@@ -14,6 +14,10 @@
 
 BATorrent is a desktop BitTorrent client for Linux, focusing on simplicity and performance. Built from scratch as a learning project using modern C++ and the Qt framework.
 
+<img width="997" height="681" alt="image" src="https://github.com/user-attachments/assets/0f0ff8c7-7dc9-482c-80cd-5bb4a66f9276" />
+<img width="540" height="550" alt="image" src="https://github.com/user-attachments/assets/a572b3cd-ad96-4453-af1b-677e8c498907" />
+
+
 ## Tech Stack
 
 - **C++17** — core language
