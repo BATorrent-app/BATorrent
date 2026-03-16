@@ -34,6 +34,8 @@ BATorrent is a desktop BitTorrent client for Linux, focusing on simplicity and p
 - libtorrent-rasterbar
 - CMake 3.16+
 
+sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools libtorrent-rasterbar-dev
+
 ### Compile
 
 ```bash
