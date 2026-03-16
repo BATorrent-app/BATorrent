@@ -8,7 +8,14 @@
   A lightweight BitTorrent client built with C++, Qt 6, and libtorrent-rasterbar.
 </p>
 
----
+<p align="center">
+  <img src="https://img.shields.io/badge/C%2B%2B-17-red?style=flat-square&logo=c%2B%2B"/>
+  <img src="https://img.shields.io/badge/Qt-6-red?style=flat-square&logo=qt"/>
+  <img src="https://img.shields.io/badge/Linux-only-red?style=flat-square&logo=linux"/>
+  <img src="https://img.shields.io/badge/License-MIT-red?style=flat-square"/>
+</p>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
 
 ## About
 
@@ -18,13 +25,18 @@ BATorrent is a desktop BitTorrent client for Linux, focusing on simplicity and p
 <img width="1038" height="711" alt="Screenshot from 2026-03-16 18-56-25" src="https://github.com/user-attachments/assets/bc436cb4-1ae5-4fc5-a853-82204d62a207" />
 <img width="540" height="550" alt="image" src="https://github.com/user-attachments/assets/a572b3cd-ad96-4453-af1b-677e8c498907" />
 
+<img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
 
 ## Tech Stack
 
-- **C++17** — core language
-- **Qt 6** — GUI framework
-- **libtorrent-rasterbar** — BitTorrent protocol implementation
-- **CMake** — build system
+| | Technology | Role |
+|---|---|---|
+| ⚙️ | **C++17** | Core language |
+| 🖼️ | **Qt 6** | GUI framework |
+| 🔗 | **libtorrent-rasterbar** | BitTorrent protocol |
+| 🔨 | **CMake** | Build system |
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
 
 ## Building
 
@@ -34,20 +46,22 @@ BATorrent is a desktop BitTorrent client for Linux, focusing on simplicity and p
 - Qt 6 (Widgets module)
 - libtorrent-rasterbar
 - CMake 3.16+
-
+```bash
 sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools libtorrent-rasterbar-dev
+```
 
 ### Compile
-
 ```bash
 cmake -B build
 cmake --build build
 ./build/BATorrent
 ```
 
+<img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
+
 ## Status
 
-Early development — actively being built.
+> 🚧 Early development — actively being built.
 
 ## License
 
