@@ -12,6 +12,7 @@
 #include "thememanager.h"
 #include "../core/sessionmanager.h"
 #include "../core/translator.h"
+#include "../core/updater.h"
 
 #include <QMenuBar>
 #include <QToolBar>
@@ -43,6 +44,7 @@
 #include <QShortcut>
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
+#include <QProgressDialog>
 
 MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     : QMainWindow(parent), m_session(session)
@@ -80,6 +82,10 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     connect(m_session, &SessionManager::torrentRemoved, m_model, &TorrentModel::refresh);
     connect(m_session, &SessionManager::torrentFinished, this, &MainWindow::onTorrentFinished);
     connect(m_session, &SessionManager::torrentError, this, &MainWindow::onTorrentError);
+
+    // Auto-updater
+    m_updater = new Updater(this);
+    checkForUpdate(true); // silent check on startup
 
     // Extra keyboard shortcuts
     auto *pauseShortcut = new QShortcut(Qt::Key_Space, this);
@@ -159,6 +165,8 @@ void MainWindow::setupMenuBar()
 
     QMenu *helpMenu = menuBar()->addMenu(tr_("menu_help"));
     helpMenu->addAction(tr_("action_welcome"), this, &MainWindow::showWelcome);
+    helpMenu->addAction(tr_("action_check_update"), this, [this]() { checkForUpdate(false); });
+    helpMenu->addSeparator();
     helpMenu->addAction(tr_("action_about"), this, &MainWindow::showAbout);
 }
 
@@ -752,4 +760,48 @@ QList<int> MainWindow::selectedRows() const
         rows.append(m_proxyModel->mapToSource(idx).row());
     std::sort(rows.begin(), rows.end());
     return rows;
+}
+
+void MainWindow::checkForUpdate(bool silent)
+{
+    connect(m_updater, &Updater::updateAvailable, this,
+            [this](const QString &version, const QString &url, const QString &assetName) {
+        QString msg = tr_("update_available").arg(version);
+        int ret = QMessageBox::question(this, tr_("update_title"), msg,
+                                        QMessageBox::Yes | QMessageBox::No);
+        if (ret != QMessageBox::Yes)
+            return;
+
+        auto *progress = new QProgressDialog(tr_("update_downloading"), tr_("btn_cancel"), 0, 100, this);
+        progress->setWindowModality(Qt::WindowModal);
+        progress->setAutoClose(false);
+        progress->show();
+
+        connect(m_updater, &Updater::downloadProgress, progress,
+                [progress](qint64 received, qint64 total) {
+            if (total > 0)
+                progress->setValue(static_cast<int>(received * 100 / total));
+        });
+
+        connect(m_updater, &Updater::updateReady, progress, &QProgressDialog::close);
+        connect(m_updater, &Updater::errorOccurred, this,
+                [this, progress](const QString &err) {
+            progress->close();
+            QMessageBox::warning(this, tr_("dlg_error"), err);
+        });
+
+        m_updater->downloadAndInstall(url, assetName);
+    }, Qt::SingleShotConnection);
+
+    connect(m_updater, &Updater::noUpdateAvailable, this, [this, silent]() {
+        if (!silent)
+            QMessageBox::information(this, tr_("update_title"), tr_("update_none"));
+    }, Qt::SingleShotConnection);
+
+    connect(m_updater, &Updater::errorOccurred, this, [this, silent](const QString &err) {
+        if (!silent)
+            QMessageBox::warning(this, tr_("dlg_error"), err);
+    }, Qt::SingleShotConnection);
+
+    m_updater->checkForUpdate();
 }

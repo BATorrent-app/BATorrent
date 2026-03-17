@@ -16,6 +16,7 @@ class DetailsPanel;
 class SpeedGraph;
 class BatWidget;
 class SplashWidget;
+class Updater;
 
 class MainWindow : public QMainWindow
 {
@@ -55,6 +56,7 @@ private slots:
     void retranslateUi();
     void filterByState(const QString &state);
     void showContextMenu(const QPoint &pos);
+    void checkForUpdate(bool silent = true);
 
 private:
     void applyTheme();
@@ -81,6 +83,7 @@ private:
     QLabel *m_statusLabel;
     QSystemTrayIcon *m_trayIcon;
     QString m_lastSavePath;
+    Updater *m_updater;
     bool m_startMinimized = false;
     bool m_useDefaultPath = false;
 };

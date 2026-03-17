@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 1.0)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+project(BATorrent VERSION 1.4.0)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
 find_package(LibtorrentRasterbar REQUIRED)
 set(CMAKE_AUTOMOC ON)
 qt_add_resources(RESOURCES src/resources.qrc)
@@ -25,11 +25,12 @@ add_executable(BATorrent WIN32
     src/gui/speedgraph.cpp
     src/gui/batwidget.cpp
     src/gui/splashwidget.cpp
+    src/core/updater.cpp
     src/gui/thememanager.cpp
     ${RESOURCES}
     ${WIN_RC}
 )
-target_link_libraries(BATorrent PRIVATE Qt6::Widgets LibtorrentRasterbar::torrent-rasterbar)
+target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network LibtorrentRasterbar::torrent-rasterbar)
 
 # Linux: install rules for icon and .desktop file
 if(UNIX AND NOT APPLE)

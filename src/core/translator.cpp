@@ -48,6 +48,13 @@ void Translator::loadEnglish()
         {"action_pause_all", "Pause &All"},
         {"action_resume_all", "Resume A&ll"},
         {"action_import_qbt", "&Import from qBittorrent..."},
+        {"action_check_update", "Check for &Updates..."},
+
+        // Update
+        {"update_title", "Update"},
+        {"update_available", "BATorrent %1 is available. Download and install now?"},
+        {"update_downloading", "Downloading update..."},
+        {"update_none", "You are running the latest version."},
 
         // Import
         {"import_qbt_success", "Imported %1 torrent(s) from qBittorrent."},
@@ -235,6 +242,13 @@ void Translator::loadPortuguese()
         {"action_pause_all", "Pausar &Todos"},
         {"action_resume_all", "Continuar T&odos"},
         {"action_import_qbt", "&Importar do qBittorrent..."},
+        {"action_check_update", "Verificar &Atualizações..."},
+
+        // Update
+        {"update_title", "Atualização"},
+        {"update_available", "BATorrent %1 está disponível. Baixar e instalar agora?"},
+        {"update_downloading", "Baixando atualização..."},
+        {"update_none", "Você já está usando a versão mais recente."},
 
         // Import
         {"import_qbt_success", "Importados %1 torrent(s) do qBittorrent."},

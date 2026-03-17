@@ -28,6 +28,7 @@ jobs:
 
       - name: Resize icon to 256x256
         run: |
+          sudo apt-get install -y imagemagick
           convert AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png \
             -resize 256x256 \
             AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png
