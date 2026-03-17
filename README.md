@@ -21,8 +21,9 @@
 
 BATorrent is a desktop BitTorrent client for Linux, focusing on simplicity and performance. Built from scratch as a learning project using modern C++ and the Qt framework.
 
-<img width="997" height="681" alt="image" src="https://github.com/user-attachments/assets/0f0ff8c7-7dc9-482c-80cd-5bb4a66f9276" />
-<img width="1038" height="711" alt="Screenshot from 2026-03-16 18-56-25" src="https://github.com/user-attachments/assets/bc436cb4-1ae5-4fc5-a853-82204d62a207" />
+<img width="1176" height="790" alt="image" src="https://github.com/user-attachments/assets/776da3b7-5fe6-49eb-87cc-b985dcc8cfda" />
+<img width="1172" height="782" alt="image" src="https://github.com/user-attachments/assets/bd1708c3-9987-4240-b37a-69c0aaa289e2" />
+<img width="1177" height="795" alt="image" src="https://github.com/user-attachments/assets/2a0be1f2-b5b5-45b8-8e17-db67a0a35345" />
 <img width="540" height="550" alt="image" src="https://github.com/user-attachments/assets/a572b3cd-ad96-4453-af1b-677e8c498907" />
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
