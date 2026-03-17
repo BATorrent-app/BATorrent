@@ -2,6 +2,7 @@
 #include "../core/translator.h"
 #include "../core/utils.h"
 #include <QColor>
+#include <QMimeData>
 
 TorrentModel::TorrentModel(SessionManager *session, QObject *parent)
     : QAbstractTableModel(parent), m_session(session)
@@ -9,7 +10,8 @@ TorrentModel::TorrentModel(SessionManager *session, QObject *parent)
     connect(&m_flashTimer, &QTimer::timeout, this, [this]() {
         m_flashingRows.clear();
         m_flashTimer.stop();
-        emit dataChanged(index(0, 0), index(rowCount() - 1, ColumnCount - 1));
+        if (rowCount() > 0)
+            emit dataChanged(index(0, 0), index(rowCount() - 1, ColumnCount - 1));
     });
 }
 
@@ -68,6 +70,11 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
         return info.stateString;
     }
 
+    // Custom order for manual sorting
+    if (role == CustomOrderRole) {
+        return m_customOrder.value(index.row(), index.row());
+    }
+
     // Flash green background for completed downloads
     if (role == Qt::BackgroundRole && m_flashingRows.contains(index.row())) {
         return QColor(0x30, 0x90, 0x50, 50); // translucent green
@@ -109,20 +116,96 @@ QVariant TorrentModel::headerData(int section, Qt::Orientation orientation, int 
 
 void TorrentModel::refresh()
 {
-    beginResetModel();
-    endResetModel();
+    int newCount = m_session->torrentCount();
+    if (newCount != m_lastCount) {
+        // Row count changed — must reset
+        beginResetModel();
+        m_lastCount = newCount;
+        endResetModel();
+    } else if (newCount > 0) {
+        // Just data changed — preserves selection
+        emit dataChanged(index(0, 0), index(newCount - 1, ColumnCount - 1));
+    }
 }
 
 void TorrentModel::flashRow(const QString &torrentName)
 {
-    // Find the row by name
     for (int i = 0; i < m_session->torrentCount(); ++i) {
         TorrentInfo info = m_session->torrentAt(i);
         if (info.name == torrentName) {
             m_flashingRows.insert(i);
-            m_flashTimer.start(2000); // flash lasts 2 seconds
+            m_flashTimer.start(2000);
             emit dataChanged(index(i, 0), index(i, ColumnCount - 1));
             break;
         }
     }
+}
+
+Qt::ItemFlags TorrentModel::flags(const QModelIndex &idx) const
+{
+    Qt::ItemFlags f = QAbstractTableModel::flags(idx);
+    if (idx.isValid())
+        f |= Qt::ItemIsDragEnabled;
+    f |= Qt::ItemIsDropEnabled;
+    return f;
+}
+
+Qt::DropActions TorrentModel::supportedDropActions() const
+{
+    return Qt::MoveAction;
+}
+
+QStringList TorrentModel::mimeTypes() const
+{
+    return {"application/x-batorrent-row"};
+}
+
+QMimeData *TorrentModel::mimeData(const QModelIndexList &indexes) const
+{
+    auto *mime = new QMimeData;
+    if (!indexes.isEmpty()) {
+        QByteArray data;
+        data.setNum(indexes.first().row());
+        mime->setData("application/x-batorrent-row", data);
+    }
+    return mime;
+}
+
+bool TorrentModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
+                                 int row, int /*column*/, const QModelIndex &parent)
+{
+    if (action != Qt::MoveAction)
+        return false;
+
+    QByteArray encoded = data->data("application/x-batorrent-row");
+    int from = encoded.toInt();
+    int to = parent.isValid() ? parent.row() : row;
+    if (to < 0) to = m_session->torrentCount() - 1;
+
+    if (from == to || from < 0 || to < 0)
+        return false;
+
+    moveRow(from, to);
+    return true;
+}
+
+void TorrentModel::moveRow(int from, int to)
+{
+    int count = m_session->torrentCount();
+    if (from < 0 || from >= count || to < 0 || to >= count || from == to)
+        return;
+
+    // Build current order if empty
+    if (m_customOrder.isEmpty()) {
+        for (int i = 0; i < count; ++i)
+            m_customOrder[i] = i;
+    }
+
+    // Swap custom order values
+    int orderFrom = m_customOrder.value(from, from);
+    int orderTo = m_customOrder.value(to, to);
+    m_customOrder[from] = orderTo;
+    m_customOrder[to] = orderFrom;
+
+    emit dataChanged(index(0, 0), index(count - 1, ColumnCount - 1));
 }

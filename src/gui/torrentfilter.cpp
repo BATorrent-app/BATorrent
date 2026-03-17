@@ -59,6 +59,12 @@ bool TorrentFilter::filterAcceptsRow(int sourceRow, const QModelIndex &sourcePar
 
 bool TorrentFilter::lessThan(const QModelIndex &left, const QModelIndex &right) const
 {
+    // When sort role is CustomOrderRole (manual drag order), use it
+    if (sortRole() == TorrentModel::CustomOrderRole) {
+        return left.data(TorrentModel::CustomOrderRole).toInt()
+             < right.data(TorrentModel::CustomOrderRole).toInt();
+    }
+
     QVariant l = left.data(TorrentModel::SortRole);
     QVariant r = right.data(TorrentModel::SortRole);
 

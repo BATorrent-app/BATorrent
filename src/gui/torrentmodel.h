@@ -4,6 +4,7 @@
 #include <QAbstractTableModel>
 #include <QSet>
 #include <QTimer>
+#include <QMap>
 #include "../core/sessionmanager.h"
 
 class TorrentModel : public QAbstractTableModel
@@ -31,6 +32,17 @@ public:
     // Raw data roles for sorting
     static constexpr int SortRole = Qt::UserRole + 10;
     static constexpr int StateFilterRole = Qt::UserRole + 11;
+    static constexpr int CustomOrderRole = Qt::UserRole + 12;
+
+    // Drag & drop support
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    Qt::DropActions supportedDropActions() const override;
+    QStringList mimeTypes() const override;
+    QMimeData *mimeData(const QModelIndexList &indexes) const override;
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action,
+                      int row, int column, const QModelIndex &parent) override;
+
+    void moveRow(int from, int to);
 
 public slots:
     void refresh();
@@ -38,6 +50,8 @@ public slots:
 
 private:
     SessionManager *m_session;
+    int m_lastCount = 0;
+    QMap<int, int> m_customOrder; // source row -> custom order
     QSet<int> m_flashingRows;
     QTimer m_flashTimer;
 };

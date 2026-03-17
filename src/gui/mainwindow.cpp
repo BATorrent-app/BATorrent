@@ -209,6 +209,10 @@ void MainWindow::setupCentralWidget()
     m_tableView->setAlternatingRowColors(true);
     m_tableView->setItemDelegateForColumn(TorrentModel::Progress,
                                           new ProgressDelegate(m_tableView));
+    m_tableView->setDragEnabled(true);
+    m_tableView->setAcceptDrops(true);
+    m_tableView->setDragDropMode(QAbstractItemView::InternalMove);
+    m_tableView->setDefaultDropAction(Qt::MoveAction);
     m_tableView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_tableView, &QWidget::customContextMenuRequested,
             this, &MainWindow::showContextMenu);
