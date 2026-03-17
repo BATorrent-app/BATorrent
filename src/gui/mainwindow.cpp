@@ -46,6 +46,7 @@
 #include <QPropertyAnimation>
 #include <QProgressDialog>
 #include <QDesktopServices>
+#include <QStandardPaths>
 #include <QUrl>
 
 MainWindow::MainWindow(SessionManager *session, QWidget *parent)
@@ -379,7 +380,7 @@ void MainWindow::loadSettings()
     if (settings.contains("geometry"))
         restoreGeometry(settings.value("geometry").toByteArray());
     m_lastSavePath = settings.value("lastSavePath",
-        QDir::homePath() + "/Downloads").toString();
+        QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
 
     int lang;
     if (settings.contains("language")) {

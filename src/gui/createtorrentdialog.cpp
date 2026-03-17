@@ -9,6 +9,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QProgressBar>
 #include <QMessageBox>
 #include <QApplication>
@@ -163,8 +164,10 @@ void CreateTorrentDialog::createTorrent()
         }
 
         // Comment
-        if (!m_commentEdit->text().isEmpty())
-            ct.set_comment(m_commentEdit->text().toStdString().c_str());
+        if (!m_commentEdit->text().isEmpty()) {
+            std::string comment = m_commentEdit->text().toStdString();
+            ct.set_comment(comment.c_str());
+        }
 
         ct.set_creator("BATorrent");
 
@@ -172,8 +175,8 @@ void CreateTorrentDialog::createTorrent()
         QApplication::processEvents();
 
         // Set piece hashes
-        lt::set_piece_hashes(ct, source.toStdString().substr(0,
-            source.toStdString().find_last_of("/\\")));
+        QString parentDir = QFileInfo(source).absolutePath();
+        lt::set_piece_hashes(ct, parentDir.toStdString());
 
         m_progressBar->setValue(90);
         QApplication::processEvents();

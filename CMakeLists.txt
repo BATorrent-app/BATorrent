@@ -32,6 +32,11 @@ add_executable(BATorrent WIN32
 )
 target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network LibtorrentRasterbar::torrent-rasterbar)
 
+# Windows: target Windows 7+ to silence Boost.Asio warnings
+if(WIN32)
+    target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601)
+endif()
+
 # Linux: install rules for icon and .desktop file
 if(UNIX AND NOT APPLE)
     include(GNUInstallDirs)

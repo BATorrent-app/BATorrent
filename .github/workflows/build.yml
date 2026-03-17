@@ -69,6 +69,13 @@ jobs:
           echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
           echo "C:\vcpkg" >> $env:GITHUB_PATH
 
+      - name: Cache vcpkg packages
+        uses: actions/cache@v4
+        with:
+          path: C:\vcpkg\installed
+          key: vcpkg-windows-libtorrent-${{ hashFiles('.github/workflows/build.yml') }}
+          restore-keys: vcpkg-windows-libtorrent-
+
       - name: Install libtorrent via vcpkg
         run: C:\vcpkg\vcpkg install libtorrent:x64-windows
 

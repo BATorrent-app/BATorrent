@@ -6,7 +6,7 @@
 #include <libtorrent/write_resume_data.hpp>
 #include <libtorrent/read_resume_data.hpp>
 #include <libtorrent/alert_types.hpp>
-#include <libtorrent/hex.hpp>
+#include <sstream>
 #include <libtorrent/peer_info.hpp>
 #include <QDir>
 #include <QStandardPaths>
@@ -85,7 +85,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
     if (m_torrents[index].is_valid()) {
         lt::torrent_status st = m_torrents[index].status();
         QString hash = QString::fromStdString(
-            lt::aux::to_hex(lt::span<char const>(st.info_hashes.get_best().data(), st.info_hashes.get_best().size())));
+            (std::ostringstream() << st.info_hashes.get_best()).str());
         QDir dir(resumeDataDir());
         dir.remove(hash + ".resume");
     }
@@ -391,7 +391,7 @@ void SessionManager::saveResumeData()
                 auto buf = lt::write_resume_data_buf(rd->params);
                 lt::torrent_status st = rd->handle.status();
                 QString hash = QString::fromStdString(
-                    lt::aux::to_hex(lt::span<char const>(st.info_hashes.get_best().data(), st.info_hashes.get_best().size())));
+                    (std::ostringstream() << st.info_hashes.get_best()).str());
                 QString filePath = dir.filePath(hash + ".resume");
                 QFile file(filePath);
                 if (file.open(QIODevice::WriteOnly)) {
@@ -473,14 +473,20 @@ void SessionManager::checkSeedRatios()
 
 QString SessionManager::resumeDataDir() const
 {
-    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/resume";
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("resume");
 }
 
 int SessionManager::importFromQBittorrent(const QString &defaultSavePath)
 {
-    // qBittorrent stores data in ~/.local/share/qBittorrent/BT_backup/
-    // Each torrent has <hash>.torrent and <hash>.fastresume
+    // qBittorrent stores data in BT_backup:
+    // Linux: ~/.local/share/qBittorrent/BT_backup/
+    // Windows: %APPDATA%/qBittorrent/BT_backup/
+#ifdef Q_OS_WIN
+    QString btBackup = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                            + "/../qBittorrent").filePath("BT_backup");
+#else
     QString btBackup = QDir::homePath() + "/.local/share/qBittorrent/BT_backup";
+#endif
     QDir dir(btBackup);
     if (!dir.exists())
         return 0;
