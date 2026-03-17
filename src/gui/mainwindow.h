@@ -11,8 +11,11 @@ class QSystemTrayIcon;
 class SessionManager;
 class TorrentModel;
 class TorrentFilter;
+class QStackedWidget;
 class DetailsPanel;
 class SpeedGraph;
+class BatWidget;
+class SplashWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -26,6 +29,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
 
@@ -71,6 +75,9 @@ private:
     QLineEdit *m_searchEdit;
     DetailsPanel *m_detailsPanel;
     SpeedGraph *m_speedGraph;
+    BatWidget *m_batWidget;
+    QStackedWidget *m_topStack;
+    SplashWidget *m_splash = nullptr;
     QLabel *m_statusLabel;
     QSystemTrayIcon *m_trayIcon;
     QString m_lastSavePath;

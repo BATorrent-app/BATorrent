@@ -1,6 +1,7 @@
 #include "torrentfilter.h"
 #include "torrentmodel.h"
 #include "../core/translator.h"
+#include <QtGlobal>
 
 TorrentFilter::TorrentFilter(QObject *parent)
     : QSortFilterProxyModel(parent)
@@ -10,16 +11,26 @@ TorrentFilter::TorrentFilter(QObject *parent)
 
 void TorrentFilter::setStateFilter(const QString &state)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
     beginFilterChange();
     m_stateFilter = state;
     endFilterChange();
+#else
+    m_stateFilter = state;
+    invalidateFilter();
+#endif
 }
 
 void TorrentFilter::setNameFilter(const QString &text)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
     beginFilterChange();
     m_nameFilter = text.toLower();
     endFilterChange();
+#else
+    m_nameFilter = text.toLower();
+    invalidateFilter();
+#endif
 }
 
 bool TorrentFilter::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const

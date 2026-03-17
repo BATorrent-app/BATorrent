@@ -6,6 +6,7 @@
 #include <libtorrent/write_resume_data.hpp>
 #include <libtorrent/read_resume_data.hpp>
 #include <libtorrent/alert_types.hpp>
+#include <libtorrent/hex.hpp>
 #include <libtorrent/peer_info.hpp>
 #include <QDir>
 #include <QStandardPaths>
@@ -79,6 +80,15 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
+
+    // Delete the .resume file so it doesn't come back on restart
+    if (m_torrents[index].is_valid()) {
+        lt::torrent_status st = m_torrents[index].status();
+        QString hash = QString::fromStdString(
+            lt::aux::to_hex(lt::span<char const>(st.info_hashes.get_best().data(), st.info_hashes.get_best().size())));
+        QDir dir(resumeDataDir());
+        dir.remove(hash + ".resume");
+    }
 
     lt::remove_flags_t flags{};
     if (deleteFiles)
@@ -357,27 +367,39 @@ void SessionManager::saveResumeData()
     if (!dir.exists())
         dir.mkpath(".");
 
+    int outstanding = 0;
     for (size_t i = 0; i < m_torrents.size(); ++i) {
+        if (!m_torrents[i].is_valid()) continue;
         lt::torrent_status st = m_torrents[i].status();
         if (!st.has_metadata) continue;
 
         m_torrents[i].save_resume_data(lt::torrent_handle::save_info_dict);
+        ++outstanding;
     }
 
-    // Process save_resume_data alerts
-    m_session.wait_for_alert(std::chrono::seconds(3));
-    std::vector<lt::alert *> alerts;
-    m_session.pop_alerts(&alerts);
+    // Process all save_resume_data alerts (one per torrent)
+    while (outstanding > 0) {
+        lt::alert const *a = m_session.wait_for_alert(std::chrono::seconds(5));
+        if (!a) break;
 
-    for (auto *a : alerts) {
-        if (auto *rd = lt::alert_cast<lt::save_resume_data_alert>(a)) {
-            auto buf = lt::write_resume_data_buf(rd->params);
-            lt::torrent_status st = rd->handle.status();
-            QString name = QString::fromStdString(st.name);
-            QString filePath = dir.filePath(name + ".resume");
-            QFile file(filePath);
-            if (file.open(QIODevice::WriteOnly)) {
-                file.write(buf.data(), static_cast<qint64>(buf.size()));
+        std::vector<lt::alert *> alerts;
+        m_session.pop_alerts(&alerts);
+
+        for (auto *alert : alerts) {
+            if (auto *rd = lt::alert_cast<lt::save_resume_data_alert>(alert)) {
+                --outstanding;
+                auto buf = lt::write_resume_data_buf(rd->params);
+                lt::torrent_status st = rd->handle.status();
+                QString hash = QString::fromStdString(
+                    lt::aux::to_hex(lt::span<char const>(st.info_hashes.get_best().data(), st.info_hashes.get_best().size())));
+                QString filePath = dir.filePath(hash + ".resume");
+                QFile file(filePath);
+                if (file.open(QIODevice::WriteOnly)) {
+                    file.write(buf.data(), static_cast<qint64>(buf.size()));
+                }
+            }
+            if (lt::alert_cast<lt::save_resume_data_failed_alert>(alert)) {
+                --outstanding;
             }
         }
     }

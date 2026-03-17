@@ -7,6 +7,8 @@
 #include "welcomedialog.h"
 #include "createtorrentdialog.h"
 #include "speedgraph.h"
+#include "batwidget.h"
+#include "splashwidget.h"
 #include "thememanager.h"
 #include "../core/sessionmanager.h"
 #include "../core/translator.h"
@@ -30,13 +32,17 @@
 #include <QMimeData>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QResizeEvent>
 #include <QApplication>
 #include <QLocale>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QStackedWidget>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QShortcut>
+#include <QGraphicsOpacityEffect>
+#include <QPropertyAnimation>
 
 MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     : QMainWindow(parent), m_session(session)
@@ -96,6 +102,18 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     QSettings settings("BATorrent", "BATorrent");
     if (!settings.value("welcomeShown", false).toBool())
         showWelcome();
+
+    // Splash animation
+    m_splash = new SplashWidget(this);
+    m_splash->setGeometry(0, 0, width(), height());
+    m_splash->raise();
+    m_splash->show();
+    m_splash->start();
+    connect(m_splash, &SplashWidget::finished, this, [this]() {
+        m_splash->hide();
+        m_splash->deleteLater();
+        m_splash = nullptr;
+    });
 }
 
 MainWindow::~MainWindow()
@@ -247,13 +265,21 @@ void MainWindow::setupCentralWidget()
 
     filterLayout->addStretch();
 
-    // Top section: filter bar + table
-    auto *topWidget = new QWidget;
-    auto *topLayout = new QVBoxLayout(topWidget);
-    topLayout->setContentsMargins(0, 0, 0, 0);
-    topLayout->setSpacing(0);
-    topLayout->addWidget(filterBar);
-    topLayout->addWidget(m_tableView);
+    // Bat animation (shown when no torrents)
+    m_batWidget = new BatWidget;
+
+    // Top section: filter bar + table or bat widget
+    auto *tableContainer = new QWidget;
+    auto *tableLayout = new QVBoxLayout(tableContainer);
+    tableLayout->setContentsMargins(0, 0, 0, 0);
+    tableLayout->setSpacing(0);
+    tableLayout->addWidget(filterBar);
+    tableLayout->addWidget(m_tableView);
+
+    m_topStack = new QStackedWidget;
+    m_topStack->addWidget(tableContainer);  // index 0 = table
+    m_topStack->addWidget(m_batWidget);     // index 1 = bat
+    m_topStack->setCurrentIndex(1);         // start with bat (no torrents yet)
 
     m_speedGraph = new SpeedGraph;
     m_detailsPanel = new DetailsPanel(m_session);
@@ -266,7 +292,7 @@ void MainWindow::setupCentralWidget()
     bottomLayout->addWidget(m_detailsPanel);
 
     auto *splitter = new QSplitter(Qt::Vertical);
-    splitter->addWidget(topWidget);
+    splitter->addWidget(m_topStack);
     splitter->addWidget(bottomWidget);
     splitter->setStretchFactor(0, 3);
     splitter->setStretchFactor(1, 2);
@@ -290,7 +316,11 @@ void MainWindow::setupTrayIcon()
     trayMenu->addAction(tr_("action_pause_all"), this, &MainWindow::pauseAll);
     trayMenu->addAction(tr_("action_resume_all"), this, &MainWindow::resumeAll);
     trayMenu->addSeparator();
-    trayMenu->addAction(tr_("tray_quit"), this, &QApplication::quit);
+    trayMenu->addAction(tr_("tray_quit"), this, [this]() {
+        saveSettings();
+        m_session->saveResumeData();
+        QApplication::quit();
+    });
     m_trayIcon->setContextMenu(trayMenu);
 
     connect(m_trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
@@ -472,6 +502,24 @@ void MainWindow::updateStatusBar()
     // Feed speed graph
     m_speedGraph->addDataPoint(totalDown, totalUp);
 
+    // Toggle bat widget vs table with fade transition
+    int target = (count == 0) ? 1 : 0;
+    if (m_topStack->currentIndex() != target) {
+        auto *incoming = m_topStack->widget(target);
+        auto *effect = new QGraphicsOpacityEffect(incoming);
+        incoming->setGraphicsEffect(effect);
+        m_topStack->setCurrentIndex(target);
+
+        auto *anim = new QPropertyAnimation(effect, "opacity", this);
+        anim->setDuration(300);
+        anim->setStartValue(0.0);
+        anim->setEndValue(1.0);
+        connect(anim, &QPropertyAnimation::finished, this, [incoming]() {
+            incoming->setGraphicsEffect(nullptr); // clean up
+        });
+        anim->start(QAbstractAnimation::DeleteWhenStopped);
+    }
+
     if (count == 0) {
         m_statusLabel->setText(tr_("status_no_torrents"));
         return;
@@ -498,6 +546,7 @@ void MainWindow::onTorrentFinished(const QString &name)
     m_trayIcon->showMessage(tr_("dlg_download_complete"),
                             tr_("dlg_finished_msg").arg(name),
                             QSystemTrayIcon::Information, 5000);
+    m_model->flashRow(name);
 }
 
 void MainWindow::onTorrentError(const QString &message)
@@ -588,12 +637,21 @@ void MainWindow::retranslateUi()
     m_detailsPanel->retranslate();
 }
 
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    if (m_splash)
+        m_splash->setGeometry(0, 0, width(), height());
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     if (m_trayIcon->isVisible()) {
         hide();
         event->ignore();
     } else {
+        saveSettings();
+        m_session->saveResumeData();
         event->accept();
     }
 }
@@ -669,7 +727,7 @@ void MainWindow::showContextMenu(const QPoint &pos)
         TorrentInfo info = m_session->torrentAt(rows.first());
         auto *seqAction = menu.addAction(tr_("ctx_sequential"));
         seqAction->setCheckable(true);
-        seqAction->setChecked(info.handle.flags() & lt::torrent_flags::sequential_download);
+        seqAction->setChecked((info.handle.flags() & lt::torrent_flags::sequential_download) != lt::torrent_flags_t{});
         connect(seqAction, &QAction::toggled, this, [this, row = rows.first()](bool checked) {
             m_session->setSequentialDownload(row, checked);
         });

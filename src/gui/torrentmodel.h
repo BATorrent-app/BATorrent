@@ -2,6 +2,8 @@
 #define TORRENTMODEL_H
 
 #include <QAbstractTableModel>
+#include <QSet>
+#include <QTimer>
 #include "../core/sessionmanager.h"
 
 class TorrentModel : public QAbstractTableModel
@@ -32,9 +34,12 @@ public:
 
 public slots:
     void refresh();
+    void flashRow(const QString &torrentName);
 
 private:
     SessionManager *m_session;
+    QSet<int> m_flashingRows;
+    QTimer m_flashTimer;
 };
 
 #endif

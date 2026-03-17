@@ -23,6 +23,8 @@ add_executable(BATorrent WIN32
     src/gui/welcomedialog.cpp
     src/gui/createtorrentdialog.cpp
     src/gui/speedgraph.cpp
+    src/gui/batwidget.cpp
+    src/gui/splashwidget.cpp
     src/gui/thememanager.cpp
     ${RESOURCES}
     ${WIN_RC}
