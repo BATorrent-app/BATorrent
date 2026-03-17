@@ -62,6 +62,7 @@ void Translator::loadEnglish()
 
         // Context menu
         {"ctx_sequential", "Sequential Download"},
+        {"ctx_open_folder", "Open Folder"},
 
         // Create torrent
         {"create_title", "Create Torrent"},
@@ -256,6 +257,7 @@ void Translator::loadPortuguese()
 
         // Context menu
         {"ctx_sequential", "Download Sequencial"},
+        {"ctx_open_folder", "Abrir Pasta"},
 
         // Create torrent
         {"create_title", "Criar Torrent"},

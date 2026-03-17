@@ -45,6 +45,8 @@
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
 #include <QProgressDialog>
+#include <QDesktopServices>
+#include <QUrl>
 
 MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     : QMainWindow(parent), m_session(session)
@@ -86,6 +88,13 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     // Auto-updater
     m_updater = new Updater(this);
     checkForUpdate(true); // silent check on startup
+
+    // Periodic resume data save (every 5 minutes)
+    auto *resumeTimer = new QTimer(this);
+    connect(resumeTimer, &QTimer::timeout, this, [this]() {
+        m_session->saveResumeData();
+    });
+    resumeTimer->start(5 * 60 * 1000);
 
     // Extra keyboard shortcuts
     auto *pauseShortcut = new QShortcut(Qt::Key_Space, this);
@@ -180,6 +189,7 @@ void MainWindow::setupToolBar()
     toolbar->setMovable(false);
     toolbar->setIconSize(QSize(20, 20));
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolbar->setStyleSheet("QToolButton { padding-left: 4px; padding-right: 4px; }");
 
     auto *logoLabel = new QLabel;
     QPixmap logo(":/images/logo1.png");
@@ -658,12 +668,13 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    saveSettings();
+    m_session->saveResumeData();
+
     if (m_trayIcon->isVisible()) {
         hide();
         event->ignore();
     } else {
-        saveSettings();
-        m_session->saveResumeData();
         event->accept();
     }
 }
@@ -742,6 +753,15 @@ void MainWindow::showContextMenu(const QPoint &pos)
         seqAction->setChecked((info.handle.flags() & lt::torrent_flags::sequential_download) != lt::torrent_flags_t{});
         connect(seqAction, &QAction::toggled, this, [this, row = rows.first()](bool checked) {
             m_session->setSequentialDownload(row, checked);
+        });
+        menu.addSeparator();
+    }
+
+    // Open folder (only for single selection)
+    if (rows.size() == 1) {
+        TorrentInfo info = m_session->torrentAt(rows.first());
+        menu.addAction(tr_("ctx_open_folder"), this, [savePath = info.savePath]() {
+            QDesktopServices::openUrl(QUrl::fromLocalFile(savePath));
         });
         menu.addSeparator();
     }

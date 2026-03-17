@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("BATorrent");
-    app.setApplicationVersion("1.4.0");
+    app.setApplicationVersion("1.5.0");
     app.setWindowIcon(QIcon(":/images/logo1.png"));
 
     SessionManager session;
