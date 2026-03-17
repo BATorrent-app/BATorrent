@@ -5,6 +5,7 @@
 #include "detailspanel.h"
 #include "settingsdialog.h"
 #include "welcomedialog.h"
+#include "createtorrentdialog.h"
 #include "speedgraph.h"
 #include "thememanager.h"
 #include "../core/sessionmanager.h"
@@ -15,6 +16,7 @@
 #include <QStatusBar>
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QMessageBox>
 #include <QTableView>
 #include <QHeaderView>
 #include <QLabel>
@@ -34,6 +36,7 @@
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QShortcut>
 
 MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     : QMainWindow(parent), m_session(session)
@@ -53,11 +56,41 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     setupStatusBar();
     setupTrayIcon();
 
+    // Restore table layout
+    {
+        QSettings settings("BATorrent", "BATorrent");
+        if (settings.contains("tableHeaderState"))
+            m_tableView->horizontalHeader()->restoreState(settings.value("tableHeaderState").toByteArray());
+        if (settings.contains("tableSortColumn")) {
+            int col = settings.value("tableSortColumn").toInt();
+            auto order = static_cast<Qt::SortOrder>(settings.value("tableSortOrder", 0).toInt());
+            m_tableView->sortByColumn(col, order);
+        }
+    }
+
     connect(m_session, &SessionManager::torrentsUpdated, m_model, &TorrentModel::refresh);
     connect(m_session, &SessionManager::torrentsUpdated, this, &MainWindow::updateStatusBar);
     connect(m_session, &SessionManager::torrentAdded, m_model, &TorrentModel::refresh);
     connect(m_session, &SessionManager::torrentRemoved, m_model, &TorrentModel::refresh);
     connect(m_session, &SessionManager::torrentFinished, this, &MainWindow::onTorrentFinished);
+    connect(m_session, &SessionManager::torrentError, this, &MainWindow::onTorrentError);
+
+    // Extra keyboard shortcuts
+    auto *pauseShortcut = new QShortcut(Qt::Key_Space, this);
+    connect(pauseShortcut, &QShortcut::activated, this, [this]() {
+        auto rows = selectedRows();
+        if (rows.isEmpty()) return;
+        // Toggle: if first selected is paused, resume all; otherwise pause all
+        TorrentInfo info = m_session->torrentAt(rows.first());
+        if (info.paused) {
+            for (int r : rows) m_session->resumeTorrent(r);
+        } else {
+            for (int r : rows) m_session->pauseTorrent(r);
+        }
+    });
+
+    auto *selectAllShortcut = new QShortcut(QKeySequence::SelectAll, this);
+    connect(selectAllShortcut, &QShortcut::activated, m_tableView, &QTableView::selectAll);
 
     // Show welcome on first launch
     QSettings settings("BATorrent", "BATorrent");
@@ -84,6 +117,8 @@ void MainWindow::setupMenuBar()
                         QKeySequence::Open, this, &MainWindow::openTorrent);
     fileMenu->addAction(QIcon(":/icons/magnet.svg"), tr_("action_magnet"),
                         this, &MainWindow::openMagnet);
+    fileMenu->addAction(tr_("action_create"), this, &MainWindow::createTorrent);
+    fileMenu->addAction(tr_("action_import_qbt"), this, &MainWindow::importQBittorrent);
     fileMenu->addSeparator();
     fileMenu->addAction(tr_("action_quit"), QKeySequence::Quit, this, &QWidget::close);
 
@@ -93,8 +128,12 @@ void MainWindow::setupMenuBar()
     torrentMenu->addAction(QIcon(":/icons/play.svg"), tr_("action_resume"),
                            this, &MainWindow::resumeSelected);
     torrentMenu->addSeparator();
+    torrentMenu->addAction(tr_("action_pause_all"), this, &MainWindow::pauseAll);
+    torrentMenu->addAction(tr_("action_resume_all"), this, &MainWindow::resumeAll);
+    torrentMenu->addSeparator();
     torrentMenu->addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"),
                            QKeySequence::Delete, this, &MainWindow::removeSelected);
+    torrentMenu->addAction(tr_("action_remove_files"), this, &MainWindow::removeSelectedWithFiles);
 
     QMenu *settingsMenu = menuBar()->addMenu(tr_("menu_settings"));
     settingsMenu->addAction(QIcon(":/icons/settings.svg"), tr_("action_settings"),
@@ -102,6 +141,7 @@ void MainWindow::setupMenuBar()
 
     QMenu *helpMenu = menuBar()->addMenu(tr_("menu_help"));
     helpMenu->addAction(tr_("action_welcome"), this, &MainWindow::showWelcome);
+    helpMenu->addAction(tr_("action_about"), this, &MainWindow::showAbout);
 }
 
 void MainWindow::setupToolBar()
@@ -143,7 +183,7 @@ void MainWindow::setupCentralWidget()
     m_tableView->setSortingEnabled(true);
     m_tableView->sortByColumn(TorrentModel::Name, Qt::AscendingOrder);
     m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_tableView->horizontalHeader()->setStretchLastSection(true);
     m_tableView->horizontalHeader()->setSortIndicatorShown(true);
     m_tableView->verticalHeader()->hide();
@@ -151,6 +191,9 @@ void MainWindow::setupCentralWidget()
     m_tableView->setAlternatingRowColors(true);
     m_tableView->setItemDelegateForColumn(TorrentModel::Progress,
                                           new ProgressDelegate(m_tableView));
+    m_tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_tableView, &QWidget::customContextMenuRequested,
+            this, &MainWindow::showContextMenu);
 
     connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, &MainWindow::onSelectionChanged);
@@ -244,6 +287,9 @@ void MainWindow::setupTrayIcon()
     auto *trayMenu = new QMenu(this);
     trayMenu->addAction(tr_("tray_show"), this, &MainWindow::trayActivated);
     trayMenu->addSeparator();
+    trayMenu->addAction(tr_("action_pause_all"), this, &MainWindow::pauseAll);
+    trayMenu->addAction(tr_("action_resume_all"), this, &MainWindow::resumeAll);
+    trayMenu->addSeparator();
     trayMenu->addAction(tr_("tray_quit"), this, &QApplication::quit);
     m_trayIcon->setContextMenu(trayMenu);
 
@@ -266,6 +312,13 @@ void MainWindow::saveSettings()
     settings.setValue("startMinimized", m_startMinimized);
     settings.setValue("useDefaultPath", m_useDefaultPath);
     settings.setValue("theme", static_cast<int>(ThemeManager::instance().theme()));
+    settings.setValue("dhtEnabled", m_session->dhtEnabled());
+    settings.setValue("encryptionMode", m_session->encryptionMode());
+    settings.setValue("maxConnections", m_session->maxConnections());
+    settings.setValue("seedRatioLimit", static_cast<double>(m_session->seedRatioLimit()));
+    settings.setValue("tableHeaderState", m_tableView->horizontalHeader()->saveState());
+    settings.setValue("tableSortColumn", m_tableView->horizontalHeader()->sortIndicatorSection());
+    settings.setValue("tableSortOrder", static_cast<int>(m_tableView->horizontalHeader()->sortIndicatorOrder()));
 }
 
 void MainWindow::loadSettings()
@@ -295,6 +348,16 @@ void MainWindow::loadSettings()
 
     int theme = settings.value("theme", 0).toInt();
     ThemeManager::instance().setTheme(static_cast<ThemeManager::Theme>(theme));
+
+    // Network settings
+    bool dht = settings.value("dhtEnabled", true).toBool();
+    m_session->setDhtEnabled(dht);
+    int enc = settings.value("encryptionMode", 0).toInt();
+    m_session->setEncryptionMode(enc);
+    int maxConn = settings.value("maxConnections", 200).toInt();
+    m_session->setMaxConnections(maxConn);
+    float seedRatio = settings.value("seedRatioLimit", 0.0).toFloat();
+    m_session->setSeedRatioLimit(seedRatio);
 }
 
 void MainWindow::openTorrent()
@@ -309,16 +372,17 @@ void MainWindow::openTorrent()
 
 void MainWindow::addTorrentFile(const QString &filePath)
 {
-    QString savePath;
-    if (m_useDefaultPath) {
-        savePath = m_lastSavePath;
-    } else {
-        savePath = QFileDialog::getExistingDirectory(this, tr_("dlg_save_to"), m_lastSavePath);
-        if (savePath.isEmpty())
-            return;
-        m_lastSavePath = savePath;
-    }
-    m_session->addTorrent(filePath, savePath);
+    m_session->addTorrent(filePath, m_lastSavePath);
+}
+
+void MainWindow::addTorrentFromCli(const QString &filePath)
+{
+    m_session->addTorrent(filePath, m_lastSavePath);
+}
+
+void MainWindow::addMagnetFromCli(const QString &uri)
+{
+    m_session->addMagnet(uri, m_lastSavePath);
 }
 
 void MainWindow::openMagnet()
@@ -328,37 +392,68 @@ void MainWindow::openMagnet()
     if (magnet.isEmpty() || !magnet.startsWith("magnet:"))
         return;
 
-    QString savePath;
-    if (m_useDefaultPath) {
-        savePath = m_lastSavePath;
-    } else {
-        savePath = QFileDialog::getExistingDirectory(this, tr_("dlg_save_to"), m_lastSavePath);
-        if (savePath.isEmpty())
-            return;
-        m_lastSavePath = savePath;
-    }
-    m_session->addMagnet(magnet, savePath);
+    m_session->addMagnet(magnet, m_lastSavePath);
 }
 
 void MainWindow::removeSelected()
 {
-    int row = selectedRow();
-    if (row >= 0)
-        m_session->removeTorrent(row);
+    auto rows = selectedRows();
+    // Remove in reverse order so indices stay valid
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    for (int r : rows)
+        m_session->removeTorrent(r, false);
+}
+
+void MainWindow::removeSelectedWithFiles()
+{
+    auto rows = selectedRows();
+    if (rows.isEmpty()) return;
+
+    auto reply = QMessageBox::warning(this, tr_("dlg_confirm_delete"),
+        tr_("dlg_confirm_delete_msg"),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if (reply != QMessageBox::Yes) return;
+
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    for (int r : rows)
+        m_session->removeTorrent(r, true);
 }
 
 void MainWindow::pauseSelected()
 {
-    int row = selectedRow();
-    if (row >= 0)
-        m_session->pauseTorrent(row);
+    for (int r : selectedRows())
+        m_session->pauseTorrent(r);
 }
 
 void MainWindow::resumeSelected()
 {
-    int row = selectedRow();
-    if (row >= 0)
-        m_session->resumeTorrent(row);
+    for (int r : selectedRows())
+        m_session->resumeTorrent(r);
+}
+
+void MainWindow::createTorrent()
+{
+    CreateTorrentDialog dlg(this);
+    dlg.exec();
+}
+
+void MainWindow::importQBittorrent()
+{
+    int count = m_session->importFromQBittorrent(m_lastSavePath);
+    if (count > 0)
+        QMessageBox::information(this, "Import", tr_("import_qbt_success").arg(count));
+    else
+        QMessageBox::information(this, "Import", tr_("import_qbt_none"));
+}
+
+void MainWindow::pauseAll()
+{
+    m_session->pauseAll();
+}
+
+void MainWindow::resumeAll()
+{
+    m_session->resumeAll();
 }
 
 void MainWindow::updateStatusBar()
@@ -394,7 +489,8 @@ void MainWindow::updateStatusBar()
 
 void MainWindow::onSelectionChanged()
 {
-    m_detailsPanel->showTorrent(selectedRow());
+    auto rows = selectedRows();
+    m_detailsPanel->showTorrent(rows.isEmpty() ? -1 : rows.first());
 }
 
 void MainWindow::onTorrentFinished(const QString &name)
@@ -402,6 +498,11 @@ void MainWindow::onTorrentFinished(const QString &name)
     m_trayIcon->showMessage(tr_("dlg_download_complete"),
                             tr_("dlg_finished_msg").arg(name),
                             QSystemTrayIcon::Information, 5000);
+}
+
+void MainWindow::onTorrentError(const QString &message)
+{
+    QMessageBox::warning(this, tr_("dlg_error"), message);
 }
 
 void MainWindow::trayActivated()
@@ -421,6 +522,10 @@ void MainWindow::openSettings()
     dlg.setStartMinimized(m_startMinimized);
     dlg.setUseDefaultPath(m_useDefaultPath);
     dlg.setThemeIndex(static_cast<int>(ThemeManager::instance().theme()));
+    dlg.setDhtEnabled(m_session->dhtEnabled());
+    dlg.setEncryptionMode(m_session->encryptionMode());
+    dlg.setMaxConnections(m_session->maxConnections());
+    dlg.setSeedRatioLimit(m_session->seedRatioLimit());
 
     if (dlg.exec() == QDialog::Accepted) {
         m_lastSavePath = dlg.defaultSavePath();
@@ -440,6 +545,12 @@ void MainWindow::openSettings()
             ThemeManager::instance().setTheme(static_cast<ThemeManager::Theme>(newTheme));
             applyTheme();
         }
+
+        // Network settings
+        m_session->setDhtEnabled(dlg.dhtEnabled());
+        m_session->setEncryptionMode(dlg.encryptionMode());
+        m_session->setMaxConnections(dlg.maxConnections());
+        m_session->setSeedRatioLimit(dlg.seedRatioLimit());
     }
 }
 
@@ -452,6 +563,21 @@ void MainWindow::showWelcome()
         QSettings settings("BATorrent", "BATorrent");
         settings.setValue("welcomeShown", true);
     }
+}
+
+void MainWindow::showAbout()
+{
+    QString text = QString(
+        "<h2>BATorrent v%1</h2>"
+        "<p>%2</p>"
+        "<p><b>%3:</b><br>"
+        "libtorrent-rasterbar, Qt 6, OpenSSL</p>"
+        "<p>%4 MIT</p>")
+        .arg(QApplication::applicationVersion(),
+             tr_("about_description"),
+             tr_("about_libraries"),
+             tr_("about_license"));
+    QMessageBox::about(this, tr_("action_about"), text);
 }
 
 void MainWindow::retranslateUi()
@@ -499,17 +625,8 @@ void MainWindow::dropEvent(QDropEvent *event)
         }
     } else if (event->mimeData()->hasText()) {
         QString text = event->mimeData()->text();
-        if (text.startsWith("magnet:")) {
-            QString savePath;
-            if (m_useDefaultPath) {
-                savePath = m_lastSavePath;
-            } else {
-                savePath = QFileDialog::getExistingDirectory(this, tr_("dlg_save_to"), m_lastSavePath);
-                if (savePath.isEmpty()) return;
-                m_lastSavePath = savePath;
-            }
-            m_session->addMagnet(text, savePath);
-        }
+        if (text.startsWith("magnet:"))
+            m_session->addMagnet(text, m_lastSavePath);
     }
 }
 
@@ -537,10 +654,40 @@ void MainWindow::filterByState(const QString &state)
     }
 }
 
-int MainWindow::selectedRow() const
+void MainWindow::showContextMenu(const QPoint &pos)
 {
+    auto rows = selectedRows();
+    if (rows.isEmpty()) return;
+
+    QMenu menu(this);
+    menu.addAction(QIcon(":/icons/play.svg"), tr_("action_resume"), this, &MainWindow::resumeSelected);
+    menu.addAction(QIcon(":/icons/pause.svg"), tr_("action_pause"), this, &MainWindow::pauseSelected);
+    menu.addSeparator();
+
+    // Sequential download toggle (only for single selection)
+    if (rows.size() == 1) {
+        TorrentInfo info = m_session->torrentAt(rows.first());
+        auto *seqAction = menu.addAction(tr_("ctx_sequential"));
+        seqAction->setCheckable(true);
+        seqAction->setChecked(info.handle.flags() & lt::torrent_flags::sequential_download);
+        connect(seqAction, &QAction::toggled, this, [this, row = rows.first()](bool checked) {
+            m_session->setSequentialDownload(row, checked);
+        });
+        menu.addSeparator();
+    }
+
+    menu.addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"), this, &MainWindow::removeSelected);
+    menu.addAction(tr_("action_remove_files"), this, &MainWindow::removeSelectedWithFiles);
+
+    menu.exec(m_tableView->viewport()->mapToGlobal(pos));
+}
+
+QList<int> MainWindow::selectedRows() const
+{
+    QList<int> rows;
     QModelIndexList sel = m_tableView->selectionModel()->selectedRows();
-    if (sel.isEmpty())
-        return -1;
-    return m_proxyModel->mapToSource(sel.first()).row();
+    for (const auto &idx : sel)
+        rows.append(m_proxyModel->mapToSource(idx).row());
+    std::sort(rows.begin(), rows.end());
+    return rows;
 }

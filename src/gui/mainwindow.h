@@ -21,6 +21,9 @@ public:
     explicit MainWindow(SessionManager *session, QWidget *parent = nullptr);
     ~MainWindow();
 
+    void addTorrentFromCli(const QString &filePath);
+    void addMagnetFromCli(const QString &uri);
+
 protected:
     void closeEvent(QCloseEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -29,17 +32,25 @@ protected:
 private slots:
     void openTorrent();
     void openMagnet();
+    void createTorrent();
+    void importQBittorrent();
     void removeSelected();
+    void removeSelectedWithFiles();
     void pauseSelected();
     void resumeSelected();
+    void pauseAll();
+    void resumeAll();
     void updateStatusBar();
     void onSelectionChanged();
     void onTorrentFinished(const QString &name);
+    void onTorrentError(const QString &message);
     void trayActivated();
     void openSettings();
     void showWelcome();
+    void showAbout();
     void retranslateUi();
     void filterByState(const QString &state);
+    void showContextMenu(const QPoint &pos);
 
 private:
     void applyTheme();
@@ -50,7 +61,7 @@ private:
     void setupTrayIcon();
     void saveSettings();
     void loadSettings();
-    int selectedRow() const;
+    QList<int> selectedRows() const;
     void addTorrentFile(const QString &filePath);
 
     SessionManager *m_session;

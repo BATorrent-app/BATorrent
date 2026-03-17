@@ -1,5 +1,6 @@
 #include "torrentmodel.h"
 #include "../core/translator.h"
+#include "../core/utils.h"
 
 TorrentModel::TorrentModel(SessionManager *session, QObject *parent)
     : QAbstractTableModel(parent), m_session(session)
@@ -85,19 +86,4 @@ void TorrentModel::refresh()
 {
     beginResetModel();
     endResetModel();
-}
-
-QString TorrentModel::formatSize(qint64 bytes)
-{
-    if (bytes < 1024) return QString::number(bytes) + " B";
-    if (bytes < 1024 * 1024) return QString::number(bytes / 1024.0, 'f', 1) + " KB";
-    if (bytes < 1024LL * 1024 * 1024) return QString::number(bytes / (1024.0 * 1024.0), 'f', 1) + " MB";
-    return QString::number(bytes / (1024.0 * 1024.0 * 1024.0), 'f', 2) + " GB";
-}
-
-QString TorrentModel::formatSpeed(int bytesPerSec)
-{
-    if (bytesPerSec < 1024) return QString::number(bytesPerSec) + " B/s";
-    if (bytesPerSec < 1024 * 1024) return QString::number(bytesPerSec / 1024.0, 'f', 1) + " KB/s";
-    return QString::number(bytesPerSec / (1024.0 * 1024.0), 'f', 1) + " MB/s";
 }

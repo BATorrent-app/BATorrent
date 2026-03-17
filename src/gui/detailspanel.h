@@ -5,6 +5,7 @@
 
 class QLabel;
 class QTableWidget;
+class QComboBox;
 class SessionManager;
 
 class DetailsPanel : public QTabWidget
@@ -18,10 +19,15 @@ public slots:
     void refresh();
     void retranslate();
 
+private slots:
+    void onFilePriorityChanged(int row, int priority);
+    void onAddTracker();
+
 private:
     QWidget *createGeneralTab();
     QWidget *createPeersTab();
     QWidget *createFilesTab();
+    QWidget *createTrackersTab();
 
     SessionManager *m_session;
     int m_currentIndex = -1;
@@ -36,12 +42,16 @@ private:
     QLabel *m_peersLabel;
     QLabel *m_downloadedLabel;
     QLabel *m_savePathLabel;
+    QLabel *m_ratioLabel;
 
     // Peers tab
     QTableWidget *m_peersTable;
 
     // Files tab
     QTableWidget *m_filesTable;
+
+    // Trackers tab
+    QTableWidget *m_trackersTable;
 };
 
 #endif

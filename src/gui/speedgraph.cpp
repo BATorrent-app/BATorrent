@@ -1,4 +1,5 @@
 #include "speedgraph.h"
+#include "thememanager.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <algorithm>
@@ -37,48 +38,52 @@ void SpeedGraph::paintEvent(QPaintEvent *)
     int w = width();
     int h = height();
 
-    // Background
-    p.fillRect(rect(), QColor(0x14, 0x14, 0x14));
+    // Use theme colors
+    const auto &tm = ThemeManager::instance();
+    QColor bgColor(tm.bgColor());
+    QColor gridColor(tm.surfaceColor());
+    QColor textColor(tm.mutedColor());
+    QColor dlColor(tm.accentColor());
+    QColor ulColor(0x30, 0x60, 0xc4);
+
+    p.fillRect(rect(), bgColor);
 
     if (m_downloadData.isEmpty())
         return;
 
     // Find max value for scaling
-    int maxVal = 1024; // minimum 1 KB/s scale
+    int maxVal = 1024;
     for (int v : m_downloadData) maxVal = std::max(maxVal, v);
     for (int v : m_uploadData) maxVal = std::max(maxVal, v);
-    maxVal = static_cast<int>(maxVal * 1.2); // 20% headroom
+    maxVal = static_cast<int>(maxVal * 1.2);
 
     int n = m_downloadData.size();
     float xStep = static_cast<float>(w) / (MaxPoints - 1);
     float xOffset = (MaxPoints - n) * xStep;
 
     // Grid lines
-    p.setPen(QPen(QColor(0x25, 0x25, 0x25), 1));
+    p.setPen(QPen(gridColor, 1));
     for (int i = 1; i < 4; ++i) {
         int y = h * i / 4;
         p.drawLine(0, y, w, y);
     }
 
     // Draw upload area (behind download)
-    QColor uploadColor(0x30, 0x60, 0xc4);
     {
         QPainterPath path;
         path.moveTo(xOffset, h);
         for (int i = 0; i < n; ++i) {
             float x = xOffset + i * xStep;
             float y = h - (static_cast<float>(m_uploadData[i]) / maxVal * (h - 4));
-            if (i == 0) path.lineTo(x, y);
-            else path.lineTo(x, y);
+            path.lineTo(x, y);
         }
         path.lineTo(xOffset + (n - 1) * xStep, h);
         path.closeSubpath();
 
-        QColor fill = uploadColor;
+        QColor fill = ulColor;
         fill.setAlpha(40);
         p.fillPath(path, fill);
-        // Line
-        p.setPen(QPen(uploadColor, 1.5));
+        p.setPen(QPen(ulColor, 1.5));
         for (int i = 1; i < n; ++i) {
             float x0 = xOffset + (i - 1) * xStep;
             float y0 = h - (static_cast<float>(m_uploadData[i - 1]) / maxVal * (h - 4));
@@ -95,17 +100,15 @@ void SpeedGraph::paintEvent(QPaintEvent *)
         for (int i = 0; i < n; ++i) {
             float x = xOffset + i * xStep;
             float y = h - (static_cast<float>(m_downloadData[i]) / maxVal * (h - 4));
-            if (i == 0) path.lineTo(x, y);
-            else path.lineTo(x, y);
+            path.lineTo(x, y);
         }
         path.lineTo(xOffset + (n - 1) * xStep, h);
         path.closeSubpath();
 
-        QColor fill = m_accentColor;
+        QColor fill = dlColor;
         fill.setAlpha(50);
         p.fillPath(path, fill);
-        // Line
-        p.setPen(QPen(m_accentColor, 1.5));
+        p.setPen(QPen(dlColor, 1.5));
         for (int i = 1; i < n; ++i) {
             float x0 = xOffset + (i - 1) * xStep;
             float y0 = h - (static_cast<float>(m_downloadData[i - 1]) / maxVal * (h - 4));
@@ -122,19 +125,19 @@ void SpeedGraph::paintEvent(QPaintEvent *)
     else
         scaleText = QString::number(maxVal / 1024.0, 'f', 0) + " KB/s";
 
-    p.setPen(QColor(0x70, 0x70, 0x70));
+    p.setPen(textColor);
     p.setFont(QFont(font().family(), 8));
     p.drawText(4, 12, scaleText);
 
     // Legend
     int legendX = w - 140;
-    p.setPen(m_accentColor);
+    p.setPen(dlColor);
     p.drawLine(legendX, 8, legendX + 14, 8);
-    p.setPen(QColor(0x90, 0x90, 0x90));
+    p.setPen(textColor);
     p.drawText(legendX + 18, 12, "Download");
 
-    p.setPen(uploadColor);
+    p.setPen(ulColor);
     p.drawLine(legendX + 80, 8, legendX + 94, 8);
-    p.setPen(QColor(0x90, 0x90, 0x90));
+    p.setPen(textColor);
     p.drawText(legendX + 98, 12, "Upload");
 }

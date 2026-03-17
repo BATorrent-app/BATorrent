@@ -39,10 +39,36 @@ void Translator::loadEnglish()
         {"action_pause", "&Pause"},
         {"action_resume", "&Resume"},
         {"action_remove", "&Remove"},
+        {"action_remove_files", "Remove with &Files..."},
         {"action_settings", "&Preferences..."},
         {"action_language", "&Language"},
         {"action_about", "&About BATorrent"},
         {"action_welcome", "&Welcome Guide"},
+        {"action_create", "&Create Torrent..."},
+        {"action_pause_all", "Pause &All"},
+        {"action_resume_all", "Resume A&ll"},
+        {"action_import_qbt", "&Import from qBittorrent..."},
+
+        // Import
+        {"import_qbt_success", "Imported %1 torrent(s) from qBittorrent."},
+        {"import_qbt_none", "No new torrents found in qBittorrent data."},
+
+        // Context menu
+        {"ctx_sequential", "Sequential Download"},
+
+        // Create torrent
+        {"create_title", "Create Torrent"},
+        {"create_source", "Source file/folder:"},
+        {"create_output", "Output .torrent:"},
+        {"create_trackers", "Trackers (one per line):"},
+        {"create_comment", "Comment:"},
+        {"create_piece_size", "Piece size:"},
+        {"create_auto", "Auto"},
+        {"create_btn", "Create Torrent"},
+        {"create_select_source", "Select Source"},
+        {"create_success", "Torrent created successfully!"},
+        {"create_err_empty", "Please fill in source and output paths."},
+        {"create_err_no_files", "No files found in the selected source."},
 
         // Toolbar
         {"tb_open", "Open"},
@@ -65,6 +91,7 @@ void Translator::loadEnglish()
         {"detail_general", "General"},
         {"detail_peers", "Peers"},
         {"detail_files", "Files"},
+        {"detail_trackers", "Trackers"},
         {"detail_name", "Name:"},
         {"detail_save_path", "Save Path:"},
         {"detail_size", "Size:"},
@@ -74,6 +101,7 @@ void Translator::loadEnglish()
         {"detail_up_speed", "Up Speed:"},
         {"detail_state", "State:"},
         {"detail_peers_count", "Peers:"},
+        {"detail_ratio", "Ratio:"},
 
         // Peer table
         {"peer_ip", "IP"},
@@ -87,6 +115,20 @@ void Translator::loadEnglish()
         {"file_name", "File"},
         {"file_size", "Size"},
         {"file_progress", "Progress"},
+        {"file_priority", "Priority"},
+
+        // File priorities
+        {"priority_skip", "Skip"},
+        {"priority_low", "Low"},
+        {"priority_normal", "Normal"},
+        {"priority_high", "High"},
+
+        // Tracker table
+        {"tracker_url_col", "URL"},
+        {"tracker_tier", "Tier"},
+        {"tracker_status", "Status"},
+        {"tracker_add", "Add Tracker"},
+        {"tracker_url", "Tracker URL:"},
 
         // Status
         {"status_no_torrents", "No torrents"},
@@ -109,19 +151,40 @@ void Translator::loadEnglish()
         {"dlg_torrent_filter", "Torrent Files (*.torrent)"},
         {"dlg_download_complete", "Download Complete"},
         {"dlg_finished_msg", "%1 has finished downloading."},
+        {"dlg_error", "Error"},
+        {"dlg_confirm_delete", "Confirm Deletion"},
+        {"dlg_confirm_delete_msg", "Delete selected torrent(s) and their downloaded files?"},
+
+        // About
+        {"about_description", "A lightweight, open-source BitTorrent client."},
+        {"about_libraries", "Libraries"},
+        {"about_license", "License:"},
 
         // Settings
         {"settings_title", "Preferences"},
         {"settings_general", "General"},
         {"settings_speed", "Speed Limits"},
+        {"settings_network", "Network"},
         {"settings_default_save", "Default save path:"},
         {"settings_browse", "Browse..."},
         {"settings_language", "Language:"},
-        {"settings_max_down", "Max download (KB/s, 0=unlimited):"},
-        {"settings_max_up", "Max upload (KB/s, 0=unlimited):"},
+        {"settings_max_down", "Max download (0 = unlimited):"},
+        {"settings_max_up", "Max upload (0 = unlimited):"},
         {"settings_start_tray", "Start minimized to tray"},
         {"settings_use_default_path", "Always use default save path (skip folder dialog)"},
         {"settings_theme", "Theme:"},
+        {"settings_unlimited", "Unlimited"},
+        {"settings_seed_ratio", "Stop seeding at ratio (0 = no limit):"},
+        {"settings_max_conn", "Max connections:"},
+        {"settings_enable_dht", "Enable DHT (trackerless peer discovery)"},
+        {"settings_encryption", "Protocol encryption:"},
+        {"settings_enc_enabled", "Enabled (prefer encrypted)"},
+        {"settings_enc_forced", "Forced (encrypted only)"},
+        {"settings_enc_disabled", "Disabled"},
+
+        // Buttons
+        {"btn_ok", "OK"},
+        {"btn_cancel", "Cancel"},
 
         // Tray
         {"tray_show", "Show"},
@@ -155,7 +218,7 @@ void Translator::loadPortuguese()
         // Menu
         {"menu_file", "&Arquivo"},
         {"menu_torrent", "&Torrent"},
-        {"menu_settings", "&Configuracoes"},
+        {"menu_settings", "&Configurações"},
         {"menu_help", "A&juda"},
         {"action_open", "&Abrir Torrent..."},
         {"action_magnet", "Abrir Link &Magnet..."},
@@ -163,10 +226,36 @@ void Translator::loadPortuguese()
         {"action_pause", "&Pausar"},
         {"action_resume", "&Continuar"},
         {"action_remove", "&Remover"},
-        {"action_settings", "&Preferencias..."},
+        {"action_remove_files", "Remover com &Arquivos..."},
+        {"action_settings", "&Preferências..."},
         {"action_language", "&Idioma"},
         {"action_about", "&Sobre o BATorrent"},
         {"action_welcome", "&Guia de Boas-vindas"},
+        {"action_create", "&Criar Torrent..."},
+        {"action_pause_all", "Pausar &Todos"},
+        {"action_resume_all", "Continuar T&odos"},
+        {"action_import_qbt", "&Importar do qBittorrent..."},
+
+        // Import
+        {"import_qbt_success", "Importados %1 torrent(s) do qBittorrent."},
+        {"import_qbt_none", "Nenhum torrent novo encontrado nos dados do qBittorrent."},
+
+        // Context menu
+        {"ctx_sequential", "Download Sequencial"},
+
+        // Create torrent
+        {"create_title", "Criar Torrent"},
+        {"create_source", "Arquivo/pasta de origem:"},
+        {"create_output", "Arquivo .torrent de saída:"},
+        {"create_trackers", "Trackers (um por linha):"},
+        {"create_comment", "Comentário:"},
+        {"create_piece_size", "Tamanho do pedaço:"},
+        {"create_auto", "Automático"},
+        {"create_btn", "Criar Torrent"},
+        {"create_select_source", "Selecionar Origem"},
+        {"create_success", "Torrent criado com sucesso!"},
+        {"create_err_empty", "Preencha os caminhos de origem e saída."},
+        {"create_err_no_files", "Nenhum arquivo encontrado na origem selecionada."},
 
         // Toolbar
         {"tb_open", "Abrir"},
@@ -189,6 +278,7 @@ void Translator::loadPortuguese()
         {"detail_general", "Geral"},
         {"detail_peers", "Peers"},
         {"detail_files", "Arquivos"},
+        {"detail_trackers", "Trackers"},
         {"detail_name", "Nome:"},
         {"detail_save_path", "Salvar em:"},
         {"detail_size", "Tamanho:"},
@@ -198,6 +288,7 @@ void Translator::loadPortuguese()
         {"detail_up_speed", "Vel. Upload:"},
         {"detail_state", "Estado:"},
         {"detail_peers_count", "Peers:"},
+        {"detail_ratio", "Proporção:"},
 
         // Peer table
         {"peer_ip", "IP"},
@@ -211,6 +302,20 @@ void Translator::loadPortuguese()
         {"file_name", "Arquivo"},
         {"file_size", "Tamanho"},
         {"file_progress", "Progresso"},
+        {"file_priority", "Prioridade"},
+
+        // File priorities
+        {"priority_skip", "Pular"},
+        {"priority_low", "Baixa"},
+        {"priority_normal", "Normal"},
+        {"priority_high", "Alta"},
+
+        // Tracker table
+        {"tracker_url_col", "URL"},
+        {"tracker_tier", "Nível"},
+        {"tracker_status", "Status"},
+        {"tracker_add", "Adicionar Tracker"},
+        {"tracker_url", "URL do Tracker:"},
 
         // Status
         {"status_no_torrents", "Nenhum torrent"},
@@ -220,7 +325,7 @@ void Translator::loadPortuguese()
         {"state_checking", "Verificando"},
         {"state_metadata", "Metadados"},
         {"state_downloading", "Baixando"},
-        {"state_finished", "Concluido"},
+        {"state_finished", "Concluído"},
         {"state_seeding", "Semeando"},
         {"state_paused", "Pausado"},
         {"state_unknown", "Desconhecido"},
@@ -231,21 +336,42 @@ void Translator::loadPortuguese()
         {"dlg_add_magnet", "Adicionar Link Magnet"},
         {"dlg_paste_magnet", "Cole o link magnet:"},
         {"dlg_torrent_filter", "Arquivos Torrent (*.torrent)"},
-        {"dlg_download_complete", "Download Concluido"},
+        {"dlg_download_complete", "Download Concluído"},
         {"dlg_finished_msg", "%1 terminou de baixar."},
+        {"dlg_error", "Erro"},
+        {"dlg_confirm_delete", "Confirmar Exclusão"},
+        {"dlg_confirm_delete_msg", "Excluir torrent(s) selecionado(s) e seus arquivos baixados?"},
+
+        // About
+        {"about_description", "Um cliente BitTorrent leve e de código aberto."},
+        {"about_libraries", "Bibliotecas"},
+        {"about_license", "Licença:"},
 
         // Settings
-        {"settings_title", "Preferencias"},
+        {"settings_title", "Preferências"},
         {"settings_general", "Geral"},
         {"settings_speed", "Limites de Velocidade"},
-        {"settings_default_save", "Pasta padrao para salvar:"},
+        {"settings_network", "Rede"},
+        {"settings_default_save", "Pasta padrão para salvar:"},
         {"settings_browse", "Procurar..."},
         {"settings_language", "Idioma:"},
-        {"settings_max_down", "Max download (KB/s, 0=ilimitado):"},
-        {"settings_max_up", "Max upload (KB/s, 0=ilimitado):"},
+        {"settings_max_down", "Max download (0 = ilimitado):"},
+        {"settings_max_up", "Max upload (0 = ilimitado):"},
         {"settings_start_tray", "Iniciar minimizado na bandeja"},
-        {"settings_use_default_path", "Sempre usar pasta padrao (pular dialogo de pasta)"},
+        {"settings_use_default_path", "Sempre usar pasta padrão (pular diálogo de pasta)"},
         {"settings_theme", "Tema:"},
+        {"settings_unlimited", "Ilimitado"},
+        {"settings_seed_ratio", "Parar de semear na proporção (0 = sem limite):"},
+        {"settings_max_conn", "Máximo de conexões:"},
+        {"settings_enable_dht", "Habilitar DHT (descoberta de peers sem tracker)"},
+        {"settings_encryption", "Criptografia do protocolo:"},
+        {"settings_enc_enabled", "Habilitada (preferir criptografado)"},
+        {"settings_enc_forced", "Forçada (somente criptografado)"},
+        {"settings_enc_disabled", "Desabilitada"},
+
+        // Buttons
+        {"btn_ok", "OK"},
+        {"btn_cancel", "Cancelar"},
 
         // Tray
         {"tray_show", "Mostrar"},
@@ -253,15 +379,15 @@ void Translator::loadPortuguese()
 
         // Welcome
         {"welcome_title", "Bem-vindo ao BATorrent!"},
-        {"welcome_subtitle", "Seu cliente BitTorrent leve e rapido"},
+        {"welcome_subtitle", "Seu cliente BitTorrent leve e rápido"},
         {"welcome_step1_title", "Adicionar um Torrent"},
-        {"welcome_step1_desc", "Clique em 'Abrir' na barra de ferramentas para adicionar um arquivo .torrent, ou use 'Magnet' para links magnet. Voce tambem pode arrastar e soltar arquivos diretamente na janela."},
+        {"welcome_step1_desc", "Clique em 'Abrir' na barra de ferramentas para adicionar um arquivo .torrent, ou use 'Magnet' para links magnet. Você também pode arrastar e soltar arquivos diretamente na janela."},
         {"welcome_step2_title", "Gerenciar Downloads"},
-        {"welcome_step2_desc", "Use os botoes Pausar, Continuar e Remover para controlar seus downloads. Selecione um torrent para ver detalhes, peers e arquivos no painel abaixo."},
-        {"welcome_step3_title", "Configuracoes e Bandeja"},
-        {"welcome_step3_desc", "Va em Configuracoes > Preferencias para definir limites de velocidade e pasta padrao. Fechar a janela minimiza para a bandeja do sistema — clique com o botao direito no icone da bandeja para sair."},
+        {"welcome_step2_desc", "Use os botões Pausar, Continuar e Remover para controlar seus downloads. Selecione um torrent para ver detalhes, peers e arquivos no painel abaixo."},
+        {"welcome_step3_title", "Configurações e Bandeja"},
+        {"welcome_step3_desc", "Vá em Configurações > Preferências para definir limites de velocidade e pasta padrão. Fechar a janela minimiza para a bandeja do sistema — clique com o botão direito no ícone da bandeja para sair."},
         {"welcome_got_it", "Entendi!"},
-        {"welcome_dont_show", "Nao mostrar novamente"},
+        {"welcome_dont_show", "Não mostrar novamente"},
 
         // Filter bar
         {"filter_search", "Buscar torrents..."},
@@ -269,6 +395,6 @@ void Translator::loadPortuguese()
         {"filter_downloading", "Baixando"},
         {"filter_seeding", "Semeando"},
         {"filter_paused", "Pausados"},
-        {"filter_finished", "Concluidos"},
+        {"filter_finished", "Concluídos"},
     };
 }

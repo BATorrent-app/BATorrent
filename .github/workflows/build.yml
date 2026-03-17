@@ -15,24 +15,35 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake g++ qt6-base-dev libqt6widgets6 \
-            libtorrent-rasterbar-dev libboost-dev libssl-dev
+            libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2
 
       - name: Build
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
           cmake --build build
 
-      - name: Package
+      - name: Install to AppDir
         run: |
-          mkdir -p release
-          cp build/BATorrent release/
-          cd release && tar czf ../BATorrent-linux-x86_64.tar.gz BATorrent
+          DESTDIR=$PWD/AppDir cmake --install build
 
-      - name: Upload artifact
+      - name: Create AppImage
+        run: |
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy*.AppImage
+          export QMAKE=$(which qmake6 2>/dev/null || which qmake)
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir \
+            --plugin qt \
+            --desktop-file AppDir/usr/share/applications/batorrent.desktop \
+            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png \
+            --output appimage
+          mv BATorrent-*.AppImage BATorrent-linux-x86_64.AppImage
+
+      - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: BATorrent-linux-x86_64.tar.gz
+          path: BATorrent-linux-x86_64.AppImage
 
   build-windows:
     runs-on: windows-latest
@@ -53,22 +64,6 @@ jobs:
 
       - name: Install libtorrent via vcpkg
         run: C:\vcpkg\vcpkg install libtorrent:x64-windows
-
-      - name: Build
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
-          cmake --build build --config Release
-
-      - name: Package
-        shell: pwsh
-        run: |
-          mkdir release
-          Copy-Item build/Release/BATorrent.exe release/
-          windeployqt release/BATorrent.exe
-          $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
-          Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
-          Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64.zip
 
       - name: Convert PNG to ICO
         shell: pwsh
@@ -93,6 +88,22 @@ jobs:
           [System.IO.File]::WriteAllBytes("$PWD\src\images\logo1.ico", $iconData.ToArray())
           $writer.Close(); $ms.Close(); $png.Dispose(); $resized.Dispose()
 
+      - name: Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          cmake --build build --config Release
+
+      - name: Package
+        shell: pwsh
+        run: |
+          mkdir release
+          Copy-Item build/Release/BATorrent.exe release/
+          windeployqt release/BATorrent.exe
+          $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
+          Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
+          Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64.zip
+
       - name: Build Installer
         shell: pwsh
         run: |
@@ -111,8 +122,84 @@ jobs:
           name: windows-installer
           path: output/BATorrent-setup-x86_64.exe
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install cmake qt@6 libtorrent-rasterbar boost openssl
+
+      - name: Build
+        run: |
+          export Qt6_DIR=$(brew --prefix qt@6)/lib/cmake/Qt6
+          export CMAKE_PREFIX_PATH=$(brew --prefix qt@6):$(brew --prefix libtorrent-rasterbar):$(brew --prefix openssl)
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH"
+          cmake --build build
+
+      - name: Create DMG
+        run: |
+          mkdir -p dmg/BATorrent.app/Contents/MacOS
+          mkdir -p dmg/BATorrent.app/Contents/Resources
+          cp build/BATorrent dmg/BATorrent.app/Contents/MacOS/
+          # Create Info.plist
+          cat > dmg/BATorrent.app/Contents/Info.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleExecutable</key>
+            <string>BATorrent</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.mateuscruz19.batorrent</string>
+            <key>CFBundleName</key>
+            <string>BATorrent</string>
+            <key>CFBundleVersion</key>
+            <string>1.0.0</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0.0</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleDocumentTypes</key>
+            <array>
+              <dict>
+                <key>CFBundleTypeExtensions</key>
+                <array><string>torrent</string></array>
+                <key>CFBundleTypeName</key>
+                <string>Torrent File</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+              </dict>
+            </array>
+            <key>CFBundleURLTypes</key>
+            <array>
+              <dict>
+                <key>CFBundleURLName</key>
+                <string>Magnet Link</string>
+                <key>CFBundleURLSchemes</key>
+                <array><string>magnet</string></array>
+              </dict>
+            </array>
+          </dict>
+          </plist>
+          PLIST
+          # Copy icon
+          sips -s format icns src/images/logo1.png --out dmg/BATorrent.app/Contents/Resources/batorrent.icns 2>/dev/null || true
+          # Deploy Qt frameworks
+          $(brew --prefix qt@6)/bin/macdeployqt dmg/BATorrent.app
+          # Create DMG
+          hdiutil create -volname BATorrent -srcfolder dmg -ov -format UDZO BATorrent-macos-x86_64.dmg
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: BATorrent-macos-x86_64.dmg
+
   release:
-    needs: [build-linux, build-windows]
+    needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -124,7 +211,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            linux-build/BATorrent-linux-x86_64.tar.gz
+            linux-build/BATorrent-linux-x86_64.AppImage
             windows-zip/BATorrent-windows-x86_64.zip
             windows-installer/BATorrent-setup-x86_64.exe
+            macos-build/BATorrent-macos-x86_64.dmg
           generate_release_notes: true

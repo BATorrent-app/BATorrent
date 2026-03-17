@@ -34,9 +34,6 @@ public slots:
     void refresh();
 
 private:
-    static QString formatSize(qint64 bytes);
-    static QString formatSpeed(int bytesPerSec);
-
     SessionManager *m_session;
 };
 
