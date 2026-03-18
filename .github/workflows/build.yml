@@ -79,28 +79,10 @@ jobs:
       - name: Install libtorrent via vcpkg
         run: C:\vcpkg\vcpkg install libtorrent:x64-windows
 
-      - name: Convert PNG to ICO
-        shell: pwsh
+      - name: Convert PNG to multi-resolution ICO
         run: |
-          Add-Type -AssemblyName System.Drawing
-          $png = [System.Drawing.Bitmap]::FromFile("$PWD\src\images\logo1.png")
-          $resized = New-Object System.Drawing.Bitmap($png, 256, 256)
-          $ms = New-Object System.IO.MemoryStream
-          $resized.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
-          $iconData = New-Object System.IO.MemoryStream
-          $writer = New-Object System.IO.BinaryWriter($iconData)
-          $writer.Write([byte[]]@(0,0,1,0,1,0))
-          $writer.Write([byte]0)
-          $writer.Write([byte]0)
-          $writer.Write([byte]0)
-          $writer.Write([byte]0)
-          $writer.Write([int16]1)
-          $writer.Write([int16]32)
-          $writer.Write([uint32]$ms.Length)
-          $writer.Write([uint32]22)
-          $writer.Write($ms.ToArray())
-          [System.IO.File]::WriteAllBytes("$PWD\src\images\logo1.ico", $iconData.ToArray())
-          $writer.Close(); $ms.Close(); $png.Dispose(); $resized.Dispose()
+          choco install imagemagick -y --no-progress
+          magick src/images/logo1.png -define icon:auto-resize=256,64,48,32,16 src/images/logo1.ico
 
       - name: Build
         run: |

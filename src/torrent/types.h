@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #ifndef TORRENT_TYPES_H
 #define TORRENT_TYPES_H
 
