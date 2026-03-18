@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #include "welcomedialog.h"
 #include "../app/translator.h"
 #include "../gui/thememanager.h"

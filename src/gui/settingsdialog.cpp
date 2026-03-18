@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #include "settingsdialog.h"
 #include "../app/translator.h"
 #include "../gui/thememanager.h"
@@ -13,6 +17,8 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QFileDialog>
+#include <QCryptographicHash>
+#include <QMessageBox>
 #include <QGroupBox>
 #include <QNetworkInterface>
 
@@ -183,6 +189,47 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     tabs->addTab(networkWidget, tr_("settings_network"));
 
+    // ---- WebUI tab ----
+    auto *webUiWidget = new QWidget;
+    auto *webUiLayout = new QFormLayout(webUiWidget);
+    webUiLayout->setContentsMargins(16, 16, 16, 16);
+    webUiLayout->setSpacing(12);
+
+    m_webUiCheck = new QCheckBox(tr_("settings_webui_enable"));
+    webUiLayout->addRow("", m_webUiCheck);
+
+    m_webUiPortSpin = new QSpinBox;
+    m_webUiPortSpin->setRange(1024, 65535);
+    m_webUiPortSpin->setValue(8080);
+    auto *wPortLabel = new QLabel(tr_("settings_webui_port"));
+    wPortLabel->setStyleSheet(labelStyle);
+    webUiLayout->addRow(wPortLabel, m_webUiPortSpin);
+
+    m_webUiUserEdit = new QLineEdit;
+    m_webUiUserEdit->setPlaceholderText("admin");
+    auto *wUserLabel = new QLabel(tr_("settings_webui_user"));
+    wUserLabel->setStyleSheet(labelStyle);
+    webUiLayout->addRow(wUserLabel, m_webUiUserEdit);
+
+    m_webUiPassEdit = new QLineEdit;
+    m_webUiPassEdit->setEchoMode(QLineEdit::Password);
+    m_webUiPassEdit->setPlaceholderText(tr_("settings_webui_pass_hint"));
+    auto *wPassLabel = new QLabel(tr_("settings_webui_pass"));
+    wPassLabel->setStyleSheet(labelStyle);
+    webUiLayout->addRow(wPassLabel, m_webUiPassEdit);
+
+    m_webUiRemoteCheck = new QCheckBox(tr_("settings_webui_remote"));
+    webUiLayout->addRow("", m_webUiRemoteCheck);
+
+    connect(m_webUiRemoteCheck, &QCheckBox::toggled, this, [this](bool checked) {
+        if (checked) {
+            QMessageBox::warning(this, tr_("settings_webui_warning_title"),
+                                 tr_("settings_webui_warning_msg"));
+        }
+    });
+
+    tabs->addTab(webUiWidget, "WebUI");
+
     // ---- Buttons ----
     auto *btnLayout = new QHBoxLayout;
     btnLayout->addStretch();
@@ -308,3 +355,25 @@ void SettingsDialog::refreshInterfaces()
     int idx = m_interfaceCombo->findData(current);
     m_interfaceCombo->setCurrentIndex(idx >= 0 ? idx : 0);
 }
+
+// WebUI getters/setters
+bool SettingsDialog::webUiEnabled() const { return m_webUiCheck->isChecked(); }
+int SettingsDialog::webUiPort() const { return m_webUiPortSpin->value(); }
+QString SettingsDialog::webUiUser() const { return m_webUiUserEdit->text(); }
+bool SettingsDialog::webUiRemoteAccess() const { return m_webUiRemoteCheck->isChecked(); }
+
+QString SettingsDialog::webUiPasswordHash() const
+{
+    if (!m_webUiPassEdit->text().isEmpty()) {
+        return QString::fromUtf8(
+            QCryptographicHash::hash(m_webUiPassEdit->text().toUtf8(),
+                                     QCryptographicHash::Sha256).toHex());
+    }
+    return m_webUiPasswordHash;
+}
+
+void SettingsDialog::setWebUiEnabled(bool enabled) { m_webUiCheck->setChecked(enabled); }
+void SettingsDialog::setWebUiPort(int port) { m_webUiPortSpin->setValue(port); }
+void SettingsDialog::setWebUiUser(const QString &user) { m_webUiUserEdit->setText(user); }
+void SettingsDialog::setWebUiPasswordHash(const QString &hash) { m_webUiPasswordHash = hash; }
+void SettingsDialog::setWebUiRemoteAccess(bool enabled) { m_webUiRemoteCheck->setChecked(enabled); }

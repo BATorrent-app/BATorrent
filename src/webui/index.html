@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BATorrent WebUI</title>
+<style>
+  :root {
+    --bg: #141414;
+    --surface: #1a1a1a;
+    --border: #252525;
+    --accent: #c43030;
+    --accent-dark: #6b2020;
+    --accent-bg: #2a1015;
+    --text: #b0b0b0;
+    --text-muted: #707070;
+    --text-bright: #d0d0d0;
+    --white: #ffffff;
+    --green: #2ecc71;
+    --yellow: #f39c12;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--accent-dark);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo h1 { font-size: 18px; color: var(--accent); font-weight: 700; }
+  .logo span { font-size: 11px; color: var(--text-muted); }
+  .stats { display: flex; gap: 20px; font-size: 12px; color: var(--text-muted); }
+  .stats .val { color: var(--text-bright); font-weight: 600; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button, .btn {
+    background: var(--accent-bg); color: var(--text-bright);
+    border: 1px solid #3d1520; border-radius: 4px;
+    padding: 6px 14px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  button:hover, .btn:hover { background: var(--accent-dark); color: var(--white); }
+  button.danger { border-color: #5a1a1a; }
+  button.danger:hover { background: #8b2020; }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px; min-width: 380px; max-width: 90vw;
+  }
+  .modal h2 { color: var(--accent); font-size: 16px; margin-bottom: 16px; }
+  .modal input[type="text"], .modal input[type="url"] {
+    width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 8px 12px; font-size: 13px; margin-bottom: 12px;
+  }
+  .modal input:focus { outline: none; border-color: var(--accent-dark); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+  .table-wrap { overflow-x: auto; padding: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    text-align: left; padding: 8px 10px; color: var(--accent);
+    font-weight: 700; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.5px; border-bottom: 1px solid var(--accent-dark); white-space: nowrap;
+  }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tr:hover td { background: rgba(196, 48, 48, 0.05); }
+  .progress-bar {
+    width: 100%; min-width: 80px; height: 16px;
+    background: var(--bg); border-radius: 3px; overflow: hidden; position: relative;
+  }
+  .progress-bar .fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+    border-radius: 3px; transition: width 0.3s ease;
+  }
+  .progress-bar .pct {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 700; color: var(--text-bright);
+  }
+  .state-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+  .state-downloading { background: rgba(46,204,113,0.15); color: var(--green); }
+  .state-seeding { background: rgba(243,156,18,0.15); color: var(--yellow); }
+  .state-paused { background: rgba(176,176,176,0.1); color: var(--text-muted); }
+  .state-other { background: rgba(196,48,48,0.1); color: var(--accent); }
+  .torrent-actions { display: flex; gap: 4px; }
+  .torrent-actions button { padding: 3px 8px; font-size: 11px; }
+  .detail-panel {
+    display: none; background: var(--surface);
+    border-top: 1px solid var(--accent-dark);
+    padding: 16px; margin: 0 12px 12px; border-radius: 0 0 6px 6px;
+  }
+  .detail-panel.active { display: block; }
+  .detail-panel h3 { color: var(--accent); font-size: 14px; margin-bottom: 12px; }
+  .detail-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .detail-tabs button { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 4px 12px; font-size: 11px; }
+  .detail-tabs button.active { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-dark); }
+  .detail-content table { font-size: 11px; }
+  .detail-content td { padding: 4px 8px; }
+  .cards { display: none; padding: 12px; gap: 10px; flex-direction: column; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+  .card-name { font-weight: 600; color: var(--text-bright); margin-bottom: 8px; word-break: break-all; }
+  .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+  .card-stats .val { color: var(--text-bright); }
+  .card-actions { display: flex; gap: 6px; margin-top: 8px; }
+  @media (max-width: 768px) {
+    .table-wrap { display: none; }
+    .cards { display: flex; }
+    .detail-panel { margin: 0 12px 12px; }
+    header { padding: 10px 12px; }
+  }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .empty-state h2 { color: var(--accent); margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><h1>BATorrent</h1><span>WebUI</span></div>
+  <div class="stats" id="globalStats">
+    <span>Torrents: <span class="val" id="statCount">0</span></span>
+    <span>Down: <span class="val" id="statDown">0 KB/s</span></span>
+    <span>Up: <span class="val" id="statUp">0 KB/s</span></span>
+  </div>
+  <div class="actions">
+    <button onclick="showAddMagnet()">+ Magnet</button>
+  </div>
+</header>
+<div class="table-wrap">
+  <table id="torrentTable">
+    <thead><tr><th>Name</th><th>Size</th><th>Progress</th><th>Down</th><th>Up</th><th>Peers</th><th>State</th><th>Actions</th></tr></thead>
+    <tbody id="torrentBody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState"><h2>No Torrents</h2><p>Add a magnet link to get started</p></div>
+</div>
+<div class="cards" id="torrentCards"></div>
+<div class="detail-panel" id="detailPanel">
+  <h3 id="detailName"></h3>
+  <div class="detail-tabs">
+    <button class="active" onclick="showDetailTab('files')">Files</button>
+    <button onclick="showDetailTab('peers')">Peers</button>
+  </div>
+  <div class="detail-content" id="detailContent"></div>
+</div>
+<div class="modal-overlay" id="magnetModal">
+  <div class="modal">
+    <h2>Add Magnet Link</h2>
+    <input type="url" id="magnetInput" placeholder="magnet:?xt=urn:btih:...">
+    <div class="modal-actions">
+      <button onclick="closeModals()">Cancel</button>
+      <button onclick="addMagnet()">Add</button>
+    </div>
+  </div>
+</div>
+<script>
+let torrents = [], selectedHash = null, detailTab = 'files';
+function formatBytes(b) {
+  if (b === 0) return '0 B';
+  const k = 1024, s = ['B','KB','MB','GB','TB'], i = Math.floor(Math.log(b)/Math.log(k));
+  return (b/Math.pow(k,i)).toFixed(i>1?1:0)+' '+s[i];
+}
+function formatSpeed(b) { return formatBytes(b)+'/s'; }
+function stateClass(state, paused) {
+  if (paused) return 'state-paused';
+  const s = state.toLowerCase();
+  if (s.includes('download')||s.includes('baixando')) return 'state-downloading';
+  if (s.includes('seed')||s.includes('semeando')) return 'state-seeding';
+  if (s.includes('paus')) return 'state-paused';
+  return 'state-other';
+}
+function renderTorrents() {
+  const tbody = document.getElementById('torrentBody'), cards = document.getElementById('torrentCards'), empty = document.getElementById('emptyState');
+  if (!torrents.length) { tbody.innerHTML=''; cards.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = torrents.map(t => `
+    <tr onclick="selectTorrent('${t.hash}')" style="cursor:pointer;${selectedHash===t.hash?'background:rgba(196,48,48,0.1)':''}">
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis" title="${t.name}">${t.name}</td>
+      <td>${formatBytes(t.size)}</td>
+      <td><div class="progress-bar"><div class="fill" style="width:${(t.progress*100).toFixed(1)}%"></div><div class="pct">${(t.progress*100).toFixed(1)}%</div></div></td>
+      <td>${formatSpeed(t.downloadRate)}</td><td>${formatSpeed(t.uploadRate)}</td><td>${t.peers}</td>
+      <td><span class="state-tag ${stateClass(t.state,t.paused)}">${t.paused?'Paused':t.state}</span></td>
+      <td><div class="torrent-actions">
+        ${t.paused?`<button onclick="event.stopPropagation();resumeTorrent('${t.hash}')">Resume</button>`:`<button onclick="event.stopPropagation();pauseTorrent('${t.hash}')">Pause</button>`}
+        <button class="danger" onclick="event.stopPropagation();removeTorrent('${t.hash}')">Remove</button>
+      </div></td></tr>`).join('');
+  cards.innerHTML = torrents.map(t => `
+    <div class="card" onclick="selectTorrent('${t.hash}')" style="${selectedHash===t.hash?'border-color:var(--accent-dark)':''}">
+      <div class="card-name">${t.name}</div>
+      <div class="progress-bar" style="margin-bottom:8px"><div class="fill" style="width:${(t.progress*100).toFixed(1)}%"></div><div class="pct">${(t.progress*100).toFixed(1)}%</div></div>
+      <div class="card-stats"><span>Size: <span class="val">${formatBytes(t.size)}</span></span><span>Peers: <span class="val">${t.peers}</span></span><span>Down: <span class="val">${formatSpeed(t.downloadRate)}</span></span><span>Up: <span class="val">${formatSpeed(t.uploadRate)}</span></span></div>
+      <span class="state-tag ${stateClass(t.state,t.paused)}">${t.paused?'Paused':t.state}</span>
+      <div class="card-actions">${t.paused?`<button onclick="event.stopPropagation();resumeTorrent('${t.hash}')">Resume</button>`:`<button onclick="event.stopPropagation();pauseTorrent('${t.hash}')">Pause</button>`}<button class="danger" onclick="event.stopPropagation();removeTorrent('${t.hash}')">Remove</button></div>
+    </div>`).join('');
+}
+function updateStats() {
+  fetch('/api/status').then(r=>r.json()).then(s=>{
+    document.getElementById('statCount').textContent=s.torrentCount;
+    document.getElementById('statDown').textContent=formatSpeed(s.downloadRate);
+    document.getElementById('statUp').textContent=formatSpeed(s.uploadRate);
+  }).catch(()=>{});
+}
+function refresh() {
+  fetch('/api/torrents').then(r=>r.json()).then(data=>{
+    torrents=data; renderTorrents(); updateStats();
+    if(selectedHash) loadDetail();
+  }).catch(()=>{});
+}
+function selectTorrent(hash) {
+  selectedHash=selectedHash===hash?null:hash;
+  const panel=document.getElementById('detailPanel');
+  if(selectedHash){panel.classList.add('active');const t=torrents.find(x=>x.hash===hash);document.getElementById('detailName').textContent=t?t.name:'';loadDetail();}
+  else panel.classList.remove('active');
+  renderTorrents();
+}
+function showDetailTab(tab) {
+  detailTab=tab;document.querySelectorAll('.detail-tabs button').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');loadDetail();
+}
+function loadDetail() {
+  if(!selectedHash) return;
+  fetch(`/api/torrents/${selectedHash}/${detailTab}`).then(r=>r.json()).then(data=>{
+    const el=document.getElementById('detailContent');
+    if(detailTab==='files') el.innerHTML=`<table><thead><tr><th>File</th><th>Size</th><th>Progress</th></tr></thead><tbody>${data.map(f=>`<tr><td style="max-width:400px;overflow:hidden;text-overflow:ellipsis" title="${f.path}">${f.path}</td><td>${formatBytes(f.size)}</td><td><div class="progress-bar" style="min-width:60px"><div class="fill" style="width:${(f.progress*100).toFixed(1)}%"></div><div class="pct">${(f.progress*100).toFixed(1)}%</div></div></td></tr>`).join('')}</tbody></table>`;
+    else el.innerHTML=`<table><thead><tr><th>IP</th><th>Port</th><th>Client</th><th>Down</th><th>Up</th><th>Progress</th></tr></thead><tbody>${data.map(p=>`<tr><td>${p.ip}</td><td>${p.port}</td><td>${p.client}</td><td>${formatSpeed(p.downloadRate)}</td><td>${formatSpeed(p.uploadRate)}</td><td>${(p.progress*100).toFixed(1)}%</td></tr>`).join('')}</tbody></table>`;
+  }).catch(()=>{});
+}
+function pauseTorrent(h){fetch(`/api/torrents/${h}/pause`,{method:'POST'}).then(()=>refresh());}
+function resumeTorrent(h){fetch(`/api/torrents/${h}/resume`,{method:'POST'}).then(()=>refresh());}
+function removeTorrent(h){if(!confirm('Remove this torrent?'))return;fetch(`/api/torrents/${h}`,{method:'DELETE'}).then(()=>{if(selectedHash===h){selectedHash=null;document.getElementById('detailPanel').classList.remove('active');}refresh();});}
+function showAddMagnet(){document.getElementById('magnetModal').classList.add('active');document.getElementById('magnetInput').focus();}
+function closeModals(){document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active'));}
+function addMagnet(){const uri=document.getElementById('magnetInput').value.trim();if(!uri||!uri.startsWith('magnet:')){alert('Please enter a valid magnet link.');return;}fetch('/api/torrents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({magnet:uri})}).then(()=>{document.getElementById('magnetInput').value='';closeModals();refresh();});}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)closeModals();});});
+refresh(); setInterval(refresh,2000);
+</script>
+</body>
+</html>

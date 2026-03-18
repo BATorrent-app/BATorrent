@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #include <QApplication>
 #include <QIcon>
 #include <QStringList>
@@ -10,7 +14,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("BATorrent");
-    app.setApplicationVersion("1.6.0");
+    app.setApplicationVersion("1.7.0");
     app.setWindowIcon(QIcon(":/images/logo1.png"));
 
     // Load Inter font family

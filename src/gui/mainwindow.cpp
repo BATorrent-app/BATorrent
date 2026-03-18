@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #include "mainwindow.h"
 #include "torrentmodel.h"
 #include "torrentfilter.h"
@@ -11,6 +15,7 @@
 #include "splashwidget.h"
 #include "thememanager.h"
 #include "../torrent/sessionmanager.h"
+#include "../webui/webserver.h"
 #include "../app/translator.h"
 #include "../app/updater.h"
 
@@ -438,6 +443,32 @@ void MainWindow::loadSettings()
     m_session->setKillSwitchEnabled(killSwitch);
     bool autoResume = settings.value("autoResumeOnReconnect", false).toBool();
     m_session->setAutoResumeOnReconnect(autoResume);
+
+    // WebUI
+    startWebServer();
+}
+
+void MainWindow::startWebServer()
+{
+    QSettings settings("BATorrent", "BATorrent");
+    bool webUiEnabled = settings.value("webUiEnabled", false).toBool();
+
+    if (m_webServer) {
+        m_webServer->stop();
+        delete m_webServer;
+        m_webServer = nullptr;
+    }
+
+    if (webUiEnabled) {
+        m_webServer = new WebServer(m_session, this);
+        int port = settings.value("webUiPort", 8080).toInt();
+        bool remote = settings.value("webUiRemoteAccess", false).toBool();
+        QString user = settings.value("webUiUser", "admin").toString();
+        QString passHash = settings.value("webUiPasswordHash").toString();
+        if (!user.isEmpty() && !passHash.isEmpty())
+            m_webServer->setCredentials(user, passHash);
+        m_webServer->start(static_cast<quint16>(port), remote);
+    }
 }
 
 void MainWindow::openTorrent()
@@ -629,6 +660,15 @@ void MainWindow::openSettings()
     dlg.setKillSwitchEnabled(m_session->killSwitchEnabled());
     dlg.setAutoResumeOnReconnect(m_session->autoResumeOnReconnect());
 
+    {
+        QSettings settings("BATorrent", "BATorrent");
+        dlg.setWebUiEnabled(settings.value("webUiEnabled", false).toBool());
+        dlg.setWebUiPort(settings.value("webUiPort", 8080).toInt());
+        dlg.setWebUiUser(settings.value("webUiUser", "admin").toString());
+        dlg.setWebUiPasswordHash(settings.value("webUiPasswordHash").toString());
+        dlg.setWebUiRemoteAccess(settings.value("webUiRemoteAccess", false).toBool());
+    }
+
     if (dlg.exec() == QDialog::Accepted) {
         m_lastSavePath = dlg.defaultSavePath();
         m_session->setDownloadLimit(dlg.maxDownloadSpeed());
@@ -658,6 +698,19 @@ void MainWindow::openSettings()
         m_session->setOutgoingInterface(dlg.outgoingInterface());
         m_session->setKillSwitchEnabled(dlg.killSwitchEnabled());
         m_session->setAutoResumeOnReconnect(dlg.autoResumeOnReconnect());
+
+        // WebUI settings
+        {
+            QSettings settings("BATorrent", "BATorrent");
+            settings.setValue("webUiEnabled", dlg.webUiEnabled());
+            settings.setValue("webUiPort", dlg.webUiPort());
+            settings.setValue("webUiUser", dlg.webUiUser());
+            settings.setValue("webUiRemoteAccess", dlg.webUiRemoteAccess());
+            QString passHash = dlg.webUiPasswordHash();
+            if (!passHash.isEmpty())
+                settings.setValue("webUiPasswordHash", passHash);
+            startWebServer();
+        }
     }
 }
 

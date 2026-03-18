@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -17,6 +21,7 @@ class SpeedGraph;
 class BatWidget;
 class SplashWidget;
 class Updater;
+class WebServer;
 
 class MainWindow : public QMainWindow
 {
@@ -67,6 +72,7 @@ private:
     void setupTrayIcon();
     void saveSettings();
     void loadSettings();
+    void startWebServer();
     QList<int> selectedRows() const;
     void addTorrentFile(const QString &filePath);
 
@@ -84,6 +90,7 @@ private:
     QSystemTrayIcon *m_trayIcon;
     QString m_lastSavePath;
     Updater *m_updater;
+    WebServer *m_webServer = nullptr;
     bool m_startMinimized = false;
     bool m_useDefaultPath = false;
 };

@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #ifndef SETTINGSDIALOG_H
 #define SETTINGSDIALOG_H
 
@@ -53,6 +57,19 @@ public:
     void setKillSwitchEnabled(bool enabled);
     void setAutoResumeOnReconnect(bool enabled);
 
+    // WebUI
+    bool webUiEnabled() const;
+    int webUiPort() const;
+    QString webUiUser() const;
+    QString webUiPasswordHash() const;
+    bool webUiRemoteAccess() const;
+
+    void setWebUiEnabled(bool enabled);
+    void setWebUiPort(int port);
+    void setWebUiUser(const QString &user);
+    void setWebUiPasswordHash(const QString &hash);
+    void setWebUiRemoteAccess(bool enabled);
+
 private slots:
     void browseSavePath();
     void refreshInterfaces();
@@ -78,6 +95,14 @@ private:
     QLabel *m_interfaceIpLabel;
     QCheckBox *m_killSwitchCheck;
     QCheckBox *m_autoResumeCheck;
+
+    // WebUI tab
+    QCheckBox *m_webUiCheck;
+    QSpinBox *m_webUiPortSpin;
+    QLineEdit *m_webUiUserEdit;
+    QLineEdit *m_webUiPassEdit;
+    QCheckBox *m_webUiRemoteCheck;
+    QString m_webUiPasswordHash;
 };
 
 #endif

@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #include "translator.h"
 
 Translator &Translator::instance()
@@ -230,6 +234,16 @@ void Translator::loadEnglish()
         {"killswitch_title", "Kill Switch"},
         {"killswitch_triggered", "VPN interface went down — all torrents paused."},
         {"killswitch_restored", "VPN interface restored — torrents resumed."},
+
+        // WebUI
+        {"settings_webui_enable", "Enable WebUI"},
+        {"settings_webui_port", "Port:"},
+        {"settings_webui_user", "Username:"},
+        {"settings_webui_pass", "Password:"},
+        {"settings_webui_pass_hint", "Leave empty to keep current"},
+        {"settings_webui_remote", "Allow remote access (bind 0.0.0.0)"},
+        {"settings_webui_warning_title", "Security Warning"},
+        {"settings_webui_warning_msg", "Enabling remote access exposes the WebUI to your network. Use a VPN or reverse proxy with HTTPS for secure remote access."},
     };
 }
 
@@ -438,5 +452,15 @@ void Translator::loadPortuguese()
         {"killswitch_title", "Kill Switch"},
         {"killswitch_triggered", "Interface VPN caiu — todos os torrents pausados."},
         {"killswitch_restored", "Interface VPN restaurada — torrents retomados."},
+
+        // WebUI
+        {"settings_webui_enable", "Habilitar WebUI"},
+        {"settings_webui_port", "Porta:"},
+        {"settings_webui_user", "Usuário:"},
+        {"settings_webui_pass", "Senha:"},
+        {"settings_webui_pass_hint", "Deixe vazio para manter a atual"},
+        {"settings_webui_remote", "Permitir acesso remoto (bind 0.0.0.0)"},
+        {"settings_webui_warning_title", "Aviso de Segurança"},
+        {"settings_webui_warning_msg", "Habilitar acesso remoto expõe a WebUI para sua rede. Use uma VPN ou proxy reverso com HTTPS para acesso remoto seguro."},
     };
 }

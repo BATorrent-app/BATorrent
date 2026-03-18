@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 1.6.0)
+project(BATorrent VERSION 1.7.0)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
 find_package(LibtorrentRasterbar REQUIRED)
 set(CMAKE_AUTOMOC ON)
-qt_add_resources(RESOURCES src/resources.qrc)
+qt_add_resources(RESOURCES src/resources.qrc src/webui/webuiresources.qrc)
 
 # Windows: embed icon in exe via .rc file
 if(WIN32)
@@ -27,6 +27,7 @@ add_executable(BATorrent WIN32
     src/gui/splashwidget.cpp
     src/app/updater.cpp
     src/gui/thememanager.cpp
+    src/webui/webserver.cpp
     ${RESOURCES}
     ${WIN_RC}
 )

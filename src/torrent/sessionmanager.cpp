@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 #include "sessionmanager.h"
 #include "../app/translator.h"
 #include <libtorrent/load_torrent.hpp>
@@ -205,10 +209,12 @@ std::vector<FileInfo> SessionManager::filesAt(int index) const
 
     const auto &fs = ti->files();
     for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
+        int idx = static_cast<int>(i);
         FileInfo fi;
         fi.path = QString::fromStdString(fs.file_path(i));
         fi.size = fs.file_size(i);
-        fi.progress = fi.size > 0 ? static_cast<float>(fileProgress[static_cast<int>(i)]) / fi.size : 1.0f;
+        fi.progress = (fi.size > 0 && idx < static_cast<int>(fileProgress.size()))
+            ? static_cast<float>(fileProgress[idx]) / fi.size : 0.0f;
         fi.priority = static_cast<std::uint8_t>(m_torrents[index].file_priority(i));
         result.push_back(fi);
     }
