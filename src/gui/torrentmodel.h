@@ -5,7 +5,7 @@
 #include <QSet>
 #include <QTimer>
 #include <QMap>
-#include "../core/sessionmanager.h"
+#include "../torrent/sessionmanager.h"
 
 class TorrentModel : public QAbstractTableModel
 {

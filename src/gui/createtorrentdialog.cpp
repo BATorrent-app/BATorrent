@@ -1,5 +1,6 @@
 #include "createtorrentdialog.h"
-#include "../core/translator.h"
+#include "../app/translator.h"
+#include "../gui/thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
@@ -23,7 +24,9 @@ CreateTorrentDialog::CreateTorrentDialog(QWidget *parent)
 {
     setWindowTitle(tr_("create_title"));
     setMinimumSize(500, 350);
-    setupStyle();
+    setStyleSheet(ThemeManager::instance().dialogStyleSheet());
+
+    QString labelStyle = ThemeManager::instance().formLabelStyle();
 
     auto *layout = new QFormLayout;
     layout->setContentsMargins(16, 16, 16, 16);
@@ -39,7 +42,7 @@ CreateTorrentDialog::CreateTorrentDialog(QWidget *parent)
     sourceLayout->addWidget(sourceBrowseBtn);
 
     auto *sourceLabel = new QLabel(tr_("create_source"));
-    sourceLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    sourceLabel->setStyleSheet(labelStyle);
     layout->addRow(sourceLabel, sourceLayout);
 
     // Output .torrent file
@@ -52,7 +55,7 @@ CreateTorrentDialog::CreateTorrentDialog(QWidget *parent)
     outputLayout->addWidget(outputBrowseBtn);
 
     auto *outputLabel = new QLabel(tr_("create_output"));
-    outputLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    outputLabel->setStyleSheet(labelStyle);
     layout->addRow(outputLabel, outputLayout);
 
     // Trackers (one per line)
@@ -60,13 +63,13 @@ CreateTorrentDialog::CreateTorrentDialog(QWidget *parent)
     m_trackerEdit->setMaximumHeight(60);
     m_trackerEdit->setPlaceholderText("https://tracker.example.com/announce");
     auto *trackerLabel = new QLabel(tr_("create_trackers"));
-    trackerLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    trackerLabel->setStyleSheet(labelStyle);
     layout->addRow(trackerLabel, m_trackerEdit);
 
     // Comment
     m_commentEdit = new QLineEdit;
     auto *commentLabel = new QLabel(tr_("create_comment"));
-    commentLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    commentLabel->setStyleSheet(labelStyle);
     layout->addRow(commentLabel, m_commentEdit);
 
     // Piece size
@@ -75,7 +78,7 @@ CreateTorrentDialog::CreateTorrentDialog(QWidget *parent)
     m_pieceSizeSpin->setSuffix(" KB");
     m_pieceSizeSpin->setSpecialValueText(tr_("create_auto"));
     auto *pieceLabel = new QLabel(tr_("create_piece_size"));
-    pieceLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    pieceLabel->setStyleSheet(labelStyle);
     layout->addRow(pieceLabel, m_pieceSizeSpin);
 
     // Progress bar
@@ -199,36 +202,6 @@ void CreateTorrentDialog::createTorrent()
         m_progressBar->setVisible(false);
         QMessageBox::critical(this, tr_("dlg_error"), QString::fromStdString(e.what()));
     }
-}
-
-void CreateTorrentDialog::setupStyle()
-{
-    setStyleSheet(R"(
-        QDialog { background-color: #141414; color: #b0b0b0; }
-        QLineEdit, QSpinBox, QTextEdit {
-            background-color: #1a1a1a; color: #b0b0b0;
-            border: 1px solid #2a2a2a; border-radius: 4px;
-            padding: 6px; font-size: 12px;
-        }
-        QLineEdit:focus, QSpinBox:focus, QTextEdit:focus { border-color: #6b2020; }
-        QPushButton {
-            background-color: #2a1015; color: #d0d0d0;
-            border: 1px solid #3d1520; border-radius: 4px;
-            padding: 8px 16px; font-weight: bold;
-        }
-        QPushButton:hover { background-color: #6b2020; color: #ffffff; }
-        QLabel { color: #b0b0b0; }
-        QProgressBar {
-            background-color: #252525; border: 1px solid #252525;
-            border-radius: 4px; text-align: center;
-            color: #b0b0b0; font-weight: bold;
-        }
-        QProgressBar::chunk {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #3d1520, stop:1 #6b2020);
-            border-radius: 3px;
-        }
-    )");
 }
 
 QString CreateTorrentDialog::sourcePath() const { return m_sourceEdit->text(); }

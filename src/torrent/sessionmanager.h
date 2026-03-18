@@ -1,6 +1,7 @@
 #ifndef SESSIONMANAGER_H
 #define SESSIONMANAGER_H
 
+#include "types.h"
 #include <QObject>
 #include <QTimer>
 #include <QString>
@@ -8,44 +9,7 @@
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/torrent_status.hpp>
 #include <vector>
-
-struct TorrentInfo {
-    lt::torrent_handle handle;
-    QString name;
-    QString savePath;
-    qint64 totalSize;
-    qint64 totalDone;
-    float progress;
-    int downloadRate;
-    int uploadRate;
-    int numPeers;
-    int numSeeds;
-    QString stateString;
-    bool paused;
-    float ratio;
-};
-
-struct PeerInfo {
-    QString ip;
-    int port;
-    int downloadRate;
-    int uploadRate;
-    float progress;
-    QString client;
-};
-
-struct FileInfo {
-    QString path;
-    qint64 size;
-    float progress;
-    int priority;
-};
-
-struct TrackerInfo {
-    QString url;
-    int tier;
-    QString status;
-};
+#include <set>
 
 class SessionManager : public QObject
 {
@@ -87,6 +51,14 @@ public:
     void setEncryptionMode(int mode); // 0=enabled, 1=forced, 2=disabled
     int encryptionMode() const;
 
+    // VPN / Interface binding
+    void setOutgoingInterface(const QString &interfaceName); // "" = any
+    QString outgoingInterface() const;
+    void setKillSwitchEnabled(bool enabled);
+    bool killSwitchEnabled() const;
+    void setAutoResumeOnReconnect(bool enabled);
+    bool autoResumeOnReconnect() const;
+
     // Seed limits
     void setSeedRatioLimit(float ratio);
     float seedRatioLimit() const;
@@ -101,6 +73,8 @@ signals:
     void torrentsUpdated();
     void torrentFinished(const QString &name);
     void torrentError(const QString &message);
+    void killSwitchTriggered();
+    void interfaceRestored();
 
 private slots:
     void updateStats();
@@ -109,6 +83,7 @@ private:
     static QString stateToString(lt::torrent_status::state_t state);
     void processAlerts();
     void checkSeedRatios();
+    void checkInterfaceStatus();
     QString resumeDataDir() const;
 
     lt::session m_session;
@@ -117,6 +92,13 @@ private:
     bool m_dhtEnabled = true;
     int m_encryptionMode = 0;
     float m_seedRatioLimit = 0.0f; // 0 = no limit
+
+    // VPN / Interface binding
+    QString m_outgoingInterface;
+    bool m_killSwitchEnabled = false;
+    bool m_autoResume = false;
+    bool m_killSwitchActive = false;
+    std::set<lt::torrent_handle> m_killSwitchPaused;
 };
 
 #endif

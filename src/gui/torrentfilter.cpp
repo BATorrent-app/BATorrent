@@ -1,6 +1,6 @@
 #include "torrentfilter.h"
 #include "torrentmodel.h"
-#include "../core/translator.h"
+#include "../app/translator.h"
 #include <QtGlobal>
 
 TorrentFilter::TorrentFilter(QObject *parent)

@@ -1,5 +1,6 @@
 #include "welcomedialog.h"
-#include "../core/translator.h"
+#include "../app/translator.h"
+#include "../gui/thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -11,49 +12,38 @@ WelcomeDialog::WelcomeDialog(QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle("BATorrent");
-    setFixedSize(520, 520);
+    setFixedSize(520, 540);
 
-    setStyleSheet(R"(
-        QDialog {
-            background-color: #121212;
-            color: #d0d0d0;
-        }
-        QLabel {
-            color: #d0d0d0;
-        }
+    const auto &tm = ThemeManager::instance();
+    QString bg = tm.bgColor();
+    QString sf = tm.surfaceColor();
+    QString tx = tm.textColor();
+    QString mt = tm.mutedColor();
+    QString ac = tm.accentColor();
+    QString acDk = tm.accentDarkColor();
+    QString bd = tm.borderColor();
+
+    setStyleSheet(QString(R"(
+        QDialog { background-color: %1; color: %2; }
+        QLabel { color: %2; }
         QPushButton {
-            background-color: #2a1015;
-            color: #e0e0e0;
-            border: 1px solid #6b2020;
-            border-radius: 6px;
-            padding: 10px 32px;
-            font-size: 14px;
-            font-weight: bold;
+            background-color: %5; color: #ffffff;
+            border: none; border-radius: 8px;
+            padding: 12px 36px; font-size: 14px; font-weight: 600;
         }
-        QPushButton:hover {
-            background-color: #6b2020;
-            color: #ffffff;
-        }
-        QCheckBox {
-            color: #888888;
-            spacing: 8px;
-            font-size: 11px;
-        }
+        QPushButton:hover { background-color: %7; }
+        QCheckBox { color: %4; spacing: 8px; font-size: 11px; }
         QCheckBox::indicator {
-            width: 14px;
-            height: 14px;
-            border: 1px solid #333333;
-            border-radius: 3px;
-            background-color: #1a1a1a;
+            width: 14px; height: 14px;
+            border: 1px solid %6; border-radius: 4px;
+            background-color: %3;
         }
-        QCheckBox::indicator:checked {
-            background-color: #6b2020;
-        }
-    )");
+        QCheckBox::indicator:checked { background-color: %5; border-color: %5; }
+    )").arg(bg, tx, sf, mt, ac, bd, tm.accentLightColor()));
 
     auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(32, 24, 32, 24);
-    mainLayout->setSpacing(8);
+    mainLayout->setContentsMargins(36, 28, 36, 28);
+    mainLayout->setSpacing(10);
 
     // Logo
     auto *logoLabel = new QLabel;
@@ -64,37 +54,39 @@ WelcomeDialog::WelcomeDialog(QWidget *parent)
 
     // Title
     auto *titleLabel = new QLabel(tr_("welcome_title"));
-    titleLabel->setStyleSheet("font-size: 22px; font-weight: bold; color: #c43030;");
+    titleLabel->setStyleSheet(QString("font-size: 22px; font-weight: 700; color: %1;").arg(tx));
     titleLabel->setAlignment(Qt::AlignCenter);
     mainLayout->addWidget(titleLabel);
 
     auto *subtitleLabel = new QLabel(tr_("welcome_subtitle"));
-    subtitleLabel->setStyleSheet("font-size: 12px; color: #888888; margin-bottom: 12px;");
+    subtitleLabel->setStyleSheet(QString("font-size: 12px; color: %1; margin-bottom: 14px;").arg(mt));
     subtitleLabel->setAlignment(Qt::AlignCenter);
     mainLayout->addWidget(subtitleLabel);
+
+    mainLayout->addSpacing(4);
 
     // Steps
     auto addStep = [&](const QString &num, const QString &titleKey, const QString &descKey) {
         auto *stepLayout = new QHBoxLayout;
-        stepLayout->setSpacing(12);
+        stepLayout->setSpacing(14);
 
         auto *numLabel = new QLabel(num);
-        numLabel->setFixedSize(32, 32);
+        numLabel->setFixedSize(34, 34);
         numLabel->setAlignment(Qt::AlignCenter);
-        numLabel->setStyleSheet(
-            "background-color: #2a1015; color: #c43030; border-radius: 16px;"
-            "font-size: 14px; font-weight: bold; border: 1px solid #6b2020;");
+        numLabel->setStyleSheet(QString(
+            "background-color: %1; color: %2; border-radius: 17px;"
+            "font-size: 14px; font-weight: 700;").arg(acDk, ac));
 
         auto *textLayout = new QVBoxLayout;
         auto *stepTitle = new QLabel(tr_(titleKey));
-        stepTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #e0e0e0;");
+        stepTitle->setStyleSheet(QString("font-size: 13px; font-weight: 600; color: %1;").arg(tx));
         auto *stepDesc = new QLabel(tr_(descKey));
         stepDesc->setWordWrap(true);
-        stepDesc->setStyleSheet("font-size: 11px; color: #999999; line-height: 1.4;");
+        stepDesc->setStyleSheet(QString("font-size: 11px; color: %1; line-height: 1.4;").arg(mt));
 
         textLayout->addWidget(stepTitle);
         textLayout->addWidget(stepDesc);
-        textLayout->setSpacing(2);
+        textLayout->setSpacing(3);
 
         stepLayout->addWidget(numLabel, 0, Qt::AlignTop);
         stepLayout->addLayout(textLayout, 1);

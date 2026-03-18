@@ -217,6 +217,19 @@ void Translator::loadEnglish()
         {"filter_seeding", "Seeding"},
         {"filter_paused", "Paused"},
         {"filter_finished", "Finished"},
+
+        // VPN / Interface binding
+        {"settings_vpn_group", "VPN / Interface Binding"},
+        {"settings_interface", "Network interface:"},
+        {"settings_iface_any", "Any (default)"},
+        {"settings_iface_any_desc", "Traffic will use any available interface"},
+        {"settings_iface_no_ip", "No IPv4 address found"},
+        {"settings_refresh", "Refresh"},
+        {"settings_kill_switch", "Pause torrents if interface drops (Kill Switch)"},
+        {"settings_auto_resume", "Auto-resume when interface returns"},
+        {"killswitch_title", "Kill Switch"},
+        {"killswitch_triggered", "VPN interface went down — all torrents paused."},
+        {"killswitch_restored", "VPN interface restored — torrents resumed."},
     };
 }
 
@@ -412,5 +425,18 @@ void Translator::loadPortuguese()
         {"filter_seeding", "Semeando"},
         {"filter_paused", "Pausados"},
         {"filter_finished", "Concluídos"},
+
+        // VPN / Interface binding
+        {"settings_vpn_group", "VPN / Vínculo de Interface"},
+        {"settings_interface", "Interface de rede:"},
+        {"settings_iface_any", "Qualquer (padrão)"},
+        {"settings_iface_any_desc", "O tráfego usará qualquer interface disponível"},
+        {"settings_iface_no_ip", "Nenhum endereço IPv4 encontrado"},
+        {"settings_refresh", "Atualizar"},
+        {"settings_kill_switch", "Pausar torrents se a interface cair (Kill Switch)"},
+        {"settings_auto_resume", "Retomar automaticamente quando a interface voltar"},
+        {"killswitch_title", "Kill Switch"},
+        {"killswitch_triggered", "Interface VPN caiu — todos os torrents pausados."},
+        {"killswitch_restored", "Interface VPN restaurada — torrents retomados."},
     };
 }

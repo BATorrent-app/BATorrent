@@ -33,13 +33,13 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
-    QRect barRect = option.rect.adjusted(4, 4, -4, -4);
-    int radius = 3;
+    QRect barRect = option.rect.adjusted(6, 6, -6, -6);
+    int radius = 5;
 
-    // Background track
-    QColor trackColor(tm.surfaceColor());
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(trackColor);
+    // Background track — more visible
+    QColor trackColor(tm.borderColor());
+    painter->setPen(QPen(trackColor.darker(110), 1));
+    painter->setBrush(QColor(tm.surfaceColor()));
     painter->drawRoundedRect(barRect, radius, radius);
 
     // Progress fill
@@ -49,26 +49,27 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
 
         QColor fillColor;
         if (progress >= 1.0f)
-            fillColor = QColor(0x30, 0x90, 0x50); // green when complete
+            fillColor = QColor(tm.successColor());
         else
             fillColor = QColor(tm.accentColor());
 
+        painter->setPen(Qt::NoPen);
         painter->setBrush(fillColor);
         painter->drawRoundedRect(fillRect, radius, radius);
 
         // Shimmer effect (only while downloading, not complete)
         if (progress < 1.0f && progress > 0.01f) {
             float elapsed = m_elapsed.elapsed() / 1000.0f;
-            // Shimmer position cycles across the bar
-            float shimmerPos = fmod(elapsed * 0.6f, 1.4f) - 0.2f;
+            // Shimmer position cycles across the bar — slower, more subtle
+            float shimmerPos = fmod(elapsed * 0.4f, 1.4f) - 0.2f;
             float shimmerX = fillRect.left() + shimmerPos * fillRect.width();
             float shimmerWidth = fillRect.width() * 0.25f;
 
             QLinearGradient shimmer(shimmerX, 0, shimmerX + shimmerWidth, 0);
-            QColor highlight = fillColor.lighter(160);
+            QColor highlight = fillColor.lighter(150);
             highlight.setAlpha(0);
             shimmer.setColorAt(0.0, highlight);
-            highlight.setAlpha(80);
+            highlight.setAlpha(50);
             shimmer.setColorAt(0.5, highlight);
             highlight.setAlpha(0);
             shimmer.setColorAt(1.0, highlight);
@@ -80,12 +81,19 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
         }
     }
 
-    // Percentage text
+    // Percentage text — use dark text on bright fills for readability
     QString text = QString::number(progress * 100.0, 'f', 1) + "%";
-    QColor textColor(tm.textColor());
+    QColor textColor;
+    if (progress >= 1.0f)
+        textColor = QColor("#0a2e14"); // dark green on green bar
+    else if (progress > 0.5f)
+        textColor = QColor("#ffffff"); // white on red bar
+    else
+        textColor = QColor(tm.textColor());
     painter->setPen(textColor);
     QFont f = painter->font();
     f.setPointSize(8);
+    f.setWeight(QFont::DemiBold);
     painter->setFont(f);
     painter->drawText(barRect, Qt::AlignCenter, text);
 

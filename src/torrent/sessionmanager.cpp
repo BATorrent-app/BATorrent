@@ -1,5 +1,5 @@
 #include "sessionmanager.h"
-#include "translator.h"
+#include "../app/translator.h"
 #include <libtorrent/load_torrent.hpp>
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/magnet_uri.hpp>
@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QFile>
+#include <QNetworkInterface>
 
 SessionManager::SessionManager(QObject *parent)
     : QObject(parent)
@@ -296,7 +297,17 @@ int SessionManager::uploadLimit() const
 void SessionManager::setListenPort(int port)
 {
     lt::settings_pack pack;
-    QString iface = QString("0.0.0.0:%1").arg(port);
+    QString listenAddr = "0.0.0.0";
+    if (!m_outgoingInterface.isEmpty()) {
+        QNetworkInterface ni = QNetworkInterface::interfaceFromName(m_outgoingInterface);
+        for (const auto &entry : ni.addressEntries()) {
+            if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
+                listenAddr = entry.ip().toString();
+                break;
+            }
+        }
+    }
+    QString iface = QString("%1:%2").arg(listenAddr).arg(port);
     pack.set_str(lt::settings_pack::listen_interfaces, iface.toStdString());
     m_session.apply_settings(pack);
 }
@@ -433,6 +444,7 @@ void SessionManager::updateStats()
 {
     processAlerts();
     checkSeedRatios();
+    checkInterfaceStatus();
     if (!m_torrents.empty())
         emit torrentsUpdated();
 }
@@ -559,5 +571,122 @@ QString SessionManager::stateToString(lt::torrent_status::state_t state)
     case lt::torrent_status::seeding: return tr_("state_seeding");
     case lt::torrent_status::checking_resume_data: return tr_("state_checking");
     default: return tr_("state_unknown");
+    }
+}
+
+// --- VPN / Interface binding ---
+
+void SessionManager::setOutgoingInterface(const QString &interfaceName)
+{
+    m_outgoingInterface = interfaceName;
+    m_killSwitchActive = false;
+    m_killSwitchPaused.clear();
+
+    lt::settings_pack pack;
+
+    if (interfaceName.isEmpty()) {
+        // Any interface
+        pack.set_str(lt::settings_pack::outgoing_interfaces, "");
+        int port = listenPort();
+        QString listenIface = QString("0.0.0.0:%1").arg(port > 0 ? port : 6881);
+        pack.set_str(lt::settings_pack::listen_interfaces, listenIface.toStdString());
+    } else {
+        pack.set_str(lt::settings_pack::outgoing_interfaces, interfaceName.toStdString());
+
+        // Resolve the interface IP for listen_interfaces
+        QNetworkInterface ni = QNetworkInterface::interfaceFromName(interfaceName);
+        QString listenAddr = "0.0.0.0";
+        for (const auto &entry : ni.addressEntries()) {
+            if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
+                listenAddr = entry.ip().toString();
+                break;
+            }
+        }
+        int port = listenPort();
+        QString listenIface = QString("%1:%2").arg(listenAddr).arg(port > 0 ? port : 6881);
+        pack.set_str(lt::settings_pack::listen_interfaces, listenIface.toStdString());
+    }
+
+    m_session.apply_settings(pack);
+}
+
+QString SessionManager::outgoingInterface() const
+{
+    return m_outgoingInterface;
+}
+
+void SessionManager::setKillSwitchEnabled(bool enabled)
+{
+    m_killSwitchEnabled = enabled;
+    if (!enabled) {
+        m_killSwitchActive = false;
+        m_killSwitchPaused.clear();
+    }
+}
+
+bool SessionManager::killSwitchEnabled() const
+{
+    return m_killSwitchEnabled;
+}
+
+void SessionManager::setAutoResumeOnReconnect(bool enabled)
+{
+    m_autoResume = enabled;
+}
+
+bool SessionManager::autoResumeOnReconnect() const
+{
+    return m_autoResume;
+}
+
+void SessionManager::checkInterfaceStatus()
+{
+    if (m_outgoingInterface.isEmpty() || !m_killSwitchEnabled)
+        return;
+
+    QNetworkInterface ni = QNetworkInterface::interfaceFromName(m_outgoingInterface);
+    bool isUp = ni.isValid()
+                && (ni.flags() & QNetworkInterface::IsUp)
+                && (ni.flags() & QNetworkInterface::IsRunning);
+
+    // Check if interface has an IPv4 address
+    bool hasIp = false;
+    if (isUp) {
+        for (const auto &entry : ni.addressEntries()) {
+            if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
+                hasIp = true;
+                break;
+            }
+        }
+    }
+
+    bool interfaceOk = isUp && hasIp;
+
+    if (!interfaceOk && !m_killSwitchActive) {
+        // Interface just went down — pause all running torrents
+        m_killSwitchActive = true;
+        m_killSwitchPaused.clear();
+        for (auto &h : m_torrents) {
+            if (!h.is_valid()) continue;
+            lt::torrent_status st = h.status();
+            if (!(st.flags & lt::torrent_flags::paused)) {
+                h.pause();
+                m_killSwitchPaused.insert(h);
+            }
+        }
+        emit killSwitchTriggered();
+    } else if (interfaceOk && m_killSwitchActive) {
+        // Interface came back — re-apply binding and optionally resume
+        m_killSwitchActive = false;
+        setOutgoingInterface(m_outgoingInterface);
+
+        if (m_autoResume) {
+            for (auto &h : m_killSwitchPaused) {
+                if (h.is_valid())
+                    h.resume();
+            }
+        }
+        m_killSwitchPaused.clear();
+        emit interfaceRestored();
     }
 }

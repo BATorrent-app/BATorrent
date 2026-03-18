@@ -1,6 +1,6 @@
 #include "torrentmodel.h"
-#include "../core/translator.h"
-#include "../core/utils.h"
+#include "../app/translator.h"
+#include "../app/utils.h"
 #include <QColor>
 #include <QMimeData>
 

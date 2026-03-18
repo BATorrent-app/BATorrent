@@ -7,5 +7,9 @@
 <file>icons/play.svg</file>
 <file>icons/trash.svg</file>
 <file>icons/settings.svg</file>
+<file>fonts/Inter-Regular.ttf</file>
+<file>fonts/Inter-Medium.ttf</file>
+<file>fonts/Inter-SemiBold.ttf</file>
+<file>fonts/Inter-Bold.ttf</file>
 </qresource>
 </RCC>

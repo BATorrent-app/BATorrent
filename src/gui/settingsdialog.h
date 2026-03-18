@@ -8,6 +8,7 @@ class QDoubleSpinBox;
 class QLineEdit;
 class QComboBox;
 class QCheckBox;
+class QLabel;
 
 class SettingsDialog : public QDialog
 {
@@ -43,12 +44,20 @@ public:
     void setMaxConnections(int max);
     void setSeedRatioLimit(float ratio);
 
+    // VPN / Interface binding
+    QString outgoingInterface() const;
+    bool killSwitchEnabled() const;
+    bool autoResumeOnReconnect() const;
+
+    void setOutgoingInterface(const QString &iface);
+    void setKillSwitchEnabled(bool enabled);
+    void setAutoResumeOnReconnect(bool enabled);
+
 private slots:
     void browseSavePath();
+    void refreshInterfaces();
 
 private:
-    void setupStyle();
-
     // General tab
     QLineEdit *m_savePathEdit;
     QSpinBox *m_maxDownSpin;
@@ -63,6 +72,12 @@ private:
     QComboBox *m_encryptionCombo;
     QSpinBox *m_maxConnSpin;
     QDoubleSpinBox *m_seedRatioSpin;
+
+    // VPN tab
+    QComboBox *m_interfaceCombo;
+    QLabel *m_interfaceIpLabel;
+    QCheckBox *m_killSwitchCheck;
+    QCheckBox *m_autoResumeCheck;
 };
 
 #endif

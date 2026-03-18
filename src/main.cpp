@@ -1,15 +1,27 @@
 #include <QApplication>
 #include <QIcon>
 #include <QStringList>
-#include "core/sessionmanager.h"
+#include <QFont>
+#include <QFontDatabase>
+#include "torrent/sessionmanager.h"
 #include "gui/mainwindow.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("BATorrent");
-    app.setApplicationVersion("1.5.0");
+    app.setApplicationVersion("1.6.0");
     app.setWindowIcon(QIcon(":/images/logo1.png"));
+
+    // Load Inter font family
+    QFontDatabase::addApplicationFont(":/fonts/Inter-Regular.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/Inter-Medium.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/Inter-SemiBold.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/Inter-Bold.ttf");
+
+    QFont defaultFont("Inter", 10);
+    defaultFont.setStyleStrategy(QFont::PreferAntialias);
+    app.setFont(defaultFont);
 
     SessionManager session;
     MainWindow window(&session);

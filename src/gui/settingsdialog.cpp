@@ -1,5 +1,5 @@
 #include "settingsdialog.h"
-#include "../core/translator.h"
+#include "../app/translator.h"
 #include "../gui/thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -14,15 +14,18 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QGroupBox>
+#include <QNetworkInterface>
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(tr_("settings_title"));
     setMinimumSize(500, 400);
-    setupStyle();
+    setStyleSheet(ThemeManager::instance().dialogStyleSheet());
 
     auto *tabs = new QTabWidget;
+
+    QString labelStyle = ThemeManager::instance().formLabelStyle();
 
     // ---- General tab ----
     auto *generalWidget = new QWidget;
@@ -39,7 +42,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     savePathLayout->addWidget(browseBtn);
 
     auto *savePathLabel = new QLabel(tr_("settings_default_save"));
-    savePathLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    savePathLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(savePathLabel, savePathLayout);
 
     m_languageCombo = new QComboBox;
@@ -47,7 +50,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_languageCombo->addItem(QString::fromUtf8("Português (BR)"));
 
     auto *langLabel = new QLabel(tr_("settings_language"));
-    langLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    langLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(langLabel, m_languageCombo);
 
     m_themeCombo = new QComboBox;
@@ -55,7 +58,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
         m_themeCombo->addItem(name);
 
     auto *themeLabel = new QLabel(tr_("settings_theme"));
-    themeLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    themeLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(themeLabel, m_themeCombo);
 
     m_useDefaultPathCheck = new QCheckBox(tr_("settings_use_default_path"));
@@ -89,11 +92,11 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_seedRatioSpin->setSpecialValueText(tr_("settings_unlimited"));
 
     auto *downLabel = new QLabel(tr_("settings_max_down"));
-    downLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    downLabel->setStyleSheet(labelStyle);
     auto *upLabel = new QLabel(tr_("settings_max_up"));
-    upLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    upLabel->setStyleSheet(labelStyle);
     auto *ratioLabel = new QLabel(tr_("settings_seed_ratio"));
-    ratioLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    ratioLabel->setStyleSheet(labelStyle);
 
     speedLayout->addRow(downLabel, m_maxDownSpin);
     speedLayout->addRow(upLabel, m_maxUpSpin);
@@ -118,13 +121,65 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_encryptionCombo->addItem(tr_("settings_enc_disabled"));
 
     auto *connLabel = new QLabel(tr_("settings_max_conn"));
-    connLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    connLabel->setStyleSheet(labelStyle);
     auto *encLabel = new QLabel(tr_("settings_encryption"));
-    encLabel->setStyleSheet("color: #c43030; font-weight: bold;");
+    encLabel->setStyleSheet(labelStyle);
 
     networkLayout->addRow(connLabel, m_maxConnSpin);
     networkLayout->addRow("", m_dhtCheck);
     networkLayout->addRow(encLabel, m_encryptionCombo);
+
+    // VPN / Interface Binding group
+    auto *vpnGroup = new QGroupBox(tr_("settings_vpn_group"));
+    auto *vpnLayout = new QFormLayout(vpnGroup);
+    vpnLayout->setSpacing(10);
+
+    auto *ifaceLayout = new QHBoxLayout;
+    m_interfaceCombo = new QComboBox;
+    m_interfaceCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    auto *refreshBtn = new QPushButton(tr_("settings_refresh"));
+    refreshBtn->setFixedWidth(80);
+    connect(refreshBtn, &QPushButton::clicked, this, &SettingsDialog::refreshInterfaces);
+    ifaceLayout->addWidget(m_interfaceCombo);
+    ifaceLayout->addWidget(refreshBtn);
+
+    auto *ifaceLabel = new QLabel(tr_("settings_interface"));
+    ifaceLabel->setStyleSheet(labelStyle);
+    vpnLayout->addRow(ifaceLabel, ifaceLayout);
+
+    m_interfaceIpLabel = new QLabel;
+    m_interfaceIpLabel->setStyleSheet(labelStyle + " color: #888;");
+    vpnLayout->addRow("", m_interfaceIpLabel);
+
+    m_killSwitchCheck = new QCheckBox(tr_("settings_kill_switch"));
+    vpnLayout->addRow("", m_killSwitchCheck);
+
+    m_autoResumeCheck = new QCheckBox(tr_("settings_auto_resume"));
+    m_autoResumeCheck->setEnabled(false);
+    vpnLayout->addRow("", m_autoResumeCheck);
+
+    connect(m_killSwitchCheck, &QCheckBox::toggled, m_autoResumeCheck, &QCheckBox::setEnabled);
+
+    connect(m_interfaceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
+        QString iface = m_interfaceCombo->currentData().toString();
+        if (iface.isEmpty()) {
+            m_interfaceIpLabel->setText(tr_("settings_iface_any_desc"));
+        } else {
+            QNetworkInterface ni = QNetworkInterface::interfaceFromName(iface);
+            QString ip;
+            for (const auto &entry : ni.addressEntries()) {
+                if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
+                    ip = entry.ip().toString();
+                    break;
+                }
+            }
+            m_interfaceIpLabel->setText(ip.isEmpty() ? tr_("settings_iface_no_ip") : ip);
+        }
+    });
+
+    networkLayout->addRow(vpnGroup);
+
+    refreshInterfaces();
 
     tabs->addTab(networkWidget, tr_("settings_network"));
 
@@ -143,93 +198,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     auto *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(tabs);
     mainLayout->addLayout(btnLayout);
-}
-
-void SettingsDialog::setupStyle()
-{
-    setStyleSheet(R"(
-        QDialog {
-            background-color: #141414;
-            color: #b0b0b0;
-        }
-        QTabWidget::pane {
-            background-color: #141414;
-            border: 1px solid #252525;
-            border-top: 1px solid #6b2020;
-        }
-        QTabBar::tab {
-            background-color: #1a1a1a;
-            color: #707070;
-            padding: 8px 20px;
-            border: 1px solid #252525;
-            border-bottom: none;
-            font-weight: bold;
-        }
-        QTabBar::tab:selected {
-            background-color: #1e1218;
-            color: #c43030;
-            border-top: 2px solid #c43030;
-        }
-        QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-            background-color: #1a1a1a;
-            color: #b0b0b0;
-            border: 1px solid #2a2a2a;
-            border-radius: 4px;
-            padding: 6px;
-            font-size: 12px;
-        }
-        QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
-            border-color: #6b2020;
-        }
-        QComboBox::drop-down {
-            border: none;
-            background-color: #1e1218;
-        }
-        QComboBox QAbstractItemView {
-            background-color: #1a1a1a;
-            color: #b0b0b0;
-            selection-background-color: #2a1015;
-            border: 1px solid #252525;
-        }
-        QPushButton {
-            background-color: #2a1015;
-            color: #d0d0d0;
-            border: 1px solid #3d1520;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-weight: bold;
-        }
-        QPushButton:hover {
-            background-color: #6b2020;
-            color: #ffffff;
-        }
-        QCheckBox {
-            color: #b0b0b0;
-            spacing: 8px;
-        }
-        QCheckBox::indicator {
-            width: 16px;
-            height: 16px;
-            border: 1px solid #2a2a2a;
-            border-radius: 3px;
-            background-color: #1a1a1a;
-        }
-        QCheckBox::indicator:checked {
-            background-color: #6b2020;
-            border-color: #8b2a2a;
-        }
-        QLabel {
-            color: #b0b0b0;
-        }
-        QGroupBox {
-            color: #c43030;
-            font-weight: bold;
-            border: 1px solid #252525;
-            border-radius: 4px;
-            margin-top: 8px;
-            padding-top: 16px;
-        }
-    )");
 }
 
 void SettingsDialog::browseSavePath()
@@ -267,3 +235,76 @@ void SettingsDialog::setDhtEnabled(bool enabled) { m_dhtCheck->setChecked(enable
 void SettingsDialog::setEncryptionMode(int mode) { m_encryptionCombo->setCurrentIndex(mode); }
 void SettingsDialog::setMaxConnections(int max) { m_maxConnSpin->setValue(max); }
 void SettingsDialog::setSeedRatioLimit(float ratio) { m_seedRatioSpin->setValue(static_cast<double>(ratio)); }
+
+// VPN getters/setters
+QString SettingsDialog::outgoingInterface() const { return m_interfaceCombo->currentData().toString(); }
+bool SettingsDialog::killSwitchEnabled() const { return m_killSwitchCheck->isChecked(); }
+bool SettingsDialog::autoResumeOnReconnect() const { return m_autoResumeCheck->isChecked(); }
+
+void SettingsDialog::setOutgoingInterface(const QString &iface)
+{
+    int idx = m_interfaceCombo->findData(iface);
+    m_interfaceCombo->setCurrentIndex(idx >= 0 ? idx : 0);
+}
+
+void SettingsDialog::setKillSwitchEnabled(bool enabled) { m_killSwitchCheck->setChecked(enabled); }
+void SettingsDialog::setAutoResumeOnReconnect(bool enabled) { m_autoResumeCheck->setChecked(enabled); }
+
+void SettingsDialog::refreshInterfaces()
+{
+    QString current = m_interfaceCombo->currentData().toString();
+    m_interfaceCombo->clear();
+
+    // "Any" option
+    m_interfaceCombo->addItem(tr_("settings_iface_any"), QString(""));
+
+    static const QStringList vpnPrefixes = {
+        "tun", "tap", "wg", "proton", "mullvad", "nordlynx", "utun"
+    };
+
+    auto interfaces = QNetworkInterface::allInterfaces();
+    for (const auto &ni : interfaces) {
+        if (ni.flags() & QNetworkInterface::IsLoopBack)
+            continue;
+        if (!(ni.flags() & QNetworkInterface::IsUp))
+            continue;
+
+        QString name = ni.name();
+        QString ip;
+        for (const auto &entry : ni.addressEntries()) {
+            if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
+                ip = entry.ip().toString();
+                break;
+            }
+        }
+
+        // Detect VPN interfaces
+        bool isVpn = false;
+        for (const auto &prefix : vpnPrefixes) {
+            if (name.startsWith(prefix, Qt::CaseInsensitive)) {
+                isVpn = true;
+                break;
+            }
+        }
+        // Also check humanReadableName on Windows
+        QString hrName = ni.humanReadableName();
+        if (!isVpn) {
+            for (const QString &kw : {"TAP", "TUN", "WireGuard"}) {
+                if (hrName.contains(kw, Qt::CaseInsensitive)) {
+                    isVpn = true;
+                    break;
+                }
+            }
+        }
+
+        QString display = name;
+        if (isVpn) display += " (VPN)";
+        if (!ip.isEmpty()) display += " - " + ip;
+
+        m_interfaceCombo->addItem(display, name);
+    }
+
+    // Restore selection
+    int idx = m_interfaceCombo->findData(current);
+    m_interfaceCombo->setCurrentIndex(idx >= 0 ? idx : 0);
+}

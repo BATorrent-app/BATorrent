@@ -38,7 +38,6 @@ void SplashWidget::paintEvent(QPaintEvent *)
 
     int w = width();
     int h = height();
-    float t = static_cast<float>(m_frame) / m_totalFrames;
 
     const auto &tm = ThemeManager::instance();
 
@@ -57,7 +56,7 @@ void SplashWidget::paintEvent(QPaintEvent *)
 
     // --- Logo ---
     // Phase 1 (0-30): fade in + scale from 0.7 to 1.0
-    // Phase 2 (30-60): hold + red glow pulse
+    // Phase 2 (30-60): hold + subtle glow
     // Phase 3 (60-90): fade out everything
 
     float logoAlpha = 0.0f;
@@ -103,7 +102,7 @@ void SplashWidget::paintEvent(QPaintEvent *)
         p.setPen(textColor);
         QFont f = font();
         f.setPointSize(22);
-        f.setBold(true);
+        f.setWeight(QFont::Bold);
         f.setLetterSpacing(QFont::AbsoluteSpacing, 3);
         p.setFont(f);
         p.drawText(QRect(0, ly + logoSize + 8, w, 40),
@@ -111,7 +110,7 @@ void SplashWidget::paintEvent(QPaintEvent *)
 
         // Subtitle
         f.setPointSize(10);
-        f.setBold(false);
+        f.setWeight(QFont::Normal);
         f.setLetterSpacing(QFont::AbsoluteSpacing, 1);
         p.setFont(f);
         QColor subColor(tm.mutedColor());

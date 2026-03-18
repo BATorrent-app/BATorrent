@@ -1,67 +1,89 @@
 ---
 name: batorrent
 description: Guia passo a passo para construir o BATorrent. Use quando o usuario quiser continuar o desenvolvimento do projeto.
-argument-hint: [fase] [passo]
+argument-hint: [feature]
 ---
 
-# BATorrent — Modo Ensino
+# BATorrent — Desenvolvimento
 
-Voce esta guiando um iniciante em C++/Qt a construir um cliente BitTorrent.
+Voce esta ajudando a construir um cliente BitTorrent em C++/Qt.
 
 ## Regras
 
-1. **NAO gere codigo pronto.** Explique o que fazer, por que, e deixe o usuario escrever.
-2. **Passos pequenos.** Um conceito por vez. Espere o usuario confirmar antes de avancar.
-3. **Snippets curtos** como exemplo quando necessario (max ~5 linhas), nunca arquivos inteiros.
-4. **Explique erros** de compilacao/runtime quando o usuario colar — ensine a ler o erro.
-5. **Responda em portugues (BR).**
-6. **Seja conciso.** Sem introducoes longas. Direto ao ponto.
+1. **Escreva o codigo direto.** O usuario quer que voce implemente.
+2. **Responda em portugues (BR).**
+3. **Seja conciso.** Sem introducoes longas. Direto ao ponto.
+4. **Teste sempre.** Apos implementar, rode `cmake --build build` e `./build/BATorrent` pra verificar.
 
 ## Estado atual do ambiente
 
 - GCC 15.2.1, Qt 6.10.2, OpenSSL 3.6.1, libtorrent-rasterbar 2.0.11, CMake instalado
 - OS: Arch Linux
+- CI: GitHub Actions (Windows, Linux, macOS)
 
-## Plano de Fases
+## Arquitetura do Projeto
 
-### Fase 1 — Setup (CMake + Qt + libtorrent)
-Passos: instalar cmake, criar diretorios, escrever CMakeLists.txt, main.cpp minimo, compilar.
-Verificar: `cmake -B build && cmake --build build && ./build/BATorrent` abre janela.
+```
+src/
+├── torrent/       # Engine BitTorrent (wrapper libtorrent)
+│   ├── sessionmanager.h/.cpp   # Sessao libtorrent, VPN binding, kill switch
+│   └── types.h                 # TorrentInfo, PeerInfo, FileInfo, TrackerInfo
+├── app/           # Infraestrutura do app (Qt, NAO GUI)
+│   ├── translator.h/.cpp       # i18n (EN + PT-BR)
+│   ├── updater.h/.cpp          # Auto-update via GitHub Releases
+│   └── utils.h                 # formatSize, formatSpeed
+├── gui/           # Desktop GUI (Qt Widgets)
+│   ├── mainwindow.h/.cpp       # Janela principal, menus, toolbar, tray
+│   ├── settingsdialog.h/.cpp   # Preferencias (geral, speed, network, VPN)
+│   ├── detailspanel.h/.cpp     # Tabs: Geral, Peers, Arquivos, Trackers
+│   ├── torrentmodel.h/.cpp     # QAbstractTableModel
+│   ├── torrentfilter.h/.cpp    # QSortFilterProxyModel
+│   ├── progressdelegate.h/.cpp # Barra de progresso custom
+│   ├── speedgraph.h/.cpp       # Grafico de velocidade em tempo real
+│   ├── batwidget.h/.cpp        # Animacao do morcego (idle state)
+│   ├── splashwidget.h/.cpp     # Splash screen
+│   ├── welcomedialog.h/.cpp    # Guia de boas-vindas
+│   ├── createtorrentdialog.h/.cpp # Criar .torrent
+│   └── thememanager.h/.cpp     # 3 temas: Dark, Light, Midnight
+├── fonts/ icons/ images/
+└── main.cpp
+```
 
-### Fase 2 — Sessao libtorrent no terminal
-Passos: criar lt::session, carregar .torrent, loop de progresso no terminal, entender alerts.
-Verificar: ver progresso de download no terminal.
+**Separacao torrent/ vs app/ vs gui/**: Quando a WebUI vier, ela importa de `torrent/` e `app/` mas NAO de `gui/`.
 
-### Fase 3 — Janela Principal Qt
-Passos: MainWindow, QMenuBar, QToolBar, QFileDialog, QStatusBar.
-Arquivos: src/gui/mainwindow.h, src/gui/mainwindow.cpp
-Verificar: abrir .torrent via dialogo, ver path no terminal.
+## Features ja implementadas (v1.6.0)
 
-### Fase 4 — Lista de Torrents (Model/View)
-Passos: TorrentModel (QAbstractTableModel), QTableView, QTimer para atualizar.
-Colunas: Nome, Tamanho, Progresso, Velocidade, Estado, Peers.
-Arquivos: src/gui/torrentmodel.h, src/gui/torrentmodel.cpp
+- .torrent e magnet links
+- Resume data, import do qBittorrent, criar .torrent
+- Download sequencial, prioridade por arquivo
+- Seed ratio limits
+- DHT, PEX, UPnP, NAT-PMP, protocol encryption
+- VPN interface binding + auto-deteccao + kill switch + auto-resume
+- 3 temas (Dark, Light, Midnight)
+- Speed graph, filter bar, drag & drop, tray, splash screen
+- Auto-update, CLI args, atalhos de teclado
+- Bilingue EN + PT-BR
 
-### Fase 5 — Session Manager
-Passos: SessionManager encapsulando lt::session, sinais Qt, conectar com GUI.
-Metodos: addTorrent, removeTorrent, pauseTorrent, resumeTorrent.
-Arquivos: src/core/sessionmanager.h, src/core/sessionmanager.cpp
+## Proximas features planejadas
 
-### Fase 6 — Progresso e Detalhes
-Passos: QStyledItemDelegate para barra de progresso, QTabWidget com abas (Geral, Peers, Arquivos).
-Arquivos: src/gui/progressdelegate.h/.cpp, src/gui/detailspanel.h/.cpp
+### RSS Feed Auto-Download
+- Parser RSS/Atom com QNetworkAccessManager
+- Regras de filtro por nome/regex
+- Polling configuravel (intervalo em minutos)
+- UI: nova tab ou dialog pra gerenciar feeds e regras
+- Persistencia via QSettings
+- Arquivo: `src/app/rssmanager.h/.cpp` + UI em `src/gui/rssdialog.h/.cpp`
 
-### Fase 7 — Funcionalidades Essenciais
-Passos: magnet links, resume data, QSettings, QSystemTrayIcon.
-Arquivos: src/core/settings.h/.cpp, src/gui/settingsdialog.h/.cpp
-
-### Fase 8 — Polimento (opcional)
-Icone, drag & drop, notificacoes, limites por torrent, prioridade de arquivos.
+### WebUI
+- HTTP server embarcado (QTcpServer ou lib leve tipo cpp-httplib)
+- REST API JSON: listar torrents, add/remove/pause/resume, settings
+- Frontend SPA minimo servido como recurso Qt (HTML/CSS/JS)
+- Importa de `torrent/` e `app/`, NAO de `gui/`
+- Arquivo: `src/web/webserver.h/.cpp` + `src/web/api.h/.cpp`
+- Porta configuravel no SettingsDialog
+- Autenticacao basica (user/pass)
 
 ## Como usar argumentos
 
-Se o usuario passar `$ARGUMENTS` (ex: `/batorrent 1 3`), interprete como fase e passo.
-- `$1` = numero da fase
-- `$2` = numero do passo dentro da fase
-
-Se nenhum argumento, pergunte onde o usuario parou ou verifique o estado do projeto.
+Se o usuario passar `$ARGUMENTS` (ex: `/batorrent rss`), interprete como a feature a implementar.
+Se nenhum argumento, pergunte o que o usuario quer fazer ou sugira as proximas features.

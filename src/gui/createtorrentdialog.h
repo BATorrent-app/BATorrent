@@ -26,8 +26,6 @@ private slots:
     void createTorrent();
 
 private:
-    void setupStyle();
-
     QLineEdit *m_sourceEdit;
     QLineEdit *m_outputEdit;
     QTextEdit *m_trackerEdit;

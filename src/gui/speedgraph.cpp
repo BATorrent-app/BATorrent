@@ -30,6 +30,43 @@ void SpeedGraph::setAccentColor(const QColor &color)
     update();
 }
 
+static void drawSmoothCurve(QPainter &p, const QVector<QPointF> &points)
+{
+    if (points.size() < 2) return;
+
+    QPainterPath path;
+    path.moveTo(points[0]);
+
+    for (int i = 1; i < points.size(); ++i) {
+        QPointF p0 = points[i - 1];
+        QPointF p1 = points[i];
+        float cx = (p0.x() + p1.x()) / 2.0f;
+        path.cubicTo(cx, p0.y(), cx, p1.y(), p1.x(), p1.y());
+    }
+
+    p.drawPath(path);
+}
+
+static QPainterPath smoothFillPath(const QVector<QPointF> &points, float bottom)
+{
+    QPainterPath path;
+    if (points.size() < 2) return path;
+
+    path.moveTo(points[0].x(), bottom);
+    path.lineTo(points[0]);
+
+    for (int i = 1; i < points.size(); ++i) {
+        QPointF p0 = points[i - 1];
+        QPointF p1 = points[i];
+        float cx = (p0.x() + p1.x()) / 2.0f;
+        path.cubicTo(cx, p0.y(), cx, p1.y(), p1.x(), p1.y());
+    }
+
+    path.lineTo(points.last().x(), bottom);
+    path.closeSubpath();
+    return path;
+}
+
 void SpeedGraph::paintEvent(QPaintEvent *)
 {
     QPainter p(this);
@@ -68,54 +105,42 @@ void SpeedGraph::paintEvent(QPaintEvent *)
         p.drawLine(0, y, w, y);
     }
 
-    // Draw upload area (behind download)
-    {
-        QPainterPath path;
-        path.moveTo(xOffset, h);
-        for (int i = 0; i < n; ++i) {
-            float x = xOffset + i * xStep;
-            float y = h - (static_cast<float>(m_uploadData[i]) / maxVal * (h - 4));
-            path.lineTo(x, y);
-        }
-        path.lineTo(xOffset + (n - 1) * xStep, h);
-        path.closeSubpath();
-
-        QColor fill = ulColor;
-        fill.setAlpha(40);
-        p.fillPath(path, fill);
-        p.setPen(QPen(ulColor, 1.5));
-        for (int i = 1; i < n; ++i) {
-            float x0 = xOffset + (i - 1) * xStep;
-            float y0 = h - (static_cast<float>(m_uploadData[i - 1]) / maxVal * (h - 4));
-            float x1 = xOffset + i * xStep;
-            float y1 = h - (static_cast<float>(m_uploadData[i]) / maxVal * (h - 4));
-            p.drawLine(QPointF(x0, y0), QPointF(x1, y1));
-        }
+    // Build point arrays
+    QVector<QPointF> dlPoints, ulPoints;
+    for (int i = 0; i < n; ++i) {
+        float x = xOffset + i * xStep;
+        float dlY = h - (static_cast<float>(m_downloadData[i]) / maxVal * (h - 4));
+        float ulY = h - (static_cast<float>(m_uploadData[i]) / maxVal * (h - 4));
+        dlPoints.append(QPointF(x, dlY));
+        ulPoints.append(QPointF(x, ulY));
     }
 
-    // Draw download area
+    // Draw upload area (behind download) with gradient fade
     {
-        QPainterPath path;
-        path.moveTo(xOffset, h);
-        for (int i = 0; i < n; ++i) {
-            float x = xOffset + i * xStep;
-            float y = h - (static_cast<float>(m_downloadData[i]) / maxVal * (h - 4));
-            path.lineTo(x, y);
-        }
-        path.lineTo(xOffset + (n - 1) * xStep, h);
-        path.closeSubpath();
+        QPainterPath fillPath = smoothFillPath(ulPoints, h);
+        QLinearGradient grad(0, 0, 0, h);
+        QColor fill = ulColor;
+        fill.setAlpha(40);
+        grad.setColorAt(0.0, fill);
+        fill.setAlpha(5);
+        grad.setColorAt(1.0, fill);
+        p.fillPath(fillPath, grad);
+        p.setPen(QPen(ulColor, 1.5));
+        drawSmoothCurve(p, ulPoints);
+    }
 
+    // Draw download area with gradient fade
+    {
+        QPainterPath fillPath = smoothFillPath(dlPoints, h);
+        QLinearGradient grad(0, 0, 0, h);
         QColor fill = dlColor;
         fill.setAlpha(50);
-        p.fillPath(path, fill);
+        grad.setColorAt(0.0, fill);
+        fill.setAlpha(5);
+        grad.setColorAt(1.0, fill);
+        p.fillPath(fillPath, grad);
         p.setPen(QPen(dlColor, 1.5));
-        for (int i = 1; i < n; ++i) {
-            float x0 = xOffset + (i - 1) * xStep;
-            float y0 = h - (static_cast<float>(m_downloadData[i - 1]) / maxVal * (h - 4));
-            float x1 = xOffset + i * xStep;
-            float y1 = h - (static_cast<float>(m_downloadData[i]) / maxVal * (h - 4));
-            p.drawLine(QPointF(x0, y0), QPointF(x1, y1));
-        }
+        drawSmoothCurve(p, dlPoints);
     }
 
     // Scale label

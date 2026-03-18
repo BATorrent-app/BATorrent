@@ -10,9 +10,9 @@
 #include "batwidget.h"
 #include "splashwidget.h"
 #include "thememanager.h"
-#include "../core/sessionmanager.h"
-#include "../core/translator.h"
-#include "../core/updater.h"
+#include "../torrent/sessionmanager.h"
+#include "../app/translator.h"
+#include "../app/updater.h"
 
 #include <QMenuBar>
 #include <QToolBar>
@@ -85,6 +85,16 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     connect(m_session, &SessionManager::torrentRemoved, m_model, &TorrentModel::refresh);
     connect(m_session, &SessionManager::torrentFinished, this, &MainWindow::onTorrentFinished);
     connect(m_session, &SessionManager::torrentError, this, &MainWindow::onTorrentError);
+
+    // Kill switch notifications
+    connect(m_session, &SessionManager::killSwitchTriggered, this, [this]() {
+        m_trayIcon->showMessage(tr_("killswitch_title"), tr_("killswitch_triggered"),
+                                QSystemTrayIcon::Warning, 5000);
+    });
+    connect(m_session, &SessionManager::interfaceRestored, this, [this]() {
+        m_trayIcon->showMessage(tr_("killswitch_title"), tr_("killswitch_restored"),
+                                QSystemTrayIcon::Information, 5000);
+    });
 
     // Auto-updater
     m_updater = new Updater(this);
@@ -190,24 +200,26 @@ void MainWindow::setupToolBar()
     toolbar->setMovable(false);
     toolbar->setIconSize(QSize(20, 20));
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toolbar->setStyleSheet("QToolButton { padding-left: 4px; padding-right: 4px; }");
-
     auto *logoLabel = new QLabel;
     QPixmap logo(":/images/logo1.png");
     logoLabel->setPixmap(logo.scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    logoLabel->setContentsMargins(4, 0, 6, 0);
+    logoLabel->setContentsMargins(4, 0, 8, 0);
     toolbar->addWidget(logoLabel);
 
     toolbar->addSeparator();
 
-    toolbar->addAction(QIcon(":/icons/open.svg"), tr_("tb_open"), this, &MainWindow::openTorrent);
-    toolbar->addAction(QIcon(":/icons/magnet.svg"), tr_("tb_magnet"), this, &MainWindow::openMagnet);
+    // Prepend space to text for icon-text gap (Qt has no CSS property for this)
+    auto addTbAction = [&](const QString &icon, const QString &textKey, auto slot) {
+        toolbar->addAction(QIcon(icon), "  " + tr_(textKey), this, slot);
+    };
+    addTbAction(":/icons/open.svg", "tb_open", &MainWindow::openTorrent);
+    addTbAction(":/icons/magnet.svg", "tb_magnet", &MainWindow::openMagnet);
     toolbar->addSeparator();
-    toolbar->addAction(QIcon(":/icons/pause.svg"), tr_("tb_pause"), this, &MainWindow::pauseSelected);
-    toolbar->addAction(QIcon(":/icons/play.svg"), tr_("tb_resume"), this, &MainWindow::resumeSelected);
-    toolbar->addAction(QIcon(":/icons/trash.svg"), tr_("tb_remove"), this, &MainWindow::removeSelected);
+    addTbAction(":/icons/pause.svg", "tb_pause", &MainWindow::pauseSelected);
+    addTbAction(":/icons/play.svg", "tb_resume", &MainWindow::resumeSelected);
+    addTbAction(":/icons/trash.svg", "tb_remove", &MainWindow::removeSelected);
     toolbar->addSeparator();
-    toolbar->addAction(QIcon(":/icons/settings.svg"), tr_("tb_settings"), this, &MainWindow::openSettings);
+    addTbAction(":/icons/settings.svg", "tb_settings", &MainWindow::openSettings);
 }
 
 void MainWindow::setupCentralWidget()
@@ -226,6 +238,7 @@ void MainWindow::setupCentralWidget()
     m_tableView->verticalHeader()->hide();
     m_tableView->setShowGrid(false);
     m_tableView->setAlternatingRowColors(true);
+    m_tableView->verticalHeader()->setDefaultSectionSize(36);
     m_tableView->setItemDelegateForColumn(TorrentModel::Progress,
                                           new ProgressDelegate(m_tableView));
     m_tableView->setDragEnabled(true);
@@ -242,30 +255,33 @@ void MainWindow::setupCentralWidget()
     // Filter bar
     auto *filterBar = new QWidget;
     auto *filterLayout = new QHBoxLayout(filterBar);
-    filterLayout->setContentsMargins(6, 4, 6, 4);
-    filterLayout->setSpacing(4);
+    const auto &tm = ThemeManager::instance();
+    filterLayout->setContentsMargins(8, 6, 8, 6);
+    filterLayout->setSpacing(6);
 
     m_searchEdit = new QLineEdit;
     m_searchEdit->setPlaceholderText(tr_("filter_search"));
     m_searchEdit->setClearButtonEnabled(true);
-    m_searchEdit->setMaximumWidth(250);
-    m_searchEdit->setStyleSheet(
-        "QLineEdit { background-color: #1a1a1a; color: #b0b0b0; border: 1px solid #252525;"
-        "border-radius: 4px; padding: 4px 8px; font-size: 11px; }"
-        "QLineEdit:focus { border-color: #6b2020; }");
+    m_searchEdit->setMaximumWidth(260);
+    m_searchEdit->setStyleSheet(QString(
+        "QLineEdit { background-color: %1; color: %2; border: 1px solid %3;"
+        "border-radius: 6px; padding: 6px 10px; font-size: 12px; }"
+        "QLineEdit:focus { border-color: %4; }")
+        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
     connect(m_searchEdit, &QLineEdit::textChanged, m_proxyModel, &TorrentFilter::setNameFilter);
     filterLayout->addWidget(m_searchEdit);
 
-    filterLayout->addSpacing(8);
+    filterLayout->addSpacing(10);
 
     auto addFilterBtn = [&](const QString &key, const QString &state) {
         auto *btn = new QPushButton(tr_(key));
         btn->setCheckable(true);
-        btn->setStyleSheet(
-            "QPushButton { background: transparent; color: #707070; border: 1px solid #252525;"
-            "border-radius: 3px; padding: 3px 10px; font-size: 11px; font-weight: bold; }"
-            "QPushButton:hover { background-color: #2a1015; color: #c43030; }"
-            "QPushButton:checked { background-color: #2a1015; color: #c43030; border-color: #6b2020; }");
+        btn->setStyleSheet(QString(
+            "QPushButton { background: transparent; color: %1; border: 1px solid %2;"
+            "border-radius: 14px; padding: 6px 14px; font-size: 11px; font-weight: 600; }"
+            "QPushButton:hover { border-color: %3; color: %3; }"
+            "QPushButton:checked { background-color: %3; color: #ffffff; border-color: %3; }")
+            .arg(tm.mutedColor(), tm.borderColor(), tm.accentColor()));
         connect(btn, &QPushButton::toggled, this, [this, btn, state](bool checked) {
             // Uncheck other filter buttons
             if (checked) {
@@ -372,6 +388,9 @@ void MainWindow::saveSettings()
     settings.setValue("tableHeaderState", m_tableView->horizontalHeader()->saveState());
     settings.setValue("tableSortColumn", m_tableView->horizontalHeader()->sortIndicatorSection());
     settings.setValue("tableSortOrder", static_cast<int>(m_tableView->horizontalHeader()->sortIndicatorOrder()));
+    settings.setValue("outgoingInterface", m_session->outgoingInterface());
+    settings.setValue("killSwitch", m_session->killSwitchEnabled());
+    settings.setValue("autoResumeOnReconnect", m_session->autoResumeOnReconnect());
 }
 
 void MainWindow::loadSettings()
@@ -411,6 +430,14 @@ void MainWindow::loadSettings()
     m_session->setMaxConnections(maxConn);
     float seedRatio = settings.value("seedRatioLimit", 0.0).toFloat();
     m_session->setSeedRatioLimit(seedRatio);
+
+    // VPN settings
+    QString iface = settings.value("outgoingInterface", "").toString();
+    m_session->setOutgoingInterface(iface);
+    bool killSwitch = settings.value("killSwitch", false).toBool();
+    m_session->setKillSwitchEnabled(killSwitch);
+    bool autoResume = settings.value("autoResumeOnReconnect", false).toBool();
+    m_session->setAutoResumeOnReconnect(autoResume);
 }
 
 void MainWindow::openTorrent()
@@ -598,6 +625,9 @@ void MainWindow::openSettings()
     dlg.setEncryptionMode(m_session->encryptionMode());
     dlg.setMaxConnections(m_session->maxConnections());
     dlg.setSeedRatioLimit(m_session->seedRatioLimit());
+    dlg.setOutgoingInterface(m_session->outgoingInterface());
+    dlg.setKillSwitchEnabled(m_session->killSwitchEnabled());
+    dlg.setAutoResumeOnReconnect(m_session->autoResumeOnReconnect());
 
     if (dlg.exec() == QDialog::Accepted) {
         m_lastSavePath = dlg.defaultSavePath();
@@ -623,6 +653,11 @@ void MainWindow::openSettings()
         m_session->setEncryptionMode(dlg.encryptionMode());
         m_session->setMaxConnections(dlg.maxConnections());
         m_session->setSeedRatioLimit(dlg.seedRatioLimit());
+
+        // VPN settings
+        m_session->setOutgoingInterface(dlg.outgoingInterface());
+        m_session->setKillSwitchEnabled(dlg.killSwitchEnabled());
+        m_session->setAutoResumeOnReconnect(dlg.autoResumeOnReconnect());
     }
 }
 

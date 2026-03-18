@@ -5,13 +5,13 @@
 <h1 align="center">BATorrent</h1>
 
 <p align="center">
-  A lightweight BitTorrent client built with C++, Qt 6, and libtorrent-rasterbar.
+  A lightweight, open-source BitTorrent client built with C++, Qt 6, and libtorrent-rasterbar.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/C%2B%2B-17-red?style=flat-square&logo=c%2B%2B"/>
   <img src="https://img.shields.io/badge/Qt-6-red?style=flat-square&logo=qt"/>
-  <img src="https://img.shields.io/badge/Linux-only-red?style=flat-square&logo=linux"/>
+  <img src="https://img.shields.io/badge/Windows%20|%20Linux%20|%20macOS-red?style=flat-square"/>
   <img src="https://img.shields.io/badge/License-MIT-red?style=flat-square"/>
 </p>
 
@@ -19,7 +19,7 @@
 
 ## About
 
-BATorrent is a desktop BitTorrent client for Linux, Windows and Mac, focusing on simplicity and performance. Built from scratch as a learning project using modern C++ and the Qt framework.
+BATorrent is a cross-platform desktop BitTorrent client focusing on simplicity, privacy, and performance. Built from scratch using modern C++ and the Qt framework.
 
 <img width="1176" height="790" alt="image" src="https://github.com/user-attachments/assets/776da3b7-5fe6-49eb-87cc-b985dcc8cfda" />
 <img width="1172" height="782" alt="image" src="https://github.com/user-attachments/assets/bd1708c3-9987-4240-b37a-69c0aaa289e2" />
@@ -28,68 +28,77 @@ BATorrent is a desktop BitTorrent client for Linux, Windows and Mac, focusing on
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
 
+## Features
+
+### Core
+- `.torrent` file and magnet link support
+- Resume data — picks up where you left off after restart
+- Import torrents from qBittorrent
+- Create `.torrent` files from any file or folder
+- Sequential download mode
+- Per-file priority control (skip, low, normal, high)
+- Seed ratio limits with auto-pause
+- DHT, PEX, UPnP, NAT-PMP
+
+### VPN & Privacy
+- **Interface binding** — lock torrent traffic to a specific network interface (e.g. `tun0`)
+- **Auto VPN detection** — identifies VPN interfaces (tun, tap, WireGuard, Mullvad, NordLynx, ProtonVPN)
+- **Kill switch** — automatically pauses all torrents if the VPN interface drops
+- **Auto-resume** — resumes only the torrents paused by the kill switch when VPN reconnects
+- Protocol encryption (enabled / forced / disabled)
+
+### Interface
+- 3 themes: Dark, Light, Midnight (bat/vampire aesthetic)
+- Real-time speed graph
+- Detailed panel with tabs: General, Peers, Files, Trackers
+- Filter bar: search by name, filter by state (Active, Downloading, Seeding, Paused, Finished)
+- Drag & drop `.torrent` files and magnet links
+- Drag & drop reorder in torrent list
+- System tray with notifications (download complete, kill switch events)
+- Splash screen with bat animation
+- Bilingual: English and Portuguese (BR), auto-detected from system locale
+
+### System
+- Cross-platform: Windows, Linux, macOS
+- Auto-update system (AppImage on Linux, installer on Windows, DMG on macOS)
+- CLI arguments: pass `.torrent` files or `magnet:` URIs directly
+- Keyboard shortcuts: Space to toggle pause, Ctrl+A to select all, Ctrl+O to open
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
+
 ## Tech Stack
 
 | | Technology | Role |
 |---|---|---|
 | ⚙️ | **C++17** | Core language |
-| 🖼️ | **Qt 6** | GUI framework |
-| 🔗 | **libtorrent-rasterbar** | BitTorrent protocol |
+| 🖼️ | **Qt 6** | GUI framework + networking |
+| 🔗 | **libtorrent-rasterbar** | BitTorrent protocol engine |
 | 🔨 | **CMake** | Build system |
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
 
-## Features
+## Architecture
 
-### Torrent Management
-- Add torrents via `.torrent` files or magnet links
-- Drag & drop support for `.torrent` files and magnet links
-- Command-line arguments support (pass `.torrent` files or `magnet:` URIs directly)
-- Create `.torrent` files from local content
-- Import torrents from qBittorrent (auto-detects BT_backup folder with fastresume data)
-- Pause, resume, and remove individual or all torrents at once
-- Remove torrents with option to delete downloaded files
-- Sequential download mode (per-torrent toggle)
-- Per-file priority control (skip, low, normal, high)
-- Automatic resume data saving (every 5 minutes + on exit)
-- Seed ratio limit with auto-pause when reached
+```
+src/
+├── torrent/       # BitTorrent engine (libtorrent wrapper)
+│   ├── sessionmanager.h/.cpp
+│   └── types.h
+├── app/           # App infrastructure (non-GUI)
+│   ├── translator.h/.cpp
+│   ├── updater.h/.cpp
+│   └── utils.h
+├── gui/           # Desktop GUI (Qt Widgets)
+│   ├── mainwindow, settingsdialog, detailspanel
+│   ├── torrentmodel, torrentfilter, progressdelegate
+│   ├── speedgraph, batwidget, splashwidget
+│   ├── welcomedialog, createtorrentdialog
+│   └── thememanager
+├── fonts/ icons/ images/
+└── main.cpp
+```
 
-### Details & Monitoring
-- **General tab** — name, save path, size, downloaded, progress, speeds, state, peers/seeds count, ratio
-- **Peers tab** — IP, port, client, download/upload speed, progress per peer
-- **Files tab** — file list with individual size, progress, and priority selector
-- **Trackers tab** — tracker URLs, tier, status, with ability to add custom trackers
-- Real-time speed graph (download & upload)
-- Status bar with torrent count and global speeds
-
-### Network & Protocol
-- DHT (Distributed Hash Table) for trackerless torrents
-- PEX (Peer Exchange) enabled by default
-- UPnP and NAT-PMP for automatic port forwarding
-- Protocol encryption (enabled, forced, or disabled)
-- Configurable max connections limit
-- Global download and upload speed limits
-
-### Interface
-- 3 themes: Dark, Light, and Midnight
-- Multi-language support (English and Portuguese), with auto-detection from system locale
-- System tray icon with quick actions (show, pause all, resume all, quit)
-- Minimize to tray on close
-- Sortable and resizable columns with persistent layout
-- Filter torrents by state (All Active, Downloading, Seeding, Paused, Finished)
-- Search bar to filter torrents by name
-- Context menu with resume, pause, sequential toggle, open folder, remove
-- Keyboard shortcuts (Space to toggle pause, Ctrl+A to select all, Ctrl+O to open)
-- Splash screen animation on startup
-- Welcome dialog on first launch
-- Desktop notifications on download completion
-
-### Updates & Distribution
-- Built-in auto-update system (checks GitHub releases on startup)
-- In-app update download with progress bar
-- Windows installer via Inno Setup
-- Linux `.desktop` file for app launcher integration
-- Cross-platform: Linux, Windows, and macOS
+The separation between `torrent/`, `app/`, and `gui/` is intentional — preparing for a future WebUI that imports from `torrent/` and `app/` without depending on `gui/`.
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
 
@@ -97,12 +106,19 @@ BATorrent is a desktop BitTorrent client for Linux, Windows and Mac, focusing on
 
 ### Dependencies
 
-- GCC (C++17 support)
-- Qt 6 (Widgets module)
+- C++17 compiler (GCC, Clang, MSVC)
+- Qt 6 (Widgets + Network modules)
 - libtorrent-rasterbar
 - CMake 3.16+
+
+**Ubuntu/Debian:**
 ```bash
 sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools libtorrent-rasterbar-dev
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S cmake qt6-base libtorrent-rasterbar
 ```
 
 ### Compile
@@ -114,9 +130,12 @@ cmake --build build
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
 
-## Status
+## Roadmap
 
-> 🚧 Early development — actively being built.
+- [ ] RSS feed auto-download
+- [ ] WebUI (remote management via browser)
+- [ ] Bandwidth scheduler (time-based speed limits)
+- [ ] IP filter / blocklist
 
 ## License
 

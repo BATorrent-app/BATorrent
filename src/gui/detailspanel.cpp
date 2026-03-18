@@ -1,7 +1,8 @@
 #include "detailspanel.h"
-#include "../core/sessionmanager.h"
-#include "../core/translator.h"
-#include "../core/utils.h"
+#include "../torrent/sessionmanager.h"
+#include "../app/translator.h"
+#include "../app/utils.h"
+#include "thememanager.h"
 #include <QLabel>
 #include <QFormLayout>
 #include <QVBoxLayout>
@@ -21,7 +22,7 @@ DetailsPanel::DetailsPanel(SessionManager *session, QWidget *parent)
     addTab(createFilesTab(), tr_("detail_files"));
     addTab(createTrackersTab(), tr_("detail_trackers"));
 
-    setMaximumHeight(200);
+    setMaximumHeight(260);
 
     connect(m_session, &SessionManager::torrentsUpdated, this, &DetailsPanel::refresh);
 }
@@ -142,8 +143,8 @@ QWidget *DetailsPanel::createGeneralTab()
 {
     auto *widget = new QWidget;
     auto *layout = new QFormLayout(widget);
-    layout->setContentsMargins(12, 8, 12, 8);
-    layout->setSpacing(4);
+    layout->setContentsMargins(12, 10, 12, 10);
+    layout->setSpacing(8);
 
     m_nameLabel = new QLabel("-");
     m_sizeLabel = new QLabel("-");
@@ -156,9 +157,12 @@ QWidget *DetailsPanel::createGeneralTab()
     m_savePathLabel = new QLabel("-");
     m_ratioLabel = new QLabel("-");
 
+    // Labels use neutral text color (NOT red)
+    QString labelStyle = ThemeManager::instance().formLabelStyle();
+
     auto addRow = [&](const QString &labelKey, QLabel *value) {
         auto *lbl = new QLabel(tr_(labelKey));
-        lbl->setStyleSheet("color: #c43030; font-weight: bold;");
+        lbl->setStyleSheet(labelStyle);
         layout->addRow(lbl, value);
     };
 
@@ -190,22 +194,6 @@ QWidget *DetailsPanel::createPeersTab()
     m_peersTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_peersTable->setShowGrid(false);
     m_peersTable->setAlternatingRowColors(true);
-    m_peersTable->setStyleSheet(R"(
-        QTableWidget {
-            background-color: #141414;
-            alternate-background-color: #181818;
-            color: #b0b0b0;
-            border: none;
-        }
-        QHeaderView::section {
-            background-color: #1a1a1a;
-            color: #c43030;
-            border: none;
-            border-bottom: 1px solid #c43030;
-            padding: 4px;
-            font-weight: bold;
-        }
-    )");
 
     layout->addWidget(m_peersTable);
     return widget;
@@ -226,22 +214,6 @@ QWidget *DetailsPanel::createFilesTab()
     m_filesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_filesTable->setShowGrid(false);
     m_filesTable->setAlternatingRowColors(true);
-    m_filesTable->setStyleSheet(R"(
-        QTableWidget {
-            background-color: #141414;
-            alternate-background-color: #181818;
-            color: #b0b0b0;
-            border: none;
-        }
-        QHeaderView::section {
-            background-color: #1a1a1a;
-            color: #c43030;
-            border: none;
-            border-bottom: 1px solid #c43030;
-            padding: 4px;
-            font-weight: bold;
-        }
-    )");
 
     layout->addWidget(m_filesTable);
     return widget;
@@ -262,30 +234,10 @@ QWidget *DetailsPanel::createTrackersTab()
     m_trackersTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_trackersTable->setShowGrid(false);
     m_trackersTable->setAlternatingRowColors(true);
-    m_trackersTable->setStyleSheet(R"(
-        QTableWidget {
-            background-color: #141414;
-            alternate-background-color: #181818;
-            color: #b0b0b0;
-            border: none;
-        }
-        QHeaderView::section {
-            background-color: #1a1a1a;
-            color: #c43030;
-            border: none;
-            border-bottom: 1px solid #c43030;
-            padding: 4px;
-            font-weight: bold;
-        }
-    )");
 
     auto *btnLayout = new QHBoxLayout;
     btnLayout->addStretch();
     auto *addBtn = new QPushButton(tr_("tracker_add"));
-    addBtn->setStyleSheet(
-        "QPushButton { background-color: #2a1015; color: #d0d0d0; border: 1px solid #3d1520;"
-        "border-radius: 4px; padding: 4px 12px; font-weight: bold; }"
-        "QPushButton:hover { background-color: #6b2020; color: #ffffff; }");
     connect(addBtn, &QPushButton::clicked, this, &DetailsPanel::onAddTracker);
     btnLayout->addWidget(addBtn);
 
