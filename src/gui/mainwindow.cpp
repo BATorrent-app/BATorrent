@@ -778,13 +778,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     saveSettings();
     m_session->saveResumeData();
-
-    if (m_trayIcon->isVisible()) {
-        hide();
-        event->ignore();
-    } else {
-        event->accept();
-    }
+    hide();
+    event->ignore();
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
