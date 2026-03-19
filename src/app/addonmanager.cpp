@@ -22,6 +22,7 @@ AddonManager::AddonManager()
     : m_net(new QNetworkAccessManager(this))
 {
     loadAddons();
+    installDefaults();
 }
 
 void AddonManager::loadAddons()
@@ -65,6 +66,64 @@ void AddonManager::saveAddons()
         settings.setValue("enabled", m_addons[i].enabled);
     }
     settings.endArray();
+}
+
+void AddonManager::installDefaults()
+{
+    QSettings settings("BATorrent", "BATorrent");
+    if (settings.value("addonsInitialized", false).toBool())
+        return;
+
+    settings.setValue("addonsInitialized", true);
+
+    // Pre-install Cinemeta (catalog) and Torrentio (streams)
+    struct DefaultAddon {
+        QString id, name, desc, url;
+        QStringList types, resources;
+    };
+    QList<DefaultAddon> defaults = {
+        {"com.linvo.cinemeta", "Cinemeta",
+         "The official addon for movie and series catalogs",
+         "https://v3-cinemeta.strem.io",
+         {"movie", "series"}, {"catalog", "meta"}},
+        {"com.stremio.torrentio.addon", "Torrentio",
+         "Torrent streams from multiple providers",
+         "https://torrentio.strem.fun",
+         {"movie", "series"}, {"stream"}},
+    };
+
+    for (const auto &d : defaults) {
+        bool exists = false;
+        for (const auto &a : m_addons) {
+            if (a.url == d.url || a.id == d.id) { exists = true; break; }
+        }
+        if (!exists) {
+            AddonManifest m;
+            m.id = d.id;
+            m.name = d.name;
+            m.description = d.desc;
+            m.url = d.url;
+            m.types = d.types;
+            m.resources = d.resources;
+            m.enabled = true;
+            m_addons.append(m);
+        }
+    }
+    saveAddons();
+}
+
+bool AddonManager::hasCatalogAddon() const
+{
+    for (const auto &a : m_addons)
+        if (a.enabled && a.resources.contains("catalog")) return true;
+    return false;
+}
+
+bool AddonManager::hasStreamAddon() const
+{
+    for (const auto &a : m_addons)
+        if (a.enabled && a.resources.contains("stream")) return true;
+    return false;
 }
 
 void AddonManager::addAddon(const QString &url)

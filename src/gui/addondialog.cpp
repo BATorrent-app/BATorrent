@@ -78,6 +78,40 @@ AddonDialog::AddonDialog(QWidget *parent)
     installLayout->addWidget(installBtn);
     layout->addWidget(installGroup);
 
+    // Suggested addons
+    auto *suggestGroup = new QGroupBox(tr_("addon_suggested"));
+    auto *suggestLayout = new QVBoxLayout(suggestGroup);
+    auto *suggestHint = new QLabel(tr_("addon_suggest_hint"));
+    suggestHint->setStyleSheet("color: #888;");
+    suggestLayout->addWidget(suggestHint);
+
+    struct SuggestedAddon { QString name, desc, url; };
+    QList<SuggestedAddon> suggestions = {
+        {"Cinemeta", "Official movie & series catalog", "https://v3-cinemeta.strem.io"},
+        {"Torrentio", "Torrent streams from multiple providers", "https://torrentio.strem.fun"},
+    };
+    for (const auto &s : suggestions) {
+        auto *row = new QHBoxLayout;
+        auto *label = new QLabel(QString("<b>%1</b> — %2").arg(s.name, s.desc));
+        label->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+        row->addWidget(label, 1);
+        auto *btn = new QPushButton(tr_("addon_install_btn"));
+        btn->setFixedWidth(80);
+        QString url = s.url;
+        connect(btn, &QPushButton::clicked, this, [this, btn, url]() {
+            AddonManager::instance().addAddon(url);
+            btn->setEnabled(false);
+            btn->setText("✓");
+        });
+        // Disable if already installed
+        for (const auto &a : AddonManager::instance().addons()) {
+            if (a.url == s.url) { btn->setEnabled(false); btn->setText("✓"); break; }
+        }
+        row->addWidget(btn);
+        suggestLayout->addLayout(row);
+    }
+    layout->addWidget(suggestGroup);
+
     // Close button
     auto *btnLayout = new QHBoxLayout;
     btnLayout->addStretch();
