@@ -181,8 +181,8 @@ jobs:
             '  <key>CFBundleExecutable</key>' '  <string>BATorrent</string>' \
             '  <key>CFBundleIdentifier</key>' '  <string>com.mateuscruz19.batorrent</string>' \
             '  <key>CFBundleName</key>' '  <string>BATorrent</string>' \
-            '  <key>CFBundleVersion</key>' '  <string>1.8.0</string>' \
-            '  <key>CFBundleShortVersionString</key>' '  <string>1.8.0</string>' \
+            '  <key>CFBundleVersion</key>' '  <string>2.0.0</string>' \
+            '  <key>CFBundleShortVersionString</key>' '  <string>2.0.0</string>' \
             '  <key>CFBundlePackageType</key>' '  <string>APPL</string>' \
             '  <key>CFBundleIconFile</key>' '  <string>batorrent</string>' \
             '  <key>LSMinimumSystemVersion</key>' '  <string>12.0</string>' \
