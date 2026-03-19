@@ -183,14 +183,17 @@ void MainWindow::setupMenuBar()
     menuBar()->clear();
 
     QMenu *fileMenu = menuBar()->addMenu(tr_("menu_file"));
-    fileMenu->addAction(QIcon(":/icons/open.svg"), tr_("action_open"),
-                        QKeySequence::Open, this, &MainWindow::openTorrent);
+    auto *openAction = fileMenu->addAction(QIcon(":/icons/open.svg"), tr_("action_open"));
+    openAction->setShortcut(QKeySequence::Open);
+    connect(openAction, &QAction::triggered, this, &MainWindow::openTorrent);
     fileMenu->addAction(QIcon(":/icons/magnet.svg"), tr_("action_magnet"),
                         this, &MainWindow::openMagnet);
     fileMenu->addAction(tr_("action_create"), this, &MainWindow::createTorrent);
     fileMenu->addAction(tr_("action_import_qbt"), this, &MainWindow::importQBittorrent);
     fileMenu->addSeparator();
-    fileMenu->addAction(tr_("action_quit"), QKeySequence::Quit, this, &QWidget::close);
+    auto *quitAction = fileMenu->addAction(tr_("action_quit"));
+    quitAction->setShortcut(QKeySequence::Quit);
+    connect(quitAction, &QAction::triggered, this, &QWidget::close);
 
     QMenu *torrentMenu = menuBar()->addMenu(tr_("menu_torrent"));
     torrentMenu->addAction(QIcon(":/icons/pause.svg"), tr_("action_pause"),
@@ -201,8 +204,9 @@ void MainWindow::setupMenuBar()
     torrentMenu->addAction(tr_("action_pause_all"), this, &MainWindow::pauseAll);
     torrentMenu->addAction(tr_("action_resume_all"), this, &MainWindow::resumeAll);
     torrentMenu->addSeparator();
-    torrentMenu->addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"),
-                           QKeySequence::Delete, this, &MainWindow::removeSelected);
+    auto *removeAction = torrentMenu->addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"));
+    removeAction->setShortcut(QKeySequence::Delete);
+    connect(removeAction, &QAction::triggered, this, &MainWindow::removeSelected);
     torrentMenu->addAction(tr_("action_remove_files"), this, &MainWindow::removeSelectedWithFiles);
     torrentMenu->addSeparator();
     auto *shutdownAction = torrentMenu->addAction(tr_("action_auto_shutdown"));
