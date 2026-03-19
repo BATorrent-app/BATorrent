@@ -14,6 +14,7 @@
 #include <QHeaderView>
 #include <QPushButton>
 #include <QLabel>
+#include <QComboBox>
 #include <QStackedWidget>
 
 SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWidget *parent)
@@ -25,6 +26,37 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
 
     auto &tm = ThemeManager::instance();
     auto *layout = new QVBoxLayout(this);
+
+    // Source selector + category row
+    auto *filterLayout = new QHBoxLayout;
+
+    m_sourceCombo = new QComboBox;
+    m_sourceCombo->addItem(tr_("search_source_stremio"));   // index 0
+    if (AddonManager::instance().torrentSearchEnabled())
+        m_sourceCombo->addItem(tr_("search_source_torrents")); // index 1
+    m_sourceCombo->setStyleSheet(QString(
+        "QComboBox { background: %1; color: %2; border: 1px solid %3;"
+        "border-radius: 6px; padding: 6px 10px; }"
+        "QComboBox::drop-down { border: none; }"
+        "QComboBox QAbstractItemView { background: %1; color: %2; selection-background-color: %4; }")
+        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
+    connect(m_sourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &SearchDialog::onSourceChanged);
+    filterLayout->addWidget(m_sourceCombo);
+
+    m_categoryCombo = new QComboBox;
+    m_categoryCombo->addItem(tr_("search_cat_all"), 0);
+    m_categoryCombo->addItem(tr_("search_cat_audio"), 100);
+    m_categoryCombo->addItem(tr_("search_cat_video"), 200);
+    m_categoryCombo->addItem(tr_("search_cat_apps"), 300);
+    m_categoryCombo->addItem(tr_("search_cat_games"), 400);
+    m_categoryCombo->addItem(tr_("search_cat_other"), 500);
+    m_categoryCombo->setStyleSheet(m_sourceCombo->styleSheet());
+    m_categoryCombo->hide(); // only visible in torrent mode
+    filterLayout->addWidget(m_categoryCombo);
+
+    filterLayout->addStretch();
+    layout->addLayout(filterLayout);
 
     // Search bar
     auto *searchLayout = new QHBoxLayout;
@@ -49,7 +81,7 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
     m_statusLabel->setStyleSheet("color: #888; padding: 4px;");
     layout->addWidget(m_statusLabel);
 
-    // Catalog results table
+    // Table style shared by all tables
     QString tableStyle = QString(
         "QTableWidget { background: %1; color: %2; border: 1px solid %3; gridline-color: %3; }"
         "QTableWidget::item { padding: 6px; }"
@@ -57,6 +89,7 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
         "QHeaderView::section { background: %1; color: %2; border: 1px solid %3; padding: 6px; }")
         .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor());
 
+    // Catalog results table
     m_catalogTable = new QTableWidget;
     m_catalogTable->setColumnCount(3);
     m_catalogTable->setHorizontalHeaderLabels({tr_("search_col_name"), tr_("search_col_type"), tr_("search_col_year")});
@@ -83,6 +116,22 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
     m_streamTable->hide();
     layout->addWidget(m_streamTable);
 
+    // Torrent search results table (hidden initially)
+    m_torrentTable = new QTableWidget;
+    m_torrentTable->setColumnCount(4);
+    m_torrentTable->setHorizontalHeaderLabels({
+        tr_("search_col_name"), tr_("search_col_size"),
+        tr_("search_col_seeds"), tr_("search_col_leechers")});
+    m_torrentTable->horizontalHeader()->setStretchLastSection(true);
+    m_torrentTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    m_torrentTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_torrentTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_torrentTable->verticalHeader()->hide();
+    m_torrentTable->setStyleSheet(tableStyle);
+    connect(m_torrentTable, &QTableWidget::cellDoubleClicked, this, &SearchDialog::onTorrentDoubleClicked);
+    m_torrentTable->hide();
+    layout->addWidget(m_torrentTable);
+
     // Back button (for stream view)
     auto *btnLayout = new QHBoxLayout;
     auto *backBtn = new QPushButton(tr_("search_back"));
@@ -101,6 +150,27 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
             this, &SearchDialog::showStreamResults);
     connect(&AddonManager::instance(), &AddonManager::streamFinished,
             this, [this]() { m_statusLabel->setText(tr_("search_streams_done").arg(m_currentStreams.size())); });
+    connect(&AddonManager::instance(), &AddonManager::torrentSearchResults,
+            this, &SearchDialog::showTorrentResults);
+    connect(&AddonManager::instance(), &AddonManager::torrentSearchFinished,
+            this, [this]() { m_statusLabel->setText(tr_("search_done").arg(m_torrentResults.size())); });
+    connect(&AddonManager::instance(), &AddonManager::torrentSearchError,
+            this, [this](const QString &err) { m_statusLabel->setText(err); });
+}
+
+void SearchDialog::onSourceChanged(int index)
+{
+    if (index == 1) {
+        // Torrent search mode
+        m_categoryCombo->show();
+        m_searchEdit->setPlaceholderText(tr_("search_placeholder_torrent"));
+        switchToTorrentResults();
+    } else {
+        // Stremio mode
+        m_categoryCombo->hide();
+        m_searchEdit->setPlaceholderText(tr_("search_placeholder"));
+        switchToCatalog();
+    }
 }
 
 void SearchDialog::performSearch()
@@ -108,17 +178,29 @@ void SearchDialog::performSearch()
     QString query = m_searchEdit->text().trimmed();
     if (query.isEmpty()) return;
 
-    if (!AddonManager::instance().hasCatalogAddon()) {
-        m_statusLabel->setText(tr_("search_no_catalog"));
-        return;
+    bool torrentMode = m_sourceCombo->currentIndex() == 1;
+
+    if (torrentMode) {
+        m_torrentTable->setRowCount(0);
+        m_torrentResults.clear();
+        switchToTorrentResults();
+        m_statusLabel->setText(tr_("search_searching"));
+
+        int cat = m_categoryCombo->currentData().toInt();
+        AddonManager::instance().searchTorrents(query, cat);
+    } else {
+        if (!AddonManager::instance().hasCatalogAddon()) {
+            m_statusLabel->setText(tr_("search_no_catalog"));
+            return;
+        }
+
+        m_catalogTable->setRowCount(0);
+        m_currentItems.clear();
+        switchToCatalog();
+        m_statusLabel->setText(tr_("search_searching"));
+
+        AddonManager::instance().searchCatalog(query);
     }
-
-    m_catalogTable->setRowCount(0);
-    m_currentItems.clear();
-    switchToCatalog();
-    m_statusLabel->setText(tr_("search_searching"));
-
-    AddonManager::instance().searchCatalog(query);
 }
 
 void SearchDialog::showCatalogResults(const QList<CatalogItem> &items)
@@ -176,14 +258,52 @@ void SearchDialog::onStreamDoubleClicked(int row, int)
     m_statusLabel->setText(tr_("search_added").arg(stream.title));
 }
 
+void SearchDialog::showTorrentResults(const QList<TorrentSearchResult> &results)
+{
+    m_torrentResults = results;
+    m_torrentTable->setRowCount(results.size());
+
+    for (int i = 0; i < results.size(); ++i) {
+        m_torrentTable->setItem(i, 0, new QTableWidgetItem(results[i].name));
+        m_torrentTable->setItem(i, 1, new QTableWidgetItem(
+            results[i].size > 0 ? formatSize(results[i].size) : ""));
+
+        auto *seedItem = new QTableWidgetItem(QString::number(results[i].seeders));
+        seedItem->setForeground(results[i].seeders > 0 ? QColor("#4CAF50") : QColor("#888"));
+        m_torrentTable->setItem(i, 2, seedItem);
+
+        auto *leechItem = new QTableWidgetItem(QString::number(results[i].leechers));
+        leechItem->setForeground(QColor("#FF9800"));
+        m_torrentTable->setItem(i, 3, leechItem);
+    }
+}
+
+void SearchDialog::onTorrentDoubleClicked(int row, int)
+{
+    if (row < 0 || row >= m_torrentResults.size()) return;
+
+    const auto &result = m_torrentResults[row];
+    m_session->addMagnet(result.magnet, m_savePath);
+    m_statusLabel->setText(tr_("search_added").arg(result.name));
+}
+
 void SearchDialog::switchToStreams()
 {
     m_catalogTable->hide();
+    m_torrentTable->hide();
     m_streamTable->show();
 }
 
 void SearchDialog::switchToCatalog()
 {
     m_streamTable->hide();
+    m_torrentTable->hide();
     m_catalogTable->show();
+}
+
+void SearchDialog::switchToTorrentResults()
+{
+    m_catalogTable->hide();
+    m_streamTable->hide();
+    m_torrentTable->show();
 }

@@ -29,6 +29,8 @@ void AddonManager::loadAddons()
 {
     QSettings settings("BATorrent", "BATorrent");
     m_autoTrackers = settings.value("autoTrackers", true).toBool();
+    m_torrentSearchEnabled = settings.value("torrentSearchEnabled", false).toBool();
+    m_torrentSearchUrl = settings.value("torrentSearchUrl").toString();
 
     int count = settings.beginReadArray("addons");
     m_addons.clear();
@@ -392,4 +394,102 @@ void AddonManager::setAutoTrackersEnabled(bool enabled)
     m_autoTrackers = enabled;
     QSettings settings("BATorrent", "BATorrent");
     settings.setValue("autoTrackers", enabled);
+}
+
+// --- Torrent Search ---
+
+bool AddonManager::torrentSearchEnabled() const
+{
+    return m_torrentSearchEnabled;
+}
+
+void AddonManager::setTorrentSearchEnabled(bool enabled)
+{
+    m_torrentSearchEnabled = enabled;
+    QSettings settings("BATorrent", "BATorrent");
+    settings.setValue("torrentSearchEnabled", enabled);
+}
+
+QString AddonManager::torrentSearchUrl() const
+{
+    return m_torrentSearchUrl;
+}
+
+void AddonManager::setTorrentSearchUrl(const QString &url)
+{
+    m_torrentSearchUrl = url;
+    QSettings settings("BATorrent", "BATorrent");
+    settings.setValue("torrentSearchUrl", url);
+}
+
+void AddonManager::searchTorrents(const QString &query, int category)
+{
+    if (!m_torrentSearchEnabled || m_torrentSearchUrl.isEmpty()) {
+        emit torrentSearchError(tr("Torrent search is not configured."));
+        emit torrentSearchFinished();
+        return;
+    }
+
+    QString baseUrl = m_torrentSearchUrl;
+    if (baseUrl.endsWith('/'))
+        baseUrl.chop(1);
+
+    QString searchUrl = QString("%1/q.php?q=%2&cat=%3")
+        .arg(baseUrl, QUrl::toPercentEncoding(query), QString::number(category));
+
+    QNetworkRequest req{QUrl(searchUrl)};
+    req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/2.0");
+    auto *reply = m_net->get(req);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            emit torrentSearchError(reply->errorString());
+            emit torrentSearchFinished();
+            return;
+        }
+
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        if (!doc.isArray()) {
+            emit torrentSearchError(tr("Invalid response format."));
+            emit torrentSearchFinished();
+            return;
+        }
+
+        // Default public trackers for magnet links
+        QStringList defaultTrackers = {
+            "udp://tracker.opentrackr.org:1337/announce",
+            "udp://open.stealth.si:80/announce",
+            "udp://tracker.openbittorrent.com:6969/announce",
+            "udp://exodus.desync.com:6969/announce",
+        };
+        QString trackerParams;
+        for (const auto &t : defaultTrackers)
+            trackerParams += "&tr=" + QUrl::toPercentEncoding(t);
+
+        QList<TorrentSearchResult> results;
+        QJsonArray arr = doc.array();
+        for (const auto &val : arr) {
+            QJsonObject obj = val.toObject();
+            QString name = obj.value("name").toString();
+            QString infoHash = obj.value("info_hash").toString();
+            if (infoHash.isEmpty() || infoHash == "0")
+                continue;
+
+            TorrentSearchResult r;
+            r.name = name;
+            r.infoHash = infoHash;
+            r.size = obj.value("size").toVariant().toLongLong();
+            r.seeders = obj.value("seeders").toVariant().toInt();
+            r.leechers = obj.value("leechers").toVariant().toInt();
+            r.category = obj.value("category").toString();
+            r.magnet = QString("magnet:?xt=urn:btih:%1&dn=%2%3")
+                .arg(infoHash, QUrl::toPercentEncoding(name), trackerParams);
+
+            results.append(r);
+        }
+
+        emit torrentSearchResults(results);
+        emit torrentSearchFinished();
+    });
 }
