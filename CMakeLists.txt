@@ -29,6 +29,8 @@ add_executable(BATorrent WIN32
     src/app/addonmanager.cpp
     src/gui/addondialog.cpp
     src/gui/searchdialog.cpp
+    src/gui/rssdialog.cpp
+    src/app/rssmanager.cpp
     src/gui/thememanager.cpp
     src/webui/webserver.cpp
     ${RESOURCES}

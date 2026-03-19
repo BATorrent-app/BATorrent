@@ -22,6 +22,8 @@
 #include "../app/addonmanager.h"
 #include "addondialog.h"
 #include "searchdialog.h"
+#include "rssdialog.h"
+#include "../app/rssmanager.h"
 
 #include <QMenuBar>
 #include <QToolBar>
@@ -126,6 +128,15 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
             m_session->addTracker(index, tracker);
     });
 
+    // RSS Manager: set session and check feeds on startup
+    RssManager::instance().setSession(m_session, m_lastSavePath);
+    RssManager::instance().checkAllFeeds();
+    connect(&RssManager::instance(), &RssManager::itemAutoDownloaded, this,
+        [this](const QString &feedName, const QString &itemTitle) {
+            m_trayIcon->showMessage(tr_("rss_auto_downloaded"),
+                QString("%1: %2").arg(feedName, itemTitle));
+        });
+
     // Periodic resume data save (every 5 minutes)
     auto *resumeTimer = new QTimer(this);
     connect(resumeTimer, &QTimer::timeout, this, [this]() {
@@ -222,6 +233,7 @@ void MainWindow::setupMenuBar()
     settingsMenu->addAction(QIcon(":/icons/settings.svg"), tr_("action_settings"),
                             this, &MainWindow::openSettings);
     settingsMenu->addAction(tr_("action_addons"), this, &MainWindow::openAddons);
+    settingsMenu->addAction(tr_("action_rss"), this, &MainWindow::openRssManager);
     settingsMenu->addSeparator();
     settingsMenu->addAction(tr_("action_search_addons"), this, &MainWindow::openSearch);
 
@@ -936,6 +948,12 @@ QList<int> MainWindow::selectedRows() const
 void MainWindow::openAddons()
 {
     AddonDialog dlg(this);
+    dlg.exec();
+}
+
+void MainWindow::openRssManager()
+{
+    RssDialog dlg(this);
     dlg.exec();
 }
 

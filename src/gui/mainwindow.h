@@ -68,6 +68,7 @@ private slots:
     void streamTorrent(int row);
     void openAddons();
     void openSearch();
+    void openRssManager();
 
 private:
     void applyTheme();
