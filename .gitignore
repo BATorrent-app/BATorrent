@@ -5,6 +5,7 @@ build-release/
 # IDE
 .vscode/
 .idea/
+.cache/
 *.swp
 *~
 
