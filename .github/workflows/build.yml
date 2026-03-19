@@ -135,64 +135,84 @@ jobs:
             -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH"
           cmake --build build
 
-      - name: Create DMG
+      - name: Create app bundle
         run: |
           mkdir -p dmg/BATorrent.app/Contents/MacOS
           mkdir -p dmg/BATorrent.app/Contents/Resources
           cp build/BATorrent dmg/BATorrent.app/Contents/MacOS/
-          # Create Info.plist
-          cat > dmg/BATorrent.app/Contents/Info.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>CFBundleExecutable</key>
-            <string>BATorrent</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.mateuscruz19.batorrent</string>
-            <key>CFBundleName</key>
-            <string>BATorrent</string>
-            <key>CFBundleVersion</key>
-            <string>1.0.0</string>
-            <key>CFBundleShortVersionString</key>
-            <string>1.0.0</string>
-            <key>CFBundlePackageType</key>
-            <string>APPL</string>
-            <key>CFBundleDocumentTypes</key>
-            <array>
-              <dict>
-                <key>CFBundleTypeExtensions</key>
-                <array><string>torrent</string></array>
-                <key>CFBundleTypeName</key>
-                <string>Torrent File</string>
-                <key>CFBundleTypeRole</key>
-                <string>Viewer</string>
-              </dict>
-            </array>
-            <key>CFBundleURLTypes</key>
-            <array>
-              <dict>
-                <key>CFBundleURLName</key>
-                <string>Magnet Link</string>
-                <key>CFBundleURLSchemes</key>
-                <array><string>magnet</string></array>
-              </dict>
-            </array>
-          </dict>
-          </plist>
-          PLIST
-          # Copy icon
-          sips -s format icns src/images/logo1.png --out dmg/BATorrent.app/Contents/Resources/batorrent.icns 2>/dev/null || true
-          # Deploy Qt frameworks
+
+          # Create Info.plist (no leading whitespace)
+          cat > dmg/BATorrent.app/Contents/Info.plist <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>BATorrent</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.mateuscruz19.batorrent</string>
+  <key>CFBundleName</key>
+  <string>BATorrent</string>
+  <key>CFBundleVersion</key>
+  <string>1.8.0</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.8.0</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>batorrent</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>12.0</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeExtensions</key>
+      <array><string>torrent</string></array>
+      <key>CFBundleTypeName</key>
+      <string>Torrent File</string>
+      <key>CFBundleTypeRole</key>
+      <string>Viewer</string>
+    </dict>
+  </array>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>Magnet Link</string>
+      <key>CFBundleURLSchemes</key>
+      <array><string>magnet</string></array>
+    </dict>
+  </array>
+</dict>
+</plist>
+PLIST
+
+      - name: Create ICNS icon
+        run: |
+          mkdir -p batorrent.iconset
+          for size in 16 32 64 128 256 512; do
+            sips -z $size $size src/images/logo1.png --out batorrent.iconset/icon_${size}x${size}.png
+          done
+          for size in 32 64 256 512; do
+            half=$((size / 2))
+            cp batorrent.iconset/icon_${size}x${size}.png batorrent.iconset/icon_${half}x${half}@2x.png
+          done
+          iconutil -c icns batorrent.iconset -o dmg/BATorrent.app/Contents/Resources/batorrent.icns
+
+      - name: Deploy Qt and create DMG
+        run: |
           $(brew --prefix qt@6)/bin/macdeployqt dmg/BATorrent.app
-          # Create DMG
-          hdiutil create -volname BATorrent -srcfolder dmg -ov -format UDZO BATorrent-macos-x86_64.dmg
+          # Ad-hoc codesign so Gatekeeper doesn't block
+          codesign --force --deep --sign - dmg/BATorrent.app
+          hdiutil create -volname BATorrent -srcfolder dmg -ov -format UDZO BATorrent-macos-arm64.dmg
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: BATorrent-macos-x86_64.dmg
+          path: BATorrent-macos-arm64.dmg
 
   release:
     needs: [build-linux, build-windows, build-macos]
@@ -210,5 +230,5 @@ jobs:
             linux-build/BATorrent-linux-x86_64.AppImage
             windows-zip/BATorrent-windows-x86_64.zip
             windows-installer/BATorrent-setup-x86_64.exe
-            macos-build/BATorrent-macos-x86_64.dmg
+            macos-build/BATorrent-macos-arm64.dmg
           generate_release_notes: true

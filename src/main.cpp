@@ -16,6 +16,7 @@ int main(int argc, char *argv[])
     app.setApplicationName("BATorrent");
     app.setApplicationVersion("1.8.0");
     app.setWindowIcon(QIcon(":/images/logo1.png"));
+    app.setQuitOnLastWindowClosed(false); // keep running in tray when window is closed
 
     // Load Inter font family
     QFontDatabase::addApplicationFont(":/fonts/Inter-Regular.ttf");
