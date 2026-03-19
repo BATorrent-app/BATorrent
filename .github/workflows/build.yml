@@ -140,54 +140,28 @@ jobs:
           mkdir -p dmg/BATorrent.app/Contents/MacOS
           mkdir -p dmg/BATorrent.app/Contents/Resources
           cp build/BATorrent dmg/BATorrent.app/Contents/MacOS/
-
-          # Create Info.plist (no leading whitespace)
-          cat > dmg/BATorrent.app/Contents/Info.plist <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>CFBundleExecutable</key>
-  <string>BATorrent</string>
-  <key>CFBundleIdentifier</key>
-  <string>com.mateuscruz19.batorrent</string>
-  <key>CFBundleName</key>
-  <string>BATorrent</string>
-  <key>CFBundleVersion</key>
-  <string>1.8.0</string>
-  <key>CFBundleShortVersionString</key>
-  <string>1.8.0</string>
-  <key>CFBundlePackageType</key>
-  <string>APPL</string>
-  <key>CFBundleIconFile</key>
-  <string>batorrent</string>
-  <key>LSMinimumSystemVersion</key>
-  <string>12.0</string>
-  <key>NSHighResolutionCapable</key>
-  <true/>
-  <key>CFBundleDocumentTypes</key>
-  <array>
-    <dict>
-      <key>CFBundleTypeExtensions</key>
-      <array><string>torrent</string></array>
-      <key>CFBundleTypeName</key>
-      <string>Torrent File</string>
-      <key>CFBundleTypeRole</key>
-      <string>Viewer</string>
-    </dict>
-  </array>
-  <key>CFBundleURLTypes</key>
-  <array>
-    <dict>
-      <key>CFBundleURLName</key>
-      <string>Magnet Link</string>
-      <key>CFBundleURLSchemes</key>
-      <array><string>magnet</string></array>
-    </dict>
-  </array>
-</dict>
-</plist>
-PLIST
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0">' '<dict>' \
+            '  <key>CFBundleExecutable</key>' '  <string>BATorrent</string>' \
+            '  <key>CFBundleIdentifier</key>' '  <string>com.mateuscruz19.batorrent</string>' \
+            '  <key>CFBundleName</key>' '  <string>BATorrent</string>' \
+            '  <key>CFBundleVersion</key>' '  <string>1.8.0</string>' \
+            '  <key>CFBundleShortVersionString</key>' '  <string>1.8.0</string>' \
+            '  <key>CFBundlePackageType</key>' '  <string>APPL</string>' \
+            '  <key>CFBundleIconFile</key>' '  <string>batorrent</string>' \
+            '  <key>LSMinimumSystemVersion</key>' '  <string>12.0</string>' \
+            '  <key>NSHighResolutionCapable</key>' '  <true/>' \
+            '  <key>CFBundleDocumentTypes</key>' '  <array>' '    <dict>' \
+            '      <key>CFBundleTypeExtensions</key>' '      <array><string>torrent</string></array>' \
+            '      <key>CFBundleTypeName</key>' '      <string>Torrent File</string>' \
+            '      <key>CFBundleTypeRole</key>' '      <string>Viewer</string>' \
+            '    </dict>' '  </array>' \
+            '  <key>CFBundleURLTypes</key>' '  <array>' '    <dict>' \
+            '      <key>CFBundleURLName</key>' '      <string>Magnet Link</string>' \
+            '      <key>CFBundleURLSchemes</key>' '      <array><string>magnet</string></array>' \
+            '    </dict>' '  </array>' \
+            '</dict>' '</plist>' > dmg/BATorrent.app/Contents/Info.plist
 
       - name: Create ICNS icon
         run: |
