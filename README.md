@@ -40,6 +40,26 @@ BATorrent is a cross-platform desktop BitTorrent client focusing on simplicity, 
 - Seed ratio limits with auto-pause
 - DHT, PEX, UPnP, NAT-PMP
 
+### RSS Auto-Download
+- **Subscribe to RSS feeds** — automatically download new torrents as they appear
+- **Regex filters** — match only what you want (e.g. `1080p|720p`, `S01E\d+`)
+- **Per-feed settings** — custom save path, check interval (5–1440 min), enable/disable
+- **Auto-download** — matched items are downloaded automatically in the background
+- Supports magnet links, `.torrent` URLs, and `<enclosure>` tags
+- Tray notifications when items are auto-downloaded
+- Duplicate detection — never downloads the same item twice
+
+### Stremio Addon System
+- **Search movies & series** directly from the app via Stremio-compatible addons
+- **Cinemeta + Torrentio pre-installed** — works out of the box
+- Browse catalogs, view stream options, and add torrents with one click
+- Auto tracker list from ngosang/trackerslist
+
+### Streaming
+- **Play while downloading** — stream video files before the download is complete
+- Supports mp4, mkv, avi, mov, wmv, flv, webm, m4v, ts
+- Auto-detects installed players (VLC, IINA, system default)
+
 ### VPN & Privacy
 - **Interface binding** — lock torrent traffic to a specific network interface (e.g. `tun0`)
 - **Auto VPN detection** — identifies VPN interfaces (tun, tap, WireGuard, Mullvad, NordLynx, ProtonVPN)
@@ -64,7 +84,7 @@ BATorrent is a cross-platform desktop BitTorrent client focusing on simplicity, 
 - Filter bar: search by name, filter by state (Active, Downloading, Seeding, Paused, Finished)
 - Drag & drop `.torrent` files and magnet links
 - Drag & drop reorder in torrent list
-- System tray with notifications (download complete, kill switch events)
+- System tray with notifications (download complete, kill switch events, RSS auto-downloads)
 - Splash screen with bat animation
 - Bilingual: English and Portuguese (BR), auto-detected from system locale
 
@@ -98,12 +118,15 @@ src/
 ├── app/           # App infrastructure (non-GUI)
 │   ├── translator.h/.cpp
 │   ├── updater.h/.cpp
+│   ├── addonmanager.h/.cpp
+│   ├── rssmanager.h/.cpp
 │   └── utils.h
 ├── gui/           # Desktop GUI (Qt Widgets)
 │   ├── mainwindow, settingsdialog, detailspanel
 │   ├── torrentmodel, torrentfilter, progressdelegate
 │   ├── speedgraph, batwidget, splashwidget
 │   ├── welcomedialog, createtorrentdialog
+│   ├── addondialog, searchdialog, rssdialog
 │   └── thememanager
 ├── webui/         # Browser-based remote UI
 │   ├── webserver.h/.cpp
@@ -147,9 +170,12 @@ cmake --build build
 
 - [x] WebUI (remote management via browser)
 - [x] Auto-shutdown when downloads complete
-- [ ] RSS feed auto-download
+- [x] Stremio addon system (search movies/series)
+- [x] Torrent streaming (play while downloading)
+- [x] RSS feed auto-download
 - [ ] Bandwidth scheduler (time-based speed limits)
-- [ ] IP filter / blocklist
+- [ ] Plex / Jellyfin / Emby integration
+- [ ] SOCKS5 proxy support (per-torrent)
 
 ## License
 
