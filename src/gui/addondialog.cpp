@@ -112,6 +112,42 @@ AddonDialog::AddonDialog(QWidget *parent)
     }
     layout->addWidget(suggestGroup);
 
+    // Torrent Search (opt-in)
+    auto *searchGroup = new QGroupBox(tr_("addon_torrent_search_group"));
+    auto *searchGroupLayout = new QVBoxLayout(searchGroup);
+
+    m_torrentSearchCheck = new QCheckBox(tr_("addon_torrent_search_enable"));
+    m_torrentSearchCheck->setChecked(AddonManager::instance().torrentSearchEnabled());
+    connect(m_torrentSearchCheck, &QCheckBox::toggled, this, [this](bool checked) {
+        AddonManager::instance().setTorrentSearchEnabled(checked);
+        m_torrentSearchUrlEdit->setEnabled(checked);
+    });
+    searchGroupLayout->addWidget(m_torrentSearchCheck);
+
+    auto *urlRow = new QHBoxLayout;
+    auto *urlLabel = new QLabel(tr_("addon_torrent_search_url"));
+    urlLabel->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+    urlRow->addWidget(urlLabel);
+    m_torrentSearchUrlEdit = new QLineEdit;
+    m_torrentSearchUrlEdit->setText(AddonManager::instance().torrentSearchUrl());
+    m_torrentSearchUrlEdit->setPlaceholderText(tr_("addon_torrent_search_url_hint"));
+    m_torrentSearchUrlEdit->setEnabled(AddonManager::instance().torrentSearchEnabled());
+    m_torrentSearchUrlEdit->setStyleSheet(QString(
+        "QLineEdit { background: %1; color: %2; border: 1px solid %3;"
+        "border-radius: 6px; padding: 6px 10px; }")
+        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor()));
+    connect(m_torrentSearchUrlEdit, &QLineEdit::editingFinished, this, [this]() {
+        AddonManager::instance().setTorrentSearchUrl(m_torrentSearchUrlEdit->text().trimmed());
+    });
+    urlRow->addWidget(m_torrentSearchUrlEdit, 1);
+    searchGroupLayout->addLayout(urlRow);
+
+    auto *searchHint = new QLabel(tr_("addon_torrent_search_hint"));
+    searchHint->setStyleSheet("color: #888;");
+    searchHint->setWordWrap(true);
+    searchGroupLayout->addWidget(searchHint);
+    layout->addWidget(searchGroup);
+
     // Close button
     auto *btnLayout = new QHBoxLayout;
     btnLayout->addStretch();

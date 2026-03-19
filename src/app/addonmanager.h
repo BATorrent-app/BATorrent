@@ -40,6 +40,17 @@ struct StreamResult {
     qint64 size = 0;
 };
 
+// Torrent search result from a compatible API
+struct TorrentSearchResult {
+    QString name;
+    QString infoHash;
+    QString magnet;
+    qint64 size = 0;
+    int seeders = 0;
+    int leechers = 0;
+    QString category;
+};
+
 class AddonManager : public QObject
 {
     Q_OBJECT
@@ -70,6 +81,13 @@ public:
     bool autoTrackersEnabled() const;
     void setAutoTrackersEnabled(bool enabled);
 
+    // Torrent search (opt-in, disabled by default)
+    bool torrentSearchEnabled() const;
+    void setTorrentSearchEnabled(bool enabled);
+    QString torrentSearchUrl() const;
+    void setTorrentSearchUrl(const QString &url);
+    void searchTorrents(const QString &query, int category);
+
 signals:
     void addonAdded(const AddonManifest &manifest);
     void addonError(const QString &error);
@@ -78,6 +96,9 @@ signals:
     void streamResults(const QList<StreamResult> &streams);
     void streamFinished();
     void trackerListUpdated();
+    void torrentSearchResults(const QList<TorrentSearchResult> &results);
+    void torrentSearchFinished();
+    void torrentSearchError(const QString &error);
 
 private:
     AddonManager();
@@ -88,6 +109,8 @@ private:
     QList<AddonManifest> m_addons;
     QStringList m_trackerList;
     bool m_autoTrackers = true;
+    bool m_torrentSearchEnabled = false;
+    QString m_torrentSearchUrl;
     int m_pendingCatalog = 0;
     int m_pendingStreams = 0;
     QList<CatalogItem> m_catalogResults;

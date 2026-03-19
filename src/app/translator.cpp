@@ -289,6 +289,24 @@ void Translator::loadEnglish()
         {"addon_suggested", "Suggested Addons"},
         {"addon_suggest_hint", "Click to install recommended addons:"},
 
+        // Torrent Search
+        {"addon_torrent_search_group", "Torrent Search"},
+        {"addon_torrent_search_enable", "Enable torrent search"},
+        {"addon_torrent_search_url", "API URL:"},
+        {"addon_torrent_search_url_hint", "URL of a compatible torrent search API"},
+        {"addon_torrent_search_hint", "Enter the URL of a torrent search API that returns JSON arrays with name, info_hash, size, seeders, leechers fields."},
+        {"search_source_stremio", "Movies / Series"},
+        {"search_source_torrents", "Torrents"},
+        {"search_placeholder_torrent", "Search torrents..."},
+        {"search_cat_all", "All"},
+        {"search_cat_audio", "Audio"},
+        {"search_cat_video", "Video"},
+        {"search_cat_apps", "Applications"},
+        {"search_cat_games", "Games"},
+        {"search_cat_other", "Other"},
+        {"search_col_seeds", "Seeds"},
+        {"search_col_leechers", "Leechers"},
+
         // RSS
         {"action_rss", "&RSS Manager..."},
         {"rss_title", "RSS Auto-Download"},
@@ -593,6 +611,24 @@ void Translator::loadPortuguese()
         {"search_no_stream", "Nenhum addon de streams habilitado. Habilite o Torrentio em Configurações > Addons."},
         {"addon_suggested", "Addons Sugeridos"},
         {"addon_suggest_hint", "Clique para instalar addons recomendados:"},
+
+        // Torrent Search
+        {"addon_torrent_search_group", "Busca de Torrents"},
+        {"addon_torrent_search_enable", "Habilitar busca de torrents"},
+        {"addon_torrent_search_url", "URL da API:"},
+        {"addon_torrent_search_url_hint", "URL de uma API de busca de torrents compatível"},
+        {"addon_torrent_search_hint", "Insira a URL de uma API de busca de torrents que retorne arrays JSON com os campos name, info_hash, size, seeders, leechers."},
+        {"search_source_stremio", "Filmes / Séries"},
+        {"search_source_torrents", "Torrents"},
+        {"search_placeholder_torrent", "Buscar torrents..."},
+        {"search_cat_all", "Todos"},
+        {"search_cat_audio", "Áudio"},
+        {"search_cat_video", "Vídeo"},
+        {"search_cat_apps", "Aplicativos"},
+        {"search_cat_games", "Jogos"},
+        {"search_cat_other", "Outros"},
+        {"search_col_seeds", "Seeds"},
+        {"search_col_leechers", "Leechers"},
 
         // RSS
         {"action_rss", "&Gerenciador RSS..."},

@@ -26,6 +26,8 @@ private:
     QListWidget *m_addonList;
     QLineEdit *m_urlEdit;
     QCheckBox *m_autoTrackersCheck;
+    QCheckBox *m_torrentSearchCheck;
+    QLineEdit *m_torrentSearchUrlEdit;
 };
 
 #endif
