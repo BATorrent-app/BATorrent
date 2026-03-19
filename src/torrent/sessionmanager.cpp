@@ -4,8 +4,8 @@
 
 #include "sessionmanager.h"
 #include "../app/translator.h"
-#include <libtorrent/load_torrent.hpp>
 #include <libtorrent/torrent_info.hpp>
+#include <libtorrent/version.hpp>
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/write_resume_data.hpp>
 #include <libtorrent/read_resume_data.hpp>
@@ -60,7 +60,8 @@ SessionManager::~SessionManager()
 void SessionManager::addTorrent(const QString &filePath, const QString &savePath)
 {
     try {
-        lt::add_torrent_params atp = lt::load_torrent_file(filePath.toStdString());
+        lt::add_torrent_params atp;
+        atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         atp.save_path = savePath.toStdString();
 
         lt::torrent_handle h = m_session.add_torrent(atp);
@@ -541,12 +542,12 @@ int SessionManager::importFromQBittorrent(const QString &defaultSavePath)
                         lt::span<const char>(data.data(), data.size()), ec);
                     if (ec) {
                         // Fastresume failed, load torrent file instead
-                        atp = lt::load_torrent_file(torrentPath.toStdString());
+                        atp.ti = std::make_shared<lt::torrent_info>(torrentPath.toStdString());
                         atp.save_path = defaultSavePath.toStdString();
                     }
                 }
             } else {
-                atp = lt::load_torrent_file(torrentPath.toStdString());
+                atp.ti = std::make_shared<lt::torrent_info>(torrentPath.toStdString());
                 atp.save_path = defaultSavePath.toStdString();
             }
 
