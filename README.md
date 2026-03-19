@@ -47,6 +47,16 @@ BATorrent is a cross-platform desktop BitTorrent client focusing on simplicity, 
 - **Auto-resume** — resumes only the torrents paused by the kill switch when VPN reconnects
 - Protocol encryption (enabled / forced / disabled)
 
+### WebUI
+- **Remote management** — control torrents from any browser at `http://localhost:8080`
+- REST API with JSON responses
+- Add torrents via magnet link or `.torrent` upload
+- Pause, resume, remove torrents remotely
+- View peers and files per torrent
+- Dark theme matching the desktop app
+- HTTP Basic Auth with SHA-256 password hashing
+- Configurable port and remote access (localhost vs 0.0.0.0)
+
 ### Interface
 - 3 themes: Dark, Light, Midnight (bat/vampire aesthetic)
 - Real-time speed graph
@@ -60,6 +70,7 @@ BATorrent is a cross-platform desktop BitTorrent client focusing on simplicity, 
 
 ### System
 - Cross-platform: Windows, Linux, macOS
+- **Auto-shutdown** — automatically shut down PC when all downloads complete (60s cancellable countdown)
 - Auto-update system (AppImage on Linux, installer on Windows, DMG on macOS)
 - CLI arguments: pass `.torrent` files or `magnet:` URIs directly
 - Keyboard shortcuts: Space to toggle pause, Ctrl+A to select all, Ctrl+O to open
@@ -94,11 +105,13 @@ src/
 │   ├── speedgraph, batwidget, splashwidget
 │   ├── welcomedialog, createtorrentdialog
 │   └── thememanager
+├── webui/         # Browser-based remote UI
+│   ├── webserver.h/.cpp
+│   ├── index.html
+│   └── webuiresources.qrc
 ├── fonts/ icons/ images/
 └── main.cpp
 ```
-
-The separation between `torrent/`, `app/`, and `gui/` is intentional — preparing for a future WebUI that imports from `torrent/` and `app/` without depending on `gui/`.
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=cc0000&height=3&width=100%25" width="100%"/>
 
@@ -132,8 +145,9 @@ cmake --build build
 
 ## Roadmap
 
+- [x] WebUI (remote management via browser)
+- [x] Auto-shutdown when downloads complete
 - [ ] RSS feed auto-download
-- [ ] WebUI (remote management via browser)
 - [ ] Bandwidth scheduler (time-based speed limits)
 - [ ] IP filter / blocklist
 
