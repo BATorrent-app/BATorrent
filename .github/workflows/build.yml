@@ -11,12 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake g++ qt6-base-dev libqt6widgets6 \
-            libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 \
-            libgl-dev libglx-dev libegl-dev
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: cmake g++ qt6-base-dev libqt6widgets6 libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
+          version: 1.0
 
       - name: Build
         run: |
@@ -29,7 +28,6 @@ jobs:
 
       - name: Resize icon to 256x256
         run: |
-          sudo apt-get install -y imagemagick
           convert AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png \
             -resize 256x256 \
             AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png
@@ -62,28 +60,55 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.7.*'
+          cache: true
+
+      - name: Cache vcpkg
+        id: cache-vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\vcpkg
+          key: vcpkg-windows-full-${{ hashFiles('.github/workflows/build.yml') }}
+          restore-keys: vcpkg-windows-full-
 
       - name: Setup vcpkg
+        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           C:\vcpkg\bootstrap-vcpkg.bat
+
+      - name: Set vcpkg env
+        run: |
           echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
           echo "C:\vcpkg" >> $env:GITHUB_PATH
-
-      - name: Cache vcpkg packages
-        uses: actions/cache@v4
-        with:
-          path: C:\vcpkg\installed
-          key: vcpkg-windows-libtorrent-${{ hashFiles('.github/workflows/build.yml') }}
-          restore-keys: vcpkg-windows-libtorrent-
 
       - name: Install libtorrent via vcpkg
         run: C:\vcpkg\vcpkg install libtorrent:x64-windows
 
-      - name: Convert PNG to multi-resolution ICO
+      - name: Cache choco packages
+        id: cache-choco
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\ProgramData\chocolatey\lib\imagemagick
+            C:\ProgramData\chocolatey\lib\innosetup
+            C:\Program Files\ImageMagick*
+            C:\Program Files (x86)\Inno Setup 6
+          key: choco-imagemagick-innosetup-v1
+
+      - name: Install choco packages
+        if: steps.cache-choco.outputs.cache-hit != 'true'
         run: |
-          choco install imagemagick -y --no-progress
-          magick src/images/logo1.png -define icon:auto-resize=256,64,48,32,16 src/images/logo1.ico
+          choco install imagemagick innosetup -y --no-progress
+
+      - name: Add choco tools to PATH
+        shell: pwsh
+        run: |
+          $magickPath = (Get-ChildItem "C:\Program Files\ImageMagick*" -Directory | Select-Object -First 1).FullName
+          if ($magickPath) { echo "$magickPath" >> $env:GITHUB_PATH }
+
+      - name: Convert PNG to multi-resolution ICO
+        run: magick src/images/logo1.png -define icon:auto-resize=256,64,48,32,16 src/images/logo1.ico
 
       - name: Build
         run: |
@@ -104,7 +129,6 @@ jobs:
       - name: Build Installer
         shell: pwsh
         run: |
-          choco install innosetup -y --no-progress
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\batorrent.iss
 
       - name: Upload zip
@@ -123,6 +147,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/Cellar
+            /opt/homebrew/opt
+          key: brew-macos-${{ hashFiles('.github/workflows/build.yml') }}
+          restore-keys: brew-macos-
 
       - name: Install dependencies
         run: |
