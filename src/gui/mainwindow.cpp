@@ -19,6 +19,9 @@
 #include "../app/translator.h"
 #include "../app/updater.h"
 #include "../app/utils.h"
+#include "../app/addonmanager.h"
+#include "addondialog.h"
+#include "searchdialog.h"
 
 #include <QMenuBar>
 #include <QToolBar>
@@ -114,6 +117,15 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     m_updater = new Updater(this);
     checkForUpdate(true); // silent check on startup
 
+    // Auto tracker list: fetch on startup, add trackers to new torrents
+    AddonManager::instance().fetchTrackerList();
+    connect(m_session, &SessionManager::torrentAdded, this, [this](int index) {
+        if (!AddonManager::instance().autoTrackersEnabled()) return;
+        auto trackers = AddonManager::instance().trackerList();
+        for (const auto &tracker : trackers)
+            m_session->addTracker(index, tracker);
+    });
+
     // Periodic resume data save (every 5 minutes)
     auto *resumeTimer = new QTimer(this);
     connect(resumeTimer, &QTimer::timeout, this, [this]() {
@@ -205,6 +217,9 @@ void MainWindow::setupMenuBar()
     QMenu *settingsMenu = menuBar()->addMenu(tr_("menu_settings"));
     settingsMenu->addAction(QIcon(":/icons/settings.svg"), tr_("action_settings"),
                             this, &MainWindow::openSettings);
+    settingsMenu->addAction(tr_("action_addons"), this, &MainWindow::openAddons);
+    settingsMenu->addSeparator();
+    settingsMenu->addAction(tr_("action_search_addons"), this, &MainWindow::openSearch);
 
     QMenu *helpMenu = menuBar()->addMenu(tr_("menu_help"));
     helpMenu->addAction(tr_("action_welcome"), this, &MainWindow::showWelcome);
@@ -912,6 +927,22 @@ QList<int> MainWindow::selectedRows() const
         rows.append(m_proxyModel->mapToSource(idx).row());
     std::sort(rows.begin(), rows.end());
     return rows;
+}
+
+void MainWindow::openAddons()
+{
+    AddonDialog dlg(this);
+    dlg.exec();
+}
+
+void MainWindow::openSearch()
+{
+    if (AddonManager::instance().addons().isEmpty()) {
+        QMessageBox::information(this, tr_("search_title"), tr_("search_no_addons"));
+        return;
+    }
+    SearchDialog dlg(m_session, m_lastSavePath, this);
+    dlg.exec();
 }
 
 void MainWindow::streamTorrent(int row)

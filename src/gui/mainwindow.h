@@ -23,6 +23,7 @@ class BatWidget;
 class SplashWidget;
 class Updater;
 class WebServer;
+class AddonManager;
 
 class MainWindow : public QMainWindow
 {
@@ -65,6 +66,8 @@ private slots:
     void checkForUpdate(bool silent = true);
     void checkAutoShutdown();
     void streamTorrent(int row);
+    void openAddons();
+    void openSearch();
 
 private:
     void applyTheme();
