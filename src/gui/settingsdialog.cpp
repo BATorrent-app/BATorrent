@@ -76,6 +76,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_autoShutdownCheck = new QCheckBox(tr_("settings_auto_shutdown"));
     generalLayout->addRow("", m_autoShutdownCheck);
 
+    m_notifSoundCheck = new QCheckBox(tr_("settings_notif_sound"));
+    generalLayout->addRow("", m_notifSoundCheck);
+
     tabs->addTab(generalWidget, tr_("settings_general"));
 
     // ---- Speed tab ----
@@ -276,6 +279,8 @@ void SettingsDialog::setUseDefaultPath(bool val) { m_useDefaultPathCheck->setChe
 void SettingsDialog::setThemeIndex(int index) { m_themeCombo->setCurrentIndex(index); }
 bool SettingsDialog::autoShutdown() const { return m_autoShutdownCheck->isChecked(); }
 void SettingsDialog::setAutoShutdown(bool val) { m_autoShutdownCheck->setChecked(val); }
+bool SettingsDialog::notifSoundEnabled() const { return m_notifSoundCheck->isChecked(); }
+void SettingsDialog::setNotifSoundEnabled(bool val) { m_notifSoundCheck->setChecked(val); }
 
 // Network getters/setters
 bool SettingsDialog::dhtEnabled() const { return m_dhtCheck->isChecked(); }

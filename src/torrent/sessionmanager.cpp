@@ -15,6 +15,7 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QFile>
+#include <QSettings>
 #include <QNetworkInterface>
 
 SessionManager::SessionManager(QObject *parent)
@@ -41,6 +42,11 @@ SessionManager::SessionManager(QObject *parent)
     m_session.apply_settings(pack);
 
     loadResumeData();
+
+    // Load global stats from previous sessions
+    QSettings settings("BATorrent", "BATorrent");
+    m_globalDownBase = settings.value("globalDownloaded", 0).toLongLong();
+    m_globalUpBase = settings.value("globalUploaded", 0).toLongLong();
 
     connect(&m_updateTimer, &QTimer::timeout, this, &SessionManager::updateStats);
     m_updateTimer.start(1000);
@@ -380,6 +386,11 @@ float SessionManager::seedRatioLimit() const
 
 void SessionManager::saveResumeData()
 {
+    // Persist global stats
+    QSettings settings("BATorrent", "BATorrent");
+    settings.setValue("globalDownloaded", globalDownloaded());
+    settings.setValue("globalUploaded", globalUploaded());
+
     QDir dir(resumeDataDir());
     if (!dir.exists())
         dir.mkpath(".");
@@ -643,6 +654,34 @@ void SessionManager::setAutoResumeOnReconnect(bool enabled)
 bool SessionManager::autoResumeOnReconnect() const
 {
     return m_autoResume;
+}
+
+qint64 SessionManager::globalDownloaded() const
+{
+    qint64 sessionDown = 0;
+    for (const auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        lt::torrent_status st = h.status();
+        sessionDown += st.total_payload_download;
+    }
+    return m_globalDownBase + sessionDown;
+}
+
+qint64 SessionManager::globalUploaded() const
+{
+    qint64 sessionUp = 0;
+    for (const auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        lt::torrent_status st = h.status();
+        sessionUp += st.total_payload_upload;
+    }
+    return m_globalUpBase + sessionUp;
+}
+
+float SessionManager::globalRatio() const
+{
+    qint64 down = globalDownloaded();
+    return down > 0 ? static_cast<float>(globalUploaded()) / static_cast<float>(down) : 0.0f;
 }
 
 void SessionManager::checkInterfaceStatus()

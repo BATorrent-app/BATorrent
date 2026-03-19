@@ -29,6 +29,7 @@ public:
     bool useDefaultPath() const;
     int themeIndex() const;
     bool autoShutdown() const;
+    bool notifSoundEnabled() const;
 
     void setDefaultSavePath(const QString &path);
     void setMaxDownloadSpeed(int kbps);
@@ -38,6 +39,7 @@ public:
     void setUseDefaultPath(bool val);
     void setThemeIndex(int index);
     void setAutoShutdown(bool val);
+    void setNotifSoundEnabled(bool val);
 
     // Network
     bool dhtEnabled() const;
@@ -86,6 +88,7 @@ private:
     QCheckBox *m_useDefaultPathCheck;
     QComboBox *m_themeCombo;
     QCheckBox *m_autoShutdownCheck;
+    QCheckBox *m_notifSoundCheck;
 
     // Network tab
     QCheckBox *m_dhtCheck;
