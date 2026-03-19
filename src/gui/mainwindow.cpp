@@ -50,6 +50,7 @@
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
 #include <QProgressDialog>
+#include <QProcess>
 #include <QDesktopServices>
 #include <QStandardPaths>
 #include <QUrl>
@@ -183,6 +184,15 @@ void MainWindow::setupMenuBar()
     torrentMenu->addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"),
                            QKeySequence::Delete, this, &MainWindow::removeSelected);
     torrentMenu->addAction(tr_("action_remove_files"), this, &MainWindow::removeSelectedWithFiles);
+    torrentMenu->addSeparator();
+    auto *shutdownAction = torrentMenu->addAction(tr_("action_auto_shutdown"));
+    shutdownAction->setCheckable(true);
+    shutdownAction->setChecked(m_autoShutdown);
+    connect(shutdownAction, &QAction::toggled, this, [this](bool checked) {
+        m_autoShutdown = checked;
+        QSettings settings("BATorrent", "BATorrent");
+        settings.setValue("autoShutdown", checked);
+    });
 
     QMenu *settingsMenu = menuBar()->addMenu(tr_("menu_settings"));
     settingsMenu->addAction(QIcon(":/icons/settings.svg"), tr_("action_settings"),
@@ -396,6 +406,7 @@ void MainWindow::saveSettings()
     settings.setValue("outgoingInterface", m_session->outgoingInterface());
     settings.setValue("killSwitch", m_session->killSwitchEnabled());
     settings.setValue("autoResumeOnReconnect", m_session->autoResumeOnReconnect());
+    settings.setValue("autoShutdown", m_autoShutdown);
 }
 
 void MainWindow::loadSettings()
@@ -443,6 +454,9 @@ void MainWindow::loadSettings()
     m_session->setKillSwitchEnabled(killSwitch);
     bool autoResume = settings.value("autoResumeOnReconnect", false).toBool();
     m_session->setAutoResumeOnReconnect(autoResume);
+
+    // Auto-shutdown
+    m_autoShutdown = settings.value("autoShutdown", false).toBool();
 
     // WebUI
     startWebServer();
@@ -628,6 +642,7 @@ void MainWindow::onTorrentFinished(const QString &name)
                             tr_("dlg_finished_msg").arg(name),
                             QSystemTrayIcon::Information, 5000);
     m_model->flashRow(name);
+    checkAutoShutdown();
 }
 
 void MainWindow::onTorrentError(const QString &message)
@@ -659,6 +674,7 @@ void MainWindow::openSettings()
     dlg.setOutgoingInterface(m_session->outgoingInterface());
     dlg.setKillSwitchEnabled(m_session->killSwitchEnabled());
     dlg.setAutoResumeOnReconnect(m_session->autoResumeOnReconnect());
+    dlg.setAutoShutdown(m_autoShutdown);
 
     {
         QSettings settings("BATorrent", "BATorrent");
@@ -698,6 +714,9 @@ void MainWindow::openSettings()
         m_session->setOutgoingInterface(dlg.outgoingInterface());
         m_session->setKillSwitchEnabled(dlg.killSwitchEnabled());
         m_session->setAutoResumeOnReconnect(dlg.autoResumeOnReconnect());
+
+        // Auto-shutdown
+        m_autoShutdown = dlg.autoShutdown();
 
         // WebUI settings
         {
@@ -869,6 +888,61 @@ QList<int> MainWindow::selectedRows() const
         rows.append(m_proxyModel->mapToSource(idx).row());
     std::sort(rows.begin(), rows.end());
     return rows;
+}
+
+void MainWindow::checkAutoShutdown()
+{
+    if (!m_autoShutdown) return;
+    if (m_shutdownDialog) return; // already showing countdown
+
+    // Check if any torrent is still downloading
+    int count = m_session->torrentCount();
+    for (int i = 0; i < count; ++i) {
+        TorrentInfo info = m_session->torrentAt(i);
+        if (!info.paused && info.progress < 1.0f)
+            return; // still downloading
+    }
+
+    // All downloads complete — start 60-second countdown
+    m_shutdownCountdown = 60;
+    m_shutdownDialog = new QMessageBox(this);
+    m_shutdownDialog->setWindowTitle(tr_("shutdown_title"));
+    m_shutdownDialog->setText(tr_("shutdown_msg").arg(m_shutdownCountdown));
+    m_shutdownDialog->setIcon(QMessageBox::Information);
+    m_shutdownDialog->setStandardButtons(QMessageBox::Cancel);
+
+    m_shutdownTimer = new QTimer(this);
+    connect(m_shutdownTimer, &QTimer::timeout, this, [this]() {
+        m_shutdownCountdown--;
+        if (m_shutdownCountdown <= 0) {
+            m_shutdownTimer->stop();
+            m_shutdownDialog->close();
+            saveSettings();
+            m_session->saveResumeData();
+
+#ifdef Q_OS_WIN
+            QProcess::startDetached("shutdown", {"/s", "/t", "0"});
+#elif defined(Q_OS_MACOS)
+            QProcess::startDetached("osascript", {"-e", "tell app \"System Events\" to shut down"});
+#else
+            QProcess::startDetached("shutdown", {"-h", "now"});
+#endif
+            QApplication::quit();
+        } else {
+            m_shutdownDialog->setText(tr_("shutdown_msg").arg(m_shutdownCountdown));
+        }
+    });
+
+    connect(m_shutdownDialog, &QMessageBox::rejected, this, [this]() {
+        m_shutdownTimer->stop();
+        m_shutdownTimer->deleteLater();
+        m_shutdownTimer = nullptr;
+        m_shutdownDialog->deleteLater();
+        m_shutdownDialog = nullptr;
+    });
+
+    m_shutdownTimer->start(1000);
+    m_shutdownDialog->show();
 }
 
 void MainWindow::checkForUpdate(bool silent)
