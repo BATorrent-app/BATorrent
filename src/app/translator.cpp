@@ -254,6 +254,37 @@ void Translator::loadEnglish()
         // Global stats
         {"status_global", "Total: %1 down  |  %2 up  |  Ratio: %3"},
 
+        // Addons
+        {"addon_title", "Addons"},
+        {"addon_trackers_group", "Auto Tracker List"},
+        {"addon_auto_trackers", "Automatically add public trackers to new torrents"},
+        {"addon_tracker_count", "%1 trackers loaded"},
+        {"addon_installed", "Installed Addons"},
+        {"addon_remove", "Remove"},
+        {"addon_install", "Install Addon (Stremio-compatible)"},
+        {"addon_url_hint", "Paste addon URL (e.g. https://addon.example.com)"},
+        {"addon_install_btn", "Install"},
+        {"action_addons", "&Addons..."},
+        {"action_search_addons", "&Search Addons..."},
+
+        // Search
+        {"search_title", "Search"},
+        {"search_placeholder", "Search movies, series..."},
+        {"search_btn", "Search"},
+        {"search_col_name", "Name"},
+        {"search_col_type", "Type"},
+        {"search_col_year", "Year"},
+        {"search_col_quality", "Quality / Title"},
+        {"search_col_size", "Size"},
+        {"search_col_addon", "Source"},
+        {"search_back", "Back"},
+        {"search_searching", "Searching..."},
+        {"search_done", "%1 result(s) found"},
+        {"search_loading_streams", "Loading streams for %1..."},
+        {"search_streams_done", "%1 stream(s) available"},
+        {"search_added", "Added: %1"},
+        {"search_no_addons", "No addons installed. Go to Settings > Addons to add one."},
+
         // WebUI
         {"settings_webui_enable", "Enable WebUI"},
         {"settings_webui_port", "Port:"},
@@ -490,6 +521,37 @@ void Translator::loadPortuguese()
 
         // Global stats
         {"status_global", "Total: %1 baixado  |  %2 enviado  |  Proporção: %3"},
+
+        // Addons
+        {"addon_title", "Addons"},
+        {"addon_trackers_group", "Lista de Trackers Automática"},
+        {"addon_auto_trackers", "Adicionar trackers públicos automaticamente em novos torrents"},
+        {"addon_tracker_count", "%1 trackers carregados"},
+        {"addon_installed", "Addons Instalados"},
+        {"addon_remove", "Remover"},
+        {"addon_install", "Instalar Addon (compatível com Stremio)"},
+        {"addon_url_hint", "Cole a URL do addon (ex: https://addon.exemplo.com)"},
+        {"addon_install_btn", "Instalar"},
+        {"action_addons", "&Addons..."},
+        {"action_search_addons", "&Buscar nos Addons..."},
+
+        // Search
+        {"search_title", "Buscar"},
+        {"search_placeholder", "Buscar filmes, séries..."},
+        {"search_btn", "Buscar"},
+        {"search_col_name", "Nome"},
+        {"search_col_type", "Tipo"},
+        {"search_col_year", "Ano"},
+        {"search_col_quality", "Qualidade / Título"},
+        {"search_col_size", "Tamanho"},
+        {"search_col_addon", "Fonte"},
+        {"search_back", "Voltar"},
+        {"search_searching", "Buscando..."},
+        {"search_done", "%1 resultado(s) encontrado(s)"},
+        {"search_loading_streams", "Carregando streams para %1..."},
+        {"search_streams_done", "%1 stream(s) disponível(eis)"},
+        {"search_added", "Adicionado: %1"},
+        {"search_no_addons", "Nenhum addon instalado. Vá em Configurações > Addons para adicionar."},
 
         // WebUI
         {"settings_webui_enable", "Habilitar WebUI"},
