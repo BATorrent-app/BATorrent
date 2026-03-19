@@ -69,6 +69,11 @@ public:
 
     void saveResumeData();
     void loadResumeData();
+
+    // Global statistics
+    qint64 globalDownloaded() const;
+    qint64 globalUploaded() const;
+    float globalRatio() const;
     int importFromQBittorrent(const QString &defaultSavePath);
 
 signals:
@@ -96,6 +101,10 @@ private:
     bool m_dhtEnabled = true;
     int m_encryptionMode = 0;
     float m_seedRatioLimit = 0.0f; // 0 = no limit
+
+    // Global stats (accumulated from previous sessions)
+    qint64 m_globalDownBase = 0;
+    qint64 m_globalUpBase = 0;
 
     // VPN / Interface binding
     QString m_outgoingInterface;

@@ -18,6 +18,7 @@
 #include "../webui/webserver.h"
 #include "../app/translator.h"
 #include "../app/updater.h"
+#include "../app/utils.h"
 
 #include <QMenuBar>
 #include <QToolBar>
@@ -88,6 +89,13 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     connect(m_session, &SessionManager::torrentsUpdated, m_model, &TorrentModel::refresh);
     connect(m_session, &SessionManager::torrentsUpdated, this, &MainWindow::updateStatusBar);
     connect(m_session, &SessionManager::torrentAdded, m_model, &TorrentModel::refresh);
+    connect(m_session, &SessionManager::torrentAdded, this, [this](int index) {
+        TorrentInfo info = m_session->torrentAt(index);
+        m_trayIcon->showMessage(tr_("notif_torrent_added"), info.name,
+                                QSystemTrayIcon::Information, 3000);
+        if (m_notifSoundEnabled)
+            QApplication::beep();
+    });
     connect(m_session, &SessionManager::torrentRemoved, m_model, &TorrentModel::refresh);
     connect(m_session, &SessionManager::torrentFinished, this, &MainWindow::onTorrentFinished);
     connect(m_session, &SessionManager::torrentError, this, &MainWindow::onTorrentError);
@@ -358,6 +366,9 @@ void MainWindow::setupStatusBar()
 {
     m_statusLabel = new QLabel(tr_("status_no_torrents"));
     statusBar()->addWidget(m_statusLabel);
+
+    m_globalStatsLabel = new QLabel;
+    statusBar()->addPermanentWidget(m_globalStatsLabel);
 }
 
 void MainWindow::setupTrayIcon()
@@ -381,6 +392,7 @@ void MainWindow::setupTrayIcon()
         if (reason == QSystemTrayIcon::Trigger)
             trayActivated();
     });
+    connect(m_trayIcon, &QSystemTrayIcon::messageClicked, this, &MainWindow::trayActivated);
 
     m_trayIcon->show();
 }
@@ -407,6 +419,7 @@ void MainWindow::saveSettings()
     settings.setValue("killSwitch", m_session->killSwitchEnabled());
     settings.setValue("autoResumeOnReconnect", m_session->autoResumeOnReconnect());
     settings.setValue("autoShutdown", m_autoShutdown);
+    settings.setValue("notifSound", m_notifSoundEnabled);
 }
 
 void MainWindow::loadSettings()
@@ -457,6 +470,7 @@ void MainWindow::loadSettings()
 
     // Auto-shutdown
     m_autoShutdown = settings.value("autoShutdown", false).toBool();
+    m_notifSoundEnabled = settings.value("notifSound", true).toBool();
 
     // WebUI
     startWebServer();
@@ -628,6 +642,12 @@ void MainWindow::updateStatusBar()
     // Update taskbar progress via tray icon tooltip
     float avgProgress = totalProgress / count;
     m_trayIcon->setToolTip(QString("BATorrent - %1%").arg(static_cast<int>(avgProgress * 100)));
+
+    // Global stats (right side of status bar)
+    m_globalStatsLabel->setText(tr_("status_global")
+        .arg(formatSize(m_session->globalDownloaded()),
+             formatSize(m_session->globalUploaded()),
+             QString::number(static_cast<double>(m_session->globalRatio()), 'f', 2)));
 }
 
 void MainWindow::onSelectionChanged()
@@ -641,6 +661,8 @@ void MainWindow::onTorrentFinished(const QString &name)
     m_trayIcon->showMessage(tr_("dlg_download_complete"),
                             tr_("dlg_finished_msg").arg(name),
                             QSystemTrayIcon::Information, 5000);
+    if (m_notifSoundEnabled)
+        QApplication::beep();
     m_model->flashRow(name);
     checkAutoShutdown();
 }
@@ -675,6 +697,7 @@ void MainWindow::openSettings()
     dlg.setKillSwitchEnabled(m_session->killSwitchEnabled());
     dlg.setAutoResumeOnReconnect(m_session->autoResumeOnReconnect());
     dlg.setAutoShutdown(m_autoShutdown);
+    dlg.setNotifSoundEnabled(m_notifSoundEnabled);
 
     {
         QSettings settings("BATorrent", "BATorrent");
@@ -715,8 +738,9 @@ void MainWindow::openSettings()
         m_session->setKillSwitchEnabled(dlg.killSwitchEnabled());
         m_session->setAutoResumeOnReconnect(dlg.autoResumeOnReconnect());
 
-        // Auto-shutdown
+        // Auto-shutdown & notifications
         m_autoShutdown = dlg.autoShutdown();
+        m_notifSoundEnabled = dlg.notifSoundEnabled();
 
         // WebUI settings
         {
@@ -860,12 +884,17 @@ void MainWindow::showContextMenu(const QPoint &pos)
         menu.addSeparator();
     }
 
-    // Open folder (only for single selection)
+    // Open folder + Stream (only for single selection)
     if (rows.size() == 1) {
         TorrentInfo info = m_session->torrentAt(rows.first());
         menu.addAction(tr_("ctx_open_folder"), this, [savePath = info.savePath]() {
             QDesktopServices::openUrl(QUrl::fromLocalFile(savePath));
         });
+        if (info.progress < 1.0f && !info.paused) {
+            menu.addAction(QIcon(":/icons/play.svg"), tr_("ctx_stream"), this, [this, row = rows.first()]() {
+                streamTorrent(row);
+            });
+        }
         menu.addSeparator();
     }
 
@@ -883,6 +912,67 @@ QList<int> MainWindow::selectedRows() const
         rows.append(m_proxyModel->mapToSource(idx).row());
     std::sort(rows.begin(), rows.end());
     return rows;
+}
+
+void MainWindow::streamTorrent(int row)
+{
+    static const QStringList videoExts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".ts"};
+
+    // Enable sequential download
+    m_session->setSequentialDownload(row, true);
+
+    // Find the largest video file
+    auto files = m_session->filesAt(row);
+    TorrentInfo info = m_session->torrentAt(row);
+    int bestIdx = -1;
+    qint64 bestSize = 0;
+    for (int i = 0; i < static_cast<int>(files.size()); ++i) {
+        const auto &f = files[i];
+        bool isVideo = false;
+        for (const auto &ext : videoExts) {
+            if (f.path.endsWith(ext, Qt::CaseInsensitive)) { isVideo = true; break; }
+        }
+        if (isVideo && f.size > bestSize) {
+            bestSize = f.size;
+            bestIdx = i;
+        }
+    }
+
+    if (bestIdx < 0) {
+        QMessageBox::information(this, "Stream", tr_("stream_no_video"));
+        return;
+    }
+
+    // Set video file to high priority
+    m_session->setFilePriority(row, bestIdx, 7);
+
+    m_streamTorrentIndex = row;
+    m_streamFilePath = info.savePath + "/" + files[bestIdx].path;
+
+    // Poll until enough data is buffered (at least 2% or 5MB)
+    if (m_streamPollTimer) {
+        m_streamPollTimer->stop();
+        m_streamPollTimer->deleteLater();
+    }
+    m_streamPollTimer = new QTimer(this);
+    connect(m_streamPollTimer, &QTimer::timeout, this, [this]() {
+        if (m_streamTorrentIndex < 0 || m_streamTorrentIndex >= m_session->torrentCount()) {
+            m_streamPollTimer->stop();
+            return;
+        }
+        auto files = m_session->filesAt(m_streamTorrentIndex);
+        TorrentInfo info = m_session->torrentAt(m_streamTorrentIndex);
+
+        // Check if file has enough data (2% or 5MB minimum)
+        bool ready = QFile::exists(m_streamFilePath) && (info.progress >= 0.02f || info.totalDone > 5 * 1024 * 1024);
+        if (ready) {
+            m_streamPollTimer->stop();
+            QDesktopServices::openUrl(QUrl::fromLocalFile(m_streamFilePath));
+            m_trayIcon->showMessage(tr_("ctx_stream"), tr_("stream_started").arg(info.name),
+                                    QSystemTrayIcon::Information, 3000);
+        }
+    });
+    m_streamPollTimer->start(2000);
 }
 
 void MainWindow::checkAutoShutdown()

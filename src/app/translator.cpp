@@ -241,6 +241,18 @@ void Translator::loadEnglish()
         {"shutdown_title", "Auto Shutdown"},
         {"shutdown_msg", "All downloads complete. Shutting down in %1 seconds..."},
 
+        // Streaming
+        {"ctx_stream", "Stream"},
+        {"stream_started", "Streaming started for %1"},
+        {"stream_no_video", "No video file found in this torrent."},
+
+        // Notifications
+        {"notif_torrent_added", "Torrent Added"},
+        {"settings_notif_sound", "Play sound on notifications"},
+
+        // Global stats
+        {"status_global", "Total: %1 down  |  %2 up  |  Ratio: %3"},
+
         // WebUI
         {"settings_webui_enable", "Enable WebUI"},
         {"settings_webui_port", "Port:"},
@@ -464,6 +476,18 @@ void Translator::loadPortuguese()
         {"action_auto_shutdown", "Desligar Automaticamente ao Concluir"},
         {"shutdown_title", "Desligamento Automático"},
         {"shutdown_msg", "Todos os downloads concluídos. Desligando em %1 segundos..."},
+
+        // Streaming
+        {"ctx_stream", "Transmitir"},
+        {"stream_started", "Transmissão iniciada para %1"},
+        {"stream_no_video", "Nenhum arquivo de vídeo encontrado neste torrent."},
+
+        // Notifications
+        {"notif_torrent_added", "Torrent Adicionado"},
+        {"settings_notif_sound", "Tocar som nas notificações"},
+
+        // Global stats
+        {"status_global", "Total: %1 baixado  |  %2 enviado  |  Proporção: %3"},
 
         // WebUI
         {"settings_webui_enable", "Habilitar WebUI"},

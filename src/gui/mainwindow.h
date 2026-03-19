@@ -64,6 +64,7 @@ private slots:
     void showContextMenu(const QPoint &pos);
     void checkForUpdate(bool silent = true);
     void checkAutoShutdown();
+    void streamTorrent(int row);
 
 private:
     void applyTheme();
@@ -96,9 +97,14 @@ private:
     bool m_startMinimized = false;
     bool m_useDefaultPath = false;
     bool m_autoShutdown = false;
+    bool m_notifSoundEnabled = true;
     QMessageBox *m_shutdownDialog = nullptr;
     QTimer *m_shutdownTimer = nullptr;
     int m_shutdownCountdown = 0;
+    QLabel *m_globalStatsLabel;
+    QTimer *m_streamPollTimer = nullptr;
+    int m_streamTorrentIndex = -1;
+    QString m_streamFilePath;
 };
 
 #endif

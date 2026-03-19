@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("BATorrent");
-    app.setApplicationVersion("1.8.0");
+    app.setApplicationVersion("1.9.0");
     app.setWindowIcon(QIcon(":/images/logo1.png"));
     app.setQuitOnLastWindowClosed(false); // keep running in tray when window is closed
 
