@@ -967,9 +967,28 @@ void MainWindow::streamTorrent(int row)
         bool ready = QFile::exists(m_streamFilePath) && (info.progress >= 0.02f || info.totalDone > 5 * 1024 * 1024);
         if (ready) {
             m_streamPollTimer->stop();
-            QDesktopServices::openUrl(QUrl::fromLocalFile(m_streamFilePath));
-            m_trayIcon->showMessage(tr_("ctx_stream"), tr_("stream_started").arg(info.name),
-                                    QSystemTrayIcon::Information, 3000);
+            bool opened = false;
+#ifdef Q_OS_MACOS
+            // macOS: try VLC, IINA, then QuickTime as fallbacks
+            for (const QString &app : {"VLC", "IINA", "QuickTime Player"}) {
+                if (QProcess::startDetached("open", {"-a", app, m_streamFilePath})) {
+                    opened = true;
+                    break;
+                }
+            }
+            if (!opened) {
+                // Last resort: let macOS pick
+                opened = QProcess::startDetached("open", {m_streamFilePath});
+            }
+#else
+            opened = QDesktopServices::openUrl(QUrl::fromLocalFile(m_streamFilePath));
+#endif
+            if (opened) {
+                m_trayIcon->showMessage(tr_("ctx_stream"), tr_("stream_started").arg(info.name),
+                                        QSystemTrayIcon::Information, 3000);
+            } else {
+                QMessageBox::warning(this, tr_("ctx_stream"), tr_("stream_no_player"));
+            }
         }
     });
     m_streamPollTimer->start(2000);

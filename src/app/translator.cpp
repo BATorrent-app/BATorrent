@@ -245,6 +245,7 @@ void Translator::loadEnglish()
         {"ctx_stream", "Stream"},
         {"stream_started", "Streaming started for %1"},
         {"stream_no_video", "No video file found in this torrent."},
+        {"stream_no_player", "No video player found. Install VLC or IINA to stream."},
 
         // Notifications
         {"notif_torrent_added", "Torrent Added"},
@@ -481,6 +482,7 @@ void Translator::loadPortuguese()
         {"ctx_stream", "Transmitir"},
         {"stream_started", "Transmissão iniciada para %1"},
         {"stream_no_video", "Nenhum arquivo de vídeo encontrado neste torrent."},
+        {"stream_no_player", "Nenhum player de vídeo encontrado. Instale o VLC ou IINA para transmitir."},
 
         // Notifications
         {"notif_torrent_added", "Torrent Adicionado"},
