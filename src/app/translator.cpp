@@ -235,6 +235,12 @@ void Translator::loadEnglish()
         {"killswitch_triggered", "VPN interface went down — all torrents paused."},
         {"killswitch_restored", "VPN interface restored — torrents resumed."},
 
+        // Auto-shutdown
+        {"settings_auto_shutdown", "Shut down PC when all downloads finish"},
+        {"action_auto_shutdown", "Auto Shutdown When Done"},
+        {"shutdown_title", "Auto Shutdown"},
+        {"shutdown_msg", "All downloads complete. Shutting down in %1 seconds..."},
+
         // WebUI
         {"settings_webui_enable", "Enable WebUI"},
         {"settings_webui_port", "Port:"},
@@ -452,6 +458,12 @@ void Translator::loadPortuguese()
         {"killswitch_title", "Kill Switch"},
         {"killswitch_triggered", "Interface VPN caiu — todos os torrents pausados."},
         {"killswitch_restored", "Interface VPN restaurada — torrents retomados."},
+
+        // Auto-shutdown
+        {"settings_auto_shutdown", "Desligar PC quando todos os downloads terminarem"},
+        {"action_auto_shutdown", "Desligar Automaticamente ao Concluir"},
+        {"shutdown_title", "Desligamento Automático"},
+        {"shutdown_msg", "Todos os downloads concluídos. Desligando em %1 segundos..."},
 
         // WebUI
         {"settings_webui_enable", "Habilitar WebUI"},

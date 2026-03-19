@@ -73,6 +73,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_startMinimizedCheck = new QCheckBox(tr_("settings_start_tray"));
     generalLayout->addRow("", m_startMinimizedCheck);
 
+    m_autoShutdownCheck = new QCheckBox(tr_("settings_auto_shutdown"));
+    generalLayout->addRow("", m_autoShutdownCheck);
+
     tabs->addTab(generalWidget, tr_("settings_general"));
 
     // ---- Speed tab ----
@@ -271,6 +274,8 @@ void SettingsDialog::setLanguageIndex(int index) { m_languageCombo->setCurrentIn
 void SettingsDialog::setStartMinimized(bool val) { m_startMinimizedCheck->setChecked(val); }
 void SettingsDialog::setUseDefaultPath(bool val) { m_useDefaultPathCheck->setChecked(val); }
 void SettingsDialog::setThemeIndex(int index) { m_themeCombo->setCurrentIndex(index); }
+bool SettingsDialog::autoShutdown() const { return m_autoShutdownCheck->isChecked(); }
+void SettingsDialog::setAutoShutdown(bool val) { m_autoShutdownCheck->setChecked(val); }
 
 // Network getters/setters
 bool SettingsDialog::dhtEnabled() const { return m_dhtCheck->isChecked(); }

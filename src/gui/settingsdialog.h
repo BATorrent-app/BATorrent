@@ -28,6 +28,7 @@ public:
     bool startMinimized() const;
     bool useDefaultPath() const;
     int themeIndex() const;
+    bool autoShutdown() const;
 
     void setDefaultSavePath(const QString &path);
     void setMaxDownloadSpeed(int kbps);
@@ -36,6 +37,7 @@ public:
     void setStartMinimized(bool val);
     void setUseDefaultPath(bool val);
     void setThemeIndex(int index);
+    void setAutoShutdown(bool val);
 
     // Network
     bool dhtEnabled() const;
@@ -83,6 +85,7 @@ private:
     QCheckBox *m_startMinimizedCheck;
     QCheckBox *m_useDefaultPathCheck;
     QComboBox *m_themeCombo;
+    QCheckBox *m_autoShutdownCheck;
 
     // Network tab
     QCheckBox *m_dhtCheck;

@@ -12,6 +12,7 @@ class QLabel;
 class QLineEdit;
 class QSplitter;
 class QSystemTrayIcon;
+class QMessageBox;
 class SessionManager;
 class TorrentModel;
 class TorrentFilter;
@@ -62,6 +63,7 @@ private slots:
     void filterByState(const QString &state);
     void showContextMenu(const QPoint &pos);
     void checkForUpdate(bool silent = true);
+    void checkAutoShutdown();
 
 private:
     void applyTheme();
@@ -93,6 +95,10 @@ private:
     WebServer *m_webServer = nullptr;
     bool m_startMinimized = false;
     bool m_useDefaultPath = false;
+    bool m_autoShutdown = false;
+    QMessageBox *m_shutdownDialog = nullptr;
+    QTimer *m_shutdownTimer = nullptr;
+    int m_shutdownCountdown = 0;
 };
 
 #endif
