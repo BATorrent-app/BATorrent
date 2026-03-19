@@ -284,6 +284,10 @@ void Translator::loadEnglish()
         {"search_streams_done", "%1 stream(s) available"},
         {"search_added", "Added: %1"},
         {"search_no_addons", "No addons installed. Go to Settings > Addons to add one."},
+        {"search_no_catalog", "No catalog addon enabled. Enable Cinemeta in Settings > Addons."},
+        {"search_no_stream", "No stream addon enabled. Enable Torrentio in Settings > Addons."},
+        {"addon_suggested", "Suggested Addons"},
+        {"addon_suggest_hint", "Click to install recommended addons:"},
 
         // WebUI
         {"settings_webui_enable", "Enable WebUI"},
@@ -552,6 +556,10 @@ void Translator::loadPortuguese()
         {"search_streams_done", "%1 stream(s) disponível(eis)"},
         {"search_added", "Adicionado: %1"},
         {"search_no_addons", "Nenhum addon instalado. Vá em Configurações > Addons para adicionar."},
+        {"search_no_catalog", "Nenhum addon de catálogo habilitado. Habilite o Cinemeta em Configurações > Addons."},
+        {"search_no_stream", "Nenhum addon de streams habilitado. Habilite o Torrentio em Configurações > Addons."},
+        {"addon_suggested", "Addons Sugeridos"},
+        {"addon_suggest_hint", "Clique para instalar addons recomendados:"},
 
         // WebUI
         {"settings_webui_enable", "Habilitar WebUI"},

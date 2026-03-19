@@ -54,6 +54,10 @@ public:
     void loadAddons();
     void saveAddons();
 
+    // Check addon capabilities
+    bool hasCatalogAddon() const;
+    bool hasStreamAddon() const;
+
     // Stremio protocol: search catalogs
     void searchCatalog(const QString &query);
 
@@ -77,6 +81,7 @@ signals:
 
 private:
     AddonManager();
+    void installDefaults();
     void fetchManifest(const QString &url);
 
     QNetworkAccessManager *m_net;

@@ -108,6 +108,11 @@ void SearchDialog::performSearch()
     QString query = m_searchEdit->text().trimmed();
     if (query.isEmpty()) return;
 
+    if (!AddonManager::instance().hasCatalogAddon()) {
+        m_statusLabel->setText(tr_("search_no_catalog"));
+        return;
+    }
+
     m_catalogTable->setRowCount(0);
     m_currentItems.clear();
     switchToCatalog();
@@ -138,6 +143,11 @@ void SearchDialog::onItemDoubleClicked(int row, int)
     m_streamTable->setRowCount(0);
     m_currentStreams.clear();
     switchToStreams();
+
+    if (!AddonManager::instance().hasStreamAddon()) {
+        m_statusLabel->setText(tr_("search_no_stream"));
+        return;
+    }
 
     AddonManager::instance().getStreams(item.type, item.id);
 }
