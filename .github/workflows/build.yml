@@ -60,7 +60,6 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.7.*'
-          modules: 'qtsvg'
           cache: true
 
       - name: Cache vcpkg
