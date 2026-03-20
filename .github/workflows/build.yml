@@ -14,7 +14,7 @@ jobs:
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: cmake g++ qt6-base-dev libqt6widgets6 libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
+          packages: cmake g++ qt6-base-dev libqt6widgets6 libqt6svg6-dev libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
           version: 1.0
 
       - name: Build
@@ -60,6 +60,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.7.*'
+          modules: 'qtsvg'
           cache: true
 
       - name: Cache vcpkg
@@ -181,8 +182,8 @@ jobs:
             '  <key>CFBundleExecutable</key>' '  <string>BATorrent</string>' \
             '  <key>CFBundleIdentifier</key>' '  <string>com.mateuscruz19.batorrent</string>' \
             '  <key>CFBundleName</key>' '  <string>BATorrent</string>' \
-            '  <key>CFBundleVersion</key>' '  <string>2.0.0</string>' \
-            '  <key>CFBundleShortVersionString</key>' '  <string>2.0.0</string>' \
+            '  <key>CFBundleVersion</key>' '  <string>2.0.1</string>' \
+            '  <key>CFBundleShortVersionString</key>' '  <string>2.0.1</string>' \
             '  <key>CFBundlePackageType</key>' '  <string>APPL</string>' \
             '  <key>CFBundleIconFile</key>' '  <string>batorrent</string>' \
             '  <key>LSMinimumSystemVersion</key>' '  <string>12.0</string>' \
