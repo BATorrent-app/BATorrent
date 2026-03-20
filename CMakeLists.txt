@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 2.1.0)
+project(BATorrent VERSION 2.0.1)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg)
 find_package(LibtorrentRasterbar REQUIRED)
 set(CMAKE_AUTOMOC ON)
@@ -36,6 +36,7 @@ add_executable(BATorrent WIN32
     ${RESOURCES}
     ${WIN_RC}
 )
+target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
 target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg LibtorrentRasterbar::torrent-rasterbar)
 
 # Windows: target Windows 7+ to silence Boost.Asio warnings
