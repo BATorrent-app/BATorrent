@@ -44,6 +44,7 @@ private:
     QLabel *m_statusLabel;
     SessionManager *m_session;
     QString m_savePath;
+    QPushButton *m_backBtn;
     QList<CatalogItem> m_currentItems;
     QList<StreamResult> m_currentStreams;
     QList<TorrentSearchResult> m_torrentResults;
