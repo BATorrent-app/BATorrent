@@ -17,6 +17,10 @@
 #include <QFile>
 #include <QSettings>
 #include <QNetworkInterface>
+#include <QDateTime>
+#include <QTextStream>
+#include <libtorrent/ip_filter.hpp>
+#include <boost/asio/ip/address.hpp>
 
 SessionManager::SessionManager(QObject *parent)
     : QObject(parent)
@@ -188,12 +192,16 @@ std::vector<PeerInfo> SessionManager::peersAt(int index) const
 
         for (const auto &p : peers) {
             PeerInfo pi;
-            pi.ip = QString::fromStdString(p.ip.address().to_string());
+            try {
+                pi.ip = QString::fromStdString(p.ip.address().to_string());
+            } catch (...) { continue; }
             pi.port = p.ip.port();
             pi.downloadRate = p.down_speed;
             pi.uploadRate = p.up_speed;
             pi.progress = p.progress;
-            pi.client = QString::fromStdString(p.client);
+            // Guard against corrupt/oversized client strings
+            if (p.client.size() < 256)
+                pi.client = QString::fromStdString(p.client);
             result.push_back(pi);
         }
     } catch (...) {}
@@ -463,6 +471,7 @@ void SessionManager::updateStats()
     processAlerts();
     checkSeedRatios();
     checkInterfaceStatus();
+    checkBandwidthSchedule();
     if (!m_torrents.empty())
         emit torrentsUpdated();
 }
@@ -683,6 +692,170 @@ float SessionManager::globalRatio() const
 {
     qint64 down = globalDownloaded();
     return down > 0 ? static_cast<float>(globalUploaded()) / static_cast<float>(down) : 0.0f;
+}
+
+// --- Proxy ---
+
+void SessionManager::setProxySettings(int type, const QString &host, int port,
+                                       const QString &user, const QString &pass)
+{
+    m_proxyType = type;
+    m_proxyHost = host;
+    m_proxyPort = port;
+    m_proxyUser = user;
+    m_proxyPass = pass;
+
+    lt::settings_pack pack;
+    if (type == 0) {
+        pack.set_int(lt::settings_pack::proxy_type, lt::settings_pack::none);
+    } else {
+        int ltType = (type == 1) ? lt::settings_pack::socks5_pw : lt::settings_pack::http_pw;
+        if (user.isEmpty())
+            ltType = (type == 1) ? lt::settings_pack::socks5 : lt::settings_pack::http;
+        pack.set_int(lt::settings_pack::proxy_type, ltType);
+        pack.set_str(lt::settings_pack::proxy_hostname, host.toStdString());
+        pack.set_int(lt::settings_pack::proxy_port, port);
+        if (!user.isEmpty()) {
+            pack.set_str(lt::settings_pack::proxy_username, user.toStdString());
+            pack.set_str(lt::settings_pack::proxy_password, pass.toStdString());
+        }
+    }
+    m_session.apply_settings(pack);
+}
+
+int SessionManager::proxyType() const { return m_proxyType; }
+QString SessionManager::proxyHost() const { return m_proxyHost; }
+int SessionManager::proxyPort() const { return m_proxyPort; }
+QString SessionManager::proxyUser() const { return m_proxyUser; }
+QString SessionManager::proxyPass() const { return m_proxyPass; }
+
+// --- IP Filter ---
+
+void SessionManager::loadIpFilter(const QString &filePath)
+{
+    m_ipFilterPath = filePath;
+    m_ipFilterCount = 0;
+
+    if (filePath.isEmpty()) {
+        clearIpFilter();
+        return;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return;
+
+    lt::ip_filter filter;
+    QTextStream in(&file);
+    int count = 0;
+
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        if (line.isEmpty() || line.startsWith('#'))
+            continue;
+
+        // P2P format: "description:startIP-endIP"
+        int colonIdx = line.lastIndexOf(':');
+        QString range;
+        if (colonIdx >= 0 && line.indexOf('.', colonIdx) > 0)
+            range = line.mid(colonIdx + 1).trimmed();
+        else
+            range = line;
+
+        int dashIdx = range.indexOf('-');
+        if (dashIdx < 0) continue;
+
+        QString startIp = range.left(dashIdx).trimmed();
+        QString endIp = range.mid(dashIdx + 1).trimmed();
+
+        try {
+            boost::system::error_code ec1, ec2;
+            auto addr1 = boost::asio::ip::make_address(startIp.toStdString(), ec1);
+            auto addr2 = boost::asio::ip::make_address(endIp.toStdString(), ec2);
+            if (ec1 || ec2) continue;
+            filter.add_rule(addr1, addr2, lt::ip_filter::blocked);
+            ++count;
+        } catch (...) {}
+    }
+
+    m_session.set_ip_filter(filter);
+    m_ipFilterCount = count;
+}
+
+void SessionManager::clearIpFilter()
+{
+    m_ipFilterPath.clear();
+    m_ipFilterCount = 0;
+    m_session.set_ip_filter(lt::ip_filter());
+}
+
+QString SessionManager::ipFilterPath() const { return m_ipFilterPath; }
+int SessionManager::ipFilterCount() const { return m_ipFilterCount; }
+
+// --- Bandwidth Scheduler ---
+
+void SessionManager::setAltSpeedLimits(int downKbps, int upKbps)
+{
+    m_altDownLimit = downKbps;
+    m_altUpLimit = upKbps;
+}
+
+int SessionManager::altDownloadLimit() const { return m_altDownLimit; }
+int SessionManager::altUploadLimit() const { return m_altUpLimit; }
+
+void SessionManager::setSchedulerEnabled(bool enabled)
+{
+    m_schedulerEnabled = enabled;
+    if (!enabled && m_altSpeedsActive) {
+        // Restore normal speeds
+        m_altSpeedsActive = false;
+        setDownloadLimit(m_normalDownLimit);
+        setUploadLimit(m_normalUpLimit);
+    }
+}
+
+bool SessionManager::schedulerEnabled() const { return m_schedulerEnabled; }
+
+void SessionManager::setScheduleFromHour(int hour) { m_scheduleFromHour = hour; }
+void SessionManager::setScheduleToHour(int hour) { m_scheduleToHour = hour; }
+int SessionManager::scheduleFromHour() const { return m_scheduleFromHour; }
+int SessionManager::scheduleToHour() const { return m_scheduleToHour; }
+
+void SessionManager::setScheduleDays(int daysMask) { m_scheduleDays = daysMask; }
+int SessionManager::scheduleDays() const { return m_scheduleDays; }
+
+bool SessionManager::altSpeedsActive() const { return m_altSpeedsActive; }
+
+void SessionManager::checkBandwidthSchedule()
+{
+    if (!m_schedulerEnabled || (m_altDownLimit == 0 && m_altUpLimit == 0))
+        return;
+
+    QDateTime now = QDateTime::currentDateTime();
+    int currentHour = now.time().hour();
+    int dayOfWeek = now.date().dayOfWeek() - 1; // Qt: Mon=1, we want Mon=0
+    bool dayMatches = (m_scheduleDays & (1 << dayOfWeek)) != 0;
+
+    bool inSchedule = false;
+    if (dayMatches) {
+        if (m_scheduleFromHour <= m_scheduleToHour) {
+            inSchedule = (currentHour >= m_scheduleFromHour && currentHour < m_scheduleToHour);
+        } else {
+            // Wraps midnight: e.g. 22:00 to 06:00
+            inSchedule = (currentHour >= m_scheduleFromHour || currentHour < m_scheduleToHour);
+        }
+    }
+
+    if (inSchedule && !m_altSpeedsActive) {
+        m_normalDownLimit = downloadLimit();
+        m_normalUpLimit = uploadLimit();
+        m_altSpeedsActive = true;
+        setDownloadLimit(m_altDownLimit);
+        setUploadLimit(m_altUpLimit);
+    } else if (!inSchedule && m_altSpeedsActive) {
+        m_altSpeedsActive = false;
+        setDownloadLimit(m_normalDownLimit);
+        setUploadLimit(m_normalUpLimit);
+    }
 }
 
 void SessionManager::checkInterfaceStatus()

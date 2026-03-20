@@ -74,8 +74,56 @@ public:
     void setWebUiPasswordHash(const QString &hash);
     void setWebUiRemoteAccess(bool enabled);
 
+    // Proxy
+    int proxyType() const;
+    QString proxyHost() const;
+    int proxyPort() const;
+    QString proxyUser() const;
+    QString proxyPass() const;
+
+    void setProxyType(int type);
+    void setProxyHost(const QString &host);
+    void setProxyPort(int port);
+    void setProxyUser(const QString &user);
+    void setProxyPass(const QString &pass);
+
+    // IP Filter
+    QString ipFilterPath() const;
+    void setIpFilterPath(const QString &path);
+
+    // Bandwidth Scheduler
+    bool schedulerEnabled() const;
+    int altDownloadSpeed() const;
+    int altUploadSpeed() const;
+    int scheduleFromHour() const;
+    int scheduleToHour() const;
+    int scheduleDays() const;
+
+    void setSchedulerEnabled(bool enabled);
+    void setAltDownloadSpeed(int kbps);
+    void setAltUploadSpeed(int kbps);
+    void setScheduleFromHour(int hour);
+    void setScheduleToHour(int hour);
+    void setScheduleDays(int daysMask);
+
+    // Media Server
+    bool plexEnabled() const;
+    QString plexUrl() const;
+    QString plexToken() const;
+    bool jellyfinEnabled() const;
+    QString jellyfinUrl() const;
+    QString jellyfinApiKey() const;
+
+    void setPlexEnabled(bool enabled);
+    void setPlexUrl(const QString &url);
+    void setPlexToken(const QString &token);
+    void setJellyfinEnabled(bool enabled);
+    void setJellyfinUrl(const QString &url);
+    void setJellyfinApiKey(const QString &key);
+
 private slots:
     void browseSavePath();
+    void browseIpFilter();
     void refreshInterfaces();
 
 private:
@@ -109,6 +157,32 @@ private:
     QLineEdit *m_webUiPassEdit;
     QCheckBox *m_webUiRemoteCheck;
     QString m_webUiPasswordHash;
+
+    // Proxy
+    QComboBox *m_proxyTypeCombo;
+    QLineEdit *m_proxyHostEdit;
+    QSpinBox *m_proxyPortSpin;
+    QLineEdit *m_proxyUserEdit;
+    QLineEdit *m_proxyPassEdit;
+
+    // IP Filter
+    QLineEdit *m_ipFilterEdit;
+
+    // Bandwidth Scheduler
+    QCheckBox *m_schedulerCheck;
+    QSpinBox *m_altDownSpin;
+    QSpinBox *m_altUpSpin;
+    QSpinBox *m_schedFromSpin;
+    QSpinBox *m_schedToSpin;
+    QList<QCheckBox *> m_dayChecks;
+
+    // Media Server
+    QCheckBox *m_plexCheck;
+    QLineEdit *m_plexUrlEdit;
+    QLineEdit *m_plexTokenEdit;
+    QCheckBox *m_jellyfinCheck;
+    QLineEdit *m_jellyfinUrlEdit;
+    QLineEdit *m_jellyfinKeyEdit;
 };
 
 #endif

@@ -11,6 +11,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QCryptographicHash>
+#include <QStandardPaths>
 #include <sstream>
 
 WebServer::WebServer(SessionManager *session, QObject *parent)
@@ -124,10 +125,19 @@ void WebServer::handleClient(QTcpSocket *socket)
         sendJson(socket, 200, handleGetTorrents());
     }
     else if (method == "POST" && path == "/api/torrents") {
-        if (handleAddTorrent(body))
-            sendJson(socket, 200, R"({"status":"ok"})");
-        else
-            sendError(socket, 400, "Failed to add torrent");
+        // Check if it's a multipart upload or JSON magnet
+        QString contentType = request.mid(request.indexOf("Content-Type:"));
+        if (contentType.contains("multipart/form-data")) {
+            if (handleUploadTorrent(requestData))
+                sendJson(socket, 200, R"({"status":"ok"})");
+            else
+                sendError(socket, 400, "Failed to upload torrent");
+        } else {
+            if (handleAddTorrent(body))
+                sendJson(socket, 200, R"({"status":"ok"})");
+            else
+                sendError(socket, 400, "Failed to add torrent");
+        }
     }
     else if (method == "GET" && path == "/api/status") {
         sendJson(socket, 200, handleGetStatus());
@@ -338,6 +348,69 @@ bool WebServer::handleAddTorrent(const QByteArray &body)
     }
 
     m_session->addMagnet(magnet, savePath);
+    return true;
+}
+
+bool WebServer::handleUploadTorrent(const QByteArray &requestData)
+{
+    // Find boundary from Content-Type header
+    int ctIdx = requestData.indexOf("Content-Type: multipart/form-data");
+    if (ctIdx < 0) return false;
+
+    int boundaryIdx = requestData.indexOf("boundary=", ctIdx);
+    if (boundaryIdx < 0) return false;
+
+    int boundaryEnd = requestData.indexOf('\r', boundaryIdx);
+    if (boundaryEnd < 0) boundaryEnd = requestData.indexOf('\n', boundaryIdx);
+    QByteArray boundary = "--" + requestData.mid(boundaryIdx + 9, boundaryEnd - boundaryIdx - 9).trimmed();
+
+    // Find the file part
+    int filePartIdx = requestData.indexOf("filename=\"", boundaryIdx);
+    if (filePartIdx < 0) return false;
+
+    // Find the start of file data (after double CRLF in this part)
+    int dataStart = requestData.indexOf("\r\n\r\n", filePartIdx);
+    if (dataStart < 0) return false;
+    dataStart += 4;
+
+    // Find the end of file data (next boundary)
+    int dataEnd = requestData.indexOf(boundary, dataStart);
+    if (dataEnd < 0) return false;
+    dataEnd -= 2; // remove trailing CRLF before boundary
+
+    QByteArray fileData = requestData.mid(dataStart, dataEnd - dataStart);
+
+    // Extract savePath if present
+    QString savePath;
+    int savePathIdx = requestData.indexOf("name=\"savePath\"");
+    if (savePathIdx >= 0) {
+        int spDataStart = requestData.indexOf("\r\n\r\n", savePathIdx);
+        if (spDataStart >= 0) {
+            spDataStart += 4;
+            int spDataEnd = requestData.indexOf(boundary, spDataStart);
+            if (spDataEnd >= 0)
+                savePath = QString::fromUtf8(requestData.mid(spDataStart, spDataEnd - spDataStart - 2)).trimmed();
+        }
+    }
+
+    if (savePath.isEmpty()) {
+        if (m_session->torrentCount() > 0)
+            savePath = m_session->torrentAt(0).savePath;
+        else
+            savePath = QDir::homePath() + "/Downloads";
+    }
+
+    // Write to temp file
+    QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    QString tempFile = QDir(tempDir).filePath("batorrent_upload.torrent");
+    QFile file(tempFile);
+    if (!file.open(QIODevice::WriteOnly))
+        return false;
+    file.write(fileData);
+    file.close();
+
+    m_session->addTorrent(tempFile, savePath);
+    QFile::remove(tempFile);
     return true;
 }
 

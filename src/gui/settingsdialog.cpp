@@ -114,6 +114,57 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     speedLayout->addRow(upLabel, m_maxUpSpin);
     speedLayout->addRow(ratioLabel, m_seedRatioSpin);
 
+    // Scheduler group inside speed tab
+    auto *schedGroup = new QGroupBox(tr_("settings_scheduler_group"));
+    auto *schedLayout = new QFormLayout(schedGroup);
+    schedLayout->setSpacing(10);
+
+    m_schedulerCheck = new QCheckBox(tr_("settings_scheduler_enable"));
+    schedLayout->addRow("", m_schedulerCheck);
+
+    m_altDownSpin = new QSpinBox;
+    m_altDownSpin->setRange(0, 999999);
+    m_altDownSpin->setSuffix(" KB/s");
+    m_altDownSpin->setSpecialValueText(tr_("settings_unlimited"));
+    auto *altDownLabel = new QLabel(tr_("settings_alt_down"));
+    altDownLabel->setStyleSheet(labelStyle);
+    schedLayout->addRow(altDownLabel, m_altDownSpin);
+
+    m_altUpSpin = new QSpinBox;
+    m_altUpSpin->setRange(0, 999999);
+    m_altUpSpin->setSuffix(" KB/s");
+    m_altUpSpin->setSpecialValueText(tr_("settings_unlimited"));
+    auto *altUpLabel = new QLabel(tr_("settings_alt_up"));
+    altUpLabel->setStyleSheet(labelStyle);
+    schedLayout->addRow(altUpLabel, m_altUpSpin);
+
+    auto *schedTimeLayout = new QHBoxLayout;
+    m_schedFromSpin = new QSpinBox;
+    m_schedFromSpin->setRange(0, 23);
+    m_schedFromSpin->setSuffix(":00");
+    m_schedToSpin = new QSpinBox;
+    m_schedToSpin->setRange(0, 23);
+    m_schedToSpin->setSuffix(":00");
+    schedTimeLayout->addWidget(m_schedFromSpin);
+    schedTimeLayout->addWidget(new QLabel(tr_("settings_sched_to")));
+    schedTimeLayout->addWidget(m_schedToSpin);
+    schedTimeLayout->addStretch();
+    auto *schedTimeLabel = new QLabel(tr_("settings_sched_from"));
+    schedTimeLabel->setStyleSheet(labelStyle);
+    schedLayout->addRow(schedTimeLabel, schedTimeLayout);
+
+    auto *daysLayout = new QHBoxLayout;
+    static const QStringList dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    for (int i = 0; i < 7; ++i) {
+        auto *cb = new QCheckBox(dayNames[i]);
+        cb->setChecked(true);
+        m_dayChecks.append(cb);
+        daysLayout->addWidget(cb);
+    }
+    schedLayout->addRow(tr_("settings_sched_days"), daysLayout);
+
+    speedLayout->addRow(schedGroup);
+
     tabs->addTab(speedWidget, tr_("settings_speed"));
 
     // ---- Network tab ----
@@ -191,6 +242,65 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     networkLayout->addRow(vpnGroup);
 
+    // Proxy group
+    auto *proxyGroup = new QGroupBox(tr_("settings_proxy_group"));
+    auto *proxyLayout = new QFormLayout(proxyGroup);
+    proxyLayout->setSpacing(10);
+
+    m_proxyTypeCombo = new QComboBox;
+    m_proxyTypeCombo->addItem(tr_("settings_proxy_none"));
+    m_proxyTypeCombo->addItem("SOCKS5");
+    m_proxyTypeCombo->addItem("HTTP");
+    auto *proxyTypeLabel = new QLabel(tr_("settings_proxy_type"));
+    proxyTypeLabel->setStyleSheet(labelStyle);
+    proxyLayout->addRow(proxyTypeLabel, m_proxyTypeCombo);
+
+    m_proxyHostEdit = new QLineEdit;
+    m_proxyHostEdit->setPlaceholderText("127.0.0.1");
+    auto *proxyHostLabel = new QLabel(tr_("settings_proxy_host"));
+    proxyHostLabel->setStyleSheet(labelStyle);
+    proxyLayout->addRow(proxyHostLabel, m_proxyHostEdit);
+
+    m_proxyPortSpin = new QSpinBox;
+    m_proxyPortSpin->setRange(0, 65535);
+    m_proxyPortSpin->setValue(1080);
+    auto *proxyPortLabel = new QLabel(tr_("settings_proxy_port"));
+    proxyPortLabel->setStyleSheet(labelStyle);
+    proxyLayout->addRow(proxyPortLabel, m_proxyPortSpin);
+
+    m_proxyUserEdit = new QLineEdit;
+    m_proxyUserEdit->setPlaceholderText(tr_("settings_proxy_user_hint"));
+    auto *proxyUserLabel = new QLabel(tr_("settings_proxy_user"));
+    proxyUserLabel->setStyleSheet(labelStyle);
+    proxyLayout->addRow(proxyUserLabel, m_proxyUserEdit);
+
+    m_proxyPassEdit = new QLineEdit;
+    m_proxyPassEdit->setEchoMode(QLineEdit::Password);
+    auto *proxyPassLabel = new QLabel(tr_("settings_proxy_pass"));
+    proxyPassLabel->setStyleSheet(labelStyle);
+    proxyLayout->addRow(proxyPassLabel, m_proxyPassEdit);
+
+    networkLayout->addRow(proxyGroup);
+
+    // IP Filter group
+    auto *ipGroup = new QGroupBox(tr_("settings_ip_filter_group"));
+    auto *ipLayout = new QFormLayout(ipGroup);
+    ipLayout->setSpacing(10);
+
+    auto *ipFilterLayout = new QHBoxLayout;
+    m_ipFilterEdit = new QLineEdit;
+    m_ipFilterEdit->setPlaceholderText(tr_("settings_ip_filter_hint"));
+    auto *ipBrowseBtn = new QPushButton(tr_("settings_browse"));
+    ipBrowseBtn->setFixedWidth(100);
+    connect(ipBrowseBtn, &QPushButton::clicked, this, &SettingsDialog::browseIpFilter);
+    ipFilterLayout->addWidget(m_ipFilterEdit);
+    ipFilterLayout->addWidget(ipBrowseBtn);
+    auto *ipFilterLabel = new QLabel(tr_("settings_ip_filter_file"));
+    ipFilterLabel->setStyleSheet(labelStyle);
+    ipLayout->addRow(ipFilterLabel, ipFilterLayout);
+
+    networkLayout->addRow(ipGroup);
+
     refreshInterfaces();
 
     tabs->addTab(networkWidget, tr_("settings_network"));
@@ -235,6 +345,56 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     });
 
     tabs->addTab(webUiWidget, "WebUI");
+
+    // ---- Media Server tab ----
+    auto *mediaWidget = new QWidget;
+    auto *mediaLayout = new QFormLayout(mediaWidget);
+    mediaLayout->setContentsMargins(16, 16, 16, 16);
+    mediaLayout->setSpacing(12);
+
+    auto *plexGroup = new QGroupBox("Plex");
+    auto *plexLayout = new QFormLayout(plexGroup);
+    plexLayout->setSpacing(10);
+
+    m_plexCheck = new QCheckBox(tr_("settings_media_enable_plex"));
+    plexLayout->addRow("", m_plexCheck);
+
+    m_plexUrlEdit = new QLineEdit;
+    m_plexUrlEdit->setPlaceholderText("http://localhost:32400");
+    auto *plexUrlLabel = new QLabel("URL:");
+    plexUrlLabel->setStyleSheet(labelStyle);
+    plexLayout->addRow(plexUrlLabel, m_plexUrlEdit);
+
+    m_plexTokenEdit = new QLineEdit;
+    m_plexTokenEdit->setPlaceholderText("X-Plex-Token");
+    auto *plexTokenLabel = new QLabel("Token:");
+    plexTokenLabel->setStyleSheet(labelStyle);
+    plexLayout->addRow(plexTokenLabel, m_plexTokenEdit);
+
+    mediaLayout->addRow(plexGroup);
+
+    auto *jellyGroup = new QGroupBox("Jellyfin / Emby");
+    auto *jellyLayout = new QFormLayout(jellyGroup);
+    jellyLayout->setSpacing(10);
+
+    m_jellyfinCheck = new QCheckBox(tr_("settings_media_enable_jellyfin"));
+    jellyLayout->addRow("", m_jellyfinCheck);
+
+    m_jellyfinUrlEdit = new QLineEdit;
+    m_jellyfinUrlEdit->setPlaceholderText("http://localhost:8096");
+    auto *jellyUrlLabel = new QLabel("URL:");
+    jellyUrlLabel->setStyleSheet(labelStyle);
+    jellyLayout->addRow(jellyUrlLabel, m_jellyfinUrlEdit);
+
+    m_jellyfinKeyEdit = new QLineEdit;
+    m_jellyfinKeyEdit->setPlaceholderText("API Key");
+    auto *jellyKeyLabel = new QLabel(tr_("settings_media_api_key"));
+    jellyKeyLabel->setStyleSheet(labelStyle);
+    jellyLayout->addRow(jellyKeyLabel, m_jellyfinKeyEdit);
+
+    mediaLayout->addRow(jellyGroup);
+
+    tabs->addTab(mediaWidget, tr_("settings_media_server"));
 
     // ---- Buttons ----
     auto *btnLayout = new QHBoxLayout;
@@ -387,3 +547,70 @@ void SettingsDialog::setWebUiPort(int port) { m_webUiPortSpin->setValue(port); }
 void SettingsDialog::setWebUiUser(const QString &user) { m_webUiUserEdit->setText(user); }
 void SettingsDialog::setWebUiPasswordHash(const QString &hash) { m_webUiPasswordHash = hash; }
 void SettingsDialog::setWebUiRemoteAccess(bool enabled) { m_webUiRemoteCheck->setChecked(enabled); }
+
+// Proxy getters/setters
+int SettingsDialog::proxyType() const { return m_proxyTypeCombo->currentIndex(); }
+QString SettingsDialog::proxyHost() const { return m_proxyHostEdit->text(); }
+int SettingsDialog::proxyPort() const { return m_proxyPortSpin->value(); }
+QString SettingsDialog::proxyUser() const { return m_proxyUserEdit->text(); }
+QString SettingsDialog::proxyPass() const { return m_proxyPassEdit->text(); }
+
+void SettingsDialog::setProxyType(int type) { m_proxyTypeCombo->setCurrentIndex(type); }
+void SettingsDialog::setProxyHost(const QString &host) { m_proxyHostEdit->setText(host); }
+void SettingsDialog::setProxyPort(int port) { m_proxyPortSpin->setValue(port); }
+void SettingsDialog::setProxyUser(const QString &user) { m_proxyUserEdit->setText(user); }
+void SettingsDialog::setProxyPass(const QString &pass) { m_proxyPassEdit->setText(pass); }
+
+// IP Filter getters/setters
+QString SettingsDialog::ipFilterPath() const { return m_ipFilterEdit->text(); }
+void SettingsDialog::setIpFilterPath(const QString &path) { m_ipFilterEdit->setText(path); }
+
+void SettingsDialog::browseIpFilter()
+{
+    QString file = QFileDialog::getOpenFileName(this, tr_("settings_ip_filter_file"),
+                                                 QString(), "Blocklists (*.txt *.p2p *.dat);;All files (*)");
+    if (!file.isEmpty())
+        m_ipFilterEdit->setText(file);
+}
+
+// Scheduler getters/setters
+bool SettingsDialog::schedulerEnabled() const { return m_schedulerCheck->isChecked(); }
+int SettingsDialog::altDownloadSpeed() const { return m_altDownSpin->value(); }
+int SettingsDialog::altUploadSpeed() const { return m_altUpSpin->value(); }
+int SettingsDialog::scheduleFromHour() const { return m_schedFromSpin->value(); }
+int SettingsDialog::scheduleToHour() const { return m_schedToSpin->value(); }
+
+int SettingsDialog::scheduleDays() const
+{
+    int mask = 0;
+    for (int i = 0; i < 7; ++i)
+        if (m_dayChecks[i]->isChecked()) mask |= (1 << i);
+    return mask;
+}
+
+void SettingsDialog::setSchedulerEnabled(bool enabled) { m_schedulerCheck->setChecked(enabled); }
+void SettingsDialog::setAltDownloadSpeed(int kbps) { m_altDownSpin->setValue(kbps); }
+void SettingsDialog::setAltUploadSpeed(int kbps) { m_altUpSpin->setValue(kbps); }
+void SettingsDialog::setScheduleFromHour(int hour) { m_schedFromSpin->setValue(hour); }
+void SettingsDialog::setScheduleToHour(int hour) { m_schedToSpin->setValue(hour); }
+
+void SettingsDialog::setScheduleDays(int daysMask)
+{
+    for (int i = 0; i < 7; ++i)
+        m_dayChecks[i]->setChecked((daysMask & (1 << i)) != 0);
+}
+
+// Media Server getters/setters
+bool SettingsDialog::plexEnabled() const { return m_plexCheck->isChecked(); }
+QString SettingsDialog::plexUrl() const { return m_plexUrlEdit->text(); }
+QString SettingsDialog::plexToken() const { return m_plexTokenEdit->text(); }
+bool SettingsDialog::jellyfinEnabled() const { return m_jellyfinCheck->isChecked(); }
+QString SettingsDialog::jellyfinUrl() const { return m_jellyfinUrlEdit->text(); }
+QString SettingsDialog::jellyfinApiKey() const { return m_jellyfinKeyEdit->text(); }
+
+void SettingsDialog::setPlexEnabled(bool enabled) { m_plexCheck->setChecked(enabled); }
+void SettingsDialog::setPlexUrl(const QString &url) { m_plexUrlEdit->setText(url); }
+void SettingsDialog::setPlexToken(const QString &token) { m_plexTokenEdit->setText(token); }
+void SettingsDialog::setJellyfinEnabled(bool enabled) { m_jellyfinCheck->setChecked(enabled); }
+void SettingsDialog::setJellyfinUrl(const QString &url) { m_jellyfinUrlEdit->setText(url); }
+void SettingsDialog::setJellyfinApiKey(const QString &key) { m_jellyfinKeyEdit->setText(key); }
