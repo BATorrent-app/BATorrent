@@ -26,7 +26,7 @@ DetailsPanel::DetailsPanel(SessionManager *session, QWidget *parent)
     addTab(createFilesTab(), tr_("detail_files"));
     addTab(createTrackersTab(), tr_("detail_trackers"));
 
-    setMaximumHeight(260);
+    setMinimumHeight(200);
 
     connect(m_session, &SessionManager::torrentsUpdated, this, &DetailsPanel::refresh);
 }

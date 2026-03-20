@@ -25,15 +25,19 @@ private slots:
     void showCatalogResults(const QList<CatalogItem> &items);
     void showStreamResults(const QList<StreamResult> &streams);
     void showTorrentResults(const QList<TorrentSearchResult> &results);
+    void showGameResults(const QList<TorrentSearchResult> &results);
     void onItemDoubleClicked(int row, int col);
     void onStreamDoubleClicked(int row, int col);
     void onTorrentDoubleClicked(int row, int col);
+    void onGameDoubleClicked(int row, int col);
     void onSourceChanged(int index);
 
 private:
     void switchToStreams();
     void switchToCatalog();
     void switchToTorrentResults();
+    void switchToGameResults();
+    static QString detectRepacker(const QString &name);
 
     QComboBox *m_sourceCombo;
     QComboBox *m_categoryCombo;
@@ -41,6 +45,7 @@ private:
     QTableWidget *m_catalogTable;
     QTableWidget *m_streamTable;
     QTableWidget *m_torrentTable;
+    QTableWidget *m_gameTable;
     QLabel *m_statusLabel;
     SessionManager *m_session;
     QString m_savePath;
@@ -48,6 +53,8 @@ private:
     QList<CatalogItem> m_currentItems;
     QList<StreamResult> m_currentStreams;
     QList<TorrentSearchResult> m_torrentResults;
+    QList<TorrentSearchResult> m_gameResults;
+    bool m_isGameSearch = false;
 };
 
 #endif

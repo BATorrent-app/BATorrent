@@ -202,6 +202,8 @@ QString ThemeManager::dialogStyleSheet() const
         QCheckBox::indicator:checked {
             background-color: @ac; border-color: @ac;
         }
+        QScrollArea { background: transparent; border: none; }
+        QScrollArea > QWidget { background: transparent; }
         QLabel { color: @tx; }
         QGroupBox {
             color: @tx; font-weight: 600;

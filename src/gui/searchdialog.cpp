@@ -32,8 +32,10 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
 
     m_sourceCombo = new QComboBox;
     m_sourceCombo->addItem(tr_("search_source_stremio"));   // index 0
-    if (AddonManager::instance().torrentSearchEnabled())
+    if (AddonManager::instance().torrentSearchEnabled()) {
         m_sourceCombo->addItem(tr_("search_source_torrents")); // index 1
+        m_sourceCombo->addItem(tr_("search_source_games"));    // index 2
+    }
     m_sourceCombo->setStyleSheet(QString(
         "QComboBox { background: %1; color: %2; border: 1px solid %3;"
         "border-radius: 6px; padding: 6px 10px; }"
@@ -132,6 +134,22 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
     m_torrentTable->hide();
     layout->addWidget(m_torrentTable);
 
+    // Game search results table (hidden initially)
+    m_gameTable = new QTableWidget;
+    m_gameTable->setColumnCount(5);
+    m_gameTable->setHorizontalHeaderLabels({
+        tr_("search_col_name"), tr_("search_col_repacker"),
+        tr_("search_col_size"), tr_("search_col_seeds"), tr_("search_col_leechers")});
+    m_gameTable->horizontalHeader()->setStretchLastSection(true);
+    m_gameTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    m_gameTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_gameTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_gameTable->verticalHeader()->hide();
+    m_gameTable->setStyleSheet(tableStyle);
+    connect(m_gameTable, &QTableWidget::cellDoubleClicked, this, &SearchDialog::onGameDoubleClicked);
+    m_gameTable->hide();
+    layout->addWidget(m_gameTable);
+
     // Back button (for stream view)
     auto *btnLayout = new QHBoxLayout;
     m_backBtn = new QPushButton(QString::fromUtf8("\xe2\x86\x90 ") + tr_("search_back"));
@@ -157,16 +175,29 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
     connect(&AddonManager::instance(), &AddonManager::streamFinished,
             this, [this]() { m_statusLabel->setText(tr_("search_streams_done").arg(m_currentStreams.size())); });
     connect(&AddonManager::instance(), &AddonManager::torrentSearchResults,
-            this, &SearchDialog::showTorrentResults);
+            this, [this](const QList<TorrentSearchResult> &results) {
+                if (m_isGameSearch)
+                    showGameResults(results);
+                else
+                    showTorrentResults(results);
+            });
     connect(&AddonManager::instance(), &AddonManager::torrentSearchFinished,
-            this, [this]() { m_statusLabel->setText(tr_("search_done").arg(m_torrentResults.size())); });
+            this, [this]() {
+                int count = m_isGameSearch ? m_gameResults.size() : m_torrentResults.size();
+                m_statusLabel->setText(tr_("search_done").arg(count));
+            });
     connect(&AddonManager::instance(), &AddonManager::torrentSearchError,
             this, [this](const QString &err) { m_statusLabel->setText(err); });
 }
 
 void SearchDialog::onSourceChanged(int index)
 {
-    if (index == 1) {
+    if (index == 2) {
+        // Games mode
+        m_categoryCombo->hide();
+        m_searchEdit->setPlaceholderText(tr_("search_placeholder_games"));
+        switchToGameResults();
+    } else if (index == 1) {
         // Torrent search mode
         m_categoryCombo->show();
         m_searchEdit->setPlaceholderText(tr_("search_placeholder_torrent"));
@@ -184,11 +215,21 @@ void SearchDialog::performSearch()
     QString query = m_searchEdit->text().trimmed();
     if (query.isEmpty()) return;
 
-    bool torrentMode = m_sourceCombo->currentIndex() == 1;
+    int sourceIndex = m_sourceCombo->currentIndex();
 
-    if (torrentMode) {
+    if (sourceIndex == 2) {
+        // Games mode — fixed category 400
+        m_gameTable->setRowCount(0);
+        m_gameResults.clear();
+        m_isGameSearch = true;
+        switchToGameResults();
+        m_statusLabel->setText(tr_("search_searching"));
+
+        AddonManager::instance().searchTorrents(query, 400);
+    } else if (sourceIndex == 1) {
         m_torrentTable->setRowCount(0);
         m_torrentResults.clear();
+        m_isGameSearch = false;
         switchToTorrentResults();
         m_statusLabel->setText(tr_("search_searching"));
 
@@ -297,6 +338,7 @@ void SearchDialog::switchToStreams()
 {
     m_catalogTable->hide();
     m_torrentTable->hide();
+    m_gameTable->hide();
     m_streamTable->show();
     m_backBtn->show();
 }
@@ -305,6 +347,7 @@ void SearchDialog::switchToCatalog()
 {
     m_streamTable->hide();
     m_torrentTable->hide();
+    m_gameTable->hide();
     m_catalogTable->show();
     m_backBtn->hide();
 }
@@ -313,6 +356,76 @@ void SearchDialog::switchToTorrentResults()
 {
     m_catalogTable->hide();
     m_streamTable->hide();
+    m_gameTable->hide();
     m_torrentTable->show();
     m_backBtn->hide();
+}
+
+void SearchDialog::switchToGameResults()
+{
+    m_catalogTable->hide();
+    m_streamTable->hide();
+    m_torrentTable->hide();
+    m_gameTable->show();
+    m_backBtn->hide();
+}
+
+QString SearchDialog::detectRepacker(const QString &name)
+{
+    QString lower = name.toLower();
+    if (lower.contains("fitgirl")) return "FitGirl";
+    if (lower.contains("dodi")) return "DODI";
+    if (lower.contains("online-fix") || lower.contains("onlinefix")) return "Online-Fix";
+    if (lower.contains("elamigos")) return "ElAmigos";
+    if (lower.contains("xatab")) return "Xatab";
+    if (lower.contains("r.g. mechanics") || lower.contains("rg mechanics")) return "R.G. Mechanics";
+    if (lower.contains("gog")) return "GOG";
+    if (lower.contains("codex")) return "CODEX";
+    if (lower.contains("plaza")) return "PLAZA";
+    if (lower.contains("skidrow")) return "SKIDROW";
+    return "";
+}
+
+void SearchDialog::showGameResults(const QList<TorrentSearchResult> &results)
+{
+    m_gameResults = results;
+    m_gameTable->setRowCount(results.size());
+
+    for (int i = 0; i < results.size(); ++i) {
+        m_gameTable->setItem(i, 0, new QTableWidgetItem(results[i].name));
+
+        QString repacker = detectRepacker(results[i].name);
+        auto *repackerItem = new QTableWidgetItem(repacker);
+        if (repacker == "FitGirl")
+            repackerItem->setForeground(QColor("#E91E63"));
+        else if (repacker == "DODI")
+            repackerItem->setForeground(QColor("#2196F3"));
+        else if (repacker == "Online-Fix")
+            repackerItem->setForeground(QColor("#4CAF50"));
+        else if (repacker == "GOG")
+            repackerItem->setForeground(QColor("#9C27B0"));
+        else if (!repacker.isEmpty())
+            repackerItem->setForeground(QColor("#888"));
+        m_gameTable->setItem(i, 1, repackerItem);
+
+        m_gameTable->setItem(i, 2, new QTableWidgetItem(
+            results[i].size > 0 ? formatSize(results[i].size) : ""));
+
+        auto *seedItem = new QTableWidgetItem(QString::number(results[i].seeders));
+        seedItem->setForeground(results[i].seeders > 0 ? QColor("#4CAF50") : QColor("#888"));
+        m_gameTable->setItem(i, 3, seedItem);
+
+        auto *leechItem = new QTableWidgetItem(QString::number(results[i].leechers));
+        leechItem->setForeground(QColor("#FF9800"));
+        m_gameTable->setItem(i, 4, leechItem);
+    }
+}
+
+void SearchDialog::onGameDoubleClicked(int row, int)
+{
+    if (row < 0 || row >= m_gameResults.size()) return;
+
+    const auto &result = m_gameResults[row];
+    m_session->addMagnet(result.magnet, m_savePath);
+    m_statusLabel->setText(tr_("search_added").arg(result.name));
 }
