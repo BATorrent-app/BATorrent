@@ -135,6 +135,7 @@
   </div>
   <div class="actions">
     <button onclick="showAddMagnet()">+ Magnet</button>
+    <button onclick="showUploadTorrent()">+ Torrent</button>
   </div>
 </header>
 <div class="table-wrap">
@@ -142,7 +143,7 @@
     <thead><tr><th>Name</th><th>Size</th><th>Progress</th><th>Down</th><th>Up</th><th>Peers</th><th>State</th><th>Actions</th></tr></thead>
     <tbody id="torrentBody"></tbody>
   </table>
-  <div class="empty-state" id="emptyState"><h2>No Torrents</h2><p>Add a magnet link to get started</p></div>
+  <div class="empty-state" id="emptyState"><h2>No Torrents</h2><p>Add a magnet link or upload a .torrent file to get started</p></div>
 </div>
 <div class="cards" id="torrentCards"></div>
 <div class="detail-panel" id="detailPanel">
@@ -160,6 +161,16 @@
     <div class="modal-actions">
       <button onclick="closeModals()">Cancel</button>
       <button onclick="addMagnet()">Add</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <h2>Upload .torrent File</h2>
+    <input type="file" id="torrentFile" accept=".torrent" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:8px;font-size:13px;margin-bottom:12px;">
+    <div class="modal-actions">
+      <button onclick="closeModals()">Cancel</button>
+      <button onclick="uploadTorrent()">Upload</button>
     </div>
   </div>
 </div>
@@ -240,6 +251,8 @@ function removeTorrent(h){if(!confirm('Remove this torrent?'))return;fetch(`/api
 function showAddMagnet(){document.getElementById('magnetModal').classList.add('active');document.getElementById('magnetInput').focus();}
 function closeModals(){document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active'));}
 function addMagnet(){const uri=document.getElementById('magnetInput').value.trim();if(!uri||!uri.startsWith('magnet:')){alert('Please enter a valid magnet link.');return;}fetch('/api/torrents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({magnet:uri})}).then(()=>{document.getElementById('magnetInput').value='';closeModals();refresh();});}
+function showUploadTorrent(){document.getElementById('uploadModal').classList.add('active');}
+function uploadTorrent(){const input=document.getElementById('torrentFile');if(!input.files.length){alert('Please select a .torrent file.');return;}const fd=new FormData();fd.append('file',input.files[0]);fetch('/api/torrents',{method:'POST',body:fd}).then(r=>{if(!r.ok)throw new Error();input.value='';closeModals();refresh();}).catch(()=>alert('Failed to upload torrent.'));}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
 document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)closeModals();});});
 refresh(); setInterval(refresh,2000);

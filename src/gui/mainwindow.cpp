@@ -60,6 +60,9 @@
 #include <QDesktopServices>
 #include <QStandardPaths>
 #include <QUrl>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 
 MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     : QMainWindow(parent), m_session(session)
@@ -451,6 +454,24 @@ void MainWindow::saveSettings()
     settings.setValue("autoResumeOnReconnect", m_session->autoResumeOnReconnect());
     settings.setValue("autoShutdown", m_autoShutdown);
     settings.setValue("notifSound", m_notifSoundEnabled);
+
+    // Proxy
+    settings.setValue("proxyType", m_session->proxyType());
+    settings.setValue("proxyHost", m_session->proxyHost());
+    settings.setValue("proxyPort", m_session->proxyPort());
+    settings.setValue("proxyUser", m_session->proxyUser());
+    settings.setValue("proxyPass", m_session->proxyPass());
+
+    // IP Filter
+    settings.setValue("ipFilterPath", m_session->ipFilterPath());
+
+    // Bandwidth Scheduler
+    settings.setValue("schedulerEnabled", m_session->schedulerEnabled());
+    settings.setValue("altDownLimit", m_session->altDownloadLimit());
+    settings.setValue("altUpLimit", m_session->altUploadLimit());
+    settings.setValue("scheduleFromHour", m_session->scheduleFromHour());
+    settings.setValue("scheduleToHour", m_session->scheduleToHour());
+    settings.setValue("scheduleDays", m_session->scheduleDays());
 }
 
 void MainWindow::loadSettings()
@@ -502,6 +523,28 @@ void MainWindow::loadSettings()
     // Auto-shutdown
     m_autoShutdown = settings.value("autoShutdown", false).toBool();
     m_notifSoundEnabled = settings.value("notifSound", true).toBool();
+
+    // Proxy
+    int proxyType = settings.value("proxyType", 0).toInt();
+    m_session->setProxySettings(proxyType,
+        settings.value("proxyHost").toString(),
+        settings.value("proxyPort", 0).toInt(),
+        settings.value("proxyUser").toString(),
+        settings.value("proxyPass").toString());
+
+    // IP Filter
+    QString ipFilter = settings.value("ipFilterPath").toString();
+    if (!ipFilter.isEmpty())
+        m_session->loadIpFilter(ipFilter);
+
+    // Bandwidth Scheduler
+    m_session->setAltSpeedLimits(
+        settings.value("altDownLimit", 0).toInt(),
+        settings.value("altUpLimit", 0).toInt());
+    m_session->setScheduleFromHour(settings.value("scheduleFromHour", 1).toInt());
+    m_session->setScheduleToHour(settings.value("scheduleToHour", 7).toInt());
+    m_session->setScheduleDays(settings.value("scheduleDays", 0x7F).toInt());
+    m_session->setSchedulerEnabled(settings.value("schedulerEnabled", false).toBool());
 
     // WebUI
     startWebServer();
@@ -695,7 +738,41 @@ void MainWindow::onTorrentFinished(const QString &name)
     if (m_notifSoundEnabled)
         QApplication::beep();
     m_model->flashRow(name);
+    notifyMediaServers();
     checkAutoShutdown();
+}
+
+void MainWindow::notifyMediaServers()
+{
+    QSettings settings("BATorrent", "BATorrent");
+
+    if (!m_mediaServerNam)
+        m_mediaServerNam = new QNetworkAccessManager(this);
+
+    // Plex library scan
+    if (settings.value("plexEnabled", false).toBool()) {
+        QString url = settings.value("plexUrl").toString();
+        QString token = settings.value("plexToken").toString();
+        if (!url.isEmpty() && !token.isEmpty()) {
+            // Refresh all sections
+            QNetworkRequest req(QUrl(url + "/library/sections/all/refresh?X-Plex-Token=" + token));
+            req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
+            auto *reply = m_mediaServerNam->get(req);
+            connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
+        }
+    }
+
+    // Jellyfin/Emby library scan
+    if (settings.value("jellyfinEnabled", false).toBool()) {
+        QString url = settings.value("jellyfinUrl").toString();
+        QString apiKey = settings.value("jellyfinApiKey").toString();
+        if (!url.isEmpty() && !apiKey.isEmpty()) {
+            QNetworkRequest req(QUrl(url + "/Library/Refresh?api_key=" + apiKey));
+            req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
+            auto *reply = m_mediaServerNam->post(req, QByteArray());
+            connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
+        }
+    }
 }
 
 void MainWindow::onTorrentError(const QString &message)
@@ -737,6 +814,32 @@ void MainWindow::openSettings()
         dlg.setWebUiUser(settings.value("webUiUser", "admin").toString());
         dlg.setWebUiPasswordHash(settings.value("webUiPasswordHash").toString());
         dlg.setWebUiRemoteAccess(settings.value("webUiRemoteAccess", false).toBool());
+
+        // Proxy
+        dlg.setProxyType(m_session->proxyType());
+        dlg.setProxyHost(m_session->proxyHost());
+        dlg.setProxyPort(m_session->proxyPort());
+        dlg.setProxyUser(m_session->proxyUser());
+        dlg.setProxyPass(m_session->proxyPass());
+
+        // IP Filter
+        dlg.setIpFilterPath(m_session->ipFilterPath());
+
+        // Bandwidth Scheduler
+        dlg.setSchedulerEnabled(m_session->schedulerEnabled());
+        dlg.setAltDownloadSpeed(m_session->altDownloadLimit());
+        dlg.setAltUploadSpeed(m_session->altUploadLimit());
+        dlg.setScheduleFromHour(m_session->scheduleFromHour());
+        dlg.setScheduleToHour(m_session->scheduleToHour());
+        dlg.setScheduleDays(m_session->scheduleDays());
+
+        // Media Server
+        dlg.setPlexEnabled(settings.value("plexEnabled", false).toBool());
+        dlg.setPlexUrl(settings.value("plexUrl").toString());
+        dlg.setPlexToken(settings.value("plexToken").toString());
+        dlg.setJellyfinEnabled(settings.value("jellyfinEnabled", false).toBool());
+        dlg.setJellyfinUrl(settings.value("jellyfinUrl").toString());
+        dlg.setJellyfinApiKey(settings.value("jellyfinApiKey").toString());
     }
 
     if (dlg.exec() == QDialog::Accepted) {
@@ -773,6 +876,26 @@ void MainWindow::openSettings()
         m_autoShutdown = dlg.autoShutdown();
         m_notifSoundEnabled = dlg.notifSoundEnabled();
 
+        // Proxy
+        m_session->setProxySettings(dlg.proxyType(), dlg.proxyHost(),
+                                     dlg.proxyPort(), dlg.proxyUser(), dlg.proxyPass());
+
+        // IP Filter
+        QString ipFilterPath = dlg.ipFilterPath();
+        if (ipFilterPath != m_session->ipFilterPath()) {
+            if (ipFilterPath.isEmpty())
+                m_session->clearIpFilter();
+            else
+                m_session->loadIpFilter(ipFilterPath);
+        }
+
+        // Bandwidth Scheduler
+        m_session->setAltSpeedLimits(dlg.altDownloadSpeed(), dlg.altUploadSpeed());
+        m_session->setScheduleFromHour(dlg.scheduleFromHour());
+        m_session->setScheduleToHour(dlg.scheduleToHour());
+        m_session->setScheduleDays(dlg.scheduleDays());
+        m_session->setSchedulerEnabled(dlg.schedulerEnabled());
+
         // WebUI settings
         {
             QSettings settings("BATorrent", "BATorrent");
@@ -784,6 +907,14 @@ void MainWindow::openSettings()
             if (!passHash.isEmpty())
                 settings.setValue("webUiPasswordHash", passHash);
             startWebServer();
+
+            // Media Server settings
+            settings.setValue("plexEnabled", dlg.plexEnabled());
+            settings.setValue("plexUrl", dlg.plexUrl());
+            settings.setValue("plexToken", dlg.plexToken());
+            settings.setValue("jellyfinEnabled", dlg.jellyfinEnabled());
+            settings.setValue("jellyfinUrl", dlg.jellyfinUrl());
+            settings.setValue("jellyfinApiKey", dlg.jellyfinApiKey());
         }
     }
 }

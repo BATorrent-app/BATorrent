@@ -67,6 +67,35 @@ public:
     void setSeedRatioLimit(float ratio);
     float seedRatioLimit() const;
 
+    // Proxy
+    void setProxySettings(int type, const QString &host, int port,
+                          const QString &user, const QString &pass);
+    int proxyType() const;
+    QString proxyHost() const;
+    int proxyPort() const;
+    QString proxyUser() const;
+    QString proxyPass() const;
+
+    // IP filter
+    void loadIpFilter(const QString &filePath);
+    void clearIpFilter();
+    QString ipFilterPath() const;
+    int ipFilterCount() const;
+
+    // Bandwidth scheduler
+    void setAltSpeedLimits(int downKbps, int upKbps);
+    int altDownloadLimit() const;
+    int altUploadLimit() const;
+    void setSchedulerEnabled(bool enabled);
+    bool schedulerEnabled() const;
+    void setScheduleFromHour(int hour);
+    void setScheduleToHour(int hour);
+    int scheduleFromHour() const;
+    int scheduleToHour() const;
+    void setScheduleDays(int daysMask); // bit 0=Mon..6=Sun
+    int scheduleDays() const;
+    bool altSpeedsActive() const;
+
     void saveResumeData();
     void loadResumeData();
 
@@ -93,6 +122,7 @@ private:
     void processAlerts();
     void checkSeedRatios();
     void checkInterfaceStatus();
+    void checkBandwidthSchedule();
     QString resumeDataDir() const;
 
     lt::session m_session;
@@ -112,6 +142,28 @@ private:
     bool m_autoResume = false;
     bool m_killSwitchActive = false;
     std::set<lt::torrent_handle> m_killSwitchPaused;
+
+    // Proxy
+    int m_proxyType = 0; // 0=none, 1=SOCKS5, 2=HTTP
+    QString m_proxyHost;
+    int m_proxyPort = 0;
+    QString m_proxyUser;
+    QString m_proxyPass;
+
+    // IP filter
+    QString m_ipFilterPath;
+    int m_ipFilterCount = 0;
+
+    // Bandwidth scheduler
+    int m_altDownLimit = 0;
+    int m_altUpLimit = 0;
+    bool m_schedulerEnabled = false;
+    int m_scheduleFromHour = 1;
+    int m_scheduleToHour = 7;
+    int m_scheduleDays = 0x7F; // all days
+    bool m_altSpeedsActive = false;
+    int m_normalDownLimit = 0;
+    int m_normalUpLimit = 0;
 };
 
 #endif

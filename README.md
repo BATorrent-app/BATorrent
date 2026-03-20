@@ -65,6 +65,8 @@ BATorrent is a cross-platform desktop BitTorrent client focusing on simplicity, 
 - **Auto VPN detection** — identifies VPN interfaces (tun, tap, WireGuard, Mullvad, NordLynx, ProtonVPN)
 - **Kill switch** — automatically pauses all torrents if the VPN interface drops
 - **Auto-resume** — resumes only the torrents paused by the kill switch when VPN reconnects
+- **Proxy support** — SOCKS5 and HTTP proxy with optional authentication
+- **IP filtering** — load P2P blocklists to block unwanted IP ranges
 - Protocol encryption (enabled / forced / disabled)
 
 ### WebUI
@@ -87,6 +89,17 @@ BATorrent is a cross-platform desktop BitTorrent client focusing on simplicity, 
 - System tray with notifications (download complete, kill switch events, RSS auto-downloads)
 - Splash screen with bat animation
 - Bilingual: English and Portuguese (BR), auto-detected from system locale
+
+### Bandwidth Scheduler
+- **Alternative speed limits** — set different download/upload limits on a schedule
+- **Time range** — configure active hours (e.g. 01:00 to 07:00), supports overnight ranges
+- **Per-day control** — choose which days of the week the schedule applies
+- Automatically switches between normal and alternative speeds
+
+### Media Server Integration
+- **Plex** — automatically trigger library scan when a download completes
+- **Jellyfin / Emby** — same automatic library refresh via API
+- Configure server URL and authentication token/key in Settings
 
 ### System
 - Cross-platform: Windows, Linux, macOS
@@ -173,9 +186,11 @@ cmake --build build
 - [x] Stremio addon system (search movies/series)
 - [x] Torrent streaming (play while downloading)
 - [x] RSS feed auto-download
-- [ ] Bandwidth scheduler (time-based speed limits)
-- [ ] Plex / Jellyfin / Emby integration
-- [ ] SOCKS5 proxy support (per-torrent)
+- [x] Bandwidth scheduler (time-based speed limits)
+- [x] Plex / Jellyfin / Emby integration
+- [x] SOCKS5 / HTTP proxy support
+- [x] IP filtering (blocklists)
+- [x] WebUI .torrent file upload
 
 ## License
 

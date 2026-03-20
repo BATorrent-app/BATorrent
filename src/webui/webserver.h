@@ -40,6 +40,7 @@ private:
     QByteArray handleGetTorrentFiles(const QString &hash);
     QByteArray handleGetStatus();
     bool handleAddTorrent(const QByteArray &body);
+    bool handleUploadTorrent(const QByteArray &requestData);
     bool handleRemoveTorrent(const QString &hash);
     bool handlePauseTorrent(const QString &hash);
     bool handleResumeTorrent(const QString &hash);

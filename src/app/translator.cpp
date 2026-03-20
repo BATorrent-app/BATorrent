@@ -349,6 +349,36 @@ void Translator::loadEnglish()
         {"settings_webui_remote", "Allow remote access (bind 0.0.0.0)"},
         {"settings_webui_warning_title", "Security Warning"},
         {"settings_webui_warning_msg", "Enabling remote access exposes the WebUI to your network. Use a VPN or reverse proxy with HTTPS for secure remote access."},
+
+        // Bandwidth Scheduler
+        {"settings_scheduler_group", "Bandwidth Scheduler"},
+        {"settings_scheduler_enable", "Enable speed scheduler"},
+        {"settings_alt_down", "Alt download limit:"},
+        {"settings_alt_up", "Alt upload limit:"},
+        {"settings_sched_from", "Active from:"},
+        {"settings_sched_to", "to"},
+        {"settings_sched_days", "Days:"},
+
+        // Proxy
+        {"settings_proxy_group", "Proxy"},
+        {"settings_proxy_type", "Proxy type:"},
+        {"settings_proxy_none", "None"},
+        {"settings_proxy_host", "Host:"},
+        {"settings_proxy_port", "Port:"},
+        {"settings_proxy_user", "Username:"},
+        {"settings_proxy_pass", "Password:"},
+        {"settings_proxy_user_hint", "Optional"},
+
+        // IP Filter
+        {"settings_ip_filter_group", "IP Filtering"},
+        {"settings_ip_filter_file", "Blocklist file:"},
+        {"settings_ip_filter_hint", "P2P blocklist (.txt, .p2p, .dat)"},
+
+        // Media Server
+        {"settings_media_server", "Media Server"},
+        {"settings_media_enable_plex", "Notify Plex on download complete"},
+        {"settings_media_enable_jellyfin", "Notify Jellyfin/Emby on download complete"},
+        {"settings_media_api_key", "API Key:"},
     };
 }
 
@@ -672,5 +702,35 @@ void Translator::loadPortuguese()
         {"settings_webui_remote", "Permitir acesso remoto (bind 0.0.0.0)"},
         {"settings_webui_warning_title", "Aviso de Segurança"},
         {"settings_webui_warning_msg", "Habilitar acesso remoto expõe a WebUI para sua rede. Use uma VPN ou proxy reverso com HTTPS para acesso remoto seguro."},
+
+        // Bandwidth Scheduler
+        {"settings_scheduler_group", "Agendamento de Velocidade"},
+        {"settings_scheduler_enable", "Habilitar agendamento de velocidade"},
+        {"settings_alt_down", "Limite alt. download:"},
+        {"settings_alt_up", "Limite alt. upload:"},
+        {"settings_sched_from", "Ativo das:"},
+        {"settings_sched_to", "até"},
+        {"settings_sched_days", "Dias:"},
+
+        // Proxy
+        {"settings_proxy_group", "Proxy"},
+        {"settings_proxy_type", "Tipo de proxy:"},
+        {"settings_proxy_none", "Nenhum"},
+        {"settings_proxy_host", "Host:"},
+        {"settings_proxy_port", "Porta:"},
+        {"settings_proxy_user", "Usuário:"},
+        {"settings_proxy_pass", "Senha:"},
+        {"settings_proxy_user_hint", "Opcional"},
+
+        // IP Filter
+        {"settings_ip_filter_group", "Filtragem de IP"},
+        {"settings_ip_filter_file", "Arquivo de blocklist:"},
+        {"settings_ip_filter_hint", "Blocklist P2P (.txt, .p2p, .dat)"},
+
+        // Media Server
+        {"settings_media_server", "Servidor de Mídia"},
+        {"settings_media_enable_plex", "Notificar Plex ao concluir download"},
+        {"settings_media_enable_jellyfin", "Notificar Jellyfin/Emby ao concluir download"},
+        {"settings_media_api_key", "Chave API:"},
     };
 }
