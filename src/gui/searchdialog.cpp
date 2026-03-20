@@ -134,10 +134,16 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
 
     // Back button (for stream view)
     auto *btnLayout = new QHBoxLayout;
-    auto *backBtn = new QPushButton(tr_("search_back"));
-    backBtn->setFixedWidth(100);
-    connect(backBtn, &QPushButton::clicked, this, &SearchDialog::switchToCatalog);
-    btnLayout->addWidget(backBtn);
+    m_backBtn = new QPushButton(QString::fromUtf8("\xe2\x86\x90 ") + tr_("search_back"));
+    m_backBtn->setFixedWidth(120);
+    m_backBtn->setStyleSheet(QString(
+        "QPushButton { background: %1; color: %2; border: 1px solid %3;"
+        "border-radius: 6px; padding: 8px 14px; font-weight: bold; }"
+        "QPushButton:hover { background: %4; }")
+        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
+    m_backBtn->hide();
+    connect(m_backBtn, &QPushButton::clicked, this, &SearchDialog::switchToCatalog);
+    btnLayout->addWidget(m_backBtn);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
 
@@ -292,6 +298,7 @@ void SearchDialog::switchToStreams()
     m_catalogTable->hide();
     m_torrentTable->hide();
     m_streamTable->show();
+    m_backBtn->show();
 }
 
 void SearchDialog::switchToCatalog()
@@ -299,6 +306,7 @@ void SearchDialog::switchToCatalog()
     m_streamTable->hide();
     m_torrentTable->hide();
     m_catalogTable->show();
+    m_backBtn->hide();
 }
 
 void SearchDialog::switchToTorrentResults()
@@ -306,4 +314,5 @@ void SearchDialog::switchToTorrentResults()
     m_catalogTable->hide();
     m_streamTable->hide();
     m_torrentTable->show();
+    m_backBtn->hide();
 }
