@@ -7,6 +7,7 @@
 #include "../gui/thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QScrollArea>
 #include <QFormLayout>
 #include <QTabWidget>
 #include <QSpinBox>
@@ -30,6 +31,14 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     setStyleSheet(ThemeManager::instance().dialogStyleSheet());
 
     auto *tabs = new QTabWidget;
+
+    auto wrapInScroll = [](QWidget *content) -> QScrollArea * {
+        auto *scroll = new QScrollArea;
+        scroll->setWidget(content);
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+        return scroll;
+    };
 
     QString labelStyle = ThemeManager::instance().formLabelStyle();
 
@@ -79,7 +88,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_notifSoundCheck = new QCheckBox(tr_("settings_notif_sound"));
     generalLayout->addRow("", m_notifSoundCheck);
 
-    tabs->addTab(generalWidget, tr_("settings_general"));
+    tabs->addTab(wrapInScroll(generalWidget), tr_("settings_general"));
 
     // ---- Speed tab ----
     auto *speedWidget = new QWidget;
@@ -165,7 +174,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     speedLayout->addRow(schedGroup);
 
-    tabs->addTab(speedWidget, tr_("settings_speed"));
+    tabs->addTab(wrapInScroll(speedWidget), tr_("settings_speed"));
 
     // ---- Network tab ----
     auto *networkWidget = new QWidget;
@@ -303,7 +312,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     refreshInterfaces();
 
-    tabs->addTab(networkWidget, tr_("settings_network"));
+    tabs->addTab(wrapInScroll(networkWidget), tr_("settings_network"));
 
     // ---- WebUI tab ----
     auto *webUiWidget = new QWidget;
@@ -344,7 +353,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
         }
     });
 
-    tabs->addTab(webUiWidget, "WebUI");
+    tabs->addTab(wrapInScroll(webUiWidget), "WebUI");
 
     // ---- Media Server tab ----
     auto *mediaWidget = new QWidget;
@@ -394,7 +403,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     mediaLayout->addRow(jellyGroup);
 
-    tabs->addTab(mediaWidget, tr_("settings_media_server"));
+    tabs->addTab(wrapInScroll(mediaWidget), tr_("settings_media_server"));
 
     // ---- Buttons ----
     auto *btnLayout = new QHBoxLayout;
