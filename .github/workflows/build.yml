@@ -164,10 +164,10 @@ jobs:
 
       - name: Build
         run: |
-          export Qt6_DIR=$(brew --prefix qt@6)/lib/cmake/Qt6
-          export CMAKE_PREFIX_PATH=$(brew --prefix qt@6):$(brew --prefix libtorrent-rasterbar):$(brew --prefix openssl)
+          QT_PREFIX=$(brew --prefix qt@6)
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH"
+            -DQt6_DIR="$QT_PREFIX/lib/cmake/Qt6" \
+            -DCMAKE_PREFIX_PATH="$QT_PREFIX;$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)"
           cmake --build build
 
       - name: Create app bundle
