@@ -160,13 +160,15 @@ jobs:
 
       - name: Install dependencies
         run: |
+          brew update
           brew install cmake qt@6 libtorrent-rasterbar boost openssl
 
       - name: Build
         run: |
           QT_PREFIX=$(brew --prefix qt@6)
+          echo "Qt6 prefix: $QT_PREFIX"
+          ls "$QT_PREFIX/lib/cmake/Qt6/" || echo "Qt6 cmake dir not found at expected path"
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DQt6_DIR="$QT_PREFIX/lib/cmake/Qt6" \
             -DCMAKE_PREFIX_PATH="$QT_PREFIX;$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)"
           cmake --build build
 

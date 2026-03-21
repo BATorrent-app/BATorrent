@@ -7,8 +7,35 @@
 #include <QStringList>
 #include <QFont>
 #include <QFontDatabase>
+#include <QLocalServer>
+#include <QLocalSocket>
 #include "torrent/sessionmanager.h"
 #include "gui/mainwindow.h"
+
+static const QString kServerName = QStringLiteral("BATorrent-SingleInstance");
+
+static QString collectArgs(const QStringList &args)
+{
+    QStringList relevant;
+    for (int i = 1; i < args.size(); ++i) {
+        const QString &a = args[i];
+        if (a.endsWith(".torrent") || a.startsWith("magnet:"))
+            relevant << a;
+    }
+    return relevant.join('\n');
+}
+
+static bool sendToRunningInstance(const QString &message)
+{
+    QLocalSocket socket;
+    socket.connectToServer(kServerName);
+    if (!socket.waitForConnected(1000))
+        return false;
+    socket.write(message.toUtf8());
+    socket.waitForBytesWritten(1000);
+    socket.disconnectFromServer();
+    return true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -17,6 +44,11 @@ int main(int argc, char *argv[])
     app.setApplicationVersion(APP_VERSION);
     app.setWindowIcon(QIcon(":/images/logo1.png"));
     app.setQuitOnLastWindowClosed(false); // keep running in tray when window is closed
+
+    // Single-instance check: if another instance is running, forward args and quit
+    QString argsPayload = collectArgs(app.arguments());
+    if (sendToRunningInstance(argsPayload))
+        return 0;
 
     // Load Inter font family
     QFontDatabase::addApplicationFont(":/fonts/Inter-Regular.ttf");
@@ -32,8 +64,31 @@ int main(int argc, char *argv[])
     MainWindow window(&session);
     window.show();
 
-    // Handle CLI arguments (torrent files or magnet links)
-    QStringList args = app.arguments();
+    // Start local server to receive args from new instances
+    QLocalServer::removeServer(kServerName); // clean up stale socket
+    QLocalServer server;
+    server.listen(kServerName);
+    QObject::connect(&server, &QLocalServer::newConnection, [&]() {
+        QLocalSocket *client = server.nextPendingConnection();
+        QObject::connect(client, &QLocalSocket::readyRead, [&window, client]() {
+            QString data = QString::fromUtf8(client->readAll());
+            const QStringList lines = data.split('\n', Qt::SkipEmptyParts);
+            for (const QString &line : lines) {
+                if (line.endsWith(".torrent"))
+                    window.addTorrentFromCli(line);
+                else if (line.startsWith("magnet:"))
+                    window.addMagnetFromCli(line);
+            }
+            // Bring window to front
+            window.show();
+            window.raise();
+            window.activateWindow();
+            client->deleteLater();
+        });
+    });
+
+    // Handle CLI arguments for the first instance
+    const QStringList args = app.arguments();
     for (int i = 1; i < args.size(); ++i) {
         const QString &arg = args[i];
         if (arg.endsWith(".torrent"))
