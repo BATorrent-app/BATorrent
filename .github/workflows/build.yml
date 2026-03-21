@@ -62,27 +62,20 @@ jobs:
           version: '6.7.*'
           cache: true
 
-      - name: Cache vcpkg
-        id: cache-vcpkg
-        uses: actions/cache@v4
-        with:
-          path: |
-            C:\vcpkg
-          key: vcpkg-windows-full-${{ hashFiles('.github/workflows/build.yml') }}
-          restore-keys: vcpkg-windows-full-
-
       - name: Setup vcpkg
-        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-          C:\vcpkg\bootstrap-vcpkg.bat
-
-      - name: Set vcpkg env
         run: |
           echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
           echo "C:\vcpkg" >> $env:GITHUB_PATH
 
+      - name: Cache vcpkg installed packages
+        id: cache-vcpkg
+        uses: actions/cache@v4
+        with:
+          path: C:\vcpkg\installed
+          key: vcpkg-libtorrent-x64-windows-${{ hashFiles('.github/workflows/build.yml') }}
+
       - name: Install libtorrent via vcpkg
+        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: C:\vcpkg\vcpkg install libtorrent:x64-windows
 
       - name: Cache choco packages
