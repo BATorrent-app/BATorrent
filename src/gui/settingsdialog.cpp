@@ -82,6 +82,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_startMinimizedCheck = new QCheckBox(tr_("settings_start_tray"));
     generalLayout->addRow("", m_startMinimizedCheck);
 
+    m_closeToTrayCheck = new QCheckBox(tr_("settings_close_to_tray"));
+    generalLayout->addRow("", m_closeToTrayCheck);
+
     m_autoShutdownCheck = new QCheckBox(tr_("settings_auto_shutdown"));
     generalLayout->addRow("", m_autoShutdownCheck);
 
@@ -436,6 +439,7 @@ int SettingsDialog::maxDownloadSpeed() const { return m_maxDownSpin->value(); }
 int SettingsDialog::maxUploadSpeed() const { return m_maxUpSpin->value(); }
 int SettingsDialog::languageIndex() const { return m_languageCombo->currentIndex(); }
 bool SettingsDialog::startMinimized() const { return m_startMinimizedCheck->isChecked(); }
+bool SettingsDialog::closeToTray() const { return m_closeToTrayCheck->isChecked(); }
 bool SettingsDialog::useDefaultPath() const { return m_useDefaultPathCheck->isChecked(); }
 int SettingsDialog::themeIndex() const { return m_themeCombo->currentIndex(); }
 
@@ -444,6 +448,7 @@ void SettingsDialog::setMaxDownloadSpeed(int kbps) { m_maxDownSpin->setValue(kbp
 void SettingsDialog::setMaxUploadSpeed(int kbps) { m_maxUpSpin->setValue(kbps); }
 void SettingsDialog::setLanguageIndex(int index) { m_languageCombo->setCurrentIndex(index); }
 void SettingsDialog::setStartMinimized(bool val) { m_startMinimizedCheck->setChecked(val); }
+void SettingsDialog::setCloseToTray(bool val) { m_closeToTrayCheck->setChecked(val); }
 void SettingsDialog::setUseDefaultPath(bool val) { m_useDefaultPathCheck->setChecked(val); }
 void SettingsDialog::setThemeIndex(int index) { m_themeCombo->setCurrentIndex(index); }
 bool SettingsDialog::autoShutdown() const { return m_autoShutdownCheck->isChecked(); }

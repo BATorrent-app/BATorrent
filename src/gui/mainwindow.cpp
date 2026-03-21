@@ -440,6 +440,7 @@ void MainWindow::saveSettings()
     settings.setValue("maxDownload", m_session->downloadLimit());
     settings.setValue("maxUpload", m_session->uploadLimit());
     settings.setValue("startMinimized", m_startMinimized);
+    settings.setValue("closeToTray", m_closeToTray);
     settings.setValue("useDefaultPath", m_useDefaultPath);
     settings.setValue("theme", static_cast<int>(ThemeManager::instance().theme()));
     settings.setValue("dhtEnabled", m_session->dhtEnabled());
@@ -497,6 +498,7 @@ void MainWindow::loadSettings()
     m_session->setUploadLimit(maxUp);
 
     m_startMinimized = settings.value("startMinimized", false).toBool();
+    m_closeToTray = settings.value("closeToTray", true).toBool();
     m_useDefaultPath = settings.value("useDefaultPath", false).toBool();
 
     int theme = settings.value("theme", 0).toInt();
@@ -795,6 +797,7 @@ void MainWindow::openSettings()
     dlg.setMaxUploadSpeed(m_session->uploadLimit());
     dlg.setLanguageIndex(static_cast<int>(Translator::instance().language()));
     dlg.setStartMinimized(m_startMinimized);
+    dlg.setCloseToTray(m_closeToTray);
     dlg.setUseDefaultPath(m_useDefaultPath);
     dlg.setThemeIndex(static_cast<int>(ThemeManager::instance().theme()));
     dlg.setDhtEnabled(m_session->dhtEnabled());
@@ -847,6 +850,7 @@ void MainWindow::openSettings()
         m_session->setDownloadLimit(dlg.maxDownloadSpeed());
         m_session->setUploadLimit(dlg.maxUploadSpeed());
         m_startMinimized = dlg.startMinimized();
+        m_closeToTray = dlg.closeToTray();
         m_useDefaultPath = dlg.useDefaultPath();
 
         int newLang = dlg.languageIndex();
@@ -964,8 +968,12 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     saveSettings();
     m_session->saveResumeData();
-    hide();
-    event->ignore();
+    if (m_closeToTray) {
+        hide();
+        event->ignore();
+    } else {
+        qApp->quit();
+    }
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)

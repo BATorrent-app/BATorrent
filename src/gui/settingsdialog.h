@@ -26,6 +26,7 @@ public:
     int maxUploadSpeed() const;
     int languageIndex() const;
     bool startMinimized() const;
+    bool closeToTray() const;
     bool useDefaultPath() const;
     int themeIndex() const;
     bool autoShutdown() const;
@@ -36,6 +37,7 @@ public:
     void setMaxUploadSpeed(int kbps);
     void setLanguageIndex(int index);
     void setStartMinimized(bool val);
+    void setCloseToTray(bool val);
     void setUseDefaultPath(bool val);
     void setThemeIndex(int index);
     void setAutoShutdown(bool val);
@@ -133,6 +135,7 @@ private:
     QSpinBox *m_maxUpSpin;
     QComboBox *m_languageCombo;
     QCheckBox *m_startMinimizedCheck;
+    QCheckBox *m_closeToTrayCheck;
     QCheckBox *m_useDefaultPathCheck;
     QComboBox *m_themeCombo;
     QCheckBox *m_autoShutdownCheck;

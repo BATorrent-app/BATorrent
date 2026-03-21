@@ -100,6 +100,7 @@ private:
     Updater *m_updater;
     WebServer *m_webServer = nullptr;
     bool m_startMinimized = false;
+    bool m_closeToTray = true;
     bool m_useDefaultPath = false;
     bool m_autoShutdown = false;
     bool m_notifSoundEnabled = true;
