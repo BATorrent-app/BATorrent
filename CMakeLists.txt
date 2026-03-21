@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 2.1.0)
+project(BATorrent VERSION 2.1.1)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg)
 find_package(LibtorrentRasterbar REQUIRED)
 set(CMAKE_AUTOMOC ON)
