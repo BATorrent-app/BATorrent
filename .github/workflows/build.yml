@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -19,7 +19,8 @@ jobs:
 
       - name: Build
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+            -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu
           cmake --build build
 
       - name: Install to AppDir
@@ -176,8 +177,8 @@ jobs:
             '  <key>CFBundleExecutable</key>' '  <string>BATorrent</string>' \
             '  <key>CFBundleIdentifier</key>' '  <string>com.mateuscruz19.batorrent</string>' \
             '  <key>CFBundleName</key>' '  <string>BATorrent</string>' \
-            '  <key>CFBundleVersion</key>' '  <string>2.1.1</string>' \
-            '  <key>CFBundleShortVersionString</key>' '  <string>2.1.1</string>' \
+            '  <key>CFBundleVersion</key>' "  <string>${GITHUB_REF_NAME#v}</string>" \
+            '  <key>CFBundleShortVersionString</key>' "  <string>${GITHUB_REF_NAME#v}</string>" \
             '  <key>CFBundlePackageType</key>' '  <string>APPL</string>' \
             '  <key>CFBundleIconFile</key>' '  <string>batorrent</string>' \
             '  <key>LSMinimumSystemVersion</key>' '  <string>12.0</string>' \
