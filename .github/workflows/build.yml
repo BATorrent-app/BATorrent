@@ -14,7 +14,7 @@ jobs:
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: cmake g++ qt6-base-dev libqt6widgets6 libqt6svg6-dev qt6-svg-dev libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
+          packages: cmake g++ qt6-base-dev libqt6widgets6 libqt6svg6-dev libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
           version: 2.0
 
       - name: Build
@@ -212,7 +212,7 @@ jobs:
 
       - name: Deploy Qt and create DMG
         run: |
-          $(brew --prefix qt@6)/bin/macdeployqt dmg/BATorrent.app
+          macdeployqt dmg/BATorrent.app
           # Ad-hoc codesign so Gatekeeper doesn't block
           codesign --force --deep --sign - dmg/BATorrent.app
           hdiutil create -volname BATorrent -srcfolder dmg -ov -format UDZO BATorrent-macos-arm64.dmg
