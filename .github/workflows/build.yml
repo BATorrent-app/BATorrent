@@ -14,8 +14,8 @@ jobs:
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: cmake g++ qt6-base-dev libqt6widgets6 libqt6svg6-dev libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
-          version: 1.0
+          packages: cmake g++ qt6-base-dev libqt6widgets6 libqt6svg6-dev qt6-svg-dev libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
+          version: 2.0
 
       - name: Build
         run: |
