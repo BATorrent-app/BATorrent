@@ -1110,9 +1110,6 @@ void MainWindow::streamTorrent(int row)
 {
     static const QStringList videoExts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".ts"};
 
-    // Enable sequential download
-    m_session->setSequentialDownload(row, true);
-
     // Find the largest video file
     auto files = m_session->filesAt(row);
     TorrentInfo info = m_session->torrentAt(row);
@@ -1135,6 +1132,15 @@ void MainWindow::streamTorrent(int row)
         return;
     }
 
+    // Enable sequential download
+    m_session->setSequentialDownload(row, true);
+
+    // Skip all non-video files so pieces focus on the video from the start
+    for (int i = 0; i < static_cast<int>(files.size()); ++i) {
+        if (i != bestIdx)
+            m_session->setFilePriority(row, i, 0);
+    }
+
     // Set video file to high priority
     m_session->setFilePriority(row, bestIdx, 7);
 
@@ -1147,7 +1153,7 @@ void MainWindow::streamTorrent(int row)
         m_streamPollTimer->deleteLater();
     }
     m_streamPollTimer = new QTimer(this);
-    connect(m_streamPollTimer, &QTimer::timeout, this, [this]() {
+    connect(m_streamPollTimer, &QTimer::timeout, this, [this, bestIdx]() {
         if (m_streamTorrentIndex < 0 || m_streamTorrentIndex >= m_session->torrentCount()) {
             m_streamPollTimer->stop();
             return;
@@ -1155,8 +1161,11 @@ void MainWindow::streamTorrent(int row)
         auto files = m_session->filesAt(m_streamTorrentIndex);
         TorrentInfo info = m_session->torrentAt(m_streamTorrentIndex);
 
-        // Check if file has enough data (2% or 5MB minimum)
-        bool ready = QFile::exists(m_streamFilePath) && (info.progress >= 0.02f || info.totalDone > 5 * 1024 * 1024);
+        // Check if the video file has enough data (2% of the file or 5MB minimum)
+        float fileProgress = (bestIdx < static_cast<int>(files.size())) ? files[bestIdx].progress : 0.0f;
+        qint64 fileDone = (bestIdx < static_cast<int>(files.size()))
+            ? static_cast<qint64>(fileProgress * files[bestIdx].size) : 0;
+        bool ready = QFile::exists(m_streamFilePath) && (fileProgress >= 0.02f || fileDone > 5 * 1024 * 1024);
         if (ready) {
             m_streamPollTimer->stop();
             bool opened = false;
