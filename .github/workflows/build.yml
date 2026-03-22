@@ -73,7 +73,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:\vcpkg\installed
-          key: vcpkg-libtorrent-x64-windows-${{ hashFiles('.github/workflows/build.yml') }}
+          key: vcpkg-libtorrent-x64-windows-v1
 
       - name: Install libtorrent via vcpkg
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
