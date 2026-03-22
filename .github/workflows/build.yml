@@ -142,28 +142,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          cache: true
+
       - name: Cache Homebrew packages
         uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/Homebrew
-            /opt/homebrew/Cellar
-            /opt/homebrew/opt
-          key: brew-macos-${{ hashFiles('.github/workflows/build.yml') }}
-          restore-keys: brew-macos-
+            /opt/homebrew/Cellar/libtorrent-rasterbar
+            /opt/homebrew/Cellar/boost
+            /opt/homebrew/Cellar/openssl@3
+          key: brew-macos-deps-${{ hashFiles('.github/workflows/build.yml') }}
+          restore-keys: brew-macos-deps-
 
       - name: Install dependencies
         run: |
-          brew update
-          brew install cmake qt@6 libtorrent-rasterbar boost openssl
+          brew install libtorrent-rasterbar boost openssl
+          brew link --overwrite libtorrent-rasterbar boost openssl
 
       - name: Build
         run: |
-          QT_PREFIX=$(brew --prefix qt@6)
-          echo "Qt6 prefix: $QT_PREFIX"
-          ls "$QT_PREFIX/lib/cmake/Qt6/" || echo "Qt6 cmake dir not found at expected path"
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$QT_PREFIX;$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)"
+            -DCMAKE_PREFIX_PATH="$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)"
           cmake --build build
 
       - name: Create app bundle
