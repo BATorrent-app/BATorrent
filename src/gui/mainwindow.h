@@ -82,6 +82,7 @@ private:
     void loadSettings();
     void startWebServer();
     QList<int> selectedRows() const;
+    QString chooseSavePath();
     void addTorrentFile(const QString &filePath);
 
     SessionManager *m_session;

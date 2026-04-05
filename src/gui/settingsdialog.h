@@ -123,6 +123,9 @@ public:
     void setJellyfinUrl(const QString &url);
     void setJellyfinApiKey(const QString &key);
 
+public slots:
+    void setAsDefaultApp();
+
 private slots:
     void browseSavePath();
     void browseIpFilter();

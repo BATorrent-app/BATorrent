@@ -12,6 +12,8 @@ SolidCompression=yes
 SetupIconFile=..\src\images\logo1.ico
 UninstallDisplayIcon={app}\BATorrent.exe
 WizardStyle=modern
+WizardImageFile=..\installer\wizard_large.bmp
+WizardSmallImageFile=..\installer\wizard_small.bmp
 PrivilegesRequired=lowest
 ChangesAssociations=yes
 

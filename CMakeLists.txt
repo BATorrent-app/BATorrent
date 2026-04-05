@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 2.1.2)
+project(BATorrent VERSION 2.2.0)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg)
 find_package(LibtorrentRasterbar REQUIRED)
 set(CMAKE_AUTOMOC ON)
@@ -32,6 +32,7 @@ add_executable(BATorrent WIN32
     src/gui/rssdialog.cpp
     src/app/rssmanager.cpp
     src/gui/thememanager.cpp
+    src/gui/releasenotesdialog.cpp
     src/webui/webserver.cpp
     ${RESOURCES}
     ${WIN_RC}
@@ -50,4 +51,10 @@ if(UNIX AND NOT APPLE)
     install(TARGETS BATorrent RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     install(FILES src/images/logo1.png DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps RENAME batorrent.png)
     install(FILES dist/batorrent.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+endif()
+
+# --- Test Suite ---
+option(BAT_BUILD_TESTS "Build the BATorrent test suite" OFF)
+if(BAT_BUILD_TESTS)
+    add_subdirectory(tests)
 endif()

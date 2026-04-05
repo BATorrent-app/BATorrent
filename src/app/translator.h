@@ -11,7 +11,7 @@
 class Translator
 {
 public:
-    enum Language { English, Portuguese };
+    enum Language { English, Portuguese, Chinese, Japanese, Russian, Spanish, German };
 
     static Translator &instance();
 
@@ -23,6 +23,11 @@ private:
     Translator();
     void loadEnglish();
     void loadPortuguese();
+    void loadChinese();
+    void loadJapanese();
+    void loadRussian();
+    void loadSpanish();
+    void loadGerman();
 
     Language m_lang = English;
     QMap<QString, QString> m_strings;

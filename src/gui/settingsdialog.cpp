@@ -22,6 +22,12 @@
 #include <QMessageBox>
 #include <QGroupBox>
 #include <QNetworkInterface>
+#include <QCoreApplication>
+#include <QProcess>
+#include <QDir>
+#ifdef Q_OS_WIN
+#include <QSettings>
+#endif
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -63,6 +69,11 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_languageCombo = new QComboBox;
     m_languageCombo->addItem("English");
     m_languageCombo->addItem(QString::fromUtf8("Português (BR)"));
+    m_languageCombo->addItem(QString::fromUtf8("中文 (简体)"));
+    m_languageCombo->addItem(QString::fromUtf8("日本語"));
+    m_languageCombo->addItem(QString::fromUtf8("Русский"));
+    m_languageCombo->addItem(QString::fromUtf8("Español (Latinoamérica)"));
+    m_languageCombo->addItem("Deutsch");
 
     auto *langLabel = new QLabel(tr_("settings_language"));
     langLabel->setStyleSheet(labelStyle);
@@ -90,6 +101,10 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     m_notifSoundCheck = new QCheckBox(tr_("settings_notif_sound"));
     generalLayout->addRow("", m_notifSoundCheck);
+
+    auto *defaultAppBtn = new QPushButton(tr_("settings_set_default"));
+    connect(defaultAppBtn, &QPushButton::clicked, this, &SettingsDialog::setAsDefaultApp);
+    generalLayout->addRow("", defaultAppBtn);
 
     tabs->addTab(wrapInScroll(generalWidget), tr_("settings_general"));
 
@@ -628,3 +643,63 @@ void SettingsDialog::setPlexToken(const QString &token) { m_plexTokenEdit->setTe
 void SettingsDialog::setJellyfinEnabled(bool enabled) { m_jellyfinCheck->setChecked(enabled); }
 void SettingsDialog::setJellyfinUrl(const QString &url) { m_jellyfinUrlEdit->setText(url); }
 void SettingsDialog::setJellyfinApiKey(const QString &key) { m_jellyfinKeyEdit->setText(key); }
+
+void SettingsDialog::setAsDefaultApp()
+{
+    QString exe = QCoreApplication::applicationFilePath();
+    bool ok = false;
+
+#ifdef Q_OS_WIN
+    // Windows: register via HKCU (no admin needed)
+    QString nativeExe = QDir::toNativeSeparators(exe);
+    QSettings reg("HKEY_CURRENT_USER\\Software\\Classes", QSettings::NativeFormat);
+
+    // .torrent file association
+    reg.setValue(".torrent/.", "BATorrent.torrent");
+    reg.setValue("BATorrent.torrent/.", "BATorrent Torrent File");
+    reg.setValue("BATorrent.torrent/shell/open/command/.",
+                 "\"" + nativeExe + "\" \"%1\"");
+    reg.setValue("BATorrent.torrent/DefaultIcon/.",
+                 nativeExe + ",0");
+
+    // magnet: protocol handler
+    reg.setValue("magnet/.", "URL:Magnet Protocol");
+    reg.setValue("magnet/URL Protocol", "");
+    reg.setValue("magnet/shell/open/command/.",
+                 "\"" + nativeExe + "\" \"%1\"");
+    reg.setValue("magnet/DefaultIcon/.",
+                 nativeExe + ",0");
+
+    reg.sync();
+    ok = (reg.status() == QSettings::NoError);
+
+    // Notify Windows that file associations changed
+    if (ok) {
+        // SHChangeNotify via command — avoids linking shell32 directly
+        QProcess::startDetached("cmd", {"/c", "assoc", ".torrent=BATorrent.torrent"});
+    }
+#elif defined(Q_OS_LINUX)
+    // Linux: xdg-mime + .desktop file
+    QProcess p;
+    p.start("xdg-mime", {"default", "batorrent.desktop", "application/x-bittorrent"});
+    p.waitForFinished(3000);
+    ok = (p.exitCode() == 0);
+
+    // magnet: protocol
+    QProcess p2;
+    p2.start("xdg-mime", {"default", "batorrent.desktop", "x-scheme-handler/magnet"});
+    p2.waitForFinished(3000);
+    ok = ok && (p2.exitCode() == 0);
+#elif defined(Q_OS_MACOS)
+    // macOS: use duti or lsregister (best effort)
+    QProcess p;
+    p.start("duti", {"-s", "com.batorrent.app", ".torrent", "all"});
+    p.waitForFinished(3000);
+    ok = (p.exitCode() == 0);
+#endif
+
+    if (ok)
+        QMessageBox::information(this, "BATorrent", tr_("settings_default_success"));
+    else
+        QMessageBox::warning(this, "BATorrent", tr_("settings_default_failed"));
+}

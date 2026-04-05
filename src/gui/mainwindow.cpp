@@ -23,6 +23,7 @@
 #include "addondialog.h"
 #include "searchdialog.h"
 #include "rssdialog.h"
+#include "releasenotesdialog.h"
 #include "../app/rssmanager.h"
 
 #include <QMenuBar>
@@ -164,10 +165,36 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     auto *selectAllShortcut = new QShortcut(QKeySequence::SelectAll, this);
     connect(selectAllShortcut, &QShortcut::activated, m_tableView, &QTableView::selectAll);
 
-    // Show welcome on first launch
+    // Show welcome on first launch + offer to set as default app
     QSettings settings("BATorrent", "BATorrent");
     if (!settings.value("welcomeShown", false).toBool())
         showWelcome();
+
+    if (!settings.value("askedDefaultApp", false).toBool()) {
+        settings.setValue("askedDefaultApp", true);
+        QTimer::singleShot(500, this, [this]() {
+            auto reply = QMessageBox::question(this, tr_("dlg_set_default_title"),
+                tr_("dlg_set_default_msg"),
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+            if (reply == QMessageBox::Yes) {
+                SettingsDialog dlg(this);
+                dlg.setAsDefaultApp();
+            }
+        });
+    }
+
+    // Show release notes on version change
+    {
+        QString lastVer = settings.value("lastVersion").toString();
+        QString curVer = QApplication::applicationVersion();
+        if (!lastVer.isEmpty() && lastVer != curVer) {
+            QTimer::singleShot(600, this, [this]() {
+                ReleaseNotesDialog dlg(this);
+                dlg.exec();
+            });
+        }
+        settings.setValue("lastVersion", curVer);
+    }
 
     // Splash animation
     m_splash = new SplashWidget(this);
@@ -242,6 +269,10 @@ void MainWindow::setupMenuBar()
 
     QMenu *helpMenu = menuBar()->addMenu(tr_("menu_help"));
     helpMenu->addAction(tr_("action_welcome"), this, &MainWindow::showWelcome);
+    helpMenu->addAction(tr_("action_release_notes"), this, [this]() {
+        ReleaseNotesDialog dlg(this);
+        dlg.exec();
+    });
     helpMenu->addAction(tr_("action_check_update"), this, [this]() { checkForUpdate(false); });
     helpMenu->addSeparator();
     helpMenu->addAction(tr_("action_about"), this, &MainWindow::showAbout);
@@ -308,6 +339,16 @@ void MainWindow::setupCentralWidget()
 
     connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, &MainWindow::onSelectionChanged);
+
+    // Double-click on torrent row → open its save folder
+    connect(m_tableView, &QTableView::doubleClicked, this, [this](const QModelIndex &index) {
+        QModelIndex srcIdx = m_proxyModel->mapToSource(index);
+        int row = srcIdx.row();
+        if (row < 0 || row >= m_session->torrentCount()) return;
+        TorrentInfo info = m_session->torrentAt(row);
+        if (!info.savePath.isEmpty())
+            QDesktopServices::openUrl(QUrl::fromLocalFile(info.savePath));
+    });
 
     // Filter bar
     auto *filterBar = new QWidget;
@@ -585,19 +626,38 @@ void MainWindow::openTorrent()
     addTorrentFile(file);
 }
 
+QString MainWindow::chooseSavePath()
+{
+    if (m_useDefaultPath)
+        return m_lastSavePath;
+
+    QString path = QFileDialog::getExistingDirectory(this, tr_("dlg_choose_folder"), m_lastSavePath);
+    if (path.isEmpty())
+        return {};
+
+    m_lastSavePath = path;
+    return path;
+}
+
 void MainWindow::addTorrentFile(const QString &filePath)
 {
-    m_session->addTorrent(filePath, m_lastSavePath);
+    QString savePath = chooseSavePath();
+    if (savePath.isEmpty()) return;
+    m_session->addTorrent(filePath, savePath);
 }
 
 void MainWindow::addTorrentFromCli(const QString &filePath)
 {
-    m_session->addTorrent(filePath, m_lastSavePath);
+    QString savePath = chooseSavePath();
+    if (savePath.isEmpty()) return;
+    m_session->addTorrent(filePath, savePath);
 }
 
 void MainWindow::addMagnetFromCli(const QString &uri)
 {
-    m_session->addMagnet(uri, m_lastSavePath);
+    QString savePath = chooseSavePath();
+    if (savePath.isEmpty()) return;
+    m_session->addMagnet(uri, savePath);
 }
 
 void MainWindow::openMagnet()
@@ -607,7 +667,9 @@ void MainWindow::openMagnet()
     if (magnet.isEmpty() || !magnet.startsWith("magnet:"))
         return;
 
-    m_session->addMagnet(magnet, m_lastSavePath);
+    QString savePath = chooseSavePath();
+    if (savePath.isEmpty()) return;
+    m_session->addMagnet(magnet, savePath);
 }
 
 void MainWindow::removeSelected()

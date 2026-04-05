@@ -1,0 +1,22 @@
+# Dr. Memory suppression file for BATorrent tests
+# Suppress known false positives from Qt and system libraries
+
+LEAK
+name=Qt*internal*
+...
+Qt*.dll!*
+
+LEAK
+name=libtorrent*internal*
+...
+torrent_rasterbar.dll!*
+
+UNINITIALIZED READ
+name=Qt*font*
+...
+Qt*.dll!*
+
+UNINITIALIZED READ
+name=windows*gdi*
+...
+gdi32*.dll!*

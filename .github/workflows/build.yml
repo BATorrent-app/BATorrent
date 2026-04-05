@@ -120,6 +120,11 @@ jobs:
           Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64.zip
 
+      - name: Generate installer wizard images
+        run: |
+          magick src/images/logo1.png -resize 164x314 -gravity center -background "#1a1a20" -extent 164x314 BMP3:installer/wizard_large.bmp
+          magick src/images/logo1.png -resize 55x55 -gravity center -background "#1a1a20" -extent 55x58 BMP3:installer/wizard_small.bmp
+
       - name: Build Installer
         shell: pwsh
         run: |
