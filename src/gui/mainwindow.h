@@ -106,6 +106,7 @@ private:
     bool m_useDefaultPath = false;
     bool m_autoShutdown = false;
     bool m_notifSoundEnabled = true;
+    bool m_splashSound = true;
     QMessageBox *m_shutdownDialog = nullptr;
     QTimer *m_shutdownTimer = nullptr;
     int m_shutdownCountdown = 0;

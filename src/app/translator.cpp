@@ -268,6 +268,7 @@ void Translator::loadEnglish()
         // Notifications
         {"notif_torrent_added", "Torrent Added"},
         {"settings_notif_sound", "Play sound on notifications"},
+        {"settings_splash_sound", "Play bat sound on startup"},
         {"settings_set_default", "Set BATorrent as default torrent app"},
         {"settings_default_success", "BATorrent is now the default torrent application."},
         {"settings_default_failed", "Could not set default. Try running as administrator."},
@@ -685,6 +686,7 @@ void Translator::loadPortuguese()
         // Notifications
         {"notif_torrent_added", "Torrent Adicionado"},
         {"settings_notif_sound", "Tocar som nas notificações"},
+        {"settings_splash_sound", "Tocar som de morcego ao iniciar"},
         {"settings_set_default", "Definir BATorrent como app padrão de torrent"},
         {"settings_default_success", "BATorrent agora é o aplicativo padrão para torrents."},
         {"settings_default_failed", "Não foi possível definir como padrão. Tente executar como administrador."},
@@ -1102,6 +1104,7 @@ void Translator::loadChinese()
         // Notifications
         {"notif_torrent_added", "已添加种子"},
         {"settings_notif_sound", "通知时播放声音"},
+        {"settings_splash_sound", "启动时播放蝙蝠声音"},
         {"settings_set_default", "将 BATorrent 设为默认种子应用"},
         {"settings_default_success", "BATorrent 已成为默认种子应用程序。"},
         {"settings_default_failed", "无法设为默认。请尝试以管理员身份运行。"},
@@ -1519,6 +1522,7 @@ void Translator::loadJapanese()
         // Notifications
         {"notif_torrent_added", "トレントを追加しました"},
         {"settings_notif_sound", "通知時にサウンドを再生"},
+        {"settings_splash_sound", "起動時にコウモリの音を再生"},
         {"settings_set_default", "BATorrent を既定のトレントアプリに設定"},
         {"settings_default_success", "BATorrent が既定のトレントアプリに設定されました。"},
         {"settings_default_failed", "既定に設定できませんでした。管理者として実行してみてください。"},
@@ -1936,6 +1940,7 @@ void Translator::loadRussian()
         // Notifications
         {"notif_torrent_added", "Торрент добавлен"},
         {"settings_notif_sound", "Звук при уведомлениях"},
+        {"settings_splash_sound", "Звук летучей мыши при запуске"},
         {"settings_set_default", "Назначить BATorrent приложением по умолчанию"},
         {"settings_default_success", "BATorrent назначен приложением для торрентов по умолчанию."},
         {"settings_default_failed", "Не удалось назначить по умолчанию. Попробуйте запустить от имени администратора."},
@@ -2352,6 +2357,7 @@ void Translator::loadSpanish()
         // Notifications
         {"notif_torrent_added", "Torrent agregado"},
         {"settings_notif_sound", "Reproducir sonido en notificaciones"},
+        {"settings_splash_sound", "Reproducir sonido de murciélago al iniciar"},
         {"settings_set_default", "Establecer BATorrent como app predeterminada"},
         {"settings_default_success", "BATorrent es ahora la aplicación predeterminada para torrents."},
         {"settings_default_failed", "No se pudo establecer como predeterminada. Intenta ejecutar como administrador."},
@@ -2768,6 +2774,7 @@ void Translator::loadGerman()
         // Notifications
         {"notif_torrent_added", "Torrent hinzugefügt"},
         {"settings_notif_sound", "Ton bei Benachrichtigungen abspielen"},
+        {"settings_splash_sound", "Fledermauston beim Start abspielen"},
         {"settings_set_default", "BATorrent als Standard-Torrent-App festlegen"},
         {"settings_default_success", "BATorrent ist jetzt die Standard-Torrent-Anwendung."},
         {"settings_default_failed", "Konnte nicht als Standard festgelegt werden. Versuchen Sie es als Administrator."},

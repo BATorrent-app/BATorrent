@@ -8,6 +8,7 @@
 #include <QRadialGradient>
 #include <QLinearGradient>
 #include <QtMath>
+#include <QSettings>
 #include <QRandomGenerator>
 #include <QMediaPlayer>
 #include <QAudioOutput>
@@ -71,7 +72,9 @@ void SplashWidget::start()
     m_running = true;
     m_particles.clear();
     m_timer.start(33);
-    m_player->play();
+    QSettings settings("BATorrent", "BATorrent");
+    if (settings.value("splashSound", true).toBool())
+        m_player->play();
 }
 
 void SplashWidget::spawnParticles(int count)

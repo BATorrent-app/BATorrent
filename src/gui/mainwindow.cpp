@@ -569,6 +569,7 @@ void MainWindow::saveSettings()
     settings.setValue("autoResumeOnReconnect", m_session->autoResumeOnReconnect());
     settings.setValue("autoShutdown", m_autoShutdown);
     settings.setValue("notifSound", m_notifSoundEnabled);
+    settings.setValue("splashSound", m_splashSound);
 
     // Auto-move
     settings.setValue("autoMoveEnabled", m_session->autoMoveEnabled());
@@ -646,6 +647,7 @@ void MainWindow::loadSettings()
     // Auto-shutdown
     m_autoShutdown = settings.value("autoShutdown", false).toBool();
     m_notifSoundEnabled = settings.value("notifSound", true).toBool();
+    m_splashSound = settings.value("splashSound", true).toBool();
 
     // Auto-move
     m_session->setAutoMove(
@@ -959,6 +961,7 @@ void MainWindow::openSettings()
     dlg.setAutoResumeOnReconnect(m_session->autoResumeOnReconnect());
     dlg.setAutoShutdown(m_autoShutdown);
     dlg.setNotifSoundEnabled(m_notifSoundEnabled);
+    dlg.setSplashSoundEnabled(m_splashSound);
     dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
     dlg.setAutoMovePath(m_session->autoMovePath());
     dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
@@ -1032,6 +1035,7 @@ void MainWindow::openSettings()
         // Auto-shutdown & notifications
         m_autoShutdown = dlg.autoShutdown();
         m_notifSoundEnabled = dlg.notifSoundEnabled();
+        m_splashSound = dlg.splashSoundEnabled();
 
         // Auto-move
         m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());

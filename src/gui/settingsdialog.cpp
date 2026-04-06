@@ -102,6 +102,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_notifSoundCheck = new QCheckBox(tr_("settings_notif_sound"));
     generalLayout->addRow("", m_notifSoundCheck);
 
+    m_splashSoundCheck = new QCheckBox(tr_("settings_splash_sound"));
+    generalLayout->addRow("", m_splashSoundCheck);
+
     // Auto-move completed downloads
     m_autoMoveCheck = new QCheckBox(tr_("settings_automove"));
     generalLayout->addRow("", m_autoMoveCheck);
@@ -501,6 +504,8 @@ bool SettingsDialog::autoShutdown() const { return m_autoShutdownCheck->isChecke
 void SettingsDialog::setAutoShutdown(bool val) { m_autoShutdownCheck->setChecked(val); }
 bool SettingsDialog::notifSoundEnabled() const { return m_notifSoundCheck->isChecked(); }
 void SettingsDialog::setNotifSoundEnabled(bool val) { m_notifSoundCheck->setChecked(val); }
+bool SettingsDialog::splashSoundEnabled() const { return m_splashSoundCheck->isChecked(); }
+void SettingsDialog::setSplashSoundEnabled(bool val) { m_splashSoundCheck->setChecked(val); }
 bool SettingsDialog::autoMoveEnabled() const { return m_autoMoveCheck->isChecked(); }
 QString SettingsDialog::autoMovePath() const { return m_autoMovePathEdit->text(); }
 void SettingsDialog::setAutoMoveEnabled(bool val) { m_autoMoveCheck->setChecked(val); }
