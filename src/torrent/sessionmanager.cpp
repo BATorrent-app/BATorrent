@@ -52,6 +52,15 @@ SessionManager::SessionManager(QObject *parent)
     m_globalDownBase = settings.value("globalDownloaded", 0).toLongLong();
     m_globalUpBase = settings.value("globalUploaded", 0).toLongLong();
 
+    // Record session start time
+    settings.setValue("sessionStartTime", QDateTime::currentSecsSinceEpoch());
+
+    // Load categories
+    settings.beginGroup("categories");
+    for (const auto &key : settings.childKeys())
+        m_categories[key] = settings.value(key).toString();
+    settings.endGroup();
+
     connect(&m_updateTimer, &QTimer::timeout, this, &SessionManager::updateStats);
     m_updateTimer.start(1000);
 }
@@ -70,6 +79,7 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
+        incrementTorrentCount();
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     } catch (const std::exception &e) {
@@ -85,6 +95,7 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath)
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
+        incrementTorrentCount();
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     } catch (const std::exception &e) {
@@ -174,6 +185,11 @@ TorrentInfo SessionManager::torrentAt(int index) const
     qint64 uploaded = st.total_upload;
     qint64 downloaded = st.total_download;
     info.ratio = downloaded > 0 ? static_cast<float>(uploaded) / static_cast<float>(downloaded) : 0.0f;
+
+    // Category
+    QString hash = QString::fromStdString(
+        (std::ostringstream() << st.info_hashes.get_best()).str());
+    info.category = m_categories.value(hash);
 
     return info;
 }
@@ -291,6 +307,51 @@ void SessionManager::setSequentialDownload(int index, bool sequential)
         m_torrents[index].unset_flags(lt::torrent_flags::sequential_download);
 }
 
+void SessionManager::setTorrentCategory(int index, const QString &category)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return;
+    if (!m_torrents[index].is_valid())
+        return;
+
+    lt::torrent_status st = m_torrents[index].status();
+    QString hash = QString::fromStdString(
+        (std::ostringstream() << st.info_hashes.get_best()).str());
+
+    if (category.isEmpty())
+        m_categories.remove(hash);
+    else
+        m_categories[hash] = category;
+}
+
+QStringList SessionManager::categories() const
+{
+    QStringList list = {"Movies", "Games", "Software", "Music", "Other"};
+    // Add any custom categories that aren't in the built-in list
+    for (auto it = m_categories.cbegin(); it != m_categories.cend(); ++it) {
+        if (!list.contains(it.value()) && !it.value().isEmpty())
+            list.append(it.value());
+    }
+    return list;
+}
+
+std::vector<bool> SessionManager::piecesAt(int index) const
+{
+    std::vector<bool> result;
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return result;
+    if (!m_torrents[index].is_valid())
+        return result;
+
+    lt::torrent_status st = m_torrents[index].status(lt::torrent_handle::query_pieces);
+    int numPieces = st.pieces.size();
+    result.resize(numPieces, false);
+    for (int i = 0; i < numPieces; ++i)
+        result[i] = st.pieces[lt::piece_index_t(i)];
+
+    return result;
+}
+
 void SessionManager::setDownloadLimit(int kbps)
 {
     lt::settings_pack pack;
@@ -400,6 +461,13 @@ void SessionManager::saveResumeData()
     settings.setValue("globalDownloaded", globalDownloaded());
     settings.setValue("globalUploaded", globalUploaded());
 
+    // Save categories
+    settings.beginGroup("categories");
+    settings.remove(""); // clear old entries
+    for (auto it = m_categories.cbegin(); it != m_categories.cend(); ++it)
+        settings.setValue(it.key(), it.value());
+    settings.endGroup();
+
     QDir dir(resumeDataDir());
     if (!dir.exists())
         dir.mkpath(".");
@@ -472,6 +540,7 @@ void SessionManager::updateStats()
     checkSeedRatios();
     checkInterfaceStatus();
     checkBandwidthSchedule();
+    enforceDownloadQueue();
     if (!m_torrents.empty())
         emit torrentsUpdated();
 }
@@ -484,6 +553,15 @@ void SessionManager::processAlerts()
     for (auto *a : alerts) {
         if (auto *fa = lt::alert_cast<lt::torrent_finished_alert>(a)) {
             QString name = QString::fromStdString(fa->torrent_name());
+
+            // Auto-move completed download
+            if (m_autoMoveEnabled && !m_autoMovePath.isEmpty()) {
+                fa->handle.move_storage(m_autoMovePath.toStdString());
+            }
+
+            // Remove from queue-paused set if present (it finished)
+            m_queuePaused.erase(fa->handle);
+
             emit torrentFinished(name);
         }
         if (auto *ea = lt::alert_cast<lt::torrent_error_alert>(a)) {
@@ -692,6 +770,41 @@ float SessionManager::globalRatio() const
 {
     qint64 down = globalDownloaded();
     return down > 0 ? static_cast<float>(globalUploaded()) / static_cast<float>(down) : 0.0f;
+}
+
+qint64 SessionManager::sessionDownloaded() const
+{
+    qint64 sessionDown = 0;
+    for (const auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        lt::torrent_status st = h.status();
+        sessionDown += st.total_payload_download;
+    }
+    return sessionDown;
+}
+
+qint64 SessionManager::sessionUploaded() const
+{
+    qint64 sessionUp = 0;
+    for (const auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        lt::torrent_status st = h.status();
+        sessionUp += st.total_payload_upload;
+    }
+    return sessionUp;
+}
+
+void SessionManager::incrementTorrentCount()
+{
+    QSettings settings("BATorrent", "BATorrent");
+    int count = settings.value("totalTorrentsAdded", 0).toInt();
+    settings.setValue("totalTorrentsAdded", count + 1);
+}
+
+int SessionManager::totalTorrentsAdded() const
+{
+    QSettings settings("BATorrent", "BATorrent");
+    return settings.value("totalTorrentsAdded", 0).toInt();
 }
 
 // --- Proxy ---
@@ -907,5 +1020,88 @@ void SessionManager::checkInterfaceStatus()
         }
         m_killSwitchPaused.clear();
         emit interfaceRestored();
+    }
+}
+
+// --- Auto-move ---
+
+void SessionManager::setAutoMove(bool enabled, const QString &path)
+{
+    m_autoMoveEnabled = enabled;
+    m_autoMovePath = path;
+}
+
+bool SessionManager::autoMoveEnabled() const { return m_autoMoveEnabled; }
+QString SessionManager::autoMovePath() const { return m_autoMovePath; }
+
+// --- Download Queue ---
+
+void SessionManager::setMaxActiveDownloads(int max)
+{
+    m_maxActiveDownloads = max;
+}
+
+int SessionManager::maxActiveDownloads() const
+{
+    return m_maxActiveDownloads;
+}
+
+void SessionManager::setTorrentQueuePosition(int index, int position)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return;
+    if (position < 0 || position >= static_cast<int>(m_torrents.size()))
+        return;
+    if (index == position)
+        return;
+
+    lt::torrent_handle h = m_torrents[index];
+    m_torrents.erase(m_torrents.begin() + index);
+    m_torrents.insert(m_torrents.begin() + position, h);
+}
+
+void SessionManager::enforceDownloadQueue()
+{
+    if (m_maxActiveDownloads <= 0)
+        return;
+
+    // Count active (non-paused) downloading torrents
+    std::vector<int> activeIndices;
+    std::vector<int> queuedIndices;
+
+    for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i) {
+        if (!m_torrents[i].is_valid()) continue;
+        lt::torrent_status st = m_torrents[i].status();
+
+        bool isPaused = (st.flags & lt::torrent_flags::paused) != lt::torrent_flags_t{};
+        bool isDownloading = (st.state == lt::torrent_status::downloading
+                              || st.state == lt::torrent_status::downloading_metadata);
+
+        if (isDownloading && !isPaused) {
+            activeIndices.push_back(i);
+        } else if (isDownloading && isPaused && m_queuePaused.count(m_torrents[i])) {
+            // This torrent was paused by queue logic -- it's waiting
+            queuedIndices.push_back(i);
+        }
+    }
+
+    int activeCount = static_cast<int>(activeIndices.size());
+
+    // If over limit, pause lowest priority (highest index) torrents
+    if (activeCount > m_maxActiveDownloads) {
+        for (int i = activeCount - 1; i >= m_maxActiveDownloads; --i) {
+            int idx = activeIndices[i];
+            m_torrents[idx].pause();
+            m_queuePaused.insert(m_torrents[idx]);
+        }
+    }
+    // If under limit, resume queued torrents
+    else if (activeCount < m_maxActiveDownloads && !queuedIndices.empty()) {
+        int toResume = m_maxActiveDownloads - activeCount;
+        for (int i = 0; i < toResume && i < static_cast<int>(queuedIndices.size()); ++i) {
+            int idx = queuedIndices[i];
+            m_torrents[idx].resume();
+            m_queuePaused.erase(m_torrents[idx]);
+        }
     }
 }

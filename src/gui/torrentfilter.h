@@ -15,6 +15,7 @@ public:
 
     void setStateFilter(const QString &state);
     void setNameFilter(const QString &text);
+    void setCategoryFilter(const QString &category);
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
@@ -23,6 +24,7 @@ protected:
 private:
     QString m_stateFilter;
     QString m_nameFilter;
+    QString m_categoryFilter;
 };
 
 #endif

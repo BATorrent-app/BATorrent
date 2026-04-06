@@ -11,5 +11,6 @@
 <file>fonts/Inter-Medium.ttf</file>
 <file>fonts/Inter-SemiBold.ttf</file>
 <file>fonts/Inter-Bold.ttf</file>
+<file>sounds/batsound.mp3</file>
 </qresource>
 </RCC>

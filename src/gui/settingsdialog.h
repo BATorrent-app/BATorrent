@@ -31,6 +31,8 @@ public:
     int themeIndex() const;
     bool autoShutdown() const;
     bool notifSoundEnabled() const;
+    bool autoMoveEnabled() const;
+    QString autoMovePath() const;
 
     void setDefaultSavePath(const QString &path);
     void setMaxDownloadSpeed(int kbps);
@@ -42,17 +44,21 @@ public:
     void setThemeIndex(int index);
     void setAutoShutdown(bool val);
     void setNotifSoundEnabled(bool val);
+    void setAutoMoveEnabled(bool val);
+    void setAutoMovePath(const QString &path);
 
     // Network
     bool dhtEnabled() const;
     int encryptionMode() const;
     int maxConnections() const;
     float seedRatioLimit() const;
+    int maxActiveDownloads() const;
 
     void setDhtEnabled(bool enabled);
     void setEncryptionMode(int mode);
     void setMaxConnections(int max);
     void setSeedRatioLimit(float ratio);
+    void setMaxActiveDownloads(int max);
 
     // VPN / Interface binding
     QString outgoingInterface() const;
@@ -128,6 +134,7 @@ public slots:
 
 private slots:
     void browseSavePath();
+    void browseAutoMovePath();
     void browseIpFilter();
     void refreshInterfaces();
 
@@ -143,12 +150,15 @@ private:
     QComboBox *m_themeCombo;
     QCheckBox *m_autoShutdownCheck;
     QCheckBox *m_notifSoundCheck;
+    QCheckBox *m_autoMoveCheck;
+    QLineEdit *m_autoMovePathEdit;
 
     // Network tab
     QCheckBox *m_dhtCheck;
     QComboBox *m_encryptionCombo;
     QSpinBox *m_maxConnSpin;
     QDoubleSpinBox *m_seedRatioSpin;
+    QSpinBox *m_maxActiveSpin;
 
     // VPN tab
     QComboBox *m_interfaceCombo;

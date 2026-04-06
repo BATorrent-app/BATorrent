@@ -3,9 +3,11 @@
 // See LICENSE file for details
 
 #include "detailspanel.h"
+#include "piecemapwidget.h"
 #include "../torrent/sessionmanager.h"
 #include "../app/translator.h"
 #include "../app/utils.h"
+#include "../app/geoip.h"
 #include "thememanager.h"
 #include <QLabel>
 #include <QFormLayout>
@@ -21,14 +23,30 @@
 DetailsPanel::DetailsPanel(SessionManager *session, QWidget *parent)
     : QTabWidget(parent), m_session(session)
 {
+    m_geoIp = new GeoIpResolver(this);
+
     addTab(createGeneralTab(), tr_("detail_general"));
     addTab(createPeersTab(), tr_("detail_peers"));
     addTab(createFilesTab(), tr_("detail_files"));
     addTab(createTrackersTab(), tr_("detail_trackers"));
+    addTab(createPiecesTab(), tr_("detail_pieces"));
 
     setMinimumHeight(200);
 
     connect(m_session, &SessionManager::torrentsUpdated, this, &DetailsPanel::refresh);
+
+    // When a GeoIP lookup completes, update the peers table
+    connect(m_geoIp, &GeoIpResolver::resolved, this, [this](const QString &ip, const QString &countryCode) {
+        if (currentIndex() != 1) return;
+        for (int row = 0; row < m_peersTable->rowCount(); ++row) {
+            auto *ipItem = m_peersTable->item(row, 1); // IP column is 1
+            if (ipItem && ipItem->text() == ip) {
+                auto *flagItem = m_peersTable->item(row, 0);
+                if (flagItem)
+                    flagItem->setText(countryCodeToFlag(countryCode));
+            }
+        }
+    });
 }
 
 void DetailsPanel::showTorrent(int index)
@@ -53,6 +71,7 @@ void DetailsPanel::refresh()
         m_peersTable->setRowCount(0);
         m_filesTable->setRowCount(0);
         m_trackersTable->setRowCount(0);
+        m_pieceMap->setPieces({});
         return;
     }
 
@@ -73,13 +92,21 @@ void DetailsPanel::refresh()
         auto peers = m_session->peersAt(m_currentIndex);
         m_peersTable->setRowCount(static_cast<int>(peers.size()));
         for (int i = 0; i < static_cast<int>(peers.size()); ++i) {
-            m_peersTable->setItem(i, 0, new QTableWidgetItem(peers[i].ip));
-            m_peersTable->setItem(i, 1, new QTableWidgetItem(QString::number(peers[i].port)));
-            m_peersTable->setItem(i, 2, new QTableWidgetItem(peers[i].client));
-            m_peersTable->setItem(i, 3, new QTableWidgetItem(formatSpeed(peers[i].downloadRate)));
-            m_peersTable->setItem(i, 4, new QTableWidgetItem(formatSpeed(peers[i].uploadRate)));
-            m_peersTable->setItem(i, 5, new QTableWidgetItem(
+            // Country flag column
+            QString cached = m_geoIp->cachedCountry(peers[i].ip);
+            m_peersTable->setItem(i, 0, new QTableWidgetItem(
+                cached.isEmpty() ? QString() : countryCodeToFlag(cached)));
+            m_peersTable->setItem(i, 1, new QTableWidgetItem(peers[i].ip));
+            m_peersTable->setItem(i, 2, new QTableWidgetItem(QString::number(peers[i].port)));
+            m_peersTable->setItem(i, 3, new QTableWidgetItem(peers[i].client));
+            m_peersTable->setItem(i, 4, new QTableWidgetItem(formatSpeed(peers[i].downloadRate)));
+            m_peersTable->setItem(i, 5, new QTableWidgetItem(formatSpeed(peers[i].uploadRate)));
+            m_peersTable->setItem(i, 6, new QTableWidgetItem(
                 QString::number(peers[i].progress * 100.0, 'f', 1) + "%"));
+
+            // Request GeoIP resolution if not cached
+            if (cached.isEmpty())
+                m_geoIp->resolve(peers[i].ip);
         }
     }
 
@@ -126,6 +153,12 @@ void DetailsPanel::refresh()
             m_trackersTable->setItem(i, 1, new QTableWidgetItem(QString::number(trackers[i].tier)));
             m_trackersTable->setItem(i, 2, new QTableWidgetItem(trackers[i].status));
         }
+    }
+
+    // Pieces tab
+    if (currentIndex() == 4) {
+        auto pieces = m_session->piecesAt(m_currentIndex);
+        m_pieceMap->setPieces(pieces);
     }
 }
 
@@ -190,9 +223,13 @@ QWidget *DetailsPanel::createPeersTab()
     auto *layout = new QVBoxLayout(widget);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    m_peersTable = new QTableWidget(0, 6);
-    m_peersTable->setHorizontalHeaderLabels({"IP", "Port", "Client", "Down", "Up", "Progress"});
+    m_peersTable = new QTableWidget(0, 7);
+    m_peersTable->setHorizontalHeaderLabels({
+        tr_("peer_country"), tr_("peer_ip"), tr_("peer_port"), tr_("peer_client"),
+        tr_("peer_down"), tr_("peer_up"), tr_("peer_progress")
+    });
     m_peersTable->horizontalHeader()->setStretchLastSection(true);
+    m_peersTable->setColumnWidth(0, 40); // narrow flag column
     m_peersTable->verticalHeader()->hide();
     m_peersTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_peersTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -250,15 +287,28 @@ QWidget *DetailsPanel::createTrackersTab()
     return widget;
 }
 
+QWidget *DetailsPanel::createPiecesTab()
+{
+    auto *widget = new QWidget;
+    auto *layout = new QVBoxLayout(widget);
+    layout->setContentsMargins(4, 4, 4, 4);
+
+    m_pieceMap = new PieceMapWidget;
+    layout->addWidget(m_pieceMap);
+    layout->addStretch();
+    return widget;
+}
+
 void DetailsPanel::retranslate()
 {
     setTabText(0, tr_("detail_general"));
     setTabText(1, tr_("detail_peers"));
     setTabText(2, tr_("detail_files"));
     setTabText(3, tr_("detail_trackers"));
+    setTabText(4, tr_("detail_pieces"));
 
     m_peersTable->setHorizontalHeaderLabels({
-        tr_("peer_ip"), tr_("peer_port"), tr_("peer_client"),
+        tr_("peer_country"), tr_("peer_ip"), tr_("peer_port"), tr_("peer_client"),
         tr_("peer_down"), tr_("peer_up"), tr_("peer_progress")
     });
     m_filesTable->setHorizontalHeaderLabels({

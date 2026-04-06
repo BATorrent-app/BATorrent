@@ -70,6 +70,10 @@ int main(int argc, char *argv[])
     server.listen(kServerName);
     QObject::connect(&server, &QLocalServer::newConnection, [&]() {
         QLocalSocket *client = server.nextPendingConnection();
+        // Always bring window to front when another instance tries to open
+        window.showNormal();
+        window.raise();
+        window.activateWindow();
         QObject::connect(client, &QLocalSocket::readyRead, [&window, client]() {
             QString data = QString::fromUtf8(client->readAll());
             const QStringList lines = data.split('\n', Qt::SkipEmptyParts);
@@ -79,10 +83,6 @@ int main(int argc, char *argv[])
                 else if (line.startsWith("magnet:"))
                     window.addMagnetFromCli(line);
             }
-            // Bring window to front
-            window.show();
-            window.raise();
-            window.activateWindow();
             client->deleteLater();
         });
     });

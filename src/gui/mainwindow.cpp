@@ -24,6 +24,9 @@
 #include "searchdialog.h"
 #include "rssdialog.h"
 #include "releasenotesdialog.h"
+#include "speedtestdialog.h"
+#include "statisticsdialog.h"
+#include "shortcutsdialog.h"
 #include "../app/rssmanager.h"
 
 #include <QMenuBar>
@@ -52,6 +55,7 @@
 #include <QHBoxLayout>
 #include <QStackedWidget>
 #include <QLineEdit>
+#include <QComboBox>
 #include <QPushButton>
 #include <QShortcut>
 #include <QGraphicsOpacityEffect>
@@ -64,6 +68,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     : QMainWindow(parent), m_session(session)
@@ -266,11 +272,56 @@ void MainWindow::setupMenuBar()
     settingsMenu->addAction(tr_("action_rss"), this, &MainWindow::openRssManager);
     settingsMenu->addSeparator();
     settingsMenu->addAction(tr_("action_search_addons"), this, &MainWindow::openSearch);
+    settingsMenu->addSeparator();
+    settingsMenu->addAction(tr_("action_speedtest"), this, [this]() {
+        SpeedTestDialog dlg(this);
+        dlg.exec();
+    });
+    settingsMenu->addAction(tr_("action_statistics"), this, [this]() {
+        StatisticsDialog dlg(m_session, this);
+        dlg.exec();
+    });
+    settingsMenu->addSeparator();
+    settingsMenu->addAction(tr_("action_export_settings"), this, [this]() {
+        QString path = QFileDialog::getSaveFileName(this, tr_("action_export_settings"),
+            QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/batorrent_settings.json",
+            "JSON (*.json)");
+        if (path.isEmpty()) return;
+        QSettings settings("BATorrent", "BATorrent");
+        QJsonObject obj;
+        for (const auto &key : settings.allKeys())
+            obj[key] = QJsonValue::fromVariant(settings.value(key));
+        QJsonDocument doc(obj);
+        QFile file(path);
+        if (file.open(QIODevice::WriteOnly)) {
+            file.write(doc.toJson());
+            QMessageBox::information(this, "BATorrent", tr_("export_success"));
+        }
+    });
+    settingsMenu->addAction(tr_("action_import_settings"), this, [this]() {
+        QString path = QFileDialog::getOpenFileName(this, tr_("action_import_settings"),
+            QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+            "JSON (*.json)");
+        if (path.isEmpty()) return;
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly)) return;
+        QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+        if (!doc.isObject()) return;
+        QSettings settings("BATorrent", "BATorrent");
+        QJsonObject obj = doc.object();
+        for (auto it = obj.begin(); it != obj.end(); ++it)
+            settings.setValue(it.key(), it.value().toVariant());
+        QMessageBox::information(this, "BATorrent", tr_("import_success") + "\n" + tr_("import_restart"));
+    });
 
     QMenu *helpMenu = menuBar()->addMenu(tr_("menu_help"));
     helpMenu->addAction(tr_("action_welcome"), this, &MainWindow::showWelcome);
     helpMenu->addAction(tr_("action_release_notes"), this, [this]() {
         ReleaseNotesDialog dlg(this);
+        dlg.exec();
+    });
+    helpMenu->addAction(tr_("action_shortcuts"), this, [this]() {
+        ShortcutsDialog dlg(this);
         dlg.exec();
     });
     helpMenu->addAction(tr_("action_check_update"), this, [this]() { checkForUpdate(false); });
@@ -400,6 +451,28 @@ void MainWindow::setupCentralWidget()
     addFilterBtn("filter_paused", "paused");
     addFilterBtn("filter_finished", "finished");
 
+    filterLayout->addSpacing(10);
+
+    m_categoryCombo = new QComboBox;
+    m_categoryCombo->addItem(tr_("filter_all_categories"));
+    for (const auto &cat : m_session->categories())
+        m_categoryCombo->addItem(cat);
+    m_categoryCombo->setStyleSheet(QString(
+        "QComboBox { background-color: %1; color: %2; border: 1px solid %3;"
+        "border-radius: 6px; padding: 5px 10px; font-size: 11px; }"
+        "QComboBox:focus { border-color: %4; }"
+        "QComboBox::drop-down { border: none; }")
+        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
+    m_categoryCombo->setMaximumWidth(160);
+    connect(m_categoryCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int idx) {
+        if (idx <= 0)
+            m_proxyModel->setCategoryFilter("");
+        else
+            m_proxyModel->setCategoryFilter(m_categoryCombo->currentText());
+    });
+    filterLayout->addWidget(m_categoryCombo);
+
     filterLayout->addStretch();
 
     // Bat animation (shown when no torrents)
@@ -497,6 +570,13 @@ void MainWindow::saveSettings()
     settings.setValue("autoShutdown", m_autoShutdown);
     settings.setValue("notifSound", m_notifSoundEnabled);
 
+    // Auto-move
+    settings.setValue("autoMoveEnabled", m_session->autoMoveEnabled());
+    settings.setValue("autoMovePath", m_session->autoMovePath());
+
+    // Download queue
+    settings.setValue("maxActiveDownloads", m_session->maxActiveDownloads());
+
     // Proxy
     settings.setValue("proxyType", m_session->proxyType());
     settings.setValue("proxyHost", m_session->proxyHost());
@@ -566,6 +646,14 @@ void MainWindow::loadSettings()
     // Auto-shutdown
     m_autoShutdown = settings.value("autoShutdown", false).toBool();
     m_notifSoundEnabled = settings.value("notifSound", true).toBool();
+
+    // Auto-move
+    m_session->setAutoMove(
+        settings.value("autoMoveEnabled", false).toBool(),
+        settings.value("autoMovePath").toString());
+
+    // Download queue
+    m_session->setMaxActiveDownloads(settings.value("maxActiveDownloads", 0).toInt());
 
     // Proxy
     int proxyType = settings.value("proxyType", 0).toInt();
@@ -871,6 +959,9 @@ void MainWindow::openSettings()
     dlg.setAutoResumeOnReconnect(m_session->autoResumeOnReconnect());
     dlg.setAutoShutdown(m_autoShutdown);
     dlg.setNotifSoundEnabled(m_notifSoundEnabled);
+    dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
+    dlg.setAutoMovePath(m_session->autoMovePath());
+    dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
 
     {
         QSettings settings("BATorrent", "BATorrent");
@@ -941,6 +1032,12 @@ void MainWindow::openSettings()
         // Auto-shutdown & notifications
         m_autoShutdown = dlg.autoShutdown();
         m_notifSoundEnabled = dlg.notifSoundEnabled();
+
+        // Auto-move
+        m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());
+
+        // Download queue
+        m_session->setMaxActiveDownloads(dlg.maxActiveDownloads());
 
         // Proxy
         m_session->setProxySettings(dlg.proxyType(), dlg.proxyHost(),
@@ -1116,6 +1213,25 @@ void MainWindow::showContextMenu(const QPoint &pos)
         menu.addSeparator();
     }
 
+    // Category submenu
+    {
+        QMenu *catMenu = menu.addMenu(tr_("ctx_category"));
+        auto *noneAction = catMenu->addAction(tr_("category_none"));
+        connect(noneAction, &QAction::triggered, this, [this, rows]() {
+            for (int r : rows)
+                m_session->setTorrentCategory(r, "");
+        });
+        catMenu->addSeparator();
+        for (const auto &cat : m_session->categories()) {
+            auto *catAction = catMenu->addAction(cat);
+            connect(catAction, &QAction::triggered, this, [this, rows, cat]() {
+                for (int r : rows)
+                    m_session->setTorrentCategory(r, cat);
+            });
+        }
+        menu.addSeparator();
+    }
+
     // Open folder + Stream (only for single selection)
     if (rows.size() == 1) {
         TorrentInfo info = m_session->torrentAt(rows.first());
@@ -1130,6 +1246,25 @@ void MainWindow::showContextMenu(const QPoint &pos)
         menu.addSeparator();
     }
 
+    // Queue position (single selection only)
+    if (rows.size() == 1) {
+        menu.addSeparator();
+        int row = rows.first();
+        menu.addAction(tr_("ctx_queue_up"), this, [this, row]() {
+            if (row > 0) {
+                m_session->setTorrentQueuePosition(row, row - 1);
+                m_model->refresh();
+            }
+        });
+        menu.addAction(tr_("ctx_queue_down"), this, [this, row]() {
+            if (row < m_session->torrentCount() - 1) {
+                m_session->setTorrentQueuePosition(row, row + 1);
+                m_model->refresh();
+            }
+        });
+    }
+
+    menu.addSeparator();
     menu.addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"), this, &MainWindow::removeSelected);
     menu.addAction(tr_("action_remove_files"), this, &MainWindow::removeSelectedWithFiles);
 

@@ -76,6 +76,11 @@ void Translator::loadEnglish()
         // Context menu
         {"ctx_sequential", "Sequential Download"},
         {"ctx_open_folder", "Open Folder"},
+        {"ctx_category", "Category"},
+        {"category_none", "None"},
+
+        // Filter
+        {"filter_all_categories", "All Categories"},
 
         // Create torrent
         {"create_title", "Create Torrent"},
@@ -106,6 +111,7 @@ void Translator::loadEnglish()
         {"col_down", "Down"},
         {"col_up", "Up"},
         {"col_state", "State"},
+        {"col_category", "Category"},
         {"col_peers", "Peers"},
 
         // Details
@@ -113,6 +119,7 @@ void Translator::loadEnglish()
         {"detail_peers", "Peers"},
         {"detail_files", "Files"},
         {"detail_trackers", "Trackers"},
+        {"detail_pieces", "Pieces"},
         {"detail_name", "Name:"},
         {"detail_save_path", "Save Path:"},
         {"detail_size", "Size:"},
@@ -398,6 +405,51 @@ void Translator::loadEnglish()
         {"settings_media_enable_plex", "Notify Plex on download complete"},
         {"settings_media_enable_jellyfin", "Notify Jellyfin/Emby on download complete"},
         {"settings_media_api_key", "API Key:"},
+
+        // Speed Test
+        {"action_speedtest", "&Speed Test"},
+        {"speedtest_title", "Speed Test"},
+        {"speedtest_start", "Start Test"},
+        {"speedtest_ping", "Ping"},
+        {"speedtest_download", "Download"},
+        {"speedtest_upload", "Upload"},
+        {"speedtest_testing", "Testing"},
+        {"speedtest_complete", "Complete!"},
+        {"speedtest_result", "Result"},
+
+        // Statistics
+        {"action_statistics", "S&tatistics"},
+        {"stats_title", "Statistics"},
+        {"stats_alltime", "All-Time"},
+        {"stats_session", "This Session"},
+        {"stats_downloaded", "Downloaded"},
+        {"stats_uploaded", "Uploaded"},
+        {"stats_ratio", "Ratio"},
+        {"stats_torrents_added", "Torrents Added"},
+        {"stats_uptime", "Uptime"},
+
+        // Shortcuts & Settings Export/Import
+        {"action_shortcuts", "&Keyboard Shortcuts"},
+        {"shortcuts_title", "Keyboard Shortcuts"},
+        {"shortcuts_key", "Shortcut"},
+        {"shortcuts_action", "Action"},
+        {"action_export_settings", "&Export Settings..."},
+        {"action_import_settings", "&Import Settings..."},
+        {"export_success", "Settings exported successfully."},
+        {"import_success", "Settings imported successfully."},
+        {"import_restart", "Please restart BATorrent for changes to take effect."},
+
+        // GeoIP / Peers
+        {"peer_country", "Country"},
+
+        // Auto-move
+        {"settings_automove", "Auto-move completed downloads to folder"},
+        {"settings_automove_path", "Move to:"},
+
+        // Download queue
+        {"settings_max_active", "Max active downloads (0 = unlimited):"},
+        {"ctx_queue_up", "Move Up in Queue"},
+        {"ctx_queue_down", "Move Down in Queue"},
     };
 }
 
@@ -443,6 +495,9 @@ void Translator::loadPortuguese()
         // Context menu
         {"ctx_sequential", "Download Sequencial"},
         {"ctx_open_folder", "Abrir Pasta"},
+        {"ctx_category", "Categoria"},
+        {"category_none", "Nenhuma"},
+        {"filter_all_categories", "Todas as Categorias"},
 
         // Create torrent
         {"create_title", "Criar Torrent"},
@@ -473,6 +528,7 @@ void Translator::loadPortuguese()
         {"col_down", "Download"},
         {"col_up", "Upload"},
         {"col_state", "Estado"},
+        {"col_category", "Categoria"},
         {"col_peers", "Peers"},
 
         // Details
@@ -480,6 +536,7 @@ void Translator::loadPortuguese()
         {"detail_peers", "Peers"},
         {"detail_files", "Arquivos"},
         {"detail_trackers", "Trackers"},
+        {"detail_pieces", "Pedaços"},
         {"detail_name", "Nome:"},
         {"detail_save_path", "Salvar em:"},
         {"detail_size", "Tamanho:"},
@@ -765,6 +822,51 @@ void Translator::loadPortuguese()
         {"settings_media_enable_plex", "Notificar Plex ao concluir download"},
         {"settings_media_enable_jellyfin", "Notificar Jellyfin/Emby ao concluir download"},
         {"settings_media_api_key", "Chave API:"},
+
+        // Speed Test
+        {"action_speedtest", "&Teste de Velocidade"},
+        {"speedtest_title", "Teste de Velocidade"},
+        {"speedtest_start", "Iniciar Teste"},
+        {"speedtest_ping", "Ping"},
+        {"speedtest_download", "Download"},
+        {"speedtest_upload", "Upload"},
+        {"speedtest_testing", "Testando"},
+        {"speedtest_complete", "Completo!"},
+        {"speedtest_result", "Resultado"},
+
+        // Statistics
+        {"action_statistics", "E&statísticas"},
+        {"stats_title", "Estatísticas"},
+        {"stats_alltime", "Todo o Período"},
+        {"stats_session", "Esta Sessão"},
+        {"stats_downloaded", "Baixado"},
+        {"stats_uploaded", "Enviado"},
+        {"stats_ratio", "Proporção"},
+        {"stats_torrents_added", "Torrents Adicionados"},
+        {"stats_uptime", "Tempo Ativo"},
+
+        // Shortcuts & Settings Export/Import
+        {"action_shortcuts", "&Atalhos de Teclado"},
+        {"shortcuts_title", "Atalhos de Teclado"},
+        {"shortcuts_key", "Atalho"},
+        {"shortcuts_action", "Ação"},
+        {"action_export_settings", "&Exportar Configurações..."},
+        {"action_import_settings", "&Importar Configurações..."},
+        {"export_success", "Configurações exportadas com sucesso."},
+        {"import_success", "Configurações importadas com sucesso."},
+        {"import_restart", "Reinicie o BATorrent para aplicar as alterações."},
+
+        // GeoIP / Peers
+        {"peer_country", "País"},
+
+        // Auto-move
+        {"settings_automove", "Mover downloads concluídos automaticamente"},
+        {"settings_automove_path", "Mover para:"},
+
+        // Download queue
+        {"settings_max_active", "Downloads ativos simultâneos (0 = ilimitado):"},
+        {"ctx_queue_up", "Subir na Fila"},
+        {"ctx_queue_down", "Descer na Fila"},
     };
 }
 
@@ -810,6 +912,9 @@ void Translator::loadChinese()
         // Context menu
         {"ctx_sequential", "顺序下载"},
         {"ctx_open_folder", "打开文件夹"},
+        {"ctx_category", "分类"},
+        {"category_none", "无"},
+        {"filter_all_categories", "所有分类"},
 
         // Create torrent
         {"create_title", "创建种子"},
@@ -840,6 +945,7 @@ void Translator::loadChinese()
         {"col_down", "下载"},
         {"col_up", "上传"},
         {"col_state", "状态"},
+        {"col_category", "分类"},
         {"col_peers", "节点"},
 
         // Details
@@ -847,6 +953,7 @@ void Translator::loadChinese()
         {"detail_peers", "节点"},
         {"detail_files", "文件"},
         {"detail_trackers", "Tracker"},
+        {"detail_pieces", "片段"},
         {"detail_name", "名称："},
         {"detail_save_path", "保存路径："},
         {"detail_size", "大小："},
@@ -1132,6 +1239,51 @@ void Translator::loadChinese()
         {"settings_media_enable_plex", "下载完成后通知 Plex"},
         {"settings_media_enable_jellyfin", "下载完成后通知 Jellyfin/Emby"},
         {"settings_media_api_key", "API 密钥："},
+
+        // Speed Test
+        {"action_speedtest", "网速测试(&S)"},
+        {"speedtest_title", "网速测试"},
+        {"speedtest_start", "开始测试"},
+        {"speedtest_ping", "延迟"},
+        {"speedtest_download", "下载"},
+        {"speedtest_upload", "上传"},
+        {"speedtest_testing", "测试中"},
+        {"speedtest_complete", "完成！"},
+        {"speedtest_result", "结果"},
+
+        // Statistics
+        {"action_statistics", "统计(&T)"},
+        {"stats_title", "统计"},
+        {"stats_alltime", "所有时间"},
+        {"stats_session", "本次会话"},
+        {"stats_downloaded", "已下载"},
+        {"stats_uploaded", "已上传"},
+        {"stats_ratio", "分享率"},
+        {"stats_torrents_added", "已添加种子数"},
+        {"stats_uptime", "运行时间"},
+
+        // Shortcuts & Settings Export/Import
+        {"action_shortcuts", "快捷键(&K)"},
+        {"shortcuts_title", "快捷键"},
+        {"shortcuts_key", "快捷键"},
+        {"shortcuts_action", "操作"},
+        {"action_export_settings", "导出设置(&E)..."},
+        {"action_import_settings", "导入设置(&I)..."},
+        {"export_success", "设置导出成功。"},
+        {"import_success", "设置导入成功。"},
+        {"import_restart", "请重启 BATorrent 以使更改生效。"},
+
+        // GeoIP / Peers
+        {"peer_country", "国家"},
+
+        // Auto-move
+        {"settings_automove", "自动移动已完成的下载"},
+        {"settings_automove_path", "移动到："},
+
+        // Download queue
+        {"settings_max_active", "最大活动下载数（0 = 无限）："},
+        {"ctx_queue_up", "上移队列"},
+        {"ctx_queue_down", "下移队列"},
     };
 }
 
@@ -1177,6 +1329,9 @@ void Translator::loadJapanese()
         // Context menu
         {"ctx_sequential", "シーケンシャルダウンロード"},
         {"ctx_open_folder", "フォルダーを開く"},
+        {"ctx_category", "カテゴリ"},
+        {"category_none", "なし"},
+        {"filter_all_categories", "すべてのカテゴリ"},
 
         // Create torrent
         {"create_title", "トレント作成"},
@@ -1207,6 +1362,7 @@ void Translator::loadJapanese()
         {"col_down", "ダウン"},
         {"col_up", "アップ"},
         {"col_state", "状態"},
+        {"col_category", "カテゴリ"},
         {"col_peers", "ピア"},
 
         // Details
@@ -1214,6 +1370,7 @@ void Translator::loadJapanese()
         {"detail_peers", "ピア"},
         {"detail_files", "ファイル"},
         {"detail_trackers", "トラッカー"},
+        {"detail_pieces", "ピース"},
         {"detail_name", "名前："},
         {"detail_save_path", "保存先："},
         {"detail_size", "サイズ："},
@@ -1499,6 +1656,51 @@ void Translator::loadJapanese()
         {"settings_media_enable_plex", "ダウンロード完了時に Plex に通知"},
         {"settings_media_enable_jellyfin", "ダウンロード完了時に Jellyfin/Emby に通知"},
         {"settings_media_api_key", "API キー："},
+
+        // Speed Test
+        {"action_speedtest", "速度テスト(&S)"},
+        {"speedtest_title", "速度テスト"},
+        {"speedtest_start", "テスト開始"},
+        {"speedtest_ping", "Ping"},
+        {"speedtest_download", "ダウンロード"},
+        {"speedtest_upload", "アップロード"},
+        {"speedtest_testing", "テスト中"},
+        {"speedtest_complete", "完了！"},
+        {"speedtest_result", "結果"},
+
+        // Statistics
+        {"action_statistics", "統計(&T)"},
+        {"stats_title", "統計"},
+        {"stats_alltime", "全期間"},
+        {"stats_session", "今回のセッション"},
+        {"stats_downloaded", "ダウンロード済み"},
+        {"stats_uploaded", "アップロード済み"},
+        {"stats_ratio", "共有比"},
+        {"stats_torrents_added", "追加されたトレント"},
+        {"stats_uptime", "稼働時間"},
+
+        // Shortcuts & Settings Export/Import
+        {"action_shortcuts", "キーボードショートカット(&K)"},
+        {"shortcuts_title", "キーボードショートカット"},
+        {"shortcuts_key", "ショートカット"},
+        {"shortcuts_action", "アクション"},
+        {"action_export_settings", "設定をエクスポート(&E)..."},
+        {"action_import_settings", "設定をインポート(&I)..."},
+        {"export_success", "設定のエクスポートに成功しました。"},
+        {"import_success", "設定のインポートに成功しました。"},
+        {"import_restart", "変更を適用するには BATorrent を再起動してください。"},
+
+        // GeoIP / Peers
+        {"peer_country", "国"},
+
+        // Auto-move
+        {"settings_automove", "完了したダウンロードを自動移動"},
+        {"settings_automove_path", "移動先："},
+
+        // Download queue
+        {"settings_max_active", "最大同時ダウンロード数（0 = 無制限）："},
+        {"ctx_queue_up", "キューを上に移動"},
+        {"ctx_queue_down", "キューを下に移動"},
     };
 }
 
@@ -1544,6 +1746,9 @@ void Translator::loadRussian()
         // Context menu
         {"ctx_sequential", "Последовательная загрузка"},
         {"ctx_open_folder", "Открыть папку"},
+        {"ctx_category", "Категория"},
+        {"category_none", "Нет"},
+        {"filter_all_categories", "Все категории"},
 
         // Create torrent
         {"create_title", "Создать торрент"},
@@ -1574,6 +1779,7 @@ void Translator::loadRussian()
         {"col_down", "Загрузка"},
         {"col_up", "Отдача"},
         {"col_state", "Состояние"},
+        {"col_category", "Категория"},
         {"col_peers", "Пиры"},
 
         // Details
@@ -1581,6 +1787,7 @@ void Translator::loadRussian()
         {"detail_peers", "Пиры"},
         {"detail_files", "Файлы"},
         {"detail_trackers", "Трекеры"},
+        {"detail_pieces", "Части"},
         {"detail_name", "Имя:"},
         {"detail_save_path", "Путь сохранения:"},
         {"detail_size", "Размер:"},
@@ -1866,6 +2073,50 @@ void Translator::loadRussian()
         {"settings_media_enable_plex", "Уведомить Plex по завершении загрузки"},
         {"settings_media_enable_jellyfin", "Уведомить Jellyfin/Emby по завершении загрузки"},
         {"settings_media_api_key", "API-ключ:"},
+        // Speed Test
+        {"action_speedtest", "&Тест скорости"},
+        {"speedtest_title", "Тест скорости"},
+        {"speedtest_start", "Начать тест"},
+        {"speedtest_ping", "Пинг"},
+        {"speedtest_download", "Загрузка"},
+        {"speedtest_upload", "Отдача"},
+        {"speedtest_testing", "Тестирование"},
+        {"speedtest_complete", "Завершено!"},
+        {"speedtest_result", "Результат"},
+
+        // Statistics
+        {"action_statistics", "С&татистика"},
+        {"stats_title", "Статистика"},
+        {"stats_alltime", "За всё время"},
+        {"stats_session", "Текущая сессия"},
+        {"stats_downloaded", "Загружено"},
+        {"stats_uploaded", "Отдано"},
+        {"stats_ratio", "Рейтинг"},
+        {"stats_torrents_added", "Добавлено торрентов"},
+        {"stats_uptime", "Время работы"},
+
+        // Shortcuts & Settings Export/Import
+        {"action_shortcuts", "&Горячие клавиши"},
+        {"shortcuts_title", "Горячие клавиши"},
+        {"shortcuts_key", "Клавиша"},
+        {"shortcuts_action", "Действие"},
+        {"action_export_settings", "&Экспорт настроек..."},
+        {"action_import_settings", "&Импорт настроек..."},
+        {"export_success", "Настройки успешно экспортированы."},
+        {"import_success", "Настройки успешно импортированы."},
+        {"import_restart", "Перезапустите BATorrent для применения изменений."},
+
+        // GeoIP / Peers
+        {"peer_country", "Страна"},
+
+        // Auto-move
+        {"settings_automove", "Автоперемещение завершённых загрузок"},
+        {"settings_automove_path", "Переместить в:"},
+
+        // Download queue
+        {"settings_max_active", "Макс. активных загрузок (0 = без ограничений):"},
+        {"ctx_queue_up", "Вверх в очереди"},
+        {"ctx_queue_down", "Вниз в очереди"},
     };
 }
 
@@ -1911,6 +2162,9 @@ void Translator::loadSpanish()
         // Context menu
         {"ctx_sequential", "Descarga secuencial"},
         {"ctx_open_folder", "Abrir carpeta"},
+        {"ctx_category", "Categoría"},
+        {"category_none", "Ninguna"},
+        {"filter_all_categories", "Todas las categorías"},
 
         // Create torrent
         {"create_title", "Crear Torrent"},
@@ -1941,6 +2195,7 @@ void Translator::loadSpanish()
         {"col_down", "Descarga"},
         {"col_up", "Subida"},
         {"col_state", "Estado"},
+        {"col_category", "Categoría"},
         {"col_peers", "Pares"},
 
         // Details
@@ -1948,6 +2203,7 @@ void Translator::loadSpanish()
         {"detail_peers", "Pares"},
         {"detail_files", "Archivos"},
         {"detail_trackers", "Trackers"},
+        {"detail_pieces", "Piezas"},
         {"detail_name", "Nombre:"},
         {"detail_save_path", "Ruta de guardado:"},
         {"detail_size", "Tamaño:"},
@@ -2233,6 +2489,50 @@ void Translator::loadSpanish()
         {"settings_media_enable_plex", "Notificar a Plex al completar descarga"},
         {"settings_media_enable_jellyfin", "Notificar a Jellyfin/Emby al completar descarga"},
         {"settings_media_api_key", "Clave API:"},
+        // Speed Test
+        {"action_speedtest", "&Test de Velocidad"},
+        {"speedtest_title", "Test de Velocidad"},
+        {"speedtest_start", "Iniciar Test"},
+        {"speedtest_ping", "Ping"},
+        {"speedtest_download", "Descarga"},
+        {"speedtest_upload", "Subida"},
+        {"speedtest_testing", "Probando"},
+        {"speedtest_complete", "¡Completado!"},
+        {"speedtest_result", "Resultado"},
+
+        // Statistics
+        {"action_statistics", "E&stadísticas"},
+        {"stats_title", "Estadísticas"},
+        {"stats_alltime", "Todo el Tiempo"},
+        {"stats_session", "Esta Sesión"},
+        {"stats_downloaded", "Descargado"},
+        {"stats_uploaded", "Subido"},
+        {"stats_ratio", "Proporción"},
+        {"stats_torrents_added", "Torrents Añadidos"},
+        {"stats_uptime", "Tiempo Activo"},
+
+        // Shortcuts & Settings Export/Import
+        {"action_shortcuts", "&Atajos de Teclado"},
+        {"shortcuts_title", "Atajos de Teclado"},
+        {"shortcuts_key", "Atajo"},
+        {"shortcuts_action", "Acción"},
+        {"action_export_settings", "&Exportar Configuración..."},
+        {"action_import_settings", "&Importar Configuración..."},
+        {"export_success", "Configuración exportada correctamente."},
+        {"import_success", "Configuración importada correctamente."},
+        {"import_restart", "Reinicie BATorrent para aplicar los cambios."},
+
+        // GeoIP / Peers
+        {"peer_country", "País"},
+
+        // Auto-move
+        {"settings_automove", "Mover descargas completadas automáticamente"},
+        {"settings_automove_path", "Mover a:"},
+
+        // Download queue
+        {"settings_max_active", "Descargas activas máximas (0 = ilimitado):"},
+        {"ctx_queue_up", "Subir en la Cola"},
+        {"ctx_queue_down", "Bajar en la Cola"},
     };
 }
 
@@ -2278,6 +2578,9 @@ void Translator::loadGerman()
         // Context menu
         {"ctx_sequential", "Sequenzieller Download"},
         {"ctx_open_folder", "Ordner öffnen"},
+        {"ctx_category", "Kategorie"},
+        {"category_none", "Keine"},
+        {"filter_all_categories", "Alle Kategorien"},
 
         // Create torrent
         {"create_title", "Torrent erstellen"},
@@ -2308,6 +2611,7 @@ void Translator::loadGerman()
         {"col_down", "Download"},
         {"col_up", "Upload"},
         {"col_state", "Status"},
+        {"col_category", "Kategorie"},
         {"col_peers", "Peers"},
 
         // Details
@@ -2315,6 +2619,7 @@ void Translator::loadGerman()
         {"detail_peers", "Peers"},
         {"detail_files", "Dateien"},
         {"detail_trackers", "Tracker"},
+        {"detail_pieces", "Stücke"},
         {"detail_name", "Name:"},
         {"detail_save_path", "Speicherpfad:"},
         {"detail_size", "Größe:"},
@@ -2600,5 +2905,49 @@ void Translator::loadGerman()
         {"settings_media_enable_plex", "Plex bei Download-Abschluss benachrichtigen"},
         {"settings_media_enable_jellyfin", "Jellyfin/Emby bei Download-Abschluss benachrichtigen"},
         {"settings_media_api_key", "API-Schlüssel:"},
+        // Speed Test
+        {"action_speedtest", "&Geschwindigkeitstest"},
+        {"speedtest_title", "Geschwindigkeitstest"},
+        {"speedtest_start", "Test starten"},
+        {"speedtest_ping", "Ping"},
+        {"speedtest_download", "Download"},
+        {"speedtest_upload", "Upload"},
+        {"speedtest_testing", "Teste"},
+        {"speedtest_complete", "Abgeschlossen!"},
+        {"speedtest_result", "Ergebnis"},
+
+        // Statistics
+        {"action_statistics", "S&tatistiken"},
+        {"stats_title", "Statistiken"},
+        {"stats_alltime", "Gesamtzeitraum"},
+        {"stats_session", "Diese Sitzung"},
+        {"stats_downloaded", "Heruntergeladen"},
+        {"stats_uploaded", "Hochgeladen"},
+        {"stats_ratio", "Verhältnis"},
+        {"stats_torrents_added", "Hinzugefügte Torrents"},
+        {"stats_uptime", "Laufzeit"},
+
+        // Shortcuts & Settings Export/Import
+        {"action_shortcuts", "&Tastaturkürzel"},
+        {"shortcuts_title", "Tastaturkürzel"},
+        {"shortcuts_key", "Kürzel"},
+        {"shortcuts_action", "Aktion"},
+        {"action_export_settings", "Einstellungen &exportieren..."},
+        {"action_import_settings", "Einstellungen &importieren..."},
+        {"export_success", "Einstellungen erfolgreich exportiert."},
+        {"import_success", "Einstellungen erfolgreich importiert."},
+        {"import_restart", "Bitte starten Sie BATorrent neu, damit die Änderungen wirksam werden."},
+
+        // GeoIP / Peers
+        {"peer_country", "Land"},
+
+        // Auto-move
+        {"settings_automove", "Abgeschlossene Downloads automatisch verschieben"},
+        {"settings_automove_path", "Verschieben nach:"},
+
+        // Download queue
+        {"settings_max_active", "Max. aktive Downloads (0 = unbegrenzt):"},
+        {"ctx_queue_up", "In Warteschlange nach oben"},
+        {"ctx_queue_down", "In Warteschlange nach unten"},
     };
 }

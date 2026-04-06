@@ -14,7 +14,7 @@ jobs:
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: cmake g++ qt6-base-dev libqt6widgets6 libqt6svg6-dev libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
+          packages: cmake g++ qt6-base-dev libqt6widgets6 libqt6svg6-dev qt6-multimedia-dev libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
           version: 2.0
 
       - name: Build
@@ -61,6 +61,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.7.*'
+          modules: qtmultimedia
           cache: true
 
       - name: Setup vcpkg
@@ -122,8 +123,8 @@ jobs:
 
       - name: Generate installer wizard images
         run: |
-          magick src/images/logo1.png -resize 164x314 -gravity center -background "#1a1a20" -extent 164x314 BMP3:installer/wizard_large.bmp
-          magick src/images/logo1.png -resize 55x55 -gravity center -background "#1a1a20" -extent 55x58 BMP3:installer/wizard_small.bmp
+          magick -size 164x314 "xc:#0E0A0A" -fill "#1A1A20" -draw "rectangle 0,0 164,2" src/images/logo1.png -resize 120x120 -gravity center -composite -gravity south -fill "#555568" -font Arial -pointsize 10 -annotate +0+20 "v2.2.0" BMP3:installer/wizard_large.bmp
+          magick src/images/logo1.png -resize 48x48 -gravity center -background "#0E0A0A" -extent 55x58 BMP3:installer/wizard_small.bmp
 
       - name: Build Installer
         shell: pwsh
@@ -151,6 +152,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.7.*'
+          modules: qtmultimedia
           cache: true
 
       - name: Cache Homebrew packages

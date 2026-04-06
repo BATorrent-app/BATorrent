@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(BATorrent VERSION 2.2.0)
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia)
 find_package(LibtorrentRasterbar REQUIRED)
 set(CMAKE_AUTOMOC ON)
 qt_add_resources(RESOURCES src/resources.qrc src/webui/webuiresources.qrc)
@@ -19,6 +19,7 @@ add_executable(BATorrent WIN32
     src/gui/torrentfilter.cpp
     src/gui/progressdelegate.cpp
     src/gui/detailspanel.cpp
+    src/gui/piecemapwidget.cpp
     src/gui/settingsdialog.cpp
     src/gui/welcomedialog.cpp
     src/gui/createtorrentdialog.cpp
@@ -31,14 +32,18 @@ add_executable(BATorrent WIN32
     src/gui/searchdialog.cpp
     src/gui/rssdialog.cpp
     src/app/rssmanager.cpp
+    src/app/geoip.cpp
     src/gui/thememanager.cpp
     src/gui/releasenotesdialog.cpp
+    src/gui/speedtestdialog.cpp
+    src/gui/statisticsdialog.cpp
+    src/gui/shortcutsdialog.cpp
     src/webui/webserver.cpp
     ${RESOURCES}
     ${WIN_RC}
 )
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
-target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg LibtorrentRasterbar::torrent-rasterbar)
+target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia LibtorrentRasterbar::torrent-rasterbar)
 
 # Windows: target Windows 7+ to silence Boost.Asio warnings
 if(WIN32)

@@ -22,6 +22,7 @@ struct TorrentInfo {
     QString stateString;
     bool paused;
     float ratio;
+    QString category;
 };
 
 struct PeerInfo {

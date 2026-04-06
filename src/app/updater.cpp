@@ -139,9 +139,19 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
     QString scriptPath = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
                              .filePath("batorrent_update.bat");
 
-    // If it's the setup exe, just run the installer
+    // If it's the setup exe, run installer then relaunch the app
     if (newFilePath.endsWith(".exe")) {
-        QProcess::startDetached(newFilePath, {"/SILENT", "/RESTARTAPPLICATIONS"});
+        // Batch script: run installer silently, wait for it to finish, then relaunch
+        QFile script(scriptPath);
+        if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&script);
+            out << "@echo off\r\n";
+            out << "\"" << QDir::toNativeSeparators(newFilePath) << "\" /SILENT /CLOSEAPPLICATIONS\r\n";
+            out << "start \"\" \"" << QDir::toNativeSeparators(appExe) << "\"\r\n";
+            out << "del \"%~f0\"\r\n";
+            script.close();
+        }
+        QProcess::startDetached("cmd.exe", {"/c", scriptPath});
         QApplication::quit();
         return;
     }

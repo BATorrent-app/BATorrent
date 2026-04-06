@@ -37,6 +37,18 @@ void TorrentFilter::setNameFilter(const QString &text)
 #endif
 }
 
+void TorrentFilter::setCategoryFilter(const QString &category)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+    beginFilterChange();
+    m_categoryFilter = category;
+    endFilterChange();
+#else
+    m_categoryFilter = category;
+    invalidateFilter();
+#endif
+}
+
 bool TorrentFilter::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     if (!m_stateFilter.isEmpty()) {
@@ -55,6 +67,13 @@ bool TorrentFilter::filterAcceptsRow(int sourceRow, const QModelIndex &sourcePar
         QModelIndex idx = sourceModel()->index(sourceRow, TorrentModel::Name, sourceParent);
         QString name = idx.data(Qt::DisplayRole).toString().toLower();
         if (!name.contains(m_nameFilter))
+            return false;
+    }
+
+    if (!m_categoryFilter.isEmpty()) {
+        QModelIndex idx = sourceModel()->index(sourceRow, 0, sourceParent);
+        QString cat = idx.data(TorrentModel::CategoryFilterRole).toString();
+        if (cat != m_categoryFilter)
             return false;
     }
 

@@ -24,6 +24,7 @@ class SplashWidget;
 class Updater;
 class WebServer;
 class AddonManager;
+class QComboBox;
 class QNetworkAccessManager;
 
 class MainWindow : public QMainWindow
@@ -112,6 +113,7 @@ private:
     QTimer *m_streamPollTimer = nullptr;
     int m_streamTorrentIndex = -1;
     QString m_streamFilePath;
+    QComboBox *m_categoryCombo = nullptr;
     QNetworkAccessManager *m_mediaServerNam = nullptr;
     void notifyMediaServers();
 };

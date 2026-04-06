@@ -11,6 +11,8 @@ class QLabel;
 class QTableWidget;
 class QComboBox;
 class SessionManager;
+class GeoIpResolver;
+class PieceMapWidget;
 
 class DetailsPanel : public QTabWidget
 {
@@ -32,6 +34,7 @@ private:
     QWidget *createPeersTab();
     QWidget *createFilesTab();
     QWidget *createTrackersTab();
+    QWidget *createPiecesTab();
 
     SessionManager *m_session;
     int m_currentIndex = -1;
@@ -50,12 +53,16 @@ private:
 
     // Peers tab
     QTableWidget *m_peersTable;
+    GeoIpResolver *m_geoIp;
 
     // Files tab
     QTableWidget *m_filesTable;
 
     // Trackers tab
     QTableWidget *m_trackersTable;
+
+    // Pieces tab
+    PieceMapWidget *m_pieceMap;
 };
 
 #endif

@@ -102,6 +102,22 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_notifSoundCheck = new QCheckBox(tr_("settings_notif_sound"));
     generalLayout->addRow("", m_notifSoundCheck);
 
+    // Auto-move completed downloads
+    m_autoMoveCheck = new QCheckBox(tr_("settings_automove"));
+    generalLayout->addRow("", m_autoMoveCheck);
+
+    auto *autoMoveLayout = new QHBoxLayout;
+    m_autoMovePathEdit = new QLineEdit;
+    m_autoMovePathEdit->setPlaceholderText(tr_("settings_automove_path"));
+    auto *autoMoveBrowseBtn = new QPushButton(tr_("settings_browse"));
+    autoMoveBrowseBtn->setFixedWidth(100);
+    connect(autoMoveBrowseBtn, &QPushButton::clicked, this, &SettingsDialog::browseAutoMovePath);
+    autoMoveLayout->addWidget(m_autoMovePathEdit);
+    autoMoveLayout->addWidget(autoMoveBrowseBtn);
+    auto *autoMoveLabel = new QLabel(tr_("settings_automove_path"));
+    autoMoveLabel->setStyleSheet(labelStyle);
+    generalLayout->addRow(autoMoveLabel, autoMoveLayout);
+
     auto *defaultAppBtn = new QPushButton(tr_("settings_set_default"));
     connect(defaultAppBtn, &QPushButton::clicked, this, &SettingsDialog::setAsDefaultApp);
     generalLayout->addRow("", defaultAppBtn);
@@ -215,7 +231,14 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     auto *encLabel = new QLabel(tr_("settings_encryption"));
     encLabel->setStyleSheet(labelStyle);
 
+    m_maxActiveSpin = new QSpinBox;
+    m_maxActiveSpin->setRange(0, 50);
+    m_maxActiveSpin->setSpecialValueText(tr_("settings_unlimited"));
+    auto *maxActiveLabel = new QLabel(tr_("settings_max_active"));
+    maxActiveLabel->setStyleSheet(labelStyle);
+
     networkLayout->addRow(connLabel, m_maxConnSpin);
+    networkLayout->addRow(maxActiveLabel, m_maxActiveSpin);
     networkLayout->addRow("", m_dhtCheck);
     networkLayout->addRow(encLabel, m_encryptionCombo);
 
@@ -448,6 +471,14 @@ void SettingsDialog::browseSavePath()
         m_savePathEdit->setText(dir);
 }
 
+void SettingsDialog::browseAutoMovePath()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, tr_("settings_automove_path"),
+                                                     m_autoMovePathEdit->text());
+    if (!dir.isEmpty())
+        m_autoMovePathEdit->setText(dir);
+}
+
 // General getters/setters
 QString SettingsDialog::defaultSavePath() const { return m_savePathEdit->text(); }
 int SettingsDialog::maxDownloadSpeed() const { return m_maxDownSpin->value(); }
@@ -470,17 +501,23 @@ bool SettingsDialog::autoShutdown() const { return m_autoShutdownCheck->isChecke
 void SettingsDialog::setAutoShutdown(bool val) { m_autoShutdownCheck->setChecked(val); }
 bool SettingsDialog::notifSoundEnabled() const { return m_notifSoundCheck->isChecked(); }
 void SettingsDialog::setNotifSoundEnabled(bool val) { m_notifSoundCheck->setChecked(val); }
+bool SettingsDialog::autoMoveEnabled() const { return m_autoMoveCheck->isChecked(); }
+QString SettingsDialog::autoMovePath() const { return m_autoMovePathEdit->text(); }
+void SettingsDialog::setAutoMoveEnabled(bool val) { m_autoMoveCheck->setChecked(val); }
+void SettingsDialog::setAutoMovePath(const QString &path) { m_autoMovePathEdit->setText(path); }
 
 // Network getters/setters
 bool SettingsDialog::dhtEnabled() const { return m_dhtCheck->isChecked(); }
 int SettingsDialog::encryptionMode() const { return m_encryptionCombo->currentIndex(); }
 int SettingsDialog::maxConnections() const { return m_maxConnSpin->value(); }
 float SettingsDialog::seedRatioLimit() const { return static_cast<float>(m_seedRatioSpin->value()); }
+int SettingsDialog::maxActiveDownloads() const { return m_maxActiveSpin->value(); }
 
 void SettingsDialog::setDhtEnabled(bool enabled) { m_dhtCheck->setChecked(enabled); }
 void SettingsDialog::setEncryptionMode(int mode) { m_encryptionCombo->setCurrentIndex(mode); }
 void SettingsDialog::setMaxConnections(int max) { m_maxConnSpin->setValue(max); }
 void SettingsDialog::setSeedRatioLimit(float ratio) { m_seedRatioSpin->setValue(static_cast<double>(ratio)); }
+void SettingsDialog::setMaxActiveDownloads(int max) { m_maxActiveSpin->setValue(max); }
 
 // VPN getters/setters
 QString SettingsDialog::outgoingInterface() const { return m_interfaceCombo->currentData().toString(); }

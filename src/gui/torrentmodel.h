@@ -22,9 +22,12 @@ public:
         DownSpeed,
         UpSpeed,
         State,
+        Category,
         Peers,
         ColumnCount
     };
+
+    static constexpr int CategoryFilterRole = Qt::UserRole + 13;
 
     explicit TorrentModel(SessionManager *session, QObject *parent = nullptr);
 

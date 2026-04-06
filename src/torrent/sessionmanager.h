@@ -9,9 +9,11 @@
 #include <QObject>
 #include <QTimer>
 #include <QString>
+#include <QStringList>
 #include <libtorrent/session.hpp>
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/torrent_status.hpp>
+#include <QMap>
 #include <vector>
 #include <set>
 
@@ -40,6 +42,13 @@ public:
     void setFilePriority(int torrentIndex, int fileIndex, int priority);
     void setSequentialDownload(int index, bool sequential);
 
+    // Categories
+    void setTorrentCategory(int index, const QString &category);
+    QStringList categories() const;
+
+    // Piece map
+    std::vector<bool> piecesAt(int index) const;
+
     void setDownloadLimit(int kbps);
     void setUploadLimit(int kbps);
     int downloadLimit() const;
@@ -66,6 +75,16 @@ public:
     // Seed limits
     void setSeedRatioLimit(float ratio);
     float seedRatioLimit() const;
+
+    // Auto-move completed downloads
+    void setAutoMove(bool enabled, const QString &path);
+    bool autoMoveEnabled() const;
+    QString autoMovePath() const;
+
+    // Download queue
+    void setMaxActiveDownloads(int max);
+    int maxActiveDownloads() const;
+    void setTorrentQueuePosition(int index, int position);
 
     // Proxy
     void setProxySettings(int type, const QString &host, int port,
@@ -103,6 +122,15 @@ public:
     qint64 globalDownloaded() const;
     qint64 globalUploaded() const;
     float globalRatio() const;
+
+    // Per-session statistics
+    qint64 sessionDownloaded() const;
+    qint64 sessionUploaded() const;
+
+    // Torrent count tracking
+    void incrementTorrentCount();
+    int totalTorrentsAdded() const;
+
     int importFromQBittorrent(const QString &defaultSavePath);
 
 signals:
@@ -132,9 +160,21 @@ private:
     int m_encryptionMode = 0;
     float m_seedRatioLimit = 0.0f; // 0 = no limit
 
+    // Auto-move
+    bool m_autoMoveEnabled = false;
+    QString m_autoMovePath;
+
+    // Download queue
+    int m_maxActiveDownloads = 0; // 0 = unlimited
+    std::set<lt::torrent_handle> m_queuePaused; // torrents paused by queue logic
+    void enforceDownloadQueue();
+
     // Global stats (accumulated from previous sessions)
     qint64 m_globalDownBase = 0;
     qint64 m_globalUpBase = 0;
+
+    // Categories per torrent (hash -> category name)
+    QMap<QString, QString> m_categories;
 
     // VPN / Interface binding
     QString m_outgoingInterface;

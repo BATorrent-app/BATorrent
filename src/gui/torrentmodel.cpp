@@ -48,6 +48,7 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
         case DownSpeed: return formatSpeed(info.downloadRate);
         case UpSpeed:   return formatSpeed(info.uploadRate);
         case State:     return info.stateString;
+        case Category:  return info.category;
         case Peers:     return info.numPeers;
         }
     }
@@ -65,8 +66,14 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
         case DownSpeed: return info.downloadRate;
         case UpSpeed:   return info.uploadRate;
         case State:     return info.stateString;
+        case Category:  return info.category;
         case Peers:     return info.numPeers;
         }
+    }
+
+    // Category for filtering
+    if (role == CategoryFilterRole) {
+        return info.category;
     }
 
     // State for filtering
@@ -113,6 +120,7 @@ QVariant TorrentModel::headerData(int section, Qt::Orientation orientation, int 
     case DownSpeed: return tr_("col_down");
     case UpSpeed:   return tr_("col_up");
     case State:     return tr_("col_state");
+    case Category:  return tr_("col_category");
     case Peers:     return tr_("col_peers");
     }
     return {};
