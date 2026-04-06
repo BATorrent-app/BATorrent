@@ -98,7 +98,6 @@ begin
 
   // -- Inner page panel --
   WizardForm.InnerPage.Color := BG_DARK;
-  WizardForm.OuterPage.Color := BG_DARK;
 
   // -- Main panel (left side on Welcome/Finish) --
   WizardForm.MainPanel.Color := BG_SURFACE;
