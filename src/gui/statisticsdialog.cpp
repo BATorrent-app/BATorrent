@@ -12,6 +12,7 @@
 #include <QSettings>
 #include <QApplication>
 #include <QFrame>
+#include <QDateTime>
 
 static QString formatBytes(qint64 bytes)
 {
