@@ -85,6 +85,21 @@ ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
 QString ReleaseNotesDialog::releaseNotes()
 {
     return QStringLiteral(
+        "<h3 style='color:#c43030'>v2.3.0</h3>"
+        "<ul>"
+        "<li><b>Categories/Tags</b> &mdash; organize torrents by type (Movies, Games, Software, Music, Other) with filtering</li>"
+        "<li><b>Piece Map</b> &mdash; visual grid showing downloaded vs missing pieces in the details panel</li>"
+        "<li><b>GeoIP Flags</b> &mdash; country flag emojis next to peer IPs</li>"
+        "<li><b>Speed Test</b> &mdash; built-in internet speed test (ping, download, upload)</li>"
+        "<li><b>Download Queue</b> &mdash; limit concurrent active downloads with queue priority</li>"
+        "<li><b>Auto-move Completed</b> &mdash; automatically move finished downloads to a configured folder</li>"
+        "<li><b>Statistics</b> &mdash; all-time and per-session download/upload statistics</li>"
+        "<li><b>Keyboard Shortcuts</b> &mdash; reference dialog for all hotkeys</li>"
+        "<li><b>Export/Import Settings</b> &mdash; backup and restore configuration as JSON</li>"
+        "<li><b>Splash Animation</b> &mdash; new cinematic startup with sonar rings, particles, and bat sound</li>"
+        "<li><b>Dark Installer</b> &mdash; fully themed Windows installer with branding</li>"
+        "<li><b>Bug Fix</b> &mdash; app now relaunches after update; tray instance restores on new launch</li>"
+        "</ul>"
         "<h3 style='color:#c43030'>v2.2.0</h3>"
         "<ul>"
         "<li><b>WebUI Redesign</b> &mdash; completely overhauled web interface with modern dark theme, "

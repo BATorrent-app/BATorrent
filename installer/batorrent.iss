@@ -3,8 +3,8 @@
 
 [Setup]
 AppName=BATorrent
-AppVersion=2.2.0
-AppVerName=BATorrent 2.2.0
+AppVersion=2.3.0
+AppVerName=BATorrent 2.3.0
 AppPublisher=Mateuscruz19
 AppPublisherURL=https://github.com/Mateuscruz19/BAT-Torrent
 AppSupportURL=https://github.com/Mateuscruz19/BAT-Torrent/issues
@@ -28,12 +28,12 @@ CloseApplications=yes
 RestartApplications=no
 ArchitecturesInstallIn64BitMode=x64compatible
 LicenseFile=..\LICENSE
-VersionInfoVersion=2.2.0.0
+VersionInfoVersion=2.3.0.0
 VersionInfoCompany=Mateuscruz19
 VersionInfoDescription=BATorrent - A modern BitTorrent client
 VersionInfoCopyright=Copyright (c) 2024-2026 Mateus Cruz
 VersionInfoProductName=BATorrent
-VersionInfoProductVersion=2.2.0
+VersionInfoProductVersion=2.3.0
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -170,7 +170,7 @@ begin
 
   VersionLabel := TNewStaticText.Create(WizardForm);
   VersionLabel.Parent := WizardForm;
-  VersionLabel.Caption := 'v2.2.0 - A modern BitTorrent client';
+  VersionLabel.Caption := 'v2.3.0 - A modern BitTorrent client';
   VersionLabel.Font.Color := TEXT_MUTED;
   VersionLabel.Font.Size := 7;
   VersionLabel.Left := BrandLabel.Left + BrandLabel.Width + ScaleX(8);
