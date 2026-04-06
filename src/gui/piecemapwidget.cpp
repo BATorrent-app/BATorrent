@@ -5,6 +5,7 @@
 #include "piecemapwidget.h"
 #include "thememanager.h"
 #include <QPainter>
+#include <QColor>
 
 PieceMapWidget::PieceMapWidget(QWidget *parent)
     : QWidget(parent)

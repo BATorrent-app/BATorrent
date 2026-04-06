@@ -95,18 +95,8 @@ var
 begin
   // -- Main form dark background --
   WizardForm.Color := BG_DARK;
-
-  // -- Inner page panel --
   WizardForm.InnerPage.Color := BG_DARK;
-
-  // -- Main panel (left side on Welcome/Finish) --
   WizardForm.MainPanel.Color := BG_SURFACE;
-
-  // -- Page name and description labels --
-  WizardForm.PageNameLabel.Font.Color := TEXT_COLOR;
-  WizardForm.PageNameLabel.Font.Size := 12;
-  WizardForm.PageNameLabel.Font.Style := [fsBold];
-  WizardForm.PageDescriptionLabel.Font.Color := TEXT_MUTED;
 
   // -- Welcome & Finish labels --
   WizardForm.WelcomeLabel1.Font.Color := TEXT_COLOR;
@@ -125,11 +115,9 @@ begin
   WizardForm.GroupEdit.Color := BG_PANEL;
   WizardForm.GroupEdit.Font.Color := TEXT_COLOR;
 
-  // -- Task list and component list --
+  // -- Task list --
   WizardForm.TasksList.Color := BG_PANEL;
   WizardForm.TasksList.Font.Color := TEXT_COLOR;
-  WizardForm.ComponentsList.Color := BG_PANEL;
-  WizardForm.ComponentsList.Font.Color := TEXT_COLOR;
 
   // -- Ready memo --
   WizardForm.ReadyMemo.Color := BG_PANEL;
@@ -138,23 +126,14 @@ begin
   // -- License page --
   WizardForm.LicenseMemo.Color := BG_PANEL;
   WizardForm.LicenseMemo.Font.Color := TEXT_COLOR;
-  WizardForm.LicenseAcceptedRadio.Font.Color := TEXT_COLOR;
-  WizardForm.LicenseNotAcceptedRadio.Font.Color := TEXT_COLOR;
 
   // -- Various labels --
   WizardForm.SelectDirLabel.Font.Color := TEXT_MUTED;
-  WizardForm.SelectDirBrowseLabel.Font.Color := TEXT_MUTED;
   WizardForm.DiskSpaceLabel.Font.Color := TEXT_MUTED;
-  WizardForm.SelectGroupLabel.Font.Color := TEXT_MUTED;
   WizardForm.SelectTasksLabel.Font.Color := TEXT_MUTED;
   WizardForm.ReadyLabel.Font.Color := TEXT_MUTED;
-
-  // -- Progress bar page --
   WizardForm.StatusLabel.Font.Color := TEXT_MUTED;
   WizardForm.FilenameLabel.Font.Color := TEXT_MUTED;
-
-  // -- Bottom panel (buttons area) --
-  WizardForm.Bevel1.Visible := False;
 
   // -- Add branding label at the bottom --
   BrandLabel := TNewStaticText.Create(WizardForm);

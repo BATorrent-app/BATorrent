@@ -13,6 +13,7 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QByteArray>
+#include <QUrl>
 
 SpeedTestDialog::SpeedTestDialog(QWidget *parent)
     : QDialog(parent)

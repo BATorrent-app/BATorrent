@@ -7,8 +7,11 @@
 #include "../gui/thememanager.h"
 #include <QVBoxLayout>
 #include <QTableWidget>
+#include <QTableWidgetItem>
 #include <QHeaderView>
 #include <QLabel>
+#include <QFont>
+#include <QAbstractItemView>
 
 ShortcutsDialog::ShortcutsDialog(QWidget *parent)
     : QDialog(parent)
