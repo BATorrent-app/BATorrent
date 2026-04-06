@@ -193,6 +193,9 @@ QString ThemeManager::dialogStyleSheet() const
         QPushButton[default="true"]:hover, QPushButton:default:hover {
             background-color: @acLt; border-color: @acLt;
         }
+        QLabel { color: @tx; }
+        QGroupBox { color: @tx; }
+        QRadioButton { color: @tx; }
         QCheckBox { color: @tx; spacing: 8px; font-size: 13px; }
         QCheckBox::indicator {
             width: 16px; height: 16px;
