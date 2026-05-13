@@ -1,9 +1,18 @@
 name: Build & Release
 
 on:
+  # Tag push -> build all platforms AND publish a GitHub release.
   push:
     tags:
       - 'v*'
+  # Manual trigger from the Actions tab -> build all platforms, no release.
+  # Use this to grab a Windows installer / DMG / AppImage for testing
+  # without cutting a real version.
+  workflow_dispatch:
+  # PR against main -> build all platforms so CI catches breakage before
+  # merge. No release.
+  pull_request:
+    branches: [main]
 
 jobs:
   build-linux:
@@ -231,6 +240,10 @@ jobs:
           path: BATorrent-macos-arm64.dmg
 
   release:
+    # Only publish a GitHub release when the trigger is an actual version
+    # tag. Manual / PR runs build the artifacts (downloadable from the
+    # workflow page) but stop short of cutting a release.
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     permissions:
