@@ -64,6 +64,7 @@
 #include <QPropertyAnimation>
 #include <QProgressDialog>
 #include <QProcess>
+#include <QRandomGenerator>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QDesktopServices>
@@ -574,7 +575,23 @@ void MainWindow::setupTrayIcon()
         if (reason == QSystemTrayIcon::Trigger)
             trayActivated();
     });
-    connect(m_trayIcon, &QSystemTrayIcon::messageClicked, this, &MainWindow::trayActivated);
+    // Clicking the balloon brings the window forward AND highlights the
+    // torrent that fired the notification, so the user lands directly on
+    // what they were notified about instead of having to find it.
+    connect(m_trayIcon, &QSystemTrayIcon::messageClicked, this, [this]() {
+        trayActivated();
+        if (m_lastNotifiedHash.isEmpty()) return;
+        for (int i = 0; i < m_session->torrentCount(); ++i) {
+            if (m_session->torrentHashAt(i) != m_lastNotifiedHash) continue;
+            QModelIndex src = m_model->index(i, 0);
+            QModelIndex proxy = m_proxyModel->mapFromSource(src);
+            if (proxy.isValid()) {
+                m_tableView->setCurrentIndex(proxy);
+                m_tableView->scrollTo(proxy);
+            }
+            break;
+        }
+    });
 
     m_trayIcon->show();
 }
@@ -668,10 +685,26 @@ void MainWindow::loadSettings()
     m_session->setDhtEnabled(dht);
     int enc = settings.value("encryptionMode", 0).toInt();
     m_session->setEncryptionMode(enc);
+    bool utp = settings.value("utpEnabled", true).toBool();
+    m_session->setUtpEnabled(utp);
     int maxConn = settings.value("maxConnections", 200).toInt();
     m_session->setMaxConnections(maxConn);
     float seedRatio = settings.value("seedRatioLimit", 0.0).toFloat();
     m_session->setSeedRatioLimit(seedRatio);
+
+    // Listening port: optionally re-randomize on each launch so trackers
+    // and ISPs can't trivially fingerprint the client across sessions.
+    bool randomizePort = settings.value("randomizePort", false).toBool();
+    if (randomizePort) {
+        // Use ephemeral port range so we never collide with well-known
+        // services. 49152-65535 is the IANA ephemeral block.
+        const int port = static_cast<int>(QRandomGenerator::system()
+                                              ->bounded(49152, 65536));
+        m_session->setListenPort(port);
+        settings.setValue("listenPort", port);
+    } else if (settings.contains("listenPort")) {
+        m_session->setListenPort(settings.value("listenPort").toInt());
+    }
 
     // VPN settings
     QString iface = settings.value("outgoingInterface", "").toString();
@@ -963,6 +996,9 @@ void MainWindow::onTorrentFinished(const QString &name, const QString &infoHash)
                             QSystemTrayIcon::Information, 5000);
     if (m_notifSoundEnabled)
         QApplication::beep();
+    // Remember the hash so clicking the balloon focuses the matching row
+    // rather than just raising the window.
+    m_lastNotifiedHash = infoHash;
     m_model->flashRow(infoHash);
     notifyMediaServers();
     checkAutoShutdown();
@@ -1039,6 +1075,12 @@ void MainWindow::openSettings()
     dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
     dlg.setStopAfterDownload(m_session->stopAfterDownload());
     dlg.setMaxSeedDays(static_cast<int>(m_session->maxSeedSeconds() / 86400));
+    {
+        QSettings s("BATorrent", "BATorrent");
+        dlg.setUtpEnabled(m_session->utpEnabled());
+        dlg.setRandomizePort(s.value("randomizePort", false).toBool());
+        dlg.setListenPort(s.value("listenPort", 6881).toInt());
+    }
 
     {
         QSettings settings("BATorrent", "BATorrent");
@@ -1120,6 +1162,18 @@ void MainWindow::openSettings()
         // Stop-seeding rules
         m_session->setStopAfterDownload(dlg.stopAfterDownload());
         m_session->setMaxSeedSeconds(static_cast<qint64>(dlg.maxSeedDays()) * 86400);
+
+        // Transport + port
+        m_session->setUtpEnabled(dlg.utpEnabled());
+        {
+            QSettings s("BATorrent", "BATorrent");
+            s.setValue("utpEnabled", dlg.utpEnabled());
+            s.setValue("randomizePort", dlg.randomizePort());
+            if (!dlg.randomizePort()) {
+                s.setValue("listenPort", dlg.listenPort());
+                m_session->setListenPort(dlg.listenPort());
+            }
+        }
 
         // Proxy
         m_session->setProxySettings(dlg.proxyType(), dlg.proxyHost(),

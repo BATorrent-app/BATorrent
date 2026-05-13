@@ -60,9 +60,14 @@ void GeoIpResolver::processQueue()
 
     m_requestInFlight = true;
 
-    QUrl url(QString("http://ip-api.com/json/%1?fields=countryCode").arg(ip));
+    // ipinfo.io serves HTTPS on the free tier (~50k req/month per IP);
+    // ip-api.com requires the paid plan for HTTPS. We switched providers
+    // so peer IPs aren't leaked in cleartext to every router on the path
+    // between BATorrent and the lookup service.
+    QUrl url(QString("https://ipinfo.io/%1/country").arg(ip));
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
+    req.setRawHeader("Accept", "text/plain");
 
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, ip]() {
@@ -71,11 +76,20 @@ void GeoIpResolver::processQueue()
 
         QString countryCode;
         if (reply->error() == QNetworkReply::NoError) {
-            QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-            countryCode = doc.object().value("countryCode").toString();
+            // /country returns just the 2-letter ISO code on its own line
+            // (e.g. "US\n") so a trim is all that's needed. We fall back
+            // to JSON parsing if the response looks structured, in case
+            // the API changes shape under us.
+            QByteArray body = reply->readAll().trimmed();
+            if (body.startsWith('{')) {
+                QJsonDocument doc = QJsonDocument::fromJson(body);
+                countryCode = doc.object().value("country").toString();
+            } else {
+                countryCode = QString::fromLatin1(body);
+            }
         }
 
-        if (!countryCode.isEmpty()) {
+        if (!countryCode.isEmpty() && countryCode.size() == 2) {
             m_cache.insert(ip, countryCode);
             emit resolved(ip, countryCode);
         }

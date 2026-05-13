@@ -29,7 +29,12 @@ SessionManager::SessionManager(QObject *parent)
     lt::settings_pack pack;
     pack.set_int(lt::settings_pack::alert_mask,
                  lt::alert_category::status | lt::alert_category::error
-                 | lt::alert_category::storage);
+                 | lt::alert_category::storage
+                 // piece_progress delivers piece_finished_alert; we use it
+                 // to opportunistically save resume data (rate-limited to
+                 // once per minute per torrent) so a crash mid-download
+                 // doesn't force a full re-hash on next launch.
+                 | lt::alert_category::piece_progress);
 
     // Enable DHT for trackerless torrents / magnet links
     pack.set_bool(lt::settings_pack::enable_dht, true);
@@ -46,7 +51,7 @@ SessionManager::SessionManager(QObject *parent)
     // fingerprint avoids that whole class of refusal.
     pack.set_str(lt::settings_pack::peer_fingerprint,
                  lt::generate_fingerprint("BT", 2, 3, 2));
-    pack.set_str(lt::settings_pack::user_agent, "BATorrent/2.3.3");
+    pack.set_str(lt::settings_pack::user_agent, "BATorrent/2.3.4");
 
     // (.!bt suffix for incomplete files is applied per-file in addTorrent
     //  and stripped on file_completed_alert below — libtorrent doesn't have
@@ -99,7 +104,10 @@ SessionManager::SessionManager(QObject *parent)
 
 SessionManager::~SessionManager()
 {
-    saveResumeData();
+    // On shutdown we want a synchronous flush so resume files are durable
+    // before Qt tears the app down. The periodic 5-min timer and the
+    // piece_finished_alert path both call saveResumeData() (non-blocking).
+    flushResumeDataBlocking(5000);
 }
 
 void SessionManager::addTorrent(const QString &filePath, const QString &savePath)
@@ -256,6 +264,8 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
     m_queuePaused.erase(h);
     m_killSwitchPaused.erase(h);
     m_statusCache.erase(h);
+    m_lastResumeSaveAt.erase(h);
+    m_lastFastAt.erase(h);
 
     lt::remove_flags_t flags{};
     if (deleteFiles)
@@ -635,6 +645,24 @@ bool SessionManager::dhtEnabled() const
     return m_dhtEnabled;
 }
 
+void SessionManager::setUtpEnabled(bool enabled)
+{
+    m_utpEnabled = enabled;
+    lt::settings_pack pack;
+    pack.set_bool(lt::settings_pack::enable_outgoing_utp, enabled);
+    pack.set_bool(lt::settings_pack::enable_incoming_utp, enabled);
+    // Always keep TCP available so peer connectivity doesn't collapse when
+    // uTP is off; the user just biases libtorrent's transport choice.
+    pack.set_bool(lt::settings_pack::enable_outgoing_tcp, true);
+    pack.set_bool(lt::settings_pack::enable_incoming_tcp, true);
+    m_session.apply_settings(pack);
+}
+
+bool SessionManager::utpEnabled() const
+{
+    return m_utpEnabled;
+}
+
 void SessionManager::setEncryptionMode(int mode)
 {
     m_encryptionMode = mode;
@@ -783,19 +811,18 @@ qint64 SessionManager::effectiveMaxSeedSeconds(const QString &hash) const
 
 void SessionManager::saveResumeData()
 {
-    // Persist global stats
+    // QSettings writes are cheap (memory-backed; flushed on app exit) so we
+    // keep them inline here.
     QSettings settings("BATorrent", "BATorrent");
     settings.setValue("globalDownloaded", globalDownloaded());
     settings.setValue("globalUploaded", globalUploaded());
 
-    // Save categories
     settings.beginGroup("categories");
-    settings.remove(""); // clear old entries
+    settings.remove("");
     for (auto it = m_categories.cbegin(); it != m_categories.cend(); ++it)
         settings.setValue(it.key(), it.value());
     settings.endGroup();
 
-    // Save stop-seeding globals + per-torrent overrides
     settings.setValue("stopAfterDownload", m_stopAfterDownload);
     settings.setValue("maxSeedSeconds", m_maxSeedSeconds);
 
@@ -815,42 +842,66 @@ void SessionManager::saveResumeData()
     if (!dir.exists())
         dir.mkpath(".");
 
-    int outstanding = 0;
-    for (size_t i = 0; i < m_torrents.size(); ++i) {
-        if (!m_torrents[i].is_valid()) continue;
-        lt::torrent_status st = m_torrents[i].status();
+    // Just kick off the async request for every torrent with metadata.
+    // libtorrent will deliver save_resume_data_alert / _failed_alert for
+    // each one; processAlerts persists them to disk and decrements
+    // m_resumeOutstanding. The GUI thread doesn't block here.
+    //
+    // Reset the counter at the start so stale alerts from a previous
+    // unfinished batch don't artificially inflate it. The earlier batch's
+    // alerts will still be persisted (processAlerts always writes), they
+    // just won't double-count against the shutdown timeout.
+    m_resumeOutstanding = 0;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    for (auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        lt::torrent_status st = cachedStatus(h);
         if (!st.has_metadata) continue;
-
-        m_torrents[i].save_resume_data(lt::torrent_handle::save_info_dict);
-        ++outstanding;
+        h.save_resume_data(lt::torrent_handle::save_info_dict);
+        m_lastResumeSaveAt[h] = now;
+        ++m_resumeOutstanding;
     }
+}
 
-    // Process all save_resume_data alerts (one per torrent)
-    while (outstanding > 0) {
-        lt::alert const *a = m_session.wait_for_alert(std::chrono::seconds(5));
+void SessionManager::flushResumeDataBlocking(int timeoutMs)
+{
+    // Called from the destructor. Kick off the async requests, then turn
+    // the crank on alerts synchronously with a bounded total wait time so
+    // app shutdown is durable but never hangs indefinitely.
+    saveResumeData();
+
+    const auto deadline = std::chrono::steady_clock::now()
+                          + std::chrono::milliseconds(timeoutMs);
+
+    while (m_resumeOutstanding > 0
+           && std::chrono::steady_clock::now() < deadline) {
+        // Wait for the next alert up to whatever time is left in the
+        // deadline window. wait_for_alert returns immediately if alerts
+        // are already queued.
+        auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+            deadline - std::chrono::steady_clock::now());
+        if (remaining.count() <= 0) break;
+        lt::alert const *a = m_session.wait_for_alert(remaining);
         if (!a) break;
-
-        std::vector<lt::alert *> alerts;
-        m_session.pop_alerts(&alerts);
-
-        for (auto *alert : alerts) {
-            if (auto *rd = lt::alert_cast<lt::save_resume_data_alert>(alert)) {
-                --outstanding;
-                auto buf = lt::write_resume_data_buf(rd->params);
-                lt::torrent_status st = rd->handle.status();
-                QString hash = QString::fromStdString(
-                    (std::ostringstream() << st.info_hashes.get_best()).str());
-                QString filePath = dir.filePath(hash + ".resume");
-                QFile file(filePath);
-                if (file.open(QIODevice::WriteOnly)) {
-                    file.write(buf.data(), static_cast<qint64>(buf.size()));
-                }
-            }
-            if (lt::alert_cast<lt::save_resume_data_failed_alert>(alert)) {
-                --outstanding;
-            }
-        }
+        processAlerts();
     }
+}
+
+bool SessionManager::persistResumeAlert(const lt::save_resume_data_alert *rd)
+{
+    QDir dir(resumeDataDir());
+    if (!dir.exists())
+        dir.mkpath(".");
+    auto buf = lt::write_resume_data_buf(rd->params);
+    lt::torrent_status st = rd->handle.status();
+    QString hash = QString::fromStdString(
+        (std::ostringstream() << st.info_hashes.get_best()).str());
+    QString filePath = dir.filePath(hash + ".resume");
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly))
+        return false;
+    file.write(buf.data(), static_cast<qint64>(buf.size()));
+    return true;
 }
 
 void SessionManager::loadResumeData()
@@ -983,6 +1034,31 @@ void SessionManager::processAlerts()
         }
         if (auto *mf = lt::alert_cast<lt::metadata_failed_alert>(a)) {
             emit torrentError(QString::fromStdString(mf->message()));
+        }
+        // Async resume-data persistence: write the buffer the moment the
+        // alert arrives, decrement the outstanding counter so
+        // flushResumeDataBlocking() and other callers can tell when every
+        // request has been serviced.
+        if (auto *rd = lt::alert_cast<lt::save_resume_data_alert>(a)) {
+            persistResumeAlert(rd);
+            if (m_resumeOutstanding > 0) --m_resumeOutstanding;
+        }
+        if (lt::alert_cast<lt::save_resume_data_failed_alert>(a)) {
+            if (m_resumeOutstanding > 0) --m_resumeOutstanding;
+        }
+        // Piece just verified — opportunistically save resume data for this
+        // torrent so a crash before the next 5-min tick doesn't force a
+        // full re-hash on the next launch. Rate-limited per handle (60 s)
+        // so a fast torrent doesn't hammer the disk; with the limit, the
+        // worst case is ~1 resume write per minute per active download.
+        if (auto *pf = lt::alert_cast<lt::piece_finished_alert>(a)) {
+            const qint64 now = QDateTime::currentSecsSinceEpoch();
+            auto it = m_lastResumeSaveAt.find(pf->handle);
+            if (it == m_lastResumeSaveAt.end() || now - it->second >= 60) {
+                pf->handle.save_resume_data(lt::torrent_handle::save_info_dict);
+                m_lastResumeSaveAt[pf->handle] = now;
+                ++m_resumeOutstanding;
+            }
         }
         // Magnet just got its metadata — file list is now known, so apply
         // the .!bt suffix to each file.
@@ -1550,6 +1626,14 @@ void SessionManager::enforceDownloadQueue()
     if (m_maxActiveDownloads <= 0)
         return;
 
+    // Constants for slow-torrent detection. A torrent counts as "fast" if
+    // it's actually transferring above this rate; stalled torrents fall
+    // off the active list after the timeout so a stuck download can't
+    // permanently consume a queue slot.
+    constexpr int kSlowTorrentThresholdBps = 10 * 1024; // 10 KB/s
+    constexpr qint64 kSlowTorrentTimeoutSec = 60;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+
     // Count active (non-paused) downloading torrents
     std::vector<int> activeIndices;
     std::vector<int> queuedIndices;
@@ -1563,7 +1647,23 @@ void SessionManager::enforceDownloadQueue()
                               || st.state == lt::torrent_status::downloading_metadata);
 
         if (isDownloading && !isPaused) {
-            activeIndices.push_back(i);
+            // Stamp the "last fast" timestamp on tick ticks where the
+            // torrent is moving; fresh adds also get an initial stamp so
+            // they're given a grace period before being demoted.
+            auto it = m_lastFastAt.find(m_torrents[i]);
+            if (it == m_lastFastAt.end()) {
+                m_lastFastAt[m_torrents[i]] = now;
+            } else if (st.download_rate >= kSlowTorrentThresholdBps) {
+                it->second = now;
+            }
+
+            const qint64 lastFast = m_lastFastAt[m_torrents[i]];
+            const bool isStalled = (now - lastFast) > kSlowTorrentTimeoutSec;
+            // Stalled torrents stay running (we don't pause them — the
+            // user can do that), they just don't count against the active
+            // limit. New downloads can therefore start in their place.
+            if (!isStalled)
+                activeIndices.push_back(i);
         } else if (isDownloading && isPaused && m_queuePaused.count(m_torrents[i])) {
             // This torrent was paused by queue logic -- it's waiting
             queuedIndices.push_back(i);

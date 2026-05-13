@@ -294,6 +294,30 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     networkLayout->addRow("", m_dhtCheck);
     networkLayout->addRow(encLabel, m_encryptionCombo);
 
+    m_utpCheck = new QCheckBox(tr_("settings_enable_utp"));
+    networkLayout->addRow("", m_utpCheck);
+
+    // Listening port + the "re-randomize on each launch" toggle. Putting
+    // them together makes the trade-off obvious: a fixed port is what you
+    // want for UPnP port forwards; a randomized port frustrates passive
+    // fingerprinting at the cost of breaking those forwards.
+    m_listenPortSpin = new QSpinBox;
+    m_listenPortSpin->setRange(1024, 65535);
+    m_listenPortSpin->setValue(6881);
+    auto *portLabel = new QLabel(tr_("settings_listen_port"));
+    portLabel->setStyleSheet(labelStyle);
+    networkLayout->addRow(portLabel, m_listenPortSpin);
+
+    m_randomizePortCheck = new QCheckBox(tr_("settings_random_port"));
+    networkLayout->addRow("", m_randomizePortCheck);
+    // Disabling the port spin when randomize is on makes the relationship
+    // visually obvious; the saved value still gets used for the *next*
+    // session if the user unticks the box.
+    connect(m_randomizePortCheck, &QCheckBox::toggled,
+            m_listenPortSpin, [this](bool randomize) {
+        m_listenPortSpin->setEnabled(!randomize);
+    });
+
     // VPN / Interface Binding group
     auto *vpnGroup = new QGroupBox(tr_("settings_vpn_group"));
     auto *vpnLayout = new QFormLayout(vpnGroup);
@@ -577,6 +601,16 @@ bool SettingsDialog::stopAfterDownload() const { return m_stopAfterDownloadCheck
 int SettingsDialog::maxSeedDays() const { return m_maxSeedDaysSpin->value(); }
 void SettingsDialog::setStopAfterDownload(bool val) { m_stopAfterDownloadCheck->setChecked(val); }
 void SettingsDialog::setMaxSeedDays(int days) { m_maxSeedDaysSpin->setValue(days); }
+
+bool SettingsDialog::utpEnabled() const { return m_utpCheck->isChecked(); }
+bool SettingsDialog::randomizePort() const { return m_randomizePortCheck->isChecked(); }
+int SettingsDialog::listenPort() const { return m_listenPortSpin->value(); }
+void SettingsDialog::setUtpEnabled(bool enabled) { m_utpCheck->setChecked(enabled); }
+void SettingsDialog::setRandomizePort(bool enabled) {
+    m_randomizePortCheck->setChecked(enabled);
+    m_listenPortSpin->setEnabled(!enabled);
+}
+void SettingsDialog::setListenPort(int port) { m_listenPortSpin->setValue(port); }
 
 // VPN getters/setters
 QString SettingsDialog::outgoingInterface() const { return m_interfaceCombo->currentData().toString(); }

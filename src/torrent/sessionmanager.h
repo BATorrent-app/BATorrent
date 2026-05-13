@@ -82,6 +82,13 @@ public:
     void setEncryptionMode(int mode); // 0=enabled, 1=forced, 2=disabled
     int encryptionMode() const;
 
+    // Transport-layer toggles. uTP is libtorrent's UDP-based reliable
+    // transport — disabling it forces all peer traffic to TCP (useful on
+    // misconfigured routers where uTP saturates the link with retransmits).
+    // The toggle covers both incoming and outgoing.
+    void setUtpEnabled(bool enabled);
+    bool utpEnabled() const;
+
     // VPN / Interface binding
     void setOutgoingInterface(const QString &interfaceName); // "" = any
     QString outgoingInterface() const;
@@ -159,7 +166,15 @@ public:
     int scheduleDays() const;
     bool altSpeedsActive() const;
 
+    // Asynchronous "save everything" trigger. Each torrent gets a
+    // save_resume_data() request; the writes happen in processAlerts when
+    // libtorrent delivers save_resume_data_alert for each one. The GUI
+    // thread doesn't block.
     void saveResumeData();
+    // Synchronous flush used by the destructor / app shutdown. Requests
+    // saves for every torrent and runs a bounded wait loop until either
+    // every outstanding write returns or the timeout expires.
+    void flushResumeDataBlocking(int timeoutMs = 5000);
     void loadResumeData();
 
     // Global statistics
@@ -219,6 +234,7 @@ private:
     QTimer m_updateTimer;
     bool m_dhtEnabled = true;
     int m_encryptionMode = 0;
+    bool m_utpEnabled = true;
     float m_seedRatioLimit = 0.0f; // 0 = no limit
 
     // Stop-seeding rules (globals)
@@ -228,6 +244,24 @@ private:
     // Per-torrent overrides (info_hash -> value; -1 = use global)
     QMap<QString, int> m_perTorrentStopAfter;
     QMap<QString, qint64> m_perTorrentMaxSeed;
+
+    // Number of save_resume_data requests outstanding. processAlerts
+    // decrements this as each save_resume_data_alert /
+    // save_resume_data_failed_alert lands.
+    int m_resumeOutstanding = 0;
+    // Per-handle epoch-seconds of last "fast" tick (download_rate above
+    // kSlowTorrentThresholdBps). Used by enforceDownloadQueue to skip
+    // torrents that haven't transferred meaningfully for >60 s when
+    // counting active downloads — a stalled torrent shouldn't permanently
+    // hog one of the user's queue slots.
+    std::map<lt::torrent_handle, qint64> m_lastFastAt;
+    // Per-handle "epoch seconds of last resume save" so piece_finished_alert
+    // can request a save without thrashing the disk on every piece. Saved
+    // only if the last save was more than kMinResumeSaveIntervalSec ago.
+    std::map<lt::torrent_handle, qint64> m_lastResumeSaveAt;
+    // Persist a save_resume_data_alert payload to its .resume file under
+    // resumeDataDir(). Returns true on success.
+    bool persistResumeAlert(const struct lt::save_resume_data_alert *rd);
 
     // Auto-move
     bool m_autoMoveEnabled = false;

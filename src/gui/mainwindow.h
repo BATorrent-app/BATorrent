@@ -114,6 +114,10 @@ private:
     QTimer *m_streamPollTimer = nullptr;
     int m_streamTorrentIndex = -1;
     QString m_streamFilePath;
+    // The hash of the torrent that fired the most recent tray notification.
+    // When the user clicks the balloon we use this to bring the matching
+    // row into view instead of just raising the window.
+    QString m_lastNotifiedHash;
     QComboBox *m_categoryCombo = nullptr;
     QNetworkAccessManager *m_mediaServerNam = nullptr;
     void notifyMediaServers();

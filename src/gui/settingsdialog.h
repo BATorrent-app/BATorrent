@@ -55,12 +55,18 @@ public:
     int maxConnections() const;
     float seedRatioLimit() const;
     int maxActiveDownloads() const;
+    bool utpEnabled() const;
+    bool randomizePort() const;
+    int listenPort() const;
 
     void setDhtEnabled(bool enabled);
     void setEncryptionMode(int mode);
     void setMaxConnections(int max);
     void setSeedRatioLimit(float ratio);
     void setMaxActiveDownloads(int max);
+    void setUtpEnabled(bool enabled);
+    void setRandomizePort(bool enabled);
+    void setListenPort(int port);
 
     // Stop seeding rules
     bool stopAfterDownload() const;
@@ -170,6 +176,9 @@ private:
     QSpinBox *m_maxActiveSpin;
     QCheckBox *m_stopAfterDownloadCheck;
     QSpinBox *m_maxSeedDaysSpin;
+    QCheckBox *m_utpCheck;
+    QCheckBox *m_randomizePortCheck;
+    QSpinBox *m_listenPortSpin;
 
     // VPN tab
     QComboBox *m_interfaceCombo;
