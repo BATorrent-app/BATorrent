@@ -408,25 +408,19 @@ void MainWindow::setupCentralWidget()
     connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, &MainWindow::onSelectionChanged);
 
-    // Double-click on torrent row → reveal its largest file in the OS file
-    // manager (qBittorrent / Transmission both do this; just opening the
-    // download folder is much less useful when it holds hundreds of files).
+    // Double-click on torrent row → reveal what this torrent put on disk
+    // inside its save folder. For a single-file torrent that's the file
+    // itself; for a multi-file torrent it's the root folder libtorrent
+    // created. In both cases the user lands in the save dir with the right
+    // item highlighted, instead of staring at a Downloads folder with 500
+    // unrelated files.
     connect(m_tableView, &QTableView::doubleClicked, this, [this](const QModelIndex &index) {
         QModelIndex srcIdx = m_proxyModel->mapToSource(index);
         int row = srcIdx.row();
         if (row < 0 || row >= m_session->torrentCount()) return;
         TorrentInfo info = m_session->torrentAt(row);
-        if (info.savePath.isEmpty()) return;
-        auto files = m_session->filesAt(row);
-        QString target = info.savePath;
-        qint64 biggest = -1;
-        for (const auto &f : files) {
-            if (f.size > biggest) {
-                biggest = f.size;
-                target = info.savePath + "/" + f.path;
-            }
-        }
-        revealInFileManager(target);
+        if (info.savePath.isEmpty() || info.name.isEmpty()) return;
+        revealInFileManager(info.savePath + "/" + info.name);
     });
 
     // Filter bar (wrapped in a horizontal scroll area so it overflows
@@ -784,20 +778,22 @@ QString MainWindow::chooseSavePath()
 void MainWindow::addTorrentFile(const QString &filePath)
 {
     // Show the confirmation dialog so the user can change the save path,
-    // see what's inside the .torrent, and choose start-immediately. The
-    // previous flow dumped them straight into a folder picker, which is
-    // worse on every count.
-    AddTorrentDialog dlg(filePath, QString(),
-        m_useDefaultPath ? m_lastSavePath : m_lastSavePath, this);
+    // pick which files to download, and choose start-immediately. The path
+    // input + file tree live in the same dialog so they don't need to go
+    // through two separate steps.
+    AddTorrentDialog dlg(filePath, QString(), m_lastSavePath, this);
     if (dlg.exec() != QDialog::Accepted) return;
     const QString savePath = dlg.savePath();
     if (savePath.isEmpty()) return;
     m_lastSavePath = savePath;
-    m_session->addTorrent(filePath, savePath);
-    if (!dlg.startImmediately()) {
-        // Pause whichever index was just added (last in vector).
+
+    const auto priorities = dlg.filePriorities();
+    if (priorities.empty())
+        m_session->addTorrent(filePath, savePath);
+    else
+        m_session->addTorrentWithPriorities(filePath, savePath, priorities);
+    if (!dlg.startImmediately())
         m_session->pauseTorrent(m_session->torrentCount() - 1);
-    }
 }
 
 void MainWindow::addTorrentFromCli(const QString &filePath)
@@ -1383,22 +1379,14 @@ void MainWindow::showContextMenu(const QPoint &pos)
     // Open folder + Stream (only for single selection)
     if (rows.size() == 1) {
         TorrentInfo info = m_session->torrentAt(rows.first());
-        // Pick the largest file in the torrent to reveal — for single-file
-        // torrents that's the only file, for multi-file it points the file
-        // manager into the right subfolder and highlights the main payload
-        // instead of dumping the user inside an unrelated Downloads dir.
+        // Reveal the torrent's root in its save folder — the single file
+        // for one-file torrents, or the root folder libtorrent created for
+        // multi-file torrents. The user lands on exactly what this torrent
+        // produced, with that item highlighted in the file manager.
         menu.addAction(tr_("ctx_open_folder"), this, [this, row = rows.first()]() {
             TorrentInfo info = m_session->torrentAt(row);
-            auto files = m_session->filesAt(row);
-            QString target = info.savePath;
-            qint64 biggest = -1;
-            for (const auto &f : files) {
-                if (f.size > biggest) {
-                    biggest = f.size;
-                    target = info.savePath + "/" + f.path;
-                }
-            }
-            revealInFileManager(target);
+            if (info.savePath.isEmpty() || info.name.isEmpty()) return;
+            revealInFileManager(info.savePath + "/" + info.name);
         });
         if (info.progress < 1.0f && !info.paused) {
             menu.addAction(QIcon(":/icons/play.svg"), tr_("ctx_stream"), this, [this, row = rows.first()]() {

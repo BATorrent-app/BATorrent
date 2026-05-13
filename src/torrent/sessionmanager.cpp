@@ -133,6 +133,38 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
     }
 }
 
+void SessionManager::addTorrentWithPriorities(const QString &filePath,
+                                                const QString &savePath,
+                                                const std::vector<int> &filePriorities)
+{
+    try {
+        lt::add_torrent_params atp;
+        atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
+        atp.save_path = savePath.toStdString();
+        atp.flags &= ~lt::torrent_flags::auto_managed;
+        if (atp.ti && atp.ti->priv()) {
+            atp.flags |= lt::torrent_flags::disable_dht
+                       | lt::torrent_flags::disable_lsd
+                       | lt::torrent_flags::disable_pex;
+        }
+        // Apply the user's per-file selection before adding so libtorrent
+        // never queues a single byte from an unchecked file.
+        atp.file_priorities.reserve(filePriorities.size());
+        for (int p : filePriorities) {
+            atp.file_priorities.push_back(
+                static_cast<lt::download_priority_t>(static_cast<std::uint8_t>(p)));
+        }
+        applyIncompleteSuffix(atp);
+
+        lt::torrent_handle h = m_session.add_torrent(atp);
+        m_torrents.push_back(h);
+        incrementTorrentCount();
+        emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
+    } catch (const std::exception &e) {
+        emit torrentError(QString::fromStdString(e.what()));
+    }
+}
+
 void SessionManager::applyIncompleteSuffix(lt::add_torrent_params &atp)
 {
     if (!atp.ti) return; // magnet without metadata yet; handled after fetch
