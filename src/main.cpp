@@ -11,6 +11,7 @@
 #include <QLocalSocket>
 #include <QStyleFactory>
 #include "torrent/sessionmanager.h"
+#include "app/secretstore.h"
 #include "gui/mainwindow.h"
 
 static const QString kServerName = QStringLiteral("BATorrent-SingleInstance");
@@ -56,6 +57,12 @@ int main(int argc, char *argv[])
     // can't recur.
     if (QStyle *fusion = QStyleFactory::create("Fusion"))
         app.setStyle(fusion);
+
+    // One-time migration of plaintext secrets from QSettings into the OS
+    // keyring (no-op on subsequent runs and on builds without QtKeychain).
+    SecretStore::instance().migrateFromSettings({
+        "proxyPass", "plexToken", "jellyfinApiKey", "webUiPasswordHash"
+    });
 
     // Single-instance check: if another instance is running, forward args and quit
     QString argsPayload = collectArgs(app.arguments());

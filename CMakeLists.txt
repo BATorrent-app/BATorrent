@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.16)
 project(BATorrent VERSION 2.3.3)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia)
 find_package(LibtorrentRasterbar REQUIRED)
+# Optional: QtKeychain stores credentials in the platform keyring (DPAPI on
+# Windows, Keychain on macOS, kwallet/libsecret on Linux). If missing at
+# build time the app falls back to QSettings — secrets stay in plaintext
+# but the app still builds and runs.
+find_package(Qt6Keychain QUIET)
 set(CMAKE_AUTOMOC ON)
 qt_add_resources(RESOURCES src/resources.qrc src/webui/webuiresources.qrc)
 
@@ -24,6 +29,7 @@ add_executable(BATorrent WIN32
     src/gui/welcomedialog.cpp
     src/gui/createtorrentdialog.cpp
     src/gui/addtorrentdialog.cpp
+    src/app/secretstore.cpp
     src/gui/speedgraph.cpp
     src/gui/batwidget.cpp
     src/gui/splashwidget.cpp
@@ -45,6 +51,14 @@ add_executable(BATorrent WIN32
 )
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
 target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia LibtorrentRasterbar::torrent-rasterbar)
+
+if(Qt6Keychain_FOUND)
+    target_compile_definitions(BATorrent PRIVATE HAVE_QTKEYCHAIN)
+    target_link_libraries(BATorrent PRIVATE Qt6Keychain::Qt6Keychain)
+    message(STATUS "QtKeychain found — secrets will use the OS keyring")
+else()
+    message(STATUS "QtKeychain not found — secrets will live in QSettings (plaintext)")
+endif()
 
 # Windows: target Windows 7+ to silence Boost.Asio warnings
 if(WIN32)

@@ -21,6 +21,7 @@
 #include "../app/updater.h"
 #include "../app/utils.h"
 #include "../app/addonmanager.h"
+#include "../app/secretstore.h"
 #include "addondialog.h"
 #include "searchdialog.h"
 #include "rssdialog.h"
@@ -616,7 +617,7 @@ void MainWindow::saveSettings()
     settings.setValue("proxyHost", m_session->proxyHost());
     settings.setValue("proxyPort", m_session->proxyPort());
     settings.setValue("proxyUser", m_session->proxyUser());
-    settings.setValue("proxyPass", m_session->proxyPass());
+    // Stored via SecretStore instead of QSettings — see saveSettings's tail.
 
     // IP Filter
     settings.setValue("ipFilterPath", m_session->ipFilterPath());
@@ -628,6 +629,9 @@ void MainWindow::saveSettings()
     settings.setValue("scheduleFromHour", m_session->scheduleFromHour());
     settings.setValue("scheduleToHour", m_session->scheduleToHour());
     settings.setValue("scheduleDays", m_session->scheduleDays());
+
+    // Credentials live in the OS keyring (via SecretStore), not QSettings.
+    SecretStore::instance().set("proxyPass", m_session->proxyPass());
 }
 
 void MainWindow::loadSettings()
@@ -696,7 +700,7 @@ void MainWindow::loadSettings()
         settings.value("proxyHost").toString(),
         settings.value("proxyPort", 0).toInt(),
         settings.value("proxyUser").toString(),
-        settings.value("proxyPass").toString());
+        SecretStore::instance().get("proxyPass"));
 
     // IP Filter
     QString ipFilter = settings.value("ipFilterPath").toString();
@@ -732,7 +736,7 @@ void MainWindow::startWebServer()
         int port = settings.value("webUiPort", 8080).toInt();
         bool remote = settings.value("webUiRemoteAccess", false).toBool();
         QString user = settings.value("webUiUser", "admin").toString();
-        QString passHash = settings.value("webUiPasswordHash").toString();
+        QString passHash = SecretStore::instance().get("webUiPasswordHash");
         if (!user.isEmpty() && !passHash.isEmpty())
             m_webServer->setCredentials(user, passHash);
         m_webServer->start(static_cast<quint16>(port), remote);
@@ -974,7 +978,7 @@ void MainWindow::notifyMediaServers()
     // Plex library scan
     if (settings.value("plexEnabled", false).toBool()) {
         QString url = settings.value("plexUrl").toString();
-        QString token = settings.value("plexToken").toString();
+        QString token = SecretStore::instance().get("plexToken");
         if (!url.isEmpty() && !token.isEmpty()) {
             // Refresh all sections
             QNetworkRequest req(QUrl(url + "/library/sections/all/refresh?X-Plex-Token=" + token));
@@ -987,7 +991,7 @@ void MainWindow::notifyMediaServers()
     // Jellyfin/Emby library scan
     if (settings.value("jellyfinEnabled", false).toBool()) {
         QString url = settings.value("jellyfinUrl").toString();
-        QString apiKey = settings.value("jellyfinApiKey").toString();
+        QString apiKey = SecretStore::instance().get("jellyfinApiKey");
         if (!url.isEmpty() && !apiKey.isEmpty()) {
             QNetworkRequest req(QUrl(url + "/Library/Refresh?api_key=" + apiKey));
             req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
@@ -1041,7 +1045,7 @@ void MainWindow::openSettings()
         dlg.setWebUiEnabled(settings.value("webUiEnabled", false).toBool());
         dlg.setWebUiPort(settings.value("webUiPort", 8080).toInt());
         dlg.setWebUiUser(settings.value("webUiUser", "admin").toString());
-        dlg.setWebUiPasswordHash(settings.value("webUiPasswordHash").toString());
+        dlg.setWebUiPasswordHash(SecretStore::instance().get("webUiPasswordHash"));
         dlg.setWebUiRemoteAccess(settings.value("webUiRemoteAccess", false).toBool());
 
         // Proxy
@@ -1065,10 +1069,10 @@ void MainWindow::openSettings()
         // Media Server
         dlg.setPlexEnabled(settings.value("plexEnabled", false).toBool());
         dlg.setPlexUrl(settings.value("plexUrl").toString());
-        dlg.setPlexToken(settings.value("plexToken").toString());
+        dlg.setPlexToken(SecretStore::instance().get("plexToken"));
         dlg.setJellyfinEnabled(settings.value("jellyfinEnabled", false).toBool());
         dlg.setJellyfinUrl(settings.value("jellyfinUrl").toString());
-        dlg.setJellyfinApiKey(settings.value("jellyfinApiKey").toString());
+        dlg.setJellyfinApiKey(SecretStore::instance().get("jellyfinApiKey"));
     }
 
     if (dlg.exec() == QDialog::Accepted) {
@@ -1146,16 +1150,17 @@ void MainWindow::openSettings()
             settings.setValue("webUiRemoteAccess", dlg.webUiRemoteAccess());
             QString passHash = dlg.webUiPasswordHash();
             if (!passHash.isEmpty())
-                settings.setValue("webUiPasswordHash", passHash);
+                SecretStore::instance().set("webUiPasswordHash", passHash);
             startWebServer();
 
-            // Media Server settings
+            // Media Server settings — secrets live in the OS keyring, the
+            // rest in QSettings.
             settings.setValue("plexEnabled", dlg.plexEnabled());
             settings.setValue("plexUrl", dlg.plexUrl());
-            settings.setValue("plexToken", dlg.plexToken());
+            SecretStore::instance().set("plexToken", dlg.plexToken());
             settings.setValue("jellyfinEnabled", dlg.jellyfinEnabled());
             settings.setValue("jellyfinUrl", dlg.jellyfinUrl());
-            settings.setValue("jellyfinApiKey", dlg.jellyfinApiKey());
+            SecretStore::instance().set("jellyfinApiKey", dlg.jellyfinApiKey());
         }
     }
 }
