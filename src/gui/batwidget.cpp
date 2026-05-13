@@ -9,7 +9,14 @@
 BatWidget::BatWidget(QWidget *parent)
     : QWidget(parent)
 {
-    m_logo = QPixmap(":/images/logo1.png");
+    // Source is 1024×1024 but we always render at 100 px. Pre-scale once
+    // here so paintEvent doesn't redo a smooth-transform from 1024 every
+    // time the window repaints (resize, hover, focus all trigger paints).
+    // Render at 2× the target on the off chance the widget winds up on a
+    // HiDPI screen, then Qt's painter downscales the cached pixmap.
+    QPixmap raw(":/images/logo1.png");
+    m_logo = raw.scaled(200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    m_logo.setDevicePixelRatio(2.0);
     m_message = "Drop a .torrent file or magnet link here";
 }
 
@@ -41,14 +48,14 @@ void BatWidget::paintEvent(QPaintEvent *)
     p.setBrush(Qt::NoBrush);
     p.drawRoundedRect(dropRect, 16, 16);
 
-    // Draw logo PNG centered
+    // Logo was pre-scaled in the constructor; we just draw the cached
+    // pixmap. The 100-logical-px target matches what the previous
+    // implementation rendered, but no SmoothTransformation work happens per
+    // paint.
     int logoSize = 100;
-    QPixmap scaled = m_logo.scaled(logoSize, logoSize,
-                                    Qt::KeepAspectRatio,
-                                    Qt::SmoothTransformation);
-    int lx = (w - scaled.width()) / 2;
-    int ly = h / 2 - scaled.height() / 2 - 24;
-    p.drawPixmap(lx, ly, scaled);
+    int lx = (w - logoSize) / 2;
+    int ly = h / 2 - logoSize / 2 - 24;
+    p.drawPixmap(QRect(lx, ly, logoSize, logoSize), m_logo);
 
     // Primary message text below
     if (!m_message.isEmpty()) {

@@ -69,7 +69,46 @@ endif()
 if(UNIX AND NOT APPLE)
     include(GNUInstallDirs)
     install(TARGETS BATorrent RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES src/images/logo1.png DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps RENAME batorrent.png)
+
+    # Install the icon at multiple hicolor sizes. Most Linux desktops
+    # request small sizes (16, 22, 32) for taskbar / window list and only
+    # the matching size is used; a single 256px install forces every panel
+    # to downscale at runtime, which looks washed out on GTK and KDE alike.
+    # CMake's install(FILES) doesn't resize; we render the variants at
+    # configure time via ImageMagick if available, otherwise we still ship
+    # the 256px copy at every size (browsers will downscale, less ideal
+    # but no worse than the previous setup).
+    find_program(IMAGEMAGICK_CONVERT NAMES magick convert)
+    set(BAT_ICON_SIZES 16 22 32 48 64 128 256 512)
+    foreach(size IN LISTS BAT_ICON_SIZES)
+        set(generated_icon "${CMAKE_BINARY_DIR}/icons/${size}x${size}/batorrent.png")
+        if(IMAGEMAGICK_CONVERT)
+            add_custom_command(
+                OUTPUT "${generated_icon}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory
+                        "${CMAKE_BINARY_DIR}/icons/${size}x${size}"
+                COMMAND ${IMAGEMAGICK_CONVERT}
+                        "${CMAKE_SOURCE_DIR}/src/images/logo1.png"
+                        -resize ${size}x${size}
+                        "${generated_icon}"
+                DEPENDS "${CMAKE_SOURCE_DIR}/src/images/logo1.png"
+                COMMENT "Generating ${size}x${size} app icon")
+            list(APPEND BAT_ICON_FILES "${generated_icon}")
+        else()
+            # No ImageMagick — fall back to copying the 1024px source. The
+            # icon theme still installs at every size; the desktop will
+            # downscale on demand.
+            set(generated_icon "${CMAKE_SOURCE_DIR}/src/images/logo1.png")
+        endif()
+        install(FILES "${generated_icon}"
+                DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps"
+                RENAME batorrent.png)
+    endforeach()
+    if(BAT_ICON_FILES)
+        add_custom_target(bat_icons ALL DEPENDS ${BAT_ICON_FILES})
+        add_dependencies(BATorrent bat_icons)
+    endif()
+
     install(FILES dist/batorrent.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 endif()
 

@@ -228,13 +228,17 @@ jobs:
 
       - name: Create ICNS icon
         run: |
+          # Apple expects iconset files named icon_<size>x<size>.png plus
+          # icon_<size>x<size>@2x.png at 2× the pixel count. We have a
+          # 1024×1024 master, so we can fill every required slot up to
+          # 512×512@2x without any low-res interpolation.
           mkdir -p batorrent.iconset
           for size in 16 32 64 128 256 512; do
             sips -z $size $size src/images/logo1.png --out batorrent.iconset/icon_${size}x${size}.png
           done
-          for size in 32 64 256 512; do
+          for size in 32 64 256 512 1024; do
             half=$((size / 2))
-            cp batorrent.iconset/icon_${size}x${size}.png batorrent.iconset/icon_${half}x${half}@2x.png
+            sips -z $size $size src/images/logo1.png --out batorrent.iconset/icon_${half}x${half}@2x.png
           done
           iconutil -c icns batorrent.iconset -o dmg/BATorrent.app/Contents/Resources/batorrent.icns
 

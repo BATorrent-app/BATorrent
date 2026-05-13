@@ -17,7 +17,15 @@
 SplashWidget::SplashWidget(QWidget *parent)
     : QWidget(parent)
 {
-    m_logo = QPixmap(":/images/logo1.png");
+    // The splash animates logoScale between ~0.3 and ~1.05, drawing at
+    // 200×scale pixels. The previous code reran scaled() with
+    // SmoothTransformation from the 1024×1024 source every frame, which is
+    // noticeably expensive on low-end Windows hardware and drops frames at
+    // 30 fps. Cache at the maximum size used by the animation; the
+    // per-frame painter does cheap bilinear scaling from there.
+    QPixmap raw(":/images/logo1.png");
+    m_logo = raw.scaled(420, 420, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    m_logo.setDevicePixelRatio(2.0);
 
     // Audio setup
     m_audioOutput = new QAudioOutput(this);
@@ -225,14 +233,15 @@ void SplashWidget::paintEvent(QPaintEvent *)
     }
 
     if (logoAlpha > 0) {
+        // Draw the cached high-res pixmap into a target rect. QPainter
+        // does the per-frame scale (with SmoothPixmapTransform already set
+        // on the painter), from a 420-px source instead of the 1024-px
+        // original.
         int logoSize = static_cast<int>(200 * logoScale);
-        QPixmap scaled = m_logo.scaled(logoSize, logoSize,
-                                        Qt::KeepAspectRatio,
-                                        Qt::SmoothTransformation);
         p.setOpacity(logoAlpha * bgAlpha);
-        int lx = (w - scaled.width()) / 2;
-        int ly = static_cast<int>(cy) - scaled.height() / 2;
-        p.drawPixmap(lx, ly, scaled);
+        int lx = (w - logoSize) / 2;
+        int ly = static_cast<int>(cy) - logoSize / 2;
+        p.drawPixmap(QRect(lx, ly, logoSize, logoSize), m_logo);
     }
 
     // ── "BATorrent" text ──
