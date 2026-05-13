@@ -46,6 +46,19 @@ void Updater::checkForUpdate()
     });
 }
 
+int Updater::compareVersions(const QString &a, const QString &b)
+{
+    const QStringList partsA = a.split('.');
+    const QStringList partsB = b.split('.');
+    const int n = qMax(partsA.size(), partsB.size());
+    for (int i = 0; i < n; ++i) {
+        const int va = i < partsA.size() ? partsA[i].toInt() : 0;
+        const int vb = i < partsB.size() ? partsB[i].toInt() : 0;
+        if (va != vb) return va < vb ? -1 : 1;
+    }
+    return 0;
+}
+
 void Updater::parseReleaseInfo(QNetworkReply *reply)
 {
     reply->deleteLater();
@@ -63,7 +76,7 @@ void Updater::parseReleaseInfo(QNetworkReply *reply)
     m_latestVersion = tagName.startsWith('v') ? tagName.mid(1) : tagName;
     QString currentVersion = QApplication::applicationVersion();
 
-    if (m_latestVersion <= currentVersion) {
+    if (compareVersions(m_latestVersion, currentVersion) <= 0) {
         emit noUpdateAvailable();
         return;
     }
@@ -133,42 +146,72 @@ void Updater::onDownloadFinished(QNetworkReply *reply, const QString &assetName)
 void Updater::launchUpdaterScript(const QString &newFilePath)
 {
 #ifdef Q_OS_WIN
-    // On Windows: the installer .exe handles everything.
-    // Just launch it and quit. The installer will close us if needed.
+    // On Windows: the installer .exe handles everything. We need to elevate
+    // (UAC prompt) because BATorrent is typically installed in Program Files,
+    // which the running app — almost always non-elevated — cannot write to.
+    // Using a PowerShell script with Start-Process -Verb RunAs triggers the
+    // UAC dialog; the user accepts once and the installer can write.
     QString appExe = QApplication::applicationFilePath();
     QString scriptPath = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
-                             .filePath("batorrent_update.bat");
+                             .filePath("batorrent_update.ps1");
 
-    // If it's the setup exe, run installer then relaunch the app
     if (newFilePath.endsWith(".exe")) {
-        // Batch script: run installer silently, wait for it to finish, then relaunch
         QFile script(scriptPath);
         if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&script);
-            out << "@echo off\r\n";
-            out << "\"" << QDir::toNativeSeparators(newFilePath) << "\" /SILENT /CLOSEAPPLICATIONS\r\n";
-            out << "start \"\" \"" << QDir::toNativeSeparators(appExe) << "\"\r\n";
-            out << "del \"%~f0\"\r\n";
+            out << "$ErrorActionPreference = 'Stop'\r\n";
+            out << "try {\r\n";
+            out << "  Start-Process -FilePath '"
+                << QDir::toNativeSeparators(newFilePath)
+                << "' -ArgumentList '/SILENT','/CLOSEAPPLICATIONS',"
+                   "'/RESTARTAPPLICATIONS','/SUPPRESSMSGBOXES','/NORESTART' "
+                   "-Verb RunAs -Wait\r\n";
+                // Inno Setup will restart the app via /RESTARTAPPLICATIONS,
+                // but launch it manually as a fallback if the installer
+                // didn't (e.g. the user installed per-user without elevation
+                // and the verb was already runAs but elevation was bypassed).
+            out << "  if (-not (Get-Process -Name BATorrent -ErrorAction SilentlyContinue)) {\r\n";
+            out << "    Start-Process -FilePath '"
+                << QDir::toNativeSeparators(appExe) << "'\r\n";
+            out << "  }\r\n";
+            out << "} catch {}\r\n";
+            out << "Remove-Item -LiteralPath $MyInvocation.MyCommand.Path "
+                   "-ErrorAction SilentlyContinue\r\n";
             script.close();
         }
-        QProcess::startDetached("cmd.exe", {"/c", scriptPath});
+        QProcess::startDetached("powershell.exe",
+            {"-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle",
+             "Hidden", "-File", scriptPath});
         QApplication::quit();
         return;
     }
 
-    // For zip-based update: batch script that waits, replaces, restarts
+    // Standalone exe (zip-style) update: replace in place, possibly elevated.
     QFile script(scriptPath);
     if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&script);
-        out << "@echo off\r\n";
-        out << "timeout /t 3 /nobreak >nul\r\n";
-        out << "copy /y \"" << QDir::toNativeSeparators(newFilePath)
-            << "\" \"" << QDir::toNativeSeparators(appExe) << "\"\r\n";
-        out << "start \"\" \"" << QDir::toNativeSeparators(appExe) << "\"\r\n";
-        out << "del \"%~f0\"\r\n";
+        out << "Start-Sleep -Seconds 3\r\n";
+        out << "try {\r\n";
+        out << "  Copy-Item -LiteralPath '"
+            << QDir::toNativeSeparators(newFilePath)
+            << "' -Destination '" << QDir::toNativeSeparators(appExe)
+            << "' -Force\r\n";
+        out << "} catch {\r\n";
+        out << "  Start-Process -FilePath 'powershell.exe' -ArgumentList "
+               "'-NoProfile','-Command',\"Copy-Item -LiteralPath '"
+            << QDir::toNativeSeparators(newFilePath)
+            << "' -Destination '" << QDir::toNativeSeparators(appExe)
+            << "' -Force\" -Verb RunAs -Wait\r\n";
+        out << "}\r\n";
+        out << "Start-Process -FilePath '"
+            << QDir::toNativeSeparators(appExe) << "'\r\n";
+        out << "Remove-Item -LiteralPath $MyInvocation.MyCommand.Path "
+               "-ErrorAction SilentlyContinue\r\n";
         script.close();
     }
-    QProcess::startDetached("cmd.exe", {"/c", scriptPath});
+    QProcess::startDetached("powershell.exe",
+        {"-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle",
+         "Hidden", "-File", scriptPath});
     QApplication::quit();
 
 #elif defined(Q_OS_LINUX)

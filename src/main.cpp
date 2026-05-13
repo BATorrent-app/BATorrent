@@ -9,6 +9,7 @@
 #include <QFontDatabase>
 #include <QLocalServer>
 #include <QLocalSocket>
+#include <QStyleFactory>
 #include "torrent/sessionmanager.h"
 #include "gui/mainwindow.h"
 
@@ -44,6 +45,17 @@ int main(int argc, char *argv[])
     app.setApplicationVersion(APP_VERSION);
     app.setWindowIcon(QIcon(":/images/logo1.png"));
     app.setQuitOnLastWindowClosed(false); // keep running in tray when window is closed
+
+    // Force the Fusion style application-wide. Native Windows styles
+    // (WindowsVista / Windows11) ignore certain QPalette colors and overrule
+    // stylesheet background-color on some user configurations — high-
+    // contrast accessibility mode is the most common cause but it can also
+    // happen with certain shell themes. Fusion paints purely from
+    // QPalette + stylesheet, so the theme renders identically on every
+    // Windows config and the previous "white/gray Settings dialog" reports
+    // can't recur.
+    if (QStyle *fusion = QStyleFactory::create("Fusion"))
+        app.setStyle(fusion);
 
     // Single-instance check: if another instance is running, forward args and quit
     QString argsPayload = collectArgs(app.arguments());

@@ -35,6 +35,11 @@ SessionManager::SessionManager(QObject *parent)
 
     // PEX (Peer Exchange) is enabled by default in libtorrent 2.x
 
+    // Enable LSD (Local Service Discovery) so peers on the same LAN find each
+    // other without going through trackers/DHT. Default in qBittorrent and
+    // Transmission; substantially helps home / corporate networks.
+    pack.set_bool(lt::settings_pack::enable_lsd, true);
+
     // Enable UPnP and NAT-PMP for automatic port forwarding
     pack.set_bool(lt::settings_pack::enable_upnp, true);
     pack.set_bool(lt::settings_pack::enable_natpmp, true);
@@ -45,8 +50,6 @@ SessionManager::SessionManager(QObject *parent)
 
     m_session.apply_settings(pack);
 
-    loadResumeData();
-
     // Load global stats from previous sessions
     QSettings settings("BATorrent", "BATorrent");
     m_globalDownBase = settings.value("globalDownloaded", 0).toLongLong();
@@ -55,11 +58,28 @@ SessionManager::SessionManager(QObject *parent)
     // Record session start time
     settings.setValue("sessionStartTime", QDateTime::currentSecsSinceEpoch());
 
+    // Load stop-seeding rules
+    m_stopAfterDownload = settings.value("stopAfterDownload", false).toBool();
+    m_maxSeedSeconds = settings.value("maxSeedSeconds", 0).toLongLong();
+
     // Load categories
     settings.beginGroup("categories");
     for (const auto &key : settings.childKeys())
         m_categories[key] = settings.value(key).toString();
     settings.endGroup();
+
+    // Load per-torrent stop-after overrides
+    settings.beginGroup("torrentStopAfter");
+    for (const auto &key : settings.childKeys())
+        m_perTorrentStopAfter[key] = settings.value(key).toInt();
+    settings.endGroup();
+
+    settings.beginGroup("torrentMaxSeed");
+    for (const auto &key : settings.childKeys())
+        m_perTorrentMaxSeed[key] = settings.value(key).toLongLong();
+    settings.endGroup();
+
+    loadResumeData();
 
     connect(&m_updateTimer, &QTimer::timeout, this, &SessionManager::updateStats);
     m_updateTimer.start(1000);
@@ -76,6 +96,16 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         atp.save_path = savePath.toStdString();
+        // Disable libtorrent's auto-manager so user pause/resume always sticks.
+        atp.flags &= ~lt::torrent_flags::auto_managed;
+        // BEP-27: private torrents must not use DHT, LSD, or PEX. Trackers
+        // banning peers that leak the info-hash through those channels is a
+        // common reason users get kicked off private trackers.
+        if (atp.ti && atp.ti->priv()) {
+            atp.flags |= lt::torrent_flags::disable_dht
+                       | lt::torrent_flags::disable_lsd
+                       | lt::torrent_flags::disable_pex;
+        }
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
@@ -92,6 +122,7 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath)
     try {
         lt::add_torrent_params atp = lt::parse_magnet_uri(uri.toStdString());
         atp.save_path = savePath.toStdString();
+        atp.flags &= ~lt::torrent_flags::auto_managed;
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
@@ -108,20 +139,34 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
 
-    // Delete the .resume file so it doesn't come back on restart
-    if (m_torrents[index].is_valid()) {
-        lt::torrent_status st = m_torrents[index].status();
+    // Delete the .resume file so it doesn't come back on restart, and drop
+    // any per-torrent seeding overrides so they don't accumulate forever.
+    lt::torrent_handle h = m_torrents[index];
+    if (h.is_valid()) {
+        lt::torrent_status st = h.status();
         QString hash = QString::fromStdString(
             (std::ostringstream() << st.info_hashes.get_best()).str());
         QDir dir(resumeDataDir());
         dir.remove(hash + ".resume");
+        m_perTorrentStopAfter.remove(hash);
+        m_perTorrentMaxSeed.remove(hash);
+
+        // Carry the removed torrent's lifetime stats into the all-time
+        // counters so global totals don't decrease when a torrent is deleted.
+        m_globalDownBase += st.total_payload_download;
+        m_globalUpBase += st.total_payload_upload;
     }
+
+    // Drop the handle from any internal "paused-by-us" sets so we never try
+    // to resume a destroyed torrent on the next kill-switch / queue tick.
+    m_queuePaused.erase(h);
+    m_killSwitchPaused.erase(h);
 
     lt::remove_flags_t flags{};
     if (deleteFiles)
         flags = lt::session::delete_files;
 
-    m_session.remove_torrent(m_torrents[index], flags);
+    m_session.remove_torrent(h, flags);
     m_torrents.erase(m_torrents.begin() + index);
     emit torrentRemoved(index);
 }
@@ -172,24 +217,37 @@ TorrentInfo SessionManager::torrentAt(int index) const
     info.totalSize = st.total_wanted;
     info.totalDone = st.total_wanted_done;
     info.progress = st.progress;
-    info.downloadRate = st.download_rate;
-    info.uploadRate = st.upload_rate;
     info.numPeers = st.num_peers;
     info.numSeeds = st.num_seeds;
     info.stateString = stateToString(st.state);
     info.paused = (st.flags & lt::torrent_flags::paused) != lt::torrent_flags_t{};
-    if (info.paused)
+    if (info.paused) {
         info.stateString = tr_("state_paused");
+        // libtorrent's download_rate / upload_rate are moving averages that
+        // take a few seconds to settle after pause. Show zero immediately so
+        // the UI matches the actual state.
+        info.downloadRate = 0;
+        info.uploadRate = 0;
+    } else {
+        info.downloadRate = st.download_rate;
+        info.uploadRate = st.upload_rate;
+    }
 
-    // Calculate ratio
-    qint64 uploaded = st.total_upload;
-    qint64 downloaded = st.total_download;
+    // Calculate ratio from payload bytes so it matches what private trackers
+    // report (BEP-3 ratio uses payload, not total wire bytes including
+    // protocol overhead).
+    qint64 uploaded = st.total_payload_upload;
+    qint64 downloaded = st.total_payload_download;
     info.ratio = downloaded > 0 ? static_cast<float>(uploaded) / static_cast<float>(downloaded) : 0.0f;
 
-    // Category
-    QString hash = QString::fromStdString(
-        (std::ostringstream() << st.info_hashes.get_best()).str());
-    info.category = m_categories.value(hash);
+    // Category — only meaningful once metadata is in. Without that guard
+    // every still-resolving magnet would share the all-zeros hash and
+    // inherit whatever category was last assigned to one of them.
+    if (st.has_metadata) {
+        QString hash = QString::fromStdString(
+            (std::ostringstream() << st.info_hashes.get_best()).str());
+        info.category = m_categories.value(hash);
+    }
 
     return info;
 }
@@ -311,12 +369,12 @@ void SessionManager::setTorrentCategory(int index, const QString &category)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
-    if (!m_torrents[index].is_valid())
+    QString hash = torrentHash(index);
+    // No real hash yet (e.g. still resolving magnet metadata) — silently
+    // skip; categorizing a magnet before its hash is known would collide
+    // with every other still-resolving magnet's zero hash.
+    if (hash.isEmpty())
         return;
-
-    lt::torrent_status st = m_torrents[index].status();
-    QString hash = QString::fromStdString(
-        (std::ostringstream() << st.info_hashes.get_best()).str());
 
     if (category.isEmpty())
         m_categories.remove(hash);
@@ -354,6 +412,15 @@ std::vector<bool> SessionManager::piecesAt(int index) const
 
 void SessionManager::setDownloadLimit(int kbps)
 {
+    // Treat "user-set" as the normal rate. When alt-speed mode is active
+    // libtorrent's currently-applied limit is the alt value; we don't want
+    // the user's preferences UI to silently clobber the alt value, and we
+    // don't want our own scheduler to clobber the user's new normal when it
+    // restores. So always update m_normalDownLimit, and only push to
+    // libtorrent immediately if alt mode isn't active.
+    m_normalDownLimit = kbps;
+    if (m_altSpeedsActive)
+        return;
     lt::settings_pack pack;
     pack.set_int(lt::settings_pack::download_rate_limit, kbps > 0 ? kbps * 1024 : 0);
     m_session.apply_settings(pack);
@@ -361,6 +428,9 @@ void SessionManager::setDownloadLimit(int kbps)
 
 void SessionManager::setUploadLimit(int kbps)
 {
+    m_normalUpLimit = kbps;
+    if (m_altSpeedsActive)
+        return;
     lt::settings_pack pack;
     pack.set_int(lt::settings_pack::upload_rate_limit, kbps > 0 ? kbps * 1024 : 0);
     m_session.apply_settings(pack);
@@ -368,12 +438,14 @@ void SessionManager::setUploadLimit(int kbps)
 
 int SessionManager::downloadLimit() const
 {
-    return m_session.get_settings().get_int(lt::settings_pack::download_rate_limit) / 1024;
+    // Always return the user-set "normal" preference; the alt value lives in
+    // m_altDownLimit and is read via altDownloadLimit().
+    return m_normalDownLimit;
 }
 
 int SessionManager::uploadLimit() const
 {
-    return m_session.get_settings().get_int(lt::settings_pack::upload_rate_limit) / 1024;
+    return m_normalUpLimit;
 }
 
 void SessionManager::setListenPort(int port)
@@ -454,6 +526,117 @@ float SessionManager::seedRatioLimit() const
     return m_seedRatioLimit;
 }
 
+void SessionManager::setStopAfterDownload(bool enabled)
+{
+    m_stopAfterDownload = enabled;
+}
+
+bool SessionManager::stopAfterDownload() const
+{
+    return m_stopAfterDownload;
+}
+
+void SessionManager::setMaxSeedSeconds(qint64 seconds)
+{
+    m_maxSeedSeconds = seconds;
+}
+
+qint64 SessionManager::maxSeedSeconds() const
+{
+    return m_maxSeedSeconds;
+}
+
+QString SessionManager::torrentHash(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return {};
+    if (!m_torrents[index].is_valid()) return {};
+    lt::torrent_status st = m_torrents[index].status();
+    // Magnet links report an all-zeros hash from get_best() until metadata
+    // is downloaded. Returning that string would cause every still-resolving
+    // magnet to share the same key — categories and per-torrent seeding
+    // overrides set on one would silently apply to all others. Refuse to
+    // expose the hash until libtorrent has the real one.
+    if (!st.has_metadata)
+        return {};
+    return QString::fromStdString(
+        (std::ostringstream() << st.info_hashes.get_best()).str());
+}
+
+void SessionManager::setTorrentStopAfterDownload(int index, int value)
+{
+    QString hash = torrentHash(index);
+    if (hash.isEmpty()) return;
+    if (value < 0)
+        m_perTorrentStopAfter.remove(hash);
+    else
+        m_perTorrentStopAfter[hash] = value ? 1 : 0;
+}
+
+int SessionManager::torrentStopAfterDownload(int index) const
+{
+    QString hash = torrentHash(index);
+    if (hash.isEmpty()) return -1;
+    return m_perTorrentStopAfter.value(hash, -1);
+}
+
+void SessionManager::setTorrentMaxSeedSeconds(int index, qint64 seconds)
+{
+    QString hash = torrentHash(index);
+    if (hash.isEmpty()) return;
+    if (seconds < 0)
+        m_perTorrentMaxSeed.remove(hash);
+    else
+        m_perTorrentMaxSeed[hash] = seconds;
+}
+
+qint64 SessionManager::torrentMaxSeedSeconds(int index) const
+{
+    QString hash = torrentHash(index);
+    if (hash.isEmpty()) return -1;
+    return m_perTorrentMaxSeed.value(hash, -1);
+}
+
+void SessionManager::stopSeedingTorrent(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return;
+    m_torrents[index].pause();
+}
+
+void SessionManager::forceRecheck(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return;
+    if (!m_torrents[index].is_valid()) return;
+    m_torrents[index].force_recheck();
+}
+
+void SessionManager::forceReannounce(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return;
+    if (!m_torrents[index].is_valid()) return;
+    m_torrents[index].force_reannounce();
+    m_torrents[index].force_dht_announce();
+}
+
+bool SessionManager::effectiveStopAfterDownload(const QString &hash) const
+{
+    int override_ = m_perTorrentStopAfter.value(hash, -1);
+    if (override_ >= 0)
+        return override_ == 1;
+    return m_stopAfterDownload;
+}
+
+qint64 SessionManager::effectiveMaxSeedSeconds(const QString &hash) const
+{
+    qint64 override_ = m_perTorrentMaxSeed.value(hash, -1);
+    if (override_ >= 0)
+        return override_;
+    return m_maxSeedSeconds;
+}
+
 void SessionManager::saveResumeData()
 {
     // Persist global stats
@@ -465,6 +648,22 @@ void SessionManager::saveResumeData()
     settings.beginGroup("categories");
     settings.remove(""); // clear old entries
     for (auto it = m_categories.cbegin(); it != m_categories.cend(); ++it)
+        settings.setValue(it.key(), it.value());
+    settings.endGroup();
+
+    // Save stop-seeding globals + per-torrent overrides
+    settings.setValue("stopAfterDownload", m_stopAfterDownload);
+    settings.setValue("maxSeedSeconds", m_maxSeedSeconds);
+
+    settings.beginGroup("torrentStopAfter");
+    settings.remove("");
+    for (auto it = m_perTorrentStopAfter.cbegin(); it != m_perTorrentStopAfter.cend(); ++it)
+        settings.setValue(it.key(), it.value());
+    settings.endGroup();
+
+    settings.beginGroup("torrentMaxSeed");
+    settings.remove("");
+    for (auto it = m_perTorrentMaxSeed.cbegin(); it != m_perTorrentMaxSeed.cend(); ++it)
         settings.setValue(it.key(), it.value());
     settings.endGroup();
 
@@ -526,6 +725,17 @@ void SessionManager::loadResumeData()
             lt::span<const char>(data.data(), data.size()), ec);
         if (ec) continue;
 
+        // Manual queue management — never let libtorrent's auto-manager
+        // override user pause state on resumed torrents.
+        atp.flags &= ~lt::torrent_flags::auto_managed;
+        // BEP-27: enforce private flag even on legacy resume data that
+        // predates the addTorrent fix.
+        if (atp.ti && atp.ti->priv()) {
+            atp.flags |= lt::torrent_flags::disable_dht
+                       | lt::torrent_flags::disable_lsd
+                       | lt::torrent_flags::disable_pex;
+        }
+
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
     }
@@ -538,6 +748,7 @@ void SessionManager::updateStats()
 {
     processAlerts();
     checkSeedRatios();
+    checkSeedingLimits();
     checkInterfaceStatus();
     checkBandwidthSchedule();
     enforceDownloadQueue();
@@ -553,16 +764,31 @@ void SessionManager::processAlerts()
     for (auto *a : alerts) {
         if (auto *fa = lt::alert_cast<lt::torrent_finished_alert>(a)) {
             QString name = QString::fromStdString(fa->torrent_name());
+            lt::torrent_status st = fa->handle.status();
 
-            // Auto-move completed download
-            if (m_autoMoveEnabled && !m_autoMovePath.isEmpty()) {
-                fa->handle.move_storage(m_autoMovePath.toStdString());
+            // Skip torrents that were already complete when the session
+            // started — libtorrent fires one finish alert per torrent during
+            // the resume check, even if no bytes were actually downloaded.
+            bool downloadedThisSession = (st.total_payload_download > 0);
+
+            if (downloadedThisSession) {
+                // Auto-move completed download
+                if (m_autoMoveEnabled && !m_autoMovePath.isEmpty()) {
+                    fa->handle.move_storage(m_autoMovePath.toStdString());
+                }
+
+                // Apply stop-after-download (global or per-torrent).
+                QString hash = QString::fromStdString(
+                    (std::ostringstream() << st.info_hashes.get_best()).str());
+                if (effectiveStopAfterDownload(hash))
+                    fa->handle.pause();
+
+                emit torrentFinished(name);
             }
 
-            // Remove from queue-paused set if present (it finished)
+            // Remove from queue-paused set in either case (it's no longer
+            // contributing to the active-download count).
             m_queuePaused.erase(fa->handle);
-
-            emit torrentFinished(name);
         }
         if (auto *ea = lt::alert_cast<lt::torrent_error_alert>(a)) {
             emit torrentError(QString::fromStdString(ea->message()));
@@ -579,11 +805,36 @@ void SessionManager::checkSeedRatios()
         if (st.state != lt::torrent_status::seeding) continue;
         if (st.flags & lt::torrent_flags::paused) continue;
 
-        float ratio = st.total_download > 0
-            ? static_cast<float>(st.total_upload) / static_cast<float>(st.total_download)
+        // Use payload counters so the pause-at-ratio threshold lines up with
+        // the ratio shown to the user and what trackers report.
+        float ratio = st.total_payload_download > 0
+            ? static_cast<float>(st.total_payload_upload)
+              / static_cast<float>(st.total_payload_download)
             : 0.0f;
 
         if (ratio >= m_seedRatioLimit)
+            h.pause();
+    }
+}
+
+void SessionManager::checkSeedingLimits()
+{
+    for (auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        lt::torrent_status st = h.status();
+        if (st.state != lt::torrent_status::seeding) continue;
+        if (st.flags & lt::torrent_flags::paused) continue;
+
+        QString hash = QString::fromStdString(
+            (std::ostringstream() << st.info_hashes.get_best()).str());
+        qint64 maxSec = effectiveMaxSeedSeconds(hash);
+        if (maxSec <= 0) continue;
+
+        // st.seeding_duration is a std::chrono::seconds duration tracking
+        // total time the torrent has been in the seeding state.
+        qint64 seeded = std::chrono::duration_cast<std::chrono::seconds>(
+                            st.seeding_duration).count();
+        if (seeded >= maxSec)
             h.pause();
     }
 }
@@ -821,6 +1072,8 @@ void SessionManager::setProxySettings(int type, const QString &host, int port,
     lt::settings_pack pack;
     if (type == 0) {
         pack.set_int(lt::settings_pack::proxy_type, lt::settings_pack::none);
+        pack.set_bool(lt::settings_pack::proxy_peer_connections, false);
+        pack.set_bool(lt::settings_pack::proxy_hostnames, false);
     } else {
         int ltType = (type == 1) ? lt::settings_pack::socks5_pw : lt::settings_pack::http_pw;
         if (user.isEmpty())
@@ -832,6 +1085,11 @@ void SessionManager::setProxySettings(int type, const QString &host, int port,
             pack.set_str(lt::settings_pack::proxy_username, user.toStdString());
             pack.set_str(lt::settings_pack::proxy_password, pass.toStdString());
         }
+        // Route peer traffic through the proxy too — without this the
+        // proxy only covers trackers and the user's real IP leaks to peers.
+        // Resolve hostnames through the proxy as well so DNS doesn't leak.
+        pack.set_bool(lt::settings_pack::proxy_peer_connections, true);
+        pack.set_bool(lt::settings_pack::proxy_hostnames, true);
     }
     m_session.apply_settings(pack);
 }
@@ -958,16 +1216,22 @@ void SessionManager::checkBandwidthSchedule()
         }
     }
 
+    // Push values straight to libtorrent — must not go through
+    // setDownloadLimit/setUploadLimit because those are "the user wants X as
+    // their normal limit" and would clobber m_normalDownLimit during alt mode.
+    auto applyLimits = [this](int dKbps, int uKbps) {
+        lt::settings_pack pack;
+        pack.set_int(lt::settings_pack::download_rate_limit, dKbps > 0 ? dKbps * 1024 : 0);
+        pack.set_int(lt::settings_pack::upload_rate_limit,   uKbps > 0 ? uKbps * 1024 : 0);
+        m_session.apply_settings(pack);
+    };
+
     if (inSchedule && !m_altSpeedsActive) {
-        m_normalDownLimit = downloadLimit();
-        m_normalUpLimit = uploadLimit();
         m_altSpeedsActive = true;
-        setDownloadLimit(m_altDownLimit);
-        setUploadLimit(m_altUpLimit);
+        applyLimits(m_altDownLimit, m_altUpLimit);
     } else if (!inSchedule && m_altSpeedsActive) {
         m_altSpeedsActive = false;
-        setDownloadLimit(m_normalDownLimit);
-        setUploadLimit(m_normalUpLimit);
+        applyLimits(m_normalDownLimit, m_normalUpLimit);
     }
 }
 

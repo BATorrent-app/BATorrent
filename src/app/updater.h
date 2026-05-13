@@ -21,6 +21,10 @@ public:
 
     QString latestVersion() const { return m_latestVersion; }
 
+    // Returns -1 if a < b, 0 if equal, 1 if a > b. Compares dot-separated
+    // numeric components ("2.10.0" > "2.3.1").
+    static int compareVersions(const QString &a, const QString &b);
+
 signals:
     void updateAvailable(const QString &version, const QString &downloadUrl, const QString &assetName);
     void noUpdateAvailable();

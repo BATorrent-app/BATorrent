@@ -207,17 +207,11 @@ void TorrentModel::moveRow(int from, int to)
     if (from < 0 || from >= count || to < 0 || to >= count || from == to)
         return;
 
-    // Build current order if empty
-    if (m_customOrder.isEmpty()) {
-        for (int i = 0; i < count; ++i)
-            m_customOrder[i] = i;
-    }
-
-    // Swap custom order values
-    int orderFrom = m_customOrder.value(from, from);
-    int orderTo = m_customOrder.value(to, to);
-    m_customOrder[from] = orderTo;
-    m_customOrder[to] = orderFrom;
-
-    emit dataChanged(index(0, 0), index(count - 1, ColumnCount - 1));
+    // Tell the session to actually shift the handle in its vector. This also
+    // affects every other place that uses indices (queue logic, save-resume
+    // ordering, the WebUI hash lookup, etc.) so the visible order and the
+    // underlying state stay in sync.
+    beginResetModel();
+    m_session->setTorrentQueuePosition(from, to);
+    endResetModel();
 }

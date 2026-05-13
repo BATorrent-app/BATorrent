@@ -62,6 +62,8 @@
 #include <QPropertyAnimation>
 #include <QProgressDialog>
 #include <QProcess>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QDesktopServices>
 #include <QStandardPaths>
 #include <QUrl>
@@ -77,7 +79,10 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     setWindowTitle("BATorrent");
     setWindowIcon(QIcon(":/images/logo1.png"));
     setAcceptDrops(true);
-    resize(1000, 650);
+    // Default size fits comfortably on 1366x768 laptops; widget min sizes
+    // below keep it usable when the user resizes smaller.
+    resize(920, 600);
+    setMinimumSize(720, 440);
 
     m_model = new TorrentModel(session, this);
 
@@ -401,12 +406,14 @@ void MainWindow::setupCentralWidget()
             QDesktopServices::openUrl(QUrl::fromLocalFile(info.savePath));
     });
 
-    // Filter bar
+    // Filter bar (wrapped in a horizontal scroll area so it overflows
+    // gracefully on narrow windows instead of squeezing the table).
     auto *filterBar = new QWidget;
     auto *filterLayout = new QHBoxLayout(filterBar);
     const auto &tm = ThemeManager::instance();
     filterLayout->setContentsMargins(8, 6, 8, 6);
     filterLayout->setSpacing(6);
+    filterBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
     m_searchEdit = new QLineEdit;
     m_searchEdit->setPlaceholderText(tr_("filter_search"));
@@ -478,12 +485,21 @@ void MainWindow::setupCentralWidget()
     // Bat animation (shown when no torrents)
     m_batWidget = new BatWidget;
 
-    // Top section: filter bar + table or bat widget
+    // Top section: filter bar (in horizontal scroll) + table or bat widget
+    auto *filterScroll = new QScrollArea;
+    filterScroll->setWidget(filterBar);
+    filterScroll->setWidgetResizable(true);
+    filterScroll->setFrameShape(QFrame::NoFrame);
+    filterScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    filterScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    filterScroll->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    filterScroll->setFixedHeight(filterBar->sizeHint().height());
+
     auto *tableContainer = new QWidget;
     auto *tableLayout = new QVBoxLayout(tableContainer);
     tableLayout->setContentsMargins(0, 0, 0, 0);
     tableLayout->setSpacing(0);
-    tableLayout->addWidget(filterBar);
+    tableLayout->addWidget(filterScroll);
     tableLayout->addWidget(m_tableView);
 
     m_topStack = new QStackedWidget;
@@ -718,8 +734,21 @@ void MainWindow::openTorrent()
 
 QString MainWindow::chooseSavePath()
 {
-    if (m_useDefaultPath)
-        return m_lastSavePath;
+    if (m_useDefaultPath) {
+        // The user enabled "always use default path" but the default may now
+        // be unreachable (external drive unplugged, network share offline,
+        // user moved their folder). Fall back to the system Downloads dir
+        // and warn so they know we changed targets — better than adding the
+        // torrent and watching every write fail later with file_error_alert.
+        if (QDir(m_lastSavePath).exists())
+            return m_lastSavePath;
+
+        QString fallback = QStandardPaths::writableLocation(
+            QStandardPaths::DownloadLocation);
+        QMessageBox::warning(this, tr_("dlg_error"),
+            tr_("dlg_save_path_missing").arg(m_lastSavePath, fallback));
+        return fallback;
+    }
 
     QString path = QFileDialog::getExistingDirectory(this, tr_("dlg_choose_folder"), m_lastSavePath);
     if (path.isEmpty())
@@ -965,6 +994,8 @@ void MainWindow::openSettings()
     dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
     dlg.setAutoMovePath(m_session->autoMovePath());
     dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
+    dlg.setStopAfterDownload(m_session->stopAfterDownload());
+    dlg.setMaxSeedDays(static_cast<int>(m_session->maxSeedSeconds() / 86400));
 
     {
         QSettings settings("BATorrent", "BATorrent");
@@ -1042,6 +1073,10 @@ void MainWindow::openSettings()
 
         // Download queue
         m_session->setMaxActiveDownloads(dlg.maxActiveDownloads());
+
+        // Stop-seeding rules
+        m_session->setStopAfterDownload(dlg.stopAfterDownload());
+        m_session->setMaxSeedSeconds(static_cast<qint64>(dlg.maxSeedDays()) * 86400);
 
         // Proxy
         m_session->setProxySettings(dlg.proxyType(), dlg.proxyHost(),
@@ -1125,6 +1160,17 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     QMainWindow::resizeEvent(event);
     if (m_splash)
         m_splash->setGeometry(0, 0, width(), height());
+
+    // Adaptive toolbar: show icon labels only when there's room for them.
+    // Below ~820 px the labelled buttons would push the toolbar past the
+    // window width.
+    for (auto *tb : findChildren<QToolBar *>()) {
+        const Qt::ToolButtonStyle desired = (width() < 820)
+            ? Qt::ToolButtonIconOnly
+            : Qt::ToolButtonTextBesideIcon;
+        if (tb->toolButtonStyle() != desired)
+            tb->setToolButtonStyle(desired);
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -1217,6 +1263,61 @@ void MainWindow::showContextMenu(const QPoint &pos)
         menu.addSeparator();
     }
 
+    // Stop seeding now (multi-selection OK; applies to anything in seeding state)
+    {
+        bool anySeeding = false;
+        for (int r : rows) {
+            TorrentInfo info = m_session->torrentAt(r);
+            if (!info.paused && info.progress >= 1.0f) { anySeeding = true; break; }
+        }
+        if (anySeeding) {
+            menu.addAction(QIcon(":/icons/pause.svg"), tr_("ctx_stop_seeding"),
+                this, [this, rows]() {
+                    for (int r : rows) m_session->stopSeedingTorrent(r);
+                });
+        }
+    }
+
+    // Per-torrent stop-after-download + max-seed-time overrides (single selection)
+    if (rows.size() == 1) {
+        int row = rows.first();
+        QMenu *seedMenu = menu.addMenu(tr_("ctx_seed_rules"));
+
+        // Stop after download toggle
+        auto *stopAfter = seedMenu->addAction(tr_("ctx_stop_after_download"));
+        stopAfter->setCheckable(true);
+        int override_ = m_session->torrentStopAfterDownload(row);
+        bool effective = (override_ >= 0)
+            ? (override_ == 1)
+            : m_session->stopAfterDownload();
+        stopAfter->setChecked(effective);
+        connect(stopAfter, &QAction::toggled, this, [this, row](bool checked) {
+            // Toggling sets an explicit per-torrent override.
+            m_session->setTorrentStopAfterDownload(row, checked ? 1 : 0);
+        });
+
+        // Max seed time
+        seedMenu->addAction(tr_("ctx_max_seed_time"), this, [this, row]() {
+            qint64 current = m_session->torrentMaxSeedSeconds(row);
+            if (current < 0) current = m_session->maxSeedSeconds();
+            int curDays = static_cast<int>(current / 86400);
+            bool ok = false;
+            int days = QInputDialog::getInt(this, tr_("ctx_max_seed_time"),
+                tr_("ctx_max_seed_prompt"), curDays, 0, 365, 1, &ok);
+            if (!ok) return;
+            m_session->setTorrentMaxSeedSeconds(row,
+                static_cast<qint64>(days) * 86400);
+        });
+
+        // Reset to global default
+        seedMenu->addAction(tr_("ctx_seed_use_default"), this, [this, row]() {
+            m_session->setTorrentStopAfterDownload(row, -1);
+            m_session->setTorrentMaxSeedSeconds(row, -1);
+        });
+
+        menu.addSeparator();
+    }
+
     // Category submenu
     {
         QMenu *catMenu = menu.addMenu(tr_("ctx_category"));
@@ -1267,6 +1368,14 @@ void MainWindow::showContextMenu(const QPoint &pos)
             }
         });
     }
+
+    menu.addSeparator();
+    menu.addAction(tr_("ctx_force_recheck"), this, [this, rows]() {
+        for (int r : rows) m_session->forceRecheck(r);
+    });
+    menu.addAction(tr_("ctx_force_reannounce"), this, [this, rows]() {
+        for (int r : rows) m_session->forceReannounce(r);
+    });
 
     menu.addSeparator();
     menu.addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"), this, &MainWindow::removeSelected);
@@ -1454,11 +1563,31 @@ void MainWindow::checkAutoShutdown()
 void MainWindow::checkForUpdate(bool silent)
 {
     connect(m_updater, &Updater::updateAvailable, this,
-            [this](const QString &version, const QString &url, const QString &assetName) {
+            [this, silent](const QString &version, const QString &url, const QString &assetName) {
+        // Honor "skip this version": only suppress on silent (startup) checks
+        // so the user can still trigger the prompt via Help → Check for updates.
+        if (silent) {
+            QSettings settings("BATorrent", "BATorrent");
+            QString skipped = settings.value("skippedUpdateVersion").toString();
+            if (skipped == version)
+                return;
+        }
+
         QString msg = tr_("update_available").arg(version);
-        int ret = QMessageBox::question(this, tr_("update_title"), msg,
-                                        QMessageBox::Yes | QMessageBox::No);
-        if (ret != QMessageBox::Yes)
+        QMessageBox box(QMessageBox::Question, tr_("update_title"), msg,
+                        QMessageBox::NoButton, this);
+        auto *yesBtn = box.addButton(QMessageBox::Yes);
+        box.addButton(QMessageBox::No);
+        auto *skipBtn = box.addButton(tr_("update_skip"), QMessageBox::ActionRole);
+        box.setDefaultButton(yesBtn);
+        box.exec();
+
+        if (box.clickedButton() == skipBtn) {
+            QSettings settings("BATorrent", "BATorrent");
+            settings.setValue("skippedUpdateVersion", version);
+            return;
+        }
+        if (box.clickedButton() != yesBtn)
             return;
 
         auto *progress = new QProgressDialog(tr_("update_downloading"), tr_("btn_cancel"), 0, 100, this);

@@ -62,6 +62,12 @@ public:
     void setSeedRatioLimit(float ratio);
     void setMaxActiveDownloads(int max);
 
+    // Stop seeding rules
+    bool stopAfterDownload() const;
+    int maxSeedDays() const;
+    void setStopAfterDownload(bool val);
+    void setMaxSeedDays(int days);
+
     // VPN / Interface binding
     QString outgoingInterface() const;
     bool killSwitchEnabled() const;
@@ -162,6 +168,8 @@ private:
     QSpinBox *m_maxConnSpin;
     QDoubleSpinBox *m_seedRatioSpin;
     QSpinBox *m_maxActiveSpin;
+    QCheckBox *m_stopAfterDownloadCheck;
+    QSpinBox *m_maxSeedDaysSpin;
 
     // VPN tab
     QComboBox *m_interfaceCombo;
