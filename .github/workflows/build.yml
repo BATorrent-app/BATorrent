@@ -131,8 +131,15 @@ jobs:
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64.zip
 
       - name: Generate installer wizard images
+        shell: pwsh
         run: |
-          magick -size 164x314 "xc:#0E0A0A" -fill "#1A1A20" -draw "rectangle 0,0 164,2" src/images/logo1.png -resize 120x120 -gravity center -composite -gravity south -fill "#555568" -font Arial -pointsize 10 -annotate +0+20 "v2.2.0" BMP3:installer/wizard_large.bmp
+          # Same trick as the macOS Info.plist: pull the version straight
+          # from CMakeLists.txt so the wizard image always matches the
+          # binary, instead of the previous hardcoded "v2.2.0" that hadn't
+          # been touched in three releases.
+          $version = (Get-Content CMakeLists.txt | Select-String 'project\(BATorrent VERSION ([\d.]+)\)').Matches.Groups[1].Value
+          if (-not $version) { $version = "0.0.0-dev" }
+          magick -size 164x314 "xc:#0E0A0A" -fill "#1A1A20" -draw "rectangle 0,0 164,2" src/images/logo1.png -resize 120x120 -gravity center -composite -gravity south -fill "#555568" -font Arial -pointsize 10 -annotate +0+20 "v$version" BMP3:installer/wizard_large.bmp
           magick src/images/logo1.png -resize 48x48 -gravity center -background "#0E0A0A" -extent 55x58 BMP3:installer/wizard_small.bmp
 
       - name: Build Installer
@@ -188,6 +195,11 @@ jobs:
 
       - name: Create app bundle
         run: |
+          # Source of truth for the version is CMakeLists.txt — that way the
+          # Info.plist matches what the binary was compiled with, regardless
+          # of whether this run came from a tag, a PR, or workflow_dispatch.
+          VERSION=$(sed -n 's/.*project(BATorrent VERSION \([0-9.]*\)).*/\1/p' CMakeLists.txt)
+          [ -z "$VERSION" ] && VERSION="0.0.0-dev"
           mkdir -p dmg/BATorrent.app/Contents/MacOS
           mkdir -p dmg/BATorrent.app/Contents/Resources
           cp build/BATorrent dmg/BATorrent.app/Contents/MacOS/
@@ -197,8 +209,8 @@ jobs:
             '  <key>CFBundleExecutable</key>' '  <string>BATorrent</string>' \
             '  <key>CFBundleIdentifier</key>' '  <string>com.mateuscruz19.batorrent</string>' \
             '  <key>CFBundleName</key>' '  <string>BATorrent</string>' \
-            '  <key>CFBundleVersion</key>' "  <string>${GITHUB_REF_NAME#v}</string>" \
-            '  <key>CFBundleShortVersionString</key>' "  <string>${GITHUB_REF_NAME#v}</string>" \
+            '  <key>CFBundleVersion</key>' "  <string>${VERSION}</string>" \
+            '  <key>CFBundleShortVersionString</key>' "  <string>${VERSION}</string>" \
             '  <key>CFBundlePackageType</key>' '  <string>APPL</string>' \
             '  <key>CFBundleIconFile</key>' '  <string>batorrent</string>' \
             '  <key>LSMinimumSystemVersion</key>' '  <string>12.0</string>' \
