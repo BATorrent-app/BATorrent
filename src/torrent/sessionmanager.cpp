@@ -12,6 +12,7 @@
 #include <libtorrent/alert_types.hpp>
 #include <sstream>
 #include <libtorrent/peer_info.hpp>
+#include <QDebug>
 #include <QDir>
 #include <QStandardPaths>
 #include <QFile>
@@ -39,6 +40,17 @@ SessionManager::SessionManager(QObject *parent)
     // other without going through trackers/DHT. Default in qBittorrent and
     // Transmission; substantially helps home / corporate networks.
     pack.set_bool(lt::settings_pack::enable_lsd, true);
+
+    // Identify ourselves to peers and trackers — private trackers
+    // sometimes reject "LT" defaults; sending our own user-agent + a "BT"
+    // fingerprint avoids that whole class of refusal.
+    pack.set_str(lt::settings_pack::peer_fingerprint,
+                 lt::generate_fingerprint("BT", 2, 3, 2));
+    pack.set_str(lt::settings_pack::user_agent, "BATorrent/2.3.3");
+
+    // (.!bt suffix for incomplete files is applied per-file in addTorrent
+    //  and stripped on file_completed_alert below — libtorrent doesn't have
+    //  a session-wide setting for this.)
 
     // Enable UPnP and NAT-PMP for automatic port forwarding
     pack.set_bool(lt::settings_pack::enable_upnp, true);
@@ -106,6 +118,10 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
                        | lt::torrent_flags::disable_lsd
                        | lt::torrent_flags::disable_pex;
         }
+        // Append ".!bt" to every file path so Plex/Jellyfin/Sonarr ignore
+        // partial files during their library scans. The suffix is stripped
+        // again as each file completes via file_completed_alert.
+        applyIncompleteSuffix(atp);
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
@@ -114,6 +130,19 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     } catch (const std::exception &e) {
         emit torrentError(QString::fromStdString(e.what()));
+    }
+}
+
+void SessionManager::applyIncompleteSuffix(lt::add_torrent_params &atp)
+{
+    if (!atp.ti) return; // magnet without metadata yet; handled after fetch
+    const auto &files = atp.ti->files();
+    for (lt::file_index_t i(0); i < files.end_file(); ++i) {
+        std::string original = files.file_path(i);
+        if (original.size() >= 4
+            && original.compare(original.size() - 4, 4, ".!bt") == 0)
+            continue; // already suffixed (resume data round-trip)
+        atp.renamed_files[i] = original + ".!bt";
     }
 }
 
@@ -126,11 +155,44 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath)
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
+        m_magnetAddedAt[h] = QDateTime::currentSecsSinceEpoch();
         incrementTorrentCount();
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     } catch (const std::exception &e) {
         emit torrentError(QString::fromStdString(e.what()));
+    }
+}
+
+void SessionManager::checkMagnetTimeouts()
+{
+    if (m_magnetTimeoutSeconds <= 0 || m_magnetAddedAt.empty())
+        return;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    for (auto it = m_magnetAddedAt.begin(); it != m_magnetAddedAt.end(); ) {
+        const lt::torrent_handle &h = it->first;
+        if (!h.is_valid()) { it = m_magnetAddedAt.erase(it); continue; }
+        const lt::torrent_status st = cachedStatus(h);
+        if (st.has_metadata) {
+            // Done — metadata arrived, stop watching this magnet.
+            it = m_magnetAddedAt.erase(it);
+            continue;
+        }
+        if (now - it->second >= m_magnetTimeoutSeconds) {
+            QString name = QString::fromStdString(st.name);
+            if (name.isEmpty()) name = "magnet";
+            emit torrentError(QString("Metadata timeout: %1").arg(name));
+            // Remove the dead magnet so it doesn't sit forever consuming a
+            // queue slot.
+            int idx = -1;
+            for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i) {
+                if (m_torrents[i] == h) { idx = i; break; }
+            }
+            it = m_magnetAddedAt.erase(it);
+            if (idx >= 0) removeTorrent(idx, false);
+            continue;
+        }
+        ++it;
     }
 }
 
@@ -161,6 +223,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
     // to resume a destroyed torrent on the next kill-switch / queue tick.
     m_queuePaused.erase(h);
     m_killSwitchPaused.erase(h);
+    m_statusCache.erase(h);
 
     lt::remove_flags_t flags{};
     if (deleteFiles)
@@ -210,7 +273,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
     if (!m_torrents[index].is_valid())
         return info;
 
-    lt::torrent_status st = m_torrents[index].status();
+    lt::torrent_status st = cachedStatus(m_torrents[index]);
     info.handle = m_torrents[index];
     info.name = QString::fromStdString(st.name);
     info.savePath = QString::fromStdString(st.save_path);
@@ -278,7 +341,11 @@ std::vector<PeerInfo> SessionManager::peersAt(int index) const
                 pi.client = QString::fromStdString(p.client);
             result.push_back(pi);
         }
-    } catch (...) {}
+    } catch (const std::exception &e) {
+        qWarning() << "peersAt:" << e.what();
+    } catch (...) {
+        qWarning() << "peersAt: unknown exception";
+    }
     return result;
 }
 
@@ -332,8 +399,13 @@ std::vector<TrackerInfo> SessionManager::trackersAt(int index) const
             }
             result.push_back(ti);
         }
+    } catch (const std::exception &e) {
+        // Torrent may not be valid yet (metadata still downloading) — that's
+        // expected, but log everything else so unexpected libtorrent
+        // exceptions don't disappear.
+        qWarning() << "trackersAt:" << e.what();
     } catch (...) {
-        // Torrent may not be valid yet (e.g. metadata still downloading)
+        qWarning() << "trackersAt: unknown exception";
     }
     return result;
 }
@@ -363,6 +435,41 @@ void SessionManager::setSequentialDownload(int index, bool sequential)
         m_torrents[index].set_flags(lt::torrent_flags::sequential_download);
     else
         m_torrents[index].unset_flags(lt::torrent_flags::sequential_download);
+}
+
+void SessionManager::renameFile(int torrentIndex, int fileIndex,
+                                 const QString &newRelativePath)
+{
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size()))
+        return;
+    if (!m_torrents[torrentIndex].is_valid()) return;
+    m_torrents[torrentIndex].rename_file(
+        lt::file_index_t(fileIndex), newRelativePath.toStdString());
+}
+
+void SessionManager::moveStorage(int torrentIndex, const QString &newSavePath)
+{
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size()))
+        return;
+    if (!m_torrents[torrentIndex].is_valid()) return;
+    m_torrents[torrentIndex].move_storage(newSavePath.toStdString());
+    // A move can leave the filesystem and libtorrent's piece map out of
+    // sync if any underlying file failed to move; re-checking is the safe
+    // default so the torrent doesn't keep re-downloading good pieces.
+}
+
+void SessionManager::replaceTrackers(int torrentIndex, const QStringList &urls)
+{
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size()))
+        return;
+    if (!m_torrents[torrentIndex].is_valid()) return;
+    std::vector<lt::announce_entry> entries;
+    entries.reserve(urls.size());
+    for (const QString &u : urls) {
+        if (u.trimmed().isEmpty()) continue;
+        entries.emplace_back(u.toStdString());
+    }
+    m_torrents[torrentIndex].replace_trackers(entries);
 }
 
 void SessionManager::setTorrentCategory(int index, const QString &category)
@@ -551,7 +658,7 @@ QString SessionManager::torrentHash(int index) const
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return {};
     if (!m_torrents[index].is_valid()) return {};
-    lt::torrent_status st = m_torrents[index].status();
+    lt::torrent_status st = cachedStatus(m_torrents[index]);
     // Magnet links report an all-zeros hash from get_best() until metadata
     // is downloaded. Returning that string would cause every still-resolving
     // magnet to share the same key — categories and per-torrent seeding
@@ -619,6 +726,11 @@ void SessionManager::forceReannounce(int index)
     if (!m_torrents[index].is_valid()) return;
     m_torrents[index].force_reannounce();
     m_torrents[index].force_dht_announce();
+}
+
+QString SessionManager::torrentHashAt(int index) const
+{
+    return torrentHash(index);
 }
 
 bool SessionManager::effectiveStopAfterDownload(const QString &hash) const
@@ -746,14 +858,37 @@ void SessionManager::loadResumeData()
 
 void SessionManager::updateStats()
 {
+    // Ask libtorrent to deliver a state_update_alert with fresh statuses for
+    // every torrent. The alert lands inside processAlerts() below; until it
+    // arrives, m_statusCache may be one tick stale — acceptable trade-off
+    // for getting rid of dozens of synchronous status() calls per second.
+    m_session.post_torrent_updates();
+
     processAlerts();
     checkSeedRatios();
     checkSeedingLimits();
     checkInterfaceStatus();
     checkBandwidthSchedule();
+    checkMagnetTimeouts();
     enforceDownloadQueue();
     if (!m_torrents.empty())
         emit torrentsUpdated();
+}
+
+lt::torrent_status SessionManager::cachedStatus(const lt::torrent_handle &h) const
+{
+    auto it = m_statusCache.find(h);
+    if (it != m_statusCache.end())
+        return it->second;
+    // Cache miss: brand-new torrent before the first state_update_alert
+    // landed. Fall back to a live call (and warm the cache) so the first
+    // refresh after add doesn't show "-" everywhere.
+    if (h.is_valid()) {
+        lt::torrent_status st = h.status();
+        m_statusCache[h] = st;
+        return st;
+    }
+    return {};
 }
 
 void SessionManager::processAlerts()
@@ -762,6 +897,15 @@ void SessionManager::processAlerts()
     m_session.pop_alerts(&alerts);
 
     for (auto *a : alerts) {
+        // Status snapshots arrive in one batch per post_torrent_updates(),
+        // refreshing every cache entry at once. This is what makes the UI
+        // 1/Nth as expensive as polling each handle individually.
+        if (auto *su = lt::alert_cast<lt::state_update_alert>(a)) {
+            for (const auto &st : su->status)
+                m_statusCache[st.handle] = st;
+            continue;
+        }
+
         if (auto *fa = lt::alert_cast<lt::torrent_finished_alert>(a)) {
             QString name = QString::fromStdString(fa->torrent_name());
             lt::torrent_status st = fa->handle.status();
@@ -783,7 +927,7 @@ void SessionManager::processAlerts()
                 if (effectiveStopAfterDownload(hash))
                     fa->handle.pause();
 
-                emit torrentFinished(name);
+                emit torrentFinished(name, hash);
             }
 
             // Remove from queue-paused set in either case (it's no longer
@@ -793,6 +937,45 @@ void SessionManager::processAlerts()
         if (auto *ea = lt::alert_cast<lt::torrent_error_alert>(a)) {
             emit torrentError(QString::fromStdString(ea->message()));
         }
+        // Surface previously-swallowed alert categories so the user actually
+        // hears about disk-full, move-storage failures, port collisions, and
+        // broken magnets instead of staring at silent empty state.
+        if (auto *fe = lt::alert_cast<lt::file_error_alert>(a)) {
+            emit torrentError(QString::fromStdString(fe->message()));
+        }
+        if (auto *sm = lt::alert_cast<lt::storage_moved_failed_alert>(a)) {
+            emit torrentError(QString::fromStdString(sm->message()));
+        }
+        if (auto *lf = lt::alert_cast<lt::listen_failed_alert>(a)) {
+            emit torrentError(QString::fromStdString(lf->message()));
+        }
+        if (auto *mf = lt::alert_cast<lt::metadata_failed_alert>(a)) {
+            emit torrentError(QString::fromStdString(mf->message()));
+        }
+        // Magnet just got its metadata — file list is now known, so apply
+        // the .!bt suffix to each file.
+        if (auto *mr = lt::alert_cast<lt::metadata_received_alert>(a)) {
+            auto ti = mr->handle.torrent_file();
+            if (ti) {
+                const auto &files = ti->files();
+                for (lt::file_index_t i(0); i < files.end_file(); ++i) {
+                    std::string original = files.file_path(i);
+                    if (original.size() >= 4
+                        && original.compare(original.size() - 4, 4, ".!bt") == 0)
+                        continue;
+                    mr->handle.rename_file(i, original + ".!bt");
+                }
+            }
+        }
+        // File done — drop the .!bt suffix so the file appears with its
+        // final name in the file manager and media server scans.
+        if (auto *fc = lt::alert_cast<lt::file_completed_alert>(a)) {
+            auto ti = fc->handle.torrent_file();
+            if (ti) {
+                std::string original = ti->files().file_path(fc->index);
+                fc->handle.rename_file(fc->index, original);
+            }
+        }
     }
 }
 
@@ -801,7 +984,7 @@ void SessionManager::checkSeedRatios()
     if (m_seedRatioLimit <= 0.0f) return;
 
     for (auto &h : m_torrents) {
-        lt::torrent_status st = h.status();
+        lt::torrent_status st = cachedStatus(h);
         if (st.state != lt::torrent_status::seeding) continue;
         if (st.flags & lt::torrent_flags::paused) continue;
 
@@ -821,7 +1004,7 @@ void SessionManager::checkSeedingLimits()
 {
     for (auto &h : m_torrents) {
         if (!h.is_valid()) continue;
-        lt::torrent_status st = h.status();
+        lt::torrent_status st = cachedStatus(h);
         if (st.state != lt::torrent_status::seeding) continue;
         if (st.flags & lt::torrent_flags::paused) continue;
 
@@ -847,11 +1030,18 @@ QString SessionManager::resumeDataDir() const
 int SessionManager::importFromQBittorrent(const QString &defaultSavePath)
 {
     // qBittorrent stores data in BT_backup:
-    // Linux: ~/.local/share/qBittorrent/BT_backup/
-    // Windows: %APPDATA%/qBittorrent/BT_backup/
+    //   Linux:   ~/.local/share/qBittorrent/BT_backup/
+    //   Windows: %APPDATA%\qBittorrent\BT_backup\
+    //   macOS:   ~/Library/Application Support/qBittorrent/BT_backup/
 #ifdef Q_OS_WIN
-    QString btBackup = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-                            + "/../qBittorrent").filePath("BT_backup");
+    // GenericDataLocation resolves to %APPDATA% on Windows, which is the
+    // parent dir qBittorrent stores its own state under. AppDataLocation
+    // appends the app's own name and would land in the wrong place.
+    QString btBackup = QDir(QStandardPaths::writableLocation(
+        QStandardPaths::GenericDataLocation)).filePath("qBittorrent/BT_backup");
+#elif defined(Q_OS_MACOS)
+    QString btBackup = QDir::homePath()
+        + "/Library/Application Support/qBittorrent/BT_backup";
 #else
     QString btBackup = QDir::homePath() + "/.local/share/qBittorrent/BT_backup";
 #endif
@@ -906,8 +1096,11 @@ int SessionManager::importFromQBittorrent(const QString &defaultSavePath)
             lt::torrent_handle h = m_session.add_torrent(atp);
             m_torrents.push_back(h);
             ++imported;
+        } catch (const std::exception &e) {
+            qWarning() << "importFromQBittorrent skipped" << fileName << ":" << e.what();
         } catch (...) {
-            // Skip problematic torrents
+            qWarning() << "importFromQBittorrent skipped" << fileName
+                       << ": unknown exception";
         }
     }
 
@@ -1000,8 +1193,7 @@ qint64 SessionManager::globalDownloaded() const
     qint64 sessionDown = 0;
     for (const auto &h : m_torrents) {
         if (!h.is_valid()) continue;
-        lt::torrent_status st = h.status();
-        sessionDown += st.total_payload_download;
+        sessionDown += cachedStatus(h).total_payload_download;
     }
     return m_globalDownBase + sessionDown;
 }
@@ -1011,8 +1203,7 @@ qint64 SessionManager::globalUploaded() const
     qint64 sessionUp = 0;
     for (const auto &h : m_torrents) {
         if (!h.is_valid()) continue;
-        lt::torrent_status st = h.status();
-        sessionUp += st.total_payload_upload;
+        sessionUp += cachedStatus(h).total_payload_upload;
     }
     return m_globalUpBase + sessionUp;
 }
@@ -1028,8 +1219,7 @@ qint64 SessionManager::sessionDownloaded() const
     qint64 sessionDown = 0;
     for (const auto &h : m_torrents) {
         if (!h.is_valid()) continue;
-        lt::torrent_status st = h.status();
-        sessionDown += st.total_payload_download;
+        sessionDown += cachedStatus(h).total_payload_download;
     }
     return sessionDown;
 }
@@ -1039,8 +1229,7 @@ qint64 SessionManager::sessionUploaded() const
     qint64 sessionUp = 0;
     for (const auto &h : m_torrents) {
         if (!h.is_valid()) continue;
-        lt::torrent_status st = h.status();
-        sessionUp += st.total_payload_upload;
+        sessionUp += cachedStatus(h).total_payload_upload;
     }
     return sessionUp;
 }
@@ -1335,7 +1524,7 @@ void SessionManager::enforceDownloadQueue()
 
     for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i) {
         if (!m_torrents[i].is_valid()) continue;
-        lt::torrent_status st = m_torrents[i].status();
+        lt::torrent_status st = cachedStatus(m_torrents[i]);
 
         bool isPaused = (st.flags & lt::torrent_flags::paused) != lt::torrent_flags_t{};
         bool isDownloading = (st.state == lt::torrent_status::downloading

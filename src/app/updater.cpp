@@ -48,14 +48,35 @@ void Updater::checkForUpdate()
 
 int Updater::compareVersions(const QString &a, const QString &b)
 {
-    const QStringList partsA = a.split('.');
-    const QStringList partsB = b.split('.');
+    // Split off pre-release suffix (everything after the first '-') so we
+    // can apply semver's "pre-release < release" rule. "2.4.0-rc1" must be
+    // treated as older than "2.4.0"; a plain int-split would call them equal
+    // since 'rc1'.toInt() == 0.
+    auto splitVersion = [](const QString &v) {
+        int dash = v.indexOf('-');
+        return std::pair<QString, QString>(
+            dash >= 0 ? v.left(dash) : v,
+            dash >= 0 ? v.mid(dash + 1) : QString());
+    };
+
+    auto [baseA, preA] = splitVersion(a);
+    auto [baseB, preB] = splitVersion(b);
+
+    const QStringList partsA = baseA.split('.');
+    const QStringList partsB = baseB.split('.');
     const int n = qMax(partsA.size(), partsB.size());
     for (int i = 0; i < n; ++i) {
         const int va = i < partsA.size() ? partsA[i].toInt() : 0;
         const int vb = i < partsB.size() ? partsB[i].toInt() : 0;
         if (va != vb) return va < vb ? -1 : 1;
     }
+
+    // Numeric components match. A pre-release suffix means "lower than the
+    // release without one" (semver §11). If both sides have suffixes, fall
+    // back to a lexicographic compare.
+    if (preA.isEmpty() && !preB.isEmpty()) return 1;
+    if (!preA.isEmpty() && preB.isEmpty()) return -1;
+    if (preA != preB) return preA < preB ? -1 : 1;
     return 0;
 }
 

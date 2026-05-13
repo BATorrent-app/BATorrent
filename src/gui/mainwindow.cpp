@@ -10,6 +10,7 @@
 #include "settingsdialog.h"
 #include "welcomedialog.h"
 #include "createtorrentdialog.h"
+#include "addtorrentdialog.h"
 #include "speedgraph.h"
 #include "batwidget.h"
 #include "splashwidget.h"
@@ -238,8 +239,10 @@ void MainWindow::setupMenuBar()
     auto *openAction = fileMenu->addAction(QIcon(":/icons/open.svg"), tr_("action_open"));
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::openTorrent);
-    fileMenu->addAction(QIcon(":/icons/magnet.svg"), tr_("action_magnet"),
-                        this, &MainWindow::openMagnet);
+    auto *magnetAction = fileMenu->addAction(QIcon(":/icons/magnet.svg"),
+                                              tr_("action_magnet"));
+    magnetAction->setShortcut(QKeySequence("Ctrl+M"));
+    connect(magnetAction, &QAction::triggered, this, &MainWindow::openMagnet);
     fileMenu->addAction(tr_("action_create"), this, &MainWindow::createTorrent);
     fileMenu->addAction(tr_("action_import_qbt"), this, &MainWindow::importQBittorrent);
     fileMenu->addSeparator();
@@ -271,8 +274,10 @@ void MainWindow::setupMenuBar()
     });
 
     QMenu *settingsMenu = menuBar()->addMenu(tr_("menu_settings"));
-    settingsMenu->addAction(QIcon(":/icons/settings.svg"), tr_("action_settings"),
-                            this, &MainWindow::openSettings);
+    auto *settingsAction = settingsMenu->addAction(QIcon(":/icons/settings.svg"),
+                                                    tr_("action_settings"));
+    settingsAction->setShortcut(QKeySequence::Preferences); // Ctrl+, on most platforms
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::openSettings);
     settingsMenu->addAction(tr_("action_addons"), this, &MainWindow::openAddons);
     settingsMenu->addAction(tr_("action_rss"), this, &MainWindow::openRssManager);
     settingsMenu->addSeparator();
@@ -293,9 +298,16 @@ void MainWindow::setupMenuBar()
             "JSON (*.json)");
         if (path.isEmpty()) return;
         QSettings settings("BATorrent", "BATorrent");
+        // Exclude credentials so users can share/attach the export without
+        // leaking proxy passwords, media-server tokens, or the WebUI hash.
+        static const QStringList kSecretKeys = {
+            "proxyPass", "plexToken", "jellyfinApiKey", "webUiPasswordHash"
+        };
         QJsonObject obj;
-        for (const auto &key : settings.allKeys())
+        for (const auto &key : settings.allKeys()) {
+            if (kSecretKeys.contains(key)) continue;
             obj[key] = QJsonValue::fromVariant(settings.value(key));
+        }
         QJsonDocument doc(obj);
         QFile file(path);
         if (file.open(QIODevice::WriteOnly)) {
@@ -396,14 +408,25 @@ void MainWindow::setupCentralWidget()
     connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, &MainWindow::onSelectionChanged);
 
-    // Double-click on torrent row → open its save folder
+    // Double-click on torrent row → reveal its largest file in the OS file
+    // manager (qBittorrent / Transmission both do this; just opening the
+    // download folder is much less useful when it holds hundreds of files).
     connect(m_tableView, &QTableView::doubleClicked, this, [this](const QModelIndex &index) {
         QModelIndex srcIdx = m_proxyModel->mapToSource(index);
         int row = srcIdx.row();
         if (row < 0 || row >= m_session->torrentCount()) return;
         TorrentInfo info = m_session->torrentAt(row);
-        if (!info.savePath.isEmpty())
-            QDesktopServices::openUrl(QUrl::fromLocalFile(info.savePath));
+        if (info.savePath.isEmpty()) return;
+        auto files = m_session->filesAt(row);
+        QString target = info.savePath;
+        qint64 biggest = -1;
+        for (const auto &f : files) {
+            if (f.size > biggest) {
+                biggest = f.size;
+                target = info.savePath + "/" + f.path;
+            }
+        }
+        revealInFileManager(target);
     });
 
     // Filter bar (wrapped in a horizontal scroll area so it overflows
@@ -760,23 +783,38 @@ QString MainWindow::chooseSavePath()
 
 void MainWindow::addTorrentFile(const QString &filePath)
 {
-    QString savePath = chooseSavePath();
+    // Show the confirmation dialog so the user can change the save path,
+    // see what's inside the .torrent, and choose start-immediately. The
+    // previous flow dumped them straight into a folder picker, which is
+    // worse on every count.
+    AddTorrentDialog dlg(filePath, QString(),
+        m_useDefaultPath ? m_lastSavePath : m_lastSavePath, this);
+    if (dlg.exec() != QDialog::Accepted) return;
+    const QString savePath = dlg.savePath();
     if (savePath.isEmpty()) return;
+    m_lastSavePath = savePath;
     m_session->addTorrent(filePath, savePath);
+    if (!dlg.startImmediately()) {
+        // Pause whichever index was just added (last in vector).
+        m_session->pauseTorrent(m_session->torrentCount() - 1);
+    }
 }
 
 void MainWindow::addTorrentFromCli(const QString &filePath)
 {
-    QString savePath = chooseSavePath();
-    if (savePath.isEmpty()) return;
-    m_session->addTorrent(filePath, savePath);
+    addTorrentFile(filePath);
 }
 
 void MainWindow::addMagnetFromCli(const QString &uri)
 {
-    QString savePath = chooseSavePath();
+    AddTorrentDialog dlg(QString(), uri, m_lastSavePath, this);
+    if (dlg.exec() != QDialog::Accepted) return;
+    const QString savePath = dlg.savePath();
     if (savePath.isEmpty()) return;
+    m_lastSavePath = savePath;
     m_session->addMagnet(uri, savePath);
+    if (!dlg.startImmediately())
+        m_session->pauseTorrent(m_session->torrentCount() - 1);
 }
 
 void MainWindow::openMagnet()
@@ -786,9 +824,14 @@ void MainWindow::openMagnet()
     if (magnet.isEmpty() || !magnet.startsWith("magnet:"))
         return;
 
-    QString savePath = chooseSavePath();
+    AddTorrentDialog dlg(QString(), magnet, m_lastSavePath, this);
+    if (dlg.exec() != QDialog::Accepted) return;
+    const QString savePath = dlg.savePath();
     if (savePath.isEmpty()) return;
+    m_lastSavePath = savePath;
     m_session->addMagnet(magnet, savePath);
+    if (!dlg.startImmediately())
+        m_session->pauseTorrent(m_session->torrentCount() - 1);
 }
 
 void MainWindow::removeSelected()
@@ -913,14 +956,14 @@ void MainWindow::onSelectionChanged()
     m_detailsPanel->showTorrent(rows.isEmpty() ? -1 : rows.first());
 }
 
-void MainWindow::onTorrentFinished(const QString &name)
+void MainWindow::onTorrentFinished(const QString &name, const QString &infoHash)
 {
     m_trayIcon->showMessage(tr_("dlg_download_complete"),
                             tr_("dlg_finished_msg").arg(name),
                             QSystemTrayIcon::Information, 5000);
     if (m_notifSoundEnabled)
         QApplication::beep();
-    m_model->flashRow(name);
+    m_model->flashRow(infoHash);
     notifyMediaServers();
     checkAutoShutdown();
 }
@@ -1340,8 +1383,22 @@ void MainWindow::showContextMenu(const QPoint &pos)
     // Open folder + Stream (only for single selection)
     if (rows.size() == 1) {
         TorrentInfo info = m_session->torrentAt(rows.first());
-        menu.addAction(tr_("ctx_open_folder"), this, [savePath = info.savePath]() {
-            QDesktopServices::openUrl(QUrl::fromLocalFile(savePath));
+        // Pick the largest file in the torrent to reveal — for single-file
+        // torrents that's the only file, for multi-file it points the file
+        // manager into the right subfolder and highlights the main payload
+        // instead of dumping the user inside an unrelated Downloads dir.
+        menu.addAction(tr_("ctx_open_folder"), this, [this, row = rows.first()]() {
+            TorrentInfo info = m_session->torrentAt(row);
+            auto files = m_session->filesAt(row);
+            QString target = info.savePath;
+            qint64 biggest = -1;
+            for (const auto &f : files) {
+                if (f.size > biggest) {
+                    biggest = f.size;
+                    target = info.savePath + "/" + f.path;
+                }
+            }
+            revealInFileManager(target);
         });
         if (info.progress < 1.0f && !info.paused) {
             menu.addAction(QIcon(":/icons/play.svg"), tr_("ctx_stream"), this, [this, row = rows.first()]() {
@@ -1376,6 +1433,30 @@ void MainWindow::showContextMenu(const QPoint &pos)
     menu.addAction(tr_("ctx_force_reannounce"), this, [this, rows]() {
         for (int r : rows) m_session->forceReannounce(r);
     });
+
+    // Rename + move storage on a single selection (these need the user to
+    // pick a new name / path so they don't make sense for bulk operations).
+    if (rows.size() == 1) {
+        int row = rows.first();
+        TorrentInfo info = m_session->torrentAt(row);
+        menu.addSeparator();
+        menu.addAction(tr_("ctx_rename"), this, [this, row, info]() {
+            bool ok = false;
+            QString name = QInputDialog::getText(this, tr_("ctx_rename"),
+                tr_("ctx_rename_prompt"), QLineEdit::Normal, info.name, &ok);
+            if (!ok || name.trimmed().isEmpty()) return;
+            // libtorrent's rename_file with file_index 0 + new name renames
+            // the single top-level file (for single-file torrents) or the
+            // root folder (for multi-file torrents).
+            m_session->renameFile(row, 0, name);
+        });
+        menu.addAction(tr_("ctx_move_storage"), this, [this, row, info]() {
+            QString dir = QFileDialog::getExistingDirectory(this,
+                tr_("ctx_move_storage"), info.savePath);
+            if (dir.isEmpty() || dir == info.savePath) return;
+            m_session->moveStorage(row, dir);
+        });
+    }
 
     menu.addSeparator();
     menu.addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"), this, &MainWindow::removeSelected);

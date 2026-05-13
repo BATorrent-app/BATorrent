@@ -14,6 +14,7 @@
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/torrent_status.hpp>
 #include <QMap>
+#include <map>
 #include <vector>
 #include <set>
 
@@ -41,6 +42,16 @@ public:
 
     void setFilePriority(int torrentIndex, int fileIndex, int priority);
     void setSequentialDownload(int index, bool sequential);
+    // Rename one file in the torrent (libtorrent's rename_file). The path
+    // is interpreted relative to the torrent's save_path.
+    void renameFile(int torrentIndex, int fileIndex, const QString &newRelativePath);
+    // Move the torrent's whole save folder to a new location. Triggers a
+    // force_recheck after the move so libtorrent re-verifies pieces.
+    void moveStorage(int torrentIndex, const QString &newSavePath);
+    // Replace the tracker list with `urls`. Drops any tracker not in the
+    // new list — used by "remove tracker" since libtorrent has no single-
+    // tracker delete API.
+    void replaceTrackers(int torrentIndex, const QStringList &urls);
 
     // Categories
     void setTorrentCategory(int index, const QString &category);
@@ -96,6 +107,11 @@ public:
     // Manual tracker / disk operations
     void forceRecheck(int index);
     void forceReannounce(int index);
+
+    // info-hash for a torrent at the given index, or empty string if metadata
+    // isn't ready yet (magnets still resolving). Used by model/UI code that
+    // needs a stable identifier across vector reorders.
+    QString torrentHashAt(int index) const;
 
     // Auto-move completed downloads
     void setAutoMove(bool enabled, const QString &path);
@@ -158,7 +174,7 @@ signals:
     void torrentAdded(int index);
     void torrentRemoved(int index);
     void torrentsUpdated();
-    void torrentFinished(const QString &name);
+    void torrentFinished(const QString &name, const QString &infoHash);
     void torrentError(const QString &message);
     void killSwitchTriggered();
     void interfaceRestored();
@@ -174,12 +190,25 @@ private:
     void checkInterfaceStatus();
     void checkBandwidthSchedule();
     QString resumeDataDir() const;
+    // Rename every file in the torrent's add_torrent_params to have a ".!bt"
+    // suffix so media servers ignore in-progress files. Stripped back as
+    // each file completes (see file_completed_alert handling).
+    void applyIncompleteSuffix(lt::add_torrent_params &atp);
     QString torrentHash(int index) const;
+    // Fetch the cached torrent_status for a handle, falling back to a live
+    // status() call only when the cache hasn't been populated yet (just after
+    // add, before the first state_update_alert).
+    lt::torrent_status cachedStatus(const lt::torrent_handle &h) const;
     bool effectiveStopAfterDownload(const QString &hash) const;
     qint64 effectiveMaxSeedSeconds(const QString &hash) const;
 
     lt::session m_session;
     std::vector<lt::torrent_handle> m_torrents;
+    // Snapshot of the most recent libtorrent state for each handle. Updated
+    // from state_update_alert; consumed by every UI getter so we don't call
+    // handle.status() — a synchronous cross-thread call — once per row per
+    // tick on top of all the other periodic checks.
+    mutable std::map<lt::torrent_handle, lt::torrent_status> m_statusCache;
     QTimer m_updateTimer;
     bool m_dhtEnabled = true;
     int m_encryptionMode = 0;
@@ -226,6 +255,14 @@ private:
     // IP filter
     QString m_ipFilterPath;
     int m_ipFilterCount = 0;
+
+    // Magnets that haven't resolved metadata within this window get aborted
+    // and emit a torrentError. 0 = no timeout.
+    int m_magnetTimeoutSeconds = 300; // 5 min default
+    // Tracks when each magnet was added, by info_hash, so we can age them
+    // out after m_magnetTimeoutSeconds without metadata.
+    std::map<lt::torrent_handle, qint64> m_magnetAddedAt;
+    void checkMagnetTimeouts();
 
     // Bandwidth scheduler
     int m_altDownLimit = 0;

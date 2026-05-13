@@ -53,7 +53,9 @@ public:
 
 public slots:
     void refresh();
-    void flashRow(const QString &torrentName);
+    // Flash the row matching the given info-hash. Hash is more reliable than
+    // name because RSS auto-downloads frequently produce duplicates.
+    void flashRow(const QString &infoHash);
 
 private:
     SessionManager *m_session;

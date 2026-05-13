@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 2.3.2)
+project(BATorrent VERSION 2.3.3)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia)
 find_package(LibtorrentRasterbar REQUIRED)
 set(CMAKE_AUTOMOC ON)
@@ -23,6 +23,7 @@ add_executable(BATorrent WIN32
     src/gui/settingsdialog.cpp
     src/gui/welcomedialog.cpp
     src/gui/createtorrentdialog.cpp
+    src/gui/addtorrentdialog.cpp
     src/gui/speedgraph.cpp
     src/gui/batwidget.cpp
     src/gui/splashwidget.cpp

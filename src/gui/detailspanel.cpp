@@ -19,6 +19,7 @@
 #include <QPushButton>
 #include <QLineEdit>
 #include <QInputDialog>
+#include <QMenu>
 #include <QScrollArea>
 #include <QFrame>
 
@@ -287,6 +288,29 @@ QWidget *DetailsPanel::createTrackersTab()
     m_trackersTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_trackersTable->setShowGrid(false);
     m_trackersTable->setAlternatingRowColors(true);
+    m_trackersTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_trackersTable, &QWidget::customContextMenuRequested,
+            this, [this](const QPoint &p) {
+        if (m_currentIndex < 0) return;
+        auto selected = m_trackersTable->selectionModel()->selectedRows();
+        if (selected.isEmpty()) return;
+        QMenu menu(this);
+        menu.addAction(tr_("tracker_remove"), this, [this, selected]() {
+            // Collect the URLs the user wants to keep and call replace.
+            // libtorrent has no single-tracker delete; replace_trackers
+            // with the survivors is the canonical way.
+            QSet<int> toRemove;
+            for (const auto &idx : selected) toRemove.insert(idx.row());
+            QStringList kept;
+            for (int r = 0; r < m_trackersTable->rowCount(); ++r) {
+                if (toRemove.contains(r)) continue;
+                auto *item = m_trackersTable->item(r, 0);
+                if (item) kept << item->text();
+            }
+            m_session->replaceTrackers(m_currentIndex, kept);
+        });
+        menu.exec(m_trackersTable->viewport()->mapToGlobal(p));
+    });
 
     auto *btnLayout = new QHBoxLayout;
     btnLayout->addStretch();

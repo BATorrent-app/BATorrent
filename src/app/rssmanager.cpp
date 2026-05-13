@@ -90,6 +90,10 @@ void RssManager::removeFeed(int index)
     m_items = newItems;
 
     saveFeeds();
+
+    // Removing a feed can change the minimum check interval; rebuild the
+    // timer so we don't keep polling at the old (faster or slower) rate.
+    setupTimers();
 }
 
 void RssManager::setFeedEnabled(int index, bool enabled)
@@ -130,18 +134,27 @@ void RssManager::checkFeed(int index)
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
     auto *reply = m_net->get(req);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, index]() {
+    // Capture by URL, not index — if the user removes a feed below this one
+    // while the request is in flight, the index would shift and the reply
+    // would parse the wrong feed.
+    const QString feedUrl = m_feeds[index].url;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, feedUrl]() {
         reply->deleteLater();
 
-        if (index >= m_feeds.size()) return;
+        int idx = -1;
+        for (int i = 0; i < m_feeds.size(); ++i) {
+            if (m_feeds[i].url == feedUrl) { idx = i; break; }
+        }
+        if (idx < 0) return; // feed removed while request was in flight
 
         if (reply->error() != QNetworkReply::NoError) {
-            emit feedError(QString("%1: %2").arg(m_feeds[index].name, reply->errorString()));
+            emit feedError(QString("%1: %2").arg(m_feeds[idx].name, reply->errorString()));
             return;
         }
 
-        m_feeds[index].lastChecked = QDateTime::currentDateTime();
-        parseFeedXml(index, reply->readAll());
+        m_feeds[idx].lastChecked = QDateTime::currentDateTime();
+        parseFeedXml(idx, reply->readAll());
         saveFeeds();
     });
 }

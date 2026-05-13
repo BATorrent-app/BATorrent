@@ -12,7 +12,7 @@
 #include <QJsonArray>
 #include <QCryptographicHash>
 #include <QStandardPaths>
-#include <sstream>
+#include <QRandomGenerator>
 
 WebServer::WebServer(SessionManager *session, QObject *parent)
     : QObject(parent), m_session(session)
@@ -47,6 +47,7 @@ void WebServer::stop()
         delete m_server;
         m_server = nullptr;
     }
+    m_pending.clear();
 }
 
 bool WebServer::isRunning() const
@@ -58,60 +59,121 @@ void WebServer::setCredentials(const QString &user, const QString &passwordHash)
 {
     m_user = user;
     m_passwordHash = passwordHash;
+    // Changing credentials invalidates every existing session.
+    m_sessionTokens.clear();
 }
 
 void WebServer::onNewConnection()
 {
     while (m_server->hasPendingConnections()) {
         QTcpSocket *socket = m_server->nextPendingConnection();
+        m_pending.insert(socket, PendingRequest{});
         connect(socket, &QTcpSocket::readyRead, this, [this, socket]() {
-            handleClient(socket);
+            readMore(socket);
         });
-        connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+        connect(socket, &QTcpSocket::disconnected, this, [this, socket]() {
+            m_pending.remove(socket);
+            socket->deleteLater();
+        });
     }
 }
 
-void WebServer::handleClient(QTcpSocket *socket)
+void WebServer::readMore(QTcpSocket *socket)
 {
-    if (!socket->canReadLine())
+    auto it = m_pending.find(socket);
+    if (it == m_pending.end())
         return;
 
-    QByteArray requestData = socket->readAll();
-    QString request = QString::fromUtf8(requestData);
+    it->buffer.append(socket->readAll());
 
-    int firstNewline = request.indexOf('\n');
+    // First, locate the end of the headers and pull Content-Length so we
+    // know how much body to expect.
+    if (!it->headersParsed) {
+        int end = it->buffer.indexOf("\r\n\r\n");
+        if (end < 0) {
+            // Cap header size to defeat slow-loris / unbounded-buffer abuse.
+            if (it->buffer.size() > 32 * 1024) {
+                sendError(socket, 400, "Headers too large");
+                socket->disconnectFromHost();
+            }
+            return; // wait for more bytes
+        }
+        it->headerEnd = end + 4;
+        it->headersParsed = true;
+
+        const QByteArray headers = it->buffer.left(it->headerEnd);
+        const QByteArray cl = headerValue(headers, "Content-Length");
+        it->contentLength = cl.isEmpty() ? 0 : cl.toInt();
+
+        // Reject obviously absurd uploads (>200 MB) before allocating memory.
+        if (it->contentLength < 0 || it->contentLength > 200 * 1024 * 1024) {
+            sendError(socket, 413, "Payload too large");
+            socket->disconnectFromHost();
+            return;
+        }
+    }
+
+    // Wait until we have the whole body.
+    int needed = it->headerEnd + it->contentLength;
+    if (it->buffer.size() < needed)
+        return;
+
+    QByteArray complete = it->buffer.left(needed);
+    // If the client pipelines further requests on the same connection we
+    // currently don't handle them (Connection: close is sent on every
+    // response). Drop any trailing bytes.
+    dispatch(socket, complete);
+}
+
+void WebServer::dispatch(QTcpSocket *socket, const QByteArray &requestData)
+{
+    int firstNewline = requestData.indexOf('\n');
     if (firstNewline < 0) {
         sendError(socket, 400, "Bad Request");
         return;
     }
 
-    QString requestLine = request.left(firstNewline).trimmed();
-    QStringList parts = requestLine.split(' ');
-    if (parts.size() < 2) {
+    const QByteArray requestLine = requestData.left(firstNewline).trimmed();
+    const int sp1 = requestLine.indexOf(' ');
+    const int sp2 = sp1 >= 0 ? requestLine.indexOf(' ', sp1 + 1) : -1;
+    if (sp1 < 0 || sp2 < 0) {
         sendError(socket, 400, "Bad Request");
         return;
     }
+    const QByteArray method = requestLine.left(sp1);
+    const QByteArray path   = requestLine.mid(sp1 + 1, sp2 - sp1 - 1);
 
-    QString method = parts[0];
-    QString path = parts[1];
+    // Split headers from body so auth/cookie parsing can never accidentally
+    // read attacker-supplied bytes that live in the request body.
+    const int headerEnd = requestData.indexOf("\r\n\r\n");
+    const QByteArray headers = headerEnd >= 0 ? requestData.left(headerEnd + 4)
+                                              : requestData;
+    const QByteArray body = headerEnd >= 0 ? requestData.mid(headerEnd + 4)
+                                           : QByteArray();
 
-    if (!m_user.isEmpty() && !checkAuth(requestData)) {
-        QByteArray body = "Unauthorized";
-        QByteArray response = "HTTP/1.1 401 Unauthorized\r\n"
-                              "WWW-Authenticate: Basic realm=\"BATorrent WebUI\"\r\n"
-                              "Content-Type: text/plain\r\n"
-                              "Content-Length: " + QByteArray::number(body.size()) + "\r\n"
-                              "Connection: close\r\n\r\n" + body;
-        socket->write(response);
-        socket->flush();
-        socket->disconnectFromHost();
+    const QString clientIp = socket->peerAddress().toString();
+
+    // Login endpoint sits before the auth gate so unauthenticated clients
+    // can post their credentials.
+    if (m_user.isEmpty() == false && method == "POST" && path == "/api/login") {
+        if (!checkAuth(headers, clientIp)) {
+            sendError(socket, 401, "Invalid credentials");
+            return;
+        }
+        QByteArray token = issueSessionCookie();
+        QByteArray cookie = "Set-Cookie: BATSID=" + token
+            + "; HttpOnly; SameSite=Strict; Path=/\r\n";
+        sendJson(socket, 200, R"({"status":"ok"})", cookie);
         return;
     }
 
-    int bodyStart = request.indexOf("\r\n\r\n");
-    QByteArray body;
-    if (bodyStart >= 0)
-        body = requestData.mid(bodyStart + 4);
+    if (!m_user.isEmpty() && !checkSession(headers) && !checkAuth(headers, clientIp)) {
+        // No session cookie and no valid Basic Auth → require login.
+        QByteArray body401 = "Unauthorized";
+        sendResponse(socket, 401, "Unauthorized", body401, "text/plain",
+            "WWW-Authenticate: Basic realm=\"BATorrent WebUI\"\r\n");
+        return;
+    }
 
     if (method == "GET" && path == "/") {
         QFile file(":/webui/index.html");
@@ -125,10 +187,17 @@ void WebServer::handleClient(QTcpSocket *socket)
         sendJson(socket, 200, handleGetTorrents());
     }
     else if (method == "POST" && path == "/api/torrents") {
-        // Check if it's a multipart upload or JSON magnet
-        QString contentType = request.mid(request.indexOf("Content-Type:"));
-        if (contentType.contains("multipart/form-data")) {
-            if (handleUploadTorrent(requestData))
+        const QByteArray ct = headerValue(headers, "Content-Type");
+        if (ct.contains("multipart/form-data")) {
+            const int boundaryIdx = ct.indexOf("boundary=");
+            QByteArray boundary;
+            if (boundaryIdx >= 0)
+                boundary = "--" + ct.mid(boundaryIdx + 9).trimmed();
+            if (boundary.isEmpty()) {
+                sendError(socket, 400, "Missing multipart boundary");
+                return;
+            }
+            if (handleUploadTorrent(body, boundary))
                 sendJson(socket, 200, R"({"status":"ok"})");
             else
                 sendError(socket, 400, "Failed to upload torrent");
@@ -143,37 +212,42 @@ void WebServer::handleClient(QTcpSocket *socket)
         sendJson(socket, 200, handleGetStatus());
     }
     else if (method == "DELETE" && path.startsWith("/api/torrents/")) {
-        QString hash = path.mid(QString("/api/torrents/").length());
+        QString hash = QString::fromUtf8(path.mid(QByteArray("/api/torrents/").length()));
         if (handleRemoveTorrent(hash))
             sendJson(socket, 200, R"({"status":"ok"})");
         else
             sendError(socket, 404, "Torrent not found");
     }
     else if (method == "POST" && path.endsWith("/pause")) {
-        QString segment = path.mid(QString("/api/torrents/").length());
-        segment.chop(QString("/pause").length());
-        if (handlePauseTorrent(segment))
+        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
+        segment.chop(QByteArray("/pause").length());
+        if (handlePauseTorrent(QString::fromUtf8(segment)))
             sendJson(socket, 200, R"({"status":"ok"})");
         else
             sendError(socket, 404, "Torrent not found");
     }
     else if (method == "POST" && path.endsWith("/resume")) {
-        QString segment = path.mid(QString("/api/torrents/").length());
-        segment.chop(QString("/resume").length());
-        if (handleResumeTorrent(segment))
+        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
+        segment.chop(QByteArray("/resume").length());
+        if (handleResumeTorrent(QString::fromUtf8(segment)))
             sendJson(socket, 200, R"({"status":"ok"})");
         else
             sendError(socket, 404, "Torrent not found");
     }
     else if (method == "GET" && path.contains("/peers")) {
-        QString segment = path.mid(QString("/api/torrents/").length());
-        segment.chop(QString("/peers").length());
-        sendJson(socket, 200, handleGetTorrentPeers(segment));
+        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
+        segment.chop(QByteArray("/peers").length());
+        sendJson(socket, 200, handleGetTorrentPeers(QString::fromUtf8(segment)));
     }
     else if (method == "GET" && path.contains("/files")) {
-        QString segment = path.mid(QString("/api/torrents/").length());
-        segment.chop(QString("/files").length());
-        sendJson(socket, 200, handleGetTorrentFiles(segment));
+        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
+        segment.chop(QByteArray("/files").length());
+        sendJson(socket, 200, handleGetTorrentFiles(QString::fromUtf8(segment)));
+    }
+    else if (method == "GET" && path.contains("/trackers")) {
+        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
+        segment.chop(QByteArray("/trackers").length());
+        sendJson(socket, 200, handleGetTorrentTrackers(QString::fromUtf8(segment)));
     }
     else {
         sendError(socket, 404, "Not Found");
@@ -181,20 +255,35 @@ void WebServer::handleClient(QTcpSocket *socket)
 }
 
 void WebServer::sendResponse(QTcpSocket *socket, int status, const QString &statusText,
-                              const QByteArray &body, const QByteArray &contentType)
+                              const QByteArray &body, const QByteArray &contentType,
+                              const QByteArray &extraHeaders)
 {
-    QByteArray response = "HTTP/1.1 " + QByteArray::number(status) + " " + statusText.toUtf8() + "\r\n"
-                          "Content-Type: " + contentType + "\r\n"
-                          "Content-Length: " + QByteArray::number(body.size()) + "\r\n"
-                          "Connection: close\r\n\r\n" + body;
+    QByteArray response;
+    response.append("HTTP/1.1 ").append(QByteArray::number(status)).append(" ")
+            .append(statusText.toUtf8()).append("\r\n");
+    response.append("Content-Type: ").append(contentType).append("\r\n");
+    response.append("Content-Length: ").append(QByteArray::number(body.size())).append("\r\n");
+    // Security headers. These are cheap, broadly compatible, and shrink the
+    // class of attacks the WebUI is exposed to (clickjacking, MIME-sniff
+    // confusion, referrer leakage).
+    response.append("X-Content-Type-Options: nosniff\r\n");
+    response.append("X-Frame-Options: DENY\r\n");
+    response.append("Referrer-Policy: same-origin\r\n");
+    response.append("Connection: close\r\n");
+    if (!extraHeaders.isEmpty())
+        response.append(extraHeaders);
+    response.append("\r\n");
+    response.append(body);
     socket->write(response);
     socket->flush();
     socket->disconnectFromHost();
 }
 
-void WebServer::sendJson(QTcpSocket *socket, int status, const QByteArray &json)
+void WebServer::sendJson(QTcpSocket *socket, int status, const QByteArray &json,
+                          const QByteArray &extraHeaders)
 {
-    sendResponse(socket, status, status == 200 ? "OK" : "Error", json, "application/json");
+    sendResponse(socket, status, status == 200 ? "OK" : "Error", json,
+                 "application/json", extraHeaders);
 }
 
 void WebServer::sendError(QTcpSocket *socket, int status, const QString &message)
@@ -204,43 +293,126 @@ void WebServer::sendError(QTcpSocket *socket, int status, const QString &message
     sendJson(socket, status, QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
 
-bool WebServer::checkAuth(const QByteArray &header)
+QByteArray WebServer::headerValue(const QByteArray &headersOnly, const QByteArray &name)
 {
-    int idx = header.indexOf("Authorization: Basic ");
-    if (idx < 0) return false;
+    // Search only within the headers region — never within the body — so an
+    // attacker can't smuggle an Authorization line through, say, a multipart
+    // form field. Caller is expected to pass requestData.left(headerEnd+4).
+    QByteArray search = "\r\n" + name + ":";
+    int idx = headersOnly.indexOf(search);
+    int start;
+    if (idx == 0) {
+        // first line, no preceding \r\n
+        start = name.size() + 1;
+    } else if (idx > 0) {
+        start = idx + search.size();
+    } else if (headersOnly.startsWith(name + ":")) {
+        start = name.size() + 1;
+    } else {
+        return {};
+    }
+    int end = headersOnly.indexOf('\r', start);
+    if (end < 0) end = headersOnly.indexOf('\n', start);
+    if (end < 0) return {};
+    return headersOnly.mid(start, end - start).trimmed();
+}
 
-    int start = idx + 21;
-    int end = header.indexOf('\r', start);
-    if (end < 0) end = header.indexOf('\n', start);
-    if (end < 0) return false;
+bool WebServer::constantTimeEquals(const QByteArray &a, const QByteArray &b)
+{
+    // Length mismatch is information we can leak (the attacker can guess
+    // it), but the bytewise comparison must not short-circuit. Pad the
+    // shorter input and XOR everything together so the loop count is
+    // independent of where the first difference lies.
+    if (a.size() != b.size()) return false;
+    int diff = 0;
+    for (int i = 0; i < a.size(); ++i)
+        diff |= static_cast<unsigned char>(a[i]) ^ static_cast<unsigned char>(b[i]);
+    return diff == 0;
+}
 
-    QByteArray encoded = header.mid(start, end - start).trimmed();
+bool WebServer::checkAuth(const QByteArray &headersOnly, const QString &clientIp)
+{
+    // Throttle: after 5 failed attempts from the same IP, lock that IP out
+    // for an exponential window (max 5 min).
+    auto &state = m_failedAuth[clientIp];
+    if (state.lockedUntil.isValid()
+        && QDateTime::currentDateTime() < state.lockedUntil)
+        return false;
+
+    QByteArray authValue = headerValue(headersOnly, "Authorization");
+    if (!authValue.startsWith("Basic ")) {
+        // Don't count a missing header as a failed attempt — only count
+        // actual Basic submissions that didn't match.
+        return false;
+    }
+
+    QByteArray encoded = authValue.mid(6).trimmed();
     QByteArray decoded = QByteArray::fromBase64(encoded);
     int colon = decoded.indexOf(':');
     if (colon < 0) return false;
 
     QString user = QString::fromUtf8(decoded.left(colon));
     QString pass = QString::fromUtf8(decoded.mid(colon + 1));
-    QString passHash = QString::fromUtf8(
-        QCryptographicHash::hash(pass.toUtf8(), QCryptographicHash::Sha256).toHex());
+    QByteArray passHash = QCryptographicHash::hash(pass.toUtf8(),
+                                                    QCryptographicHash::Sha256).toHex();
+    QByteArray storedHash = m_passwordHash.toUtf8();
 
-    return user == m_user && passHash == m_passwordHash;
+    // Compare both fields in constant time so timing analysis can't recover
+    // the hash byte-by-byte.
+    bool userOk = constantTimeEquals(user.toUtf8(), m_user.toUtf8());
+    bool passOk = constantTimeEquals(passHash, storedHash);
+
+    if (userOk && passOk) {
+        state.attempts = 0;
+        state.lockedUntil = QDateTime();
+        return true;
+    }
+
+    state.attempts++;
+    if (state.attempts >= 5) {
+        // 5,6,7,8,9 → 5s, 10s, 20s, 40s, 80s, ... cap at 5 min.
+        int penaltySec = qMin(5 * (1 << (state.attempts - 5)), 300);
+        state.lockedUntil = QDateTime::currentDateTime().addSecs(penaltySec);
+    }
+    return false;
+}
+
+bool WebServer::checkSession(const QByteArray &headersOnly)
+{
+    QByteArray cookieLine = headerValue(headersOnly, "Cookie");
+    if (cookieLine.isEmpty()) return false;
+    // Cookie header format: "BATSID=token; other=value"
+    for (const QByteArray &part : cookieLine.split(';')) {
+        QByteArray trimmed = part.trimmed();
+        if (trimmed.startsWith("BATSID=")) {
+            return m_sessionTokens.contains(trimmed.mid(7));
+        }
+    }
+    return false;
+}
+
+QByteArray WebServer::issueSessionCookie()
+{
+    // 32 bytes of randomness → 64 hex chars. Plenty against guessing.
+    QByteArray raw(32, 0);
+    QRandomGenerator *rng = QRandomGenerator::system();
+    for (int i = 0; i < raw.size(); ++i)
+        raw[i] = static_cast<char>(rng->bounded(256));
+    QByteArray token = raw.toHex();
+    m_sessionTokens.insert(token);
+    return token;
 }
 
 QString WebServer::torrentHash(int index)
 {
     if (index < 0 || index >= m_session->torrentCount())
         return {};
-    TorrentInfo info = m_session->torrentAt(index);
-    if (!info.handle.is_valid())
-        return {};
-    lt::torrent_status st = info.handle.status();
-    return QString::fromStdString(
-        (std::ostringstream() << st.info_hashes.get_best()).str());
+    return m_session->torrentHashAt(index);
 }
 
 int WebServer::findTorrentByHash(const QString &hash)
 {
+    if (hash.isEmpty()) return -1;
     for (int i = 0; i < m_session->torrentCount(); ++i) {
         if (torrentHash(i) == hash)
             return i;
@@ -310,6 +482,23 @@ QByteArray WebServer::handleGetTorrentFiles(const QString &hash)
     return QJsonDocument(arr).toJson(QJsonDocument::Compact);
 }
 
+QByteArray WebServer::handleGetTorrentTrackers(const QString &hash)
+{
+    int idx = findTorrentByHash(hash);
+    if (idx < 0) return "[]";
+
+    auto trackers = m_session->trackersAt(idx);
+    QJsonArray arr;
+    for (const auto &t : trackers) {
+        QJsonObject obj;
+        obj["url"] = t.url;
+        obj["tier"] = t.tier;
+        obj["status"] = t.status;
+        arr.append(obj);
+    }
+    return QJsonDocument(arr).toJson(QJsonDocument::Compact);
+}
+
 QByteArray WebServer::handleGetStatus()
 {
     QJsonObject obj;
@@ -351,45 +540,34 @@ bool WebServer::handleAddTorrent(const QByteArray &body)
     return true;
 }
 
-bool WebServer::handleUploadTorrent(const QByteArray &requestData)
+bool WebServer::handleUploadTorrent(const QByteArray &body, const QByteArray &boundary)
 {
-    // Find boundary from Content-Type header
-    int ctIdx = requestData.indexOf("Content-Type: multipart/form-data");
-    if (ctIdx < 0) return false;
-
-    int boundaryIdx = requestData.indexOf("boundary=", ctIdx);
-    if (boundaryIdx < 0) return false;
-
-    int boundaryEnd = requestData.indexOf('\r', boundaryIdx);
-    if (boundaryEnd < 0) boundaryEnd = requestData.indexOf('\n', boundaryIdx);
-    QByteArray boundary = "--" + requestData.mid(boundaryIdx + 9, boundaryEnd - boundaryIdx - 9).trimmed();
-
-    // Find the file part
-    int filePartIdx = requestData.indexOf("filename=\"", boundaryIdx);
+    // Find the file part inside the multipart body. The body has already
+    // been split from the headers by the caller, so anything we see here
+    // can be trusted to be the request payload.
+    int filePartIdx = body.indexOf("filename=\"");
     if (filePartIdx < 0) return false;
 
-    // Find the start of file data (after double CRLF in this part)
-    int dataStart = requestData.indexOf("\r\n\r\n", filePartIdx);
+    int dataStart = body.indexOf("\r\n\r\n", filePartIdx);
     if (dataStart < 0) return false;
     dataStart += 4;
 
-    // Find the end of file data (next boundary)
-    int dataEnd = requestData.indexOf(boundary, dataStart);
+    int dataEnd = body.indexOf(boundary, dataStart);
     if (dataEnd < 0) return false;
     dataEnd -= 2; // remove trailing CRLF before boundary
 
-    QByteArray fileData = requestData.mid(dataStart, dataEnd - dataStart);
+    QByteArray fileData = body.mid(dataStart, dataEnd - dataStart);
 
-    // Extract savePath if present
     QString savePath;
-    int savePathIdx = requestData.indexOf("name=\"savePath\"");
+    int savePathIdx = body.indexOf("name=\"savePath\"");
     if (savePathIdx >= 0) {
-        int spDataStart = requestData.indexOf("\r\n\r\n", savePathIdx);
+        int spDataStart = body.indexOf("\r\n\r\n", savePathIdx);
         if (spDataStart >= 0) {
             spDataStart += 4;
-            int spDataEnd = requestData.indexOf(boundary, spDataStart);
+            int spDataEnd = body.indexOf(boundary, spDataStart);
             if (spDataEnd >= 0)
-                savePath = QString::fromUtf8(requestData.mid(spDataStart, spDataEnd - spDataStart - 2)).trimmed();
+                savePath = QString::fromUtf8(body.mid(spDataStart,
+                    spDataEnd - spDataStart - 2)).trimmed();
         }
     }
 
@@ -400,7 +578,6 @@ bool WebServer::handleUploadTorrent(const QByteArray &requestData)
             savePath = QDir::homePath() + "/Downloads";
     }
 
-    // Write to temp file
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     QString tempFile = QDir(tempDir).filePath("batorrent_upload.torrent");
     QFile file(tempFile);

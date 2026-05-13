@@ -56,7 +56,7 @@ private slots:
     void resumeAll();
     void updateStatusBar();
     void onSelectionChanged();
-    void onTorrentFinished(const QString &name);
+    void onTorrentFinished(const QString &name, const QString &infoHash);
     void onTorrentError(const QString &message);
     void trayActivated();
     void openSettings();

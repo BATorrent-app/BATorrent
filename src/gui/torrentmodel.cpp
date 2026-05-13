@@ -140,11 +140,11 @@ void TorrentModel::refresh()
     }
 }
 
-void TorrentModel::flashRow(const QString &torrentName)
+void TorrentModel::flashRow(const QString &infoHash)
 {
+    if (infoHash.isEmpty()) return;
     for (int i = 0; i < m_session->torrentCount(); ++i) {
-        TorrentInfo info = m_session->torrentAt(i);
-        if (info.name == torrentName) {
+        if (m_session->torrentHashAt(i) == infoHash) {
             m_flashingRows.insert(i);
             m_flashTimer.start(2000);
             emit dataChanged(index(i, 0), index(i, ColumnCount - 1));

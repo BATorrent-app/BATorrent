@@ -25,6 +25,7 @@
 #include <QCryptographicHash>
 #include <QMessageBox>
 #include <QGroupBox>
+#include <QLocale>
 #include <QNetworkInterface>
 #include <QCoreApplication>
 #include <QProcess>
@@ -245,9 +246,12 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     schedLayout->addRow(schedTimeLabel, schedTimeLayout);
 
     auto *daysLayout = new QHBoxLayout;
-    static const QStringList dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    // Use the system locale's short day names so the schedule reads
+    // naturally in every language the app supports.
+    QLocale sysLocale = QLocale::system();
     for (int i = 0; i < 7; ++i) {
-        auto *cb = new QCheckBox(dayNames[i]);
+        // Qt uses Mon=1..Sun=7; our bit-mask is Mon=0..Sun=6.
+        auto *cb = new QCheckBox(sysLocale.dayName(i + 1, QLocale::ShortFormat));
         cb->setChecked(true);
         m_dayChecks.append(cb);
         daysLayout->addWidget(cb);

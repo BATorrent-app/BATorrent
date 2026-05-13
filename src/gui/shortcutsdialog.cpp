@@ -62,11 +62,10 @@ ShortcutsDialog::ShortcutsDialog(QWidget *parent)
         {"Ctrl+A",   tr_("filter_all_active")},
         {"Delete",   tr_("action_remove")},
         {"Ctrl+,",   tr_("action_settings")},
-        {"F5",       tr_("settings_refresh")},
         {"Escape",   tr_("btn_cancel")},
     };
 
-    auto *table = new QTableWidget(shortcuts.size(), 2);
+    auto *table = new QTableWidget(static_cast<int>(shortcuts.size()), 2);
     table->setHorizontalHeaderLabels({tr_("shortcuts_key"), tr_("shortcuts_action")});
     table->horizontalHeader()->setStretchLastSection(true);
     table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
