@@ -76,6 +76,27 @@ public:
     void setSeedRatioLimit(float ratio);
     float seedRatioLimit() const;
 
+    // Stop seeding when download completes (global default)
+    void setStopAfterDownload(bool enabled);
+    bool stopAfterDownload() const;
+
+    // Maximum seeding time in seconds (global default, 0 = unlimited)
+    void setMaxSeedSeconds(qint64 seconds);
+    qint64 maxSeedSeconds() const;
+
+    // Per-torrent overrides (-1 = use global default)
+    void setTorrentStopAfterDownload(int index, int value); // -1, 0, or 1
+    int torrentStopAfterDownload(int index) const;
+    void setTorrentMaxSeedSeconds(int index, qint64 seconds); // -1 = use default
+    qint64 torrentMaxSeedSeconds(int index) const;
+
+    // Force pause regardless of state ("stop seeding now")
+    void stopSeedingTorrent(int index);
+
+    // Manual tracker / disk operations
+    void forceRecheck(int index);
+    void forceReannounce(int index);
+
     // Auto-move completed downloads
     void setAutoMove(bool enabled, const QString &path);
     bool autoMoveEnabled() const;
@@ -149,9 +170,13 @@ private:
     static QString stateToString(lt::torrent_status::state_t state);
     void processAlerts();
     void checkSeedRatios();
+    void checkSeedingLimits();
     void checkInterfaceStatus();
     void checkBandwidthSchedule();
     QString resumeDataDir() const;
+    QString torrentHash(int index) const;
+    bool effectiveStopAfterDownload(const QString &hash) const;
+    qint64 effectiveMaxSeedSeconds(const QString &hash) const;
 
     lt::session m_session;
     std::vector<lt::torrent_handle> m_torrents;
@@ -159,6 +184,14 @@ private:
     bool m_dhtEnabled = true;
     int m_encryptionMode = 0;
     float m_seedRatioLimit = 0.0f; // 0 = no limit
+
+    // Stop-seeding rules (globals)
+    bool m_stopAfterDownload = false;
+    qint64 m_maxSeedSeconds = 0; // 0 = unlimited
+
+    // Per-torrent overrides (info_hash -> value; -1 = use global)
+    QMap<QString, int> m_perTorrentStopAfter;
+    QMap<QString, qint64> m_perTorrentMaxSeed;
 
     // Auto-move
     bool m_autoMoveEnabled = false;

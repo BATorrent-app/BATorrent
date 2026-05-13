@@ -1,10 +1,12 @@
 ; BATorrent Installer - Inno Setup Script
 ; Custom dark theme with branding
 
+#define MyAppVersion "2.3.2"
+
 [Setup]
 AppName=BATorrent
-AppVersion=2.3.0
-AppVerName=BATorrent 2.3.0
+AppVersion={#MyAppVersion}
+AppVerName=BATorrent {#MyAppVersion}
 AppPublisher=Mateuscruz19
 AppPublisherURL=https://github.com/Mateuscruz19/BAT-Torrent
 AppSupportURL=https://github.com/Mateuscruz19/BAT-Torrent/issues
@@ -28,12 +30,12 @@ CloseApplications=yes
 RestartApplications=no
 ArchitecturesInstallIn64BitMode=x64compatible
 LicenseFile=..\LICENSE
-VersionInfoVersion=2.3.0.0
+VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany=Mateuscruz19
 VersionInfoDescription=BATorrent - A modern BitTorrent client
 VersionInfoCopyright=Copyright (c) 2024-2026 Mateus Cruz
 VersionInfoProductName=BATorrent
-VersionInfoProductVersion=2.3.0
+VersionInfoProductVersion={#MyAppVersion}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -78,15 +80,41 @@ Type: filesandordirs; Name: "{app}\logs"
 
 [Code]
 const
-  // Dark theme colors
-  BG_DARK       = $0A0A0E;    // #0E0A0A  (Inno uses BGR)
+  // Dark theme colors (Inno uses BGR — read the trailing comment for the
+  // actual RGB hex code).
+  BG_DARK       = $0A0A0E;    // #0E0A0A
   BG_SURFACE    = $191519;    // #151919
   BG_PANEL      = $201A1A;    // #1A1A20
-  TEXT_COLOR     = $D0C8C8;    // #C8C8D0
-  TEXT_MUTED     = $685555;    // #555568
-  ACCENT_RED     = $2626DC;    // #DC2626 (BGR)
-  ACCENT_DARK    = $1B1B99;    // #991B1B (BGR)
-  BORDER_COLOR   = $352A2A;    // #2A2A35
+  TEXT_COLOR    = $F0F0F0;    // #F0F0F0  bright off-white
+  TEXT_MUTED    = $B0B0B8;    // #B8B0B0  light gray, readable on dark
+  ACCENT_RED    = $2626DC;    // #DC2626
+  ACCENT_DARK   = $1B1B99;    // #991B1B
+  BORDER_COLOR  = $352A2A;    // #2A2A35
+
+procedure StyleControlText(C: TControl);
+var
+  i: Integer;
+  Container: TWinControl;
+begin
+  // Force a readable foreground color on every text-bearing control we know
+  // about. Anything we don't recognize is left alone (e.g. buttons keep the
+  // native Windows look).
+  if C is TNewStaticText then
+    TNewStaticText(C).Font.Color := TEXT_COLOR
+  else if C is TLabel then
+    TLabel(C).Font.Color := TEXT_COLOR
+  else if C is TNewCheckBox then
+    TNewCheckBox(C).Font.Color := TEXT_COLOR
+  else if C is TNewRadioButton then
+    TNewRadioButton(C).Font.Color := TEXT_COLOR;
+
+  // Recurse into containers so we catch labels nested in panels/pages.
+  if C is TWinControl then begin
+    Container := TWinControl(C);
+    for i := 0 to Container.ControlCount - 1 do
+      StyleControlText(Container.Controls[i]);
+  end;
+end;
 
 procedure InitializeWizard();
 var
@@ -127,10 +155,15 @@ begin
   WizardForm.LicenseMemo.Color := BG_PANEL;
   WizardForm.LicenseMemo.Font.Color := TEXT_COLOR;
 
+  // -- Page-level header labels (rendered on every page) --
+  WizardForm.PageNameLabel.Font.Color := TEXT_COLOR;
+  WizardForm.PageDescriptionLabel.Font.Color := TEXT_MUTED;
+
   // -- Various labels --
   WizardForm.SelectDirLabel.Font.Color := TEXT_MUTED;
   WizardForm.DiskSpaceLabel.Font.Color := TEXT_MUTED;
   WizardForm.SelectTasksLabel.Font.Color := TEXT_MUTED;
+  WizardForm.SelectStartMenuFolderLabel.Font.Color := TEXT_MUTED;
   WizardForm.ReadyLabel.Font.Color := TEXT_MUTED;
   WizardForm.StatusLabel.Font.Color := TEXT_MUTED;
   WizardForm.FilenameLabel.Font.Color := TEXT_MUTED;
@@ -148,12 +181,22 @@ begin
 
   VersionLabel := TNewStaticText.Create(WizardForm);
   VersionLabel.Parent := WizardForm;
-  VersionLabel.Caption := 'v2.3.0 - A modern BitTorrent client';
+  VersionLabel.Caption := 'v{#MyAppVersion} - A modern BitTorrent client';
   VersionLabel.Font.Color := TEXT_MUTED;
   VersionLabel.Font.Size := 7;
   VersionLabel.Left := BrandLabel.Left + BrandLabel.Width + ScaleX(8);
   VersionLabel.Top := BrandLabel.Top + ScaleY(2);
   VersionLabel.AutoSize := True;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  // Some controls (e.g. dynamically added checkboxes for [Tasks] entries and
+  // the license accept/decline radios) are created when the page first
+  // becomes visible, so styling them here catches anything that wasn't in
+  // existence during InitializeWizard.
+  StyleControlText(WizardForm.MainPanel);
+  StyleControlText(WizardForm.InnerPage);
 end;
 
 // Custom colors for uninstaller too

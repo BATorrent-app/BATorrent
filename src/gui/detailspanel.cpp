@@ -19,19 +19,31 @@
 #include <QPushButton>
 #include <QLineEdit>
 #include <QInputDialog>
+#include <QScrollArea>
+#include <QFrame>
 
 DetailsPanel::DetailsPanel(SessionManager *session, QWidget *parent)
     : QTabWidget(parent), m_session(session)
 {
     m_geoIp = new GeoIpResolver(this);
 
-    addTab(createGeneralTab(), tr_("detail_general"));
+    auto wrapScroll = [](QWidget *content) -> QScrollArea * {
+        auto *scroll = new QScrollArea;
+        scroll->setWidget(content);
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+        scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        return scroll;
+    };
+
+    addTab(wrapScroll(createGeneralTab()), tr_("detail_general"));
     addTab(createPeersTab(), tr_("detail_peers"));
     addTab(createFilesTab(), tr_("detail_files"));
     addTab(createTrackersTab(), tr_("detail_trackers"));
-    addTab(createPiecesTab(), tr_("detail_pieces"));
+    addTab(wrapScroll(createPiecesTab()), tr_("detail_pieces"));
 
-    setMinimumHeight(200);
+    setMinimumHeight(140);
 
     connect(m_session, &SessionManager::torrentsUpdated, this, &DetailsPanel::refresh);
 

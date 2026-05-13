@@ -68,6 +68,7 @@ void Translator::loadEnglish()
         {"update_available", "BATorrent %1 is available. Download and install now?"},
         {"update_downloading", "Downloading update..."},
         {"update_none", "You are running the latest version."},
+        {"update_skip", "Skip this version"},
 
         // Import
         {"import_qbt_success", "Imported %1 torrent(s) from qBittorrent."},
@@ -78,6 +79,14 @@ void Translator::loadEnglish()
         {"ctx_open_folder", "Open Folder"},
         {"ctx_category", "Category"},
         {"category_none", "None"},
+        {"ctx_stop_seeding", "Stop seeding now"},
+        {"ctx_seed_rules", "Seeding rules"},
+        {"ctx_stop_after_download", "Stop after download"},
+        {"ctx_max_seed_time", "Max seeding time..."},
+        {"ctx_max_seed_prompt", "Stop seeding after (days, 0 = unlimited):"},
+        {"ctx_seed_use_default", "Use global default"},
+        {"ctx_force_recheck", "Force re-check"},
+        {"ctx_force_reannounce", "Force re-announce"},
 
         // Filter
         {"filter_all_categories", "All Categories"},
@@ -181,6 +190,7 @@ void Translator::loadEnglish()
         {"dlg_download_complete", "Download Complete"},
         {"dlg_finished_msg", "%1 has finished downloading."},
         {"dlg_error", "Error"},
+        {"dlg_save_path_missing", "Default save folder is not available:\n%1\n\nFalling back to:\n%2"},
         {"dlg_confirm_delete", "Confirm Deletion"},
         {"dlg_confirm_delete_msg", "Delete selected torrent(s) and their downloaded files?"},
 
@@ -205,6 +215,9 @@ void Translator::loadEnglish()
         {"settings_theme", "Theme:"},
         {"settings_unlimited", "Unlimited"},
         {"settings_seed_ratio", "Stop seeding at ratio (0 = no limit):"},
+        {"settings_max_seed_days", "Stop seeding after:"},
+        {"settings_stop_after_download", "Stop seeding when download completes"},
+        {"settings_days", "days"},
         {"settings_max_conn", "Max connections:"},
         {"settings_enable_dht", "Enable DHT (trackerless peer discovery)"},
         {"settings_encryption", "Protocol encryption:"},
@@ -488,6 +501,7 @@ void Translator::loadPortuguese()
         {"update_available", "BATorrent %1 está disponível. Baixar e instalar agora?"},
         {"update_downloading", "Baixando atualização..."},
         {"update_none", "Você já está usando a versão mais recente."},
+        {"update_skip", "Pular esta versão"},
 
         // Import
         {"import_qbt_success", "Importados %1 torrent(s) do qBittorrent."},
@@ -499,6 +513,14 @@ void Translator::loadPortuguese()
         {"ctx_category", "Categoria"},
         {"category_none", "Nenhuma"},
         {"filter_all_categories", "Todas as Categorias"},
+        {"ctx_stop_seeding", "Parar de semear agora"},
+        {"ctx_seed_rules", "Regras de seed"},
+        {"ctx_stop_after_download", "Parar ao concluir o download"},
+        {"ctx_max_seed_time", "Tempo máximo de seed..."},
+        {"ctx_max_seed_prompt", "Parar de semear após (dias, 0 = ilimitado):"},
+        {"ctx_seed_use_default", "Usar padrão global"},
+        {"ctx_force_recheck", "Forçar verificação"},
+        {"ctx_force_reannounce", "Forçar reanúncio"},
 
         // Create torrent
         {"create_title", "Criar Torrent"},
@@ -599,6 +621,7 @@ void Translator::loadPortuguese()
         {"dlg_download_complete", "Download Concluído"},
         {"dlg_finished_msg", "%1 terminou de baixar."},
         {"dlg_error", "Erro"},
+        {"dlg_save_path_missing", "Pasta padrão de download não está disponível:\n%1\n\nUsando como alternativa:\n%2"},
         {"dlg_confirm_delete", "Confirmar Exclusão"},
         {"dlg_confirm_delete_msg", "Excluir torrent(s) selecionado(s) e seus arquivos baixados?"},
 
@@ -623,6 +646,9 @@ void Translator::loadPortuguese()
         {"settings_theme", "Tema:"},
         {"settings_unlimited", "Ilimitado"},
         {"settings_seed_ratio", "Parar de semear na proporção (0 = sem limite):"},
+        {"settings_max_seed_days", "Parar de semear após:"},
+        {"settings_stop_after_download", "Parar de semear ao concluir o download"},
+        {"settings_days", "dias"},
         {"settings_max_conn", "Máximo de conexões:"},
         {"settings_enable_dht", "Habilitar DHT (descoberta de peers sem tracker)"},
         {"settings_encryption", "Criptografia do protocolo:"},

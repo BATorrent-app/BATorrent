@@ -5,6 +5,10 @@
 #include "settingsdialog.h"
 #include "../app/translator.h"
 #include "../gui/thememanager.h"
+#include <QPalette>
+#include <QColor>
+#include <QStyle>
+#include <QStyleFactory>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QScrollArea>
@@ -34,6 +38,36 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 {
     setWindowTitle(tr_("settings_title"));
     setMinimumSize(500, 400);
+
+    // Some Windows native styles (WindowsVista / Windows11) honor only part
+    // of QPalette and silently override stylesheet background-color on
+    // certain widget classes. The result is the dialog showing a white/gray
+    // background instead of the dark theme color, for users with that
+    // configuration. Forcing the Fusion style on the dialog tree sidesteps
+    // it: Fusion paints purely from QPalette + stylesheet, so the same
+    // theme colors render identically on every Windows config.
+    if (QStyle *fusion = QStyleFactory::create("Fusion"))
+        setStyle(fusion);
+
+    // Force the theme palette on this dialog tree. The Fusion style reads
+    // these colors directly; setting them explicitly also covers any other
+    // platform style that ignores the QDialog stylesheet.
+    const auto &tm = ThemeManager::instance();
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window, QColor(tm.bgColor()));
+    pal.setColor(QPalette::Base, QColor(tm.surfaceColor()));
+    pal.setColor(QPalette::AlternateBase, QColor(tm.surfaceColor()));
+    pal.setColor(QPalette::Text, QColor(tm.textColor()));
+    pal.setColor(QPalette::WindowText, QColor(tm.textColor()));
+    pal.setColor(QPalette::Button, QColor(tm.surfaceColor()));
+    pal.setColor(QPalette::ButtonText, QColor(tm.textColor()));
+    pal.setColor(QPalette::ToolTipBase, QColor(tm.surfaceColor()));
+    pal.setColor(QPalette::ToolTipText, QColor(tm.textColor()));
+    pal.setColor(QPalette::Highlight, QColor(tm.accentColor()));
+    pal.setColor(QPalette::HighlightedText, QColor("#ffffff"));
+    setPalette(pal);
+    setAutoFillBackground(true);
+
     setStyleSheet(ThemeManager::instance().dialogStyleSheet());
 
     auto *tabs = new QTabWidget;
@@ -149,16 +183,27 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_seedRatioSpin->setDecimals(1);
     m_seedRatioSpin->setSpecialValueText(tr_("settings_unlimited"));
 
+    m_maxSeedDaysSpin = new QSpinBox;
+    m_maxSeedDaysSpin->setRange(0, 365);
+    m_maxSeedDaysSpin->setSuffix(" " + tr_("settings_days"));
+    m_maxSeedDaysSpin->setSpecialValueText(tr_("settings_unlimited"));
+
+    m_stopAfterDownloadCheck = new QCheckBox(tr_("settings_stop_after_download"));
+
     auto *downLabel = new QLabel(tr_("settings_max_down"));
     downLabel->setStyleSheet(labelStyle);
     auto *upLabel = new QLabel(tr_("settings_max_up"));
     upLabel->setStyleSheet(labelStyle);
     auto *ratioLabel = new QLabel(tr_("settings_seed_ratio"));
     ratioLabel->setStyleSheet(labelStyle);
+    auto *seedDaysLabel = new QLabel(tr_("settings_max_seed_days"));
+    seedDaysLabel->setStyleSheet(labelStyle);
 
     speedLayout->addRow(downLabel, m_maxDownSpin);
     speedLayout->addRow(upLabel, m_maxUpSpin);
     speedLayout->addRow(ratioLabel, m_seedRatioSpin);
+    speedLayout->addRow(seedDaysLabel, m_maxSeedDaysSpin);
+    speedLayout->addRow("", m_stopAfterDownloadCheck);
 
     // Scheduler group inside speed tab
     auto *schedGroup = new QGroupBox(tr_("settings_scheduler_group"));
@@ -523,6 +568,11 @@ void SettingsDialog::setEncryptionMode(int mode) { m_encryptionCombo->setCurrent
 void SettingsDialog::setMaxConnections(int max) { m_maxConnSpin->setValue(max); }
 void SettingsDialog::setSeedRatioLimit(float ratio) { m_seedRatioSpin->setValue(static_cast<double>(ratio)); }
 void SettingsDialog::setMaxActiveDownloads(int max) { m_maxActiveSpin->setValue(max); }
+
+bool SettingsDialog::stopAfterDownload() const { return m_stopAfterDownloadCheck->isChecked(); }
+int SettingsDialog::maxSeedDays() const { return m_maxSeedDaysSpin->value(); }
+void SettingsDialog::setStopAfterDownload(bool val) { m_stopAfterDownloadCheck->setChecked(val); }
+void SettingsDialog::setMaxSeedDays(int days) { m_maxSeedDaysSpin->setValue(days); }
 
 // VPN getters/setters
 QString SettingsDialog::outgoingInterface() const { return m_interfaceCombo->currentData().toString(); }
