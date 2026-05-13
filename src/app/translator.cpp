@@ -98,6 +98,8 @@ void Translator::loadEnglish()
         {"add_torrent_invalid", "Invalid torrent."},
         {"add_torrent_magnet_label", "Magnet link"},
         {"add_torrent_magnet_hint", "Metadata will be downloaded after adding."},
+        {"add_torrent_col_name", "File"},
+        {"add_torrent_col_size", "Size"},
 
         // Filter
         {"filter_all_categories", "All Categories"},
@@ -543,6 +545,8 @@ void Translator::loadPortuguese()
         {"add_torrent_invalid", "Torrent inválido."},
         {"add_torrent_magnet_label", "Link magnético"},
         {"add_torrent_magnet_hint", "Os metadados serão baixados após adicionar."},
+        {"add_torrent_col_name", "Arquivo"},
+        {"add_torrent_col_size", "Tamanho"},
 
         // Create torrent
         {"create_title", "Criar Torrent"},

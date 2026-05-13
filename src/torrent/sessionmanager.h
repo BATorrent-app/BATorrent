@@ -27,6 +27,13 @@ public:
 
     void addTorrent(const QString &filePath, const QString &savePath);
     void addMagnet(const QString &uri, const QString &savePath);
+
+    // Same as addTorrent but with up-front file priorities (0..7 per file).
+    // Used by AddTorrentDialog so unchecked files never start downloading
+    // — setting priorities only after add can leak a few KB before libtorrent
+    // applies them.
+    void addTorrentWithPriorities(const QString &filePath, const QString &savePath,
+                                  const std::vector<int> &filePriorities);
     void removeTorrent(int index, bool deleteFiles = false);
     void pauseTorrent(int index);
     void resumeTorrent(int index);
