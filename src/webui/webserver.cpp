@@ -12,6 +12,7 @@
 #include <QJsonArray>
 #include <QCryptographicHash>
 #include <QStandardPaths>
+#include <QTemporaryFile>
 #include <QRandomGenerator>
 
 WebServer::WebServer(SessionManager *session, QObject *parent)
@@ -83,6 +84,11 @@ void WebServer::readMore(QTcpSocket *socket)
     auto it = m_pending.find(socket);
     if (it == m_pending.end())
         return;
+    if (it->dispatched) {
+        // Drain bytes to keep readyRead quiet; we won't act on them.
+        socket->readAll();
+        return;
+    }
 
     it->buffer.append(socket->readAll());
 
@@ -119,9 +125,8 @@ void WebServer::readMore(QTcpSocket *socket)
         return;
 
     QByteArray complete = it->buffer.left(needed);
-    // If the client pipelines further requests on the same connection we
-    // currently don't handle them (Connection: close is sent on every
-    // response). Drop any trailing bytes.
+    // Mark dispatched before calling out so trailing bytes can't re-enter.
+    it->dispatched = true;
     dispatch(socket, complete);
 }
 
@@ -191,8 +196,13 @@ void WebServer::dispatch(QTcpSocket *socket, const QByteArray &requestData)
         if (ct.contains("multipart/form-data")) {
             const int boundaryIdx = ct.indexOf("boundary=");
             QByteArray boundary;
-            if (boundaryIdx >= 0)
-                boundary = "--" + ct.mid(boundaryIdx + 9).trimmed();
+            if (boundaryIdx >= 0) {
+                QByteArray b = ct.mid(boundaryIdx + 9).trimmed();
+                // RFC 2046 allows the boundary to be a quoted-string.
+                if (b.size() >= 2 && b.startsWith('"') && b.endsWith('"'))
+                    b = b.mid(1, b.size() - 2);
+                boundary = "--" + b;
+            }
             if (boundary.isEmpty()) {
                 sendError(socket, 400, "Missing multipart boundary");
                 return;
@@ -332,6 +342,7 @@ bool WebServer::constantTimeEquals(const QByteArray &a, const QByteArray &b)
 
 bool WebServer::checkAuth(const QByteArray &headersOnly, const QString &clientIp)
 {
+    evictExpiredFailedAuth();
     // Throttle: after 5 failed attempts from the same IP, lock that IP out
     // for an exponential window (max 5 min).
     auto &state = m_failedAuth[clientIp];
@@ -381,11 +392,18 @@ bool WebServer::checkSession(const QByteArray &headersOnly)
 {
     QByteArray cookieLine = headerValue(headersOnly, "Cookie");
     if (cookieLine.isEmpty()) return false;
-    // Cookie header format: "BATSID=token; other=value"
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
     for (const QByteArray &part : cookieLine.split(';')) {
         QByteArray trimmed = part.trimmed();
         if (trimmed.startsWith("BATSID=")) {
-            return m_sessionTokens.contains(trimmed.mid(7));
+            QByteArray token = trimmed.mid(7);
+            auto it = m_sessionTokens.find(token);
+            if (it == m_sessionTokens.end()) return false;
+            if (now - it.value() > kSessionMaxAgeSec) {
+                m_sessionTokens.erase(it);
+                return false;
+            }
+            return true;
         }
     }
     return false;
@@ -393,14 +411,29 @@ bool WebServer::checkSession(const QByteArray &headersOnly)
 
 QByteArray WebServer::issueSessionCookie()
 {
-    // 32 bytes of randomness → 64 hex chars. Plenty against guessing.
     QByteArray raw(32, 0);
     QRandomGenerator *rng = QRandomGenerator::system();
     for (int i = 0; i < raw.size(); ++i)
         raw[i] = static_cast<char>(rng->bounded(256));
     QByteArray token = raw.toHex();
-    m_sessionTokens.insert(token);
+    m_sessionTokens.insert(token, QDateTime::currentSecsSinceEpoch());
     return token;
+}
+
+void WebServer::evictExpiredFailedAuth()
+{
+    const QDateTime now = QDateTime::currentDateTime();
+    for (auto it = m_failedAuth.begin(); it != m_failedAuth.end(); ) {
+        // Entries past their lockout with no recent activity are safe to drop.
+        if (it->lockedUntil.isValid() && it->lockedUntil < now)
+            it = m_failedAuth.erase(it);
+        else
+            ++it;
+    }
+    // Hard cap so an attacker spraying from many spoofed source addresses
+    // (trivial via IPv6 prefix abuse) can't OOM the process.
+    if (m_failedAuth.size() > kFailedAuthMax)
+        m_failedAuth.clear();
 }
 
 QString WebServer::torrentHash(int index)
@@ -578,16 +611,16 @@ bool WebServer::handleUploadTorrent(const QByteArray &body, const QByteArray &bo
             savePath = QDir::homePath() + "/Downloads";
     }
 
-    QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-    QString tempFile = QDir(tempDir).filePath("batorrent_upload.torrent");
-    QFile file(tempFile);
-    if (!file.open(QIODevice::WriteOnly))
-        return false;
-    file.write(fileData);
-    file.close();
+    // QTemporaryFile generates a unique name per request so concurrent
+    // uploads (two browser tabs, or WebUI + curl) don't clobber each other.
+    QTemporaryFile tmp(QDir(QStandardPaths::writableLocation(
+        QStandardPaths::TempLocation)).filePath("batorrent_upload_XXXXXX.torrent"));
+    tmp.setAutoRemove(true);
+    if (!tmp.open()) return false;
+    tmp.write(fileData);
+    tmp.close();
 
-    m_session->addTorrent(tempFile, savePath);
-    QFile::remove(tempFile);
+    m_session->addTorrent(tmp.fileName(), savePath);
     return true;
 }
 

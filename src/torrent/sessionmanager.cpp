@@ -34,7 +34,11 @@ SessionManager::SessionManager(QObject *parent)
                  // to opportunistically save resume data (rate-limited to
                  // once per minute per torrent) so a crash mid-download
                  // doesn't force a full re-hash on next launch.
-                 | lt::alert_category::piece_progress);
+                 | lt::alert_category::piece_progress
+                 // file_progress is required for file_completed_alert —
+                 // without it the alert is filtered and the .!bt suffix
+                 // never gets stripped when a file finishes.
+                 | lt::alert_category::file_progress);
 
     // Enable DHT for trackerless torrents / magnet links
     pack.set_bool(lt::settings_pack::enable_dht, true);
@@ -116,8 +120,15 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         atp.save_path = savePath.toStdString();
-        // Disable libtorrent's auto-manager so user pause/resume always sticks.
-        atp.flags &= ~lt::torrent_flags::auto_managed;
+        // libtorrent's default flags include BOTH `auto_managed` AND
+        // `paused` — the auto-manager is what normally unpauses new
+        // torrents. We disable auto-management so user pause/resume
+        // always sticks, but that means we also have to clear the
+        // initial `paused` bit or every fresh add would stay paused
+        // forever. The "start paused" UX is handled at the caller via
+        // pauseTorrent() after add.
+        atp.flags &= ~(lt::torrent_flags::auto_managed
+                       | lt::torrent_flags::paused);
         // BEP-27: private torrents must not use DHT, LSD, or PEX. Trackers
         // banning peers that leak the info-hash through those channels is a
         // common reason users get kicked off private trackers.
@@ -149,7 +160,9 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         atp.save_path = savePath.toStdString();
-        atp.flags &= ~lt::torrent_flags::auto_managed;
+        // Clear both flags (see addTorrent for the full rationale).
+        atp.flags &= ~(lt::torrent_flags::auto_managed
+                       | lt::torrent_flags::paused);
         if (atp.ti && atp.ti->priv()) {
             atp.flags |= lt::torrent_flags::disable_dht
                        | lt::torrent_flags::disable_lsd
@@ -191,7 +204,9 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath)
     try {
         lt::add_torrent_params atp = lt::parse_magnet_uri(uri.toStdString());
         atp.save_path = savePath.toStdString();
-        atp.flags &= ~lt::torrent_flags::auto_managed;
+        // Clear both flags (see addTorrent for the full rationale).
+        atp.flags &= ~(lt::torrent_flags::auto_managed
+                       | lt::torrent_flags::paused);
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
@@ -252,9 +267,9 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         dir.remove(hash + ".resume");
         m_perTorrentStopAfter.remove(hash);
         m_perTorrentMaxSeed.remove(hash);
+        // Block in-flight save_resume_data_alerts from re-creating the file.
+        m_removedHashes.insert(hash);
 
-        // Carry the removed torrent's lifetime stats into the all-time
-        // counters so global totals don't decrease when a torrent is deleted.
         m_globalDownBase += st.total_payload_download;
         m_globalUpBase += st.total_payload_upload;
     }
@@ -842,16 +857,10 @@ void SessionManager::saveResumeData()
     if (!dir.exists())
         dir.mkpath(".");
 
-    // Just kick off the async request for every torrent with metadata.
-    // libtorrent will deliver save_resume_data_alert / _failed_alert for
-    // each one; processAlerts persists them to disk and decrements
-    // m_resumeOutstanding. The GUI thread doesn't block here.
-    //
-    // Reset the counter at the start so stale alerts from a previous
-    // unfinished batch don't artificially inflate it. The earlier batch's
-    // alerts will still be persisted (processAlerts always writes), they
-    // just won't double-count against the shutdown timeout.
-    m_resumeOutstanding = 0;
+    // Kick off async save_resume_data for every torrent with metadata.
+    // Counter represents *total* outstanding writes across batches; resetting
+    // it here would let prior-batch alerts decrement the shutdown reservation
+    // and let flushResumeDataBlocking exit before our writes actually land.
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     for (auto &h : m_torrents) {
         if (!h.is_valid()) continue;
@@ -896,6 +905,9 @@ bool SessionManager::persistResumeAlert(const lt::save_resume_data_alert *rd)
     lt::torrent_status st = rd->handle.status();
     QString hash = QString::fromStdString(
         (std::ostringstream() << st.info_hashes.get_best()).str());
+    // Race-guard: removeTorrent recorded this hash, the alert is stale.
+    if (m_removedHashes.contains(hash))
+        return false;
     QString filePath = dir.filePath(hash + ".resume");
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly))
@@ -931,8 +943,36 @@ void SessionManager::loadResumeData()
                        | lt::torrent_flags::disable_pex;
         }
 
-        lt::torrent_handle h = m_session.add_torrent(atp);
+        lt::torrent_handle h;
+        try {
+            h = m_session.add_torrent(atp);
+        } catch (const std::exception &e) {
+            qWarning("loadResumeData: skipping %s: %s",
+                     qPrintable(fileName), e.what());
+            continue;
+        }
+        if (!h.is_valid()) continue;
         m_torrents.push_back(h);
+
+        // Strip ".!bt" from any files already 100% complete at resume —
+        // file_completed_alert won't fire for files that were done before
+        // this session started, so without this pass the suffix is stuck
+        // until the whole torrent finishes.
+        if (auto ti = h.torrent_file()) {
+            std::vector<std::int64_t> progress;
+            h.file_progress(progress, lt::torrent_handle::piece_granularity);
+            const auto &fs = ti->files();
+            const int n = static_cast<int>(progress.size());
+            for (int i = 0; i < n; ++i) {
+                lt::file_index_t idx(i);
+                if (progress[i] != fs.file_size(idx)) continue;
+                std::string cur = fs.file_path(idx);
+                if (cur.size() >= 4
+                    && cur.compare(cur.size() - 4, 4, ".!bt") == 0) {
+                    h.rename_file(idx, std::string(cur, 0, cur.size() - 4));
+                }
+            }
+        }
     }
 
     if (!m_torrents.empty())
@@ -993,6 +1033,23 @@ void SessionManager::processAlerts()
             QString name = QString::fromStdString(fa->torrent_name());
             lt::torrent_status st = fa->handle.status();
 
+            // Safety net: strip any remaining ".!bt" suffixes. Normally
+            // file_completed_alert handles this per-file as the download
+            // progresses, but this catches edge cases — torrents that
+            // resume already-complete from a previous session, alerts
+            // dropped under load, etc.
+            if (auto ti = fa->handle.torrent_file()) {
+                const auto &files = ti->files();
+                for (lt::file_index_t i(0); i < files.end_file(); ++i) {
+                    std::string current = files.file_path(i);
+                    if (current.size() >= 4
+                        && current.compare(current.size() - 4, 4, ".!bt") == 0) {
+                        std::string stripped(current, 0, current.size() - 4);
+                        fa->handle.rename_file(i, stripped);
+                    }
+                }
+            }
+
             // Skip torrents that were already complete when the session
             // started — libtorrent fires one finish alert per torrent during
             // the resume check, even if no bytes were actually downloaded.
@@ -1028,6 +1085,10 @@ void SessionManager::processAlerts()
         }
         if (auto *sm = lt::alert_cast<lt::storage_moved_failed_alert>(a)) {
             emit torrentError(QString::fromStdString(sm->message()));
+            // Partial moves leave libtorrent's piece map out of sync with
+            // disk; a recheck is the only safe recovery.
+            if (sm->handle.is_valid())
+                sm->handle.force_recheck();
         }
         if (auto *lf = lt::alert_cast<lt::listen_failed_alert>(a)) {
             emit torrentError(QString::fromStdString(lf->message()));
@@ -1076,12 +1137,19 @@ void SessionManager::processAlerts()
             }
         }
         // File done — drop the .!bt suffix so the file appears with its
-        // final name in the file manager and media server scans.
+        // final name in the file manager and media server scans. The
+        // path libtorrent returns here is the *current* renamed path
+        // (still suffixed), so we have to strip the ".!bt" ourselves
+        // before renaming; otherwise the call is a no-op.
         if (auto *fc = lt::alert_cast<lt::file_completed_alert>(a)) {
             auto ti = fc->handle.torrent_file();
             if (ti) {
-                std::string original = ti->files().file_path(fc->index);
-                fc->handle.rename_file(fc->index, original);
+                std::string current = ti->files().file_path(fc->index);
+                if (current.size() >= 4
+                    && current.compare(current.size() - 4, 4, ".!bt") == 0) {
+                    std::string stripped(current, 0, current.size() - 4);
+                    fc->handle.rename_file(fc->index, stripped);
+                }
             }
         }
     }
@@ -1237,6 +1305,11 @@ void SessionManager::setOutgoingInterface(const QString &interfaceName)
 {
     m_outgoingInterface = interfaceName;
     m_killSwitchActive = false;
+    // Resume torrents that the killswitch paused — otherwise switching VPNs
+    // or going back to "any interface" leaves them paused forever.
+    for (auto &h : m_killSwitchPaused) {
+        if (h.is_valid()) h.resume();
+    }
     m_killSwitchPaused.clear();
 
     lt::settings_pack pack;
@@ -1277,6 +1350,9 @@ void SessionManager::setKillSwitchEnabled(bool enabled)
     m_killSwitchEnabled = enabled;
     if (!enabled) {
         m_killSwitchActive = false;
+        for (auto &h : m_killSwitchPaused) {
+            if (h.is_valid()) h.resume();
+        }
         m_killSwitchPaused.clear();
     }
 }

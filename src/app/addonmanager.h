@@ -113,6 +113,13 @@ private:
     QString m_torrentSearchUrl;
     int m_pendingCatalog = 0;
     int m_pendingStreams = 0;
+    // Generation counters: every searchCatalog / getStreams call bumps the
+    // matching counter; in-flight replies from an earlier call carry the
+    // old gen and are dropped when they land. Without this, typing
+    // "matrix" then "inception" mixes the late "matrix" results into the
+    // "inception" list.
+    quint32 m_catalogGen = 0;
+    quint32 m_streamGen = 0;
     QList<CatalogItem> m_catalogResults;
     QList<StreamResult> m_streamResults;
 };

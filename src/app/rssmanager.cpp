@@ -120,9 +120,18 @@ QList<RssFeed> RssManager::feeds() const
 
 void RssManager::checkAllFeeds()
 {
+    // The single timer ticks at the smallest configured interval; honor each
+    // feed's own checkIntervalMin here so a feed set to "every 6 h" isn't
+    // actually polled every 30 min (which can get the user banned from
+    // private trackers).
+    const QDateTime now = QDateTime::currentDateTime();
     for (int i = 0; i < m_feeds.size(); ++i) {
-        if (m_feeds[i].enabled)
-            checkFeed(i);
+        const auto &f = m_feeds[i];
+        if (!f.enabled) continue;
+        if (f.lastChecked.isValid()
+            && f.lastChecked.secsTo(now) < f.checkIntervalMin * 60)
+            continue;
+        checkFeed(i);
     }
 }
 

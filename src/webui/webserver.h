@@ -38,6 +38,10 @@ private:
         int contentLength = -1;     // -1 until parsed
         int headerEnd = -1;         // index of body start; -1 until parsed
         bool headersParsed = false;
+        // Gate further reads after a request has been handed to dispatch.
+        // Without this, trailing TCP bytes can re-enter readMore and run the
+        // handler twice (request smuggling / duplicate side effects).
+        bool dispatched = false;
     };
 
     struct FailedAuthState {
@@ -84,12 +88,16 @@ private:
     // .torrent uploads especially).
     QHash<QTcpSocket *, PendingRequest> m_pending;
 
-    // Active session tokens. Set on login (POST /api/login). Each token is
-    // good until the server restarts.
-    QSet<QByteArray> m_sessionTokens;
+    // Active session tokens with their issuance time (epoch seconds). Tokens
+    // expire after kSessionMaxAgeSec; checkSession evicts expired entries.
+    QHash<QByteArray, qint64> m_sessionTokens;
+    static constexpr qint64 kSessionMaxAgeSec = 24 * 60 * 60; // 24h sliding cap
 
-    // Failed-auth tracking per IP for login throttling.
+    // Failed-auth tracking per IP for login throttling. Capped + evicted to
+    // defeat IP-spoofed memory-exhaustion attacks.
     QHash<QString, FailedAuthState> m_failedAuth;
+    void evictExpiredFailedAuth();
+    static constexpr int kFailedAuthMax = 4096;
 };
 
 #endif

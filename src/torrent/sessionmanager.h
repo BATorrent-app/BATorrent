@@ -14,6 +14,7 @@
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/torrent_status.hpp>
 #include <QMap>
+#include <QSet>
 #include <map>
 #include <vector>
 #include <set>
@@ -259,6 +260,10 @@ private:
     // can request a save without thrashing the disk on every piece. Saved
     // only if the last save was more than kMinResumeSaveIntervalSec ago.
     std::map<lt::torrent_handle, qint64> m_lastResumeSaveAt;
+    // Info-hashes of recently removed torrents. Used to drop in-flight
+    // save_resume_data_alerts that arrive after removeTorrent, which would
+    // otherwise re-create the .resume file we just deleted.
+    QSet<QString> m_removedHashes;
     // Persist a save_resume_data_alert payload to its .resume file under
     // resumeDataDir(). Returns true on success.
     bool persistResumeAlert(const struct lt::save_resume_data_alert *rd);

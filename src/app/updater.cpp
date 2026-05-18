@@ -19,12 +19,16 @@ static const QString GITHUB_API =
 
 static QString platformAssetName()
 {
+    const QString arch = QSysInfo::currentCpuArchitecture();
 #ifdef Q_OS_WIN
-    return "BATorrent-setup-x86_64.exe";
+    if (arch == "x86_64") return "BATorrent-setup-x86_64.exe";
+    return {};
 #elif defined(Q_OS_LINUX)
-    return "BATorrent-linux-x86_64.AppImage";
+    if (arch == "x86_64") return "BATorrent-linux-x86_64.AppImage";
+    return {};
 #elif defined(Q_OS_MACOS)
-    return "BATorrent-macos-x86_64.dmg";
+    if (arch == "arm64") return "BATorrent-macos-arm64.dmg";
+    return {};
 #else
     return {};
 #endif

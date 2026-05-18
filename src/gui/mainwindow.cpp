@@ -120,6 +120,13 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
             QApplication::beep();
     });
     connect(m_session, &SessionManager::torrentRemoved, m_model, &TorrentModel::refresh);
+    // Removing a torrent shifts every higher index down by one. If the user
+    // had a higher-indexed torrent selected, the details pane would silently
+    // start showing some other torrent's data. Clear the selection-driven
+    // panel state on remove and let the user re-select.
+    connect(m_session, &SessionManager::torrentRemoved, this, [this]() {
+        m_detailsPanel->showTorrent(-1);
+    });
     connect(m_session, &SessionManager::torrentFinished, this, &MainWindow::onTorrentFinished);
     connect(m_session, &SessionManager::torrentError, this, &MainWindow::onTorrentError);
 
@@ -421,8 +428,7 @@ void MainWindow::setupCentralWidget()
         int row = srcIdx.row();
         if (row < 0 || row >= m_session->torrentCount()) return;
         TorrentInfo info = m_session->torrentAt(row);
-        if (info.savePath.isEmpty() || info.name.isEmpty()) return;
-        revealInFileManager(info.savePath + "/" + info.name);
+        revealTorrentRoot(info.savePath, info.name);
     });
 
     // Filter bar (wrapped in a horizontal scroll area so it overflows
@@ -654,8 +660,21 @@ void MainWindow::saveSettings()
 void MainWindow::loadSettings()
 {
     QSettings settings("BATorrent", "BATorrent");
-    if (settings.contains("geometry"))
+    if (settings.contains("geometry")) {
         restoreGeometry(settings.value("geometry").toByteArray());
+        // Clamp to a visible screen — if the user undocks an external monitor
+        // the saved coords can land off-screen and the window becomes
+        // unreachable except via the tray icon.
+        const QRect avail = screen() ? screen()->availableGeometry()
+                                     : QGuiApplication::primaryScreen()->availableGeometry();
+        if (!avail.intersects(geometry())) {
+            QRect g = geometry();
+            g.moveCenter(avail.center());
+            if (g.width() > avail.width()) g.setWidth(avail.width());
+            if (g.height() > avail.height()) g.setHeight(avail.height());
+            setGeometry(g);
+        }
+    }
     m_lastSavePath = settings.value("lastSavePath",
         QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
 
@@ -1044,7 +1063,12 @@ void MainWindow::onTorrentError(const QString &message)
 
 void MainWindow::trayActivated()
 {
-    show();
+    // showNormal unminimizes — plain show() is a no-op on an already-visible
+    // but minimized window, which is exactly the state a tray-only app sits in.
+    if (isMinimized() || !isVisible())
+        showNormal();
+    else
+        show();
     raise();
     activateWindow();
 }
@@ -1444,8 +1468,7 @@ void MainWindow::showContextMenu(const QPoint &pos)
         // produced, with that item highlighted in the file manager.
         menu.addAction(tr_("ctx_open_folder"), this, [this, row = rows.first()]() {
             TorrentInfo info = m_session->torrentAt(row);
-            if (info.savePath.isEmpty() || info.name.isEmpty()) return;
-            revealInFileManager(info.savePath + "/" + info.name);
+            revealTorrentRoot(info.savePath, info.name);
         });
         if (info.progress < 1.0f && !info.paused) {
             menu.addAction(QIcon(":/icons/play.svg"), tr_("ctx_stream"), this, [this, row = rows.first()]() {
@@ -1548,16 +1571,21 @@ void MainWindow::streamTorrent(int row)
 {
     static const QStringList videoExts = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".ts"};
 
-    // Find the largest video file
     auto files = m_session->filesAt(row);
     TorrentInfo info = m_session->torrentAt(row);
     int bestIdx = -1;
     qint64 bestSize = 0;
+    // In-progress files carry a ".!bt" suffix; match against the stripped
+    // form so an incomplete Movie.mp4.!bt still detects as video.
+    auto stripBt = [](const QString &p) {
+        return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p;
+    };
     for (int i = 0; i < static_cast<int>(files.size()); ++i) {
         const auto &f = files[i];
+        const QString matchPath = stripBt(f.path);
         bool isVideo = false;
         for (const auto &ext : videoExts) {
-            if (f.path.endsWith(ext, Qt::CaseInsensitive)) { isVideo = true; break; }
+            if (matchPath.endsWith(ext, Qt::CaseInsensitive)) { isVideo = true; break; }
         }
         if (isVideo && f.size > bestSize) {
             bestSize = f.size;
@@ -1583,6 +1611,8 @@ void MainWindow::streamTorrent(int row)
     m_session->setFilePriority(row, bestIdx, 7);
 
     m_streamTorrentIndex = row;
+    // libtorrent reports the on-disk path (suffixed for incomplete files), so
+    // this points at the actual byte stream the player can open right now.
     m_streamFilePath = info.savePath + "/" + files[bestIdx].path;
 
     // Poll until enough data is buffered (at least 2% or 5MB)

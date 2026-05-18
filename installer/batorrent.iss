@@ -29,7 +29,11 @@ ChangesAssociations=yes
 CloseApplications=yes
 RestartApplications=no
 ArchitecturesInstallIn64BitMode=x64compatible
-LicenseFile=..\LICENSE
+; RTF (not the plain LICENSE) so the RichEdit memo on the License page picks
+; up the white text color — plaintext loaded into a TRichEdit defaults to
+; black regardless of LicenseMemo.Font.Color, leaving the EULA unreadable on
+; our dark wizard.
+LicenseFile=LICENSE.rtf
 VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany=Mateuscruz19
 VersionInfoDescription=BATorrent - A modern BitTorrent client
@@ -125,6 +129,12 @@ begin
   WizardForm.Color := BG_DARK;
   WizardForm.InnerPage.Color := BG_DARK;
   WizardForm.MainPanel.Color := BG_SURFACE;
+  // Welcome and Finish pages live on the OuterNotebook (separate from
+  // MainPanel); without these the final "exit / launch app" screen reverts
+  // to system white, hiding the muted-grey body labels.
+  WizardForm.OuterNotebook.Color := BG_DARK;
+  WizardForm.WelcomePage.Color := BG_DARK;
+  WizardForm.FinishedPage.Color := BG_DARK;
 
   // -- Welcome & Finish labels --
   WizardForm.WelcomeLabel1.Font.Color := TEXT_COLOR;

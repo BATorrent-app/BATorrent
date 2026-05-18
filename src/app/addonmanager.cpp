@@ -217,6 +217,7 @@ void AddonManager::searchCatalog(const QString &query)
 {
     m_catalogResults.clear();
     m_pendingCatalog = 0;
+    const quint32 gen = ++m_catalogGen;
 
     for (const auto &addon : m_addons) {
         if (!addon.enabled || !addon.resources.contains("catalog"))
@@ -233,8 +234,9 @@ void AddonManager::searchCatalog(const QString &query)
             req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
             auto *reply = m_net->get(req);
 
-            connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+            connect(reply, &QNetworkReply::finished, this, [this, reply, gen]() {
                 reply->deleteLater();
+                if (gen != m_catalogGen) return; // stale reply, ignore
                 m_pendingCatalog--;
 
                 if (reply->error() == QNetworkReply::NoError) {
@@ -280,6 +282,7 @@ void AddonManager::getStreams(const QString &type, const QString &id)
 {
     m_streamResults.clear();
     m_pendingStreams = 0;
+    const quint32 gen = ++m_streamGen;
 
     for (const auto &addon : m_addons) {
         if (!addon.enabled || !addon.resources.contains("stream"))
@@ -295,8 +298,9 @@ void AddonManager::getStreams(const QString &type, const QString &id)
         req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
         auto *reply = m_net->get(req);
 
-        connect(reply, &QNetworkReply::finished, this, [this, reply, addonName = addon.name]() {
+        connect(reply, &QNetworkReply::finished, this, [this, reply, gen, addonName = addon.name]() {
             reply->deleteLater();
+            if (gen != m_streamGen) return; // stale reply, ignore
             m_pendingStreams--;
 
             if (reply->error() == QNetworkReply::NoError) {

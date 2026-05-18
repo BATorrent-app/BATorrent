@@ -17,17 +17,23 @@ namespace {
 // macOS, seahorse on Linux).
 constexpr const char *kServiceName = "BATorrent";
 
-// Block on a QtKeychain Job until it emits finished() or the timeout fires.
-// QtKeychain is async by design; for our use case (a handful of secrets read
-// once on startup, written from a settings dialog) a brief synchronous wait
-// is the right trade-off vs. plumbing async-everywhere through the app.
-void runJob(QKeychain::Job *job)
+// Run a heap-allocated QtKeychain job synchronously. Returns true if the job
+// finished before timeoutMs. On timeout we return false but keep the job
+// alive (autoDelete) so its eventual completion doesn't access destroyed
+// memory — this is the bug we used to have: a 1 s timeout on a cold keychain
+// (just-unlocked Keychain on macOS, gnome-keyring spinning up on Linux)
+// could destroy the job while QtKeychain was still in flight.
+bool runJob(QKeychain::Job *job, int timeoutMs = 5000)
 {
     QEventLoop loop;
-    QObject::connect(job, &QKeychain::Job::finished, &loop, &QEventLoop::quit);
-    QTimer::singleShot(1000, &loop, &QEventLoop::quit);
+    bool finished = false;
+    QObject::connect(job, &QKeychain::Job::finished, &loop,
+                     [&]() { finished = true; loop.quit(); });
+    QTimer::singleShot(timeoutMs, &loop, &QEventLoop::quit);
+    job->setAutoDelete(true);
     job->start();
     loop.exec();
+    return finished;
 }
 }
 #endif
@@ -50,13 +56,11 @@ bool SecretStore::isSecure() const
 QString SecretStore::get(const QString &key)
 {
 #ifdef HAVE_QTKEYCHAIN
-    QKeychain::ReadPasswordJob job(QString::fromLatin1(kServiceName));
-    job.setAutoDelete(false);
-    job.setKey(key);
-    runJob(&job);
-    if (job.error() != QKeychain::NoError)
-        return {};
-    return job.textData();
+    auto *job = new QKeychain::ReadPasswordJob(QString::fromLatin1(kServiceName));
+    job->setKey(key);
+    if (!runJob(job)) return {};
+    if (job->error() != QKeychain::NoError) return {};
+    return job->textData();
 #else
     return QSettings("BATorrent", "BATorrent").value(key).toString();
 #endif
@@ -66,17 +70,15 @@ void SecretStore::set(const QString &key, const QString &value)
 {
 #ifdef HAVE_QTKEYCHAIN
     if (value.isEmpty()) {
-        QKeychain::DeletePasswordJob job(QString::fromLatin1(kServiceName));
-        job.setAutoDelete(false);
-        job.setKey(key);
-        runJob(&job);
+        auto *job = new QKeychain::DeletePasswordJob(QString::fromLatin1(kServiceName));
+        job->setKey(key);
+        runJob(job);
         return;
     }
-    QKeychain::WritePasswordJob job(QString::fromLatin1(kServiceName));
-    job.setAutoDelete(false);
-    job.setKey(key);
-    job.setTextData(value);
-    runJob(&job);
+    auto *job = new QKeychain::WritePasswordJob(QString::fromLatin1(kServiceName));
+    job->setKey(key);
+    job->setTextData(value);
+    runJob(job);
 #else
     QSettings settings("BATorrent", "BATorrent");
     if (value.isEmpty())
