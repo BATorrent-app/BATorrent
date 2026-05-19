@@ -14,11 +14,13 @@
 namespace {
 QString stateKeyFor(const TorrentInfo &info)
 {
+    if (info.completed) return QStringLiteral("completed");
     if (info.paused) return QStringLiteral("paused");
     const QString &st = info.stateString;
     if (st == tr_("state_downloading")) return QStringLiteral("downloading");
     if (st == tr_("state_seeding"))     return QStringLiteral("seeding");
     if (st == tr_("state_finished"))    return QStringLiteral("finished");
+    if (st == tr_("state_completed"))   return QStringLiteral("completed");
     if (st == tr_("state_queued"))      return QStringLiteral("queued");
     if (st == tr_("state_checking"))    return QStringLiteral("downloading");
     if (st == tr_("state_metadata"))    return QStringLiteral("downloading");
@@ -31,6 +33,7 @@ QColor colorForState(const QString &key)
     if (key == QLatin1String("downloading")) return QColor(tm.stateDownloadingColor());
     if (key == QLatin1String("seeding"))     return QColor(tm.stateSeedingColor());
     if (key == QLatin1String("finished"))    return QColor(tm.stateFinishedColor());
+    if (key == QLatin1String("completed"))   return QColor(tm.stateCompletedColor());
     if (key == QLatin1String("error"))       return QColor(tm.stateErrorColor());
     return QColor(tm.statePausedColor());
 }

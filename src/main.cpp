@@ -59,48 +59,9 @@ int main(int argc, char *argv[])
     if (QStyle *fusion = QStyleFactory::create("Fusion"))
         app.setStyle(fusion);
 
-    // Application-wide stylesheet for popups that Qt creates on the fly
-    // (QMessageBox, QInputDialog, QToolTip). These don't have their own
-    // setStyleSheet calls so without a global rule they inherit the system
-    // gray/light theme and clash with the rest of the dark UI.
-    const auto &tm = ThemeManager::instance();
-    app.setStyleSheet(QString(
-        "QMessageBox, QInputDialog {"
-        "  background: %1; color: %2;"
-        "}"
-        "QMessageBox QLabel, QInputDialog QLabel {"
-        "  background: transparent; color: %2; font-size: 11px;"
-        "}"
-        "QMessageBox QPushButton, QInputDialog QPushButton {"
-        "  background: %3; color: %2;"
-        "  border: 1px solid %4; border-radius: 6px;"
-        "  padding: 6px 18px; font-size: 11px; font-weight: 500;"
-        "  min-width: 80px;"
-        "}"
-        "QMessageBox QPushButton:hover, QInputDialog QPushButton:hover {"
-        "  background: %5; border-color: %4;"
-        "}"
-        "QMessageBox QPushButton:default, QInputDialog QPushButton:default {"
-        "  background: %6; color: #ffffff; border-color: %6;"
-        "}"
-        "QMessageBox QPushButton:default:hover, QInputDialog QPushButton:default:hover {"
-        "  background: %7; border-color: %7;"
-        "}"
-        "QInputDialog QLineEdit, QInputDialog QComboBox, QInputDialog QSpinBox {"
-        "  background: %3; color: %2;"
-        "  border: 1px solid %4; border-radius: 6px;"
-        "  padding: 6px 10px; font-size: 11px;"
-        "  selection-background-color: %6;"
-        "}"
-        "QInputDialog QLineEdit:focus { border-color: %6; }"
-        "QToolTip {"
-        "  background: %5; color: %2;"
-        "  border: 1px solid %4; padding: 4px 8px;"
-        "  font-size: 11px;"
-        "}"
-        ).arg(tm.panelColor(), tm.textColor(), tm.surfaceColor(),
-              tm.borderColor(), tm.surfaceAltColor(), tm.accentColor(),
-              tm.accentLightColor()));
+    // Initial popup QSS (QMessageBox / QInputDialog / QToolTip). Re-applied
+    // by MainWindow::applyTheme on every theme change so popups stay in sync.
+    app.setStyleSheet(ThemeManager::instance().appPopupStyleSheet());
 
     // One-time migration of plaintext secrets from QSettings into the OS
     // keyring (no-op on subsequent runs and on builds without QtKeychain).

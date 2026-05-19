@@ -83,6 +83,9 @@ SessionManager::SessionManager(QObject *parent)
     // Load stop-seeding rules
     m_stopAfterDownload = settings.value("stopAfterDownload", false).toBool();
     m_maxSeedSeconds = settings.value("maxSeedSeconds", 0).toLongLong();
+    m_autoCompleteSeconds = settings.value("autoCompleteSeconds", 0).toLongLong();
+    for (const auto &h : settings.value("completedTorrents").toStringList())
+        m_completedTorrents.insert(h);
 
     // Load categories
     settings.beginGroup("categories");
@@ -268,6 +271,8 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         dir.remove(hash + ".resume");
         m_perTorrentStopAfter.remove(hash);
         m_perTorrentMaxSeed.remove(hash);
+        if (m_completedTorrents.remove(hash))
+            saveCompletedSet();
         // Block in-flight save_resume_data_alerts from re-creating the file.
         m_removedHashes.insert(hash);
 
@@ -304,6 +309,9 @@ void SessionManager::resumeTorrent(int index)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
+    // Resume on a completed torrent un-marks it — the user is explicitly
+    // asking it to participate again, so the "frozen" flag has to clear.
+    unmarkCompleted(index);
     m_torrents[index].resume();
 }
 
@@ -343,7 +351,16 @@ TorrentInfo SessionManager::torrentAt(int index) const
     info.numSeeds = st.num_seeds;
     info.stateString = stateToString(st.state);
     info.paused = (st.flags & lt::torrent_flags::paused) != lt::torrent_flags_t{};
-    if (info.paused) {
+    if (st.has_metadata) {
+        QString hash = QString::fromStdString(
+            (std::ostringstream() << st.info_hashes.get_best()).str());
+        info.completed = m_completedTorrents.contains(hash);
+    }
+    if (info.completed) {
+        info.stateString = tr_("state_completed");
+        info.downloadRate = 0;
+        info.uploadRate = 0;
+    } else if (info.paused) {
         info.stateString = tr_("state_paused");
         // libtorrent's download_rate / upload_rate are moving averages that
         // take a few seconds to settle after pause. Show zero immediately so
@@ -788,6 +805,91 @@ void SessionManager::stopSeedingTorrent(int index)
     m_torrents[index].pause();
 }
 
+void SessionManager::markCompleted(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return;
+    auto &h = m_torrents[index];
+    if (!h.is_valid()) return;
+    lt::torrent_status st = cachedStatus(h);
+    if (!st.has_metadata) return;
+    QString hash = QString::fromStdString(
+        (std::ostringstream() << st.info_hashes.get_best()).str());
+    if (m_completedTorrents.contains(hash)) return;
+    m_completedTorrents.insert(hash);
+    saveCompletedSet();
+    h.pause();
+    emit torrentsUpdated();
+}
+
+void SessionManager::unmarkCompleted(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return;
+    auto &h = m_torrents[index];
+    if (!h.is_valid()) return;
+    lt::torrent_status st = cachedStatus(h);
+    if (!st.has_metadata) return;
+    QString hash = QString::fromStdString(
+        (std::ostringstream() << st.info_hashes.get_best()).str());
+    if (m_completedTorrents.remove(hash)) {
+        saveCompletedSet();
+        emit torrentsUpdated();
+    }
+}
+
+bool SessionManager::isTorrentCompleted(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return false;
+    const auto &h = m_torrents[index];
+    if (!h.is_valid()) return false;
+    lt::torrent_status st = cachedStatus(h);
+    if (!st.has_metadata) return false;
+    QString hash = QString::fromStdString(
+        (std::ostringstream() << st.info_hashes.get_best()).str());
+    return m_completedTorrents.contains(hash);
+}
+
+void SessionManager::saveCompletedSet()
+{
+    QSettings settings("BATorrent", "BATorrent");
+    settings.setValue("completedTorrents", QStringList(m_completedTorrents.values()));
+}
+
+void SessionManager::setAutoCompleteSeconds(qint64 seconds)
+{
+    if (seconds < 0) seconds = 0;
+    m_autoCompleteSeconds = seconds;
+    QSettings settings("BATorrent", "BATorrent");
+    settings.setValue("autoCompleteSeconds", m_autoCompleteSeconds);
+}
+
+qint64 SessionManager::autoCompleteSeconds() const
+{
+    return m_autoCompleteSeconds;
+}
+
+void SessionManager::checkAutoComplete()
+{
+    if (m_autoCompleteSeconds <= 0) return;
+    for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i) {
+        auto &h = m_torrents[i];
+        if (!h.is_valid()) continue;
+        lt::torrent_status st = cachedStatus(h);
+        if (st.state != lt::torrent_status::seeding) continue;
+        if (st.flags & lt::torrent_flags::paused) continue;
+        if (!st.has_metadata) continue;
+        QString hash = QString::fromStdString(
+            (std::ostringstream() << st.info_hashes.get_best()).str());
+        if (m_completedTorrents.contains(hash)) continue;
+        qint64 seeded = std::chrono::duration_cast<std::chrono::seconds>(
+                            st.seeding_duration).count();
+        if (seeded >= m_autoCompleteSeconds)
+            markCompleted(i);
+    }
+}
+
 void SessionManager::forceRecheck(int index)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
@@ -1010,6 +1112,7 @@ void SessionManager::updateStats()
     processAlerts();
     checkSeedRatios();
     checkSeedingLimits();
+    checkAutoComplete();
     checkInterfaceStatus();
     checkBandwidthSchedule();
     checkMagnetTimeouts();

@@ -281,8 +281,7 @@ TrayPopup::TrayPopup(SessionManager *session, QWidget *parent)
     hRow->setSpacing(10);
 
     auto *logo = new QLabel;
-    QPixmap raw(":/images/logo1.png");
-    logo->setPixmap(raw.scaled(28 * 2, 28 * 2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logo->setPixmap(tm.themedLogo(28, 2.0));
     logo->setFixedSize(28, 28);
     logo->setScaledContents(true);
     logo->setStyleSheet(QStringLiteral("background: transparent;"));

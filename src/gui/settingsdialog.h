@@ -69,8 +69,10 @@ public:
     // Stop seeding rules
     bool stopAfterDownload() const;
     int maxSeedDays() const;
+    qint64 autoCompleteSeconds() const;
     void setStopAfterDownload(bool val);
     void setMaxSeedDays(int days);
+    void setAutoCompleteSeconds(qint64 seconds);
 
     // VPN / Interface binding
     QString outgoingInterface() const;
@@ -173,6 +175,7 @@ private:
     QSpinBox *m_maxActiveSpin;
     QCheckBox *m_stopAfterDownloadCheck;
     QSpinBox *m_maxSeedDaysSpin;
+    QComboBox *m_autoCompleteCombo;
     QCheckBox *m_utpCheck;
     QCheckBox *m_randomizePortCheck;
     QSpinBox *m_listenPortSpin;

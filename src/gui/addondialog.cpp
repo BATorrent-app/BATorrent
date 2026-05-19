@@ -64,7 +64,7 @@ AddonDialog::AddonDialog(QWidget *parent)
     setStyleSheet(QString(
         "QDialog {"
         "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
-        "      stop:0 rgba(220,38,38,0.10),"
+        "      stop:0 %10,"
         "      stop:1 %1);"
         "  color: %2;"
         "}"
@@ -123,7 +123,8 @@ AddonDialog::AddonDialog(QWidget *parent)
         "#chipBtn:disabled { background: transparent; color: %8; border-color: %4; }"
         ).arg(tm.bgColor(), tm.textColor(), tm.surfaceColor(),
               tm.borderColor(), tm.accentColor(), tm.accentTintColor(),
-              tm.panelColor(), tm.dimColor(), tm.accentLightColor()));
+              tm.panelColor(), tm.dimColor(), tm.accentLightColor(),
+              tm.accentTintForGradient(10)));
 
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(32, 28, 32, 24);

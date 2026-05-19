@@ -24,6 +24,10 @@ public slots:
     void showTorrent(int index);
     void refresh();
     void retranslate();
+    // Re-apply theme colors in-place after a theme switch — the constructor
+    // bakes panelColor/mutedColor/etc into per-widget stylesheets and they
+    // don't refresh from the global QSS alone.
+    void restyle();
 
 private slots:
     void onFilePriorityChanged(int row, int priority);

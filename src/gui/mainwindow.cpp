@@ -54,6 +54,8 @@
 #include <QDropEvent>
 #include <QResizeEvent>
 #include <QApplication>
+#include <QColor>
+#include <QPalette>
 #include <QLocale>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -94,11 +96,11 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     m_model = new TorrentModel(session, this);
 
     loadSettings();
-    applyTheme();
     setupMenuBar();
-    setupToolBar();
     setupCentralWidget();
-    setupStatusBar();
+    // applyTheme() owns toolbar + status-bar construction so a later theme
+    // switch can rebuild them without leaking widgets or running setup twice.
+    applyTheme();
     // Defer tray-icon creation until after the event loop is running.
     // NSStatusItem registration during the MainWindow ctor (before
     // QApplication::exec()) can land in a state where macOS reports
@@ -253,7 +255,89 @@ MainWindow::~MainWindow()
 
 void MainWindow::applyTheme()
 {
-    setStyleSheet(ThemeManager::instance().styleSheet());
+    const auto &tm = ThemeManager::instance();
+    // Override the application QPalette so plain QWidgets (filter bar
+    // container, splitters, scroll areas, details-panel inner widgets) pick
+    // up our theme colors instead of inheriting macOS / Fusion defaults.
+    // Without this the body looks correctly themed but the unstyled
+    // containers around it stay in the system appearance (e.g. dark filter
+    // row on top of a light table when our theme is set to Light).
+    QPalette pal;
+    pal.setColor(QPalette::Window,          QColor(tm.bgColor()));
+    pal.setColor(QPalette::WindowText,      QColor(tm.textColor()));
+    pal.setColor(QPalette::Base,            QColor(tm.surfaceColor()));
+    pal.setColor(QPalette::AlternateBase,   QColor(tm.surfaceAltColor()));
+    pal.setColor(QPalette::Text,            QColor(tm.textColor()));
+    pal.setColor(QPalette::PlaceholderText, QColor(tm.mutedColor()));
+    pal.setColor(QPalette::Button,          QColor(tm.surfaceColor()));
+    pal.setColor(QPalette::ButtonText,      QColor(tm.textColor()));
+    pal.setColor(QPalette::ToolTipBase,     QColor(tm.panelColor()));
+    pal.setColor(QPalette::ToolTipText,     QColor(tm.textColor()));
+    pal.setColor(QPalette::Highlight,       QColor(tm.accentColor()));
+    pal.setColor(QPalette::HighlightedText, QColor("#ffffff"));
+    qApp->setPalette(pal);
+    // Re-apply the popup QSS (QMessageBox, QInputDialog, QToolTip). Without
+    // this the About dialog and other ad-hoc popups keep startup-time colors
+    // — e.g. dark bg + dark text in light mode after a theme switch.
+    qApp->setStyleSheet(tm.appPopupStyleSheet());
+
+    setStyleSheet(tm.styleSheet());
+    // Toolbar widgets bake theme colors (tm.bgColor(), tm.surfaceColor(),
+    // per-button QSS) into their own setStyleSheet at creation time, so the
+    // MainWindow stylesheet alone doesn't refresh them. Without this rebuild:
+    // header would freeze on the previous theme (e.g. light bg behind dark
+    // body), and repeated setStyleSheet passes cascaded an ever-smaller font
+    // onto the bake-in-place toolbar buttons.
+    setupToolBar();
+    // Filter-row widgets (search edit, filter pills, category combo) also
+    // bake-in their colors during setupCentralWidget. Re-apply their styles
+    // in place rather than rebuilding the central widget (which would drop
+    // selection / scroll state).
+    restyleFilterRow();
+    if (m_detailsPanel) m_detailsPanel->restyle();
+    // Status-bar labels bake mutedColor()/stateSeedingColor() in the same
+    // way. Delete the specific labels we own, then rebuild — wholesale
+    // clearing direct children would also kill QStatusBar's internal
+    // QSizeGrip / message label.
+    if (m_statusLabel) { delete m_statusLabel; m_statusLabel = nullptr; }
+    if (m_statusSpeedLabel) { delete m_statusSpeedLabel; m_statusSpeedLabel = nullptr; }
+    if (m_vpnLabel) { delete m_vpnLabel; m_vpnLabel = nullptr; }
+    if (m_globalStatsLabel) { delete m_globalStatsLabel; m_globalStatsLabel = nullptr; }
+    setupStatusBar();
+}
+
+void MainWindow::restyleFilterRow()
+{
+    const auto &tm = ThemeManager::instance();
+    if (m_searchEdit) {
+        m_searchEdit->setStyleSheet(QString(
+            "QLineEdit { background-color: %1; color: %2; border: 1px solid %3;"
+            "border-radius: 6px; padding: 6px 10px; font-size: 12px; }"
+            "QLineEdit:focus { border-color: %4; }")
+            .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
+    }
+    const QString pillQss = QString(
+        "QPushButton {"
+        "  background: transparent; color: %1;"
+        "  border: 1px solid %2; border-radius: 14px;"
+        "  padding: 6px 14px; font-size: 11px; font-weight: 600;"
+        "}"
+        "QPushButton:hover { color: %3; }"
+        "QPushButton:checked {"
+        "  background: %4; color: %3; border-color: %5;"
+        "}")
+        .arg(tm.mutedColor(), tm.borderColor(), tm.textColor(),
+             tm.accentTintColor(), tm.accentColor());
+    for (QPushButton *pill : m_filterPills)
+        pill->setStyleSheet(pillQss);
+    if (m_categoryCombo) {
+        m_categoryCombo->setStyleSheet(QString(
+            "QComboBox { background-color: %1; color: %2; border: 1px solid %3;"
+            "border-radius: 6px; padding: 5px 10px; font-size: 11px; }"
+            "QComboBox:focus { border-color: %4; }"
+            "QComboBox::drop-down { border: none; }")
+            .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
+    }
 }
 
 void MainWindow::setupMenuBar()
@@ -397,8 +481,7 @@ void MainWindow::setupToolBar()
     brandRow->setSpacing(10);
 
     auto *logoLabel = new QLabel;
-    QPixmap logo(":/images/logo1.png");
-    logoLabel->setPixmap(logo.scaled(26, 26, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoLabel->setPixmap(tm.themedLogo(26, 2.0));
     logoLabel->setFixedSize(26, 26);
     brandRow->addWidget(logoLabel);
 
@@ -475,6 +558,7 @@ void MainWindow::setupToolBar()
     addBtn(":/icons/magnet.svg",   "tb_magnet",   &MainWindow::openMagnet);
     addBtn(":/icons/pause.svg",    "tb_pause",    &MainWindow::pauseSelected);
     addBtn(":/icons/play.svg",     "tb_resume",   &MainWindow::resumeSelected);
+    addBtn(":/icons/stop.svg",     "tb_stop",     &MainWindow::stopSelected);
     addBtn(":/icons/trash.svg",    "tb_remove",   &MainWindow::removeSelected);
     addBtn(":/icons/search.svg",   "tb_search",   &MainWindow::openSearch);
     addBtn(":/icons/rss.svg",      "tb_rss",      &MainWindow::openRssManager);
@@ -650,6 +734,7 @@ void MainWindow::setupCentralWidget()
     addFilterBtn("Active",      "all_active");
     addFilterBtn("Downloading", "downloading");
     addFilterBtn("Seeding",     "seeding");
+    addFilterBtn(tr_("filter_completed"), "completed");
     addFilterBtn("Paused",      "paused");
     addFilterBtn("Finished",    "finished");
     addFilterBtn("Queued",      "queued");
@@ -708,7 +793,10 @@ void MainWindow::setupCentralWidget()
     m_topStack = new QStackedWidget;
     m_topStack->addWidget(tableContainer);  // index 0 = table
     m_topStack->addWidget(m_batWidget);     // index 1 = bat
-    m_topStack->setCurrentIndex(1);         // start with bat (no torrents yet)
+    // Pick the right view up-front based on what loadResumeData already
+    // populated. Defaulting to the bat widget caused a ~1 s flash on startup
+    // because updateStatusBar only swaps after its first timer tick.
+    m_topStack->setCurrentIndex(m_session->torrentCount() > 0 ? 0 : 1);
 
     m_speedGraph = new SpeedGraph;
     m_speedGraph->setMinimumHeight(30);
@@ -1180,6 +1268,20 @@ void MainWindow::resumeSelected()
         m_session->resumeTorrent(r);
 }
 
+void MainWindow::stopSelected()
+{
+    auto rows = selectedRows();
+    if (rows.isEmpty()) return;
+    // Stop only acts on torrents that finished downloading — "completed" is
+    // meaningless for an in-flight torrent. For in-progress rows the button
+    // is a no-op; the regular Pause action covers that intent.
+    for (int r : rows) {
+        TorrentInfo info = m_session->torrentAt(r);
+        if (info.progress >= 1.0f)
+            m_session->markCompleted(r);
+    }
+}
+
 void MainWindow::createTorrent()
 {
     CreateTorrentDialog dlg(this);
@@ -1281,10 +1383,11 @@ void MainWindow::updateStatusBar()
     }
 
     int activeCount = 0, downloadingCount = 0, seedingCount = 0,
-        pausedCount = 0, finishedCount = 0, queuedCount = 0;
+        pausedCount = 0, finishedCount = 0, completedCount = 0, queuedCount = 0;
     for (int i = 0; i < count; ++i) {
         TorrentInfo info = m_session->torrentAt(i);
-        if (info.paused) ++pausedCount;
+        if (info.completed) ++completedCount;
+        else if (info.paused) ++pausedCount;
         else if (info.downloadRate > 0 || info.uploadRate > 0) ++activeCount;
         const QString &st = info.stateString;
         if (st == tr_("state_downloading")) ++downloadingCount;
@@ -1312,6 +1415,7 @@ void MainWindow::updateStatusBar()
         else if (state == "seeding")         n = seedingCount;
         else if (state == "paused")          n = pausedCount;
         else if (state == "finished")        n = finishedCount;
+        else if (state == "completed")       n = completedCount;
         else if (state == "queued")          n = queuedCount;
         pill->setText(QStringLiteral("%1   %2").arg(label).arg(n));
     }
@@ -1430,6 +1534,7 @@ void MainWindow::openSettings()
     dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
     dlg.setStopAfterDownload(m_session->stopAfterDownload());
     dlg.setMaxSeedDays(static_cast<int>(m_session->maxSeedSeconds() / 86400));
+    dlg.setAutoCompleteSeconds(m_session->autoCompleteSeconds());
     {
         QSettings s("BATorrent", "BATorrent");
         dlg.setUtpEnabled(m_session->utpEnabled());
@@ -1515,6 +1620,7 @@ void MainWindow::openSettings()
         // Stop-seeding rules
         m_session->setStopAfterDownload(dlg.stopAfterDownload());
         m_session->setMaxSeedSeconds(static_cast<qint64>(dlg.maxSeedDays()) * 86400);
+        m_session->setAutoCompleteSeconds(dlg.autoCompleteSeconds());
 
         // Transport + port
         m_session->setUtpEnabled(dlg.utpEnabled());
@@ -1683,6 +1789,7 @@ void MainWindow::filterByState(const QString &state)
         {"seeding", "state_seeding"},
         {"paused", "state_paused"},
         {"finished", "state_finished"},
+        {"completed", "state_completed"},
     };
 
     if (state == "all_active") {
@@ -1716,17 +1823,29 @@ void MainWindow::showContextMenu(const QPoint &pos)
         menu.addSeparator();
     }
 
-    // Stop seeding now (multi-selection OK; applies to anything in seeding state)
+    // Mark/Unmark Completed. Acts only on 100%+ rows; mid-download selection
+    // gets the regular pause/resume path instead.
     {
-        bool anySeeding = false;
+        bool anyCompletable = false, anyCompleted = false;
         for (int r : rows) {
             TorrentInfo info = m_session->torrentAt(r);
-            if (!info.paused && info.progress >= 1.0f) { anySeeding = true; break; }
+            if (info.completed) anyCompleted = true;
+            else if (info.progress >= 1.0f) anyCompletable = true;
         }
-        if (anySeeding) {
-            menu.addAction(QIcon(":/icons/pause.svg"), tr_("ctx_stop_seeding"),
+        if (anyCompletable) {
+            menu.addAction(QIcon(":/icons/stop.svg"), tr_("ctx_mark_completed"),
                 this, [this, rows]() {
-                    for (int r : rows) m_session->stopSeedingTorrent(r);
+                    for (int r : rows) {
+                        TorrentInfo info = m_session->torrentAt(r);
+                        if (!info.completed && info.progress >= 1.0f)
+                            m_session->markCompleted(r);
+                    }
+                });
+        }
+        if (anyCompleted) {
+            menu.addAction(QIcon(":/icons/play.svg"), tr_("ctx_unmark_completed"),
+                this, [this, rows]() {
+                    for (int r : rows) m_session->unmarkCompleted(r);
                 });
         }
     }

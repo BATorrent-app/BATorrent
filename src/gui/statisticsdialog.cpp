@@ -51,7 +51,7 @@ StatisticsDialog::StatisticsDialog(SessionManager *session, QWidget *parent)
     setStyleSheet(QString(
         "QDialog {"
         "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
-        "      stop:0 rgba(220,38,38,0.10),"
+        "      stop:0 %5,"
         "      stop:1 %1);"
         "  color: %2;"
         "}"
@@ -62,7 +62,8 @@ StatisticsDialog::StatisticsDialog(SessionManager *session, QWidget *parent)
         "  padding: 8px 22px; font-size: 11px; font-weight: 500;"
         "}"
         "#ghostBtn:hover { background: %4; }"
-        ).arg(tm.bgColor(), tm.textColor(), tm.borderColor(), tm.surfaceColor()));
+        ).arg(tm.bgColor(), tm.textColor(), tm.borderColor(), tm.surfaceColor(),
+              tm.accentTintForGradient(10)));
 
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(36, 32, 36, 24);

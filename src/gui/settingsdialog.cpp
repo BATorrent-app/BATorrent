@@ -273,6 +273,14 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     m_stopAfterDownloadCheck = new QCheckBox(tr_("settings_stop_after_download"));
 
+    m_autoCompleteCombo = new QComboBox;
+    m_autoCompleteCombo->addItem(tr_("auto_complete_never"), QVariant::fromValue<qint64>(0));
+    m_autoCompleteCombo->addItem(tr_("auto_complete_1d"),  QVariant::fromValue<qint64>(86400));
+    m_autoCompleteCombo->addItem(tr_("auto_complete_3d"),  QVariant::fromValue<qint64>(86400 * 3));
+    m_autoCompleteCombo->addItem(tr_("auto_complete_7d"),  QVariant::fromValue<qint64>(86400 * 7));
+    m_autoCompleteCombo->addItem(tr_("auto_complete_14d"), QVariant::fromValue<qint64>(86400 * 14));
+    m_autoCompleteCombo->addItem(tr_("auto_complete_30d"), QVariant::fromValue<qint64>(86400 * 30));
+
     auto *downLabel = new QLabel(tr_("settings_max_down"));
     downLabel->setStyleSheet(labelStyle);
     auto *upLabel = new QLabel(tr_("settings_max_up"));
@@ -281,12 +289,15 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     ratioLabel->setStyleSheet(labelStyle);
     auto *seedDaysLabel = new QLabel(tr_("settings_max_seed_days"));
     seedDaysLabel->setStyleSheet(labelStyle);
+    auto *autoCompleteLabel = new QLabel(tr_("settings_auto_complete"));
+    autoCompleteLabel->setStyleSheet(labelStyle);
 
     speedLayout->addRow(downLabel, m_maxDownSpin);
     speedLayout->addRow(upLabel, m_maxUpSpin);
     speedLayout->addRow(ratioLabel, m_seedRatioSpin);
     speedLayout->addRow(seedDaysLabel, m_maxSeedDaysSpin);
     speedLayout->addRow("", m_stopAfterDownloadCheck);
+    speedLayout->addRow(autoCompleteLabel, m_autoCompleteCombo);
 
     // Scheduler group inside speed tab
     auto *schedGroup = new QGroupBox(tr_("settings_scheduler_group"));
@@ -710,6 +721,18 @@ void SettingsDialog::setMaxActiveDownloads(int max) { m_maxActiveSpin->setValue(
 
 bool SettingsDialog::stopAfterDownload() const { return m_stopAfterDownloadCheck->isChecked(); }
 int SettingsDialog::maxSeedDays() const { return m_maxSeedDaysSpin->value(); }
+qint64 SettingsDialog::autoCompleteSeconds() const {
+    return m_autoCompleteCombo->currentData().toLongLong();
+}
+void SettingsDialog::setAutoCompleteSeconds(qint64 seconds) {
+    for (int i = 0; i < m_autoCompleteCombo->count(); ++i) {
+        if (m_autoCompleteCombo->itemData(i).toLongLong() == seconds) {
+            m_autoCompleteCombo->setCurrentIndex(i);
+            return;
+        }
+    }
+    m_autoCompleteCombo->setCurrentIndex(0);
+}
 void SettingsDialog::setStopAfterDownload(bool val) { m_stopAfterDownloadCheck->setChecked(val); }
 void SettingsDialog::setMaxSeedDays(int days) { m_maxSeedDaysSpin->setValue(days); }
 

@@ -52,6 +52,7 @@ private slots:
     void removeSelectedWithFiles();
     void pauseSelected();
     void resumeSelected();
+    void stopSelected();
     void pauseAll();
     void resumeAll();
     void updateStatusBar();
@@ -74,6 +75,7 @@ private slots:
 
 private:
     void applyTheme();
+    void restyleFilterRow();
     void setupMenuBar();
     void setupToolBar();
     void setupCentralWidget();
@@ -95,7 +97,7 @@ private:
     SpeedGraph *m_speedGraph;
     BatWidget *m_batWidget;
     QStackedWidget *m_topStack;
-    QLabel *m_statusLabel;
+    QLabel *m_statusLabel = nullptr;
     QLabel *m_statusSpeedLabel = nullptr;
     QLabel *m_bandwidthPill = nullptr;
     QLabel *m_vpnLabel = nullptr;
@@ -113,7 +115,7 @@ private:
     QMessageBox *m_shutdownDialog = nullptr;
     QTimer *m_shutdownTimer = nullptr;
     int m_shutdownCountdown = 0;
-    QLabel *m_globalStatsLabel;
+    QLabel *m_globalStatsLabel = nullptr;
     QTimer *m_streamPollTimer = nullptr;
     int m_streamTorrentIndex = -1;
     QString m_streamFilePath;

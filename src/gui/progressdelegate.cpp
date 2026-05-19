@@ -38,7 +38,9 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
 
     const QString stateKey = index.data(TorrentModel::StateKeyRole).toString();
     QColor fillColor;
-    if (stateKey == QLatin1String("seeding") || stateKey == QLatin1String("finished")
+    if (stateKey == QLatin1String("completed"))
+        fillColor = QColor(tm.stateCompletedColor());
+    else if (stateKey == QLatin1String("seeding") || stateKey == QLatin1String("finished")
             || progress >= 1.0f)
         fillColor = QColor(tm.stateSeedingColor());
     else if (stateKey == QLatin1String("paused") || stateKey == QLatin1String("queued"))

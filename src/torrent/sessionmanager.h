@@ -119,6 +119,19 @@ public:
     // Force pause regardless of state ("stop seeding now")
     void stopSeedingTorrent(int index);
 
+    // "Completed" — user-frozen state for torrents that are done and should
+    // stop participating. Marked torrents are paused, persisted across
+    // restarts, and surface in the UI with a distinct (green) state. Calling
+    // resumeTorrent() on a completed torrent automatically un-marks it.
+    void markCompleted(int index);
+    void unmarkCompleted(int index);
+    bool isTorrentCompleted(int index) const;
+
+    // Auto-mark a seeding torrent as completed after this many seconds in
+    // the seeding state (0 = disabled). Persisted across restarts.
+    void setAutoCompleteSeconds(qint64 seconds);
+    qint64 autoCompleteSeconds() const;
+
     // Manual tracker / disk operations
     void forceRecheck(int index);
     void forceReannounce(int index);
@@ -246,6 +259,14 @@ private:
     // Stop-seeding rules (globals)
     bool m_stopAfterDownload = false;
     qint64 m_maxSeedSeconds = 0; // 0 = unlimited
+
+    // User-marked-as-completed info-hashes. Persisted to QSettings under
+    // "completedTorrents". A torrent in this set is paused on resume and
+    // displayed in the green "completed" state regardless of seeding flags.
+    QSet<QString> m_completedTorrents;
+    qint64 m_autoCompleteSeconds = 0; // 0 = disabled
+    void saveCompletedSet();
+    void checkAutoComplete();
 
     // Per-torrent overrides (info_hash -> value; -1 = use global)
     QMap<QString, int> m_perTorrentStopAfter;

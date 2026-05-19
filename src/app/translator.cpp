@@ -281,8 +281,22 @@ void Translator::loadEnglish()
         {"state_downloading", "Downloading"},
         {"state_finished", "Finished"},
         {"state_seeding", "Seeding"},
+        {"state_completed", "Completed"},
         {"state_paused", "Paused"},
         {"state_unknown", "Unknown"},
+
+        // Completed (manual + auto)
+        {"tb_stop", "Stop"},
+        {"ctx_mark_completed", "Mark as completed"},
+        {"ctx_unmark_completed", "Resume seeding"},
+        {"filter_completed", "Completed"},
+        {"settings_auto_complete", "Auto-mark as Completed after"},
+        {"auto_complete_never", "Never"},
+        {"auto_complete_1d", "1 day"},
+        {"auto_complete_3d", "3 days"},
+        {"auto_complete_7d", "7 days"},
+        {"auto_complete_14d", "14 days"},
+        {"auto_complete_30d", "30 days"},
 
         // Dialogs
         {"dlg_open_torrent", "Open Torrent"},
@@ -815,10 +829,24 @@ void Translator::loadPortuguese()
         {"state_checking", "Verificando"},
         {"state_metadata", "Metadados"},
         {"state_downloading", "Baixando"},
-        {"state_finished", "Concluído"},
+        {"state_finished", "Pronto"},
         {"state_seeding", "Semeando"},
+        {"state_completed", "Concluído"},
         {"state_paused", "Pausado"},
         {"state_unknown", "Desconhecido"},
+
+        // Completed (manual + auto)
+        {"tb_stop", "Encerrar"},
+        {"ctx_mark_completed", "Marcar como concluído"},
+        {"ctx_unmark_completed", "Retomar semeadura"},
+        {"filter_completed", "Concluídos"},
+        {"settings_auto_complete", "Marcar como Concluído após"},
+        {"auto_complete_never", "Nunca"},
+        {"auto_complete_1d", "1 dia"},
+        {"auto_complete_3d", "3 dias"},
+        {"auto_complete_7d", "7 dias"},
+        {"auto_complete_14d", "14 dias"},
+        {"auto_complete_30d", "30 dias"},
 
         // Dialogs
         {"dlg_open_torrent", "Abrir Torrent"},

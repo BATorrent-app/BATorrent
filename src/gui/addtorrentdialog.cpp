@@ -55,7 +55,7 @@ AddTorrentDialog::AddTorrentDialog(const QString &torrentFilePath,
     setStyleSheet(QString(
         "QDialog {"
         "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
-        "      stop:0 rgba(220,38,38,0.10),"
+        "      stop:0 %10,"
         "      stop:1 %1);"
         "  color: %2;"
         "}"
@@ -102,7 +102,8 @@ AddTorrentDialog::AddTorrentDialog(const QString &torrentFilePath,
         "#ghostBtn:hover { background: %3; }"
         ).arg(tm.bgColor(), tm.textColor(), tm.surfaceColor(),
               tm.borderColor(), tm.accentColor(), tm.panelColor(),
-              tm.accentTintColor(), tm.dimColor(), tm.accentLightColor()));
+              tm.accentTintColor(), tm.dimColor(), tm.accentLightColor(),
+              tm.accentTintForGradient(10)));
 
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(32, 28, 32, 24);

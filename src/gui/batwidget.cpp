@@ -25,12 +25,6 @@ class LogoCircle : public QWidget
 public:
     explicit LogoCircle(QWidget *parent = nullptr) : QWidget(parent)
     {
-        QPixmap raw(":/images/logo1.png");
-        const int target = 76;
-        const qreal dpr = 2.0;
-        m_logo = raw.scaled(int(target * dpr), int(target * dpr),
-                            Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        m_logo.setDevicePixelRatio(dpr);
         setFixedSize(132, 132);
     }
 protected:
@@ -51,12 +45,13 @@ protected:
         p.drawEllipse(circle);
 
         const int target = 76;
+        // Pull fresh on each paint so a theme switch picks up the new tint
+        // without forcing a widget rebuild.
+        QPixmap logo = tm.themedLogo(target, 2.0);
         p.drawPixmap(QRect((width() - target) / 2,
                            (height() - target) / 2,
-                           target, target), m_logo);
+                           target, target), logo);
     }
-private:
-    QPixmap m_logo;
 };
 
 QWidget *makeKeycap(const QString &text, QWidget *parent)

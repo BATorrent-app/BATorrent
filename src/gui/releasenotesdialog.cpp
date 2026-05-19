@@ -25,7 +25,7 @@ ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
     setStyleSheet(QString(
         "QDialog {"
         "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
-        "      stop:0 rgba(220,38,38,0.12),"
+        "      stop:0 %7,"
         "      stop:1 %1);"
         "  color: %2;"
         "}"
@@ -44,7 +44,8 @@ ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
         "}"
         "#closeBtn:hover { background: %6; }"
         ).arg(tm.bgColor(), tm.textColor(), tm.panelColor(),
-              tm.accentColor(), tm.borderColor(), tm.surfaceColor()));
+              tm.accentColor(), tm.borderColor(), tm.surfaceColor(),
+              tm.accentTintForGradient(12)));
 
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(36, 32, 36, 24);
@@ -56,9 +57,7 @@ ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
     headerRow->setContentsMargins(0, 0, 0, 0);
 
     auto *logoLabel = new QLabel;
-    QPixmap raw(":/images/logo1.png");
-    logoLabel->setPixmap(raw.scaled(56 * 2, 56 * 2,
-        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoLabel->setPixmap(tm.themedLogo(56, 2.0));
     logoLabel->setFixedSize(56, 56);
     logoLabel->setScaledContents(true);
     auto *halo = new QGraphicsDropShadowEffect;
@@ -136,6 +135,31 @@ ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
 QString ReleaseNotesDialog::releaseNotes()
 {
     return QStringLiteral(
+        "<h3>v2.4.2</h3>"
+        "<ul>"
+        "<li><b>Completed state</b> &mdash; new green-tinted state separate from Seeding. "
+        "Stop toolbar button + context menu mark a 100% torrent as completed (paused, "
+        "frozen). Resume on a completed torrent unmarks it. Settings &rarr; auto-mark "
+        "as completed after 1/3/7/14/30 days of seeding.</li>"
+        "<li><b>Light theme rework</b> &mdash; warm cream / beige palette inspired by the "
+        "JSX &quot;Comfortable&quot; reference instead of pure white, with darker brown "
+        "borders and a softer red accent surface.</li>"
+        "<li><b>Dark theme refinement</b> &mdash; panel / surface colors now align with the "
+        "body bg (no more brown drift on the details panel) to match the canvas reference.</li>"
+        "<li><b>Theme switching fixes</b> &mdash; toolbar, status bar, filter row, search "
+        "edit, category combo, details panel, and the About / message popups all re-style "
+        "in place on theme change. Previous build left several of these locked to the "
+        "startup theme and shrank toolbar icons cumulatively across switches.</li>"
+        "<li><b>Logo legibility in light mode</b> &mdash; the white-on-transparent logo is "
+        "now tinted to textColor in light theme so it stops disappearing on cream "
+        "surfaces (home empty state, toolbar, tray popup, welcome / release notes).</li>"
+        "<li><b>Dialog gradients</b> &mdash; replaced translucent red gradient stops with "
+        "opaque pre-mixed tints so welcome, release notes, shortcuts, add / create "
+        "torrent, RSS, search, statistics, and addons dialogs stop showing a black "
+        "streak through the gradient in light mode.</li>"
+        "<li><b>Startup &amp; empty-state polish</b> &mdash; no more 1 s flash of the empty "
+        "bat widget while resume data loads on launch; status / member init hardened.</li>"
+        "</ul>"
         "<h3>v2.4.1</h3>"
         "<ul>"
         "<li><b>Design overhaul</b> &mdash; full dark UI redesign across every dialog: "

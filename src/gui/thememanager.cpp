@@ -3,6 +3,8 @@
 // See LICENSE file for details
 
 #include "thememanager.h"
+#include <QColor>
+#include <QPainter>
 #include <QStringList>
 
 ThemeManager &ThemeManager::instance()
@@ -51,7 +53,7 @@ QString ThemeManager::accentLightColor() const
 QString ThemeManager::accentSurfaceColor() const
 {
     switch (m_theme) {
-    case Light:    return "#fef2f2";
+    case Light:    return "#f5e2dc";  // warm red tint on cream
     case Midnight: return "#1a0a10";
     default:       return "#1f1012";
     }
@@ -60,7 +62,7 @@ QString ThemeManager::accentSurfaceColor() const
 QString ThemeManager::bgColor() const
 {
     switch (m_theme) {
-    case Light:    return "#f7f6f4";
+    case Light:    return "#ece4d2";  // warm cream, matches JSX "Comfortable" palette
     case Midnight: return "#08070d";
     default:       return "#0e0a0a";
     }
@@ -69,27 +71,27 @@ QString ThemeManager::bgColor() const
 QString ThemeManager::surfaceColor() const
 {
     switch (m_theme) {
-    case Light:    return "#ffffff";
+    case Light:    return "#f5eed9";  // light cream cards / inputs
     case Midnight: return "#12121c";
-    default:       return "#1a1a20";
+    default:       return "#15110f";  // was #1a1a20 (blue tint) — match warm dark
     }
 }
 
 QString ThemeManager::panelColor() const
 {
     switch (m_theme) {
-    case Light:    return "#fbfaf8";
+    case Light:    return "#f1e9d4";  // slightly above bg for details panel
     case Midnight: return "#181425";
-    default:       return "#201a1a";
+    default:       return "#14100f";  // was #201a1a (too brown) — closer to bg
     }
 }
 
 QString ThemeManager::surfaceAltColor() const
 {
     switch (m_theme) {
-    case Light:    return "#f1efeb";
+    case Light:    return "#e2d9bf";  // alt rows / progress track
     case Midnight: return "#0f0e18";
-    default:       return "#16161c";
+    default:       return "#100c0b";
     }
 }
 
@@ -105,7 +107,7 @@ QString ThemeManager::textColor() const
 QString ThemeManager::mutedColor() const
 {
     switch (m_theme) {
-    case Light:    return "#5e574f";
+    case Light:    return "#6d5f4d";  // warm muted, balances cream bg
     case Midnight: return "#9a95c8";
     default:       return "#b0b0b8";
     }
@@ -123,18 +125,18 @@ QString ThemeManager::dimColor() const
 QString ThemeManager::borderColor() const
 {
     switch (m_theme) {
-    case Light:    return "#e5e1da";
+    case Light:    return "#d9cfb8";  // warm border tone
     case Midnight: return "#22203a";
-    default:       return "#2a2a35";
+    default:       return "#2a2018";  // less blue, warm dark
     }
 }
 
 QString ThemeManager::borderStrongColor() const
 {
     switch (m_theme) {
-    case Light:    return "#cfcac0";
+    case Light:    return "#c2b59b";
     case Midnight: return "#322e50";
-    default:       return "#3a3a48";
+    default:       return "#3a2e22";
     }
 }
 
@@ -161,6 +163,39 @@ QString ThemeManager::accentTintStrongColor() const
     }
 }
 
+QPixmap ThemeManager::themedLogo(int size, qreal dpr) const
+{
+    if (dpr <= 0) dpr = 1.0;
+    QPixmap raw(":/images/logo1.png");
+    QPixmap scaled = raw.scaled(int(size * dpr), int(size * dpr),
+                                Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    scaled.setDevicePixelRatio(dpr);
+    if (m_theme != Light)
+        return scaled;
+    // Light theme: re-paint the white alpha mask with textColor so the logo
+    // stays visible on the off-white bg.
+    QPixmap tinted(scaled.size());
+    tinted.setDevicePixelRatio(dpr);
+    tinted.fill(Qt::transparent);
+    QPainter p(&tinted);
+    p.drawPixmap(0, 0, scaled);
+    p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    p.fillRect(tinted.rect(), QColor(textColor()));
+    p.end();
+    return tinted;
+}
+
+QString ThemeManager::accentTintForGradient(int alphaPercent) const
+{
+    const QColor base(bgColor());
+    const QColor accent(220, 38, 38);
+    const float a = qBound(0, alphaPercent, 100) / 100.0f;
+    const int r = qRound(accent.red()   * a + base.red()   * (1.0f - a));
+    const int g = qRound(accent.green() * a + base.green() * (1.0f - a));
+    const int b = qRound(accent.blue()  * a + base.blue()  * (1.0f - a));
+    return QColor(r, g, b).name();
+}
+
 QString ThemeManager::stateDownloadingColor() const
 {
     return accentColor(); // red
@@ -181,6 +216,18 @@ QString ThemeManager::stateFinishedColor() const
     case Light:    return "#94897c";
     case Midnight: return "#9a95c8";
     default:       return "#b0b0b8";
+    }
+}
+
+QString ThemeManager::stateCompletedColor() const
+{
+    // Greens are otherwise absent from the palette by design, but the user
+    // asked for the universal "download done" cue here — kept slightly
+    // desaturated so it sits next to the red/amber accents without fighting.
+    switch (m_theme) {
+    case Light:    return "#16a34a";
+    case Midnight: return "#22c55e";
+    default:       return "#22c55e";
     }
 }
 
@@ -306,6 +353,47 @@ QString ThemeManager::dialogStyleSheet() const
     return applyColors(css, bgColor(), surfaceColor(), textColor(),
                        mutedColor(), accentColor(), accentDarkColor(),
                        accentLightColor(), accentSurfaceColor(), borderColor());
+}
+
+QString ThemeManager::appPopupStyleSheet() const
+{
+    return QString(
+        "QMessageBox, QInputDialog {"
+        "  background: %1; color: %2;"
+        "}"
+        "QMessageBox QLabel, QInputDialog QLabel {"
+        "  background: transparent; color: %2; font-size: 11px;"
+        "}"
+        "QMessageBox QPushButton, QInputDialog QPushButton {"
+        "  background: %3; color: %2;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  padding: 6px 18px; font-size: 11px; font-weight: 500;"
+        "  min-width: 80px;"
+        "}"
+        "QMessageBox QPushButton:hover, QInputDialog QPushButton:hover {"
+        "  background: %5; border-color: %4;"
+        "}"
+        "QMessageBox QPushButton:default, QInputDialog QPushButton:default {"
+        "  background: %6; color: #ffffff; border-color: %6;"
+        "}"
+        "QMessageBox QPushButton:default:hover, QInputDialog QPushButton:default:hover {"
+        "  background: %7; border-color: %7;"
+        "}"
+        "QInputDialog QLineEdit, QInputDialog QComboBox, QInputDialog QSpinBox {"
+        "  background: %3; color: %2;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  padding: 6px 10px; font-size: 11px;"
+        "  selection-background-color: %6;"
+        "}"
+        "QInputDialog QLineEdit:focus { border-color: %6; }"
+        "QToolTip {"
+        "  background: %5; color: %2;"
+        "  border: 1px solid %4; padding: 4px 8px;"
+        "  font-size: 11px;"
+        "}"
+        ).arg(panelColor(), textColor(), surfaceColor(),
+              borderColor(), surfaceAltColor(), accentColor(),
+              accentLightColor());
 }
 
 QString ThemeManager::styleSheet() const

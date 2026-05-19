@@ -21,6 +21,7 @@ struct TorrentInfo {
     int numSeeds;
     QString stateString;
     bool paused;
+    bool completed = false;
     float ratio;
     QString category;
 };

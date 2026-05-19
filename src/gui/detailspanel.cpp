@@ -486,6 +486,58 @@ QWidget *DetailsPanel::createPiecesTab()
     return widget;
 }
 
+void DetailsPanel::restyle()
+{
+    const auto &tm = ThemeManager::instance();
+    setStyleSheet(QString(
+        "QTabWidget::pane { background: %1; border: none; }"
+        "QTabBar { background: %1; alignment: left; }"
+        "QTabBar::tab {"
+        "  background: transparent; color: %2;"
+        "  padding: 10px 16px; margin: 0;"
+        "  border: none; border-bottom: 2px solid transparent;"
+        "  font-size: 12px; font-weight: 500;"
+        "}"
+        "QTabBar::tab:first { margin-left: 16px; }"
+        "QTabBar::tab:selected {"
+        "  color: %3; border-bottom: 2px solid %4;"
+        "  font-weight: 600;"
+        "}"
+        "QTabBar::tab:hover:!selected { color: %3; }"
+        "QTableWidget {"
+        "  background: %1; color: %3;"
+        "  border: none; outline: none;"
+        "  alternate-background-color: %5;"
+        "  gridline-color: transparent;"
+        "}"
+        "QTableWidget::item { padding: 4px 8px; border: none; }"
+        "QTableWidget::item:selected { background: %6; color: %3; }"
+        "QHeaderView { background: transparent; border: none; }"
+        "QHeaderView::section {"
+        "  background: %1; color: %7;"
+        "  border: none; border-bottom: 1px solid %8;"
+        "  padding: 8px 10px; font-weight: 700;"
+        "  font-size: 9px; letter-spacing: 1.2px;"
+        "}"
+        "QPushButton {"
+        "  background: transparent; color: %3;"
+        "  border: 1px solid %8; border-radius: 6px;"
+        "  padding: 6px 16px; font-size: 11px; font-weight: 500;"
+        "}"
+        "QPushButton:hover { background: %5; }"
+        ).arg(tm.panelColor(), tm.mutedColor(), tm.textColor(),
+              tm.accentColor(), tm.surfaceColor(), tm.accentTintColor(),
+              tm.dimColor(), tm.borderColor()));
+
+    const QString tabBg = QString("QWidget { background: %1; }").arg(tm.panelColor());
+    for (int i = 0; i < count(); ++i) {
+        QWidget *w = widget(i);
+        if (auto *scroll = qobject_cast<QScrollArea *>(w))
+            w = scroll->widget();
+        if (w) w->setStyleSheet(tabBg);
+    }
+}
+
 void DetailsPanel::retranslate()
 {
     setTabText(0, tr_("detail_general"));

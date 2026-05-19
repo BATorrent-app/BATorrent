@@ -120,7 +120,7 @@ WelcomeDialog::WelcomeDialog(QWidget *parent)
     setStyleSheet(QString(
         "QDialog {"
         "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
-        "      stop:0 rgba(220,38,38,0.16),"
+        "      stop:0 %7,"
         "      stop:1 %1);"
         "  color: %2;"
         "}"
@@ -139,16 +139,15 @@ WelcomeDialog::WelcomeDialog(QWidget *parent)
         "}"
         "#closeBtn:hover { background: %5; color: %2; }"
         ).arg(tm.bgColor(), tm.textColor(), tm.mutedColor(),
-              tm.borderColor(), tm.surfaceColor(), tm.accentColor()));
+              tm.borderColor(), tm.surfaceColor(), tm.accentColor(),
+              tm.accentTintForGradient(16)));
 
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(48, 36, 48, 24);
     root->setSpacing(0);
 
     auto *logoLabel = new QLabel;
-    QPixmap raw(":/images/logo1.png");
-    logoLabel->setPixmap(raw.scaled(80 * 2, 80 * 2,
-        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoLabel->setPixmap(tm.themedLogo(80, 2.0));
     logoLabel->setFixedSize(80, 80);
     logoLabel->setScaledContents(true);
     logoLabel->setAlignment(Qt::AlignCenter);
