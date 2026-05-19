@@ -14,6 +14,7 @@
 #include <libtorrent/peer_info.hpp>
 #include <QDebug>
 #include <QDir>
+#include <QFileInfo>
 #include <QStandardPaths>
 #include <QFile>
 #include <QSettings>
@@ -281,6 +282,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
     m_statusCache.erase(h);
     m_lastResumeSaveAt.erase(h);
     m_lastFastAt.erase(h);
+    m_pendingResumeStripCheck.erase(h);
 
     lt::remove_flags_t flags{};
     if (deleteFiles)
@@ -808,6 +810,37 @@ QString SessionManager::torrentHashAt(int index) const
     return torrentHash(index);
 }
 
+QString SessionManager::torrentRootPath(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()))
+        return {};
+    const auto &h = m_torrents[index];
+    if (!h.is_valid()) return {};
+    lt::torrent_status st = h.status();
+    QString save = QString::fromStdString(st.save_path);
+    auto ti = h.torrent_file();
+    if (!ti || ti->num_files() == 0) return save;
+
+    // file_path(0) is relative to save_path. For multi-file torrents it
+    // starts with the torrent root folder libtorrent created (so the first
+    // path component is the root); for single-file torrents it's just the
+    // filename. Both are exactly what we need to reveal.
+    QString rel = QString::fromStdString(
+        ti->files().file_path(lt::file_index_t(0)));
+    if (rel.isEmpty()) return save;
+
+    if (ti->num_files() > 1) {
+        // Multi-file: trim down to the first path component (the root folder).
+        int slash = rel.indexOf('/');
+        if (slash > 0) rel = rel.left(slash);
+    }
+    QString full = save + QLatin1Char('/') + rel;
+    if (QFileInfo::exists(full)) return full;
+    if (QFileInfo::exists(full + QLatin1String(".!bt")))
+        return full + QLatin1String(".!bt");
+    return save;
+}
+
 bool SessionManager::effectiveStopAfterDownload(const QString &hash) const
 {
     int override_ = m_perTorrentStopAfter.value(hash, -1);
@@ -902,10 +935,12 @@ bool SessionManager::persistResumeAlert(const lt::save_resume_data_alert *rd)
     if (!dir.exists())
         dir.mkpath(".");
     auto buf = lt::write_resume_data_buf(rd->params);
-    lt::torrent_status st = rd->handle.status();
+    // Read the info-hash from the alert's params, NOT from rd->handle.status().
+    // If the torrent was removed between the save_resume_data() request and
+    // this alert landing, the handle is invalid and .status() throws
+    // "invalid torrent handle" — which would terminate the app.
     QString hash = QString::fromStdString(
-        (std::ostringstream() << st.info_hashes.get_best()).str());
-    // Race-guard: removeTorrent recorded this hash, the alert is stale.
+        (std::ostringstream() << rd->params.info_hashes.get_best()).str());
     if (m_removedHashes.contains(hash))
         return false;
     QString filePath = dir.filePath(hash + ".resume");
@@ -953,26 +988,11 @@ void SessionManager::loadResumeData()
         }
         if (!h.is_valid()) continue;
         m_torrents.push_back(h);
-
-        // Strip ".!bt" from any files already 100% complete at resume —
-        // file_completed_alert won't fire for files that were done before
-        // this session started, so without this pass the suffix is stuck
-        // until the whole torrent finishes.
-        if (auto ti = h.torrent_file()) {
-            std::vector<std::int64_t> progress;
-            h.file_progress(progress, lt::torrent_handle::piece_granularity);
-            const auto &fs = ti->files();
-            const int n = static_cast<int>(progress.size());
-            for (int i = 0; i < n; ++i) {
-                lt::file_index_t idx(i);
-                if (progress[i] != fs.file_size(idx)) continue;
-                std::string cur = fs.file_path(idx);
-                if (cur.size() >= 4
-                    && cur.compare(cur.size() - 4, 4, ".!bt") == 0) {
-                    h.rename_file(idx, std::string(cur, 0, cur.size() - 4));
-                }
-            }
-        }
+        // Mark this handle so the first state_update_alert it generates runs
+        // a ".!bt" strip pass for any files already complete on resume. We
+        // can't call file_progress() inline here — the storage isn't bound
+        // yet and libtorrent throws invalid_torrent_handle.
+        m_pendingResumeStripCheck.insert(h);
     }
 
     if (!m_torrents.empty())
@@ -1024,12 +1044,43 @@ void SessionManager::processAlerts()
         // refreshing every cache entry at once. This is what makes the UI
         // 1/Nth as expensive as polling each handle individually.
         if (auto *su = lt::alert_cast<lt::state_update_alert>(a)) {
-            for (const auto &st : su->status)
+            for (const auto &st : su->status) {
                 m_statusCache[st.handle] = st;
+                // Deferred .!bt strip for files already 100% on resume.
+                // Storage is bound by the time we get here, so file_progress
+                // is safe — gate on metadata + has_storage just in case.
+                auto it = m_pendingResumeStripCheck.find(st.handle);
+                if (it != m_pendingResumeStripCheck.end() && st.has_metadata) {
+                    try {
+                        if (auto ti = st.handle.torrent_file()) {
+                            std::vector<std::int64_t> progress;
+                            st.handle.file_progress(progress,
+                                lt::torrent_handle::piece_granularity);
+                            const auto &fs = ti->files();
+                            const int n = static_cast<int>(progress.size());
+                            for (int i = 0; i < n; ++i) {
+                                lt::file_index_t idx(i);
+                                if (progress[i] != fs.file_size(idx)) continue;
+                                std::string cur = fs.file_path(idx);
+                                if (cur.size() >= 4
+                                    && cur.compare(cur.size() - 4, 4, ".!bt") == 0) {
+                                    st.handle.rename_file(idx,
+                                        std::string(cur, 0, cur.size() - 4));
+                                }
+                            }
+                        }
+                    } catch (const std::exception &) {
+                        // Storage still not ready — retry on next tick.
+                        continue;
+                    }
+                    m_pendingResumeStripCheck.erase(it);
+                }
+            }
             continue;
         }
 
         if (auto *fa = lt::alert_cast<lt::torrent_finished_alert>(a)) {
+            if (!fa->handle.is_valid()) continue;
             QString name = QString::fromStdString(fa->torrent_name());
             lt::torrent_status st = fa->handle.status();
 
@@ -1082,6 +1133,21 @@ void SessionManager::processAlerts()
         // broken magnets instead of staring at silent empty state.
         if (auto *fe = lt::alert_cast<lt::file_error_alert>(a)) {
             emit torrentError(QString::fromStdString(fe->message()));
+            // If the file is missing/unreadable on a finished torrent, libtorrent
+            // marks the affected pieces as unavailable and the torrent silently
+            // drops back into "downloading" state — re-fetching content the user
+            // already had. Pause it so the user can investigate (deleted files
+            // on purpose? external drive disconnected?) without surprise traffic.
+            if (fe->handle.is_valid()) {
+                lt::torrent_status st = fe->handle.status();
+                const bool wasFinished = st.is_finished
+                    || st.state == lt::torrent_status::finished
+                    || st.state == lt::torrent_status::seeding;
+                if (wasFinished
+                    && !(st.flags & lt::torrent_flags::paused)) {
+                    fe->handle.pause();
+                }
+            }
         }
         if (auto *sm = lt::alert_cast<lt::storage_moved_failed_alert>(a)) {
             emit torrentError(QString::fromStdString(sm->message()));
@@ -1113,6 +1179,7 @@ void SessionManager::processAlerts()
         // so a fast torrent doesn't hammer the disk; with the limit, the
         // worst case is ~1 resume write per minute per active download.
         if (auto *pf = lt::alert_cast<lt::piece_finished_alert>(a)) {
+            if (!pf->handle.is_valid()) continue;
             const qint64 now = QDateTime::currentSecsSinceEpoch();
             auto it = m_lastResumeSaveAt.find(pf->handle);
             if (it == m_lastResumeSaveAt.end() || now - it->second >= 60) {
@@ -1124,6 +1191,7 @@ void SessionManager::processAlerts()
         // Magnet just got its metadata — file list is now known, so apply
         // the .!bt suffix to each file.
         if (auto *mr = lt::alert_cast<lt::metadata_received_alert>(a)) {
+            if (!mr->handle.is_valid()) continue;
             auto ti = mr->handle.torrent_file();
             if (ti) {
                 const auto &files = ti->files();
@@ -1142,6 +1210,7 @@ void SessionManager::processAlerts()
         // (still suffixed), so we have to strip the ".!bt" ourselves
         // before renaming; otherwise the call is a no-op.
         if (auto *fc = lt::alert_cast<lt::file_completed_alert>(a)) {
+            if (!fc->handle.is_valid()) continue;
             auto ti = fc->handle.torrent_file();
             if (ti) {
                 std::string current = ti->files().file_path(fc->index);

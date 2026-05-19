@@ -9,10 +9,10 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QSettings>
-#include <QApplication>
-#include <QFrame>
 #include <QDateTime>
+#include <QFontInfo>
 
 static QString formatBytes(qint64 bytes)
 {
@@ -44,124 +44,148 @@ StatisticsDialog::StatisticsDialog(SessionManager *session, QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(tr_("stats_title"));
-    setFixedSize(460, 420);
+    setFixedSize(560, 480);
 
     const auto &tm = ThemeManager::instance();
-    QString bg = tm.bgColor();
-    QString sf = tm.surfaceColor();
-    QString tx = tm.textColor();
-    QString mt = tm.mutedColor();
-    QString ac = tm.accentColor();
-    QString bd = tm.borderColor();
 
-    setStyleSheet(QString(R"(
-        QDialog { background-color: %1; color: %2; }
-        QLabel { color: %2; }
-        QFrame[frameShape="4"] { background-color: %3; max-height: 1px; }
-    )").arg(bg, tx, bd));
+    setStyleSheet(QString(
+        "QDialog {"
+        "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
+        "      stop:0 rgba(220,38,38,0.10),"
+        "      stop:1 %1);"
+        "  color: %2;"
+        "}"
+        "QLabel { background: transparent; color: %2; }"
+        "#ghostBtn {"
+        "  background: transparent; color: %2;"
+        "  border: 1px solid %3; border-radius: 6px;"
+        "  padding: 8px 22px; font-size: 11px; font-weight: 500;"
+        "}"
+        "#ghostBtn:hover { background: %4; }"
+        ).arg(tm.bgColor(), tm.textColor(), tm.borderColor(), tm.surfaceColor()));
 
-    auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(36, 28, 36, 28);
-    mainLayout->setSpacing(12);
+    auto *root = new QVBoxLayout(this);
+    root->setContentsMargins(36, 32, 36, 24);
+    root->setSpacing(0);
 
-    // Title
-    auto *titleLabel = new QLabel(tr_("stats_title"));
-    titleLabel->setStyleSheet(QString("font-size: 20px; font-weight: 700; color: %1;").arg(tx));
-    titleLabel->setAlignment(Qt::AlignCenter);
-    mainLayout->addWidget(titleLabel);
+    auto *eyebrow = new QLabel(tr_("stats_eyebrow"));
+    {
+        QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.2);
+        eyebrow->setFont(f);
+        eyebrow->setStyleSheet(QString("color: %1;").arg(tm.accentColor()));
+    }
+    root->addWidget(eyebrow);
+    root->addSpacing(6);
 
-    mainLayout->addSpacing(4);
+    auto *heading = new QLabel(tr_("stats_heading"));
+    {
+        QFont f; f.setPointSize(18); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, -0.3);
+        heading->setFont(f);
+        heading->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+    }
+    root->addWidget(heading);
+    root->addSpacing(28);
 
-    // Helper to add a stat row
-    auto addStatRow = [&](const QString &label, const QString &value) {
-        auto *row = new QHBoxLayout;
-        auto *nameLabel = new QLabel(label);
-        nameLabel->setStyleSheet(QString("font-size: 13px; color: %1;").arg(mt));
-        auto *valueLabel = new QLabel(value);
-        valueLabel->setStyleSheet(QString("font-size: 13px; font-weight: 600; color: %1;").arg(tx));
-        valueLabel->setAlignment(Qt::AlignRight);
-        row->addWidget(nameLabel);
-        row->addStretch();
-        row->addWidget(valueLabel);
-        mainLayout->addLayout(row);
+    auto makeSectionEyebrow = [&](const QString &text) {
+        auto *lbl = new QLabel(text.toUpper());
+        QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.4);
+        lbl->setFont(f);
+        lbl->setStyleSheet(QString("color: %1;").arg(tm.dimColor()));
+        return lbl;
     };
 
-    // Helper to add a section header
-    auto addSection = [&](const QString &text) {
-        auto *sep = new QFrame;
-        sep->setFrameShape(QFrame::HLine);
-        mainLayout->addWidget(sep);
-        auto *lbl = new QLabel(text);
-        lbl->setStyleSheet(QString("font-size: 14px; font-weight: 700; color: %1;").arg(ac));
-        mainLayout->addWidget(lbl);
+    auto makeKV = [&](const QString &k, const QString &v, bool mono = false) {
+        auto *row = new QWidget;
+        auto *rl = new QHBoxLayout(row);
+        rl->setContentsMargins(0, 6, 0, 6);
+        rl->setSpacing(12);
+
+        auto *key = new QLabel(k);
+        QFont kf; kf.setPointSize(9); kf.setWeight(QFont::DemiBold);
+        key->setFont(kf);
+        key->setStyleSheet(QString("color: %1;").arg(tm.mutedColor()));
+        key->setFixedWidth(110);
+        rl->addWidget(key);
+
+        auto *val = new QLabel(v);
+        QFont vf; vf.setPointSize(11);
+        if (mono) {
+            vf.setFamily(QStringLiteral("Menlo"));
+            if (!QFontInfo(vf).fixedPitch())
+                vf.setFamily(QStringLiteral("Consolas"));
+            vf.setStyleHint(QFont::Monospace);
+        }
+        val->setFont(vf);
+        val->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+        val->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        rl->addWidget(val);
+        rl->addStretch();
+        return row;
     };
 
-    // --- All-time stats ---
-    addSection(tr_("stats_alltime"));
+    auto makeColumn = [&](const QString &eyebrowText,
+                          std::initializer_list<QWidget *> rows) {
+        auto *col = new QWidget;
+        auto *cl = new QVBoxLayout(col);
+        cl->setContentsMargins(0, 0, 0, 0);
+        cl->setSpacing(0);
+        cl->addWidget(makeSectionEyebrow(eyebrowText));
+        cl->addSpacing(8);
+        for (QWidget *r : rows)
+            cl->addWidget(r);
+        cl->addStretch();
+        return col;
+    };
 
-    qint64 totalDown = session->globalDownloaded();
-    qint64 totalUp = session->globalUploaded();
-    float ratio = session->globalRatio();
-    int totalTorrents = session->totalTorrentsAdded();
+    const qint64 totalDown = session->globalDownloaded();
+    const qint64 totalUp = session->globalUploaded();
+    const float totalRatio = session->globalRatio();
+    const int totalTorrents = session->totalTorrentsAdded();
 
-    addStatRow(tr_("stats_downloaded"), formatBytes(totalDown));
-    addStatRow(tr_("stats_uploaded"), formatBytes(totalUp));
-    addStatRow(tr_("stats_ratio"), QString::number(ratio, 'f', 3));
-    addStatRow(tr_("stats_torrents_added"), QString::number(totalTorrents));
-
-    // --- Session stats ---
-    addSection(tr_("stats_session"));
-
-    qint64 sessionDown = session->sessionDownloaded();
-    qint64 sessionUp = session->sessionUploaded();
+    const qint64 sessionDown = session->sessionDownloaded();
+    const qint64 sessionUp = session->sessionUploaded();
 
     QSettings settings("BATorrent", "BATorrent");
-    qint64 startTime = settings.value("sessionStartTime", 0).toLongLong();
-    qint64 uptime = 0;
-    if (startTime > 0)
-        uptime = QDateTime::currentSecsSinceEpoch() - startTime;
+    const qint64 startTime = settings.value("sessionStartTime", 0).toLongLong();
+    const qint64 sessionUptime = startTime > 0
+        ? QDateTime::currentSecsSinceEpoch() - startTime
+        : 0;
 
-    addStatRow(tr_("stats_uptime"), formatDuration(uptime));
-    addStatRow(tr_("stats_downloaded"), formatBytes(sessionDown));
-    addStatRow(tr_("stats_uploaded"), formatBytes(sessionUp));
+    const float sessionRatio = sessionDown > 0
+        ? static_cast<float>(sessionUp) / static_cast<float>(sessionDown)
+        : 0.0f;
 
-    mainLayout->addSpacing(8);
+    auto *body = new QHBoxLayout;
+    body->setContentsMargins(0, 0, 0, 0);
+    body->setSpacing(32);
 
-    // --- Visual bar: download vs upload proportion ---
-    if (totalDown > 0 || totalUp > 0) {
-        auto *barFrame = new QFrame;
-        barFrame->setFixedHeight(20);
-        barFrame->setStyleSheet(QString("background-color: %1; border-radius: 4px;").arg(sf));
+    body->addWidget(makeColumn(tr_("stats_alltime"), {
+        makeKV(tr_("stats_downloaded"),      formatBytes(totalDown), true),
+        makeKV(tr_("stats_uploaded"),        formatBytes(totalUp), true),
+        makeKV(tr_("stats_ratio"),           QString::number(totalRatio, 'f', 3), true),
+        makeKV(tr_("stats_torrents_added"),  QString::number(totalTorrents), true),
+        makeKV(tr_("stats_uptime"),          formatDuration(sessionUptime), true),
+    }), 1);
 
-        auto *barLayout = new QHBoxLayout(barFrame);
-        barLayout->setContentsMargins(0, 0, 0, 0);
-        barLayout->setSpacing(0);
+    body->addWidget(makeColumn(tr_("stats_session"), {
+        makeKV(tr_("stats_downloaded"), formatBytes(sessionDown), true),
+        makeKV(tr_("stats_uploaded"),   formatBytes(sessionUp), true),
+        makeKV(tr_("stats_ratio"),      QString::number(sessionRatio, 'f', 3), true),
+        makeKV(tr_("stats_uptime"),     formatDuration(sessionUptime), true),
+    }), 1);
 
-        double total = static_cast<double>(totalDown + totalUp);
-        int downPct = static_cast<int>((totalDown / total) * 100.0);
+    root->addLayout(body);
+    root->addStretch();
 
-        auto *downBar = new QFrame;
-        downBar->setStyleSheet(QString("background-color: %1; border-radius: 4px;").arg(ac));
-
-        auto *upBar = new QFrame;
-        upBar->setStyleSheet(QString("background-color: %1; border-radius: 4px;").arg(tm.warningColor()));
-
-        barLayout->addWidget(downBar, downPct);
-        barLayout->addWidget(upBar, 100 - downPct);
-
-        mainLayout->addWidget(barFrame);
-
-        auto *legendLayout = new QHBoxLayout;
-        auto *downLegend = new QLabel(QString("%1 %2").arg(tr_("stats_downloaded"), formatBytes(totalDown)));
-        downLegend->setStyleSheet(QString("font-size: 10px; color: %1;").arg(ac));
-        auto *upLegend = new QLabel(QString("%1 %2").arg(tr_("stats_uploaded"), formatBytes(totalUp)));
-        upLegend->setStyleSheet(QString("font-size: 10px; color: %1;").arg(tm.warningColor()));
-        upLegend->setAlignment(Qt::AlignRight);
-        legendLayout->addWidget(downLegend);
-        legendLayout->addStretch();
-        legendLayout->addWidget(upLegend);
-        mainLayout->addLayout(legendLayout);
-    }
-
-    mainLayout->addStretch();
+    auto *footer = new QHBoxLayout;
+    footer->addStretch();
+    auto *closeBtn = new QPushButton(tr_("welcome_close"));
+    closeBtn->setObjectName(QStringLiteral("ghostBtn"));
+    closeBtn->setCursor(Qt::PointingHandCursor);
+    connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
+    footer->addWidget(closeBtn);
+    root->addLayout(footer);
 }

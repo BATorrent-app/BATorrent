@@ -7,6 +7,10 @@
 <file>icons/play.svg</file>
 <file>icons/trash.svg</file>
 <file>icons/settings.svg</file>
+<file>icons/search.svg</file>
+<file>icons/rss.svg</file>
+<file>icons/download.svg</file>
+<file>icons/upload.svg</file>
 <file>fonts/Inter-Regular.ttf</file>
 <file>fonts/Inter-Medium.ttf</file>
 <file>fonts/Inter-SemiBold.ttf</file>

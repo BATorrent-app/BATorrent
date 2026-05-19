@@ -38,21 +38,17 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(tr_("settings_title"));
-    setMinimumSize(500, 400);
+    // Settings opens as an independent top-level window, not a child modal —
+    // the main BATorrent window is often resized small and a child modal would
+    // be cramped. Window flag makes it appear in the dock/taskbar separately.
+    setWindowFlag(Qt::Window, true);
+    setModal(false);
+    setMinimumSize(900, 640);
+    resize(960, 720);
 
-    // Some Windows native styles (WindowsVista / Windows11) honor only part
-    // of QPalette and silently override stylesheet background-color on
-    // certain widget classes. The result is the dialog showing a white/gray
-    // background instead of the dark theme color, for users with that
-    // configuration. Forcing the Fusion style on the dialog tree sidesteps
-    // it: Fusion paints purely from QPalette + stylesheet, so the same
-    // theme colors render identically on every Windows config.
     if (QStyle *fusion = QStyleFactory::create("Fusion"))
         setStyle(fusion);
 
-    // Force the theme palette on this dialog tree. The Fusion style reads
-    // these colors directly; setting them explicitly also covers any other
-    // platform style that ignores the QDialog stylesheet.
     const auto &tm = ThemeManager::instance();
     QPalette pal = palette();
     pal.setColor(QPalette::Window, QColor(tm.bgColor()));
@@ -69,7 +65,95 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     setPalette(pal);
     setAutoFillBackground(true);
 
-    setStyleSheet(ThemeManager::instance().dialogStyleSheet());
+    setStyleSheet(QString(
+        "QDialog { background: %1; color: %2; }"
+        "QLabel { background: transparent; color: %2; }"
+        "QScrollArea { background: transparent; border: none; }"
+        "QScrollArea > QWidget > QWidget { background: transparent; }"
+
+        "QTabWidget::pane { background: transparent; border: none; }"
+        "QTabBar { background: transparent; alignment: left; }"
+        "QTabBar::tab {"
+        "  background: transparent; color: %3;"
+        "  padding: 10px 18px; margin: 0;"
+        "  border: none; border-bottom: 2px solid transparent;"
+        "  font-size: 12px; font-weight: 500;"
+        "}"
+        "QTabBar::tab:selected {"
+        "  color: %2; border-bottom: 2px solid %4;"
+        "  font-weight: 600;"
+        "}"
+        "QTabBar::tab:hover:!selected { color: %2; }"
+
+        "QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {"
+        "  background: %5; color: %2;"
+        "  border: 1px solid %6; border-radius: 6px;"
+        "  padding: 6px 10px; font-size: 11px;"
+        "  selection-background-color: %4;"
+        "  min-height: 22px;"
+        "}"
+        "QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {"
+        "  border-color: %4;"
+        "}"
+        "QLineEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {"
+        "  color: %7; background: %8;"
+        "}"
+        "QComboBox::drop-down { border: none; width: 22px; }"
+        "QComboBox QAbstractItemView {"
+        "  background: %5; color: %2;"
+        "  border: 1px solid %6; selection-background-color: %9;"
+        "  outline: none;"
+        "}"
+        "QSpinBox::up-button, QSpinBox::down-button,"
+        "QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {"
+        "  background: transparent; border: none; width: 18px;"
+        "}"
+
+        "QCheckBox { color: %2; spacing: 8px; font-size: 11px; }"
+        "QCheckBox::indicator {"
+        "  width: 14px; height: 14px;"
+        "  border: 1px solid %6; border-radius: 4px;"
+        "  background: %5;"
+        "}"
+        "QCheckBox::indicator:checked {"
+        "  background: %4; border-color: %4;"
+        "}"
+        "QCheckBox:disabled { color: %7; }"
+
+        "QGroupBox {"
+        "  background: %8; color: %2;"
+        "  border: none; border-radius: 8px;"
+        "  margin-top: 22px; padding: 24px 16px 14px 16px;"
+        "  font-size: 9px; font-weight: 700;"
+        "}"
+        "QGroupBox::title {"
+        "  subcontrol-origin: margin; subcontrol-position: top left;"
+        "  left: 16px; top: 0px; padding: 0 0 6px 0;"
+        "  color: %7; letter-spacing: 1.4px;"
+        "}"
+
+        "QPushButton#primaryBtn {"
+        "  background: %4; color: #ffffff;"
+        "  border: none; border-radius: 6px;"
+        "  padding: 8px 22px; font-size: 11px; font-weight: 600;"
+        "}"
+        "QPushButton#primaryBtn:hover { background: %10; }"
+        "QPushButton#ghostBtn {"
+        "  background: transparent; color: %2;"
+        "  border: 1px solid %6; border-radius: 6px;"
+        "  padding: 8px 18px; font-size: 11px; font-weight: 500;"
+        "}"
+        "QPushButton#ghostBtn:hover { background: %5; }"
+        "QPushButton {"
+        "  background: %5; color: %2;"
+        "  border: 1px solid %6; border-radius: 6px;"
+        "  padding: 6px 14px; font-size: 11px;"
+        "}"
+        "QPushButton:hover { background: %8; border-color: %9; }"
+        ).arg(tm.bgColor(), tm.textColor(), tm.mutedColor(),
+              tm.accentColor(), tm.surfaceColor(), tm.borderColor(),
+              tm.dimColor(), tm.panelColor(), tm.accentTintColor(),
+              tm.accentLightColor()));
 
     auto *tabs = new QTabWidget;
 
@@ -81,7 +165,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
         return scroll;
     };
 
-    QString labelStyle = ThemeManager::instance().formLabelStyle();
+    const QString labelStyle = QString("color: %1; font-size: 11px;")
+        .arg(tm.mutedColor());
 
     // ---- General tab ----
     auto *generalWidget = new QWidget;
@@ -337,7 +422,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     vpnLayout->addRow(ifaceLabel, ifaceLayout);
 
     m_interfaceIpLabel = new QLabel;
-    m_interfaceIpLabel->setStyleSheet(labelStyle + " color: #888;");
+    m_interfaceIpLabel->setStyleSheet(QString("color: %1; font-size: 11px;")
+        .arg(tm.dimColor()));
     vpnLayout->addRow("", m_interfaceIpLabel);
 
     m_killSwitchCheck = new QCheckBox(tr_("settings_kill_switch"));
@@ -522,20 +608,50 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     tabs->addTab(wrapInScroll(mediaWidget), tr_("settings_media_server"));
 
-    // ---- Buttons ----
+    // ---- Header (eyebrow + heading) ----
+    auto *eyebrow = new QLabel(tr_("settings_title").toUpper());
+    {
+        QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.4);
+        eyebrow->setFont(f);
+        eyebrow->setStyleSheet(QString("color: %1;").arg(tm.accentColor()));
+    }
+
+    auto *heading = new QLabel(tr_("settings_heading"));
+    {
+        QFont f; f.setPointSize(18); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, -0.3);
+        heading->setFont(f);
+        heading->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+    }
+
+    // ---- Footer (Cancel ghost + Save primary) ----
     auto *btnLayout = new QHBoxLayout;
+    btnLayout->setSpacing(8);
     btnLayout->addStretch();
-    auto *okBtn = new QPushButton(tr_("btn_ok"));
+
     auto *cancelBtn = new QPushButton(tr_("btn_cancel"));
-    okBtn->setFixedWidth(100);
-    cancelBtn->setFixedWidth(100);
-    connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
+    cancelBtn->setObjectName(QStringLiteral("ghostBtn"));
+    cancelBtn->setCursor(Qt::PointingHandCursor);
     connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
-    btnLayout->addWidget(okBtn);
     btnLayout->addWidget(cancelBtn);
 
+    auto *okBtn = new QPushButton(tr_("btn_ok"));
+    okBtn->setObjectName(QStringLiteral("primaryBtn"));
+    okBtn->setCursor(Qt::PointingHandCursor);
+    okBtn->setDefault(true);
+    connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
+    btnLayout->addWidget(okBtn);
+
     auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(tabs);
+    mainLayout->setContentsMargins(32, 28, 32, 24);
+    mainLayout->setSpacing(0);
+    mainLayout->addWidget(eyebrow);
+    mainLayout->addSpacing(6);
+    mainLayout->addWidget(heading);
+    mainLayout->addSpacing(20);
+    mainLayout->addWidget(tabs, 1);
+    mainLayout->addSpacing(20);
     mainLayout->addLayout(btnLayout);
 }
 

@@ -28,6 +28,52 @@ DetailsPanel::DetailsPanel(SessionManager *session, QWidget *parent)
 {
     m_geoIp = new GeoIpResolver(this);
 
+    // Match canvas/primitives.jsx Tabs: paddingLeft 16 on the tab strip. The
+    // global QSS positions tabs flush-left; setting it on this widget here
+    // overrides for this panel only.
+    const auto &tm = ThemeManager::instance();
+    setStyleSheet(QString(
+        "QTabWidget::pane { background: %1; border: none; }"
+        "QTabBar { background: %1; alignment: left; }"
+        "QTabBar::tab {"
+        "  background: transparent; color: %2;"
+        "  padding: 10px 16px; margin: 0;"
+        "  border: none; border-bottom: 2px solid transparent;"
+        "  font-size: 12px; font-weight: 500;"
+        "}"
+        "QTabBar::tab:first { margin-left: 16px; }"
+        "QTabBar::tab:selected {"
+        "  color: %3; border-bottom: 2px solid %4;"
+        "  font-weight: 600;"
+        "}"
+        "QTabBar::tab:hover:!selected { color: %3; }"
+
+        "QTableWidget {"
+        "  background: %1; color: %3;"
+        "  border: none; outline: none;"
+        "  alternate-background-color: %5;"
+        "  gridline-color: transparent;"
+        "}"
+        "QTableWidget::item { padding: 4px 8px; border: none; }"
+        "QTableWidget::item:selected { background: %6; color: %3; }"
+        "QHeaderView { background: transparent; border: none; }"
+        "QHeaderView::section {"
+        "  background: %1; color: %7;"
+        "  border: none; border-bottom: 1px solid %8;"
+        "  padding: 8px 10px; font-weight: 700;"
+        "  font-size: 9px; letter-spacing: 1.2px;"
+        "}"
+
+        "QPushButton {"
+        "  background: transparent; color: %3;"
+        "  border: 1px solid %8; border-radius: 6px;"
+        "  padding: 6px 16px; font-size: 11px; font-weight: 500;"
+        "}"
+        "QPushButton:hover { background: %5; }"
+        ).arg(tm.panelColor(), tm.mutedColor(), tm.textColor(),
+              tm.accentColor(), tm.surfaceColor(), tm.accentTintColor(),
+              tm.dimColor(), tm.borderColor()));
+
     auto wrapScroll = [](QWidget *content) -> QScrollArea * {
         auto *scroll = new QScrollArea;
         scroll->setWidget(content);
@@ -70,17 +116,14 @@ void DetailsPanel::showTorrent(int index)
 
 void DetailsPanel::refresh()
 {
+    const QString dash = QStringLiteral("—");
     if (m_currentIndex < 0 || m_currentIndex >= m_session->torrentCount()) {
-        m_nameLabel->setText("-");
-        m_sizeLabel->setText("-");
-        m_progressLabel->setText("-");
-        m_downSpeedLabel->setText("-");
-        m_upSpeedLabel->setText("-");
-        m_stateLabel->setText("-");
-        m_peersLabel->setText("-");
-        m_downloadedLabel->setText("-");
-        m_savePathLabel->setText("-");
-        m_ratioLabel->setText("-");
+        for (QLabel *l : {m_nameLabel, m_savePathLabel, m_sizeLabel, m_hashLabel,
+                          m_downloadedLabel, m_uploadedLabel, m_speedLabel,
+                          m_etaLabel, m_seedsLabel, m_peersLabel,
+                          m_ratioLabel, m_stateLabel}) {
+            l->setText(dash);
+        }
         m_peersTable->setRowCount(0);
         m_filesTable->setRowCount(0);
         m_trackersTable->setRowCount(0);
@@ -90,15 +133,37 @@ void DetailsPanel::refresh()
 
     TorrentInfo info = m_session->torrentAt(m_currentIndex);
     m_nameLabel->setText(info.name);
-    m_stateLabel->setText(info.stateString);
-    m_peersLabel->setText(QString("%1 (%2 seeds)").arg(info.numPeers).arg(info.numSeeds));
-    m_progressLabel->setText(QString::number(info.progress * 100.0, 'f', 1) + "%");
-    m_sizeLabel->setText(formatSize(info.totalSize));
-    m_downloadedLabel->setText(formatSize(info.totalDone));
-    m_downSpeedLabel->setText(formatSpeed(info.downloadRate));
-    m_upSpeedLabel->setText(formatSpeed(info.uploadRate));
     m_savePathLabel->setText(info.savePath);
+    m_sizeLabel->setText(formatSize(info.totalSize));
+    const QString fullHash = m_session->torrentHashAt(m_currentIndex);
+    m_hashLabel->setText(fullHash.size() > 14
+        ? fullHash.left(8) + QStringLiteral("…") + fullHash.right(4)
+        : fullHash.isEmpty() ? dash : fullHash);
+
+    m_downloadedLabel->setText(QStringLiteral("%1 (%2%)")
+        .arg(formatSize(info.totalDone))
+        .arg(info.progress * 100.0, 0, 'f', 1));
+    const qint64 uploaded = static_cast<qint64>(info.totalDone * info.ratio);
+    m_uploadedLabel->setText(formatSize(uploaded));
+    m_speedLabel->setText(QStringLiteral("↓ %1   ↑ %2")
+        .arg(formatSpeed(info.downloadRate), formatSpeed(info.uploadRate)));
+    if (info.downloadRate > 0 && info.totalSize > info.totalDone) {
+        const qint64 remaining = info.totalSize - info.totalDone;
+        const qint64 secs = remaining / info.downloadRate;
+        if (secs < 60)
+            m_etaLabel->setText(QStringLiteral("%1s").arg(secs));
+        else if (secs < 3600)
+            m_etaLabel->setText(QStringLiteral("%1m %2s").arg(secs / 60).arg(secs % 60));
+        else
+            m_etaLabel->setText(QStringLiteral("%1h %2m").arg(secs / 3600).arg((secs % 3600) / 60));
+    } else {
+        m_etaLabel->setText(dash);
+    }
+
+    m_seedsLabel->setText(QStringLiteral("%1 %2").arg(info.numSeeds).arg(tr_("detail_connected")));
+    m_peersLabel->setText(QStringLiteral("%1 %2").arg(info.numPeers).arg(tr_("detail_connected")));
     m_ratioLabel->setText(QString::number(info.ratio, 'f', 2));
+    m_stateLabel->setText(info.stateString);
 
     // Peers tab
     if (currentIndex() == 1) {
@@ -191,55 +256,128 @@ void DetailsPanel::onAddTracker()
 
 QWidget *DetailsPanel::createGeneralTab()
 {
+    // Mirrors canvas/main.jsx MiniDetails: 3 columns (Info / Transfer / Peers),
+    // each with an Eyebrow CAPS header and KV rows below.
+    const auto &tm = ThemeManager::instance();
     auto *widget = new QWidget;
-    auto *layout = new QFormLayout(widget);
-    layout->setContentsMargins(12, 10, 12, 10);
-    layout->setSpacing(8);
+    widget->setAutoFillBackground(true);
+    widget->setStyleSheet(QString("QWidget { background: %1; }").arg(tm.panelColor()));
 
-    m_nameLabel = new QLabel("-");
-    m_sizeLabel = new QLabel("-");
-    m_progressLabel = new QLabel("-");
-    m_downSpeedLabel = new QLabel("-");
-    m_upSpeedLabel = new QLabel("-");
-    m_stateLabel = new QLabel("-");
-    m_peersLabel = new QLabel("-");
-    m_downloadedLabel = new QLabel("-");
-    m_savePathLabel = new QLabel("-");
-    m_ratioLabel = new QLabel("-");
+    auto *row = new QHBoxLayout(widget);
+    row->setContentsMargins(16, 16, 16, 16);
+    row->setSpacing(24);
 
-    // Labels use neutral text color (NOT red)
-    QString labelStyle = ThemeManager::instance().formLabelStyle();
-
-    auto addRow = [&](const QString &labelKey, QLabel *value) {
-        auto *lbl = new QLabel(tr_(labelKey));
-        lbl->setStyleSheet(labelStyle);
-        layout->addRow(lbl, value);
+    // Eyebrow: 8pt Bold, letterSpacing 1.2, color textDim (matches primitives.jsx).
+    auto makeEyebrow = [&](const QString &text) {
+        auto *lbl = new QLabel(text.toUpper());
+        QFont f;
+        f.setPointSize(8);
+        f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.2);
+        lbl->setFont(f);
+        lbl->setStyleSheet(QString("color: %1;").arg(tm.dimColor()));
+        return lbl;
     };
 
-    addRow("detail_name", m_nameLabel);
-    addRow("detail_save_path", m_savePathLabel);
-    addRow("detail_size", m_sizeLabel);
-    addRow("detail_downloaded", m_downloadedLabel);
-    addRow("detail_progress", m_progressLabel);
-    addRow("detail_down_speed", m_downSpeedLabel);
-    addRow("detail_up_speed", m_upSpeedLabel);
-    addRow("detail_state", m_stateLabel);
-    addRow("detail_peers_count", m_peersLabel);
-    addRow("detail_ratio", m_ratioLabel);
+    // KV row: padding 6 vertical, fixed-width label, value sits right after
+    // the label at its natural width; trailing stretch consumes the rest of
+    // the column. Previous version stretched the value, leaving a huge gap
+    // between value and the next column's label.
+    auto makeKV = [&](const QString &k, QLabel *value, bool mono = false) {
+        auto *r = new QWidget;
+        auto *rl = new QHBoxLayout(r);
+        rl->setContentsMargins(0, 6, 0, 6);
+        rl->setSpacing(12);
+        auto *key = new QLabel(k);
+        QFont kf;
+        kf.setPointSize(9);
+        kf.setWeight(QFont::DemiBold);
+        key->setFont(kf);
+        key->setStyleSheet(QString("color: %1;").arg(tm.mutedColor()));
+        key->setFixedWidth(90);
+        rl->addWidget(key);
+        QFont vf;
+        vf.setPointSize(9);
+        if (mono) {
+            vf.setFamily(QStringLiteral("Menlo"));
+            if (!QFontInfo(vf).fixedPitch())
+                vf.setFamily(QStringLiteral("Consolas"));
+        }
+        value->setFont(vf);
+        value->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+        value->setText(QStringLiteral("—"));
+        value->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        rl->addWidget(value);
+        rl->addStretch();
+        return r;
+    };
+
+    auto makeColumn = [&](const QString &eyebrow,
+                          std::initializer_list<QWidget *> rows) {
+        auto *col = new QWidget;
+        auto *cl = new QVBoxLayout(col);
+        cl->setContentsMargins(0, 0, 0, 0);
+        cl->setSpacing(0);
+        cl->addWidget(makeEyebrow(eyebrow));
+        cl->addSpacing(8);
+        for (QWidget *r : rows)
+            cl->addWidget(r);
+        cl->addStretch();
+        return col;
+    };
+
+    m_nameLabel = new QLabel;
+    m_savePathLabel = new QLabel;
+    m_sizeLabel = new QLabel;
+    m_hashLabel = new QLabel;
+    m_downloadedLabel = new QLabel;
+    m_uploadedLabel = new QLabel;
+    m_speedLabel = new QLabel;
+    m_etaLabel = new QLabel;
+    m_seedsLabel = new QLabel;
+    m_peersLabel = new QLabel;
+    m_ratioLabel = new QLabel;
+    m_stateLabel = new QLabel;
+
+    row->addWidget(makeColumn(tr_("detail_section_info"), {
+        makeKV(tr_("detail_kv_name"),    m_nameLabel),
+        makeKV(tr_("detail_kv_save_to"), m_savePathLabel, /*mono=*/true),
+        makeKV(tr_("detail_kv_size"),    m_sizeLabel),
+        makeKV(tr_("detail_kv_hash"),    m_hashLabel,     /*mono=*/true),
+    }), /*stretch=*/1);
+
+    row->addWidget(makeColumn(tr_("detail_section_transfer"), {
+        makeKV(tr_("detail_kv_downloaded"), m_downloadedLabel),
+        makeKV(tr_("detail_kv_uploaded"),   m_uploadedLabel),
+        makeKV(tr_("detail_kv_speed"),      m_speedLabel),
+        makeKV(tr_("detail_kv_eta"),        m_etaLabel),
+    }), /*stretch=*/1);
+
+    row->addWidget(makeColumn(tr_("detail_section_peers"), {
+        makeKV(tr_("detail_kv_seeds"), m_seedsLabel),
+        makeKV(tr_("detail_kv_peers"), m_peersLabel),
+        makeKV(tr_("detail_kv_ratio"), m_ratioLabel),
+        makeKV(tr_("detail_kv_state"), m_stateLabel),
+    }), /*stretch=*/1);
 
     return widget;
 }
 
 QWidget *DetailsPanel::createPeersTab()
 {
+    const auto &tm = ThemeManager::instance();
     auto *widget = new QWidget;
+    widget->setAutoFillBackground(true);
+    widget->setStyleSheet(QString("QWidget { background: %1; }").arg(tm.panelColor()));
     auto *layout = new QVBoxLayout(widget);
     layout->setContentsMargins(0, 0, 0, 0);
 
     m_peersTable = new QTableWidget(0, 7);
     m_peersTable->setHorizontalHeaderLabels({
-        tr_("peer_country"), tr_("peer_ip"), tr_("peer_port"), tr_("peer_client"),
-        tr_("peer_down"), tr_("peer_up"), tr_("peer_progress")
+        tr_("peer_country").toUpper(), tr_("peer_ip").toUpper(),
+        tr_("peer_port").toUpper(), tr_("peer_client").toUpper(),
+        tr_("peer_down").toUpper(), tr_("peer_up").toUpper(),
+        tr_("peer_progress").toUpper()
     });
     m_peersTable->horizontalHeader()->setStretchLastSection(true);
     m_peersTable->setColumnWidth(0, 40); // narrow flag column
@@ -255,12 +393,17 @@ QWidget *DetailsPanel::createPeersTab()
 
 QWidget *DetailsPanel::createFilesTab()
 {
+    const auto &tm = ThemeManager::instance();
     auto *widget = new QWidget;
+    widget->setAutoFillBackground(true);
+    widget->setStyleSheet(QString("QWidget { background: %1; }").arg(tm.panelColor()));
     auto *layout = new QVBoxLayout(widget);
     layout->setContentsMargins(0, 0, 0, 0);
 
     m_filesTable = new QTableWidget(0, 4);
-    m_filesTable->setHorizontalHeaderLabels({"File", "Size", "Progress", "Priority"});
+    m_filesTable->setHorizontalHeaderLabels({
+        tr_("file_name").toUpper(), tr_("file_size").toUpper(),
+        tr_("file_progress").toUpper(), tr_("file_priority").toUpper()});
     m_filesTable->horizontalHeader()->setStretchLastSection(true);
     m_filesTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_filesTable->verticalHeader()->hide();
@@ -275,12 +418,17 @@ QWidget *DetailsPanel::createFilesTab()
 
 QWidget *DetailsPanel::createTrackersTab()
 {
+    const auto &tm = ThemeManager::instance();
     auto *widget = new QWidget;
+    widget->setAutoFillBackground(true);
+    widget->setStyleSheet(QString("QWidget { background: %1; }").arg(tm.panelColor()));
     auto *layout = new QVBoxLayout(widget);
     layout->setContentsMargins(0, 0, 0, 0);
 
     m_trackersTable = new QTableWidget(0, 3);
-    m_trackersTable->setHorizontalHeaderLabels({"URL", "Tier", "Status"});
+    m_trackersTable->setHorizontalHeaderLabels({
+        tr_("tracker_url_col").toUpper(), tr_("tracker_tier").toUpper(),
+        tr_("tracker_status").toUpper()});
     m_trackersTable->horizontalHeader()->setStretchLastSection(true);
     m_trackersTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_trackersTable->verticalHeader()->hide();
@@ -325,9 +473,12 @@ QWidget *DetailsPanel::createTrackersTab()
 
 QWidget *DetailsPanel::createPiecesTab()
 {
+    const auto &tm = ThemeManager::instance();
     auto *widget = new QWidget;
+    widget->setAutoFillBackground(true);
+    widget->setStyleSheet(QString("QWidget { background: %1; }").arg(tm.panelColor()));
     auto *layout = new QVBoxLayout(widget);
-    layout->setContentsMargins(4, 4, 4, 4);
+    layout->setContentsMargins(8, 8, 8, 8);
 
     m_pieceMap = new PieceMapWidget;
     layout->addWidget(m_pieceMap);
@@ -344,13 +495,17 @@ void DetailsPanel::retranslate()
     setTabText(4, tr_("detail_pieces"));
 
     m_peersTable->setHorizontalHeaderLabels({
-        tr_("peer_country"), tr_("peer_ip"), tr_("peer_port"), tr_("peer_client"),
-        tr_("peer_down"), tr_("peer_up"), tr_("peer_progress")
+        tr_("peer_country").toUpper(), tr_("peer_ip").toUpper(),
+        tr_("peer_port").toUpper(), tr_("peer_client").toUpper(),
+        tr_("peer_down").toUpper(), tr_("peer_up").toUpper(),
+        tr_("peer_progress").toUpper()
     });
     m_filesTable->setHorizontalHeaderLabels({
-        tr_("file_name"), tr_("file_size"), tr_("file_progress"), tr_("file_priority")
+        tr_("file_name").toUpper(), tr_("file_size").toUpper(),
+        tr_("file_progress").toUpper(), tr_("file_priority").toUpper()
     });
     m_trackersTable->setHorizontalHeaderLabels({
-        tr_("tracker_url_col"), tr_("tracker_tier"), tr_("tracker_status")
+        tr_("tracker_url_col").toUpper(), tr_("tracker_tier").toUpper(),
+        tr_("tracker_status").toUpper()
     });
 }

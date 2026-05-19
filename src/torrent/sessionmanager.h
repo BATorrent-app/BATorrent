@@ -128,6 +128,11 @@ public:
     // needs a stable identifier across vector reorders.
     QString torrentHashAt(int index) const;
 
+    // Absolute on-disk root path for the torrent (single file or root folder).
+    // Resolves via libtorrent's file_path(0) rather than the torrent's display
+    // name, which can drift from disk after rename/sanitization.
+    QString torrentRootPath(int index) const;
+
     // Auto-move completed downloads
     void setAutoMove(bool enabled, const QString &path);
     bool autoMoveEnabled() const;
@@ -264,6 +269,14 @@ private:
     // save_resume_data_alerts that arrive after removeTorrent, which would
     // otherwise re-create the .resume file we just deleted.
     QSet<QString> m_removedHashes;
+
+    // Handles loaded from resume data that still need a deferred ".!bt"
+    // strip pass for files already 100% complete. Calling file_progress()
+    // inline right after add_torrent throws "invalid torrent handle" —
+    // libtorrent hasn't bound storage yet. We process them in the alert
+    // loop the first time state_update_alert delivers a status with the
+    // file storage attached, then drop them from the set.
+    std::set<lt::torrent_handle> m_pendingResumeStripCheck;
     // Persist a save_resume_data_alert payload to its .resume file under
     // resumeDataDir(). Returns true on success.
     bool persistResumeAlert(const struct lt::save_resume_data_alert *rd);

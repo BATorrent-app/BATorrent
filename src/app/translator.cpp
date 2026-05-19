@@ -13,6 +13,7 @@ Translator &Translator::instance()
 Translator::Translator()
 {
     loadEnglish();
+    m_englishFallback = m_strings;
 }
 
 void Translator::setLanguage(Language lang)
@@ -31,7 +32,9 @@ void Translator::setLanguage(Language lang)
 
 QString Translator::tr(const QString &key) const
 {
-    return m_strings.value(key, key);
+    auto it = m_strings.constFind(key);
+    if (it != m_strings.constEnd()) return it.value();
+    return m_englishFallback.value(key, key);
 }
 
 void Translator::loadEnglish()
@@ -100,6 +103,86 @@ void Translator::loadEnglish()
         {"add_torrent_magnet_hint", "Metadata will be downloaded after adding."},
         {"add_torrent_col_name", "File"},
         {"add_torrent_col_size", "Size"},
+        {"add_torrent_heading", "Confirm download"},
+        {"add_torrent_add_btn", "Add"},
+
+        // Welcome / release notes / shortcuts headings (design polish)
+        {"welcome_window_title", "Welcome to BATorrent"},
+        {"welcome_eyebrow", "WELCOME"},
+        {"welcome_heading", "Ready to share."},
+        {"welcome_subtitle_text", "BATorrent is a lightweight, open-source BitTorrent client. Functional, dark, focused — nothing between you and the swarm."},
+        {"welcome_card_open_title", "Open .torrent"},
+        {"welcome_card_open_desc", "Add a file from disk"},
+        {"welcome_card_magnet_title", "Paste magnet"},
+        {"welcome_card_magnet_desc", "From the clipboard"},
+        {"welcome_card_search_title", "Search"},
+        {"welcome_card_search_desc", "Stremio · Torrentio"},
+        {"welcome_card_rss_title", "Subscribe RSS"},
+        {"welcome_card_rss_desc", "Auto-download new"},
+        {"welcome_close", "Close"},
+        {"release_notes_heading", "What's new"},
+        {"shortcuts_heading", "Hotkeys reference"},
+        {"shortcuts_subtitle", "Keyboard shortcuts for common actions."},
+        {"shortcuts_section_torrents", "Torrents"},
+        {"shortcuts_section_navigation", "Navigation"},
+
+        // Empty state (batwidget)
+        {"empty_title", "No torrents yet"},
+        {"empty_body", "Drop a .torrent file anywhere on this window, paste a magnet link, or use the toolbar."},
+        {"empty_open_btn", "Open file…"},
+        {"empty_paste_btn", "Paste magnet"},
+        {"empty_search_btn", "Search"},
+        {"empty_hint_open", "to open"},
+        {"empty_hint_paste", "to paste magnet"},
+
+        // Details panel — general tab section eyebrows + KV labels
+        {"detail_section_info", "Info"},
+        {"detail_section_transfer", "Transfer"},
+        {"detail_section_peers", "Peers"},
+        {"detail_kv_name", "Name"},
+        {"detail_kv_save_to", "Save to"},
+        {"detail_kv_size", "Size"},
+        {"detail_kv_hash", "Hash"},
+        {"detail_kv_downloaded", "Downloaded"},
+        {"detail_kv_uploaded", "Uploaded"},
+        {"detail_kv_speed", "Speed"},
+        {"detail_kv_eta", "ETA"},
+        {"detail_kv_seeds", "Seeds"},
+        {"detail_kv_peers", "Peers"},
+        {"detail_kv_ratio", "Ratio"},
+        {"detail_kv_state", "State"},
+        {"detail_connected", "connected"},
+
+        // Splash animation
+        {"splash_tagline", "Lightweight BitTorrent Client"},
+
+        {"settings_heading", "Preferences"},
+
+        // Dialog redesign keys (search/rss/create/speedtest/stats/addon)
+        {"search_eyebrow", "Discover"},
+        {"search_heading", "Find torrents"},
+        {"search_subtitle", "Stremio catalogs · Torrentio · indexers"},
+        {"search_section_source", "Source"},
+        {"search_section_query", "Query"},
+        {"search_section_results", "Results"},
+        {"rss_eyebrow", "Feeds"},
+        {"rss_heading", "RSS subscriptions"},
+        {"rss_subtitle", "Add feed URLs and BATorrent will watch them for new torrents matching your filters."},
+        {"rss_minutes_suffix", "min"},
+        {"create_heading", "Package your torrent"},
+        {"create_source_placeholder", "Path to file or folder to share"},
+        {"create_output_placeholder", "Where to save the .torrent file"},
+        {"create_options", "Options"},
+        {"speedtest_heading", "Internet speed"},
+        {"speedtest_subtitle", "Measures ping, download, and upload against Cloudflare's edge."},
+        {"stats_eyebrow", "STATISTICS"},
+        {"stats_heading", "Activity overview"},
+        {"addon_eyebrow", "Community"},
+        {"addon_heading", "Addons"},
+        {"addon_subtitle", "Extend BATorrent with community-built addons for catalogs, streams, and search."},
+        {"addon_empty_hint", "No addons installed yet. Pick one from Suggested below, or paste an addon URL."},
+        {"addon_installed_chip", "Installed"},
+        {"addon_types_label", "Types"},
 
         // Filter
         {"filter_all_categories", "All Categories"},
@@ -124,6 +207,8 @@ void Translator::loadEnglish()
         {"tb_pause", "Pause"},
         {"tb_resume", "Resume"},
         {"tb_remove", "Remove"},
+        {"tb_search", "Search"},
+        {"tb_rss", "RSS"},
         {"tb_settings", "Settings"},
 
         // Table headers
@@ -446,6 +531,7 @@ void Translator::loadEnglish()
         {"speedtest_testing", "Testing"},
         {"speedtest_complete", "Complete!"},
         {"speedtest_result", "Result"},
+        {"speedtest_retest", "Run again"},
 
         // Statistics
         {"action_statistics", "S&tatistics"},
@@ -550,6 +636,86 @@ void Translator::loadPortuguese()
         {"add_torrent_magnet_hint", "Os metadados serão baixados após adicionar."},
         {"add_torrent_col_name", "Arquivo"},
         {"add_torrent_col_size", "Tamanho"},
+        {"add_torrent_heading", "Confirmar download"},
+        {"add_torrent_add_btn", "Adicionar"},
+
+        // Welcome / release notes / shortcuts headings (design polish)
+        {"welcome_window_title", "Bem-vindo ao BATorrent"},
+        {"welcome_eyebrow", "BEM-VINDO"},
+        {"welcome_heading", "Pronto pra compartilhar."},
+        {"welcome_subtitle_text", "BATorrent é um cliente BitTorrent leve e open-source. Funcional, escuro, focado — nada entre você e a rede."},
+        {"welcome_card_open_title", "Abrir .torrent"},
+        {"welcome_card_open_desc", "Adicionar arquivo do disco"},
+        {"welcome_card_magnet_title", "Colar magnet"},
+        {"welcome_card_magnet_desc", "Da área de transferência"},
+        {"welcome_card_search_title", "Buscar"},
+        {"welcome_card_search_desc", "Stremio · Torrentio"},
+        {"welcome_card_rss_title", "Inscrever RSS"},
+        {"welcome_card_rss_desc", "Auto-baixar novos"},
+        {"welcome_close", "Fechar"},
+        {"release_notes_heading", "Novidades"},
+        {"shortcuts_heading", "Referência de atalhos"},
+        {"shortcuts_subtitle", "Atalhos de teclado para ações comuns."},
+        {"shortcuts_section_torrents", "Torrents"},
+        {"shortcuts_section_navigation", "Navegação"},
+
+        // Empty state (batwidget)
+        {"empty_title", "Nenhum torrent ainda"},
+        {"empty_body", "Solte um arquivo .torrent em qualquer lugar da janela, cole um link magnet, ou use a barra de ferramentas."},
+        {"empty_open_btn", "Abrir arquivo…"},
+        {"empty_paste_btn", "Colar magnet"},
+        {"empty_search_btn", "Buscar"},
+        {"empty_hint_open", "pra abrir"},
+        {"empty_hint_paste", "pra colar magnet"},
+
+        // Details panel — general tab section eyebrows + KV labels
+        {"detail_section_info", "Info"},
+        {"detail_section_transfer", "Transferência"},
+        {"detail_section_peers", "Peers"},
+        {"detail_kv_name", "Nome"},
+        {"detail_kv_save_to", "Salvar em"},
+        {"detail_kv_size", "Tamanho"},
+        {"detail_kv_hash", "Hash"},
+        {"detail_kv_downloaded", "Baixado"},
+        {"detail_kv_uploaded", "Enviado"},
+        {"detail_kv_speed", "Velocidade"},
+        {"detail_kv_eta", "ETA"},
+        {"detail_kv_seeds", "Seeds"},
+        {"detail_kv_peers", "Peers"},
+        {"detail_kv_ratio", "Ratio"},
+        {"detail_kv_state", "Estado"},
+        {"detail_connected", "conectados"},
+
+        // Splash animation
+        {"splash_tagline", "Cliente BitTorrent leve"},
+
+        {"settings_heading", "Preferências"},
+
+        // Dialog redesign keys (search/rss/create/speedtest/stats/addon)
+        {"search_eyebrow", "Descobrir"},
+        {"search_heading", "Buscar torrents"},
+        {"search_subtitle", "Catálogos Stremio · Torrentio · indexadores"},
+        {"search_section_source", "Fonte"},
+        {"search_section_query", "Consulta"},
+        {"search_section_results", "Resultados"},
+        {"rss_eyebrow", "Feeds"},
+        {"rss_heading", "Assinaturas RSS"},
+        {"rss_subtitle", "Adicione URLs de feeds e o BATorrent vai monitorá-los buscando novos torrents que correspondam aos seus filtros."},
+        {"rss_minutes_suffix", "min"},
+        {"create_heading", "Empacote seu torrent"},
+        {"create_source_placeholder", "Caminho do arquivo ou pasta a compartilhar"},
+        {"create_output_placeholder", "Onde salvar o arquivo .torrent"},
+        {"create_options", "Opções"},
+        {"speedtest_heading", "Velocidade da internet"},
+        {"speedtest_subtitle", "Mede ping, download e upload contra a edge da Cloudflare."},
+        {"stats_eyebrow", "ESTATÍSTICAS"},
+        {"stats_heading", "Visão geral da atividade"},
+        {"addon_eyebrow", "Comunidade"},
+        {"addon_heading", "Addons"},
+        {"addon_subtitle", "Estenda o BATorrent com addons da comunidade para catálogos, streams e busca."},
+        {"addon_empty_hint", "Nenhum addon instalado ainda. Escolha um em Sugeridos abaixo ou cole uma URL de addon."},
+        {"addon_installed_chip", "Instalado"},
+        {"addon_types_label", "Tipos"},
 
         // Create torrent
         {"create_title", "Criar Torrent"},
@@ -571,6 +737,8 @@ void Translator::loadPortuguese()
         {"tb_pause", "Pausar"},
         {"tb_resume", "Continuar"},
         {"tb_remove", "Remover"},
+        {"tb_search", "Buscar"},
+        {"tb_rss", "RSS"},
         {"tb_settings", "Config"},
 
         // Table headers
@@ -893,6 +1061,7 @@ void Translator::loadPortuguese()
         {"speedtest_testing", "Testando"},
         {"speedtest_complete", "Completo!"},
         {"speedtest_result", "Resultado"},
+        {"speedtest_retest", "Refazer teste"},
 
         // Statistics
         {"action_statistics", "E&statísticas"},

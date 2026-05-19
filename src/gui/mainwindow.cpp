@@ -15,6 +15,7 @@
 #include "batwidget.h"
 #include "splashwidget.h"
 #include "thememanager.h"
+#include "toast.h"
 #include "../torrent/sessionmanager.h"
 #include "../webui/webserver.h"
 #include "../app/translator.h"
@@ -26,13 +27,14 @@
 #include "searchdialog.h"
 #include "rssdialog.h"
 #include "releasenotesdialog.h"
-#include "speedtestdialog.h"
 #include "statisticsdialog.h"
 #include "shortcutsdialog.h"
+#include "traypopup.h"
 #include "../app/rssmanager.h"
 
 #include <QMenuBar>
 #include <QToolBar>
+#include <QToolButton>
 #include <QStatusBar>
 #include <QFileDialog>
 #include <QInputDialog>
@@ -44,6 +46,7 @@
 #include <QSplitter>
 #include <QPixmap>
 #include <QSystemTrayIcon>
+#include <QCursor>
 #include <QMenu>
 #include <QCloseEvent>
 #include <QSettings>
@@ -82,10 +85,12 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     setWindowTitle("BATorrent");
     setWindowIcon(QIcon(":/images/logo1.png"));
     setAcceptDrops(true);
-    // Default size fits comfortably on 1366x768 laptops; widget min sizes
-    // below keep it usable when the user resizes smaller.
-    resize(920, 600);
-    setMinimumSize(720, 440);
+    // Default size targets the comfortable layout: 8-column table + 3-column
+    // details panel + bandwidth pill all visible without crowding. Used only
+    // on first launch — loadSettings restores the user's last geometry if
+    // there is one.
+    resize(1280, 820);
+    setMinimumSize(960, 600);
 
     m_model = new TorrentModel(session, this);
 
@@ -114,8 +119,11 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     connect(m_session, &SessionManager::torrentAdded, m_model, &TorrentModel::refresh);
     connect(m_session, &SessionManager::torrentAdded, this, [this](int index) {
         TorrentInfo info = m_session->torrentAt(index);
-        m_trayIcon->showMessage(tr_("notif_torrent_added"), info.name,
-                                QSystemTrayIcon::Information, 3000);
+        QString body = info.totalSize > 0
+            ? QStringLiteral("%1 · %2").arg(info.name, formatSize(info.totalSize))
+            : info.name;
+        Toast::notify(tr_("notif_torrent_added"), body,
+                      Toast::Info, this, SLOT(trayActivated()));
         if (m_notifSoundEnabled)
             QApplication::beep();
     });
@@ -132,12 +140,25 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
 
     // Kill switch notifications
     connect(m_session, &SessionManager::killSwitchTriggered, this, [this]() {
-        m_trayIcon->showMessage(tr_("killswitch_title"), tr_("killswitch_triggered"),
-                                QSystemTrayIcon::Warning, 5000);
+        int active = 0;
+        for (int i = 0; i < m_session->torrentCount(); ++i) {
+            TorrentInfo info = m_session->torrentAt(i);
+            if (!info.paused && (info.downloadRate > 0 || info.uploadRate > 0))
+                ++active;
+        }
+        const QString iface = m_session->outgoingInterface();
+        const QString body = !iface.isEmpty()
+            ? QStringLiteral("%1 active torrents paused · %2 disconnected")
+                  .arg(active).arg(iface)
+            : tr_("killswitch_triggered");
+        Toast::notify(tr_("killswitch_title"), body, Toast::Warning);
     });
     connect(m_session, &SessionManager::interfaceRestored, this, [this]() {
-        m_trayIcon->showMessage(tr_("killswitch_title"), tr_("killswitch_restored"),
-                                QSystemTrayIcon::Information, 5000);
+        const QString iface = m_session->outgoingInterface();
+        const QString body = !iface.isEmpty()
+            ? QStringLiteral("%1 reconnected").arg(iface)
+            : tr_("killswitch_restored");
+        Toast::notify(tr_("killswitch_title"), body, Toast::Success);
     });
 
     // Auto-updater
@@ -158,8 +179,9 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     RssManager::instance().checkAllFeeds();
     connect(&RssManager::instance(), &RssManager::itemAutoDownloaded, this,
         [this](const QString &feedName, const QString &itemTitle) {
-            m_trayIcon->showMessage(tr_("rss_auto_downloaded"),
-                QString("%1: %2").arg(feedName, itemTitle));
+            Toast::notify(tr_("rss_auto_downloaded"),
+                          QStringLiteral("%1 · %2").arg(feedName, itemTitle),
+                          Toast::Success, this, SLOT(trayActivated()));
         });
 
     // Periodic resume data save (every 5 minutes)
@@ -292,9 +314,8 @@ void MainWindow::setupMenuBar()
     settingsMenu->addSeparator();
     settingsMenu->addAction(tr_("action_search_addons"), this, &MainWindow::openSearch);
     settingsMenu->addSeparator();
-    settingsMenu->addAction(tr_("action_speedtest"), this, [this]() {
-        SpeedTestDialog dlg(this);
-        dlg.exec();
+    settingsMenu->addAction(tr_("action_speedtest"), this, []() {
+        QDesktopServices::openUrl(QUrl(QStringLiteral("https://fast.com")));
     });
     settingsMenu->addAction(tr_("action_statistics"), this, [this]() {
         StatisticsDialog dlg(m_session, this);
@@ -357,34 +378,173 @@ void MainWindow::setupMenuBar()
 
 void MainWindow::setupToolBar()
 {
-    // Remove existing toolbars
     for (auto *tb : findChildren<QToolBar *>())
         delete tb;
 
+    const auto &tm = ThemeManager::instance();
+
+    // Values transcribed from canvas/main.jsx MainToolbar:
+    //   height 64, padding '0 16px', gap 4 between children.
     QToolBar *toolbar = addToolBar("Main");
     toolbar->setMovable(false);
-    toolbar->setIconSize(QSize(20, 20));
-    toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolbar->setFixedHeight(64);
+    toolbar->setIconSize(QSize(18, 18));
+    toolbar->setContentsMargins(0, 0, 0, 0);
+    toolbar->setStyleSheet(QString(
+        "QToolBar { background: %1; border: none; spacing: 2px; padding: 0 16px; }"
+        ).arg(tm.bgColor()));
+
+    // Brand cluster: bat 26px + stacked "BATorrent" / version. From JSX:
+    //   gap 10, paddingRight 14, height 36, name font 13/700 letterSpacing -0.2,
+    //   version eyebrow size 8 textDim.
+    auto *brand = new QWidget;
+    auto *brandRow = new QHBoxLayout(brand);
+    brandRow->setContentsMargins(0, 0, 14, 0);
+    brandRow->setSpacing(10);
+
     auto *logoLabel = new QLabel;
     QPixmap logo(":/images/logo1.png");
-    logoLabel->setPixmap(logo.scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    logoLabel->setContentsMargins(4, 0, 8, 0);
-    toolbar->addWidget(logoLabel);
+    logoLabel->setPixmap(logo.scaled(26, 26, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoLabel->setFixedSize(26, 26);
+    brandRow->addWidget(logoLabel);
 
-    toolbar->addSeparator();
+    auto *brandStack = new QWidget;
+    auto *brandCol = new QVBoxLayout(brandStack);
+    brandCol->setContentsMargins(0, 0, 0, 0);
+    brandCol->setSpacing(0);
+    auto *name = new QLabel(QStringLiteral("BATorrent"));
+    {
+        QFont f; f.setPointSize(12); f.setWeight(QFont::Bold);
+        name->setFont(f);
+        name->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+        name->setContentsMargins(0, 0, 0, -2);
+    }
+    brandCol->addWidget(name);
+    auto *ver = new QLabel(QStringLiteral("V") + QStringLiteral(APP_VERSION).toUpper());
+    {
+        QFont f; f.setPointSize(7); f.setWeight(QFont::Black);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.0);
+        ver->setFont(f);
+        ver->setStyleSheet(QString("color: %1;").arg(tm.dimColor()));
+        ver->setContentsMargins(0, -4, 0, 0);
+    }
+    brandCol->addWidget(ver);
+    brandRow->addWidget(brandStack);
+    toolbar->addWidget(brand);
 
-    // Prepend space to text for icon-text gap (Qt has no CSS property for this)
-    auto addTbAction = [&](const QString &icon, const QString &textKey, auto slot) {
-        toolbar->addAction(QIcon(icon), "  " + tr_(textKey), this, slot);
+    // Action buttons. ToolbarBtn spec (primitives.jsx):
+    //   padding 6×14, minWidth 60, gap 4 icon↔label, fontSize 11, weight 500,
+    //   icon 18, color textMuted (active/hover textColor), no border.
+    const QString btnQss = QString(
+        "QToolButton {"
+        "  color: %1; background: transparent;"
+        "  border: none; border-radius: 6px;"
+        "  min-width: 60px;"
+        "  padding: 4px 12px;"
+        "}"
+        "QToolButton:hover { background: %2; color: %3; }"
+        "QToolButton:pressed { background: %4; color: #ffffff; }"
+        ).arg(tm.mutedColor(), tm.surfaceColor(), tm.textColor(), tm.accentTintColor());
+
+    auto addBtn = [&](const QString &icon, const QString &textKey, auto slot, bool danger = false) {
+        auto *btn = new QToolButton;
+        btn->setIcon(QIcon(icon));
+        btn->setIconSize(QSize(18, 18));
+        btn->setText(tr_(textKey));
+        btn->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setAutoRaise(true);
+        btn->setMaximumHeight(56);
+        btn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        if (danger) {
+            btn->setStyleSheet(QString(
+                "QToolButton {"
+                "  color: %1; background: transparent;"
+                "  border: none; border-radius: 6px;"
+                "  min-width: 60px; padding: 4px 12px;"
+                "}"
+                "QToolButton:hover { background: %2; color: #ffffff; }"
+                ).arg(tm.accentLightColor(), tm.accentTintColor()));
+        } else {
+            btn->setStyleSheet(btnQss);
+        }
+        QFont f = btn->font();
+        f.setPointSize(9);
+        f.setWeight(QFont::Medium);
+        btn->setFont(f);
+        connect(btn, &QToolButton::clicked, this, slot);
+        toolbar->addWidget(btn);
+        return btn;
     };
-    addTbAction(":/icons/open.svg", "tb_open", &MainWindow::openTorrent);
-    addTbAction(":/icons/magnet.svg", "tb_magnet", &MainWindow::openMagnet);
-    toolbar->addSeparator();
-    addTbAction(":/icons/pause.svg", "tb_pause", &MainWindow::pauseSelected);
-    addTbAction(":/icons/play.svg", "tb_resume", &MainWindow::resumeSelected);
-    addTbAction(":/icons/trash.svg", "tb_remove", &MainWindow::removeSelected);
-    toolbar->addSeparator();
-    addTbAction(":/icons/settings.svg", "tb_settings", &MainWindow::openSettings);
+
+    addBtn(":/icons/open.svg",     "tb_open",     &MainWindow::openTorrent);
+    addBtn(":/icons/magnet.svg",   "tb_magnet",   &MainWindow::openMagnet);
+    addBtn(":/icons/pause.svg",    "tb_pause",    &MainWindow::pauseSelected);
+    addBtn(":/icons/play.svg",     "tb_resume",   &MainWindow::resumeSelected);
+    addBtn(":/icons/trash.svg",    "tb_remove",   &MainWindow::removeSelected);
+    addBtn(":/icons/search.svg",   "tb_search",   &MainWindow::openSearch);
+    addBtn(":/icons/rss.svg",      "tb_rss",      &MainWindow::openRssManager);
+    addBtn(":/icons/settings.svg", "tb_settings", &MainWindow::openSettings);
+
+    auto *spacer = new QWidget;
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    toolbar->addWidget(spacer);
+
+    // Bandwidth pill (live speeds). Per JSX:
+    //   padding 6×12, borderRadius 6, bg surface, gap 12;
+    //   each side: icon 12 + value 11px muted + unit 9px dim;
+    //   middle vertical separator 1×14 hairline.
+    auto *pill = new QFrame;
+    pill->setStyleSheet(QString(
+        "QFrame { background: %1; border-radius: 6px; }").arg(tm.surfaceColor()));
+    pill->setFixedHeight(30);
+    auto *pillRow = new QHBoxLayout(pill);
+    pillRow->setContentsMargins(12, 4, 12, 4);
+    pillRow->setSpacing(12);
+
+    auto makeSpeedCluster = [&](const QString &iconPath, const QString &valueObjName,
+                                const QString &unitObjName, const QString &numColor) {
+        auto *box = new QWidget;
+        auto *l = new QHBoxLayout(box);
+        l->setContentsMargins(0, 0, 0, 0);
+        l->setSpacing(6);
+        auto *ic = new QLabel;
+        QIcon icon(iconPath);
+        ic->setPixmap(icon.pixmap(12, 12));
+        l->addWidget(ic);
+        auto *val = new QLabel(QStringLiteral("0"));
+        val->setObjectName(valueObjName);
+        QFont vf; vf.setPointSize(10); vf.setWeight(QFont::Medium);
+        val->setFont(vf);
+        val->setStyleSheet(QString("color: %1;").arg(numColor));
+        l->addWidget(val);
+        auto *unit = new QLabel(QStringLiteral("B/s"));
+        unit->setObjectName(unitObjName);
+        QFont uf; uf.setPointSize(8);
+        unit->setFont(uf);
+        unit->setStyleSheet(QString("color: %1;").arg(tm.dimColor()));
+        l->addWidget(unit);
+        return box;
+    };
+
+    pillRow->addWidget(makeSpeedCluster(":/icons/download.svg",
+                                        QStringLiteral("pillDownVal"),
+                                        QStringLiteral("pillDownUnit"),
+                                        tm.textColor()));
+    auto *sep = new QWidget;
+    sep->setFixedSize(1, 14);
+    sep->setStyleSheet(QStringLiteral("background: rgba(255,255,255,0.08);"));
+    pillRow->addWidget(sep);
+    pillRow->addWidget(makeSpeedCluster(":/icons/upload.svg",
+                                        QStringLiteral("pillUpVal"),
+                                        QStringLiteral("pillUpUnit"),
+                                        tm.textColor()));
+
+    toolbar->addWidget(pill);
+
+    // m_bandwidthPill kept for the updateStatusBar setter; we now point it at
+    // the down-value label and pull the up label dynamically when refreshing.
+    m_bandwidthPill = pill->findChild<QLabel *>(QStringLiteral("pillDownVal"));
 }
 
 void MainWindow::setupCentralWidget()
@@ -427,8 +587,8 @@ void MainWindow::setupCentralWidget()
         QModelIndex srcIdx = m_proxyModel->mapToSource(index);
         int row = srcIdx.row();
         if (row < 0 || row >= m_session->torrentCount()) return;
-        TorrentInfo info = m_session->torrentAt(row);
-        revealTorrentRoot(info.savePath, info.name);
+        QString root = m_session->torrentRootPath(row);
+        if (!root.isEmpty()) revealInFileManager(root);
     });
 
     // Filter bar (wrapped in a horizontal scroll area so it overflows
@@ -454,20 +614,34 @@ void MainWindow::setupCentralWidget()
 
     filterLayout->addSpacing(10);
 
-    auto addFilterBtn = [&](const QString &key, const QString &state) {
-        auto *btn = new QPushButton(tr_(key));
+    // Filter pills with live count badges. Pills are tracked in m_filterPills
+    // so updateStatusBar() can refresh badge counts each tick.
+    m_filterPills.clear();
+
+    auto addFilterBtn = [&](const QString &label, const QString &state) {
+        auto *btn = new QPushButton;
         btn->setCheckable(true);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setProperty("filterState", state);
+        btn->setProperty("filterLabel", label);
+        btn->setText(QStringLiteral("%1   0").arg(label));
         btn->setStyleSheet(QString(
-            "QPushButton { background: transparent; color: %1; border: 1px solid %2;"
-            "border-radius: 14px; padding: 6px 14px; font-size: 11px; font-weight: 600; }"
-            "QPushButton:hover { border-color: %3; color: %3; }"
-            "QPushButton:checked { background-color: %3; color: #ffffff; border-color: %3; }")
-            .arg(tm.mutedColor(), tm.borderColor(), tm.accentColor()));
+            "QPushButton {"
+            "  background: transparent; color: %1;"
+            "  border: 1px solid %2; border-radius: 14px;"
+            "  padding: 6px 14px; font-size: 11px; font-weight: 600;"
+            "}"
+            "QPushButton:hover { color: %3; }"
+            "QPushButton:checked {"
+            "  background: %4; color: %3; border-color: %5;"
+            "}")
+            .arg(tm.mutedColor(), tm.borderColor(), tm.textColor(),
+                 tm.accentTintColor(), tm.accentColor()));
         connect(btn, &QPushButton::toggled, this, [this, btn, state](bool checked) {
-            // Uncheck other filter buttons
             if (checked) {
                 for (auto *other : btn->parentWidget()->findChildren<QPushButton *>()) {
-                    if (other != btn) other->setChecked(false);
+                    if (other != btn && other->property("filterState").isValid())
+                        other->setChecked(false);
                 }
                 filterByState(state);
             } else {
@@ -475,13 +649,19 @@ void MainWindow::setupCentralWidget()
             }
         });
         filterLayout->addWidget(btn);
+        m_filterPills.append(btn);
     };
 
-    addFilterBtn("filter_all_active", "all_active");
-    addFilterBtn("filter_downloading", "downloading");
-    addFilterBtn("filter_seeding", "seeding");
-    addFilterBtn("filter_paused", "paused");
-    addFilterBtn("filter_finished", "finished");
+    addFilterBtn("All",         "");
+    addFilterBtn("Active",      "all_active");
+    addFilterBtn("Downloading", "downloading");
+    addFilterBtn("Seeding",     "seeding");
+    addFilterBtn("Paused",      "paused");
+    addFilterBtn("Finished",    "finished");
+    addFilterBtn("Queued",      "queued");
+
+    if (!m_filterPills.isEmpty())
+        m_filterPills.first()->setChecked(true);
 
     filterLayout->addSpacing(10);
 
@@ -507,8 +687,12 @@ void MainWindow::setupCentralWidget()
 
     filterLayout->addStretch();
 
-    // Bat animation (shown when no torrents)
+    // Empty-state widget (shown when there are no torrents). Its three CTAs
+    // route to the same MainWindow actions the toolbar uses.
     m_batWidget = new BatWidget;
+    connect(m_batWidget, &BatWidget::openFileRequested, this, &MainWindow::openTorrent);
+    connect(m_batWidget, &BatWidget::pasteMagnetRequested, this, &MainWindow::openMagnet);
+    connect(m_batWidget, &BatWidget::openSearchRequested, this, &MainWindow::openSearch);
 
     // Top section: filter bar (in horizontal scroll) + table or bat widget
     auto *filterScroll = new QScrollArea;
@@ -533,30 +717,56 @@ void MainWindow::setupCentralWidget()
     m_topStack->setCurrentIndex(1);         // start with bat (no torrents yet)
 
     m_speedGraph = new SpeedGraph;
+    m_speedGraph->setMinimumHeight(30);
     m_detailsPanel = new DetailsPanel(m_session);
+    m_detailsPanel->setMinimumHeight(60);
 
-    auto *bottomWidget = new QWidget;
-    auto *bottomLayout = new QVBoxLayout(bottomWidget);
-    bottomLayout->setContentsMargins(0, 0, 0, 0);
-    bottomLayout->setSpacing(0);
-    bottomLayout->addWidget(m_speedGraph);
-    bottomLayout->addWidget(m_detailsPanel);
+    // Inner splitter: graph ↔ details. Collapsible so the user can hide the
+    // graph completely by dragging the handle to the edge.
+    auto *bottomSplitter = new QSplitter(Qt::Vertical);
+    bottomSplitter->addWidget(m_speedGraph);
+    bottomSplitter->addWidget(m_detailsPanel);
+    bottomSplitter->setStretchFactor(0, 1);
+    bottomSplitter->setStretchFactor(1, 3);
+    bottomSplitter->setSizes({120, 360});
 
+    // Outer splitter: table ↔ (graph + details). Also collapsible — useful
+    // when the user wants to focus on either the list or the details.
     auto *splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(m_topStack);
-    splitter->addWidget(bottomWidget);
-    splitter->setStretchFactor(0, 3);
-    splitter->setStretchFactor(1, 2);
+    splitter->addWidget(bottomSplitter);
+    splitter->setStretchFactor(0, 2);
+    splitter->setStretchFactor(1, 3);
 
     setCentralWidget(splitter);
 }
 
 void MainWindow::setupStatusBar()
 {
+    const auto &tm = ThemeManager::instance();
+
     m_statusLabel = new QLabel(tr_("status_no_torrents"));
+    m_statusLabel->setStyleSheet(QString(
+        "color: %1; font-size: 11px;").arg(tm.mutedColor()));
     statusBar()->addWidget(m_statusLabel);
 
+    m_statusSpeedLabel = new QLabel;
+    m_statusSpeedLabel->setStyleSheet(QString(
+        "color: %1; font-size: 11px;").arg(tm.mutedColor()));
+    statusBar()->addWidget(m_statusSpeedLabel);
+
+    // VPN/interface indicator on the right side, before the global totals.
+    // Hidden when no outgoing interface is bound.
+    m_vpnLabel = new QLabel;
+    m_vpnLabel->setStyleSheet(QString(
+        "QLabel { color: %1; font-size: 11px; font-weight: 500; }"
+        ).arg(tm.stateSeedingColor()));
+    m_vpnLabel->setVisible(false);
+    statusBar()->addPermanentWidget(m_vpnLabel);
+
     m_globalStatsLabel = new QLabel;
+    m_globalStatsLabel->setStyleSheet(QString(
+        "color: %1; font-size: 11px;").arg(tm.mutedColor()));
     statusBar()->addPermanentWidget(m_globalStatsLabel);
 }
 
@@ -564,6 +774,8 @@ void MainWindow::setupTrayIcon()
 {
     m_trayIcon = new QSystemTrayIcon(QIcon(":/images/logo1.png"), this);
 
+    // Right-click keeps a native context menu (Windows users expect this and
+    // it's keyboard-navigable). Left-click opens the rich custom popup.
     auto *trayMenu = new QMenu(this);
     trayMenu->addAction(tr_("tray_show"), this, &MainWindow::trayActivated);
     trayMenu->addSeparator();
@@ -577,9 +789,48 @@ void MainWindow::setupTrayIcon()
     });
     m_trayIcon->setContextMenu(trayMenu);
 
+    m_trayPopup = new TrayPopup(m_session);
+    m_trayPopup->setVpnInterface(m_session->outgoingInterface());
+    m_trayPopup->setAutoShutdown(m_autoShutdown);
+    connect(m_trayPopup, &TrayPopup::showWindowRequested,
+            this, &MainWindow::trayActivated);
+    connect(m_trayPopup, &TrayPopup::openFileRequested,
+            this, &MainWindow::openTorrent);
+    connect(m_trayPopup, &TrayPopup::pasteMagnetRequested,
+            this, &MainWindow::openMagnet);
+    connect(m_trayPopup, &TrayPopup::pauseAllRequested,
+            this, &MainWindow::pauseAll);
+    connect(m_trayPopup, &TrayPopup::resumeAllRequested,
+            this, &MainWindow::resumeAll);
+    connect(m_trayPopup, &TrayPopup::openSettingsRequested,
+            this, &MainWindow::openSettings);
+    connect(m_trayPopup, &TrayPopup::autoShutdownToggled,
+            this, [this](bool on) {
+        m_autoShutdown = on;
+        saveSettings();
+    });
+    connect(m_trayPopup, &TrayPopup::quitRequested, this, [this]() {
+        saveSettings();
+        m_session->saveResumeData();
+        QApplication::quit();
+    });
+    connect(m_session, &SessionManager::killSwitchTriggered, this, [this]() {
+        if (m_trayPopup) m_trayPopup->setKillSwitchActive(true);
+    });
+    connect(m_session, &SessionManager::interfaceRestored, this, [this]() {
+        if (m_trayPopup) m_trayPopup->setKillSwitchActive(false);
+    });
+
     connect(m_trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
-        if (reason == QSystemTrayIcon::Trigger)
-            trayActivated();
+        if (reason == QSystemTrayIcon::Trigger) {
+            if (m_trayPopup) {
+                m_trayPopup->setAutoShutdown(m_autoShutdown);
+                m_trayPopup->setVpnInterface(m_session->outgoingInterface());
+                m_trayPopup->showAt(QCursor::pos());
+            } else {
+                trayActivated();
+            }
+        }
     });
     // Clicking the balloon brings the window forward AND highlights the
     // torrent that fired the notification, so the user lands directly on
@@ -981,22 +1232,87 @@ void MainWindow::updateStatusBar()
         anim->start(QAbstractAnimation::DeleteWhenStopped);
     }
 
+    // Toolbar bandwidth pill — written to the per-direction labels found by
+    // objectName so the pill keeps its icon+value+unit structure rather than
+    // collapsing into a single text run.
+    auto splitSpeed = [](int bps) -> std::pair<QString, QString> {
+        if (bps < 1024)        return {QString::number(bps), "B/s"};
+        if (bps < 1024 * 1024) return {QString::number(bps / 1024.0, 'f', 1), "KB/s"};
+        return {QString::number(bps / (1024.0 * 1024.0), 'f', 1), "MB/s"};
+    };
+    if (auto *root = findChild<QFrame *>()) {
+        if (auto *dv = findChild<QLabel *>(QStringLiteral("pillDownVal"))) {
+            auto [v, u] = splitSpeed(totalDown);
+            dv->setText(v);
+            if (auto *du = findChild<QLabel *>(QStringLiteral("pillDownUnit")))
+                du->setText(u);
+        }
+        if (auto *uv = findChild<QLabel *>(QStringLiteral("pillUpVal"))) {
+            auto [v, u] = splitSpeed(totalUp);
+            uv->setText(v);
+            if (auto *uu = findChild<QLabel *>(QStringLiteral("pillUpUnit")))
+                uu->setText(u);
+        }
+        Q_UNUSED(root);
+    }
+
+    // VPN/interface indicator — show only when we've bound an outgoing
+    // interface in Settings; otherwise the pill in the status bar is hidden.
+    if (m_vpnLabel) {
+        const QString iface = m_session->outgoingInterface();
+        if (iface.isEmpty()) {
+            m_vpnLabel->setVisible(false);
+        } else {
+            m_vpnLabel->setText(QStringLiteral("● VPN %1").arg(iface));
+            m_vpnLabel->setVisible(true);
+        }
+    }
+
     if (count == 0) {
         m_statusLabel->setText(tr_("status_no_torrents"));
         return;
     }
 
-    m_statusLabel->setText(tr_("status_format")
-                               .arg(count)
-                               .arg(totalDown / 1024.0, 0, 'f', 1)
-                               .arg(totalUp / 1024.0, 0, 'f', 1));
+    int activeCount = 0, downloadingCount = 0, seedingCount = 0,
+        pausedCount = 0, finishedCount = 0, queuedCount = 0;
+    for (int i = 0; i < count; ++i) {
+        TorrentInfo info = m_session->torrentAt(i);
+        if (info.paused) ++pausedCount;
+        else if (info.downloadRate > 0 || info.uploadRate > 0) ++activeCount;
+        const QString &st = info.stateString;
+        if (st == tr_("state_downloading")) ++downloadingCount;
+        else if (st == tr_("state_seeding")) ++seedingCount;
+        else if (st == tr_("state_finished")) ++finishedCount;
+        else if (st == tr_("state_queued"))   ++queuedCount;
+    }
+    m_statusLabel->setText(QStringLiteral("%1 torrents · %2 active")
+                               .arg(count).arg(activeCount));
 
-    // Update taskbar progress via tray icon tooltip
+    if (m_statusSpeedLabel) {
+        m_statusSpeedLabel->setText(QStringLiteral("   ↓ %1   ↑ %2")
+                                        .arg(formatSpeed(totalDown),
+                                             formatSpeed(totalUp)));
+    }
+
+    // Refresh filter pill counts.
+    for (QPushButton *pill : m_filterPills) {
+        const QString state = pill->property("filterState").toString();
+        const QString label = pill->property("filterLabel").toString();
+        int n = 0;
+        if (state.isEmpty())                 n = count;
+        else if (state == "all_active")      n = activeCount;
+        else if (state == "downloading")     n = downloadingCount;
+        else if (state == "seeding")         n = seedingCount;
+        else if (state == "paused")          n = pausedCount;
+        else if (state == "finished")        n = finishedCount;
+        else if (state == "queued")          n = queuedCount;
+        pill->setText(QStringLiteral("%1   %2").arg(label).arg(n));
+    }
+
     float avgProgress = totalProgress / count;
     m_trayIcon->setToolTip(QString("BATorrent - %1%").arg(static_cast<int>(avgProgress * 100)));
 
-    // Global stats (right side of status bar)
-    m_globalStatsLabel->setText(tr_("status_global")
+    m_globalStatsLabel->setText(QStringLiteral("Total: %1 down · %2 up   · Ratio %3")
         .arg(formatSize(m_session->globalDownloaded()),
              formatSize(m_session->globalUploaded()),
              QString::number(static_cast<double>(m_session->globalRatio()), 'f', 2)));
@@ -1010,9 +1326,18 @@ void MainWindow::onSelectionChanged()
 
 void MainWindow::onTorrentFinished(const QString &name, const QString &infoHash)
 {
-    m_trayIcon->showMessage(tr_("dlg_download_complete"),
-                            tr_("dlg_finished_msg").arg(name),
-                            QSystemTrayIcon::Information, 5000);
+    QString completedBody = name;
+    for (int i = 0; i < m_session->torrentCount(); ++i) {
+        if (m_session->torrentHashAt(i) == infoHash) {
+            const qint64 totalSize = m_session->torrentAt(i).totalSize;
+            if (totalSize > 0)
+                completedBody = QStringLiteral("%1 · %2")
+                                    .arg(name, formatSize(totalSize));
+            break;
+        }
+    }
+    Toast::notify(tr_("dlg_download_complete"), completedBody,
+                  Toast::Success, this, SLOT(trayActivated()));
     if (m_notifSoundEnabled)
         QApplication::beep();
     // Remember the hash so clicking the balloon focuses the matching row
@@ -1246,6 +1571,10 @@ void MainWindow::openSettings()
 void MainWindow::showWelcome()
 {
     WelcomeDialog dlg(this);
+    connect(&dlg, &WelcomeDialog::openFileRequested,   this, &MainWindow::openTorrent);
+    connect(&dlg, &WelcomeDialog::pasteMagnetRequested, this, &MainWindow::openMagnet);
+    connect(&dlg, &WelcomeDialog::openSearchRequested, this, &MainWindow::openSearch);
+    connect(&dlg, &WelcomeDialog::openRssRequested,    this, &MainWindow::openRssManager);
     dlg.exec();
 
     if (dlg.dontShowAgain()) {
@@ -1467,8 +1796,8 @@ void MainWindow::showContextMenu(const QPoint &pos)
         // multi-file torrents. The user lands on exactly what this torrent
         // produced, with that item highlighted in the file manager.
         menu.addAction(tr_("ctx_open_folder"), this, [this, row = rows.first()]() {
-            TorrentInfo info = m_session->torrentAt(row);
-            revealTorrentRoot(info.savePath, info.name);
+            QString root = m_session->torrentRootPath(row);
+            if (!root.isEmpty()) revealInFileManager(root);
         });
         if (info.progress < 1.0f && !info.paused) {
             menu.addAction(QIcon(":/icons/play.svg"), tr_("ctx_stream"), this, [this, row = rows.first()]() {
@@ -1653,8 +1982,8 @@ void MainWindow::streamTorrent(int row)
             opened = QDesktopServices::openUrl(QUrl::fromLocalFile(m_streamFilePath));
 #endif
             if (opened) {
-                m_trayIcon->showMessage(tr_("ctx_stream"), tr_("stream_started").arg(info.name),
-                                        QSystemTrayIcon::Information, 3000);
+                Toast::notify(tr_("ctx_stream"),
+                              tr_("stream_started").arg(info.name));
             } else {
                 QMessageBox::warning(this, tr_("ctx_stream"), tr_("stream_no_player"));
             }

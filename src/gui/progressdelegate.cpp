@@ -4,7 +4,9 @@
 
 #include "progressdelegate.h"
 #include "thememanager.h"
+#include "torrentmodel.h"
 #include <QPainter>
+#include <QPainterPath>
 #include <QAbstractItemView>
 #include <QtMath>
 
@@ -34,72 +36,79 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
     float progress = progressVar.toFloat();
     const auto &tm = ThemeManager::instance();
 
+    const QString stateKey = index.data(TorrentModel::StateKeyRole).toString();
+    QColor fillColor;
+    if (stateKey == QLatin1String("seeding") || stateKey == QLatin1String("finished")
+            || progress >= 1.0f)
+        fillColor = QColor(tm.stateSeedingColor());
+    else if (stateKey == QLatin1String("paused") || stateKey == QLatin1String("queued"))
+        fillColor = QColor(tm.statePausedColor());
+    else if (stateKey == QLatin1String("error"))
+        fillColor = QColor(tm.stateErrorColor());
+    else
+        fillColor = QColor(tm.stateDownloadingColor());
+
+    if (stateKey == QLatin1String("finished"))
+        fillColor = QColor(tm.stateFinishedColor());
+
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
-    QRect barRect = option.rect.adjusted(6, 6, -6, -6);
-    int radius = 5;
+    // Full-cell filled bar with the percentage overlaid centered — classic
+    // torrent-client look (uTorrent / qBittorrent default), more legible at a
+    // glance than a slim pill + text. Background track in surfaceAlt, fill in
+    // the state color, text in white when fill is wide enough to read against
+    // it, otherwise text color.
+    constexpr int kBarHeight = 18;
+    constexpr int kMargin = 8;
+    const QRect track(option.rect.left() + kMargin,
+                      option.rect.center().y() - kBarHeight / 2,
+                      option.rect.width() - 2 * kMargin,
+                      kBarHeight);
+    constexpr int kRadius = 4;
 
-    // Background track — more visible
-    QColor trackColor(tm.borderColor());
-    painter->setPen(QPen(trackColor.darker(110), 1));
-    painter->setBrush(QColor(tm.surfaceColor()));
-    painter->drawRoundedRect(barRect, radius, radius);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(tm.surfaceAltColor()));
+    painter->drawRoundedRect(track, kRadius, kRadius);
 
-    // Progress fill
     if (progress > 0.001f) {
-        int fillWidth = static_cast<int>(barRect.width() * progress);
-        QRect fillRect(barRect.left(), barRect.top(), fillWidth, barRect.height());
-
-        QColor fillColor;
-        if (progress >= 1.0f)
-            fillColor = QColor(tm.successColor());
-        else
-            fillColor = QColor(tm.accentColor());
-
-        painter->setPen(Qt::NoPen);
+        const int fillW = static_cast<int>(track.width() * progress);
+        const QRect fillRect(track.left(), track.top(), fillW, track.height());
         painter->setBrush(fillColor);
-        painter->drawRoundedRect(fillRect, radius, radius);
-
-        // Shimmer effect (only while downloading, not complete)
-        if (progress < 1.0f && progress > 0.01f) {
-            float elapsed = m_elapsed.elapsed() / 1000.0f;
-            // Shimmer position cycles across the bar — slower, more subtle
-            float shimmerPos = fmod(elapsed * 0.4f, 1.4f) - 0.2f;
-            float shimmerX = fillRect.left() + shimmerPos * fillRect.width();
-            float shimmerWidth = fillRect.width() * 0.25f;
-
-            QLinearGradient shimmer(shimmerX, 0, shimmerX + shimmerWidth, 0);
-            QColor highlight = fillColor.lighter(150);
-            highlight.setAlpha(0);
-            shimmer.setColorAt(0.0, highlight);
-            highlight.setAlpha(50);
-            shimmer.setColorAt(0.5, highlight);
-            highlight.setAlpha(0);
-            shimmer.setColorAt(1.0, highlight);
-
-            painter->setClipRect(fillRect);
-            painter->setBrush(shimmer);
-            painter->drawRoundedRect(fillRect, radius, radius);
-            painter->setClipping(false);
+        // Round only the leading edge; if fill spans full width the track's
+        // own rounding handles the trailing edge already.
+        if (fillW < track.width()) {
+            QPainterPath path;
+            path.moveTo(track.left() + kRadius, track.top());
+            path.lineTo(fillRect.right(), track.top());
+            path.lineTo(fillRect.right(), track.bottom());
+            path.lineTo(track.left() + kRadius, track.bottom());
+            path.arcTo(track.left(), track.bottom() - 2 * kRadius,
+                       2 * kRadius, 2 * kRadius, 270, -90);
+            path.lineTo(track.left(), track.top() + kRadius);
+            path.arcTo(track.left(), track.top(),
+                       2 * kRadius, 2 * kRadius, 180, -90);
+            path.closeSubpath();
+            painter->drawPath(path);
+        } else {
+            painter->drawRoundedRect(fillRect, kRadius, kRadius);
         }
     }
 
-    // Percentage text — use dark text on bright fills for readability
-    QString text = QString::number(progress * 100.0, 'f', 1) + "%";
-    QColor textColor;
-    if (progress >= 1.0f)
-        textColor = QColor("#0a2e14"); // dark green on green bar
-    else if (progress > 0.5f)
-        textColor = QColor("#ffffff"); // white on red bar
-    else
-        textColor = QColor(tm.textColor());
-    painter->setPen(textColor);
+    // Percentage centered on the bar. White when over the colored fill,
+    // text color over the empty track.
     QFont f = painter->font();
-    f.setPointSize(8);
+    f.setPointSize(9);
     f.setWeight(QFont::DemiBold);
     painter->setFont(f);
-    painter->drawText(barRect, Qt::AlignCenter, text);
+    const QString text = QString::number(progress * 100.0, 'f', 1) + "%";
+    const QFontMetrics fm(f);
+    const int textW = fm.horizontalAdvance(text);
+    const int textCenterX = track.center().x();
+    const int fillEdge = track.left() + static_cast<int>(track.width() * progress);
+    const bool overFill = (textCenterX - textW / 2) < fillEdge - 4;
+    painter->setPen(overFill ? QColor("#ffffff") : QColor(tm.textColor()));
+    painter->drawText(track, Qt::AlignCenter, text);
 
     painter->restore();
 }

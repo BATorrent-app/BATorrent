@@ -24,106 +24,197 @@ QStringList ThemeManager::themeNames()
 QString ThemeManager::accentColor() const
 {
     switch (m_theme) {
-    case Light: return "#b91c1c";
-    case Midnight: return "#f43f5e";
-    default: return "#dc2626";
-    }
-}
-
-QString ThemeManager::bgColor() const
-{
-    switch (m_theme) {
-    case Light: return "#f5f5f7";
-    case Midnight: return "#08080e";
-    default: return "#111115";
-    }
-}
-
-QString ThemeManager::surfaceColor() const
-{
-    switch (m_theme) {
-    case Light: return "#ffffff";
-    case Midnight: return "#0e0e18";
-    default: return "#1c1c22";
-    }
-}
-
-QString ThemeManager::textColor() const
-{
-    switch (m_theme) {
-    case Light: return "#1a1a1a";
-    case Midnight: return "#d8d8e0";
-    default: return "#e0e0e6";
-    }
-}
-
-QString ThemeManager::mutedColor() const
-{
-    switch (m_theme) {
-    case Light: return "#6b7280";
-    case Midnight: return "#6b6b80";
-    default: return "#78788a";
-    }
-}
-
-QString ThemeManager::borderColor() const
-{
-    switch (m_theme) {
-    case Light: return "#d1d5db";
-    case Midnight: return "#1a1a2a";
-    default: return "#2a2a32";
+    case Light:    return "#dc2626";
+    case Midnight: return "#dc2626";
+    default:       return "#dc2626";
     }
 }
 
 QString ThemeManager::accentDarkColor() const
 {
     switch (m_theme) {
-    case Light: return "#991b1b";
-    case Midnight: return "#be123c";
-    default: return "#2a1015";
+    case Light:    return "#991b1b";
+    case Midnight: return "#991b1b";
+    default:       return "#991b1b";
     }
 }
 
 QString ThemeManager::accentLightColor() const
 {
     switch (m_theme) {
-    case Light: return "#dc2626";
-    case Midnight: return "#fb7185";
-    default: return "#ef4444";
+    case Light:    return "#ef4444";
+    case Midnight: return "#ef4444";
+    default:       return "#ef4444";
     }
 }
 
 QString ThemeManager::accentSurfaceColor() const
 {
     switch (m_theme) {
-    case Light: return "#fef2f2";
+    case Light:    return "#fef2f2";
     case Midnight: return "#1a0a10";
-    default: return "#1f1012";
+    default:       return "#1f1012";
+    }
+}
+
+QString ThemeManager::bgColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#f7f6f4";
+    case Midnight: return "#08070d";
+    default:       return "#0e0a0a";
+    }
+}
+
+QString ThemeManager::surfaceColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#ffffff";
+    case Midnight: return "#12121c";
+    default:       return "#1a1a20";
+    }
+}
+
+QString ThemeManager::panelColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#fbfaf8";
+    case Midnight: return "#181425";
+    default:       return "#201a1a";
+    }
+}
+
+QString ThemeManager::surfaceAltColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#f1efeb";
+    case Midnight: return "#0f0e18";
+    default:       return "#16161c";
+    }
+}
+
+QString ThemeManager::textColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#1a1614";
+    case Midnight: return "#eceafb";
+    default:       return "#f0f0f0";
+    }
+}
+
+QString ThemeManager::mutedColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#5e574f";
+    case Midnight: return "#9a95c8";
+    default:       return "#b0b0b8";
+    }
+}
+
+QString ThemeManager::dimColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#94897c";
+    case Midnight: return "#605c82";
+    default:       return "#71717a";
+    }
+}
+
+QString ThemeManager::borderColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#e5e1da";
+    case Midnight: return "#22203a";
+    default:       return "#2a2a35";
+    }
+}
+
+QString ThemeManager::borderStrongColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#cfcac0";
+    case Midnight: return "#322e50";
+    default:       return "#3a3a48";
+    }
+}
+
+QString ThemeManager::hairlineColor() const
+{
+    return m_theme == Light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)";
+}
+
+QString ThemeManager::accentTintColor() const
+{
+    switch (m_theme) {
+    case Light:    return "rgba(220,38,38,0.08)";
+    case Midnight: return "rgba(220,38,38,0.10)";
+    default:       return "rgba(220,38,38,0.10)";
+    }
+}
+
+QString ThemeManager::accentTintStrongColor() const
+{
+    switch (m_theme) {
+    case Light:    return "rgba(220,38,38,0.14)";
+    case Midnight: return "rgba(220,38,38,0.18)";
+    default:       return "rgba(220,38,38,0.18)";
+    }
+}
+
+QString ThemeManager::stateDownloadingColor() const
+{
+    return accentColor(); // red
+}
+
+QString ThemeManager::stateSeedingColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#b45309";
+    case Midnight: return "#f59e0b";
+    default:       return "#f59e0b";
+    }
+}
+
+QString ThemeManager::stateFinishedColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#94897c";
+    case Midnight: return "#9a95c8";
+    default:       return "#b0b0b8";
+    }
+}
+
+QString ThemeManager::statePausedColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#cfcac0";
+    case Midnight: return "#2d2a42";
+    default:       return "#3a3035";
+    }
+}
+
+QString ThemeManager::stateErrorColor() const
+{
+    switch (m_theme) {
+    case Light:    return "#7f1d1d";
+    default:       return "#991b1b";
     }
 }
 
 QString ThemeManager::successColor() const
 {
-    switch (m_theme) {
-    case Light: return "#16a34a";
-    default: return "#22c55e";
-    }
+    // Seeding-equivalent (amber) — used for success states in dialogs.
+    return stateSeedingColor();
 }
 
 QString ThemeManager::warningColor() const
 {
-    switch (m_theme) {
-    case Light: return "#ca8a04";
-    default: return "#eab308";
-    }
+    return accentColor();
 }
 
 QString ThemeManager::errorColor() const
 {
-    switch (m_theme) {
-    case Light: return "#dc2626";
-    default: return "#ef4444";
-    }
+    return stateErrorColor();
 }
 
 QString ThemeManager::formLabelStyle() const
@@ -154,24 +245,18 @@ QString ThemeManager::dialogStyleSheet() const
 {
     QString css = R"(
         QDialog { background-color: @bg; color: @tx; }
-        QTabWidget::pane {
-            background-color: @bg; border: 1px solid @bd;
-            border-top: none;
-        }
+        QTabWidget::pane { background-color: @bg; border: none; }
         QTabBar::tab {
             background-color: transparent; color: @mt;
             padding: 10px 22px; border: none;
             border-bottom: 2px solid transparent;
             font-weight: 600; font-size: 12px;
         }
-        QTabBar::tab:selected {
-            color: @tx; border-bottom: 2px solid @ac;
-            background-color: @sf;
-        }
-        QTabBar::tab:hover { color: @tx; background-color: @acSf; }
+        QTabBar::tab:selected { color: @tx; border-bottom: 2px solid @ac; }
+        QTabBar::tab:hover { color: @tx; }
         QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit {
             background-color: @sf; color: @tx;
-            border: 1px solid @bd; border-radius: 6px;
+            border: 1px solid @bd; border-radius: 4px;
             padding: 7px 10px; font-size: 13px;
         }
         QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus,
@@ -182,11 +267,11 @@ QString ThemeManager::dialogStyleSheet() const
             selection-background-color: @acSf; border: 1px solid @bd;
         }
         QPushButton {
-            background-color: @sf; color: @tx;
-            border: 1px solid @bd; border-radius: 6px;
-            padding: 8px 18px; font-weight: 600; font-size: 13px;
+            background-color: transparent; color: @tx;
+            border: 1px solid @bd; border-radius: 4px;
+            padding: 8px 18px; font-weight: 500; font-size: 12px;
         }
-        QPushButton:hover { background-color: @acSf; border-color: @ac; color: #ffffff; }
+        QPushButton:hover { background-color: @sf; }
         QPushButton[default="true"], QPushButton:default {
             background-color: @ac; color: #ffffff; border-color: @ac;
         }
@@ -194,9 +279,11 @@ QString ThemeManager::dialogStyleSheet() const
             background-color: @acLt; border-color: @acLt;
         }
         QLabel { color: @tx; }
-        QGroupBox { color: @tx; }
-        QRadioButton { color: @tx; }
-        QCheckBox { color: @tx; spacing: 8px; font-size: 13px; }
+        QGroupBox {
+            color: @tx; font-weight: 600;
+            border: none; margin-top: 16px; padding-top: 8px;
+        }
+        QRadioButton, QCheckBox { color: @tx; spacing: 8px; font-size: 13px; }
         QCheckBox::indicator {
             width: 16px; height: 16px;
             border: 1px solid @bd; border-radius: 4px;
@@ -207,21 +294,13 @@ QString ThemeManager::dialogStyleSheet() const
         }
         QScrollArea { background: transparent; border: none; }
         QScrollArea > QWidget { background: transparent; }
-        QLabel { color: @tx; }
-        QGroupBox {
-            color: @tx; font-weight: 600;
-            border: 1px solid @bd; border-radius: 6px;
-            margin-top: 8px; padding-top: 16px;
-        }
         QProgressBar {
-            background-color: @bd; border: 1px solid @bd;
-            border-radius: 5px; text-align: center;
-            color: @tx; font-weight: 600; font-size: 11px;
+            background-color: @sf; border: none;
+            border-radius: 3px; text-align: center;
+            color: @tx; font-size: 11px; height: 6px;
         }
         QProgressBar::chunk {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 @acDk, stop:1 @ac);
-            border-radius: 4px;
+            background-color: @ac; border-radius: 3px;
         }
     )";
     return applyColors(css, bgColor(), surfaceColor(), textColor(),
@@ -234,92 +313,82 @@ QString ThemeManager::styleSheet() const
     QString css = R"(
         QMainWindow { background-color: @bg; }
 
-        /* ---- Menu bar ---- */
         QMenuBar {
-            background-color: @sf; color: @tx;
-            border-bottom: 1px solid @bd; font-weight: 600;
+            background-color: @bg; color: @tx;
+            border: none; font-weight: 500;
         }
-        QMenuBar::item:selected { background-color: @acSf; color: @tx; }
+        QMenuBar::item:selected { background-color: @sf; color: @tx; }
         QMenu {
             background-color: @sf; color: @tx; border: 1px solid @bd;
         }
         QMenu::item:selected { background-color: @acSf; }
         QMenu::separator { background-color: @bd; height: 1px; margin: 4px 8px; }
 
-        /* ---- Toolbar ---- */
         QToolBar {
-            background-color: @sf; border-bottom: 1px solid @bd;
-            spacing: 8px; padding: 8px 12px;
+            background-color: @bg; border: none;
+            spacing: 4px; padding: 6px 10px;
         }
         QToolButton {
-            color: @tx; background-color: transparent;
-            border: 1px solid transparent; border-radius: 6px;
-            padding: 6px 14px 6px 10px; font-weight: 600; font-size: 12px;
+            color: @mt; background-color: transparent;
+            border: none; border-radius: 6px;
+            padding: 6px 12px; font-weight: 500; font-size: 11px;
         }
-        QToolButton:hover {
-            background-color: @acSf; color: #ffffff; border-color: @bd;
-        }
-        QToolButton:pressed { background-color: @acDk; color: #ffffff; }
+        QToolButton:hover { background-color: @sf; color: @tx; }
+        QToolButton:pressed { background-color: @acSf; color: #ffffff; }
 
-        /* ---- Table ---- */
         QTableView {
-            background-color: @bg; alternate-background-color: @sf;
+            background-color: @bg;
+            alternate-background-color: @bg;
             color: @tx; gridline-color: transparent; border: none;
             selection-background-color: rgba(220, 38, 38, 0.12);
             selection-color: @tx;
-            font-size: 13px;
+            font-size: 12px;
         }
-        QTableView::item { padding: 4px 6px; min-height: 36px; }
+        QTableView::item { padding: 6px 8px; min-height: 36px; }
 
-        /* ---- Table headers ---- */
         QHeaderView::section {
-            background-color: @sf; color: @tx;
+            background-color: @bg; color: @mt;
             border: none; border-bottom: 1px solid @bd;
-            padding: 8px 6px; font-weight: 600; font-size: 11px;
-            text-transform: uppercase;
+            padding: 10px 8px; font-weight: 900; font-size: 9px;
         }
 
-        /* ---- Tab widget (details panel) ---- */
-        QTabWidget::pane {
-            background-color: @bg; border: 1px solid @bd;
-            border-top: none;
-        }
+        QTabWidget::pane { background-color: @bg; border: none; }
         QTabBar::tab {
             background-color: transparent; color: @mt;
             padding: 10px 22px; border: none;
             border-bottom: 2px solid transparent;
             font-weight: 600;
         }
-        QTabBar::tab:selected {
-            color: @tx; border-bottom: 2px solid @ac;
-            background-color: @sf;
-        }
-        QTabBar::tab:hover { color: @tx; background-color: @acSf; }
+        QTabBar::tab:selected { color: @tx; border-bottom: 2px solid @ac; }
+        QTabBar::tab:hover { color: @tx; }
 
         QLabel { color: @tx; }
 
-        /* ---- Status bar ---- */
         QStatusBar {
-            background-color: @sf; color: @mt;
-            border-top: 1px solid @bd; font-size: 11px;
+            background-color: @bg; color: @mt;
+            border: none; font-size: 11px;
         }
 
-        /* ---- Splitter ---- */
-        QSplitter::handle { background-color: @bd; height: 1px; }
+        QSplitter::handle:vertical {
+            background-color: @bd;
+            height: 1px;
+            margin: 3px 0;
+        }
+        QSplitter::handle:vertical:hover { background-color: @ac; }
+        QSplitter::handle:horizontal {
+            background-color: @bd;
+            width: 1px;
+            margin: 0 3px;
+        }
+        QSplitter::handle:horizontal:hover { background-color: @ac; }
 
-        /* ---- Progress bar ---- */
         QProgressBar {
-            background-color: @bd; border: 1px solid @bd;
-            border-radius: 5px; text-align: center;
-            color: @tx; font-weight: 600; font-size: 11px;
+            background-color: @sf; border: none;
+            border-radius: 3px; text-align: center;
+            color: @tx; font-size: 11px;
         }
-        QProgressBar::chunk {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 @acDk, stop:1 @acLt);
-            border-radius: 4px;
-        }
+        QProgressBar::chunk { background-color: @ac; border-radius: 3px; }
 
-        /* ---- Scrollbars ---- */
         QScrollBar:vertical {
             background-color: @bg; width: 8px; border: none;
         }
@@ -337,15 +406,12 @@ QString ThemeManager::styleSheet() const
         QScrollBar::handle:horizontal:hover { background-color: @mt; }
         QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
 
-        /* ---- Details panel inner tables ---- */
         QTableWidget {
-            background-color: @bg; alternate-background-color: @sf;
-            color: @tx; border: none;
+            background-color: @bg; color: @tx; border: none;
             selection-background-color: rgba(220, 38, 38, 0.12);
-            selection-color: @tx; font-size: 13px;
+            selection-color: @tx; font-size: 12px;
         }
 
-        /* ---- Combo box in tables ---- */
         QComboBox {
             background-color: @sf; color: @tx;
             border: 1px solid @bd; border-radius: 4px;

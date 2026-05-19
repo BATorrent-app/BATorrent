@@ -8,8 +8,7 @@
 #include "thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QFormLayout>
-#include <QGroupBox>
+#include <QFrame>
 #include <QSplitter>
 #include <QListWidget>
 #include <QTableWidget>
@@ -21,63 +20,179 @@
 #include <QLabel>
 #include <QFileDialog>
 
+namespace {
+
+QLabel *makeEyebrow(const QString &text, QWidget *parent)
+{
+    const auto &tm = ThemeManager::instance();
+    auto *lbl = new QLabel(text.toUpper(), parent);
+    QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+    f.setLetterSpacing(QFont::AbsoluteSpacing, 1.4);
+    lbl->setFont(f);
+    lbl->setStyleSheet(QString("color: %1; background: transparent;").arg(tm.dimColor()));
+    return lbl;
+}
+
+QLabel *makeFieldLabel(const QString &text, QWidget *parent)
+{
+    const auto &tm = ThemeManager::instance();
+    auto *lbl = new QLabel(text, parent);
+    QFont f; f.setPointSize(10); f.setWeight(QFont::Medium);
+    lbl->setFont(f);
+    lbl->setStyleSheet(QString("color: %1; background: transparent;").arg(tm.mutedColor()));
+    return lbl;
+}
+
+} // namespace
+
 RssDialog::RssDialog(QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(tr_("rss_title"));
-    setMinimumSize(800, 550);
-    setStyleSheet(ThemeManager::instance().dialogStyleSheet());
+    setMinimumSize(720, 540);
+    resize(820, 620);
 
-    auto &tm = ThemeManager::instance();
-    auto *mainLayout = new QVBoxLayout(this);
+    const auto &tm = ThemeManager::instance();
 
-    // Add feed bar
-    auto *addLayout = new QHBoxLayout;
+    setStyleSheet(QString(
+        "QDialog {"
+        "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
+        "      stop:0 rgba(220,38,38,0.10),"
+        "      stop:1 %1);"
+        "  color: %2;"
+        "}"
+        "QLabel { background: transparent; color: %2; }"
+        "QLineEdit, QComboBox, QSpinBox {"
+        "  background: %3; color: %2;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  padding: 7px 10px; font-size: 11px;"
+        "  selection-background-color: %5;"
+        "}"
+        "QLineEdit:focus, QComboBox:focus, QSpinBox:focus { border-color: %5; }"
+        "QListWidget, QTableWidget, QTreeWidget {"
+        "  background: %7; color: %2;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  alternate-background-color: %3; outline: none;"
+        "}"
+        "QListWidget::item, QTableWidget::item, QTreeWidget::item { padding: 6px 8px; }"
+        "QListWidget::item:selected, QTableWidget::item:selected, QTreeWidget::item:selected {"
+        "  background: %6; color: %2;"
+        "}"
+        "QHeaderView::section {"
+        "  background: %1; color: %8;"
+        "  border: none; border-bottom: 1px solid %4;"
+        "  padding: 6px 10px; font-weight: 600;"
+        "  text-transform: uppercase; font-size: 9px; letter-spacing: 1px;"
+        "}"
+        "QCheckBox { color: %2; spacing: 8px; font-size: 11px; }"
+        "QCheckBox::indicator {"
+        "  width: 14px; height: 14px;"
+        "  border: 1px solid %4; border-radius: 4px;"
+        "  background: %3;"
+        "}"
+        "QCheckBox::indicator:checked { background: %5; border-color: %5; }"
+        "QSplitter::handle { background: transparent; }"
+        "QSplitter::handle:horizontal { width: 12px; }"
+        "#primaryBtn {"
+        "  background: %5; color: #ffffff;"
+        "  border: none; border-radius: 6px;"
+        "  padding: 8px 22px; font-size: 11px; font-weight: 600;"
+        "}"
+        "#primaryBtn:hover { background: %9; }"
+        "#ghostBtn {"
+        "  background: transparent; color: %2;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  padding: 8px 18px; font-size: 11px; font-weight: 500;"
+        "}"
+        "#ghostBtn:hover { background: %3; }"
+        ).arg(tm.bgColor(), tm.textColor(), tm.surfaceColor(),
+              tm.borderColor(), tm.accentColor(), tm.accentTintColor(),
+              tm.panelColor(), tm.dimColor(), tm.accentLightColor()));
+
+    auto *root = new QVBoxLayout(this);
+    root->setContentsMargins(32, 28, 32, 24);
+    root->setSpacing(0);
+
+    auto *eyebrow = new QLabel(tr_("rss_eyebrow").toUpper());
+    {
+        QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.2);
+        eyebrow->setFont(f);
+        eyebrow->setStyleSheet(QString("color: %1;").arg(tm.accentColor()));
+    }
+    root->addWidget(eyebrow);
+    root->addSpacing(6);
+
+    auto *heading = new QLabel(tr_("rss_heading"));
+    {
+        QFont f; f.setPointSize(18); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, -0.3);
+        heading->setFont(f);
+        heading->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+    }
+    root->addWidget(heading);
+    root->addSpacing(4);
+
+    auto *subtitle = new QLabel(tr_("rss_subtitle"));
+    {
+        QFont f; f.setPointSize(11);
+        subtitle->setFont(f);
+        subtitle->setStyleSheet(QString("color: %1;").arg(tm.mutedColor()));
+        subtitle->setWordWrap(true);
+    }
+    root->addWidget(subtitle);
+    root->addSpacing(18);
+
+    auto *addRow = new QHBoxLayout;
+    addRow->setSpacing(8);
     m_urlEdit = new QLineEdit;
     m_urlEdit->setPlaceholderText(tr_("rss_url_hint"));
-    m_urlEdit->setStyleSheet(QString(
-        "QLineEdit { background: %1; color: %2; border: 1px solid %3;"
-        "border-radius: 6px; padding: 8px 12px; font-size: 14px; }"
-        "QLineEdit:focus { border-color: %4; }")
-        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
-    addLayout->addWidget(m_urlEdit);
+    {
+        QFont f("Menlo");
+        f.setStyleHint(QFont::Monospace);
+        f.setPointSize(10);
+        m_urlEdit->setFont(f);
+    }
+    addRow->addWidget(m_urlEdit, 1);
 
     auto *addBtn = new QPushButton(tr_("rss_add"));
-    addBtn->setFixedWidth(100);
+    addBtn->setObjectName(QStringLiteral("primaryBtn"));
+    addBtn->setCursor(Qt::PointingHandCursor);
     connect(addBtn, &QPushButton::clicked, this, &RssDialog::addFeed);
     connect(m_urlEdit, &QLineEdit::returnPressed, this, &RssDialog::addFeed);
-    addLayout->addWidget(addBtn);
-    mainLayout->addLayout(addLayout);
+    addRow->addWidget(addBtn);
+    root->addLayout(addRow);
+    root->addSpacing(20);
 
-    // Splitter: feed list (left) + items/settings (right)
     auto *splitter = new QSplitter(Qt::Horizontal);
+    splitter->setHandleWidth(12);
+    splitter->setChildrenCollapsible(false);
 
-    // Left: feed list
     auto *leftWidget = new QWidget;
     auto *leftLayout = new QVBoxLayout(leftWidget);
     leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(0);
 
-    auto *feedLabel = new QLabel(tr_("rss_feeds"));
-    feedLabel->setStyleSheet(QString("color: %1; font-weight: bold; padding: 4px;").arg(tm.textColor()));
-    leftLayout->addWidget(feedLabel);
+    leftLayout->addWidget(makeEyebrow(tr_("rss_feeds"), leftWidget));
+    leftLayout->addSpacing(8);
 
     m_feedList = new QListWidget;
-    m_feedList->setStyleSheet(QString(
-        "QListWidget { background: %1; color: %2; border: 1px solid %3; border-radius: 6px; }"
-        "QListWidget::item { padding: 8px; }"
-        "QListWidget::item:selected { background: %4; }")
-        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
+    m_feedList->setAlternatingRowColors(true);
     connect(m_feedList, &QListWidget::currentRowChanged, this, &RssDialog::onFeedSelected);
-    leftLayout->addWidget(m_feedList);
+    leftLayout->addWidget(m_feedList, 1);
+    leftLayout->addSpacing(10);
 
     auto *feedBtnLayout = new QHBoxLayout;
+    feedBtnLayout->setSpacing(8);
     auto *removeBtn = new QPushButton(tr_("rss_remove"));
-    removeBtn->setFixedWidth(100);
+    removeBtn->setObjectName(QStringLiteral("ghostBtn"));
+    removeBtn->setCursor(Qt::PointingHandCursor);
     connect(removeBtn, &QPushButton::clicked, this, &RssDialog::removeFeed);
     feedBtnLayout->addWidget(removeBtn);
 
     auto *refreshBtn = new QPushButton(tr_("rss_refresh_all"));
-    refreshBtn->setFixedWidth(100);
+    refreshBtn->setObjectName(QStringLiteral("ghostBtn"));
+    refreshBtn->setCursor(Qt::PointingHandCursor);
     connect(refreshBtn, &QPushButton::clicked, this, &RssDialog::refreshAllFeeds);
     feedBtnLayout->addWidget(refreshBtn);
     feedBtnLayout->addStretch();
@@ -85,108 +200,153 @@ RssDialog::RssDialog(QWidget *parent)
 
     splitter->addWidget(leftWidget);
 
-    // Right: items table + feed settings
     auto *rightWidget = new QWidget;
     auto *rightLayout = new QVBoxLayout(rightWidget);
     rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(0);
 
-    // Feed settings group
-    auto *settingsGroup = new QGroupBox(tr_("rss_feed_settings"));
-    auto *settingsLayout = new QFormLayout(settingsGroup);
+    auto *settingsCard = new QFrame;
+    settingsCard->setObjectName(QStringLiteral("settingsCard"));
+    settingsCard->setStyleSheet(QString(
+        "QFrame#settingsCard {"
+        "  background: %1; border: none; border-radius: 8px;"
+        "}"
+        ).arg(tm.panelColor()));
+    auto *settingsCol = new QVBoxLayout(settingsCard);
+    settingsCol->setContentsMargins(16, 14, 16, 16);
+    settingsCol->setSpacing(10);
 
-    QString inputStyle = QString(
-        "QLineEdit, QSpinBox { background: %1; color: %2; border: 1px solid %3;"
-        "border-radius: 4px; padding: 4px 8px; }")
-        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor());
+    auto *settingsHeader = makeEyebrow(tr_("rss_feed_settings"), settingsCard);
+    settingsCol->addWidget(settingsHeader);
 
+    auto *togglesRow = new QHBoxLayout;
+    togglesRow->setSpacing(18);
     m_enabledCheck = new QCheckBox(tr_("rss_enabled"));
-    settingsLayout->addRow(m_enabledCheck);
-
     m_autoDownloadCheck = new QCheckBox(tr_("rss_auto_download"));
-    settingsLayout->addRow(m_autoDownloadCheck);
+    togglesRow->addWidget(m_enabledCheck);
+    togglesRow->addWidget(m_autoDownloadCheck);
+    togglesRow->addStretch();
+    settingsCol->addLayout(togglesRow);
 
+    auto *filterCol = new QVBoxLayout;
+    filterCol->setSpacing(4);
+    filterCol->addWidget(makeFieldLabel(tr_("rss_filter"), settingsCard));
     m_filterEdit = new QLineEdit;
     m_filterEdit->setPlaceholderText(tr_("rss_filter_hint"));
-    m_filterEdit->setStyleSheet(inputStyle);
-    settingsLayout->addRow(tr_("rss_filter"), m_filterEdit);
+    {
+        QFont f("Menlo");
+        f.setStyleHint(QFont::Monospace);
+        f.setPointSize(10);
+        m_filterEdit->setFont(f);
+    }
+    filterCol->addWidget(m_filterEdit);
+    settingsCol->addLayout(filterCol);
 
+    auto *pathCol = new QVBoxLayout;
+    pathCol->setSpacing(4);
+    pathCol->addWidget(makeFieldLabel(tr_("rss_save_path"), settingsCard));
+    auto *pathRow = new QHBoxLayout;
+    pathRow->setSpacing(8);
     m_savePathEdit = new QLineEdit;
     m_savePathEdit->setPlaceholderText(tr_("rss_save_path_hint"));
-    m_savePathEdit->setStyleSheet(inputStyle);
-    auto *pathLayout = new QHBoxLayout;
-    pathLayout->addWidget(m_savePathEdit);
+    {
+        QFont f("Menlo");
+        f.setStyleHint(QFont::Monospace);
+        f.setPointSize(10);
+        m_savePathEdit->setFont(f);
+    }
+    pathRow->addWidget(m_savePathEdit, 1);
     auto *browseBtn = new QPushButton(tr_("settings_browse"));
-    browseBtn->setFixedWidth(80);
+    browseBtn->setObjectName(QStringLiteral("ghostBtn"));
+    browseBtn->setCursor(Qt::PointingHandCursor);
     connect(browseBtn, &QPushButton::clicked, this, [this]() {
         QString dir = QFileDialog::getExistingDirectory(this, tr_("dlg_save_to"));
         if (!dir.isEmpty()) m_savePathEdit->setText(dir);
     });
-    pathLayout->addWidget(browseBtn);
-    settingsLayout->addRow(tr_("rss_save_path"), pathLayout);
+    pathRow->addWidget(browseBtn);
+    pathCol->addLayout(pathRow);
+    settingsCol->addLayout(pathCol);
 
+    auto *intervalRow = new QHBoxLayout;
+    intervalRow->setSpacing(10);
+    auto *intervalCol = new QVBoxLayout;
+    intervalCol->setSpacing(4);
+    intervalCol->addWidget(makeFieldLabel(tr_("rss_interval"), settingsCard));
     m_intervalSpin = new QSpinBox;
     m_intervalSpin->setRange(5, 1440);
     m_intervalSpin->setValue(30);
-    m_intervalSpin->setSuffix(" min");
-    m_intervalSpin->setStyleSheet(inputStyle);
-    settingsLayout->addRow(tr_("rss_interval"), m_intervalSpin);
-
-    m_lastCheckedLabel = new QLabel;
-    m_lastCheckedLabel->setStyleSheet("color: #888;");
-    settingsLayout->addRow(m_lastCheckedLabel);
+    m_intervalSpin->setSuffix(QString(" %1").arg(tr_("rss_minutes_suffix")));
+    m_intervalSpin->setFixedWidth(140);
+    intervalCol->addWidget(m_intervalSpin);
+    intervalRow->addLayout(intervalCol);
+    intervalRow->addStretch();
 
     m_saveBtn = new QPushButton(tr_("rss_save_settings"));
-    m_saveBtn->setFixedWidth(140);
+    m_saveBtn->setObjectName(QStringLiteral("primaryBtn"));
+    m_saveBtn->setCursor(Qt::PointingHandCursor);
     connect(m_saveBtn, &QPushButton::clicked, this, &RssDialog::saveCurrentFeedSettings);
-    settingsLayout->addRow(m_saveBtn);
+    intervalRow->addWidget(m_saveBtn, 0, Qt::AlignBottom);
+    settingsCol->addLayout(intervalRow);
 
-    rightLayout->addWidget(settingsGroup);
+    m_lastCheckedLabel = new QLabel;
+    {
+        QFont f; f.setPointSize(10);
+        m_lastCheckedLabel->setFont(f);
+        m_lastCheckedLabel->setStyleSheet(QString("color: %1; background: transparent;").arg(tm.dimColor()));
+    }
+    settingsCol->addWidget(m_lastCheckedLabel);
 
-    // Items table
-    auto *itemsLabel = new QLabel(tr_("rss_items"));
-    itemsLabel->setStyleSheet(QString("color: %1; font-weight: bold; padding: 4px;").arg(tm.textColor()));
-    rightLayout->addWidget(itemsLabel);
+    rightLayout->addWidget(settingsCard);
+    rightLayout->addSpacing(16);
+
+    rightLayout->addWidget(makeEyebrow(tr_("rss_items"), rightWidget));
+    rightLayout->addSpacing(8);
 
     m_itemsTable = new QTableWidget;
     m_itemsTable->setColumnCount(3);
     m_itemsTable->setHorizontalHeaderLabels({
         tr_("rss_col_title"), tr_("rss_col_size"), tr_("rss_col_date")
     });
-    m_itemsTable->horizontalHeader()->setStretchLastSection(true);
+    m_itemsTable->horizontalHeader()->setStretchLastSection(false);
     m_itemsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    m_itemsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    m_itemsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     m_itemsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_itemsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_itemsTable->setAlternatingRowColors(true);
     m_itemsTable->verticalHeader()->hide();
-    m_itemsTable->setStyleSheet(QString(
-        "QTableWidget { background: %1; color: %2; border: 1px solid %3; gridline-color: %3; }"
-        "QTableWidget::item { padding: 6px; }"
-        "QTableWidget::item:selected { background: %4; }"
-        "QHeaderView::section { background: %1; color: %2; border: 1px solid %3; padding: 6px; }")
-        .arg(tm.surfaceColor(), tm.textColor(), tm.borderColor(), tm.accentColor()));
+    m_itemsTable->setShowGrid(false);
     connect(m_itemsTable, &QTableWidget::cellDoubleClicked, this, &RssDialog::onItemDoubleClicked);
-    rightLayout->addWidget(m_itemsTable);
+    rightLayout->addWidget(m_itemsTable, 1);
 
     splitter->addWidget(rightWidget);
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 2);
 
-    mainLayout->addWidget(splitter, 1);
+    root->addWidget(splitter, 1);
+    root->addSpacing(14);
 
-    // Status bar
     m_statusLabel = new QLabel;
-    m_statusLabel->setStyleSheet("color: #888; padding: 4px;");
-    mainLayout->addWidget(m_statusLabel);
+    {
+        QFont f; f.setPointSize(10);
+        m_statusLabel->setFont(f);
+        m_statusLabel->setStyleSheet(QString("color: %1; background: transparent;").arg(tm.mutedColor()));
+    }
 
-    // Bottom buttons
-    auto *btnLayout = new QHBoxLayout;
-    btnLayout->addStretch();
+    auto *footer = new QHBoxLayout;
+    footer->setSpacing(8);
+    footer->addWidget(m_statusLabel);
+    footer->addStretch();
+
     auto *closeBtn = new QPushButton(tr_("btn_ok"));
-    closeBtn->setFixedWidth(100);
+    closeBtn->setObjectName(QStringLiteral("primaryBtn"));
+    closeBtn->setCursor(Qt::PointingHandCursor);
+    closeBtn->setDefault(true);
     connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
-    btnLayout->addWidget(closeBtn);
-    mainLayout->addLayout(btnLayout);
+    footer->addWidget(closeBtn);
 
-    // Connect RSS manager signals
+    root->addLayout(footer);
+
     connect(&RssManager::instance(), &RssManager::feedAdded, this, [this](const RssFeed &) {
         refreshFeedList();
     });
@@ -197,10 +357,9 @@ RssDialog::RssDialog(QWidget *parent)
 
     refreshFeedList();
 
-    // Disable settings when no feed selected
-    settingsGroup->setEnabled(false);
-    connect(m_feedList, &QListWidget::currentRowChanged, settingsGroup, [settingsGroup](int row) {
-        settingsGroup->setEnabled(row >= 0);
+    settingsCard->setEnabled(false);
+    connect(m_feedList, &QListWidget::currentRowChanged, settingsCard, [settingsCard](int row) {
+        settingsCard->setEnabled(row >= 0);
     });
 }
 
@@ -275,10 +434,11 @@ void RssDialog::showFeedItems(int feedIndex)
     auto items = RssManager::instance().itemsForFeed(feedIndex);
     m_itemsTable->setRowCount(items.size());
 
+    const auto &tm = ThemeManager::instance();
     for (int i = 0; i < items.size(); ++i) {
         auto *titleItem = new QTableWidgetItem(items[i].title);
         if (items[i].downloaded)
-            titleItem->setForeground(QColor("#888888"));
+            titleItem->setForeground(QColor(tm.dimColor()));
         m_itemsTable->setItem(i, 0, titleItem);
 
         m_itemsTable->setItem(i, 1, new QTableWidgetItem(
@@ -302,7 +462,7 @@ void RssDialog::onItemDoubleClicked(int row, int)
 {
     if (m_selectedFeed < 0) return;
     RssManager::instance().downloadItem(m_selectedFeed, row);
-    showFeedItems(m_selectedFeed); // refresh to show downloaded state
+    showFeedItems(m_selectedFeed);
     m_statusLabel->setText(tr_("rss_downloading"));
 }
 
@@ -318,8 +478,8 @@ void RssDialog::refreshFeedList()
     auto feeds = RssManager::instance().feeds();
     for (const auto &f : feeds) {
         QString text = f.name;
-        if (!f.enabled) text += QString(" [%1]").arg(tr_("rss_disabled"));
-        if (f.autoDownload) text += QString(" [%1]").arg(tr_("rss_auto"));
+        if (!f.enabled) text += QString("  ·  %1").arg(tr_("rss_disabled"));
+        if (f.autoDownload) text += QString("  ·  %1").arg(tr_("rss_auto"));
         m_feedList->addItem(text);
     }
 }

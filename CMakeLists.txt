@@ -33,6 +33,7 @@ add_executable(BATorrent WIN32
     src/gui/speedgraph.cpp
     src/gui/batwidget.cpp
     src/gui/splashwidget.cpp
+    src/gui/toast.cpp
     src/app/updater.cpp
     src/app/addonmanager.cpp
     src/gui/addondialog.cpp
@@ -42,8 +43,8 @@ add_executable(BATorrent WIN32
     src/app/geoip.cpp
     src/gui/thememanager.cpp
     src/gui/releasenotesdialog.cpp
-    src/gui/speedtestdialog.cpp
     src/gui/statisticsdialog.cpp
+    src/gui/traypopup.cpp
     src/gui/shortcutsdialog.cpp
     src/webui/webserver.cpp
     ${RESOURCES}

@@ -31,6 +31,7 @@ private:
 
     Language m_lang = English;
     QMap<QString, QString> m_strings;
+    QMap<QString, QString> m_englishFallback;
 };
 
 // Shortcut

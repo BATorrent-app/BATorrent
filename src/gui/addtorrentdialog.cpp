@@ -6,10 +6,10 @@
 #include "thememanager.h"
 #include "../app/translator.h"
 #include "../app/utils.h"
+
 #include <QCheckBox>
-#include <QDialogButtonBox>
 #include <QFileDialog>
-#include <QFormLayout>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -25,6 +25,21 @@
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/magnet_uri.hpp>
 
+namespace {
+
+QLabel *makeEyebrow(const QString &text, QWidget *parent)
+{
+    const auto &tm = ThemeManager::instance();
+    auto *lbl = new QLabel(text.toUpper(), parent);
+    QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+    f.setLetterSpacing(QFont::AbsoluteSpacing, 1.4);
+    lbl->setFont(f);
+    lbl->setStyleSheet(QString("color: %1; background: transparent;").arg(tm.dimColor()));
+    return lbl;
+}
+
+} // namespace
+
 AddTorrentDialog::AddTorrentDialog(const QString &torrentFilePath,
                                     const QString &magnetUri,
                                     const QString &defaultSavePath,
@@ -32,83 +47,193 @@ AddTorrentDialog::AddTorrentDialog(const QString &torrentFilePath,
     : QDialog(parent), m_filesTree(nullptr)
 {
     setWindowTitle(tr_("add_torrent_title"));
-    setMinimumSize(620, 460);
-    setStyleSheet(ThemeManager::instance().dialogStyleSheet());
+    setMinimumSize(640, 560);
+    resize(640, 560);
 
-    auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(16, 16, 16, 16);
-    mainLayout->setSpacing(10);
+    const auto &tm = ThemeManager::instance();
 
-    QString labelStyle = ThemeManager::instance().formLabelStyle();
+    setStyleSheet(QString(
+        "QDialog {"
+        "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
+        "      stop:0 rgba(220,38,38,0.10),"
+        "      stop:1 %1);"
+        "  color: %2;"
+        "}"
+        "QLabel { background: transparent; color: %2; }"
+        "QLineEdit {"
+        "  background: %3; color: %2;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  padding: 7px 10px; font-size: 11px;"
+        "  selection-background-color: %5;"
+        "}"
+        "QLineEdit:focus { border-color: %5; }"
+        "QTreeWidget {"
+        "  background: %6; color: %2;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  alternate-background-color: %3;"
+        "  outline: none;"
+        "}"
+        "QTreeWidget::item { padding: 4px 2px; }"
+        "QTreeWidget::item:selected { background: %7; color: %2; }"
+        "QHeaderView::section {"
+        "  background: %1; color: %8;"
+        "  border: none; border-bottom: 1px solid %4;"
+        "  padding: 6px 10px; font-weight: 600;"
+        "  text-transform: uppercase; font-size: 9px; letter-spacing: 1px;"
+        "}"
+        "QCheckBox { color: %2; spacing: 8px; font-size: 11px; }"
+        "QCheckBox::indicator {"
+        "  width: 14px; height: 14px;"
+        "  border: 1px solid %4; border-radius: 4px;"
+        "  background-color: %3;"
+        "}"
+        "QCheckBox::indicator:checked { background-color: %5; border-color: %5; }"
+        "#primaryBtn {"
+        "  background: %5; color: #ffffff;"
+        "  border: none; border-radius: 6px;"
+        "  padding: 8px 22px; font-size: 11px; font-weight: 600;"
+        "}"
+        "#primaryBtn:hover { background: %9; }"
+        "#ghostBtn {"
+        "  background: transparent; color: %2;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  padding: 8px 18px; font-size: 11px; font-weight: 500;"
+        "}"
+        "#ghostBtn:hover { background: %3; }"
+        ).arg(tm.bgColor(), tm.textColor(), tm.surfaceColor(),
+              tm.borderColor(), tm.accentColor(), tm.panelColor(),
+              tm.accentTintColor(), tm.dimColor(), tm.accentLightColor()));
 
-    // ---- Save path row (always visible, at the top) ----
-    auto *pathLayout = new QHBoxLayout;
-    auto *pathLabel = new QLabel(tr_("add_torrent_save_to"));
-    pathLabel->setStyleSheet(labelStyle);
+    auto *root = new QVBoxLayout(this);
+    root->setContentsMargins(32, 28, 32, 24);
+    root->setSpacing(0);
 
-    // Pre-fill with the caller's default save path; if that's empty, fall
-    // back to the user's Downloads folder so the input is never blank.
-    QString initial = defaultSavePath;
-    if (initial.isEmpty())
-        initial = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-    m_savePathEdit = new QLineEdit(initial);
+    // Header eyebrow + heading
+    auto *eyebrow = new QLabel(tr_("add_torrent_title").toUpper());
+    {
+        QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.2);
+        eyebrow->setFont(f);
+        eyebrow->setStyleSheet(QString("color: %1;").arg(tm.accentColor()));
+    }
+    root->addWidget(eyebrow);
+    root->addSpacing(6);
 
-    auto *browseBtn = new QPushButton(tr_("settings_browse"));
-    browseBtn->setFixedWidth(100);
-    connect(browseBtn, &QPushButton::clicked, this, &AddTorrentDialog::browseSavePath);
+    auto *heading = new QLabel(tr_("add_torrent_heading"));
+    {
+        QFont f; f.setPointSize(18); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, -0.3);
+        heading->setFont(f);
+        heading->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+    }
+    root->addWidget(heading);
+    root->addSpacing(18);
 
-    pathLayout->addWidget(m_savePathEdit);
-    pathLayout->addWidget(browseBtn);
+    // Summary card: torrent name + meta line (size, files)
+    auto *summaryCard = new QFrame;
+    summaryCard->setObjectName(QStringLiteral("summaryCard"));
+    summaryCard->setStyleSheet(QString(
+        "QFrame#summaryCard {"
+        "  background: %1; border: none; border-radius: 8px;"
+        "}"
+        ).arg(tm.panelColor()));
+    auto *summaryCol = new QVBoxLayout(summaryCard);
+    summaryCol->setContentsMargins(16, 14, 16, 14);
+    summaryCol->setSpacing(4);
 
-    auto *pathForm = new QFormLayout;
-    pathForm->setSpacing(8);
-    pathForm->addRow(pathLabel, pathLayout);
-    mainLayout->addLayout(pathForm);
+    QString torrentName;
+    QString metaLine;
+    bool valid = true;
 
-    // ---- Summary section (name / size / file count) ----
-    QString summary;
     if (!torrentFilePath.isEmpty()) {
         try {
             lt::torrent_info ti(torrentFilePath.toStdString());
-            qint64 size = ti.total_size();
-            int files = ti.num_files();
-            summary = QString("<b>%1</b><br>%2 — %3 %4")
-                .arg(QString::fromStdString(ti.name()),
-                     formatSize(size),
-                     QString::number(files),
-                     tr_("add_torrent_files"));
+            torrentName = QString::fromStdString(ti.name());
+            metaLine = QString("%1 · %2 %3")
+                .arg(formatSize(ti.total_size()))
+                .arg(ti.num_files())
+                .arg(tr_("add_torrent_files"));
         } catch (...) {
-            summary = tr_("add_torrent_invalid");
+            valid = false;
+            torrentName = tr_("add_torrent_invalid");
         }
     } else if (!magnetUri.isEmpty()) {
         try {
             lt::error_code ec;
             lt::add_torrent_params atp = lt::parse_magnet_uri(magnetUri.toStdString(), ec);
-            QString name = QString::fromStdString(atp.name);
-            if (name.isEmpty()) name = tr_("add_torrent_magnet_label");
-            summary = QString("<b>%1</b><br>%2").arg(name, tr_("add_torrent_magnet_hint"));
+            torrentName = QString::fromStdString(atp.name);
+            if (torrentName.isEmpty()) torrentName = tr_("add_torrent_magnet_label");
+            metaLine = tr_("add_torrent_magnet_hint");
         } catch (...) {
-            summary = tr_("add_torrent_invalid");
+            valid = false;
+            torrentName = tr_("add_torrent_invalid");
         }
     }
 
-    m_summaryLabel = new QLabel(summary);
-    m_summaryLabel->setWordWrap(true);
-    m_summaryLabel->setStyleSheet(QString("color: %1; padding: 4px 0;")
-        .arg(ThemeManager::instance().textColor()));
-    mainLayout->addWidget(m_summaryLabel);
+    auto *nameLbl = new QLabel(torrentName);
+    nameLbl->setWordWrap(true);
+    {
+        QFont f; f.setPointSize(12); f.setWeight(QFont::DemiBold);
+        nameLbl->setFont(f);
+        nameLbl->setStyleSheet(QString("color: %1;")
+            .arg(valid ? tm.textColor() : tm.stateErrorColor()));
+    }
+    summaryCol->addWidget(nameLbl);
 
-    // ---- File tree (only when we have metadata, i.e. .torrent files) ----
+    if (!metaLine.isEmpty()) {
+        auto *metaLbl = new QLabel(metaLine);
+        QFont f("Menlo");
+        f.setStyleHint(QFont::Monospace);
+        f.setPointSize(9);
+        metaLbl->setFont(f);
+        metaLbl->setStyleSheet(QString("color: %1;").arg(tm.mutedColor()));
+        summaryCol->addWidget(metaLbl);
+    }
+
+    m_summaryLabel = nameLbl;
+    root->addWidget(summaryCard);
+    root->addSpacing(18);
+
+    // Save path section
+    root->addWidget(makeEyebrow(tr_("add_torrent_save_to"), this));
+    root->addSpacing(6);
+
+    QString initial = defaultSavePath;
+    if (initial.isEmpty())
+        initial = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    m_savePathEdit = new QLineEdit(initial);
+    {
+        QFont f("Menlo");
+        f.setStyleHint(QFont::Monospace);
+        f.setPointSize(10);
+        m_savePathEdit->setFont(f);
+    }
+
+    auto *browseBtn = new QPushButton(tr_("settings_browse"));
+    browseBtn->setObjectName(QStringLiteral("ghostBtn"));
+    browseBtn->setCursor(Qt::PointingHandCursor);
+    connect(browseBtn, &QPushButton::clicked, this, &AddTorrentDialog::browseSavePath);
+
+    auto *pathRow = new QHBoxLayout;
+    pathRow->setSpacing(8);
+    pathRow->addWidget(m_savePathEdit, 1);
+    pathRow->addWidget(browseBtn);
+    root->addLayout(pathRow);
+    root->addSpacing(16);
+
+    // File tree (only for .torrent files with bundled metadata)
     if (!torrentFilePath.isEmpty()) {
+        root->addWidget(makeEyebrow(tr_("add_torrent_col_name"), this));
+        root->addSpacing(6);
+
         m_filesTree = new QTreeWidget;
         m_filesTree->setHeaderLabels({tr_("add_torrent_col_name"),
                                        tr_("add_torrent_col_size")});
         m_filesTree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
         m_filesTree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
         m_filesTree->setAlternatingRowColors(true);
-        // React to user toggling files / folders. We have to disconnect
-        // ourselves during programmatic state changes to avoid infinite
-        // recursion through itemChanged → setSubtreeChecked → itemChanged.
+        m_filesTree->setRootIsDecorated(true);
+        m_filesTree->setUniformRowHeights(true);
         connect(m_filesTree, &QTreeWidget::itemChanged, this,
             [this](QTreeWidgetItem *item, int column) {
                 if (column != 0) return;
@@ -119,21 +244,39 @@ AddTorrentDialog::AddTorrentDialog(const QString &torrentFilePath,
                 if (item->parent())
                     refreshAncestorCheckStates(item->parent());
             });
-        mainLayout->addWidget(m_filesTree, 1);
+        root->addWidget(m_filesTree, 1);
         populateFileTree(torrentFilePath);
+    } else {
+        root->addStretch(1);
     }
 
-    // ---- Start-immediately checkbox ----
+    root->addSpacing(14);
+
     m_startCheck = new QCheckBox(tr_("add_torrent_start_now"));
     m_startCheck->setChecked(true);
-    mainLayout->addWidget(m_startCheck);
+    root->addWidget(m_startCheck);
+    root->addSpacing(14);
 
-    // ---- Buttons ----
-    auto *buttons = new QDialogButtonBox(
-        QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    mainLayout->addWidget(buttons);
+    // Footer
+    auto *footer = new QHBoxLayout;
+    footer->setSpacing(8);
+    footer->addStretch();
+
+    auto *cancelBtn = new QPushButton(tr_("btn_cancel"));
+    cancelBtn->setObjectName(QStringLiteral("ghostBtn"));
+    cancelBtn->setCursor(Qt::PointingHandCursor);
+    connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
+    footer->addWidget(cancelBtn);
+
+    auto *okBtn = new QPushButton(tr_("add_torrent_add_btn"));
+    okBtn->setObjectName(QStringLiteral("primaryBtn"));
+    okBtn->setCursor(Qt::PointingHandCursor);
+    okBtn->setDefault(true);
+    okBtn->setEnabled(valid);
+    connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
+    footer->addWidget(okBtn);
+
+    root->addLayout(footer);
 }
 
 void AddTorrentDialog::populateFileTree(const QString &torrentFilePath)
@@ -142,9 +285,6 @@ void AddTorrentDialog::populateFileTree(const QString &torrentFilePath)
         lt::torrent_info ti(torrentFilePath.toStdString());
         const auto &fs = ti.files();
 
-        // Build a path → node map so siblings group under shared parents.
-        // The root has no item; children of root sit at the top level of
-        // the tree widget.
         QMap<QString, QTreeWidgetItem *> folders;
         QSignalBlocker blocker(m_filesTree);
 
@@ -153,7 +293,6 @@ void AddTorrentDialog::populateFileTree(const QString &torrentFilePath)
             if (path.isEmpty()) return nullptr;
             auto it = folders.find(path);
             if (it != folders.end()) return it.value();
-            // Recursively create the parent chain.
             int slash = path.lastIndexOf('/');
             QString parentPath = slash >= 0 ? path.left(slash) : QString();
             QString name = slash >= 0 ? path.mid(slash + 1) : path;
@@ -174,9 +313,6 @@ void AddTorrentDialog::populateFileTree(const QString &torrentFilePath)
 
         for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
             QString fullPath = QString::fromStdString(fs.file_path(i));
-            // libtorrent gives the path including the torrent root folder
-            // for multi-file torrents — that's what we want, so the tree
-            // mirrors what the user will see on disk.
             int slash = fullPath.lastIndexOf('/');
             QString parentPath = slash >= 0 ? fullPath.left(slash) : QString();
             QString fileName = slash >= 0 ? fullPath.mid(slash + 1) : fullPath;
@@ -187,8 +323,6 @@ void AddTorrentDialog::populateFileTree(const QString &torrentFilePath)
             node->setText(1, formatSize(fs.file_size(i)));
             node->setFlags(node->flags() | Qt::ItemIsUserCheckable);
             node->setCheckState(0, Qt::Checked);
-            // Remember which torrent file_index this leaf corresponds to so
-            // we can reconstruct the priority list later.
             node->setData(0, Qt::UserRole, static_cast<int>(i));
             if (parent) parent->addChild(node);
             else m_filesTree->addTopLevelItem(node);
@@ -198,8 +332,6 @@ void AddTorrentDialog::populateFileTree(const QString &torrentFilePath)
 
         m_filesTree->expandAll();
     } catch (...) {
-        // The summary label already reported the parse failure; just leave
-        // the tree empty so the dialog still works as a save-path picker.
     }
 }
 
@@ -218,7 +350,7 @@ void AddTorrentDialog::refreshAncestorCheckStates(QTreeWidgetItem *item)
             Qt::CheckState s = item->child(i)->checkState(0);
             ++total;
             if (s == Qt::Checked) ++checked;
-            else if (s == Qt::PartiallyChecked) checked = -1; // partial wins
+            else if (s == Qt::PartiallyChecked) checked = -1;
         }
         if (checked == -1 || (checked > 0 && checked < total))
             item->setCheckState(0, Qt::PartiallyChecked);
@@ -245,19 +377,13 @@ std::vector<int> AddTorrentDialog::filePriorities() const
     std::vector<int> priorities;
     if (!m_filesTree) return priorities;
 
-    // Walk the tree to find every leaf and read its check state. Build a
-    // dense vector indexed by file_index so the caller can pass it straight
-    // into add_torrent_params.file_priorities.
     int maxIndex = 0;
     for (int idx : m_fileIndices) if (idx > maxIndex) maxIndex = idx;
-    priorities.assign(static_cast<size_t>(maxIndex + 1), 4); // 4 = default
+    priorities.assign(static_cast<size_t>(maxIndex + 1), 4);
 
     std::function<void(QTreeWidgetItem *)> walk = [&](QTreeWidgetItem *node) {
         if (node->childCount() == 0) {
             int idx = node->data(0, Qt::UserRole).toInt();
-            // 0 = don't_download, 4 = default. We keep the distinction
-            // intentionally minimal here; per-file low/high tweaking lives
-            // in the Files tab post-add.
             priorities[static_cast<size_t>(idx)] =
                 node->checkState(0) == Qt::Checked ? 4 : 0;
             return;

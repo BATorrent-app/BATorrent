@@ -4,6 +4,7 @@
 
 #include "splashwidget.h"
 #include "thememanager.h"
+#include "../app/translator.h"
 #include <QPainter>
 #include <QRadialGradient>
 #include <QLinearGradient>
@@ -313,7 +314,7 @@ void SplashWidget::paintEvent(QPaintEvent *)
             QColor subColor(tm.mutedColor());
             p.setPen(subColor);
             p.drawText(QRect(0, textY + 48 + static_cast<int>(subOffset), w, 25),
-                        Qt::AlignHCenter, "Lightweight BitTorrent Client");
+                        Qt::AlignHCenter, tr_("splash_tagline"));
         }
     }
 

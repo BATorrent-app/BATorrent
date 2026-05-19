@@ -5,8 +5,58 @@
 #include "torrentmodel.h"
 #include "../app/translator.h"
 #include "../app/utils.h"
+#include "thememanager.h"
 #include <QColor>
 #include <QMimeData>
+#include <QPainter>
+#include <QPixmap>
+
+namespace {
+QString stateKeyFor(const TorrentInfo &info)
+{
+    if (info.paused) return QStringLiteral("paused");
+    const QString &st = info.stateString;
+    if (st == tr_("state_downloading")) return QStringLiteral("downloading");
+    if (st == tr_("state_seeding"))     return QStringLiteral("seeding");
+    if (st == tr_("state_finished"))    return QStringLiteral("finished");
+    if (st == tr_("state_queued"))      return QStringLiteral("queued");
+    if (st == tr_("state_checking"))    return QStringLiteral("downloading");
+    if (st == tr_("state_metadata"))    return QStringLiteral("downloading");
+    return QStringLiteral("paused");
+}
+
+QColor colorForState(const QString &key)
+{
+    const auto &tm = ThemeManager::instance();
+    if (key == QLatin1String("downloading")) return QColor(tm.stateDownloadingColor());
+    if (key == QLatin1String("seeding"))     return QColor(tm.stateSeedingColor());
+    if (key == QLatin1String("finished"))    return QColor(tm.stateFinishedColor());
+    if (key == QLatin1String("error"))       return QColor(tm.stateErrorColor());
+    return QColor(tm.statePausedColor());
+}
+
+QPixmap makeDotIcon(const QColor &c, bool glow)
+{
+    constexpr int kIconSize = 18;
+    constexpr int kDotSize = 6;
+    QPixmap pm(kIconSize, kIconSize);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    const QPointF center(kIconSize / 2.0, kIconSize / 2.0);
+    if (glow) {
+        QColor halo = c;
+        halo.setAlphaF(0.30);
+        p.setBrush(halo);
+        p.setPen(Qt::NoPen);
+        p.drawEllipse(center, kDotSize, kDotSize);
+    }
+    p.setBrush(c);
+    p.setPen(Qt::NoPen);
+    p.drawEllipse(center, kDotSize / 2.0, kDotSize / 2.0);
+    return pm;
+}
+}
 
 TorrentModel::TorrentModel(SessionManager *session, QObject *parent)
     : QAbstractTableModel(parent), m_session(session)
@@ -57,6 +107,19 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
         return info.progress;
     }
 
+    if (role == StateKeyRole) {
+        return stateKeyFor(info);
+    }
+
+    // Status dot before the name. DecorationRole on column 0 makes Qt
+    // render the icon inline before the text — no custom delegate needed.
+    if (role == Qt::DecorationRole && index.column() == Name) {
+        const QString key = stateKeyFor(info);
+        const bool glow = (key == QLatin1String("downloading")
+                           || key == QLatin1String("seeding"));
+        return makeDotIcon(colorForState(key), glow);
+    }
+
     // Raw values for sorting
     if (role == SortRole) {
         switch (index.column()) {
@@ -86,23 +149,34 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
         return m_customOrder.value(index.row(), index.row());
     }
 
-    // Flash green background for completed downloads
+    // Flash the row in accent-tint when a torrent just finished — picked up
+    // by the row background; lasts ~2 s via m_flashTimer.
     if (role == Qt::BackgroundRole && m_flashingRows.contains(index.row())) {
-        return QColor(0x30, 0x90, 0x50, 50); // translucent green
+        QColor c(ThemeManager::instance().accentColor());
+        c.setAlphaF(0.18f);
+        return c;
     }
 
-    // Color coding for state and paused rows
+    // Color coding aligned with the design palette (no greens / blues).
     if (role == Qt::ForegroundRole) {
-        if (info.paused)
-            return QColor(120, 120, 120); // dim gray for paused
-        if (index.column() == State) {
-            QString st = info.stateString;
-            if (st == tr_("state_downloading")) return QColor(0x40, 0xA0, 0x40); // green
-            if (st == tr_("state_seeding"))     return QColor(0x30, 0x90, 0xD0); // blue
-            if (st == tr_("state_finished"))    return QColor(0x30, 0x90, 0xD0); // blue
-            if (st == tr_("state_checking"))    return QColor(0xD0, 0xA0, 0x30); // yellow
-            if (st == tr_("state_metadata"))    return QColor(0xD0, 0xA0, 0x30); // yellow
+        const auto &tm = ThemeManager::instance();
+        const QString key = stateKeyFor(info);
+
+        if (index.column() == DownSpeed) {
+            if (info.downloadRate > 0 && key == QLatin1String("downloading"))
+                return QColor(tm.stateDownloadingColor());
+            return QColor(tm.dimColor());
         }
+        if (index.column() == UpSpeed) {
+            if (info.uploadRate > 0)
+                return QColor(tm.stateSeedingColor());
+            return QColor(tm.dimColor());
+        }
+        if (index.column() == State) {
+            return QColor(colorForState(key));
+        }
+        if (key == QLatin1String("paused") || key == QLatin1String("queued"))
+            return QColor(tm.mutedColor());
     }
 
     return {};
@@ -110,19 +184,36 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
 
 QVariant TorrentModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
+    if (orientation != Qt::Horizontal)
         return {};
 
-    switch (section) {
-    case Name:      return tr_("col_name");
-    case Size:      return tr_("col_size");
-    case Progress:  return tr_("col_progress");
-    case DownSpeed: return tr_("col_down");
-    case UpSpeed:   return tr_("col_up");
-    case State:     return tr_("col_state");
-    case Category:  return tr_("col_category");
-    case Peers:     return tr_("col_peers");
+    if (role == Qt::DisplayRole) {
+        QString label;
+        switch (section) {
+        case Name:      label = tr_("col_name"); break;
+        case Size:      label = tr_("col_size"); break;
+        case Progress:  label = tr_("col_progress"); break;
+        case DownSpeed: label = tr_("col_down"); break;
+        case UpSpeed:   label = tr_("col_up"); break;
+        case State:     label = tr_("col_state"); break;
+        case Category:  label = tr_("col_category"); break;
+        case Peers:     label = tr_("col_peers"); break;
+        default: return {};
+        }
+        return label.toUpper();
     }
+
+    if (role == Qt::FontRole) {
+        QFont f;
+        f.setPointSize(9);
+        f.setWeight(QFont::Black);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.2);
+        return f;
+    }
+
+    if (role == Qt::ForegroundRole)
+        return QColor(ThemeManager::instance().mutedColor());
+
     return {};
 }
 

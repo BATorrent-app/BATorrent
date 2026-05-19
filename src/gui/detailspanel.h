@@ -39,17 +39,22 @@ private:
     SessionManager *m_session;
     int m_currentIndex = -1;
 
-    // General tab
+    // General tab. Layout matches canvas/main.jsx MiniDetails: three columns
+    // (Info / Transfer / Peers), each headed by a CAPS eyebrow, with KV rows
+    // below. Speed is a single combined "↓ X  ↑ Y" string; Uploaded and ETA
+    // are computed from existing TorrentInfo fields.
     QLabel *m_nameLabel;
-    QLabel *m_sizeLabel;
-    QLabel *m_progressLabel;
-    QLabel *m_downSpeedLabel;
-    QLabel *m_upSpeedLabel;
-    QLabel *m_stateLabel;
-    QLabel *m_peersLabel;
-    QLabel *m_downloadedLabel;
     QLabel *m_savePathLabel;
+    QLabel *m_sizeLabel;
+    QLabel *m_hashLabel;
+    QLabel *m_downloadedLabel;
+    QLabel *m_uploadedLabel;
+    QLabel *m_speedLabel;
+    QLabel *m_etaLabel;
+    QLabel *m_seedsLabel;
+    QLabel *m_peersLabel;
     QLabel *m_ratioLabel;
+    QLabel *m_stateLabel;
 
     // Peers tab
     QTableWidget *m_peersTable;

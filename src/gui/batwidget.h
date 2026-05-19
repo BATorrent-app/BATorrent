@@ -8,19 +8,25 @@
 #include <QWidget>
 #include <QPixmap>
 
+class QLabel;
+
 class BatWidget : public QWidget
 {
     Q_OBJECT
 public:
     explicit BatWidget(QWidget *parent = nullptr);
-    void setMessage(const QString &msg);
+
+signals:
+    void openFileRequested();
+    void pasteMagnetRequested();
+    void openSearchRequested();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
     QPixmap m_logo;
-    QString m_message;
+    int m_circleSize = 132;
 };
 
 #endif

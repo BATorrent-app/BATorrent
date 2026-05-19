@@ -21,14 +21,31 @@ public:
     QString formLabelStyle() const;
 
     QString accentColor() const;
-    QString bgColor() const;
-    QString surfaceColor() const;
-    QString textColor() const;
-    QString mutedColor() const;
-    QString borderColor() const;
     QString accentDarkColor() const;
     QString accentLightColor() const;
     QString accentSurfaceColor() const;
+    QString accentTintColor() const;
+    QString accentTintStrongColor() const;
+
+    QString bgColor() const;
+    QString surfaceColor() const;
+    QString surfaceAltColor() const;
+    QString panelColor() const;
+
+    QString textColor() const;
+    QString mutedColor() const;
+    QString dimColor() const;
+
+    QString borderColor() const;
+    QString borderStrongColor() const;
+    QString hairlineColor() const;
+
+    QString stateDownloadingColor() const;
+    QString stateSeedingColor() const;
+    QString stateFinishedColor() const;
+    QString statePausedColor() const;
+    QString stateErrorColor() const;
+
     QString successColor() const;
     QString warningColor() const;
     QString errorColor() const;

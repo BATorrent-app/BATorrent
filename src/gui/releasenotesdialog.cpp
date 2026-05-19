@@ -12,80 +12,131 @@
 #include <QTextBrowser>
 #include <QPixmap>
 #include <QApplication>
+#include <QGraphicsDropShadowEffect>
 
 ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(tr_("release_notes_title"));
-    setFixedSize(560, 520);
+    setFixedSize(620, 580);
 
     const auto &tm = ThemeManager::instance();
-    QString bg = tm.bgColor();
-    QString sf = tm.surfaceColor();
-    QString tx = tm.textColor();
-    QString mt = tm.mutedColor();
-    QString ac = tm.accentColor();
-    QString bd = tm.borderColor();
 
-    setStyleSheet(QString(R"(
-        QDialog { background-color: %1; color: %2; }
-        QLabel { color: %2; }
-        QTextBrowser {
-            background-color: %3; color: %2;
-            border: 1px solid %6; border-radius: 8px;
-            padding: 16px; font-size: 13px;
-            selection-background-color: %5;
-        }
-        QPushButton {
-            background-color: %5; color: #ffffff;
-            border: none; border-radius: 8px;
-            padding: 10px 32px; font-size: 13px; font-weight: 600;
-        }
-        QPushButton:hover { background-color: %7; }
-    )").arg(bg, tx, sf, mt, ac, bd, tm.accentLightColor()));
+    setStyleSheet(QString(
+        "QDialog {"
+        "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
+        "      stop:0 rgba(220,38,38,0.12),"
+        "      stop:1 %1);"
+        "  color: %2;"
+        "}"
+        "QLabel { background: transparent; }"
+        "QTextBrowser {"
+        "  background: %3; color: %2;"
+        "  border: none; border-radius: 8px;"
+        "  padding: 18px 22px;"
+        "  selection-background-color: %4;"
+        "  selection-color: #ffffff;"
+        "}"
+        "#closeBtn {"
+        "  background: transparent; color: %2;"
+        "  border: 1px solid %5; border-radius: 6px;"
+        "  padding: 8px 22px; font-size: 11px; font-weight: 500;"
+        "}"
+        "#closeBtn:hover { background: %6; }"
+        ).arg(tm.bgColor(), tm.textColor(), tm.panelColor(),
+              tm.accentColor(), tm.borderColor(), tm.surfaceColor()));
 
-    auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(32, 24, 32, 24);
-    mainLayout->setSpacing(12);
+    auto *root = new QVBoxLayout(this);
+    root->setContentsMargins(36, 32, 36, 24);
+    root->setSpacing(0);
 
-    // Logo + title row
-    auto *headerLayout = new QHBoxLayout;
+    // Header: logo with halo + textual cluster (eyebrow + heading + version)
+    auto *headerRow = new QHBoxLayout;
+    headerRow->setSpacing(16);
+    headerRow->setContentsMargins(0, 0, 0, 0);
+
     auto *logoLabel = new QLabel;
-    QPixmap logo(":/images/logo1.png");
-    logoLabel->setPixmap(logo.scaled(40, 40, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    headerLayout->addWidget(logoLabel);
+    QPixmap raw(":/images/logo1.png");
+    logoLabel->setPixmap(raw.scaled(56 * 2, 56 * 2,
+        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoLabel->setFixedSize(56, 56);
+    logoLabel->setScaledContents(true);
+    auto *halo = new QGraphicsDropShadowEffect;
+    halo->setColor(QColor(220, 38, 38, 80));
+    halo->setBlurRadius(36);
+    halo->setOffset(0, 0);
+    logoLabel->setGraphicsEffect(halo);
+    headerRow->addWidget(logoLabel, 0, Qt::AlignTop);
 
-    auto *titleLabel = new QLabel(
-        QString("%1 v%2").arg(tr_("release_notes_title"),
-                              QApplication::applicationVersion()));
-    titleLabel->setStyleSheet(QString("font-size: 18px; font-weight: 700; color: %1; margin-left: 10px;").arg(tx));
-    headerLayout->addWidget(titleLabel);
-    headerLayout->addStretch();
-    mainLayout->addLayout(headerLayout);
+    auto *textCol = new QVBoxLayout;
+    textCol->setSpacing(4);
+    textCol->setContentsMargins(0, 4, 0, 0);
 
-    auto *subtitleLabel = new QLabel(tr_("release_notes_subtitle"));
-    subtitleLabel->setStyleSheet(QString("font-size: 12px; color: %1;").arg(mt));
-    mainLayout->addWidget(subtitleLabel);
+    auto *eyebrow = new QLabel(tr_("release_notes_title").toUpper());
+    {
+        QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.2);
+        eyebrow->setFont(f);
+        eyebrow->setStyleSheet(QString("color: %1;").arg(tm.accentColor()));
+    }
+    textCol->addWidget(eyebrow);
 
-    // Release notes content
+    auto *heading = new QLabel(tr_("release_notes_heading"));
+    {
+        QFont f; f.setPointSize(18); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, -0.3);
+        heading->setFont(f);
+        heading->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+    }
+    textCol->addWidget(heading);
+
+    auto *versionLbl = new QLabel(QString("v%1").arg(QApplication::applicationVersion()));
+    {
+        QFont f("Menlo");
+        f.setStyleHint(QFont::Monospace);
+        f.setPointSize(10);
+        versionLbl->setFont(f);
+        versionLbl->setStyleSheet(QString("color: %1;").arg(tm.dimColor()));
+    }
+    textCol->addWidget(versionLbl);
+
+    headerRow->addLayout(textCol, 1);
+    root->addLayout(headerRow);
+    root->addSpacing(22);
+
     auto *browser = new QTextBrowser;
     browser->setOpenExternalLinks(true);
+    browser->setFrameShape(QFrame::NoFrame);
+    browser->document()->setDefaultStyleSheet(QString(
+        "h3 {"
+        "  color: %1; font-size: 10px; font-weight: 700;"
+        "  letter-spacing: 1.4px; text-transform: uppercase;"
+        "  margin-top: 18px; margin-bottom: 8px;"
+        "}"
+        "h3:first-of-type { margin-top: 0; }"
+        "ul { margin: 0 0 0 12px; padding: 0; }"
+        "li { color: %2; margin-bottom: 6px; line-height: 150%; }"
+        "li b { color: %3; font-weight: 600; }"
+        ).arg(tm.accentColor(), tm.mutedColor(), tm.textColor()));
     browser->setHtml(releaseNotes());
-    mainLayout->addWidget(browser, 1);
+    root->addWidget(browser, 1);
 
-    // Close button
-    auto *btnLayout = new QHBoxLayout;
-    btnLayout->addStretch();
+    root->addSpacing(16);
+
+    auto *bottom = new QHBoxLayout;
+    bottom->addStretch();
     auto *closeBtn = new QPushButton(tr_("release_notes_close"));
+    closeBtn->setObjectName(QStringLiteral("closeBtn"));
+    closeBtn->setCursor(Qt::PointingHandCursor);
     connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
-    btnLayout->addWidget(closeBtn);
-    mainLayout->addLayout(btnLayout);
+    bottom->addWidget(closeBtn);
+    root->addLayout(bottom);
 }
 
 QString ReleaseNotesDialog::releaseNotes()
 {
     return QStringLiteral(
-        "<h3 style='color:#c43030'>v2.3.0</h3>"
+        "<h3>v2.3.0</h3>"
         "<ul>"
         "<li><b>Categories/Tags</b> &mdash; organize torrents by type (Movies, Games, Software, Music, Other) with filtering</li>"
         "<li><b>Piece Map</b> &mdash; visual grid showing downloaded vs missing pieces in the details panel</li>"
@@ -100,7 +151,7 @@ QString ReleaseNotesDialog::releaseNotes()
         "<li><b>Dark Installer</b> &mdash; fully themed Windows installer with branding</li>"
         "<li><b>Bug Fix</b> &mdash; app now relaunches after update; tray instance restores on new launch</li>"
         "</ul>"
-        "<h3 style='color:#c43030'>v2.2.0</h3>"
+        "<h3>v2.2.0</h3>"
         "<ul>"
         "<li><b>WebUI Redesign</b> &mdash; completely overhauled web interface with modern dark theme, "
         "filtering, search, drag-and-drop upload, and responsive mobile layout</li>"
@@ -114,7 +165,7 @@ QString ReleaseNotesDialog::releaseNotes()
         "<li><b>Test Suite</b> &mdash; comprehensive security, memory leak, and unit/integration tests with "
         "Catch2, ASan, CppCheck, MSVC /analyze, CRT Debug Heap, and Dr. Memory</li>"
         "</ul>"
-        "<h3 style='color:#c43030'>v2.1.0</h3>"
+        "<h3>v2.1.0</h3>"
         "<ul>"
         "<li><b>RSS Manager</b> &mdash; subscribe to RSS/Atom feeds and auto-download matching torrents</li>"
         "<li><b>Addon System</b> &mdash; search and install community addons</li>"
@@ -123,7 +174,7 @@ QString ReleaseNotesDialog::releaseNotes()
         "<li><b>Bandwidth Scheduler</b> &mdash; set alternative speed limits on a schedule</li>"
         "<li><b>VPN / Interface Binding</b> &mdash; bind to specific network interfaces with kill switch</li>"
         "</ul>"
-        "<h3 style='color:#c43030'>v2.0.0</h3>"
+        "<h3>v2.0.0</h3>"
         "<ul>"
         "<li><b>WebUI</b> &mdash; remote web interface with authentication</li>"
         "<li><b>Speed Graph</b> &mdash; real-time download/upload speed visualization</li>"

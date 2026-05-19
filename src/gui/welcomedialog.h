@@ -16,6 +16,14 @@ public:
     explicit WelcomeDialog(QWidget *parent = nullptr);
     bool dontShowAgain() const;
 
+signals:
+    // Emitted when the user clicks an action card. The receiver should also
+    // close the dialog (the card click itself only emits).
+    void openFileRequested();
+    void pasteMagnetRequested();
+    void openSearchRequested();
+    void openRssRequested();
+
 private:
     QCheckBox *m_dontShowCheck;
 };

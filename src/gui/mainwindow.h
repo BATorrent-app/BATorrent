@@ -25,6 +25,7 @@ class Updater;
 class WebServer;
 class AddonManager;
 class QComboBox;
+class QPushButton;
 class QNetworkAccessManager;
 
 class MainWindow : public QMainWindow
@@ -97,7 +98,12 @@ private:
     QStackedWidget *m_topStack;
     SplashWidget *m_splash = nullptr;
     QLabel *m_statusLabel;
+    QLabel *m_statusSpeedLabel = nullptr;
+    QLabel *m_bandwidthPill = nullptr;
+    QLabel *m_vpnLabel = nullptr;
+    QList<QPushButton *> m_filterPills;
     QSystemTrayIcon *m_trayIcon;
+    class TrayPopup *m_trayPopup = nullptr;
     QString m_lastSavePath;
     Updater *m_updater;
     WebServer *m_webServer = nullptr;

@@ -5,116 +5,255 @@
 #include "welcomedialog.h"
 #include "../app/translator.h"
 #include "../gui/thememanager.h"
+
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QCheckBox>
 #include <QPixmap>
+#include <QFrame>
+#include <QMouseEvent>
+#include <QEvent>
+#include <QGraphicsDropShadowEffect>
+#include <functional>
+
+namespace {
+
+// Click-detecting card frame. We need full layout control (icon top, title,
+// description, packed tight) which QToolButton's internal icon/text engine
+// fights against — using a QFrame keeps the embedded QVBoxLayout authoritative.
+class ActionCard : public QFrame
+{
+public:
+    ActionCard(const QString &iconPath,
+               const QString &title,
+               const QString &desc,
+               std::function<void()> onClick,
+               QWidget *parent)
+        : QFrame(parent), m_onClick(std::move(onClick))
+    {
+        const auto &tm = ThemeManager::instance();
+        setCursor(Qt::PointingHandCursor);
+        setObjectName(QStringLiteral("actionCard"));
+        setFixedHeight(106);
+        m_baseBg = tm.surfaceColor();
+        m_hoverBg = tm.panelColor();
+        applyStyle(false);
+
+        auto *col = new QVBoxLayout(this);
+        col->setContentsMargins(18, 16, 18, 16);
+        col->setSpacing(4);
+
+        auto *icon = new QLabel(this);
+        QPixmap pm(iconPath);
+        icon->setPixmap(pm.scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        icon->setFixedSize(16, 16);
+        icon->setStyleSheet(QStringLiteral("background: transparent;"));
+        col->addWidget(icon);
+
+        col->addSpacing(10);
+
+        auto *titleLbl = new QLabel(title, this);
+        {
+            QFont f; f.setPointSize(11); f.setWeight(QFont::DemiBold);
+            titleLbl->setFont(f);
+        }
+        titleLbl->setStyleSheet(QString("color: %1; background: transparent;").arg(tm.textColor()));
+        col->addWidget(titleLbl);
+
+        auto *descLbl = new QLabel(desc, this);
+        {
+            QFont f; f.setPointSize(9);
+            descLbl->setFont(f);
+        }
+        descLbl->setStyleSheet(QString("color: %1; background: transparent;").arg(tm.mutedColor()));
+        col->addWidget(descLbl);
+
+        col->addStretch();
+    }
+
+protected:
+    void mousePressEvent(QMouseEvent *e) override
+    {
+        if (e->button() == Qt::LeftButton && m_onClick) m_onClick();
+        QFrame::mousePressEvent(e);
+    }
+    void enterEvent(QEnterEvent *e) override
+    {
+        applyStyle(true);
+        QFrame::enterEvent(e);
+    }
+    void leaveEvent(QEvent *e) override
+    {
+        applyStyle(false);
+        QFrame::leaveEvent(e);
+    }
+
+private:
+    void applyStyle(bool hover)
+    {
+        setStyleSheet(QString(
+            "QFrame#actionCard {"
+            "  background: %1;"
+            "  border: none; border-radius: 6px;"
+            "}"
+            ).arg(hover ? m_hoverBg : m_baseBg));
+    }
+
+    std::function<void()> m_onClick;
+    QString m_baseBg;
+    QString m_hoverBg;
+};
+
+} // namespace
 
 WelcomeDialog::WelcomeDialog(QWidget *parent)
     : QDialog(parent)
 {
-    setWindowTitle("BATorrent");
-    setFixedSize(520, 540);
+    setWindowTitle(tr_("welcome_window_title"));
+    setFixedSize(620, 560);
 
     const auto &tm = ThemeManager::instance();
-    QString bg = tm.bgColor();
-    QString sf = tm.surfaceColor();
-    QString tx = tm.textColor();
-    QString mt = tm.mutedColor();
-    QString ac = tm.accentColor();
-    QString acDk = tm.accentDarkColor();
-    QString bd = tm.borderColor();
 
-    setStyleSheet(QString(R"(
-        QDialog { background-color: %1; color: %2; }
-        QLabel { color: %2; }
-        QPushButton {
-            background-color: %5; color: #ffffff;
-            border: none; border-radius: 8px;
-            padding: 12px 36px; font-size: 14px; font-weight: 600;
-        }
-        QPushButton:hover { background-color: %7; }
-        QCheckBox { color: %4; spacing: 8px; font-size: 11px; }
-        QCheckBox::indicator {
-            width: 14px; height: 14px;
-            border: 1px solid %6; border-radius: 4px;
-            background-color: %3;
-        }
-        QCheckBox::indicator:checked { background-color: %5; border-color: %5; }
-    )").arg(bg, tx, sf, mt, ac, bd, tm.accentLightColor()));
+    setStyleSheet(QString(
+        "QDialog {"
+        "  background: qradialgradient(cx:0.5, cy:0, radius:0.7,"
+        "      stop:0 rgba(220,38,38,0.16),"
+        "      stop:1 %1);"
+        "  color: %2;"
+        "}"
+        "QLabel { background: transparent; }"
+        "QCheckBox { color: %3; spacing: 8px; font-size: 11px; background: transparent; }"
+        "QCheckBox::indicator {"
+        "  width: 14px; height: 14px;"
+        "  border: 1px solid %4; border-radius: 4px;"
+        "  background-color: %5;"
+        "}"
+        "QCheckBox::indicator:checked { background-color: %6; border-color: %6; }"
+        "#closeBtn {"
+        "  background: transparent; color: %3;"
+        "  border: 1px solid %4; border-radius: 6px;"
+        "  padding: 6px 18px; font-size: 11px; font-weight: 500;"
+        "}"
+        "#closeBtn:hover { background: %5; color: %2; }"
+        ).arg(tm.bgColor(), tm.textColor(), tm.mutedColor(),
+              tm.borderColor(), tm.surfaceColor(), tm.accentColor()));
 
-    auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(36, 28, 36, 28);
-    mainLayout->setSpacing(10);
+    auto *root = new QVBoxLayout(this);
+    root->setContentsMargins(48, 36, 48, 24);
+    root->setSpacing(0);
 
-    // Logo
     auto *logoLabel = new QLabel;
-    QPixmap logo(":/images/logo1.png");
-    logoLabel->setPixmap(logo.scaled(80, 80, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    QPixmap raw(":/images/logo1.png");
+    logoLabel->setPixmap(raw.scaled(80 * 2, 80 * 2,
+        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoLabel->setFixedSize(80, 80);
+    logoLabel->setScaledContents(true);
     logoLabel->setAlignment(Qt::AlignCenter);
-    mainLayout->addWidget(logoLabel);
+    auto *halo = new QGraphicsDropShadowEffect;
+    halo->setColor(QColor(220, 38, 38, 90));
+    halo->setBlurRadius(48);
+    halo->setOffset(0, 0);
+    logoLabel->setGraphicsEffect(halo);
+    auto *logoRow = new QHBoxLayout;
+    logoRow->addStretch();
+    logoRow->addWidget(logoLabel);
+    logoRow->addStretch();
+    root->addLayout(logoRow);
+    root->addSpacing(16);
 
-    // Title
-    auto *titleLabel = new QLabel(tr_("welcome_title"));
-    titleLabel->setStyleSheet(QString("font-size: 22px; font-weight: 700; color: %1;").arg(tx));
-    titleLabel->setAlignment(Qt::AlignCenter);
-    mainLayout->addWidget(titleLabel);
+    auto *eyebrow = new QLabel(tr_("welcome_eyebrow"));
+    eyebrow->setAlignment(Qt::AlignCenter);
+    {
+        QFont f; f.setPointSize(8); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 1.2);
+        eyebrow->setFont(f);
+        eyebrow->setStyleSheet(QString("color: %1;").arg(tm.accentColor()));
+    }
+    root->addWidget(eyebrow);
+    root->addSpacing(6);
 
-    auto *subtitleLabel = new QLabel(tr_("welcome_subtitle"));
-    subtitleLabel->setStyleSheet(QString("font-size: 12px; color: %1; margin-bottom: 14px;").arg(mt));
-    subtitleLabel->setAlignment(Qt::AlignCenter);
-    mainLayout->addWidget(subtitleLabel);
+    auto *heading = new QLabel(tr_("welcome_heading"));
+    heading->setAlignment(Qt::AlignCenter);
+    {
+        QFont f; f.setPointSize(18); f.setWeight(QFont::Bold);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, -0.3);
+        heading->setFont(f);
+        heading->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+    }
+    root->addWidget(heading);
+    root->addSpacing(8);
 
-    mainLayout->addSpacing(4);
+    auto *subtitle = new QLabel(tr_("welcome_subtitle_text"));
+    subtitle->setAlignment(Qt::AlignCenter);
+    subtitle->setWordWrap(true);
+    subtitle->setMaximumWidth(380);
+    {
+        QFont f; f.setPointSize(11);
+        subtitle->setFont(f);
+        subtitle->setStyleSheet(QString("color: %1;").arg(tm.mutedColor()));
+    }
+    auto *subRow = new QHBoxLayout;
+    subRow->addStretch();
+    subRow->addWidget(subtitle);
+    subRow->addStretch();
+    root->addLayout(subRow);
+    root->addSpacing(24);
 
-    // Steps
-    auto addStep = [&](const QString &num, const QString &titleKey, const QString &descKey) {
-        auto *stepLayout = new QHBoxLayout;
-        stepLayout->setSpacing(14);
+    auto *grid = new QGridLayout;
+    grid->setHorizontalSpacing(12);
+    grid->setVerticalSpacing(12);
+    grid->setContentsMargins(0, 0, 0, 0);
 
-        auto *numLabel = new QLabel(num);
-        numLabel->setFixedSize(34, 34);
-        numLabel->setAlignment(Qt::AlignCenter);
-        numLabel->setStyleSheet(QString(
-            "background-color: %1; color: %2; border-radius: 17px;"
-            "font-size: 14px; font-weight: 700;").arg(acDk, ac));
+    auto *openCard = new ActionCard(
+        QStringLiteral(":/icons/open.svg"),
+        tr_("welcome_card_open_title"),
+        tr_("welcome_card_open_desc"),
+        [this]() { emit openFileRequested(); accept(); },
+        this);
 
-        auto *textLayout = new QVBoxLayout;
-        auto *stepTitle = new QLabel(tr_(titleKey));
-        stepTitle->setStyleSheet(QString("font-size: 13px; font-weight: 600; color: %1;").arg(tx));
-        auto *stepDesc = new QLabel(tr_(descKey));
-        stepDesc->setWordWrap(true);
-        stepDesc->setStyleSheet(QString("font-size: 11px; color: %1; line-height: 1.4;").arg(mt));
+    auto *magnetCard = new ActionCard(
+        QStringLiteral(":/icons/magnet.svg"),
+        tr_("welcome_card_magnet_title"),
+        tr_("welcome_card_magnet_desc"),
+        [this]() { emit pasteMagnetRequested(); accept(); },
+        this);
 
-        textLayout->addWidget(stepTitle);
-        textLayout->addWidget(stepDesc);
-        textLayout->setSpacing(3);
+    auto *searchCard = new ActionCard(
+        QStringLiteral(":/icons/search.svg"),
+        tr_("welcome_card_search_title"),
+        tr_("welcome_card_search_desc"),
+        [this]() { emit openSearchRequested(); accept(); },
+        this);
 
-        stepLayout->addWidget(numLabel, 0, Qt::AlignTop);
-        stepLayout->addLayout(textLayout, 1);
+    auto *rssCard = new ActionCard(
+        QStringLiteral(":/icons/rss.svg"),
+        tr_("welcome_card_rss_title"),
+        tr_("welcome_card_rss_desc"),
+        [this]() { emit openRssRequested(); accept(); },
+        this);
 
-        mainLayout->addLayout(stepLayout);
-    };
+    grid->addWidget(openCard,   0, 0);
+    grid->addWidget(magnetCard, 0, 1);
+    grid->addWidget(searchCard, 1, 0);
+    grid->addWidget(rssCard,    1, 1);
+    root->addLayout(grid);
+    root->addStretch();
 
-    addStep("1", "welcome_step1_title", "welcome_step1_desc");
-    addStep("2", "welcome_step2_title", "welcome_step2_desc");
-    addStep("3", "welcome_step3_title", "welcome_step3_desc");
-
-    mainLayout->addStretch();
-
-    // Bottom
+    auto *bottom = new QHBoxLayout;
     m_dontShowCheck = new QCheckBox(tr_("welcome_dont_show"));
+    bottom->addWidget(m_dontShowCheck);
+    bottom->addStretch();
 
-    auto *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(m_dontShowCheck);
-    btnLayout->addStretch();
-    auto *gotItBtn = new QPushButton(tr_("welcome_got_it"));
-    connect(gotItBtn, &QPushButton::clicked, this, &QDialog::accept);
-    btnLayout->addWidget(gotItBtn);
+    auto *closeBtn = new QPushButton(tr_("welcome_close"));
+    closeBtn->setObjectName(QStringLiteral("closeBtn"));
+    closeBtn->setCursor(Qt::PointingHandCursor);
+    connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
+    bottom->addWidget(closeBtn);
 
-    mainLayout->addLayout(btnLayout);
+    root->addLayout(bottom);
 }
 
 bool WelcomeDialog::dontShowAgain() const
