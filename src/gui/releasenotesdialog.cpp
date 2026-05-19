@@ -136,7 +136,7 @@ ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
 QString ReleaseNotesDialog::releaseNotes()
 {
     return QStringLiteral(
-        "<h3>v2.4.0</h3>"
+        "<h3>v2.4.1</h3>"
         "<ul>"
         "<li><b>Design overhaul</b> &mdash; full dark UI redesign across every dialog: "
         "welcome, settings, add torrent, search, RSS, create torrent, statistics, addons, "
