@@ -184,6 +184,12 @@ void Translator::loadEnglish()
         {"addon_installed_chip", "Installed"},
         {"addon_types_label", "Types"},
 
+        // Tray popup (custom menu-bar dropdown)
+        {"tray_count_format", "%1 torrents · %2 active"},
+        {"tray_vpn_idle", "VPN — off"},
+        {"tray_kill_switch_on", "kill switch on"},
+        {"tray_auto_shutdown", "Auto-shutdown when done"},
+
         // Filter
         {"filter_all_categories", "All Categories"},
 
@@ -716,6 +722,12 @@ void Translator::loadPortuguese()
         {"addon_empty_hint", "Nenhum addon instalado ainda. Escolha um em Sugeridos abaixo ou cole uma URL de addon."},
         {"addon_installed_chip", "Instalado"},
         {"addon_types_label", "Tipos"},
+
+        // Tray popup
+        {"tray_count_format", "%1 torrents · %2 ativos"},
+        {"tray_vpn_idle", "VPN — desligada"},
+        {"tray_kill_switch_on", "kill switch ligado"},
+        {"tray_auto_shutdown", "Desligar ao concluir"},
 
         // Create torrent
         {"create_title", "Criar Torrent"},
@@ -1551,6 +1563,12 @@ void Translator::loadChinese()
         {"addon_installed_chip", "已安装"},
         {"addon_types_label", "类型"},
 
+        // Tray popup
+        {"tray_count_format", "%1 个种子 · %2 个活动"},
+        {"tray_vpn_idle", "VPN — 关闭"},
+        {"tray_kill_switch_on", "终止开关已开启"},
+        {"tray_auto_shutdown", "完成后关机"},
+
         // Statistics
         {"action_statistics", "统计(&T)"},
         {"stats_title", "统计"},
@@ -2039,6 +2057,12 @@ void Translator::loadJapanese()
         {"addon_installed_chip", "インストール済み"},
         {"addon_types_label", "タイプ"},
 
+        // Tray popup
+        {"tray_count_format", "%1 トレント · %2 アクティブ"},
+        {"tray_vpn_idle", "VPN — オフ"},
+        {"tray_kill_switch_on", "キルスイッチ オン"},
+        {"tray_auto_shutdown", "完了したら自動シャットダウン"},
+
         // Statistics
         {"action_statistics", "統計(&T)"},
         {"stats_title", "統計"},
@@ -2525,6 +2549,12 @@ void Translator::loadRussian()
         {"addon_empty_hint", "Аддоны пока не установлены. Выберите один из предложенных ниже или вставьте URL аддона."},
         {"addon_installed_chip", "Установлено"},
         {"addon_types_label", "Типы"},
+
+        // Tray popup
+        {"tray_count_format", "%1 торрентов · %2 активных"},
+        {"tray_vpn_idle", "VPN — выкл"},
+        {"tray_kill_switch_on", "kill switch включён"},
+        {"tray_auto_shutdown", "Выключить по окончании"},
 
         // Statistics
         {"action_statistics", "С&татистика"},
@@ -3013,6 +3043,12 @@ void Translator::loadSpanish()
         {"addon_installed_chip", "Instalado"},
         {"addon_types_label", "Tipos"},
 
+        // Tray popup
+        {"tray_count_format", "%1 torrents · %2 activos"},
+        {"tray_vpn_idle", "VPN — apagada"},
+        {"tray_kill_switch_on", "kill switch activado"},
+        {"tray_auto_shutdown", "Apagar al terminar"},
+
         // Statistics
         {"action_statistics", "E&stadísticas"},
         {"stats_title", "Estadísticas"},
@@ -3499,6 +3535,12 @@ void Translator::loadGerman()
         {"addon_empty_hint", "Noch keine Erweiterungen installiert. Wählen Sie eine aus den Vorschlägen unten oder fügen Sie eine Erweiterungs-URL ein."},
         {"addon_installed_chip", "Installiert"},
         {"addon_types_label", "Typen"},
+
+        // Tray popup
+        {"tray_count_format", "%1 Torrents · %2 aktiv"},
+        {"tray_vpn_idle", "VPN — aus"},
+        {"tray_kill_switch_on", "Kill Switch an"},
+        {"tray_auto_shutdown", "Bei Abschluss herunterfahren"},
 
         // Statistics
         {"action_statistics", "S&tatistiken"},

@@ -75,6 +75,7 @@ private:
     QLabel *m_upUnit    = nullptr;
     QVBoxLayout *m_activeLayout = nullptr;
     QWidget *m_activeSection = nullptr;
+    QLabel *m_vpnLabel = nullptr;
     QLabel *m_vpnSub = nullptr;
     ToggleSwitch *m_autoShutdownSwitch = nullptr;
 

@@ -237,6 +237,13 @@ TrayPopup::TrayPopup(SessionManager *session, QWidget *parent)
     setAttribute(Qt::WA_TranslucentBackground);
     setFixedWidth(280);
 
+    // Live-refresh speeds/active count while the popup is open. We only
+    // listen while visible — connecting permanently would call refresh()
+    // every poll tick (~1s) wasting cycles when the popup is hidden.
+    connect(m_session, &SessionManager::torrentsUpdated, this, [this]() {
+        if (isVisible()) refresh();
+    });
+
     const auto &tm = ThemeManager::instance();
 
     // Outer wrapper: rounded panel with shadow. The QDialog itself is
@@ -373,6 +380,15 @@ TrayPopup::TrayPopup(SessionManager *session, QWidget *parent)
     const QString cmd = QStringLiteral("Ctrl+");
 #endif
 
+    // Qt's translation entries use "&X" as keyboard-accelerator hints which
+    // QMenu interprets (underlining the next char). Custom widgets render
+    // them literally, so strip the ampersand for the tray rows.
+    auto strip = [](const QString &s) {
+        QString out = s;
+        out.remove(QChar('&'));
+        return out;
+    };
+
     auto addRow = [&](const QString &label, const QString &shortcut,
                       bool danger, std::function<void()> handler) {
         auto *r = new MenuRow(label, shortcut, danger, menu);
@@ -384,29 +400,31 @@ TrayPopup::TrayPopup(SessionManager *session, QWidget *parent)
         return r;
     };
 
-    addRow(tr_("tray_show"), cmd + "1", false,
+    addRow(strip(tr_("tray_show")), cmd + "1", false,
            [this]() { emit showWindowRequested(); });
-    addRow(tr_("action_open"), cmd + "O", false,
+    addRow(strip(tr_("action_open")), cmd + "O", false,
            [this]() { emit openFileRequested(); });
-    addRow(tr_("action_magnet"), cmd + "V", false,
+    addRow(strip(tr_("action_magnet")), cmd + "V", false,
            [this]() { emit pasteMagnetRequested(); });
     mCol->addWidget(makeDivider(menu));
-    addRow(tr_("action_pause_all"), QString(), false,
+    addRow(strip(tr_("action_pause_all")), QString(), false,
            [this]() { emit pauseAllRequested(); });
-    addRow(tr_("action_resume_all"), QString(), false,
+    addRow(strip(tr_("action_resume_all")), QString(), false,
            [this]() { emit resumeAllRequested(); });
     mCol->addWidget(makeDivider(menu));
 
     // VPN row with optional "kill switch on" sub-text. We construct it
-    // directly so the sub-label is reachable for refresh() updates.
-    auto *vpnRow = new MenuRow(QStringLiteral("VPN — —"), QString(), false, menu);
+    // directly so the label/sub-label are reachable for refresh() updates.
+    auto *vpnRow = new MenuRow(tr_("tray_vpn_idle"), QString(), false, menu);
+    m_vpnLabel = vpnRow->findChild<QLabel *>();
     m_vpnSub = vpnRow->addSub(QStringLiteral(""), QColor(tm.stateSeedingColor()));
     m_vpnSub->setVisible(false);
     vpnRow->onClick([this]() { emit openSettingsRequested(); hide(); });
     mCol->addWidget(vpnRow);
 
-    // Auto-shutdown row with toggle
-    auto *autoRow = new MenuRow(tr_("settings_auto_shutdown"), QString(), false, menu);
+    // Auto-shutdown row with toggle (short label for the tray; the verbose
+    // version lives in the settings dialog).
+    auto *autoRow = new MenuRow(tr_("tray_auto_shutdown"), QString(), false, menu);
     m_autoShutdownSwitch = new ToggleSwitch(autoRow);
     autoRow->setTrailing(m_autoShutdownSwitch);
     connect(m_autoShutdownSwitch, &ToggleSwitch::toggled, this, [this](bool on) {
@@ -416,9 +434,9 @@ TrayPopup::TrayPopup(SessionManager *session, QWidget *parent)
     mCol->addWidget(autoRow);
     mCol->addWidget(makeDivider(menu));
 
-    addRow(tr_("action_settings"), cmd + ",", false,
+    addRow(strip(tr_("action_settings")), cmd + ",", false,
            [this]() { emit openSettingsRequested(); });
-    addRow(tr_("tray_quit"), cmd + "Q", true,
+    addRow(strip(tr_("tray_quit")), cmd + "Q", true,
            [this]() { emit quitRequested(); });
 
     inner->addWidget(menu);
@@ -458,7 +476,8 @@ void TrayPopup::refresh()
         down += info.downloadRate;
         up += info.uploadRate;
     }
-    m_headerCount->setText(QString("%1 torrents · %2 active").arg(total).arg(active));
+    m_headerCount->setText(tr_("tray_count_format")
+        .arg(total).arg(active));
 
     // Status dot: amber if any activity, dim otherwise.
     QColor dotColor = active > 0
@@ -496,11 +515,17 @@ void TrayPopup::refresh()
 
     rebuildActiveList(m_activeLayout);
 
-    // VPN row
+    // VPN row — show the bound interface name when set, otherwise an idle
+    // placeholder. Sub-label surfaces "kill switch on" only while engaged.
+    if (m_vpnLabel) {
+        m_vpnLabel->setText(m_vpnIface.isEmpty()
+            ? tr_("tray_vpn_idle")
+            : QString("VPN — %1").arg(m_vpnIface));
+    }
     if (!m_vpnIface.isEmpty()) {
         m_vpnSub->setVisible(m_killSwitchOn);
         if (m_killSwitchOn)
-            m_vpnSub->setText(QStringLiteral("kill switch on"));
+            m_vpnSub->setText(tr_("tray_kill_switch_on"));
     } else {
         m_vpnSub->setVisible(false);
     }

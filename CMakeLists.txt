@@ -15,7 +15,7 @@ if(WIN32)
     set(WIN_RC src/app.rc)
 endif()
 
-add_executable(BATorrent WIN32
+add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/main.cpp
     src/torrent/sessionmanager.cpp
     src/app/translator.cpp
@@ -52,6 +52,20 @@ add_executable(BATorrent WIN32
 )
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
 target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia LibtorrentRasterbar::torrent-rasterbar)
+
+# macOS: bundle metadata. Without these keys, NSStatusItem (the tray icon)
+# can fail to allocate a menu-bar slot — Qt reports the item as visible but
+# height 0, off-screen.
+if(APPLE)
+    set_target_properties(BATorrent PROPERTIES
+        MACOSX_BUNDLE_BUNDLE_NAME "BATorrent"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.batorrent.app"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_INFO_STRING "BATorrent ${PROJECT_VERSION}"
+        MACOSX_BUNDLE_COPYRIGHT "© 2024-2026 Mateus Cruz"
+    )
+endif()
 
 if(Qt6Keychain_FOUND)
     target_compile_definitions(BATorrent PRIVATE HAVE_QTKEYCHAIN)

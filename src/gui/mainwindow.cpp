@@ -100,7 +100,13 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     setupToolBar();
     setupCentralWidget();
     setupStatusBar();
-    setupTrayIcon();
+    // Defer tray-icon creation until after the event loop is running.
+    // NSStatusItem registration during the MainWindow ctor (before
+    // QApplication::exec()) can land in a state where macOS reports
+    // the item as height 0 / position bottom-of-screen — the slot is
+    // never allocated. Deferring to the next event-loop tick lets
+    // AppKit finish its initialization first.
+    QTimer::singleShot(0, this, &MainWindow::setupTrayIcon);
 
     // Restore table layout
     {
@@ -772,10 +778,24 @@ void MainWindow::setupStatusBar()
 
 void MainWindow::setupTrayIcon()
 {
-    m_trayIcon = new QSystemTrayIcon(QIcon(":/images/logo1.png"), this);
+    // Build a multi-size icon from the single 1024×1024 source. Without
+    // intermediate sizes Qt downsamples 1024→22pt in one pass, which is
+    // fine on most platforms but can produce a 0-height NSStatusItem on
+    // macOS. Pre-scaling to a handful of sizes lets Qt pick the closest.
+    QPixmap source(":/images/logo1.png");
+    QIcon ic;
+    for (int sz : {16, 22, 32, 44, 64, 128, 256}) {
+        ic.addPixmap(source.scaled(sz, sz,
+            Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    m_trayIcon = new QSystemTrayIcon(ic, this);
 
-    // Right-click keeps a native context menu (Windows users expect this and
-    // it's keyboard-navigable). Left-click opens the rich custom popup.
+#ifndef Q_OS_MAC
+    // On Windows/Linux, right-click on the tray icon shows a native context
+    // menu (users expect it; it's also keyboard-navigable). Left-click opens
+    // the rich custom popup. On macOS we DON'T set a context menu: NSStatusItem
+    // fires both the menu AND the activated() signal on click, which would
+    // pop the popup on top of the native menu.
     auto *trayMenu = new QMenu(this);
     trayMenu->addAction(tr_("tray_show"), this, &MainWindow::trayActivated);
     trayMenu->addSeparator();
@@ -788,6 +808,7 @@ void MainWindow::setupTrayIcon()
         QApplication::quit();
     });
     m_trayIcon->setContextMenu(trayMenu);
+#endif
 
     m_trayPopup = new TrayPopup(m_session);
     m_trayPopup->setVpnInterface(m_session->outgoingInterface());
