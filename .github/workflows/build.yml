@@ -202,7 +202,7 @@ jobs:
           [ -z "$VERSION" ] && VERSION="0.0.0-dev"
           mkdir -p dmg/BATorrent.app/Contents/MacOS
           mkdir -p dmg/BATorrent.app/Contents/Resources
-          cp build/BATorrent dmg/BATorrent.app/Contents/MacOS/
+          cp build/BATorrent.app/Contents/MacOS/BATorrent dmg/BATorrent.app/Contents/MacOS/
           printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
             '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
             '<plist version="1.0">' '<dict>' \
