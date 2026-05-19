@@ -1,7 +1,7 @@
 ; BATorrent Installer - Inno Setup Script
 ; Custom dark theme with branding
 
-#define MyAppVersion "2.3.4"
+#define MyAppVersion "2.4.0"
 
 [Setup]
 AppName=BATorrent
@@ -129,12 +129,6 @@ begin
   WizardForm.Color := BG_DARK;
   WizardForm.InnerPage.Color := BG_DARK;
   WizardForm.MainPanel.Color := BG_SURFACE;
-  // Welcome and Finish pages live on the OuterNotebook (separate from
-  // MainPanel); without these the final "exit / launch app" screen reverts
-  // to system white, hiding the muted-grey body labels.
-  WizardForm.OuterNotebook.Color := BG_DARK;
-  WizardForm.WelcomePage.Color := BG_DARK;
-  WizardForm.FinishedPage.Color := BG_DARK;
 
   // -- Welcome & Finish labels --
   WizardForm.WelcomeLabel1.Font.Color := TEXT_COLOR;
