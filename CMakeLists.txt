@@ -32,7 +32,6 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/secretstore.cpp
     src/gui/speedgraph.cpp
     src/gui/batwidget.cpp
-    src/gui/splashwidget.cpp
     src/gui/toast.cpp
     src/app/updater.cpp
     src/app/addonmanager.cpp

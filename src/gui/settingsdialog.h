@@ -31,7 +31,6 @@ public:
     int themeIndex() const;
     bool autoShutdown() const;
     bool notifSoundEnabled() const;
-    bool splashSoundEnabled() const;
     bool autoMoveEnabled() const;
     QString autoMovePath() const;
 
@@ -45,7 +44,6 @@ public:
     void setThemeIndex(int index);
     void setAutoShutdown(bool val);
     void setNotifSoundEnabled(bool val);
-    void setSplashSoundEnabled(bool val);
     void setAutoMoveEnabled(bool val);
     void setAutoMovePath(const QString &path);
 
@@ -164,7 +162,6 @@ private:
     QComboBox *m_themeCombo;
     QCheckBox *m_autoShutdownCheck;
     QCheckBox *m_notifSoundCheck;
-    QCheckBox *m_splashSoundCheck;
     QCheckBox *m_autoMoveCheck;
     QLineEdit *m_autoMovePathEdit;
 

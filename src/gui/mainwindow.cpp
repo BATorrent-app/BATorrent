@@ -13,7 +13,6 @@
 #include "addtorrentdialog.h"
 #include "speedgraph.h"
 #include "batwidget.h"
-#include "splashwidget.h"
 #include "thememanager.h"
 #include "toast.h"
 #include "../torrent/sessionmanager.h"
@@ -245,17 +244,6 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
         settings.setValue("lastVersion", curVer);
     }
 
-    // Splash animation
-    m_splash = new SplashWidget(this);
-    m_splash->setGeometry(0, 0, width(), height());
-    m_splash->raise();
-    m_splash->show();
-    m_splash->start();
-    connect(m_splash, &SplashWidget::finished, this, [this]() {
-        m_splash->hide();
-        m_splash->deleteLater();
-        m_splash = nullptr;
-    });
 }
 
 MainWindow::~MainWindow()
@@ -898,7 +886,6 @@ void MainWindow::saveSettings()
     settings.setValue("autoResumeOnReconnect", m_session->autoResumeOnReconnect());
     settings.setValue("autoShutdown", m_autoShutdown);
     settings.setValue("notifSound", m_notifSoundEnabled);
-    settings.setValue("splashSound", m_splashSound);
 
     // Auto-move
     settings.setValue("autoMoveEnabled", m_session->autoMoveEnabled());
@@ -1008,7 +995,6 @@ void MainWindow::loadSettings()
     // Auto-shutdown
     m_autoShutdown = settings.value("autoShutdown", false).toBool();
     m_notifSoundEnabled = settings.value("notifSound", true).toBool();
-    m_splashSound = settings.value("splashSound", true).toBool();
 
     // Auto-move
     m_session->setAutoMove(
@@ -1439,7 +1425,6 @@ void MainWindow::openSettings()
     dlg.setAutoResumeOnReconnect(m_session->autoResumeOnReconnect());
     dlg.setAutoShutdown(m_autoShutdown);
     dlg.setNotifSoundEnabled(m_notifSoundEnabled);
-    dlg.setSplashSoundEnabled(m_splashSound);
     dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
     dlg.setAutoMovePath(m_session->autoMovePath());
     dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
@@ -1521,8 +1506,6 @@ void MainWindow::openSettings()
         // Auto-shutdown & notifications
         m_autoShutdown = dlg.autoShutdown();
         m_notifSoundEnabled = dlg.notifSoundEnabled();
-        m_splashSound = dlg.splashSoundEnabled();
-
         // Auto-move
         m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());
 
@@ -1630,8 +1613,6 @@ void MainWindow::retranslateUi()
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
-    if (m_splash)
-        m_splash->setGeometry(0, 0, width(), height());
 
     // Adaptive toolbar: show icon labels only when there's room for them.
     // Below ~820 px the labelled buttons would push the toolbar past the

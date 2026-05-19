@@ -20,7 +20,6 @@ class QStackedWidget;
 class DetailsPanel;
 class SpeedGraph;
 class BatWidget;
-class SplashWidget;
 class Updater;
 class WebServer;
 class AddonManager;
@@ -96,7 +95,6 @@ private:
     SpeedGraph *m_speedGraph;
     BatWidget *m_batWidget;
     QStackedWidget *m_topStack;
-    SplashWidget *m_splash = nullptr;
     QLabel *m_statusLabel;
     QLabel *m_statusSpeedLabel = nullptr;
     QLabel *m_bandwidthPill = nullptr;
@@ -112,7 +110,6 @@ private:
     bool m_useDefaultPath = false;
     bool m_autoShutdown = false;
     bool m_notifSoundEnabled = true;
-    bool m_splashSound = true;
     QMessageBox *m_shutdownDialog = nullptr;
     QTimer *m_shutdownTimer = nullptr;
     int m_shutdownCountdown = 0;
