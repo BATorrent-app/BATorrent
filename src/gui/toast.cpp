@@ -56,13 +56,7 @@ Toast::Toast(const QString &title, const QString &body, Kind kind)
     setWindowOpacity(0.0);
     setCursor(Qt::PointingHandCursor);
 
-    QPixmap src(":/images/logo1.png");
-    if (!src.isNull()) {
-        const qreal dpr = devicePixelRatioF();
-        m_logo = src.scaled(int(kLogoSize * dpr), int(kLogoSize * dpr),
-                            Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        m_logo.setDevicePixelRatio(dpr);
-    }
+    m_logo = ThemeManager::instance().themedLogo(kLogoSize, devicePixelRatioF());
 
     m_dismissTimer->setSingleShot(true);
     m_dismissTimer->setInterval(kDismissMs);

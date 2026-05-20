@@ -84,7 +84,7 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     : QMainWindow(parent), m_session(session)
 {
     setWindowTitle("BATorrent");
-    setWindowIcon(QIcon(":/images/logo1.png"));
+    setWindowIcon(QIcon(":/images/logo.svg"));
     setAcceptDrops(true);
     // Default size targets the comfortable layout: 8-column table + 3-column
     // details panel + bandwidth pill all visible without crowding. Used only
@@ -854,15 +854,13 @@ void MainWindow::setupStatusBar()
 
 void MainWindow::setupTrayIcon()
 {
-    // Build a multi-size icon from the single 1024×1024 source. Without
-    // intermediate sizes Qt downsamples 1024→22pt in one pass, which is
-    // fine on most platforms but can produce a 0-height NSStatusItem on
-    // macOS. Pre-scaling to a handful of sizes lets Qt pick the closest.
-    QPixmap source(":/images/logo1.png");
+    // Pre-rasterize the SVG at the tray sizes macOS / Windows / Linux are
+    // likely to ask for. Letting Qt pick from a multi-size QIcon avoids a
+    // single 1024→22 downsample that can otherwise produce a 0-height
+    // NSStatusItem on macOS. Sourcing from the SVG keeps every size sharp.
     QIcon ic;
     for (int sz : {16, 22, 32, 44, 64, 128, 256}) {
-        ic.addPixmap(source.scaled(sz, sz,
-            Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        ic.addPixmap(ThemeManager::instance().themedLogo(sz, 1.0));
     }
     m_trayIcon = new QSystemTrayIcon(ic, this);
 

@@ -1,5 +1,6 @@
 <RCC>
 <qresource prefix="/">
+<file>images/logo.svg</file>
 <file>images/logo1.png</file>
 <file>icons/open.svg</file>
 <file>icons/magnet.svg</file>

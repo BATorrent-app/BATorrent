@@ -4,8 +4,10 @@
 
 #include "thememanager.h"
 #include <QColor>
+#include <QFile>
 #include <QPainter>
 #include <QStringList>
+#include <QSvgRenderer>
 
 ThemeManager &ThemeManager::instance()
 {
@@ -166,23 +168,29 @@ QString ThemeManager::accentTintStrongColor() const
 QPixmap ThemeManager::themedLogo(int size, qreal dpr) const
 {
     if (dpr <= 0) dpr = 1.0;
-    QPixmap raw(":/images/logo1.png");
-    QPixmap scaled = raw.scaled(int(size * dpr), int(size * dpr),
-                                Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    scaled.setDevicePixelRatio(dpr);
-    if (m_theme != Light)
-        return scaled;
-    // Light theme: re-paint the white alpha mask with textColor so the logo
-    // stays visible on the off-white bg.
-    QPixmap tinted(scaled.size());
-    tinted.setDevicePixelRatio(dpr);
-    tinted.fill(Qt::transparent);
-    QPainter p(&tinted);
-    p.drawPixmap(0, 0, scaled);
-    p.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    p.fillRect(tinted.rect(), QColor(textColor()));
-    p.end();
-    return tinted;
+    QFile f(":/images/logo.svg");
+    if (!f.open(QIODevice::ReadOnly))
+        return QPixmap();
+    QByteArray svg = f.readAll();
+    // The body uses #E9E9E8 (off-white) and the wings use #E72134 (accent
+    // red). Off-white vanishes on the cream-cream bg in Light theme, so swap
+    // the body color to textColor; the red accent stays in every theme.
+    if (m_theme == Light)
+        svg.replace("#E9E9E8", textColor().toUtf8());
+    QSvgRenderer renderer(svg);
+    const int px = int(size * dpr);
+    QPixmap pm(px, px);
+    pm.fill(Qt::transparent);
+    pm.setDevicePixelRatio(dpr);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHint(QPainter::SmoothPixmapTransform);
+    // Render to the full logical extent. Without an explicit rect QSvgRenderer
+    // can pick the physical pixmap size (px*px) instead of the logical one
+    // (size*size after setDevicePixelRatio), which makes the SVG render
+    // upscaled with only the top-right corner visible on retina displays.
+    renderer.render(&p, QRectF(0, 0, size, size));
+    return pm;
 }
 
 QString ThemeManager::accentTintForGradient(int alphaPercent) const
@@ -431,8 +439,10 @@ QString ThemeManager::styleSheet() const
             selection-background-color: rgba(220, 38, 38, 0.12);
             selection-color: @tx;
             font-size: 12px;
+            outline: none;
         }
-        QTableView::item { padding: 6px 8px; min-height: 36px; }
+        QTableView::item { padding: 6px 8px; min-height: 36px; border: none; }
+        QTableView::item:focus { border: none; outline: none; }
 
         QHeaderView::section {
             background-color: @bg; color: @mt;
