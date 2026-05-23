@@ -296,6 +296,11 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     // Network reachability watcher — when the system reports it just came
     // back online, kick libtorrent to re-announce immediately. Otherwise
     // the next tracker probe waits for the next scheduled interval (minutes).
+    // loadDefaultBackend() was added in Qt 6.3 — older Qt needs explicit
+    // per-platform backend names, which isn't worth the build matrix
+    // complexity. On Qt 6.2 (Ubuntu 22.04 CI default) we just skip and
+    // rely on libtorrent's own reconnect logic.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)
     if (QNetworkInformation::loadDefaultBackend()) {
         if (auto *ni = QNetworkInformation::instance()) {
             connect(ni, &QNetworkInformation::reachabilityChanged, this,
@@ -309,6 +314,7 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
             });
         }
     }
+#endif
 
     // Show welcome on first launch + offer to set as default app
     QSettings settings("BATorrent", "BATorrent");
