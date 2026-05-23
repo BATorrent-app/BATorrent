@@ -12,10 +12,27 @@
 #include <QNetworkReply>
 #include <QProcess>
 #include <QStandardPaths>
+#include <QSettings>
 #include <QSysInfo>
 
 static const QString GITHUB_API =
     "https://api.github.com/repos/Mateuscruz19/BAT-Torrent/releases/latest";
+static const QString GITEE_API =
+    "https://gitee.com/api/v5/repos/Mateuscruz19/BAT-Torrent/releases/latest";
+
+// Read the configured release-info endpoint. Both GitHub and Gitee expose the
+// same JSON shape — `tag_name`, `assets[].browser_download_url`, `assets[].name`
+// — so parseReleaseInfo doesn't need to branch by provider. The asset
+// filename selection in platformAssetName() also stays identical because the
+// CI publishes the same artefact names to both mirrors.
+static QString releaseApiUrl()
+{
+    const QString channel =
+        QSettings("BATorrent", "BATorrent").value("updateChannel", "github").toString();
+    if (channel == "disabled") return "disabled";
+    if (channel == "gitee")    return GITEE_API;
+    return GITHUB_API;
+}
 
 static QString platformAssetName()
 {
@@ -41,7 +58,11 @@ Updater::Updater(QObject *parent)
 
 void Updater::checkForUpdate()
 {
-    QUrl apiUrl(GITHUB_API);
+    // Read the channel on every check so a Settings change takes effect
+    // without restarting; the cost is one QSettings open per click.
+    const QString url = releaseApiUrl();
+    if (url == "disabled") return;
+    QUrl apiUrl(url);
     QNetworkRequest req(apiUrl);
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
     QNetworkReply *reply = m_nam.get(req);

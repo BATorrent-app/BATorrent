@@ -412,6 +412,25 @@ QWidget *DetailsPanel::createFilesTab()
     m_filesTable->setShowGrid(false);
     m_filesTable->setAlternatingRowColors(true);
 
+    // Right-click on a file row → Reveal in Finder/Explorer. The file may
+    // still be in-progress (`.!bt` suffix) so utils::revealInFileManager
+    // tries both the real name and the suffix variant.
+    m_filesTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_filesTable, &QTableWidget::customContextMenuRequested,
+            this, [this](const QPoint &pos) {
+        const int row = m_filesTable->rowAt(pos.y());
+        if (row < 0 || m_currentIndex < 0) return;
+        auto files = m_session->filesAt(m_currentIndex);
+        if (row >= static_cast<int>(files.size())) return;
+        TorrentInfo info = m_session->torrentAt(m_currentIndex);
+        const QString fullPath = info.savePath + "/" + files[row].path;
+        QMenu menu(m_filesTable);
+        menu.addAction(tr_("ctx_reveal_file"), this, [fullPath]() {
+            revealInFileManager(fullPath);
+        });
+        menu.exec(m_filesTable->viewport()->mapToGlobal(pos));
+    });
+
     layout->addWidget(m_filesTable);
     return widget;
 }

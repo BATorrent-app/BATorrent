@@ -10,6 +10,8 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QTextBrowser>
+#include <QDesktopServices>
+#include <QUrl>
 #include <QPixmap>
 #include <QApplication>
 #include <QGraphicsDropShadowEffect>
@@ -123,6 +125,13 @@ ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
     root->addSpacing(16);
 
     auto *bottom = new QHBoxLayout;
+    auto *donateBtn = new QPushButton(QStringLiteral("♥  ") + tr_("action_donate"));
+    donateBtn->setObjectName(QStringLiteral("closeBtn"));
+    donateBtn->setCursor(Qt::PointingHandCursor);
+    connect(donateBtn, &QPushButton::clicked, this, []() {
+        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/sponsors/Mateuscruz19")));
+    });
+    bottom->addWidget(donateBtn);
     bottom->addStretch();
     auto *closeBtn = new QPushButton(tr_("release_notes_close"));
     closeBtn->setObjectName(QStringLiteral("closeBtn"));
@@ -135,6 +144,35 @@ ReleaseNotesDialog::ReleaseNotesDialog(QWidget *parent)
 QString ReleaseNotesDialog::releaseNotes()
 {
     return QStringLiteral(
+        "<h3>v2.5.0</h3>"
+        "<ul>"
+        "<li><b>PT Mode</b> &mdash; one-toggle compliance for private trackers: disables "
+        "DHT/PEX/LSD, forces anonymous handshake, announces to every tier. Required by "
+        "RuTracker private, M-Team, TorrentLeech and most ratio-tracked communities.</li>"
+        "<li><b>Tor proxy preset</b> &mdash; one-click fill of the proxy fields with "
+        "127.0.0.1:9050 (SOCKS5).</li>"
+        "<li><b>Telegram webhook notifications</b> &mdash; mirror in-app toasts (download "
+        "complete, kill switch, RSS auto-download, errors) into any Telegram chat or "
+        "channel via a bot token. Per-event checkboxes + a Test button. Token stored "
+        "in the OS keychain via SecretStore.</li>"
+        "<li><b>WebUI mobile pairing</b> &mdash; new <i>Pair phone</i> button in Settings &rarr; "
+        "WebUI shows a large copyable LAN URL so you can open the WebUI on your phone "
+        "without finding the machine's IP. WebUI itself was already responsive.</li>"
+        "<li><b>Gitee update mirror</b> &mdash; Update source combo in Settings: GitHub "
+        "(default), Gitee (China mirror), or Disabled. Same JSON schema so no parser "
+        "branching needed.</li>"
+        "<li><b>RSS feed presets</b> &mdash; one-click add of Nyaa (anime, all + English-"
+        "subbed + search template), Sukebei, and the Linux Tracker.</li>"
+        "<li><b>Speed unit toggle</b> &mdash; new General &rarr; <i>Display speeds as</i> combo: "
+        "Bytes (KB/s, MB/s) or Bits (Kbps, Mbps). Default unchanged.</li>"
+        "<li><b>Locale-aware number formatting</b> &mdash; <code>formatSize</code> / "
+        "<code>formatSpeed</code> now use <code>QLocale::system()</code> so RU sees "
+        "<code>1 234,5</code> instead of <code>1,234.5</code>.</li>"
+        "<li><b>No-telemetry guarantee</b> &mdash; explicit privacy statement on the "
+        "Welcome dialog, About box, and README.</li>"
+        "<li><b>i18n sweep</b> &mdash; all 37 new v2.5.0 strings translated to EN, PT, "
+        "ZH, JA, RU, ES, DE (579 keys &times; 7 languages, 100% coverage).</li>"
+        "</ul>"
         "<h3>v2.4.2</h3>"
         "<ul>"
         "<li><b>Completed state</b> &mdash; new green-tinted state separate from Seeding. "

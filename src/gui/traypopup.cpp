@@ -81,13 +81,15 @@ QLabel *makeStatusDot(const QColor &color, int size, QWidget *parent)
 class ActiveRow : public QWidget
 {
 public:
-    ActiveRow(const QString &name, float progress, QWidget *parent = nullptr)
+    ActiveRow(const QString &name, float progress,
+              int downloadRate, qint64 remainingBytes,
+              QWidget *parent = nullptr)
         : QWidget(parent)
     {
         const auto &tm = ThemeManager::instance();
         auto *col = new QVBoxLayout(this);
         col->setContentsMargins(0, 6, 0, 6);
-        col->setSpacing(4);
+        col->setSpacing(2);
 
         auto *line = new QHBoxLayout;
         line->setSpacing(6);
@@ -110,8 +112,40 @@ public:
         line->addWidget(pct);
         col->addLayout(line);
 
+        // Sub-line: live download rate + ETA. Skipped when the torrent is
+        // either complete or stalled so we don't waste vertical space on
+        // "0 B/s · ∞" rows.
+        if (progress < 1.0f && downloadRate > 0) {
+            auto *meta = new QLabel(QString("↓ %1 · ETA %2")
+                .arg(formatSpeed(downloadRate), formatEta(downloadRate, remainingBytes)));
+            QFont mf("Menlo");
+            mf.setStyleHint(QFont::Monospace);
+            mf.setPointSize(8);
+            meta->setFont(mf);
+            meta->setStyleSheet(QString("color: %1; background: transparent;")
+                .arg(tm.dimColor()));
+            col->addWidget(meta);
+        }
+
         m_progress = progress;
     }
+
+private:
+    static QString formatSpeed(int bps) {
+        if (bps < 1024) return QString::number(bps) + " B/s";
+        if (bps < 1024 * 1024) return QString::number(bps / 1024) + " KB/s";
+        return QString::number(bps / 1048576.0, 'f', 1) + " MB/s";
+    }
+    static QString formatEta(int rate, qint64 remaining) {
+        if (rate <= 0 || remaining <= 0) return QStringLiteral("∞");
+        qint64 secs = remaining / rate;
+        if (secs < 60)    return QString::number(secs) + "s";
+        if (secs < 3600)  return QString::number(secs / 60) + "m";
+        if (secs < 86400) return QString::number(secs / 3600) + "h "
+                                + QString::number((secs % 3600) / 60) + "m";
+        return QString::number(secs / 86400) + "d";
+    }
+public:
 
 protected:
     void paintEvent(QPaintEvent *) override {
@@ -455,7 +489,10 @@ void TrayPopup::rebuildActiveList(QVBoxLayout *into)
         if (info.paused) continue;
         if (info.progress >= 1.0f) continue;
         if (info.downloadRate <= 0) continue;
-        into->addWidget(new ActiveRow(info.name, info.progress));
+        const qint64 remaining = info.totalSize > 0
+            ? info.totalSize - info.totalDone : 0;
+        into->addWidget(new ActiveRow(info.name, info.progress,
+                                      info.downloadRate, remaining));
         added++;
     }
     m_activeSection->setVisible(added > 0);

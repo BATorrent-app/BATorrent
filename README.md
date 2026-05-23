@@ -21,6 +21,8 @@
 
 BATorrent is a desktop BitTorrent client that prioritises clarity, performance, and privacy. It pairs the mature libtorrent-rasterbar engine with a hand-tuned Qt 6 interface, a remote-control WebUI, RSS auto-downloading, Stremio-compatible search, VPN-aware traffic isolation, and built-in media-server integration.
 
+> **No telemetry, no analytics, no calls home.** The only outbound request the app initiates without you is the GitHub release check, which can be disabled in Settings. Audit it yourself in [`src/app/updater.cpp`](src/app/updater.cpp).
+
 ![Main window — Dark theme](src/images/image1.png)
 
 ![Main window — Light theme](src/images/image2.png)

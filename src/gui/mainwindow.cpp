@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "mainwindow.h"
+#include "../app/logger.h"
 #include "torrentmodel.h"
 #include "torrentfilter.h"
 #include "progressdelegate.h"
@@ -22,12 +23,15 @@
 #include "../app/utils.h"
 #include "../app/addonmanager.h"
 #include "../app/secretstore.h"
+#include "../app/notifier.h"
 #include "addondialog.h"
 #include "searchdialog.h"
 #include "rssdialog.h"
 #include "releasenotesdialog.h"
 #include "statisticsdialog.h"
 #include "shortcutsdialog.h"
+#include "logviewerdialog.h"
+#include "diagnosticsdialog.h"
 #include "traypopup.h"
 #include "../app/rssmanager.h"
 
@@ -54,6 +58,7 @@
 #include <QDropEvent>
 #include <QResizeEvent>
 #include <QApplication>
+#include <QClipboard>
 #include <QColor>
 #include <QPalette>
 #include <QLocale>
@@ -172,6 +177,19 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     m_updater = new Updater(this);
     checkForUpdate(true); // silent check on startup
 
+    // Telegram notifier — mirrors the in-app Toasts into a chat. Reload-on-
+    // settings-save is wired below in openSettings(). Subscribe to the same
+    // event surfaces the Toast notify() calls use.
+    m_telegramNotifier = new TelegramNotifier(this);
+    connect(m_session, &SessionManager::torrentFinished,
+            m_telegramNotifier, &TelegramNotifier::onTorrentFinished);
+    connect(m_session, &SessionManager::killSwitchTriggered,
+            m_telegramNotifier, &TelegramNotifier::onKillSwitchTriggered);
+    connect(m_session, &SessionManager::torrentError,
+            m_telegramNotifier, &TelegramNotifier::onTorrentError);
+    connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
+            m_telegramNotifier, &TelegramNotifier::onRssAutoDownloaded);
+
     // Auto tracker list: fetch on startup, add trackers to new torrents
     AddonManager::instance().fetchTrackerList();
     connect(m_session, &SessionManager::torrentAdded, this, [this](int index) {
@@ -214,6 +232,21 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
 
     auto *selectAllShortcut = new QShortcut(QKeySequence::SelectAll, this);
     connect(selectAllShortcut, &QShortcut::activated, m_tableView, &QTableView::selectAll);
+
+    // F2 on selected row — matches universal file-manager rename convention.
+    auto *renameShortcut = new QShortcut(QKeySequence(Qt::Key_F2), m_tableView);
+    renameShortcut->setContext(Qt::WidgetShortcut);
+    connect(renameShortcut, &QShortcut::activated, this, [this]() {
+        auto rows = selectedRows();
+        if (rows.size() != 1) return;
+        const int row = rows.first();
+        TorrentInfo info = m_session->torrentAt(row);
+        bool ok = false;
+        QString name = QInputDialog::getText(this, tr_("ctx_rename"),
+            tr_("ctx_rename_prompt"), QLineEdit::Normal, info.name, &ok);
+        if (!ok || name.trimmed().isEmpty() || name == info.name) return;
+        m_session->renameFile(row, 0, name);
+    });
 
     // Show welcome on first launch + offer to set as default app
     QSettings settings("BATorrent", "BATorrent");
@@ -450,7 +483,18 @@ void MainWindow::setupMenuBar()
         dlg.exec();
     });
     helpMenu->addAction(tr_("action_check_update"), this, [this]() { checkForUpdate(false); });
+    helpMenu->addAction(tr_("action_log_viewer"), this, [this]() {
+        LogViewerDialog dlg(this);
+        dlg.exec();
+    });
+    helpMenu->addAction(tr_("action_diagnostics"), this, [this]() {
+        DiagnosticsDialog dlg(m_session, this);
+        dlg.exec();
+    });
     helpMenu->addSeparator();
+    helpMenu->addAction(tr_("action_donate"), this, []() {
+        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/sponsors/Mateuscruz19")));
+    });
     helpMenu->addAction(tr_("action_about"), this, &MainWindow::showAbout);
 }
 
@@ -1233,10 +1277,26 @@ void MainWindow::openMagnet()
 void MainWindow::removeSelected()
 {
     auto rows = selectedRows();
-    // Remove in reverse order so indices stay valid
+    if (rows.isEmpty()) return;
+    // Snapshot the .resume bytes BEFORE removal so the toast undo button has
+    // something to restore from. Order doesn't matter for the capture; we
+    // sort descending for the actual remove call to keep indices valid.
+    QList<QByteArray> snapshots;
+    for (int r : rows) {
+        QByteArray data = m_session->captureResumeData(r);
+        if (!data.isEmpty()) snapshots.append(data);
+    }
     std::sort(rows.begin(), rows.end(), std::greater<int>());
     for (int r : rows)
         m_session->removeTorrent(r, false);
+    if (snapshots.isEmpty()) return;
+    const QString body = snapshots.size() == 1
+        ? tr_("toast_removed_one")
+        : tr_("toast_removed_many").arg(snapshots.size());
+    // Stash snapshots on the toast click; on a 5 s dismiss they're discarded.
+    m_pendingUndoRemove = snapshots;
+    Toast::notify(tr_("toast_removed_title"), body, Toast::Info,
+                  this, SLOT(undoLastRemove()));
 }
 
 void MainWindow::removeSelectedWithFiles()
@@ -1297,7 +1357,83 @@ void MainWindow::importQBittorrent()
 
 void MainWindow::pauseAll()
 {
+    // Count active (non-paused, non-completed) torrents — pausing while
+    // nothing is running isn't worth a dialog, but pausing 20 seeding
+    // torrents by an accidental hotkey definitely is.
+    int active = 0;
+    for (int i = 0; i < m_session->torrentCount(); ++i) {
+        TorrentInfo info = m_session->torrentAt(i);
+        if (!info.paused && !info.completed) ++active;
+    }
+    if (active >= 2) {
+        auto reply = QMessageBox::question(this, tr_("dlg_pause_all_title"),
+            tr_("dlg_pause_all_msg").arg(active),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        if (reply != QMessageBox::Yes) return;
+    }
     m_session->pauseAll();
+}
+
+void MainWindow::diagnoseSlow(int row)
+{
+    if (row < 0 || row >= m_session->torrentCount()) return;
+    TorrentInfo info = m_session->torrentAt(row);
+    QStringList lines;
+    // Single-finding mode: tell the user the most likely reason first;
+    // others are listed beneath for transparency. Bias toward concrete
+    // fixes ("reannounce", "check VPN") over generic descriptions.
+    if (info.paused) {
+        lines << "★ " + tr_("diag_paused");
+    } else if (info.completed) {
+        lines << "★ " + tr_("diag_completed");
+    } else if (info.progress >= 1.0f) {
+        if (info.uploadRate == 0)
+            lines << "★ " + tr_("diag_seeding_no_uploaders");
+        else
+            lines << "★ " + tr_("diag_seeding_ok");
+    } else {
+        // Active download diagnostics.
+        if (info.numPeers == 0) {
+            lines << "★ " + tr_("diag_no_peers");
+        } else if (info.numSeeds == 0) {
+            lines << "★ " + tr_("diag_no_seeds");
+        } else if (info.downloadRate == 0) {
+            lines << "★ " + tr_("diag_choked");
+        } else {
+            const int dlimit = m_session->torrentDownloadLimit(row);
+            if (dlimit > 0 && info.downloadRate >= dlimit * 1024 * 0.9) {
+                lines << "★ " + tr_("diag_at_local_limit").arg(dlimit);
+            } else {
+                lines << "★ " + tr_("diag_throughput_normal")
+                              .arg(formatSpeed(info.downloadRate));
+            }
+        }
+    }
+    // Always show the supporting facts so the user can verify.
+    lines << "";
+    lines << tr_("diag_facts");
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_peers"), QString::number(info.numPeers));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("detail_seeds"), QString::number(info.numSeeds));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_down"), formatSpeed(info.downloadRate));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_up"), formatSpeed(info.uploadRate));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_state"), info.stateString);
+
+    QMessageBox box(QMessageBox::NoIcon, tr_("ctx_why_slow"), lines.join('\n'),
+                    QMessageBox::Ok, this);
+    box.exec();
+}
+
+void MainWindow::undoLastRemove()
+{
+    if (m_pendingUndoRemove.isEmpty()) return;
+    int restored = 0;
+    for (const auto &snapshot : m_pendingUndoRemove)
+        if (m_session->restoreFromResumeData(snapshot)) ++restored;
+    m_pendingUndoRemove.clear();
+    if (restored > 0)
+        Toast::notify(tr_("toast_restored_title"),
+                      tr_("toast_restored_body").arg(restored),
+                      Toast::Success);
 }
 
 void MainWindow::resumeAll()
@@ -1419,12 +1555,17 @@ void MainWindow::updateStatusBar()
     }
 
     float avgProgress = totalProgress / count;
-    m_trayIcon->setToolTip(QString("BATorrent - %1%").arg(static_cast<int>(avgProgress * 100)));
+    // Tray icon is created via a deferred singleShot(0) (NSStatusItem timing
+    // workaround), so the first updateStatusBar after a fast first tick can
+    // hit it before setupTrayIcon runs. Guard.
+    if (m_trayIcon)
+        m_trayIcon->setToolTip(QString("BATorrent - %1%").arg(static_cast<int>(avgProgress * 100)));
 
-    m_globalStatsLabel->setText(QStringLiteral("Total: %1 down · %2 up   · Ratio %3")
-        .arg(formatSize(m_session->globalDownloaded()),
-             formatSize(m_session->globalUploaded()),
-             QString::number(static_cast<double>(m_session->globalRatio()), 'f', 2)));
+    if (m_globalStatsLabel)
+        m_globalStatsLabel->setText(QStringLiteral("Total: %1 down · %2 up   · Ratio %3")
+            .arg(formatSize(m_session->globalDownloaded()),
+                 formatSize(m_session->globalUploaded()),
+                 QString::number(static_cast<double>(m_session->globalRatio()), 'f', 2)));
 }
 
 void MainWindow::onSelectionChanged()
@@ -1445,8 +1586,11 @@ void MainWindow::onTorrentFinished(const QString &name, const QString &infoHash)
             break;
         }
     }
+    // Click on a "download complete" toast jumps the user straight to the
+    // file in Finder / Explorer instead of just raising the app — the more
+    // common follow-up action than "look at the torrent row I just saw".
     Toast::notify(tr_("dlg_download_complete"), completedBody,
-                  Toast::Success, this, SLOT(trayActivated()));
+                  Toast::Success, this, SLOT(revealLastNotified()));
     if (m_notifSoundEnabled)
         QApplication::beep();
     // Remember the hash so clicking the balloon focuses the matching row
@@ -1507,6 +1651,20 @@ void MainWindow::trayActivated()
     activateWindow();
 }
 
+void MainWindow::revealLastNotified()
+{
+    if (m_lastNotifiedHash.isEmpty()) { trayActivated(); return; }
+    for (int i = 0; i < m_session->torrentCount(); ++i) {
+        if (m_session->torrentHashAt(i) != m_lastNotifiedHash) continue;
+        QString root = m_session->torrentRootPath(i);
+        if (!root.isEmpty()) {
+            revealInFileManager(root);
+            return;
+        }
+    }
+    trayActivated();
+}
+
 void MainWindow::openSettings()
 {
     SettingsDialog dlg(this);
@@ -1527,6 +1685,15 @@ void MainWindow::openSettings()
     dlg.setAutoResumeOnReconnect(m_session->autoResumeOnReconnect());
     dlg.setAutoShutdown(m_autoShutdown);
     dlg.setNotifSoundEnabled(m_notifSoundEnabled);
+    dlg.setVerboseLogEnabled(Logger::instance().level() <= Logger::Debug);
+    {
+        QSettings s("BATorrent", "BATorrent");
+        dlg.setSpeedUnit(s.value("speedUnit", 0).toInt());
+        dlg.setUpdateChannel(s.value("updateChannel", "github").toString());
+        dlg.setTelegramToken(SecretStore::instance().get("telegramBotToken"));
+        dlg.setTelegramChatId(s.value("telegramChatId").toString());
+        dlg.setTelegramEvents(s.value("telegramEvents", 0xF).toInt());
+    }
     dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
     dlg.setAutoMovePath(m_session->autoMovePath());
     dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
@@ -1536,6 +1703,9 @@ void MainWindow::openSettings()
     {
         QSettings s("BATorrent", "BATorrent");
         dlg.setUtpEnabled(m_session->utpEnabled());
+        dlg.setAnonymousMode(m_session->anonymousMode());
+        dlg.setForceIpv4(m_session->forceIpv4());
+        dlg.setPtMode(m_session->ptMode());
         dlg.setRandomizePort(s.value("randomizePort", false).toBool());
         dlg.setListenPort(s.value("listenPort", 6881).toInt());
     }
@@ -1609,6 +1779,17 @@ void MainWindow::openSettings()
         // Auto-shutdown & notifications
         m_autoShutdown = dlg.autoShutdown();
         m_notifSoundEnabled = dlg.notifSoundEnabled();
+        Logger::instance().setLevel(dlg.verboseLogEnabled() ? Logger::Debug : Logger::Info);
+        {
+            QSettings s("BATorrent", "BATorrent");
+            s.setValue("speedUnit", dlg.speedUnit());
+            setSpeedUnit(dlg.speedUnit());
+            s.setValue("updateChannel", dlg.updateChannel());
+            SecretStore::instance().set("telegramBotToken", dlg.telegramToken());
+            s.setValue("telegramChatId", dlg.telegramChatId());
+            s.setValue("telegramEvents", dlg.telegramEvents());
+            if (m_telegramNotifier) m_telegramNotifier->reload();
+        }
         // Auto-move
         m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());
 
@@ -1622,6 +1803,9 @@ void MainWindow::openSettings()
 
         // Transport + port
         m_session->setUtpEnabled(dlg.utpEnabled());
+        m_session->setAnonymousMode(dlg.anonymousMode());
+        m_session->setForceIpv4(dlg.forceIpv4());
+        m_session->setPtMode(dlg.ptMode());
         {
             QSettings s("BATorrent", "BATorrent");
             s.setValue("utpEnabled", dlg.utpEnabled());
@@ -1696,14 +1880,24 @@ void MainWindow::showAbout()
     QString text = QString(
         "<h2>BATorrent v%1</h2>"
         "<p>%2</p>"
+        "<p>🔒 <b>%6</b></p>"
         "<p><b>%3:</b><br>"
         "libtorrent-rasterbar, Qt 6, OpenSSL</p>"
-        "<p>%4 MIT</p>")
+        "<p>%4 MIT</p>"
+        "<p>%5</p>")
         .arg(QApplication::applicationVersion(),
              tr_("about_description"),
              tr_("about_libraries"),
-             tr_("about_license"));
-    QMessageBox::about(this, tr_("action_about"), text);
+             tr_("about_license"),
+             tr_("about_donate_blurb"),
+             tr_("about_no_telemetry"));
+    QMessageBox box(QMessageBox::NoIcon, tr_("action_about"), text, QMessageBox::NoButton, this);
+    box.setTextFormat(Qt::RichText);
+    auto *donateBtn = box.addButton(tr_("action_donate"), QMessageBox::ActionRole);
+    box.addButton(QMessageBox::Ok);
+    box.exec();
+    if (box.clickedButton() == donateBtn)
+        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/sponsors/Mateuscruz19")));
 }
 
 void MainWindow::retranslateUi()
@@ -1778,6 +1972,7 @@ void MainWindow::filterByState(const QString &state)
 {
     if (state.isEmpty()) {
         m_proxyModel->setStateFilter("");
+        if (m_batWidget) m_batWidget->setCustomMessage("", "");
         return;
     }
 
@@ -1796,6 +1991,21 @@ void MainWindow::filterByState(const QString &state)
     } else {
         QString trKey = keyMap.value(state);
         m_proxyModel->setStateFilter(trKey.isEmpty() ? state : tr_(trKey));
+    }
+
+    // Per-filter empty state copy — saves the user from the generic bat
+    // widget when they're filtering for "Completed" and see "no torrents
+    // yet" with three CTAs that aren't even relevant to that view.
+    if (m_batWidget) {
+        QString title, body;
+        if (state == "all_active")        { title = tr_("empty_active_t"); body = tr_("empty_active_b"); }
+        else if (state == "downloading")  { title = tr_("empty_downloading_t"); body = tr_("empty_downloading_b"); }
+        else if (state == "seeding")      { title = tr_("empty_seeding_t"); body = tr_("empty_seeding_b"); }
+        else if (state == "completed")    { title = tr_("empty_completed_t"); body = tr_("empty_completed_b"); }
+        else if (state == "paused")       { title = tr_("empty_paused_t"); body = tr_("empty_paused_b"); }
+        else if (state == "finished")     { title = tr_("empty_finished_t"); body = tr_("empty_finished_b"); }
+        else if (state == "queued")       { title = tr_("empty_queued_t"); body = tr_("empty_queued_b"); }
+        m_batWidget->setCustomMessage(title, body);
     }
 }
 
@@ -1817,6 +2027,74 @@ void MainWindow::showContextMenu(const QPoint &pos)
         seqAction->setChecked((info.handle.flags() & lt::torrent_flags::sequential_download) != lt::torrent_flags_t{});
         connect(seqAction, &QAction::toggled, this, [this, row = rows.first()](bool checked) {
             m_session->setSequentialDownload(row, checked);
+        });
+        menu.addSeparator();
+    }
+
+    // Per-torrent rate caps. Submenu with presets + Custom entry. Applies
+    // to whichever rows are selected (bulk-friendly).
+    {
+        const QList<QPair<QString, int>> presets = {
+            {tr_("ctx_speed_unlimited"), 0},
+            {QStringLiteral("50 KB/s"),   50},
+            {QStringLiteral("100 KB/s"),  100},
+            {QStringLiteral("500 KB/s"),  500},
+            {QStringLiteral("1 MB/s"),    1024},
+            {QStringLiteral("5 MB/s"),    5120},
+            {QStringLiteral("10 MB/s"),  10240},
+        };
+        auto buildLimitMenu = [&](const QString &title, bool isDownload) {
+            QMenu *sub = menu.addMenu(title);
+            int current = 0;
+            if (rows.size() == 1) {
+                current = isDownload
+                    ? m_session->torrentDownloadLimit(rows.first())
+                    : m_session->torrentUploadLimit(rows.first());
+            }
+            for (const auto &p : presets) {
+                QAction *a = sub->addAction(p.first);
+                a->setCheckable(true);
+                a->setChecked(current == p.second);
+                connect(a, &QAction::triggered, this, [this, rows, isDownload, kbps = p.second]() {
+                    for (int r : rows) {
+                        if (isDownload) m_session->setTorrentDownloadLimit(r, kbps);
+                        else            m_session->setTorrentUploadLimit(r, kbps);
+                    }
+                });
+            }
+            sub->addSeparator();
+            QAction *custom = sub->addAction(tr_("ctx_speed_custom"));
+            connect(custom, &QAction::triggered, this, [this, rows, isDownload, current]() {
+                bool ok = false;
+                int v = QInputDialog::getInt(this, tr_("ctx_speed_custom"),
+                    tr_("ctx_speed_prompt"), current, 0, 1000000, 50, &ok);
+                if (!ok) return;
+                for (int r : rows) {
+                    if (isDownload) m_session->setTorrentDownloadLimit(r, v);
+                    else            m_session->setTorrentUploadLimit(r, v);
+                }
+            });
+        };
+        buildLimitMenu(tr_("ctx_speed_down"), true);
+        buildLimitMenu(tr_("ctx_speed_up"), false);
+        menu.addSeparator();
+    }
+
+    // Copy magnet / info-hash for the first selected torrent (clipboard
+    // bulk-copy of multiple torrents is rarely what users want — they want
+    // to share one).
+    if (!rows.isEmpty()) {
+        const int row = rows.first();
+        menu.addAction(tr_("ctx_copy_magnet"), this, [this, row]() {
+            QString uri = m_session->torrentMagnetUri(row);
+            if (!uri.isEmpty()) QApplication::clipboard()->setText(uri);
+        });
+        menu.addAction(tr_("ctx_copy_hash"), this, [this, row]() {
+            QString hash = m_session->torrentHashAt(row);
+            if (!hash.isEmpty()) QApplication::clipboard()->setText(hash);
+        });
+        menu.addAction(tr_("ctx_why_slow"), this, [this, row]() {
+            diagnoseSlow(row);
         });
         menu.addSeparator();
     }
@@ -2057,6 +2335,10 @@ void MainWindow::streamTorrent(int row)
 
     // Set video file to high priority
     m_session->setFilePriority(row, bestIdx, 7);
+
+    // Boost piece boundaries (first 4 + last 2 pieces) so the player can
+    // open the container header + trailing index before the body fills in.
+    m_session->prioritizeFilePieceBoundaries(row, bestIdx);
 
     m_streamTorrentIndex = row;
     // libtorrent reports the on-disk path (suffixed for incomplete files), so

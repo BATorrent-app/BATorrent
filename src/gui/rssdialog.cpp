@@ -6,6 +6,7 @@
 #include "../app/translator.h"
 #include "../app/utils.h"
 #include "thememanager.h"
+#include <QMenu>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFrame>
@@ -162,6 +163,37 @@ RssDialog::RssDialog(QWidget *parent)
     connect(addBtn, &QPushButton::clicked, this, &RssDialog::addFeed);
     connect(m_urlEdit, &QLineEdit::returnPressed, this, &RssDialog::addFeed);
     addRow->addWidget(addBtn);
+
+    // Curated regional/topic feeds — saves first-time users from hunting URLs
+    // and gives the JP anime community + linux-iso seedbox crowd a one-click
+    // onboarding path. RuTracker / true CN private trackers don't have public
+    // RSS so they're absent here.
+    auto *presetBtn = new QPushButton(tr_("rss_preset_btn"));
+    presetBtn->setCursor(Qt::PointingHandCursor);
+    auto *presetMenu = new QMenu(presetBtn);
+    struct Preset { QString label; QString url; };
+    const QList<Preset> presets = {
+        {QStringLiteral("Nyaa — All anime (latest)"),
+         QStringLiteral("https://nyaa.si/?page=rss")},
+        {QStringLiteral("Nyaa — English-subbed anime (latest)"),
+         QStringLiteral("https://nyaa.si/?page=rss&c=1_2&f=0")},
+        {QStringLiteral("Nyaa — search template (replace QUERY)"),
+         QStringLiteral("https://nyaa.si/?page=rss&q=QUERY&c=1_2&f=0")},
+        {QStringLiteral("Sukebei (NSFW, JP)"),
+         QStringLiteral("https://sukebei.nyaa.si/?page=rss")},
+        {QStringLiteral("Linux Tracker — distro releases"),
+         QStringLiteral("https://linuxtracker.org/rss.php")},
+    };
+    for (const auto &p : presets) {
+        QAction *a = presetMenu->addAction(p.label);
+        connect(a, &QAction::triggered, this, [this, url = p.url]() {
+            m_urlEdit->setText(url);
+            m_urlEdit->setFocus();
+        });
+    }
+    presetBtn->setMenu(presetMenu);
+    addRow->addWidget(presetBtn);
+
     root->addLayout(addRow);
     root->addSpacing(20);
 

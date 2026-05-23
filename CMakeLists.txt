@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 2.4.2)
+project(BATorrent VERSION 2.5.0)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia)
 find_package(LibtorrentRasterbar REQUIRED)
 # Optional: QtKeychain stores credentials in the platform keyring (DPAPI on
@@ -19,6 +19,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/main.cpp
     src/torrent/sessionmanager.cpp
     src/app/translator.cpp
+    src/app/logger.cpp
+    src/app/notifier.cpp
     src/gui/mainwindow.cpp
     src/gui/torrentmodel.cpp
     src/gui/torrentfilter.cpp
@@ -45,6 +47,9 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/gui/statisticsdialog.cpp
     src/gui/traypopup.cpp
     src/gui/shortcutsdialog.cpp
+    src/gui/logviewerdialog.cpp
+    src/gui/diagnosticsdialog.cpp
+    src/gui/pairingdialog.cpp
     src/webui/webserver.cpp
     ${RESOURCES}
     ${WIN_RC}

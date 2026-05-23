@@ -31,6 +31,12 @@ public:
     int themeIndex() const;
     bool autoShutdown() const;
     bool notifSoundEnabled() const;
+    bool verboseLogEnabled() const;
+    int speedUnit() const;
+    QString updateChannel() const;
+    void setVerboseLogEnabled(bool val);
+    void setSpeedUnit(int unit);
+    void setUpdateChannel(const QString &channel);
     bool autoMoveEnabled() const;
     QString autoMovePath() const;
 
@@ -54,6 +60,12 @@ public:
     float seedRatioLimit() const;
     int maxActiveDownloads() const;
     bool utpEnabled() const;
+    bool anonymousMode() const;
+    bool forceIpv4() const;
+    bool ptMode() const;
+    void setAnonymousMode(bool val);
+    void setForceIpv4(bool val);
+    void setPtMode(bool val);
     bool randomizePort() const;
     int listenPort() const;
 
@@ -143,6 +155,14 @@ public:
     void setJellyfinUrl(const QString &url);
     void setJellyfinApiKey(const QString &key);
 
+    // Telegram notifier
+    QString telegramToken() const;
+    QString telegramChatId() const;
+    int telegramEvents() const;        // bitmask matching TelegramNotifier::Events
+    void setTelegramToken(const QString &token);
+    void setTelegramChatId(const QString &id);
+    void setTelegramEvents(int mask);
+
 public slots:
     void setAsDefaultApp();
 
@@ -164,6 +184,9 @@ private:
     QComboBox *m_themeCombo;
     QCheckBox *m_autoShutdownCheck;
     QCheckBox *m_notifSoundCheck;
+    QCheckBox *m_verboseLogCheck;
+    QComboBox *m_speedUnitCombo;
+    QComboBox *m_updateChannelCombo;
     QCheckBox *m_autoMoveCheck;
     QLineEdit *m_autoMovePathEdit;
 
@@ -177,6 +200,9 @@ private:
     QSpinBox *m_maxSeedDaysSpin;
     QComboBox *m_autoCompleteCombo;
     QCheckBox *m_utpCheck;
+    QCheckBox *m_anonymousCheck;
+    QCheckBox *m_forceIpv4Check;
+    QCheckBox *m_ptModeCheck;
     QCheckBox *m_randomizePortCheck;
     QSpinBox *m_listenPortSpin;
 
@@ -219,6 +245,15 @@ private:
     QCheckBox *m_jellyfinCheck;
     QLineEdit *m_jellyfinUrlEdit;
     QLineEdit *m_jellyfinKeyEdit;
+
+    // Telegram notifier
+    QLineEdit *m_telegramTokenEdit = nullptr;
+    QLineEdit *m_telegramChatIdEdit = nullptr;
+    QCheckBox *m_telegramFinishedCheck = nullptr;
+    QCheckBox *m_telegramKillSwitchCheck = nullptr;
+    QCheckBox *m_telegramRssCheck = nullptr;
+    QCheckBox *m_telegramErrorCheck = nullptr;
+    QLabel *m_telegramTestResult = nullptr;
 };
 
 #endif

@@ -10,8 +10,11 @@
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QStyleFactory>
+#include <QSettings>
 #include "torrent/sessionmanager.h"
 #include "app/secretstore.h"
+#include "app/logger.h"
+#include "app/utils.h"
 #include "gui/mainwindow.h"
 #include "gui/thememanager.h"
 
@@ -40,6 +43,28 @@ static bool sendToRunningInstance(const QString &message)
     return true;
 }
 
+// Maps Qt's runtime log categories (QtDebugMsg / QtInfoMsg / etc) to our
+// internal Logger levels so every existing qDebug() / qWarning() in the
+// codebase ends up in the same file the user can export.
+static void qtMessageHandler(QtMsgType type, const QMessageLogContext &ctx,
+                             const QString &msg)
+{
+    Logger::Level lvl = Logger::Debug;
+    switch (type) {
+    case QtDebugMsg:    lvl = Logger::Debug;    break;
+    case QtInfoMsg:     lvl = Logger::Info;     break;
+    case QtWarningMsg:  lvl = Logger::Warning;  break;
+    case QtCriticalMsg: lvl = Logger::Error;    break;
+    case QtFatalMsg:    lvl = Logger::Critical; break;
+    }
+    QString prefix;
+    if (ctx.category && qstrcmp(ctx.category, "default") != 0)
+        prefix = QStringLiteral("[%1] ").arg(QString::fromUtf8(ctx.category));
+    Logger::instance().log(lvl, prefix + msg);
+    // Keep stderr live for `--debug` console use.
+    fprintf(stderr, "%s\n", qPrintable(prefix + msg));
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -47,6 +72,21 @@ int main(int argc, char *argv[])
     app.setApplicationVersion(APP_VERSION);
     app.setWindowIcon(QIcon(":/images/logo1.png"));
     app.setQuitOnLastWindowClosed(false); // keep running in tray when window is closed
+
+    // CLI flag: --debug / -d forces verbose logging for this session (without
+    // mutating the persisted setting). Comes before init() so the lowered
+    // level takes effect immediately.
+    const bool debugFlag = app.arguments().contains("--debug")
+                        || app.arguments().contains("-d");
+    Logger::instance().init();
+    if (debugFlag)
+        Logger::instance().setLevel(Logger::Trace);
+    qInstallMessageHandler(qtMessageHandler);
+
+    // Speed unit display preference (0 = bytes/sec, 1 = bits/sec). Read once
+    // here so formatSpeed() doesn't hit QSettings on every call (UI refresh
+    // rate would otherwise translate to ~10 QSettings opens/sec).
+    setSpeedUnit(QSettings("BATorrent", "BATorrent").value("speedUnit", 0).toInt());
 
     // Force the Fusion style application-wide. Native Windows styles
     // (WindowsVista / Windows11) ignore certain QPalette colors and overrule

@@ -60,6 +60,11 @@ private slots:
     void onTorrentFinished(const QString &name, const QString &infoHash);
     void onTorrentError(const QString &message);
     void trayActivated();
+    // Click handler for a completion toast — opens the on-disk folder of the
+    // last torrent we notified about, instead of just raising the window.
+    void revealLastNotified();
+    void undoLastRemove();
+    void diagnoseSlow(int row);
     void openSettings();
     void showWelcome();
     void showAbout();
@@ -88,24 +93,25 @@ private:
     QString chooseSavePath();
     void addTorrentFile(const QString &filePath);
 
-    SessionManager *m_session;
-    TorrentModel *m_model;
-    TorrentFilter *m_proxyModel;
-    QTableView *m_tableView;
-    QLineEdit *m_searchEdit;
-    DetailsPanel *m_detailsPanel;
-    SpeedGraph *m_speedGraph;
-    BatWidget *m_batWidget;
-    QStackedWidget *m_topStack;
+    SessionManager *m_session = nullptr;
+    TorrentModel *m_model = nullptr;
+    TorrentFilter *m_proxyModel = nullptr;
+    QTableView *m_tableView = nullptr;
+    QLineEdit *m_searchEdit = nullptr;
+    DetailsPanel *m_detailsPanel = nullptr;
+    SpeedGraph *m_speedGraph = nullptr;
+    BatWidget *m_batWidget = nullptr;
+    QStackedWidget *m_topStack = nullptr;
     QLabel *m_statusLabel = nullptr;
     QLabel *m_statusSpeedLabel = nullptr;
     QLabel *m_bandwidthPill = nullptr;
     QLabel *m_vpnLabel = nullptr;
     QList<QPushButton *> m_filterPills;
-    QSystemTrayIcon *m_trayIcon;
+    QSystemTrayIcon *m_trayIcon = nullptr;
     class TrayPopup *m_trayPopup = nullptr;
     QString m_lastSavePath;
-    Updater *m_updater;
+    Updater *m_updater = nullptr;
+    class TelegramNotifier *m_telegramNotifier = nullptr;
     WebServer *m_webServer = nullptr;
     bool m_startMinimized = false;
     bool m_closeToTray = true;
@@ -123,6 +129,10 @@ private:
     // When the user clicks the balloon we use this to bring the matching
     // row into view instead of just raising the window.
     QString m_lastNotifiedHash;
+    // Snapshot of .resume bytes captured by the most recent removeSelected()
+    // call. Consumed by undoLastRemove() if the user clicks the toast within
+    // its dismiss window; cleared (idempotently) after restore.
+    QList<QByteArray> m_pendingUndoRemove;
     QComboBox *m_categoryCombo = nullptr;
     QNetworkAccessManager *m_mediaServerNam = nullptr;
     void notifyMediaServers();

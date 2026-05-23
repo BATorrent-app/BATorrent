@@ -50,6 +50,10 @@ public:
 
     void setFilePriority(int torrentIndex, int fileIndex, int priority);
     void setSequentialDownload(int index, bool sequential);
+    // Boost piece priority for the first/last pieces of a specific file so
+    // streaming players can read container headers (mp4 moov atom, mkv
+    // cues) and trailing index data before the bulk download completes.
+    void prioritizeFilePieceBoundaries(int torrentIndex, int fileIndex);
     // Rename one file in the torrent (libtorrent's rename_file). The path
     // is interpreted relative to the torrent's save_path.
     void renameFile(int torrentIndex, int fileIndex, const QString &newRelativePath);
@@ -90,6 +94,25 @@ public:
     void setUtpEnabled(bool enabled);
     bool utpEnabled() const;
 
+    // Anonymous mode hides the client version in the BitTorrent handshake
+    // and disables uTP / NAT-PMP / UPnP advertisements. Trades discoverability
+    // for less fingerprintable traffic — useful behind a VPN.
+    void setAnonymousMode(bool enabled);
+    bool anonymousMode() const;
+
+    // Force IPv4-only outgoing connections. Useful on trackers that
+    // misbehave with v6 (still common on RU/CN private trackers) and as a
+    // simple leak-prevention when the v6 path isn't tunneled.
+    void setForceIpv4(bool enabled);
+    bool forceIpv4() const;
+
+    // Private-tracker friendly mode. When on: DHT / PEX / LSD off, anonymous
+    // handshake forced, announces hit every tracker tier instead of stopping
+    // at the first responsive one. Exactly what private-tracker rules
+    // (TorrentLeech, M-Team, RuTracker private, etc.) require to avoid bans.
+    void setPtMode(bool enabled);
+    bool ptMode() const;
+
     // VPN / Interface binding
     void setOutgoingInterface(const QString &interfaceName); // "" = any
     QString outgoingInterface() const;
@@ -119,6 +142,14 @@ public:
     // Force pause regardless of state ("stop seeding now")
     void stopSeedingTorrent(int index);
 
+    // Per-torrent rate caps (KB/s, 0 = unlimited). Persisted by info-hash so
+    // limits survive restarts and re-applied on load. Override the global
+    // session caps for that torrent only.
+    void setTorrentDownloadLimit(int index, int kbps);
+    void setTorrentUploadLimit(int index, int kbps);
+    int torrentDownloadLimit(int index) const;
+    int torrentUploadLimit(int index) const;
+
     // "Completed" — user-frozen state for torrents that are done and should
     // stop participating. Marked torrents are paused, persisted across
     // restarts, and surface in the UI with a distinct (green) state. Calling
@@ -140,6 +171,18 @@ public:
     // isn't ready yet (magnets still resolving). Used by model/UI code that
     // needs a stable identifier across vector reorders.
     QString torrentHashAt(int index) const;
+
+    // Build a magnet URI for the torrent at `index`. Returns empty if
+    // metadata isn't loaded yet (still-resolving magnets, etc.).
+    QString torrentMagnetUri(int index) const;
+
+    // Snapshot the .resume bytes for a torrent so an undo path can recover
+    // it after removal. Empty if the resume file isn't on disk yet (very
+    // recent magnet add, etc.).
+    QByteArray captureResumeData(int index) const;
+    // Re-add a torrent from a previously captured .resume snapshot.
+    // Returns true on success.
+    bool restoreFromResumeData(const QByteArray &data);
 
     // Absolute on-disk root path for the torrent (single file or root folder).
     // Resolves via libtorrent's file_path(0) rather than the torrent's display
@@ -254,6 +297,9 @@ private:
     bool m_dhtEnabled = true;
     int m_encryptionMode = 0;
     bool m_utpEnabled = true;
+    bool m_anonymousMode = false;
+    bool m_forceIpv4 = false;
+    bool m_ptMode = false;
     float m_seedRatioLimit = 0.0f; // 0 = no limit
 
     // Stop-seeding rules (globals)
@@ -271,6 +317,9 @@ private:
     // Per-torrent overrides (info_hash -> value; -1 = use global)
     QMap<QString, int> m_perTorrentStopAfter;
     QMap<QString, qint64> m_perTorrentMaxSeed;
+    // Per-torrent rate caps (info_hash -> KB/s; 0 = unlimited)
+    QMap<QString, int> m_perTorrentDownLimit;
+    QMap<QString, int> m_perTorrentUpLimit;
 
     // Number of save_resume_data requests outstanding. processAlerts
     // decrements this as each save_resume_data_alert /

@@ -95,20 +95,23 @@ BatWidget::BatWidget(QWidget *parent)
     root->addLayout(circleRow);
     root->addSpacing(24);
 
-    auto *title = new QLabel(tr_("empty_title"));
-    title->setAlignment(Qt::AlignCenter);
-    title->setStyleSheet(QString(
+    m_defaultTitle = tr_("empty_title");
+    m_defaultBody = tr_("empty_body");
+    m_titleLabel = new QLabel(m_defaultTitle);
+    m_titleLabel->setAlignment(Qt::AlignCenter);
+    m_titleLabel->setStyleSheet(QString(
         "color: %1; font-size: 18px; font-weight: 600;").arg(tm.textColor()));
-    root->addWidget(title);
+    root->addWidget(m_titleLabel);
     root->addSpacing(8);
 
-    auto *body = new QLabel(tr_("empty_body"));
-    body->setAlignment(Qt::AlignCenter);
-    body->setWordWrap(true);
-    body->setMaximumWidth(420);
-    body->setMinimumHeight(40);
-    body->setStyleSheet(QString(
+    m_bodyLabel = new QLabel(m_defaultBody);
+    m_bodyLabel->setAlignment(Qt::AlignCenter);
+    m_bodyLabel->setWordWrap(true);
+    m_bodyLabel->setMaximumWidth(420);
+    m_bodyLabel->setMinimumHeight(40);
+    m_bodyLabel->setStyleSheet(QString(
         "color: %1; font-size: 12px;").arg(tm.mutedColor()));
+    QLabel *body = m_bodyLabel; // keep the rest of the function unchanged
     auto *bodyRow = new QHBoxLayout;
     bodyRow->addStretch();
     bodyRow->addWidget(body);
@@ -191,4 +194,11 @@ BatWidget::BatWidget(QWidget *parent)
 void BatWidget::paintEvent(QPaintEvent *event)
 {
     QWidget::paintEvent(event);
+}
+
+void BatWidget::setCustomMessage(const QString &title, const QString &body)
+{
+    if (!m_titleLabel || !m_bodyLabel) return;
+    m_titleLabel->setText(title.isEmpty() ? m_defaultTitle : title);
+    m_bodyLabel->setText(body.isEmpty() ? m_defaultBody : body);
 }

@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QDesktopServices>
 #include <QFileInfo>
+#include <QLocale>
 #include <QProcess>
 #include <QUrl>
 
@@ -101,19 +102,35 @@ inline void revealTorrentRoot(const QString &savePath, const QString &name)
         revealInFileManager(savePath);
 }
 
+// Global speed unit. 0 = bytes (B/s, KB/s, MB/s), 1 = bits (b/s, Kbps, Mbps).
+// Set once at app startup from QSettings; read on every formatSpeed call.
+// A static int instead of QSettings query each call keeps the hot path
+// allocation-free.
+inline int &g_speedUnit() { static int u = 0; return u; }
+inline void setSpeedUnit(int unit) { g_speedUnit() = unit; }
+
 inline QString formatSize(qint64 bytes)
 {
-    if (bytes < 1024) return QString::number(bytes) + " B";
-    if (bytes < 1024 * 1024) return QString::number(bytes / 1024.0, 'f', 1) + " KB";
-    if (bytes < 1024LL * 1024 * 1024) return QString::number(bytes / (1024.0 * 1024.0), 'f', 1) + " MB";
-    return QString::number(bytes / (1024.0 * 1024.0 * 1024.0), 'f', 2) + " GB";
+    const QLocale loc = QLocale::system();
+    if (bytes < 1024) return loc.toString(bytes) + " B";
+    if (bytes < 1024 * 1024) return loc.toString(bytes / 1024.0, 'f', 1) + " KB";
+    if (bytes < 1024LL * 1024 * 1024) return loc.toString(bytes / (1024.0 * 1024.0), 'f', 1) + " MB";
+    return loc.toString(bytes / (1024.0 * 1024.0 * 1024.0), 'f', 2) + " GB";
 }
 
 inline QString formatSpeed(int bps)
 {
-    if (bps < 1024) return QString::number(bps) + " B/s";
-    if (bps < 1024 * 1024) return QString::number(bps / 1024.0, 'f', 1) + " KB/s";
-    return QString::number(bps / (1024.0 * 1024.0), 'f', 1) + " MB/s";
+    const QLocale loc = QLocale::system();
+    if (g_speedUnit() == 1) {
+        // Bits-per-second display. Convert bytes-per-second → bits by *8.
+        const double bits = bps * 8.0;
+        if (bits < 1000)    return loc.toString(int(bits)) + " b/s";
+        if (bits < 1000000) return loc.toString(bits / 1000.0, 'f', 1) + " Kbps";
+        return loc.toString(bits / 1000000.0, 'f', 1) + " Mbps";
+    }
+    if (bps < 1024) return loc.toString(bps) + " B/s";
+    if (bps < 1024 * 1024) return loc.toString(bps / 1024.0, 'f', 1) + " KB/s";
+    return loc.toString(bps / (1024.0 * 1024.0), 'f', 1) + " MB/s";
 }
 
 #endif

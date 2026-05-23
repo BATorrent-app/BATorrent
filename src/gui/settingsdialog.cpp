@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "settingsdialog.h"
+#include "pairingdialog.h"
 #include "../app/translator.h"
 #include "../gui/thememanager.h"
 #include <QPalette>
@@ -26,7 +27,12 @@
 #include <QMessageBox>
 #include <QGroupBox>
 #include <QLocale>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkAccessManager>
 #include <QNetworkInterface>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QCoreApplication>
 #include <QProcess>
 #include <QDir>
@@ -222,6 +228,27 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_notifSoundCheck = new QCheckBox(tr_("settings_notif_sound"));
     generalLayout->addRow("", m_notifSoundCheck);
 
+    m_verboseLogCheck = new QCheckBox(tr_("settings_verbose_log"));
+    m_verboseLogCheck->setToolTip(tr_("tip_verbose_log"));
+    generalLayout->addRow("", m_verboseLogCheck);
+
+    m_speedUnitCombo = new QComboBox;
+    m_speedUnitCombo->addItem(tr_("settings_speed_unit_bytes"), 0);
+    m_speedUnitCombo->addItem(tr_("settings_speed_unit_bits"), 1);
+    m_speedUnitCombo->setToolTip(tr_("tip_speed_unit"));
+    auto *speedUnitLabel = new QLabel(tr_("settings_speed_unit"));
+    speedUnitLabel->setStyleSheet(labelStyle);
+    generalLayout->addRow(speedUnitLabel, m_speedUnitCombo);
+
+    m_updateChannelCombo = new QComboBox;
+    m_updateChannelCombo->addItem(tr_("settings_update_channel_github"), "github");
+    m_updateChannelCombo->addItem(tr_("settings_update_channel_gitee"), "gitee");
+    m_updateChannelCombo->addItem(tr_("settings_update_channel_disabled"), "disabled");
+    m_updateChannelCombo->setToolTip(tr_("tip_update_channel"));
+    auto *updateChannelLabel = new QLabel(tr_("settings_update_channel"));
+    updateChannelLabel->setStyleSheet(labelStyle);
+    generalLayout->addRow(updateChannelLabel, m_updateChannelCombo);
+
     // Auto-move completed downloads
     m_autoMoveCheck = new QCheckBox(tr_("settings_automove"));
     generalLayout->addRow("", m_autoMoveCheck);
@@ -265,6 +292,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_seedRatioSpin->setSingleStep(0.1);
     m_seedRatioSpin->setDecimals(1);
     m_seedRatioSpin->setSpecialValueText(tr_("settings_unlimited"));
+    m_seedRatioSpin->setToolTip(tr_("tip_seed_ratio"));
 
     m_maxSeedDaysSpin = new QSpinBox;
     m_maxSeedDaysSpin->setRange(0, 365);
@@ -272,8 +300,10 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_maxSeedDaysSpin->setSpecialValueText(tr_("settings_unlimited"));
 
     m_stopAfterDownloadCheck = new QCheckBox(tr_("settings_stop_after_download"));
+    m_stopAfterDownloadCheck->setToolTip(tr_("tip_stop_after_download"));
 
     m_autoCompleteCombo = new QComboBox;
+    m_autoCompleteCombo->setToolTip(tr_("tip_auto_complete"));
     m_autoCompleteCombo->addItem(tr_("auto_complete_never"), QVariant::fromValue<qint64>(0));
     m_autoCompleteCombo->addItem(tr_("auto_complete_1d"),  QVariant::fromValue<qint64>(86400));
     m_autoCompleteCombo->addItem(tr_("auto_complete_3d"),  QVariant::fromValue<qint64>(86400 * 3));
@@ -305,6 +335,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     schedLayout->setSpacing(10);
 
     m_schedulerCheck = new QCheckBox(tr_("settings_scheduler_enable"));
+    m_schedulerCheck->setToolTip(tr_("tip_scheduler"));
     schedLayout->addRow("", m_schedulerCheck);
 
     m_altDownSpin = new QSpinBox;
@@ -365,11 +396,13 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_maxConnSpin->setRange(10, 9999);
 
     m_dhtCheck = new QCheckBox(tr_("settings_enable_dht"));
+    m_dhtCheck->setToolTip(tr_("tip_dht"));
 
     m_encryptionCombo = new QComboBox;
     m_encryptionCombo->addItem(tr_("settings_enc_enabled"));
     m_encryptionCombo->addItem(tr_("settings_enc_forced"));
     m_encryptionCombo->addItem(tr_("settings_enc_disabled"));
+    m_encryptionCombo->setToolTip(tr_("tip_encryption"));
 
     auto *connLabel = new QLabel(tr_("settings_max_conn"));
     connLabel->setStyleSheet(labelStyle);
@@ -388,7 +421,20 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     networkLayout->addRow(encLabel, m_encryptionCombo);
 
     m_utpCheck = new QCheckBox(tr_("settings_enable_utp"));
+    m_utpCheck->setToolTip(tr_("tip_utp"));
     networkLayout->addRow("", m_utpCheck);
+
+    m_anonymousCheck = new QCheckBox(tr_("settings_anonymous_mode"));
+    m_anonymousCheck->setToolTip(tr_("tip_anonymous_mode"));
+    networkLayout->addRow("", m_anonymousCheck);
+
+    m_forceIpv4Check = new QCheckBox(tr_("settings_force_ipv4"));
+    m_forceIpv4Check->setToolTip(tr_("tip_force_ipv4"));
+    networkLayout->addRow("", m_forceIpv4Check);
+
+    m_ptModeCheck = new QCheckBox(tr_("settings_pt_mode"));
+    m_ptModeCheck->setToolTip(tr_("tip_pt_mode"));
+    networkLayout->addRow("", m_ptModeCheck);
 
     // Listening port + the "re-randomize on each launch" toggle. Putting
     // them together makes the trade-off obvious: a fixed port is what you
@@ -397,6 +443,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_listenPortSpin = new QSpinBox;
     m_listenPortSpin->setRange(1024, 65535);
     m_listenPortSpin->setValue(6881);
+    m_listenPortSpin->setToolTip(tr_("tip_listen_port"));
     auto *portLabel = new QLabel(tr_("settings_listen_port"));
     portLabel->setStyleSheet(labelStyle);
     networkLayout->addRow(portLabel, m_listenPortSpin);
@@ -435,9 +482,11 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     vpnLayout->addRow("", m_interfaceIpLabel);
 
     m_killSwitchCheck = new QCheckBox(tr_("settings_kill_switch"));
+    m_killSwitchCheck->setToolTip(tr_("tip_kill_switch"));
     vpnLayout->addRow("", m_killSwitchCheck);
 
     m_autoResumeCheck = new QCheckBox(tr_("settings_auto_resume"));
+    m_autoResumeCheck->setToolTip(tr_("tip_auto_resume"));
     m_autoResumeCheck->setEnabled(false);
     vpnLayout->addRow("", m_autoResumeCheck);
 
@@ -468,6 +517,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     proxyLayout->setSpacing(10);
 
     m_proxyTypeCombo = new QComboBox;
+    m_proxyTypeCombo->setToolTip(tr_("tip_proxy"));
     m_proxyTypeCombo->addItem(tr_("settings_proxy_none"));
     m_proxyTypeCombo->addItem("SOCKS5");
     m_proxyTypeCombo->addItem("HTTP");
@@ -500,6 +550,20 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     proxyPassLabel->setStyleSheet(labelStyle);
     proxyLayout->addRow(proxyPassLabel, m_proxyPassEdit);
 
+    // One-click Tor preset — most users running Tor on the same machine want
+    // exactly this (default SocksPort 9050, no auth). Saves them looking up
+    // the SOCKS5 fields and risking a typo.
+    auto *torBtn = new QPushButton(tr_("settings_use_tor"));
+    torBtn->setToolTip(tr_("tip_use_tor"));
+    connect(torBtn, &QPushButton::clicked, this, [this]() {
+        m_proxyTypeCombo->setCurrentIndex(1); // SOCKS5
+        m_proxyHostEdit->setText(QStringLiteral("127.0.0.1"));
+        m_proxyPortSpin->setValue(9050);
+        m_proxyUserEdit->clear();
+        m_proxyPassEdit->clear();
+    });
+    proxyLayout->addRow("", torBtn);
+
     networkLayout->addRow(proxyGroup);
 
     // IP Filter group
@@ -509,6 +573,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     auto *ipFilterLayout = new QHBoxLayout;
     m_ipFilterEdit = new QLineEdit;
+    m_ipFilterEdit->setToolTip(tr_("tip_ip_filter"));
     m_ipFilterEdit->setPlaceholderText(tr_("settings_ip_filter_hint"));
     auto *ipBrowseBtn = new QPushButton(tr_("settings_browse"));
     ipBrowseBtn->setFixedWidth(100);
@@ -540,6 +605,14 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     auto *wPortLabel = new QLabel(tr_("settings_webui_port"));
     wPortLabel->setStyleSheet(labelStyle);
     webUiLayout->addRow(wPortLabel, m_webUiPortSpin);
+
+    auto *pairBtn = new QPushButton(tr_("pairing_button"));
+    pairBtn->setToolTip(tr_("tip_pairing"));
+    connect(pairBtn, &QPushButton::clicked, this, [this]() {
+        PairingDialog dlg(m_webUiPortSpin->value(), this);
+        dlg.exec();
+    });
+    webUiLayout->addRow("", pairBtn);
 
     m_webUiUserEdit = new QLineEdit;
     m_webUiUserEdit->setPlaceholderText("admin");
@@ -614,6 +687,75 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     mediaLayout->addRow(jellyGroup);
 
+    // Telegram bot notifier — same Integrations tab so the user finds all
+    // outbound mirrors in one place. Token + chat ID separate so a malformed
+    // token can't be mistaken for the chat selector.
+    auto *telegramGroup = new QGroupBox("Telegram");
+    auto *telegramLayout = new QFormLayout(telegramGroup);
+    telegramLayout->setSpacing(10);
+
+    m_telegramTokenEdit = new QLineEdit;
+    m_telegramTokenEdit->setPlaceholderText("123456:ABC-DEF...");
+    m_telegramTokenEdit->setEchoMode(QLineEdit::Password);
+    m_telegramTokenEdit->setToolTip(tr_("tip_telegram_token"));
+    auto *tgTokenLabel = new QLabel(tr_("settings_telegram_token"));
+    tgTokenLabel->setStyleSheet(labelStyle);
+    telegramLayout->addRow(tgTokenLabel, m_telegramTokenEdit);
+
+    m_telegramChatIdEdit = new QLineEdit;
+    m_telegramChatIdEdit->setPlaceholderText("@yourchannel or 123456789");
+    m_telegramChatIdEdit->setToolTip(tr_("tip_telegram_chat"));
+    auto *tgChatLabel = new QLabel(tr_("settings_telegram_chat"));
+    tgChatLabel->setStyleSheet(labelStyle);
+    telegramLayout->addRow(tgChatLabel, m_telegramChatIdEdit);
+
+    m_telegramFinishedCheck = new QCheckBox(tr_("settings_telegram_finished"));
+    m_telegramKillSwitchCheck = new QCheckBox(tr_("settings_telegram_killswitch"));
+    m_telegramRssCheck = new QCheckBox(tr_("settings_telegram_rss"));
+    m_telegramErrorCheck = new QCheckBox(tr_("settings_telegram_error"));
+    telegramLayout->addRow("", m_telegramFinishedCheck);
+    telegramLayout->addRow("", m_telegramKillSwitchCheck);
+    telegramLayout->addRow("", m_telegramRssCheck);
+    telegramLayout->addRow("", m_telegramErrorCheck);
+
+    auto *tgTestBtn = new QPushButton(tr_("settings_telegram_test"));
+    m_telegramTestResult = new QLabel;
+    m_telegramTestResult->setStyleSheet(QString("color: %1; font-size: 11px;").arg(tm.mutedColor()));
+    connect(tgTestBtn, &QPushButton::clicked, this, [this]() {
+        // Inline test that doesn't depend on saving first — uses the values
+        // in the fields right now. Posts to api.telegram.org and shows the
+        // HTTP result in the label below.
+        m_telegramTestResult->setText(tr_("settings_telegram_test_sending"));
+        QString token = m_telegramTokenEdit->text().trimmed();
+        QString chatId = m_telegramChatIdEdit->text().trimmed();
+        if (token.isEmpty() || chatId.isEmpty()) {
+            m_telegramTestResult->setText(tr_("settings_telegram_test_missing"));
+            return;
+        }
+        auto *nam = new QNetworkAccessManager(this);
+        QUrl url(QStringLiteral("https://api.telegram.org/bot%1/sendMessage").arg(token));
+        QNetworkRequest req(url);
+        req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        QJsonObject body;
+        body.insert("chat_id", chatId);
+        body.insert("text", QStringLiteral("🦇 BATorrent test — webhook works."));
+        auto *reply = nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+        connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+            if (reply->error() == QNetworkReply::NoError)
+                m_telegramTestResult->setText(tr_("settings_telegram_test_ok"));
+            else
+                m_telegramTestResult->setText(QStringLiteral("✗ %1").arg(reply->errorString()));
+            reply->deleteLater();
+            nam->deleteLater();
+        });
+    });
+    auto *tgTestRow = new QHBoxLayout;
+    tgTestRow->addWidget(tgTestBtn);
+    tgTestRow->addWidget(m_telegramTestResult, 1);
+    telegramLayout->addRow("", tgTestRow);
+
+    mediaLayout->addRow(telegramGroup);
+
     tabs->addTab(wrapInScroll(mediaWidget), tr_("settings_media_server"));
 
     // ---- Header (eyebrow + heading) ----
@@ -657,7 +799,40 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     mainLayout->addWidget(eyebrow);
     mainLayout->addSpacing(6);
     mainLayout->addWidget(heading);
-    mainLayout->addSpacing(20);
+    mainLayout->addSpacing(16);
+
+    // Search box: jump to first matching label/checkbox across tabs.
+    auto *searchEdit = new QLineEdit;
+    searchEdit->setPlaceholderText(tr_("settings_search_placeholder"));
+    searchEdit->setClearButtonEnabled(true);
+    searchEdit->setStyleSheet(QString(
+        "QLineEdit { background: %1; color: %2; border: 1px solid %3;"
+        "  border-radius: 6px; padding: 7px 10px; font-size: 11px; }"
+        "QLineEdit:focus { border-color: %4; }")
+        .arg(tm.surfaceColor(), tm.textColor(),
+             tm.borderColor(), tm.accentColor()));
+    connect(searchEdit, &QLineEdit::textChanged, this, [this, tabs](const QString &q) {
+        if (q.length() < 2) return;
+        // Match against every label/checkbox text under each tab. First hit
+        // wins — switch to its tab and scroll/highlight via setFocus.
+        for (int i = 0; i < tabs->count(); ++i) {
+            QWidget *page = tabs->widget(i);
+            if (!page) continue;
+            for (auto *w : page->findChildren<QWidget *>()) {
+                QString text;
+                if (auto *l = qobject_cast<QLabel *>(w))    text = l->text();
+                if (auto *c = qobject_cast<QCheckBox *>(w)) text = c->text();
+                if (text.contains(q, Qt::CaseInsensitive)) {
+                    tabs->setCurrentIndex(i);
+                    w->setFocus(Qt::ShortcutFocusReason);
+                    return;
+                }
+            }
+        }
+    });
+    mainLayout->addWidget(searchEdit);
+    mainLayout->addSpacing(12);
+
     mainLayout->addWidget(tabs, 1);
     mainLayout->addSpacing(20);
     mainLayout->addLayout(btnLayout);
@@ -701,6 +876,22 @@ bool SettingsDialog::autoShutdown() const { return m_autoShutdownCheck->isChecke
 void SettingsDialog::setAutoShutdown(bool val) { m_autoShutdownCheck->setChecked(val); }
 bool SettingsDialog::notifSoundEnabled() const { return m_notifSoundCheck->isChecked(); }
 void SettingsDialog::setNotifSoundEnabled(bool val) { m_notifSoundCheck->setChecked(val); }
+bool SettingsDialog::verboseLogEnabled() const { return m_verboseLogCheck->isChecked(); }
+void SettingsDialog::setVerboseLogEnabled(bool val) { m_verboseLogCheck->setChecked(val); }
+int SettingsDialog::speedUnit() const {
+    return m_speedUnitCombo->currentData().toInt();
+}
+void SettingsDialog::setSpeedUnit(int unit) {
+    int idx = m_speedUnitCombo->findData(unit);
+    m_speedUnitCombo->setCurrentIndex(idx >= 0 ? idx : 0);
+}
+QString SettingsDialog::updateChannel() const {
+    return m_updateChannelCombo->currentData().toString();
+}
+void SettingsDialog::setUpdateChannel(const QString &channel) {
+    int idx = m_updateChannelCombo->findData(channel);
+    m_updateChannelCombo->setCurrentIndex(idx >= 0 ? idx : 0);
+}
 bool SettingsDialog::autoMoveEnabled() const { return m_autoMoveCheck->isChecked(); }
 QString SettingsDialog::autoMovePath() const { return m_autoMovePathEdit->text(); }
 void SettingsDialog::setAutoMoveEnabled(bool val) { m_autoMoveCheck->setChecked(val); }
@@ -737,9 +928,15 @@ void SettingsDialog::setStopAfterDownload(bool val) { m_stopAfterDownloadCheck->
 void SettingsDialog::setMaxSeedDays(int days) { m_maxSeedDaysSpin->setValue(days); }
 
 bool SettingsDialog::utpEnabled() const { return m_utpCheck->isChecked(); }
+bool SettingsDialog::anonymousMode() const { return m_anonymousCheck->isChecked(); }
+bool SettingsDialog::forceIpv4() const { return m_forceIpv4Check->isChecked(); }
+bool SettingsDialog::ptMode() const { return m_ptModeCheck->isChecked(); }
 bool SettingsDialog::randomizePort() const { return m_randomizePortCheck->isChecked(); }
 int SettingsDialog::listenPort() const { return m_listenPortSpin->value(); }
 void SettingsDialog::setUtpEnabled(bool enabled) { m_utpCheck->setChecked(enabled); }
+void SettingsDialog::setAnonymousMode(bool val) { m_anonymousCheck->setChecked(val); }
+void SettingsDialog::setForceIpv4(bool val) { m_forceIpv4Check->setChecked(val); }
+void SettingsDialog::setPtMode(bool val) { m_ptModeCheck->setChecked(val); }
 void SettingsDialog::setRandomizePort(bool enabled) {
     m_randomizePortCheck->setChecked(enabled);
     m_listenPortSpin->setEnabled(!enabled);
@@ -907,6 +1104,25 @@ void SettingsDialog::setPlexToken(const QString &token) { m_plexTokenEdit->setTe
 void SettingsDialog::setJellyfinEnabled(bool enabled) { m_jellyfinCheck->setChecked(enabled); }
 void SettingsDialog::setJellyfinUrl(const QString &url) { m_jellyfinUrlEdit->setText(url); }
 void SettingsDialog::setJellyfinApiKey(const QString &key) { m_jellyfinKeyEdit->setText(key); }
+
+QString SettingsDialog::telegramToken() const { return m_telegramTokenEdit->text().trimmed(); }
+QString SettingsDialog::telegramChatId() const { return m_telegramChatIdEdit->text().trimmed(); }
+int SettingsDialog::telegramEvents() const {
+    int m = 0;
+    if (m_telegramFinishedCheck->isChecked())   m |= 0x1;
+    if (m_telegramKillSwitchCheck->isChecked()) m |= 0x2;
+    if (m_telegramRssCheck->isChecked())        m |= 0x4;
+    if (m_telegramErrorCheck->isChecked())      m |= 0x8;
+    return m;
+}
+void SettingsDialog::setTelegramToken(const QString &t) { m_telegramTokenEdit->setText(t); }
+void SettingsDialog::setTelegramChatId(const QString &id) { m_telegramChatIdEdit->setText(id); }
+void SettingsDialog::setTelegramEvents(int mask) {
+    m_telegramFinishedCheck->setChecked(mask & 0x1);
+    m_telegramKillSwitchCheck->setChecked(mask & 0x2);
+    m_telegramRssCheck->setChecked(mask & 0x4);
+    m_telegramErrorCheck->setChecked(mask & 0x8);
+}
 
 void SettingsDialog::setAsDefaultApp()
 {

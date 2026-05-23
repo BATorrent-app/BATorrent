@@ -16,6 +16,8 @@
 #include <QFrame>
 #include <QMouseEvent>
 #include <QEvent>
+#include <QDesktopServices>
+#include <QUrl>
 #include <QGraphicsDropShadowEffect>
 #include <functional>
 
@@ -199,7 +201,26 @@ WelcomeDialog::WelcomeDialog(QWidget *parent)
     subRow->addWidget(subtitle);
     subRow->addStretch();
     root->addLayout(subRow);
-    root->addSpacing(24);
+    root->addSpacing(8);
+
+    // Privacy promise line — set the tone before the feature grid. Matters
+    // disproportionately to JP/RU audiences who default to assuming the
+    // worst about closed-source torrent clients.
+    auto *privacy = new QLabel(QStringLiteral("🔒  ") + tr_("about_no_telemetry"));
+    privacy->setAlignment(Qt::AlignCenter);
+    privacy->setWordWrap(true);
+    privacy->setMaximumWidth(420);
+    {
+        QFont f; f.setPointSize(9);
+        privacy->setFont(f);
+        privacy->setStyleSheet(QString("color: %1;").arg(tm.dimColor()));
+    }
+    auto *privRow = new QHBoxLayout;
+    privRow->addStretch();
+    privRow->addWidget(privacy);
+    privRow->addStretch();
+    root->addLayout(privRow);
+    root->addSpacing(20);
 
     auto *grid = new QGridLayout;
     grid->setHorizontalSpacing(12);
@@ -245,6 +266,14 @@ WelcomeDialog::WelcomeDialog(QWidget *parent)
     m_dontShowCheck = new QCheckBox(tr_("welcome_dont_show"));
     bottom->addWidget(m_dontShowCheck);
     bottom->addStretch();
+
+    auto *donateBtn = new QPushButton(QStringLiteral("♥  ") + tr_("action_donate"));
+    donateBtn->setObjectName(QStringLiteral("closeBtn"));
+    donateBtn->setCursor(Qt::PointingHandCursor);
+    connect(donateBtn, &QPushButton::clicked, this, []() {
+        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/sponsors/Mateuscruz19")));
+    });
+    bottom->addWidget(donateBtn);
 
     auto *closeBtn = new QPushButton(tr_("welcome_close"));
     closeBtn->setObjectName(QStringLiteral("closeBtn"));
