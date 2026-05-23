@@ -22,6 +22,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/logger.cpp
     src/app/notifier.cpp
     src/app/qrcodegen.cpp
+    src/app/discordrpc.cpp
     src/gui/mainwindow.cpp
     src/gui/torrentmodel.cpp
     src/gui/torrentfilter.cpp
@@ -51,6 +52,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/gui/logviewerdialog.cpp
     src/gui/diagnosticsdialog.cpp
     src/gui/pairingdialog.cpp
+    src/gui/removedhistorydialog.cpp
+    src/gui/torrentinspectordialog.cpp
     src/webui/webserver.cpp
     ${RESOURCES}
     ${WIN_RC}

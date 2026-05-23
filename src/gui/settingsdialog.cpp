@@ -756,6 +756,24 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     mediaLayout->addRow(telegramGroup);
 
+    // Discord Rich Presence — shows "Downloading X · 67%" in the user's
+    // Discord profile. Empty client ID = silent disabled.
+    auto *discordGroup = new QGroupBox("Discord Rich Presence");
+    auto *discordLayout = new QFormLayout(discordGroup);
+    discordLayout->setSpacing(10);
+    m_discordClientIdEdit = new QLineEdit;
+    m_discordClientIdEdit->setPlaceholderText("Application ID from discord.com/developers");
+    m_discordClientIdEdit->setToolTip(tr_("tip_discord_client_id"));
+    auto *discordLabel = new QLabel(tr_("settings_discord_client_id"));
+    discordLabel->setStyleSheet(labelStyle);
+    discordLayout->addRow(discordLabel, m_discordClientIdEdit);
+    auto *discordHelp = new QLabel(tr_("settings_discord_help"));
+    discordHelp->setWordWrap(true);
+    discordHelp->setStyleSheet(QString("color: %1; font-size: 10px;").arg(tm.mutedColor()));
+    discordHelp->setOpenExternalLinks(true);
+    discordLayout->addRow("", discordHelp);
+    mediaLayout->addRow(discordGroup);
+
     tabs->addTab(wrapInScroll(mediaWidget), tr_("settings_media_server"));
 
     // ---- Header (eyebrow + heading) ----
@@ -1123,6 +1141,8 @@ void SettingsDialog::setTelegramEvents(int mask) {
     m_telegramRssCheck->setChecked(mask & 0x4);
     m_telegramErrorCheck->setChecked(mask & 0x8);
 }
+QString SettingsDialog::discordClientId() const { return m_discordClientIdEdit->text().trimmed(); }
+void SettingsDialog::setDiscordClientId(const QString &id) { m_discordClientIdEdit->setText(id); }
 
 void SettingsDialog::setAsDefaultApp()
 {

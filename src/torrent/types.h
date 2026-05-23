@@ -6,6 +6,7 @@
 #define TORRENT_TYPES_H
 
 #include <QString>
+#include <QStringList>
 #include <libtorrent/torrent_handle.hpp>
 
 struct TorrentInfo {
@@ -24,6 +25,7 @@ struct TorrentInfo {
     bool completed = false;
     float ratio;
     QString category;
+    QStringList tags;
 };
 
 struct PeerInfo {

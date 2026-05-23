@@ -112,6 +112,10 @@ private:
     QString m_lastSavePath;
     Updater *m_updater = nullptr;
     class TelegramNotifier *m_telegramNotifier = nullptr;
+    class DiscordRPC *m_discordRpc = nullptr;
+    QTimer *m_discordRefreshTimer = nullptr;
+    qint64 m_discordSessionStart = 0;
+    void refreshDiscordPresence();
     WebServer *m_webServer = nullptr;
     bool m_startMinimized = false;
     bool m_closeToTray = true;

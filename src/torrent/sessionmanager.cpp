@@ -87,6 +87,8 @@ SessionManager::SessionManager(QObject *parent)
     m_anonymousMode = settings.value("anonymousMode", false).toBool();
     m_forceIpv4 = settings.value("forceIpv4", false).toBool();
     m_ptMode = settings.value("ptMode", false).toBool();
+    for (const auto &h : settings.value("forceStartHashes").toStringList())
+        m_forceStartHashes.insert(h);
     if (m_anonymousMode || m_forceIpv4 || m_ptMode) {
         // Apply immediately so the first session starts with the right pack;
         // setters above persist to QSettings, but the in-memory pack was
@@ -102,6 +104,14 @@ SessionManager::SessionManager(QObject *parent)
     settings.beginGroup("categories");
     for (const auto &key : settings.childKeys())
         m_categories[key] = settings.value(key).toString();
+    settings.endGroup();
+
+    settings.beginGroup("torrentTags");
+    for (const auto &key : settings.childKeys()) {
+        const QString joined = settings.value(key).toString();
+        if (!joined.isEmpty())
+            m_torrentTags[key] = joined.split(',', Qt::SkipEmptyParts);
+    }
     settings.endGroup();
 
     // Load per-torrent stop-after overrides
@@ -289,7 +299,40 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         QString hash = QString::fromStdString(
             (std::ostringstream() << st.info_hashes.get_best()).str());
         QDir dir(resumeDataDir());
-        dir.remove(hash + ".resume");
+        // Move the .resume to the removed-history dir before deleting, so
+        // the user can re-add later. Use a parallel "removed" subfolder
+        // alongside .resume so cleanup logic stays simple.
+        QDir removedDir(QFileInfo(dir, "../removed").absoluteFilePath());
+        if (!removedDir.exists()) removedDir.mkpath(".");
+        QFile::remove(removedDir.filePath(hash + ".resume"));
+        QFile::rename(dir.filePath(hash + ".resume"),
+                      removedDir.filePath(hash + ".resume"));
+        // Also drop a tiny metadata sidecar (name + size + timestamp) so the
+        // history dialog can display useful entries without re-parsing each
+        // resume file.
+        QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
+        meta.beginGroup(hash);
+        meta.setValue("name", QString::fromStdString(st.name));
+        meta.setValue("size", static_cast<qint64>(st.total_wanted));
+        meta.setValue("removedAt", QDateTime::currentSecsSinceEpoch());
+        meta.endGroup();
+        // Trim ring buffer to 50 entries (oldest evicted).
+        meta.beginGroup("");
+        QStringList groups = meta.childGroups();
+        if (groups.size() > 50) {
+            QList<QPair<qint64, QString>> sorted;
+            for (const QString &g : groups) {
+                meta.beginGroup(g);
+                sorted.append({meta.value("removedAt").toLongLong(), g});
+                meta.endGroup();
+            }
+            std::sort(sorted.begin(), sorted.end());
+            for (int i = 0; i < sorted.size() - 50; ++i) {
+                meta.remove(sorted[i].second);
+                QFile::remove(removedDir.filePath(sorted[i].second + ".resume"));
+            }
+        }
+        meta.endGroup();
         m_perTorrentStopAfter.remove(hash);
         m_perTorrentMaxSeed.remove(hash);
         if (m_perTorrentDownLimit.remove(hash) || m_perTorrentUpLimit.remove(hash)) {
@@ -299,6 +342,12 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         }
         if (m_completedTorrents.remove(hash))
             saveCompletedSet();
+        if (m_forceStartHashes.remove(hash)) {
+            QSettings("BATorrent", "BATorrent").setValue(
+                "forceStartHashes", QStringList(m_forceStartHashes.values()));
+        }
+        if (m_torrentTags.remove(hash))
+            QSettings("BATorrent", "BATorrent").remove("torrentTags/" + hash);
         // Block in-flight save_resume_data_alerts from re-creating the file.
         m_removedHashes.insert(hash);
 
@@ -412,6 +461,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
         QString hash = QString::fromStdString(
             (std::ostringstream() << st.info_hashes.get_best()).str());
         info.category = m_categories.value(hash);
+        info.tags = m_torrentTags.value(hash);
     }
 
     return info;
@@ -634,6 +684,49 @@ QStringList SessionManager::categories() const
             list.append(it.value());
     }
     return list;
+}
+
+QStringList SessionManager::torrentTags(int index) const
+{
+    QString hash = torrentHash(index);
+    if (hash.isEmpty()) return {};
+    return m_torrentTags.value(hash);
+}
+
+void SessionManager::setTorrentTags(int index, const QStringList &tags)
+{
+    QString hash = torrentHash(index);
+    if (hash.isEmpty()) return;
+    // Strip empty/whitespace entries, dedupe case-insensitively.
+    QStringList clean;
+    for (const QString &raw : tags) {
+        QString t = raw.trimmed();
+        if (t.isEmpty()) continue;
+        bool dup = false;
+        for (const QString &e : clean) if (e.compare(t, Qt::CaseInsensitive) == 0) { dup = true; break; }
+        if (!dup) clean.append(t);
+    }
+    QSettings s("BATorrent", "BATorrent");
+    if (clean.isEmpty()) {
+        m_torrentTags.remove(hash);
+        s.remove("torrentTags/" + hash);
+    } else {
+        m_torrentTags[hash] = clean;
+        s.setValue("torrentTags/" + hash, clean.join(","));
+    }
+    emit torrentsUpdated();
+}
+
+QStringList SessionManager::allTags() const
+{
+    QSet<QString> seen;
+    for (auto it = m_torrentTags.cbegin(); it != m_torrentTags.cend(); ++it)
+        for (const QString &t : it.value()) seen.insert(t);
+    QStringList out(seen.begin(), seen.end());
+    std::sort(out.begin(), out.end(), [](const QString &a, const QString &b) {
+        return a.compare(b, Qt::CaseInsensitive) < 0;
+    });
+    return out;
 }
 
 std::vector<bool> SessionManager::piecesAt(int index) const
@@ -911,6 +1004,34 @@ void SessionManager::stopSeedingTorrent(int index)
     m_torrents[index].pause();
 }
 
+void SessionManager::setForceStart(int index, bool on)
+{
+    QString hash = torrentHash(index);
+    if (hash.isEmpty()) return;
+    if (on) {
+        m_forceStartHashes.insert(hash);
+        // Resume so the user sees immediate effect — force-start that
+        // remains paused would be confusing.
+        if (m_torrents[index].is_valid())
+            m_torrents[index].resume();
+        // Drop from queue-paused set so enforceDownloadQueue doesn't keep
+        // pausing it.
+        m_queuePaused.erase(m_torrents[index]);
+    } else {
+        m_forceStartHashes.remove(hash);
+    }
+    QSettings("BATorrent", "BATorrent").setValue(
+        "forceStartHashes", QStringList(m_forceStartHashes.values()));
+    emit torrentsUpdated();
+}
+
+bool SessionManager::isForceStart(int index) const
+{
+    QString hash = torrentHash(index);
+    if (hash.isEmpty()) return false;
+    return m_forceStartHashes.contains(hash);
+}
+
 void SessionManager::setTorrentDownloadLimit(int index, int kbps)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size())) return;
@@ -1118,6 +1239,55 @@ bool SessionManager::restoreFromResumeData(const QByteArray &data)
     emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     emit torrentsUpdated();
     return true;
+}
+
+QList<SessionManager::RemovedEntry> SessionManager::recentlyRemoved() const
+{
+    QList<RemovedEntry> out;
+    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
+    if (!removedDir.exists()) return out;
+    QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
+    for (const QString &hash : meta.childGroups()) {
+        meta.beginGroup(hash);
+        RemovedEntry e;
+        e.hash = hash;
+        e.name = meta.value("name").toString();
+        e.totalSize = meta.value("size").toLongLong();
+        e.removedAt = meta.value("removedAt").toLongLong();
+        e.resumePath = removedDir.filePath(hash + ".resume");
+        meta.endGroup();
+        if (QFile::exists(e.resumePath)) out.append(e);
+    }
+    std::sort(out.begin(), out.end(), [](const RemovedEntry &a, const RemovedEntry &b) {
+        return a.removedAt > b.removedAt; // newest first
+    });
+    return out;
+}
+
+bool SessionManager::restoreRemoved(const QString &hash)
+{
+    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
+    QString path = removedDir.filePath(hash + ".resume");
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    QByteArray bytes = f.readAll();
+    f.close();
+    if (!restoreFromResumeData(bytes)) return false;
+    // Successful restore — remove the history entry so it doesn't stay
+    // there forever after the user re-added.
+    QFile::remove(path);
+    QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
+    meta.remove(hash);
+    return true;
+}
+
+void SessionManager::clearRemovedHistory()
+{
+    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
+    if (!removedDir.exists()) return;
+    for (const QString &f : removedDir.entryList({"*.resume"}, QDir::Files))
+        QFile::remove(removedDir.filePath(f));
+    QFile::remove(removedDir.filePath("history.ini"));
 }
 
 QString SessionManager::torrentHashAt(int index) const
@@ -2146,6 +2316,18 @@ void SessionManager::enforceDownloadQueue()
         bool isPaused = (st.flags & lt::torrent_flags::paused) != lt::torrent_flags_t{};
         bool isDownloading = (st.state == lt::torrent_status::downloading
                               || st.state == lt::torrent_status::downloading_metadata);
+
+        // Force-start torrents are exempt from the queue entirely — they
+        // neither count against the cap nor get auto-paused. Resume them
+        // here if they're paused for any reason.
+        if (st.has_metadata) {
+            QString hash = QString::fromStdString(
+                (std::ostringstream() << st.info_hashes.get_best()).str());
+            if (m_forceStartHashes.contains(hash)) {
+                if (isPaused) m_torrents[i].resume();
+                continue;
+            }
+        }
 
         if (isDownloading && !isPaused) {
             // Stamp the "last fast" timestamp on tick ticks where the

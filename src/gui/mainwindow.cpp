@@ -24,6 +24,7 @@
 #include "../app/addonmanager.h"
 #include "../app/secretstore.h"
 #include "../app/notifier.h"
+#include "../app/discordrpc.h"
 #include "addondialog.h"
 #include "searchdialog.h"
 #include "rssdialog.h"
@@ -32,6 +33,8 @@
 #include "shortcutsdialog.h"
 #include "logviewerdialog.h"
 #include "diagnosticsdialog.h"
+#include "removedhistorydialog.h"
+#include "torrentinspectordialog.h"
 #include "traypopup.h"
 #include "../app/rssmanager.h"
 
@@ -80,6 +83,7 @@
 #include <QStandardPaths>
 #include <QUrl>
 #include <QNetworkAccessManager>
+#include <QNetworkInformation>
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QJsonDocument>
@@ -190,6 +194,20 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
             m_telegramNotifier, &TelegramNotifier::onRssAutoDownloaded);
 
+    // Discord Rich Presence — empty client ID at startup is fine (the RPC
+    // is silent until configured in Settings → Integrations). Refresh every
+    // 15 s so the activity tracks the current download set.
+    m_discordRpc = new DiscordRPC(this);
+    m_discordSessionStart = QDateTime::currentSecsSinceEpoch();
+    {
+        QSettings s("BATorrent", "BATorrent");
+        m_discordRpc->setClientId(s.value("discordClientId").toString());
+    }
+    m_discordRefreshTimer = new QTimer(this);
+    connect(m_discordRefreshTimer, &QTimer::timeout, this, &MainWindow::refreshDiscordPresence);
+    m_discordRefreshTimer->start(15000);
+    refreshDiscordPresence();
+
     // Auto tracker list: fetch on startup, add trackers to new torrents
     AddonManager::instance().fetchTrackerList();
     connect(m_session, &SessionManager::torrentAdded, this, [this](int index) {
@@ -233,6 +251,33 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     auto *selectAllShortcut = new QShortcut(QKeySequence::SelectAll, this);
     connect(selectAllShortcut, &QShortcut::activated, m_tableView, &QTableView::selectAll);
 
+    // Ctrl+V anywhere in the window: if the clipboard holds a magnet link,
+    // a 40-char info-hash, or a .torrent URL, offer to add it. Saves a trip
+    // through File → Add Magnet for the most common workflow.
+    auto *smartPasteShortcut = new QShortcut(QKeySequence(QKeySequence::Paste), this);
+    smartPasteShortcut->setContext(Qt::ApplicationShortcut);
+    connect(smartPasteShortcut, &QShortcut::activated, this, [this]() {
+        QString clip = QApplication::clipboard()->text().trimmed();
+        if (clip.isEmpty()) return;
+        // Heuristic: magnet:?... (any length); .torrent ending URL; or a
+        // bare 40-char hex info-hash that we wrap into a magnet.
+        QString magnet;
+        if (clip.startsWith("magnet:", Qt::CaseInsensitive)) {
+            magnet = clip;
+        } else if (clip.size() == 40
+                   && std::all_of(clip.begin(), clip.end(),
+                       [](QChar c){ return c.isLetterOrNumber(); })) {
+            magnet = QStringLiteral("magnet:?xt=urn:btih:") + clip;
+        } else {
+            return;
+        }
+        auto reply = QMessageBox::question(this, tr_("smartpaste_title"),
+            tr_("smartpaste_body").arg(magnet.left(80) + (magnet.size() > 80 ? "..." : "")),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        if (reply == QMessageBox::Yes)
+            m_session->addMagnet(magnet, chooseSavePath());
+    });
+
     // F2 on selected row — matches universal file-manager rename convention.
     auto *renameShortcut = new QShortcut(QKeySequence(Qt::Key_F2), m_tableView);
     renameShortcut->setContext(Qt::WidgetShortcut);
@@ -248,8 +293,39 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
         m_session->renameFile(row, 0, name);
     });
 
+    // Network reachability watcher — when the system reports it just came
+    // back online, kick libtorrent to re-announce immediately. Otherwise
+    // the next tracker probe waits for the next scheduled interval (minutes).
+    if (QNetworkInformation::loadDefaultBackend()) {
+        if (auto *ni = QNetworkInformation::instance()) {
+            connect(ni, &QNetworkInformation::reachabilityChanged, this,
+                    [this](QNetworkInformation::Reachability r) {
+                if (r == QNetworkInformation::Reachability::Online) {
+                    Logger::instance().log(Logger::Info,
+                        "Network reachable again — re-announcing all trackers");
+                    for (int i = 0; i < m_session->torrentCount(); ++i)
+                        m_session->forceReannounce(i);
+                }
+            });
+        }
+    }
+
     // Show welcome on first launch + offer to set as default app
     QSettings settings("BATorrent", "BATorrent");
+
+    // Auto-open release notes after a version bump. We compare against the
+    // version the user last saw and skip the welcome dialog if both fire
+    // (release notes is the more relevant "what changed" surface).
+    const QString lastChangelog = settings.value("lastChangelogVersion").toString();
+    const bool firstLaunch = lastChangelog.isEmpty();
+    if (!firstLaunch && lastChangelog != QApplication::applicationVersion()) {
+        QTimer::singleShot(300, this, [this]() {
+            ReleaseNotesDialog dlg(this);
+            dlg.exec();
+        });
+    }
+    settings.setValue("lastChangelogVersion", QApplication::applicationVersion());
+
     if (!settings.value("welcomeShown", false).toBool())
         showWelcome();
 
@@ -387,6 +463,18 @@ void MainWindow::setupMenuBar()
     connect(magnetAction, &QAction::triggered, this, &MainWindow::openMagnet);
     fileMenu->addAction(tr_("action_create"), this, &MainWindow::createTorrent);
     fileMenu->addAction(tr_("action_import_qbt"), this, &MainWindow::importQBittorrent);
+    fileMenu->addAction(tr_("action_recently_removed"), this, [this]() {
+        RemovedHistoryDialog dlg(m_session, this);
+        dlg.exec();
+    });
+    fileMenu->addAction(tr_("action_inspect"), this, [this]() {
+        QString path = QFileDialog::getOpenFileName(this, tr_("action_inspect"),
+            m_lastSavePath, tr_("dlg_torrent_filter"));
+        if (path.isEmpty()) return;
+        TorrentInspectorDialog dlg(path, m_session, this);
+        dlg.exec();
+        if (dlg.addRequested()) addTorrentFile(path);
+    });
     fileMenu->addSeparator();
     auto *quitAction = fileMenu->addAction(tr_("action_quit"));
     quitAction->setShortcut(QKeySequence::Quit);
@@ -470,6 +558,110 @@ void MainWindow::setupMenuBar()
         for (auto it = obj.begin(); it != obj.end(); ++it)
             settings.setValue(it.key(), it.value().toVariant());
         QMessageBox::information(this, "BATorrent", tr_("import_success") + "\n" + tr_("import_restart"));
+    });
+    settingsMenu->addSeparator();
+    settingsMenu->addAction(tr_("action_full_backup"), this, [this]() {
+        // Full backup: settings JSON + every .resume file in a single
+        // self-describing archive. Custom format because shipping a zip
+        // implementation just for this would dwarf the feature.
+        // Layout: "BATBACKUP1\n" + count(u32 LE) + repeat{ nameLen(u32) +
+        // name + dataLen(u64) + data }.
+        QString out = QFileDialog::getSaveFileName(this, tr_("action_full_backup"),
+            QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+                + QStringLiteral("/batorrent-backup-%1.bat")
+                    .arg(QDate::currentDate().toString("yyyy-MM-dd")),
+            "BATorrent backup (*.bat)");
+        if (out.isEmpty()) return;
+        QFile f(out);
+        if (!f.open(QIODevice::WriteOnly)) return;
+
+        QByteArray archive("BATBACKUP1\n");
+        QList<QPair<QString, QByteArray>> entries;
+
+        // Settings as JSON (re-using the export logic, but secrets included
+        // since this is a private backup not a shareable export).
+        QSettings settings("BATorrent", "BATorrent");
+        QJsonObject obj;
+        for (const auto &k : settings.allKeys())
+            obj[k] = QJsonValue::fromVariant(settings.value(k));
+        entries.append({"settings.json", QJsonDocument(obj).toJson()});
+
+        // Resume + removed dirs
+        QDir resumeDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                       + "/resume");
+        if (resumeDir.exists()) {
+            for (const auto &name : resumeDir.entryList({"*.resume"}, QDir::Files)) {
+                QFile rf(resumeDir.filePath(name));
+                if (rf.open(QIODevice::ReadOnly))
+                    entries.append({"resume/" + name, rf.readAll()});
+            }
+        }
+
+        quint32 count = entries.size();
+        archive.append(reinterpret_cast<const char *>(&count), 4);
+        for (const auto &e : entries) {
+            QByteArray nameBytes = e.first.toUtf8();
+            quint32 nameLen = nameBytes.size();
+            quint64 dataLen = e.second.size();
+            archive.append(reinterpret_cast<const char *>(&nameLen), 4);
+            archive.append(nameBytes);
+            archive.append(reinterpret_cast<const char *>(&dataLen), 8);
+            archive.append(e.second);
+        }
+        f.write(archive);
+        QMessageBox::information(this, "BATorrent",
+            tr_("full_backup_done").arg(entries.size()).arg(formatSize(archive.size())));
+    });
+    settingsMenu->addAction(tr_("action_full_restore"), this, [this]() {
+        QString path = QFileDialog::getOpenFileName(this, tr_("action_full_restore"),
+            QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+            "BATorrent backup (*.bat)");
+        if (path.isEmpty()) return;
+        QFile f(path);
+        if (!f.open(QIODevice::ReadOnly)) {
+            QMessageBox::warning(this, "BATorrent", tr_("full_restore_failed"));
+            return;
+        }
+        QByteArray data = f.readAll();
+        if (!data.startsWith("BATBACKUP1\n")) {
+            QMessageBox::warning(this, "BATorrent", tr_("full_restore_bad_format"));
+            return;
+        }
+        const char *p = data.constData() + 11; // past magic
+        const char *end = data.constData() + data.size();
+        if (p + 4 > end) return;
+        quint32 count;
+        memcpy(&count, p, 4); p += 4;
+        QString resumeBase = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+        QDir().mkpath(resumeBase + "/resume");
+        int restored = 0;
+        for (quint32 i = 0; i < count; ++i) {
+            if (p + 4 > end) break;
+            quint32 nameLen;
+            memcpy(&nameLen, p, 4); p += 4;
+            if (p + nameLen > end) break;
+            QString name = QString::fromUtf8(p, nameLen); p += nameLen;
+            if (p + 8 > end) break;
+            quint64 dataLen;
+            memcpy(&dataLen, p, 8); p += 8;
+            if (p + dataLen > end) break;
+            QByteArray payload(p, dataLen); p += dataLen;
+            if (name == "settings.json") {
+                auto obj = QJsonDocument::fromJson(payload).object();
+                QSettings s("BATorrent", "BATorrent");
+                for (auto it = obj.begin(); it != obj.end(); ++it)
+                    s.setValue(it.key(), it.value().toVariant());
+                ++restored;
+            } else if (name.startsWith("resume/")) {
+                QFile rf(resumeBase + "/" + name);
+                if (rf.open(QIODevice::WriteOnly)) {
+                    rf.write(payload);
+                    ++restored;
+                }
+            }
+        }
+        QMessageBox::information(this, "BATorrent",
+            tr_("full_restore_done").arg(restored) + "\n" + tr_("import_restart"));
     });
 
     QMenu *helpMenu = menuBar()->addMenu(tr_("menu_help"));
@@ -1591,6 +1783,13 @@ void MainWindow::onTorrentFinished(const QString &name, const QString &infoHash)
     // common follow-up action than "look at the torrent row I just saw".
     Toast::notify(tr_("dlg_download_complete"), completedBody,
                   Toast::Success, this, SLOT(revealLastNotified()));
+    // Also fire a native OS notification so it lands in Notification Center
+    // (macOS) / Action Center (Windows) / D-Bus org.freedesktop.Notifications
+    // (Linux) even if the user is on a different desktop / display.
+    if (m_trayIcon && m_trayIcon->isVisible() && m_trayIcon->supportsMessages()) {
+        m_trayIcon->showMessage(tr_("dlg_download_complete"), completedBody,
+                                QSystemTrayIcon::Information, 5000);
+    }
     if (m_notifSoundEnabled)
         QApplication::beep();
     // Remember the hash so clicking the balloon focuses the matching row
@@ -1651,6 +1850,41 @@ void MainWindow::trayActivated()
     activateWindow();
 }
 
+void MainWindow::refreshDiscordPresence()
+{
+    if (!m_discordRpc || m_discordRpc->clientId().isEmpty()) return;
+    // Find the most interesting torrent to feature — bias toward the largest
+    // active download. If nothing's downloading, mention seeding count.
+    int activeDownloads = 0, seeding = 0;
+    int featured = -1;
+    int featuredRate = 0;
+    for (int i = 0; i < m_session->torrentCount(); ++i) {
+        TorrentInfo info = m_session->torrentAt(i);
+        if (info.paused || info.completed) continue;
+        if (info.progress >= 1.0f) { ++seeding; continue; }
+        ++activeDownloads;
+        if (info.downloadRate > featuredRate) {
+            featuredRate = info.downloadRate;
+            featured = i;
+        }
+    }
+    if (featured >= 0) {
+        TorrentInfo info = m_session->torrentAt(featured);
+        const QString name = info.name.left(64);
+        const QString state = QStringLiteral("%1% · ↓ %2")
+            .arg(static_cast<int>(info.progress * 100))
+            .arg(formatSpeed(info.downloadRate));
+        m_discordRpc->setActivity(name, state, m_discordSessionStart);
+    } else if (seeding > 0) {
+        m_discordRpc->setActivity(
+            tr_("discord_seeding").arg(seeding),
+            tr_("discord_seeding_state"),
+            m_discordSessionStart);
+    } else {
+        m_discordRpc->setActivity(tr_("discord_idle"), QString(), m_discordSessionStart);
+    }
+}
+
 void MainWindow::revealLastNotified()
 {
     if (m_lastNotifiedHash.isEmpty()) { trayActivated(); return; }
@@ -1693,6 +1927,7 @@ void MainWindow::openSettings()
         dlg.setTelegramToken(SecretStore::instance().get("telegramBotToken"));
         dlg.setTelegramChatId(s.value("telegramChatId").toString());
         dlg.setTelegramEvents(s.value("telegramEvents", 0xF).toInt());
+        dlg.setDiscordClientId(s.value("discordClientId").toString());
     }
     dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
     dlg.setAutoMovePath(m_session->autoMovePath());
@@ -1789,6 +2024,11 @@ void MainWindow::openSettings()
             s.setValue("telegramChatId", dlg.telegramChatId());
             s.setValue("telegramEvents", dlg.telegramEvents());
             if (m_telegramNotifier) m_telegramNotifier->reload();
+            s.setValue("discordClientId", dlg.discordClientId());
+            if (m_discordRpc) {
+                m_discordRpc->setClientId(dlg.discordClientId());
+                refreshDiscordPresence();
+            }
         }
         // Auto-move
         m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());
@@ -1884,13 +2124,15 @@ void MainWindow::showAbout()
         "<p><b>%3:</b><br>"
         "libtorrent-rasterbar, Qt 6, OpenSSL</p>"
         "<p>%4 MIT</p>"
-        "<p>%5</p>")
+        "<p>%5</p>"
+        "<p>💬 <a href=\"https://discord.com/users/241995362057977856\">%7</a></p>")
         .arg(QApplication::applicationVersion(),
              tr_("about_description"),
              tr_("about_libraries"),
              tr_("about_license"),
              tr_("about_donate_blurb"),
-             tr_("about_no_telemetry"));
+             tr_("about_no_telemetry"),
+             tr_("about_discord"));
     QMessageBox box(QMessageBox::NoIcon, tr_("action_about"), text, QMessageBox::NoButton, this);
     box.setTextFormat(Qt::RichText);
     auto *donateBtn = box.addButton(tr_("action_donate"), QMessageBox::ActionRole);
@@ -2028,6 +2270,29 @@ void MainWindow::showContextMenu(const QPoint &pos)
         connect(seqAction, &QAction::toggled, this, [this, row = rows.first()](bool checked) {
             m_session->setSequentialDownload(row, checked);
         });
+
+        auto *forceAction = menu.addAction(tr_("ctx_force_start"));
+        forceAction->setCheckable(true);
+        forceAction->setChecked(m_session->isForceStart(rows.first()));
+        forceAction->setToolTip(tr_("tip_force_start"));
+        connect(forceAction, &QAction::toggled, this, [this, row = rows.first()](bool checked) {
+            m_session->setForceStart(row, checked);
+        });
+
+        // Tags — comma-separated quick editor. Multi-tag support without
+        // building a full tag picker UI: most users want to type "anime, 2024"
+        // and move on.
+        auto *tagsAction = menu.addAction(tr_("ctx_tags"));
+        connect(tagsAction, &QAction::triggered, this, [this, row = rows.first()]() {
+            QStringList current = m_session->torrentTags(row);
+            bool ok = false;
+            QString text = QInputDialog::getText(this, tr_("ctx_tags"),
+                tr_("ctx_tags_prompt"), QLineEdit::Normal,
+                current.join(", "), &ok);
+            if (!ok) return;
+            m_session->setTorrentTags(row, text.split(',', Qt::SkipEmptyParts));
+        });
+
         menu.addSeparator();
     }
 

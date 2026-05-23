@@ -69,6 +69,13 @@ public:
     void setTorrentCategory(int index, const QString &category);
     QStringList categories() const;
 
+    // Tags — multiple per torrent, free-form. Persisted under "torrentTags/{hash}"
+    // as a comma-joined list. Used in addition to (not instead of) the single
+    // category.
+    QStringList torrentTags(int index) const;
+    void setTorrentTags(int index, const QStringList &tags);
+    QStringList allTags() const; // union of every torrent's tags, sorted
+
     // Piece map
     std::vector<bool> piecesAt(int index) const;
 
@@ -142,6 +149,11 @@ public:
     // Force pause regardless of state ("stop seeding now")
     void stopSeedingTorrent(int index);
 
+    // Force start: exempt this torrent from the active-downloads queue cap.
+    // It will keep downloading even when other torrents are queue-paused.
+    void setForceStart(int index, bool on);
+    bool isForceStart(int index) const;
+
     // Per-torrent rate caps (KB/s, 0 = unlimited). Persisted by info-hash so
     // limits survive restarts and re-applied on load. Override the global
     // session caps for that torrent only.
@@ -183,6 +195,20 @@ public:
     // Re-add a torrent from a previously captured .resume snapshot.
     // Returns true on success.
     bool restoreFromResumeData(const QByteArray &data);
+
+    // Recently-removed history — persistent ring buffer of the last N removed
+    // torrents' resume snapshots, so the user can re-add even after closing
+    // the undo toast. Stored as files under <AppData>/removed/{hash}.resume.
+    struct RemovedEntry {
+        QString hash;
+        QString name;
+        qint64 totalSize;
+        qint64 removedAt; // unix seconds
+        QString resumePath; // absolute path to the snapshot file
+    };
+    QList<RemovedEntry> recentlyRemoved() const;
+    bool restoreRemoved(const QString &hash);
+    void clearRemovedHistory();
 
     // Absolute on-disk root path for the torrent (single file or root folder).
     // Resolves via libtorrent's file_path(0) rather than the torrent's display
@@ -310,6 +336,8 @@ private:
     // "completedTorrents". A torrent in this set is paused on resume and
     // displayed in the green "completed" state regardless of seeding flags.
     QSet<QString> m_completedTorrents;
+    // Info-hashes that bypass the active-downloads queue cap.
+    QSet<QString> m_forceStartHashes;
     qint64 m_autoCompleteSeconds = 0; // 0 = disabled
     void saveCompletedSet();
     void checkAutoComplete();
@@ -366,6 +394,8 @@ private:
 
     // Categories per torrent (hash -> category name)
     QMap<QString, QString> m_categories;
+    // Tags per torrent (hash -> list of tag names)
+    QMap<QString, QStringList> m_torrentTags;
 
     // VPN / Interface binding
     QString m_outgoingInterface;
