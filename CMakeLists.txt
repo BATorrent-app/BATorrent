@@ -21,6 +21,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/translator.cpp
     src/app/logger.cpp
     src/app/notifier.cpp
+    src/app/qrcodegen.cpp
     src/gui/mainwindow.cpp
     src/gui/torrentmodel.cpp
     src/gui/torrentfilter.cpp

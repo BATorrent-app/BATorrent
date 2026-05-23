@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "pairingdialog.h"
+#include "../app/qrcodegen.h"
 #include "../app/translator.h"
 #include "thememanager.h"
 
@@ -75,6 +76,24 @@ PairingDialog::PairingDialog(int port, QWidget *parent)
         root->addWidget(err);
         root->addStretch();
     } else {
+        // QR code first — most phones scan via the camera app and open the
+        // URL directly, no typing needed. Generated in pure Qt (no external
+        // service, so the LAN URL never leaks off the machine).
+        QPixmap qr = qrgen::renderQR(url, 240, Qt::black, Qt::white, 2);
+        if (!qr.isNull()) {
+            auto *qrLabel = new QLabel;
+            qrLabel->setPixmap(qr);
+            qrLabel->setAlignment(Qt::AlignCenter);
+            qrLabel->setStyleSheet(
+                "QLabel { background: white; border-radius: 8px; padding: 12px; }");
+            auto *qrRow = new QHBoxLayout;
+            qrRow->addStretch();
+            qrRow->addWidget(qrLabel);
+            qrRow->addStretch();
+            root->addLayout(qrRow);
+            root->addSpacing(8);
+        }
+
         // Big monospace URL — easy to read across the room. Boxed bg so it
         // visually reads as "this is the thing you want to type or scan".
         auto *urlBox = new QLabel(url);
