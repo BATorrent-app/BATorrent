@@ -1,4 +1,8 @@
 <p align="center">
+  <b>English</b> | <a href="README.pt-BR.md">Português</a> | <a href="README.zh-CN.md">中文</a> | <a href="README.ja.md">日本語</a> | <a href="README.ru.md">Русский</a> | <a href="README.es.md">Español</a> | <a href="README.de.md">Deutsch</a>
+</p>
+
+<p align="center">
   <img src="src/images/logo.svg" alt="BATorrent" width="160">
 </p>
 
@@ -51,8 +55,12 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 
 ### Torrents
 - `.torrent` files and magnet links with persistent resume data
+- **Thunder:// link decoding** — Chinese forums share links in Xunlei's `thunder://` format; BATorrent decodes them automatically via Smart Paste (Ctrl+V)
+- **Smart Paste** — Ctrl+V with a magnet link, info hash, or thunder:// link on the clipboard prompts to add instantly
+- **Torrent inspector** — preview a `.torrent` file (name, size, files, trackers, hash, creator, private flag) before committing to download
 - Per-file priority, sequential download, manual recheck and reannounce
 - Auto-tracker injection from [ngosang/trackerslist](https://github.com/ngosang/trackerslist)
+- Multi-tag system (free-form, multiple tags per torrent alongside single category)
 - Categories, drag-and-drop reorder, and right-click context actions
 - Import existing state from qBittorrent
 - Create new `.torrent` files from any file or folder
@@ -74,6 +82,11 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 ### VPN & privacy
 - **Interface binding** locks all torrent traffic to a chosen network interface (e.g. `tun0`, `utun4`).
 - **Kill switch** pauses every active torrent the moment the bound interface drops, with optional auto-resume when it returns.
+- **PT mode** — one-toggle private tracker compliance: disables DHT/PEX/LSD, forces anonymous handshake, announces to every tier. Required by M-Team, TorrentLeech, and most ratio-tracked communities.
+- **Anti-leecher blocking** — auto-detects and bans Xunlei (Thunder), QQDownload, Baidu Netdisk P2P, and other clients that download without seeding back. Detected by peer_id prefix in the BitTorrent handshake.
+- **Anonymous mode** — hides client name/version in handshakes, disables UPnP/NAT-PMP advertisements.
+- **Tor proxy preset** — one click fills SOCKS5 127.0.0.1:9050.
+- **Force IPv4** — rejects IPv6 peers to prevent v6 leaks when the tunnel doesn't cover it.
 - VPN detection for WireGuard, Mullvad, NordLynx, ProtonVPN, generic tun/tap.
 - SOCKS5 and HTTP proxy with authentication.
 - IP blocklist support (P2P format).
@@ -81,8 +94,9 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 
 ### WebUI
 - Browser-based control panel on `http://localhost:8080` (port and remote access configurable).
+- **QR code pairing** — scan a QR from your phone to open the WebUI instantly, no IP typing. QR generated locally in pure C++ (your LAN address never leaves the machine).
 - REST API with JSON responses; add by magnet or `.torrent` upload; pause / resume / remove; per-torrent file and peer views.
-- SHA-256 hashed Basic Auth, theme-matched dark UI.
+- SHA-256 hashed Basic Auth, theme-matched dark UI, fully responsive mobile layout.
 
 ### Bandwidth & scheduling
 - Independent download and upload limits.
@@ -93,18 +107,30 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 - Notifies **Plex**, **Jellyfin**, or **Emby** to scan the library when a download completes.
 - Configurable URL and token / API key per server.
 
+### Notifications & integrations
+- **Telegram webhook** — download complete, kill switch fired, RSS auto-download, and torrent errors pushed to any Telegram chat via bot token. Per-event checkboxes + Test button.
+- **Discord Rich Presence** — shows "Downloading X · 67%" on your Discord profile with "Download BATorrent" and "View on GitHub" buttons. Works out of the box.
+
 ### Interface
 - Three themes — Dark, Light (warm cream "Comfortable" palette), and Midnight — with a global QPalette override so plain widgets follow the active theme.
 - Real-time speed graph, detailed panel (General · Peers · Files · Trackers · Pieces), state-coloured progress bars, click-to-focus tray notifications.
-- Custom tray popup (cross-platform) with live speeds, active-torrent preview, VPN status, and quit affordance.
+- Custom tray popup (cross-platform) with live speeds, active-torrent preview with ETA, VPN status, and quit affordance.
 - Filter pills with live counts (All / Active / Downloading / Seeding / Completed / Paused / Finished / Queued), search bar, and category filter.
 - Drag and drop for both `.torrent` files and magnet links.
-- Seven UI languages: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — with English fallback for missing keys.
+- **Seven UI languages** with auto-detection: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 622 translated strings with English fallback for missing keys.
+- Speed display in bytes (KB/s, MB/s) or bits (Kbps, Mbps) — togglable in Settings.
+- Locale-aware number formatting (e.g. `1 234,5` for Russian locale).
 
 ### System
-- Auto-update channel reading from GitHub releases (AppImage / installer / DMG).
+- Auto-update with configurable source: **GitHub** (default) or **Gitee** (China mirror) or disabled.
 - Auto-shutdown when all downloads complete (60 s cancellable countdown).
+- **Full backup/restore** of all settings + resume data in a single archive for cross-machine migration.
+- **Recently removed** history (last 50 torrents, one-click restore).
+- **Force start** — bypass the active-downloads queue cap for a single torrent.
+- Built-in **log viewer** with file rotation (5 MB/file, keep 3), level filter, export for bug reports, and `--debug` CLI flag.
+- **Diagnostics dialog** — health check (save path, port, DHT, encryption, VPN, leecher blocking) + outgoing IP leak test (via api.ipify.org).
 - CLI args: pass any number of `.torrent` paths or `magnet:` URIs at launch; subsequent launches forward to the running instance.
+- Changelog auto-popup on first launch after a version bump.
 - Keyboard shortcuts and `?` quick-reference dialog.
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
