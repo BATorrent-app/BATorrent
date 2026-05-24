@@ -16,3 +16,6 @@ build-release/
 *.o
 *.so
 *.a
+
+# Internal docs (not for public repo)
+MARKETING_PLAN.md
