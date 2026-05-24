@@ -89,7 +89,10 @@ jobs:
           # I/O to avoid PowerShell's encoding quirks (BOM insertion,
           # UTF-16 default) that makeappx rejects.
           $raw = [System.IO.File]::ReadAllText("$PWD\installer\msix\AppxManifest.xml", [System.Text.Encoding]::UTF8)
-          $raw = $raw -replace 'Version="[^"]*"', "Version=`"$version`""
+          # Case-SENSITIVE replace (-creplace) so we only hit the Identity
+          # element's uppercase-V Version, not the xml declaration's
+          # lowercase-v version="1.0" which must stay untouched.
+          $raw = $raw -creplace 'Version="[\d.]+"', "Version=`"$version`""
           [System.IO.File]::WriteAllText("$PWD\msix-layout\AppxManifest.xml", $raw, [System.Text.UTF8Encoding]::new($false))
 
           # Generate logo assets from source PNG at required Store sizes
