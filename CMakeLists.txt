@@ -59,6 +59,13 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     ${WIN_RC}
 )
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
+
+# Microsoft Store builds must not include their own auto-updater (Store
+# handles updates). Pass -DBAT_STORE_BUILD=ON in the store.yml workflow.
+option(BAT_STORE_BUILD "Disable auto-updater for Microsoft Store submission" OFF)
+if(BAT_STORE_BUILD)
+    target_compile_definitions(BATorrent PRIVATE BAT_STORE_BUILD)
+endif()
 target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia LibtorrentRasterbar::torrent-rasterbar)
 
 # macOS: bundle metadata. Without these keys, NSStatusItem (the tray icon)

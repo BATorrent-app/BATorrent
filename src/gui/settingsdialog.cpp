@@ -240,6 +240,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     speedUnitLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(speedUnitLabel, m_speedUnitCombo);
 
+#ifndef BAT_STORE_BUILD
     m_updateChannelCombo = new QComboBox;
     m_updateChannelCombo->addItem(tr_("settings_update_channel_github"), "github");
     m_updateChannelCombo->addItem(tr_("settings_update_channel_gitee"), "gitee");
@@ -248,6 +249,10 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     auto *updateChannelLabel = new QLabel(tr_("settings_update_channel"));
     updateChannelLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(updateChannelLabel, m_updateChannelCombo);
+#else
+    m_updateChannelCombo = new QComboBox; // hidden, but pointer must exist
+    m_updateChannelCombo->hide();
+#endif
 
     // Auto-move completed downloads
     m_autoMoveCheck = new QCheckBox(tr_("settings_automove"));

@@ -42,10 +42,11 @@ jobs:
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: C:\vcpkg\vcpkg install libtorrent:x64-windows
 
-      - name: Build
+      - name: Build (Store variant — auto-updater disabled)
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DBAT_STORE_BUILD=ON
           cmake --build build --config Release
 
       - name: Prepare MSIX layout

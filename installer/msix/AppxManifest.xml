@@ -6,17 +6,21 @@
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
   IgnorableNamespaces="uap rescap desktop">
 
+  <!-- Publisher CN must match your Partner Center identity exactly.
+       After registering at https://partner.microsoft.com/dashboard,
+       replace the placeholder below with the CN= string from your
+       certificate info page. -->
   <Identity
     Name="Mateuscruz19.BATorrent"
     Version="2.5.1.0"
-    Publisher="CN=PUBLISHER_ID_FROM_PARTNER_CENTER"
+    Publisher="CN=REPLACE_WITH_PARTNER_CENTER_PUBLISHER_ID"
     ProcessorArchitecture="x64" />
 
   <Properties>
     <DisplayName>BATorrent</DisplayName>
     <PublisherDisplayName>Mateus Cruz</PublisherDisplayName>
     <Logo>assets\StoreLogo.png</Logo>
-    <Description>A modern, open-source BitTorrent client focused on privacy, performance, and clarity.</Description>
+    <Description>A modern, open-source BitTorrent client focused on privacy, performance, and clarity. No ads, no telemetry.</Description>
   </Properties>
 
   <Dependencies>
@@ -37,7 +41,7 @@
     <Application Id="BATorrent" Executable="BATorrent.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="BATorrent"
-        Description="Open-source BitTorrent client with VPN kill switch, anti-Xunlei blocking, Tor proxy, and 7 languages."
+        Description="Open-source BitTorrent client with VPN kill switch, anti-Xunlei blocking, Tor proxy, Telegram notifications, Discord activity, and 7 languages."
         BackgroundColor="#0e0a0a"
         Square150x150Logo="assets\Square150x150Logo.png"
         Square44x44Logo="assets\Square44x44Logo.png">
@@ -45,7 +49,6 @@
       </uap:VisualElements>
 
       <Extensions>
-        <!-- .torrent file association -->
         <uap:Extension Category="windows.fileTypeAssociation">
           <uap:FileTypeAssociation Name="torrent">
             <uap:SupportedFileTypes>
@@ -55,7 +58,6 @@
           </uap:FileTypeAssociation>
         </uap:Extension>
 
-        <!-- magnet: URI scheme -->
         <uap:Extension Category="windows.protocol">
           <uap:Protocol Name="magnet">
             <uap:DisplayName>Magnet Link</uap:DisplayName>
@@ -65,8 +67,9 @@
     </Application>
   </Applications>
 
+  <!-- Full-trust Win32 app — no AppContainer sandbox. Unrestricted
+       network + file system access via Desktop Bridge. -->
   <Capabilities>
-    <Capability Name="internetClient" />
-    <Capability Name="privateNetworkClientServer" />
+    <rescap:Capability Name="runFullTrust" />
   </Capabilities>
 </Package>

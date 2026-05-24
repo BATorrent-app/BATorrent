@@ -177,9 +177,11 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
         Toast::notify(tr_("killswitch_title"), body, Toast::Success);
     });
 
-    // Auto-updater
+    // Auto-updater — disabled in Store builds (Microsoft handles updates).
     m_updater = new Updater(this);
+#ifndef BAT_STORE_BUILD
     checkForUpdate(true); // silent check on startup
+#endif
 
     // Telegram notifier — mirrors the in-app Toasts into a chat. Reload-on-
     // settings-save is wired below in openSettings(). Subscribe to the same
@@ -696,7 +698,9 @@ void MainWindow::setupMenuBar()
         ShortcutsDialog dlg(this);
         dlg.exec();
     });
+#ifndef BAT_STORE_BUILD
     helpMenu->addAction(tr_("action_check_update"), this, [this]() { checkForUpdate(false); });
+#endif
     helpMenu->addAction(tr_("action_log_viewer"), this, [this]() {
         LogViewerDialog dlg(this);
         dlg.exec();
