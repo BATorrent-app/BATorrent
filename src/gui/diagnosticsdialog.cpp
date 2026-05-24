@@ -173,6 +173,12 @@ void DiagnosticsDialog::runHealthCheck()
         rows << warn(tr_("diag_check_vpn_none"));
     }
 
+    // Leecher blocking
+    if (m_session->blockLeecherClients())
+        rows << pass(tr_("diag_check_leecher_on").arg(m_session->blockedLeecherCount()));
+    else
+        rows << warn(tr_("diag_check_leecher_off"));
+
     // Active torrents sanity
     rows << pass(tr_("diag_check_torrent_count").arg(m_session->torrentCount()));
 

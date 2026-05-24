@@ -120,6 +120,14 @@ public:
     void setPtMode(bool enabled);
     bool ptMode() const;
 
+    // Block known leecher clients (Xunlei/Thunder, QQDownload, Baidu
+    // offline, etc.) that download from peers but never seed back. Detected
+    // by peer_id prefix in the BitTorrent handshake. Popular in Chinese PT
+    // communities where Xunlei's "vampire" behavior is universally hated.
+    void setBlockLeecherClients(bool enabled);
+    bool blockLeecherClients() const;
+    int blockedLeecherCount() const;
+
     // VPN / Interface binding
     void setOutgoingInterface(const QString &interfaceName); // "" = any
     QString outgoingInterface() const;
@@ -326,6 +334,9 @@ private:
     bool m_anonymousMode = false;
     bool m_forceIpv4 = false;
     bool m_ptMode = false;
+    bool m_blockLeechers = false;
+    int m_blockedLeecherCount = 0;
+    void checkAndBlockLeechers();
     float m_seedRatioLimit = 0.0f; // 0 = no limit
 
     // Stop-seeding rules (globals)

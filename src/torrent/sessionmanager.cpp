@@ -89,6 +89,7 @@ SessionManager::SessionManager(QObject *parent)
     m_ptMode = settings.value("ptMode", false).toBool();
     for (const auto &h : settings.value("forceStartHashes").toStringList())
         m_forceStartHashes.insert(h);
+    m_blockLeechers = settings.value("blockLeechers", false).toBool();
     if (m_anonymousMode || m_forceIpv4 || m_ptMode) {
         // Apply immediately so the first session starts with the right pack;
         // setters above persist to QSettings, but the in-memory pack was
@@ -896,6 +897,54 @@ void SessionManager::setPtMode(bool enabled)
 
 bool SessionManager::ptMode() const { return m_ptMode; }
 
+void SessionManager::setBlockLeecherClients(bool enabled)
+{
+    m_blockLeechers = enabled;
+    QSettings("BATorrent", "BATorrent").setValue("blockLeechers", enabled);
+}
+
+bool SessionManager::blockLeecherClients() const { return m_blockLeechers; }
+int SessionManager::blockedLeecherCount() const { return m_blockedLeecherCount; }
+
+void SessionManager::checkAndBlockLeechers()
+{
+    if (!m_blockLeechers) return;
+    // Known leecher peer_id prefixes. Xunlei variants dominate but
+    // QQDownload and Baidu offline download are also prevalent.
+    static const QList<QByteArray> kLeecherPrefixes = {
+        "-SD",  // Xunlei (Thunder)
+        "-XL",  // Xunlei variant
+        "XL",   // Xunlei legacy
+        "-DL",  // Xunlei Dlthunder
+        "-QD",  // QQDownload
+        "-BN",  // Baidu Netdisk P2P
+        "-SP",  // BitSpirit (known bad seeder)
+    };
+    for (auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        std::vector<lt::peer_info> peers;
+        try { h.get_peer_info(peers); } catch (...) { continue; }
+        for (const auto &p : peers) {
+            QByteArray pid(p.pid.data(), 8);
+            for (const auto &prefix : kLeecherPrefixes) {
+                if (pid.startsWith(prefix)) {
+                    h.connect_peer(p.ip, lt::peer_source_flags_t{});
+                    // No direct "ban peer" in libtorrent 2.x — use the IP
+                    // filter to block the address for this session.
+                    lt::ip_filter filter = m_session.get_ip_filter();
+                    try {
+                        auto addr = p.ip.address();
+                        filter.add_rule(addr, addr, lt::ip_filter::blocked);
+                        m_session.set_ip_filter(filter);
+                    } catch (...) {}
+                    ++m_blockedLeecherCount;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void SessionManager::setEncryptionMode(int mode)
 {
     m_encryptionMode = mode;
@@ -1568,6 +1617,7 @@ void SessionManager::updateStats()
     checkSeedRatios();
     checkSeedingLimits();
     checkAutoComplete();
+    checkAndBlockLeechers();
     checkInterfaceStatus();
     checkBandwidthSchedule();
     checkMagnetTimeouts();
