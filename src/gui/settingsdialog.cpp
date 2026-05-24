@@ -436,6 +436,10 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     m_ptModeCheck->setToolTip(tr_("tip_pt_mode"));
     networkLayout->addRow("", m_ptModeCheck);
 
+    m_blockLeechersCheck = new QCheckBox(tr_("settings_block_leechers"));
+    m_blockLeechersCheck->setToolTip(tr_("tip_block_leechers"));
+    networkLayout->addRow("", m_blockLeechersCheck);
+
     // Listening port + the "re-randomize on each launch" toggle. Putting
     // them together makes the trade-off obvious: a fixed port is what you
     // want for UPnP port forwards; a randomized port frustrates passive
@@ -952,6 +956,8 @@ void SettingsDialog::setUtpEnabled(bool enabled) { m_utpCheck->setChecked(enable
 void SettingsDialog::setAnonymousMode(bool val) { m_anonymousCheck->setChecked(val); }
 void SettingsDialog::setForceIpv4(bool val) { m_forceIpv4Check->setChecked(val); }
 void SettingsDialog::setPtMode(bool val) { m_ptModeCheck->setChecked(val); }
+bool SettingsDialog::blockLeechers() const { return m_blockLeechersCheck->isChecked(); }
+void SettingsDialog::setBlockLeechers(bool val) { m_blockLeechersCheck->setChecked(val); }
 void SettingsDialog::setRandomizePort(bool enabled) {
     m_randomizePortCheck->setChecked(enabled);
     m_listenPortSpin->setEnabled(!enabled);

@@ -63,9 +63,11 @@ public:
     bool anonymousMode() const;
     bool forceIpv4() const;
     bool ptMode() const;
+    bool blockLeechers() const;
     void setAnonymousMode(bool val);
     void setForceIpv4(bool val);
     void setPtMode(bool val);
+    void setBlockLeechers(bool val);
     bool randomizePort() const;
     int listenPort() const;
 
@@ -207,6 +209,7 @@ private:
     QCheckBox *m_anonymousCheck;
     QCheckBox *m_forceIpv4Check;
     QCheckBox *m_ptModeCheck;
+    QCheckBox *m_blockLeechersCheck;
     QCheckBox *m_randomizePortCheck;
     QSpinBox *m_listenPortSpin;
 

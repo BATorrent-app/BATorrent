@@ -267,6 +267,19 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
         QString magnet;
         if (clip.startsWith("magnet:", Qt::CaseInsensitive)) {
             magnet = clip;
+        } else if (clip.startsWith("thunder://", Qt::CaseInsensitive)) {
+            // Xunlei thunder:// links are base64("AA" + real_url + "ZZ").
+            // Extremely common on Chinese forums — without this decode,
+            // CN users have to manually convert before adding.
+            QByteArray encoded = clip.mid(10).toUtf8();
+            QByteArray decoded = QByteArray::fromBase64(encoded);
+            if (decoded.startsWith("AA") && decoded.endsWith("ZZ"))
+                decoded = decoded.mid(2, decoded.size() - 4);
+            QString inner = QString::fromUtf8(decoded);
+            if (inner.startsWith("magnet:", Qt::CaseInsensitive))
+                magnet = inner;
+            else
+                return; // HTTP/FTP thunder links not supported yet
         } else if (clip.size() == 40
                    && std::all_of(clip.begin(), clip.end(),
                        [](QChar c){ return c.isLetterOrNumber(); })) {
@@ -1272,8 +1285,17 @@ void MainWindow::loadSettings()
     if (settings.contains("language")) {
         lang = settings.value("language").toInt();
     } else {
-        QString sysLang = QLocale::system().name();
-        lang = sysLang.startsWith("pt") ? 1 : 0;
+        // Auto-detect from system locale on first launch. Covers all 7
+        // supported languages so international users see their language
+        // immediately without visiting Settings first.
+        const QString sys = QLocale::system().name().toLower();
+        if      (sys.startsWith("pt")) lang = 1; // Portuguese
+        else if (sys.startsWith("zh")) lang = 2; // Chinese
+        else if (sys.startsWith("ja")) lang = 3; // Japanese
+        else if (sys.startsWith("ru")) lang = 4; // Russian
+        else if (sys.startsWith("es")) lang = 5; // Spanish
+        else if (sys.startsWith("de")) lang = 6; // German
+        else                           lang = 0; // English
     }
     Translator::instance().setLanguage(static_cast<Translator::Language>(lang));
 
@@ -1950,6 +1972,7 @@ void MainWindow::openSettings()
         dlg.setAnonymousMode(m_session->anonymousMode());
         dlg.setForceIpv4(m_session->forceIpv4());
         dlg.setPtMode(m_session->ptMode());
+        dlg.setBlockLeechers(m_session->blockLeecherClients());
         dlg.setRandomizePort(s.value("randomizePort", false).toBool());
         dlg.setListenPort(s.value("listenPort", 6881).toInt());
     }
@@ -2057,6 +2080,7 @@ void MainWindow::openSettings()
         m_session->setAnonymousMode(dlg.anonymousMode());
         m_session->setForceIpv4(dlg.forceIpv4());
         m_session->setPtMode(dlg.ptMode());
+        m_session->setBlockLeecherClients(dlg.blockLeechers());
         {
             QSettings s("BATorrent", "BATorrent");
             s.setValue("utpEnabled", dlg.utpEnabled());
