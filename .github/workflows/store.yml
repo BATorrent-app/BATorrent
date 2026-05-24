@@ -1,0 +1,96 @@
+name: Microsoft Store (MSIX)
+
+# Separate from the main Build & Release workflow. This produces an
+# unsigned MSIX package ready for upload to Microsoft Partner Center.
+# Microsoft signs it during the Store submission process.
+#
+# Trigger manually from the Actions tab when preparing a Store update.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 2.5.1.0 — must be 4-part for MSIX)'
+        required: true
+        default: '2.5.1.0'
+
+jobs:
+  build-msix:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: qtmultimedia
+          cache: true
+
+      - name: Setup vcpkg
+        run: |
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+          echo "C:\vcpkg" >> $env:GITHUB_PATH
+
+      - name: Cache vcpkg installed packages
+        id: cache-vcpkg
+        uses: actions/cache@v4
+        with:
+          path: C:\vcpkg\installed
+          key: vcpkg-libtorrent-x64-windows-v1
+
+      - name: Install libtorrent via vcpkg
+        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+        run: C:\vcpkg\vcpkg install libtorrent:x64-windows
+
+      - name: Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          cmake --build build --config Release
+
+      - name: Prepare MSIX layout
+        shell: pwsh
+        run: |
+          $version = "${{ github.event.inputs.version }}"
+
+          # Create package layout
+          mkdir msix-layout
+          Copy-Item build/Release/BATorrent.exe msix-layout/
+          windeployqt msix-layout/BATorrent.exe
+
+          # Copy vcpkg DLLs
+          $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
+          Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination msix-layout/
+
+          # Copy manifest and patch version
+          $manifest = Get-Content installer/msix/AppxManifest.xml -Raw
+          $manifest = $manifest -replace 'Version="[^"]*"', "Version=`"$version`""
+          $manifest | Set-Content msix-layout/AppxManifest.xml
+
+          # Generate logo assets from source PNG at required Store sizes
+          $sizes = @(
+            @{Name="StoreLogo.png"; Size=50},
+            @{Name="Square44x44Logo.png"; Size=44},
+            @{Name="Square71x71Logo.png"; Size=71},
+            @{Name="Square150x150Logo.png"; Size=150},
+            @{Name="Wide310x150Logo.png"; Size=310; Height=150}
+          )
+          mkdir msix-layout/assets
+          foreach ($s in $sizes) {
+            $h = if ($s.Height) { $s.Height } else { $s.Size }
+            magick src/images/logo1.png -resize "$($s.Size)x$h" -background "#0e0a0a" -gravity center -extent "$($s.Size)x$h" "msix-layout/assets/$($s.Name)"
+          }
+
+      - name: Create MSIX package
+        shell: pwsh
+        run: |
+          # makeappx is in the Windows SDK
+          $sdkPath = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\makeappx.exe" | Sort-Object | Select-Object -Last 1
+          & $sdkPath.FullName pack /d msix-layout /p BATorrent-store.msix /nv
+          Write-Host "Created BATorrent-store.msix"
+
+      - name: Upload MSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-store
+          path: BATorrent-store.msix

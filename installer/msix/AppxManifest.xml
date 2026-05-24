@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  IgnorableNamespaces="uap rescap desktop">
+
+  <Identity
+    Name="Mateuscruz19.BATorrent"
+    Version="2.5.1.0"
+    Publisher="CN=PUBLISHER_ID_FROM_PARTNER_CENTER"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>BATorrent</DisplayName>
+    <PublisherDisplayName>Mateus Cruz</PublisherDisplayName>
+    <Logo>assets\StoreLogo.png</Logo>
+    <Description>A modern, open-source BitTorrent client focused on privacy, performance, and clarity.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+    <Resource Language="pt-br" />
+    <Resource Language="zh-hans" />
+    <Resource Language="ja" />
+    <Resource Language="ru" />
+    <Resource Language="es" />
+    <Resource Language="de" />
+  </Resources>
+
+  <Applications>
+    <Application Id="BATorrent" Executable="BATorrent.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="BATorrent"
+        Description="Open-source BitTorrent client with VPN kill switch, anti-Xunlei blocking, Tor proxy, and 7 languages."
+        BackgroundColor="#0e0a0a"
+        Square150x150Logo="assets\Square150x150Logo.png"
+        Square44x44Logo="assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="assets\Wide310x150Logo.png" Square71x71Logo="assets\Square71x71Logo.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- .torrent file association -->
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="torrent">
+            <uap:SupportedFileTypes>
+              <uap:FileType>.torrent</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap:DisplayName>Torrent File</uap:DisplayName>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+
+        <!-- magnet: URI scheme -->
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="magnet">
+            <uap:DisplayName>Magnet Link</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <Capability Name="privateNetworkClientServer" />
+  </Capabilities>
+</Package>
