@@ -85,12 +85,56 @@ jobs:
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination msix-layout/
 
-          # Copy manifest and patch version. Use WriteAllText to avoid
-          # PowerShell's Set-Content adding a UTF-16 BOM that makeappx
-          # can't parse ("Incorrect xml declaration syntax").
-          $manifest = Get-Content installer/msix/AppxManifest.xml -Raw
-          $manifest = $manifest -replace 'Version="[^"]*"', "Version=`"$version`""
-          [System.IO.File]::WriteAllText("$PWD/msix-layout/AppxManifest.xml", $manifest, [System.Text.UTF8Encoding]::new($false))
+          # Generate manifest inline to avoid any file-encoding surprises
+          # from PowerShell's Get-Content / Set-Content pipeline. makeappx
+          # is very picky about BOM + encoding.
+          $xml = @"
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+  <Identity Name="Mateuscruz19.BATorrent" Version="$version"
+    Publisher="CN=Mateuscruz19" ProcessorArchitecture="x64"/>
+  <Properties>
+    <DisplayName>BATorrent</DisplayName>
+    <PublisherDisplayName>Mateus Cruz</PublisherDisplayName>
+    <Logo>assets\StoreLogo.png</Logo>
+    <Description>Open-source BitTorrent client. No ads, no telemetry.</Description>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0"/>
+  </Dependencies>
+  <Resources>
+    <Resource Language="en-us"/><Resource Language="pt-br"/>
+    <Resource Language="zh-hans"/><Resource Language="ja"/>
+    <Resource Language="ru"/><Resource Language="es"/><Resource Language="de"/>
+  </Resources>
+  <Applications>
+    <Application Id="BATorrent" Executable="BATorrent.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="BATorrent"
+        Description="Open-source BitTorrent client with VPN kill switch, anti-Xunlei, Tor, and 7 languages."
+        BackgroundColor="#0e0a0a"
+        Square150x150Logo="assets\Square150x150Logo.png"
+        Square44x44Logo="assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="assets\Wide310x150Logo.png" Square71x71Logo="assets\Square71x71Logo.png"/>
+      </uap:VisualElements>
+      <Extensions>
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="torrent">
+            <uap:SupportedFileTypes><uap:FileType>.torrent</uap:FileType></uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="magnet"><uap:DisplayName>Magnet Link</uap:DisplayName></uap:Protocol>
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Capabilities><rescap:Capability Name="runFullTrust"/></Capabilities>
+</Package>
+"@
+          [System.IO.File]::WriteAllText("$PWD\msix-layout\AppxManifest.xml", $xml, [System.Text.UTF8Encoding]::new($false))
 
           # Generate logo assets from source PNG at required Store sizes
           $sizes = @(
