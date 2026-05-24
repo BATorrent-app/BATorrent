@@ -42,6 +42,28 @@ jobs:
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: C:\vcpkg\vcpkg install libtorrent:x64-windows
 
+      - name: Cache choco packages
+        id: cache-choco
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\ProgramData\chocolatey\lib\imagemagick
+            C:\Program Files\ImageMagick*
+          key: choco-imagemagick-v1
+
+      - name: Install ImageMagick
+        if: steps.cache-choco.outputs.cache-hit != 'true'
+        run: choco install imagemagick -y --no-progress
+
+      - name: Add ImageMagick to PATH
+        shell: pwsh
+        run: |
+          $magickPath = (Get-ChildItem "C:\Program Files\ImageMagick*" -Directory | Select-Object -First 1).FullName
+          if ($magickPath) { echo "$magickPath" >> $env:GITHUB_PATH }
+
+      - name: Convert PNG to ICO
+        run: magick src/images/logo1.png -define icon:auto-resize=256,64,48,32,16 src/images/logo1.ico
+
       - name: Build (Store variant — auto-updater disabled)
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release `
