@@ -1734,26 +1734,66 @@ void SessionManager::processAlerts()
             m_queuePaused.erase(fa->handle);
         }
         if (auto *ea = lt::alert_cast<lt::torrent_error_alert>(a)) {
-            emit torrentError(QString::fromStdString(ea->message()));
+            // Rate-limit: torrent_error_alert can also fire in bursts
+            // during cascading failures (multiple files in one torrent).
+            static qint64 lastTorrentErrorEmit = 0;
+            const qint64 nowTe = QDateTime::currentSecsSinceEpoch();
+            if (nowTe - lastTorrentErrorEmit >= 10) {
+                emit torrentError(QString::fromStdString(ea->message()));
+                lastTorrentErrorEmit = nowTe;
+            }
         }
         // Surface previously-swallowed alert categories so the user actually
         // hears about disk-full, move-storage failures, port collisions, and
         // broken magnets instead of staring at silent empty state.
         if (auto *fe = lt::alert_cast<lt::file_error_alert>(a)) {
-            emit torrentError(QString::fromStdString(fe->message()));
-            // If the file is missing/unreadable on a finished torrent, libtorrent
-            // marks the affected pieces as unavailable and the torrent silently
-            // drops back into "downloading" state — re-fetching content the user
-            // already had. Pause it so the user can investigate (deleted files
-            // on purpose? external drive disconnected?) without surprise traffic.
-            if (fe->handle.is_valid()) {
-                lt::torrent_status st = fe->handle.status();
-                const bool wasFinished = st.is_finished
-                    || st.state == lt::torrent_status::finished
-                    || st.state == lt::torrent_status::seeding;
-                if (wasFinished
-                    && !(st.flags & lt::torrent_flags::paused)) {
-                    fe->handle.pause();
+            // Rate-limit file error emissions to avoid notification storms
+            // when disk fills up — libtorrent fires one alert per failed
+            // piece write, which at full speed can be hundreds per second.
+            // One notification per 30 s is enough to inform without locking
+            // the UI or crashing the notification stack.
+            static qint64 lastFileErrorEmit = 0;
+            const qint64 now = QDateTime::currentSecsSinceEpoch();
+            const bool shouldEmit = (now - lastFileErrorEmit) >= 30;
+
+            // Detect disk-full specifically and auto-pause everything.
+            // "No space" (Linux/macOS) / "not enough" (Windows) in the
+            // libtorrent error message.
+            const QString msg = QString::fromStdString(fe->message());
+            const bool diskFull = msg.contains("No space", Qt::CaseInsensitive)
+                               || msg.contains("not enough", Qt::CaseInsensitive)
+                               || msg.contains("disk full", Qt::CaseInsensitive);
+            if (diskFull) {
+                // Pause ALL downloading torrents — continuing just wastes
+                // CPU re-trying writes that will fail.
+                for (auto &h : m_torrents) {
+                    if (!h.is_valid()) continue;
+                    auto st = cachedStatus(h);
+                    if (st.state == lt::torrent_status::downloading
+                        && !(st.flags & lt::torrent_flags::paused)) {
+                        h.pause();
+                    }
+                }
+                if (shouldEmit) {
+                    emit torrentError(tr_("error_disk_full"));
+                    lastFileErrorEmit = now;
+                }
+            } else {
+                if (shouldEmit) {
+                    emit torrentError(msg);
+                    lastFileErrorEmit = now;
+                }
+                // Pause finished torrents that hit file errors (external
+                // drive unplugged, files deleted, etc.)
+                if (fe->handle.is_valid()) {
+                    lt::torrent_status st = fe->handle.status();
+                    const bool wasFinished = st.is_finished
+                        || st.state == lt::torrent_status::finished
+                        || st.state == lt::torrent_status::seeding;
+                    if (wasFinished
+                        && !(st.flags & lt::torrent_flags::paused)) {
+                        fe->handle.pause();
+                    }
                 }
             }
         }

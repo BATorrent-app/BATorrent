@@ -85,10 +85,12 @@ jobs:
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination msix-layout/
 
-          # Copy manifest and patch version
+          # Copy manifest and patch version. Use WriteAllText to avoid
+          # PowerShell's Set-Content adding a UTF-16 BOM that makeappx
+          # can't parse ("Incorrect xml declaration syntax").
           $manifest = Get-Content installer/msix/AppxManifest.xml -Raw
           $manifest = $manifest -replace 'Version="[^"]*"', "Version=`"$version`""
-          $manifest | Set-Content msix-layout/AppxManifest.xml
+          [System.IO.File]::WriteAllText("$PWD/msix-layout/AppxManifest.xml", $manifest, [System.Text.UTF8Encoding]::new($false))
 
           # Generate logo assets from source PNG at required Store sizes
           $sizes = @(

@@ -755,6 +755,7 @@ void Translator::loadEnglish()
         {"ctx_queue_down", "Move Down in Queue"},
 
         // === Rounds 1-3 ===
+        {"error_disk_full", "Disk full — all downloads paused. Free up space and resume manually."},
         {"about_discord", "Talk to the maintainer on Discord"},
         {"action_full_backup", "Full backup..."},
         {"action_full_restore", "Restore backup..."},
@@ -1497,6 +1498,7 @@ void Translator::loadPortuguese()
         {"ctx_queue_down", "Descer na Fila"},
 
         // === Rounds 1-3 ===
+        {"error_disk_full", "Disco cheio — todos os downloads pausados. Libere espaço e retome manualmente."},
         {"about_discord", "Falar com o mantenedor no Discord"},
         {"action_full_backup", "Backup completo..."},
         {"action_full_restore", "Restaurar backup..."},
