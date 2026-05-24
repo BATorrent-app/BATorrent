@@ -164,8 +164,8 @@ public:
     void setTelegramEvents(int mask);
 
     // Discord Rich Presence
-    QString discordClientId() const;
-    void setDiscordClientId(const QString &id);
+    bool discordEnabled() const;
+    void setDiscordEnabled(bool val);
 
 public slots:
     void setAsDefaultApp();
@@ -259,7 +259,7 @@ private:
     QCheckBox *m_telegramErrorCheck = nullptr;
     QLabel *m_telegramTestResult = nullptr;
 
-    QLineEdit *m_discordClientIdEdit = nullptr;
+    QCheckBox *m_discordEnabledCheck = nullptr;
 };
 
 #endif

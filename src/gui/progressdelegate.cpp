@@ -38,10 +38,14 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
 
     const QString stateKey = index.data(TorrentModel::StateKeyRole).toString();
     QColor fillColor;
+    // Progress >= 100% always gets a "done" color regardless of paused state
+    // — a gray bar at 100% reads as broken, not finished. Completed (green)
+    // takes priority over generic 100% (amber).
     if (stateKey == QLatin1String("completed"))
         fillColor = QColor(tm.stateCompletedColor());
-    else if (stateKey == QLatin1String("seeding") || stateKey == QLatin1String("finished")
-            || progress >= 1.0f)
+    else if (progress >= 1.0f)
+        fillColor = QColor(tm.stateSeedingColor());
+    else if (stateKey == QLatin1String("seeding") || stateKey == QLatin1String("finished"))
         fillColor = QColor(tm.stateSeedingColor());
     else if (stateKey == QLatin1String("paused") || stateKey == QLatin1String("queued"))
         fillColor = QColor(tm.statePausedColor());
@@ -49,9 +53,6 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
         fillColor = QColor(tm.stateErrorColor());
     else
         fillColor = QColor(tm.stateDownloadingColor());
-
-    if (stateKey == QLatin1String("finished"))
-        fillColor = QColor(tm.stateFinishedColor());
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);

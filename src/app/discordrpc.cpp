@@ -7,6 +7,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLocalSocket>
@@ -69,6 +70,27 @@ void DiscordRPC::setActivity(const QString &details, const QString &state, qint6
         timestamps.insert("start", startEpoch);
         activity.insert("timestamps", timestamps);
     }
+    // Assets — the "logo" key must match an image uploaded to the Discord
+    // Application's Rich Presence Art Assets (discord.com/developers →
+    // your app → Rich Presence → Art Assets → upload logo1.png as "logo").
+    QJsonObject assets;
+    assets.insert("large_image", "logo");
+    assets.insert("large_text", QStringLiteral("BATorrent %1").arg(
+        QCoreApplication::applicationVersion()));
+    activity.insert("assets", assets);
+    // Buttons — up to 2 clickable links shown on the activity card. This
+    // is the organic marketing channel: anyone who sees a friend's profile
+    // showing BATorrent activity can click straight to the releases page.
+    QJsonArray buttons;
+    QJsonObject dlBtn;
+    dlBtn.insert("label", "Download BATorrent");
+    dlBtn.insert("url", "https://github.com/Mateuscruz19/BAT-Torrent/releases/latest");
+    buttons.append(dlBtn);
+    QJsonObject ghBtn;
+    ghBtn.insert("label", "View on GitHub");
+    ghBtn.insert("url", "https://github.com/Mateuscruz19/BAT-Torrent");
+    buttons.append(ghBtn);
+    activity.insert("buttons", buttons);
     QJsonObject args;
     args.insert("pid", static_cast<qint64>(QCoreApplication::applicationPid()));
     args.insert("activity", activity);

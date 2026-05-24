@@ -3,6 +3,9 @@
 // See LICENSE file for details
 
 #include "translator.h"
+#include <QApplication>
+#include <QLibraryInfo>
+#include <QTranslator>
 
 Translator &Translator::instance()
 {
@@ -27,6 +30,23 @@ void Translator::setLanguage(Language lang)
     case Spanish:    loadSpanish();    break;
     case German:     loadGerman();     break;
     default:         loadEnglish();    break;
+    }
+
+    // Install Qt's own translation catalog for this language so QMessageBox
+    // buttons (Yes/No/OK/Cancel), QFileDialog text, QInputDialog labels, etc.
+    // appear in the user's language instead of English. Without this, our
+    // tr_() translates the body text but Qt's built-in widgets show English.
+    static QTranslator *qtTr = nullptr;
+    if (qtTr) { qApp->removeTranslator(qtTr); delete qtTr; }
+    qtTr = new QTranslator;
+    static const QMap<Language, QString> qtLocales = {
+        {Portuguese, "pt_BR"}, {Chinese, "zh_CN"}, {Japanese, "ja"},
+        {Russian, "ru"}, {Spanish, "es"}, {German, "de"},
+    };
+    const QString locale = qtLocales.value(lang, "en");
+    if (qtTr->load("qt_" + locale,
+            QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
+        qApp->installTranslator(qtTr);
     }
 }
 
@@ -741,7 +761,7 @@ void Translator::loadEnglish()
         {"ctx_tags_prompt", "Tags (comma-separated):"},
         {"discord_idle", "BATorrent — idle"},
         {"discord_seeding", "Seeding %1 torrent(s)"},
-        {"discord_seeding_state", "Sharing back to the swarm"},
+        {"discord_seeding_state", "Uploading to other users"},
         {"full_backup_done", "Saved %1 entries (%2)."},
         {"full_restore_bad_format", "That doesn't look like a BATorrent backup."},
         {"full_restore_done", "Restored %1 entries."},
@@ -768,11 +788,11 @@ void Translator::loadEnglish()
         {"removed_history_failed", "Couldn't restore the torrent — the resume snapshot may be missing or unreadable."},
         {"removed_history_restore", "Restore"},
         {"removed_history_title", "Recently removed torrents"},
-        {"settings_discord_client_id", "Application ID"},
-        {"settings_discord_help", "Get a free Application ID at <a href=\"https://discord.com/developers/applications\">discord.com/developers/applications</a> (2-minute signup). Leave empty to disable Rich Presence."},
+        {"settings_discord_enabled", "Show activity on Discord profile"},
+        {"settings_discord_help", "When enabled, your Discord friends see what you're downloading / seeding in your profile activity card. Two buttons link them straight to the BATorrent releases page."},
         {"smartpaste_body", "Detected a magnet link or info hash:\n\n%1\n\nAdd it as a torrent?"},
         {"smartpaste_title", "Magnet on clipboard"},
-        {"tip_discord_client_id", "Numeric Discord application ID. Without one, your Discord profile won't show BATorrent activity. Setup takes ~2 minutes: create a new app, copy the Application ID."},
+        {"tip_discord_enabled", "Discord Rich Presence — shows your current download/seeding status on your Discord profile. Requires the Discord desktop app to be running. Disable if you prefer privacy."},
         {"tip_force_start", "Keep this torrent running even when the active-downloads cap is reached. Useful for the one torrent you actually need now."},
     };
 }
@@ -1479,7 +1499,7 @@ void Translator::loadPortuguese()
         {"ctx_tags_prompt", "Tags (separadas por vírgula):"},
         {"discord_idle", "BATorrent — ocioso"},
         {"discord_seeding", "Semeando %1 torrent(s)"},
-        {"discord_seeding_state", "Compartilhando de volta no swarm"},
+        {"discord_seeding_state", "Enviando para outros usuários"},
         {"full_backup_done", "Salvou %1 entradas (%2)."},
         {"full_restore_bad_format", "Isso não parece ser um backup do BATorrent."},
         {"full_restore_done", "Restaurou %1 entradas."},
@@ -1506,11 +1526,11 @@ void Translator::loadPortuguese()
         {"removed_history_failed", "Não foi possível restaurar — o snapshot de resume pode estar faltando ou corrompido."},
         {"removed_history_restore", "Restaurar"},
         {"removed_history_title", "Torrents removidos recentemente"},
-        {"settings_discord_client_id", "Application ID"},
-        {"settings_discord_help", "Obtenha um Application ID grátis em <a href=\"https://discord.com/developers/applications\">discord.com/developers/applications</a> (2 min de cadastro). Deixe vazio pra desativar Rich Presence."},
+        {"settings_discord_enabled", "Show activity on Discord profile"},
+        {"settings_discord_help", "Quando ativado, seus amigos do Discord veem o que você está baixando / semeando no card de atividade do perfil. Dois botões levam direto pra página de releases do BATorrent."},
         {"smartpaste_body", "Detectado link magnet ou info hash:\n\n%1\n\nAdicionar como torrent?"},
         {"smartpaste_title", "Magnet no clipboard"},
-        {"tip_discord_client_id", "Application ID numérico do Discord. Sem ele, seu perfil Discord não mostra atividade BATorrent. Setup leva ~2 min: criar app novo, copiar Application ID."},
+        {"tip_discord_enabled", "Discord Rich Presence — mostra seu status de download/seeding no perfil Discord. Requer o app Discord Desktop rodando. Desative se preferir privacidade."},
         {"tip_force_start", "Mantém esse torrent rodando mesmo quando o limite de downloads ativos é atingido. Útil pro torrent que você realmente precisa agora."},
     };
 }
@@ -2206,7 +2226,7 @@ void Translator::loadChinese()
         {"ctx_tags_prompt", "标签 (逗号分隔):"},
         {"discord_idle", "BATorrent — 空闲"},
         {"discord_seeding", "做种 %1 个种子"},
-        {"discord_seeding_state", "向 swarm 分享"},
+        {"discord_seeding_state", "上传给其他用户"},
         {"full_backup_done", "已保存 %1 个条目 (%2)。"},
         {"full_restore_bad_format", "这看起来不是 BATorrent 备份。"},
         {"full_restore_done", "已恢复 %1 个条目。"},
@@ -2933,7 +2953,7 @@ void Translator::loadJapanese()
         {"ctx_tags_prompt", "タグ (カンマ区切り):"},
         {"discord_idle", "BATorrent — アイドル"},
         {"discord_seeding", "%1 個のトレントをシード中"},
-        {"discord_seeding_state", "swarmに共有中"},
+        {"discord_seeding_state", "他のユーザーにアップロード中"},
         {"full_backup_done", "%1 個のエントリを保存しました (%2)。"},
         {"full_restore_bad_format", "BATorrentバックアップではないようです。"},
         {"full_restore_done", "%1 個のエントリを復元しました。"},
@@ -3659,7 +3679,7 @@ void Translator::loadRussian()
         {"ctx_tags_prompt", "Теги (через запятую):"},
         {"discord_idle", "BATorrent — простой"},
         {"discord_seeding", "Раздаём %1 торрент(ов)"},
-        {"discord_seeding_state", "Делимся с swarm"},
+        {"discord_seeding_state", "Раздаём другим пользователям"},
         {"full_backup_done", "Сохранено %1 записей (%2)."},
         {"full_restore_bad_format", "Это не похоже на бэкап BATorrent."},
         {"full_restore_done", "Восстановлено %1 записей."},
@@ -4385,7 +4405,7 @@ void Translator::loadSpanish()
         {"ctx_tags_prompt", "Etiquetas (separadas por coma):"},
         {"discord_idle", "BATorrent — inactivo"},
         {"discord_seeding", "Sembrando %1 torrent(s)"},
-        {"discord_seeding_state", "Compartiendo de vuelta al swarm"},
+        {"discord_seeding_state", "Subiendo a otros usuarios"},
         {"full_backup_done", "Guardado %1 entradas (%2)."},
         {"full_restore_bad_format", "Esto no parece un respaldo de BATorrent."},
         {"full_restore_done", "Restauradas %1 entradas."},
@@ -5111,7 +5131,7 @@ void Translator::loadGerman()
         {"ctx_tags_prompt", "Tags (kommagetrennt):"},
         {"discord_idle", "BATorrent — inaktiv"},
         {"discord_seeding", "Seede %1 Torrent(s)"},
-        {"discord_seeding_state", "Teile zurück an den Swarm"},
+        {"discord_seeding_state", "Hochladen an andere Benutzer"},
         {"full_backup_done", "%1 Einträge gespeichert (%2)."},
         {"full_restore_bad_format", "Das sieht nicht nach einem BATorrent-Backup aus."},
         {"full_restore_done", "%1 Einträge wiederhergestellt."},

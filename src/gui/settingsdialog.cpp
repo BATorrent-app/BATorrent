@@ -761,12 +761,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     auto *discordGroup = new QGroupBox("Discord Rich Presence");
     auto *discordLayout = new QFormLayout(discordGroup);
     discordLayout->setSpacing(10);
-    m_discordClientIdEdit = new QLineEdit;
-    m_discordClientIdEdit->setPlaceholderText("Application ID from discord.com/developers");
-    m_discordClientIdEdit->setToolTip(tr_("tip_discord_client_id"));
-    auto *discordLabel = new QLabel(tr_("settings_discord_client_id"));
-    discordLabel->setStyleSheet(labelStyle);
-    discordLayout->addRow(discordLabel, m_discordClientIdEdit);
+    m_discordEnabledCheck = new QCheckBox(tr_("settings_discord_enabled"));
+    m_discordEnabledCheck->setToolTip(tr_("tip_discord_enabled"));
+    discordLayout->addRow("", m_discordEnabledCheck);
     auto *discordHelp = new QLabel(tr_("settings_discord_help"));
     discordHelp->setWordWrap(true);
     discordHelp->setStyleSheet(QString("color: %1; font-size: 10px;").arg(tm.mutedColor()));
@@ -1141,8 +1138,8 @@ void SettingsDialog::setTelegramEvents(int mask) {
     m_telegramRssCheck->setChecked(mask & 0x4);
     m_telegramErrorCheck->setChecked(mask & 0x8);
 }
-QString SettingsDialog::discordClientId() const { return m_discordClientIdEdit->text().trimmed(); }
-void SettingsDialog::setDiscordClientId(const QString &id) { m_discordClientIdEdit->setText(id); }
+bool SettingsDialog::discordEnabled() const { return m_discordEnabledCheck->isChecked(); }
+void SettingsDialog::setDiscordEnabled(bool val) { m_discordEnabledCheck->setChecked(val); }
 
 void SettingsDialog::setAsDefaultApp()
 {

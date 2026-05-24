@@ -1301,28 +1301,60 @@ QString SessionManager::torrentRootPath(int index) const
         return {};
     const auto &h = m_torrents[index];
     if (!h.is_valid()) return {};
-    lt::torrent_status st = h.status();
+    lt::torrent_status st = cachedStatus(h);
     QString save = QString::fromStdString(st.save_path);
+
+    // Existence checker that also tries the ".!bt" suffix (in-progress
+    // rename) AND native separators (Windows backslash → forward-slash
+    // mismatch from libtorrent can cause QFileInfo::exists to fail on
+    // some configs).
+    auto existsOnDisk = [](const QString &path) -> QString {
+        if (QFileInfo::exists(path)) return path;
+        const QString native = QDir::toNativeSeparators(path);
+        if (native != path && QFileInfo::exists(native)) return native;
+        if (QFileInfo::exists(path + ".!bt")) return path + ".!bt";
+        return {};
+    };
+
+    // Strategy 1: file_path(0) — the most reliable source since it comes
+    // from the torrent metadata and matches what libtorrent wrote to disk.
     auto ti = h.torrent_file();
-    if (!ti || ti->num_files() == 0) return save;
-
-    // file_path(0) is relative to save_path. For multi-file torrents it
-    // starts with the torrent root folder libtorrent created (so the first
-    // path component is the root); for single-file torrents it's just the
-    // filename. Both are exactly what we need to reveal.
-    QString rel = QString::fromStdString(
-        ti->files().file_path(lt::file_index_t(0)));
-    if (rel.isEmpty()) return save;
-
-    if (ti->num_files() > 1) {
-        // Multi-file: trim down to the first path component (the root folder).
-        int slash = rel.indexOf('/');
-        if (slash > 0) rel = rel.left(slash);
+    if (ti && ti->num_files() > 0) {
+        QString rel = QString::fromStdString(
+            ti->files().file_path(lt::file_index_t(0)));
+        if (!rel.isEmpty()) {
+            if (ti->num_files() > 1) {
+                int slash = rel.indexOf('/');
+                if (slash > 0) rel = rel.left(slash);
+            }
+            QString found = existsOnDisk(save + QLatin1Char('/') + rel);
+            if (!found.isEmpty()) return found;
+        }
     }
-    QString full = save + QLatin1Char('/') + rel;
-    if (QFileInfo::exists(full)) return full;
-    if (QFileInfo::exists(full + QLatin1String(".!bt")))
-        return full + QLatin1String(".!bt");
+
+    // Strategy 2: torrent display name (st.name). May differ from
+    // file_path(0) after renames, sanitization, or cross-platform transfer
+    // (Windows strips characters that macOS/Linux kept). Covers the common
+    // case where file_path was sanitized but name wasn't, or vice-versa.
+    QString name = QString::fromStdString(st.name);
+    if (!name.isEmpty()) {
+        QString found = existsOnDisk(save + QLatin1Char('/') + name);
+        if (!found.isEmpty()) return found;
+    }
+
+    // Strategy 3: scan save_path for a directory or file whose name
+    // case-insensitively matches the torrent display name. Handles partial
+    // renames and encoding mismatches (e.g. ñ vs n, full-width chars).
+    if (!name.isEmpty()) {
+        const QDir dir(save);
+        const auto entries = dir.entryList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
+        for (const QString &entry : entries) {
+            if (entry.compare(name, Qt::CaseInsensitive) == 0)
+                return save + QLatin1Char('/') + entry;
+        }
+    }
+
+    // All strategies exhausted — fall back to the save directory itself.
     return save;
 }
 

@@ -201,7 +201,10 @@ MainWindow::MainWindow(SessionManager *session, QWidget *parent)
     m_discordSessionStart = QDateTime::currentSecsSinceEpoch();
     {
         QSettings s("BATorrent", "BATorrent");
-        m_discordRpc->setClientId(s.value("discordClientId").toString());
+        // Enabled by default; user can toggle off in Settings → Integrations.
+        // Application ID is hardcoded so it works for everyone out of the box.
+        if (s.value("discordEnabled", true).toBool())
+            m_discordRpc->setClientId(QStringLiteral("1508208411282640956"));
     }
     m_discordRefreshTimer = new QTimer(this);
     connect(m_discordRefreshTimer, &QTimer::timeout, this, &MainWindow::refreshDiscordPresence);
@@ -1933,7 +1936,7 @@ void MainWindow::openSettings()
         dlg.setTelegramToken(SecretStore::instance().get("telegramBotToken"));
         dlg.setTelegramChatId(s.value("telegramChatId").toString());
         dlg.setTelegramEvents(s.value("telegramEvents", 0xF).toInt());
-        dlg.setDiscordClientId(s.value("discordClientId").toString());
+        dlg.setDiscordEnabled(s.value("discordEnabled", true).toBool());
     }
     dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
     dlg.setAutoMovePath(m_session->autoMovePath());
@@ -2030,10 +2033,12 @@ void MainWindow::openSettings()
             s.setValue("telegramChatId", dlg.telegramChatId());
             s.setValue("telegramEvents", dlg.telegramEvents());
             if (m_telegramNotifier) m_telegramNotifier->reload();
-            s.setValue("discordClientId", dlg.discordClientId());
+            s.setValue("discordEnabled", dlg.discordEnabled());
             if (m_discordRpc) {
-                m_discordRpc->setClientId(dlg.discordClientId());
-                refreshDiscordPresence();
+                if (dlg.discordEnabled())
+                    m_discordRpc->setClientId(QStringLiteral("1508208411282640956"));
+                else
+                    m_discordRpc->setClientId(QString());
             }
         }
         // Auto-move
