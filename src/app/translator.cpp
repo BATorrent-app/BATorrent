@@ -219,7 +219,9 @@ void Translator::loadEnglish()
         {"tray_auto_shutdown", "Auto-shutdown when done"},
 
         // Filter
+        {"filter_all", "All"},
         {"filter_all_categories", "All Categories"},
+        {"filter_queued", "Queued"},
 
         // Create torrent
         {"create_title", "Create Torrent"},
@@ -855,7 +857,9 @@ void Translator::loadPortuguese()
         {"ctx_open_folder", "Abrir Pasta"},
         {"ctx_category", "Categoria"},
         {"category_none", "Nenhuma"},
+        {"filter_all", "Todos"},
         {"filter_all_categories", "Todas as Categorias"},
+        {"filter_queued", "Na Fila"},
         {"ctx_stop_seeding", "Parar de semear agora"},
         {"ctx_seed_rules", "Regras de seed"},
         {"ctx_stop_after_download", "Parar ao concluir o download"},

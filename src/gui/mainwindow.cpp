@@ -992,14 +992,14 @@ void MainWindow::setupCentralWidget()
         m_filterPills.append(btn);
     };
 
-    addFilterBtn("All",         "");
-    addFilterBtn("Active",      "all_active");
-    addFilterBtn("Downloading", "downloading");
-    addFilterBtn("Seeding",     "seeding");
+    addFilterBtn(tr_("filter_all"),            "");
+    addFilterBtn(tr_("filter_all_active"),    "all_active");
+    addFilterBtn(tr_("filter_downloading"), "downloading");
+    addFilterBtn(tr_("filter_seeding"),     "seeding");
     addFilterBtn(tr_("filter_completed"), "completed");
-    addFilterBtn("Paused",      "paused");
-    addFilterBtn("Finished",    "finished");
-    addFilterBtn("Queued",      "queued");
+    addFilterBtn(tr_("filter_paused"),      "paused");
+    addFilterBtn(tr_("filter_finished"),    "finished");
+    addFilterBtn(tr_("filter_queued"),      "queued");
 
     if (!m_filterPills.isEmpty())
         m_filterPills.first()->setChecked(true);
