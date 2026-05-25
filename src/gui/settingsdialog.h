@@ -6,6 +6,7 @@
 #define SETTINGSDIALOG_H
 
 #include <QDialog>
+#include "../torrent/sessionmanager.h"
 
 class QSpinBox;
 class QDoubleSpinBox;
@@ -39,6 +40,10 @@ public:
     void setUpdateChannel(const QString &channel);
     bool autoMoveEnabled() const;
     QString autoMovePath() const;
+    QString runOnComplete() const;
+    QString watchedFolder() const;
+    void setRunOnComplete(const QString &cmd);
+    void setWatchedFolder(const QString &path);
 
     void setDefaultSavePath(const QString &path);
     void setMaxDownloadSpeed(int kbps);
@@ -169,6 +174,10 @@ public:
     bool discordEnabled() const;
     void setDiscordEnabled(bool val);
 
+    // Advanced libtorrent settings
+    void loadAdvancedSettings(const SessionManager::AdvancedSettings &a);
+    SessionManager::AdvancedSettings collectAdvancedSettings() const;
+
 public slots:
     void setAsDefaultApp();
 
@@ -195,6 +204,8 @@ private:
     QComboBox *m_updateChannelCombo;
     QCheckBox *m_autoMoveCheck;
     QLineEdit *m_autoMovePathEdit;
+    QLineEdit *m_runOnCompleteEdit;
+    QLineEdit *m_watchedFolderEdit;
 
     // Network tab
     QCheckBox *m_dhtCheck;
@@ -263,6 +274,22 @@ private:
     QLabel *m_telegramTestResult = nullptr;
 
     QCheckBox *m_discordEnabledCheck = nullptr;
+
+    // Advanced tab
+    QSpinBox *m_advAioThreads = nullptr;
+    QSpinBox *m_advHashingThreads = nullptr;
+    QSpinBox *m_advFilePoolSize = nullptr;
+    QSpinBox *m_advCheckingMem = nullptr;
+    QSpinBox *m_advSendBuffer = nullptr;
+    QSpinBox *m_advConnLimit = nullptr;
+    QSpinBox *m_advConnSpeed = nullptr;
+    QSpinBox *m_advMaxUploadsPerTorrent = nullptr;
+    QSpinBox *m_advMaxConnsPerTorrent = nullptr;
+    QSpinBox *m_advUnchokeSlots = nullptr;
+    QComboBox *m_advChokingAlgo = nullptr;
+    QComboBox *m_advSeedChokingAlgo = nullptr;
+    QCheckBox *m_advRateLimitOverhead = nullptr;
+    QCheckBox *m_advIgnoreLimitsLAN = nullptr;
 };
 
 #endif

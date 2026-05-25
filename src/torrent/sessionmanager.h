@@ -223,6 +223,18 @@ public:
     // name, which can drift from disk after rename/sanitization.
     QString torrentRootPath(int index) const;
 
+    // Execute a command when a torrent finishes. Template variables:
+    // %N = torrent name, %D = save path, %F = content path (first file),
+    // %Z = total size, %H = info hash. Empty = disabled.
+    void setRunOnComplete(const QString &command);
+    QString runOnComplete() const;
+    void executeOnComplete(const QString &name, const QString &savePath,
+                           const QString &hash, qint64 totalSize);
+
+    // Watch a directory for .torrent files — auto-add when detected.
+    void setWatchedFolder(const QString &path);
+    QString watchedFolder() const;
+
     // Auto-move completed downloads
     void setAutoMove(bool enabled, const QString &path);
     bool autoMoveEnabled() const;
@@ -247,6 +259,32 @@ public:
     void clearIpFilter();
     QString ipFilterPath() const;
     int ipFilterCount() const;
+
+    // Advanced libtorrent tuning — exposed in Settings → Advanced.
+    // Each setter applies immediately via settings_pack and persists to
+    // QSettings so the value survives restarts.
+    struct AdvancedSettings {
+        int aioThreads = 10;
+        int hashingThreads = 2;
+        int filePoolSize = 100;
+        int checkingMemUsage = 512;   // × 16KB = 8MB default
+        int diskIOReadMode = 0;       // 0=EnableOSCache, 1=DisableOSCache
+        int diskIOWriteMode = 0;      // 0=EnableOSCache, 1=DisableOSCache, 2=WriteThrough
+        int connectionsLimit = 500;
+        int connectionSpeed = 30;
+        int maxUploadsPerTorrent = 4;
+        int maxConnectionsPerTorrent = 100;
+        int unchokeSlotsLimit = 20;
+        int chokingAlgorithm = 0;     // 0=FixedSlots, 1=RateBased
+        int seedChokingAlgorithm = 0; // 0=RoundRobin, 1=FastestUpload, 2=AntiLeech
+        int sendBufferWatermark = 500; // KB
+        int outgoingPortMin = 0;
+        int outgoingPortMax = 0;
+        bool rateLimitIpOverhead = false;
+        bool ignoreLimitsOnLAN = true;
+    };
+    AdvancedSettings advancedSettings() const;
+    void setAdvancedSettings(const AdvancedSettings &s);
 
     // Bandwidth scheduler
     void setAltSpeedLimits(int downKbps, int upKbps);
@@ -390,6 +428,12 @@ private:
     // resumeDataDir(). Returns true on success.
     bool persistResumeAlert(const struct lt::save_resume_data_alert *rd);
 
+    // Run on complete
+    QString m_runOnComplete;
+    // Watched folder
+    QString m_watchedFolder;
+    QTimer *m_watchedFolderTimer = nullptr;
+    void scanWatchedFolder();
     // Auto-move
     bool m_autoMoveEnabled = false;
     QString m_autoMovePath;

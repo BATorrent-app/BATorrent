@@ -1966,8 +1966,11 @@ void MainWindow::openSettings()
         dlg.setTelegramChatId(s.value("telegramChatId").toString());
         dlg.setTelegramEvents(s.value("telegramEvents", 0xF).toInt());
         dlg.setDiscordEnabled(s.value("discordEnabled", true).toBool());
+        dlg.loadAdvancedSettings(m_session->advancedSettings());
     }
     dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
+    dlg.setRunOnComplete(m_session->runOnComplete());
+    dlg.setWatchedFolder(m_session->watchedFolder());
     dlg.setAutoMovePath(m_session->autoMovePath());
     dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
     dlg.setStopAfterDownload(m_session->stopAfterDownload());
@@ -2070,9 +2073,12 @@ void MainWindow::openSettings()
                 else
                     m_discordRpc->setClientId(QString());
             }
+            m_session->setAdvancedSettings(dlg.collectAdvancedSettings());
         }
         // Auto-move
         m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());
+        m_session->setRunOnComplete(dlg.runOnComplete());
+        m_session->setWatchedFolder(dlg.watchedFolder());
 
         // Download queue
         m_session->setMaxActiveDownloads(dlg.maxActiveDownloads());

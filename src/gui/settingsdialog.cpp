@@ -270,6 +270,31 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     autoMoveLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(autoMoveLabel, autoMoveLayout);
 
+    // Run on completion — external command with template variables
+    m_runOnCompleteEdit = new QLineEdit;
+    m_runOnCompleteEdit->setPlaceholderText("e.g. notify-send \"%N completed\" or curl http://...");
+    m_runOnCompleteEdit->setToolTip("Run this command when a torrent finishes. Variables: %N=name, %D=save path, %H=hash, %Z=size, %F=file path");
+    auto *runLabel = new QLabel("Run on complete:");
+    runLabel->setStyleSheet(labelStyle);
+    generalLayout->addRow(runLabel, m_runOnCompleteEdit);
+
+    // Watched folder
+    m_watchedFolderEdit = new QLineEdit;
+    m_watchedFolderEdit->setPlaceholderText("Folder to monitor for .torrent files");
+    m_watchedFolderEdit->setToolTip("BATorrent scans this folder every 10s and auto-adds any .torrent files found. Files are moved to .processed/ after adding.");
+    auto *watchLabel = new QLabel("Watched folder:");
+    watchLabel->setStyleSheet(labelStyle);
+    auto *watchRow = new QHBoxLayout;
+    watchRow->addWidget(m_watchedFolderEdit, 1);
+    auto *watchBrowse = new QPushButton(tr_("settings_browse"));
+    watchBrowse->setFixedWidth(100);
+    connect(watchBrowse, &QPushButton::clicked, this, [this]() {
+        QString dir = QFileDialog::getExistingDirectory(this, "Watch folder");
+        if (!dir.isEmpty()) m_watchedFolderEdit->setText(dir);
+    });
+    watchRow->addWidget(watchBrowse);
+    generalLayout->addRow(watchLabel, watchRow);
+
     auto *defaultAppBtn = new QPushButton(tr_("settings_set_default"));
     connect(defaultAppBtn, &QPushButton::clicked, this, &SettingsDialog::setAsDefaultApp);
     generalLayout->addRow("", defaultAppBtn);
@@ -782,6 +807,76 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     tabs->addTab(wrapInScroll(mediaWidget), tr_("settings_media_server"));
 
+    // ---- Advanced tab (libtorrent tuning) ----
+    auto *advWidget = new QWidget;
+    auto *advLayout = new QFormLayout(advWidget);
+    advLayout->setContentsMargins(16, 16, 16, 16);
+    advLayout->setSpacing(10);
+
+    auto addAdvSpin = [&](const QString &label, int min, int max, int def, const QString &tip) {
+        auto *spin = new QSpinBox;
+        spin->setRange(min, max);
+        spin->setValue(def);
+        if (!tip.isEmpty()) spin->setToolTip(tip);
+        auto *lbl = new QLabel(label);
+        lbl->setStyleSheet(labelStyle);
+        advLayout->addRow(lbl, spin);
+        return spin;
+    };
+
+    auto *diskGroup = new QGroupBox("Disk I/O");
+    auto *diskLay = new QFormLayout(diskGroup);
+    diskLay->setSpacing(8);
+    m_advAioThreads = new QSpinBox; m_advAioThreads->setRange(1, 64); m_advAioThreads->setToolTip("Async I/O threads for disk operations");
+    m_advHashingThreads = new QSpinBox; m_advHashingThreads->setRange(1, 16); m_advHashingThreads->setToolTip("Threads for piece hashing (recheck)");
+    m_advFilePoolSize = new QSpinBox; m_advFilePoolSize->setRange(10, 1000); m_advFilePoolSize->setToolTip("Max open file handles");
+    m_advCheckingMem = new QSpinBox; m_advCheckingMem->setRange(1, 4096); m_advCheckingMem->setSuffix(" (x16KB)"); m_advCheckingMem->setToolTip("Memory budget for piece checking. 512 = 8MB.");
+    m_advSendBuffer = new QSpinBox; m_advSendBuffer->setRange(16, 8192); m_advSendBuffer->setSuffix(" KB"); m_advSendBuffer->setToolTip("Send buffer watermark");
+    diskLay->addRow("Async I/O threads", m_advAioThreads);
+    diskLay->addRow("Hashing threads", m_advHashingThreads);
+    diskLay->addRow("File pool size", m_advFilePoolSize);
+    diskLay->addRow("Checking memory", m_advCheckingMem);
+    diskLay->addRow("Send buffer", m_advSendBuffer);
+    advLayout->addRow(diskGroup);
+
+    auto *connGroup = new QGroupBox("Connections");
+    auto *connLay = new QFormLayout(connGroup);
+    connLay->setSpacing(8);
+    m_advConnLimit = new QSpinBox; m_advConnLimit->setRange(10, 10000); m_advConnLimit->setToolTip("Global max connections");
+    m_advConnSpeed = new QSpinBox; m_advConnSpeed->setRange(1, 200); m_advConnSpeed->setToolTip("Half-open connections per second");
+    m_advMaxUploadsPerTorrent = new QSpinBox; m_advMaxUploadsPerTorrent->setRange(1, 100); m_advMaxUploadsPerTorrent->setToolTip("Max upload slots per torrent");
+    m_advMaxConnsPerTorrent = new QSpinBox; m_advMaxConnsPerTorrent->setRange(1, 500); m_advMaxConnsPerTorrent->setToolTip("Max connections per torrent");
+    m_advUnchokeSlots = new QSpinBox; m_advUnchokeSlots->setRange(1, 100); m_advUnchokeSlots->setToolTip("Global unchoke (upload) slots");
+    connLay->addRow("Global connections limit", m_advConnLimit);
+    connLay->addRow("Connection speed", m_advConnSpeed);
+    connLay->addRow("Unchoke slots", m_advUnchokeSlots);
+    connLay->addRow("Max uploads/torrent", m_advMaxUploadsPerTorrent);
+    connLay->addRow("Max connections/torrent", m_advMaxConnsPerTorrent);
+    advLayout->addRow(connGroup);
+
+    auto *algoGroup = new QGroupBox("Algorithms");
+    auto *algoLay = new QFormLayout(algoGroup);
+    algoLay->setSpacing(8);
+    m_advChokingAlgo = new QComboBox;
+    m_advChokingAlgo->addItem("Fixed slots", 0);
+    m_advChokingAlgo->addItem("Rate-based", 1);
+    m_advChokingAlgo->setToolTip("How upload slots are distributed among peers");
+    m_advSeedChokingAlgo = new QComboBox;
+    m_advSeedChokingAlgo->addItem("Round robin", 0);
+    m_advSeedChokingAlgo->addItem("Fastest upload", 1);
+    m_advSeedChokingAlgo->addItem("Anti-leech", 2);
+    m_advSeedChokingAlgo->setToolTip("How seeding slots are distributed. Anti-leech prioritizes peers that upload back.");
+    m_advRateLimitOverhead = new QCheckBox("Include IP overhead in rate limits");
+    m_advIgnoreLimitsLAN = new QCheckBox("Exempt LAN peers from speed limits");
+    m_advIgnoreLimitsLAN->setToolTip("Peers on 10.x / 172.16.x / 192.168.x bypass your download/upload limits");
+    algoLay->addRow("Choking algorithm", m_advChokingAlgo);
+    algoLay->addRow("Seed choking", m_advSeedChokingAlgo);
+    algoLay->addRow("", m_advRateLimitOverhead);
+    algoLay->addRow("", m_advIgnoreLimitsLAN);
+    advLayout->addRow(algoGroup);
+
+    tabs->addTab(wrapInScroll(advWidget), "Advanced");
+
     // ---- Header (eyebrow + heading) ----
     auto *eyebrow = new QLabel(tr_("settings_title").toUpper());
     {
@@ -920,6 +1015,10 @@ bool SettingsDialog::autoMoveEnabled() const { return m_autoMoveCheck->isChecked
 QString SettingsDialog::autoMovePath() const { return m_autoMovePathEdit->text(); }
 void SettingsDialog::setAutoMoveEnabled(bool val) { m_autoMoveCheck->setChecked(val); }
 void SettingsDialog::setAutoMovePath(const QString &path) { m_autoMovePathEdit->setText(path); }
+QString SettingsDialog::runOnComplete() const { return m_runOnCompleteEdit->text().trimmed(); }
+QString SettingsDialog::watchedFolder() const { return m_watchedFolderEdit->text().trimmed(); }
+void SettingsDialog::setRunOnComplete(const QString &cmd) { m_runOnCompleteEdit->setText(cmd); }
+void SettingsDialog::setWatchedFolder(const QString &path) { m_watchedFolderEdit->setText(path); }
 
 // Network getters/setters
 bool SettingsDialog::dhtEnabled() const { return m_dhtCheck->isChecked(); }
@@ -1151,6 +1250,44 @@ void SettingsDialog::setTelegramEvents(int mask) {
 }
 bool SettingsDialog::discordEnabled() const { return m_discordEnabledCheck->isChecked(); }
 void SettingsDialog::setDiscordEnabled(bool val) { m_discordEnabledCheck->setChecked(val); }
+
+void SettingsDialog::loadAdvancedSettings(const SessionManager::AdvancedSettings &a)
+{
+    if (m_advAioThreads) m_advAioThreads->setValue(a.aioThreads);
+    if (m_advHashingThreads) m_advHashingThreads->setValue(a.hashingThreads);
+    if (m_advFilePoolSize) m_advFilePoolSize->setValue(a.filePoolSize);
+    if (m_advCheckingMem) m_advCheckingMem->setValue(a.checkingMemUsage);
+    if (m_advSendBuffer) m_advSendBuffer->setValue(a.sendBufferWatermark);
+    if (m_advConnLimit) m_advConnLimit->setValue(a.connectionsLimit);
+    if (m_advConnSpeed) m_advConnSpeed->setValue(a.connectionSpeed);
+    if (m_advMaxUploadsPerTorrent) m_advMaxUploadsPerTorrent->setValue(a.maxUploadsPerTorrent);
+    if (m_advMaxConnsPerTorrent) m_advMaxConnsPerTorrent->setValue(a.maxConnectionsPerTorrent);
+    if (m_advUnchokeSlots) m_advUnchokeSlots->setValue(a.unchokeSlotsLimit);
+    if (m_advChokingAlgo) m_advChokingAlgo->setCurrentIndex(a.chokingAlgorithm);
+    if (m_advSeedChokingAlgo) m_advSeedChokingAlgo->setCurrentIndex(a.seedChokingAlgorithm);
+    if (m_advRateLimitOverhead) m_advRateLimitOverhead->setChecked(a.rateLimitIpOverhead);
+    if (m_advIgnoreLimitsLAN) m_advIgnoreLimitsLAN->setChecked(a.ignoreLimitsOnLAN);
+}
+
+SessionManager::AdvancedSettings SettingsDialog::collectAdvancedSettings() const
+{
+    SessionManager::AdvancedSettings a;
+    if (m_advAioThreads) a.aioThreads = m_advAioThreads->value();
+    if (m_advHashingThreads) a.hashingThreads = m_advHashingThreads->value();
+    if (m_advFilePoolSize) a.filePoolSize = m_advFilePoolSize->value();
+    if (m_advCheckingMem) a.checkingMemUsage = m_advCheckingMem->value();
+    if (m_advSendBuffer) a.sendBufferWatermark = m_advSendBuffer->value();
+    if (m_advConnLimit) a.connectionsLimit = m_advConnLimit->value();
+    if (m_advConnSpeed) a.connectionSpeed = m_advConnSpeed->value();
+    if (m_advMaxUploadsPerTorrent) a.maxUploadsPerTorrent = m_advMaxUploadsPerTorrent->value();
+    if (m_advMaxConnsPerTorrent) a.maxConnectionsPerTorrent = m_advMaxConnsPerTorrent->value();
+    if (m_advUnchokeSlots) a.unchokeSlotsLimit = m_advUnchokeSlots->value();
+    if (m_advChokingAlgo) a.chokingAlgorithm = m_advChokingAlgo->currentIndex();
+    if (m_advSeedChokingAlgo) a.seedChokingAlgorithm = m_advSeedChokingAlgo->currentIndex();
+    if (m_advRateLimitOverhead) a.rateLimitIpOverhead = m_advRateLimitOverhead->isChecked();
+    if (m_advIgnoreLimitsLAN) a.ignoreLimitsOnLAN = m_advIgnoreLimitsLAN->isChecked();
+    return a;
+}
 
 void SettingsDialog::setAsDefaultApp()
 {

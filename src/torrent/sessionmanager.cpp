@@ -5,6 +5,7 @@
 #include "sessionmanager.h"
 #include "../app/logger.h"
 #include "../app/translator.h"
+#include <QProcess>
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
 #include <libtorrent/magnet_uri.hpp>
@@ -115,6 +116,14 @@ SessionManager::SessionManager(QObject *parent)
     for (const auto &h : settings.value("forceStartHashes").toStringList())
         m_forceStartHashes.insert(h);
     m_blockLeechers = settings.value("blockLeechers", false).toBool();
+    // Apply persisted advanced settings on startup
+    setAdvancedSettings(advancedSettings());
+
+    // Run on complete + watched folder
+    m_runOnComplete = settings.value("runOnComplete").toString();
+    QString watchPath = settings.value("watchedFolder").toString();
+    if (!watchPath.isEmpty()) setWatchedFolder(watchPath);
+
     if (m_anonymousMode || m_forceIpv4 || m_ptMode) {
         // Apply immediately so the first session starts with the right pack;
         // setters above persist to QSettings, but the in-memory pack was
@@ -1797,6 +1806,8 @@ void SessionManager::processAlerts()
                     fa->handle.pause();
 
                 qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
+                executeOnComplete(name, QString::fromStdString(st.save_path),
+                                  hash, st.total_wanted);
                 emit torrentFinished(name, hash);
             }
 
@@ -2350,6 +2361,141 @@ QString SessionManager::ipFilterPath() const { return m_ipFilterPath; }
 int SessionManager::ipFilterCount() const { return m_ipFilterCount; }
 
 // --- Bandwidth Scheduler ---
+
+SessionManager::AdvancedSettings SessionManager::advancedSettings() const
+{
+    QSettings s("BATorrent", "BATorrent");
+    AdvancedSettings a;
+    a.aioThreads = s.value("adv/aioThreads", 10).toInt();
+    a.hashingThreads = s.value("adv/hashingThreads", 2).toInt();
+    a.filePoolSize = s.value("adv/filePoolSize", 100).toInt();
+    a.checkingMemUsage = s.value("adv/checkingMemUsage", 512).toInt();
+    a.diskIOReadMode = s.value("adv/diskIOReadMode", 0).toInt();
+    a.diskIOWriteMode = s.value("adv/diskIOWriteMode", 0).toInt();
+    a.connectionsLimit = s.value("adv/connectionsLimit", 500).toInt();
+    a.connectionSpeed = s.value("adv/connectionSpeed", 30).toInt();
+    a.maxUploadsPerTorrent = s.value("adv/maxUploadsPerTorrent", 4).toInt();
+    a.maxConnectionsPerTorrent = s.value("adv/maxConnectionsPerTorrent", 100).toInt();
+    a.unchokeSlotsLimit = s.value("adv/unchokeSlotsLimit", 20).toInt();
+    a.chokingAlgorithm = s.value("adv/chokingAlgorithm", 0).toInt();
+    a.seedChokingAlgorithm = s.value("adv/seedChokingAlgorithm", 0).toInt();
+    a.sendBufferWatermark = s.value("adv/sendBufferWatermark", 500).toInt();
+    a.outgoingPortMin = s.value("adv/outgoingPortMin", 0).toInt();
+    a.outgoingPortMax = s.value("adv/outgoingPortMax", 0).toInt();
+    a.rateLimitIpOverhead = s.value("adv/rateLimitIpOverhead", false).toBool();
+    a.ignoreLimitsOnLAN = s.value("adv/ignoreLimitsOnLAN", true).toBool();
+    return a;
+}
+
+void SessionManager::setAdvancedSettings(const AdvancedSettings &a)
+{
+    QSettings s("BATorrent", "BATorrent");
+    s.setValue("adv/aioThreads", a.aioThreads);
+    s.setValue("adv/hashingThreads", a.hashingThreads);
+    s.setValue("adv/filePoolSize", a.filePoolSize);
+    s.setValue("adv/checkingMemUsage", a.checkingMemUsage);
+    s.setValue("adv/diskIOReadMode", a.diskIOReadMode);
+    s.setValue("adv/diskIOWriteMode", a.diskIOWriteMode);
+    s.setValue("adv/connectionsLimit", a.connectionsLimit);
+    s.setValue("adv/connectionSpeed", a.connectionSpeed);
+    s.setValue("adv/maxUploadsPerTorrent", a.maxUploadsPerTorrent);
+    s.setValue("adv/maxConnectionsPerTorrent", a.maxConnectionsPerTorrent);
+    s.setValue("adv/unchokeSlotsLimit", a.unchokeSlotsLimit);
+    s.setValue("adv/chokingAlgorithm", a.chokingAlgorithm);
+    s.setValue("adv/seedChokingAlgorithm", a.seedChokingAlgorithm);
+    s.setValue("adv/sendBufferWatermark", a.sendBufferWatermark);
+    s.setValue("adv/outgoingPortMin", a.outgoingPortMin);
+    s.setValue("adv/outgoingPortMax", a.outgoingPortMax);
+    s.setValue("adv/rateLimitIpOverhead", a.rateLimitIpOverhead);
+    s.setValue("adv/ignoreLimitsOnLAN", a.ignoreLimitsOnLAN);
+
+    lt::settings_pack pack;
+    pack.set_int(lt::settings_pack::aio_threads, a.aioThreads);
+    pack.set_int(lt::settings_pack::hashing_threads, a.hashingThreads);
+    pack.set_int(lt::settings_pack::file_pool_size, a.filePoolSize);
+    pack.set_int(lt::settings_pack::checking_mem_usage, a.checkingMemUsage);
+    pack.set_int(lt::settings_pack::disk_io_read_mode, a.diskIOReadMode);
+    pack.set_int(lt::settings_pack::disk_io_write_mode, a.diskIOWriteMode);
+    pack.set_int(lt::settings_pack::connections_limit, a.connectionsLimit);
+    pack.set_int(lt::settings_pack::connection_speed, a.connectionSpeed);
+    pack.set_int(lt::settings_pack::unchoke_slots_limit, a.unchokeSlotsLimit);
+    pack.set_int(lt::settings_pack::choking_algorithm, a.chokingAlgorithm);
+    pack.set_int(lt::settings_pack::seed_choking_algorithm, a.seedChokingAlgorithm);
+    pack.set_int(lt::settings_pack::send_buffer_watermark, a.sendBufferWatermark * 1024);
+    pack.set_bool(lt::settings_pack::rate_limit_ip_overhead, a.rateLimitIpOverhead);
+    if (a.outgoingPortMin > 0 && a.outgoingPortMax >= a.outgoingPortMin) {
+        pack.set_int(lt::settings_pack::outgoing_port, a.outgoingPortMin);
+        pack.set_int(lt::settings_pack::num_outgoing_ports, a.outgoingPortMax - a.outgoingPortMin + 1);
+    }
+    // LAN peer class exemption: remove rate limits for local network peers
+    if (a.ignoreLimitsOnLAN) {
+        pack.set_bool(lt::settings_pack::ignore_limits_on_local_network, true);
+    }
+
+    m_session.apply_settings(pack);
+    qDebug() << "[session] advanced settings applied";
+}
+
+void SessionManager::setRunOnComplete(const QString &command)
+{
+    m_runOnComplete = command;
+    QSettings("BATorrent", "BATorrent").setValue("runOnComplete", command);
+}
+
+QString SessionManager::runOnComplete() const { return m_runOnComplete; }
+
+void SessionManager::executeOnComplete(const QString &name, const QString &savePath,
+                                       const QString &hash, qint64 totalSize)
+{
+    if (m_runOnComplete.isEmpty()) return;
+    QString cmd = m_runOnComplete;
+    cmd.replace("%N", name);
+    cmd.replace("%D", savePath);
+    cmd.replace("%H", hash);
+    cmd.replace("%Z", QString::number(totalSize));
+    // %F = first file's full path (best effort)
+    cmd.replace("%F", savePath + "/" + name);
+    qDebug() << "[session] executeOnComplete:" << cmd;
+    QProcess::startDetached("/bin/sh", {"-c", cmd});
+}
+
+void SessionManager::setWatchedFolder(const QString &path)
+{
+    m_watchedFolder = path;
+    QSettings("BATorrent", "BATorrent").setValue("watchedFolder", path);
+    if (path.isEmpty()) {
+        if (m_watchedFolderTimer) m_watchedFolderTimer->stop();
+    } else {
+        if (!m_watchedFolderTimer) {
+            m_watchedFolderTimer = new QTimer(this);
+            connect(m_watchedFolderTimer, &QTimer::timeout, this, &SessionManager::scanWatchedFolder);
+        }
+        m_watchedFolderTimer->start(10000); // scan every 10s
+    }
+}
+
+QString SessionManager::watchedFolder() const { return m_watchedFolder; }
+
+void SessionManager::scanWatchedFolder()
+{
+    if (m_watchedFolder.isEmpty()) return;
+    QDir dir(m_watchedFolder);
+    if (!dir.exists()) return;
+    const auto files = dir.entryList({"*.torrent"}, QDir::Files);
+    for (const QString &f : files) {
+        const QString path = dir.filePath(f);
+        qDebug() << "[session] watched folder: auto-adding" << f;
+        // Use the global save path (last used)
+        QSettings s("BATorrent", "BATorrent");
+        QString savePath = s.value("lastSavePath",
+            QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
+        addTorrent(path, savePath);
+        // Move the .torrent to a "processed" subfolder to avoid re-adding
+        QDir processed(dir.filePath(".processed"));
+        if (!processed.exists()) processed.mkpath(".");
+        QFile::rename(path, processed.filePath(f));
+    }
+}
 
 void SessionManager::setAltSpeedLimits(int downKbps, int upKbps)
 {
