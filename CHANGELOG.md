@@ -1,5 +1,32 @@
 # Changelog
 
+## v2.6.0
+
+### Search plugin system
+- **Multiple search providers** with configurable URL templates and JSON response mapping
+- **Built-in providers:** The Pirate Bay (apibay), Nyaa.si — ready to use out of the box
+- **Custom providers:** define your own URL template, JSON array path, and field mappings (name, hash, size, seeders, leechers)
+- Provider selector in the search dialog alongside the existing Stremio source
+
+### Translation system rewrite
+- Migrated 683+ translation keys × 7 languages from hardcoded C++ to JSON files
+- `translator.cpp` reduced from 5,615 lines to 62 lines
+- JSON files in `translations/` directory, loaded via Qt resources at runtime
+- Translators can now contribute by editing JSON — no C++ knowledge required
+- `tr_()` shortcut and English fallback work exactly as before
+
+### Category temp paths
+- Assigning a category with a save path to a downloading torrent automatically updates the download destination
+- With temp path active: updates the intended final path (auto-moves on completion)
+- Without temp path: calls `move_storage` immediately to the category's save path
+
+### Release workflow
+- `CHANGELOG.md` as the source of truth for GitHub Release descriptions
+- Release job automatically extracts the version-specific section on tag push
+- All existing releases (v1.3 through v2.5.3) retroactively received proper descriptions
+
+---
+
 ## v2.5.3
 
 ### New features
