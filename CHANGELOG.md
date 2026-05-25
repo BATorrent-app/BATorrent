@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.6.1
+
+### Critical fix
+- **Auto-updater broken since v2.5.0** — the "Check for updates" button and silent startup check were both failing silently due to accumulated signal connections. Fixed by disconnecting stale handlers before each check.
+- Added redirect policy and 15-second timeout to update API requests
+- Users on v2.5.0 through v2.6.0 must update manually this one time — the updater will work correctly from v2.6.1 onward
+
+---
+
 ## v2.6.0
 
 ### Search plugin system
