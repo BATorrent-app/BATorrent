@@ -31,8 +31,7 @@ modules:
     sources:
       - type: archive
         url: https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz
-        sha256: 2575e74ffc3ef1f3e1c7c8a4e013d0e7f4e40f12e7d8a7d6a3b5e8c9d0a2b4c6
-        # NOTE: Replace sha256 with actual hash from boost.org
+        sha256: 2575e74ffc3ef1cd0babac2c1ee8bdb5782a0ee672b1912da40e5b4b591ca01f
 
   - name: libtorrent-rasterbar
     buildsystem: cmake-ninja
@@ -41,8 +40,7 @@ modules:
     sources:
       - type: archive
         url: https://github.com/arvidn/libtorrent/releases/download/v2.0.10/libtorrent-rasterbar-2.0.10.tar.gz
-        sha256: REPLACE_WITH_ACTUAL_SHA256
-        # NOTE: Replace sha256 with actual hash from libtorrent releases
+        sha256: fc935b8c1daca5c0a4d304bff59e64e532be16bb877c012aea4bda73d9ca885d
 
   - name: batorrent
     buildsystem: cmake-ninja
@@ -51,8 +49,7 @@ modules:
     sources:
       - type: archive
         url: https://github.com/Mateuscruz19/BAT-Torrent/archive/refs/tags/v2.5.1.tar.gz
-        sha256: REPLACE_WITH_ACTUAL_SHA256
-        # NOTE: Replace with `sha256sum` of the tarball
+        sha256: 5218de308188cd4fa606baba28f2d461ae486097f42e4b686616c61946638ef6
     post-install:
       - install -Dm644 dist/batorrent.desktop /app/share/applications/com.batorrent.BATorrent.desktop
       - install -Dm644 src/images/logo1.png /app/share/icons/hicolor/256x256/apps/com.batorrent.BATorrent.png
