@@ -67,6 +67,30 @@ SessionManager::SessionManager(QObject *parent)
     pack.set_bool(lt::settings_pack::enable_upnp, true);
     pack.set_bool(lt::settings_pack::enable_natpmp, true);
 
+    // Stability settings learned from qBittorrent's codebase:
+    // - Only 1 torrent rechecks at a time (prevents OOM on 96GB+ torrents)
+    // - Generous alert queue so disk-full storms don't silently drop alerts
+    // - Explicit checking memory budget (16KB * value, 512 = 8MB)
+    // - 10 async I/O threads for disk operations
+    pack.set_int(lt::settings_pack::active_checking, 1);
+    pack.set_int(lt::settings_pack::alert_queue_size, 1000000);
+    pack.set_int(lt::settings_pack::checking_mem_usage, 512);
+    pack.set_int(lt::settings_pack::aio_threads, 10);
+    pack.set_int(lt::settings_pack::hashing_threads, 2);
+    pack.set_int(lt::settings_pack::file_pool_size, 100);
+    // Connection tuning: qBT defaults
+    pack.set_int(lt::settings_pack::connections_limit, 500);
+    pack.set_int(lt::settings_pack::connection_speed, 30);
+    pack.set_int(lt::settings_pack::unchoke_slots_limit, 20);
+    // Prefer RC4 encryption (like qBittorrent) — some private trackers
+    // penalize clients that accept plaintext.
+    pack.set_int(lt::settings_pack::allowed_enc_level,
+                 lt::settings_pack::pe_rc4);
+    pack.set_bool(lt::settings_pack::prefer_rc4, true);
+    // Don't fall back to a random port if the configured one is busy —
+    // the user explicitly set a port for their port-forward rule.
+    pack.set_bool(lt::settings_pack::listen_system_port_fallback, false);
+
     // Enable protocol encryption (prefer encrypted, allow unencrypted fallback)
     pack.set_int(lt::settings_pack::out_enc_policy, lt::settings_pack::pe_enabled);
     pack.set_int(lt::settings_pack::in_enc_policy, lt::settings_pack::pe_enabled);
@@ -1256,6 +1280,12 @@ void SessionManager::forceRecheck(int index)
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
     if (!m_torrents[index].is_valid()) return;
+    // Clear the cached status BEFORE calling force_recheck. Without this,
+    // the update timer reads stale state (e.g. "downloading") while
+    // libtorrent is internally in checking_files. That mismatch caused
+    // crashes on large torrents (96GB+) because queue management and
+    // auto-pause logic acted on inconsistent state.
+    m_statusCache.erase(m_torrents[index]);
     m_torrents[index].force_recheck();
 }
 
@@ -1687,6 +1717,7 @@ void SessionManager::processAlerts()
     m_session.pop_alerts(&alerts);
 
     for (auto *a : alerts) {
+      try {
         // Status snapshots arrive in one batch per post_torrent_updates(),
         // refreshing every cache entry at once. This is what makes the UI
         // 1/Nth as expensive as polling each handle individually.
@@ -1774,13 +1805,15 @@ void SessionManager::processAlerts()
             m_queuePaused.erase(fa->handle);
         }
         if (auto *ea = lt::alert_cast<lt::torrent_error_alert>(a)) {
-            // Rate-limit: torrent_error_alert can also fire in bursts
-            // during cascading failures (multiple files in one torrent).
-            static qint64 lastTorrentErrorEmit = 0;
+            // Per-torrent rate-limit (like qBittorrent's 1s cooldown per
+            // torrent). The previous global 30s window silently swallowed
+            // errors from torrent B if torrent A errored first.
+            static QHash<lt::torrent_handle, qint64> lastErrorAt;
             const qint64 nowTe = QDateTime::currentSecsSinceEpoch();
-            if (nowTe - lastTorrentErrorEmit >= 10) {
+            auto &last = lastErrorAt[ea->handle];
+            if (nowTe - last >= 3) {
                 emit torrentError(QString::fromStdString(ea->message()));
-                lastTorrentErrorEmit = nowTe;
+                last = nowTe;
             }
         }
         // Surface previously-swallowed alert categories so the user actually
@@ -1876,6 +1909,24 @@ void SessionManager::processAlerts()
                 ++m_resumeOutstanding;
             }
         }
+        // Resume data was rejected (corrupt, version mismatch, missing
+        // files). qBittorrent logs this and sets a missing-files flag;
+        // without handling it we get undefined behavior at startup.
+        if (auto *fr = lt::alert_cast<lt::fastresume_rejected_alert>(a)) {
+            qWarning() << "[session] fastresume rejected:"
+                       << QString::fromStdString(fr->message());
+            if (fr->handle.is_valid())
+                fr->handle.force_recheck();
+        }
+        // Recheck completed — the torrent is back in a consistent state.
+        // Re-populate the status cache so queue/auto-pause logic sees the
+        // real state instead of the stale pre-recheck snapshot.
+        if (auto *tc = lt::alert_cast<lt::torrent_checked_alert>(a)) {
+            if (tc->handle.is_valid()) {
+                m_statusCache[tc->handle] = tc->handle.status();
+                qDebug() << "[session] recheck completed for torrent";
+            }
+        }
         // Magnet just got its metadata — file list is now known, so apply
         // the .!bt suffix to each file.
         if (auto *mr = lt::alert_cast<lt::metadata_received_alert>(a)) {
@@ -1909,6 +1960,11 @@ void SessionManager::processAlerts()
                 }
             }
         }
+      } catch (const std::exception &e) {
+        qWarning() << "[session] alert processing exception:" << e.what();
+      } catch (...) {
+        qWarning() << "[session] alert processing: unknown exception caught";
+      }
     }
 }
 
