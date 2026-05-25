@@ -28,7 +28,7 @@ PrivilegesRequired=lowest
 ChangesAssociations=yes
 CloseApplications=force
 CloseApplicationsFilter=BATorrent.exe
-RestartApplications=no
+RestartApplications=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 ; RTF (not the plain LICENSE) so the RichEdit memo on the License page picks
 ; up the white text color — plaintext loaded into a TRichEdit defaults to
