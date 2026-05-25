@@ -63,6 +63,16 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
 )
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
 
+if(DEFINED ENV{BAT_TMDB_KEY})
+    target_compile_definitions(BATorrent PRIVATE BAT_TMDB_KEY="$ENV{BAT_TMDB_KEY}")
+endif()
+if(DEFINED ENV{BAT_IGDB_ID})
+    target_compile_definitions(BATorrent PRIVATE BAT_IGDB_CLIENT_ID="$ENV{BAT_IGDB_ID}")
+endif()
+if(DEFINED ENV{BAT_IGDB_SECRET})
+    target_compile_definitions(BATorrent PRIVATE BAT_IGDB_CLIENT_SECRET="$ENV{BAT_IGDB_SECRET}")
+endif()
+
 # Microsoft Store builds must not include their own auto-updater (Store
 # handles updates). Pass -DBAT_STORE_BUILD=ON in the store.yml workflow.
 option(BAT_STORE_BUILD "Disable auto-updater for Microsoft Store submission" OFF)
