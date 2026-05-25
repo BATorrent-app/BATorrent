@@ -61,6 +61,9 @@ Alle Artefakte werden durch den [Build & Release](.github/workflows/build.yml)-W
 - Priorität pro Datei, sequentieller Download, manuelle Neuprüfung und Neuankündigung
 - Automatische Tracker-Injektion von [ngosang/trackerslist](https://github.com/ngosang/trackerslist)
 - Multi-Tag-System (Freitext, mehrere Tags pro Torrent neben einer einzelnen Kategorie)
+- **Inhaltslayout** — Original, Unterordner erstellen oder Kein Unterordner steuert die Festplattenstruktur von Multi-Datei-Torrents
+- **Ausschluss-Dateimuster** — Regex-Regeln zum automatischen Uberspringen von Dateien (z.B. `.nfo`, `.txt`, `sample`) beim Hinzufugen eines Torrents
+- **Temporarer Download-Pfad** — ladt zuerst in einen Staging-Ordner herunter, verschiebt automatisch zum Speicherpfad nach Abschluss (verhindert das Scannen von Teildownloads durch Medienserver)
 - Kategorien, Neuanordnung per Drag-and-Drop und Kontextaktionen per Rechtsklick
 - Bestehenden Status aus qBittorrent importieren
 - Neue `.torrent`-Dateien aus beliebigen Dateien oder Ordnern erstellen
@@ -117,7 +120,7 @@ Alle Artefakte werden durch den [Build & Release](.github/workflows/build.yml)-W
 - Benutzerdefiniertes Tray-Popup (plattformübergreifend) mit Live-Geschwindigkeiten, Vorschau aktiver Torrents mit ETA, VPN-Status und Beenden-Option.
 - Filterschaltflächen mit Live-Zählern (Alle / Aktiv / Herunterladen / Seeden / Abgeschlossen / Pausiert / Fertig / Warteschlange), Suchleiste und Kategoriefilter.
 - Drag-and-Drop für `.torrent`-Dateien und Magnet-Links.
-- **Sieben UI-Sprachen** mit automatischer Erkennung: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 622 übersetzte Zeichenketten mit englischem Fallback für fehlende Schlüssel.
+- **Sieben UI-Sprachen** mit automatischer Erkennung: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 630+ übersetzte Zeichenketten mit englischem Fallback für fehlende Schlüssel.
 - Geschwindigkeitsanzeige in Bytes (KB/s, MB/s) oder Bits (Kbps, Mbps) — umschaltbar in den Einstellungen.
 - Locale-bewusste Zahlenformatierung (z. B. `1 234,5` für russisches Locale).
 

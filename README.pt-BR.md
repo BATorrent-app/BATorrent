@@ -61,6 +61,9 @@ Todos os artefatos sao gerados pelo workflow [Build & Release](.github/workflows
 - Prioridade por arquivo, download sequencial, recheck e reannounce manuais
 - Injecao automatica de trackers do [ngosang/trackerslist](https://github.com/ngosang/trackerslist)
 - Sistema de multi-tags (texto livre, multiplas tags por torrent junto com categoria unica)
+- **Layout de conteudo** — Original, Criar subpasta ou Sem subpasta controla como torrents multi-arquivo sao organizados no disco
+- **Padroes de exclusao de arquivos** — regras regex para pular arquivos automaticamente (ex: `.nfo`, `.txt`, `sample`) ao adicionar um torrent
+- **Caminho temporario de download** — baixa para uma pasta intermediaria primeiro, move automaticamente para o destino ao concluir (evita escaneamento de parciais por servidores de midia)
 - Categorias, reordenacao por arrastar-e-soltar e acoes de contexto com clique direito
 - Importacao de estado existente do qBittorrent
 - Criacao de novos arquivos `.torrent` a partir de qualquer arquivo ou pasta
@@ -117,7 +120,7 @@ Todos os artefatos sao gerados pelo workflow [Build & Release](.github/workflows
 - Popup customizado na bandeja (multiplataforma) com velocidades ao vivo, preview de torrents ativos com ETA, status da VPN e opcao de sair.
 - Pills de filtro com contagem ao vivo (Todos / Ativos / Baixando / Semeando / Concluidos / Pausados / Finalizados / Na fila), barra de busca e filtro por categoria.
 - Arrastar e soltar para arquivos `.torrent` e magnet links.
-- **Sete idiomas na interface** com deteccao automatica: English, Portugues (BR), Espanol, Deutsch, Russky, Nihongo, Zhongwen — 622 strings traduzidas com fallback para ingles em chaves ausentes.
+- **Sete idiomas na interface** com deteccao automatica: English, Portugues (BR), Espanol, Deutsch, Russky, Nihongo, Zhongwen — 630+ strings traduzidas com fallback para ingles em chaves ausentes.
 - Exibicao de velocidade em bytes (KB/s, MB/s) ou bits (Kbps, Mbps) — alternavel nas Configuracoes.
 - Formatacao de numeros sensivel ao locale (ex.: `1 234,5` para o locale russo).
 

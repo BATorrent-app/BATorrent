@@ -61,6 +61,9 @@ Todos los artefactos son producidos por el flujo de trabajo [Build & Release](.g
 - Prioridad por archivo, descarga secuencial, reverificación manual y reanuncio
 - Inyección automática de trackers desde [ngosang/trackerslist](https://github.com/ngosang/trackerslist)
 - Sistema de etiquetas múltiples (texto libre, varias etiquetas por torrent junto con una sola categoría)
+- **Disposicion del contenido** — Original, Crear subcarpeta o Sin subcarpeta controla como se organizan los torrents multi-archivo en disco
+- **Patrones de exclusion de archivos** — reglas regex para omitir archivos automaticamente (ej: `.nfo`, `.txt`, `sample`) al agregar un torrent
+- **Ruta temporal de descarga** — descarga primero a una carpeta intermedia, mueve automaticamente al destino al completar (evita escaneo de parciales por servidores de medios)
 - Categorías, reorden por arrastrar y soltar, y acciones contextuales con clic derecho
 - Importar estado existente desde qBittorrent
 - Crear nuevos archivos `.torrent` desde cualquier archivo o carpeta
@@ -117,7 +120,7 @@ Todos los artefactos son producidos por el flujo de trabajo [Build & Release](.g
 - Popup de bandeja personalizado (multiplataforma) con velocidades en vivo, vista previa de torrents activos con ETA, estado de VPN y opción de salir.
 - Filtros con conteo en vivo (Todos / Activos / Descargando / Sembrando / Completados / Pausados / Finalizados / En cola), barra de búsqueda y filtro por categoría.
 - Arrastrar y soltar para archivos `.torrent` y enlaces magnet.
-- **Siete idiomas de interfaz** con detección automática: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 622 cadenas traducidas con respaldo en inglés para claves faltantes.
+- **Siete idiomas de interfaz** con detección automática: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 630+ cadenas traducidas con respaldo en inglés para claves faltantes.
 - Visualización de velocidad en bytes (KB/s, MB/s) o bits (Kbps, Mbps) — configurable en Configuración.
 - Formato numérico adaptado al locale (p. ej. `1 234,5` para el locale ruso).
 

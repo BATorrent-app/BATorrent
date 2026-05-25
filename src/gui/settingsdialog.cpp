@@ -307,17 +307,17 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     // Run on completion — external command with template variables
     m_runOnCompleteEdit = new QLineEdit;
-    m_runOnCompleteEdit->setPlaceholderText("e.g. notify-send \"%N completed\" or curl http://...");
-    m_runOnCompleteEdit->setToolTip("Run this command when a torrent finishes. Variables: %N=name, %D=save path, %H=hash, %Z=size, %F=file path");
-    auto *runLabel = new QLabel("Run on complete:");
+    m_runOnCompleteEdit->setPlaceholderText(tr_("settings_run_on_hint"));
+    m_runOnCompleteEdit->setToolTip(tr_("tip_run_on_complete"));
+    auto *runLabel = new QLabel(tr_("settings_run_on_complete"));
     runLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(runLabel, m_runOnCompleteEdit);
 
     // Watched folder
     m_watchedFolderEdit = new QLineEdit;
-    m_watchedFolderEdit->setPlaceholderText("Folder to monitor for .torrent files");
-    m_watchedFolderEdit->setToolTip("BATorrent scans this folder every 10s and auto-adds any .torrent files found. Files are moved to .processed/ after adding.");
-    auto *watchLabel = new QLabel("Watched folder:");
+    m_watchedFolderEdit->setPlaceholderText(tr_("settings_watched_hint"));
+    m_watchedFolderEdit->setToolTip(tr_("tip_watched_folder"));
+    auto *watchLabel = new QLabel(tr_("settings_watched_folder"));
     watchLabel->setStyleSheet(labelStyle);
     auto *watchRow = new QHBoxLayout;
     watchRow->addWidget(m_watchedFolderEdit, 1);
@@ -859,58 +859,58 @@ SettingsDialog::SettingsDialog(QWidget *parent)
         return spin;
     };
 
-    auto *diskGroup = new QGroupBox("Disk I/O");
+    auto *diskGroup = new QGroupBox(tr_("adv_disk_io"));
     auto *diskLay = new QFormLayout(diskGroup);
     diskLay->setSpacing(8);
-    m_advAioThreads = new QSpinBox; m_advAioThreads->setRange(1, 64); m_advAioThreads->setToolTip("Async I/O threads for disk operations");
-    m_advHashingThreads = new QSpinBox; m_advHashingThreads->setRange(1, 16); m_advHashingThreads->setToolTip("Threads for piece hashing (recheck)");
-    m_advFilePoolSize = new QSpinBox; m_advFilePoolSize->setRange(10, 1000); m_advFilePoolSize->setToolTip("Max open file handles");
-    m_advCheckingMem = new QSpinBox; m_advCheckingMem->setRange(1, 4096); m_advCheckingMem->setSuffix(" (x16KB)"); m_advCheckingMem->setToolTip("Memory budget for piece checking. 512 = 8MB.");
-    m_advSendBuffer = new QSpinBox; m_advSendBuffer->setRange(16, 8192); m_advSendBuffer->setSuffix(" KB"); m_advSendBuffer->setToolTip("Send buffer watermark");
-    diskLay->addRow("Async I/O threads", m_advAioThreads);
-    diskLay->addRow("Hashing threads", m_advHashingThreads);
-    diskLay->addRow("File pool size", m_advFilePoolSize);
-    diskLay->addRow("Checking memory", m_advCheckingMem);
-    diskLay->addRow("Send buffer", m_advSendBuffer);
+    m_advAioThreads = new QSpinBox; m_advAioThreads->setRange(1, 64); m_advAioThreads->setToolTip(tr_("tip_adv_aio"));
+    m_advHashingThreads = new QSpinBox; m_advHashingThreads->setRange(1, 16); m_advHashingThreads->setToolTip(tr_("tip_adv_hashing"));
+    m_advFilePoolSize = new QSpinBox; m_advFilePoolSize->setRange(10, 1000); m_advFilePoolSize->setToolTip(tr_("tip_adv_filepool"));
+    m_advCheckingMem = new QSpinBox; m_advCheckingMem->setRange(1, 4096); m_advCheckingMem->setSuffix(" (x16KB)"); m_advCheckingMem->setToolTip(tr_("tip_adv_checkmem"));
+    m_advSendBuffer = new QSpinBox; m_advSendBuffer->setRange(16, 8192); m_advSendBuffer->setSuffix(" KB"); m_advSendBuffer->setToolTip(tr_("tip_adv_sendbuf"));
+    diskLay->addRow(tr_("adv_aio_threads"), m_advAioThreads);
+    diskLay->addRow(tr_("adv_hashing_threads"), m_advHashingThreads);
+    diskLay->addRow(tr_("adv_file_pool"), m_advFilePoolSize);
+    diskLay->addRow(tr_("adv_checking_mem"), m_advCheckingMem);
+    diskLay->addRow(tr_("adv_send_buffer"), m_advSendBuffer);
     advLayout->addRow(diskGroup);
 
-    auto *connGroup = new QGroupBox("Connections");
+    auto *connGroup = new QGroupBox(tr_("adv_connections"));
     auto *connLay = new QFormLayout(connGroup);
     connLay->setSpacing(8);
-    m_advConnLimit = new QSpinBox; m_advConnLimit->setRange(10, 10000); m_advConnLimit->setToolTip("Global max connections");
-    m_advConnSpeed = new QSpinBox; m_advConnSpeed->setRange(1, 200); m_advConnSpeed->setToolTip("Half-open connections per second");
-    m_advMaxUploadsPerTorrent = new QSpinBox; m_advMaxUploadsPerTorrent->setRange(1, 100); m_advMaxUploadsPerTorrent->setToolTip("Max upload slots per torrent");
-    m_advMaxConnsPerTorrent = new QSpinBox; m_advMaxConnsPerTorrent->setRange(1, 500); m_advMaxConnsPerTorrent->setToolTip("Max connections per torrent");
-    m_advUnchokeSlots = new QSpinBox; m_advUnchokeSlots->setRange(1, 100); m_advUnchokeSlots->setToolTip("Global unchoke (upload) slots");
-    connLay->addRow("Global connections limit", m_advConnLimit);
-    connLay->addRow("Connection speed", m_advConnSpeed);
-    connLay->addRow("Unchoke slots", m_advUnchokeSlots);
-    connLay->addRow("Max uploads/torrent", m_advMaxUploadsPerTorrent);
-    connLay->addRow("Max connections/torrent", m_advMaxConnsPerTorrent);
+    m_advConnLimit = new QSpinBox; m_advConnLimit->setRange(10, 10000); m_advConnLimit->setToolTip(tr_("tip_adv_connlimit"));
+    m_advConnSpeed = new QSpinBox; m_advConnSpeed->setRange(1, 200); m_advConnSpeed->setToolTip(tr_("tip_adv_connspeed"));
+    m_advMaxUploadsPerTorrent = new QSpinBox; m_advMaxUploadsPerTorrent->setRange(1, 100); m_advMaxUploadsPerTorrent->setToolTip(tr_("tip_adv_maxuploads"));
+    m_advMaxConnsPerTorrent = new QSpinBox; m_advMaxConnsPerTorrent->setRange(1, 500); m_advMaxConnsPerTorrent->setToolTip(tr_("tip_adv_maxconns"));
+    m_advUnchokeSlots = new QSpinBox; m_advUnchokeSlots->setRange(1, 100); m_advUnchokeSlots->setToolTip(tr_("tip_adv_unchoke"));
+    connLay->addRow(tr_("adv_conn_limit"), m_advConnLimit);
+    connLay->addRow(tr_("adv_conn_speed"), m_advConnSpeed);
+    connLay->addRow(tr_("adv_unchoke_slots"), m_advUnchokeSlots);
+    connLay->addRow(tr_("adv_max_uploads"), m_advMaxUploadsPerTorrent);
+    connLay->addRow(tr_("adv_max_conns"), m_advMaxConnsPerTorrent);
     advLayout->addRow(connGroup);
 
-    auto *algoGroup = new QGroupBox("Algorithms");
+    auto *algoGroup = new QGroupBox(tr_("adv_algorithms"));
     auto *algoLay = new QFormLayout(algoGroup);
     algoLay->setSpacing(8);
     m_advChokingAlgo = new QComboBox;
-    m_advChokingAlgo->addItem("Fixed slots", 0);
-    m_advChokingAlgo->addItem("Rate-based", 1);
-    m_advChokingAlgo->setToolTip("How upload slots are distributed among peers");
+    m_advChokingAlgo->addItem(tr_("adv_choke_fixed"), 0);
+    m_advChokingAlgo->addItem(tr_("adv_choke_rate"), 1);
+    m_advChokingAlgo->setToolTip(tr_("tip_adv_choking"));
     m_advSeedChokingAlgo = new QComboBox;
-    m_advSeedChokingAlgo->addItem("Round robin", 0);
-    m_advSeedChokingAlgo->addItem("Fastest upload", 1);
-    m_advSeedChokingAlgo->addItem("Anti-leech", 2);
-    m_advSeedChokingAlgo->setToolTip("How seeding slots are distributed. Anti-leech prioritizes peers that upload back.");
-    m_advRateLimitOverhead = new QCheckBox("Include IP overhead in rate limits");
-    m_advIgnoreLimitsLAN = new QCheckBox("Exempt LAN peers from speed limits");
-    m_advIgnoreLimitsLAN->setToolTip("Peers on 10.x / 172.16.x / 192.168.x bypass your download/upload limits");
-    algoLay->addRow("Choking algorithm", m_advChokingAlgo);
-    algoLay->addRow("Seed choking", m_advSeedChokingAlgo);
+    m_advSeedChokingAlgo->addItem(tr_("adv_seedchoke_robin"), 0);
+    m_advSeedChokingAlgo->addItem(tr_("adv_seedchoke_fastest"), 1);
+    m_advSeedChokingAlgo->addItem(tr_("adv_seedchoke_antileech"), 2);
+    m_advSeedChokingAlgo->setToolTip(tr_("tip_adv_seedchoking"));
+    m_advRateLimitOverhead = new QCheckBox(tr_("adv_rate_overhead"));
+    m_advIgnoreLimitsLAN = new QCheckBox(tr_("adv_ignore_lan"));
+    m_advIgnoreLimitsLAN->setToolTip(tr_("tip_adv_ignorelan"));
+    algoLay->addRow(tr_("adv_choking_algo"), m_advChokingAlgo);
+    algoLay->addRow(tr_("adv_seed_choking"), m_advSeedChokingAlgo);
     algoLay->addRow("", m_advRateLimitOverhead);
     algoLay->addRow("", m_advIgnoreLimitsLAN);
     advLayout->addRow(algoGroup);
 
-    tabs->addTab(wrapInScroll(advWidget), "Advanced");
+    tabs->addTab(wrapInScroll(advWidget), tr_("settings_advanced"));
 
     // ---- Header (eyebrow + heading) ----
     auto *eyebrow = new QLabel(tr_("settings_title").toUpper());

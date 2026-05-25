@@ -59,8 +59,8 @@ SessionManager::SessionManager(QObject *parent)
     // sometimes reject "LT" defaults; sending our own user-agent + a "BT"
     // fingerprint avoids that whole class of refusal.
     pack.set_str(lt::settings_pack::peer_fingerprint,
-                 lt::generate_fingerprint("BT", 2, 3, 2));
-    pack.set_str(lt::settings_pack::user_agent, "BATorrent/2.3.4");
+                 lt::generate_fingerprint("BT", 2, 5, 3));
+    pack.set_str(lt::settings_pack::user_agent, "BATorrent/" APP_VERSION);
 
     // (.!bt suffix for incomplete files is applied per-file in addTorrent
     //  and stripped on file_completed_alert below — libtorrent doesn't have
