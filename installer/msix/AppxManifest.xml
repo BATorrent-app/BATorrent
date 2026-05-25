@@ -11,9 +11,9 @@
        replace the placeholder below with the CN= string from your
        certificate info page. -->
   <Identity
-    Name="Mateuscruz19.BATorrent"
+    Name="BATorrent.BATorrent"
     Version="2.5.1.0"
-    Publisher="CN=REPLACE_WITH_PARTNER_CENTER_PUBLISHER_ID"
+    Publisher="CN=D838099A-EE48-4F66-92B6-2A44F20C37EF"
     ProcessorArchitecture="x64" />
 
   <Properties>
