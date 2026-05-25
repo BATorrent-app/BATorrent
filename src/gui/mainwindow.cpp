@@ -1972,6 +1972,9 @@ void MainWindow::openSettings()
     dlg.setRunOnComplete(m_session->runOnComplete());
     dlg.setWatchedFolder(m_session->watchedFolder());
     dlg.setAutoMovePath(m_session->autoMovePath());
+    dlg.setTempPath(m_session->tempPath());
+    dlg.setContentLayout(m_session->contentLayout());
+    dlg.setExcludedFilePatterns(m_session->excludedFilePatterns().join("; "));
     dlg.setMaxActiveDownloads(m_session->maxActiveDownloads());
     dlg.setStopAfterDownload(m_session->stopAfterDownload());
     dlg.setMaxSeedDays(static_cast<int>(m_session->maxSeedSeconds() / 86400));
@@ -2079,6 +2082,14 @@ void MainWindow::openSettings()
         m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());
         m_session->setRunOnComplete(dlg.runOnComplete());
         m_session->setWatchedFolder(dlg.watchedFolder());
+        m_session->setTempPath(dlg.tempPath());
+        m_session->setContentLayout(dlg.contentLayout());
+        {
+            QStringList patterns;
+            for (const auto &p : dlg.excludedFilePatterns().split(';'))
+                if (!p.trimmed().isEmpty()) patterns << p.trimmed();
+            m_session->setExcludedFilePatterns(patterns);
+        }
 
         // Download queue
         m_session->setMaxActiveDownloads(dlg.maxActiveDownloads());

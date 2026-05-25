@@ -61,6 +61,9 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 - Per-file priority, sequential download, manual recheck and reannounce
 - Auto-tracker injection from [ngosang/trackerslist](https://github.com/ngosang/trackerslist)
 - Multi-tag system (free-form, multiple tags per torrent alongside single category)
+- **Content layout** — Original, Create subfolder, or No subfolder controls how multi-file torrents are laid out on disk
+- **Excluded file patterns** — regex rules to auto-skip files (e.g. `.nfo`, `.txt`, `sample`) when adding a torrent
+- **Temp download path** — download to a staging folder first, auto-move to the save path on completion (keeps media servers from scanning partials)
 - Categories, drag-and-drop reorder, and right-click context actions
 - Import existing state from qBittorrent
 - Create new `.torrent` files from any file or folder
@@ -117,7 +120,7 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 - Custom tray popup (cross-platform) with live speeds, active-torrent preview with ETA, VPN status, and quit affordance.
 - Filter pills with live counts (All / Active / Downloading / Seeding / Completed / Paused / Finished / Queued), search bar, and category filter.
 - Drag and drop for both `.torrent` files and magnet links.
-- **Seven UI languages** with auto-detection: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 622 translated strings with English fallback for missing keys.
+- **Seven UI languages** with auto-detection: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 630+ translated strings with English fallback for missing keys.
 - Speed display in bytes (KB/s, MB/s) or bits (Kbps, Mbps) — togglable in Settings.
 - Locale-aware number formatting (e.g. `1 234,5` for Russian locale).
 

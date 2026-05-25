@@ -233,6 +233,22 @@ public:
     // name, which can drift from disk after rename/sanitization.
     QString torrentRootPath(int index) const;
 
+    // Incomplete downloads path — download to a temp directory, move to the
+    // real save path when the torrent finishes. Avoids media servers scanning
+    // half-downloaded files and lets users put temp data on a faster drive.
+    void setTempPath(const QString &path);
+    QString tempPath() const;
+
+    // Content layout: 0=Original, 1=Create subfolder, 2=No subfolder.
+    // Controls how multi-file torrents are laid out on disk.
+    void setContentLayout(int layout);
+    int contentLayout() const;
+
+    // Regex patterns for files to auto-skip (priority 0) on add. One pattern
+    // per entry, matched against the file path inside the torrent.
+    void setExcludedFilePatterns(const QStringList &patterns);
+    QStringList excludedFilePatterns() const;
+
     // Auto-copy .torrent files to a backup directory when added. Essential
     // for private tracker users who want to keep an archive.
     void setTorrentExportDir(const QString &path);
@@ -453,6 +469,19 @@ private:
     // Persist a save_resume_data_alert payload to its .resume file under
     // resumeDataDir(). Returns true on success.
     bool persistResumeAlert(const struct lt::save_resume_data_alert *rd);
+
+    // Temp path for incomplete downloads
+    QString m_tempPath;
+    // Hash -> intended final save path (only when temp path is active)
+    QMap<QString, QString> m_torrentIntendedPath;
+
+    // Content layout: 0=Original, 1=CreateSubfolder, 2=NoSubfolder
+    int m_contentLayout = 0;
+    void applyContentLayout(lt::add_torrent_params &atp);
+
+    // Excluded file name patterns (regex)
+    QStringList m_excludedFilePatterns;
+    void applyExcludedPatterns(lt::add_torrent_params &atp);
 
     // Torrent export — auto-copy .torrent files to a backup directory
     QString m_torrentExportDir;

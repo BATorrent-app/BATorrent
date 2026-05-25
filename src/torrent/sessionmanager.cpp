@@ -24,6 +24,7 @@
 #include <QNetworkInterface>
 #include <QDateTime>
 #include <QTextStream>
+#include <QRegularExpression>
 #include <libtorrent/ip_filter.hpp>
 #include <boost/asio/ip/address.hpp>
 
@@ -120,8 +121,11 @@ SessionManager::SessionManager(QObject *parent)
     // Apply persisted advanced settings on startup
     setAdvancedSettings(advancedSettings());
 
-    // Torrent export + run on complete + watched folder
+    // Torrent export + run on complete + watched folder + temp path
     m_torrentExportDir = settings.value("torrentExportDir").toString();
+    m_tempPath = settings.value("tempPath").toString();
+    m_contentLayout = settings.value("contentLayout", 0).toInt();
+    m_excludedFilePatterns = settings.value("excludedFilePatterns").toStringList();
     m_runOnComplete = settings.value("runOnComplete").toString();
     QString watchPath = settings.value("watchedFolder").toString();
     if (!watchPath.isEmpty()) setWatchedFolder(watchPath);
@@ -226,27 +230,23 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         atp.save_path = savePath.toStdString();
-        // libtorrent's default flags include BOTH `auto_managed` AND
-        // `paused` — the auto-manager is what normally unpauses new
-        // torrents. We disable auto-management so user pause/resume
-        // always sticks, but that means we also have to clear the
-        // initial `paused` bit or every fresh add would stay paused
-        // forever. The "start paused" UX is handled at the caller via
-        // pauseTorrent() after add.
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
-        // BEP-27: private torrents must not use DHT, LSD, or PEX. Trackers
-        // banning peers that leak the info-hash through those channels is a
-        // common reason users get kicked off private trackers.
         if (atp.ti && atp.ti->priv()) {
             atp.flags |= lt::torrent_flags::disable_dht
                        | lt::torrent_flags::disable_lsd
                        | lt::torrent_flags::disable_pex;
         }
-        // Append ".!bt" to every file path so Plex/Jellyfin/Sonarr ignore
-        // partial files during their library scans. The suffix is stripped
-        // again as each file completes via file_completed_alert.
+        applyContentLayout(atp);
+        applyExcludedPatterns(atp);
         applyIncompleteSuffix(atp);
+
+        // Temp path: download to temp dir, move to real path on finish
+        if (!m_tempPath.isEmpty() && QDir(m_tempPath).exists()) {
+            std::string hash = (std::ostringstream() << atp.ti->info_hashes().get_best()).str();
+            m_torrentIntendedPath[QString::fromStdString(hash)] = savePath;
+            atp.save_path = m_tempPath.toStdString();
+        }
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
@@ -266,7 +266,6 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         atp.save_path = savePath.toStdString();
-        // Clear both flags (see addTorrent for the full rationale).
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
         if (atp.ti && atp.ti->priv()) {
@@ -274,14 +273,20 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
                        | lt::torrent_flags::disable_lsd
                        | lt::torrent_flags::disable_pex;
         }
-        // Apply the user's per-file selection before adding so libtorrent
-        // never queues a single byte from an unchecked file.
         atp.file_priorities.reserve(filePriorities.size());
         for (int p : filePriorities) {
             atp.file_priorities.push_back(
                 static_cast<lt::download_priority_t>(static_cast<std::uint8_t>(p)));
         }
+        applyContentLayout(atp);
+        applyExcludedPatterns(atp);
         applyIncompleteSuffix(atp);
+
+        if (!m_tempPath.isEmpty() && QDir(m_tempPath).exists()) {
+            std::string hash = (std::ostringstream() << atp.ti->info_hashes().get_best()).str();
+            m_torrentIntendedPath[QString::fromStdString(hash)] = savePath;
+            atp.save_path = m_tempPath.toStdString();
+        }
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
@@ -311,9 +316,14 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath)
         qDebug() << "[session] addMagnet:" << uri.left(80) << "save:" << savePath;
         lt::add_torrent_params atp = lt::parse_magnet_uri(uri.toStdString());
         atp.save_path = savePath.toStdString();
-        // Clear both flags (see addTorrent for the full rationale).
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
+
+        if (!m_tempPath.isEmpty() && QDir(m_tempPath).exists()) {
+            std::string hash = (std::ostringstream() << atp.info_hashes.get_best()).str();
+            m_torrentIntendedPath[QString::fromStdString(hash)] = savePath;
+            atp.save_path = m_tempPath.toStdString();
+        }
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
@@ -1873,14 +1883,16 @@ void SessionManager::processAlerts()
             bool downloadedThisSession = (st.total_payload_download > 0);
 
             if (downloadedThisSession) {
-                // Auto-move completed download
-                if (m_autoMoveEnabled && !m_autoMovePath.isEmpty()) {
-                    fa->handle.move_storage(m_autoMovePath.toStdString());
-                }
-
-                // Apply stop-after-download (global or per-torrent).
                 QString hash = QString::fromStdString(
                     (std::ostringstream() << st.info_hashes.get_best()).str());
+
+                // Temp path → move to intended final path first
+                if (m_torrentIntendedPath.contains(hash)) {
+                    QString dest = m_torrentIntendedPath.take(hash);
+                    fa->handle.move_storage(dest.toStdString());
+                } else if (m_autoMoveEnabled && !m_autoMovePath.isEmpty()) {
+                    fa->handle.move_storage(m_autoMovePath.toStdString());
+                }
                 if (effectiveStopAfterDownload(hash))
                     fa->handle.pause();
 
@@ -2738,6 +2750,106 @@ void SessionManager::setAutoMove(bool enabled, const QString &path)
 
 bool SessionManager::autoMoveEnabled() const { return m_autoMoveEnabled; }
 QString SessionManager::autoMovePath() const { return m_autoMovePath; }
+
+// --- Temp path ---
+
+void SessionManager::setTempPath(const QString &path)
+{
+    m_tempPath = path;
+    QSettings s("BATorrent", "BATorrent");
+    s.setValue("tempPath", path);
+}
+
+QString SessionManager::tempPath() const { return m_tempPath; }
+
+// --- Content layout ---
+
+void SessionManager::setContentLayout(int layout)
+{
+    m_contentLayout = layout;
+    QSettings s("BATorrent", "BATorrent");
+    s.setValue("contentLayout", layout);
+}
+
+int SessionManager::contentLayout() const { return m_contentLayout; }
+
+void SessionManager::applyContentLayout(lt::add_torrent_params &atp)
+{
+    if (!atp.ti || m_contentLayout == 0) return;
+    const auto &files = atp.ti->files();
+    const int numFiles = static_cast<int>(files.num_files());
+    if (numFiles == 0) return;
+
+    if (m_contentLayout == 2) {
+        // No subfolder: strip the common root directory from all file paths.
+        std::string root = files.file_path(lt::file_index_t(0));
+        auto slash = root.find('/');
+        if (slash != std::string::npos && numFiles > 1) {
+            std::string prefix = root.substr(0, slash + 1);
+            bool allMatch = true;
+            for (lt::file_index_t i(0); i < files.end_file(); ++i) {
+                if (files.file_path(i).compare(0, prefix.size(), prefix) != 0) {
+                    allMatch = false;
+                    break;
+                }
+            }
+            if (allMatch) {
+                for (lt::file_index_t i(0); i < files.end_file(); ++i) {
+                    std::string p = files.file_path(i);
+                    atp.renamed_files[i] = p.substr(prefix.size());
+                }
+            }
+        }
+    } else if (m_contentLayout == 1 && numFiles == 1) {
+        // Create subfolder for single-file torrents.
+        std::string name = atp.ti->name();
+        std::string filePath = files.file_path(lt::file_index_t(0));
+        if (filePath.find('/') == std::string::npos) {
+            atp.renamed_files[lt::file_index_t(0)] = name + "/" + filePath;
+        }
+    }
+}
+
+// --- Excluded file patterns ---
+
+void SessionManager::setExcludedFilePatterns(const QStringList &patterns)
+{
+    m_excludedFilePatterns = patterns;
+    QSettings s("BATorrent", "BATorrent");
+    s.setValue("excludedFilePatterns", patterns);
+}
+
+QStringList SessionManager::excludedFilePatterns() const { return m_excludedFilePatterns; }
+
+void SessionManager::applyExcludedPatterns(lt::add_torrent_params &atp)
+{
+    if (!atp.ti || m_excludedFilePatterns.isEmpty()) return;
+    const auto &files = atp.ti->files();
+    const int numFiles = static_cast<int>(files.num_files());
+
+    QList<QRegularExpression> regexes;
+    for (const QString &p : m_excludedFilePatterns) {
+        QString trimmed = p.trimmed();
+        if (trimmed.isEmpty()) continue;
+        QRegularExpression re(trimmed, QRegularExpression::CaseInsensitiveOption);
+        if (re.isValid())
+            regexes.append(re);
+    }
+    if (regexes.isEmpty()) return;
+
+    if (atp.file_priorities.empty())
+        atp.file_priorities.resize(numFiles, lt::default_priority);
+
+    for (lt::file_index_t i(0); i < files.end_file(); ++i) {
+        QString path = QString::fromStdString(files.file_path(i));
+        for (const auto &re : regexes) {
+            if (re.match(path).hasMatch()) {
+                atp.file_priorities[static_cast<int>(i)] = lt::dont_download;
+                break;
+            }
+        }
+    }
+}
 
 // --- Download Queue ---
 

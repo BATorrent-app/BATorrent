@@ -58,6 +58,18 @@ public:
     void setAutoMoveEnabled(bool val);
     void setAutoMovePath(const QString &path);
 
+    // Temp path
+    QString tempPath() const;
+    void setTempPath(const QString &path);
+
+    // Content layout: 0=Original, 1=Create subfolder, 2=No subfolder
+    int contentLayout() const;
+    void setContentLayout(int layout);
+
+    // Excluded file patterns
+    QString excludedFilePatterns() const;
+    void setExcludedFilePatterns(const QString &patterns);
+
     // Network
     bool dhtEnabled() const;
     int encryptionMode() const;
@@ -206,6 +218,9 @@ private:
     QLineEdit *m_autoMovePathEdit;
     QLineEdit *m_runOnCompleteEdit;
     QLineEdit *m_watchedFolderEdit;
+    QLineEdit *m_tempPathEdit;
+    QComboBox *m_contentLayoutCombo;
+    QLineEdit *m_excludedPatternsEdit;
 
     // Network tab
     QCheckBox *m_dhtCheck;

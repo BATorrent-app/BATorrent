@@ -750,6 +750,17 @@ void Translator::loadEnglish()
         // Auto-move
         {"settings_automove", "Auto-move completed downloads to folder"},
         {"settings_automove_path", "Move to:"},
+        {"settings_temp_path", "Temp download path:"},
+        {"settings_temp_path_hint", "Download to this folder first, move to save path on completion"},
+        {"tip_temp_path", "Incomplete downloads go here first, then move to the save path when finished. Useful to keep media servers from scanning partial files."},
+        {"settings_content_layout", "Content layout:"},
+        {"settings_layout_original", "Original"},
+        {"settings_layout_subfolder", "Create subfolder"},
+        {"settings_layout_no_subfolder", "No subfolder"},
+        {"tip_content_layout", "Original: use torrent's file structure. Create subfolder: wrap single files in a folder. No subfolder: flatten multi-file torrents."},
+        {"settings_excluded_patterns", "Excluded file patterns:"},
+        {"settings_excluded_hint", "Regex patterns separated by ; (e.g. \.nfo$; \.txt$; sample)"},
+        {"tip_excluded_patterns", "Files matching these regex patterns will be auto-skipped (priority 0) when adding a torrent. Separate patterns with semicolons."},
 
         // Download queue
         {"settings_max_active", "Max active downloads (0 = unlimited):"},
@@ -1496,6 +1507,17 @@ void Translator::loadPortuguese()
         // Auto-move
         {"settings_automove", "Mover downloads concluídos automaticamente"},
         {"settings_automove_path", "Mover para:"},
+        {"settings_temp_path", "Caminho temporário de download:"},
+        {"settings_temp_path_hint", "Baixar para esta pasta primeiro, mover para destino ao concluir"},
+        {"tip_temp_path", "Downloads incompletos vão para cá primeiro, depois movem para o destino quando terminam. Útil para evitar que servidores de mídia escaneiem arquivos parciais."},
+        {"settings_content_layout", "Layout do conteúdo:"},
+        {"settings_layout_original", "Original"},
+        {"settings_layout_subfolder", "Criar subpasta"},
+        {"settings_layout_no_subfolder", "Sem subpasta"},
+        {"tip_content_layout", "Original: usar estrutura do torrent. Criar subpasta: colocar arquivos únicos numa pasta. Sem subpasta: achatar torrents com vários arquivos."},
+        {"settings_excluded_patterns", "Padrões de exclusão:"},
+        {"settings_excluded_hint", "Padrões regex separados por ; (ex: \.nfo$; \.txt$; sample)"},
+        {"tip_excluded_patterns", "Arquivos que correspondem a estes padrões serão ignorados automaticamente (prioridade 0) ao adicionar um torrent. Separe padrões com ponto-e-vírgula."},
 
         // Download queue
         {"settings_max_active", "Downloads ativos simultâneos (0 = ilimitado):"},
@@ -2037,6 +2059,17 @@ void Translator::loadChinese()
         // Auto-move
         {"settings_automove", "自动移动已完成的下载"},
         {"settings_automove_path", "移动到："},
+        {"settings_temp_path", "临时下载路径："},
+        {"settings_temp_path_hint", "先下载到此文件夹，完成后移至保存路径"},
+        {"tip_temp_path", "未完成的下载先保存在此处，完成后移至保存路径。可防止媒体服务器扫描不完整文件。"},
+        {"settings_content_layout", "内容布局："},
+        {"settings_layout_original", "原始"},
+        {"settings_layout_subfolder", "创建子文件夹"},
+        {"settings_layout_no_subfolder", "不创建子文件夹"},
+        {"tip_content_layout", "原始：使用 torrent 的文件结构。创建子文件夹：将单个文件放入文件夹。不创建子文件夹：展平多文件 torrent。"},
+        {"settings_excluded_patterns", "排除文件模式："},
+        {"settings_excluded_hint", "正则表达式，分号分隔（如 \.nfo$; \.txt$; sample）"},
+        {"tip_excluded_patterns", "添加 torrent 时，匹配这些正则表达式的文件将自动跳过（优先级 0）。用分号分隔模式。"},
 
         // Download queue
         {"settings_max_active", "最大活动下载数（0 = 无限）："},
@@ -2776,6 +2809,17 @@ void Translator::loadJapanese()
         // Auto-move
         {"settings_automove", "完了したダウンロードを自動移動"},
         {"settings_automove_path", "移動先："},
+        {"settings_temp_path", "一時ダウンロードパス："},
+        {"settings_temp_path_hint", "まずこのフォルダにダウンロード、完了後保存先に移動"},
+        {"tip_temp_path", "不完全なダウンロードはまずここに保存され、完了後に保存先に移動します。メディアサーバーの部分ファイルスキャンを防ぎます。"},
+        {"settings_content_layout", "コンテンツレイアウト："},
+        {"settings_layout_original", "オリジナル"},
+        {"settings_layout_subfolder", "サブフォルダを作成"},
+        {"settings_layout_no_subfolder", "サブフォルダなし"},
+        {"tip_content_layout", "オリジナル：torrent のファイル構造を使用。サブフォルダ作成：単一ファイルをフォルダに入れる。サブフォルダなし：複数ファイルを展開。"},
+        {"settings_excluded_patterns", "除外ファイルパターン："},
+        {"settings_excluded_hint", "正規表現パターン（; 区切り、例: \.nfo$; \.txt$; sample）"},
+        {"tip_excluded_patterns", "torrent 追加時、これらの正規表現に一致するファイルは自動スキップされます（優先度 0）。パターンはセミコロンで区切ります。"},
 
         // Download queue
         {"settings_max_active", "最大同時ダウンロード数（0 = 無制限）："},
@@ -3514,6 +3558,17 @@ void Translator::loadRussian()
         // Auto-move
         {"settings_automove", "Автоперемещение завершённых загрузок"},
         {"settings_automove_path", "Переместить в:"},
+        {"settings_temp_path", "Временный путь загрузки:"},
+        {"settings_temp_path_hint", "Сначала скачать в эту папку, по завершении переместить в папку сохранения"},
+        {"tip_temp_path", "Незавершённые загрузки сохраняются здесь, затем перемещаются в папку сохранения по завершении. Защищает медиасервер от сканирования частичных файлов."},
+        {"settings_content_layout", "Структура содержимого:"},
+        {"settings_layout_original", "Оригинал"},
+        {"settings_layout_subfolder", "Создать подпапку"},
+        {"settings_layout_no_subfolder", "Без подпапки"},
+        {"tip_content_layout", "Оригинал: использовать файловую структуру торрента. Создать подпапку: одиночные файлы в папку. Без подпапки: развернуть многофайловые торренты."},
+        {"settings_excluded_patterns", "Шаблоны исключения файлов:"},
+        {"settings_excluded_hint", "Регулярные выражения через ; (напр. \.nfo$; \.txt$; sample)"},
+        {"tip_excluded_patterns", "Файлы, соответствующие этим регулярным выражениям, будут автоматически пропущены (приоритет 0) при добавлении торрента. Разделяйте точкой с запятой."},
 
         // Download queue
         {"settings_max_active", "Макс. активных загрузок (0 = без ограничений):"},
@@ -4252,6 +4307,17 @@ void Translator::loadSpanish()
         // Auto-move
         {"settings_automove", "Mover descargas completadas automáticamente"},
         {"settings_automove_path", "Mover a:"},
+        {"settings_temp_path", "Ruta temporal de descarga:"},
+        {"settings_temp_path_hint", "Descargar primero a esta carpeta, mover al destino al completar"},
+        {"tip_temp_path", "Las descargas incompletas van aquí primero, luego se mueven a la ruta de guardado al finalizar. Evita que servidores de medios escaneen archivos parciales."},
+        {"settings_content_layout", "Disposición del contenido:"},
+        {"settings_layout_original", "Original"},
+        {"settings_layout_subfolder", "Crear subcarpeta"},
+        {"settings_layout_no_subfolder", "Sin subcarpeta"},
+        {"tip_content_layout", "Original: usar la estructura del torrent. Crear subcarpeta: envolver archivos individuales. Sin subcarpeta: aplanar torrents con múltiples archivos."},
+        {"settings_excluded_patterns", "Patrones de exclusión:"},
+        {"settings_excluded_hint", "Patrones regex separados por ; (ej: \.nfo$; \.txt$; sample)"},
+        {"tip_excluded_patterns", "Los archivos que coincidan con estos patrones regex se omitirán automáticamente (prioridad 0) al agregar un torrent. Separe patrones con punto y coma."},
 
         // Download queue
         {"settings_max_active", "Descargas activas máximas (0 = ilimitado):"},
@@ -4990,6 +5056,17 @@ void Translator::loadGerman()
         // Auto-move
         {"settings_automove", "Abgeschlossene Downloads automatisch verschieben"},
         {"settings_automove_path", "Verschieben nach:"},
+        {"settings_temp_path", "Temporärer Download-Pfad:"},
+        {"settings_temp_path_hint", "Zuerst in diesen Ordner herunterladen, nach Abschluss verschieben"},
+        {"tip_temp_path", "Unvollständige Downloads werden zuerst hier gespeichert und nach Abschluss verschoben. Verhindert das Scannen von Teildownloads durch Medienserver."},
+        {"settings_content_layout", "Inhaltslayout:"},
+        {"settings_layout_original", "Original"},
+        {"settings_layout_subfolder", "Unterordner erstellen"},
+        {"settings_layout_no_subfolder", "Kein Unterordner"},
+        {"tip_content_layout", "Original: Torrent-Dateistruktur verwenden. Unterordner erstellen: Einzeldateien in Ordner. Kein Unterordner: Mehrfachdatei-Torrents flach machen."},
+        {"settings_excluded_patterns", "Ausschluss-Muster:"},
+        {"settings_excluded_hint", "Regex-Muster getrennt durch ; (z.B. \.nfo$; \.txt$; sample)"},
+        {"tip_excluded_patterns", "Dateien, die diesen Regex-Mustern entsprechen, werden beim Hinzufügen eines Torrents automatisch übersprungen (Priorität 0). Muster mit Semikolon trennen."},
 
         // Download queue
         {"settings_max_active", "Max. aktive Downloads (0 = unbegrenzt):"},

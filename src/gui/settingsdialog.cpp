@@ -270,6 +270,41 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     autoMoveLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(autoMoveLabel, autoMoveLayout);
 
+    // Temp path for incomplete downloads
+    auto *tempPathLayout = new QHBoxLayout;
+    m_tempPathEdit = new QLineEdit;
+    m_tempPathEdit->setPlaceholderText(tr_("settings_temp_path_hint"));
+    m_tempPathEdit->setToolTip(tr_("tip_temp_path"));
+    auto *tempBrowseBtn = new QPushButton(tr_("settings_browse"));
+    tempBrowseBtn->setFixedWidth(100);
+    connect(tempBrowseBtn, &QPushButton::clicked, this, [this]() {
+        QString dir = QFileDialog::getExistingDirectory(this, tr_("settings_temp_path"));
+        if (!dir.isEmpty()) m_tempPathEdit->setText(dir);
+    });
+    tempPathLayout->addWidget(m_tempPathEdit);
+    tempPathLayout->addWidget(tempBrowseBtn);
+    auto *tempPathLabel = new QLabel(tr_("settings_temp_path"));
+    tempPathLabel->setStyleSheet(labelStyle);
+    generalLayout->addRow(tempPathLabel, tempPathLayout);
+
+    // Content layout
+    m_contentLayoutCombo = new QComboBox;
+    m_contentLayoutCombo->addItem(tr_("settings_layout_original"), 0);
+    m_contentLayoutCombo->addItem(tr_("settings_layout_subfolder"), 1);
+    m_contentLayoutCombo->addItem(tr_("settings_layout_no_subfolder"), 2);
+    m_contentLayoutCombo->setToolTip(tr_("tip_content_layout"));
+    auto *layoutLabel = new QLabel(tr_("settings_content_layout"));
+    layoutLabel->setStyleSheet(labelStyle);
+    generalLayout->addRow(layoutLabel, m_contentLayoutCombo);
+
+    // Excluded file patterns
+    m_excludedPatternsEdit = new QLineEdit;
+    m_excludedPatternsEdit->setPlaceholderText(tr_("settings_excluded_hint"));
+    m_excludedPatternsEdit->setToolTip(tr_("tip_excluded_patterns"));
+    auto *excludedLabel = new QLabel(tr_("settings_excluded_patterns"));
+    excludedLabel->setStyleSheet(labelStyle);
+    generalLayout->addRow(excludedLabel, m_excludedPatternsEdit);
+
     // Run on completion — external command with template variables
     m_runOnCompleteEdit = new QLineEdit;
     m_runOnCompleteEdit->setPlaceholderText("e.g. notify-send \"%N completed\" or curl http://...");
@@ -1019,6 +1054,15 @@ QString SettingsDialog::runOnComplete() const { return m_runOnCompleteEdit->text
 QString SettingsDialog::watchedFolder() const { return m_watchedFolderEdit->text().trimmed(); }
 void SettingsDialog::setRunOnComplete(const QString &cmd) { m_runOnCompleteEdit->setText(cmd); }
 void SettingsDialog::setWatchedFolder(const QString &path) { m_watchedFolderEdit->setText(path); }
+QString SettingsDialog::tempPath() const { return m_tempPathEdit->text().trimmed(); }
+void SettingsDialog::setTempPath(const QString &path) { m_tempPathEdit->setText(path); }
+int SettingsDialog::contentLayout() const { return m_contentLayoutCombo->currentData().toInt(); }
+void SettingsDialog::setContentLayout(int layout) {
+    int idx = m_contentLayoutCombo->findData(layout);
+    m_contentLayoutCombo->setCurrentIndex(idx >= 0 ? idx : 0);
+}
+QString SettingsDialog::excludedFilePatterns() const { return m_excludedPatternsEdit->text().trimmed(); }
+void SettingsDialog::setExcludedFilePatterns(const QString &patterns) { m_excludedPatternsEdit->setText(patterns); }
 
 // Network getters/setters
 bool SettingsDialog::dhtEnabled() const { return m_dhtCheck->isChecked(); }
