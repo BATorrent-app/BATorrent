@@ -22,6 +22,7 @@
 #include "gui/torrentfilter.h"
 #include "webui/webserver.h"
 #include "app/translator.h"
+#include "app/updater.h"
 
 using Catch::Approx;
 using Catch::Matchers::ContainsSubstring;
@@ -950,6 +951,44 @@ TEST_CASE("WebServer: /api/torrents JSON schema (empty)", "[integration][webserv
     REQUIRE(doc.array().size() == 0);
 
     server.stop();
+}
+
+// ============================================================================
+//  UPDATER
+// ============================================================================
+
+TEST_CASE("Updater::compareVersions", "[unit][updater]")
+{
+    REQUIRE(Updater::compareVersions("2.6.0", "2.5.0") == 1);
+    REQUIRE(Updater::compareVersions("2.5.0", "2.6.0") == -1);
+    REQUIRE(Updater::compareVersions("2.5.0", "2.5.0") == 0);
+    REQUIRE(Updater::compareVersions("2.10.0", "2.9.0") == 1);
+    REQUIRE(Updater::compareVersions("2.5.1", "2.5.0") == 1);
+    REQUIRE(Updater::compareVersions("3.0.0", "2.99.99") == 1);
+    REQUIRE(Updater::compareVersions("2.5.0-rc1", "2.5.0") == -1);
+    REQUIRE(Updater::compareVersions("2.5.0", "2.5.0-rc1") == 1);
+}
+
+TEST_CASE("Updater: signals fire on check", "[integration][updater]")
+{
+    app();
+    Updater updater;
+    QSignalSpy spyNoUpdate(&updater, &Updater::noUpdateAvailable);
+    QSignalSpy spyUpdate(&updater, &Updater::updateAvailable);
+    QSignalSpy spyError(&updater, &Updater::errorOccurred);
+
+    updater.checkForUpdate();
+
+    // Pump event loop for up to 20s (network call)
+    QElapsedTimer timer;
+    timer.start();
+    while (spyNoUpdate.count() == 0 && spyUpdate.count() == 0
+           && spyError.count() == 0 && timer.elapsed() < 20000)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+
+    // At least ONE signal must have fired — "nothing happens" is a failure
+    int total = spyNoUpdate.count() + spyUpdate.count() + spyError.count();
+    REQUIRE(total > 0);
 }
 
 // ============================================================================

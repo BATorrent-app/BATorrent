@@ -37,6 +37,8 @@ BATorrent is a desktop BitTorrent client that prioritises clarity, performance, 
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
+> **Update notice:** versions 2.5.0 through 2.6.0 had a bug where the auto-updater silently failed. If you're on one of these versions, please [download the latest release manually](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest). The updater works correctly from v2.6.1 onward.
+
 ## Download
 
 Pre-built binaries for the latest release:

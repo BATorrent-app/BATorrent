@@ -27,6 +27,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
     ${CMAKE_SOURCE_DIR}/src/app/rssmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/app/addonmanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/updater.cpp
     ${CMAKE_SOURCE_DIR}/src/gui/torrentmodel.cpp
     ${CMAKE_SOURCE_DIR}/src/gui/torrentfilter.cpp
 )
