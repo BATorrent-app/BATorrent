@@ -120,7 +120,8 @@ SessionManager::SessionManager(QObject *parent)
     // Apply persisted advanced settings on startup
     setAdvancedSettings(advancedSettings());
 
-    // Run on complete + watched folder
+    // Torrent export + run on complete + watched folder
+    m_torrentExportDir = settings.value("torrentExportDir").toString();
     m_runOnComplete = settings.value("runOnComplete").toString();
     QString watchPath = settings.value("watchedFolder").toString();
     if (!watchPath.isEmpty()) setWatchedFolder(watchPath);
@@ -214,6 +215,14 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
 {
     try {
         qDebug() << "[session] addTorrent:" << filePath << "save:" << savePath;
+        // Auto-copy .torrent to export directory (backup archive)
+        if (!m_torrentExportDir.isEmpty()) {
+            QDir exportDir(m_torrentExportDir);
+            if (exportDir.exists()) {
+                QFileInfo fi(filePath);
+                QFile::copy(filePath, exportDir.filePath(fi.fileName()));
+            }
+        }
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         atp.save_path = savePath.toStdString();
@@ -1154,6 +1163,24 @@ void SessionManager::stopSeedingTorrent(int index)
     m_torrents[index].pause();
 }
 
+void SessionManager::setSuperSeeding(int index, bool on)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return;
+    if (!m_torrents[index].is_valid()) return;
+    qDebug() << "[session] superSeeding index:" << index << "on:" << on;
+    if (on)
+        m_torrents[index].set_flags(lt::torrent_flags::super_seeding);
+    else
+        m_torrents[index].unset_flags(lt::torrent_flags::super_seeding);
+}
+
+bool SessionManager::isSuperSeeding(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return false;
+    if (!m_torrents[index].is_valid()) return false;
+    return (m_torrents[index].flags() & lt::torrent_flags::super_seeding) != lt::torrent_flags_t{};
+}
+
 void SessionManager::setForceStart(int index, bool on)
 {
     qDebug() << "[session] forceStart index:" << index << "on:" << on;
@@ -1972,6 +1999,12 @@ void SessionManager::processAlerts()
                 ++m_resumeOutstanding;
             }
         }
+        // Alert queue overflow — critical: alerts were silently dropped.
+        // Means our alert_queue_size was too small or processing too slow.
+        if (auto *ad = lt::alert_cast<lt::alerts_dropped_alert>(a)) {
+            qWarning() << "[session] CRITICAL: alerts were dropped! Bitmask:"
+                       << QString::number(ad->dropped_alerts.to_ulong(), 16);
+        }
         // Resume data was rejected (corrupt, version mismatch, missing
         // files). qBittorrent logs this and sets a missing-files flag;
         // without handling it we get undefined behavior at startup.
@@ -2487,6 +2520,14 @@ void SessionManager::setAdvancedSettings(const AdvancedSettings &a)
     m_session.apply_settings(pack);
     qDebug() << "[session] advanced settings applied";
 }
+
+void SessionManager::setTorrentExportDir(const QString &path)
+{
+    m_torrentExportDir = path;
+    QSettings("BATorrent", "BATorrent").setValue("torrentExportDir", path);
+}
+
+QString SessionManager::torrentExportDir() const { return m_torrentExportDir; }
 
 void SessionManager::setRunOnComplete(const QString &command)
 {

@@ -2327,6 +2327,17 @@ void MainWindow::showContextMenu(const QPoint &pos)
             m_session->setForceStart(row, checked);
         });
 
+        // Super seeding toggle
+        if (info.progress >= 1.0f) {
+            auto *superSeedAction = menu.addAction(tr_("ctx_super_seeding"));
+            superSeedAction->setCheckable(true);
+            superSeedAction->setChecked(m_session->isSuperSeeding(rows.first()));
+            superSeedAction->setToolTip("Send each piece only once to maximize initial distribution");
+            connect(superSeedAction, &QAction::toggled, this, [this, row = rows.first()](bool checked) {
+                m_session->setSuperSeeding(row, checked);
+            });
+        }
+
         // Tags — comma-separated quick editor. Multi-tag support without
         // building a full tag picker UI: most users want to type "anime, 2024"
         // and move on.

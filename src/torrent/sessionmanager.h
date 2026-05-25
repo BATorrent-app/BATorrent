@@ -162,6 +162,11 @@ public:
     // Force pause regardless of state ("stop seeding now")
     void stopSeedingTorrent(int index);
 
+    // Super seeding mode — only sends each piece once to maximize initial
+    // distribution. Essential for first seeders of new content.
+    void setSuperSeeding(int index, bool on);
+    bool isSuperSeeding(int index) const;
+
     // Force start: exempt this torrent from the active-downloads queue cap.
     // It will keep downloading even when other torrents are queue-paused.
     void setForceStart(int index, bool on);
@@ -227,6 +232,11 @@ public:
     // Resolves via libtorrent's file_path(0) rather than the torrent's display
     // name, which can drift from disk after rename/sanitization.
     QString torrentRootPath(int index) const;
+
+    // Auto-copy .torrent files to a backup directory when added. Essential
+    // for private tracker users who want to keep an archive.
+    void setTorrentExportDir(const QString &path);
+    QString torrentExportDir() const;
 
     // Execute a command when a torrent finishes. Template variables:
     // %N = torrent name, %D = save path, %F = content path (first file),
@@ -433,6 +443,8 @@ private:
     // resumeDataDir(). Returns true on success.
     bool persistResumeAlert(const struct lt::save_resume_data_alert *rd);
 
+    // Torrent export — auto-copy .torrent files to a backup directory
+    QString m_torrentExportDir;
     // Run on complete
     QString m_runOnComplete;
     // Watched folder
