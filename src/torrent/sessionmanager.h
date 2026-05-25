@@ -65,9 +65,14 @@ public:
     // tracker delete API.
     void replaceTrackers(int torrentIndex, const QStringList &urls);
 
-    // Categories
+    // Categories — each can optionally map to a dedicated save path.
+    // When a torrent is assigned a category that has a save path, new
+    // downloads auto-use that path instead of the global default.
     void setTorrentCategory(int index, const QString &category);
     QStringList categories() const;
+    void setCategorySavePath(const QString &category, const QString &path);
+    QString categorySavePath(const QString &category) const;
+    QMap<QString, QString> allCategorySavePaths() const;
 
     // Tags — multiple per torrent, free-form. Persisted under "torrentTags/{hash}"
     // as a comma-joined list. Used in addition to (not instead of) the single
@@ -449,6 +454,8 @@ private:
 
     // Categories per torrent (hash -> category name)
     QMap<QString, QString> m_categories;
+    // Per-category save paths (category name -> save path)
+    QMap<QString, QString> m_categorySavePaths;
     // Tags per torrent (hash -> list of tag names)
     QMap<QString, QStringList> m_torrentTags;
 

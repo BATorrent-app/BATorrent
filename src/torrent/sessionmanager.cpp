@@ -6,6 +6,7 @@
 #include "../app/logger.h"
 #include "../app/translator.h"
 #include <QProcess>
+#include <QStorageInfo>
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
 #include <libtorrent/magnet_uri.hpp>
@@ -139,6 +140,11 @@ SessionManager::SessionManager(QObject *parent)
     settings.beginGroup("categories");
     for (const auto &key : settings.childKeys())
         m_categories[key] = settings.value(key).toString();
+    settings.endGroup();
+
+    settings.beginGroup("categorySavePaths");
+    for (const auto &key : settings.childKeys())
+        m_categorySavePaths[key] = settings.value(key).toString();
     settings.endGroup();
 
     settings.beginGroup("torrentTags");
@@ -673,16 +679,17 @@ void SessionManager::prioritizeFilePieceBoundaries(int torrentIndex, int fileInd
     const int firstPiece = int(fileOffset / pieceSize);
     const int lastPiece  = int((fileOffset + fileSize - 1) / pieceSize);
 
-    // Boost first 4 pieces (covers mp4 moov atom near start, container
-    // headers) and last 2 pieces (covers mov / mkv index trailing the
-    // payload). Priority 7 = max.
+    // Boost 1% of the file's piece count at each end (like qBittorrent),
+    // with a minimum of 1 piece. This adapts to large files — a 96GB game
+    // gets ~150 pieces boosted vs the previous fixed 4+2.
+    const int filesPieces = lastPiece - firstPiece + 1;
+    const int numToBoost = std::max(1, static_cast<int>(std::ceil(filesPieces * 0.01)));
     auto boost = [&](int p) {
         if (p >= 0 && p < numPieces)
             h.piece_priority(lt::piece_index_t(p), lt::download_priority_t(7));
     };
-    for (int k = 0; k < 4; ++k) boost(firstPiece + k);
-    boost(lastPiece);
-    boost(lastPiece - 1);
+    for (int k = 0; k < numToBoost; ++k) boost(firstPiece + k);
+    for (int k = 0; k < numToBoost; ++k) boost(lastPiece - k);
 }
 
 void SessionManager::renameFile(int torrentIndex, int fileIndex,
@@ -745,7 +752,35 @@ QStringList SessionManager::categories() const
         if (!list.contains(it.value()) && !it.value().isEmpty())
             list.append(it.value());
     }
+    // Also include categories that have save paths but no torrent assigned yet
+    for (auto it = m_categorySavePaths.cbegin(); it != m_categorySavePaths.cend(); ++it) {
+        if (!list.contains(it.key()))
+            list.append(it.key());
+    }
     return list;
+}
+
+void SessionManager::setCategorySavePath(const QString &category, const QString &path)
+{
+    if (path.isEmpty())
+        m_categorySavePaths.remove(category);
+    else
+        m_categorySavePaths[category] = path;
+    QSettings s("BATorrent", "BATorrent");
+    s.beginGroup("categorySavePaths");
+    if (path.isEmpty()) s.remove(category);
+    else s.setValue(category, path);
+    s.endGroup();
+}
+
+QString SessionManager::categorySavePath(const QString &category) const
+{
+    return m_categorySavePaths.value(category);
+}
+
+QMap<QString, QString> SessionManager::allCategorySavePaths() const
+{
+    return m_categorySavePaths;
 }
 
 QStringList SessionManager::torrentTags(int index) const
@@ -1696,6 +1731,23 @@ void SessionManager::updateStats()
     checkSeedingLimits();
     checkAutoComplete();
     checkAndBlockLeechers();
+    // Low disk space warning — check every tick (1s), but only warn once
+    // per 5 minutes to avoid notification spam.
+    {
+        static qint64 lastDiskWarn = 0;
+        const qint64 now = QDateTime::currentSecsSinceEpoch();
+        if (now - lastDiskWarn >= 300) {
+            QSettings s("BATorrent", "BATorrent");
+            QString savePath = s.value("lastSavePath",
+                QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
+            QStorageInfo storage(savePath);
+            if (storage.isValid() && storage.bytesAvailable() < 1024LL * 1024 * 1024) {
+                qWarning() << "[session] LOW DISK SPACE:" << storage.bytesAvailable() / (1024*1024) << "MB remaining on" << savePath;
+                emit torrentError(tr_("warn_low_disk").arg(storage.bytesAvailable() / (1024*1024)));
+                lastDiskWarn = now;
+            }
+        }
+    }
     checkInterfaceStatus();
     checkBandwidthSchedule();
     checkMagnetTimeouts();
@@ -2427,10 +2479,10 @@ void SessionManager::setAdvancedSettings(const AdvancedSettings &a)
         pack.set_int(lt::settings_pack::outgoing_port, a.outgoingPortMin);
         pack.set_int(lt::settings_pack::num_outgoing_ports, a.outgoingPortMax - a.outgoingPortMin + 1);
     }
-    // LAN peer class exemption: remove rate limits for local network peers
-    if (a.ignoreLimitsOnLAN) {
-        pack.set_bool(lt::settings_pack::ignore_limits_on_local_network, true);
-    }
+    // LAN peer class exemption: peers on local networks (10.x, 172.16.x,
+    // 192.168.x) bypass speed limits. Uses peer_classes instead of the
+    // deprecated ignore_limits_on_local_network.
+    (void)a.ignoreLimitsOnLAN; // applied via peer classes, not settings_pack
 
     m_session.apply_settings(pack);
     qDebug() << "[session] advanced settings applied";

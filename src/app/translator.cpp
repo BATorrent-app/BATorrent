@@ -758,6 +758,7 @@ void Translator::loadEnglish()
 
         // === Rounds 1-3 ===
         {"error_disk_full", "Disk full — all downloads paused. Free up space and resume manually."},
+        {"warn_low_disk", "Low disk space — only %1 MB remaining. Downloads may fail if disk fills up."},
         {"about_discord", "Talk to the maintainer on Discord"},
         {"action_full_backup", "Full backup..."},
         {"action_full_restore", "Restore backup..."},
@@ -1503,6 +1504,7 @@ void Translator::loadPortuguese()
 
         // === Rounds 1-3 ===
         {"error_disk_full", "Disco cheio — todos os downloads pausados. Libere espaço e retome manualmente."},
+        {"warn_low_disk", "Pouco espaço em disco — apenas %1 MB restantes. Downloads podem falhar se o disco encher."},
         {"about_discord", "Falar com o mantenedor no Discord"},
         {"action_full_backup", "Backup completo..."},
         {"action_full_restore", "Restaurar backup..."},
