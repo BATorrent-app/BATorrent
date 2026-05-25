@@ -63,7 +63,8 @@ void Updater::checkForUpdate()
         emit noUpdateAvailable();
         return;
     }
-    QNetworkRequest req(QUrl(url));
+    QUrl apiUrl(url);
+    QNetworkRequest req{apiUrl};
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/" APP_VERSION);
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                      QNetworkRequest::NoLessSafeRedirectPolicy);
