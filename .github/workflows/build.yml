@@ -264,6 +264,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
 
@@ -287,16 +288,15 @@ jobs:
       # publishes. The MSIX artifact still needs manual upload to Partner
       # Center, but at least the build is ready without a separate dispatch.
       - name: Trigger Store MSIX build
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
           gh workflow run store.yml -f version="${VERSION}.0"
 
-      # Notify the Homebrew tap to auto-update its cask with the new
-      # version + SHA256. The tap repo has its own workflow that downloads
-      # the DMG, recomputes the hash, and commits.
       - name: Update Homebrew tap
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
