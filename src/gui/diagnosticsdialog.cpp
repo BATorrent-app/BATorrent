@@ -4,6 +4,7 @@
 
 #include "diagnosticsdialog.h"
 #include "../app/translator.h"
+#include "../app/utils.h"
 #include "../torrent/sessionmanager.h"
 #include "thememanager.h"
 
@@ -181,6 +182,16 @@ void DiagnosticsDialog::runHealthCheck()
 
     // Active torrents sanity
     rows << pass(tr_("diag_check_torrent_count").arg(m_session->torrentCount()));
+
+    // Detailed stats
+    auto ds = m_session->detailedStats();
+    rows << pass(QStringLiteral("DHT nodes: %1").arg(ds.dhtNodes));
+    rows << pass(QStringLiteral("Connected peers: %1").arg(ds.peersCount));
+    if (ds.totalWasted > 0)
+        rows << warn(QStringLiteral("Wasted data: %1").arg(formatSize(ds.totalWasted)));
+    rows << (ds.hasIncomingConnections
+             ? pass(QStringLiteral("Listening for incoming connections"))
+             : warn(QStringLiteral("Not listening — port may be blocked")));
 
     m_healthLabel->setText(rows.join(QStringLiteral("<br>")));
 }

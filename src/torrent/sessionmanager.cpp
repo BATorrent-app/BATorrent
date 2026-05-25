@@ -2328,6 +2328,19 @@ qint64 SessionManager::sessionUploaded() const
     return sessionUp;
 }
 
+SessionManager::DetailedStats SessionManager::detailedStats() const
+{
+    DetailedStats ds;
+    for (const auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        auto st = cachedStatus(h);
+        ds.peersCount += st.num_peers;
+        ds.totalWasted += st.total_redundant_bytes + st.total_failed_bytes;
+    }
+    ds.hasIncomingConnections = m_session.is_listening();
+    return ds;
+}
+
 void SessionManager::incrementTorrentCount()
 {
     QSettings settings("BATorrent", "BATorrent");

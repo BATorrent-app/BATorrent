@@ -335,6 +335,17 @@ public:
     qint64 sessionDownloaded() const;
     qint64 sessionUploaded() const;
 
+    // Detailed session metrics (from libtorrent session_stats)
+    struct DetailedStats {
+        int dhtNodes = 0;
+        int peersCount = 0;
+        qint64 totalWasted = 0;       // redundant + failed bytes
+        int diskReadQueue = 0;
+        int diskWriteQueue = 0;
+        bool hasIncomingConnections = false;
+    };
+    DetailedStats detailedStats() const;
+
     // Torrent count tracking
     void incrementTorrentCount();
     int totalTorrentsAdded() const;
