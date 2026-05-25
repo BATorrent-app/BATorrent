@@ -136,10 +136,29 @@ SessionManager::SessionManager(QObject *parent)
         m_perTorrentUpLimit[key] = settings.value(key).toInt();
     settings.endGroup();
 
-    loadResumeData();
+    // Crash loop guard: if the app crashed during the previous startup
+    // (flag still set), skip loading resume data so the user can at least
+    // open the app and remove the problematic torrent. The flag is cleared
+    // after 15 seconds of stable running.
+    const bool prevCrash = settings.value("startupInProgress", false).toBool();
+    if (prevCrash) {
+        qWarning("Crash loop detected — skipping resume data to allow recovery. "
+                 "Previously active torrents will reappear after a clean restart.");
+        settings.setValue("startupInProgress", false);
+    } else {
+        settings.setValue("startupInProgress", true);
+        settings.sync();
+        loadResumeData();
+    }
 
     connect(&m_updateTimer, &QTimer::timeout, this, &SessionManager::updateStats);
     m_updateTimer.start(1000);
+
+    // Clear the crash guard after 15 s of stable running. If the app
+    // crashes before this timer fires, the next launch enters safe mode.
+    QTimer::singleShot(15000, this, [this]() {
+        QSettings("BATorrent", "BATorrent").setValue("startupInProgress", false);
+    });
 }
 
 SessionManager::~SessionManager()
