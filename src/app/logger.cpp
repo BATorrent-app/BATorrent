@@ -34,6 +34,19 @@ void Logger::init()
     m_file.setFileName(currentLogPath());
     (void)m_file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
 
+    // Detect unclean shutdown: if the previous session didn't write
+    // "--- log closed ---" before the file ended, it crashed.
+    {
+        QFile readCheck(currentLogPath());
+        if (readCheck.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QByteArray tail = readCheck.readAll().right(200);
+            readCheck.close();
+            if (!tail.isEmpty() && !tail.contains("--- log closed ---")
+                && tail.contains("--- log opened ---")) {
+                writeLine(Warning, QStringLiteral("--- previous session ended abnormally (crash or force-kill) ---"));
+            }
+        }
+    }
     writeLine(Info, QStringLiteral("--- log opened ---"));
 }
 

@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "sessionmanager.h"
+#include "../app/logger.h"
 #include "../app/translator.h"
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
@@ -167,6 +168,7 @@ SessionManager::~SessionManager()
     // before Qt tears the app down. The periodic 5-min timer and the
     // piece_finished_alert path both call saveResumeData() (non-blocking).
     flushResumeDataBlocking(5000);
+    Logger::instance().log(Logger::Info, QStringLiteral("--- log closed ---"));
 }
 
 void SessionManager::addTorrent(const QString &filePath, const QString &savePath)

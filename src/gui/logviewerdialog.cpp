@@ -79,7 +79,7 @@ LogViewerDialog::LogViewerDialog(QWidget *parent)
 
     m_view = new QPlainTextEdit;
     m_view->setReadOnly(true);
-    m_view->setMaximumBlockCount(5000); // cap UI memory; full log on disk
+    m_view->setMaximumBlockCount(20000); // show more history (includes previous sessions)
     root->addWidget(m_view, 1);
 
     // Bottom row: actions
