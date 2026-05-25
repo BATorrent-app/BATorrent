@@ -388,6 +388,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::applyTheme()
 {
+    qDebug() << "[ui] applyTheme:" << ThemeManager::instance().theme();
     const auto &tm = ThemeManager::instance();
     // Override the application QPalette so plain QWidgets (filter bar
     // container, splitters, scroll areas, details-panel inner widgets) pick
@@ -1803,6 +1804,7 @@ void MainWindow::onSelectionChanged()
 
 void MainWindow::onTorrentFinished(const QString &name, const QString &infoHash)
 {
+    qDebug() << "[ui] torrent finished:" << name;
     QString completedBody = name;
     for (int i = 0; i < m_session->torrentCount(); ++i) {
         if (m_session->torrentHashAt(i) == infoHash) {
@@ -1936,6 +1938,7 @@ void MainWindow::revealLastNotified()
 
 void MainWindow::openSettings()
 {
+    qDebug() << "[ui] openSettings";
     SettingsDialog dlg(this);
     dlg.setDefaultSavePath(m_lastSavePath);
     dlg.setMaxDownloadSpeed(m_session->downloadLimit());

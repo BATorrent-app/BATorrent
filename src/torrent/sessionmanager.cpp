@@ -174,6 +174,7 @@ SessionManager::~SessionManager()
 void SessionManager::addTorrent(const QString &filePath, const QString &savePath)
 {
     try {
+        qDebug() << "[session] addTorrent:" << filePath << "save:" << savePath;
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         atp.save_path = savePath.toStdString();
@@ -259,6 +260,7 @@ void SessionManager::applyIncompleteSuffix(lt::add_torrent_params &atp)
 void SessionManager::addMagnet(const QString &uri, const QString &savePath)
 {
     try {
+        qDebug() << "[session] addMagnet:" << uri.left(80) << "save:" << savePath;
         lt::add_torrent_params atp = lt::parse_magnet_uri(uri.toStdString());
         atp.save_path = savePath.toStdString();
         // Clear both flags (see addTorrent for the full rationale).
@@ -310,6 +312,7 @@ void SessionManager::checkMagnetTimeouts()
 
 void SessionManager::removeTorrent(int index, bool deleteFiles)
 {
+    qDebug() << "[session] removeTorrent index:" << index << "deleteFiles:" << deleteFiles;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
 
@@ -397,6 +400,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
 
 void SessionManager::pauseTorrent(int index)
 {
+    qDebug() << "[session] pauseTorrent index:" << index;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
     m_torrents[index].pause();
@@ -404,6 +408,7 @@ void SessionManager::pauseTorrent(int index)
 
 void SessionManager::resumeTorrent(int index)
 {
+    qDebug() << "[session] resumeTorrent index:" << index;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
     // Resume on a completed torrent un-marks it — the user is explicitly
@@ -414,12 +419,14 @@ void SessionManager::resumeTorrent(int index)
 
 void SessionManager::pauseAll()
 {
+    qDebug() << "[session] pauseAll";
     for (auto &h : m_torrents)
         h.pause();
 }
 
 void SessionManager::resumeAll()
 {
+    qDebug() << "[session] resumeAll";
     for (auto &h : m_torrents)
         h.resume();
 }
@@ -874,6 +881,7 @@ bool SessionManager::utpEnabled() const
 
 void SessionManager::setAnonymousMode(bool enabled)
 {
+    qDebug() << "[session] anonymousMode:" << enabled;
     m_anonymousMode = enabled;
     lt::settings_pack pack;
     pack.set_bool(lt::settings_pack::anonymous_mode, enabled);
@@ -885,6 +893,7 @@ bool SessionManager::anonymousMode() const { return m_anonymousMode; }
 
 void SessionManager::setForceIpv4(bool enabled)
 {
+    qDebug() << "[session] forceIpv4:" << enabled;
     m_forceIpv4 = enabled;
     lt::settings_pack pack;
     int port = listenPort();
@@ -903,6 +912,7 @@ bool SessionManager::forceIpv4() const { return m_forceIpv4; }
 
 void SessionManager::setPtMode(bool enabled)
 {
+    qDebug() << "[session] ptMode:" << enabled;
     m_ptMode = enabled;
     lt::settings_pack pack;
     pack.set_bool(lt::settings_pack::enable_dht, !enabled && m_dhtEnabled);
@@ -920,6 +930,7 @@ bool SessionManager::ptMode() const { return m_ptMode; }
 
 void SessionManager::setBlockLeecherClients(bool enabled)
 {
+    qDebug() << "[session] blockLeechers:" << enabled;
     m_blockLeechers = enabled;
     QSettings("BATorrent", "BATorrent").setValue("blockLeechers", enabled);
 }
@@ -959,6 +970,7 @@ void SessionManager::checkAndBlockLeechers()
                         m_session.set_ip_filter(filter);
                     } catch (...) {}
                     ++m_blockedLeecherCount;
+                    qDebug() << "[session] blocked leecher peer:" << QString::fromStdString(p.ip.address().to_string()) << "client:" << pid.left(8);
                     break;
                 }
             }
@@ -1076,6 +1088,7 @@ void SessionManager::stopSeedingTorrent(int index)
 
 void SessionManager::setForceStart(int index, bool on)
 {
+    qDebug() << "[session] forceStart index:" << index << "on:" << on;
     QString hash = torrentHash(index);
     if (hash.isEmpty()) return;
     if (on) {
@@ -1153,6 +1166,7 @@ int SessionManager::torrentUploadLimit(int index) const
 
 void SessionManager::markCompleted(int index)
 {
+    qDebug() << "[session] markCompleted index:" << index;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
     auto &h = m_torrents[index];
@@ -1238,6 +1252,7 @@ void SessionManager::checkAutoComplete()
 
 void SessionManager::forceRecheck(int index)
 {
+    qDebug() << "[session] forceRecheck index:" << index;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
     if (!m_torrents[index].is_valid()) return;
@@ -1246,6 +1261,7 @@ void SessionManager::forceRecheck(int index)
 
 void SessionManager::forceReannounce(int index)
 {
+    qDebug() << "[session] forceReannounce index:" << index;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
     if (!m_torrents[index].is_valid()) return;
@@ -1622,6 +1638,8 @@ void SessionManager::loadResumeData()
             h.set_upload_limit(kbps * 1024);
     }
 
+    qDebug() << "[session] loadResumeData complete:" << m_torrents.size() << "torrents loaded";
+
     if (!m_torrents.empty())
         emit torrentsUpdated();
 }
@@ -1747,6 +1765,7 @@ void SessionManager::processAlerts()
                 if (effectiveStopAfterDownload(hash))
                     fa->handle.pause();
 
+                qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
                 emit torrentFinished(name, hash);
             }
 
@@ -2041,6 +2060,7 @@ QString SessionManager::stateToString(lt::torrent_status::state_t state)
 
 void SessionManager::setOutgoingInterface(const QString &interfaceName)
 {
+    qDebug() << "[session] setOutgoingInterface:" << interfaceName;
     m_outgoingInterface = interfaceName;
     m_killSwitchActive = false;
     // Resume torrents that the killswitch paused — otherwise switching VPNs
@@ -2371,6 +2391,7 @@ void SessionManager::checkInterfaceStatus()
 
     if (!interfaceOk && !m_killSwitchActive) {
         // Interface just went down — pause all running torrents
+        qDebug() << "[session] KILL SWITCH TRIGGERED — interface" << m_outgoingInterface << "is down";
         m_killSwitchActive = true;
         m_killSwitchPaused.clear();
         for (auto &h : m_torrents) {
@@ -2394,6 +2415,7 @@ void SessionManager::checkInterfaceStatus()
             }
         }
         m_killSwitchPaused.clear();
+        qDebug() << "[session] VPN interface restored:" << m_outgoingInterface;
         emit interfaceRestored();
     }
 }
