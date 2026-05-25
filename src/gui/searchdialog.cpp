@@ -134,10 +134,15 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
     filterRow->setSpacing(8);
 
     m_sourceCombo = new QComboBox;
-    m_sourceCombo->addItem(tr_("search_source_stremio"));
+    m_sourceCombo->addItem(tr_("search_source_stremio"), QStringLiteral("stremio"));
     if (AddonManager::instance().torrentSearchEnabled()) {
-        m_sourceCombo->addItem(tr_("search_source_torrents"));
-        m_sourceCombo->addItem(tr_("search_source_games"));
+        m_sourceCombo->addItem(tr_("search_source_torrents"), QStringLiteral("legacy"));
+        m_sourceCombo->addItem(tr_("search_source_games"), QStringLiteral("games"));
+    }
+    const auto providers = AddonManager::instance().searchProviders();
+    for (int i = 0; i < providers.size(); ++i) {
+        if (providers[i].enabled)
+            m_sourceCombo->addItem(providers[i].name, QStringLiteral("provider:%1").arg(i));
     }
     m_sourceCombo->setCursor(Qt::PointingHandCursor);
     connect(m_sourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -306,12 +311,13 @@ SearchDialog::SearchDialog(SessionManager *session, const QString &savePath, QWi
 
 void SearchDialog::onSourceChanged(int index)
 {
-    if (index == 2) {
+    QString data = m_sourceCombo->currentData().toString();
+    if (data == "games") {
         m_categoryCombo->hide();
         m_searchEdit->setPlaceholderText(tr_("search_placeholder_games"));
         switchToGameResults();
-    } else if (index == 1) {
-        m_categoryCombo->show();
+    } else if (data == "legacy" || data.startsWith("provider:")) {
+        m_categoryCombo->setVisible(data == "legacy");
         m_searchEdit->setPlaceholderText(tr_("search_placeholder_torrent"));
         switchToTorrentResults();
     } else {
@@ -326,23 +332,29 @@ void SearchDialog::performSearch()
     QString query = m_searchEdit->text().trimmed();
     if (query.isEmpty()) return;
 
-    int sourceIndex = m_sourceCombo->currentIndex();
+    QString data = m_sourceCombo->currentData().toString();
 
-    if (sourceIndex == 2) {
+    if (data == "games") {
         m_gameTable->setRowCount(0);
         m_gameResults.clear();
         m_isGameSearch = true;
         switchToGameResults();
         m_statusLabel->setText(tr_("search_searching"));
-
         AddonManager::instance().searchTorrents(query, 400);
-    } else if (sourceIndex == 1) {
+    } else if (data.startsWith("provider:")) {
+        int idx = data.mid(9).toInt();
         m_torrentTable->setRowCount(0);
         m_torrentResults.clear();
         m_isGameSearch = false;
         switchToTorrentResults();
         m_statusLabel->setText(tr_("search_searching"));
-
+        AddonManager::instance().searchWithProvider(idx, query);
+    } else if (data == "legacy") {
+        m_torrentTable->setRowCount(0);
+        m_torrentResults.clear();
+        m_isGameSearch = false;
+        switchToTorrentResults();
+        m_statusLabel->setText(tr_("search_searching"));
         int cat = m_categoryCombo->currentData().toInt();
         AddonManager::instance().searchTorrents(query, cat);
     } else {
@@ -350,12 +362,10 @@ void SearchDialog::performSearch()
             m_statusLabel->setText(tr_("search_no_catalog"));
             return;
         }
-
         m_catalogTable->setRowCount(0);
         m_currentItems.clear();
         switchToCatalog();
         m_statusLabel->setText(tr_("search_searching"));
-
         AddonManager::instance().searchCatalog(query);
     }
 }

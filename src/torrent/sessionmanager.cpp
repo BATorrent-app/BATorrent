@@ -751,9 +751,6 @@ void SessionManager::setTorrentCategory(int index, const QString &category)
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
     QString hash = torrentHash(index);
-    // No real hash yet (e.g. still resolving magnet metadata) — silently
-    // skip; categorizing a magnet before its hash is known would collide
-    // with every other still-resolving magnet's zero hash.
     if (hash.isEmpty())
         return;
 
@@ -761,6 +758,24 @@ void SessionManager::setTorrentCategory(int index, const QString &category)
         m_categories.remove(hash);
     else
         m_categories[hash] = category;
+
+    // If the category has a save path and the torrent is still downloading,
+    // update the intended destination (temp path integration).
+    if (!category.isEmpty() && m_categorySavePaths.contains(category)) {
+        const QString &catPath = m_categorySavePaths[category];
+        if (!catPath.isEmpty()) {
+            lt::torrent_status st = cachedStatus(m_torrents[index]);
+            bool downloading = (st.state == lt::torrent_status::downloading
+                             || st.state == lt::torrent_status::downloading_metadata);
+            if (downloading) {
+                if (!m_tempPath.isEmpty() && QDir(m_tempPath).exists()) {
+                    m_torrentIntendedPath[hash] = catPath;
+                } else {
+                    m_torrents[index].move_storage(catPath.toStdString());
+                }
+            }
+        }
+    }
 }
 
 QStringList SessionManager::categories() const

@@ -271,6 +271,18 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          # Extract the section between "## vX.Y.Z" and the next "---" or "## v"
+          NOTES=$(awk "/^## v${VERSION}/{found=1; next} /^---$|^## v/{if(found) exit} found{print}" CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            NOTES="Release ${VERSION}"
+          fi
+          # Write to file to avoid quoting issues
+          echo "$NOTES" > /tmp/release_notes.md
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -279,7 +291,7 @@ jobs:
             windows-zip/BATorrent-windows-x86_64.zip
             windows-installer/BATorrent-setup-x86_64.exe
             macos-build/BATorrent-macos-arm64.dmg
-          generate_release_notes: true
+          body_path: /tmp/release_notes.md
 
       # Trigger the Store MSIX build automatically after GitHub Release
       # publishes. The MSIX artifact still needs manual upload to Partner

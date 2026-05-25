@@ -51,6 +51,22 @@ struct TorrentSearchResult {
     QString category;
 };
 
+// Search provider — a named torrent search engine with URL template + JSON mapping.
+struct SearchProvider {
+    QString id;
+    QString name;
+    QString urlTemplate; // {query} and {category} placeholders
+    // JSON paths for parsing response (dot-separated, array root assumed)
+    QString arrayPath = ""; // empty = root array, e.g. "torrents" or "results"
+    QString namePath = "name";
+    QString hashPath = "info_hash";
+    QString sizePath = "size";
+    QString seedersPath = "seeders";
+    QString leechersPath = "leechers";
+    bool enabled = true;
+    bool builtIn = false;
+};
+
 class AddonManager : public QObject
 {
     Q_OBJECT
@@ -81,7 +97,14 @@ public:
     bool autoTrackersEnabled() const;
     void setAutoTrackersEnabled(bool enabled);
 
-    // Torrent search (opt-in, disabled by default)
+    // Search providers (multi-engine torrent search)
+    QList<SearchProvider> searchProviders() const;
+    void addSearchProvider(const SearchProvider &p);
+    void removeSearchProvider(int index);
+    void setSearchProviderEnabled(int index, bool enabled);
+    void searchWithProvider(int providerIndex, const QString &query, int category = 0);
+
+    // Legacy single-URL search (kept for backward compat)
     bool torrentSearchEnabled() const;
     void setTorrentSearchEnabled(bool enabled);
     QString torrentSearchUrl() const;
@@ -111,6 +134,11 @@ private:
     bool m_autoTrackers = true;
     bool m_torrentSearchEnabled = false;
     QString m_torrentSearchUrl;
+    QList<SearchProvider> m_searchProviders;
+    void installDefaultProviders();
+    void loadSearchProviders();
+    void saveSearchProviders();
+    QList<TorrentSearchResult> parseProviderResponse(const SearchProvider &p, const QByteArray &data);
     int m_pendingCatalog = 0;
     int m_pendingStreams = 0;
     // Generation counters: every searchCatalog / getStreams call bumps the

@@ -23,6 +23,8 @@ AddonManager::AddonManager()
 {
     loadAddons();
     installDefaults();
+    loadSearchProviders();
+    installDefaultProviders();
 }
 
 void AddonManager::loadAddons()
@@ -493,6 +495,189 @@ void AddonManager::searchTorrents(const QString &query, int category)
             results.append(r);
         }
 
+        emit torrentSearchResults(results);
+        emit torrentSearchFinished();
+    });
+}
+
+// --- Search Providers ---
+
+void AddonManager::installDefaultProviders()
+{
+    QSettings s("BATorrent", "BATorrent");
+    if (s.value("searchProvidersInitialized", false).toBool())
+        return;
+    s.setValue("searchProvidersInitialized", true);
+
+    struct Def { QString id, name, url, arr, nm, hash, sz, seed, leech; };
+    QList<Def> defaults = {
+        {"apibay", "The Pirate Bay (apibay)",
+         "https://apibay.org/q.php?q={query}&cat={category}",
+         "", "name", "info_hash", "size", "seeders", "leechers"},
+        {"nyaa_api", "Nyaa.si",
+         "https://nyaa.si/api/v2?q={query}&limit=50",
+         "torrents", "title", "info_hash", "total_size", "seeders", "leechers"},
+    };
+
+    for (const auto &d : defaults) {
+        bool exists = false;
+        for (const auto &p : m_searchProviders)
+            if (p.id == d.id) { exists = true; break; }
+        if (!exists) {
+            SearchProvider p;
+            p.id = d.id; p.name = d.name; p.urlTemplate = d.url;
+            p.arrayPath = d.arr; p.namePath = d.nm; p.hashPath = d.hash;
+            p.sizePath = d.sz; p.seedersPath = d.seed; p.leechersPath = d.leech;
+            p.enabled = true; p.builtIn = true;
+            m_searchProviders.append(p);
+        }
+    }
+    saveSearchProviders();
+}
+
+void AddonManager::loadSearchProviders()
+{
+    QSettings s("BATorrent", "BATorrent");
+    int count = s.beginReadArray("searchProviders");
+    m_searchProviders.clear();
+    for (int i = 0; i < count; ++i) {
+        s.setArrayIndex(i);
+        SearchProvider p;
+        p.id = s.value("id").toString();
+        p.name = s.value("name").toString();
+        p.urlTemplate = s.value("urlTemplate").toString();
+        p.arrayPath = s.value("arrayPath").toString();
+        p.namePath = s.value("namePath", "name").toString();
+        p.hashPath = s.value("hashPath", "info_hash").toString();
+        p.sizePath = s.value("sizePath", "size").toString();
+        p.seedersPath = s.value("seedersPath", "seeders").toString();
+        p.leechersPath = s.value("leechersPath", "leechers").toString();
+        p.enabled = s.value("enabled", true).toBool();
+        p.builtIn = s.value("builtIn", false).toBool();
+        m_searchProviders.append(p);
+    }
+    s.endArray();
+}
+
+void AddonManager::saveSearchProviders()
+{
+    QSettings s("BATorrent", "BATorrent");
+    s.beginWriteArray("searchProviders", m_searchProviders.size());
+    for (int i = 0; i < m_searchProviders.size(); ++i) {
+        s.setArrayIndex(i);
+        const auto &p = m_searchProviders[i];
+        s.setValue("id", p.id);
+        s.setValue("name", p.name);
+        s.setValue("urlTemplate", p.urlTemplate);
+        s.setValue("arrayPath", p.arrayPath);
+        s.setValue("namePath", p.namePath);
+        s.setValue("hashPath", p.hashPath);
+        s.setValue("sizePath", p.sizePath);
+        s.setValue("seedersPath", p.seedersPath);
+        s.setValue("leechersPath", p.leechersPath);
+        s.setValue("enabled", p.enabled);
+        s.setValue("builtIn", p.builtIn);
+    }
+    s.endArray();
+}
+
+QList<SearchProvider> AddonManager::searchProviders() const
+{
+    return m_searchProviders;
+}
+
+void AddonManager::addSearchProvider(const SearchProvider &p)
+{
+    m_searchProviders.append(p);
+    saveSearchProviders();
+}
+
+void AddonManager::removeSearchProvider(int index)
+{
+    if (index < 0 || index >= m_searchProviders.size()) return;
+    m_searchProviders.removeAt(index);
+    saveSearchProviders();
+}
+
+void AddonManager::setSearchProviderEnabled(int index, bool enabled)
+{
+    if (index < 0 || index >= m_searchProviders.size()) return;
+    m_searchProviders[index].enabled = enabled;
+    saveSearchProviders();
+}
+
+QList<TorrentSearchResult> AddonManager::parseProviderResponse(
+    const SearchProvider &p, const QByteArray &data)
+{
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+
+    QJsonArray arr;
+    if (p.arrayPath.isEmpty()) {
+        if (doc.isArray()) arr = doc.array();
+    } else {
+        QJsonObject root = doc.object();
+        QJsonValue v = root.value(p.arrayPath);
+        if (v.isArray()) arr = v.toArray();
+    }
+
+    QStringList defaultTrackers = {
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://open.stealth.si:80/announce",
+        "udp://tracker.openbittorrent.com:6969/announce",
+    };
+    QString trackerParams;
+    for (const auto &t : defaultTrackers)
+        trackerParams += "&tr=" + QUrl::toPercentEncoding(t);
+
+    QList<TorrentSearchResult> results;
+    for (const auto &val : arr) {
+        QJsonObject obj = val.toObject();
+        QString name = obj.value(p.namePath).toString();
+        QString infoHash = obj.value(p.hashPath).toString();
+        if (infoHash.isEmpty() || infoHash == "0") continue;
+
+        TorrentSearchResult r;
+        r.name = name;
+        r.infoHash = infoHash;
+        r.size = obj.value(p.sizePath).toVariant().toLongLong();
+        r.seeders = obj.value(p.seedersPath).toVariant().toInt();
+        r.leechers = obj.value(p.leechersPath).toVariant().toInt();
+        r.category = obj.value("category").toString();
+        r.magnet = QString("magnet:?xt=urn:btih:%1&dn=%2%3")
+            .arg(infoHash, QUrl::toPercentEncoding(name), trackerParams);
+        results.append(r);
+    }
+    return results;
+}
+
+void AddonManager::searchWithProvider(int providerIndex, const QString &query, int category)
+{
+    if (providerIndex < 0 || providerIndex >= m_searchProviders.size()) {
+        emit torrentSearchFinished();
+        return;
+    }
+    const SearchProvider &p = m_searchProviders[providerIndex];
+    if (!p.enabled || p.urlTemplate.isEmpty()) {
+        emit torrentSearchFinished();
+        return;
+    }
+
+    QString url = p.urlTemplate;
+    url.replace("{query}", QUrl::toPercentEncoding(query));
+    url.replace("{category}", QString::number(category));
+
+    QNetworkRequest req{QUrl(url)};
+    req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/" APP_VERSION);
+    auto *reply = m_net->get(req);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, p]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            emit torrentSearchError(reply->errorString());
+            emit torrentSearchFinished();
+            return;
+        }
+        auto results = parseProviderResponse(p, reply->readAll());
         emit torrentSearchResults(results);
         emit torrentSearchFinished();
     });

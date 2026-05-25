@@ -18,5 +18,12 @@
 <file>fonts/Inter-SemiBold.ttf</file>
 <file>fonts/Inter-Bold.ttf</file>
 <file>sounds/batsound.mp3</file>
+<file>../translations/en.json</file>
+<file>../translations/pt.json</file>
+<file>../translations/zh.json</file>
+<file>../translations/ja.json</file>
+<file>../translations/ru.json</file>
+<file>../translations/es.json</file>
+<file>../translations/de.json</file>
 </qresource>
 </RCC>

@@ -21,13 +21,7 @@ public:
 
 private:
     Translator();
-    void loadEnglish();
-    void loadPortuguese();
-    void loadChinese();
-    void loadJapanese();
-    void loadRussian();
-    void loadSpanish();
-    void loadGerman();
+    void loadLanguage(const QString &code, QMap<QString, QString> &map);
 
     Language m_lang = English;
     QMap<QString, QString> m_strings;
