@@ -2275,6 +2275,18 @@ void Translator::loadChinese()
         {"smartpaste_title", "剪贴板中有 magnet"},
         {"tip_discord_client_id", "Discord 数字应用 ID。没有它,您的 Discord 个人资料不会显示 BATorrent 活动。设置需要约 2 分钟:创建新应用,复制 Application ID。"},
         {"tip_force_start", "即使达到活动下载上限,也继续运行此种子。适用于您现在真正需要的那个种子。"},
+
+        // === v2.5.2 final sweep ===
+        {"diag_check_leecher_off", "吸血客户端拦截已禁用 — 允许迅雷/QQ下载 peers。"},
+        {"diag_check_leecher_on", "吸血客户端拦截已启用 — 本次会话已拦截 %1 个"},
+        {"error_disk_full", "磁盘已满 — 所有下载已暂停。释放空间后手动恢复。"},
+        {"filter_all", "全部"},
+        {"filter_queued", "排队中"},
+        {"settings_block_leechers", "屏蔽吸血客户端 (迅雷/QQ下载/百度)"},
+        {"settings_discord_enabled", "在 Discord 个人资料中显示活动"},
+        {"tip_block_leechers", "自动检测并封禁使用迅雷、QQ下载、百度网盘P2P等只下载不上传的客户端。通过 BitTorrent 握手中的 peer_id 检测。对中国 tracker 的 swarm 健康至关重要。"},
+        {"tip_discord_enabled", "Discord Rich Presence — 在您的 Discord 个人资料中显示当前下载/做种状态。需要 Discord 桌面应用运行。如需隐私可禁用。"},
+        {"warn_low_disk", "磁盘空间不足 — 仅剩 %1 MB。如果磁盘满了下载可能会失败。"},
     };
 }
 
@@ -3002,6 +3014,18 @@ void Translator::loadJapanese()
         {"smartpaste_title", "クリップボードにマグネット"},
         {"tip_discord_client_id", "Discord数値アプリケーションID。これがないと、Discordプロフィールに BATorrentアクティビティが表示されません。設定は約2分:新規アプリ作成、Application IDをコピー。"},
         {"tip_force_start", "アクティブダウンロード上限に達してもこのトレントを動作させ続けます。今本当に必要なトレント向け。"},
+
+        // === v2.5.2 final sweep ===
+        {"diag_check_leecher_off", "リーチャーブロック無効 — Xunlei/QQDownload peer を許可。"},
+        {"diag_check_leecher_on", "リーチャーブロック有効 — 今回のセッションで %1 件ブロック"},
+        {"error_disk_full", "ディスクフル — 全ダウンロードを一時停止しました。空きを増やして手動で再開してください。"},
+        {"filter_all", "すべて"},
+        {"filter_queued", "キュー待ち"},
+        {"settings_block_leechers", "リーチャークライアントをブロック (Xunlei/QQDownload/Baidu)"},
+        {"settings_discord_enabled", "Discord プロフィールにアクティビティを表示"},
+        {"tip_block_leechers", "Xunlei/QQDownload/Baidu等、ダウンロードだけでアップロードしないクライアントを自動検出してBANします。BitTorrentハンドシェイクのpeer_idで検出。中国トラッカーのswarm健全性に必須。"},
+        {"tip_discord_enabled", "Discord Rich Presence — Discordプロフィールに現在のダウンロード/シード状況を表示。Discordデスクトップアプリの起動が必要。プライバシーが必要なら無効に。"},
+        {"warn_low_disk", "ディスク空き容量不足 — 残り %1 MB のみ。ディスクがいっぱいになるとダウンロードが失敗する可能性があります。"},
     };
 }
 
@@ -3728,6 +3752,18 @@ void Translator::loadRussian()
         {"smartpaste_title", "Magnet в буфере обмена"},
         {"tip_discord_client_id", "Числовой Discord application ID. Без него профиль Discord не покажет активность BATorrent. Настройка ~2 мин: создайте приложение, скопируйте Application ID."},
         {"tip_force_start", "Этот торрент будет работать, даже когда лимит активных загрузок достигнут. Подходит для одного торрента, который реально нужен сейчас."},
+
+        // === v2.5.2 final sweep ===
+        {"diag_check_leecher_off", "Блокировка лич-клиентов отключена — Xunlei/QQDownload пропускаются."},
+        {"diag_check_leecher_on", "Блокировка лич-клиентов включена — заблокировано %1 за сессию"},
+        {"error_disk_full", "Диск заполнен — все загрузки приостановлены. Освободите место и возобновите вручную."},
+        {"filter_all", "Все"},
+        {"filter_queued", "В очереди"},
+        {"settings_block_leechers", "Блокировать лич-клиенты (Xunlei, QQDownload, Baidu)"},
+        {"settings_discord_enabled", "Показывать активность в профиле Discord"},
+        {"tip_block_leechers", "Автоматически обнаруживает и банит клиенты Xunlei, QQDownload, Baidu, которые скачивают не отдавая. Определяется по peer_id в BitTorrent handshake. Важно для здоровья swarm на китайских трекерах."},
+        {"tip_discord_enabled", "Discord Rich Presence — показывает текущий статус загрузки/раздачи в профиле Discord. Требуется запущенный Discord Desktop. Отключите, если предпочитаете приватность."},
+        {"warn_low_disk", "Мало места на диске — осталось только %1 МБ. Загрузки могут сбоить при заполнении диска."},
     };
 }
 
@@ -4454,6 +4490,18 @@ void Translator::loadSpanish()
         {"smartpaste_title", "Magnet en portapapeles"},
         {"tip_discord_client_id", "Application ID numérico de Discord. Sin él, tu perfil de Discord no mostrará actividad de BATorrent. Setup ~2 min: crea nueva app, copia el Application ID."},
         {"tip_force_start", "Mantiene este torrent corriendo aunque se alcance el límite de descargas activas. Útil para el torrent que realmente necesitas ahora."},
+
+        // === v2.5.2 final sweep ===
+        {"diag_check_leecher_off", "Bloqueo de leechers desactivado — peers Xunlei/QQDownload permitidos."},
+        {"diag_check_leecher_on", "Bloqueo de leechers activo — %1 bloqueados esta sesión"},
+        {"error_disk_full", "Disco lleno — todas las descargas pausadas. Libera espacio y reanuda manualmente."},
+        {"filter_all", "Todos"},
+        {"filter_queued", "En cola"},
+        {"settings_block_leechers", "Bloquear clientes leecher (Xunlei, QQDownload, Baidu)"},
+        {"settings_discord_enabled", "Mostrar actividad en perfil de Discord"},
+        {"tip_block_leechers", "Detecta y banea automáticamente clientes Xunlei, QQDownload, Baidu que descargan sin sembrar. Se detecta por peer_id en el handshake BitTorrent. Esencial para la salud del swarm en trackers chinos."},
+        {"tip_discord_enabled", "Discord Rich Presence — muestra tu estado de descarga/siembra en tu perfil Discord. Requiere la app Discord Desktop ejecutándose. Desactívalo si prefieres privacidad."},
+        {"warn_low_disk", "Poco espacio en disco — solo quedan %1 MB. Las descargas pueden fallar si el disco se llena."},
     };
 }
 
@@ -5180,5 +5228,17 @@ void Translator::loadGerman()
         {"smartpaste_title", "Magnet in Zwischenablage"},
         {"tip_discord_client_id", "Numerische Discord-Application-ID. Ohne sie zeigt dein Discord-Profil keine BATorrent-Aktivität. Setup ~2 Min: neue App erstellen, Application-ID kopieren."},
         {"tip_force_start", "Hält diesen Torrent am Laufen, auch wenn das Limit aktiver Downloads erreicht ist. Nützlich für den einen Torrent, den du jetzt brauchst."},
+
+        // === v2.5.2 final sweep ===
+        {"diag_check_leecher_off", "Leecher-Blockierung deaktiviert — Xunlei/QQDownload-Peers erlaubt."},
+        {"diag_check_leecher_on", "Leecher-Blockierung aktiv — %1 in dieser Sitzung blockiert"},
+        {"error_disk_full", "Datenträger voll — alle Downloads pausiert. Speicher freigeben und manuell fortsetzen."},
+        {"filter_all", "Alle"},
+        {"filter_queued", "Warteschlange"},
+        {"settings_block_leechers", "Leecher-Clients blockieren (Xunlei, QQDownload, Baidu)"},
+        {"settings_discord_enabled", "Aktivität im Discord-Profil anzeigen"},
+        {"tip_block_leechers", "Erkennt und bannt automatisch Xunlei-, QQDownload-, Baidu-Clients, die herunterladen ohne zu seeden. Erkennung über peer_id im BitTorrent-Handshake. Essenziell für die Swarm-Gesundheit bei chinesischen Trackern."},
+        {"tip_discord_enabled", "Discord Rich Presence — zeigt deinen aktuellen Download-/Seeding-Status im Discord-Profil. Erfordert die laufende Discord-Desktop-App. Deaktivieren für mehr Privatsphäre."},
+        {"warn_low_disk", "Wenig Speicherplatz — nur noch %1 MB übrig. Downloads können fehlschlagen, wenn der Datenträger voll wird."},
     };
 }
