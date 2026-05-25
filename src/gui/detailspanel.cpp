@@ -8,6 +8,7 @@
 #include "../app/translator.h"
 #include "../app/utils.h"
 #include "../app/geoip.h"
+#include "../app/metadataresolver.h"
 #include "thememanager.h"
 #include <QLabel>
 #include <QFormLayout>
@@ -165,6 +166,35 @@ void DetailsPanel::refresh()
     m_ratioLabel->setText(QString::number(info.ratio, 'f', 2));
     m_stateLabel->setText(info.stateString);
 
+    if (m_resolver && !fullHash.isEmpty() && m_resolver->hasCached(fullHash)) {
+        auto meta = m_resolver->cached(fullHash);
+        if (meta.valid) {
+            m_metadataWidget->show();
+            if (!meta.posterPath.isEmpty()) {
+                QPixmap poster(meta.posterPath);
+                if (!poster.isNull())
+                    m_posterLabel->setPixmap(poster.scaled(120, 180, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            }
+            m_metaTitleLabel->setText(meta.title);
+            QString infoLine;
+            if (meta.year > 0) infoLine = QString::number(meta.year);
+            if (!meta.genres.isEmpty()) {
+                if (!infoLine.isEmpty()) infoLine += QStringLiteral(" · ");
+                infoLine += meta.genres.mid(0, 3).join(QStringLiteral(", "));
+            }
+            if (meta.rating > 0) {
+                if (!infoLine.isEmpty()) infoLine += QStringLiteral(" · ");
+                infoLine += QStringLiteral("%1/10").arg(meta.rating, 0, 'f', 1);
+            }
+            m_metaInfoLabel->setText(infoLine);
+            m_metaSynopsisLabel->setText(meta.description.left(300));
+        } else {
+            m_metadataWidget->hide();
+        }
+    } else {
+        m_metadataWidget->hide();
+    }
+
     // Peers tab
     if (currentIndex() == 1) {
         auto peers = m_session->peersAt(m_currentIndex);
@@ -246,6 +276,11 @@ void DetailsPanel::onFilePriorityChanged(int row, int priority)
         m_session->setFilePriority(m_currentIndex, row, priority);
 }
 
+void DetailsPanel::setMetadataResolver(MetadataResolver *resolver)
+{
+    m_resolver = resolver;
+}
+
 void DetailsPanel::onAddTracker()
 {
     if (m_currentIndex < 0) return;
@@ -325,6 +360,37 @@ QWidget *DetailsPanel::createGeneralTab()
         cl->addStretch();
         return col;
     };
+
+    m_metadataWidget = new QWidget;
+    auto *metaCol = new QVBoxLayout(m_metadataWidget);
+    metaCol->setContentsMargins(0, 0, 16, 0);
+    metaCol->setSpacing(8);
+    m_posterLabel = new QLabel;
+    m_posterLabel->setFixedSize(120, 180);
+    m_posterLabel->setScaledContents(true);
+    m_posterLabel->setStyleSheet(QStringLiteral("border-radius: 6px; background: transparent;"));
+    metaCol->addWidget(m_posterLabel);
+    m_metaTitleLabel = new QLabel;
+    m_metaTitleLabel->setWordWrap(true);
+    {
+        QFont f; f.setPointSize(10); f.setWeight(QFont::Bold);
+        m_metaTitleLabel->setFont(f);
+        m_metaTitleLabel->setStyleSheet(QString("color: %1;").arg(tm.textColor()));
+    }
+    metaCol->addWidget(m_metaTitleLabel);
+    m_metaInfoLabel = new QLabel;
+    m_metaInfoLabel->setWordWrap(true);
+    m_metaInfoLabel->setStyleSheet(QString("color: %1; font-size: 9px;").arg(tm.dimColor()));
+    metaCol->addWidget(m_metaInfoLabel);
+    m_metaSynopsisLabel = new QLabel;
+    m_metaSynopsisLabel->setWordWrap(true);
+    m_metaSynopsisLabel->setMaximumHeight(100);
+    m_metaSynopsisLabel->setStyleSheet(QString("color: %1; font-size: 9px;").arg(tm.mutedColor()));
+    metaCol->addWidget(m_metaSynopsisLabel);
+    metaCol->addStretch();
+    m_metadataWidget->setFixedWidth(140);
+    m_metadataWidget->hide();
+    row->addWidget(m_metadataWidget);
 
     m_nameLabel = new QLabel;
     m_savePathLabel = new QLabel;

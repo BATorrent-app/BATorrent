@@ -18,6 +18,8 @@
 #include "toast.h"
 #include "../torrent/sessionmanager.h"
 #include "../webui/webserver.h"
+#include "../app/metadataresolver.h"
+#include "posterview.h"
 #include "../app/translator.h"
 #include "../app/updater.h"
 #include "../app/utils.h"
@@ -953,6 +955,29 @@ void MainWindow::setupCentralWidget()
     connect(m_searchEdit, &QLineEdit::textChanged, m_proxyModel, &TorrentFilter::setNameFilter);
     filterLayout->addWidget(m_searchEdit);
 
+    auto *viewToggle = new QPushButton;
+    viewToggle->setCheckable(true);
+    viewToggle->setCursor(Qt::PointingHandCursor);
+    viewToggle->setChecked(m_posterViewActive);
+    viewToggle->setFixedSize(32, 32);
+    viewToggle->setToolTip(tr_("tb_grid_view"));
+    viewToggle->setIcon(QIcon(m_posterViewActive ? QStringLiteral(":/icons/list.svg") : QStringLiteral(":/icons/grid.svg")));
+    viewToggle->setIconSize(QSize(16, 16));
+    viewToggle->setStyleSheet(QString(
+        "QPushButton {"
+        "  background: %1; border: 1px solid %2; border-radius: 6px;"
+        "}"
+        "QPushButton:hover { border-color: %3; }")
+        .arg(tm.surfaceColor(), tm.borderColor(), tm.accentColor()));
+    connect(viewToggle, &QPushButton::toggled, this, [this, viewToggle](bool checked) {
+        m_posterViewActive = checked;
+        viewToggle->setIcon(QIcon(checked ? QStringLiteral(":/icons/list.svg") : QStringLiteral(":/icons/grid.svg")));
+        if (m_session->torrentCount() > 0)
+            m_topStack->setCurrentIndex(checked ? 2 : 0);
+        QSettings("BATorrent", "BATorrent").setValue("posterViewActive", checked);
+    });
+    filterLayout->addWidget(viewToggle);
+
     filterLayout->addSpacing(10);
 
     // Filter pills with live count badges. Pills are tracked in m_filterPills
@@ -1046,24 +1071,76 @@ void MainWindow::setupCentralWidget()
     filterScroll->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     filterScroll->setFixedHeight(filterBar->sizeHint().height());
 
-    auto *tableContainer = new QWidget;
-    auto *tableLayout = new QVBoxLayout(tableContainer);
-    tableLayout->setContentsMargins(0, 0, 0, 0);
-    tableLayout->setSpacing(0);
-    tableLayout->addWidget(filterScroll);
-    tableLayout->addWidget(m_tableView);
+    // tableContainer removed — filter bar is now above the stack
+    // so it's shared between table view and poster grid view
+
+    m_metadataResolver = new MetadataResolver(this);
+
+    m_posterView = new PosterView(m_metadataResolver, m_session, this);
+    m_posterView->setModel(m_proxyModel);
+    connect(m_posterView, &PosterView::torrentSelected, this, [this](int row) {
+        m_detailsPanel->showTorrent(row);
+    });
+    connect(m_posterView, &PosterView::torrentDoubleClicked, this, [this](int row) {
+        if (row < 0 || row >= m_session->torrentCount()) return;
+        QString root = m_session->torrentRootPath(row);
+        if (!root.isEmpty()) revealInFileManager(root);
+    });
+    connect(m_posterView, &QWidget::customContextMenuRequested,
+            this, [this](const QPoint &pos) {
+        QModelIndex idx = m_posterView->indexAt(pos);
+        if (idx.isValid()) {
+            m_posterView->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect);
+        }
+        showContextMenu(m_posterView->viewport()->mapToGlobal(pos));
+    });
+
+    connect(m_metadataResolver, &MetadataResolver::metadataReady,
+            this, [this](const QString &) {
+        m_model->refresh();
+    });
+
+    connect(m_session, &SessionManager::torrentAdded, this, [this](int index) {
+        QString hash = m_session->torrentHashAt(index);
+        if (!hash.isEmpty()) {
+            TorrentInfo info = m_session->torrentAt(index);
+            m_metadataResolver->resolve(hash, info.name);
+        }
+    });
+
+    {
+        QStringList hashes, names;
+        for (int i = 0; i < m_session->torrentCount(); ++i) {
+            QString h = m_session->torrentHashAt(i);
+            if (!h.isEmpty() && !m_metadataResolver->hasCached(h)) {
+                hashes << h;
+                names << m_session->torrentAt(i).name;
+            }
+        }
+        if (!hashes.isEmpty())
+            m_metadataResolver->batchResolve(hashes, names);
+    }
 
     m_topStack = new QStackedWidget;
-    m_topStack->addWidget(tableContainer);  // index 0 = table
-    m_topStack->addWidget(m_batWidget);     // index 1 = bat
-    // Pick the right view up-front based on what loadResumeData already
-    // populated. Defaulting to the bat widget caused a ~1 s flash on startup
-    // because updateStatusBar only swaps after its first timer tick.
-    m_topStack->setCurrentIndex(m_session->torrentCount() > 0 ? 0 : 1);
+    m_topStack->addWidget(m_tableView);      // index 0 = table
+    m_topStack->addWidget(m_batWidget);      // index 1 = bat
+    m_topStack->addWidget(m_posterView);     // index 2 = poster grid
+
+    auto *tableContainer2 = new QWidget;
+    auto *tableLayout2 = new QVBoxLayout(tableContainer2);
+    tableLayout2->setContentsMargins(0, 0, 0, 0);
+    tableLayout2->setSpacing(0);
+    tableLayout2->addWidget(filterScroll);
+    tableLayout2->addWidget(m_topStack);
+    if (m_session->torrentCount() == 0)
+        m_topStack->setCurrentIndex(1);
+    else
+        m_topStack->setCurrentIndex(m_posterViewActive ? 2 : 0);
 
     m_speedGraph = new SpeedGraph;
     m_speedGraph->setMinimumHeight(30);
     m_detailsPanel = new DetailsPanel(m_session);
+    m_detailsPanel->setMetadataResolver(m_metadataResolver);
     m_detailsPanel->setMinimumHeight(60);
 
     // Inner splitter: graph ↔ details. Collapsible so the user can hide the
@@ -1078,7 +1155,7 @@ void MainWindow::setupCentralWidget()
     // Outer splitter: table ↔ (graph + details). Also collapsible — useful
     // when the user wants to focus on either the list or the details.
     auto *splitter = new QSplitter(Qt::Vertical);
-    splitter->addWidget(m_topStack);
+    splitter->addWidget(tableContainer2);
     splitter->addWidget(bottomSplitter);
     splitter->setStretchFactor(0, 2);
     splitter->setStretchFactor(1, 3);
@@ -1312,6 +1389,7 @@ void MainWindow::loadSettings()
     m_startMinimized = settings.value("startMinimized", false).toBool();
     m_closeToTray = settings.value("closeToTray", true).toBool();
     m_useDefaultPath = settings.value("useDefaultPath", false).toBool();
+    m_posterViewActive = settings.value("posterViewActive", true).toBool();
 
     int theme = settings.value("theme", 0).toInt();
     ThemeManager::instance().setTheme(static_cast<ThemeManager::Theme>(theme));
@@ -1686,7 +1764,7 @@ void MainWindow::updateStatusBar()
     m_speedGraph->addDataPoint(totalDown, totalUp);
 
     // Toggle bat widget vs table with fade transition
-    int target = (count == 0) ? 1 : 0;
+    int target = (count == 0) ? 1 : (m_posterViewActive ? 2 : 0);
     if (m_topStack->currentIndex() != target) {
         auto *incoming = m_topStack->widget(target);
         auto *effect = new QGraphicsOpacityEffect(incoming);
@@ -2315,6 +2393,14 @@ void MainWindow::showContextMenu(const QPoint &pos)
     auto rows = selectedRows();
     if (rows.isEmpty()) return;
 
+    QPoint globalPos = pos;
+    if (!pos.isNull() && pos.x() < 10000) {
+        if (m_posterViewActive)
+            globalPos = pos;
+        else
+            globalPos = m_tableView->viewport()->mapToGlobal(pos);
+    }
+
     QMenu menu(this);
     menu.addAction(QIcon(":/icons/play.svg"), tr_("action_resume"), this, &MainWindow::resumeSelected);
     menu.addAction(QIcon(":/icons/pause.svg"), tr_("action_pause"), this, &MainWindow::pauseSelected);
@@ -2593,16 +2679,21 @@ void MainWindow::showContextMenu(const QPoint &pos)
     menu.addAction(QIcon(":/icons/trash.svg"), tr_("action_remove"), this, &MainWindow::removeSelected);
     menu.addAction(tr_("action_remove_files"), this, &MainWindow::removeSelectedWithFiles);
 
-    menu.exec(m_tableView->viewport()->mapToGlobal(pos));
+    menu.exec(globalPos);
 }
 
 QList<int> MainWindow::selectedRows() const
 {
     QList<int> rows;
-    QModelIndexList sel = m_tableView->selectionModel()->selectedRows();
+    QModelIndexList sel;
+    if (m_posterViewActive && m_posterView)
+        sel = m_posterView->selectionModel()->selectedIndexes();
+    else
+        sel = m_tableView->selectionModel()->selectedRows();
     for (const auto &idx : sel)
         rows.append(m_proxyModel->mapToSource(idx).row());
     std::sort(rows.begin(), rows.end());
+    rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
     return rows;
 }
 

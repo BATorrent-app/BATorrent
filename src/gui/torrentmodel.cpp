@@ -147,9 +147,12 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
         return info.stateString;
     }
 
-    // Custom order for manual sorting
     if (role == CustomOrderRole) {
         return m_customOrder.value(index.row(), index.row());
+    }
+
+    if (role == InfoHashRole) {
+        return m_session->torrentHashAt(index.row());
     }
 
     // Flash the row in accent-tint when a torrent just finished — picked up

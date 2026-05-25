@@ -683,5 +683,6 @@
   "settings_discord_enabled": "Discord プロフィールにアクティビティを表示",
   "tip_block_leechers": "Xunlei/QQDownload/Baidu等、ダウンロードだけでアップロードしないクライアントを自動検出してBANします。BitTorrentハンドシェイクのpeer_idで検出。中国トラッカーのswarm健全性に必須。",
   "tip_discord_enabled": "Discord Rich Presence — Discordプロフィールに現在のダウンロード/シード状況を表示。Discordデスクトップアプリの起動が必要。プライバシーが必要なら無効に。",
-  "warn_low_disk": "ディスク空き容量不足 — 残り %1 MB のみ。ディスクがいっぱいになるとダウンロードが失敗する可能性があります。"
+  "warn_low_disk": "ディスク空き容量不足 — 残り %1 MB のみ。ディスクがいっぱいになるとダウンロードが失敗する可能性があります。",
+  "tb_grid_view": "グリッド"
 }

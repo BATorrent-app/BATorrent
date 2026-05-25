@@ -683,5 +683,6 @@
   "settings_discord_enabled": "Mostrar actividad en perfil de Discord",
   "tip_block_leechers": "Detecta y banea automáticamente clientes Xunlei, QQDownload, Baidu que descargan sin sembrar. Se detecta por peer_id en el handshake BitTorrent. Esencial para la salud del swarm en trackers chinos.",
   "tip_discord_enabled": "Discord Rich Presence — muestra tu estado de descarga/siembra en tu perfil Discord. Requiere la app Discord Desktop ejecutándose. Desactívalo si prefieres privacidad.",
-  "warn_low_disk": "Poco espacio en disco — solo quedan %1 MB. Las descargas pueden fallar si el disco se llena."
+  "warn_low_disk": "Poco espacio en disco — solo quedan %1 MB. Las descargas pueden fallar si el disco se llena.",
+  "tb_grid_view": "Grid"
 }

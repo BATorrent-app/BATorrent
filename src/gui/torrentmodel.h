@@ -40,8 +40,8 @@ public:
     static constexpr int SortRole = Qt::UserRole + 10;
     static constexpr int StateFilterRole = Qt::UserRole + 11;
     static constexpr int CustomOrderRole = Qt::UserRole + 12;
-    // Coarse state key for the delegate / status dot.
     static constexpr int StateKeyRole = Qt::UserRole + 14;
+    static constexpr int InfoHashRole = Qt::UserRole + 20;
 
     // Drag & drop support
     Qt::ItemFlags flags(const QModelIndex &index) const override;

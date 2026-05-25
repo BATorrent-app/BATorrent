@@ -26,6 +26,8 @@ class AddonManager;
 class QComboBox;
 class QPushButton;
 class QNetworkAccessManager;
+class MetadataResolver;
+class PosterView;
 
 class MainWindow : public QMainWindow
 {
@@ -140,6 +142,9 @@ private:
     QComboBox *m_categoryCombo = nullptr;
     QNetworkAccessManager *m_mediaServerNam = nullptr;
     void notifyMediaServers();
+    MetadataResolver *m_metadataResolver = nullptr;
+    PosterView *m_posterView = nullptr;
+    bool m_posterViewActive = false;
 };
 
 #endif

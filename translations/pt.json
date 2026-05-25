@@ -681,5 +681,6 @@
   "smartpaste_body": "Detectado link magnet ou info hash:\n\n%1\n\nAdicionar como torrent?",
   "smartpaste_title": "Magnet no clipboard",
   "tip_discord_enabled": "Discord Rich Presence — mostra seu status de download/seeding no perfil Discord. Requer o app Discord Desktop rodando. Desative se preferir privacidade.",
-  "tip_force_start": "Mantém esse torrent rodando mesmo quando o limite de downloads ativos é atingido. Útil pro torrent que você realmente precisa agora."
+  "tip_force_start": "Mantém esse torrent rodando mesmo quando o limite de downloads ativos é atingido. Útil pro torrent que você realmente precisa agora.",
+  "tb_grid_view": "Grid"
 }

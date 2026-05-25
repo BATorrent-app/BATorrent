@@ -27,9 +27,18 @@ jobs:
           version: 2.0
 
       - name: Build
+        env:
+          BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
+          BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: |
+          DEFS=""
+          [ -n "$BAT_TMDB_KEY" ] && DEFS="$DEFS -DBAT_TMDB_KEY=\"$BAT_TMDB_KEY\""
+          [ -n "$BAT_IGDB_ID" ] && DEFS="$DEFS -DBAT_IGDB_CLIENT_ID=\"$BAT_IGDB_ID\""
+          [ -n "$BAT_IGDB_SECRET" ] && DEFS="$DEFS -DBAT_IGDB_CLIENT_SECRET=\"$BAT_IGDB_SECRET\""
           cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
-            -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu
+            -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu \
+            -DCMAKE_CXX_FLAGS="$DEFS"
           cmake --build build
 
       - name: Install to AppDir
@@ -115,9 +124,19 @@ jobs:
         run: magick src/images/logo1.png -define icon:auto-resize=256,64,48,32,16 src/images/logo1.ico
 
       - name: Build
+        env:
+          BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
+          BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+        shell: pwsh
         run: |
+          $defs = ""
+          if ($env:BAT_TMDB_KEY) { $defs += " /DBAT_TMDB_KEY=`"$env:BAT_TMDB_KEY`"" }
+          if ($env:BAT_IGDB_ID) { $defs += " /DBAT_IGDB_CLIENT_ID=`"$env:BAT_IGDB_ID`"" }
+          if ($env:BAT_IGDB_SECRET) { $defs += " /DBAT_IGDB_CLIENT_SECRET=`"$env:BAT_IGDB_SECRET`"" }
           cmake -B build -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DCMAKE_CXX_FLAGS="$defs"
           cmake --build build --config Release
 
       - name: Package
@@ -188,9 +207,18 @@ jobs:
           brew link --overwrite libtorrent-rasterbar boost openssl
 
       - name: Build
+        env:
+          BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
+          BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: |
+          DEFS=""
+          [ -n "$BAT_TMDB_KEY" ] && DEFS="$DEFS -DBAT_TMDB_KEY=\"$BAT_TMDB_KEY\""
+          [ -n "$BAT_IGDB_ID" ] && DEFS="$DEFS -DBAT_IGDB_CLIENT_ID=\"$BAT_IGDB_ID\""
+          [ -n "$BAT_IGDB_SECRET" ] && DEFS="$DEFS -DBAT_IGDB_CLIENT_SECRET=\"$BAT_IGDB_SECRET\""
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)"
+            -DCMAKE_PREFIX_PATH="$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)" \
+            -DCMAKE_CXX_FLAGS="$DEFS"
           cmake --build build
 
       - name: Create app bundle

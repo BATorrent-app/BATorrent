@@ -13,12 +13,14 @@ class QComboBox;
 class SessionManager;
 class GeoIpResolver;
 class PieceMapWidget;
+class MetadataResolver;
 
 class DetailsPanel : public QTabWidget
 {
     Q_OBJECT
 public:
     explicit DetailsPanel(SessionManager *session, QWidget *parent = nullptr);
+    void setMetadataResolver(MetadataResolver *resolver);
 
 public slots:
     void showTorrent(int index);
@@ -72,6 +74,14 @@ private:
 
     // Pieces tab
     PieceMapWidget *m_pieceMap;
+
+    // Metadata
+    MetadataResolver *m_resolver = nullptr;
+    QLabel *m_posterLabel = nullptr;
+    QLabel *m_metaTitleLabel = nullptr;
+    QLabel *m_metaInfoLabel = nullptr;
+    QLabel *m_metaSynopsisLabel = nullptr;
+    QWidget *m_metadataWidget = nullptr;
 };
 
 #endif
