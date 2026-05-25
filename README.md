@@ -11,7 +11,6 @@
 </p>
 
 <p align="center">
-  <img width="1280" height="808" alt="image" src="https://github.com/user-attachments/assets/1d560e7a-06bc-443d-8e07-9189e74b0953" />
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BAT-Torrent/total?style=flat-square&color=dc2626"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
@@ -27,6 +26,7 @@
 BATorrent is a desktop BitTorrent client that prioritises clarity, performance, and privacy. It pairs the mature libtorrent-rasterbar engine with a hand-tuned Qt 6 interface, a remote-control WebUI, RSS auto-downloading, Stremio-compatible search, VPN-aware traffic isolation, and built-in media-server integration.
 
 > **No telemetry, no analytics, no calls home.** The only outbound request the app initiates without you is the GitHub release check, which can be disabled in Settings. Audit it yourself in [`src/app/updater.cpp`](src/app/updater.cpp).
+<img width="1280" height="808" alt="image" src="https://github.com/user-attachments/assets/1d560e7a-06bc-443d-8e07-9189e74b0953" />
 
 ![Main window — Dark theme](src/images/image1.png)
 
