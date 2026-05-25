@@ -26,7 +26,8 @@ WizardSmallImageFile=..\installer\wizard_small.bmp
 WizardImageStretch=yes
 PrivilegesRequired=lowest
 ChangesAssociations=yes
-CloseApplications=yes
+CloseApplications=force
+CloseApplicationsFilter=BATorrent.exe
 RestartApplications=no
 ArchitecturesInstallIn64BitMode=x64compatible
 ; RTF (not the plain LICENSE) so the RichEdit memo on the License page picks
@@ -83,6 +84,20 @@ Type: filesandordirs; Name: "{app}\cache"
 Type: filesandordirs; Name: "{app}\logs"
 
 [Code]
+// Kill any running BATorrent instance before installing. The Restart
+// Manager (CloseApplications=force) handles most cases, but it can't
+// always reach tray-only processes that have no visible window. This
+// taskkill fallback ensures the exe is never locked during file copy.
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  Exec('taskkill.exe', '/f /im BATorrent.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  // Small delay so Windows releases file handles after process death.
+  Sleep(500);
+  Result := '';
+end;
+
 const
   // Dark theme colors (Inno uses BGR — read the trailing comment for the
   // actual RGB hex code).
