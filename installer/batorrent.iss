@@ -1,7 +1,7 @@
 ; BATorrent Installer - Inno Setup Script
 ; Custom dark theme with branding
 
-#define MyAppVersion "2.5.1"
+#define MyAppVersion "2.5.2"
 
 [Setup]
 AppName=BATorrent
