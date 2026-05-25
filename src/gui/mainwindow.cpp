@@ -2785,14 +2785,13 @@ void MainWindow::checkAutoShutdown()
 
 void MainWindow::checkForUpdate(bool silent)
 {
+    disconnect(m_updater, nullptr, this, nullptr);
+
     connect(m_updater, &Updater::updateAvailable, this,
             [this, silent](const QString &version, const QString &url, const QString &assetName) {
-        // Honor "skip this version": only suppress on silent (startup) checks
-        // so the user can still trigger the prompt via Help → Check for updates.
         if (silent) {
             QSettings settings("BATorrent", "BATorrent");
-            QString skipped = settings.value("skippedUpdateVersion").toString();
-            if (skipped == version)
+            if (settings.value("skippedUpdateVersion").toString() == version)
                 return;
         }
 
@@ -2806,8 +2805,7 @@ void MainWindow::checkForUpdate(bool silent)
         box.exec();
 
         if (box.clickedButton() == skipBtn) {
-            QSettings settings("BATorrent", "BATorrent");
-            settings.setValue("skippedUpdateVersion", version);
+            QSettings("BATorrent", "BATorrent").setValue("skippedUpdateVersion", version);
             return;
         }
         if (box.clickedButton() != yesBtn)
@@ -2823,7 +2821,6 @@ void MainWindow::checkForUpdate(bool silent)
             if (total > 0)
                 progress->setValue(static_cast<int>(received * 100 / total));
         });
-
         connect(m_updater, &Updater::updateReady, progress, &QProgressDialog::close);
         connect(m_updater, &Updater::errorOccurred, this,
                 [this, progress](const QString &err) {

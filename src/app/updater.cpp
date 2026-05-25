@@ -58,13 +58,16 @@ Updater::Updater(QObject *parent)
 
 void Updater::checkForUpdate()
 {
-    // Read the channel on every check so a Settings change takes effect
-    // without restarting; the cost is one QSettings open per click.
     const QString url = releaseApiUrl();
-    if (url == "disabled") return;
-    QUrl apiUrl(url);
-    QNetworkRequest req(apiUrl);
-    req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
+    if (url == "disabled") {
+        emit noUpdateAvailable();
+        return;
+    }
+    QNetworkRequest req(QUrl(url));
+    req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/" APP_VERSION);
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                     QNetworkRequest::NoLessSafeRedirectPolicy);
+    req.setTransferTimeout(15000);
     QNetworkReply *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         parseReleaseInfo(reply);
