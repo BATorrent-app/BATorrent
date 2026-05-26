@@ -684,5 +684,16 @@
   "tip_block_leechers": "Xunlei/QQDownload/Baidu等、ダウンロードだけでアップロードしないクライアントを自動検出してBANします。BitTorrentハンドシェイクのpeer_idで検出。中国トラッカーのswarm健全性に必須。",
   "tip_discord_enabled": "Discord Rich Presence — Discordプロフィールに現在のダウンロード/シード状況を表示。Discordデスクトップアプリの起動が必要。プライバシーが必要なら無効に。",
   "warn_low_disk": "ディスク空き容量不足 — 残り %1 MB のみ。ディスクがいっぱいになるとダウンロードが失敗する可能性があります。",
-  "tb_grid_view": "グリッド"
+  "tb_grid_view": "グリッド",
+  "settings_auto_extract": "ダウンロード完了時にアーカイブを自動展開（RAR/ZIP/7z）",
+  "settings_auto_extract_delete": "展開後にアーカイブファイルを削除",
+  "tip_auto_extract": "トレントのダウンロード完了時に RAR、ZIP、7z アーカイブを自動展開。7-Zip（Windows）または unrar/unzip（macOS/Linux）のインストールが必要。",
+  "tip_auto_extract_delete": "展開成功後に元のアーカイブファイル（.rar、.zip、.7z）を削除してディスク容量を解放。",
+  "settings_defender_exclude": "ダウンロードフォルダを Windows Defender の除外に追加",
+  "tip_defender_exclude": "ダウンロードフォルダを Windows Defender の除外リストに追加し、ダウンロードしたファイルのフラグ付けを停止します。管理者権限が必要です（UAC プロンプト）。",
+  "defender_exclude_ok": "フォルダを Windows Defender の除外に追加しました：%1",
+  "defender_exclude_fail": "除外の追加に失敗しました。UAC プロンプトを承認してください。",
+  "settings_extract_passwords": "アーカイブパスワード：",
+  "settings_extract_passwords_hint": "試行するパスワード、; 区切り（例: online-fix.me; password123）",
+  "tip_extract_passwords": "パスワード保護されたアーカイブを展開する際に試行するパスワードリスト。まずパスワードなしで試み、次に各パスワードを順番に試みます。"
 }

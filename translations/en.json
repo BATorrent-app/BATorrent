@@ -682,5 +682,16 @@
   "smartpaste_title": "Magnet on clipboard",
   "tip_discord_enabled": "Discord Rich Presence — shows your current download/seeding status on your Discord profile. Requires the Discord desktop app to be running. Disable if you prefer privacy.",
   "tip_force_start": "Keep this torrent running even when the active-downloads cap is reached. Useful for the one torrent you actually need now.",
-  "tb_grid_view": "Grid"
+  "tb_grid_view": "Grid",
+  "settings_auto_extract": "Auto-extract archives (RAR/ZIP/7z) when download completes",
+  "settings_auto_extract_delete": "Delete archive files after extraction",
+  "tip_auto_extract": "Automatically extract RAR, ZIP, and 7z archives when a torrent finishes downloading. Requires 7-Zip (Windows) or unrar/unzip (macOS/Linux) installed.",
+  "tip_auto_extract_delete": "Remove the original archive files (.rar, .zip, .7z) after successful extraction to free disk space.",
+  "settings_defender_exclude": "Add download folder to Windows Defender exclusions",
+  "tip_defender_exclude": "Adds your download folder to Windows Defender exclusion list so it stops flagging downloaded files. Requires administrator permission (UAC prompt).",
+  "defender_exclude_ok": "Folder added to Windows Defender exclusions: %1",
+  "defender_exclude_fail": "Failed to add exclusion. Make sure to accept the UAC prompt.",
+  "settings_extract_passwords": "Archive passwords:",
+  "settings_extract_passwords_hint": "Passwords to try, separated by ; (e.g. online-fix.me; password123)",
+  "tip_extract_passwords": "List of passwords to try when extracting password-protected archives. The extractor tries without password first, then each password in order."
 }

@@ -58,6 +58,13 @@ public:
     void setAutoMoveEnabled(bool val);
     void setAutoMovePath(const QString &path);
 
+    bool autoExtract() const;
+    bool autoExtractDelete() const;
+    void setAutoExtract(bool val);
+    void setAutoExtractDelete(bool val);
+    QString extractPasswords() const;
+    void setExtractPasswords(const QString &passwords);
+
     // Temp path
     QString tempPath() const;
     void setTempPath(const QString &path);
@@ -218,6 +225,9 @@ private:
     QLineEdit *m_autoMovePathEdit;
     QLineEdit *m_runOnCompleteEdit;
     QLineEdit *m_watchedFolderEdit;
+    QCheckBox *m_autoExtractCheck;
+    QCheckBox *m_autoExtractDeleteCheck;
+    QLineEdit *m_extractPasswordsEdit;
     QLineEdit *m_tempPathEdit;
     QComboBox *m_contentLayoutCombo;
     QLineEdit *m_excludedPatternsEdit;

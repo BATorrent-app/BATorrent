@@ -684,5 +684,16 @@
   "tip_block_leechers": "Автоматически обнаруживает и банит клиенты Xunlei, QQDownload, Baidu, которые скачивают не отдавая. Определяется по peer_id в BitTorrent handshake. Важно для здоровья swarm на китайских трекерах.",
   "tip_discord_enabled": "Discord Rich Presence — показывает текущий статус загрузки/раздачи в профиле Discord. Требуется запущенный Discord Desktop. Отключите, если предпочитаете приватность.",
   "warn_low_disk": "Мало места на диске — осталось только %1 МБ. Загрузки могут сбоить при заполнении диска.",
-  "tb_grid_view": "Сетка"
+  "tb_grid_view": "Сетка",
+  "settings_auto_extract": "Автоматически извлекать архивы (RAR/ZIP/7z) после завершения загрузки",
+  "settings_auto_extract_delete": "Удалять архивные файлы после извлечения",
+  "tip_auto_extract": "Автоматически извлекает архивы RAR, ZIP и 7z после завершения загрузки торрента. Требуется установленный 7-Zip (Windows) или unrar/unzip (macOS/Linux).",
+  "tip_auto_extract_delete": "Удаляет исходные архивные файлы (.rar, .zip, .7z) после успешного извлечения для освобождения места на диске.",
+  "settings_defender_exclude": "Добавить папку загрузок в исключения Windows Defender",
+  "tip_defender_exclude": "Добавляет папку загрузок в список исключений Windows Defender, чтобы он перестал помечать загруженные файлы. Требуются права администратора (запрос UAC).",
+  "defender_exclude_ok": "Папка добавлена в исключения Windows Defender: %1",
+  "defender_exclude_fail": "Не удалось добавить исключение. Убедитесь, что вы приняли запрос UAC.",
+  "settings_extract_passwords": "Пароли архивов:",
+  "settings_extract_passwords_hint": "Пароли для попыток, через ; (напр. online-fix.me; password123)",
+  "tip_extract_passwords": "Список паролей для попыток при извлечении защищённых паролем архивов. Сначала пробует без пароля, затем каждый пароль по порядку."
 }

@@ -2047,6 +2047,9 @@ void MainWindow::openSettings()
         dlg.loadAdvancedSettings(m_session->advancedSettings());
     }
     dlg.setAutoMoveEnabled(m_session->autoMoveEnabled());
+    dlg.setAutoExtract(m_session->autoExtract());
+    dlg.setAutoExtractDelete(m_session->autoExtractDelete());
+    dlg.setExtractPasswords(m_session->extractPasswords().join(QStringLiteral("; ")));
     dlg.setRunOnComplete(m_session->runOnComplete());
     dlg.setWatchedFolder(m_session->watchedFolder());
     dlg.setAutoMovePath(m_session->autoMovePath());
@@ -2158,6 +2161,14 @@ void MainWindow::openSettings()
         }
         // Auto-move
         m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());
+        m_session->setAutoExtract(dlg.autoExtract());
+        m_session->setAutoExtractDelete(dlg.autoExtractDelete());
+        {
+            QStringList pw;
+            for (const auto &p : dlg.extractPasswords().split(';'))
+                if (!p.trimmed().isEmpty()) pw << p.trimmed();
+            m_session->setExtractPasswords(pw);
+        }
         m_session->setRunOnComplete(dlg.runOnComplete());
         m_session->setWatchedFolder(dlg.watchedFolder());
         m_session->setTempPath(dlg.tempPath());

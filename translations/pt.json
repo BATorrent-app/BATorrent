@@ -682,5 +682,16 @@
   "smartpaste_title": "Magnet no clipboard",
   "tip_discord_enabled": "Discord Rich Presence — mostra seu status de download/seeding no perfil Discord. Requer o app Discord Desktop rodando. Desative se preferir privacidade.",
   "tip_force_start": "Mantém esse torrent rodando mesmo quando o limite de downloads ativos é atingido. Útil pro torrent que você realmente precisa agora.",
-  "tb_grid_view": "Grid"
+  "tb_grid_view": "Grid",
+  "settings_auto_extract": "Extrair arquivos automaticamente (RAR/ZIP/7z) ao concluir download",
+  "settings_auto_extract_delete": "Excluir arquivos compactados após extração",
+  "tip_auto_extract": "Extrai automaticamente arquivos RAR, ZIP e 7z quando um torrent termina de baixar. Requer 7-Zip (Windows) ou unrar/unzip (macOS/Linux) instalado.",
+  "tip_auto_extract_delete": "Remove os arquivos originais (.rar, .zip, .7z) após extração bem-sucedida para liberar espaço em disco.",
+  "settings_defender_exclude": "Adicionar pasta de download às exclusões do Windows Defender",
+  "tip_defender_exclude": "Adiciona sua pasta de download à lista de exclusões do Windows Defender para parar de sinalizar arquivos baixados. Requer permissão de administrador (prompt UAC).",
+  "defender_exclude_ok": "Pasta adicionada às exclusões do Windows Defender: %1",
+  "defender_exclude_fail": "Falha ao adicionar exclusão. Certifique-se de aceitar o prompt UAC.",
+  "settings_extract_passwords": "Senhas de arquivos:",
+  "settings_extract_passwords_hint": "Senhas para tentar, separadas por ; (ex: online-fix.me; senha123)",
+  "tip_extract_passwords": "Lista de senhas para tentar ao extrair arquivos protegidos por senha. O extrator tenta sem senha primeiro, depois cada senha em ordem."
 }

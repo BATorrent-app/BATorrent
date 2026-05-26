@@ -684,5 +684,16 @@
   "tip_block_leechers": "Erkennt und bannt automatisch Xunlei-, QQDownload-, Baidu-Clients, die herunterladen ohne zu seeden. Erkennung über peer_id im BitTorrent-Handshake. Essenziell für die Swarm-Gesundheit bei chinesischen Trackern.",
   "tip_discord_enabled": "Discord Rich Presence — zeigt deinen aktuellen Download-/Seeding-Status im Discord-Profil. Erfordert die laufende Discord-Desktop-App. Deaktivieren für mehr Privatsphäre.",
   "warn_low_disk": "Wenig Speicherplatz — nur noch %1 MB übrig. Downloads können fehlschlagen, wenn der Datenträger voll wird.",
-  "tb_grid_view": "Raster"
+  "tb_grid_view": "Raster",
+  "settings_auto_extract": "Archive automatisch entpacken (RAR/ZIP/7z) nach Abschluss",
+  "settings_auto_extract_delete": "Archivdateien nach dem Entpacken löschen",
+  "tip_auto_extract": "Entpackt automatisch RAR-, ZIP- und 7z-Archive nach Abschluss eines Torrent-Downloads. Erfordert installiertes 7-Zip (Windows) oder unrar/unzip (macOS/Linux).",
+  "tip_auto_extract_delete": "Entfernt die originalen Archivdateien (.rar, .zip, .7z) nach erfolgreicher Extraktion um Speicherplatz freizugeben.",
+  "settings_defender_exclude": "Download-Ordner zu Windows Defender-Ausnahmen hinzufügen",
+  "tip_defender_exclude": "Fügt Ihren Download-Ordner zur Windows Defender-Ausnahmeliste hinzu, damit heruntergeladene Dateien nicht mehr markiert werden. Erfordert Administratorrechte (UAC-Aufforderung).",
+  "defender_exclude_ok": "Ordner zu Windows Defender-Ausnahmen hinzugefügt: %1",
+  "defender_exclude_fail": "Fehler beim Hinzufügen der Ausnahme. Stellen Sie sicher, dass Sie die UAC-Aufforderung akzeptieren.",
+  "settings_extract_passwords": "Archiv-Passwörter:",
+  "settings_extract_passwords_hint": "Passwörter zum Ausprobieren, getrennt durch ; (z.B. online-fix.me; password123)",
+  "tip_extract_passwords": "Liste von Passwörtern zum Ausprobieren beim Entpacken passwortgeschützter Archive. Der Entpacker versucht zuerst ohne Passwort, dann jedes Passwort der Reihe nach."
 }

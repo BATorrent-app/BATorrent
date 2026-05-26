@@ -124,6 +124,9 @@ SessionManager::SessionManager(QObject *parent)
     // Torrent export + run on complete + watched folder + temp path
     m_torrentExportDir = settings.value("torrentExportDir").toString();
     m_tempPath = settings.value("tempPath").toString();
+    m_autoExtract = settings.value("autoExtract", false).toBool();
+    m_autoExtractDelete = settings.value("autoExtractDelete", false).toBool();
+    m_extractPasswords = settings.value("extractPasswords").toStringList();
     m_contentLayout = settings.value("contentLayout", 0).toInt();
     m_excludedFilePatterns = settings.value("excludedFilePatterns").toStringList();
     m_runOnComplete = settings.value("runOnComplete").toString();
@@ -1911,6 +1914,9 @@ void SessionManager::processAlerts()
                 if (effectiveStopAfterDownload(hash))
                     fa->handle.pause();
 
+                if (m_autoExtract)
+                    extractArchives(QString::fromStdString(st.save_path), name);
+
                 qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
                 executeOnComplete(name, QString::fromStdString(st.save_path),
                                   hash, st.total_wanted);
@@ -2765,6 +2771,149 @@ void SessionManager::setAutoMove(bool enabled, const QString &path)
 
 bool SessionManager::autoMoveEnabled() const { return m_autoMoveEnabled; }
 QString SessionManager::autoMovePath() const { return m_autoMovePath; }
+
+// --- Auto-extract ---
+
+void SessionManager::setAutoExtract(bool enabled)
+{
+    m_autoExtract = enabled;
+    QSettings("BATorrent", "BATorrent").setValue("autoExtract", enabled);
+}
+
+bool SessionManager::autoExtract() const { return m_autoExtract; }
+
+void SessionManager::setAutoExtractDelete(bool deleteAfter)
+{
+    m_autoExtractDelete = deleteAfter;
+    QSettings("BATorrent", "BATorrent").setValue("autoExtractDelete", deleteAfter);
+}
+
+bool SessionManager::autoExtractDelete() const { return m_autoExtractDelete; }
+
+void SessionManager::setExtractPasswords(const QStringList &passwords)
+{
+    m_extractPasswords = passwords;
+    QSettings("BATorrent", "BATorrent").setValue("extractPasswords", passwords);
+}
+
+QStringList SessionManager::extractPasswords() const { return m_extractPasswords; }
+
+void SessionManager::extractArchives(const QString &savePath, const QString &torrentName)
+{
+    QDir dir(savePath);
+    QStringList archives;
+
+    // Scan for archives in save path (including torrent subfolder)
+    QStringList dirs = {savePath};
+    QString subDir = dir.filePath(torrentName);
+    if (QDir(subDir).exists()) dirs << subDir;
+
+    for (const QString &d : dirs) {
+        QDir scanDir(d);
+        for (const auto &fi : scanDir.entryInfoList(
+                 {"*.rar", "*.zip", "*.7z", "*.tar.gz", "*.tar.bz2"},
+                 QDir::Files)) {
+            if (fi.fileName().contains(QStringLiteral(".part")) &&
+                !fi.fileName().endsWith(QStringLiteral(".part1.rar")) &&
+                !fi.fileName().endsWith(QStringLiteral(".part01.rar")))
+                continue;
+            archives << fi.absoluteFilePath();
+        }
+    }
+
+    if (archives.isEmpty()) return;
+
+    for (const QString &archive : archives) {
+        QFileInfo fi(archive);
+        QString extractDir = fi.absolutePath();
+
+        QStringList passwords = m_extractPasswords;
+        // Try without password first, then each password
+        QStringList attempts;
+        attempts << QString();
+        attempts << passwords;
+
+        auto tryExtract = [this, archive, extractDir, attempts](int attemptIdx) {
+            auto self = std::make_shared<std::function<void(int)>>();
+            *self = [this, archive, extractDir, attempts, self](int idx) {
+                if (idx >= attempts.size()) {
+                    qDebug() << "[session] extraction failed (all passwords tried):" << archive;
+                    return;
+                }
+
+                QString password = attempts[idx];
+                QStringList args;
+                QString program;
+
+#ifdef Q_OS_WIN
+                program = QStringLiteral("7z.exe");
+                for (const QString &path : {
+                         QStringLiteral("C:/Program Files/7-Zip/7z.exe"),
+                         QStringLiteral("C:/Program Files (x86)/7-Zip/7z.exe")}) {
+                    if (QFile::exists(path)) { program = path; break; }
+                }
+                args << QStringLiteral("x") << archive
+                     << QStringLiteral("-o") + extractDir
+                     << QStringLiteral("-y") << QStringLiteral("-aoa");
+                if (!password.isEmpty())
+                    args << QStringLiteral("-p") + password;
+#else
+                if (archive.endsWith(QStringLiteral(".rar"))) {
+                    program = QStringLiteral("unrar");
+                    args << QStringLiteral("x") << QStringLiteral("-o+");
+                    if (!password.isEmpty())
+                        args << QStringLiteral("-p") + password;
+                    args << archive << extractDir + QStringLiteral("/");
+                } else if (archive.endsWith(QStringLiteral(".zip"))) {
+                    program = QStringLiteral("unzip");
+                    if (!password.isEmpty())
+                        args << QStringLiteral("-P") << password;
+                    args << QStringLiteral("-o") << archive
+                         << QStringLiteral("-d") << extractDir;
+                } else {
+                    program = QStringLiteral("7z");
+                    args << QStringLiteral("x") << archive
+                         << QStringLiteral("-o") + extractDir
+                         << QStringLiteral("-y");
+                    if (!password.isEmpty())
+                        args << QStringLiteral("-p") + password;
+                }
+#endif
+
+                qDebug() << "[session] auto-extract attempt" << idx << ":" << program
+                         << (password.isEmpty() ? "(no password)" : "(with password)");
+
+                auto *proc = new QProcess(this);
+                connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                        this, [this, proc, archive, idx, self](int exitCode, QProcess::ExitStatus) {
+                    proc->deleteLater();
+                    if (exitCode == 0) {
+                        qDebug() << "[session] extraction complete:" << archive;
+                        if (m_autoExtractDelete) {
+                            QFile::remove(archive);
+                            QFileInfo fi(archive);
+                            QDir dir = fi.absoluteDir();
+                            QString baseName = fi.completeBaseName();
+                            for (const auto &related : dir.entryInfoList(QDir::Files)) {
+                                QString name = related.fileName();
+                                if (name.startsWith(baseName) &&
+                                    (name.endsWith(QStringLiteral(".rar")) ||
+                                     name.contains(QRegularExpression(QStringLiteral("\\.(r\\d+|part\\d+\\.rar)$"))))) {
+                                    QFile::remove(related.absoluteFilePath());
+                                }
+                            }
+                        }
+                    } else {
+                        (*self)(idx + 1);
+                    }
+                });
+                proc->start(program, args);
+            };
+            (*self)(attemptIdx);
+        };
+        tryExtract(0);
+    }
+}
 
 // --- Temp path ---
 

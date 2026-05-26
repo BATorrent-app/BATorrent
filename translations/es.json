@@ -684,5 +684,16 @@
   "tip_block_leechers": "Detecta y banea automáticamente clientes Xunlei, QQDownload, Baidu que descargan sin sembrar. Se detecta por peer_id en el handshake BitTorrent. Esencial para la salud del swarm en trackers chinos.",
   "tip_discord_enabled": "Discord Rich Presence — muestra tu estado de descarga/siembra en tu perfil Discord. Requiere la app Discord Desktop ejecutándose. Desactívalo si prefieres privacidad.",
   "warn_low_disk": "Poco espacio en disco — solo quedan %1 MB. Las descargas pueden fallar si el disco se llena.",
-  "tb_grid_view": "Grid"
+  "tb_grid_view": "Grid",
+  "settings_auto_extract": "Extraer archivos automáticamente (RAR/ZIP/7z) al completar descarga",
+  "settings_auto_extract_delete": "Eliminar archivos comprimidos después de extraer",
+  "tip_auto_extract": "Extrae automáticamente archivos RAR, ZIP y 7z cuando un torrent termina de descargarse. Requiere 7-Zip (Windows) o unrar/unzip (macOS/Linux) instalado.",
+  "tip_auto_extract_delete": "Elimina los archivos originales (.rar, .zip, .7z) después de una extracción exitosa para liberar espacio en disco.",
+  "settings_defender_exclude": "Agregar carpeta de descarga a exclusiones de Windows Defender",
+  "tip_defender_exclude": "Agrega tu carpeta de descarga a la lista de exclusiones de Windows Defender para que deje de marcar archivos descargados. Requiere permisos de administrador (solicitud UAC).",
+  "defender_exclude_ok": "Carpeta agregada a las exclusiones de Windows Defender: %1",
+  "defender_exclude_fail": "Error al agregar exclusión. Asegúrese de aceptar la solicitud UAC.",
+  "settings_extract_passwords": "Contraseñas de archivos:",
+  "settings_extract_passwords_hint": "Contraseñas a probar, separadas por ; (ej: online-fix.me; password123)",
+  "tip_extract_passwords": "Lista de contraseñas a probar al extraer archivos protegidos con contraseña. El extractor intenta sin contraseña primero, luego cada contraseña en orden."
 }

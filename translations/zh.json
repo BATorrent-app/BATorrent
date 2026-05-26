@@ -684,5 +684,16 @@
   "tip_block_leechers": "自动检测并封禁使用迅雷、QQ下载、百度网盘P2P等只下载不上传的客户端。通过 BitTorrent 握手中的 peer_id 检测。对中国 tracker 的 swarm 健康至关重要。",
   "tip_discord_enabled": "Discord Rich Presence — 在您的 Discord 个人资料中显示当前下载/做种状态。需要 Discord 桌面应用运行。如需隐私可禁用。",
   "warn_low_disk": "磁盘空间不足 — 仅剩 %1 MB。如果磁盘满了下载可能会失败。",
-  "tb_grid_view": "网格"
+  "tb_grid_view": "网格",
+  "settings_auto_extract": "下载完成时自动解压归档文件（RAR/ZIP/7z）",
+  "settings_auto_extract_delete": "解压后删除归档文件",
+  "tip_auto_extract": "种子下载完成后自动解压 RAR、ZIP 和 7z 归档。需要安装 7-Zip（Windows）或 unrar/unzip（macOS/Linux）。",
+  "tip_auto_extract_delete": "成功解压后删除原始归档文件（.rar、.zip、.7z）以释放磁盘空间。",
+  "settings_defender_exclude": "将下载文件夹添加到 Windows Defender 排除列表",
+  "tip_defender_exclude": "将下载文件夹添加到 Windows Defender 排除列表，使其停止标记已下载的文件。需要管理员权限（UAC 提示）。",
+  "defender_exclude_ok": "文件夹已添加到 Windows Defender 排除列表：%1",
+  "defender_exclude_fail": "添加排除失败。请确保接受 UAC 提示。",
+  "settings_extract_passwords": "归档密码：",
+  "settings_extract_passwords_hint": "要尝试的密码，分号分隔（如 online-fix.me; password123）",
+  "tip_extract_passwords": "解压密码保护的归档文件时要尝试的密码列表。解压器先尝试无密码，然后按顺序尝试每个密码。"
 }

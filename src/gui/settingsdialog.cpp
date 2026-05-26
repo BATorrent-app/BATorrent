@@ -270,6 +270,41 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     autoMoveLabel->setStyleSheet(labelStyle);
     generalLayout->addRow(autoMoveLabel, autoMoveLayout);
 
+    // Auto-extract archives
+    m_autoExtractCheck = new QCheckBox(tr_("settings_auto_extract"));
+    m_autoExtractCheck->setToolTip(tr_("tip_auto_extract"));
+    generalLayout->addRow("", m_autoExtractCheck);
+
+    m_autoExtractDeleteCheck = new QCheckBox(tr_("settings_auto_extract_delete"));
+    m_autoExtractDeleteCheck->setToolTip(tr_("tip_auto_extract_delete"));
+    generalLayout->addRow("", m_autoExtractDeleteCheck);
+
+    m_extractPasswordsEdit = new QLineEdit;
+    m_extractPasswordsEdit->setPlaceholderText(tr_("settings_extract_passwords_hint"));
+    m_extractPasswordsEdit->setToolTip(tr_("tip_extract_passwords"));
+    auto *pwLabel = new QLabel(tr_("settings_extract_passwords"));
+    pwLabel->setStyleSheet(labelStyle);
+    generalLayout->addRow(pwLabel, m_extractPasswordsEdit);
+
+#if defined(Q_OS_WIN) && !defined(BAT_STORE_BUILD)
+    auto *defenderBtn = new QPushButton(tr_("settings_defender_exclude"));
+    defenderBtn->setToolTip(tr_("tip_defender_exclude"));
+    connect(defenderBtn, &QPushButton::clicked, this, [this]() {
+        QString path = m_savePathEdit->text().trimmed();
+        if (path.isEmpty()) return;
+        QString cmd = QStringLiteral("Add-MpPreference -ExclusionPath '%1'").arg(path);
+        int ret = QProcess::execute(QStringLiteral("powershell.exe"),
+            {QStringLiteral("-Command"), QStringLiteral("Start-Process powershell -ArgumentList '-Command','") + cmd + QStringLiteral("' -Verb RunAs -Wait")});
+        if (ret == 0)
+            QMessageBox::information(this, QStringLiteral("Windows Defender"),
+                tr_("defender_exclude_ok").arg(path));
+        else
+            QMessageBox::warning(this, QStringLiteral("Windows Defender"),
+                tr_("defender_exclude_fail"));
+    });
+    generalLayout->addRow("", defenderBtn);
+#endif
+
     // Temp path for incomplete downloads
     auto *tempPathLayout = new QHBoxLayout;
     m_tempPathEdit = new QLineEdit;
@@ -1050,6 +1085,12 @@ bool SettingsDialog::autoMoveEnabled() const { return m_autoMoveCheck->isChecked
 QString SettingsDialog::autoMovePath() const { return m_autoMovePathEdit->text(); }
 void SettingsDialog::setAutoMoveEnabled(bool val) { m_autoMoveCheck->setChecked(val); }
 void SettingsDialog::setAutoMovePath(const QString &path) { m_autoMovePathEdit->setText(path); }
+bool SettingsDialog::autoExtract() const { return m_autoExtractCheck->isChecked(); }
+bool SettingsDialog::autoExtractDelete() const { return m_autoExtractDeleteCheck->isChecked(); }
+void SettingsDialog::setAutoExtract(bool val) { m_autoExtractCheck->setChecked(val); }
+void SettingsDialog::setAutoExtractDelete(bool val) { m_autoExtractDeleteCheck->setChecked(val); }
+QString SettingsDialog::extractPasswords() const { return m_extractPasswordsEdit->text().trimmed(); }
+void SettingsDialog::setExtractPasswords(const QString &passwords) { m_extractPasswordsEdit->setText(passwords); }
 QString SettingsDialog::runOnComplete() const { return m_runOnCompleteEdit->text().trimmed(); }
 QString SettingsDialog::watchedFolder() const { return m_watchedFolderEdit->text().trimmed(); }
 void SettingsDialog::setRunOnComplete(const QString &cmd) { m_runOnCompleteEdit->setText(cmd); }

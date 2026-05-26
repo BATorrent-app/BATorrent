@@ -254,6 +254,14 @@ public:
     void setTorrentExportDir(const QString &path);
     QString torrentExportDir() const;
 
+    // Auto-extract archives (RAR/ZIP/7z) when a torrent completes.
+    void setAutoExtract(bool enabled);
+    bool autoExtract() const;
+    void setAutoExtractDelete(bool deleteAfter);
+    bool autoExtractDelete() const;
+    void setExtractPasswords(const QStringList &passwords);
+    QStringList extractPasswords() const;
+
     // Execute a command when a torrent finishes. Template variables:
     // %N = torrent name, %D = save path, %F = content path (first file),
     // %Z = total size, %H = info hash. Empty = disabled.
@@ -491,6 +499,12 @@ private:
     QString m_watchedFolder;
     QTimer *m_watchedFolderTimer = nullptr;
     void scanWatchedFolder();
+    // Auto-extract
+    bool m_autoExtract = false;
+    bool m_autoExtractDelete = false;
+    QStringList m_extractPasswords;
+    void extractArchives(const QString &savePath, const QString &torrentName);
+
     // Auto-move
     bool m_autoMoveEnabled = false;
     QString m_autoMovePath;
