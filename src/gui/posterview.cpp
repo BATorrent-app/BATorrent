@@ -53,11 +53,20 @@ void PosterDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
         hasMeta = meta.valid;
     }
 
-    // Card background
+    const bool hovered = option.state & QStyle::State_MouseOver;
+
     QPainterPath cardPath;
     cardPath.addRoundedRect(QRectF(card), 8, 8);
     painter->setPen(Qt::NoPen);
-    painter->setBrush(QColor(tm.panelColor()));
+
+    QColor cardBg(tm.panelColor());
+    if (hovered) {
+        int r = cardBg.red()   + (255 - cardBg.red())   * 0.10;
+        int g = cardBg.green() + (255 - cardBg.green()) * 0.10;
+        int b = cardBg.blue()  + (255 - cardBg.blue())  * 0.10;
+        cardBg = QColor(qMin(r, 255), qMin(g, 255), qMin(b, 255), cardBg.alpha());
+    }
+    painter->setBrush(cardBg);
     painter->drawPath(cardPath);
 
     // Poster area
@@ -138,7 +147,7 @@ void PosterDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     // Title text
     QString displayTitle = (hasMeta && !meta.title.isEmpty()) ? meta.title : name;
     QFont titleFont = painter->font();
-    titleFont.setPointSize(10);
+    titleFont.setPointSize(11);
     painter->setFont(titleFont);
     painter->setPen(QColor(tm.textColor()));
 
@@ -160,7 +169,23 @@ void PosterDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     QString elidedState = stateFm.elidedText(stateStr, Qt::ElideRight, stateRect.width());
     painter->drawText(stateRect, Qt::AlignLeft | Qt::AlignVCenter, elidedState);
 
-    // Selection border
+    if (hovered && !(option.state & QStyle::State_Selected)) {
+        QColor hoverBorder(tm.accentColor());
+        hoverBorder.setAlphaF(0.30f);
+        QPen hoverPen(hoverBorder, 1);
+        painter->setPen(hoverPen);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(QRectF(card).adjusted(0.5, 0.5, -0.5, -0.5), 8, 8);
+    }
+
+    if (option.state & QStyle::State_HasFocus) {
+        QColor focusBorder(tm.accentColor());
+        QPen focusPen(focusBorder, 2, Qt::DashLine);
+        painter->setPen(focusPen);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(QRectF(card).adjusted(1, 1, -1, -1), 8, 8);
+    }
+
     if (option.state & QStyle::State_Selected) {
         QPen selPen(QColor(tm.accentColor()), 2);
         painter->setPen(selPen);
@@ -182,6 +207,7 @@ PosterView::PosterView(MetadataResolver *resolver, SessionManager *session, QWid
     setGridSize(QSize(176, 300));
     setUniformItemSizes(true);
     setSelectionMode(QAbstractItemView::SingleSelection);
+    setMouseTracking(true);
     setContextMenuPolicy(Qt::CustomContextMenu);
     setItemDelegate(new PosterDelegate(resolver, session, this));
     setStyleSheet(QStringLiteral("QListView { background: transparent; border: none; }"));
