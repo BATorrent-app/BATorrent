@@ -11,7 +11,7 @@
 class ThemeManager
 {
 public:
-    enum Theme { Dark, Light, Midnight };
+    enum Theme { Dark, Light, Midnight, Sakura };
 
     static ThemeManager &instance();
 
