@@ -695,5 +695,9 @@
   "defender_exclude_fail": "Fehler beim Hinzufügen der Ausnahme. Stellen Sie sicher, dass Sie die UAC-Aufforderung akzeptieren.",
   "settings_extract_passwords": "Archiv-Passwörter:",
   "settings_extract_passwords_hint": "Passwörter zum Ausprobieren, getrennt durch ; (z.B. online-fix.me; password123)",
-  "tip_extract_passwords": "Liste von Passwörtern zum Ausprobieren beim Entpacken passwortgeschützter Archive. Der Entpacker versucht zuerst ohne Passwort, dann jedes Passwort der Reihe nach."
+  "tip_extract_passwords": "Liste von Passwörtern zum Ausprobieren beim Entpacken passwortgeschützter Archive. Der Entpacker versucht zuerst ohne Passwort, dann jedes Passwort der Reihe nach.",
+  "adv_metadata_api": "Metadaten-API",
+  "adv_tmdb_hint": "Kostenloser Schlüssel von themoviedb.org (Film-/Serienplakate)",
+  "adv_igdb_id_hint": "Von dev.twitch.tv (Spielcover)",
+  "adv_igdb_secret_hint": "Twitch-App-Client-Secret"
 }

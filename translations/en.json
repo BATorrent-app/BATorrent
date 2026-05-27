@@ -693,5 +693,9 @@
   "defender_exclude_fail": "Failed to add exclusion. Make sure to accept the UAC prompt.",
   "settings_extract_passwords": "Archive passwords:",
   "settings_extract_passwords_hint": "Passwords to try, separated by ; (e.g. online-fix.me; password123)",
-  "tip_extract_passwords": "List of passwords to try when extracting password-protected archives. The extractor tries without password first, then each password in order."
+  "tip_extract_passwords": "List of passwords to try when extracting password-protected archives. The extractor tries without password first, then each password in order.",
+  "adv_metadata_api": "Metadata API",
+  "adv_tmdb_hint": "Free key from themoviedb.org (movies/series posters)",
+  "adv_igdb_id_hint": "From dev.twitch.tv (game covers)",
+  "adv_igdb_secret_hint": "Twitch app client secret"
 }

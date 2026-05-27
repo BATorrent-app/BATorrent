@@ -695,5 +695,9 @@
   "defender_exclude_fail": "Error al agregar exclusión. Asegúrese de aceptar la solicitud UAC.",
   "settings_extract_passwords": "Contraseñas de archivos:",
   "settings_extract_passwords_hint": "Contraseñas a probar, separadas por ; (ej: online-fix.me; password123)",
-  "tip_extract_passwords": "Lista de contraseñas a probar al extraer archivos protegidos con contraseña. El extractor intenta sin contraseña primero, luego cada contraseña en orden."
+  "tip_extract_passwords": "Lista de contraseñas a probar al extraer archivos protegidos con contraseña. El extractor intenta sin contraseña primero, luego cada contraseña en orden.",
+  "adv_metadata_api": "API de Metadatos",
+  "adv_tmdb_hint": "Clave gratuita de themoviedb.org (pósters de películas/series)",
+  "adv_igdb_id_hint": "De dev.twitch.tv (portadas de juegos)",
+  "adv_igdb_secret_hint": "Secreto del cliente de la app Twitch"
 }

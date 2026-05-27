@@ -693,5 +693,9 @@
   "defender_exclude_fail": "Falha ao adicionar exclusão. Certifique-se de aceitar o prompt UAC.",
   "settings_extract_passwords": "Senhas de arquivos:",
   "settings_extract_passwords_hint": "Senhas para tentar, separadas por ; (ex: online-fix.me; senha123)",
-  "tip_extract_passwords": "Lista de senhas para tentar ao extrair arquivos protegidos por senha. O extrator tenta sem senha primeiro, depois cada senha em ordem."
+  "tip_extract_passwords": "Lista de senhas para tentar ao extrair arquivos protegidos por senha. O extrator tenta sem senha primeiro, depois cada senha em ordem.",
+  "adv_metadata_api": "API de Metadados",
+  "adv_tmdb_hint": "Key gratuita de themoviedb.org (posters de filmes/séries)",
+  "adv_igdb_id_hint": "De dev.twitch.tv (capas de jogos)",
+  "adv_igdb_secret_hint": "Client secret do app Twitch"
 }
