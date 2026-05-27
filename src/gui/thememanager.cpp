@@ -27,7 +27,7 @@ QStringList ThemeManager::themeNames()
 
 QString ThemeManager::accentColor() const
 {
-    if (m_theme == Sakura) return "#EC4899";
+    if (m_theme == Sakura) return "#d6336c";
     switch (m_theme) {
     case Light:    return "#dc2626";
     case Midnight: return "#dc2626";
@@ -127,11 +127,11 @@ QString ThemeManager::mutedColor() const
 
 QString ThemeManager::dimColor() const
 {
-    if (m_theme == Sakura) return "#B98AA0";
+    if (m_theme == Sakura) return "#8a5a70";
     switch (m_theme) {
-    case Light:    return "#94897c";
-    case Midnight: return "#605c82";
-    default:       return "#71717a";
+    case Light:    return "#6e6355";
+    case Midnight: return "#7a75a0";
+    default:       return "#8a8a94";
     }
 }
 
