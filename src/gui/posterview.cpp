@@ -33,7 +33,8 @@ void PosterDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     painter->setRenderHint(QPainter::Antialiasing);
 
     const auto &tm = ThemeManager::instance();
-    const QRect card = option.rect;
+    QRect card = option.rect;
+    card.adjust(0, 8, 0, 0);
     const QRect posterRect(card.left(), card.top(), card.width(), 225);
     const QRect infoRect(card.left(), card.top() + 225, card.width(), 55);
 
@@ -56,7 +57,7 @@ void PosterDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     QPainterPath cardPath;
     cardPath.addRoundedRect(QRectF(card), 8, 8);
     painter->setPen(Qt::NoPen);
-    painter->setBrush(QColor(tm.surfaceColor()));
+    painter->setBrush(QColor(tm.panelColor()));
     painter->drawPath(cardPath);
 
     // Poster area
@@ -178,7 +179,7 @@ PosterView::PosterView(MetadataResolver *resolver, SessionManager *session, QWid
     setWrapping(true);
     setResizeMode(QListView::Adjust);
     setSpacing(12);
-    setGridSize(QSize(172, 292));
+    setGridSize(QSize(176, 300));
     setUniformItemSizes(true);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setContextMenuPolicy(Qt::CustomContextMenu);

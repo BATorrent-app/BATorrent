@@ -22,11 +22,12 @@ void ThemeManager::setTheme(Theme theme)
 
 QStringList ThemeManager::themeNames()
 {
-    return {"Dark", "Light", "Midnight"};
+    return {"Dark", "Light", "Midnight", "Sakura"};
 }
 
 QString ThemeManager::accentColor() const
 {
+    if (m_theme == Sakura) return "#EC4899";
     switch (m_theme) {
     case Light:    return "#dc2626";
     case Midnight: return "#dc2626";
@@ -36,6 +37,7 @@ QString ThemeManager::accentColor() const
 
 QString ThemeManager::accentDarkColor() const
 {
+    if (m_theme == Sakura) return "#BE185D";
     switch (m_theme) {
     case Light:    return "#991b1b";
     case Midnight: return "#991b1b";
@@ -45,6 +47,7 @@ QString ThemeManager::accentDarkColor() const
 
 QString ThemeManager::accentLightColor() const
 {
+    if (m_theme == Sakura) return "#F472B6";
     switch (m_theme) {
     case Light:    return "#ef4444";
     case Midnight: return "#ef4444";
@@ -54,8 +57,9 @@ QString ThemeManager::accentLightColor() const
 
 QString ThemeManager::accentSurfaceColor() const
 {
+    if (m_theme == Sakura) return "#FCE7F0";
     switch (m_theme) {
-    case Light:    return "#f5e2dc";  // warm red tint on cream
+    case Light:    return "#f5e2dc";
     case Midnight: return "#1a0a10";
     default:       return "#1f1012";
     }
@@ -63,8 +67,9 @@ QString ThemeManager::accentSurfaceColor() const
 
 QString ThemeManager::bgColor() const
 {
+    if (m_theme == Sakura) return "#FDE6EF";
     switch (m_theme) {
-    case Light:    return "#ece4d2";  // warm cream, matches JSX "Comfortable" palette
+    case Light:    return "#ece4d2";
     case Midnight: return "#08070d";
     default:       return "#0e0a0a";
     }
@@ -72,26 +77,29 @@ QString ThemeManager::bgColor() const
 
 QString ThemeManager::surfaceColor() const
 {
+    if (m_theme == Sakura) return "#FFFFFF";
     switch (m_theme) {
-    case Light:    return "#f5eed9";  // light cream cards / inputs
+    case Light:    return "#f5eed9";
     case Midnight: return "#12121c";
-    default:       return "#15110f";  // was #1a1a20 (blue tint) — match warm dark
+    default:       return "#15110f";
     }
 }
 
 QString ThemeManager::panelColor() const
 {
+    if (m_theme == Sakura) return "#FCE7F0";
     switch (m_theme) {
-    case Light:    return "#f1e9d4";  // slightly above bg for details panel
+    case Light:    return "#f1e9d4";
     case Midnight: return "#181425";
-    default:       return "#14100f";  // was #201a1a (too brown) — closer to bg
+    default:       return "#14100f";
     }
 }
 
 QString ThemeManager::surfaceAltColor() const
 {
+    if (m_theme == Sakura) return "#FBD5E1";
     switch (m_theme) {
-    case Light:    return "#e2d9bf";  // alt rows / progress track
+    case Light:    return "#e2d9bf";
     case Midnight: return "#0f0e18";
     default:       return "#100c0b";
     }
@@ -99,6 +107,7 @@ QString ThemeManager::surfaceAltColor() const
 
 QString ThemeManager::textColor() const
 {
+    if (m_theme == Sakura) return "#3F1D2E";
     switch (m_theme) {
     case Light:    return "#1a1614";
     case Midnight: return "#eceafb";
@@ -108,8 +117,9 @@ QString ThemeManager::textColor() const
 
 QString ThemeManager::mutedColor() const
 {
+    if (m_theme == Sakura) return "#7E4862";
     switch (m_theme) {
-    case Light:    return "#6d5f4d";  // warm muted, balances cream bg
+    case Light:    return "#6d5f4d";
     case Midnight: return "#9a95c8";
     default:       return "#b0b0b8";
     }
@@ -117,6 +127,7 @@ QString ThemeManager::mutedColor() const
 
 QString ThemeManager::dimColor() const
 {
+    if (m_theme == Sakura) return "#B98AA0";
     switch (m_theme) {
     case Light:    return "#94897c";
     case Midnight: return "#605c82";
@@ -126,15 +137,17 @@ QString ThemeManager::dimColor() const
 
 QString ThemeManager::borderColor() const
 {
+    if (m_theme == Sakura) return "#F9C2D2";
     switch (m_theme) {
-    case Light:    return "#d9cfb8";  // warm border tone
+    case Light:    return "#d9cfb8";
     case Midnight: return "#22203a";
-    default:       return "#2a2018";  // less blue, warm dark
+    default:       return "#2a2018";
     }
 }
 
 QString ThemeManager::borderStrongColor() const
 {
+    if (m_theme == Sakura) return "#F19BB3";
     switch (m_theme) {
     case Light:    return "#c2b59b";
     case Midnight: return "#322e50";
@@ -144,11 +157,13 @@ QString ThemeManager::borderStrongColor() const
 
 QString ThemeManager::hairlineColor() const
 {
+    if (m_theme == Sakura) return "rgba(190,24,93,0.10)";
     return m_theme == Light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)";
 }
 
 QString ThemeManager::accentTintColor() const
 {
+    if (m_theme == Sakura) return "rgba(236,72,153,0.10)";
     switch (m_theme) {
     case Light:    return "rgba(220,38,38,0.08)";
     case Midnight: return "rgba(220,38,38,0.10)";
@@ -158,6 +173,7 @@ QString ThemeManager::accentTintColor() const
 
 QString ThemeManager::accentTintStrongColor() const
 {
+    if (m_theme == Sakura) return "rgba(236,72,153,0.18)";
     switch (m_theme) {
     case Light:    return "rgba(220,38,38,0.14)";
     case Midnight: return "rgba(220,38,38,0.18)";
@@ -177,6 +193,10 @@ QPixmap ThemeManager::themedLogo(int size, qreal dpr) const
     // the body color to textColor; the red accent stays in every theme.
     if (m_theme == Light)
         svg.replace("#E9E9E8", textColor().toUtf8());
+    if (m_theme == Sakura) {
+        svg.replace("#E9E9E8", "#3F1D2E");
+        svg.replace("#E72134", "#EC4899");
+    }
     QSvgRenderer renderer(svg);
     const int px = int(size * dpr);
     QPixmap pm(px, px);
@@ -196,7 +216,7 @@ QPixmap ThemeManager::themedLogo(int size, qreal dpr) const
 QString ThemeManager::accentTintForGradient(int alphaPercent) const
 {
     const QColor base(bgColor());
-    const QColor accent(220, 38, 38);
+    const QColor accent(m_theme == Sakura ? QColor(236, 72, 153) : QColor(220, 38, 38));
     const float a = qBound(0, alphaPercent, 100) / 100.0f;
     const int r = qRound(accent.red()   * a + base.red()   * (1.0f - a));
     const int g = qRound(accent.green() * a + base.green() * (1.0f - a));
@@ -206,41 +226,43 @@ QString ThemeManager::accentTintForGradient(int alphaPercent) const
 
 QString ThemeManager::stateDownloadingColor() const
 {
-    return accentColor(); // red
+    if (m_theme == Sakura) return "#EC4899";
+    return accentColor();
 }
 
 QString ThemeManager::stateSeedingColor() const
 {
+    if (m_theme == Sakura) return "#F59E0B";
     switch (m_theme) {
-    case Light:    return "#b45309";
-    case Midnight: return "#f59e0b";
-    default:       return "#f59e0b";
+    case Light:    return "#7f1d1d";
+    case Midnight: return "#991b1b";
+    default:       return "#991b1b";
     }
 }
 
 QString ThemeManager::stateFinishedColor() const
 {
+    if (m_theme == Sakura) return "#F59E0B";
     switch (m_theme) {
-    case Light:    return "#94897c";
-    case Midnight: return "#9a95c8";
-    default:       return "#b0b0b8";
+    case Light:    return "#7f1d1d";
+    case Midnight: return "#991b1b";
+    default:       return "#991b1b";
     }
 }
 
 QString ThemeManager::stateCompletedColor() const
 {
-    // Greens are otherwise absent from the palette by design, but the user
-    // asked for the universal "download done" cue here — kept slightly
-    // desaturated so it sits next to the red/amber accents without fighting.
+    if (m_theme == Sakura) return "#B98AA0";
     switch (m_theme) {
-    case Light:    return "#16a34a";
-    case Midnight: return "#22c55e";
-    default:       return "#22c55e";
+    case Light:    return "#a85252";
+    case Midnight: return "#6b2a2a";
+    default:       return "#6b2a2a";
     }
 }
 
 QString ThemeManager::statePausedColor() const
 {
+    if (m_theme == Sakura) return "#EBC8D4";
     switch (m_theme) {
     case Light:    return "#cfcac0";
     case Midnight: return "#2d2a42";
@@ -250,6 +272,7 @@ QString ThemeManager::statePausedColor() const
 
 QString ThemeManager::stateErrorColor() const
 {
+    if (m_theme == Sakura) return "#9F1239";
     switch (m_theme) {
     case Light:    return "#7f1d1d";
     default:       return "#991b1b";

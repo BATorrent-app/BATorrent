@@ -75,27 +75,14 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
     painter->drawRoundedRect(track, kRadius, kRadius);
 
     if (progress > 0.001f) {
-        const int fillW = static_cast<int>(track.width() * progress);
+        const int fillW = qMax(2, static_cast<int>(track.width() * progress));
         const QRect fillRect(track.left(), track.top(), fillW, track.height());
         painter->setBrush(fillColor);
-        // Round only the leading edge; if fill spans full width the track's
-        // own rounding handles the trailing edge already.
-        if (fillW < track.width()) {
-            QPainterPath path;
-            path.moveTo(track.left() + kRadius, track.top());
-            path.lineTo(fillRect.right(), track.top());
-            path.lineTo(fillRect.right(), track.bottom());
-            path.lineTo(track.left() + kRadius, track.bottom());
-            path.arcTo(track.left(), track.bottom() - 2 * kRadius,
-                       2 * kRadius, 2 * kRadius, 270, -90);
-            path.lineTo(track.left(), track.top() + kRadius);
-            path.arcTo(track.left(), track.top(),
-                       2 * kRadius, 2 * kRadius, 180, -90);
-            path.closeSubpath();
-            painter->drawPath(path);
-        } else {
-            painter->drawRoundedRect(fillRect, kRadius, kRadius);
-        }
+        QPainterPath clipPath;
+        clipPath.addRoundedRect(QRectF(track), kRadius, kRadius);
+        painter->setClipPath(clipPath);
+        painter->drawRect(fillRect);
+        painter->setClipping(false);
     }
 
     // Percentage centered on the bar. White when over the colored fill,

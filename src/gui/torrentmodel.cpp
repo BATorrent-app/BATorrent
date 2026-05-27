@@ -169,13 +169,13 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
         const QString key = stateKeyFor(info);
 
         if (index.column() == DownSpeed) {
-            if (info.downloadRate > 0 && key == QLatin1String("downloading"))
-                return QColor(tm.stateDownloadingColor());
+            if (info.downloadRate > 0)
+                return QColor(tm.textColor());
             return QColor(tm.dimColor());
         }
         if (index.column() == UpSpeed) {
             if (info.uploadRate > 0)
-                return QColor(tm.stateSeedingColor());
+                return QColor(tm.textColor());
             return QColor(tm.dimColor());
         }
         if (index.column() == State) {

@@ -84,8 +84,8 @@ void SpeedGraph::paintEvent(QPaintEvent *)
     QColor bgColor(tm.bgColor());
     QColor gridColor(tm.surfaceColor());
     QColor textColor(tm.mutedColor());
-    QColor dlColor(tm.accentColor());
-    QColor ulColor(0x30, 0x60, 0xc4);
+    QColor dlColor(tm.stateDownloadingColor());
+    QColor ulColor(tm.stateSeedingColor());
 
     p.fillRect(rect(), bgColor);
 

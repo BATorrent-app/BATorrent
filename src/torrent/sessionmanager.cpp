@@ -377,32 +377,29 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
 
-    // Delete the .resume file so it doesn't come back on restart, and drop
-    // any per-torrent seeding overrides so they don't accumulate forever.
     lt::torrent_handle h = m_torrents[index];
-    if (h.is_valid()) {
+    if (!h.is_valid()) {
+        m_torrents.erase(m_torrents.begin() + index);
+        emit torrentRemoved(index);
+        return;
+    }
+
+    try {
         lt::torrent_status st = h.status();
         QString hash = QString::fromStdString(
             (std::ostringstream() << st.info_hashes.get_best()).str());
         QDir dir(resumeDataDir());
-        // Move the .resume to the removed-history dir before deleting, so
-        // the user can re-add later. Use a parallel "removed" subfolder
-        // alongside .resume so cleanup logic stays simple.
         QDir removedDir(QFileInfo(dir, "../removed").absoluteFilePath());
         if (!removedDir.exists()) removedDir.mkpath(".");
         QFile::remove(removedDir.filePath(hash + ".resume"));
         QFile::rename(dir.filePath(hash + ".resume"),
                       removedDir.filePath(hash + ".resume"));
-        // Also drop a tiny metadata sidecar (name + size + timestamp) so the
-        // history dialog can display useful entries without re-parsing each
-        // resume file.
         QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
         meta.beginGroup(hash);
         meta.setValue("name", QString::fromStdString(st.name));
         meta.setValue("size", static_cast<qint64>(st.total_wanted));
         meta.setValue("removedAt", QDateTime::currentSecsSinceEpoch());
         meta.endGroup();
-        // Trim ring buffer to 50 entries (oldest evicted).
         meta.beginGroup("");
         QStringList groups = meta.childGroups();
         if (groups.size() > 50) {
@@ -434,27 +431,25 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         }
         if (m_torrentTags.remove(hash))
             QSettings("BATorrent", "BATorrent").remove("torrentTags/" + hash);
-        // Block in-flight save_resume_data_alerts from re-creating the file.
         m_removedHashes.insert(hash);
 
         m_globalDownBase += st.total_payload_download;
         m_globalUpBase += st.total_payload_upload;
+
+        m_queuePaused.erase(h);
+        m_killSwitchPaused.erase(h);
+        m_statusCache.erase(h);
+        m_lastResumeSaveAt.erase(h);
+        m_lastFastAt.erase(h);
+        m_pendingResumeStripCheck.erase(h);
+
+        lt::remove_flags_t flags{};
+        if (deleteFiles)
+            flags = lt::session::delete_files;
+        m_session.remove_torrent(h, flags);
+    } catch (const std::exception &e) {
+        qWarning() << "[session] removeTorrent exception:" << e.what();
     }
-
-    // Drop the handle from any internal "paused-by-us" sets so we never try
-    // to resume a destroyed torrent on the next kill-switch / queue tick.
-    m_queuePaused.erase(h);
-    m_killSwitchPaused.erase(h);
-    m_statusCache.erase(h);
-    m_lastResumeSaveAt.erase(h);
-    m_lastFastAt.erase(h);
-    m_pendingResumeStripCheck.erase(h);
-
-    lt::remove_flags_t flags{};
-    if (deleteFiles)
-        flags = lt::session::delete_files;
-
-    m_session.remove_torrent(h, flags);
     m_torrents.erase(m_torrents.begin() + index);
     emit torrentRemoved(index);
 }
