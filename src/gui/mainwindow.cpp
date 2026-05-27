@@ -903,6 +903,14 @@ void MainWindow::setupCentralWidget()
     m_tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_tableView->horizontalHeader()->setStretchLastSection(true);
     m_tableView->horizontalHeader()->setSortIndicatorShown(true);
+    m_tableView->horizontalHeader()->setSectionResizeMode(TorrentModel::Name, QHeaderView::Stretch);
+    m_tableView->setColumnWidth(TorrentModel::Size, 80);
+    m_tableView->setColumnWidth(TorrentModel::Progress, 90);
+    m_tableView->setColumnWidth(TorrentModel::DownSpeed, 90);
+    m_tableView->setColumnWidth(TorrentModel::UpSpeed, 90);
+    m_tableView->setColumnWidth(TorrentModel::State, 90);
+    m_tableView->setColumnWidth(TorrentModel::Category, 100);
+    m_tableView->setColumnWidth(TorrentModel::Peers, 60);
     m_tableView->verticalHeader()->hide();
     m_tableView->setShowGrid(false);
     m_tableView->setAlternatingRowColors(true);
