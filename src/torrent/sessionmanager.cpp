@@ -432,6 +432,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         if (m_torrentTags.remove(hash))
             QSettings("BATorrent", "BATorrent").remove("torrentTags/" + hash);
         m_removedHashes.insert(hash);
+        if (m_removedHashes.size() > 500) m_removedHashes.clear();
 
         m_globalDownBase += st.total_payload_download;
         m_globalUpBase += st.total_payload_upload;
@@ -442,6 +443,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         m_lastResumeSaveAt.erase(h);
         m_lastFastAt.erase(h);
         m_pendingResumeStripCheck.erase(h);
+        m_magnetAddedAt.erase(h);
 
         lt::remove_flags_t flags{};
         if (deleteFiles)
@@ -511,20 +513,20 @@ TorrentInfo SessionManager::torrentAt(int index) const
     info.numSeeds = st.num_seeds;
     info.stateString = stateToString(st.state);
     info.paused = (st.flags & lt::torrent_flags::paused) != lt::torrent_flags_t{};
-    if (st.has_metadata) {
-        QString hash = QString::fromStdString(
+    QString hash;
+    if (st.has_metadata)
+        hash = QString::fromStdString(
             (std::ostringstream() << st.info_hashes.get_best()).str());
+
+    if (!hash.isEmpty())
         info.completed = m_completedTorrents.contains(hash);
-    }
+
     if (info.completed) {
         info.stateString = tr_("state_completed");
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else if (info.paused) {
         info.stateString = tr_("state_paused");
-        // libtorrent's download_rate / upload_rate are moving averages that
-        // take a few seconds to settle after pause. Show zero immediately so
-        // the UI matches the actual state.
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else {
@@ -532,19 +534,11 @@ TorrentInfo SessionManager::torrentAt(int index) const
         info.uploadRate = st.upload_rate;
     }
 
-    // Calculate ratio from payload bytes so it matches what private trackers
-    // report (BEP-3 ratio uses payload, not total wire bytes including
-    // protocol overhead).
     qint64 uploaded = st.total_payload_upload;
     qint64 downloaded = st.total_payload_download;
     info.ratio = downloaded > 0 ? static_cast<float>(uploaded) / static_cast<float>(downloaded) : 0.0f;
 
-    // Category — only meaningful once metadata is in. Without that guard
-    // every still-resolving magnet would share the all-zeros hash and
-    // inherit whatever category was last assigned to one of them.
-    if (st.has_metadata) {
-        QString hash = QString::fromStdString(
-            (std::ostringstream() << st.info_hashes.get_best()).str());
+    if (!hash.isEmpty()) {
         info.category = m_categories.value(hash);
         info.tags = m_torrentTags.value(hash);
     }
@@ -1041,17 +1035,11 @@ int SessionManager::blockedLeecherCount() const { return m_blockedLeecherCount; 
 void SessionManager::checkAndBlockLeechers()
 {
     if (!m_blockLeechers) return;
-    // Known leecher peer_id prefixes. Xunlei variants dominate but
-    // QQDownload and Baidu offline download are also prevalent.
     static const QList<QByteArray> kLeecherPrefixes = {
-        "-SD",  // Xunlei (Thunder)
-        "-XL",  // Xunlei variant
-        "XL",   // Xunlei legacy
-        "-DL",  // Xunlei Dlthunder
-        "-QD",  // QQDownload
-        "-BN",  // Baidu Netdisk P2P
-        "-SP",  // BitSpirit (known bad seeder)
+        "-SD", "-XL", "XL", "-DL", "-QD", "-BN", "-SP",
     };
+    lt::ip_filter filter = m_session.get_ip_filter();
+    bool filterChanged = false;
     for (auto &h : m_torrents) {
         if (!h.is_valid()) continue;
         std::vector<lt::peer_info> peers;
@@ -1061,13 +1049,10 @@ void SessionManager::checkAndBlockLeechers()
             for (const auto &prefix : kLeecherPrefixes) {
                 if (pid.startsWith(prefix)) {
                     h.connect_peer(p.ip, lt::peer_source_flags_t{});
-                    // No direct "ban peer" in libtorrent 2.x — use the IP
-                    // filter to block the address for this session.
-                    lt::ip_filter filter = m_session.get_ip_filter();
                     try {
                         auto addr = p.ip.address();
                         filter.add_rule(addr, addr, lt::ip_filter::blocked);
-                        m_session.set_ip_filter(filter);
+                        filterChanged = true;
                     } catch (...) {}
                     ++m_blockedLeecherCount;
                     qDebug() << "[session] blocked leecher peer:" << QString::fromStdString(p.ip.address().to_string()) << "client:" << pid.left(8);
@@ -1076,6 +1061,8 @@ void SessionManager::checkAndBlockLeechers()
             }
         }
     }
+    if (filterChanged)
+        m_session.set_ip_filter(filter);
 }
 
 void SessionManager::setEncryptionMode(int mode)
@@ -1933,6 +1920,7 @@ void SessionManager::processAlerts()
                 emit torrentError(QString::fromStdString(ea->message()));
                 last = nowTe;
             }
+            if (lastErrorAt.size() > 500) lastErrorAt.clear();
         }
         // Surface previously-swallowed alert categories so the user actually
         // hears about disk-full, move-storage failures, port collisions, and
@@ -2332,8 +2320,14 @@ qint64 SessionManager::globalUploaded() const
 
 float SessionManager::globalRatio() const
 {
-    qint64 down = globalDownloaded();
-    return down > 0 ? static_cast<float>(globalUploaded()) / static_cast<float>(down) : 0.0f;
+    qint64 down = m_globalDownBase, up = m_globalUpBase;
+    for (const auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        auto st = cachedStatus(h);
+        down += st.total_payload_download;
+        up += st.total_payload_upload;
+    }
+    return down > 0 ? static_cast<float>(up) / static_cast<float>(down) : 0.0f;
 }
 
 qint64 SessionManager::sessionDownloaded() const
@@ -2582,13 +2576,19 @@ void SessionManager::executeOnComplete(const QString &name, const QString &saveP
                                        const QString &hash, qint64 totalSize)
 {
     if (m_runOnComplete.isEmpty()) return;
+
+    auto shellQuote = [](const QString &s) -> QString {
+        QString q = s;
+        q.replace(QLatin1Char('\''), QStringLiteral("'\\''"));
+        return QLatin1Char('\'') + q + QLatin1Char('\'');
+    };
+
     QString cmd = m_runOnComplete;
-    cmd.replace("%N", name);
-    cmd.replace("%D", savePath);
-    cmd.replace("%H", hash);
-    cmd.replace("%Z", QString::number(totalSize));
-    // %F = first file's full path (best effort)
-    cmd.replace("%F", savePath + "/" + name);
+    cmd.replace("%N", shellQuote(name));
+    cmd.replace("%D", shellQuote(savePath));
+    cmd.replace("%H", shellQuote(hash));
+    cmd.replace("%Z", shellQuote(QString::number(totalSize)));
+    cmd.replace("%F", shellQuote(savePath + "/" + name));
     qDebug() << "[session] executeOnComplete:" << cmd;
     QProcess::startDetached("/bin/sh", {"-c", cmd});
 }

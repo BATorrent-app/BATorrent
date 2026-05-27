@@ -62,7 +62,6 @@ public slots:
 private:
     SessionManager *m_session;
     int m_lastCount = 0;
-    QMap<int, int> m_customOrder; // source row -> custom order
     QSet<int> m_flashingRows;
     QTimer m_flashTimer;
 };

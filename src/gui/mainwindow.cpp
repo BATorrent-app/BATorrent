@@ -663,15 +663,15 @@ void MainWindow::setupMenuBar()
         QDir().mkpath(resumeBase + "/resume");
         int restored = 0;
         for (quint32 i = 0; i < count; ++i) {
-            if (p + 4 > end) break;
+            if (end - p < 4) break;
             quint32 nameLen;
             memcpy(&nameLen, p, 4); p += 4;
-            if (p + nameLen > end) break;
+            if (nameLen > 4096 || static_cast<ptrdiff_t>(nameLen) > end - p) break;
             QString name = QString::fromUtf8(p, nameLen); p += nameLen;
-            if (p + 8 > end) break;
+            if (end - p < 8) break;
             quint64 dataLen;
             memcpy(&dataLen, p, 8); p += 8;
-            if (p + dataLen > end) break;
+            if (dataLen > 1073741824ULL || static_cast<ptrdiff_t>(dataLen) > end - p) break;
             QByteArray payload(p, dataLen); p += dataLen;
             if (name == "settings.json") {
                 auto obj = QJsonDocument::fromJson(payload).object();
@@ -2369,7 +2369,7 @@ void MainWindow::dropEvent(QDropEvent *event)
     } else if (event->mimeData()->hasText()) {
         QString text = event->mimeData()->text();
         if (text.startsWith("magnet:"))
-            m_session->addMagnet(text, m_lastSavePath);
+            addMagnetFromCli(text);
     }
 }
 
@@ -2872,6 +2872,8 @@ void MainWindow::checkAutoShutdown()
         if (m_shutdownCountdown <= 0) {
             m_shutdownTimer->stop();
             m_shutdownDialog->close();
+            m_shutdownDialog->deleteLater();
+            m_shutdownDialog = nullptr;
             saveSettings();
             m_session->saveResumeData();
 

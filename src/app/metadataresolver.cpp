@@ -88,13 +88,12 @@ MetadataResolver::MetadataResolver(QObject *parent)
     connect(&m_rateLimiter, &QTimer::timeout, this, &MetadataResolver::processQueue);
 
     QDir dir(cacheDir());
-    if (!dir.exists())
-        return;
-
-    const auto entries = dir.entryList({QStringLiteral("*.json")}, QDir::Files);
-    for (const QString &file : entries) {
-        const QString hash = file.chopped(5); // strip ".json"
-        loadFromDisk(hash);
+    if (dir.exists()) {
+        const auto entries = dir.entryList({QStringLiteral("*.json")}, QDir::Files);
+        for (const QString &file : entries) {
+            const QString hash = file.chopped(5);
+            loadFromDisk(hash);
+        }
     }
 }
 
@@ -557,9 +556,12 @@ void MetadataResolver::saveToDisk(const QString &infoHash, const MetadataResult 
     obj.insert(QLatin1String("contentType"), contentTypeToString(result.contentType));
     obj.insert(QLatin1String("resolvedAt"), QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
 
-    QFile file(cacheDir() + QLatin1Char('/') + infoHash + QStringLiteral(".json"));
+    QString path = cacheDir() + QLatin1Char('/') + infoHash + QStringLiteral(".json");
+    QFile file(path);
     if (file.open(QIODevice::WriteOnly))
         file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+    else
+        qDebug() << "[metadata] saveToDisk failed:" << path;
 }
 
 QString MetadataResolver::cacheDir() const

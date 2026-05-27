@@ -7,6 +7,7 @@
 #include "../app/utils.h"
 #include "thememanager.h"
 #include <QColor>
+#include <QHash>
 #include <QMimeData>
 #include <QPainter>
 #include <QPixmap>
@@ -40,6 +41,12 @@ QColor colorForState(const QString &key)
 
 QPixmap makeDotIcon(const QColor &c, bool glow)
 {
+    static QHash<quint64, QPixmap> cache;
+    quint64 key = (static_cast<quint64>(c.rgba()) << 1) | static_cast<quint64>(glow);
+    auto it = cache.find(key);
+    if (it != cache.end())
+        return *it;
+
     constexpr int kIconSize = 18;
     constexpr int kDotSize = 6;
     QPixmap pm(kIconSize, kIconSize);
@@ -57,6 +64,7 @@ QPixmap makeDotIcon(const QColor &c, bool glow)
     p.setBrush(c);
     p.setPen(Qt::NoPen);
     p.drawEllipse(center, kDotSize / 2.0, kDotSize / 2.0);
+    cache.insert(key, pm);
     return pm;
 }
 }
@@ -68,7 +76,7 @@ TorrentModel::TorrentModel(SessionManager *session, QObject *parent)
         m_flashingRows.clear();
         m_flashTimer.stop();
         if (rowCount() > 0)
-            emit dataChanged(index(0, 0), index(rowCount() - 1, ColumnCount - 1));
+            emit dataChanged(index(0, 0), index(rowCount() - 1, ColumnCount - 1), {Qt::BackgroundRole});
     });
 }
 
@@ -90,6 +98,18 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid() || index.row() >= m_session->torrentCount())
         return {};
+
+    if (role == Qt::BackgroundRole && m_flashingRows.contains(index.row())) {
+        QColor c(ThemeManager::instance().accentColor());
+        c.setAlphaF(0.18f);
+        return c;
+    }
+
+    if (role == CustomOrderRole)
+        return index.row();
+
+    if (role == InfoHashRole)
+        return m_session->torrentHashAt(index.row());
 
     TorrentInfo info = m_session->torrentAt(index.row());
 
@@ -145,22 +165,6 @@ QVariant TorrentModel::data(const QModelIndex &index, int role) const
     // State for filtering
     if (role == StateFilterRole) {
         return info.stateString;
-    }
-
-    if (role == CustomOrderRole) {
-        return m_customOrder.value(index.row(), index.row());
-    }
-
-    if (role == InfoHashRole) {
-        return m_session->torrentHashAt(index.row());
-    }
-
-    // Flash the row in accent-tint when a torrent just finished — picked up
-    // by the row background; lasts ~2 s via m_flashTimer.
-    if (role == Qt::BackgroundRole && m_flashingRows.contains(index.row())) {
-        QColor c(ThemeManager::instance().accentColor());
-        c.setAlphaF(0.18f);
-        return c;
     }
 
     // Color coding aligned with the design palette (no greens / blues).
@@ -226,14 +230,21 @@ QVariant TorrentModel::headerData(int section, Qt::Orientation orientation, int 
 void TorrentModel::refresh()
 {
     int newCount = m_session->torrentCount();
-    if (newCount != m_lastCount) {
-        // Row count changed — must reset
-        beginResetModel();
+    if (newCount > m_lastCount) {
+        beginInsertRows(QModelIndex(), m_lastCount, newCount - 1);
         m_lastCount = newCount;
-        endResetModel();
+        endInsertRows();
+        if (m_lastCount > 0)
+            emit dataChanged(index(0, 0), index(m_lastCount - 1, ColumnCount - 1), {Qt::DisplayRole});
+    } else if (newCount < m_lastCount) {
+        m_flashingRows.clear();
+        beginRemoveRows(QModelIndex(), newCount, m_lastCount - 1);
+        m_lastCount = newCount;
+        endRemoveRows();
+        if (m_lastCount > 0)
+            emit dataChanged(index(0, 0), index(m_lastCount - 1, ColumnCount - 1), {Qt::DisplayRole});
     } else if (newCount > 0) {
-        // Just data changed — preserves selection
-        emit dataChanged(index(0, 0), index(newCount - 1, ColumnCount - 1));
+        emit dataChanged(index(0, 0), index(newCount - 1, ColumnCount - 1), {Qt::DisplayRole});
     }
 }
 
@@ -244,7 +255,7 @@ void TorrentModel::flashRow(const QString &infoHash)
         if (m_session->torrentHashAt(i) == infoHash) {
             m_flashingRows.insert(i);
             m_flashTimer.start(2000);
-            emit dataChanged(index(i, 0), index(i, ColumnCount - 1));
+            emit dataChanged(index(i, 0), index(i, ColumnCount - 1), {Qt::BackgroundRole});
             break;
         }
     }

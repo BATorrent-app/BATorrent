@@ -207,7 +207,11 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
 
     if (newFilePath.endsWith(".exe")) {
         QFile script(scriptPath);
-        if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        if (!script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            emit errorOccurred("Failed to create update script: " + script.errorString());
+            return;
+        }
+        {
             QTextStream out(&script);
             out << "$ErrorActionPreference = 'Stop'\r\n";
             out << "try {\r\n";
@@ -216,10 +220,6 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
                 << "' -ArgumentList '/SILENT','/CLOSEAPPLICATIONS',"
                    "'/RESTARTAPPLICATIONS','/SUPPRESSMSGBOXES','/NORESTART' "
                    "-Verb RunAs -Wait\r\n";
-                // Inno Setup will restart the app via /RESTARTAPPLICATIONS,
-                // but launch it manually as a fallback if the installer
-                // didn't (e.g. the user installed per-user without elevation
-                // and the verb was already runAs but elevation was bypassed).
             out << "  if (-not (Get-Process -Name BATorrent -ErrorAction SilentlyContinue)) {\r\n";
             out << "    Start-Process -FilePath '"
                 << QDir::toNativeSeparators(appExe) << "'\r\n";
@@ -238,7 +238,11 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
 
     // Standalone exe (zip-style) update: replace in place, possibly elevated.
     QFile script(scriptPath);
-    if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit errorOccurred("Failed to create update script: " + script.errorString());
+        return;
+    }
+    {
         QTextStream out(&script);
         out << "Start-Sleep -Seconds 3\r\n";
         out << "try {\r\n";
@@ -276,7 +280,11 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
     QString scriptPath = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
                              .filePath("batorrent_update.sh");
     QFile script(scriptPath);
-    if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit errorOccurred("Failed to create update script: " + script.errorString());
+        return;
+    }
+    {
         QTextStream out(&script);
         out << "#!/bin/sh\n";
         out << "sleep 3\n";
