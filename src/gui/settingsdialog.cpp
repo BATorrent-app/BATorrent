@@ -36,9 +36,7 @@
 #include <QCoreApplication>
 #include <QProcess>
 #include <QDir>
-#ifdef Q_OS_WIN
 #include <QSettings>
-#endif
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -945,6 +943,29 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     algoLay->addRow("", m_advIgnoreLimitsLAN);
     advLayout->addRow(algoGroup);
 
+    auto *metaGroup = new QGroupBox(tr_("adv_metadata_api"));
+    auto *metaLay = new QFormLayout(metaGroup);
+    metaLay->setSpacing(8);
+    m_tmdbKeyEdit = new QLineEdit;
+    m_tmdbKeyEdit->setPlaceholderText(tr_("adv_tmdb_hint"));
+    m_tmdbKeyEdit->setEchoMode(QLineEdit::Password);
+    m_igdbClientIdEdit = new QLineEdit;
+    m_igdbClientIdEdit->setPlaceholderText(tr_("adv_igdb_id_hint"));
+    m_igdbSecretEdit = new QLineEdit;
+    m_igdbSecretEdit->setPlaceholderText(tr_("adv_igdb_secret_hint"));
+    m_igdbSecretEdit->setEchoMode(QLineEdit::Password);
+    metaLay->addRow("TMDB API Key", m_tmdbKeyEdit);
+    metaLay->addRow("IGDB Client ID", m_igdbClientIdEdit);
+    metaLay->addRow("IGDB Client Secret", m_igdbSecretEdit);
+    advLayout->addRow(metaGroup);
+
+    {
+        QSettings s("BATorrent", "BATorrent");
+        m_tmdbKeyEdit->setText(s.value("tmdbApiKey").toString());
+        m_igdbClientIdEdit->setText(s.value("igdbClientId").toString());
+        m_igdbSecretEdit->setText(s.value("igdbClientSecret").toString());
+    }
+
     tabs->addTab(wrapInScroll(advWidget), tr_("settings_advanced"));
 
     // ---- Header (eyebrow + heading) ----
@@ -1091,6 +1112,9 @@ void SettingsDialog::setAutoExtract(bool val) { m_autoExtractCheck->setChecked(v
 void SettingsDialog::setAutoExtractDelete(bool val) { m_autoExtractDeleteCheck->setChecked(val); }
 QString SettingsDialog::extractPasswords() const { return m_extractPasswordsEdit->text().trimmed(); }
 void SettingsDialog::setExtractPasswords(const QString &passwords) { m_extractPasswordsEdit->setText(passwords); }
+QString SettingsDialog::tmdbApiKey() const { return m_tmdbKeyEdit ? m_tmdbKeyEdit->text().trimmed() : QString(); }
+QString SettingsDialog::igdbClientId() const { return m_igdbClientIdEdit ? m_igdbClientIdEdit->text().trimmed() : QString(); }
+QString SettingsDialog::igdbClientSecret() const { return m_igdbSecretEdit ? m_igdbSecretEdit->text().trimmed() : QString(); }
 QString SettingsDialog::runOnComplete() const { return m_runOnCompleteEdit->text().trimmed(); }
 QString SettingsDialog::watchedFolder() const { return m_watchedFolderEdit->text().trimmed(); }
 void SettingsDialog::setRunOnComplete(const QString &cmd) { m_runOnCompleteEdit->setText(cmd); }

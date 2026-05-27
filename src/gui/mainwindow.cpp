@@ -2158,6 +2158,13 @@ void MainWindow::openSettings()
                     m_discordRpc->setClientId(QString());
             }
             m_session->setAdvancedSettings(dlg.collectAdvancedSettings());
+            QSettings apiS("BATorrent", "BATorrent");
+            if (!dlg.tmdbApiKey().isEmpty())
+                apiS.setValue("tmdbApiKey", dlg.tmdbApiKey());
+            if (!dlg.igdbClientId().isEmpty())
+                apiS.setValue("igdbClientId", dlg.igdbClientId());
+            if (!dlg.igdbClientSecret().isEmpty())
+                apiS.setValue("igdbClientSecret", dlg.igdbClientSecret());
         }
         // Auto-move
         m_session->setAutoMove(dlg.autoMoveEnabled(), dlg.autoMovePath());

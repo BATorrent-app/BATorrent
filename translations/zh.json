@@ -695,5 +695,9 @@
   "defender_exclude_fail": "添加排除失败。请确保接受 UAC 提示。",
   "settings_extract_passwords": "归档密码：",
   "settings_extract_passwords_hint": "要尝试的密码，分号分隔（如 online-fix.me; password123）",
-  "tip_extract_passwords": "解压密码保护的归档文件时要尝试的密码列表。解压器先尝试无密码，然后按顺序尝试每个密码。"
+  "tip_extract_passwords": "解压密码保护的归档文件时要尝试的密码列表。解压器先尝试无密码，然后按顺序尝试每个密码。",
+  "adv_metadata_api": "元数据 API",
+  "adv_tmdb_hint": "来自 themoviedb.org 的免费密钥（电影/剧集海报）",
+  "adv_igdb_id_hint": "来自 dev.twitch.tv（游戏封面）",
+  "adv_igdb_secret_hint": "Twitch 应用客户端密钥"
 }

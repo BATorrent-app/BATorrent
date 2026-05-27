@@ -695,5 +695,9 @@
   "defender_exclude_fail": "除外の追加に失敗しました。UAC プロンプトを承認してください。",
   "settings_extract_passwords": "アーカイブパスワード：",
   "settings_extract_passwords_hint": "試行するパスワード、; 区切り（例: online-fix.me; password123）",
-  "tip_extract_passwords": "パスワード保護されたアーカイブを展開する際に試行するパスワードリスト。まずパスワードなしで試み、次に各パスワードを順番に試みます。"
+  "tip_extract_passwords": "パスワード保護されたアーカイブを展開する際に試行するパスワードリスト。まずパスワードなしで試み、次に各パスワードを順番に試みます。",
+  "adv_metadata_api": "メタデータ API",
+  "adv_tmdb_hint": "themoviedb.org の無料キー（映画/シリーズのポスター）",
+  "adv_igdb_id_hint": "dev.twitch.tv から（ゲームカバー）",
+  "adv_igdb_secret_hint": "Twitch アプリのクライアントシークレット"
 }

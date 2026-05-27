@@ -65,6 +65,10 @@ public:
     QString extractPasswords() const;
     void setExtractPasswords(const QString &passwords);
 
+    QString tmdbApiKey() const;
+    QString igdbClientId() const;
+    QString igdbClientSecret() const;
+
     // Temp path
     QString tempPath() const;
     void setTempPath(const QString &path);
@@ -315,6 +319,11 @@ private:
     QComboBox *m_advSeedChokingAlgo = nullptr;
     QCheckBox *m_advRateLimitOverhead = nullptr;
     QCheckBox *m_advIgnoreLimitsLAN = nullptr;
+
+    // Metadata API keys
+    QLineEdit *m_tmdbKeyEdit = nullptr;
+    QLineEdit *m_igdbClientIdEdit = nullptr;
+    QLineEdit *m_igdbSecretEdit = nullptr;
 };
 
 #endif
