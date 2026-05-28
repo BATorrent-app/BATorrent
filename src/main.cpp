@@ -11,6 +11,11 @@
 #include <QLocalSocket>
 #include <QStyleFactory>
 #include <QSettings>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QQuickStyle>
+#include "app/metadataresolver.h"
+#include "gui/qmlposterbridge.h"
 #include "torrent/sessionmanager.h"
 #include "app/secretstore.h"
 #include "app/logger.h"
@@ -123,6 +128,58 @@ int main(int argc, char *argv[])
     QFont defaultFont("Inter", 10);
     defaultFont.setStyleStrategy(QFont::PreferAntialias);
     app.setFont(defaultFont);
+
+    if (app.arguments().contains("--qml")) {
+        QQuickStyle::setStyle("Basic");
+
+        SessionManager session;
+
+        auto *resolver = new MetadataResolver(&app);
+        auto *posterModel = new QmlPosterModel(&session, resolver, &app);
+        auto *themeBridge = new QmlThemeBridge(&app);
+        auto *sessionBridge = new QmlSessionBridge(&session, resolver, &app);
+        QObject::connect(&session, &SessionManager::torrentsUpdated,
+                         sessionBridge, &QmlSessionBridge::emitStats);
+        QObject::connect(resolver, &MetadataResolver::metadataReady,
+                         sessionBridge, &QmlSessionBridge::emitStats);
+
+        QObject::connect(&session, &SessionManager::torrentsUpdated,
+                         posterModel, &QmlPosterModel::refresh);
+        QObject::connect(resolver, &MetadataResolver::metadataReady,
+                         posterModel, &QmlPosterModel::refresh);
+        QObject::connect(&session, &SessionManager::torrentAdded,
+                         &app, [&session, resolver](int index) {
+            QString hash = session.torrentHashAt(index);
+            if (!hash.isEmpty())
+                resolver->resolve(hash, session.torrentAt(index).name);
+        });
+
+        {
+            QStringList hashes, names;
+            for (int i = 0; i < session.torrentCount(); ++i) {
+                QString h = session.torrentHashAt(i);
+                if (!h.isEmpty() && !resolver->hasCached(h)) {
+                    hashes << h;
+                    names << session.torrentAt(i).name;
+                }
+            }
+            if (!hashes.isEmpty())
+                resolver->batchResolve(hashes, names);
+        }
+
+        auto *filterProxy = new QmlTorrentFilterProxy(&app);
+        filterProxy->setSourceModel(posterModel);
+
+        QQmlApplicationEngine engine;
+        engine.rootContext()->setContextProperty("torrentModel", filterProxy);
+        engine.rootContext()->setContextProperty("torrentFilter", filterProxy);
+        engine.rootContext()->setContextProperty("theme", themeBridge);
+        engine.rootContext()->setContextProperty("session", sessionBridge);
+        engine.load(QUrl("qrc:/src/qml/Main.qml"));
+        if (engine.rootObjects().isEmpty())
+            return -1;
+        return app.exec();
+    }
 
     SessionManager session;
     MainWindow window(&session);

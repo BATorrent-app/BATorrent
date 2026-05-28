@@ -263,6 +263,134 @@ Run with `-platform offscreen` for CI (headless).
 
 ---
 
+## Lessons Learned (during port)
+
+### Rectangle `clip: true` does NOT clip to rounded corners
+`clip: true` clips children to the **bounding rectangle** only — rounded corners are
+ignored. To clip an Image (no `radius` property) to a rounded shape, use
+`MultiEffect` with a `maskSource`:
+
+```qml
+Image { id: img; visible: false; layer.enabled: true }
+Rectangle { id: mask; visible: false; layer.enabled: true; topLeftRadius: 12; topRightRadius: 12; color: "white" }
+MultiEffect { source: img; anchors.fill: img; maskEnabled: true; maskSource: mask }
+```
+
+The mask and source must both be layered (`layer.enabled: true`). The MultiEffect is
+the visible one, source stays invisible.
+
+### Qt 6.7+ per-corner radius
+`Rectangle` has `topLeftRadius`/`topRightRadius`/`bottomLeftRadius`/`bottomRightRadius`
+since 6.7. Useful when you want rounded top, square bottom (like cards above a footer).
+**They only affect the Rectangle's own paint** — not children clipping.
+
+### Property change signals collide with explicit signals
+`property string searchText` auto-generates `searchTextChanged()`. If you also declare
+`signal searchTextChanged(string text)` → compile error "Duplicate signal name".
+Fix: rename one (e.g. `signal searchEdited(string)`).
+
+### Q_PROPERTY function shadowing in C++
+If you already have `int selectedPeers() const` and add
+`QVariantList selectedPeers() const`, MOC fails because Q_PROPERTY getters cannot
+overload by return type. Rename one (e.g. `selectedPeerList`).
+
+### Layout sizing inside Layouts
+Inside `RowLayout`/`ColumnLayout`/`GridLayout`, **never set bare `width`/`height`** on
+direct children — use `Layout.preferredWidth`/`Layout.fillWidth`/etc. Direct width
+is silently ignored.
+
+`Layout.margins: N` on a Layout child sets margins between it and its parent. To add
+**internal padding** inside a RowLayout, wrap it in an Item with `anchors.fill: parent`
++ `anchors.margins`.
+
+### Repeater inside StackLayout
+Repeater creates children as siblings in its parent (not under itself). So a StackLayout
+with an explicit child + Repeater(4) has 5 children at indices 0-4. Works for tab content,
+but explicit Items are clearer.
+
+### TabBar spreads tabs across full width
+Default `TabBar` distributes `TabButton`s evenly across its width. To get compact,
+left-aligned tabs (like QTabWidget), replace TabBar with a `Row` of clickable
+Rectangles with manual `TapHandler`s + underline accent.
+
+### Menu styling (QtQuick.Controls.Basic)
+Default `Menu` looks system-generic. To match theme:
+- Override `background:` Rectangle (Theme.panel + border + radius)
+- Override `delegate: MenuItem { contentItem: ...; background: ... }` — checkmark for
+  checkable Actions can be drawn as a Label with "✓" colored by Theme.accent
+- `modal: true` dims the screen behind. Set `modal: false` for context-menu UX (or
+  `dim: false` if you need modal behavior without dimming).
+
+### Animator vs NumberAnimation in `Behavior`
+`ScaleAnimator` works in `Behavior on scale {}` but can be flaky when combined with
+nested layers/effects. `NumberAnimation { easing.type: Easing.OutCubic }` is more
+predictable in `Behavior` blocks. Reserve `Animator` types for `Transition` blocks
+where they truly run on the render thread.
+
+### Image inside layered (visible: false) parent
+An `Image` inside a `Rectangle` with `visible: false; layer.enabled: true` may not
+trigger its asynchronous load in some Qt versions. Workaround: place the Image at
+sibling level, give IT `layer.enabled: true; visible: false`, and reference it from
+the `MultiEffect.source` directly.
+
+### GridView "responsive snap" perception
+Computing `cellWidth = available / round(available / target)` causes cards to shrink
+when crossing column thresholds (the user perceives "bigger window → smaller cards").
+Fixed `cellWidth` + `floor(available / cellWidth)` columns + centering the leftover
+margin is cleaner. (Netflix/Spotify pattern.)
+
+### List/Grid view transition without StackLayout
+StackLayout swaps instantly. For crossfade + scale animation between two views:
+sibling Items both `anchors.fill: parent`, each with `Behavior on opacity` + `Behavior
+on scale`, driven by a `bool posterMode` property. Use `visible: opacity > 0.01` to
+avoid capturing input on the invisible one. Snappier easing (130ms `InOutQuad`) avoids
+seeing both layers during transition.
+
+### GridView remove + displaced race
+With `remove: Transition` only, kept items snap-teleport to new positions while
+others fade out — feels like "the new ones appear faster than the old ones disappear".
+Add `removeDisplaced: Transition { SequentialAnimation { PauseAnimation { duration: 150 }; NumberAnimation { properties: "x,y"; duration: 180 } } }`
+to delay the layout settle until after the remove animation starts. Plain `displaced`
+without the pause causes the slide-across-grid problem (cards flying long distances).
+
+### QSortFilterProxyModel from QML
+Subclass it in C++, add `Q_INVOKABLE setFilterState(QString)` /
+`setSearchText(QString)` / `mapToSource(int proxyRow)`. Override `filterAcceptsRow`
+to read source roles via `sourceModel()->data(idx, RoleEnum)`. roleNames passes through
+to QML automatically — `model.torrentName` works on the proxy. The grid clicks return
+proxy row indices, so always `mapToSource` before forwarding to selection-by-source-index
+session methods.
+
+### CMake modules for QML features
+QtQuick.Shapes needs `Qt6::QuickShapes` in `find_package` AND in `target_link_libraries`.
+Reconfigure after adding to `find_package` (`cmake -S . -B build`) — incremental builds
+don't re-detect the package.
+
+### Brand state colors clash with graph differentiation
+The brand is red, so `stateDownloading` and `stateSeeding` (used for chips on cards)
+are both red shades. For SpeedGraph download/upload distinction, override locally
+to graph-specific colors (e.g. download = `stateDownloading` red, upload = `#fbbf24` amber).
+Keep state chip colors for cards as-is.
+
+### Theme colors with rich text in Labels
+`Label.color: Theme.text` colors the whole text. To color just one part (e.g. red ↓
+arrow + white value), use `textFormat: Text.StyledText; text: "<font color='#dc2626'>↓</font> " + value`.
+StyledText parses a small HTML subset.
+
+### Tab order in DetailsPanel = tabs at top
+The original `QTabWidget` puts tabs at TOP of the panel with content below — meta info
+(poster + title) goes INSIDE the General tab content, NOT in a header above the
+TabBar. Putting header above tabs creates the "tabs in the middle of the panel"
+look the user flagged.
+
+### Context menu shared between views
+For the same context menu on PosterGrid AND TorrentTable: keep the Menu instantiated
+inside one view, expose `function openContextMenu(x, y)` from it. Sibling view
+forwards its `contextRequested(row, x, y)` signal, maps coordinates via
+`mapToItem(commonAncestor, x, y)`, and calls the function.
+
+---
+
 ## Sources
 
 - [Qt Docs - QQmlApplicationEngine](https://doc.qt.io/qt-6/qqmlapplicationengine.html)
