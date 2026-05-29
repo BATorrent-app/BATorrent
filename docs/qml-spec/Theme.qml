@@ -11,22 +11,12 @@ import QtQuick
 //    darkstar  ← batorrent-home-darkstar.css
 //  Nada de hex/rgba hardcoded fora deste arquivo.
 //  Theme.name chaveia tudo; Theme.anime liga a arte de acento.
-//  Persistência via QmlThemeBridge (QSettings: qmlThemeName, qmlAnime).
 // ============================================================
 QtObject {
     id: theme
 
-    property string name: typeof themeBridge !== "undefined" ? themeBridge.themeName : "dark"
-    property bool anime: typeof themeBridge !== "undefined" ? themeBridge.anime : false
-
-    function setName(n) {
-        if (typeof themeBridge !== "undefined") themeBridge.themeName = n
-        else theme.name = n
-    }
-    function setAnime(on) {
-        if (typeof themeBridge !== "undefined") themeBridge.anime = on
-        else theme.anime = on
-    }
+    property string name: "dark"      // dark | light | midnight | sakura | darkstar
+    property bool anime: false
 
     // light-mode flag (sakura e light são claros → color-scheme: light)
     readonly property bool isLight: name === "light" || name === "sakura"
@@ -162,16 +152,16 @@ QtObject {
 
     // ---------- anime accent art (per theme) ----------
     readonly property string animeSource:
-        name === "dark"     ? "qrc:/images/eyes-dark.png" :
-        name === "midnight" ? "qrc:/images/eyes-midnight.png" :
-        name === "sakura"   ? "qrc:/images/eyes-sakura.png" :
-        name === "darkstar" ? "qrc:/images/spider.jpg" : ""   // light: nenhuma
+        name === "dark"     ? "images/eyes-dark.png" :
+        name === "midnight" ? "images/eyes-midnight.png" :
+        name === "sakura"   ? "images/eyes-sakura.png" :
+        name === "darkstar" ? "images/spider.jpg" : ""   // light: nenhuma
     readonly property bool animeBottom: name === "darkstar"   // aranha no canto inferior-direito
     readonly property bool hasAnime: anime && animeSource !== ""
 
     // troca de tema (chamada pela SettingsWindow — NUNCA por demo control na subbar)
     function cycle() {
         var order = ["dark", "light", "midnight", "sakura", "darkstar"]
-        setName(order[(order.indexOf(name) + 1) % order.length])
+        name = order[(order.indexOf(name) + 1) % order.length]
     }
 }
