@@ -30,7 +30,12 @@ public:
         StateStringRole,
         DownSpeedRole,
         UpSpeedRole,
-        SizeRole
+        SizeRole,
+        CategoryRole,
+        NumPeersRole,
+        DownRateRole,
+        UpRateRole,
+        SizeBytesRole
     };
 
     explicit QmlPosterModel(SessionManager *session, MetadataResolver *resolver,
@@ -42,6 +47,7 @@ public:
 
 public slots:
     void refresh();
+    void moveRow(int from, int to);
 
 private:
     SessionManager *m_session;
@@ -57,14 +63,19 @@ public:
 
     Q_INVOKABLE void setFilterState(const QString &state);
     Q_INVOKABLE void setSearchText(const QString &text);
+    Q_INVOKABLE void setSortColumn(const QString &column, bool ascending);
+    Q_INVOKABLE void clearSort();
     Q_INVOKABLE int mapToSource(int proxyRow) const;
+    Q_INVOKABLE int mapFromSource(int sourceRow) const;
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+    bool lessThan(const QModelIndex &l, const QModelIndex &r) const override;
 
 private:
     QString m_filterState = QStringLiteral("all");
     QString m_searchText;
+    QString m_sortColumn;
 };
 
 class QmlSessionBridge : public QObject
@@ -105,6 +116,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(bool selectedSuperSeeding READ selectedSuperSeeding NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedCompleted READ selectedCompleted NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedAtFullProgress READ selectedAtFullProgress NOTIFY selectionChanged)
+    Q_PROPERTY(bool selectedPaused READ selectedPaused NOTIFY selectionChanged)
     Q_PROPERTY(QVariantList selectedPeerList READ selectedPeerList NOTIFY selectionChanged)
     Q_PROPERTY(QVariantList selectedFiles READ selectedFiles NOTIFY selectionChanged)
     Q_PROPERTY(QVariantList selectedTrackers READ selectedTrackers NOTIFY selectionChanged)
@@ -130,6 +142,8 @@ public:
     int historyMaxBytes() const;
 
     Q_INVOKABLE void setSelectedIndex(int index);
+    Q_INVOKABLE void setSelectedRows(const QList<int> &rows);
+    Q_INVOKABLE QList<int> selectedRows() const;
     Q_INVOKABLE void pauseSelected();
     Q_INVOKABLE void resumeSelected();
     Q_INVOKABLE void removeSelected();
@@ -150,6 +164,8 @@ public:
     Q_INVOKABLE void forceReannounceSelected();
     Q_INVOKABLE void queueUpSelected();
     Q_INVOKABLE void queueDownSelected();
+    Q_INVOKABLE void toggleSelectedPause();
+    Q_INVOKABLE void smartPaste();
 
     QString selectedName() const;
     QString selectedSavePath() const;
@@ -171,6 +187,7 @@ public:
     bool selectedSuperSeeding() const;
     bool selectedCompleted() const;
     bool selectedAtFullProgress() const;
+    bool selectedPaused() const;
     QVariantList selectedPeerList() const;
     QVariantList selectedFiles() const;
     QVariantList selectedTrackers() const;
@@ -183,6 +200,8 @@ signals:
     void statsChanged();
     void selectionChanged();
     void historyChanged();
+    void queueRefreshNeeded();
+    void queueMoved(int from, int to);
 
 private slots:
     void sampleSpeeds();
@@ -191,6 +210,7 @@ private:
     SessionManager *m_session;
     MetadataResolver *m_resolver;
     int m_selectedIndex = -1;
+    QList<int> m_selectedRows;
 
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;

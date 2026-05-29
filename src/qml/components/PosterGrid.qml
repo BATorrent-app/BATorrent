@@ -26,6 +26,8 @@ GridView {
         contextMenu.open()
     }
 
+    function selectAll() {}
+
     delegate: PosterCard {
         id: del
         width: grid.cellWidth
@@ -211,6 +213,14 @@ GridView {
     add: Transition {
         OpacityAnimator { from: 0; to: 1; duration: 250; easing.type: Easing.OutCubic }
         ScaleAnimator { from: 0.9; to: 1; duration: 250; easing.type: Easing.OutCubic }
+    }
+
+    move: Transition {
+        NumberAnimation { properties: "x,y"; duration: 280; easing.type: Easing.OutCubic }
+    }
+
+    moveDisplaced: Transition {
+        NumberAnimation { properties: "x,y"; duration: 280; easing.type: Easing.OutCubic }
     }
 
     remove: Transition {

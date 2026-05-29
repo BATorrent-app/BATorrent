@@ -8,6 +8,7 @@ Rectangle {
     color: Theme.bg
 
     property string activeFilter: "all"
+    property bool posterMode: true
 
     signal filterChanged(string filterState)
     signal searchEdited(string text)
@@ -39,20 +40,34 @@ Rectangle {
 
         AbstractButton {
             id: viewToggle
-            Layout.preferredWidth: 32
             Layout.preferredHeight: 32
+            Layout.preferredWidth: viewRow.implicitWidth + 20
+            padding: 0
             activeFocusOnTab: true
             onClicked: filterBar.viewToggleClicked()
 
             contentItem: Item {
-                Image {
-                    source: "qrc:/icons/grid.svg"
-                    width: 18
-                    height: 18
-                    sourceSize: Qt.size(36, 36)
-                    fillMode: Image.PreserveAspectFit
-                    smooth: true
+                Row {
+                    id: viewRow
                     anchors.centerIn: parent
+                    spacing: 6
+
+                    Image {
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: filterBar.posterMode ? "qrc:/icons/grid.svg" : "qrc:/icons/list.svg"
+                        width: 16
+                        height: 16
+                        sourceSize: Qt.size(32, 32)
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: filterBar.posterMode ? qsTr("Grid view") : qsTr("List view")
+                        color: viewToggle.hovered ? Theme.text : Theme.muted
+                        font.pixelSize: Theme.fontCaption
+                        font.weight: Font.DemiBold
+                    }
                 }
             }
 
@@ -124,12 +139,11 @@ Rectangle {
             }
         }
 
-        Item { Layout.fillWidth: true }
-
         ComboBox {
             id: categoryCombo
             Layout.preferredWidth: 160
             Layout.preferredHeight: 32
+            Layout.leftMargin: Theme.spacingSm
             model: [qsTr("All Categories"), qsTr("Movies"), qsTr("Games"), qsTr("Software"), qsTr("Music")]
             font.pixelSize: Theme.fontCaption
 
@@ -206,6 +220,48 @@ Rectangle {
                     radius: 4
                 }
             }
+        }
+
+        Item { Layout.fillWidth: true }
+
+        AbstractButton {
+            id: donateBtn
+            Layout.preferredWidth: donateLabel.implicitWidth + 22
+            Layout.preferredHeight: 26
+            Layout.leftMargin: Theme.spacingLg
+            Layout.rightMargin: Theme.spacingSm
+            activeFocusOnTab: true
+
+            contentItem: Row {
+                anchors.centerIn: parent
+                spacing: 5
+
+                Label {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "♥"
+                    color: Theme.accent
+                    font.pixelSize: 12
+                }
+                Label {
+                    id: donateLabel
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Donate")
+                    color: donateBtn.hovered ? Theme.text : Theme.muted
+                    font.pixelSize: Theme.fontCaption
+                    font.weight: Font.DemiBold
+                }
+            }
+
+            background: Rectangle {
+                radius: 13
+                color: donateBtn.hovered ? Theme.accentTint : "transparent"
+                border.color: donateBtn.hovered ? Theme.accent : Theme.border
+                border.width: 1
+                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on border.color { ColorAnimation { duration: 120 } }
+            }
+
+            onClicked: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
         }
     }
 }
