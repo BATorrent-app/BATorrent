@@ -147,6 +147,10 @@ int main(int argc, char *argv[])
                          posterModel, &QmlPosterModel::refresh);
         QObject::connect(resolver, &MetadataResolver::metadataReady,
                          posterModel, &QmlPosterModel::refresh);
+        QObject::connect(sessionBridge, &QmlSessionBridge::queueRefreshNeeded,
+                         posterModel, &QmlPosterModel::refresh);
+        QObject::connect(sessionBridge, &QmlSessionBridge::queueMoved,
+                         posterModel, &QmlPosterModel::moveRow);
         QObject::connect(&session, &SessionManager::torrentAdded,
                          &app, [&session, resolver](int index) {
             QString hash = session.torrentHashAt(index);

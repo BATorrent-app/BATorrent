@@ -12,6 +12,7 @@
 #include <QDesktopServices>
 #include <QDir>
 #include <QGuiApplication>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
@@ -64,6 +65,11 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case DownSpeedRole:   return formatSpeed(info.downloadRate);
     case UpSpeedRole:     return formatSpeed(info.uploadRate);
     case SizeRole:        return formatSize(info.totalSize);
+    case CategoryRole:    return info.category;
+    case NumPeersRole:    return info.numPeers;
+    case DownRateRole:    return info.downloadRate;
+    case UpRateRole:      return info.uploadRate;
+    case SizeBytesRole:   return static_cast<qint64>(info.totalSize);
     }
     return {};
 }
@@ -80,8 +86,22 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {StateStringRole, "stateString"},
         {DownSpeedRole,   "downSpeed"},
         {UpSpeedRole,     "upSpeed"},
+        {CategoryRole,    "category"},
+        {NumPeersRole,    "numPeers"},
+        {DownRateRole,    "downRate"},
+        {UpRateRole,      "upRate"},
         {SizeRole,        "size"}
     };
+}
+
+void QmlPosterModel::moveRow(int from, int to)
+{
+    if (from < 0 || to < 0 || from == to) return;
+    int count = m_session->torrentCount();
+    if (from >= count || to >= count) return;
+    int destRow = to > from ? to + 1 : to;
+    beginMoveRows(QModelIndex(), from, from, QModelIndex(), destRow);
+    endMoveRows();
 }
 
 void QmlPosterModel::refresh()
@@ -119,10 +139,74 @@ void QmlTorrentFilterProxy::setSearchText(const QString &text)
     invalidateFilter();
 }
 
+void QmlTorrentFilterProxy::setSortColumn(const QString &column, bool ascending)
+{
+    m_sortColumn = column;
+    sort(0, ascending ? Qt::AscendingOrder : Qt::DescendingOrder);
+}
+
+void QmlTorrentFilterProxy::clearSort()
+{
+    m_sortColumn.clear();
+    sort(-1);
+}
+
+bool QmlTorrentFilterProxy::lessThan(const QModelIndex &l, const QModelIndex &r) const
+{
+    const QAbstractItemModel *src = sourceModel();
+    if (!src) return false;
+
+    auto raw = [&](int role) {
+        return std::make_pair(src->data(l, role), src->data(r, role));
+    };
+
+    if (m_sortColumn == QStringLiteral("name") || m_sortColumn.isEmpty()) {
+        auto [a, b] = raw(QmlPosterModel::NameRole);
+        return a.toString().toLower() < b.toString().toLower();
+    }
+    if (m_sortColumn == QStringLiteral("size")) {
+        auto [a, b] = raw(QmlPosterModel::SizeBytesRole);
+        return a.toLongLong() < b.toLongLong();
+    }
+    if (m_sortColumn == QStringLiteral("progress")) {
+        auto [a, b] = raw(QmlPosterModel::ProgressRole);
+        return a.toReal() < b.toReal();
+    }
+    if (m_sortColumn == QStringLiteral("down")) {
+        auto [a, b] = raw(QmlPosterModel::DownRateRole);
+        return a.toInt() < b.toInt();
+    }
+    if (m_sortColumn == QStringLiteral("up")) {
+        auto [a, b] = raw(QmlPosterModel::UpRateRole);
+        return a.toInt() < b.toInt();
+    }
+    if (m_sortColumn == QStringLiteral("state")) {
+        auto [a, b] = raw(QmlPosterModel::StateStringRole);
+        return a.toString() < b.toString();
+    }
+    if (m_sortColumn == QStringLiteral("category")) {
+        auto [a, b] = raw(QmlPosterModel::CategoryRole);
+        return a.toString() < b.toString();
+    }
+    if (m_sortColumn == QStringLiteral("peers")) {
+        auto [a, b] = raw(QmlPosterModel::NumPeersRole);
+        return a.toInt() < b.toInt();
+    }
+    return false;
+}
+
 int QmlTorrentFilterProxy::mapToSource(int proxyRow) const
 {
     if (proxyRow < 0 || proxyRow >= rowCount()) return -1;
     return QSortFilterProxyModel::mapToSource(index(proxyRow, 0)).row();
+}
+
+int QmlTorrentFilterProxy::mapFromSource(int sourceRow) const
+{
+    if (!sourceModel() || sourceRow < 0 || sourceRow >= sourceModel()->rowCount())
+        return -1;
+    QModelIndex src = sourceModel()->index(sourceRow, 0);
+    return QSortFilterProxyModel::mapFromSource(src).row();
 }
 
 bool QmlTorrentFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
@@ -267,28 +351,50 @@ QString QmlSessionBridge::globalRatio() const { return QString::number(m_session
 
 void QmlSessionBridge::setSelectedIndex(int index)
 {
-    if (index == m_selectedIndex) return;
+    m_selectedRows.clear();
+    if (index >= 0) m_selectedRows << index;
     m_selectedIndex = index;
     emit selectionChanged();
 }
 
+void QmlSessionBridge::setSelectedRows(const QList<int> &rows)
+{
+    m_selectedRows = rows;
+    m_selectedIndex = rows.isEmpty() ? -1 : rows.last();
+    emit selectionChanged();
+}
+
+QList<int> QmlSessionBridge::selectedRows() const { return m_selectedRows; }
+
 void QmlSessionBridge::pauseSelected()
 {
-    if (m_selectedIndex >= 0) m_session->pauseTorrent(m_selectedIndex);
+    if (m_selectedRows.isEmpty()) {
+        if (m_selectedIndex >= 0) m_session->pauseTorrent(m_selectedIndex);
+        return;
+    }
+    for (int r : m_selectedRows) m_session->pauseTorrent(r);
 }
 
 void QmlSessionBridge::resumeSelected()
 {
-    if (m_selectedIndex >= 0) m_session->resumeTorrent(m_selectedIndex);
+    if (m_selectedRows.isEmpty()) {
+        if (m_selectedIndex >= 0) m_session->resumeTorrent(m_selectedIndex);
+        return;
+    }
+    for (int r : m_selectedRows) m_session->resumeTorrent(r);
 }
 
 void QmlSessionBridge::removeSelected()
 {
-    if (m_selectedIndex >= 0) {
-        m_session->removeTorrent(m_selectedIndex, false);
-        m_selectedIndex = -1;
-        emit selectionChanged();
-    }
+    QList<int> rows = m_selectedRows.isEmpty()
+        ? (m_selectedIndex >= 0 ? QList<int>{m_selectedIndex} : QList<int>{})
+        : m_selectedRows;
+    if (rows.isEmpty()) return;
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    for (int r : rows) m_session->removeTorrent(r, false);
+    m_selectedRows.clear();
+    m_selectedIndex = -1;
+    emit selectionChanged();
 }
 
 void QmlSessionBridge::removeSelectedWithFiles()
@@ -344,6 +450,40 @@ bool QmlSessionBridge::selectedAtFullProgress() const
     return hasSelection() && m_session->torrentAt(m_selectedIndex).progress >= 1.0f;
 }
 
+bool QmlSessionBridge::selectedPaused() const
+{
+    return hasSelection() && m_session->torrentAt(m_selectedIndex).paused;
+}
+
+void QmlSessionBridge::toggleSelectedPause()
+{
+    if (!hasSelection()) return;
+    if (m_session->torrentAt(m_selectedIndex).paused)
+        m_session->resumeTorrent(m_selectedIndex);
+    else
+        m_session->pauseTorrent(m_selectedIndex);
+}
+
+void QmlSessionBridge::smartPaste()
+{
+    QString clip = QGuiApplication::clipboard()->text().trimmed();
+    if (clip.isEmpty()) return;
+    if (clip.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)) {
+        addMagnetUri(clip);
+        return;
+    }
+    static const QRegularExpression hashRe(QStringLiteral("^[0-9a-fA-F]{40}$"));
+    if (hashRe.match(clip).hasMatch()) {
+        addMagnetUri(QStringLiteral("magnet:?xt=urn:btih:") + clip);
+        return;
+    }
+    if (clip.endsWith(QStringLiteral(".torrent"), Qt::CaseInsensitive)
+        && (clip.startsWith(QStringLiteral("http"), Qt::CaseInsensitive)
+            || clip.startsWith(QStringLiteral("file:"), Qt::CaseInsensitive))) {
+        addTorrentFile(clip);
+    }
+}
+
 void QmlSessionBridge::setSelectedForceStart(bool on)
 {
     if (hasSelection()) m_session->setForceStart(m_selectedIndex, on);
@@ -380,14 +520,49 @@ void QmlSessionBridge::forceReannounceSelected()
 
 void QmlSessionBridge::queueUpSelected()
 {
-    if (!hasSelection() || m_selectedIndex <= 0) return;
-    m_session->setTorrentQueuePosition(m_selectedIndex, m_selectedIndex - 1);
+    QList<int> rows = m_selectedRows.isEmpty()
+        ? (m_selectedIndex >= 0 ? QList<int>{m_selectedIndex} : QList<int>{})
+        : m_selectedRows;
+    if (rows.isEmpty()) return;
+    std::sort(rows.begin(), rows.end());
+    QList<int> newRows;
+    for (int r : rows) {
+        if (r > 0 && !newRows.contains(r - 1)) {
+            m_session->setTorrentQueuePosition(r, r - 1);
+            emit queueMoved(r, r - 1);
+            newRows << (r - 1);
+        } else {
+            newRows << r;
+        }
+    }
+    m_selectedRows = newRows;
+    m_selectedIndex = newRows.isEmpty() ? -1 : newRows.last();
+    emit queueRefreshNeeded();
+    emit selectionChanged();
 }
 
 void QmlSessionBridge::queueDownSelected()
 {
-    if (!hasSelection() || m_selectedIndex >= m_session->torrentCount() - 1) return;
-    m_session->setTorrentQueuePosition(m_selectedIndex, m_selectedIndex + 1);
+    QList<int> rows = m_selectedRows.isEmpty()
+        ? (m_selectedIndex >= 0 ? QList<int>{m_selectedIndex} : QList<int>{})
+        : m_selectedRows;
+    if (rows.isEmpty()) return;
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    int lastIdx = m_session->torrentCount() - 1;
+    QList<int> newRows;
+    for (int r : rows) {
+        if (r < lastIdx && !newRows.contains(r + 1)) {
+            m_session->setTorrentQueuePosition(r, r + 1);
+            emit queueMoved(r, r + 1);
+            newRows << (r + 1);
+        } else {
+            newRows << r;
+        }
+    }
+    m_selectedRows = newRows;
+    m_selectedIndex = newRows.isEmpty() ? -1 : newRows.first();
+    emit queueRefreshNeeded();
+    emit selectionChanged();
 }
 
 QVariantList QmlSessionBridge::selectedPeerList() const
