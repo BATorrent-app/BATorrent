@@ -160,6 +160,10 @@ QtObject {
     // .fl-pa (paused fill) — dark/midnight/darkstar #54555c; light/sakura #6a6c73
     readonly property color pausedFill: isLight ? "#6a6c73" : "#54555c"
 
+    // --grn (verde de saúde: seeds em Search, "Instalado" em Addons, badge "Auto" em RSS)
+    // bat-dialog*.css: dark/midnight/darkstar #3fb950 ; light/sakura #2e9c40
+    readonly property color grn: isLight ? "#2e9c40" : "#3fb950"
+
     // ---------- anime accent art (per theme) ----------
     readonly property string animeSource:
         name === "dark"     ? "qrc:/images/eyes-dark.png" :

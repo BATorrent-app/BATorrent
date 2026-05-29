@@ -4,6 +4,7 @@ import QtQuick.Effects
 import QtQuick.Layouts
 import QtQuick.Shapes
 import "theme"
+import "widgets"
 
 Window {
     id: win
@@ -43,30 +44,7 @@ Window {
         return Theme.accent
     }
 
-    // ----- reusable tinted icon -----
-    component IconImg: Item {
-        id: ico
-        property string src
-        property color tint: Theme.t3
-        property int s: 18
-        implicitWidth: s
-        implicitHeight: s
-        Image {
-            id: imgSrc
-            anchors.fill: parent
-            source: ico.src
-            sourceSize: Qt.size(ico.s * 2, ico.s * 2)
-            fillMode: Image.PreserveAspectFit
-            visible: false
-            layer.enabled: true
-        }
-        MultiEffect {
-            source: imgSrc
-            anchors.fill: imgSrc
-            colorization: 1.0
-            colorizationColor: ico.tint
-        }
-    }
+    // (IconImg vem de widgets/)
 
     // ----- reusable toolbar button (.tbtn) -----
     component TBtn: Rectangle {
@@ -74,6 +52,7 @@ Window {
         property string label
         property string icon
         property bool disabled: false
+        signal clicked()
         Layout.preferredWidth: 52
         Layout.preferredHeight: 54
         color: !disabled && tbMa.containsMouse ? Theme.hover : "transparent"
@@ -103,6 +82,7 @@ Window {
             anchors.fill: parent
             hoverEnabled: !tb.disabled
             cursorShape: tb.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
+            onClicked: if (!tb.disabled) tb.clicked()
         }
     }
 
@@ -159,32 +139,6 @@ Window {
         anchors.fill: parent
         spacing: 0
 
-        // ================== TITLEBAR ==================
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 34
-            color: Theme.elev
-
-            Row {
-                anchors.left: parent.left
-                anchors.leftMargin: Theme.sp4
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.sp2
-                Rectangle { width: 12; height: 12; radius: 6; color: "#ff5f57"; anchors.verticalCenter: parent.verticalCenter }
-                Rectangle { width: 12; height: 12; radius: 6; color: "#febc2e"; anchors.verticalCenter: parent.verticalCenter }
-                Rectangle { width: 12; height: 12; radius: 6; color: "#28c840"; anchors.verticalCenter: parent.verticalCenter }
-            }
-            Text {
-                anchors.centerIn: parent
-                text: "BATorrent"
-                color: Theme.t2
-                font.pointSize: 12.5
-                font.weight: Font.DemiBold
-                font.family: Theme.fontSans
-            }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
-        }
-
         // ================== TOOLBAR ==================
         Rectangle {
             Layout.fillWidth: true
@@ -219,8 +173,8 @@ Window {
                 }
 
                 // G1: Abrir, Magnet
-                TBtn { label: "Abrir";   icon: "qrc:/icons/open.svg" }
-                TBtn { label: "Magnet";  icon: "qrc:/icons/magnet.svg" }
+                TBtn { label: "Abrir";   icon: "qrc:/icons/open.svg";  onClicked: addTorrentDlg.show() }
+                TBtn { label: "Magnet";  icon: "qrc:/icons/magnet.svg"; onClicked: magnetDlg.show() }
                 TGrpDiv {}
                 // G2: Pausar, Retomar, Parar
                 TBtn { label: "Pausar";  icon: "qrc:/icons/pause.svg" }
@@ -228,14 +182,14 @@ Window {
                 TBtn { label: "Parar";   icon: "qrc:/icons/stop.svg" }
                 TGrpDiv {}
                 // G3: Remover
-                TBtn { label: "Remover"; icon: "qrc:/icons/trash.svg" }
+                TBtn { label: "Remover"; icon: "qrc:/icons/trash.svg"; onClicked: removeDlg.show() }
                 TGrpDiv {}
                 // G4: Buscar, RSS
-                TBtn { label: "Buscar";  icon: "qrc:/icons/search.svg" }
-                TBtn { label: "RSS";     icon: "qrc:/icons/rss.svg" }
+                TBtn { label: "Buscar";  icon: "qrc:/icons/search.svg"; onClicked: searchWin.show() }
+                TBtn { label: "RSS";     icon: "qrc:/icons/rss.svg";    onClicked: rssWin.show() }
                 TGrpDiv {}
                 // G5: Config.
-                TBtn { label: "Config."; icon: "qrc:/icons/settings.svg" }
+                TBtn { label: "Config."; icon: "qrc:/icons/settings.svg"; onClicked: settingsWin.show() }
 
                 // .tb-spacer
                 Item { Layout.fillWidth: true }
@@ -883,6 +837,7 @@ Window {
 
             // 2 smooth curves: download accent + upload amber
             Shape {
+                id: graphShape
                 anchors.fill: parent
                 anchors.topMargin: 24
                 anchors.bottomMargin: 4
@@ -894,19 +849,19 @@ Window {
                     startX: 0
                     startY: 24
                     PathCubic {
-                        x: parent.width * 0.5
+                        x: graphShape.width * 0.5
                         y: 6
-                        control1X: parent.width * 0.18
+                        control1X: graphShape.width * 0.18
                         control1Y: 24
-                        control2X: parent.width * 0.32
+                        control2X: graphShape.width * 0.32
                         control2Y: 4
                     }
                     PathCubic {
-                        x: parent.width
+                        x: graphShape.width
                         y: 18
-                        control1X: parent.width * 0.68
+                        control1X: graphShape.width * 0.68
                         control1Y: 8
-                        control2X: parent.width * 0.82
+                        control2X: graphShape.width * 0.82
                         control2Y: 22
                     }
                 }
@@ -917,19 +872,19 @@ Window {
                     startX: 0
                     startY: 30
                     PathCubic {
-                        x: parent.width * 0.5
+                        x: graphShape.width * 0.5
                         y: 22
-                        control1X: parent.width * 0.18
+                        control1X: graphShape.width * 0.18
                         control1Y: 30
-                        control2X: parent.width * 0.32
+                        control2X: graphShape.width * 0.32
                         control2Y: 18
                     }
                     PathCubic {
-                        x: parent.width
+                        x: graphShape.width
                         y: 26
-                        control1X: parent.width * 0.68
+                        control1X: graphShape.width * 0.68
                         control1Y: 24
-                        control2X: parent.width * 0.82
+                        control2X: graphShape.width * 0.82
                         control2Y: 28
                     }
                 }
@@ -1211,4 +1166,12 @@ Window {
             }
         }
     }
+
+    // ================== WINDOWS / DIALOGS (opened from toolbar) ==================
+    MagnetDialog       { id: magnetDlg;     visible: false }
+    AddTorrentDialog   { id: addTorrentDlg; visible: false }
+    RemoveDialog       { id: removeDlg;     visible: false }
+    SearchWindow       { id: searchWin;     visible: false }
+    RssWindow          { id: rssWin;        visible: false }
+    SettingsWindow     { id: settingsWin;   visible: false }
 }
