@@ -2,6 +2,10 @@
 <qresource prefix="/">
 <file>images/logo.svg</file>
 <file>images/logo1.png</file>
+<file>images/eyes-dark.png</file>
+<file>images/eyes-midnight.png</file>
+<file>images/eyes-sakura.png</file>
+<file>images/spider.jpg</file>
 <file>icons/open.svg</file>
 <file>icons/magnet.svg</file>
 <file>icons/pause.svg</file>

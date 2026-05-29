@@ -791,23 +791,27 @@ void QmlSessionBridge::emitStats()
 
 // Theme bridge
 
-QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent) {}
+QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
+{
+    QSettings s;
+    m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("dark")).toString();
+    m_anime = s.value(QStringLiteral("qmlAnime"), true).toBool();
+}
 
-QColor QmlThemeBridge::bg() const { return QColor(ThemeManager::instance().bgColor()); }
-QColor QmlThemeBridge::surface() const { return QColor(ThemeManager::instance().surfaceColor()); }
-QColor QmlThemeBridge::panel() const { return QColor(ThemeManager::instance().panelColor()); }
-QColor QmlThemeBridge::surfaceAlt() const { return QColor(ThemeManager::instance().surfaceAltColor()); }
-QColor QmlThemeBridge::accent() const { return QColor(ThemeManager::instance().accentColor()); }
-QColor QmlThemeBridge::accentDark() const { return QColor(ThemeManager::instance().accentDarkColor()); }
-QColor QmlThemeBridge::accentLight() const { return QColor(ThemeManager::instance().accentLightColor()); }
-QColor QmlThemeBridge::text() const { return QColor(ThemeManager::instance().textColor()); }
-QColor QmlThemeBridge::muted() const { return QColor(ThemeManager::instance().mutedColor()); }
-QColor QmlThemeBridge::dim() const { return QColor(ThemeManager::instance().dimColor()); }
-QColor QmlThemeBridge::border() const { return QColor(ThemeManager::instance().borderColor()); }
-QColor QmlThemeBridge::stateDownloading() const { return QColor(ThemeManager::instance().stateDownloadingColor()); }
-QColor QmlThemeBridge::stateSeeding() const { return QColor(ThemeManager::instance().stateSeedingColor()); }
-QColor QmlThemeBridge::stateCompleted() const { return QColor(ThemeManager::instance().stateCompletedColor()); }
-QColor QmlThemeBridge::statePaused() const { return QColor(ThemeManager::instance().statePausedColor()); }
-bool QmlThemeBridge::isSakura() const { return ThemeManager::instance().theme() == ThemeManager::Sakura; }
+QString QmlThemeBridge::themeName() const { return m_themeName; }
+void QmlThemeBridge::setThemeName(const QString &n)
+{
+    if (n == m_themeName) return;
+    m_themeName = n;
+    QSettings().setValue(QStringLiteral("qmlThemeName"), n);
+    emit changed();
+}
 
-void QmlThemeBridge::emitChanged() { emit changed(); }
+bool QmlThemeBridge::anime() const { return m_anime; }
+void QmlThemeBridge::setAnime(bool on)
+{
+    if (on == m_anime) return;
+    m_anime = on;
+    QSettings().setValue(QStringLiteral("qmlAnime"), on);
+    emit changed();
+}

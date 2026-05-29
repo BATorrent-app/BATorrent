@@ -221,47 +221,23 @@ private:
 class QmlThemeBridge : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QColor bg READ bg NOTIFY changed)
-    Q_PROPERTY(QColor surface READ surface NOTIFY changed)
-    Q_PROPERTY(QColor panel READ panel NOTIFY changed)
-    Q_PROPERTY(QColor surfaceAlt READ surfaceAlt NOTIFY changed)
-    Q_PROPERTY(QColor accent READ accent NOTIFY changed)
-    Q_PROPERTY(QColor accentDark READ accentDark NOTIFY changed)
-    Q_PROPERTY(QColor accentLight READ accentLight NOTIFY changed)
-    Q_PROPERTY(QColor text READ text NOTIFY changed)
-    Q_PROPERTY(QColor muted READ muted NOTIFY changed)
-    Q_PROPERTY(QColor dim READ dim NOTIFY changed)
-    Q_PROPERTY(QColor border READ border NOTIFY changed)
-    Q_PROPERTY(QColor stateDownloading READ stateDownloading NOTIFY changed)
-    Q_PROPERTY(QColor stateSeeding READ stateSeeding NOTIFY changed)
-    Q_PROPERTY(QColor stateCompleted READ stateCompleted NOTIFY changed)
-    Q_PROPERTY(QColor statePaused READ statePaused NOTIFY changed)
-    Q_PROPERTY(bool isSakura READ isSakura NOTIFY changed)
+    Q_PROPERTY(QString themeName READ themeName WRITE setThemeName NOTIFY changed)
+    Q_PROPERTY(bool anime READ anime WRITE setAnime NOTIFY changed)
 
 public:
     explicit QmlThemeBridge(QObject *parent = nullptr);
 
-    QColor bg() const;
-    QColor surface() const;
-    QColor panel() const;
-    QColor surfaceAlt() const;
-    QColor accent() const;
-    QColor accentDark() const;
-    QColor accentLight() const;
-    QColor text() const;
-    QColor muted() const;
-    QColor dim() const;
-    QColor border() const;
-    QColor stateDownloading() const;
-    QColor stateSeeding() const;
-    QColor stateCompleted() const;
-    QColor statePaused() const;
-    bool isSakura() const;
-
-    void emitChanged();
+    QString themeName() const;
+    void setThemeName(const QString &n);
+    bool anime() const;
+    void setAnime(bool on);
 
 signals:
     void changed();
+
+private:
+    QString m_themeName;
+    bool m_anime = true;
 };
 
 #endif

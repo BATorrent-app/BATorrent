@@ -5,17 +5,8 @@ QtObject {
     id: theme
 
     // "dark" | "light" | "midnight" | "sakura" | "darkstar"
-    property string name: typeof themeBridge !== "undefined" ? themeBridge.themeName : "dark"
-    property bool anime: typeof themeBridge !== "undefined" ? themeBridge.anime : true
-
-    function setName(n) {
-        if (typeof themeBridge !== "undefined") themeBridge.themeName = n
-        else theme.name = n
-    }
-    function setAnime(on) {
-        if (typeof themeBridge !== "undefined") themeBridge.anime = on
-        else theme.anime = on
-    }
+    property string name: "dark"
+    property bool anime: true
 
     readonly property bool isDark: name !== "light" && name !== "sakura"
 
@@ -115,16 +106,16 @@ QtObject {
 
     // ---- anime accent art per theme ----
     readonly property string animeSource:
-        name === "dark"     ? "qrc:/images/eyes-dark.png" :
-        name === "midnight" ? "qrc:/images/eyes-midnight.png" :
-        name === "sakura"   ? "qrc:/images/eyes-sakura.png" :
-        name === "darkstar" ? "qrc:/images/spider.jpg" : ""   // light: none
+        name === "dark"     ? "images/eyes-dark.png" :
+        name === "midnight" ? "images/eyes-midnight.png" :
+        name === "sakura"   ? "images/eyes-sakura.png" :
+        name === "darkstar" ? "images/spider.jpg" : ""   // light: none
 
     readonly property bool animeBottom: name === "darkstar"   // spider sits bottom-right
     readonly property bool hasAnime: anime && animeSource !== ""
 
     function cycle() {
         var order = ["dark", "light", "midnight", "sakura", "darkstar"];
-        setName(order[(order.indexOf(name) + 1) % order.length]);
+        name = order[(order.indexOf(name) + 1) % order.length];
     }
 }
