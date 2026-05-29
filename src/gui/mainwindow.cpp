@@ -445,8 +445,7 @@ void MainWindow::applyTheme()
     if (m_globalStatsLabel) { delete m_globalStatsLabel; m_globalStatsLabel = nullptr; }
     setupStatusBar();
 
-    if (m_qmlThemeBridge)
-        m_qmlThemeBridge->emitChanged();
+    // Legacy QWidget theme change — QML theme is independent (qmlThemeName setting).
 }
 
 void MainWindow::restyleFilterRow()
