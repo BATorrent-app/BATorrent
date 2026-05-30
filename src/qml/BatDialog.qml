@@ -1,21 +1,28 @@
 // Source: bat-dialog.css  (tokens em Theme.qml)
-// Chrome reutilizável: backdrop + card centralizado com titlebar + body slot + footer.
+// Overlay reutilizável: backdrop full-fill + card centralizado (titlebar + body slot + footer).
+// Instanciado dentro da Main (não é Window) para o backdrop cobrir o app inteiro (inset:0).
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
 import "theme"
 import "widgets"
 
-Window {
+Item {
     id: dlg
+    anchors.fill: parent
+    z: 200
+    visible: opened
+    property bool opened: false
 
-    // ------- API -------
-    property alias title: ttl.text                 // .ttl text
-    property int cardW: 480                        // .dlg width
-    property int cardH: 460                        // .dlg height
-    property string footHint: ""                   // .hint
-    property string okText: "OK"                   // .acts > primary
-    property string cancelText: "Cancelar"         // .acts > flat
+    function open()  { opened = true }
+    function close() { opened = false }
+
+    property alias title: ttl.text
+    property int cardW: 480
+    property int cardH: 460
+    property string footHint: ""
+    property string okText: "OK"
+    property string cancelText: "Cancelar"
     property bool showFooter: true
     property bool showCancel: true
     property bool showOk: true
@@ -24,22 +31,25 @@ Window {
     signal accepted()
     signal rejected()
 
-    // ------- Window setup -------
-    visible: true
-    width: cardW + 120
-    height: cardH + 120
-    color: "transparent"
-    flags: Qt.FramelessWindowHint | Qt.Dialog
-    modality: Qt.ApplicationModal
-
-    // ------- backdrop (rgba(0,0,0,0.5) dark / rgba(20,20,28,0.32) light) -------
+    // backdrop (rgba(0,0,0,0.5) dark / rgba(20,20,28,0.32) light)
     Rectangle {
         anchors.fill: parent
         color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.5)
                             : Qt.rgba(20/255, 20/255, 28/255, 0.32)
+        MouseArea { anchors.fill: parent; onClicked: { dlg.rejected(); dlg.close() } }
     }
 
-    // ------- .dlg (card) -------
+    // shadow behind card
+    MultiEffect {
+        source: card
+        anchors.fill: card
+        shadowEnabled: true
+        shadowBlur: 1.0
+        shadowVerticalOffset: 40
+        shadowColor: Qt.rgba(0, 0, 0, 0.6)
+    }
+
+    // .dlg card
     Rectangle {
         id: card
         anchors.centerIn: parent
@@ -47,22 +57,22 @@ Window {
         height: dlg.cardH
         radius: 13
         color: Theme.bg
-        border.color: Theme.isDark ? Qt.rgba(1, 1, 1, 0.09)
-                                   : Qt.rgba(0, 0, 0, 0.14)
+        border.color: Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.14)
         border.width: 1
         clip: true
+        // swallow backdrop clicks landing on the card
+        MouseArea { anchors.fill: parent }
 
         ColumnLayout {
             anchors.fill: parent
             spacing: 0
 
-            // -------- .tb (titlebar, 36px) --------
+            // .tb titlebar 36
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
                 color: Theme.elev
 
-                // .ttl (centralizado absoluto, 12.5 / 600 / t2)
                 Text {
                     id: ttl
                     anchors.centerIn: parent
@@ -71,8 +81,7 @@ Window {
                     font.weight: Font.DemiBold
                     font.family: Theme.fontSans
                 }
-
-                // .x-close (margin-left auto, 22×22, radius 6, color t4 → hover bg hover + t1)
+                // .x-close
                 Rectangle {
                     anchors.right: parent.right
                     anchors.rightMargin: 7
@@ -81,7 +90,6 @@ Window {
                     height: 22
                     radius: 6
                     color: xMa.containsMouse ? Theme.hover : "transparent"
-
                     IconImg {
                         anchors.centerIn: parent
                         src: "qrc:/icons/close.svg"
@@ -96,12 +104,10 @@ Window {
                         onClicked: { dlg.rejected(); dlg.close() }
                     }
                 }
-
-                // border-bottom 1px hairSoft
                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
             }
 
-            // -------- .body (flex:1, overflow-y auto, padding 24) --------
+            // .body (scrollable, padding 24)
             Flickable {
                 id: bodyScroll
                 Layout.fillWidth: true
@@ -120,35 +126,26 @@ Window {
                 }
             }
 
-            // -------- .foot (56px) --------
+            // .foot 56
             Rectangle {
                 visible: dlg.showFooter
                 Layout.fillWidth: true
                 Layout.preferredHeight: 56
                 color: Theme.elev
-
-                // border-top hair
                 Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair }
-
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: Theme.sp5
                     anchors.rightMargin: 20
-
-                    // .hint
                     Text {
                         text: dlg.footHint
                         color: Theme.t4
                         font.pointSize: 10.5
                         font.family: Theme.fontSans
                     }
-
                     Item { Layout.fillWidth: true }
-
-                    // .acts (Row spacing 8)
                     Row {
                         spacing: Theme.sp2
-
                         BtnFlat {
                             visible: dlg.showCancel
                             text: dlg.cancelText
@@ -164,18 +161,5 @@ Window {
                 }
             }
         }
-    }
-
-    // box-shadow do CSS: aproximação via MultiEffect
-    MultiEffect {
-        source: card
-        anchors.fill: card
-        z: -1
-        shadowEnabled: true
-        shadowBlur: 1.0
-        shadowVerticalOffset: 50
-        shadowHorizontalOffset: 0
-        shadowColor: Qt.rgba(0, 0, 0, 0.85)
-        shadowScale: 1.0
     }
 }

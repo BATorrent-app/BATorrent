@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
         QQmlApplicationEngine engine;
         engine.rootContext()->setContextProperty("torrentModel", filterProxy);
         engine.rootContext()->setContextProperty("torrentFilter", filterProxy);
-        engine.rootContext()->setContextProperty("theme", themeBridge);
+        engine.rootContext()->setContextProperty("themeBridge", themeBridge);
         engine.rootContext()->setContextProperty("session", sessionBridge);
         engine.load(QUrl("qrc:/src/qml/Main.qml"));
         if (engine.rootObjects().isEmpty())

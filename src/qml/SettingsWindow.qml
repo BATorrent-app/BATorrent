@@ -52,7 +52,8 @@ Window {
             { type: "path", label: "Mover para", placeholder: "Pasta de destino final" },
             { type: "group", label: "Aparência" },
             { type: "select", label: "Idioma", options: ["Português", "English", "Español", "日本語", "Русский", "中文", "Deutsch"], value: 0 },
-            { type: "theme", label: "Tema", options: ["Escuro", "Claro", "Sakura", "Midnight"], value: 0 },
+            { type: "theme", label: "Tema", options: ["Escuro", "Claro", "Midnight", "Sakura", "Dark Star"], value: 0 },
+            { type: "anime", label: "Arte anime de fundo" },
             { type: "group", label: "Sistema" },
             { type: "toggle", label: "Iniciar minimizado na bandeja" },
             { type: "toggle", label: "Fechar para a bandeja ao invés de sair", on: true },
@@ -483,12 +484,13 @@ Window {
                 sourceComponent: {
                     switch (field.type) {
                     case "toggle": return cToggle
+                    case "anime": return cAnime
                     case "number": return cNumber
                     case "text": return cText
                     case "password": return cText
                     case "select": return cSelect
                     case "segmented": return cSegmented
-                    case "theme": return cSelect
+                    case "theme": return cTheme
                     case "button": return cButton
                     case "iface": return cSelect
                     }
@@ -504,6 +506,24 @@ Window {
 
         // ---- control components ----
         Component { id: cToggle; TToggle { on: field.on === true } }
+        Component {
+            id: cAnime
+            TToggle {
+                on: Theme.anime
+                onToggled: function(v) { Theme.setAnime(v) }
+            }
+        }
+        Component {
+            id: cTheme
+            TSelect {
+                // options index ↔ Theme.name
+                readonly property var names: ["dark", "light", "midnight", "sakura", "darkstar"]
+                implicitWidth: 180
+                model: field.options || []
+                currentIndex: Math.max(0, names.indexOf(Theme.name))
+                onActivated: function(i) { Theme.setName(names[i]) }
+            }
+        }
         Component {
             id: cNumber
             RowLayout {

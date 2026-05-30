@@ -62,6 +62,7 @@
 <file>../src/qml/widgets/PathFld.qml</file>
 <file>../src/qml/widgets/Eyebrow.qml</file>
 <file>../src/qml/widgets/EmptyState.qml</file>
+<file>../src/qml/widgets/PosterThumb.qml</file>
 <file>fonts/Inter-Regular.ttf</file>
 <file>fonts/Inter-Medium.ttf</file>
 <file>fonts/Inter-SemiBold.ttf</file>

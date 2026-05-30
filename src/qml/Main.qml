@@ -3,6 +3,8 @@ import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
 import QtQuick.Shapes
+import QtQuick.Dialogs
+import Qt.labs.platform as Platform
 import "theme"
 import "widgets"
 
@@ -16,32 +18,81 @@ Window {
     color: Theme.bg
     title: "BATorrent"
 
-    property int selected: 2
+    property int selected: -1
     property bool gridView: true
+    property string activeFilter: "all"
 
-    // ----- ground-truth model (batorrent-home.js) -----
-    ListModel {
-        id: torrents
-        ListElement { file: "Hollow.Knight-GOG.bin"; title: "Hollow Knight"; cat: "Jogos"; poster: "qrc:/images/hollow.webp"; state: "dl"; label: "Baixando"; size: "5.20 GB"; pct: 42; down: "2.4 MB/s"; up: "180 KB/s"; peers: "24" }
-        ListElement { file: "007.First.Light-RUNE.bin"; title: "007 First Light"; cat: "Jogos"; poster: "qrc:/images/007.jpg"; state: "pa"; label: "Pausado"; size: "7.49 GB"; pct: 12; down: "—"; up: "—"; peers: "0" }
-        ListElement { file: "Forza.Horizon.6-CODEX.bin"; title: "Forza Horizon 6"; cat: "Jogos"; poster: "qrc:/images/forza.png"; state: "dl"; label: "Baixando"; size: "92.4 GB"; pct: 67; down: "6.1 MB/s"; up: "412 KB/s"; peers: "38" }
-    }
+    // live model from C++ (QmlTorrentFilterProxy → QmlPosterModel). Roles:
+    // torrentName, metaTitle, stateKey, progress(0..1), posterPath, stateString,
+    // downSpeed, upSpeed, category, numPeers, downRate, upRate, size, infoHash.
+    readonly property var model: typeof torrentModel !== "undefined" ? torrentModel : null
+    readonly property bool hasSel: typeof session !== "undefined" && session.hasSelection
 
-    // ----- state→color helpers (fl-* / bg-* / st-*) -----
-    function fillFor(s) {
-        if (s === "se" || s === "cp") return Theme.amber
-        if (s === "pa") return Theme.pausedFill
+    // ----- state→color helpers (keyed by real stateKey) -----
+    function fillFor(k) {
+        if (k === "seeding" || k === "finished" || k === "completed") return Theme.amber
+        if (k === "paused" || k === "queued") return Theme.pausedFill
         return Theme.accent
     }
-    function textFor(s) {
-        if (s === "se" || s === "cp") return Theme.up
-        if (s === "pa") return Theme.t3
+    function textFor(k) {
+        if (k === "seeding" || k === "finished" || k === "completed") return Theme.up
+        if (k === "paused" || k === "queued") return Theme.t3
         return Theme.accentText
     }
-    function dotFor(s) {
-        if (s === "se" || s === "cp") return Theme.amber
-        if (s === "pa") return Theme.t4
+    function dotFor(k) {
+        if (k === "seeding" || k === "finished" || k === "completed") return Theme.amber
+        if (k === "paused" || k === "queued") return Theme.t4
         return Theme.accent
+    }
+    function selectRow(proxyRow) {
+        win.selected = proxyRow
+        if (typeof session !== "undefined" && typeof torrentFilter !== "undefined")
+            session.setSelectedIndex(torrentFilter.mapToSource(proxyRow))
+    }
+    function setFilter(f) {
+        win.activeFilter = f
+        if (typeof torrentFilter !== "undefined") torrentFilter.setFilterState(f)
+    }
+
+    // ================== NATIVE MENU BAR (ported from mainwindow.cpp) ==================
+    Platform.MenuBar {
+        Platform.Menu {
+            title: qsTr("Arquivo")
+            Platform.MenuItem { text: qsTr("Abrir torrent…"); shortcut: StandardKey.Open; onTriggered: openFileDlg.open() }
+            Platform.MenuItem { text: qsTr("Adicionar magnet…"); shortcut: "Ctrl+M"; onTriggered: magnetDlg.open() }
+            Platform.MenuItem { text: qsTr("Criar torrent…"); onTriggered: createDlg.open() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Sair"); shortcut: StandardKey.Quit; onTriggered: Qt.quit() }
+        }
+        Platform.Menu {
+            title: qsTr("Torrent")
+            Platform.MenuItem { text: qsTr("Pausar"); enabled: win.hasSel; onTriggered: session.pauseSelected() }
+            Platform.MenuItem { text: qsTr("Retomar"); enabled: win.hasSel; onTriggered: session.resumeSelected() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Pausar todos"); onTriggered: if (typeof session !== "undefined") session.pauseAll() }
+            Platform.MenuItem { text: qsTr("Retomar todos"); onTriggered: if (typeof session !== "undefined") session.resumeAll() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Remover…"); shortcut: StandardKey.Delete; enabled: win.hasSel; onTriggered: removeDlg.open() }
+            Platform.MenuItem { text: qsTr("Remover e excluir arquivos"); enabled: win.hasSel; onTriggered: if (typeof session !== "undefined") session.removeSelectedWithFiles() }
+        }
+        Platform.Menu {
+            title: qsTr("Configurações")
+            Platform.MenuItem { text: qsTr("Preferências…"); shortcut: StandardKey.Preferences; onTriggered: settingsWin.show() }
+            Platform.MenuItem { text: qsTr("Addons…"); onTriggered: addAddonDlg.open() }
+            Platform.MenuItem { text: qsTr("RSS…"); onTriggered: rssWin.show() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Buscar torrents…"); onTriggered: searchWin.show() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Teste de velocidade"); onTriggered: Qt.openUrlExternally("https://fast.com") }
+        }
+        Platform.Menu {
+            title: qsTr("Ajuda")
+            Platform.MenuItem { text: qsTr("Boas-vindas"); onTriggered: welcomeDlg.open() }
+            Platform.MenuItem { text: qsTr("Notas de versão"); onTriggered: releaseNotesDlg.open() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Doar"); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
+            Platform.MenuItem { text: qsTr("Sobre o BATorrent"); onTriggered: aboutDlg.open() }
+        }
     }
 
     // (IconImg vem de widgets/)
@@ -101,7 +152,9 @@ Window {
         id: pi
         property string label
         property string count
-        property bool on: false
+        property string state: "all"
+        property bool on: win.activeFilter === state
+        signal clicked()
         radius: 8
         height: 30
         implicitWidth: pillRow.implicitWidth + 26
@@ -132,6 +185,7 @@ Window {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
+            onClicked: pi.clicked()
         }
     }
 
@@ -173,16 +227,16 @@ Window {
                 }
 
                 // G1: Abrir, Magnet
-                TBtn { label: "Abrir";   icon: "qrc:/icons/open.svg";  onClicked: addTorrentDlg.show() }
-                TBtn { label: "Magnet";  icon: "qrc:/icons/magnet.svg"; onClicked: magnetDlg.show() }
+                TBtn { label: "Abrir";   icon: "qrc:/icons/open.svg";  onClicked: openFileDlg.open() }
+                TBtn { label: "Magnet";  icon: "qrc:/icons/magnet.svg"; onClicked: magnetDlg.open() }
                 TGrpDiv {}
                 // G2: Pausar, Retomar, Parar
-                TBtn { label: "Pausar";  icon: "qrc:/icons/pause.svg" }
-                TBtn { label: "Retomar"; icon: "qrc:/icons/play.svg" }
-                TBtn { label: "Parar";   icon: "qrc:/icons/stop.svg" }
+                TBtn { label: "Pausar";  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }
+                TBtn { label: "Retomar"; icon: "qrc:/icons/play.svg";  disabled: !win.hasSel; onClicked: session.resumeSelected() }
+                TBtn { label: "Parar";   icon: "qrc:/icons/stop.svg";  disabled: !win.hasSel; onClicked: session.pauseSelected() }
                 TGrpDiv {}
                 // G3: Remover
-                TBtn { label: "Remover"; icon: "qrc:/icons/trash.svg"; onClicked: removeDlg.show() }
+                TBtn { label: "Remover"; icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: removeDlg.open() }
                 TGrpDiv {}
                 // G4: Buscar, RSS
                 TBtn { label: "Buscar";  icon: "qrc:/icons/search.svg"; onClicked: searchWin.show() }
@@ -235,7 +289,7 @@ Window {
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: "8.5 MB/s"
+                                        text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"
                                         color: Theme.accentText
                                         font.pointSize: 13
                                         font.weight: Font.Bold
@@ -272,7 +326,7 @@ Window {
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: "1.7 MB/s"
+                                        text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"
                                         color: Theme.up
                                         font.pointSize: 13
                                         font.family: Theme.fontMono
@@ -304,27 +358,38 @@ Window {
                     Layout.preferredHeight: 34
                     Layout.alignment: Qt.AlignVCenter
                     color: Theme.panel
-                    border.color: Theme.hair
+                    border.color: searchInput.activeFocus ? Theme.accent : Theme.hair
                     border.width: 1
                     radius: 8
 
-                    Row {
-                        anchors.left: parent.left
+                    RowLayout {
+                        anchors.fill: parent
                         anchors.leftMargin: 11
-                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.rightMargin: 11
                         spacing: 8
                         IconImg {
-                            anchors.verticalCenter: parent.verticalCenter
+                            Layout.alignment: Qt.AlignVCenter
                             src: "qrc:/icons/search.svg"
                             tint: Theme.t4
                             s: 14
                         }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Buscar torrents"
-                            color: Theme.t4
+                        TextInput {
+                            id: searchInput
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            verticalAlignment: TextInput.AlignVCenter
+                            color: Theme.t1
                             font.pointSize: 12.5
                             font.family: Theme.fontSans
+                            clip: true
+                            onTextChanged: if (typeof torrentFilter !== "undefined") torrentFilter.setSearchText(text)
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Buscar torrents"
+                                color: Theme.t4
+                                font: searchInput.font
+                                visible: searchInput.text.length === 0 && !searchInput.activeFocus
+                            }
                         }
                     }
                 }
@@ -399,16 +464,16 @@ Window {
                     }
                 }
 
-                // .pills (gap 4) — 6 pills: Todos(3,on), Ativos(2), Baixando(2), Semeando(0), Pausado(1), Concluído(0)
+                // .pills (gap 4) — 6 pills, counts from session, click sets filter
                 Row {
                     Layout.alignment: Qt.AlignVCenter
                     spacing: Theme.sp1
-                    Pill { label: "Todos";     count: "3"; on: true }
-                    Pill { label: "Ativos";    count: "2" }
-                    Pill { label: "Baixando";  count: "2" }
-                    Pill { label: "Semeando";  count: "0" }
-                    Pill { label: "Pausado";   count: "1" }
-                    Pill { label: "Concluído"; count: "0" }
+                    Pill { label: "Todos";     state: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: win.setFilter("all") }
+                    Pill { label: "Ativos";    state: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: win.setFilter("active") }
+                    Pill { label: "Baixando";  state: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: win.setFilter("downloading") }
+                    Pill { label: "Semeando";  state: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: win.setFilter("seeding") }
+                    Pill { label: "Pausado";   state: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: win.setFilter("paused") }
+                    Pill { label: "Concluído"; state: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: win.setFilter("completed") }
                 }
 
                 Item { Layout.fillWidth: true }
@@ -490,10 +555,20 @@ Window {
             Layout.fillHeight: true
             clip: true
 
+            readonly property bool empty: typeof session !== "undefined" && session.torrentCount === 0
+
+            // empty state (no torrents)
+            EmptyState {
+                anchors.centerIn: parent
+                visible: parent.empty
+                onOpenClicked: addTorrentDlg.open()
+                onMagnetClicked: magnetDlg.open()
+            }
+
             // anime art (eyes top-right; spider bottom-right)
             Image {
                 id: animeArt
-                visible: Theme.hasAnime
+                visible: Theme.hasAnime && !parent.empty
                 source: Theme.hasAnime ? Theme.animeSource : ""
                 fillMode: Image.PreserveAspectFit
                 width: Theme.animeBottom ? 560 : 460
@@ -509,7 +584,7 @@ Window {
             // ----- GRID -----
             GridView {
                 id: grid
-                visible: win.gridView
+                visible: win.gridView && !parent.empty
                 anchors.fill: parent
                 topMargin: Theme.sp5
                 bottomMargin: Theme.sp5
@@ -518,13 +593,26 @@ Window {
                 cellWidth: 178 + Theme.sp4
                 cellHeight: 286
                 clip: true
-                model: torrents
+                model: win.model
                 interactive: true
                 z: 1
 
                 delegate: Item {
+                    id: tile
                     width: 178
                     height: 286
+
+                    required property int index
+                    required property string torrentName
+                    required property string metaTitle
+                    required property string stateKey
+                    required property real progress
+                    required property string posterPath
+                    required property string stateString
+                    required property string category
+                    required property string size
+
+                    readonly property string posterUrl: posterPath && posterPath.length > 0 ? "file://" + posterPath : ""
 
                     // .poster wrapper (aspect 3:4 ≈ 178:237)
                     Item {
@@ -532,21 +620,59 @@ Window {
                         width: 178
                         height: 237
 
-                        // Content rendered to layer, masked by rounded rect
+                        // fallback (no poster): tinted bg + watermark + category + title
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 10
+                            color: "#161618"
+                            visible: tile.posterUrl === ""
+                            Text {
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                anchors.rightMargin: -10
+                                anchors.bottomMargin: -22
+                                text: (tile.metaTitle || tile.torrentName).charAt(0).toUpperCase()
+                                color: Qt.rgba(1, 1, 1, 0.05)
+                                font.pointSize: 105
+                                font.weight: Font.Bold
+                                font.family: Theme.fontSans
+                            }
+                            Text {
+                                anchors.left: parent.left; anchors.top: parent.top
+                                anchors.leftMargin: 13; anchors.topMargin: 12
+                                text: tile.category
+                                color: Qt.rgba(1, 1, 1, 0.42)
+                                font.pointSize: 9.5; font.weight: Font.Bold; font.letterSpacing: 1.3
+                                font.capitalization: Font.AllUppercase
+                                font.family: Theme.fontSans
+                            }
+                            Text {
+                                anchors.left: parent.left; anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                anchors.leftMargin: 13; anchors.rightMargin: 13; anchors.bottomMargin: 15
+                                text: tile.metaTitle || tile.torrentName
+                                color: "#f5f5f6"
+                                font.pointSize: 18; font.weight: Font.Bold; font.letterSpacing: -0.3
+                                font.family: Theme.fontSans
+                                wrapMode: Text.WordWrap
+                                maximumLineCount: 3
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        // poster image (masked rounded) — only when present
                         Rectangle {
                             id: posterBg
                             anchors.fill: parent
                             color: "#161618"
                             visible: false
                             layer.enabled: true
-
                             Image {
                                 anchors.fill: parent
-                                source: model.poster
+                                source: tile.posterUrl
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                             }
-                            // .pscrim — gradient bottom 42% transparent→rgba(0,0,0,0.5)
                             Rectangle {
                                 anchors.left: parent.left
                                 anchors.right: parent.right
@@ -555,19 +681,6 @@ Window {
                                 gradient: Gradient {
                                     GradientStop { position: 0.0; color: "transparent" }
                                     GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.5) }
-                                }
-                            }
-                            // .pbar (z2 in CSS — top of poster content layer)
-                            Rectangle {
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.bottom: parent.bottom
-                                height: 3
-                                color: Qt.rgba(0, 0, 0, 0.5)
-                                Rectangle {
-                                    height: parent.height
-                                    width: parent.width * model.pct / 100
-                                    color: win.fillFor(model.state)
                                 }
                             }
                         }
@@ -584,21 +697,35 @@ Window {
                             anchors.fill: parent
                             maskEnabled: true
                             maskSource: posterMask
+                            visible: tile.posterUrl !== ""
+                        }
+                        // .pbar progress (bottom, over everything)
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                            height: 3
+                            color: Qt.rgba(0, 0, 0, 0.5)
+                            Rectangle {
+                                height: parent.height
+                                width: parent.width * tile.progress
+                                color: win.fillFor(tile.stateKey)
+                            }
                         }
                         // border overlay (radius 10, hair / accent when sel)
                         Rectangle {
                             anchors.fill: parent
                             radius: 10
                             color: "transparent"
-                            border.color: win.selected === index ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
-                            border.width: win.selected === index ? 2 : 1
+                            border.color: win.selected === tile.index ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
+                            border.width: win.selected === tile.index ? 2 : 1
                         }
                         MouseArea {
                             id: tileMa
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: win.selected = index
+                            onClicked: win.selectRow(tile.index)
                         }
                     }
 
@@ -617,19 +744,19 @@ Window {
                                 height: 6
                                 radius: 3
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: win.dotFor(model.state)
+                                color: win.dotFor(tile.stateKey)
                             }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: model.label
-                                color: win.textFor(model.state)
+                                text: tile.stateString
+                                color: win.textFor(tile.stateKey)
                                 font.pointSize: 11.5
                                 font.family: Theme.fontSans
                             }
                         }
                         Item { Layout.fillWidth: true }
                         Text {
-                            text: model.size
+                            text: tile.size
                             color: Theme.t4
                             font.pointSize: 11.5
                             font.family: Theme.fontMono
@@ -641,10 +768,10 @@ Window {
             // ----- LIST -----
             ListView {
                 id: list
-                visible: !win.gridView
+                visible: !win.gridView && !parent.empty
                 anchors.fill: parent
                 clip: true
-                model: torrents
+                model: win.model
                 interactive: true
                 z: 1
 
@@ -672,13 +799,31 @@ Window {
                 }
 
                 delegate: Rectangle {
+                    id: lrow
                     width: ListView.view.width
-                    height: 48
+                    height: 56
+
+                    required property int index
+                    required property string torrentName
+                    required property string stateKey
+                    required property real progress
+                    required property string stateString
+                    required property string size
+                    required property string downSpeed
+                    required property string upSpeed
+                    required property int downRate
+                    required property int upRate
+                    required property string category
+                    required property int numPeers
+                    required property string posterPath
+
+                    readonly property string posterUrl: posterPath && posterPath.length > 0 ? "file://" + posterPath : ""
+
                     color: win.selected === index ? Theme.sel : (rowMa.containsMouse ? Theme.hover : "transparent")
 
                     // .sel inset 2px barra esquerda
                     Rectangle {
-                        visible: win.selected === index
+                        visible: win.selected === lrow.index
                         anchors.left: parent.left
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
@@ -694,27 +839,27 @@ Window {
                         anchors.rightMargin: Theme.sp4
                         spacing: Theme.sp4
 
-                        // .name: dot 7×7 + nome
-                        Row {
+                        // .name: poster thumb + nome
+                        RowLayout {
                             Layout.fillWidth: true
                             spacing: Theme.sp3
-                            Rectangle {
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 7; height: 7; radius: 3.5
-                                color: win.dotFor(model.state)
+                            PosterThumb {
+                                Layout.alignment: Qt.AlignVCenter
+                                posterUrl: lrow.posterUrl
+                                letter: lrow.torrentName.length > 0 ? lrow.torrentName.charAt(0).toUpperCase() : ""
                             }
                             Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: model.file
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                text: lrow.torrentName
                                 color: Theme.t1
                                 font.pointSize: 13
                                 font.family: Theme.fontSans
                                 elide: Text.ElideRight
-                                width: parent.parent.width - 30
                             }
                         }
                         Text {
-                            text: model.size
+                            text: lrow.size
                             Layout.preferredWidth: 78
                             horizontalAlignment: Text.AlignRight
                             color: Theme.t2
@@ -736,12 +881,12 @@ Window {
                                     anchors.top: parent.top
                                     anchors.bottom: parent.bottom
                                     anchors.left: parent.left
-                                    width: parent.width * model.pct / 100
-                                    color: win.fillFor(model.state)
+                                    width: parent.width * lrow.progress
+                                    color: win.fillFor(lrow.stateKey)
                                 }
                                 Text {
                                     anchors.centerIn: parent
-                                    text: model.pct + "%"
+                                    text: Math.round(lrow.progress * 100) + "%"
                                     color: "#fff"
                                     font.pointSize: 10.5
                                     font.weight: Font.DemiBold
@@ -750,41 +895,42 @@ Window {
                             }
                         }
                         Text {
-                            text: model.down
+                            text: lrow.downRate > 0 ? lrow.downSpeed : "—"
                             Layout.preferredWidth: 78
                             horizontalAlignment: Text.AlignRight
-                            color: model.down === "—" ? Theme.t4 : Theme.accentText
+                            color: lrow.downRate > 0 ? Theme.accentText : Theme.t4
                             font.pointSize: 12
                             font.family: Theme.fontMono
                         }
                         Text {
-                            text: model.up
+                            text: lrow.upRate > 0 ? lrow.upSpeed : "—"
                             Layout.preferredWidth: 78
                             horizontalAlignment: Text.AlignRight
-                            color: model.up === "—" ? Theme.t4 : Theme.up
+                            color: lrow.upRate > 0 ? Theme.up : Theme.t4
                             font.pointSize: 12
                             font.family: Theme.fontMono
                         }
                         Text {
-                            text: model.label
+                            text: lrow.stateString
                             Layout.preferredWidth: 110
-                            color: win.textFor(model.state)
+                            color: win.textFor(lrow.stateKey)
                             font.pointSize: 12
                             font.weight: Theme.hasAnime ? Font.DemiBold : Font.Medium
                             font.family: Theme.fontSans
                         }
                         Text {
-                            text: model.cat
+                            text: lrow.category
                             Layout.preferredWidth: 90
                             color: Theme.t3
                             font.pointSize: 12
                             font.family: Theme.fontSans
+                            elide: Text.ElideRight
                         }
                         Text {
-                            text: model.peers
+                            text: lrow.numPeers
                             Layout.preferredWidth: 56
                             horizontalAlignment: Text.AlignRight
-                            color: model.peers === "0" ? Theme.t4 : Theme.t2
+                            color: lrow.numPeers === 0 ? Theme.t4 : Theme.t2
                             font.pointSize: 12
                             font.family: Theme.fontMono
                         }
@@ -794,7 +940,7 @@ Window {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: win.selected = index
+                        onClicked: win.selectRow(lrow.index)
                     }
                 }
             }
@@ -969,7 +1115,7 @@ Window {
                             layer.enabled: true
                             Image {
                                 anchors.fill: parent
-                                source: torrents.get(win.selected).poster
+                                source: win.hasSel && session.selectedPoster.length > 0 ? "file://" + session.selectedPoster : ""
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                             }
@@ -1005,28 +1151,34 @@ Window {
                         spacing: 6
 
                         Text {
-                            text: torrents.get(win.selected).title
+                            text: win.hasSel ? (session.selectedMetaTitle.length > 0 ? session.selectedMetaTitle : session.selectedName) : "Nenhum torrent selecionado"
                             color: Theme.t1
                             font.pointSize: 17
                             font.weight: Font.DemiBold
                             font.letterSpacing: -0.2
                             font.family: Theme.fontSans
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
                         }
                         Text {
-                            text: "2026 · Racing, Simulator, Sport · 8.6/10"
+                            visible: win.hasSel && session.selectedMetaInfo.length > 0
+                            text: win.hasSel ? session.selectedMetaInfo : ""
                             color: Theme.t3
                             font.pointSize: 11.5
                             font.family: Theme.fontSans
                         }
                         Text {
+                            visible: win.hasSel && session.selectedDescription.length > 0
                             Layout.topMargin: 6
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
+                            maximumLineCount: 4
+                            elide: Text.ElideRight
                             color: Theme.t2
                             font.pointSize: 12
                             font.family: Theme.fontSans
                             lineHeight: 1.55
-                            text: "Explore paisagens deslumbrantes ao volante de centenas de carros e torne-se uma lenda no Horizon Festival."
+                            text: win.hasSel ? session.selectedDescription : ""
                         }
                     }
 
@@ -1054,10 +1206,10 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { k: "Nome",    v: "Forza.Horizon.6-CODEX.bin" },
-                                    { k: "Tamanho", v: "92.4 GB" },
-                                    { k: "Hash",    v: "657c6a58…42e7" },
-                                    { k: "Estado",  v: "Baixando" }
+                                    { k: "Nome",    v: win.hasSel ? session.selectedName : "—" },
+                                    { k: "Tamanho", v: win.hasSel ? session.selectedSize : "—" },
+                                    { k: "Hash",    v: win.hasSel ? session.selectedHash : "—" },
+                                    { k: "Estado",  v: win.hasSel ? session.selectedState : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
@@ -1085,10 +1237,10 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { k: "Baixado",  v: "62.1 GB (67%)" },
-                                    { k: "Download", v: "6.1 MB/s" },
-                                    { k: "Upload",   v: "412 KB/s" },
-                                    { k: "ETA",      v: "14 min" }
+                                    { k: "Baixado",  v: win.hasSel ? session.selectedDownloaded : "—" },
+                                    { k: "Download", v: win.hasSel ? session.selectedDownSpeed : "—" },
+                                    { k: "Upload",   v: win.hasSel ? session.selectedUpSpeed : "—" },
+                                    { k: "ETA",      v: win.hasSel ? session.selectedEta : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
@@ -1116,9 +1268,9 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { k: "Seeds", v: "12" },
-                                    { k: "Peers", v: "38" },
-                                    { k: "Ratio", v: "0.18" }
+                                    { k: "Seeds", v: win.hasSel ? String(session.selectedSeeds) : "—" },
+                                    { k: "Peers", v: win.hasSel ? String(session.selectedPeers) : "—" },
+                                    { k: "Ratio", v: win.hasSel ? session.selectedRatio : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
@@ -1147,18 +1299,22 @@ Window {
                 spacing: Theme.sp2
 
                 Text {
-                    text: "3 torrents · 2 ativos"
+                    text: typeof session !== "undefined"
+                          ? session.torrentCount + " torrents · " + session.activeCount + " ativos"
+                          : "0 torrents"
                     color: Theme.t4
                     font.pointSize: 11.5
                     font.family: Theme.fontSans
                 }
                 Item { Layout.fillWidth: true }
-                Rectangle { width: 6; height: 6; radius: 3; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: "8.5 MB/s"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono }
-                Rectangle { width: 6; height: 6; radius: 3; color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: "1.7 MB/s"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono }
+                Rectangle { Layout.alignment: Qt.AlignVCenter; width: 6; height: 6; radius: 3; color: Theme.accent }
+                Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono }
+                Rectangle { Layout.alignment: Qt.AlignVCenter; width: 6; height: 6; radius: 3; color: Theme.amber }
+                Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono }
                 Text {
-                    text: "·  Total 31,04 GB ↓ · 2,09 GB ↑ · Ratio 0.07"
+                    text: typeof session !== "undefined"
+                          ? "·  Total " + session.totalDownloaded + " ↓ · " + session.totalUploaded + " ↑ · Ratio " + session.globalRatio
+                          : ""
                     color: Theme.t4
                     font.pointSize: 11.5
                     font.family: Theme.fontSans
@@ -1167,11 +1323,34 @@ Window {
         }
     }
 
-    // ================== WINDOWS / DIALOGS (opened from toolbar) ==================
-    MagnetDialog       { id: magnetDlg;     visible: false }
-    AddTorrentDialog   { id: addTorrentDlg; visible: false }
-    RemoveDialog       { id: removeDlg;     visible: false }
-    SearchWindow       { id: searchWin;     visible: false }
-    RssWindow          { id: rssWin;        visible: false }
-    SettingsWindow     { id: settingsWin;   visible: false }
+    // ================== NATIVE FILE PICKER (Abrir) ==================
+    FileDialog {
+        id: openFileDlg
+        title: "Abrir torrent"
+        nameFilters: ["Arquivos torrent (*.torrent)", "Todos os arquivos (*)"]
+        onAccepted: if (typeof session !== "undefined") session.addTorrentFile(selectedFile.toString())
+    }
+
+    // ================== OVERLAY DIALOGS (in-app, backdrop covers all) ==================
+    MagnetDialog {
+        id: magnetDlg
+        onAccepted: if (magnetText.length > 0 && typeof session !== "undefined") session.addMagnetUri(magnetText)
+    }
+    AddTorrentDialog  { id: addTorrentDlg }
+    RemoveDialog {
+        id: removeDlg
+        onAccepted: if (typeof session !== "undefined") {
+            if (deleteFiles) session.removeSelectedWithFiles(); else session.removeSelected()
+        }
+    }
+    CreateTorrentDialog { id: createDlg }
+    AddAddonDialog      { id: addAddonDlg }
+    WelcomeDialog       { id: welcomeDlg }
+    ReleaseNotesDialog  { id: releaseNotesDlg }
+    AboutDialog         { id: aboutDlg }
+
+    // ================== TOP-LEVEL WINDOWS ==================
+    SearchWindow      { id: searchWin;   visible: false }
+    RssWindow         { id: rssWin;      visible: false }
+    SettingsWindow    { id: settingsWin; visible: false }
 }

@@ -103,6 +103,8 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString selectedDownloaded READ selectedDownloaded NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedUploaded READ selectedUploaded NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedSpeed READ selectedSpeed NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedDownSpeed READ selectedDownSpeed NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedUpSpeed READ selectedUpSpeed NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedEta READ selectedEta NOTIFY selectionChanged)
     Q_PROPERTY(int selectedSeeds READ selectedSeeds NOTIFY selectionChanged)
     Q_PROPERTY(int selectedPeers READ selectedPeers NOTIFY selectionChanged)
@@ -174,6 +176,8 @@ public:
     QString selectedDownloaded() const;
     QString selectedUploaded() const;
     QString selectedSpeed() const;
+    QString selectedDownSpeed() const;
+    QString selectedUpSpeed() const;
     QString selectedEta() const;
     int selectedSeeds() const;
     int selectedPeers() const;

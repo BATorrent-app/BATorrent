@@ -5,11 +5,15 @@ import "theme"
 import "widgets"
 
 BatDialog {
+    id: dlg
     title: "Adicionar link magnet"
     cardW: 480
     cardH: 470
     footHint: "Aceita vários links, um por linha"
     okText: "Adicionar"
+
+    property alias magnetText: magnetArea.text
+    onOpenedChanged: if (opened) magnetArea.text = ""
 
     // ----- col 1: eyebrow + title -----
     ColumnLayout {
@@ -38,9 +42,10 @@ BatDialog {
             font.family: Theme.fontSans
         }
         TArea {
+            id: magnetArea
             Layout.fillWidth: true
             Layout.preferredHeight: 88
-            text: "magnet:?xt=urn:btih:657c6a58e3b1f24c9a7d42e7&dn=Forza.Horizon.6-CODEX&tr=udp://tracker.opentrackr.org:1337"
+            placeholder: "magnet:?xt=urn:btih:..."
         }
     }
 

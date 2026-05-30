@@ -703,6 +703,18 @@ QString QmlSessionBridge::selectedSpeed() const
     return QString("↓ %1   ↑ %2").arg(formatSpeed(info.downloadRate), formatSpeed(info.uploadRate));
 }
 
+QString QmlSessionBridge::selectedDownSpeed() const
+{
+    if (!hasSelection()) return QStringLiteral("—");
+    return formatSpeed(m_session->torrentAt(m_selectedIndex).downloadRate);
+}
+
+QString QmlSessionBridge::selectedUpSpeed() const
+{
+    if (!hasSelection()) return QStringLiteral("—");
+    return formatSpeed(m_session->torrentAt(m_selectedIndex).uploadRate);
+}
+
 QString QmlSessionBridge::selectedEta() const
 {
     if (!hasSelection()) return QStringLiteral("—");
@@ -795,7 +807,7 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
 {
     QSettings s;
     m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("dark")).toString();
-    m_anime = s.value(QStringLiteral("qmlAnime"), true).toBool();
+    m_anime = s.value(QStringLiteral("qmlAnime"), false).toBool();
 }
 
 QString QmlThemeBridge::themeName() const { return m_themeName; }

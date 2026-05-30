@@ -66,7 +66,7 @@ BatDialog {
         spacing: 8
         RowLayout {
             spacing: 7
-            Rectangle { width: 7; height: 7; radius: 3.5; color: clg.tagColor; anchors.verticalCenter: parent.verticalCenter }
+            Rectangle { Layout.alignment: Qt.AlignVCenter; width: 7; height: 7; radius: 3.5; color: clg.tagColor }
             Text {
                 text: clg.tag
                 color: clg.tagColor
