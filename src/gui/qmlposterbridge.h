@@ -154,6 +154,10 @@ public:
     Q_INVOKABLE void resumeAll();
     Q_INVOKABLE void addTorrentFile(const QString &filePath);
     Q_INVOKABLE void addMagnetUri(const QString &uri);
+    Q_INVOKABLE QVariantMap previewTorrent(const QString &filePath) const;
+    Q_INVOKABLE void resolvePreview(const QString &infoHash, const QString &name);
+    Q_INVOKABLE void addTorrentWithPrefs(const QString &filePath, const QString &savePath,
+                                         const QVariantList &priorities);
     Q_INVOKABLE void copyMagnetLink();
     Q_INVOKABLE void copyInfoHash();
     Q_INVOKABLE void openSaveFolder();
@@ -206,6 +210,7 @@ signals:
     void historyChanged();
     void queueRefreshNeeded();
     void queueMoved(int from, int to);
+    void previewPosterReady(const QString &infoHash, const QString &posterPath);
 
 private slots:
     void sampleSpeeds();

@@ -17,6 +17,11 @@
 #include <QStandardPaths>
 #include <QUrl>
 
+#include <libtorrent/torrent_info.hpp>
+#include <libtorrent/file_storage.hpp>
+#include <memory>
+#include <sstream>
+
 QmlPosterModel::QmlPosterModel(SessionManager *session, MetadataResolver *resolver,
                                QObject *parent)
     : QAbstractListModel(parent), m_session(session), m_resolver(resolver)
@@ -240,6 +245,16 @@ QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *re
     m_sampleTimer.setInterval(1000);
     connect(&m_sampleTimer, &QTimer::timeout, this, &QmlSessionBridge::sampleSpeeds);
     m_sampleTimer.start();
+
+    if (m_resolver) {
+        connect(m_resolver, &MetadataResolver::metadataReady, this,
+                [this](const QString &infoHash) {
+            if (!m_resolver->hasCached(infoHash)) return;
+            auto meta = m_resolver->cached(infoHash);
+            if (meta.valid && !meta.posterPath.isEmpty())
+                emit previewPosterReady(infoHash, meta.posterPath);
+        });
+    }
 }
 
 void QmlSessionBridge::sampleSpeeds()
@@ -648,6 +663,80 @@ void QmlSessionBridge::addMagnetUri(const QString &uri)
 {
     if (uri.isEmpty()) return;
     m_session->addMagnet(uri, defaultSavePath());
+}
+
+QVariantMap QmlSessionBridge::previewTorrent(const QString &filePath) const
+{
+    QString local = filePath;
+    if (local.startsWith(QStringLiteral("file://")))
+        local = QUrl(local).toLocalFile();
+
+    QVariantMap out;
+    std::shared_ptr<lt::torrent_info> ti;
+    try {
+        ti = std::make_shared<lt::torrent_info>(local.toStdString());
+    } catch (const std::exception &e) {
+        out["ok"] = false;
+        out["error"] = QString::fromUtf8(e.what());
+        return out;
+    }
+    out["ok"] = true;
+    out["name"] = QString::fromStdString(ti->name());
+    out["totalSize"] = formatSize(ti->total_size());
+    out["fileCount"] = ti->num_files();
+
+    // info hash (same convention as SessionManager: info_hashes().get_best())
+    QString infoHash = QString::fromStdString(
+        (std::ostringstream() << ti->info_hashes().get_best()).str());
+    out["infoHash"] = infoHash;
+
+    // poster from metadata cache, if this torrent was seen before
+    if (m_resolver && m_resolver->hasCached(infoHash)) {
+        auto meta = m_resolver->cached(infoHash);
+        if (meta.valid) out["posterPath"] = meta.posterPath;
+    }
+
+    QVariantList files;
+    const lt::file_storage &fs = ti->files();
+    for (int i = 0; i < ti->num_files(); ++i) {
+        lt::file_index_t fi(i);
+        QVariantMap f;
+        f["path"] = QString::fromStdString(fs.file_path(fi));
+        f["size"] = formatSize(fs.file_size(fi));
+        f["dir"]  = false;
+        f["depth"] = 0;
+        files << f;
+    }
+    out["files"] = files;
+    return out;
+}
+
+void QmlSessionBridge::resolvePreview(const QString &infoHash, const QString &name)
+{
+    if (m_resolver && !infoHash.isEmpty() && !m_resolver->hasCached(infoHash))
+        m_resolver->resolve(infoHash, name);
+}
+
+void QmlSessionBridge::addTorrentWithPrefs(const QString &filePath, const QString &savePath,
+                                           const QVariantList &priorities)
+{
+    if (filePath.isEmpty()) return;
+    QString local = filePath;
+    if (local.startsWith(QStringLiteral("file://")))
+        local = QUrl(local).toLocalFile();
+    QString dest = savePath;
+    if (dest.startsWith(QStringLiteral("file://")))
+        dest = QUrl(dest).toLocalFile();
+    if (dest.isEmpty()) dest = defaultSavePath();
+
+    if (priorities.isEmpty()) {
+        m_session->addTorrent(local, dest);
+    } else {
+        std::vector<int> prios;
+        prios.reserve(priorities.size());
+        for (const auto &v : priorities) prios.push_back(v.toInt());
+        m_session->addTorrentWithPriorities(local, dest, prios);
+    }
 }
 
 bool QmlSessionBridge::hasSelection() const

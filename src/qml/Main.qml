@@ -19,10 +19,14 @@ Window {
     color: Theme.bg
     title: "BATorrent"
 
-    property int selected: -1
+    property int selected: -1          // focus row (drives the detail panel)
+    property var selectedRows: []      // multi-selection (proxy rows)
+    property int anchorRow: -1         // shift-range anchor
     property bool gridView: true
     property string activeFilter: "all"
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
+    property string sortColumn: ""
+    property bool sortAsc: true
 
     // live model from C++ (QmlTorrentFilterProxy → QmlPosterModel). Roles:
     // torrentName, metaTitle, stateKey, progress(0..1), posterPath, stateString,
@@ -46,10 +50,55 @@ Window {
         if (k === "paused" || k === "queued") return Theme.t4
         return Theme.accent
     }
-    function selectRow(proxyRow) {
+    function _commitSel() {
+        if (typeof session === "undefined" || typeof torrentFilter === "undefined") return
+        var src = []
+        for (var i = 0; i < win.selectedRows.length; ++i) {
+            var s = torrentFilter.mapToSource(win.selectedRows[i])
+            if (s >= 0) src.push(s)
+        }
+        session.setSelectedRows(src)
+    }
+    function selectRow(proxyRow, mods) {
+        mods = mods || 0
+        var ctrl = (mods & Qt.ControlModifier) || (mods & Qt.MetaModifier)
+        var shift = (mods & Qt.ShiftModifier)
+        var rows = win.selectedRows.slice()
+        if (shift && win.anchorRow >= 0) {
+            rows = []
+            var a = Math.min(win.anchorRow, proxyRow)
+            var b = Math.max(win.anchorRow, proxyRow)
+            for (var i = a; i <= b; ++i) rows.push(i)
+        } else if (ctrl) {
+            var idx = rows.indexOf(proxyRow)
+            if (idx >= 0) rows.splice(idx, 1); else rows.push(proxyRow)
+            win.anchorRow = proxyRow
+        } else {
+            rows = [proxyRow]
+            win.anchorRow = proxyRow
+        }
+        win.selectedRows = rows
         win.selected = proxyRow
-        if (typeof session !== "undefined" && typeof torrentFilter !== "undefined")
-            session.setSelectedIndex(torrentFilter.mapToSource(proxyRow))
+        _commitSel()
+    }
+    function isRowSelected(proxyRow) { return win.selectedRows.indexOf(proxyRow) >= 0 }
+    function selectAll() {
+        if (typeof session === "undefined" || typeof torrentFilter === "undefined") return
+        var rows = []
+        for (var s = 0; s < session.torrentCount; ++s) {
+            var p = torrentFilter.mapFromSource(s)
+            if (p >= 0) rows.push(p)
+        }
+        rows.sort(function(x, y) { return x - y })
+        win.selectedRows = rows
+        win.anchorRow = rows.length > 0 ? rows[0] : -1
+        win.selected = rows.length > 0 ? rows[rows.length - 1] : -1
+        _commitSel()
+    }
+    function toggleSort(col) {
+        if (win.sortColumn === col) win.sortAsc = !win.sortAsc
+        else { win.sortColumn = col; win.sortAsc = true }
+        if (typeof torrentFilter !== "undefined") torrentFilter.setSortColumn(col, win.sortAsc)
     }
     function setFilter(f) {
         win.activeFilter = f
@@ -100,9 +149,10 @@ Window {
         CtxItem { text: "Forçar verificação"; onTriggered: session.forceRecheckSelected() }
         CtxItem { text: "Forçar reanúncio"; onTriggered: session.forceReannounceSelected() }
         MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-        CtxItem { text: "Remover"; onTriggered: removeDlg.open() }
-        CtxItem { text: "Remover e excluir arquivos"; onTriggered: session.removeSelectedWithFiles() }
+        CtxItem { text: "Remover…"; onTriggered: removeDlg.open() }
     }
+
+    Shortcut { sequence: StandardKey.SelectAll; onActivated: win.selectAll() }
 
     // ================== NATIVE MENU BAR (ported from mainwindow.cpp) ==================
     Platform.MenuBar {
@@ -123,7 +173,6 @@ Window {
             Platform.MenuItem { text: qsTr("Retomar todos"); onTriggered: if (typeof session !== "undefined") session.resumeAll() }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: qsTr("Remover…"); shortcut: StandardKey.Delete; enabled: win.hasSel; onTriggered: removeDlg.open() }
-            Platform.MenuItem { text: qsTr("Remover e excluir arquivos"); enabled: win.hasSel; onTriggered: if (typeof session !== "undefined") session.removeSelectedWithFiles() }
         }
         Platform.Menu {
             title: qsTr("Configurações")
@@ -237,6 +286,39 @@ Window {
             cursorShape: Qt.PointingHandCursor
             onClicked: pi.clicked()
         }
+    }
+
+    // ----- clickable list header column (sort) -----
+    component HCol: Item {
+        id: hc
+        property string label
+        property string col
+        property bool fill: false
+        property int w: 78
+        property bool alignRight: false
+        Layout.fillWidth: fill
+        Layout.preferredWidth: fill ? -1 : w
+        Layout.fillHeight: true
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: hc.alignRight ? undefined : parent.left
+            anchors.right: hc.alignRight ? parent.right : undefined
+            spacing: 4
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: hc.label
+                color: win.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : Theme.t4)
+                font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: win.sortColumn === hc.col
+                text: win.sortAsc ? "▲" : "▼"
+                color: Theme.accent
+                font.pointSize: 7
+            }
+        }
+        MouseArea { id: hcMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.toggleSort(hc.col) }
     }
 
     ColumnLayout {
@@ -611,7 +693,7 @@ Window {
             EmptyState {
                 anchors.centerIn: parent
                 visible: parent.empty
-                onOpenClicked: addTorrentDlg.open()
+                onOpenClicked: openFileDlg.open()
                 onMagnetClicked: magnetDlg.open()
             }
 
@@ -787,8 +869,8 @@ Window {
                             anchors.fill: parent
                             radius: 10
                             color: "transparent"
-                            border.color: win.selected === tile.index ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
-                            border.width: win.selected === tile.index ? 2 : 1
+                            border.color: win.isRowSelected(tile.index) ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
+                            border.width: win.isRowSelected(tile.index) ? 2 : 1
                         }
                         MouseArea {
                             id: tileMa
@@ -798,9 +880,10 @@ Window {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: function(mouse) {
                                 if (mouse.button === Qt.RightButton) {
+                                    if (!win.isRowSelected(tile.index)) win.selectRow(tile.index, 0)
                                     win.openContext(tile.index)
                                 } else {
-                                    win.selectRow(tile.index)
+                                    win.selectRow(tile.index, mouse.modifiers)
                                 }
                             }
                         }
@@ -864,14 +947,14 @@ Window {
                         anchors.rightMargin: Theme.sp4
                         spacing: Theme.sp4
 
-                        Text { text: "NOME"; Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                        Text { text: "TAMANHO"; Layout.preferredWidth: 78; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                        Text { text: "PROGRESSO"; Layout.preferredWidth: 130; color: Theme.t4; font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                        Text { text: "DOWN"; Layout.preferredWidth: 78; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                        Text { text: "UP"; Layout.preferredWidth: 78; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                        Text { text: "ESTADO"; Layout.preferredWidth: 110; color: Theme.t4; font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                        Text { text: "CATEGORIA"; Layout.preferredWidth: 90; color: Theme.t4; font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                        Text { text: "PEERS"; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                        HCol { label: "NOME"; col: "name"; fill: true }
+                        HCol { label: "TAMANHO"; col: "size"; w: 78; alignRight: true }
+                        HCol { label: "PROGRESSO"; col: "progress"; w: 104 }
+                        HCol { label: "DOWN"; col: "down"; w: 78; alignRight: true }
+                        HCol { label: "UP"; col: "up"; w: 78; alignRight: true }
+                        HCol { label: "ESTADO"; col: "state"; w: 110 }
+                        HCol { label: "CATEGORIA"; col: "category"; w: 90 }
+                        HCol { label: "PEERS"; col: "peers"; w: 56; alignRight: true }
                     }
                 }
 
@@ -896,11 +979,11 @@ Window {
 
                     readonly property string posterUrl: posterPath && posterPath.length > 0 ? "file://" + posterPath : ""
 
-                    color: win.selected === index ? Theme.sel : (rowMa.containsMouse ? Theme.hover : "transparent")
+                    color: win.isRowSelected(index) ? Theme.sel : (rowMa.containsMouse ? Theme.hover : "transparent")
 
                     // .sel inset 2px barra esquerda
                     Rectangle {
-                        visible: win.selected === lrow.index
+                        visible: win.isRowSelected(lrow.index)
                         anchors.left: parent.left
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
@@ -1020,9 +1103,10 @@ Window {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: function(mouse) {
                             if (mouse.button === Qt.RightButton) {
+                                if (!win.isRowSelected(lrow.index)) win.selectRow(lrow.index, 0)
                                 win.openContext(lrow.index)
                             } else {
-                                win.selectRow(lrow.index)
+                                win.selectRow(lrow.index, mouse.modifiers)
                             }
                         }
                     }
@@ -1503,7 +1587,15 @@ Window {
         id: openFileDlg
         title: "Abrir torrent"
         nameFilters: ["Arquivos torrent (*.torrent)", "Todos os arquivos (*)"]
-        onAccepted: if (typeof session !== "undefined") session.addTorrentFile(selectedFile.toString())
+        onAccepted: {
+            if (typeof session === "undefined") return
+            var path = selectedFile.toString()
+            var p = session.previewTorrent(path)
+            if (!p.ok) { session.addTorrentFile(path); return }
+            addTorrentDlg.savePath = session.defaultSavePath()
+            addTorrentDlg.loadPreview(p, path)
+            addTorrentDlg.open()
+        }
     }
 
     // ================== OVERLAY DIALOGS (in-app, backdrop covers all) ==================
@@ -1511,7 +1603,10 @@ Window {
         id: magnetDlg
         onAccepted: if (magnetText.length > 0 && typeof session !== "undefined") session.addMagnetUri(magnetText)
     }
-    AddTorrentDialog  { id: addTorrentDlg }
+    AddTorrentDialog {
+        id: addTorrentDlg
+        onAccepted: if (typeof session !== "undefined") session.addTorrentWithPrefs(torrentPath, savePath, priorities())
+    }
     RemoveDialog {
         id: removeDlg
         onAccepted: if (typeof session !== "undefined") {
