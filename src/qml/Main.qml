@@ -1,5 +1,6 @@
 // Source: BATorrent Home.html + batorrent-home.css (+ batorrent-home.js model)
 import QtQuick
+import QtQuick.Controls.Basic
 import QtQuick.Effects
 import QtQuick.Layouts
 import QtQuick.Shapes
@@ -21,6 +22,7 @@ Window {
     property int selected: -1
     property bool gridView: true
     property string activeFilter: "all"
+    property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
 
     // live model from C++ (QmlTorrentFilterProxy → QmlPosterModel). Roles:
     // torrentName, metaTitle, stateKey, progress(0..1), posterPath, stateString,
@@ -52,6 +54,54 @@ Window {
     function setFilter(f) {
         win.activeFilter = f
         if (typeof torrentFilter !== "undefined") torrentFilter.setFilterState(f)
+    }
+    function openContext(proxyRow) {
+        win.selectRow(proxyRow)
+        ctxMenu.popup()
+    }
+
+    // ----- shared context menu (right-click on grid tile / list row) -----
+    Menu {
+        id: ctxMenu
+        modal: true
+        implicitWidth: 220
+        background: Rectangle {
+            color: Theme.panel
+            border.color: Theme.hair
+            border.width: 1
+            radius: 8
+        }
+        component CtxItem: MenuItem {
+            id: ci
+            implicitHeight: enabled ? 30 : 1
+            visible: enabled
+            padding: 0
+            contentItem: Text {
+                leftPadding: 14
+                rightPadding: 14
+                text: ci.text
+                color: ci.highlighted ? Theme.t1 : Theme.t2
+                font.pointSize: 12
+                font.family: Theme.fontSans
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: ci.highlighted ? Theme.hover : "transparent"
+                radius: 5
+            }
+        }
+        CtxItem { text: "Pausar"; onTriggered: session.pauseSelected() }
+        CtxItem { text: "Retomar"; onTriggered: session.resumeSelected() }
+        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+        CtxItem { text: "Abrir pasta"; onTriggered: session.openSaveFolder() }
+        CtxItem { text: "Copiar link magnet"; onTriggered: session.copyMagnetLink() }
+        CtxItem { text: "Copiar hash"; onTriggered: session.copyInfoHash() }
+        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+        CtxItem { text: "Forçar verificação"; onTriggered: session.forceRecheckSelected() }
+        CtxItem { text: "Forçar reanúncio"; onTriggered: session.forceReannounceSelected() }
+        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+        CtxItem { text: "Remover"; onTriggered: removeDlg.open() }
+        CtxItem { text: "Remover e excluir arquivos"; onTriggered: session.removeSelectedWithFiles() }
     }
 
     // ================== NATIVE MENU BAR (ported from mainwindow.cpp) ==================
@@ -677,10 +727,11 @@ Window {
                                 anchors.left: parent.left
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
-                                height: parent.height * 0.42
+                                height: parent.height * 0.6
                                 gradient: Gradient {
                                     GradientStop { position: 0.0; color: "transparent" }
-                                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.5) }
+                                    GradientStop { position: 0.55; color: Qt.rgba(0, 0, 0, 0.45) }
+                                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.92) }
                                 }
                             }
                         }
@@ -698,6 +749,25 @@ Window {
                             maskEnabled: true
                             maskSource: posterMask
                             visible: tile.posterUrl !== ""
+                        }
+                        // title over the fade (only when poster present)
+                        Text {
+                            visible: tile.posterUrl !== ""
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            anchors.bottomMargin: 12
+                            text: tile.metaTitle || tile.torrentName
+                            color: "#f5f5f6"
+                            font.pointSize: 15
+                            font.weight: Font.Bold
+                            font.letterSpacing: -0.2
+                            font.family: Theme.fontSans
+                            elide: Text.ElideRight
+                            maximumLineCount: 2
+                            wrapMode: Text.WordWrap
                         }
                         // .pbar progress (bottom, over everything)
                         Rectangle {
@@ -724,8 +794,15 @@ Window {
                             id: tileMa
                             anchors.fill: parent
                             hoverEnabled: true
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: win.selectRow(tile.index)
+                            onClicked: function(mouse) {
+                                if (mouse.button === Qt.RightButton) {
+                                    win.openContext(tile.index)
+                                } else {
+                                    win.selectRow(tile.index)
+                                }
+                            }
                         }
                     }
 
@@ -866,10 +943,10 @@ Window {
                             font.pointSize: 12
                             font.family: Theme.fontMono
                         }
-                        // .prog (130) → .pbar2 height 18 black track + fill state + centered % white
+                        // .prog → .pbar2 black track + fill state + centered % white
                         Item {
-                            Layout.preferredWidth: 130
-                            Layout.preferredHeight: 18
+                            Layout.preferredWidth: 104
+                            Layout.preferredHeight: 14
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 4
@@ -888,7 +965,7 @@ Window {
                                     anchors.centerIn: parent
                                     text: Math.round(lrow.progress * 100) + "%"
                                     color: "#fff"
-                                    font.pointSize: 10.5
+                                    font.pointSize: 9
                                     font.weight: Font.DemiBold
                                     font.family: Theme.fontMono
                                 }
@@ -939,8 +1016,15 @@ Window {
                         id: rowMa
                         anchors.fill: parent
                         hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: win.selectRow(lrow.index)
+                        onClicked: function(mouse) {
+                            if (mouse.button === Qt.RightButton) {
+                                win.openContext(lrow.index)
+                            } else {
+                                win.selectRow(lrow.index)
+                            }
+                        }
                     }
                 }
             }
@@ -948,17 +1032,48 @@ Window {
 
         // ================== GRAPH ==================
         Rectangle {
+            id: graphPanel
             Layout.fillWidth: true
             Layout.preferredHeight: 64
             color: Theme.bg
             Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair }
+
+            readonly property var dl: typeof session !== "undefined" ? session.downloadHistory : []
+            readonly property var ul: typeof session !== "undefined" ? session.uploadHistory : []
+            readonly property int maxBytes: typeof session !== "undefined" ? session.historyMaxBytes : 1024
+            readonly property int scaledMax: Math.max(1024, Math.round(maxBytes * 1.2))
+            readonly property int slots: 60
+
+            function scaleText(b) {
+                if (b >= 1024 * 1024) return (b / (1024 * 1024)).toFixed(1) + " MB/s"
+                return Math.round(b / 1024) + " KB/s"
+            }
+            // build a smooth filled area path from a byte-history array
+            function areaPath(arr, h) {
+                if (!arr || arr.length === 0) return ""
+                var n = arr.length
+                var step = graphShape.width / (slots - 1)
+                var off = (slots - n) * step
+                function yAt(v) { return h - (v / scaledMax) * (h - 2) }
+                var x0 = off
+                var s = "M " + x0.toFixed(1) + "," + h.toFixed(1)
+                s += " L " + x0.toFixed(1) + "," + yAt(arr[0]).toFixed(1)
+                for (var i = 1; i < n; ++i) {
+                    var px = off + (i - 1) * step, py = yAt(arr[i - 1])
+                    var x = off + i * step, y = yAt(arr[i])
+                    var cx = (px + x) / 2
+                    s += " C " + cx.toFixed(1) + "," + py.toFixed(1) + " " + cx.toFixed(1) + "," + y.toFixed(1) + " " + x.toFixed(1) + "," + y.toFixed(1)
+                }
+                s += " L " + (off + (n - 1) * step).toFixed(1) + "," + h.toFixed(1) + " Z"
+                return s
+            }
 
             Text {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.topMargin: 6
                 anchors.leftMargin: Theme.sp4
-                text: "1 KB/s"
+                text: graphPanel.scaleText(graphPanel.scaledMax)
                 color: Theme.t4
                 font.pointSize: 10
                 font.family: Theme.fontSans
@@ -972,67 +1087,42 @@ Window {
                 Row {
                     spacing: 6
                     Rectangle { width: 6; height: 6; radius: 3; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "8.5 MB/s"; color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
                 }
                 Row {
                     spacing: 6
                     Rectangle { width: 6; height: 6; radius: 3; color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "1.7 MB/s"; color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
 
-            // 2 smooth curves: download accent + upload amber
+            // real curves from session history (download accent + upload amber)
             Shape {
                 id: graphShape
                 anchors.fill: parent
                 anchors.topMargin: 24
                 anchors.bottomMargin: 4
                 antialiasing: true
+
                 ShapePath {
                     strokeColor: Theme.accent
                     strokeWidth: 1.5
-                    fillColor: "transparent"
-                    startX: 0
-                    startY: 24
-                    PathCubic {
-                        x: graphShape.width * 0.5
-                        y: 6
-                        control1X: graphShape.width * 0.18
-                        control1Y: 24
-                        control2X: graphShape.width * 0.32
-                        control2Y: 4
+                    fillGradient: LinearGradient {
+                        x1: 0; y1: 0; x2: 0; y2: graphShape.height
+                        GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22) }
+                        GradientStop { position: 1.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.02) }
                     }
-                    PathCubic {
-                        x: graphShape.width
-                        y: 18
-                        control1X: graphShape.width * 0.68
-                        control1Y: 8
-                        control2X: graphShape.width * 0.82
-                        control2Y: 22
-                    }
+                    PathSvg { path: graphPanel.areaPath(graphPanel.dl, graphShape.height) }
                 }
                 ShapePath {
                     strokeColor: Theme.amber
                     strokeWidth: 1.5
-                    fillColor: "transparent"
-                    startX: 0
-                    startY: 30
-                    PathCubic {
-                        x: graphShape.width * 0.5
-                        y: 22
-                        control1X: graphShape.width * 0.18
-                        control1Y: 30
-                        control2X: graphShape.width * 0.32
-                        control2Y: 18
+                    fillGradient: LinearGradient {
+                        x1: 0; y1: 0; x2: 0; y2: graphShape.height
+                        GradientStop { position: 0.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.18) }
+                        GradientStop { position: 1.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.02) }
                     }
-                    PathCubic {
-                        x: graphShape.width
-                        y: 26
-                        control1X: graphShape.width * 0.68
-                        control1Y: 24
-                        control2X: graphShape.width * 0.82
-                        control2Y: 28
-                    }
+                    PathSvg { path: graphPanel.areaPath(graphPanel.ul, graphShape.height) }
                 }
             }
         }
@@ -1062,43 +1152,69 @@ Window {
 
                         Repeater {
                             model: [
-                                { label: "Geral",    on: true  },
-                                { label: "Peers",    on: false },
-                                { label: "Arquivos", on: false },
-                                { label: "Trackers", on: false },
-                                { label: "Pedaços",  on: false }
+                                { label: "Geral",    ct: "" },
+                                { label: "Peers",    ct: win.hasSel ? String(session.selectedPeers) : "" },
+                                { label: "Arquivos", ct: win.hasSel ? String(session.selectedFiles.length) : "" },
+                                { label: "Trackers", ct: win.hasSel ? String(session.selectedTrackers.length) : "" },
+                                { label: "Pedaços",  ct: "" }
                             ]
                             delegate: Item {
-                                width: tabText.implicitWidth
                                 height: 42
+                                width: dtabRow.implicitWidth
+                                readonly property bool on: win.detailTab === index
 
-                                Text {
-                                    id: tabText
+                                Row {
+                                    id: dtabRow
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.label
-                                    color: modelData.on ? Theme.t1 : Theme.t3
-                                    font.pointSize: 12.5
-                                    font.weight: modelData.on ? Font.DemiBold : Font.Medium
-                                    font.family: Theme.fontSans
+                                    spacing: 7
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.label
+                                        color: parent.parent.on ? Theme.t1 : (dtabMa.containsMouse ? Theme.t2 : Theme.t3)
+                                        font.pointSize: 12.5
+                                        font.weight: parent.parent.on ? Font.DemiBold : Font.Medium
+                                        font.family: Theme.fontSans
+                                    }
+                                    Text {
+                                        visible: modelData.ct !== ""
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.ct
+                                        color: Theme.t4
+                                        font.pointSize: 11
+                                        font.family: Theme.fontMono
+                                    }
                                 }
                                 Rectangle {
-                                    visible: modelData.on
+                                    visible: parent.on
                                     anchors.left: parent.left
                                     anchors.right: parent.right
                                     anchors.bottom: parent.bottom
                                     height: 2
                                     color: Theme.accent
                                 }
+                                MouseArea {
+                                    id: dtabMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: win.detailTab = index
+                                }
                             }
                         }
                     }
                 }
 
-                // .dbody — cover 104×146 + dmain 460 + dcols 3×
-                RowLayout {
+                // .dbody — stacked panes (Geral / Peers / Arquivos / Trackers / Pedaços)
+                StackLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.margins: Theme.sp5
+                    currentIndex: win.detailTab
+
+                  // --- 0: Geral ---
+                  Item {
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Theme.sp5
                     spacing: Theme.sp6
 
                     // .dcover (radius 8 — mask via MultiEffect)
@@ -1281,6 +1397,13 @@ Window {
                             }
                         }
                     }
+                  }
+                  }
+                  // --- 1: Peers · 2: Arquivos · 3: Trackers · 4: Pedaços ---
+                  DetailPeers    { peers:    win.hasSel ? session.selectedPeerList  : [] }
+                  DetailFiles    { files:    win.hasSel ? session.selectedFiles     : [] }
+                  DetailTrackers { trackers: win.hasSel ? session.selectedTrackers  : [] }
+                  DetailPieces   { pieces:   win.hasSel ? session.selectedPieces    : [] }
                 }
             }
         }
@@ -1319,6 +1442,58 @@ Window {
                     font.pointSize: 11.5
                     font.family: Theme.fontSans
                 }
+            }
+        }
+    }
+
+    // ================== DRAG & DROP (.torrent / magnet) ==================
+    DropArea {
+        id: dropZone
+        anchors.fill: parent
+        z: 150
+        function accepts(drag) {
+            if (drag.hasUrls) {
+                for (var i = 0; i < drag.urls.length; ++i)
+                    if (drag.urls[i].toString().toLowerCase().endsWith(".torrent")) return true
+            }
+            if (drag.hasText && drag.text.indexOf("magnet:") === 0) return true
+            return false
+        }
+        onEntered: function(drag) { drag.accepted = accepts(drag) }
+        onDropped: function(drop) {
+            if (typeof session === "undefined") return
+            if (drop.hasUrls) {
+                for (var i = 0; i < drop.urls.length; ++i) {
+                    var u = drop.urls[i].toString()
+                    if (u.toLowerCase().endsWith(".torrent")) session.addTorrentFile(u)
+                }
+                drop.accept()
+            } else if (drop.hasText && drop.text.indexOf("magnet:") === 0) {
+                session.addMagnetUri(drop.text); drop.accept()
+            }
+        }
+    }
+    Rectangle {
+        anchors.fill: parent
+        z: 151
+        color: Qt.rgba(0, 0, 0, 0.65)
+        visible: opacity > 0.01
+        opacity: dropZone.containsDrag ? 1 : 0
+        Behavior on opacity { OpacityAnimator { duration: 150; easing.type: Easing.OutCubic } }
+        Rectangle {
+            anchors.centerIn: parent
+            width: 360; height: 200; radius: Theme.radiusLg !== undefined ? 16 : 16
+            color: Theme.panel
+            border.color: Theme.accent
+            border.width: 2
+            scale: dropZone.containsDrag ? 1.0 : 0.95
+            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 12
+                IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/magnet.svg"; tint: Theme.accentText; s: 52 }
+                Text { Layout.alignment: Qt.AlignHCenter; text: "Soltar para adicionar"; color: Theme.t1; font.pointSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans }
+                Text { Layout.alignment: Qt.AlignHCenter; text: "arquivos .torrent ou links magnet"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
             }
         }
     }

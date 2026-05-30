@@ -46,7 +46,6 @@
 <file>../src/qml/AboutDialog.qml</file>
 <file>../src/qml/SearchWindow.qml</file>
 <file>../src/qml/RssWindow.qml</file>
-<file>../src/qml/DetailWindow.qml</file>
 <file>../src/qml/SettingsWindow.qml</file>
 <file>../src/qml/theme/Theme.qml</file>
 <file>../src/qml/theme/qmldir</file>
@@ -63,6 +62,10 @@
 <file>../src/qml/widgets/Eyebrow.qml</file>
 <file>../src/qml/widgets/EmptyState.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
+<file>../src/qml/widgets/DetailPeers.qml</file>
+<file>../src/qml/widgets/DetailFiles.qml</file>
+<file>../src/qml/widgets/DetailTrackers.qml</file>
+<file>../src/qml/widgets/DetailPieces.qml</file>
 <file>fonts/Inter-Regular.ttf</file>
 <file>fonts/Inter-Medium.ttf</file>
 <file>fonts/Inter-SemiBold.ttf</file>
