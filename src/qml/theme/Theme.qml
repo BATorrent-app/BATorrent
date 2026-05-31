@@ -41,52 +41,52 @@ QtObject {
     readonly property int sp6: 32
 
     // ---------- fonts (--sys / --mono, strings idênticas) ----------
-    readonly property string fontSans: "-apple-system, BlinkMacSystemFont, SF Pro Text, Segoe UI, system-ui, sans-serif"
-    readonly property string fontMono: "SF Mono, ui-monospace, JetBrains Mono, Menlo, Consolas, monospace"
+    readonly property string fontSans: Qt.platform.os === "windows" ? "Segoe UI" : (Qt.platform.os === "osx" ? ".AppleSystemUIFont" : "sans-serif")
+    readonly property string fontMono: Qt.platform.os === "windows" ? "Consolas" : (Qt.platform.os === "osx" ? "Menlo" : "monospace")
 
     // ---------- surfaces ----------
     readonly property color bg:
         name === "light"    ? "#ffffff" :
-        name === "midnight" ? "#08070d" :
+        name === "midnight" ? "#05080f" :
         name === "sakura"   ? "#fde6ef" :
         name === "darkstar" ? "#0b0612" : "#0e0e10"
 
     readonly property color panel:
         name === "light"    ? "#f4f5f7" :
-        name === "midnight" ? "#181425" :
+        name === "midnight" ? "#0f1830" :
         name === "sakura"   ? "#ffffff" :
         name === "darkstar" ? "#190f2e" : "#141416"
 
     readonly property color elev:
         name === "light"    ? "#eef0f2" :
-        name === "midnight" ? "#12121c" :
+        name === "midnight" ? "#0b1426" :
         name === "sakura"   ? "#fcdcea" :
         name === "darkstar" ? "#130b22" : "#18181b"
 
     // input/recessed field (--c-field nos diálogos; home não usa, mas mantém coerência)
     readonly property color field:
         name === "light"    ? "#ffffff" :
-        name === "midnight" ? "#0f0e18" :
+        name === "midnight" ? "#080f1f" :
         name === "sakura"   ? "#ffffff" :
         name === "darkstar" ? "#0a0717" : "#0b0c0d"
 
     // ---------- hairlines ----------
     readonly property color hair:
         name === "light"    ? Qt.rgba(0,0,0,0.11) :
-        name === "midnight" ? Qt.rgba(150/255,160/255,225/255,0.13) :
+        name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.15) :
         name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.13) :
         name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.14) : Qt.rgba(1,1,1,0.08)
 
     readonly property color hairSoft:
         name === "light"    ? Qt.rgba(0,0,0,0.06) :
-        name === "midnight" ? Qt.rgba(150/255,160/255,225/255,0.07) :
+        name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.08) :
         name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.07) :
         name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.08) : Qt.rgba(1,1,1,0.05)
 
     readonly property color hover:
         name === "light"    ? Qt.rgba(0,0,0,0.045) :
         name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.06) :
-        name === "midnight" ? Qt.rgba(160/255,170/255,235/255,0.05) :
+        name === "midnight" ? Qt.rgba(80/255,140/255,245/255,0.07) :
         name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.10) : Qt.rgba(1,1,1,0.035)
 
     // .sel / .pill.on tint (--c-sel)
@@ -103,32 +103,32 @@ QtObject {
 
     readonly property color track:
         name === "light"    ? Qt.rgba(0,0,0,0.10) :
-        name === "midnight" ? Qt.rgba(150/255,160/255,225/255,0.14) :
+        name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.16) :
         name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.12) :
         name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.15) : Qt.rgba(1,1,1,0.09)
 
     // ---------- text ----------
     readonly property color t1:
         name === "light"    ? "#16171a" :
-        name === "midnight" ? "#eceafb" :
+        name === "midnight" ? "#e4edff" :
         name === "sakura"   ? "#3f1d2e" :
         name === "darkstar" ? "#efeaff" : "#f3f3f4"
 
     readonly property color t2:
         name === "light"    ? "#44464d" :
-        name === "midnight" ? "#9a95c8" :
+        name === "midnight" ? "#8aa3da" :
         name === "sakura"   ? "#7e4862" :
         name === "darkstar" ? "#b6aae0" : "#b4b5ba"
 
     readonly property color t3:
         name === "light"    ? "#6c6e76" :
-        name === "midnight" ? "#7a75a0" :
+        name === "midnight" ? "#6a82b8" :
         name === "sakura"   ? "#8a5a70" :
         name === "darkstar" ? "#8a7eb8" : "#818288"
 
     readonly property color t4:
         name === "light"    ? "#9a9da6" :
-        name === "midnight" ? "#565178" :
+        name === "midnight" ? "#47588a" :
         name === "sakura"   ? "#b58aa0" :
         name === "darkstar" ? "#645889" : "#5b5c63"
 
