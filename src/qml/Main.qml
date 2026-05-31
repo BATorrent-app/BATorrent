@@ -188,6 +188,15 @@ Window {
                 color: ci.highlighted ? Theme.hover : "transparent"
                 radius: 5
             }
+            arrow: Text {
+                visible: ci.subMenu
+                text: "›"
+                color: ci.highlighted ? Theme.t1 : Theme.t4
+                font.pixelSize: 16
+                font.family: Theme.fontSans
+                x: ci.width - width - 12
+                y: (ci.height - height) / 2
+            }
         }
         component Sep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
         delegate: CtxItem {}
