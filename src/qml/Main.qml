@@ -334,7 +334,7 @@ Window {
                 || reason === Platform.SystemTrayIcon.DoubleClick) {
                 win.show(); win.raise(); win.requestActivate()
             } else if (reason === Platform.SystemTrayIcon.Context) {
-                trayPopup.popUp()
+                trayPopup.popUpAt(trayIcon.geometry)
             }
         }
     }

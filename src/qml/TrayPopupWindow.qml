@@ -27,17 +27,27 @@ Window {
 
     readonly property var sess: typeof session !== "undefined" ? session : null
 
-    // Show anchored to a screen corner: bottom-right on Windows/Linux (taskbar
-    // tray), top-right on macOS (menu bar). Clamped to the available geometry.
-    function popUp() {
+    // Anchor near the tray icon using its reported geometry (passed in). macOS
+    // menu bar is at the top → drop below the icon; Windows/Linux tray is at the
+    // bottom → rise above it. Falls back to a screen corner if geometry is empty.
+    function popUpAt(iconRect) {
         var scr = Qt.application.screens[0]
         var g = scr ? Qt.rect(scr.virtualX, scr.virtualY, scr.width, scr.height) : Qt.rect(0,0,1920,1080)
-        var margin = 8
-        pop.x = g.x + g.width - pop.width - margin
-        if (Qt.platform.os === "osx")
-            pop.y = g.y + margin + 24
-        else
-            pop.y = g.y + g.height - pop.height - margin - 40
+        var margin = 6
+        if (iconRect && iconRect.width > 0) {
+            // center under/over the icon
+            pop.x = Math.round(iconRect.x + iconRect.width / 2 - pop.width / 2)
+            if (Qt.platform.os === "osx")
+                pop.y = Math.round(iconRect.y + iconRect.height + margin)
+            else
+                pop.y = Math.round(iconRect.y - pop.height - margin)
+        } else {
+            pop.x = g.x + g.width - pop.width - 8
+            pop.y = (Qt.platform.os === "osx") ? g.y + 30 : g.y + g.height - pop.height - 48
+        }
+        // clamp horizontally to the screen
+        if (pop.x + pop.width > g.x + g.width - 4) pop.x = g.x + g.width - pop.width - 4
+        if (pop.x < g.x + 4) pop.x = g.x + 4
         pop.show()
         pop.raise()
         pop.requestActivate()
@@ -105,14 +115,14 @@ Window {
                     spacing: 16
                     Repeater {
                         model: [
-                            { eb: "↓ DOWN", val: pop.sess ? pop.sess.totalDownSpeed : "0 B/s" },
-                            { eb: "↑ UP",   val: pop.sess ? pop.sess.totalUpSpeed   : "0 B/s" }
+                            { eb: "↓ DOWN", val: pop.sess ? pop.sess.totalDownSpeed : "0 B/s", c: Theme.accent },
+                            { eb: "↑ UP",   val: pop.sess ? pop.sess.totalUpSpeed   : "0 B/s", c: Theme.amber }
                         ]
                         delegate: ColumnLayout {
                             required property var modelData
                             Layout.fillWidth: true
                             spacing: 2
-                            Text { text: modelData.eb; color: Theme.t4; font.pointSize: 8; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans }
+                            Text { text: modelData.eb; color: modelData.c; font.pointSize: 8; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans }
                             Text { text: modelData.val; color: Theme.t1; font.pointSize: 14; font.weight: Font.Bold; font.family: Theme.fontMono }
                         }
                     }
