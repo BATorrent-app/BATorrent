@@ -14,6 +14,7 @@ Rectangle {
     property alias placeholder: input.placeholderText
     property bool mono: false
     property bool readonly: false
+    signal edited(string text)
 
     implicitWidth: 240
     implicitHeight: 34
@@ -47,6 +48,7 @@ Rectangle {
             verticalAlignment: TextInput.AlignVCenter
             background: null
             padding: 0
+            onEditingFinished: fld.edited(text)
         }
     }
 }

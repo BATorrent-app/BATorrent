@@ -6,6 +6,7 @@ import "../theme"
 RowLayout {
     id: pth
     property alias text: fld.text
+    property alias placeholder: fld.placeholder
     property string browseLabel: "Procurar…"
     signal browseClicked()
 

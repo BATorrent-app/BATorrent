@@ -24,6 +24,8 @@ Window {
     property int anchorRow: -1         // shift-range anchor
     property bool gridView: true
     property string activeFilter: "all"
+    property string catFilter: ""
+    readonly property var presetCats: ["Programas", "Jogos", "Filmes", "Séries"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
     property string sortColumn: ""
     property bool sortAsc: true
@@ -104,9 +106,57 @@ Window {
         win.activeFilter = f
         if (typeof torrentFilter !== "undefined") torrentFilter.setFilterState(f)
     }
+    function applyCatFilter(c) {
+        win.catFilter = c
+        if (typeof torrentFilter !== "undefined") torrentFilter.setCategoryFilter(c)
+    }
     function openContext(proxyRow) {
         win.selectRow(proxyRow)
         ctxMenu.popup()
+    }
+    // keep the visual selection glued to the item when the queue reorders
+    function remapRow(r, from, to) {
+        if (r === from) return to
+        if (from < to) return (r > from && r <= to) ? r - 1 : r
+        else           return (r >= to && r < from) ? r + 1 : r
+    }
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        ignoreUnknownSignals: true
+        function onQueueMoved(from, to) {
+            var rows = []
+            for (var i = 0; i < win.selectedRows.length; ++i)
+                rows.push(win.remapRow(win.selectedRows[i], from, to))
+            win.selectedRows = rows
+            if (win.selected >= 0) win.selected = win.remapRow(win.selected, from, to)
+            if (win.anchorRow >= 0) win.anchorRow = win.remapRow(win.anchorRow, from, to)
+        }
+    }
+    function gridCols() { return Math.max(1, Math.floor(grid.width / grid.cellWidth)) }
+    function moveSel(step) {
+        var view = win.gridView ? grid : list
+        var n = view.count
+        if (n <= 0) return
+        var cur = win.selected
+        var next = cur < 0 ? (step > 0 ? 0 : n - 1)
+                           : Math.max(0, Math.min(n - 1, cur + step))
+        win.selectRow(next)
+        view.positionViewAtIndex(next, win.gridView ? GridView.Contain : ListView.Contain)
+    }
+
+    // styled menu item reused by the category menus
+    component CatItem: MenuItem {
+        id: cmi
+        implicitHeight: 30
+        padding: 0
+        contentItem: Text {
+            leftPadding: 14; rightPadding: 14
+            text: cmi.text
+            color: cmi.highlighted ? Theme.t1 : Theme.t2
+            font.pointSize: 12; font.family: Theme.fontSans
+            verticalAlignment: Text.AlignVCenter
+        }
+        background: Rectangle { color: cmi.highlighted ? Theme.hover : "transparent"; radius: 5 }
     }
 
     // ----- shared context menu (right-click on grid tile / list row) -----
@@ -139,20 +189,62 @@ Window {
                 radius: 5
             }
         }
-        CtxItem { text: "Pausar"; onTriggered: session.pauseSelected() }
-        CtxItem { text: "Retomar"; onTriggered: session.resumeSelected() }
-        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+        component Sep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+        delegate: CtxItem {}
+
+        CtxItem { text: "Pausar"; enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
+        CtxItem { text: "Retomar"; enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
+        CtxItem { text: (session.selectedForceStart ? "✓ " : "") + "Forçar início"; onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
+        CtxItem { text: (session.selectedSuperSeeding ? "✓ " : "") + "Super seeding"; onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding) }
+        Sep {}
+        CtxItem { text: "Mover para o topo"; onTriggered: session.queueTopSelected() }
+        CtxItem { text: "Subir na fila"; onTriggered: session.queueUpSelected() }
+        CtxItem { text: "Descer na fila"; onTriggered: session.queueDownSelected() }
+        CtxItem { text: "Mover para o fim"; onTriggered: session.queueBottomSelected() }
+        Sep {}
         CtxItem { text: "Abrir pasta"; onTriggered: session.openSaveFolder() }
+        CtxItem { text: "Abrir arquivo"; onTriggered: session.openSelectedFile() }
+        CtxItem { text: "Definir local…"; onTriggered: setLocationDlg.open() }
+        CtxItem { text: "Limite de download…"; onTriggered: inputPrompt.openWith("Limite de download", "KB/s (0 = ilimitado)", String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
+        CtxItem { text: "Limite de upload…"; onTriggered: inputPrompt.openWith("Limite de upload", "KB/s (0 = ilimitado)", String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
+        Sep {}
+        Menu {
+            id: catSub
+            title: "Categoria"
+            implicitWidth: 180
+            delegate: CatItem {}
+            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+            CatItem { text: "Programas"; onTriggered: session.setSelectedCategory("Programas") }
+            CatItem { text: "Jogos";     onTriggered: session.setSelectedCategory("Jogos") }
+            CatItem { text: "Filmes";    onTriggered: session.setSelectedCategory("Filmes") }
+            CatItem { text: "Séries";    onTriggered: session.setSelectedCategory("Séries") }
+            MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+            CatItem { text: "Nenhuma"; onTriggered: session.setSelectedCategory("") }
+            CatItem { text: "Outra…"; onTriggered: inputPrompt.openWith("Categoria", "Nome da categoria", session.selectedCategory(), "Ex.: Documentários", function(t){ session.setSelectedCategory(t) }) }
+        }
+        CtxItem { text: "Adicionar etiqueta…"; onTriggered: inputPrompt.openWith("Adicionar etiqueta", "Nova etiqueta", "", "Ex.: favorito", function(t){ if (t.length === 0) return; var tags = session.selectedTagList(); if (tags.indexOf(t) < 0) { tags.push(t); session.setSelectedTags(tags) } }) }
+        CtxItem { text: "Adicionar tracker…"; onTriggered: inputPrompt.openWith("Adicionar tracker", "URL do tracker", "", "udp://tracker:porta", function(t){ session.addTrackerToSelected(t) }) }
+        Sep {}
+        CtxItem { text: "Copiar nome"; onTriggered: session.copySelectedName() }
         CtxItem { text: "Copiar link magnet"; onTriggered: session.copyMagnetLink() }
         CtxItem { text: "Copiar hash"; onTriggered: session.copyInfoHash() }
-        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+        Sep {}
         CtxItem { text: "Forçar verificação"; onTriggered: session.forceRecheckSelected() }
         CtxItem { text: "Forçar reanúncio"; onTriggered: session.forceReannounceSelected() }
-        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+        CtxItem { text: session.selectedCompleted ? "Desmarcar concluído" : "Marcar como concluído"; onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
+        CtxItem { text: "Parar de semear"; onTriggered: session.stopSeedingSelected() }
+        Sep {}
         CtxItem { text: "Remover…"; onTriggered: removeDlg.open() }
     }
 
     Shortcut { sequence: StandardKey.SelectAll; onActivated: win.selectAll() }
+
+    // "Definir local…" — move the selected torrent's storage to a new folder
+    FolderDialog {
+        id: setLocationDlg
+        title: "Definir novo local"
+        onAccepted: session.moveSelectedStorage(setLocationDlg.selectedFolder.toString().replace(/^file:\/\//, ""))
+    }
 
     // ================== NATIVE MENU BAR (ported from mainwindow.cpp) ==================
     Platform.MenuBar {
@@ -161,6 +253,10 @@ Window {
             Platform.MenuItem { text: qsTr("Abrir torrent…"); shortcut: StandardKey.Open; onTriggered: openFileDlg.open() }
             Platform.MenuItem { text: qsTr("Adicionar magnet…"); shortcut: "Ctrl+M"; onTriggered: magnetDlg.open() }
             Platform.MenuItem { text: qsTr("Criar torrent…"); onTriggered: createDlg.open() }
+            Platform.MenuItem { text: qsTr("Inspecionar torrent…"); onTriggered: inspectFileDlg.open() }
+            Platform.MenuItem { text: qsTr("Importar do qBittorrent…"); onTriggered: importQbtDlg.open() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Removidos recentemente…"); onTriggered: removedWin.show() }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: qsTr("Sair"); shortcut: StandardKey.Quit; onTriggered: Qt.quit() }
         }
@@ -179,15 +275,20 @@ Window {
             Platform.MenuItem { text: qsTr("Preferências…"); shortcut: StandardKey.Preferences; onTriggered: settingsWin.show() }
             Platform.MenuItem { text: qsTr("Addons…"); onTriggered: addAddonDlg.open() }
             Platform.MenuItem { text: qsTr("RSS…"); onTriggered: rssWin.show() }
+            Platform.MenuItem { text: qsTr("Parear celular (WebUI)…"); onTriggered: pairingDlg.open() }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: qsTr("Buscar torrents…"); onTriggered: searchWin.show() }
             Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Estatísticas…"); onTriggered: statsWin.show() }
             Platform.MenuItem { text: qsTr("Teste de velocidade"); onTriggered: Qt.openUrlExternally("https://fast.com") }
         }
         Platform.Menu {
             title: qsTr("Ajuda")
             Platform.MenuItem { text: qsTr("Boas-vindas"); onTriggered: welcomeDlg.open() }
             Platform.MenuItem { text: qsTr("Notas de versão"); onTriggered: releaseNotesDlg.open() }
+            Platform.MenuItem { text: qsTr("Atalhos de teclado"); onTriggered: shortcutsWin.show() }
+            Platform.MenuItem { text: qsTr("Logs…"); shortcut: "Ctrl+Shift+L"; onTriggered: logWin.show() }
+            Platform.MenuItem { text: qsTr("Diagnóstico de rede…"); onTriggered: diagWin.show() }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: qsTr("Doar"); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
             Platform.MenuItem { text: qsTr("Sobre o BATorrent"); onTriggered: aboutDlg.open() }
@@ -347,6 +448,8 @@ Window {
                     source: "qrc:/images/logo.svg"
                     sourceSize: Qt.size(60, 60)
                     fillMode: Image.PreserveAspectFit
+                    layer.enabled: Theme.isLight
+                    layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
                 }
                 // .brand-div (1×26 hair, margin 0 4)
                 Rectangle {
@@ -626,8 +729,8 @@ Window {
                         spacing: 8
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Todas as categorias"
-                            color: Theme.t2
+                            text: win.catFilter.length > 0 ? win.catFilter : "Todas as categorias"
+                            color: win.catFilter.length > 0 ? Theme.t1 : Theme.t2
                             font.pointSize: 12
                             font.family: Theme.fontSans
                         }
@@ -638,7 +741,25 @@ Window {
                             s: 13
                         }
                     }
-                    MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: catFilterMenu.open()
+                    }
+                    Menu {
+                        id: catFilterMenu
+                        y: parent.height + 4
+                        implicitWidth: 200
+                        delegate: CatItem {}
+                        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+                        CatItem { text: "Todas as categorias"; onTriggered: win.applyCatFilter("") }
+                        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+                        CatItem { text: "Programas"; onTriggered: win.applyCatFilter("Programas") }
+                        CatItem { text: "Jogos";     onTriggered: win.applyCatFilter("Jogos") }
+                        CatItem { text: "Filmes";    onTriggered: win.applyCatFilter("Filmes") }
+                        CatItem { text: "Séries";    onTriggered: win.applyCatFilter("Séries") }
+                    }
                 }
 
                 // .donate (♥ Doar)
@@ -697,26 +818,54 @@ Window {
                 onMagnetClicked: magnetDlg.open()
             }
 
-            // anime art (eyes top-right; spider bottom-right)
-            Image {
-                id: animeArt
+            // anime art (eyes top-right / spider bottom-right). Ported 1:1 from .eyes-accent:
+            // the CSS fades the edges via two intersected linear masks; since only Theme.bg sits
+            // behind the art, we reproduce it with two bg-colored gradient scrims (left + bottom/top).
+            Item {
+                id: animeArtWrap
                 visible: Theme.hasAnime && !parent.empty
-                source: Theme.hasAnime ? Theme.animeSource : ""
-                fillMode: Image.PreserveAspectFit
-                width: Theme.animeBottom ? 560 : 460
-                opacity: win.gridView ? 0.9 : 0.6
+                width: Math.min(Theme.animeBottom ? 560 : 460, parent.width * 0.46)
+                height: animeArt.implicitWidth > 0 ? animeArt.implicitHeight * (width / animeArt.implicitWidth) : 0
                 anchors.right: parent.right
-                anchors.rightMargin: -10
                 anchors.top: Theme.animeBottom ? undefined : parent.top
                 anchors.bottom: Theme.animeBottom ? parent.bottom : undefined
-                anchors.bottomMargin: Theme.animeBottom ? -80 : 0
+                anchors.bottomMargin: Theme.animeBottom ? -80 : 0   // spider sits lower (peeks from bottom)
                 z: 0
+
+                Image {
+                    id: animeArt
+                    anchors.fill: parent
+                    source: Theme.hasAnime ? Theme.animeSource : ""
+                    fillMode: Image.PreserveAspectFit
+                    opacity: win.gridView ? 0.9 : 0.6
+                }
+                // fade left edge (mask: linear-gradient(90deg, transparent, #000 55%))
+                Rectangle {
+                    anchors.fill: parent
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: Theme.bg }
+                        GradientStop { position: 0.55; color: "transparent" }
+                    }
+                }
+                // fade bottom (eyes) / top (spider) — mask: linear-gradient(180deg, #000 60%, transparent)
+                Rectangle {
+                    anchors.fill: parent
+                    gradient: Gradient {
+                        orientation: Gradient.Vertical
+                        GradientStop { position: 0.0; color: Theme.animeBottom ? Theme.bg : "transparent" }
+                        GradientStop { position: Theme.animeBottom ? 0.40 : 0.60; color: "transparent" }
+                        GradientStop { position: 1.0; color: Theme.animeBottom ? "transparent" : Theme.bg }
+                    }
+                }
             }
 
             // ----- GRID -----
             GridView {
                 id: grid
-                visible: win.gridView && !parent.empty
+                opacity: (win.gridView && !parent.empty) ? 1 : 0
+                visible: opacity > 0.01
+                Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                 anchors.fill: parent
                 topMargin: Theme.sp5
                 bottomMargin: Theme.sp5
@@ -724,6 +873,25 @@ Window {
                 rightMargin: Theme.sp4
                 cellWidth: 178 + Theme.sp4
                 cellHeight: 286
+                populate: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic } }
+                add: Transition {
+                    NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic }
+                    NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: 180; easing.type: Easing.OutCubic }
+                }
+                remove: Transition {
+                    NumberAnimation { properties: "opacity"; to: 0; duration: 160; easing.type: Easing.OutCubic }
+                    NumberAnimation { properties: "scale"; to: 0.85; duration: 160; easing.type: Easing.OutCubic }
+                }
+                displaced: Transition {
+                    NumberAnimation { properties: "x,y"; duration: 280; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
+                    NumberAnimation { properties: "scale"; to: 1; duration: 280; easing.type: Easing.OutCubic }
+                }
+                move: Transition {
+                    NumberAnimation { properties: "x,y"; duration: 300; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+                }
+                moveDisplaced: Transition {
+                    NumberAnimation { properties: "x,y"; duration: 280; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
+                }
                 clip: true
                 model: win.model
                 interactive: true
@@ -862,6 +1030,7 @@ Window {
                                 height: parent.height
                                 width: parent.width * tile.progress
                                 color: win.fillFor(tile.stateKey)
+                                Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
                             }
                         }
                         // border overlay (radius 10, hair / accent when sel)
@@ -871,6 +1040,7 @@ Window {
                             color: "transparent"
                             border.color: win.isRowSelected(tile.index) ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
                             border.width: win.isRowSelected(tile.index) ? 2 : 1
+                            Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         }
                         MouseArea {
                             id: tileMa
@@ -928,12 +1098,17 @@ Window {
             // ----- LIST -----
             ListView {
                 id: list
-                visible: !win.gridView && !parent.empty
+                opacity: (!win.gridView && !parent.empty) ? 1 : 0
+                visible: opacity > 0.01
+                Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                 anchors.fill: parent
                 clip: true
                 model: win.model
                 interactive: true
                 z: 1
+                add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 160; easing.type: Easing.OutCubic } }
+                remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: 120; easing.type: Easing.OutCubic } }
+                displaced: Transition { NumberAnimation { properties: "x,y"; duration: 180; easing.type: Easing.OutCubic } }
 
                 header: Rectangle {
                     width: ListView.view.width
@@ -979,7 +1154,7 @@ Window {
 
                     readonly property string posterUrl: posterPath && posterPath.length > 0 ? "file://" + posterPath : ""
 
-                    color: win.isRowSelected(index) ? Theme.sel : (rowMa.containsMouse ? Theme.hover : "transparent")
+                    color: win.isRowSelected(index) ? Theme.sel : (listArea.hoveredRow === index ? Theme.hover : "transparent")
 
                     // .sel inset 2px barra esquerda
                     Rectangle {
@@ -1026,31 +1201,33 @@ Window {
                             font.pointSize: 12
                             font.family: Theme.fontMono
                         }
-                        // .prog → .pbar2 black track + fill state + centered % white
+                        // .prog — QWidget ProgressDelegate style: surfaceAlt track,
+                        // state-colored fill, centered % (white over fill, t1 over track)
                         Item {
                             Layout.preferredWidth: 104
-                            Layout.preferredHeight: 14
+                            Layout.preferredHeight: 18
                             Rectangle {
+                                id: pbarTrack
                                 anchors.fill: parent
                                 radius: 4
-                                color: "#000"
-                                border.color: Theme.hair
-                                border.width: 1
+                                color: Theme.field
                                 clip: true
                                 Rectangle {
                                     anchors.top: parent.top
                                     anchors.bottom: parent.bottom
                                     anchors.left: parent.left
-                                    width: parent.width * lrow.progress
+                                    width: Math.max(lrow.progress > 0.001 ? 2 : 0, parent.width * lrow.progress)
+                                    radius: 4
                                     color: win.fillFor(lrow.stateKey)
                                 }
                                 Text {
+                                    id: pbarPct
                                     anchors.centerIn: parent
-                                    text: Math.round(lrow.progress * 100) + "%"
-                                    color: "#fff"
+                                    text: (lrow.progress * 100).toFixed(1) + "%"
+                                    color: (parent.width / 2) < (parent.width * lrow.progress - 4) ? "#ffffff" : Theme.t1
                                     font.pointSize: 9
                                     font.weight: Font.DemiBold
-                                    font.family: Theme.fontMono
+                                    font.family: Theme.fontSans
                                 }
                             }
                         }
@@ -1095,21 +1272,96 @@ Window {
                             font.family: Theme.fontMono
                         }
                     }
-                    MouseArea {
-                        id: rowMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: function(mouse) {
-                            if (mouse.button === Qt.RightButton) {
-                                if (!win.isRowSelected(lrow.index)) win.selectRow(lrow.index, 0)
-                                win.openContext(lrow.index)
-                            } else {
-                                win.selectRow(lrow.index, mouse.modifiers)
-                            }
-                        }
+                }
+            }
+
+            // ----- marquee + click/hover overlay for the list -----
+            MouseArea {
+                id: listArea
+                anchors.fill: list
+                visible: !win.gridView && !parent.empty
+                enabled: visible
+                hoverEnabled: true
+                preventStealing: true   // don't let the ListView steal the gesture
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                z: 2
+
+                property int hoveredRow: -1
+                readonly property int rowH: 56
+                property bool dragging: false
+                property real startX: 0
+                property real startY: 0
+                property int pressRow: -1
+
+                function rowAt(my, mx) {
+                    if (!win.model || list.count === 0) return -1
+                    // use the ListView's own layout so detection lines up exactly
+                    // with where each delegate is drawn (header returns -1).
+                    return list.indexAt((mx === undefined ? width / 2 : mx) + list.contentX,
+                                        my + list.contentY)
+                }
+
+                onPositionChanged: function(mouse) {
+                    hoveredRow = rowAt(mouse.y, mouse.x)
+                    if (pressed && !dragging &&
+                        (Math.abs(mouse.x - startX) > 8 || Math.abs(mouse.y - startY) > 8))
+                        dragging = true
+                    if (dragging) {
+                        marquee.x = Math.min(startX, mouse.x)
+                        marquee.y = Math.min(startY, mouse.y)
+                        marquee.width = Math.abs(mouse.x - startX)
+                        marquee.height = Math.abs(mouse.y - startY)
                     }
+                }
+                onExited: hoveredRow = -1
+                onPressed: function(mouse) {
+                    startX = mouse.x; startY = mouse.y
+                    pressRow = rowAt(mouse.y, mouse.x)
+                    dragging = false
+                }
+                onReleased: function(mouse) {
+                    // a real marquee = dragged past threshold AND box big enough
+                    if (dragging && (marquee.width > 6 || marquee.height > 6)) {
+                        var top = marquee.y, bot = marquee.y + marquee.height
+                        var rows = []
+                        for (var i = 0; i < list.count; ++i) {
+                            var ry = list.headerItem.height + i * rowH - list.contentY
+                            if (ry + rowH > top && ry < bot) rows.push(i)
+                        }
+                        win.selectedRows = rows
+                        win.selected = rows.length > 0 ? rows[rows.length - 1] : -1
+                        win.anchorRow = rows.length > 0 ? rows[0] : -1
+                        win._commitSel()
+                        dragging = false
+                        return
+                    }
+                    dragging = false
+                    // otherwise treat as a click (use release position, robust to jitter)
+                    var clickRow = rowAt(mouse.y, mouse.x)
+                    if (clickRow < 0) {
+                        if (mouse.button === Qt.LeftButton) {
+                            win.selectedRows = []; win.selected = -1; win._commitSel()
+                        }
+                        return
+                    }
+                    if (mouse.button === Qt.RightButton) {
+                        if (!win.isRowSelected(clickRow)) win.selectRow(clickRow, 0)
+                        win.openContext(clickRow)
+                    } else {
+                        win.selectRow(clickRow, mouse.modifiers)
+                    }
+                }
+                onDoubleClicked: function(mouse) {
+                    if (rowAt(mouse.y, mouse.x) >= 0) session.openSaveFolder()
+                }
+
+                Rectangle {
+                    id: marquee
+                    visible: listArea.dragging
+                    color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12)
+                    border.color: Theme.accent
+                    border.width: 1
+                    radius: 2
                 }
             }
         }
@@ -1124,8 +1376,16 @@ Window {
 
             readonly property var dl: typeof session !== "undefined" ? session.downloadHistory : []
             readonly property var ul: typeof session !== "undefined" ? session.uploadHistory : []
-            readonly property int maxBytes: typeof session !== "undefined" ? session.historyMaxBytes : 1024
-            readonly property int scaledMax: Math.max(1024, Math.round(maxBytes * 1.2))
+            // auto-scale to the real peak of the visible window (like speedgraph.cpp:
+            // no fixed floor → the curve always uses ~87% of the height, whether
+            // traffic is a few B/s or several MB/s). A floor squished low traffic
+            // into a flat band at the bottom.
+            readonly property int scaledMax: {
+                var m = 1
+                for (var i = 0; i < dl.length; ++i) if (dl[i] > m) m = dl[i]
+                for (var j = 0; j < ul.length; ++j) if (ul[j] > m) m = ul[j]
+                return Math.round(m * 1.15)
+            }
             readonly property int slots: 60
 
             function scaleText(b) {
@@ -1149,6 +1409,22 @@ Window {
                     s += " C " + cx.toFixed(1) + "," + py.toFixed(1) + " " + cx.toFixed(1) + "," + y.toFixed(1) + " " + x.toFixed(1) + "," + y.toFixed(1)
                 }
                 s += " L " + (off + (n - 1) * step).toFixed(1) + "," + h.toFixed(1) + " Z"
+                return s
+            }
+            // open smooth curve (top line only — no bottom edge / no fill close)
+            function linePath(arr, h) {
+                if (!arr || arr.length === 0) return ""
+                var n = arr.length
+                var step = graphShape.width / (slots - 1)
+                var off = (slots - n) * step
+                function yAt(v) { return h - (v / scaledMax) * (h - 2) }
+                var s = "M " + off.toFixed(1) + "," + yAt(arr[0]).toFixed(1)
+                for (var i = 1; i < n; ++i) {
+                    var px = off + (i - 1) * step, py = yAt(arr[i - 1])
+                    var x = off + i * step, y = yAt(arr[i])
+                    var cx = (px + x) / 2
+                    s += " C " + cx.toFixed(1) + "," + py.toFixed(1) + " " + cx.toFixed(1) + "," + y.toFixed(1) + " " + x.toFixed(1) + "," + y.toFixed(1)
+                }
                 return s
             }
 
@@ -1188,25 +1464,43 @@ Window {
                 anchors.bottomMargin: 4
                 antialiasing: true
 
+                // order matches speedgraph.cpp: upload under, download on top.
+                // fills carry no stroke (the bottom edge was the phantom floor line).
                 ShapePath {
-                    strokeColor: Theme.accent
-                    strokeWidth: 1.5
+                    strokeColor: "transparent"
+                    strokeWidth: 0
                     fillGradient: LinearGradient {
                         x1: 0; y1: 0; x2: 0; y2: graphShape.height
-                        GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22) }
-                        GradientStop { position: 1.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.02) }
+                        GradientStop { position: 0.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.09) }
+                        GradientStop { position: 1.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.0) }
+                    }
+                    PathSvg { path: graphPanel.areaPath(graphPanel.ul, graphShape.height) }
+                }
+                ShapePath {
+                    strokeColor: "transparent"
+                    strokeWidth: 0
+                    fillGradient: LinearGradient {
+                        x1: 0; y1: 0; x2: 0; y2: graphShape.height
+                        GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.09) }
+                        GradientStop { position: 1.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.0) }
                     }
                     PathSvg { path: graphPanel.areaPath(graphPanel.dl, graphShape.height) }
                 }
                 ShapePath {
-                    strokeColor: Theme.amber
-                    strokeWidth: 1.5
-                    fillGradient: LinearGradient {
-                        x1: 0; y1: 0; x2: 0; y2: graphShape.height
-                        GradientStop { position: 0.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.18) }
-                        GradientStop { position: 1.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.02) }
-                    }
-                    PathSvg { path: graphPanel.areaPath(graphPanel.ul, graphShape.height) }
+                    strokeColor: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5)
+                    strokeWidth: 1.25
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    joinStyle: ShapePath.RoundJoin
+                    PathSvg { path: graphPanel.linePath(graphPanel.ul, graphShape.height) }
+                }
+                ShapePath {
+                    strokeColor: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.5)
+                    strokeWidth: 1.25
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    joinStyle: ShapePath.RoundJoin
+                    PathSvg { path: graphPanel.linePath(graphPanel.dl, graphShape.height) }
                 }
             }
         }
@@ -1333,6 +1627,19 @@ Window {
                             anchors.fill: parent
                             maskEnabled: true
                             maskSource: dcoverMask
+                            visible: win.hasSel && session.selectedPoster.length > 0
+                        }
+                        // placeholder logo (no poster / no selection)
+                        Image {
+                            anchors.centerIn: parent
+                            visible: !(win.hasSel && session.selectedPoster.length > 0)
+                            width: 52; height: 52
+                            source: "qrc:/images/logo.svg"
+                            sourceSize: Qt.size(104, 104)
+                            fillMode: Image.PreserveAspectFit
+                            opacity: 0.4
+                            layer.enabled: Theme.isLight
+                            layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
                         }
                         Rectangle {
                             anchors.fill: parent
@@ -1613,6 +1920,7 @@ Window {
             if (deleteFiles) session.removeSelectedWithFiles(); else session.removeSelected()
         }
     }
+    InputPromptDialog   { id: inputPrompt }
     CreateTorrentDialog { id: createDlg }
     AddAddonDialog      { id: addAddonDlg }
     WelcomeDialog       { id: welcomeDlg }
@@ -1620,7 +1928,50 @@ Window {
     AboutDialog         { id: aboutDlg }
 
     // ================== TOP-LEVEL WINDOWS ==================
-    SearchWindow      { id: searchWin;   visible: false }
-    RssWindow         { id: rssWin;      visible: false }
-    SettingsWindow    { id: settingsWin; visible: false }
+    SearchWindow         { id: searchWin;   visible: false }
+    RssWindow            { id: rssWin;      visible: false }
+    SettingsWindow       { id: settingsWin; visible: false }
+    ShortcutsWindow      { id: shortcutsWin; visible: false }
+    StatisticsWindow     { id: statsWin;    visible: false }
+    RemovedHistoryWindow { id: removedWin;  visible: false }
+    LogViewerWindow      { id: logWin;      visible: false }
+    DiagnosticsWindow    { id: diagWin;     visible: false }
+    InspectorDialog      { id: inspectorDlg }
+    PairingDialog        { id: pairingDlg }
+
+    // Inspect a .torrent file before adding (File menu)
+    FileDialog {
+        id: inspectFileDlg
+        title: "Inspecionar torrent"
+        nameFilters: ["Torrent (*.torrent)"]
+        onAccepted: inspectorDlg.load(inspectFileDlg.selectedFile.toString().replace(/^file:\/\//, ""))
+    }
+
+    // Import torrents from an existing qBittorrent install (choose default save path)
+    FolderDialog {
+        id: importQbtDlg
+        title: "Pasta padrão para os torrents importados"
+        onAccepted: if (typeof session !== "undefined") session.importQbittorrent(importQbtDlg.selectedFolder.toString().replace(/^file:\/\//, ""))
+    }
+
+    Shortcut { sequences: [StandardKey.HelpContents]; onActivated: shortcutsWin.show() }
+    Shortcut { sequence: "Ctrl+F"; onActivated: searchInput.forceActiveFocus() }
+    Shortcut { sequence: "Ctrl+R"; onActivated: if (typeof session !== "undefined") session.forceRecheckSelected() }
+    // reorder queue: vertical in list, horizontal in grid (tiles sit side by side)
+    Shortcut { sequence: "Ctrl+Up";    enabled: !win.gridView; onActivated: if (typeof session !== "undefined") session.queueUpSelected() }
+    Shortcut { sequence: "Ctrl+Down";  enabled: !win.gridView; onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
+    Shortcut { sequence: "Ctrl+Left";  enabled: win.gridView;  onActivated: if (typeof session !== "undefined") session.queueUpSelected() }
+    Shortcut { sequence: "Ctrl+Right"; enabled: win.gridView;  onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
+    // navigate selection
+    Shortcut { sequence: "Up";    onActivated: win.moveSel(win.gridView ? -win.gridCols() : -1) }
+    Shortcut { sequence: "Down";  onActivated: win.moveSel(win.gridView ?  win.gridCols() :  1) }
+    Shortcut { sequence: "Left";  enabled: win.gridView; onActivated: win.moveSel(-1) }
+    Shortcut { sequence: "Right"; enabled: win.gridView; onActivated: win.moveSel(1) }
+    Shortcut { sequence: "Ctrl+1"; onActivated: win.setFilter("all") }
+    Shortcut { sequence: "Ctrl+2"; onActivated: win.setFilter("downloading") }
+    Shortcut { sequence: "Ctrl+3"; onActivated: win.setFilter("seeding") }
+    Shortcut { sequence: "Ctrl+4"; onActivated: win.setFilter("completed") }
+    Shortcut { sequence: "Ctrl+5"; onActivated: win.setFilter("active") }
+    Shortcut { sequence: "Ctrl+6"; onActivated: win.setFilter("paused") }
+    Shortcut { sequence: "Ctrl+Shift+T"; onActivated: Theme.cycle() }
 }
