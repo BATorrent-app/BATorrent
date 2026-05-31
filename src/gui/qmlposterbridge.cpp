@@ -10,6 +10,10 @@
 #include "../app/logger.h"
 #include "../app/qrcodegen.h"
 #include "../app/utils.h"
+#include "../app/translator.h"
+#include "../app/discordrpc.h"
+#include "../app/updater.h"
+#include <QDateTime>
 
 #include <QNetworkInterface>
 #include "thememanager.h"
@@ -1889,4 +1893,86 @@ void QmlNotificationBridge::onKillSwitchTriggered()
 void QmlNotificationBridge::onRssAutoDownloaded(const QString &feedName, const QString &itemTitle)
 {
     emit notify(feedName, itemTitle, 0);
+}
+
+// --- DiscordRpcBridge ---
+
+DiscordRpcBridge::DiscordRpcBridge(SessionManager *session, QObject *parent)
+    : QObject(parent), m_session(session)
+{
+    m_rpc = new DiscordRPC(this);
+    m_sessionStart = QDateTime::currentSecsSinceEpoch();
+    if (QSettings().value("discordRichPresence", true).toBool())
+        m_rpc->setClientId(QStringLiteral("1508208411282640956"));
+
+    connect(&m_timer, &QTimer::timeout, this, &DiscordRpcBridge::refresh);
+    m_timer.start(15000);
+    refresh();
+}
+
+void DiscordRpcBridge::refresh()
+{
+    if (!m_rpc || m_rpc->clientId().isEmpty()) return;
+    // Mirror MainWindow::refreshDiscordPresence: feature the fastest active
+    // download; otherwise report seeding count; otherwise idle.
+    int seeding = 0, featured = -1, featuredRate = 0;
+    for (int i = 0; i < m_session->torrentCount(); ++i) {
+        TorrentInfo info = m_session->torrentAt(i);
+        if (info.paused || info.completed) continue;
+        if (info.progress >= 1.0f) { ++seeding; continue; }
+        if (info.downloadRate > featuredRate) {
+            featuredRate = info.downloadRate;
+            featured = i;
+        }
+    }
+    if (featured >= 0) {
+        TorrentInfo info = m_session->torrentAt(featured);
+        const QString name = info.name.left(64);
+        const QString state = QStringLiteral("%1% · ↓ %2")
+            .arg(static_cast<int>(info.progress * 100))
+            .arg(formatSpeed(info.downloadRate));
+        m_rpc->setActivity(name, state, m_sessionStart);
+    } else if (seeding > 0) {
+        m_rpc->setActivity(tr_("discord_seeding").arg(seeding),
+                           tr_("discord_seeding_state"), m_sessionStart);
+    } else {
+        m_rpc->setActivity(tr_("discord_idle"), QString(), m_sessionStart);
+    }
+}
+
+// --- QmlUpdaterBridge ---
+
+QmlUpdaterBridge::QmlUpdaterBridge(QObject *parent)
+    : QObject(parent), m_updater(new Updater(this))
+{
+    connect(m_updater, &Updater::updateAvailable, this,
+            [this](const QString &v, const QString &url, const QString &asset) {
+        QSettings s;
+        if (s.value("skippedUpdateVersion").toString() == v && m_silent)
+            return;   // user chose to skip this version on a silent check
+        emit updateFound(v, url, asset);
+    });
+    connect(m_updater, &Updater::noUpdateAvailable, this,
+            [this]() { emit noUpdate(m_silent); });
+    connect(m_updater, &Updater::downloadProgress, this, [this](qint64 r, qint64 t) {
+        emit progress(t > 0 ? static_cast<int>((r * 100) / t) : 0);
+    });
+    connect(m_updater, &Updater::updateReady, this, &QmlUpdaterBridge::ready);
+    connect(m_updater, &Updater::errorOccurred, this, &QmlUpdaterBridge::failed);
+}
+
+void QmlUpdaterBridge::check(bool silent)
+{
+    m_silent = silent;
+    m_updater->checkForUpdate();
+}
+
+void QmlUpdaterBridge::downloadAndInstall(const QString &url, const QString &assetName)
+{
+    m_updater->downloadAndInstall(url, assetName);
+}
+
+void QmlUpdaterBridge::skipVersion(const QString &version)
+{
+    QSettings().setValue("skippedUpdateVersion", version);
 }

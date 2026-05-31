@@ -310,6 +310,11 @@ Window {
             Platform.MenuItem { text: qsTr("Atalhos de teclado"); onTriggered: shortcutsWin.show() }
             Platform.MenuItem { text: qsTr("Logs…"); shortcut: "Ctrl+Shift+L"; onTriggered: logWin.show() }
             Platform.MenuItem { text: qsTr("Diagnóstico de rede…"); onTriggered: diagWin.show() }
+            Platform.MenuItem {
+                text: qsTr("Buscar atualizações…")
+                enabled: typeof updater !== "undefined" && updater !== null
+                onTriggered: if (typeof updater !== "undefined" && updater) updater.check(false)
+            }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: qsTr("Doar"); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
             Platform.MenuItem { text: qsTr("Sobre o BATorrent"); onTriggered: aboutDlg.open() }
@@ -1989,6 +1994,13 @@ Window {
         }
     }
     InputPromptDialog   { id: inputPrompt }
+    UpdateDialog        { id: updateDlg }
+    Connections {
+        target: typeof updater !== "undefined" ? updater : null
+        ignoreUnknownSignals: true
+        function onUpdateFound(version, url, assetName) { updateDlg.showAvailable(version, url, assetName) }
+        function onNoUpdate(silent) { if (!silent) updateDlg.showNone() }
+    }
     CreateTorrentDialog { id: createDlg }
     AddAddonDialog      { id: addAddonDlg }
     WelcomeDialog       { id: welcomeDlg }

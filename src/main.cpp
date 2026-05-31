@@ -157,6 +157,12 @@ int main(int argc, char *argv[])
                          notificationBridge, &QmlNotificationBridge::onKillSwitchTriggered);
         QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
                          notificationBridge, &QmlNotificationBridge::onRssAutoDownloaded);
+        auto *discordBridge = new DiscordRpcBridge(&session, &app);
+        QObject::connect(&session, &SessionManager::torrentsUpdated,
+                         discordBridge, &DiscordRpcBridge::refresh);
+#ifndef BAT_STORE_BUILD
+        auto *updaterBridge = new QmlUpdaterBridge(&app);
+#endif
         QObject::connect(&session, &SessionManager::torrentsUpdated,
                          sessionBridge, &QmlSessionBridge::emitStats);
         QObject::connect(resolver, &MetadataResolver::metadataReady,
@@ -205,9 +211,17 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("logs", logBridge);
         engine.rootContext()->setContextProperty("pairing", pairingBridge);
         engine.rootContext()->setContextProperty("notifications", notificationBridge);
+#ifndef BAT_STORE_BUILD
+        engine.rootContext()->setContextProperty("updater", updaterBridge);
+#else
+        engine.rootContext()->setContextProperty("updater", nullptr);
+#endif
         engine.load(QUrl("qrc:/src/qml/Main.qml"));
         if (engine.rootObjects().isEmpty())
             return -1;
+#ifndef BAT_STORE_BUILD
+        updaterBridge->check(true);   // silent check on startup
+#endif
         return app.exec();
     }
 
