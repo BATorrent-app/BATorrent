@@ -326,26 +326,28 @@ Window {
         icon.source: "qrc:/images/logo1.png"
         icon.mask: false
         tooltip: "BATorrent"
+        // Left click / double click restores the window (Windows convention).
+        // Right click (Context) opens the rich painted popup instead of a
+        // native menu.
         onActivated: function(reason) {
             if (reason === Platform.SystemTrayIcon.Trigger
                 || reason === Platform.SystemTrayIcon.DoubleClick) {
                 win.show(); win.raise(); win.requestActivate()
+            } else if (reason === Platform.SystemTrayIcon.Context) {
+                trayPopup.popUp()
             }
         }
-        menu: Platform.Menu {
-            Platform.MenuItem {
-                enabled: false
-                text: "↓ " + (typeof session !== "undefined" ? session.totalDownSpeed : "0 B/s")
-                    + "   ↑ " + (typeof session !== "undefined" ? session.totalUpSpeed : "0 B/s")
-            }
-            Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Mostrar BATorrent"); onTriggered: { win.show(); win.raise(); win.requestActivate() } }
-            Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Pausar todos"); onTriggered: if (typeof session !== "undefined") session.pauseAll() }
-            Platform.MenuItem { text: qsTr("Retomar todos"); onTriggered: if (typeof session !== "undefined") session.resumeAll() }
-            Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Sair"); onTriggered: Qt.quit() }
-        }
+    }
+
+    TrayPopupWindow {
+        id: trayPopup
+        onShowApp:      { win.show(); win.raise(); win.requestActivate() }
+        onOpenTorrent:  { win.show(); win.raise(); win.requestActivate(); openFileDlg.open() }
+        onOpenMagnet:   { win.show(); win.raise(); win.requestActivate(); magnetDlg.open() }
+        onPauseAll:     if (typeof session !== "undefined") session.pauseAll()
+        onResumeAll:    if (typeof session !== "undefined") session.resumeAll()
+        onOpenSettings: { settingsWin.show() }
+        onQuitApp:      Qt.quit()
     }
 
     // (IconImg vem de widgets/)
