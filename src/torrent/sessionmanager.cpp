@@ -184,29 +184,30 @@ SessionManager::SessionManager(QObject *parent)
         m_perTorrentUpLimit[key] = settings.value(key).toInt();
     settings.endGroup();
 
-    // Crash loop guard: if the app crashed during the previous startup
-    // (flag still set), skip loading resume data so the user can at least
-    // open the app and remove the problematic torrent. The flag is cleared
-    // after 15 seconds of stable running.
+    // Crash-loop guard. The only place a bad/corrupt resume file can hard-crash
+    // the process is the synchronous parse inside loadResumeData(). So we raise
+    // the flag right before it and lower it right after: if the parse crashes,
+    // the flag survives to the next launch and we skip resume data once to
+    // recover. Crucially the window is just loadResumeData()'s duration (ms) —
+    // an earlier version only cleared the flag after 15s of uptime, so quitting
+    // before then looked like a crash and made every torrent vanish for a launch.
     const bool prevCrash = settings.value("startupInProgress", false).toBool();
     if (prevCrash) {
         qWarning("Crash loop detected — skipping resume data to allow recovery. "
                  "Previously active torrents will reappear after a clean restart.");
         settings.setValue("startupInProgress", false);
+        settings.sync();
     } else {
         settings.setValue("startupInProgress", true);
         settings.sync();
         loadResumeData();
+        // Survived the parse — clear immediately; not crash-gated on uptime.
+        settings.setValue("startupInProgress", false);
+        settings.sync();
     }
 
     connect(&m_updateTimer, &QTimer::timeout, this, &SessionManager::updateStats);
     m_updateTimer.start(1000);
-
-    // Clear the crash guard after 15 s of stable running. If the app
-    // crashes before this timer fires, the next launch enters safe mode.
-    QTimer::singleShot(15000, this, [this]() {
-        QSettings("BATorrent", "BATorrent").setValue("startupInProgress", false);
-    });
 }
 
 SessionManager::~SessionManager()
