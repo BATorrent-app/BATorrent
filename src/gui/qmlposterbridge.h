@@ -13,6 +13,8 @@
 #include <QVariantList>
 #include <QVector>
 
+#include "../app/addonmanager.h"   // CatalogItem / StreamResult / TorrentSearchResult
+
 class SessionManager;
 class MetadataResolver;
 
@@ -62,6 +64,7 @@ public:
     explicit QmlTorrentFilterProxy(QObject *parent = nullptr);
 
     Q_INVOKABLE void setFilterState(const QString &state);
+    Q_INVOKABLE void setCategoryFilter(const QString &category);
     Q_INVOKABLE void setSearchText(const QString &text);
     Q_INVOKABLE void setSortColumn(const QString &column, bool ascending);
     Q_INVOKABLE void clearSort();
@@ -74,6 +77,7 @@ protected:
 
 private:
     QString m_filterState = QStringLiteral("all");
+    QString m_categoryFilter;
     QString m_searchText;
     QString m_sortColumn;
 };
@@ -170,8 +174,50 @@ public:
     Q_INVOKABLE void forceReannounceSelected();
     Q_INVOKABLE void queueUpSelected();
     Q_INVOKABLE void queueDownSelected();
+    Q_INVOKABLE void queueTopSelected();
+    Q_INVOKABLE void queueBottomSelected();
     Q_INVOKABLE void toggleSelectedPause();
+    Q_INVOKABLE void stopSeedingSelected();
     Q_INVOKABLE void smartPaste();
+
+    // per-torrent edits (wrap SessionManager against the current selection)
+    Q_INVOKABLE void moveSelectedStorage(const QString &path);
+    Q_INVOKABLE void setSelectedDownloadLimit(int kbps);
+    Q_INVOKABLE void setSelectedUploadLimit(int kbps);
+    Q_INVOKABLE void setSelectedSequential(bool on);
+    Q_INVOKABLE void setSelectedCategory(const QString &category);
+    Q_INVOKABLE void setSelectedTags(const QStringList &tags);
+    Q_INVOKABLE void addTrackerToSelected(const QString &url);
+    Q_INVOKABLE void removeTrackerFromSelected(const QString &url);
+    Q_INVOKABLE void renameSelectedFile(int fileIndex, const QString &newName);
+    Q_INVOKABLE void setSelectedFilePriority(int fileIndex, int priority);
+    Q_INVOKABLE void copySelectedName();
+    Q_INVOKABLE void openSelectedFile();
+    Q_INVOKABLE void importQbittorrent(const QString &savePath);
+    // Create a .torrent (mirrors the validated synchronous logic from
+    // createtorrentdialog.cpp). Returns "" on success, else an error message.
+    // opts keys: source, output, trackers, pieceSize(bytes,0=auto), comment, priv, startSeeding.
+    Q_INVOKABLE QString createTorrent(const QVariantMap &opts);
+    Q_INVOKABLE QString suggestTorrentOutput(const QString &source) const;
+
+    // Statistics window
+    Q_INVOKABLE QVariantMap statistics() const;
+    // Diagnostics window (snapshot of listen/DHT/NAT/port reachability)
+    Q_INVOKABLE QVariantMap diagnostics() const;
+    // Removed-history window
+    Q_INVOKABLE QVariantList recentlyRemoved() const;
+    Q_INVOKABLE bool restoreRemoved(const QString &hash);
+    Q_INVOKABLE void clearRemovedHistory();
+    // Generic clipboard copy (inspector full hash, etc.)
+    Q_INVOKABLE void copyToClipboard(const QString &text);
+
+    // selection-state + global lists for the context menu
+    Q_INVOKABLE int selectedDownloadLimit() const;
+    Q_INVOKABLE int selectedUploadLimit() const;
+    Q_INVOKABLE QString selectedCategory() const;
+    Q_INVOKABLE QStringList selectedTagList() const;
+    Q_INVOKABLE QStringList categories() const;
+    Q_INVOKABLE QStringList allTags() const;
 
     QString selectedName() const;
     QString selectedSavePath() const;
@@ -247,6 +293,198 @@ signals:
 private:
     QString m_themeName;
     bool m_anime = true;
+};
+
+// Bridge for RSS feeds (wraps RssManager singleton).
+class QmlRssBridge : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QVariantList feeds READ feeds NOTIFY feedsChanged)
+public:
+    explicit QmlRssBridge(QObject *parent = nullptr);
+
+    QVariantList feeds() const;
+    Q_INVOKABLE QVariantList itemsForFeed(int feedIndex) const;
+    Q_INVOKABLE void addFeed(const QString &url);
+    Q_INVOKABLE void removeFeed(int index);
+    Q_INVOKABLE void setFeedEnabled(int index, bool enabled);
+    Q_INVOKABLE void setAutoDownload(int index, bool on);
+    Q_INVOKABLE void checkAllFeeds();
+    Q_INVOKABLE void checkFeed(int index);
+    Q_INVOKABLE void downloadItem(int feedIndex, int itemIndex);
+    Q_INVOKABLE void updateFeedSettings(int index, const QString &filterPattern,
+                                        const QString &savePath, int checkInterval,
+                                        bool enabled, bool autoDownload);
+
+signals:
+    void feedsChanged();
+    void errorOccurred(const QString &message);
+    void autoDownloaded(const QString &feedName, const QString &itemTitle);
+};
+
+// Bridge for the Search window (wraps AddonManager's 4 search modes).
+class QmlSearchBridge : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QVariantList sources READ sources NOTIFY sourcesChanged)
+    Q_PROPERTY(QVariantList categories READ categories CONSTANT)
+    Q_PROPERTY(QVariantList results READ results NOTIFY resultsChanged)
+    Q_PROPERTY(QString mode READ mode NOTIFY modeChanged)        // catalog|streams|torrent|games
+    Q_PROPERTY(bool inStreams READ inStreams NOTIFY modeChanged)
+    Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
+    Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
+public:
+    explicit QmlSearchBridge(SessionManager *session, QObject *parent = nullptr);
+
+    QVariantList sources() const;
+    QVariantList categories() const;
+    QVariantList results() const;
+    QString mode() const;
+    bool inStreams() const;
+    bool searching() const;
+    QString statusText() const;
+
+    Q_INVOKABLE void refreshSources();
+    Q_INVOKABLE void search(const QString &sourceKey, const QString &query, int categoryCode = 0);
+    Q_INVOKABLE void activateResult(int index);   // catalog→streams; else add magnet
+    Q_INVOKABLE void back();                       // streams → catalog
+
+signals:
+    void sourcesChanged();
+    void resultsChanged();
+    void modeChanged();
+    void searchingChanged();
+    void statusChanged();
+
+private:
+    void setSearching(bool on);
+    void setStatus(const QString &s);
+    void setMode(const QString &m);
+    static QString detectRepacker(const QString &name);
+
+    SessionManager *m_session;
+    QString m_mode;
+    QString m_savePath;
+    QString m_lastQuery;
+    bool m_searching = false;
+    bool m_isGameSearch = false;
+    QString m_status;
+    QVariantList m_results;
+    QList<CatalogItem> m_catalogCache;
+    QList<StreamResult> m_streamCache;
+    QList<TorrentSearchResult> m_torrentCache;
+    QVariantList m_catalogResultsSnapshot;
+};
+
+// Bridge for community addons (wraps AddonManager singleton).
+class QmlAddonBridge : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QVariantList installed READ installed NOTIFY changed)
+    Q_PROPERTY(QVariantList suggested READ suggested NOTIFY changed)
+    Q_PROPERTY(bool autoTrackers READ autoTrackers WRITE setAutoTrackers NOTIFY changed)
+    Q_PROPERTY(int trackerCount READ trackerCount NOTIFY changed)
+    Q_PROPERTY(bool torrentSearchEnabled READ torrentSearchEnabled WRITE setTorrentSearchEnabled NOTIFY changed)
+    Q_PROPERTY(QString torrentSearchUrl READ torrentSearchUrl WRITE setTorrentSearchUrl NOTIFY changed)
+public:
+    explicit QmlAddonBridge(QObject *parent = nullptr);
+
+    QVariantList installed() const;
+    QVariantList suggested() const;
+    bool autoTrackers() const;
+    void setAutoTrackers(bool on);
+    int trackerCount() const;
+    bool torrentSearchEnabled() const;
+    void setTorrentSearchEnabled(bool on);
+    QString torrentSearchUrl() const;
+    void setTorrentSearchUrl(const QString &url);
+
+    Q_INVOKABLE void addAddon(const QString &url);
+    Q_INVOKABLE void removeAddon(int index);
+    Q_INVOKABLE void setEnabled(int index, bool on);
+    Q_INVOKABLE void refreshTrackers();
+    Q_INVOKABLE bool isInstalled(const QString &url) const;
+
+signals:
+    void changed();
+    void error(const QString &message);
+};
+
+// WebUI pairing backend. Presentational (mirrors pairingdialog.cpp): detect LAN
+// IP, build the http URL for the configured WebUI port, render a QR matrix.
+class QmlPairingBridge : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QString url READ url CONSTANT)
+    Q_PROPERTY(bool available READ available CONSTANT)
+public:
+    explicit QmlPairingBridge(QObject *parent = nullptr);
+
+    QString url() const { return m_url; }
+    bool available() const { return !m_url.isEmpty(); }
+
+    Q_INVOKABLE void copyUrl();
+    Q_INVOKABLE void openBrowser();
+    // QR as a list of row strings ("0101…"), one char per module. Empty on failure.
+    Q_INVOKABLE QStringList qrRows() const;
+
+private:
+    static QString detectLanIp();
+    QString m_url;
+};
+
+// Log viewer backend. Logger has no signal, so we poll the file delta (1s)
+// exactly like the old LogViewerDialog and re-emit a Qt signal to QML.
+class QmlLogBridge : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QString text READ text NOTIFY textChanged)
+    Q_PROPERTY(int level READ level WRITE setLevel NOTIFY levelChanged)
+    Q_PROPERTY(QStringList levelNames READ levelNames CONSTANT)
+    Q_PROPERTY(QString logsDir READ logsDir CONSTANT)
+public:
+    explicit QmlLogBridge(QObject *parent = nullptr);
+
+    QString text() const { return m_text; }
+    int level() const;
+    void setLevel(int l);
+    QStringList levelNames() const;
+    QString logsDir() const;
+
+    Q_INVOKABLE void start();
+    Q_INVOKABLE void stop();
+    Q_INVOKABLE void clearLog();
+    Q_INVOKABLE void openLogsFolder();
+    Q_INVOKABLE bool exportLogs(const QString &filePath);
+    Q_INVOKABLE QString defaultExportName() const;
+
+signals:
+    void textChanged();
+    void levelChanged();
+
+private slots:
+    void poll();
+
+private:
+    QString m_text;
+    qint64 m_lastSize = 0;
+    QTimer m_pollTimer;
+};
+
+// Settings window backend. Generic get(key)/set(key,value) keyed by setting
+// name: most route to SessionManager (live + persisted); UI-only prefs and the
+// media API keys fall through to QSettings.
+class QmlSettingsBridge : public QObject
+{
+    Q_OBJECT
+public:
+    explicit QmlSettingsBridge(SessionManager *session, QObject *parent = nullptr);
+    Q_INVOKABLE QVariant get(const QString &key) const;
+    Q_INVOKABLE void set(const QString &key, const QVariant &v);
+signals:
+    void changed();
+private:
+    SessionManager *m_session;
 };
 
 #endif

@@ -5,12 +5,20 @@
 #include "qmlposterbridge.h"
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
+#include "../app/rssmanager.h"
+#include "../app/addonmanager.h"
+#include "../app/logger.h"
+#include "../app/qrcodegen.h"
 #include "../app/utils.h"
+
+#include <QNetworkInterface>
 #include "thememanager.h"
 
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QRegularExpression>
 #include <QSettings>
@@ -19,6 +27,8 @@
 
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/file_storage.hpp>
+#include <libtorrent/create_torrent.hpp>
+#include <libtorrent/bencode.hpp>
 #include <memory>
 #include <sstream>
 
@@ -137,6 +147,13 @@ void QmlTorrentFilterProxy::setFilterState(const QString &state)
     invalidateFilter();
 }
 
+void QmlTorrentFilterProxy::setCategoryFilter(const QString &category)
+{
+    if (category == m_categoryFilter) return;
+    m_categoryFilter = category;
+    invalidateFilter();
+}
+
 void QmlTorrentFilterProxy::setSearchText(const QString &text)
 {
     if (text == m_searchText) return;
@@ -225,6 +242,11 @@ bool QmlTorrentFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &s
         QString meta = src->data(idx, QmlPosterModel::MetaTitleRole).toString();
         if (!name.contains(m_searchText, Qt::CaseInsensitive)
             && !meta.contains(m_searchText, Qt::CaseInsensitive))
+            return false;
+    }
+
+    if (!m_categoryFilter.isEmpty()) {
+        if (src->data(idx, QmlPosterModel::CategoryRole).toString() != m_categoryFilter)
             return false;
     }
 
@@ -580,6 +602,298 @@ void QmlSessionBridge::queueDownSelected()
     emit selectionChanged();
 }
 
+// resolve the active rows (multi-select, falling back to the focus index)
+static QList<int> resolveRows(const QList<int> &rows, int idx)
+{
+    if (!rows.isEmpty()) return rows;
+    return idx >= 0 ? QList<int>{idx} : QList<int>{};
+}
+
+void QmlSessionBridge::queueTopSelected()
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentQueuePosition(r, 0);
+    emit queueRefreshNeeded();
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::queueBottomSelected()
+{
+    const int last = m_session->torrentCount() - 1;
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentQueuePosition(r, last);
+    emit queueRefreshNeeded();
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::stopSeedingSelected()
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->stopSeedingTorrent(r);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::moveSelectedStorage(const QString &path)
+{
+    if (path.isEmpty()) return;
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->moveStorage(r, path);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::setSelectedDownloadLimit(int kbps)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentDownloadLimit(r, kbps);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::setSelectedUploadLimit(int kbps)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentUploadLimit(r, kbps);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::setSelectedSequential(bool on)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setSequentialDownload(r, on);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::setSelectedCategory(const QString &category)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentCategory(r, category);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::setSelectedTags(const QStringList &tags)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentTags(r, tags);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::addTrackerToSelected(const QString &url)
+{
+    if (url.isEmpty()) return;
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->addTracker(r, url);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::removeTrackerFromSelected(const QString &url)
+{
+    if (url.isEmpty() || !hasSelection()) return;
+    QStringList keep;
+    for (const auto &t : m_session->trackersAt(m_selectedIndex))
+        if (t.url != url) keep << t.url;
+    m_session->replaceTrackers(m_selectedIndex, keep);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::renameSelectedFile(int fileIndex, const QString &newName)
+{
+    if (!hasSelection() || newName.isEmpty()) return;
+    m_session->renameFile(m_selectedIndex, fileIndex, newName);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::setSelectedFilePriority(int fileIndex, int priority)
+{
+    if (!hasSelection()) return;
+    m_session->setFilePriority(m_selectedIndex, fileIndex, priority);
+    emit selectionChanged();
+}
+
+void QmlSessionBridge::copySelectedName()
+{
+    if (!hasSelection()) return;
+    const QString n = m_session->torrentAt(m_selectedIndex).name;
+    if (!n.isEmpty()) QGuiApplication::clipboard()->setText(n);
+}
+
+void QmlSessionBridge::openSelectedFile()
+{
+    if (!hasSelection()) return;
+    const QString path = m_session->torrentRootPath(m_selectedIndex);
+    if (!path.isEmpty()) QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
+void QmlSessionBridge::importQbittorrent(const QString &savePath)
+{
+    m_session->importFromQBittorrent(savePath);
+    emit queueRefreshNeeded();
+}
+
+void QmlSessionBridge::copyToClipboard(const QString &text)
+{
+    if (!text.isEmpty()) QGuiApplication::clipboard()->setText(text);
+}
+
+QVariantMap QmlSessionBridge::statistics() const
+{
+    QVariantMap m;
+    const qint64 down = m_session->globalDownloaded();
+    const qint64 up = m_session->globalUploaded();
+    const qint64 sDown = m_session->sessionDownloaded();
+    const qint64 sUp = m_session->sessionUploaded();
+    m["totalDownloaded"] = formatSize(down);
+    m["totalUploaded"] = formatSize(up);
+    m["totalRatio"] = QString::number(m_session->globalRatio(), 'f', 3);
+    m["torrentsAdded"] = m_session->totalTorrentsAdded();
+    m["sessionDownloaded"] = formatSize(sDown);
+    m["sessionUploaded"] = formatSize(sUp);
+    m["sessionRatio"] = QString::number(sDown > 0 ? double(sUp) / double(sDown) : 0.0, 'f', 3);
+    QSettings s;
+    const qint64 startTime = s.value(QStringLiteral("sessionStartTime"), 0).toLongLong();
+    const qint64 uptime = startTime > 0 ? QDateTime::currentSecsSinceEpoch() - startTime : 0;
+    const int d = int(uptime / 86400), h = int((uptime % 86400) / 3600), mn = int((uptime % 3600) / 60);
+    m["uptime"] = d > 0 ? QString("%1d %2h %3m").arg(d).arg(h).arg(mn)
+                        : QString("%1h %2m").arg(h).arg(mn);
+    return m;
+}
+
+QVariantMap QmlSessionBridge::diagnostics() const
+{
+    QVariantMap m;
+    const int port = m_session->listenPort();
+    const auto stats = m_session->detailedStats();
+    const bool dht = m_session->dhtEnabled();
+
+    m["listenOk"] = port > 0;
+    m["listenText"] = port > 0 ? QStringLiteral("Escutando na porta %1").arg(port)
+                               : QStringLiteral("Não está escutando");
+    m["dhtOk"] = dht;
+    m["dhtText"] = dht ? QStringLiteral("Ativo (%1 nós)").arg(stats.dhtNodes)
+                       : QStringLiteral("Desativado");
+    m["natOk"] = stats.hasIncomingConnections;
+    m["natText"] = stats.hasIncomingConnections ? QStringLiteral("Conexões de entrada OK")
+                                                : QStringLiteral("Sem conexões de entrada");
+    m["portOk"] = stats.peersCount > 0;
+    m["portText"] = stats.peersCount > 0 ? QStringLiteral("%1 peers conectados").arg(stats.peersCount)
+                                         : QStringLiteral("Não confirmado");
+    return m;
+}
+
+QVariantList QmlSessionBridge::recentlyRemoved() const
+{
+    QVariantList out;
+    const auto entries = m_session->recentlyRemoved();
+    for (const auto &e : entries) {
+        QVariantMap m;
+        m["hash"] = e.hash;
+        m["name"] = e.name;
+        m["size"] = formatSize(e.totalSize);
+        m["when"] = QLocale::system().toString(
+            QDateTime::fromSecsSinceEpoch(e.removedAt), QLocale::ShortFormat);
+        out << m;
+    }
+    return out;
+}
+
+bool QmlSessionBridge::restoreRemoved(const QString &hash)
+{
+    if (hash.isEmpty()) return false;
+    bool ok = m_session->restoreRemoved(hash);
+    if (ok) emit queueRefreshNeeded();
+    return ok;
+}
+
+void QmlSessionBridge::clearRemovedHistory()
+{
+    m_session->clearRemovedHistory();
+}
+
+QString QmlSessionBridge::suggestTorrentOutput(const QString &source) const
+{
+    QString s = source;
+    if (s.startsWith("file://")) s = QUrl(s).toLocalFile();
+    if (s.isEmpty()) return {};
+    QFileInfo fi(s);
+    return fi.absolutePath() + "/" + fi.fileName() + ".torrent";
+}
+
+QString QmlSessionBridge::createTorrent(const QVariantMap &opts)
+{
+    QString source = opts.value("source").toString();
+    QString output = opts.value("output").toString();
+    if (source.startsWith("file://")) source = QUrl(source).toLocalFile();
+    if (output.startsWith("file://")) output = QUrl(output).toLocalFile();
+    if (source.isEmpty() || output.isEmpty())
+        return QStringLiteral("Informe origem e arquivo de saída.");
+
+    const QString trackerText = opts.value("trackers").toString();
+    const int pieceSize = opts.value("pieceSize").toInt();   // bytes, 0 = auto
+    const QString comment = opts.value("comment").toString().trimmed();
+    const bool priv = opts.value("priv").toBool();
+    const bool startSeeding = opts.value("startSeeding").toBool();
+
+    try {
+        lt::file_storage fs;
+        QFileInfo srcInfo(source);
+        const QString parentDir = srcInfo.absolutePath();
+        lt::add_files(fs, source.toStdString());
+        if (fs.num_files() == 0)
+            return QStringLiteral("Nenhum arquivo encontrado na origem.");
+
+        lt::create_torrent ct(fs, pieceSize > 0 ? pieceSize : 0);
+
+        const QStringList trackers = trackerText.split('\n', Qt::SkipEmptyParts);
+        for (int i = 0; i < trackers.size(); ++i)
+            ct.add_tracker(trackers[i].trimmed().toStdString(), i);
+
+        if (!comment.isEmpty()) ct.set_comment(comment.toStdString().c_str());
+        ct.set_creator("BATorrent");
+        if (priv) ct.set_priv(true);
+
+        lt::set_piece_hashes(ct, parentDir.toStdString());
+        auto entry = ct.generate();
+
+        std::vector<char> buf;
+        lt::bencode(std::back_inserter(buf), entry);
+
+        QFile outFile(output);
+        if (!outFile.open(QIODevice::WriteOnly))
+            return QStringLiteral("Não foi possível gravar o arquivo de saída.");
+        outFile.write(buf.data(), static_cast<qsizetype>(buf.size()));
+        outFile.close();
+
+        if (startSeeding) {
+            m_session->addTorrent(output, parentDir);
+            emit queueRefreshNeeded();
+        }
+        return {};
+    } catch (const std::exception &e) {
+        return QString::fromStdString(e.what());
+    }
+}
+
+int QmlSessionBridge::selectedDownloadLimit() const
+{
+    return hasSelection() ? m_session->torrentDownloadLimit(m_selectedIndex) : 0;
+}
+
+int QmlSessionBridge::selectedUploadLimit() const
+{
+    return hasSelection() ? m_session->torrentUploadLimit(m_selectedIndex) : 0;
+}
+
+QString QmlSessionBridge::selectedCategory() const
+{
+    return hasSelection() ? m_session->torrentAt(m_selectedIndex).category : QString();
+}
+
+QStringList QmlSessionBridge::selectedTagList() const
+{
+    return hasSelection() ? m_session->torrentTags(m_selectedIndex) : QStringList();
+}
+
+QStringList QmlSessionBridge::categories() const { return m_session->categories(); }
+QStringList QmlSessionBridge::allTags() const { return m_session->allTags(); }
+
 QVariantList QmlSessionBridge::selectedPeerList() const
 {
     QVariantList out;
@@ -914,5 +1228,642 @@ void QmlThemeBridge::setAnime(bool on)
     if (on == m_anime) return;
     m_anime = on;
     QSettings().setValue(QStringLiteral("qmlAnime"), on);
+    emit changed();
+}
+
+// RSS bridge
+
+QmlRssBridge::QmlRssBridge(QObject *parent) : QObject(parent)
+{
+    auto &rss = RssManager::instance();
+    connect(&rss, &RssManager::feedAdded, this, [this]() { emit feedsChanged(); });
+    connect(&rss, &RssManager::feedUpdated, this, [this]() { emit feedsChanged(); });
+    connect(&rss, &RssManager::feedError, this, &QmlRssBridge::errorOccurred);
+    connect(&rss, &RssManager::itemAutoDownloaded, this, &QmlRssBridge::autoDownloaded);
+    rss.loadFeeds();
+}
+
+QVariantList QmlRssBridge::feeds() const
+{
+    QVariantList out;
+    const auto feeds = RssManager::instance().feeds();
+    for (int i = 0; i < feeds.size(); ++i) {
+        const RssFeed &f = feeds[i];
+        QVariantMap m;
+        m["index"] = i;
+        m["name"] = f.name.isEmpty() ? f.url : f.name;
+        m["url"] = f.url;
+        m["enabled"] = f.enabled;
+        m["autoDownload"] = f.autoDownload;
+        m["filterPattern"] = f.filterPattern;
+        m["savePath"] = f.savePath;
+        m["checkInterval"] = f.checkIntervalMin;
+        m["lastChecked"] = f.lastChecked.isValid()
+            ? f.lastChecked.toString("yyyy-MM-dd hh:mm") : QString();
+        m["count"] = RssManager::instance().itemsForFeed(i).size();
+        out << m;
+    }
+    return out;
+}
+
+QVariantList QmlRssBridge::itemsForFeed(int feedIndex) const
+{
+    QVariantList out;
+    const auto items = RssManager::instance().itemsForFeed(feedIndex);
+    for (const RssItem &it : items) {
+        QVariantMap m;
+        m["title"] = it.title;
+        m["link"] = it.link;
+        m["size"] = it.size > 0 ? formatSize(it.size) : QString();
+        m["date"] = it.pubDate.isValid() ? it.pubDate.toString("yyyy-MM-dd hh:mm") : QString();
+        m["downloaded"] = it.downloaded;
+        out << m;
+    }
+    return out;
+}
+
+void QmlRssBridge::addFeed(const QString &url)
+{
+    if (url.trimmed().isEmpty()) return;
+    RssManager::instance().addFeed(url.trimmed());
+    RssManager::instance().saveFeeds();
+    emit feedsChanged();
+}
+
+void QmlRssBridge::removeFeed(int index)
+{
+    RssManager::instance().removeFeed(index);
+    RssManager::instance().saveFeeds();
+    emit feedsChanged();
+}
+
+void QmlRssBridge::setFeedEnabled(int index, bool enabled)
+{
+    RssManager::instance().setFeedEnabled(index, enabled);
+    RssManager::instance().saveFeeds();
+    emit feedsChanged();
+}
+
+void QmlRssBridge::setAutoDownload(int index, bool on)
+{
+    auto feeds = RssManager::instance().feeds();
+    if (index < 0 || index >= feeds.size()) return;
+    RssFeed copy = feeds[index];
+    copy.autoDownload = on;
+    RssManager::instance().updateFeed(index, copy);
+    RssManager::instance().saveFeeds();
+    emit feedsChanged();
+}
+
+void QmlRssBridge::checkAllFeeds()
+{
+    RssManager::instance().checkAllFeeds();
+}
+
+void QmlRssBridge::checkFeed(int index)
+{
+    RssManager::instance().checkFeed(index);
+}
+
+void QmlRssBridge::updateFeedSettings(int index, const QString &filterPattern,
+                                      const QString &savePath, int checkInterval,
+                                      bool enabled, bool autoDownload)
+{
+    auto feeds = RssManager::instance().feeds();
+    if (index < 0 || index >= feeds.size()) return;
+    RssFeed f = feeds[index];
+    f.filterPattern = filterPattern;
+    f.savePath = savePath.startsWith("file://") ? QUrl(savePath).toLocalFile() : savePath;
+    f.checkIntervalMin = qBound(5, checkInterval, 1440);
+    f.enabled = enabled;
+    f.autoDownload = autoDownload;
+    RssManager::instance().updateFeed(index, f);
+    RssManager::instance().saveFeeds();
+    emit feedsChanged();
+}
+
+void QmlRssBridge::downloadItem(int feedIndex, int itemIndex)
+{
+    RssManager::instance().downloadItem(feedIndex, itemIndex);
+}
+
+// ===================== QmlSearchBridge =====================
+
+QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
+    : QObject(parent), m_session(session), m_mode("torrent")
+{
+    auto &mgr = AddonManager::instance();
+    connect(&mgr, &AddonManager::catalogResults, this, [this](const QList<CatalogItem> &items) {
+        m_catalogCache = items;
+        if (m_mode != "catalog") return;
+        m_results.clear();
+        for (const auto &it : items) {
+            QVariantMap m;
+            m["name"] = it.name;
+            m["sub"] = it.type;
+            m["sizeStr"] = it.year > 0 ? QString::number(it.year) : QString();
+            m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+            m_results << m;
+        }
+        emit resultsChanged();
+    });
+    connect(&mgr, &AddonManager::catalogFinished, this, [this]() {
+        setSearching(false);
+        setStatus(QString("%1 resultados").arg(m_catalogCache.size()));
+    });
+    connect(&mgr, &AddonManager::streamResults, this, [this](const QList<StreamResult> &streams) {
+        m_streamCache = streams;
+        if (m_mode != "streams") return;
+        m_results.clear();
+        for (const auto &s : streams) {
+            QVariantMap m;
+            m["name"] = s.title;
+            m["sub"] = s.addonName;
+            m["sizeStr"] = s.size > 0 ? formatSize(s.size) : QString();
+            m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+            m_results << m;
+        }
+        emit resultsChanged();
+    });
+    connect(&mgr, &AddonManager::streamFinished, this, [this]() {
+        setSearching(false);
+        setStatus(QString("%1 streams").arg(m_streamCache.size()));
+    });
+    connect(&mgr, &AddonManager::torrentSearchResults, this,
+            [this](const QList<TorrentSearchResult> &results) {
+        m_torrentCache = results;
+        if (m_mode != "torrent" && m_mode != "games") return;
+        m_results.clear();
+        for (const auto &r : results) {
+            QVariantMap m;
+            m["name"] = r.name;
+            m["sub"] = "";
+            m["sizeStr"] = r.size > 0 ? formatSize(r.size) : QString();
+            m["seeds"] = QString::number(r.seeders);
+            m["leech"] = QString::number(r.leechers);
+            m["hasSeeds"] = r.seeders > 0;
+            m["repacker"] = (m_mode == "games") ? detectRepacker(r.name) : QString();
+            m_results << m;
+        }
+        emit resultsChanged();
+    });
+    connect(&mgr, &AddonManager::torrentSearchFinished, this, [this]() {
+        setSearching(false);
+        setStatus(QString("%1 resultados").arg(m_torrentCache.size()));
+    });
+    connect(&mgr, &AddonManager::torrentSearchError, this, [this](const QString &err) {
+        setSearching(false);
+        setStatus(err);
+    });
+
+    QSettings s;
+    m_savePath = s.value(QStringLiteral("lastSavePath")).toString();
+    if (m_savePath.isEmpty() || !QDir(m_savePath).exists())
+        m_savePath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+}
+
+QString QmlSearchBridge::detectRepacker(const QString &name)
+{
+    const QString lower = name.toLower();
+    if (lower.contains("fitgirl")) return "FitGirl";
+    if (lower.contains("dodi")) return "DODI";
+    if (lower.contains("online-fix") || lower.contains("onlinefix")) return "Online-Fix";
+    if (lower.contains("elamigos")) return "ElAmigos";
+    if (lower.contains("xatab")) return "Xatab";
+    if (lower.contains("r.g. mechanics") || lower.contains("rg mechanics")) return "R.G. Mechanics";
+    if (lower.contains("gog")) return "GOG";
+    if (lower.contains("codex")) return "CODEX";
+    if (lower.contains("plaza")) return "PLAZA";
+    if (lower.contains("skidrow")) return "SKIDROW";
+    return "";
+}
+
+QVariantList QmlSearchBridge::sources() const
+{
+    QVariantList out;
+    auto add = [&out](const QString &key, const QString &label) {
+        QVariantMap m; m["key"] = key; m["label"] = label; out << m;
+    };
+    add("stremio", "Stremio (catálogo)");
+    auto &mgr = AddonManager::instance();
+    if (mgr.torrentSearchEnabled()) {
+        add("legacy", "Torrents");
+        add("games", "Jogos");
+    }
+    const auto providers = mgr.searchProviders();
+    for (int i = 0; i < providers.size(); ++i)
+        if (providers[i].enabled)
+            add(QString("provider:%1").arg(i), providers[i].name);
+    return out;
+}
+
+QVariantList QmlSearchBridge::categories() const
+{
+    QVariantList out;
+    auto add = [&out](int code, const QString &label) {
+        QVariantMap m; m["code"] = code; m["label"] = label; out << m;
+    };
+    add(0, "Todas"); add(100, "Áudio"); add(200, "Vídeo");
+    add(300, "Apps"); add(400, "Jogos"); add(500, "Outros");
+    return out;
+}
+
+QVariantList QmlSearchBridge::results() const { return m_results; }
+QString QmlSearchBridge::mode() const { return m_mode; }
+bool QmlSearchBridge::inStreams() const { return m_mode == "streams"; }
+bool QmlSearchBridge::searching() const { return m_searching; }
+QString QmlSearchBridge::statusText() const { return m_status; }
+
+void QmlSearchBridge::setSearching(bool on) { if (m_searching == on) return; m_searching = on; emit searchingChanged(); }
+void QmlSearchBridge::setStatus(const QString &s) { if (m_status == s) return; m_status = s; emit statusChanged(); }
+void QmlSearchBridge::setMode(const QString &m) { if (m_mode == m) return; m_mode = m; emit modeChanged(); }
+
+void QmlSearchBridge::refreshSources() { emit sourcesChanged(); }
+
+void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int categoryCode)
+{
+    const QString q = query.trimmed();
+    if (q.isEmpty()) return;
+    m_lastQuery = q;
+    m_results.clear();
+    emit resultsChanged();
+
+    auto &mgr = AddonManager::instance();
+    if (sourceKey == "games") {
+        m_isGameSearch = true;
+        setMode("games");
+        setSearching(true);
+        setStatus("Buscando…");
+        mgr.searchTorrents(q, 400);
+    } else if (sourceKey.startsWith("provider:")) {
+        m_isGameSearch = false;
+        setMode("torrent");
+        setSearching(true);
+        setStatus("Buscando…");
+        mgr.searchWithProvider(sourceKey.mid(9).toInt(), q);
+    } else if (sourceKey == "legacy") {
+        m_isGameSearch = false;
+        setMode("torrent");
+        setSearching(true);
+        setStatus("Buscando…");
+        mgr.searchTorrents(q, categoryCode);
+    } else {
+        if (!mgr.hasCatalogAddon()) { setStatus("Nenhum addon de catálogo instalado."); return; }
+        setMode("catalog");
+        setSearching(true);
+        setStatus("Buscando…");
+        mgr.searchCatalog(q);
+    }
+}
+
+void QmlSearchBridge::activateResult(int index)
+{
+    auto &mgr = AddonManager::instance();
+    if (m_mode == "catalog") {
+        if (index < 0 || index >= m_catalogCache.size()) return;
+        const auto &it = m_catalogCache[index];
+        setMode("streams");
+        m_results.clear();
+        emit resultsChanged();
+        if (!mgr.hasStreamAddon()) { setStatus("Nenhum addon de streams instalado."); return; }
+        setSearching(true);
+        setStatus(QString("Carregando streams de %1…").arg(it.name));
+        mgr.getStreams(it.type, it.id);
+    } else if (m_mode == "streams") {
+        if (index < 0 || index >= m_streamCache.size()) return;
+        const auto &s = m_streamCache[index];
+        if (s.magnet.startsWith("magnet:")) {
+            m_session->addMagnet(s.magnet, m_savePath);
+            setStatus(QString("Adicionado: %1").arg(s.title));
+        }
+    } else {
+        if (index < 0 || index >= m_torrentCache.size()) return;
+        const auto &r = m_torrentCache[index];
+        m_session->addMagnet(r.magnet, m_savePath);
+        setStatus(QString("Adicionado: %1").arg(r.name));
+    }
+}
+
+void QmlSearchBridge::back()
+{
+    if (m_mode != "streams") return;
+    setMode("catalog");
+    m_results.clear();
+    for (const auto &it : m_catalogCache) {
+        QVariantMap m;
+        m["name"] = it.name;
+        m["sub"] = it.type;
+        m["sizeStr"] = it.year > 0 ? QString::number(it.year) : QString();
+        m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+        m_results << m;
+    }
+    emit resultsChanged();
+    setStatus(QString("%1 resultados").arg(m_catalogCache.size()));
+}
+
+// ===================== QmlAddonBridge =====================
+
+QmlAddonBridge::QmlAddonBridge(QObject *parent) : QObject(parent)
+{
+    auto &mgr = AddonManager::instance();
+    connect(&mgr, &AddonManager::addonAdded, this, [this](const AddonManifest &){ emit changed(); });
+    connect(&mgr, &AddonManager::addonError, this, [this](const QString &e){ emit error(e); });
+    connect(&mgr, &AddonManager::trackerListUpdated, this, &QmlAddonBridge::changed);
+}
+
+QVariantList QmlAddonBridge::installed() const
+{
+    QVariantList out;
+    const auto list = AddonManager::instance().addons();
+    for (const auto &a : list) {
+        QVariantMap m;
+        m["name"] = a.name;
+        m["description"] = a.description;
+        m["url"] = a.url;
+        m["types"] = a.types.join(", ");
+        m["enabled"] = a.enabled;
+        out << m;
+    }
+    return out;
+}
+
+QVariantList QmlAddonBridge::suggested() const
+{
+    struct S { const char *nm; const char *d; const char *url; };
+    static const S items[] = {
+        { "Cinemeta", "Catálogos oficiais de filmes e séries", "https://v3-cinemeta.strem.io" },
+        { "Torrentio", "Streams de torrent para filmes e séries", "https://torrentio.strem.fun" },
+    };
+    QVariantList out;
+    for (const auto &s : items) {
+        QVariantMap m;
+        m["name"] = QString::fromUtf8(s.nm);
+        m["description"] = QString::fromUtf8(s.d);
+        m["url"] = QString::fromUtf8(s.url);
+        m["installed"] = isInstalled(QString::fromUtf8(s.url));
+        out << m;
+    }
+    return out;
+}
+
+bool QmlAddonBridge::autoTrackers() const { return AddonManager::instance().autoTrackersEnabled(); }
+void QmlAddonBridge::setAutoTrackers(bool on) { AddonManager::instance().setAutoTrackersEnabled(on); emit changed(); }
+int QmlAddonBridge::trackerCount() const { return AddonManager::instance().trackerList().size(); }
+bool QmlAddonBridge::torrentSearchEnabled() const { return AddonManager::instance().torrentSearchEnabled(); }
+void QmlAddonBridge::setTorrentSearchEnabled(bool on) { AddonManager::instance().setTorrentSearchEnabled(on); emit changed(); }
+QString QmlAddonBridge::torrentSearchUrl() const { return AddonManager::instance().torrentSearchUrl(); }
+void QmlAddonBridge::setTorrentSearchUrl(const QString &url) { AddonManager::instance().setTorrentSearchUrl(url); emit changed(); }
+
+void QmlAddonBridge::addAddon(const QString &url) { if (!url.isEmpty()) AddonManager::instance().addAddon(url); }
+void QmlAddonBridge::removeAddon(int index) { AddonManager::instance().removeAddon(index); emit changed(); }
+void QmlAddonBridge::setEnabled(int index, bool on) { AddonManager::instance().setAddonEnabled(index, on); emit changed(); }
+void QmlAddonBridge::refreshTrackers() { AddonManager::instance().fetchTrackerList(); }
+
+bool QmlAddonBridge::isInstalled(const QString &url) const
+{
+    const auto list = AddonManager::instance().addons();
+    for (const auto &a : list)
+        if (a.url == url) return true;
+    return false;
+}
+
+// ===================== QmlPairingBridge =====================
+
+QString QmlPairingBridge::detectLanIp()
+{
+    QString preferred, fallback;
+    for (const auto &iface : QNetworkInterface::allInterfaces()) {
+        const auto flags = iface.flags();
+        if (!flags.testFlag(QNetworkInterface::IsUp)) continue;
+        if (!flags.testFlag(QNetworkInterface::IsRunning)) continue;
+        if (flags.testFlag(QNetworkInterface::IsLoopBack)) continue;
+        const QString name = iface.name();
+        for (const auto &entry : iface.addressEntries()) {
+            if (entry.ip().protocol() != QAbstractSocket::IPv4Protocol) continue;
+            const QString ip = entry.ip().toString();
+            if (ip.startsWith("169.254.")) continue;
+            if (name.startsWith("en") || name.contains("wlan") || name.contains("wlp"))
+                preferred = ip;
+            else if (fallback.isEmpty())
+                fallback = ip;
+        }
+    }
+    return preferred.isEmpty() ? fallback : preferred;
+}
+
+QmlPairingBridge::QmlPairingBridge(QObject *parent) : QObject(parent)
+{
+    const int port = QSettings().value(QStringLiteral("webui/port"), 8080).toInt();
+    const QString ip = detectLanIp();
+    if (!ip.isEmpty())
+        m_url = QStringLiteral("http://%1:%2/").arg(ip).arg(port);
+}
+
+void QmlPairingBridge::copyUrl()
+{
+    if (!m_url.isEmpty()) QGuiApplication::clipboard()->setText(m_url);
+}
+
+void QmlPairingBridge::openBrowser()
+{
+    if (!m_url.isEmpty()) QDesktopServices::openUrl(QUrl(m_url));
+}
+
+QStringList QmlPairingBridge::qrRows() const
+{
+    QStringList rows;
+    if (m_url.isEmpty()) return rows;
+    const qrgen::Matrix m = qrgen::encode(m_url);
+    if (m.size == 0) return rows;
+    for (int y = 0; y < m.size; ++y) {
+        QString s;
+        s.reserve(m.size);
+        for (int x = 0; x < m.size; ++x)
+            s += m.at(x, y) ? QLatin1Char('1') : QLatin1Char('0');
+        rows << s;
+    }
+    return rows;
+}
+
+// ===================== QmlLogBridge =====================
+
+QmlLogBridge::QmlLogBridge(QObject *parent) : QObject(parent)
+{
+    m_pollTimer.setInterval(1000);
+    connect(&m_pollTimer, &QTimer::timeout, this, &QmlLogBridge::poll);
+}
+
+int QmlLogBridge::level() const { return int(Logger::instance().level()); }
+
+void QmlLogBridge::setLevel(int l)
+{
+    Logger::instance().setLevel(Logger::Level(l));
+    m_lastSize = 0;
+    poll();
+    emit levelChanged();
+}
+
+QStringList QmlLogBridge::levelNames() const
+{
+    // Critical omitted on purpose (matches the old combo's 5 entries).
+    return { "Trace", "Debug", "Info", "Warning", "Error" };
+}
+
+QString QmlLogBridge::logsDir() const { return Logger::instance().logsDir(); }
+
+void QmlLogBridge::start() { poll(); m_pollTimer.start(); }
+void QmlLogBridge::stop() { m_pollTimer.stop(); }
+
+void QmlLogBridge::poll()
+{
+    QFile f(Logger::instance().currentLogPath());
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
+    const qint64 size = f.size();
+    if (size == m_lastSize) return;
+    if (size < m_lastSize) { m_text.clear(); m_lastSize = 0; }  // rotated/cleared
+    f.seek(m_lastSize);
+    m_text += QString::fromUtf8(f.readAll());
+    m_lastSize = size;
+    // cap to ~20000 lines (replaces QPlainTextEdit::maximumBlockCount)
+    int nl = m_text.count('\n');
+    if (nl > 20000) {
+        int drop = m_text.indexOf('\n', 0);
+        while (nl-- > 20000 && drop >= 0) drop = m_text.indexOf('\n', drop + 1);
+        if (drop > 0) m_text = m_text.mid(drop + 1);
+    }
+    emit textChanged();
+}
+
+void QmlLogBridge::clearLog()
+{
+    Logger::instance().clear();
+    m_text.clear();
+    m_lastSize = 0;
+    emit textChanged();
+}
+
+void QmlLogBridge::openLogsFolder()
+{
+    QDesktopServices::openUrl(QUrl::fromLocalFile(Logger::instance().logsDir()));
+}
+
+bool QmlLogBridge::exportLogs(const QString &filePath)
+{
+    QString path = filePath;
+    if (path.startsWith("file://")) path = QUrl(path).toLocalFile();
+    QFile out(path);
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
+    out.write(Logger::instance().readAllLogs().toUtf8());
+    out.close();
+    return true;
+}
+
+QString QmlLogBridge::defaultExportName() const
+{
+    const QString desktop = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    return desktop + "/batorrent-logs-"
+        + QDateTime::currentDateTime().toString("yyyy-MM-dd-HHmmss") + ".txt";
+}
+
+// ===================== QmlSettingsBridge =====================
+
+QmlSettingsBridge::QmlSettingsBridge(SessionManager *session, QObject *parent)
+    : QObject(parent), m_session(session) {}
+
+QVariant QmlSettingsBridge::get(const QString &key) const
+{
+    SessionManager *s = m_session;
+    // speed
+    if (key == "downloadLimit")       return s->downloadLimit();
+    if (key == "uploadLimit")         return s->uploadLimit();
+    if (key == "maxActiveDownloads")  return s->maxActiveDownloads();
+    if (key == "seedRatioLimit")      return s->seedRatioLimit();
+    if (key == "stopAfterDownload")   return s->stopAfterDownload();
+    if (key == "maxSeedDays")         return int(s->maxSeedSeconds() / 86400);
+    if (key == "schedulerEnabled")    return s->schedulerEnabled();
+    if (key == "altDownloadLimit")    return s->altDownloadLimit();
+    if (key == "altUploadLimit")      return s->altUploadLimit();
+    if (key == "scheduleFromHour")    return s->scheduleFromHour();
+    if (key == "scheduleToHour")      return s->scheduleToHour();
+    if (key == "scheduleDays")        return s->scheduleDays();
+    // network
+    if (key == "listenPort")          return s->listenPort();
+    if (key == "maxConnections")      return s->maxConnections();
+    if (key == "dhtEnabled")          return s->dhtEnabled();
+    if (key == "utpEnabled")          return s->utpEnabled();
+    if (key == "encryptionMode")      return s->encryptionMode();
+    if (key == "anonymousMode")       return s->anonymousMode();
+    if (key == "forceIpv4")           return s->forceIpv4();
+    if (key == "ptMode")              return s->ptMode();
+    if (key == "blockLeechers")       return s->blockLeecherClients();
+    // vpn
+    if (key == "outgoingInterface")   return s->outgoingInterface();
+    if (key == "killSwitchEnabled")   return s->killSwitchEnabled();
+    if (key == "autoResumeOnReconnect") return s->autoResumeOnReconnect();
+    // proxy / ip filter
+    if (key == "proxyType")           return s->proxyType();
+    if (key == "proxyHost")           return s->proxyHost();
+    if (key == "proxyPort")           return s->proxyPort();
+    if (key == "proxyUser")           return s->proxyUser();
+    if (key == "proxyPass")           return s->proxyPass();
+    if (key == "ipFilterPath")        return s->ipFilterPath();
+    // files / media
+    if (key == "tempPath")            return s->tempPath();
+    if (key == "contentLayout")       return s->contentLayout();
+    if (key == "torrentExportDir")    return s->torrentExportDir();
+    if (key == "autoExtract")         return s->autoExtract();
+    if (key == "autoExtractDelete")   return s->autoExtractDelete();
+    if (key == "runOnComplete")       return s->runOnComplete();
+    if (key == "watchedFolder")       return s->watchedFolder();
+    if (key == "autoMoveEnabled")     return s->autoMoveEnabled();
+    if (key == "autoMovePath")        return s->autoMovePath();
+    // UI-only prefs + media API keys
+    QSettings st;
+    return st.value(key);
+}
+
+void QmlSettingsBridge::set(const QString &key, const QVariant &v)
+{
+    SessionManager *s = m_session;
+    if (key == "downloadLimit")            s->setDownloadLimit(v.toInt());
+    else if (key == "uploadLimit")         s->setUploadLimit(v.toInt());
+    else if (key == "maxActiveDownloads")  s->setMaxActiveDownloads(v.toInt());
+    else if (key == "seedRatioLimit")      s->setSeedRatioLimit(v.toFloat());
+    else if (key == "stopAfterDownload")   s->setStopAfterDownload(v.toBool());
+    else if (key == "maxSeedDays")         s->setMaxSeedSeconds(qint64(v.toInt()) * 86400);
+    else if (key == "schedulerEnabled")    s->setSchedulerEnabled(v.toBool());
+    else if (key == "altDownloadLimit")    s->setAltSpeedLimits(v.toInt(), s->altUploadLimit());
+    else if (key == "altUploadLimit")      s->setAltSpeedLimits(s->altDownloadLimit(), v.toInt());
+    else if (key == "scheduleFromHour")    s->setScheduleFromHour(v.toInt());
+    else if (key == "scheduleToHour")      s->setScheduleToHour(v.toInt());
+    else if (key == "scheduleDays")        s->setScheduleDays(v.toInt());
+    else if (key == "listenPort")          s->setListenPort(v.toInt());
+    else if (key == "maxConnections")      s->setMaxConnections(v.toInt());
+    else if (key == "dhtEnabled")          s->setDhtEnabled(v.toBool());
+    else if (key == "utpEnabled")          s->setUtpEnabled(v.toBool());
+    else if (key == "encryptionMode")      s->setEncryptionMode(v.toInt());
+    else if (key == "anonymousMode")       s->setAnonymousMode(v.toBool());
+    else if (key == "forceIpv4")           s->setForceIpv4(v.toBool());
+    else if (key == "ptMode")              s->setPtMode(v.toBool());
+    else if (key == "blockLeechers")       s->setBlockLeecherClients(v.toBool());
+    else if (key == "outgoingInterface")   s->setOutgoingInterface(v.toString());
+    else if (key == "killSwitchEnabled")   s->setKillSwitchEnabled(v.toBool());
+    else if (key == "autoResumeOnReconnect") s->setAutoResumeOnReconnect(v.toBool());
+    else if (key == "proxyType")           s->setProxySettings(v.toInt(), s->proxyHost(), s->proxyPort(), s->proxyUser(), s->proxyPass());
+    else if (key == "proxyHost")           s->setProxySettings(s->proxyType(), v.toString(), s->proxyPort(), s->proxyUser(), s->proxyPass());
+    else if (key == "proxyPort")           s->setProxySettings(s->proxyType(), s->proxyHost(), v.toInt(), s->proxyUser(), s->proxyPass());
+    else if (key == "proxyUser")           s->setProxySettings(s->proxyType(), s->proxyHost(), s->proxyPort(), v.toString(), s->proxyPass());
+    else if (key == "proxyPass")           s->setProxySettings(s->proxyType(), s->proxyHost(), s->proxyPort(), s->proxyUser(), v.toString());
+    else if (key == "ipFilterPath")        { QString p = v.toString(); if (p.isEmpty()) s->clearIpFilter(); else s->loadIpFilter(p); }
+    else if (key == "tempPath")            s->setTempPath(v.toString());
+    else if (key == "contentLayout")       s->setContentLayout(v.toInt());
+    else if (key == "torrentExportDir")    s->setTorrentExportDir(v.toString());
+    else if (key == "autoExtract")         s->setAutoExtract(v.toBool());
+    else if (key == "autoExtractDelete")   s->setAutoExtractDelete(v.toBool());
+    else if (key == "runOnComplete")       s->setRunOnComplete(v.toString());
+    else if (key == "watchedFolder")       s->setWatchedFolder(v.toString());
+    else if (key == "autoMoveEnabled")     s->setAutoMove(v.toBool(), s->autoMovePath());
+    else if (key == "autoMovePath")        s->setAutoMove(s->autoMoveEnabled(), v.toString());
+    else { QSettings st; st.setValue(key, v); }
     emit changed();
 }
