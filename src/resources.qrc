@@ -36,6 +36,7 @@
 <file>icons/set-advanced.svg</file>
 <file>../src/qml/Main.qml</file>
         <file>../src/qml/TrayPopupWindow.qml</file>
+        <file>../src/qml/UpdateDialog.qml</file>
         <file>../src/qml/InputPromptDialog.qml</file>
 <file>../src/qml/BatDialog.qml</file>
 <file>../src/qml/MagnetDialog.qml</file>
