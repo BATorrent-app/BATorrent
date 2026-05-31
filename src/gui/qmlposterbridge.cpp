@@ -1867,3 +1867,26 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     else { QSettings st; st.setValue(key, v); }
     emit changed();
 }
+
+// --- QmlNotificationBridge ---
+
+void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &)
+{
+    emit notify(QStringLiteral("Download concluído"), name, 0);
+}
+
+void QmlNotificationBridge::onTorrentError(const QString &message)
+{
+    emit notify(QStringLiteral("Erro no torrent"), message, 2);
+}
+
+void QmlNotificationBridge::onKillSwitchTriggered()
+{
+    emit notify(QStringLiteral("Kill switch ativado"),
+                QStringLiteral("A VPN caiu — os torrents foram pausados."), 1);
+}
+
+void QmlNotificationBridge::onRssAutoDownloaded(const QString &feedName, const QString &itemTitle)
+{
+    emit notify(feedName, itemTitle, 0);
+}

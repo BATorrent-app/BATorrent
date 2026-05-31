@@ -339,6 +339,19 @@ Window {
         }
     }
 
+    // Background events → native OS notification via the tray icon.
+    Connections {
+        target: typeof notifications !== "undefined" ? notifications : null
+        ignoreUnknownSignals: true
+        function onNotify(title, body, level) {
+            if (trayIcon.supportsMessages)
+                trayIcon.showMessage(title, body,
+                    level === 2 ? Platform.SystemTrayIcon.Critical
+                    : level === 1 ? Platform.SystemTrayIcon.Warning
+                    : Platform.SystemTrayIcon.Information, 5000)
+        }
+    }
+
     TrayPopupWindow {
         id: trayPopup
         onShowApp:      { win.show(); win.raise(); win.requestActivate() }

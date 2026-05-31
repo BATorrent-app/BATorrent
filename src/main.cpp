@@ -148,6 +148,15 @@ int main(int argc, char *argv[])
         auto *searchBridge = new QmlSearchBridge(&session, &app);
         auto *logBridge = new QmlLogBridge(&app);
         auto *pairingBridge = new QmlPairingBridge(&app);
+        auto *notificationBridge = new QmlNotificationBridge(&app);
+        QObject::connect(&session, &SessionManager::torrentFinished,
+                         notificationBridge, &QmlNotificationBridge::onTorrentFinished);
+        QObject::connect(&session, &SessionManager::torrentError,
+                         notificationBridge, &QmlNotificationBridge::onTorrentError);
+        QObject::connect(&session, &SessionManager::killSwitchTriggered,
+                         notificationBridge, &QmlNotificationBridge::onKillSwitchTriggered);
+        QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
+                         notificationBridge, &QmlNotificationBridge::onRssAutoDownloaded);
         QObject::connect(&session, &SessionManager::torrentsUpdated,
                          sessionBridge, &QmlSessionBridge::emitStats);
         QObject::connect(resolver, &MetadataResolver::metadataReady,
@@ -195,6 +204,7 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("search", searchBridge);
         engine.rootContext()->setContextProperty("logs", logBridge);
         engine.rootContext()->setContextProperty("pairing", pairingBridge);
+        engine.rootContext()->setContextProperty("notifications", notificationBridge);
         engine.load(QUrl("qrc:/src/qml/Main.qml"));
         if (engine.rootObjects().isEmpty())
             return -1;

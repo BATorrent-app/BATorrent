@@ -487,4 +487,23 @@ private:
     SessionManager *m_session;
 };
 
+// Turns background SessionManager / RSS events into a single `notify` signal
+// that QML hands to the system tray icon as a native OS notification.
+class QmlNotificationBridge : public QObject
+{
+    Q_OBJECT
+public:
+    explicit QmlNotificationBridge(QObject *parent = nullptr) : QObject(parent) {}
+
+public slots:
+    void onTorrentFinished(const QString &name, const QString &infoHash);
+    void onTorrentError(const QString &message);
+    void onKillSwitchTriggered();
+    void onRssAutoDownloaded(const QString &feedName, const QString &itemTitle);
+
+signals:
+    // level: 0 = information, 1 = warning, 2 = critical
+    void notify(const QString &title, const QString &body, int level);
+};
+
 #endif
