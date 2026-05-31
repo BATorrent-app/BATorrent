@@ -19,6 +19,18 @@ Window {
     color: Theme.bg
     title: "BATorrent"
 
+    // Close button hides to the tray instead of quitting (quitOnLastWindowClosed
+    // is false). If no tray is available, really quit so the app can't get stuck
+    // running with no window. Real quit otherwise goes through the tray/app menu.
+    onClosing: function(close) {
+        if (trayIcon.available) {
+            close.accepted = false
+            win.hide()
+        } else {
+            Qt.quit()
+        }
+    }
+
     property int selected: -1          // focus row (drives the detail panel)
     property var selectedRows: []      // multi-selection (proxy rows)
     property int anchorRow: -1         // shift-range anchor
@@ -301,6 +313,38 @@ Window {
             Platform.MenuSeparator {}
             Platform.MenuItem { text: qsTr("Doar"); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
             Platform.MenuItem { text: qsTr("Sobre o BATorrent"); onTriggered: aboutDlg.open() }
+        }
+    }
+
+    // ----- system tray -----
+    // Left click (Trigger) / double click restores the window — Windows
+    // convention. Right click opens the context menu automatically. The rich
+    // mini-stats popup is folded into the menu's first (disabled) line.
+    Platform.SystemTrayIcon {
+        id: trayIcon
+        visible: true
+        icon.source: "qrc:/images/logo1.png"
+        icon.mask: false
+        tooltip: "BATorrent"
+        onActivated: function(reason) {
+            if (reason === Platform.SystemTrayIcon.Trigger
+                || reason === Platform.SystemTrayIcon.DoubleClick) {
+                win.show(); win.raise(); win.requestActivate()
+            }
+        }
+        menu: Platform.Menu {
+            Platform.MenuItem {
+                enabled: false
+                text: "↓ " + (typeof session !== "undefined" ? session.totalDownSpeed : "0 B/s")
+                    + "   ↑ " + (typeof session !== "undefined" ? session.totalUpSpeed : "0 B/s")
+            }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Mostrar BATorrent"); onTriggered: { win.show(); win.raise(); win.requestActivate() } }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Pausar todos"); onTriggered: if (typeof session !== "undefined") session.pauseAll() }
+            Platform.MenuItem { text: qsTr("Retomar todos"); onTriggered: if (typeof session !== "undefined") session.resumeAll() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: qsTr("Sair"); onTriggered: Qt.quit() }
         }
     }
 
