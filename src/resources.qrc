@@ -35,6 +35,7 @@
 <file>icons/set-addons.svg</file>
 <file>icons/set-advanced.svg</file>
 <file>../src/qml/Main.qml</file>
+        <file>../src/qml/InputPromptDialog.qml</file>
 <file>../src/qml/BatDialog.qml</file>
 <file>../src/qml/MagnetDialog.qml</file>
 <file>../src/qml/RemoveDialog.qml</file>
@@ -47,6 +48,13 @@
 <file>../src/qml/SearchWindow.qml</file>
 <file>../src/qml/RssWindow.qml</file>
 <file>../src/qml/SettingsWindow.qml</file>
+<file>../src/qml/ShortcutsWindow.qml</file>
+<file>../src/qml/StatisticsWindow.qml</file>
+<file>../src/qml/RemovedHistoryWindow.qml</file>
+<file>../src/qml/InspectorDialog.qml</file>
+<file>../src/qml/LogViewerWindow.qml</file>
+<file>../src/qml/DiagnosticsWindow.qml</file>
+<file>../src/qml/PairingDialog.qml</file>
 <file>../src/qml/theme/Theme.qml</file>
 <file>../src/qml/theme/qmldir</file>
 <file>../src/qml/widgets/qmldir</file>

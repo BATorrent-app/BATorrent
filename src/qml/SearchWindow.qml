@@ -1,4 +1,4 @@
-// Source: BATorrent Search.html (bat-dialog.css + <style> inline)
+// Source: BATorrent Search.html — wired to QmlSearchBridge (`search`).
 import QtQuick
 import QtQuick.Layouts
 import "theme"
@@ -13,37 +13,36 @@ Window {
     color: Theme.bg
     title: "Buscar torrents"
 
-    ListModel {
-        id: results
-        ListElement { name: "Forza.Horizon.6-CODEX"; prov: "The Pirate Bay"; size: "92.4 GB"; se: "412"; le: "88"; age: "3d" }
-        ListElement { name: "Forza Horizon 6 [FitGirl Repack] selective"; prov: "The Pirate Bay"; size: "58.1 GB"; se: "389"; le: "120"; age: "3d" }
-        ListElement { name: "Forza.Horizon.6.MULTi15-ElAmigos"; prov: "1337x"; size: "71.9 GB"; se: "154"; le: "63"; age: "2d" }
-        ListElement { name: "Forza Horizon 6 Deluxe Edition"; prov: "RuTracker"; size: "96.0 GB"; se: "77"; le: "41"; age: "5d" }
-        ListElement { name: "Forza.Horizon.6.Update.v1.2-CODEX"; prov: "The Pirate Bay"; size: "2.1 GB"; se: "203"; le: "12"; age: "1d" }
-        ListElement { name: "Forza Horizon 6 OST (FLAC)"; prov: "1337x"; size: "480 MB"; se: "34"; le: "5"; age: "6d" }
+    readonly property var api: typeof search !== "undefined" ? search : null
+    readonly property string sourceKey: {
+        if (!api) return "stremio"
+        var s = api.sources
+        return (srcSel.currentIndex >= 0 && srcSel.currentIndex < s.length) ? s[srcSel.currentIndex].key : "stremio"
+    }
+    readonly property bool isLegacy: sourceKey === "legacy"
+
+    onVisibleChanged: if (visible && api) api.refreshSources()
+
+    function runSearch() {
+        if (!api) return
+        var cat = (isLegacy && catSel.currentIndex >= 0) ? api.categories[catSel.currentIndex].code : 0
+        api.search(win.sourceKey, queryFld.text, cat)
     }
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
-        // ----- titlebar (.tb) -----
+        // titlebar
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text {
-                anchors.centerIn: parent
-                text: "Buscar torrents"
-                color: Theme.t2
-                font.pointSize: 12.5
-                font.weight: Font.DemiBold
-                font.family: Theme.fontSans
-            }
+            Text { anchors.centerIn: parent; text: "Buscar torrents"; color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
-        // ----- .sbar (padding s4 s5, gap s3) -----
+        // search bar
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 36 + 2 * Theme.sp4
@@ -59,32 +58,33 @@ Window {
                 spacing: Theme.sp3
 
                 TFld {
+                    id: queryFld
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
                     icon: "qrc:/icons/search.svg"
-                    text: "forza horizon 6"
+                    placeholder: "Buscar…"
+                    onEdited: win.runSearch()
                 }
-                // .prov
-                Rectangle {
+                TSelect {
+                    id: srcSel
                     Layout.preferredHeight: 36
-                    implicitWidth: provRow.implicitWidth + 24
-                    radius: 8
-                    color: "transparent"
-                    border.color: Theme.hair
-                    border.width: 1
-                    Row {
-                        id: provRow
-                        anchors.centerIn: parent
-                        spacing: 8
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: "Todos os provedores"; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
-                        IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/chevron.svg"; tint: Theme.t4; s: 13 }
-                    }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
+                    Layout.preferredWidth: 180
+                    model: win.api ? win.api.sources : []
+                    textRole: "label"
                 }
+                TSelect {
+                    id: catSel
+                    visible: win.isLegacy
+                    Layout.preferredHeight: 36
+                    Layout.preferredWidth: 130
+                    model: win.api ? win.api.categories : []
+                    textRole: "label"
+                }
+                BtnFlat { primary: true; text: "Buscar"; onClicked: win.runSearch() }
             }
         }
 
-        // ----- .rhd header -----
+        // results header (columns adapt to mode)
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 34
@@ -95,25 +95,38 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp4
+                property bool torrentish: win.api && (win.api.mode === "torrent" || win.api.mode === "games")
                 Text { text: "NOME"; Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { text: "PROVEDOR"; Layout.preferredWidth: 120; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { text: "TAMANHO"; Layout.preferredWidth: 78; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { text: "SEEDS"; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { text: "LEECH"; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { text: "IDADE"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { text: "TAMANHO"; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { visible: parent.torrentish; text: "SEEDS"; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { visible: parent.torrentish; text: "LEECH"; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Item { Layout.preferredWidth: 36 }
             }
         }
 
-        // ----- .results -----
+        // results
         ListView {
+            id: resultsView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            model: results
+            model: win.api ? win.api.results : []
             boundsBehavior: Flickable.StopAtBounds
 
+            // empty / loading state
+            Text {
+                anchors.centerIn: parent
+                visible: resultsView.count === 0
+                text: win.api && win.api.searching ? "Buscando…"
+                     : (win.api && win.api.statusText.length > 0 ? win.api.statusText : "Digite algo e pressione Buscar")
+                color: Theme.t4
+                font.pointSize: 12.5
+                font.family: Theme.fontSans
+            }
+
             delegate: Rectangle {
+                required property var modelData
+                required property int index
                 width: ListView.view.width
                 height: 46
                 color: resMa.containsMouse ? Theme.hover : "transparent"
@@ -125,24 +138,33 @@ Window {
                     anchors.rightMargin: Theme.sp5
                     spacing: Theme.sp4
 
-                    Text {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        text: model.name
-                        color: Theme.t1
-                        font.pointSize: 12.5
-                        font.family: Theme.fontSans
-                        elide: Text.ElideRight
+                        spacing: 1
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.name
+                                color: Theme.t1
+                                font.pointSize: 12.5
+                                font.family: Theme.fontSans
+                                elide: Text.ElideRight
+                            }
+                            TChip { visible: (modelData.repacker || "").length > 0; text: modelData.repacker || "" }
+                        }
+                        Text {
+                            visible: (modelData.sub || "").length > 0
+                            text: modelData.sub || ""
+                            color: Theme.t4
+                            font.pointSize: 10
+                            font.family: Theme.fontSans
+                        }
                     }
-                    // .prv chip
-                    Item {
-                        Layout.preferredWidth: 120
-                        TChip { anchors.verticalCenter: parent.verticalCenter; text: model.prov }
-                    }
-                    Text { text: model.size; Layout.preferredWidth: 78; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontMono }
-                    Text { text: model.se; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.grn; font.pointSize: 12; font.family: Theme.fontMono }
-                    Text { text: model.le; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pointSize: 12; font.family: Theme.fontMono }
-                    Text { text: model.age; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 11.5; font.family: Theme.fontMono }
-                    // .add button
+                    Text { text: modelData.sizeStr || ""; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontMono }
+                    Text { visible: (modelData.seeds || "").length > 0; text: modelData.seeds || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: modelData.hasSeeds ? Theme.grn : Theme.t4; font.pointSize: 12; font.family: Theme.fontMono }
+                    Text { visible: (modelData.leech || "").length > 0; text: modelData.leech || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pointSize: 12; font.family: Theme.fontMono }
                     Item {
                         Layout.preferredWidth: 36
                         Rectangle {
@@ -154,19 +176,32 @@ Window {
                             border.width: 1
                             Text {
                                 anchors.centerIn: parent
-                                text: "+"
+                                text: (win.api && win.api.mode === "catalog") ? "›" : "+"
                                 color: addMa.containsMouse ? Theme.accentText : Theme.t3
                                 font.pointSize: 15
                             }
-                            MouseArea { id: addMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
+                            MouseArea {
+                                id: addMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: if (win.api) win.api.activateResult(index)
+                            }
                         }
                     }
                 }
-                MouseArea { id: resMa; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                MouseArea {
+                    id: resMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton
+                    z: -1
+                    onDoubleClicked: if (win.api) win.api.activateResult(index)
+                }
             }
         }
 
-        // ----- .foot -----
+        // footer
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 56
@@ -176,7 +211,9 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
-                Text { text: "42 resultados · 3 provedores"; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                spacing: Theme.sp2
+                BtnFlat { visible: win.api && win.api.inStreams; text: "‹ Voltar"; onClicked: if (win.api) win.api.back() }
+                Text { text: win.api ? win.api.statusText : ""; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
                 BtnFlat { text: "Fechar"; onClicked: win.close() }
             }

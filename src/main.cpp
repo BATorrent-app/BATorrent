@@ -16,6 +16,7 @@
 #include <QQuickStyle>
 #include "app/metadataresolver.h"
 #include "gui/qmlposterbridge.h"
+#include "app/rssmanager.h"
 #include "torrent/sessionmanager.h"
 #include "app/secretstore.h"
 #include "app/logger.h"
@@ -129,7 +130,9 @@ int main(int argc, char *argv[])
     defaultFont.setStyleStrategy(QFont::PreferAntialias);
     app.setFont(defaultFont);
 
-    if (app.arguments().contains("--qml")) {
+    // QML is the default UI. The old QWidget UI stays reachable via --legacy
+    // as a safety net during the migration.
+    if (!app.arguments().contains("--legacy")) {
         QQuickStyle::setStyle("Basic");
 
         SessionManager session;
@@ -138,6 +141,13 @@ int main(int argc, char *argv[])
         auto *posterModel = new QmlPosterModel(&session, resolver, &app);
         auto *themeBridge = new QmlThemeBridge(&app);
         auto *sessionBridge = new QmlSessionBridge(&session, resolver, &app);
+        RssManager::instance().setSession(&session, sessionBridge->defaultSavePath());
+        auto *rssBridge = new QmlRssBridge(&app);
+        auto *settingsBridge = new QmlSettingsBridge(&session, &app);
+        auto *addonBridge = new QmlAddonBridge(&app);
+        auto *searchBridge = new QmlSearchBridge(&session, &app);
+        auto *logBridge = new QmlLogBridge(&app);
+        auto *pairingBridge = new QmlPairingBridge(&app);
         QObject::connect(&session, &SessionManager::torrentsUpdated,
                          sessionBridge, &QmlSessionBridge::emitStats);
         QObject::connect(resolver, &MetadataResolver::metadataReady,
@@ -179,6 +189,12 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("torrentFilter", filterProxy);
         engine.rootContext()->setContextProperty("themeBridge", themeBridge);
         engine.rootContext()->setContextProperty("session", sessionBridge);
+        engine.rootContext()->setContextProperty("rss", rssBridge);
+        engine.rootContext()->setContextProperty("settings", settingsBridge);
+        engine.rootContext()->setContextProperty("addons", addonBridge);
+        engine.rootContext()->setContextProperty("search", searchBridge);
+        engine.rootContext()->setContextProperty("logs", logBridge);
+        engine.rootContext()->setContextProperty("pairing", pairingBridge);
         engine.load(QUrl("qrc:/src/qml/Main.qml"));
         if (engine.rootObjects().isEmpty())
             return -1;

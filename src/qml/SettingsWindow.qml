@@ -53,7 +53,7 @@ Window {
             { type: "group", label: "Aparência" },
             { type: "select", label: "Idioma", options: ["Português", "English", "Español", "日本語", "Русский", "中文", "Deutsch"], value: 0 },
             { type: "theme", label: "Tema", options: ["Escuro", "Claro", "Midnight", "Sakura", "Dark Star"], value: 0 },
-            { type: "anime", label: "Arte anime de fundo" },
+            { type: "anime", label: "Modo Anime (arte de fundo)" },
             { type: "group", label: "Sistema" },
             { type: "toggle", label: "Iniciar minimizado na bandeja" },
             { type: "toggle", label: "Fechar para a bandeja ao invés de sair", on: true },
@@ -64,44 +64,44 @@ Window {
         // 1 Velocidade
         [
             { type: "group", label: "Limites globais" },
-            { type: "number", label: "Máximo de download", value: "0", suffix: "KB/s", note: "0 = ilimitado" },
-            { type: "number", label: "Máximo de upload", value: "200", suffix: "KB/s", note: "0 = ilimitado" },
-            { type: "number", label: "Downloads ativos simultâneos", value: "5", note: "0 = ilimitado" },
+            { type: "number", key: "downloadLimit", label: "Máximo de download", value: "0", suffix: "KB/s", note: "0 = ilimitado" },
+            { type: "number", key: "uploadLimit", label: "Máximo de upload", value: "200", suffix: "KB/s", note: "0 = ilimitado" },
+            { type: "number", key: "maxActiveDownloads", label: "Downloads ativos simultâneos", value: "5", note: "0 = ilimitado" },
             { type: "group", label: "Seeding" },
-            { type: "number", label: "Parar de semear na proporção", value: "2.0", note: "Pausa o seeding quando upload ÷ download alcança essa razão. 0 = sem limite." },
-            { type: "number", label: "Parar de semear após", value: "0", suffix: "dias" },
-            { type: "toggle", label: "Parar de semear ao concluir o download" },
+            { type: "number", key: "seedRatioLimit", label: "Parar de semear na proporção", value: "2.0", note: "Pausa o seeding quando upload ÷ download alcança essa razão. 0 = sem limite." },
+            { type: "number", key: "maxSeedDays", label: "Parar de semear após", value: "0", suffix: "dias" },
+            { type: "toggle", key: "stopAfterDownload", label: "Parar de semear ao concluir o download" },
             { type: "select", label: "Marcar como Concluído após", options: ["Nunca", "1 dia", "3 dias", "7 dias", "14 dias", "30 dias"], value: 0, note: "Depois desse tempo contínuo de seeding, marca o torrent como Concluído (verde, pausado)." },
             { type: "group", label: "Agendamento de Velocidade" },
-            { type: "toggle", label: "Habilitar agendamento de velocidade", note: "Troca para os limites alternativos em uma janela de horário e dias configurados." },
-            { type: "number", label: "Limite alt. download", value: "50", suffix: "KB/s" },
-            { type: "number", label: "Limite alt. upload", value: "20", suffix: "KB/s" },
+            { type: "toggle", key: "schedulerEnabled", label: "Habilitar agendamento de velocidade", note: "Troca para os limites alternativos em uma janela de horário e dias configurados." },
+            { type: "number", key: "altDownloadLimit", label: "Limite alt. download", value: "50", suffix: "KB/s" },
+            { type: "number", key: "altUploadLimit", label: "Limite alt. upload", value: "20", suffix: "KB/s" },
             { type: "timerange", label: "Ativo das", from: "08:00", to: "18:00" },
             { type: "days", label: "Dias", value: [1,2,3,4,5] }
         ],
         // 2 Rede
         [
             { type: "group", label: "Conexão" },
-            { type: "number", label: "Porta de escuta", value: "6881", note: "Conexões de peers chegam por aqui. Combine com a regra de port-forward do seu roteador." },
-            { type: "toggle", label: "Usar porta aleatória a cada inicialização" },
-            { type: "number", label: "Máximo de conexões", value: "200" },
+            { type: "number", key: "listenPort", label: "Porta de escuta", value: "6881", note: "Conexões de peers chegam por aqui. Combine com a regra de port-forward do seu roteador." },
+            { type: "toggle", key: "randomPort", label: "Usar porta aleatória a cada inicialização" },
+            { type: "number", key: "maxConnections", label: "Máximo de conexões", value: "200" },
             { type: "group", label: "Protocolo" },
-            { type: "toggle", label: "Habilitar DHT (descoberta de peers sem tracker)", on: true, note: "Descobre peers sem precisar de tracker. Desabilite em trackers privados (BEP-27)." },
-            { type: "toggle", label: "Habilitar µTP (transporte de peer via UDP)", on: true },
-            { type: "segmented", label: "Criptografia do protocolo", options: ["Habilitada", "Forçada", "Desabilitada"], value: 0, note: "Forçado = só criptografado. Muitos provedores limitam BitTorrent em texto plano." },
-            { type: "segmented", label: "Exibir velocidades em", options: ["Bytes (KB/s)", "Bits (Kbps)"], value: 0 },
+            { type: "toggle", key: "dhtEnabled", label: "Habilitar DHT (descoberta de peers sem tracker)", on: true, note: "Descobre peers sem precisar de tracker. Desabilite em trackers privados (BEP-27)." },
+            { type: "toggle", key: "utpEnabled", label: "Habilitar µTP (transporte de peer via UDP)", on: true },
+            { type: "segmented", key: "encryptionMode", label: "Criptografia do protocolo", options: ["Habilitada", "Forçada", "Desabilitada"], value: 0, note: "Forçado = só criptografado. Muitos provedores limitam BitTorrent em texto plano." },
+            { type: "segmented", key: "speedUnit", label: "Exibir velocidades em", options: ["Bytes (KB/s)", "Bits (Kbps)"], value: 0 },
             { type: "group", label: "Privacidade" },
-            { type: "toggle", label: "Modo anônimo (ocultar ID do cliente)", note: "Oculta nome/versão do cliente nos handshakes e desativa anúncios UPnP/NAT-PMP." },
-            { type: "toggle", label: "Forçar somente IPv4" },
-            { type: "toggle", label: "Modo PT (compatível com private trackers)", note: "Desliga DHT/PEX/LSD, força handshake anônimo e anuncia em todas as tiers." },
-            { type: "toggle", label: "Bloquear clientes vampiros (Xunlei, QQDownload, Baidu)", on: true }
+            { type: "toggle", key: "anonymousMode", label: "Modo anônimo (ocultar ID do cliente)", note: "Oculta nome/versão do cliente nos handshakes e desativa anúncios UPnP/NAT-PMP." },
+            { type: "toggle", key: "forceIpv4", label: "Forçar somente IPv4" },
+            { type: "toggle", key: "ptMode", label: "Modo PT (compatível com private trackers)", note: "Desliga DHT/PEX/LSD, força handshake anônimo e anuncia em todas as tiers." },
+            { type: "toggle", key: "blockLeechers", label: "Bloquear clientes vampiros (Xunlei, QQDownload, Baidu)", on: true }
         ],
         // 3 VPN
         [
             { type: "group", label: "Vínculo de Interface" },
             { type: "select", label: "Interface de rede", options: ["Qualquer (padrão)", "en0 — 192.168.0.12", "utun4 — 10.2.0.2 (VPN)"], value: 2 },
-            { type: "toggle", label: "Pausar torrents se a interface cair (Kill Switch)", on: true, note: "Pausa todo torrent ativo no instante em que a interface ligada cair." },
-            { type: "toggle", label: "Retomar automaticamente quando a interface voltar", on: true, note: "Retoma apenas os torrents que o kill switch pausou — não os que você pausou manualmente." },
+            { type: "toggle", key: "killSwitchEnabled", label: "Pausar torrents se a interface cair (Kill Switch)", on: true, note: "Pausa todo torrent ativo no instante em que a interface ligada cair." },
+            { type: "toggle", key: "autoResumeOnReconnect", label: "Retomar automaticamente quando a interface voltar", on: true, note: "Retoma apenas os torrents que o kill switch pausou — não os que você pausou manualmente." },
             { type: "toggle", label: "Usar Tor (SOCKS5 127.0.0.1:9050)" },
             { type: "group", label: "Energia" },
             { type: "toggle", label: "Desligar PC quando todos os downloads terminarem" }
@@ -109,11 +109,11 @@ Window {
         // 4 Proxy
         [
             { type: "group", label: "Proxy" },
-            { type: "select", label: "Tipo de proxy", options: ["Nenhum", "SOCKS5", "HTTP"], value: 0, note: "Roteia todo o tráfego de peers + trackers através de proxy SOCKS5 ou HTTP." },
-            { type: "text", label: "Host", mono: true, placeholder: "127.0.0.1", w: "w-md" },
-            { type: "number", label: "Porta", value: "1080" },
-            { type: "text", label: "Usuário", placeholder: "Opcional", w: "w-md" },
-            { type: "password", label: "Senha", w: "w-md" },
+            { type: "select", key: "proxyType", label: "Tipo de proxy", options: ["Nenhum", "SOCKS5", "HTTP"], value: 0, note: "Roteia todo o tráfego de peers + trackers através de proxy SOCKS5 ou HTTP." },
+            { type: "text", key: "proxyHost", label: "Host", mono: true, placeholder: "127.0.0.1", w: "w-md" },
+            { type: "number", key: "proxyPort", label: "Porta", value: "1080" },
+            { type: "text", key: "proxyUser", label: "Usuário", placeholder: "Opcional", w: "w-md" },
+            { type: "password", key: "proxyPass", label: "Senha", w: "w-md" },
             { type: "group", label: "Filtragem de IP" },
             { type: "path", label: "Arquivo de blocklist", placeholder: "Blocklist P2P (.txt, .p2p, .dat)", note: "Faixas de IP carregadas são descartadas antes do handshake." }
         ],
@@ -180,11 +180,11 @@ Window {
             { type: "toggle", label: "Incluir overhead IP nos limites de taxa" },
             { type: "toggle", label: "Isentar peers LAN dos limites de velocidade", on: true },
             { type: "group", label: "API de Metadados" },
-            { type: "text", label: "TMDB API key", mono: true, w: "grow", note: "Key gratuita de themoviedb.org — posters de filmes/séries." },
-            { type: "text", label: "IGDB Client ID", mono: true, w: "w-md" },
-            { type: "text", label: "IGDB Client secret", mono: true, w: "w-md" },
+            { type: "text", key: "tmdbApiKey", label: "TMDB API key", mono: true, w: "grow", note: "Key gratuita de themoviedb.org — posters de filmes/séries." },
+            { type: "text", key: "igdbClientId", label: "IGDB Client ID", mono: true, w: "w-md" },
+            { type: "text", key: "igdbClientSecret", label: "IGDB Client secret", mono: true, w: "w-md" },
             { type: "group", label: "Diagnóstico" },
-            { type: "toggle", label: "Logs detalhados (nível Debug)", note: "Captura detalhes extras de eventos do libtorrent. Use ao reportar um bug; desligue depois." },
+            { type: "toggle", key: "verboseLogging", label: "Logs detalhados (nível Debug)", note: "Captura detalhes extras de eventos do libtorrent. Use ao reportar um bug; desligue depois." },
             { type: "text", label: "Executar ao concluir", mono: true, placeholder: "notify-send \"%N concluído\"", w: "grow" },
             { type: "path", label: "Pasta monitorada", placeholder: "Pasta para monitorar arquivos .torrent" }
         ]
@@ -505,7 +505,10 @@ Window {
         Rectangle { visible: showDivider; Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
 
         // ---- control components ----
-        Component { id: cToggle; TToggle { on: field.on === true } }
+        Component { id: cToggle; TToggle {
+            on: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) === true : field.on === true
+            onToggled: function(v) { if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, v) }
+        } }
         Component {
             id: cAnime
             TToggle {
@@ -533,11 +536,12 @@ Window {
                     color: Theme.field; border.color: Theme.hair; border.width: 1
                     TextInput {
                         anchors.fill: parent; anchors.rightMargin: 10
-                        text: field.value || ""
+                        text: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || "")
                         color: Theme.t1
                         font.pointSize: 12; font.family: Theme.fontMono
                         horizontalAlignment: TextInput.AlignRight
                         verticalAlignment: TextInput.AlignVCenter
+                        onEditingFinished: if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, text)
                     }
                 }
                 Text { visible: field.suffix !== undefined; text: field.suffix || ""; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontMono }
@@ -549,8 +553,9 @@ Window {
                 implicitWidth: field.w === "grow" ? 320 : field.w === "w-md" ? 210 : field.w === "w-sm" ? 120 : 180
                 implicitHeight: 30
                 mono: field.mono === true
-                text: field.value || ""
+                text: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || "")
                 placeholder: field.placeholder || ""
+                onEdited: function(t) { if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, t) }
             }
         }
         Component {
@@ -558,7 +563,8 @@ Window {
             TSelect {
                 implicitWidth: 180
                 model: field.options || []
-                currentIndex: field.value || 0
+                currentIndex: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || 0)
+                onActivated: function(i) { if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, i) }
             }
         }
         Component {
@@ -570,7 +576,7 @@ Window {
                 color: Theme.field
                 border.color: Theme.hair
                 border.width: 1
-                property int curIdx: field.value || 0
+                property int curIdx: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || 0)
                 Row {
                     id: segR
                     anchors.centerIn: parent
@@ -591,7 +597,7 @@ Window {
                                 font.weight: Font.Medium
                                 font.family: Theme.fontSans
                             }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: parent.parent.parent.curIdx = index }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { parent.parent.parent.curIdx = index; if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, index) } }
                         }
                     }
                 }

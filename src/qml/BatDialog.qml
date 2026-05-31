@@ -11,8 +11,13 @@ Item {
     id: dlg
     anchors.fill: parent
     z: 200
-    visible: opened
+    // keep the item alive briefly after close so the exit animation can play
+    visible: opened || anim > 0
     property bool opened: false
+    // 0..1 drives the entrance/exit (backdrop fade + card scale+fade)
+    property real anim: 0
+    Behavior on anim { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+    onOpenedChanged: anim = opened ? 1 : 0
 
     function open()  { opened = true }
     function close() { opened = false }
@@ -34,6 +39,7 @@ Item {
     // backdrop (rgba(0,0,0,0.5) dark / rgba(20,20,28,0.32) light)
     Rectangle {
         anchors.fill: parent
+        opacity: dlg.anim
         color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.5)
                             : Qt.rgba(20/255, 20/255, 28/255, 0.32)
         MouseArea { anchors.fill: parent; onClicked: { dlg.rejected(); dlg.close() } }
@@ -55,6 +61,8 @@ Item {
         anchors.centerIn: parent
         width: dlg.cardW
         height: dlg.cardH
+        opacity: dlg.anim
+        scale: 0.97 + 0.03 * dlg.anim
         radius: 13
         color: Theme.bg
         border.color: Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.14)

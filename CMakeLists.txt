@@ -15,6 +15,14 @@ if(WIN32)
     set(WIN_RC src/app.rc)
 endif()
 
+# macOS: bundle the app icon (black bg + white logo) into Contents/Resources
+set(MACOSX_APP_ICON "")
+if(APPLE)
+    set(MACOSX_APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/src/images/appicon.icns")
+    set_source_files_properties("${MACOSX_APP_ICON}" PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources")
+endif()
+
 add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/main.cpp
     src/torrent/sessionmanager.cpp
@@ -61,6 +69,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/webui/webserver.cpp
     ${RESOURCES}
     ${WIN_RC}
+    ${MACOSX_APP_ICON}
 )
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
 
@@ -93,6 +102,7 @@ if(APPLE)
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_INFO_STRING "BATorrent ${PROJECT_VERSION}"
         MACOSX_BUNDLE_COPYRIGHT "© 2024-2026 Mateus Cruz"
+        MACOSX_BUNDLE_ICON_FILE "appicon"
     )
 endif()
 
