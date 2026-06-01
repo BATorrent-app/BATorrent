@@ -213,49 +213,49 @@ Window {
         component Sep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
         delegate: CtxItem {}
 
-        CtxItem { text: win.tr("tb_pause"); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
-        CtxItem { text: win.tr("tb_resume"); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
+        CtxItem { text: (i18n.language, i18n.t("tb_pause")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
+        CtxItem { text: (i18n.language, i18n.t("tb_resume")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
         CtxItem { text: (session.selectedForceStart ? "✓ " : "") + "Forçar início"; onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
         CtxItem { text: (session.selectedSuperSeeding ? "✓ " : "") + "Super seeding"; onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding) }
         Sep {}
-        CtxItem { text: win.tr("ctx_queue_top"); onTriggered: session.queueTopSelected() }
-        CtxItem { text: win.tr("ctx_queue_up"); onTriggered: session.queueUpSelected() }
-        CtxItem { text: win.tr("ctx_queue_down"); onTriggered: session.queueDownSelected() }
-        CtxItem { text: win.tr("ctx_queue_bottom"); onTriggered: session.queueBottomSelected() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_queue_top")); onTriggered: session.queueTopSelected() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_queue_up")); onTriggered: session.queueUpSelected() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_queue_down")); onTriggered: session.queueDownSelected() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_queue_bottom")); onTriggered: session.queueBottomSelected() }
         Sep {}
-        CtxItem { text: win.tr("ctx_open_folder"); onTriggered: session.openSaveFolder() }
-        CtxItem { text: win.tr("ctx_reveal_file"); onTriggered: session.openSelectedFile() }
-        CtxItem { text: win.tr("ctx_move_storage"); onTriggered: setLocationDlg.open() }
-        CtxItem { text: win.tr("ctx_speed_down"); onTriggered: inputPrompt.openWith("Limite de download", "KB/s (0 = ilimitado)", String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
-        CtxItem { text: win.tr("ctx_speed_up"); onTriggered: inputPrompt.openWith("Limite de upload", "KB/s (0 = ilimitado)", String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
+        CtxItem { text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_reveal_file")); onTriggered: session.openSelectedFile() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDlg.open() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_speed_down")); onTriggered: inputPrompt.openWith("Limite de download", "KB/s (0 = ilimitado)", String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
+        CtxItem { text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith("Limite de upload", "KB/s (0 = ilimitado)", String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
         Sep {}
         Menu {
             id: catSub
-            title: win.tr("ctx_category")
+            title: (i18n.language, i18n.t("ctx_category"))
             implicitWidth: 180
             delegate: CatItem {}
             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-            CatItem { text: win.tr("cat_apps"); onTriggered: session.setSelectedCategory(win.tr("cat_apps")) }
-            CatItem { text: win.tr("cat_games");     onTriggered: session.setSelectedCategory(win.tr("cat_games")) }
-            CatItem { text: win.tr("cat_movies");    onTriggered: session.setSelectedCategory(win.tr("cat_movies")) }
-            CatItem { text: win.tr("cat_series");    onTriggered: session.setSelectedCategory(win.tr("cat_series")) }
+            CatItem { text: (i18n.language, i18n.t("cat_apps")); onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_apps"))) }
+            CatItem { text: (i18n.language, i18n.t("cat_games"));     onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_games"))) }
+            CatItem { text: (i18n.language, i18n.t("cat_movies"));    onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_movies"))) }
+            CatItem { text: (i18n.language, i18n.t("cat_series"));    onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_series"))) }
             MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-            CatItem { text: win.tr("category_none"); onTriggered: session.setSelectedCategory("") }
-            CatItem { text: win.tr("ctx_category_other"); onTriggered: inputPrompt.openWith("Categoria", "Nome da categoria", session.selectedCategory(), "Ex.: Documentários", function(t){ session.setSelectedCategory(t) }) }
+            CatItem { text: (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
+            CatItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith("Categoria", "Nome da categoria", session.selectedCategory(), "Ex.: Documentários", function(t){ session.setSelectedCategory(t) }) }
         }
-        CtxItem { text: win.tr("ctx_add_tag"); onTriggered: inputPrompt.openWith("Adicionar etiqueta", "Nova etiqueta", "", "Ex.: favorito", function(t){ if (t.length === 0) return; var tags = session.selectedTagList(); if (tags.indexOf(t) < 0) { tags.push(t); session.setSelectedTags(tags) } }) }
-        CtxItem { text: win.tr("tracker_add"); onTriggered: inputPrompt.openWith("Adicionar tracker", "URL do tracker", "", "udp://tracker:porta", function(t){ session.addTrackerToSelected(t) }) }
+        CtxItem { text: (i18n.language, i18n.t("ctx_add_tag")); onTriggered: inputPrompt.openWith("Adicionar etiqueta", "Nova etiqueta", "", "Ex.: favorito", function(t){ if (t.length === 0) return; var tags = session.selectedTagList(); if (tags.indexOf(t) < 0) { tags.push(t); session.setSelectedTags(tags) } }) }
+        CtxItem { text: (i18n.language, i18n.t("tracker_add")); onTriggered: inputPrompt.openWith("Adicionar tracker", "URL do tracker", "", "udp://tracker:porta", function(t){ session.addTrackerToSelected(t) }) }
         Sep {}
-        CtxItem { text: win.tr("ctx_copy_name"); onTriggered: session.copySelectedName() }
-        CtxItem { text: win.tr("ctx_copy_magnet"); onTriggered: session.copyMagnetLink() }
-        CtxItem { text: win.tr("ctx_copy_hash"); onTriggered: session.copyInfoHash() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_copy_name")); onTriggered: session.copySelectedName() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
         Sep {}
-        CtxItem { text: win.tr("ctx_force_recheck"); onTriggered: session.forceRecheckSelected() }
-        CtxItem { text: win.tr("ctx_force_reannounce"); onTriggered: session.forceReannounceSelected() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
         CtxItem { text: session.selectedCompleted ? "Desmarcar concluído" : "Marcar como concluído"; onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
-        CtxItem { text: win.tr("ctx_stop_seeding"); onTriggered: session.stopSeedingSelected() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
         Sep {}
-        CtxItem { text: win.tr("action_remove"); onTriggered: removeDlg.open() }
+        CtxItem { text: (i18n.language, i18n.t("action_remove")); onTriggered: removeDlg.open() }
     }
 
     Shortcut { sequence: StandardKey.SelectAll; onActivated: win.selectAll() }
@@ -263,7 +263,7 @@ Window {
     // "Definir local…" — move the selected torrent's storage to a new folder
     FolderDialog {
         id: setLocationDlg
-        title: win.tr("ctx_move_storage_title")
+        title: (i18n.language, i18n.t("ctx_move_storage_title"))
         onAccepted: session.moveSelectedStorage(setLocationDlg.selectedFolder.toString().replace(/^file:\/\//, ""))
     }
 
@@ -535,23 +535,23 @@ Window {
                 }
 
                 // G1: Abrir, Magnet
-                TBtn { label: win.tr("tb_open");   icon: "qrc:/icons/open.svg";  onClicked: openFileDlg.open() }
-                TBtn { label: win.tr("tb_magnet");  icon: "qrc:/icons/magnet.svg"; onClicked: magnetDlg.open() }
+                TBtn { label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/open.svg";  onClicked: openFileDlg.open() }
+                TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: magnetDlg.open() }
                 TGrpDiv {}
                 // G2: Pausar, Retomar, Parar
-                TBtn { label: win.tr("tb_pause");  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }
-                TBtn { label: win.tr("tb_resume"); icon: "qrc:/icons/play.svg";  disabled: !win.hasSel; onClicked: session.resumeSelected() }
-                TBtn { label: win.tr("tb_stop");   icon: "qrc:/icons/stop.svg";  disabled: !win.hasSel; onClicked: session.pauseSelected() }
+                TBtn { label: (i18n.language, i18n.t("tb_pause"));  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }
+                TBtn { label: (i18n.language, i18n.t("tb_resume")); icon: "qrc:/icons/play.svg";  disabled: !win.hasSel; onClicked: session.resumeSelected() }
+                TBtn { label: (i18n.language, i18n.t("tb_stop"));   icon: "qrc:/icons/stop.svg";  disabled: !win.hasSel; onClicked: session.pauseSelected() }
                 TGrpDiv {}
                 // G3: Remover
-                TBtn { label: win.tr("tb_remove"); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: removeDlg.open() }
+                TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: removeDlg.open() }
                 TGrpDiv {}
                 // G4: Buscar, RSS
-                TBtn { label: win.tr("tb_search");  icon: "qrc:/icons/search.svg"; onClicked: searchWin.show() }
-                TBtn { label: win.tr("tb_rss");     icon: "qrc:/icons/rss.svg";    onClicked: rssWin.show() }
+                TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: searchWin.show() }
+                TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: rssWin.show() }
                 TGrpDiv {}
                 // G5: Config.
-                TBtn { label: win.tr("tb_settings"); icon: "qrc:/icons/settings.svg"; onClicked: settingsWin.show() }
+                TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: settingsWin.show() }
 
                 // .tb-spacer
                 Item { Layout.fillWidth: true }
@@ -580,7 +580,7 @@ Window {
                                 anchors.centerIn: parent
                                 spacing: 3
                                 Text {
-                                    text: win.tr("graph_download")
+                                    text: (i18n.language, i18n.t("graph_download"))
                                     color: Theme.t4
                                     font.pointSize: 9
                                     font.weight: Font.Bold
@@ -617,7 +617,7 @@ Window {
                                 anchors.centerIn: parent
                                 spacing: 3
                                 Text {
-                                    text: win.tr("graph_upload")
+                                    text: (i18n.language, i18n.t("graph_upload"))
                                     color: Theme.t4
                                     font.pointSize: 9
                                     font.weight: Font.Bold
@@ -693,7 +693,7 @@ Window {
                             onTextChanged: if (typeof torrentFilter !== "undefined") torrentFilter.setSearchText(text)
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: win.tr("search_heading")
+                                text: (i18n.language, i18n.t("search_heading"))
                                 color: Theme.t4
                                 font: searchInput.font
                                 visible: searchInput.text.length === 0 && !searchInput.activeFocus
@@ -734,7 +734,7 @@ Window {
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: win.tr("view_grid")
+                                    text: (i18n.language, i18n.t("view_grid"))
                                     color: win.gridView ? Theme.t1 : Theme.t3
                                     font.pointSize: 11.5
                                     font.weight: Font.Medium
@@ -760,7 +760,7 @@ Window {
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: win.tr("view_list")
+                                    text: (i18n.language, i18n.t("view_list"))
                                     color: !win.gridView ? Theme.t1 : Theme.t3
                                     font.pointSize: 11.5
                                     font.weight: Font.Medium
@@ -776,12 +776,12 @@ Window {
                 Row {
                     Layout.alignment: Qt.AlignVCenter
                     spacing: Theme.sp1
-                    Pill { label: win.tr("filter_all");     state: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: win.setFilter("all") }
-                    Pill { label: win.tr("filter_all_active");    state: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: win.setFilter("active") }
-                    Pill { label: win.tr("filter_downloading");  state: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: win.setFilter("downloading") }
-                    Pill { label: win.tr("filter_seeding");  state: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: win.setFilter("seeding") }
-                    Pill { label: win.tr("filter_paused");   state: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: win.setFilter("paused") }
-                    Pill { label: win.tr("filter_completed"); state: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: win.setFilter("completed") }
+                    Pill { label: (i18n.language, i18n.t("filter_all"));     state: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: win.setFilter("all") }
+                    Pill { label: (i18n.language, i18n.t("filter_all_active"));    state: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: win.setFilter("active") }
+                    Pill { label: (i18n.language, i18n.t("filter_downloading"));  state: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: win.setFilter("downloading") }
+                    Pill { label: (i18n.language, i18n.t("filter_seeding"));  state: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: win.setFilter("seeding") }
+                    Pill { label: (i18n.language, i18n.t("filter_paused"));   state: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: win.setFilter("paused") }
+                    Pill { label: (i18n.language, i18n.t("filter_completed")); state: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: win.setFilter("completed") }
                 }
 
                 Item { Layout.fillWidth: true }
@@ -826,12 +826,12 @@ Window {
                         implicitWidth: 200
                         delegate: CatItem {}
                         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-                        CatItem { text: win.tr("filter_all_categories"); onTriggered: win.applyCatFilter("") }
+                        CatItem { text: (i18n.language, i18n.t("filter_all_categories")); onTriggered: win.applyCatFilter("") }
                         MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-                        CatItem { text: win.tr("cat_apps"); onTriggered: win.applyCatFilter(win.tr("cat_apps")) }
-                        CatItem { text: win.tr("cat_games");     onTriggered: win.applyCatFilter(win.tr("cat_games")) }
-                        CatItem { text: win.tr("cat_movies");    onTriggered: win.applyCatFilter(win.tr("cat_movies")) }
-                        CatItem { text: win.tr("cat_series");    onTriggered: win.applyCatFilter(win.tr("cat_series")) }
+                        CatItem { text: (i18n.language, i18n.t("cat_apps")); onTriggered: win.applyCatFilter((i18n.language, i18n.t("cat_apps"))) }
+                        CatItem { text: (i18n.language, i18n.t("cat_games"));     onTriggered: win.applyCatFilter((i18n.language, i18n.t("cat_games"))) }
+                        CatItem { text: (i18n.language, i18n.t("cat_movies"));    onTriggered: win.applyCatFilter((i18n.language, i18n.t("cat_movies"))) }
+                        CatItem { text: (i18n.language, i18n.t("cat_series"));    onTriggered: win.applyCatFilter((i18n.language, i18n.t("cat_series"))) }
                     }
                 }
 
@@ -857,7 +857,7 @@ Window {
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: win.tr("action_donate")
+                            text: (i18n.language, i18n.t("action_donate"))
                             color: Theme.accentText
                             font.pointSize: 12
                             font.weight: Font.DemiBold
@@ -1195,14 +1195,14 @@ Window {
                         anchors.rightMargin: Theme.sp4
                         spacing: Theme.sp4
 
-                        HCol { label: win.tr("col_name"); col: "name"; fill: true }
-                        HCol { label: win.tr("col_size"); col: "size"; w: 78; alignRight: true }
-                        HCol { label: win.tr("col_progress"); col: "progress"; w: 104 }
-                        HCol { label: win.tr("col_down"); col: "down"; w: 78; alignRight: true }
-                        HCol { label: win.tr("col_up"); col: "up"; w: 78; alignRight: true }
-                        HCol { label: win.tr("col_state"); col: "state"; w: 110 }
-                        HCol { label: win.tr("col_category"); col: "category"; w: 90 }
-                        HCol { label: win.tr("col_peers"); col: "peers"; w: 56; alignRight: true }
+                        HCol { label: (i18n.language, i18n.t("col_name")); col: "name"; fill: true }
+                        HCol { label: (i18n.language, i18n.t("col_size")); col: "size"; w: 78; alignRight: true }
+                        HCol { label: (i18n.language, i18n.t("col_progress")); col: "progress"; w: 104 }
+                        HCol { label: (i18n.language, i18n.t("col_down")); col: "down"; w: 78; alignRight: true }
+                        HCol { label: (i18n.language, i18n.t("col_up")); col: "up"; w: 78; alignRight: true }
+                        HCol { label: (i18n.language, i18n.t("col_state")); col: "state"; w: 110 }
+                        HCol { label: (i18n.language, i18n.t("col_category")); col: "category"; w: 90 }
+                        HCol { label: (i18n.language, i18n.t("col_peers")); col: "peers"; w: 56; alignRight: true }
                     }
                 }
 
@@ -1603,11 +1603,11 @@ Window {
 
                         Repeater {
                             model: [
-                                { label: win.tr("detail_general"),    ct: "" },
-                                { label: win.tr("detail_peers"),    ct: win.hasSel ? String(session.selectedPeers) : "" },
-                                { label: win.tr("detail_files"), ct: win.hasSel ? String(session.selectedFiles.length) : "" },
-                                { label: win.tr("detail_trackers"), ct: win.hasSel ? String(session.selectedTrackers.length) : "" },
-                                { label: win.tr("detail_pieces"),  ct: "" }
+                                { label: (i18n.language, i18n.t("detail_general")),    ct: "" },
+                                { label: (i18n.language, i18n.t("detail_peers")),    ct: win.hasSel ? String(session.selectedPeers) : "" },
+                                { label: (i18n.language, i18n.t("detail_files")), ct: win.hasSel ? String(session.selectedFiles.length) : "" },
+                                { label: (i18n.language, i18n.t("detail_trackers")), ct: win.hasSel ? String(session.selectedTrackers.length) : "" },
+                                { label: (i18n.language, i18n.t("detail_pieces")),  ct: "" }
                             ]
                             delegate: Item {
                                 height: 42
@@ -1776,7 +1776,7 @@ Window {
                             spacing: 0
 
                             Text {
-                                text: win.tr("detail_section_info")
+                                text: (i18n.language, i18n.t("detail_section_info"))
                                 color: Theme.t4
                                 font.pointSize: 10
                                 font.weight: Font.Bold
@@ -1807,7 +1807,7 @@ Window {
                             spacing: 0
 
                             Text {
-                                text: win.tr("detail_section_transfer")
+                                text: (i18n.language, i18n.t("detail_section_transfer"))
                                 color: Theme.t4
                                 font.pointSize: 10
                                 font.weight: Font.Bold
@@ -1838,7 +1838,7 @@ Window {
                             spacing: 0
 
                             Text {
-                                text: win.tr("detail_section_peers")
+                                text: (i18n.language, i18n.t("detail_section_peers"))
                                 color: Theme.t4
                                 font.pointSize: 10
                                 font.weight: Font.Bold
@@ -1956,8 +1956,8 @@ Window {
                 anchors.centerIn: parent
                 spacing: 12
                 IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/magnet.svg"; tint: Theme.accentText; s: 52 }
-                Text { Layout.alignment: Qt.AlignHCenter; text: win.tr("dnd_drop_title"); color: Theme.t1; font.pointSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans }
-                Text { Layout.alignment: Qt.AlignHCenter; text: win.tr("dnd_drop_sub"); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("dnd_drop_title")); color: Theme.t1; font.pointSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans }
+                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("dnd_drop_sub")); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
             }
         }
     }
@@ -1965,7 +1965,7 @@ Window {
     // ================== NATIVE FILE PICKER (Abrir) ==================
     FileDialog {
         id: openFileDlg
-        title: win.tr("dlg_open_torrent")
+        title: (i18n.language, i18n.t("dlg_open_torrent"))
         nameFilters: ["Arquivos torrent (*.torrent)", "Todos os arquivos (*)"]
         onAccepted: {
             if (typeof session === "undefined") return
@@ -2022,7 +2022,7 @@ Window {
     // Inspect a .torrent file before adding (File menu)
     FileDialog {
         id: inspectFileDlg
-        title: win.tr("inspector_title")
+        title: (i18n.language, i18n.t("inspector_title"))
         nameFilters: ["Torrent (*.torrent)"]
         onAccepted: inspectorDlg.load(inspectFileDlg.selectedFile.toString().replace(/^file:\/\//, ""))
     }
@@ -2030,7 +2030,7 @@ Window {
     // Import torrents from an existing qBittorrent install (choose default save path)
     FolderDialog {
         id: importQbtDlg
-        title: win.tr("import_savepath_title")
+        title: (i18n.language, i18n.t("import_savepath_title"))
         onAccepted: if (typeof session !== "undefined") session.importQbittorrent(importQbtDlg.selectedFolder.toString().replace(/^file:\/\//, ""))
     }
 
