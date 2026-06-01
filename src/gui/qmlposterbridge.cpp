@@ -16,6 +16,8 @@
 #include "../app/updater.h"
 #include "../app/notifier.h"
 #include "../app/secretstore.h"
+#include "../webui/webserver.h"
+#include <QCryptographicHash>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -2028,7 +2030,21 @@ QString QmlLogBridge::defaultExportName() const
 // ===================== QmlSettingsBridge =====================
 
 QmlSettingsBridge::QmlSettingsBridge(SessionManager *session, QObject *parent)
-    : QObject(parent), m_session(session) {}
+    : QObject(parent), m_session(session) { applyWebUi(); }
+
+void QmlSettingsBridge::applyWebUi()
+{
+    QSettings st;
+    if (m_webServer) { m_webServer->stop(); m_webServer->deleteLater(); m_webServer = nullptr; }
+    if (!st.value("webUiEnabled", false).toBool()) return;
+    m_webServer = new WebServer(m_session, this);
+    const QString user = st.value("webUiUser", "admin").toString();
+    const QString passHash = SecretStore::instance().get("webUiPasswordHash");
+    if (!user.isEmpty() && !passHash.isEmpty())
+        m_webServer->setCredentials(user, passHash);
+    m_webServer->start(quint16(st.value("webUiPort", 8080).toInt()),
+                       st.value("webUiRemoteAccess", false).toBool());
+}
 
 QVariant QmlSettingsBridge::get(const QString &key) const
 {
@@ -2078,6 +2094,30 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "watchedFolder")       return s->watchedFolder();
     if (key == "autoMoveEnabled")     return s->autoMoveEnabled();
     if (key == "autoMovePath")        return s->autoMovePath();
+    if (key == "autoComplete") {
+        const qint64 days[] = {0, 1, 3, 7, 14, 30};
+        const int d = int(s->autoCompleteSeconds() / 86400);
+        for (int i = 0; i < 6; ++i) if (days[i] == d) return i;
+        return 0;
+    }
+    // advanced libtorrent tuning
+    if (key.startsWith(QStringLiteral("adv"))) {
+        auto a = s->advancedSettings();
+        if (key == "advAioThreads")     return a.aioThreads;
+        if (key == "advHashingThreads") return a.hashingThreads;
+        if (key == "advFilePool")       return a.filePoolSize;
+        if (key == "advCheckingMem")    return a.checkingMemUsage;
+        if (key == "advSendBuffer")     return a.sendBufferWatermark;
+        if (key == "advConnLimit")      return a.connectionsLimit;
+        if (key == "advConnSpeed")      return a.connectionSpeed;
+        if (key == "advUnchokeSlots")   return a.unchokeSlotsLimit;
+        if (key == "advMaxUploadsTor")  return a.maxUploadsPerTorrent;
+        if (key == "advMaxConnsTor")    return a.maxConnectionsPerTorrent;
+        if (key == "advChokingAlgo")    return a.chokingAlgorithm;
+        if (key == "advSeedChoking")    return a.seedChokingAlgorithm;
+        if (key == "advRateOverhead")   return a.rateLimitIpOverhead;
+        if (key == "advIgnoreLan")      return a.ignoreLimitsOnLAN;
+    }
     // telegram (token lives in the keychain; events are a bitmask)
     if (key == "telegramToken")   return SecretStore::instance().get("telegramBotToken");
     {
@@ -2089,6 +2129,12 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         }
     }
     if (key == "discordEnabled") { QSettings st; return st.value("discordEnabled", true).toBool(); }
+    // webui
+    if (key == "webUiEnabled")       { QSettings st; return st.value("webUiEnabled", false).toBool(); }
+    if (key == "webUiPort")          { QSettings st; return st.value("webUiPort", 8080).toInt(); }
+    if (key == "webUiRemoteAccess")  { QSettings st; return st.value("webUiRemoteAccess", false).toBool(); }
+    if (key == "webUiUser")          { QSettings st; return st.value("webUiUser", QStringLiteral("admin")).toString(); }
+    if (key == "webUiPassword")      return QString();   // never expose the stored hash
     // UI-only prefs + media API keys
     QSettings st;
     return st.value(key);
@@ -2124,6 +2170,39 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
         QSettings st; st.setValue("telegramChatId", v);
         if (m_telegram) m_telegram->reload();
         emit changed(); return;
+    }
+    if (key.startsWith(QStringLiteral("webUi"))) {
+        if (key == "webUiPassword") {
+            const QString p = v.toString();
+            if (!p.isEmpty())
+                SecretStore::instance().set("webUiPasswordHash",
+                    QString::fromLatin1(QCryptographicHash::hash(p.toUtf8(), QCryptographicHash::Sha256).toHex()));
+        } else if (key == "webUiEnabled")      { QSettings().setValue("webUiEnabled", v.toBool()); }
+        else if (key == "webUiPort")           { QSettings().setValue("webUiPort", v.toInt()); }
+        else if (key == "webUiRemoteAccess")   { QSettings().setValue("webUiRemoteAccess", v.toBool()); }
+        else if (key == "webUiUser")           { QSettings().setValue("webUiUser", v.toString()); }
+        applyWebUi();
+        emit changed(); return;
+    }
+    if (key.startsWith(QStringLiteral("adv"))) {
+        auto a = m_session->advancedSettings();
+        bool hit = true;
+        if (key == "advAioThreads")          a.aioThreads = v.toInt();
+        else if (key == "advHashingThreads") a.hashingThreads = v.toInt();
+        else if (key == "advFilePool")       a.filePoolSize = v.toInt();
+        else if (key == "advCheckingMem")    a.checkingMemUsage = v.toInt();
+        else if (key == "advSendBuffer")     a.sendBufferWatermark = v.toInt();
+        else if (key == "advConnLimit")      a.connectionsLimit = v.toInt();
+        else if (key == "advConnSpeed")      a.connectionSpeed = v.toInt();
+        else if (key == "advUnchokeSlots")   a.unchokeSlotsLimit = v.toInt();
+        else if (key == "advMaxUploadsTor")  a.maxUploadsPerTorrent = v.toInt();
+        else if (key == "advMaxConnsTor")    a.maxConnectionsPerTorrent = v.toInt();
+        else if (key == "advChokingAlgo")    a.chokingAlgorithm = v.toInt();
+        else if (key == "advSeedChoking")    a.seedChokingAlgorithm = v.toInt();
+        else if (key == "advRateOverhead")   a.rateLimitIpOverhead = v.toBool();
+        else if (key == "advIgnoreLan")      a.ignoreLimitsOnLAN = v.toBool();
+        else hit = false;
+        if (hit) { m_session->setAdvancedSettings(a); emit changed(); return; }
     }
 
     SessionManager *s = m_session;
@@ -2172,6 +2251,11 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     else if (key == "watchedFolder")       s->setWatchedFolder(v.toString());
     else if (key == "autoMoveEnabled")     s->setAutoMove(v.toBool(), s->autoMovePath());
     else if (key == "autoMovePath")        s->setAutoMove(s->autoMoveEnabled(), v.toString());
+    else if (key == "autoComplete") {
+        const qint64 days[] = {0, 1, 3, 7, 14, 30};
+        int i = v.toInt();
+        s->setAutoCompleteSeconds((i >= 0 && i < 6 ? days[i] : 0) * 86400);
+    }
     else { QSettings st; st.setValue(key, v); }
     emit changed();
 }
@@ -2220,6 +2304,21 @@ bool QmlSettingsBridge::excludeFromDefender()
 #else
     return false;   // Windows-only
 #endif
+}
+
+QStringList QmlSettingsBridge::networkInterfaces() const
+{
+    QStringList out;
+    out << tr_("settings_iface_any");
+    for (const QNetworkInterface &iface : QNetworkInterface::allInterfaces()) {
+        if (!(iface.flags() & QNetworkInterface::IsUp)) continue;
+        if (iface.flags() & QNetworkInterface::IsLoopBack) continue;
+        QString ip;
+        for (const QNetworkAddressEntry &e : iface.addressEntries())
+            if (e.ip().protocol() == QAbstractSocket::IPv4Protocol) { ip = e.ip().toString(); break; }
+        out << (ip.isEmpty() ? iface.name() : QStringLiteral("%1 — %2").arg(iface.name(), ip));
+    }
+    return out;
 }
 
 bool QmlSettingsBridge::setAsDefaultApp()

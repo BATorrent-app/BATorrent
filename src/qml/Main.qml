@@ -23,7 +23,8 @@ Window {
     // is false). If no tray is available, really quit so the app can't get stuck
     // running with no window. Real quit otherwise goes through the tray/app menu.
     onClosing: function(close) {
-        if (trayIcon.available) {
+        var toTray = (typeof settings === "undefined") || settings.get("closeToTray") !== false
+        if (trayIcon.available && toTray) {
             close.accepted = false
             win.hide()
         } else {
@@ -41,6 +42,9 @@ Window {
     property bool showSplash: false
     Component.onCompleted: {
         showSplash = (typeof settings === "undefined") || settings.get("showSplash") !== false
+        // start hidden in the tray if the user asked for it (and a tray exists)
+        if (typeof settings !== "undefined" && settings.get("startTray") === true && trayIcon.available)
+            win.visible = false
         if (!showSplash) win.maybeShowWelcome()
     }
     // welcome on first launch — shows until the user ticks "don't show again"
@@ -2098,8 +2102,10 @@ Window {
     function processTorrentQueue() {
         if (typeof session === "undefined") { win.torrentQueue = []; return }
         if (addTorrentDlg.opened) return        // wait until the current one closes
+        var useDefault = settings.get("useDefaultPath") === true
         while (win.torrentQueue.length > 0) {
             var u = win.torrentQueue.shift()
+            if (useDefault) { session.addTorrentFile(u); continue }   // skip the dialog
             var p = session.previewTorrent(u)
             if (p && p.ok) {
                 addTorrentDlg.savePath = session.defaultSavePath()
