@@ -481,7 +481,11 @@ Window {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: hc.label
-                color: win.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : Theme.t4)
+                // anime art sits behind the right columns — lift the weak grey + a contrasting
+                // outline so headers stay legible over both dark and bright parts of the art
+                color: win.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : (Theme.hasAnime ? Theme.t2 : Theme.t4))
+                style: Theme.hasAnime ? Text.Outline : Text.Normal
+                styleColor: Theme.isLight ? "#ffffff" : "#000000"
                 font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans
             }
             Text {
@@ -1331,8 +1335,11 @@ Window {
                         Text {
                             text: lrow.category
                             Layout.preferredWidth: 90
-                            color: Theme.t3
+                            color: Theme.hasAnime ? Theme.t1 : Theme.t3
+                            style: Theme.hasAnime ? Text.Outline : Text.Normal
+                            styleColor: Theme.isLight ? "#ffffff" : "#000000"
                             font.pointSize: 12
+                            font.weight: Theme.hasAnime ? Font.Medium : Font.Normal
                             font.family: Theme.fontSans
                             elide: Text.ElideRight
                         }
@@ -1340,8 +1347,11 @@ Window {
                             text: lrow.numPeers
                             Layout.preferredWidth: 56
                             horizontalAlignment: Text.AlignRight
-                            color: lrow.numPeers === 0 ? Theme.t4 : Theme.t2
+                            color: lrow.numPeers === 0 ? (Theme.hasAnime ? Theme.t2 : Theme.t4) : (Theme.hasAnime ? Theme.t1 : Theme.t2)
+                            style: Theme.hasAnime ? Text.Outline : Text.Normal
+                            styleColor: Theme.isLight ? "#ffffff" : "#000000"
                             font.pointSize: 12
+                            font.weight: Theme.hasAnime ? Font.Medium : Font.Normal
                             font.family: Theme.fontMono
                         }
                     }
