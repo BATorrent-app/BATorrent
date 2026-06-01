@@ -1,4 +1,4 @@
-// Source: bat-dialog.css .path — Row gap 8: .field (flex 1, mono) + (i18n.language, i18n.t("pathfld_browse")) button.
+// Source: bat-dialog.css .path — Row gap 8: .field (flex 1, mono) + browse button.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"

@@ -98,7 +98,7 @@ BatDialog {
     }
 
     // footer checkbox handled via footHint slot — but checklist puts checkbox at footer-left.
-    // BatDialog footer only has hint+buttons; embed the (i18n.language, i18n.t("welcome_dont_show2")) as last body row aligned bottom.
+    // BatDialog footer only has hint+buttons; embed the "don't show" toggle as last body row aligned bottom.
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: 4
