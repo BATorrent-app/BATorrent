@@ -15,6 +15,10 @@ Window {
 
     property int sec: 0
 
+    // Instant-apply settings: Esc / ⌘W just close (nothing to confirm).
+    Shortcut { sequences: [StandardKey.Cancel]; onActivated: win.close() }
+    Shortcut { sequences: [StandardKey.Close];  onActivated: win.close() }
+
     // ---- nav metadata ----
     readonly property var navs: [
         { nav: (i18n.language, i18n.t("detail_general")),               icon: "qrc:/icons/set-general.svg" },
@@ -414,13 +418,9 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
-                Text { text: (i18n.language, i18n.t("set_changes_on_confirm")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("set_changes_instant")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
-                Row {
-                    spacing: Theme.sp2
-                    BtnFlat { text: (i18n.language, i18n.t("btn_cancel")); onClicked: win.close() }
-                    BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_ok")); onClicked: win.close() }
-                }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_close")); onClicked: win.close() }
             }
         }
     }
