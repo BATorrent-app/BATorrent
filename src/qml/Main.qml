@@ -728,9 +728,12 @@ Window {
                 anchors.rightMargin: Theme.sp4
                 spacing: Theme.sp3
 
-                // .search (240×34, padding 0 11, gap 8, bg panel)
+                // .search (240×34, padding 0 11, gap 8, bg panel) — the one
+                // element that absorbs the shrink: it gives back width down to
+                // 150 so the pills/category never have to clip.
                 Rectangle {
                     Layout.preferredWidth: 240
+                    Layout.minimumWidth: 150
                     Layout.preferredHeight: 34
                     Layout.alignment: Qt.AlignVCenter
                     color: Theme.panel
@@ -774,6 +777,7 @@ Window {
                 Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredHeight: 32
+                    Layout.minimumWidth: implicitWidth      // never clip the toggle
                     implicitWidth: segRow.implicitWidth + 4
                     color: Theme.panel
                     border.color: Theme.hair
@@ -843,6 +847,7 @@ Window {
                 // .pills (gap 4) — 6 pills, counts from session, click sets filter
                 Row {
                     Layout.alignment: Qt.AlignVCenter
+                    Layout.minimumWidth: implicitWidth      // pills never clip
                     spacing: Theme.sp1
                     Pill { label: (i18n.language, i18n.t("filter_all"));     state: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: win.setFilter("all") }
                     Pill { label: (i18n.language, i18n.t("filter_all_active"));    state: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: win.setFilter("active") }
@@ -858,6 +863,7 @@ Window {
                 Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredHeight: 34
+                    Layout.minimumWidth: implicitWidth      // never clip the category dropdown
                     implicitWidth: catRow.implicitWidth + 24
                     color: "transparent"
                     border.color: Theme.hair

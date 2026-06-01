@@ -20,6 +20,7 @@
 #include <QQuickImageProvider>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QSGRendererInterface>
 #include <QLocale>
 #include "app/metadataresolver.h"
 #include "app/translator.h"
@@ -117,8 +118,12 @@ int main(int argc, char *argv[])
     const bool debugFlag = app.arguments().contains("--debug")
                         || app.arguments().contains("-d");
     Logger::instance().init();
-    if (debugFlag)
+    if (debugFlag) {
         Logger::instance().setLevel(Logger::Trace);
+        // Make Qt dump the scene-graph/RHI init (which GPU backend it picked and
+        // why it fell back, if it did) — captured into our log via the handler.
+        qputenv("QSG_INFO", "1");
+    }
     qInstallMessageHandler(qtMessageHandler);
 
     // Speed unit display preference (0 = bytes/sec, 1 = bits/sec). Read once
@@ -330,6 +335,25 @@ int main(int argc, char *argv[])
         engine.load(QUrl("qrc:/src/qml/Main.qml"));
         if (engine.rootObjects().isEmpty())
             return -1;
+
+        // Record which scene-graph backend is actually in use. If a machine
+        // falls back to the Software renderer (no GPU), the whole UI stutters
+        // like a game compiling shaders even on a fast card — this line in the
+        // log tells us that immediately instead of guessing.
+        if (auto *qw = qobject_cast<QQuickWindow *>(engine.rootObjects().first())) {
+            const char *backend = "Unknown";
+            switch (qw->rendererInterface()->graphicsApi()) {
+            case QSGRendererInterface::Software:   backend = "Software (NO GPU — expect heavy stutter)"; break;
+            case QSGRendererInterface::OpenGL:     backend = "OpenGL"; break;
+            case QSGRendererInterface::Direct3D11: backend = "Direct3D11"; break;
+            case QSGRendererInterface::Direct3D12: backend = "Direct3D12"; break;
+            case QSGRendererInterface::Vulkan:     backend = "Vulkan"; break;
+            case QSGRendererInterface::Metal:      backend = "Metal"; break;
+            default: break;
+            }
+            Logger::instance().log(Logger::Info,
+                QStringLiteral("[render] scene graph backend: %1").arg(QLatin1String(backend)));
+        }
 #ifndef BAT_STORE_BUILD
         updaterBridge->check(true);   // silent check on startup
 #endif
