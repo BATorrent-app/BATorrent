@@ -1,0 +1,16 @@
+IconImg 1.0 IconImg.qml
+BtnFlat 1.0 BtnFlat.qml
+TFld 1.0 TFld.qml
+TArea 1.0 TArea.qml
+TToggle 1.0 TToggle.qml
+TChk 1.0 TChk.qml
+TChip 1.0 TChip.qml
+TSelect 1.0 TSelect.qml
+PathFld 1.0 PathFld.qml
+Eyebrow 1.0 Eyebrow.qml
+EmptyState 1.0 EmptyState.qml
+PosterThumb 1.0 PosterThumb.qml
+DetailPeers 1.0 DetailPeers.qml
+DetailFiles 1.0 DetailFiles.qml
+DetailTrackers 1.0 DetailTrackers.qml
+DetailPieces 1.0 DetailPieces.qml

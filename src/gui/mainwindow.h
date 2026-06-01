@@ -28,6 +28,9 @@ class QPushButton;
 class QNetworkAccessManager;
 class MetadataResolver;
 class PosterView;
+class QQuickWidget;
+class QmlPosterModel;
+class QmlThemeBridge;
 
 class MainWindow : public QMainWindow
 {
@@ -79,6 +82,8 @@ private slots:
     void openAddons();
     void openSearch();
     void openRssManager();
+    void onQmlTorrentSelected(int row);
+    void onQmlTorrentDoubleClicked(int row);
 
 private:
     void applyTheme();
@@ -144,6 +149,9 @@ private:
     void notifyMediaServers();
     MetadataResolver *m_metadataResolver = nullptr;
     PosterView *m_posterView = nullptr;
+    QQuickWidget *m_qmlPosterView = nullptr;
+    QmlPosterModel *m_qmlPosterModel = nullptr;
+    QmlThemeBridge *m_qmlThemeBridge = nullptr;
     bool m_posterViewActive = false;
 };
 

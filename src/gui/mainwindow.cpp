@@ -20,6 +20,10 @@
 #include "../webui/webserver.h"
 #include "../app/metadataresolver.h"
 #include "posterview.h"
+#include "qmlposterbridge.h"
+#include <QQuickWidget>
+#include <QQmlContext>
+#include <QQuickItem>
 #include "../app/translator.h"
 #include "../app/updater.h"
 #include "../app/utils.h"
@@ -440,6 +444,8 @@ void MainWindow::applyTheme()
     if (m_vpnLabel) { delete m_vpnLabel; m_vpnLabel = nullptr; }
     if (m_globalStatsLabel) { delete m_globalStatsLabel; m_globalStatsLabel = nullptr; }
     setupStatusBar();
+
+    // Legacy QWidget theme change — QML theme is independent (qmlThemeName setting).
 }
 
 void MainWindow::restyleFilterRow()
@@ -1130,9 +1136,27 @@ void MainWindow::setupCentralWidget()
     }
 
     m_topStack = new QStackedWidget;
+    m_qmlThemeBridge = new QmlThemeBridge(this);
+    m_qmlPosterModel = new QmlPosterModel(m_session, m_metadataResolver, this);
+    connect(m_session, &SessionManager::torrentsUpdated, m_qmlPosterModel, &QmlPosterModel::refresh);
+    connect(m_metadataResolver, &MetadataResolver::metadataReady, this, [this]() {
+        m_qmlPosterModel->refresh();
+    });
+
+    m_qmlPosterView = new QQuickWidget(this);
+    m_qmlPosterView->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    m_qmlPosterView->setClearColor(Qt::transparent);
+    m_qmlPosterView->rootContext()->setContextProperty("torrentModel", m_qmlPosterModel);
+    m_qmlPosterView->rootContext()->setContextProperty("theme", m_qmlThemeBridge);
+    m_qmlPosterView->setSource(QUrl(QStringLiteral("qrc:/src/qml/PosterGrid.qml")));
+    if (auto *root = m_qmlPosterView->rootObject()) {
+        connect(root, SIGNAL(torrentSelected(int)), this, SLOT(onQmlTorrentSelected(int)));
+        connect(root, SIGNAL(torrentDoubleClicked(int)), this, SLOT(onQmlTorrentDoubleClicked(int)));
+    }
+
     m_topStack->addWidget(m_tableView);      // index 0 = table
     m_topStack->addWidget(m_batWidget);      // index 1 = bat
-    m_topStack->addWidget(m_posterView);     // index 2 = poster grid
+    m_topStack->addWidget(m_qmlPosterView);  // index 2 = QML poster grid
 
     auto *tableContainer2 = new QWidget;
     auto *tableLayout2 = new QVBoxLayout(tableContainer2);
@@ -2733,6 +2757,19 @@ void MainWindow::openRssManager()
 {
     RssDialog dlg(this);
     dlg.exec();
+}
+
+void MainWindow::onQmlTorrentSelected(int row)
+{
+    if (row >= 0 && row < m_session->torrentCount())
+        m_detailsPanel->showTorrent(row);
+}
+
+void MainWindow::onQmlTorrentDoubleClicked(int row)
+{
+    if (row < 0 || row >= m_session->torrentCount()) return;
+    QString root = m_session->torrentRootPath(row);
+    if (!root.isEmpty()) revealInFileManager(root);
 }
 
 void MainWindow::openSearch()

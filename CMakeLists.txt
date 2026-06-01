@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(BATorrent VERSION 2.6.1)
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia Quick QuickWidgets QuickControls2 QuickShapes)
 find_package(LibtorrentRasterbar REQUIRED)
 # Optional: QtKeychain stores credentials in the platform keyring (DPAPI on
 # Windows, Keychain on macOS, kwallet/libsecret on Linux). If missing at
@@ -13,6 +13,14 @@ qt_add_resources(RESOURCES src/resources.qrc src/webui/webuiresources.qrc)
 # Windows: embed icon in exe via .rc file
 if(WIN32)
     set(WIN_RC src/app.rc)
+endif()
+
+# macOS: bundle the app icon (black bg + white logo) into Contents/Resources
+set(MACOSX_APP_ICON "")
+if(APPLE)
+    set(MACOSX_APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/src/images/appicon.icns")
+    set_source_files_properties("${MACOSX_APP_ICON}" PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 
 add_executable(BATorrent WIN32 MACOSX_BUNDLE
@@ -55,11 +63,13 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/gui/removedhistorydialog.cpp
     src/gui/torrentinspectordialog.cpp
     src/gui/posterview.cpp
+    src/gui/qmlposterbridge.cpp
     src/app/nameparser.cpp
     src/app/metadataresolver.cpp
     src/webui/webserver.cpp
     ${RESOURCES}
     ${WIN_RC}
+    ${MACOSX_APP_ICON}
 )
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
 
@@ -79,7 +89,7 @@ option(BAT_STORE_BUILD "Disable auto-updater for Microsoft Store submission" OFF
 if(BAT_STORE_BUILD)
     target_compile_definitions(BATorrent PRIVATE BAT_STORE_BUILD)
 endif()
-target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia LibtorrentRasterbar::torrent-rasterbar)
+target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::QuickShapes LibtorrentRasterbar::torrent-rasterbar)
 
 # macOS: bundle metadata. Without these keys, NSStatusItem (the tray icon)
 # can fail to allocate a menu-bar slot — Qt reports the item as visible but
@@ -92,6 +102,7 @@ if(APPLE)
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_INFO_STRING "BATorrent ${PROJECT_VERSION}"
         MACOSX_BUNDLE_COPYRIGHT "© 2024-2026 Mateus Cruz"
+        MACOSX_BUNDLE_ICON_FILE "appicon"
     )
 endif()
 

@@ -1,0 +1,182 @@
+// Source: BATorrent Add Torrent.html + bat-dialog.css
+// Data-driven: populated from session.previewTorrent(path). OK → addTorrentWithPrefs.
+import QtQuick
+import QtQuick.Effects
+import QtQuick.Layouts
+import "theme"
+import "widgets"
+
+BatDialog {
+    id: dlg
+    title: (i18n.language, i18n.t("addt_title"))
+    cardW: 580
+    cardH: 632
+    okText: (i18n.language, i18n.t("add_torrent_add_btn"))
+    footHint: dlg.selectedCount + " " + (i18n.language, i18n.t("word_of")) + " " + dlg.fileCount + " " + i18n.t("word_files_lc") + " · " + dlg.totalSize
+
+    property string torrentPath: ""
+    property string torrentName: ""
+    property string totalSize: ""
+    property int fileCount: 0
+    property int selectedCount: 0
+    property string infoHash: ""
+    property string posterPath: ""
+    property alias savePath: pathFld.text
+
+    readonly property string posterUrl: posterPath && posterPath.length > 0 ? "file://" + posterPath : ""
+
+    function loadPreview(p, path) {
+        dlg.torrentPath = path
+        dlg.torrentName = p.name || ""
+        dlg.totalSize = p.totalSize || ""
+        dlg.fileCount = p.fileCount || 0
+        dlg.infoHash = p.infoHash || ""
+        dlg.posterPath = p.posterPath || ""
+        fileModel.clear()
+        var fs = p.files || []
+        for (var i = 0; i < fs.length; ++i) {
+            fileModel.append({ path: fs[i].path, size: fs[i].size || "", dir: fs[i].dir === true, depth: fs[i].depth || 0, on: true })
+        }
+        recount()
+        // if no cached poster, ask the resolver to fetch it
+        if (dlg.posterPath === "" && dlg.infoHash !== "" && typeof session !== "undefined")
+            session.resolvePreview(dlg.infoHash, dlg.torrentName)
+    }
+
+    // update the poster when the resolver finishes (matches our infoHash)
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        function onPreviewPosterReady(hash, poster) {
+            if (hash === dlg.infoHash) dlg.posterPath = poster
+        }
+    }
+    function recount() {
+        var n = 0
+        for (var i = 0; i < fileModel.count; ++i)
+            if (fileModel.get(i).on && !fileModel.get(i).dir) n++
+        dlg.selectedCount = n
+    }
+    function priorities() {
+        var prios = []
+        for (var i = 0; i < fileModel.count; ++i) {
+            var it = fileModel.get(i)
+            if (!it.dir) prios.push(it.on ? 4 : 0)
+        }
+        return prios
+    }
+
+    ListModel { id: fileModel }
+
+    // ----- header -----
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: Theme.sp4
+        Item {
+            Layout.preferredWidth: 44; Layout.preferredHeight: 44
+
+            // placeholder (no poster): field bg + dimmed logo
+            Rectangle {
+                anchors.fill: parent
+                radius: 10; color: Theme.field; border.color: Theme.hair; border.width: 1
+                visible: dlg.posterUrl === ""
+                Image {
+                    anchors.centerIn: parent; width: 24; height: 24
+                    source: "qrc:/images/logo.svg"; sourceSize: Qt.size(48, 48)
+                    fillMode: Image.PreserveAspectFit; opacity: 0.5
+                }
+            }
+            // poster (masked rounded)
+            Rectangle {
+                id: pContent
+                anchors.fill: parent; color: "#161618"
+                visible: false; layer.enabled: true
+                Image { anchors.fill: parent; source: dlg.posterUrl; fillMode: Image.PreserveAspectCrop; asynchronous: true }
+            }
+            Rectangle { id: pMask; anchors.fill: parent; radius: 10; color: "white"; visible: false; layer.enabled: true }
+            MultiEffect {
+                source: pContent; anchors.fill: parent
+                maskEnabled: true; maskSource: pMask
+                visible: dlg.posterUrl !== ""
+            }
+        }
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 2
+            Eyebrow { text: (i18n.language, i18n.t("addt_confirm")); red: true }
+            Text {
+                Layout.fillWidth: true
+                text: dlg.torrentName
+                color: Theme.t1; font.pointSize: 19; font.weight: Font.DemiBold
+                font.letterSpacing: -0.3; font.family: Theme.fontSans
+                elide: Text.ElideRight
+            }
+            Text {
+                text: dlg.totalSize + " · " + dlg.fileCount + " itens"
+                color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono
+            }
+        }
+    }
+
+    // ----- file head -----
+    RowLayout {
+        Layout.fillWidth: true
+        RowLayout {
+            spacing: 10
+            TChk { id: selAll; on: true; onToggled: function(v) { for (var i=0;i<fileModel.count;i++) fileModel.setProperty(i,"on",v); dlg.recount() } }
+            Text { text: (i18n.language, i18n.t("addt_select_files")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
+        }
+        Item { Layout.fillWidth: true }
+        Text {
+            text: dlg.selectedCount + " de " + dlg.fileCount + " · " + dlg.totalSize
+            color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono
+        }
+    }
+
+    // ----- file tree -----
+    Rectangle {
+        Layout.fillWidth: true
+        Layout.preferredHeight: 224
+        radius: 11; color: Theme.panel; border.color: Theme.hair; border.width: 1
+        clip: true
+        ListView {
+            anchors.fill: parent; anchors.margins: 1; clip: true; model: fileModel
+            boundsBehavior: Flickable.StopAtBounds
+            delegate: Rectangle {
+                width: ListView.view.width; height: 40; color: "transparent"
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 14 + model.depth * 18
+                    anchors.rightMargin: 14
+                    spacing: 10
+                    TChk { Layout.alignment: Qt.AlignVCenter; on: model.on; onToggled: function(v) { fileModel.setProperty(index, "on", v); dlg.recount() } }
+                    Text { text: model.dir ? "📁" : "📄"; color: model.dir ? Theme.amber : Theme.t3; font.pointSize: 13 }
+                    Text {
+                        Layout.fillWidth: true
+                        text: model.path; color: Theme.t1
+                        font.pointSize: 12; font.weight: model.dir ? Font.DemiBold : Font.Normal
+                        font.family: Theme.fontSans; elide: Text.ElideMiddle
+                    }
+                    Text { text: model.size; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono; visible: model.size !== "" }
+                }
+            }
+        }
+    }
+
+    // ----- save path -----
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 7
+        Text { text: (i18n.language, i18n.t("detail_kv_save_to")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        PathFld { id: pathFld; Layout.fillWidth: true }
+    }
+
+    // ----- start now -----
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 12
+        Text { text: (i18n.language, i18n.t("addt_start_now")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
+        Item { Layout.fillWidth: true }
+        TToggle { on: true }
+    }
+}
