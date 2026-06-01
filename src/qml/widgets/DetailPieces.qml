@@ -20,7 +20,7 @@ ColumnLayout {
         Layout.leftMargin: Theme.sp5
         text: pane.total === 0
               ? (i18n.language, i18n.t("detailpieces_empty"))
-              : pane.doneCount + " / " + pane.total + " pedaços (" + (pane.total > 0 ? Math.round(pane.doneCount / pane.total * 100) : 0) + "%)"
+              : pane.doneCount + " / " + pane.total + " " + (i18n.language, i18n.t("word_pieces")) + " (" + (pane.total > 0 ? Math.round(pane.doneCount / pane.total * 100) : 0) + "%)"
         color: Theme.t3
         font.pointSize: 11.5
         font.family: Theme.fontSans

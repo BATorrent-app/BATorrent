@@ -215,8 +215,8 @@ Window {
 
         CtxItem { text: (i18n.language, i18n.t("tb_pause")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
         CtxItem { text: (i18n.language, i18n.t("tb_resume")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
-        CtxItem { text: (session.selectedForceStart ? "✓ " : "") + "Forçar início"; onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
-        CtxItem { text: (session.selectedSuperSeeding ? "✓ " : "") + "Super seeding"; onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding) }
+        CtxItem { text: (session.selectedForceStart ? "✓ " : "") + (i18n.language, i18n.t("ctx_force_start_plain")); onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
+        CtxItem { text: (session.selectedSuperSeeding ? "✓ " : "") + (i18n.language, i18n.t("ctx_super_seeding")); onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding) }
         Sep {}
         CtxItem { text: (i18n.language, i18n.t("ctx_queue_top")); onTriggered: session.queueTopSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_queue_up")); onTriggered: session.queueUpSelected() }
@@ -226,8 +226,8 @@ Window {
         CtxItem { text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
         CtxItem { text: (i18n.language, i18n.t("ctx_reveal_file")); onTriggered: session.openSelectedFile() }
         CtxItem { text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDlg.open() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_speed_down")); onTriggered: inputPrompt.openWith("Limite de download", "KB/s (0 = ilimitado)", String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
-        CtxItem { text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith("Limite de upload", "KB/s (0 = ilimitado)", String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
+        CtxItem { text: (i18n.language, i18n.t("ctx_speed_down")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_down"), i18n.t("prompt_speed_kbs"), String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
+        CtxItem { text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_up"), i18n.t("prompt_speed_kbs"), String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
         Sep {}
         Menu {
             id: catSub
@@ -241,10 +241,10 @@ Window {
             CatItem { text: (i18n.language, i18n.t("cat_series"));    onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_series"))) }
             MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
             CatItem { text: (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
-            CatItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith("Categoria", "Nome da categoria", session.selectedCategory(), "Ex.: Documentários", function(t){ session.setSelectedCategory(t) }) }
+            CatItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith(i18n.t("ctx_category"), i18n.t("prompt_category_name"), session.selectedCategory(), i18n.t("prompt_category_eg"), function(t){ session.setSelectedCategory(t) }) }
         }
-        CtxItem { text: (i18n.language, i18n.t("ctx_add_tag")); onTriggered: inputPrompt.openWith("Adicionar etiqueta", "Nova etiqueta", "", "Ex.: favorito", function(t){ if (t.length === 0) return; var tags = session.selectedTagList(); if (tags.indexOf(t) < 0) { tags.push(t); session.setSelectedTags(tags) } }) }
-        CtxItem { text: (i18n.language, i18n.t("tracker_add")); onTriggered: inputPrompt.openWith("Adicionar tracker", "URL do tracker", "", "udp://tracker:porta", function(t){ session.addTrackerToSelected(t) }) }
+        CtxItem { text: (i18n.language, i18n.t("ctx_add_tag")); onTriggered: inputPrompt.openWith(i18n.t("prompt_add_tag_title"), i18n.t("prompt_new_tag"), "", i18n.t("prompt_tag_eg"), function(t){ if (t.length === 0) return; var tags = session.selectedTagList(); if (tags.indexOf(t) < 0) { tags.push(t); session.setSelectedTags(tags) } }) }
+        CtxItem { text: (i18n.language, i18n.t("tracker_add")); onTriggered: inputPrompt.openWith(i18n.t("prompt_add_tracker_title"), i18n.t("prompt_tracker_url"), "", "udp://tracker:porta", function(t){ session.addTrackerToSelected(t) }) }
         Sep {}
         CtxItem { text: (i18n.language, i18n.t("ctx_copy_name")); onTriggered: session.copySelectedName() }
         CtxItem { text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
@@ -252,7 +252,7 @@ Window {
         Sep {}
         CtxItem { text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
-        CtxItem { text: session.selectedCompleted ? "Desmarcar concluído" : "Marcar como concluído"; onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
+        CtxItem { text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain")); onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
         Sep {}
         CtxItem { text: (i18n.language, i18n.t("action_remove")); onTriggered: removeDlg.open() }
@@ -270,54 +270,54 @@ Window {
     // ================== NATIVE MENU BAR (ported from mainwindow.cpp) ==================
     Platform.MenuBar {
         Platform.Menu {
-            title: qsTr("Arquivo")
-            Platform.MenuItem { text: qsTr("Abrir torrent…"); shortcut: StandardKey.Open; onTriggered: openFileDlg.open() }
-            Platform.MenuItem { text: qsTr("Adicionar magnet…"); shortcut: "Ctrl+M"; onTriggered: magnetDlg.open() }
-            Platform.MenuItem { text: qsTr("Criar torrent…"); onTriggered: createDlg.open() }
-            Platform.MenuItem { text: qsTr("Inspecionar torrent…"); onTriggered: inspectFileDlg.open() }
-            Platform.MenuItem { text: qsTr("Importar do qBittorrent…"); onTriggered: importQbtDlg.open() }
+            title: (i18n.language, i18n.t("menu_file_title"))
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_open_torrent")); shortcut: StandardKey.Open; onTriggered: openFileDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_magnet")); shortcut: "Ctrl+M"; onTriggered: magnetDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_create_torrent")); onTriggered: createDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: inspectFileDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_import_qbt")); onTriggered: importQbtDlg.open() }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Removidos recentemente…"); onTriggered: removedWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_recently_removed")); onTriggered: removedWin.show() }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Sair"); shortcut: StandardKey.Quit; onTriggered: Qt.quit() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_quit")); shortcut: StandardKey.Quit; onTriggered: Qt.quit() }
         }
         Platform.Menu {
-            title: qsTr("Torrent")
-            Platform.MenuItem { text: qsTr("Pausar"); enabled: win.hasSel; onTriggered: session.pauseSelected() }
-            Platform.MenuItem { text: qsTr("Retomar"); enabled: win.hasSel; onTriggered: session.resumeSelected() }
+            title: (i18n.language, i18n.t("menu_torrent_title"))
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_pause")); enabled: win.hasSel; onTriggered: session.pauseSelected() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_resume")); enabled: win.hasSel; onTriggered: session.resumeSelected() }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Pausar todos"); onTriggered: if (typeof session !== "undefined") session.pauseAll() }
-            Platform.MenuItem { text: qsTr("Retomar todos"); onTriggered: if (typeof session !== "undefined") session.resumeAll() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_pause_all")); onTriggered: if (typeof session !== "undefined") session.pauseAll() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_resume_all")); onTriggered: if (typeof session !== "undefined") session.resumeAll() }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Remover…"); shortcut: StandardKey.Delete; enabled: win.hasSel; onTriggered: removeDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_remove")); shortcut: StandardKey.Delete; enabled: win.hasSel; onTriggered: removeDlg.open() }
         }
         Platform.Menu {
-            title: qsTr("Configurações")
-            Platform.MenuItem { text: qsTr("Preferências…"); shortcut: StandardKey.Preferences; onTriggered: settingsWin.show() }
-            Platform.MenuItem { text: qsTr("Addons…"); onTriggered: addAddonDlg.open() }
-            Platform.MenuItem { text: qsTr("RSS…"); onTriggered: rssWin.show() }
-            Platform.MenuItem { text: qsTr("Parear celular (WebUI)…"); onTriggered: pairingDlg.open() }
+            title: (i18n.language, i18n.t("menu_settings_title"))
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: settingsWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: rssWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: pairingDlg.open() }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Buscar torrents…"); onTriggered: searchWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: searchWin.show() }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Estatísticas…"); onTriggered: statsWin.show() }
-            Platform.MenuItem { text: qsTr("Teste de velocidade"); onTriggered: Qt.openUrlExternally("https://fast.com") }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: statsWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
         }
         Platform.Menu {
-            title: qsTr("Ajuda")
-            Platform.MenuItem { text: qsTr("Boas-vindas"); onTriggered: welcomeDlg.open() }
-            Platform.MenuItem { text: qsTr("Notas de versão"); onTriggered: releaseNotesDlg.open() }
-            Platform.MenuItem { text: qsTr("Atalhos de teclado"); onTriggered: shortcutsWin.show() }
-            Platform.MenuItem { text: qsTr("Logs…"); shortcut: "Ctrl+Shift+L"; onTriggered: logWin.show() }
-            Platform.MenuItem { text: qsTr("Diagnóstico de rede…"); onTriggered: diagWin.show() }
+            title: (i18n.language, i18n.t("menu_help_title"))
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_welcome")); onTriggered: welcomeDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_release_notes")); onTriggered: releaseNotesDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_shortcuts")); onTriggered: shortcutsWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_logs")); shortcut: "Ctrl+Shift+L"; onTriggered: logWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_diagnostics")); onTriggered: diagWin.show() }
             Platform.MenuItem {
-                text: qsTr("Buscar atualizações…")
+                text: (i18n.language, i18n.t("menu_check_updates"))
                 enabled: typeof updater !== "undefined" && updater !== null
                 onTriggered: if (typeof updater !== "undefined" && updater) updater.check(false)
             }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: qsTr("Doar"); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
-            Platform.MenuItem { text: qsTr("Sobre o BATorrent"); onTriggered: aboutDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_donate")); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_about")); onTriggered: aboutDlg.open() }
         }
     }
 
@@ -802,7 +802,7 @@ Window {
                         spacing: 8
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: win.catFilter.length > 0 ? win.catFilter : "Todas as categorias"
+                            text: win.catFilter.length > 0 ? win.catFilter : (i18n.language, i18n.t("filter_all_categories"))
                             color: win.catFilter.length > 0 ? Theme.t1 : Theme.t2
                             font.pointSize: 12
                             font.family: Theme.fontSans
@@ -1731,7 +1731,7 @@ Window {
                         spacing: 6
 
                         Text {
-                            text: win.hasSel ? (session.selectedMetaTitle.length > 0 ? session.selectedMetaTitle : session.selectedName) : "Nenhum torrent selecionado"
+                            text: win.hasSel ? (session.selectedMetaTitle.length > 0 ? session.selectedMetaTitle : session.selectedName) : (i18n.language, i18n.t("empty_no_selection"))
                             color: Theme.t1
                             font.pointSize: 17
                             font.weight: Font.DemiBold
@@ -1786,14 +1786,14 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { k: "Nome",    v: win.hasSel ? session.selectedName : "—" },
-                                    { k: "Tamanho", v: win.hasSel ? session.selectedSize : "—" },
-                                    { k: "Hash",    v: win.hasSel ? session.selectedHash : "—" },
-                                    { k: "Estado",  v: win.hasSel ? session.selectedState : "—" }
+                                    { kk: "detail_kv_name",  v: win.hasSel ? session.selectedName : "—" },
+                                    { kk: "detail_kv_size",  v: win.hasSel ? session.selectedSize : "—" },
+                                    { kk: "detail_kv_hash",  v: win.hasSel ? session.selectedHash : "—" },
+                                    { kk: "detail_kv_state", v: win.hasSel ? session.selectedState : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
-                                    Text { text: modelData.k; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
                                     Item { Layout.fillWidth: true }
                                     Text { text: modelData.v; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans; elide: Text.ElideMiddle; Layout.maximumWidth: 110; horizontalAlignment: Text.AlignRight }
                                 }
@@ -1817,14 +1817,14 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { k: "Baixado",  v: win.hasSel ? session.selectedDownloaded : "—" },
-                                    { k: "Download", v: win.hasSel ? session.selectedDownSpeed : "—" },
-                                    { k: "Upload",   v: win.hasSel ? session.selectedUpSpeed : "—" },
-                                    { k: "ETA",      v: win.hasSel ? session.selectedEta : "—" }
+                                    { kk: "detail_kv_downloaded", v: win.hasSel ? session.selectedDownloaded : "—" },
+                                    { kk: "col_down",             v: win.hasSel ? session.selectedDownSpeed : "—" },
+                                    { kk: "col_up",               v: win.hasSel ? session.selectedUpSpeed : "—" },
+                                    { kk: "detail_kv_eta",        v: win.hasSel ? session.selectedEta : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
-                                    Text { text: modelData.k; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
                                     Item { Layout.fillWidth: true }
                                     Text { text: modelData.v; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans }
                                 }
@@ -1848,13 +1848,13 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { k: "Seeds", v: win.hasSel ? String(session.selectedSeeds) : "—" },
-                                    { k: "Peers", v: win.hasSel ? String(session.selectedPeers) : "—" },
-                                    { k: "Ratio", v: win.hasSel ? session.selectedRatio : "—" }
+                                    { kk: "detail_kv_seeds", v: win.hasSel ? String(session.selectedSeeds) : "—" },
+                                    { kk: "detail_kv_peers", v: win.hasSel ? String(session.selectedPeers) : "—" },
+                                    { kk: "detail_kv_ratio", v: win.hasSel ? session.selectedRatio : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
-                                    Text { text: modelData.k; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
                                     Item { Layout.fillWidth: true }
                                     Text { text: modelData.v; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans }
                                 }

@@ -92,7 +92,7 @@ Window {
                         Text { text: "BATorrent"; color: Theme.t1; font.pointSize: 12.5; font.weight: Font.Bold; font.family: Theme.fontSans }
                         Text {
                             text: (pop.sess ? pop.sess.torrentCount : 0) + " torrents · "
-                                + (pop.sess ? pop.sess.activeCount : 0) + " ativos"
+                                + (pop.sess ? pop.sess.activeCount : 0) + " " + (i18n.language, i18n.t("word_active"))
                             color: Theme.t3; font.pointSize: 10; font.family: Theme.fontMono
                         }
                     }
