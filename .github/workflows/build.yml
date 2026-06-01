@@ -320,7 +320,17 @@ jobs:
           macdeployqt dmg/BATorrent.app -qmldir=src/qml
           # Ad-hoc codesign so Gatekeeper doesn't block
           codesign --force --deep --sign - dmg/BATorrent.app
-          hdiutil create -volname BATorrent -srcfolder dmg -ov -format UDZO BATorrent-macos-arm64.dmg
+          # hdiutil intermittently fails with "Resource busy" on CI; retry a few
+          # times (detaching any stale mount) so beta builds don't flake out.
+          for i in 1 2 3; do
+            if hdiutil create -volname BATorrent -srcfolder dmg -ov -format UDZO BATorrent-macos-arm64.dmg; then
+              break
+            fi
+            echo "hdiutil attempt $i failed; retrying after detaching stale mounts…"
+            hdiutil detach "/Volumes/BATorrent" 2>/dev/null || true
+            sleep 5
+          done
+          test -f BATorrent-macos-arm64.dmg
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4

@@ -25,3 +25,6 @@ compile_commands.json
 
 # Internal docs (not for public repo)
 MARKETING_PLAN.md
+
+# local test build dir
+build-tests/
