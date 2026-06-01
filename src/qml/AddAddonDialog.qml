@@ -155,7 +155,7 @@ BatDialog {
                             }
                             BtnFlat { sm: true; text: (i18n.language, i18n.t("addon_remove")); onClicked: if (dlg.addonsApi) dlg.addonsApi.removeAddon(index) }
                         }
-                        Rectangle { visible: index < (dlg.addonsApi ? dlg.addonsApi.installed.length - 1 : 0); Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+                        Rectangle { visible: index < (dlg.addonsApi ? dlg.addonsApi.installed.length - 1 : 0); Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
                     }
                 }
             }
@@ -220,7 +220,7 @@ BatDialog {
                             }
                             BtnFlat { visible: !modelData.installed; sm: true; text: (i18n.language, i18n.t("addon_install_btn")); onClicked: if (dlg.addonsApi) dlg.addonsApi.addAddon(modelData.url) }
                         }
-                        Rectangle { visible: index < (dlg.addonsApi ? dlg.addonsApi.suggested.length - 1 : 0); Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+                        Rectangle { visible: index < (dlg.addonsApi ? dlg.addonsApi.suggested.length - 1 : 0); Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
                     }
                 }
             }
@@ -267,7 +267,7 @@ BatDialog {
                         onToggled: function(v) { if (dlg.addonsApi) dlg.addonsApi.autoTrackers = v }
                     }
                 }
-                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -284,7 +284,7 @@ BatDialog {
                         onToggled: function(v) { if (dlg.addonsApi) dlg.addonsApi.torrentSearchEnabled = v }
                     }
                 }
-                Rectangle { visible: dlg.addonsApi && dlg.addonsApi.torrentSearchEnabled; Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+                Rectangle { visible: dlg.addonsApi && dlg.addonsApi.torrentSearchEnabled; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
 
                 TFld {
                     visible: dlg.addonsApi && dlg.addonsApi.torrentSearchEnabled

@@ -116,7 +116,7 @@ BatDialog {
                     Item { Layout.fillWidth: true }
                     Text { text: modelData.v; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono }
                 }
-                Rectangle { visible: index < libsRep.count - 1; Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+                Rectangle { visible: index < libsRep.count - 1; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
             }
         }
     }

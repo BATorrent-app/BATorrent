@@ -45,7 +45,7 @@ ColumnLayout {
                 RowLayout {
                     Layout.preferredWidth: 128; spacing: 9
                     Rectangle {
-                        Layout.fillWidth: true; height: 5; radius: 3; color: Theme.track; clip: true
+                        Layout.fillWidth: true; Layout.preferredHeight: 5; radius: 3; color: Theme.track; clip: true
                         Rectangle { anchors.left: parent.left; height: parent.height; width: parent.width * (modelData.progress || 0); radius: 3; color: Theme.accent }
                     }
                     Text { text: Math.round((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 34; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pointSize: 11; font.family: Theme.fontMono }

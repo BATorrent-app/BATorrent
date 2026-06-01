@@ -1621,12 +1621,12 @@ Window {
                 spacing: Theme.sp4
                 Row {
                     spacing: 6
-                    Rectangle { width: 6; height: 6; radius: 3; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
+                    Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
                     Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
                 }
                 Row {
                     spacing: 6
-                    Rectangle { width: 6; height: 6; radius: 3; color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
+                    Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
                     Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
@@ -1996,9 +1996,9 @@ Window {
                     font.family: Theme.fontSans
                 }
                 Item { Layout.fillWidth: true }
-                Rectangle { Layout.alignment: Qt.AlignVCenter; width: 6; height: 6; radius: 3; color: Theme.accent }
+                Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent }
                 Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono }
-                Rectangle { Layout.alignment: Qt.AlignVCenter; width: 6; height: 6; radius: 3; color: Theme.amber }
+                Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.amber }
                 Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono }
                 Text {
                     text: typeof session !== "undefined"
