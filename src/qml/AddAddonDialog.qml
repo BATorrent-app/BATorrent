@@ -260,7 +260,7 @@ BatDialog {
                         Layout.fillWidth: true
                         spacing: 2
                         Text { text: (i18n.language, i18n.t("addon_auto_trackers2")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
-                        Text { text: (dlg.addonsApi ? dlg.addonsApi.trackerCount : 0) + " trackers carregados"; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                        Text { text: (dlg.addonsApi ? dlg.addonsApi.trackerCount : 0) + " " + (i18n.language, i18n.t("word_trackers_loaded")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                     }
                     TToggle {
                         on: dlg.addonsApi ? dlg.addonsApi.autoTrackers : false

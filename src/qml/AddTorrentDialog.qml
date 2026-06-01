@@ -12,7 +12,7 @@ BatDialog {
     cardW: 580
     cardH: 632
     okText: (i18n.language, i18n.t("add_torrent_add_btn"))
-    footHint: dlg.selectedCount + " de " + dlg.fileCount + " arquivos · " + dlg.totalSize
+    footHint: dlg.selectedCount + " " + (i18n.language, i18n.t("word_of")) + " " + dlg.fileCount + " " + i18n.t("word_files_lc") + " · " + dlg.totalSize
 
     property string torrentPath: ""
     property string torrentName: ""
