@@ -15,6 +15,37 @@ on:
     branches: [main]
 
 jobs:
+  # Test suite (Catch2): runs the unit/security/memory tests so regressions —
+  # especially resume-data migration and auto-update version detection — are
+  # caught in CI instead of by users on upgrade.
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: qtmultimedia
+          cache: true
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev
+          version: 3.0
+      - name: Build tests
+        run: |
+          cmake -B build-tests -DBAT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build-tests -j$(nproc) --target test_unit test_security test_memory
+      - name: Run tests
+        env:
+          LC_ALL: C        # deterministic locale for the formatSize/formatSpeed checks
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          ./build-tests/tests/test_unit
+          ./build-tests/tests/test_security
+          ./build-tests/tests/test_memory
+
   build-linux:
     runs-on: ubuntu-22.04
     steps:

@@ -285,7 +285,7 @@ TEST_CASE("Security: multipart upload", "[security][upload]")
             "POST /api/torrents HTTP/1.1\r\n"
             "Host: localhost\r\n"
             "Content-Type: multipart/form-data; boundary=----B\r\n"
-            "Content-Length: 40\r\n\r\n"
+            "Content-Length: 33\r\n\r\n"   // must match the body length, else the server blocks waiting
             "------B\r\nno-filename\r\n------B--\r\n");
         REQUIRE_THAT(r.toStdString(), ContainsSubstring("400"));
     }

@@ -51,6 +51,9 @@ public:
     void setFilePriority(int torrentIndex, int fileIndex, int priority);
     void setSequentialDownload(int index, bool sequential);
     bool isSequentialDownload(int index) const;
+    // Exposed for tests: one-time copy of pre-3.0 resume data into the new dir.
+    void migrateLegacyResumeData();   // one-time pull from the pre-3.0 data dir
+    QString resumeDataDir() const;
     // Boost piece priority for the first/last pieces of a specific file so
     // streaming players can read container headers (mp4 moov atom, mkv
     // cues) and trailing index data before the bulk download completes.
@@ -396,8 +399,6 @@ private:
     void checkSeedingLimits();
     void checkInterfaceStatus();
     void checkBandwidthSchedule();
-    QString resumeDataDir() const;
-    void migrateLegacyResumeData();   // one-time pull from the pre-3.0 data dir
     // Rename every file in the torrent's add_torrent_params to have a ".!bt"
     // suffix so media servers ignore in-progress files. Stripped back as
     // each file completes (see file_completed_alert handling).

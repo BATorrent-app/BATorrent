@@ -12,6 +12,10 @@
 #include <QXmlStreamReader>
 #include <QTcpSocket>
 #include <QSignalSpy>
+#include <QStandardPaths>
+#include <QDir>
+#include <QFile>
+#include <QSettings>
 #include <QElapsedTimer>
 #include <QTest>
 
@@ -92,34 +96,36 @@ static QByteArray sendHttp(quint16 port, const QByteArray &request, int timeout 
 
 TEST_CASE("Utils: formatSize", "[unit][utils]")
 {
+    // formatSize is locale-aware (QLocale::system); build expectations with the
+    // SAME locale so the test checks our threshold/divisor/precision/suffix
+    // logic without depending on the test machine's number formatting.
+    const QLocale loc = QLocale::system();
+
     SECTION("bytes") {
-        REQUIRE(formatSize(0) == "0 B");
-        REQUIRE(formatSize(1) == "1 B");
-        REQUIRE(formatSize(512) == "512 B");
-        REQUIRE(formatSize(1023) == "1023 B");
+        REQUIRE(formatSize(0)    == loc.toString(qlonglong(0))    + " B");
+        REQUIRE(formatSize(512)  == loc.toString(qlonglong(512))  + " B");
+        REQUIRE(formatSize(1023) == loc.toString(qlonglong(1023)) + " B");
     }
 
     SECTION("kilobytes") {
-        REQUIRE(formatSize(1024) == "1.0 KB");
-        REQUIRE(formatSize(1536) == "1.5 KB");
-        REQUIRE(formatSize(10240) == "10.0 KB");
-        REQUIRE(formatSize(1048575) == "1024.0 KB");
+        REQUIRE(formatSize(1024)    == loc.toString(1.0, 'f', 1)  + " KB");
+        REQUIRE(formatSize(1536)    == loc.toString(1.5, 'f', 1)  + " KB");
+        REQUIRE(formatSize(10240)   == loc.toString(10.0, 'f', 1) + " KB");
     }
 
     SECTION("megabytes") {
-        REQUIRE(formatSize(1048576) == "1.0 MB");
-        REQUIRE(formatSize(1572864) == "1.5 MB");
-        REQUIRE(formatSize(104857600) == "100.0 MB");
+        REQUIRE(formatSize(1048576)   == loc.toString(1.0, 'f', 1)   + " MB");
+        REQUIRE(formatSize(1572864)   == loc.toString(1.5, 'f', 1)   + " MB");
+        REQUIRE(formatSize(104857600) == loc.toString(100.0, 'f', 1) + " MB");
     }
 
     SECTION("gigabytes") {
-        REQUIRE(formatSize(1073741824LL) == "1.00 GB");
-        REQUIRE(formatSize(1610612736LL) == "1.50 GB");
-        REQUIRE(formatSize(10737418240LL) == "10.00 GB");
+        REQUIRE(formatSize(1073741824LL)  == loc.toString(1.0, 'f', 2)  + " GB");
+        REQUIRE(formatSize(1610612736LL)  == loc.toString(1.5, 'f', 2)  + " GB");
+        REQUIRE(formatSize(10737418240LL) == loc.toString(10.0, 'f', 2) + " GB");
     }
 
     SECTION("edge: negative values") {
-        // Negative bytes shouldn't crash (may display oddly, but no UB)
         auto result = formatSize(-1);
         REQUIRE(!result.isEmpty());
     }
@@ -131,26 +137,94 @@ TEST_CASE("Utils: formatSize", "[unit][utils]")
 
 TEST_CASE("Utils: formatSpeed", "[unit][utils]")
 {
+    // Locale-aware + honors the bytes/bits unit (global); pin to bytes so the
+    // assertions are deterministic.
+    setSpeedUnit(0);
+    const QLocale loc = QLocale::system();
+
     SECTION("bytes per second") {
-        REQUIRE(formatSpeed(0) == "0 B/s");
-        REQUIRE(formatSpeed(500) == "500 B/s");
-        REQUIRE(formatSpeed(1023) == "1023 B/s");
+        REQUIRE(formatSpeed(0)    == loc.toString(0)    + " B/s");
+        REQUIRE(formatSpeed(500)  == loc.toString(500)  + " B/s");
+        REQUIRE(formatSpeed(1023) == loc.toString(1023) + " B/s");
     }
 
     SECTION("kilobytes per second") {
-        REQUIRE(formatSpeed(1024) == "1.0 KB/s");
-        REQUIRE(formatSpeed(5120) == "5.0 KB/s");
-        REQUIRE(formatSpeed(1048575) == "1024.0 KB/s");
+        REQUIRE(formatSpeed(1024) == loc.toString(1.0, 'f', 1) + " KB/s");
+        REQUIRE(formatSpeed(5120) == loc.toString(5.0, 'f', 1) + " KB/s");
     }
 
     SECTION("megabytes per second") {
-        REQUIRE(formatSpeed(1048576) == "1.0 MB/s");
-        REQUIRE(formatSpeed(10485760) == "10.0 MB/s");
+        REQUIRE(formatSpeed(1048576)  == loc.toString(1.0, 'f', 1)  + " MB/s");
+        REQUIRE(formatSpeed(10485760) == loc.toString(10.0, 'f', 1) + " MB/s");
     }
 
     SECTION("edge: zero") {
-        REQUIRE(formatSpeed(0) == "0 B/s");
+        REQUIRE(formatSpeed(0) == loc.toString(0) + " B/s");
     }
+}
+
+// ============================================================================
+//  AUTO-UPDATE: version detection (the logic that decides "update available")
+// ============================================================================
+
+TEST_CASE("Updater: compareVersions detects newer/older/equal", "[unit][updater]")
+{
+    // >0 means the first arg is newer than the second.
+    SECTION("an update is available when the remote is newer") {
+        REQUIRE(Updater::compareVersions("3.0.0", "2.6.1") > 0);
+        REQUIRE(Updater::compareVersions("2.6.1", "2.6.0") > 0);
+    }
+    SECTION("no update when we're at or ahead of the remote") {
+        REQUIRE(Updater::compareVersions("2.6.1", "2.6.1") == 0);
+        REQUIRE(Updater::compareVersions("3.0.0", "2.6.1") > 0); // remote older → we're ahead
+        REQUIRE(Updater::compareVersions("2.6.0", "2.6.1") < 0);
+    }
+    SECTION("numeric, not lexicographic (2.10 > 2.9)") {
+        REQUIRE(Updater::compareVersions("2.10.0", "2.9.0") > 0);
+        REQUIRE(Updater::compareVersions("1.2.0", "1.10.0") < 0);
+    }
+    SECTION("a release outranks its pre-release (semver)") {
+        REQUIRE(Updater::compareVersions("3.0.0", "3.0.0-rc1") > 0);
+        REQUIRE(Updater::compareVersions("3.0.0-beta", "3.0.0") < 0);
+    }
+}
+
+// ============================================================================
+//  UPGRADE SAFETY: a pre-3.0 user's torrents survive the org-name path shift
+// ============================================================================
+
+TEST_CASE("Resume data migrates from the pre-3.0 location", "[unit][migration]")
+{
+    QStandardPaths::setTestModeEnabled(true);
+    QCoreApplication::setOrganizationName("BATorrent");
+    QCoreApplication::setApplicationName("BATorrent");
+    QSettings().remove("resumeMigrated");   // clear the one-time guard
+
+    const QString appData = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    const QString newResume = QDir(appData).filePath("resume");
+    QDir up(appData); up.cdUp();
+    const QString legacyResume = up.filePath("resume");
+
+    // If the platform's layout collapses both to the same dir, the migration is
+    // a no-op by design — skip rather than assert a meaningless copy.
+    if (QDir::cleanPath(legacyResume) == QDir::cleanPath(newResume))
+        return;
+
+    QDir().mkpath(legacyResume);
+    QDir().mkpath(newResume);
+    for (const auto &n : QDir(newResume).entryList({"*.resume"}, QDir::Files))
+        QFile::remove(newResume + "/" + n);
+    {
+        QFile f(legacyResume + "/deadbeef.resume");
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write("x");
+    }
+
+    // ctor runs the migration; the guard was cleared above so it fires.
+    SessionManager sm;
+
+    REQUIRE(QFile::exists(newResume + "/deadbeef.resume"));        // torrents survived
+    REQUIRE(QSettings().value("resumeMigrated").toBool() == true); // ran exactly once
 }
 
 // ============================================================================
@@ -472,7 +546,7 @@ TEST_CASE("TorrentModel: empty model", "[unit][model]")
 
     REQUIRE(model.rowCount() == 0);
     REQUIRE(model.columnCount() == TorrentModel::ColumnCount);
-    REQUIRE(model.columnCount() == 7);
+    REQUIRE(model.columnCount() == 8);   // pinned; bump intentionally when a column is added/removed
 }
 
 TEST_CASE("TorrentModel: header data", "[unit][model]")

@@ -30,6 +30,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/app/updater.cpp
     ${CMAKE_SOURCE_DIR}/src/gui/torrentmodel.cpp
     ${CMAKE_SOURCE_DIR}/src/gui/torrentfilter.cpp
+    ${CMAKE_SOURCE_DIR}/src/gui/thememanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/logger.cpp
 )
 
 set(COMMON_LIBS
