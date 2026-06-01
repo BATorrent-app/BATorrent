@@ -563,7 +563,11 @@ Window {
             TSelect {
                 implicitWidth: 180
                 model: field.options || []
-                currentIndex: field.isLang ? i18n.language : ((typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || 0))
+                currentIndex: {
+                    if (field.isLang) return i18n.language
+                    var v = (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : field.value
+                    return (v === undefined || v === null || v === "") ? 0 : v
+                }
                 onActivated: function(i) { if (field.isLang) i18n.setLanguage(i); else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, i) }
             }
         }
@@ -576,7 +580,10 @@ Window {
                 color: Theme.field
                 border.color: Theme.hair
                 border.width: 1
-                property int curIdx: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || 0)
+                property int curIdx: {
+                    var v = (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : field.value
+                    return (v === undefined || v === null || v === "") ? 0 : v
+                }
                 Row {
                     id: segR
                     anchors.centerIn: parent
