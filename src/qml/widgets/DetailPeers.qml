@@ -16,6 +16,7 @@ ColumnLayout {
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
+            Text { text: "PAÍS"; Layout.preferredWidth: 40; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
             Text { text: "ENDEREÇO IP"; Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
             Text { text: "CLIENTE"; Layout.preferredWidth: 150; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
             Text { text: "PROGR."; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
@@ -37,6 +38,7 @@ ColumnLayout {
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
+                Text { text: modelData.flag || ""; Layout.preferredWidth: 40; font.pointSize: 13; font.family: Theme.fontSans }
                 Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
                 Text { text: modelData.client; Layout.preferredWidth: 150; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
                 Text { text: Math.round((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontMono }

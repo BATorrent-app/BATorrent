@@ -11,6 +11,7 @@
 #include "../app/qrcodegen.h"
 #include "../app/utils.h"
 #include "../app/translator.h"
+#include "../app/geoip.h"
 #include "../app/discordrpc.h"
 #include "../app/updater.h"
 #include <QDateTime>
@@ -271,6 +272,11 @@ QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *re
     m_sampleTimer.setInterval(1000);
     connect(&m_sampleTimer, &QTimer::timeout, this, &QmlSessionBridge::sampleSpeeds);
     m_sampleTimer.start();
+
+    m_geoIp = new GeoIpResolver(this);
+    connect(m_geoIp, &GeoIpResolver::resolved, this, [this](const QString &, const QString &) {
+        emit selectionChanged();
+    });
 
     if (m_resolver) {
         connect(m_resolver, &MetadataResolver::metadataReady, this,
@@ -912,6 +918,10 @@ QVariantList QmlSessionBridge::selectedPeerList() const
         m["downSpeed"]= formatSpeed(p.downloadRate);
         m["upSpeed"]  = formatSpeed(p.uploadRate);
         m["progress"] = p.progress;
+        const QString cc = m_geoIp->cachedCountry(p.ip);
+        if (cc.isEmpty())
+            m_geoIp->resolve(p.ip);
+        m["flag"] = cc.isEmpty() ? QString() : countryCodeToFlag(cc);
         out << m;
     }
     return out;
