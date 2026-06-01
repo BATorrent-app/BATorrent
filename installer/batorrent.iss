@@ -125,13 +125,9 @@ begin
   // Backgrounds: paint every container/input dark so no page (welcome, finish,
   // license, etc.) is left with the default white Windows background.
   if C is TNewNotebookPage then TNewNotebookPage(C).Color := BG_DARK
-  else if C is TNewNotebook then TNewNotebook(C).Color := BG_DARK
   else if C is TPanel then TPanel(C).Color := BG_DARK
   else if C is TRichEditViewer then TRichEditViewer(C).Color := BG_PANEL
   else if C is TNewMemo then TNewMemo(C).Color := BG_PANEL
-  else if C is TNewEdit then begin TNewEdit(C).Color := BG_PANEL; TNewEdit(C).Font.Color := TEXT_COLOR; end
-  else if C is TNewListBox then begin TNewListBox(C).Color := BG_PANEL; TNewListBox(C).Font.Color := TEXT_COLOR; end
-  else if C is TFolderTreeView then TFolderTreeView(C).Color := BG_PANEL
   else if C is TBevel then TBevel(C).Visible := False;
 
   // Foreground: readable text on every text-bearing control. Buttons are left
@@ -154,11 +150,10 @@ var
   BrandLabel: TNewStaticText;
   VersionLabel: TNewStaticText;
 begin
-  // -- Main form dark background (incl. the outer notebook that hosts the
-  //    welcome & finished pages, which were left white before) --
+  // -- Main form dark background. The welcome/finished pages live on the outer
+  //    notebook; we color the PAGES (TNewNotebookPage) via the recursive walk
+  //    rather than the notebook itself (TNewNotebook has no Color property). --
   WizardForm.Color := BG_DARK;
-  WizardForm.OuterNotebook.Color := BG_DARK;
-  WizardForm.InnerNotebook.Color := BG_DARK;
   WizardForm.InnerPage.Color := BG_DARK;
   WizardForm.MainPanel.Color := BG_SURFACE;
 
