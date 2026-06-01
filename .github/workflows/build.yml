@@ -156,13 +156,22 @@ jobs:
           # been touched in three releases.
           $version = (Get-Content CMakeLists.txt | Select-String 'project\(BATorrent VERSION ([\d.]+)\)').Matches.Groups[1].Value
           if (-not $version) { $version = "0.0.0-dev" }
-          magick -size 164x314 "xc:#0E0A0A" -fill "#1A1A20" -draw "rectangle 0,0 164,2" src/images/logo1.png -resize 120x120 -gravity center -composite -gravity south -fill "#555568" -font Arial -pointsize 10 -annotate +0+20 "v$version" BMP3:installer/wizard_large.bmp
-          magick src/images/logo1.png -resize 48x48 -gravity center -background "#0E0A0A" -extent 55x58 BMP3:installer/wizard_small.bmp
+          # Generate at 3x the logical wizard-image size, keeping the exact
+          # 164:314 aspect, so WizardImageStretch scales DOWN (crisp) instead of
+          # blowing up a 164px bitmap on a 120%/high-DPI wizard (blurry before).
+          # The logo is composited centered at its native square aspect — never
+          # stretched to fill the tall strip.
+          magick -size 492x942 "xc:#0E0A0A" -fill "#1A1A20" -draw "rectangle 0,0 492,6" ( src/images/logo1.png -resize 320x320 ) -gravity center -geometry +0-60 -composite -gravity south -fill "#8A8A99" -font Arial -pointsize 26 -annotate +0+70 "v$version" BMP3:installer/wizard_large.bmp
+          magick -size 165x174 "xc:#0E0A0A" ( src/images/logo1.png -resize 132x132 ) -gravity center -composite BMP3:installer/wizard_small.bmp
 
       - name: Build Installer
         shell: pwsh
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\batorrent.iss
+          # Inject the real version so the installer matches the binary instead
+          # of the value hardcoded in the .iss.
+          $version = (Get-Content CMakeLists.txt | Select-String 'project\(BATorrent VERSION ([\d.]+)\)').Matches.Groups[1].Value
+          if (-not $version) { $version = "0.0.0" }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" installer\batorrent.iss
 
       - name: Upload zip
         uses: actions/upload-artifact@v4

@@ -1,7 +1,10 @@
 ; BATorrent Installer - Inno Setup Script
 ; Custom dark theme with branding
 
-#define MyAppVersion "2.6.1"
+; Version is injected by CI via ISCC /DMyAppVersion=x.y.z; fallback for local builds.
+#ifndef MyAppVersion
+  #define MyAppVersion "3.0.0"
+#endif
 
 [Setup]
 AppName=BATorrent
@@ -24,6 +27,10 @@ WizardSizePercent=120,120
 WizardImageFile=..\installer\wizard_large.bmp
 WizardSmallImageFile=..\installer\wizard_small.bmp
 WizardImageStretch=yes
+; The native "Select Setup Language" dialog can't be dark-themed (it shows
+; before the wizard form exists), so it clashed with our dark wizard. Skip it
+; and auto-detect from the system locale; users can still switch in-app.
+ShowLanguageDialog=no
 PrivilegesRequired=lowest
 ChangesAssociations=yes
 CloseApplications=force
@@ -115,19 +122,26 @@ var
   i: Integer;
   Container: TWinControl;
 begin
-  // Force a readable foreground color on every text-bearing control we know
-  // about. Anything we don't recognize is left alone (e.g. buttons keep the
-  // native Windows look).
-  if C is TNewStaticText then
-    TNewStaticText(C).Font.Color := TEXT_COLOR
-  else if C is TLabel then
-    TLabel(C).Font.Color := TEXT_COLOR
-  else if C is TNewCheckBox then
-    TNewCheckBox(C).Font.Color := TEXT_COLOR
-  else if C is TNewRadioButton then
-    TNewRadioButton(C).Font.Color := TEXT_COLOR;
+  // Backgrounds: paint every container/input dark so no page (welcome, finish,
+  // license, etc.) is left with the default white Windows background.
+  if C is TNewNotebookPage then TNewNotebookPage(C).Color := BG_DARK
+  else if C is TNewNotebook then TNewNotebook(C).Color := BG_DARK
+  else if C is TPanel then TPanel(C).Color := BG_DARK
+  else if C is TRichEditViewer then TRichEditViewer(C).Color := BG_PANEL
+  else if C is TNewMemo then TNewMemo(C).Color := BG_PANEL
+  else if C is TNewEdit then begin TNewEdit(C).Color := BG_PANEL; TNewEdit(C).Font.Color := TEXT_COLOR; end
+  else if C is TNewListBox then begin TNewListBox(C).Color := BG_PANEL; TNewListBox(C).Font.Color := TEXT_COLOR; end
+  else if C is TFolderTreeView then TFolderTreeView(C).Color := BG_PANEL
+  else if C is TBevel then TBevel(C).Visible := False;
 
-  // Recurse into containers so we catch labels nested in panels/pages.
+  // Foreground: readable text on every text-bearing control. Buttons are left
+  // native so they keep the standard Windows look.
+  if C is TNewStaticText then TNewStaticText(C).Font.Color := TEXT_COLOR
+  else if C is TLabel then TLabel(C).Font.Color := TEXT_COLOR
+  else if C is TNewCheckBox then TNewCheckBox(C).Font.Color := TEXT_COLOR
+  else if C is TNewRadioButton then TNewRadioButton(C).Font.Color := TEXT_COLOR;
+
+  // Recurse into containers so we catch controls nested in panels/pages.
   if C is TWinControl then begin
     Container := TWinControl(C);
     for i := 0 to Container.ControlCount - 1 do
@@ -140,8 +154,11 @@ var
   BrandLabel: TNewStaticText;
   VersionLabel: TNewStaticText;
 begin
-  // -- Main form dark background --
+  // -- Main form dark background (incl. the outer notebook that hosts the
+  //    welcome & finished pages, which were left white before) --
   WizardForm.Color := BG_DARK;
+  WizardForm.OuterNotebook.Color := BG_DARK;
+  WizardForm.InnerNotebook.Color := BG_DARK;
   WizardForm.InnerPage.Color := BG_DARK;
   WizardForm.MainPanel.Color := BG_SURFACE;
 
@@ -210,12 +227,15 @@ end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
-  // Some controls (e.g. dynamically added checkboxes for [Tasks] entries and
-  // the license accept/decline radios) are created when the page first
-  // becomes visible, so styling them here catches anything that wasn't in
-  // existence during InitializeWizard.
-  StyleControlText(WizardForm.MainPanel);
-  StyleControlText(WizardForm.InnerPage);
+  // Walk the ENTIRE form each time: the license accept/decline radios, task
+  // checkboxes, and the welcome/finish pages live on different containers and
+  // some are created only when their page first shows. Re-theming the whole
+  // WizardForm here guarantees no page keeps a white background or dark text.
+  StyleControlText(WizardForm);
+  // License radios are well-known controls — set them explicitly in case the
+  // walk runs before they're parented.
+  WizardForm.LicenseAcceptedRadio.Font.Color := TEXT_COLOR;
+  WizardForm.LicenseNotAcceptedRadio.Font.Color := TEXT_COLOR;
 end;
 
 // Custom colors for uninstaller too
