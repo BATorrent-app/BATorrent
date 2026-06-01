@@ -191,6 +191,8 @@ SessionManager::SessionManager(QObject *parent)
     // recover. Crucially the window is just loadResumeData()'s duration (ms) —
     // an earlier version only cleared the flag after 15s of uptime, so quitting
     // before then looked like a crash and made every torrent vanish for a launch.
+    migrateLegacyResumeData();   // pull torrents from the pre-3.0 data dir if needed
+
     const bool prevCrash = settings.value("startupInProgress", false).toBool();
     if (prevCrash) {
         qWarning("Crash loop detected — skipping resume data to allow recovery. "
@@ -2148,6 +2150,34 @@ void SessionManager::checkSeedingLimits()
 QString SessionManager::resumeDataDir() const
 {
     return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("resume");
+}
+
+void SessionManager::migrateLegacyResumeData()
+{
+    // v3.0 added setOrganizationName("BATorrent"), which shifted AppDataLocation
+    // from <APPDATA>/BATorrent to <APPDATA>/BATorrent/BATorrent. Pre-3.0 users'
+    // .resume/.torrent files live in the old dir; copy them over once so their
+    // torrents don't vanish after upgrading. Non-destructive: only runs when the
+    // new dir has no resume data yet, and copies (never deletes) the originals.
+    QDir newDir(resumeDataDir());
+    if (!newDir.entryList({"*.resume"}, QDir::Files).isEmpty())
+        return;   // already populated — nothing to migrate
+
+    const QString appData = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir up(appData);
+    if (!up.cdUp()) return;
+    const QString legacyResume = up.filePath("resume");   // <APPDATA>/BATorrent/resume
+    if (QDir::cleanPath(legacyResume) == QDir::cleanPath(newDir.absolutePath())) return;
+
+    QDir legacyDir(legacyResume);
+    const QStringList files = legacyDir.entryList({"*.resume", "*.torrent"}, QDir::Files);
+    if (files.isEmpty()) return;
+
+    newDir.mkpath(".");
+    int n = 0;
+    for (const QString &f : files)
+        if (QFile::copy(legacyDir.filePath(f), newDir.filePath(f))) ++n;
+    qDebug() << "[session] migrated" << n << "resume files from legacy dir" << legacyResume;
 }
 
 int SessionManager::importFromQBittorrent(const QString &defaultSavePath)
