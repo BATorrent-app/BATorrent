@@ -215,15 +215,22 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
             QTextStream out(&script);
             out << "$ErrorActionPreference = 'Stop'\r\n";
             out << "try {\r\n";
+            // Wait for the app to finish quitting, then force-kill any straggler
+            // (tray instance / child) BEFORE running the installer — otherwise the
+            // installer's Restart Manager sees BATorrent.exe alive and pops the
+            // native "files in use / close these programs" dialog.
+            out << "  $deadline = (Get-Date).AddSeconds(10)\r\n";
+            out << "  while ((Get-Process -Name BATorrent -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 300 }\r\n";
+            out << "  Get-Process -Name BATorrent -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue\r\n";
+            out << "  Start-Sleep -Milliseconds 700\r\n";
+            // Fully silent; drop /CLOSEAPPLICATIONS + /RESTARTAPPLICATIONS (those
+            // invoke the Restart Manager UI) since the process is already gone.
             out << "  Start-Process -FilePath '"
                 << QDir::toNativeSeparators(newFilePath)
-                << "' -ArgumentList '/SILENT','/CLOSEAPPLICATIONS',"
-                   "'/RESTARTAPPLICATIONS','/SUPPRESSMSGBOXES','/NORESTART' "
+                << "' -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOCANCEL' "
                    "-Verb RunAs -Wait\r\n";
-            out << "  if (-not (Get-Process -Name BATorrent -ErrorAction SilentlyContinue)) {\r\n";
-            out << "    Start-Process -FilePath '"
+            out << "  Start-Process -FilePath '"
                 << QDir::toNativeSeparators(appExe) << "'\r\n";
-            out << "  }\r\n";
             out << "} catch {}\r\n";
             out << "Remove-Item -LiteralPath $MyInvocation.MyCommand.Path "
                    "-ErrorAction SilentlyContinue\r\n";
