@@ -2,6 +2,9 @@
 build/
 build-release/
 
+# clangd (symlink to build/compile_commands.json)
+compile_commands.json
+
 # IDE
 .vscode/
 .idea/
