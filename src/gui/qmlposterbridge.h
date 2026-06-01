@@ -257,6 +257,10 @@ public:
 
     void emitStats();
 
+    // Auto-shutdown: power off the machine after all downloads complete (the QML
+    // side shows a cancelable countdown, then calls performShutdown()).
+    Q_INVOKABLE void performShutdown();
+
 signals:
     void statsChanged();
     void selectionChanged();
@@ -264,6 +268,7 @@ signals:
     void queueRefreshNeeded();
     void queueMoved(int from, int to);
     void previewPosterReady(const QString &infoHash, const QString &posterPath);
+    void allDownloadsComplete();   // fired once when the last active download finishes
 
 private slots:
     void sampleSpeeds();
@@ -274,6 +279,7 @@ private:
     int m_selectedIndex = -1;
     QList<int> m_selectedRows;
     GeoIpResolver *m_geoIp = nullptr;
+    bool m_shutdownArmed = false;   // debounce so the countdown fires once per drain
 
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;

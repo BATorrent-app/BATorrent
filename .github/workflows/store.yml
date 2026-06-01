@@ -79,7 +79,7 @@ jobs:
           # Create package layout
           mkdir msix-layout
           Copy-Item build/Release/BATorrent.exe msix-layout/
-          windeployqt msix-layout/BATorrent.exe
+          windeployqt --qmldir src/qml msix-layout/BATorrent.exe
 
           # Copy vcpkg DLLs
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"

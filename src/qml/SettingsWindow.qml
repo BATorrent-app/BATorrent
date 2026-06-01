@@ -17,6 +17,14 @@ Window {
 
     property int sec: 0
 
+    // a stored bool pref, falling back to the field's `on` default when unset —
+    // so a default-on toggle reads ON on a fresh profile (matches runtime behavior).
+    function boolPref(field) {
+        if (typeof settings === "undefined" || field.key === undefined) return field.on === true
+        var v = settings.get(field.key)
+        return (v === undefined || v === null || v === "") ? (field.on === true) : (v === true)
+    }
+
     // active custom-theme profile map; re-read on any profile data change
     readonly property var ap: (typeof themeBridge !== "undefined" && themeBridge.customProfiles.length > 0)
                               ? themeBridge.customProfiles[themeBridge.activeProfile] : ({})
@@ -76,7 +84,7 @@ Window {
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
             { type: "toggle", key: "startTray", label: (i18n.language, i18n.t("settings_start_tray")) },
             { type: "toggle", key: "closeToTray", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
-            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
+            { type: "toggle", key: "notifSound", label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
             { type: "toggle", key: "showSplash", label: (i18n.language, i18n.t("settings_show_splash")), on: true },
             { type: "button", action: "default", label: (i18n.language, i18n.t("set_default_app")), btn: (i18n.language, i18n.t("settings_set_default")) }
         ],
@@ -121,9 +129,9 @@ Window {
             { type: "iface", label: (i18n.language, i18n.t("set_iface2")) },
             { type: "toggle", key: "killSwitchEnabled", label: (i18n.language, i18n.t("settings_kill_switch")), on: true, note: (i18n.language, i18n.t("set_killswitch_note")) },
             { type: "toggle", key: "autoResumeOnReconnect", label: (i18n.language, i18n.t("settings_auto_resume")), on: true, note: (i18n.language, i18n.t("set_autoresume_note")) },
-            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("settings_use_tor")) },
+            { type: "toggle", key: "useTor", label: (i18n.language, i18n.t("settings_use_tor")), note: (i18n.language, i18n.t("set_use_tor_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_power")) },
-            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("settings_auto_shutdown")) }
+            { type: "toggle", key: "autoShutdown", label: (i18n.language, i18n.t("settings_auto_shutdown")), note: (i18n.language, i18n.t("set_auto_shutdown_note")) }
         ],
         // 4 Proxy
         [
@@ -161,19 +169,22 @@ Window {
             { type: "group", label: (i18n.language, i18n.t("set_grp_discord")) },
             { type: "toggle", key: "discordEnabled", label: (i18n.language, i18n.t("set_discord_show")), on: true, note: (i18n.language, i18n.t("set_discord_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
-            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("settings_notif_sound")), on: true }
+            { type: "toggle", key: "notifSound", label: (i18n.language, i18n.t("settings_notif_sound")), on: true }
         ],
         // 7 Addons
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_trackers")) },
-            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("set_auto_trackers2")), on: true, badge: "1.243 carregados" },
+            { type: "toggle", key: "autoTrackers", label: (i18n.language, i18n.t("set_auto_trackers2")), on: true, note: (i18n.language, i18n.t("set_auto_trackers_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_torrent_search")) },
             { type: "toggle", key: "torrentSearchEnabled", label: (i18n.language, i18n.t("set_torrent_search_enable")) },
             { type: "text", key: "torrentSearchUrl", label: (i18n.language, i18n.t("set_api_url2")), mono: true, placeholder: (i18n.language, i18n.t("set_api_url_ph")), w: "grow" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_media_server")) },
-            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("set_media_plex")) },
-            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("set_media_jellyfin")) },
-            { type: "text", hidden: true, label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" },
+            { type: "toggle", key: "plexEnabled", label: (i18n.language, i18n.t("set_media_plex")) },
+            { type: "text", key: "plexUrl", label: (i18n.language, i18n.t("set_plex_url")), mono: true, placeholder: "http://127.0.0.1:32400", w: "grow" },
+            { type: "password", key: "plexToken", label: (i18n.language, i18n.t("set_plex_token")), mono: true, w: "w-md" },
+            { type: "toggle", key: "jellyfinEnabled", label: (i18n.language, i18n.t("set_media_jellyfin")) },
+            { type: "text", key: "jellyfinUrl", label: (i18n.language, i18n.t("set_jellyfin_url")), mono: true, placeholder: "http://127.0.0.1:8096", w: "grow" },
+            { type: "password", key: "jellyfinApiKey", label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_extraction")) },
             { type: "toggle", key: "autoExtract", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
             { type: "toggle", key: "autoExtractDelete", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
@@ -210,7 +221,9 @@ Window {
         ]
     ]
 
-    // group consecutive fields into { label, rows[] } blocks (a "group" field starts a new card)
+    // group consecutive fields into { label, rows[] } blocks (a "group" field starts a new card).
+    // Hidden rows are dropped, and a group with no remaining rows is omitted entirely
+    // (so we never render an orphan header over an empty card).
     function buildBlocks(fields) {
         var blocks = []
         var cur = null
@@ -218,9 +231,10 @@ Window {
             var f = fields[i]
             if (f.type === "group") {
                 cur = { label: f.label, rows: [] }
-                blocks.push(cur)
             } else {
-                if (!cur) { cur = { label: "", rows: [] }; blocks.push(cur) }
+                if (f.hidden === true) continue
+                if (!cur) { cur = { label: "", rows: [] } }
+                if (cur.rows.length === 0 && blocks.indexOf(cur) < 0) blocks.push(cur)
                 cur.rows.push(f)
             }
         }
@@ -455,8 +469,12 @@ Window {
         visible: rowVisible
         Layout.preferredHeight: rowVisible ? -1 : 0
 
-        // .srow
+        // .srow — label/note on the left, control on the right. The text column
+        // fills the space left of the control, so a long label/note word-wraps
+        // to a second line instead of running into the control.
         RowLayout {
+            id: srow
+            visible: field.type !== "warning"
             Layout.fillWidth: true
             Layout.topMargin: 13
             Layout.bottomMargin: 13
@@ -465,16 +483,18 @@ Window {
             // .smeta
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 120
                 spacing: 4
                 RowLayout {
                     spacing: Theme.sp2
+                    Layout.fillWidth: true
                     Text {
                         text: field.label
                         color: Theme.t1
                         font.pointSize: 12.5
                         font.family: Theme.fontSans
                         wrapMode: Text.WordWrap
-                        Layout.fillWidth: field.type === "warning"
+                        Layout.fillWidth: true
                     }
                     // badge
                     Rectangle {
@@ -490,7 +510,7 @@ Window {
                 }
                 Text {
                     visible: field.note !== undefined
-                    Layout.maximumWidth: 440
+                    Layout.fillWidth: true          // wrap within the text column, never under the control
                     text: field.note || ""
                     color: Theme.t4
                     font.pointSize: 10.5
@@ -500,14 +520,21 @@ Window {
                 }
             }
 
-            // .sctrl — control by type
+            // .sctrl — control by type. Wide controls (path, grow text) fill the
+            // remaining width (capped) and shrink instead of overflowing the card.
+            // Fixed-width control on the right; the text column (fillWidth) takes the
+            // rest and wraps. Making the control fillWidth makes it fight a long note
+            // for space and get pushed off-screen, so we keep it a fixed size.
             Loader {
-                Layout.alignment: Qt.AlignVCenter
-                visible: field.type !== "warning" && field.type !== "timerange" && field.type !== "days"
+                id: ctrl
+                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                visible: field.type !== "warning"
                 sourceComponent: {
                     switch (field.type) {
                     case "toggle": return cToggle
                     case "path": return cPath
+                    case "timerange": return cTimeRange
+                    case "days": return cDays
                     case "anime": return cAnime
                     case "number": return cNumber
                     case "text": return cText
@@ -527,17 +554,36 @@ Window {
             }
         }
 
-        // full-width controls below (path / warning / timerange / days are stacked)
-        // (handled inline above via type; for brevity path uses its own row)
+        // warning: full-width amber banner (the .srow above is hidden for it)
+        RowLayout {
+            visible: field.type === "warning"
+            Layout.fillWidth: true
+            Layout.topMargin: 12
+            Layout.bottomMargin: 12
+            spacing: Theme.sp3
+            Text { text: "⚠"; color: Theme.amber; font.pointSize: 13; Layout.alignment: Qt.AlignTop }
+            Text {
+                Layout.fillWidth: true
+                visible: field.type === "warning"
+                text: field.text || ""
+                color: Theme.t3
+                font.pointSize: 11
+                font.family: Theme.fontSans
+                wrapMode: Text.WordWrap
+                lineHeight: 1.45
+            }
+        }
 
         Rectangle { visible: showDivider; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
 
         // ---- control components ----
         Component { id: cToggle; TToggle {
-            on: (field.key === "torrentSearchEnabled" && typeof search !== "undefined") ? search.torrentSearchEnabled
-                : (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) === true : field.on === true
+            on: (field.key === "torrentSearchEnabled" && typeof addons !== "undefined") ? addons.torrentSearchEnabled
+                : (field.key === "autoTrackers" && typeof addons !== "undefined") ? addons.autoTrackers
+                : win.boolPref(field)
             onToggled: function(v) {
-                if (field.key === "torrentSearchEnabled" && typeof search !== "undefined") search.torrentSearchEnabled = v
+                if (field.key === "torrentSearchEnabled" && typeof addons !== "undefined") addons.torrentSearchEnabled = v
+                else if (field.key === "autoTrackers" && typeof addons !== "undefined") addons.autoTrackers = v
                 else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, v)
             }
         } }
@@ -681,15 +727,15 @@ Window {
         Component {
             id: cText
             TFld {
-                implicitWidth: field.w === "grow" ? 320 : field.w === "w-md" ? 210 : field.w === "w-sm" ? 120 : 180
+                implicitWidth: field.w === "grow" ? 300 : field.w === "w-md" ? 210 : field.w === "w-sm" ? 120 : 180
                 implicitHeight: 30
                 mono: field.mono === true
                 password: field.type === "password"
-                text: (field.key === "torrentSearchUrl" && typeof search !== "undefined") ? search.torrentSearchUrl
+                text: (field.key === "torrentSearchUrl" && typeof addons !== "undefined") ? addons.torrentSearchUrl
                       : (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || "")
                 placeholder: field.placeholder || ""
                 onEdited: function(t) {
-                    if (field.key === "torrentSearchUrl" && typeof search !== "undefined") search.torrentSearchUrl = t
+                    if (field.key === "torrentSearchUrl" && typeof addons !== "undefined") addons.torrentSearchUrl = t
                     else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, t)
                 }
             }
@@ -770,7 +816,7 @@ Window {
             RowLayout {
                 spacing: Theme.sp2
                 TFld {
-                    implicitWidth: 280; implicitHeight: 30; mono: true; readonly: true
+                    implicitWidth: 220; implicitHeight: 30; mono: true; readonly: true
                     text: (typeof settings !== "undefined" && field.key !== undefined) ? (settings.get(field.key) || "") : (field.value || "")
                     placeholder: field.placeholder || ""
                 }
@@ -782,6 +828,58 @@ Window {
                     visible: field.file !== true
                     text: (i18n.language, i18n.t("set_custom_clear")); sm: true
                     onClicked: if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, "")
+                }
+            }
+        }
+        // scheduler from/to hour (0–23)
+        Component {
+            id: cTimeRange
+            RowLayout {
+                spacing: Theme.sp2
+                Repeater {
+                    model: [{ k: "scheduleFromHour" }, { k: "scheduleToHour" }]
+                    delegate: Row {
+                        spacing: Theme.sp2
+                        Text { visible: index === 1; text: "—"; color: Theme.t4; font.pointSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                        Rectangle {
+                            width: 64; height: 30; radius: 7
+                            color: Theme.field; border.color: Theme.hair; border.width: 1
+                            TextInput {
+                                anchors.fill: parent; anchors.margins: 6
+                                text: (typeof settings !== "undefined") ? String(settings.get(modelData.k)) : "0"
+                                color: Theme.t1; font.pointSize: 12; font.family: Theme.fontMono
+                                horizontalAlignment: TextInput.AlignHCenter; verticalAlignment: TextInput.AlignVCenter
+                                validator: IntValidator { bottom: 0; top: 23 }
+                                onEditingFinished: if (typeof settings !== "undefined") settings.set(modelData.k, Math.max(0, Math.min(23, parseInt(text) || 0)))
+                            }
+                        }
+                        Text { text: "h"; color: Theme.t4; font.pointSize: 11; anchors.verticalCenter: parent.verticalCenter }
+                    }
+                }
+            }
+        }
+        // scheduler active days — bitmask, bit0=Mon … bit6=Sun
+        Component {
+            id: cDays
+            Row {
+                spacing: 4
+                property int mask: (typeof settings !== "undefined") ? (settings.get("scheduleDays") || 0) : 0
+                Repeater {
+                    model: [(i18n.language, i18n.t("day_mon")), i18n.t("day_tue"), i18n.t("day_wed"), i18n.t("day_thu"), i18n.t("day_fri"), i18n.t("day_sat"), i18n.t("day_sun")]
+                    delegate: Rectangle {
+                        width: 30; height: 30; radius: 7
+                        readonly property bool sel: (parent.mask & (1 << index)) !== 0
+                        color: sel ? Theme.accent : Theme.field
+                        border.color: sel ? Theme.accent : Theme.hair; border.width: 1
+                        Text { anchors.centerIn: parent; text: modelData; color: parent.sel ? Theme.accentText : Theme.t3; font.pointSize: 10.5; font.weight: Font.Medium; font.family: Theme.fontSans }
+                        MouseArea {
+                            anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                            onClicked: if (typeof settings !== "undefined") {
+                                parent.parent.mask ^= (1 << index)
+                                settings.set("scheduleDays", parent.parent.mask)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -844,7 +942,12 @@ Window {
         else { pathFolderDlg.targetKey = key; pathFolderDlg.open() }
     }
     function decodeLocalPath(u) {
-        return decodeURIComponent(u.toString().replace(/^file:\/\/\/?/, Qt.platform.os === "windows" ? "" : "/"))
+        var s = u.toString()
+        // file:///C:/x → C:/x (win) ; file:///Users/x → /Users/x (mac/linux) ;
+        // file://server/share → //server/share (UNC)
+        if (s.startsWith("file:///")) s = s.substring(Qt.platform.os === "windows" ? 8 : 7)
+        else if (s.startsWith("file://")) s = "//" + s.substring(7)
+        return decodeURIComponent(s)
     }
     FolderDialog {
         id: pathFolderDlg

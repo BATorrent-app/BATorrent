@@ -33,6 +33,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QApplication>
 #include <QCoreApplication>
 #include <QStyleHints>
 #include <QPainter>
@@ -1243,6 +1244,35 @@ void QmlSessionBridge::emitStats()
 {
     emit statsChanged();
     emit selectionChanged();
+
+    // Auto-shutdown arming: when enabled and at least one torrent exists, fire
+    // once the moment nothing is downloading anymore. Re-arms when a new
+    // download starts, so each "drain" triggers at most one countdown.
+    if (QSettings().value(QStringLiteral("autoShutdown"), false).toBool()) {
+        int n = m_session->torrentCount();
+        bool anyDownloading = false;
+        for (int i = 0; i < n; ++i) {
+            auto info = m_session->torrentAt(i);
+            if (!info.paused && info.progress < 1.0f) { anyDownloading = true; break; }
+        }
+        if (anyDownloading) m_shutdownArmed = true;
+        else if (m_shutdownArmed && n > 0) { m_shutdownArmed = false; emit allDownloadsComplete(); }
+    } else {
+        m_shutdownArmed = false;
+    }
+}
+
+void QmlSessionBridge::performShutdown()
+{
+    m_session->saveResumeData();
+#ifdef Q_OS_WIN
+    QProcess::startDetached("shutdown", {"/s", "/t", "0"});
+#elif defined(Q_OS_MACOS)
+    QProcess::startDetached("osascript", {"-e", "tell app \"System Events\" to shut down"});
+#else
+    QProcess::startDetached("shutdown", {"-h", "now"});
+#endif
+    QCoreApplication::quit();
 }
 
 // Theme bridge
@@ -2040,10 +2070,13 @@ void QmlSettingsBridge::applyWebUi()
     m_webServer = new WebServer(m_session, this);
     const QString user = st.value("webUiUser", "admin").toString();
     const QString passHash = SecretStore::instance().get("webUiPasswordHash");
-    if (!user.isEmpty() && !passHash.isEmpty())
+    const bool hasAuth = !user.isEmpty() && !passHash.isEmpty();
+    if (hasAuth)
         m_webServer->setCredentials(user, passHash);
-    m_webServer->start(quint16(st.value("webUiPort", 8080).toInt()),
-                       st.value("webUiRemoteAccess", false).toBool());
+    // Never expose an unauthenticated control surface to the LAN: without
+    // credentials, force localhost-only even if remote access was requested.
+    bool remote = st.value("webUiRemoteAccess", false).toBool() && hasAuth;
+    m_webServer->start(quint16(st.value("webUiPort", 8080).toInt()), remote);
 }
 
 QVariant QmlSettingsBridge::get(const QString &key) const
@@ -2113,7 +2146,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         if (key == "advUnchokeSlots")   return a.unchokeSlotsLimit;
         if (key == "advMaxUploadsTor")  return a.maxUploadsPerTorrent;
         if (key == "advMaxConnsTor")    return a.maxConnectionsPerTorrent;
-        if (key == "advChokingAlgo")    return a.chokingAlgorithm;
+        if (key == "advChokingAlgo")    return a.chokingAlgorithm == 2 ? 1 : 0;  // lt rate_based=2 → UI idx 1
         if (key == "advSeedChoking")    return a.seedChokingAlgorithm;
         if (key == "advRateOverhead")   return a.rateLimitIpOverhead;
         if (key == "advIgnoreLan")      return a.ignoreLimitsOnLAN;
@@ -2135,6 +2168,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "webUiRemoteAccess")  { QSettings st; return st.value("webUiRemoteAccess", false).toBool(); }
     if (key == "webUiUser")          { QSettings st; return st.value("webUiUser", QStringLiteral("admin")).toString(); }
     if (key == "webUiPassword")      return QString();   // never expose the stored hash
+    // media-server secrets live in the keychain; never echoed back to the UI
+    if (key == "plexToken" || key == "jellyfinApiKey") return QString();
     // UI-only prefs + media API keys
     QSettings st;
     return st.value(key);
@@ -2174,9 +2209,9 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     if (key.startsWith(QStringLiteral("webUi"))) {
         if (key == "webUiPassword") {
             const QString p = v.toString();
-            if (!p.isEmpty())
-                SecretStore::instance().set("webUiPasswordHash",
-                    QString::fromLatin1(QCryptographicHash::hash(p.toUtf8(), QCryptographicHash::Sha256).toHex()));
+            // empty → clear the stored credential (lets the user remove/rotate it)
+            SecretStore::instance().set("webUiPasswordHash", p.isEmpty() ? QString()
+                : QString::fromLatin1(QCryptographicHash::hash(p.toUtf8(), QCryptographicHash::Sha256).toHex()));
         } else if (key == "webUiEnabled")      { QSettings().setValue("webUiEnabled", v.toBool()); }
         else if (key == "webUiPort")           { QSettings().setValue("webUiPort", v.toInt()); }
         else if (key == "webUiRemoteAccess")   { QSettings().setValue("webUiRemoteAccess", v.toBool()); }
@@ -2197,12 +2232,25 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
         else if (key == "advUnchokeSlots")   a.unchokeSlotsLimit = v.toInt();
         else if (key == "advMaxUploadsTor")  a.maxUploadsPerTorrent = v.toInt();
         else if (key == "advMaxConnsTor")    a.maxConnectionsPerTorrent = v.toInt();
-        else if (key == "advChokingAlgo")    a.chokingAlgorithm = v.toInt();
+        else if (key == "advChokingAlgo")    a.chokingAlgorithm = v.toInt() == 1 ? 2 : 0;  // UI idx 1 → lt rate_based=2
         else if (key == "advSeedChoking")    a.seedChokingAlgorithm = v.toInt();
         else if (key == "advRateOverhead")   a.rateLimitIpOverhead = v.toBool();
         else if (key == "advIgnoreLan")      a.ignoreLimitsOnLAN = v.toBool();
         else hit = false;
         if (hit) { m_session->setAdvancedSettings(a); emit changed(); return; }
+    }
+
+    if (key == "plexToken" || key == "jellyfinApiKey") {   // → keychain (empty clears)
+        SecretStore::instance().set(key, v.toString());
+        emit changed(); return;
+    }
+    if (key == "useTor") {   // one-toggle Tor preset: route through 127.0.0.1:9050 SOCKS5
+        QSettings st; st.setValue("useTor", v.toBool());
+        if (v.toBool()) {
+            m_session->setProxySettings(1, QStringLiteral("127.0.0.1"), 9050, QString(), QString());
+            st.setValue("proxyType", 1); st.setValue("proxyHost", "127.0.0.1"); st.setValue("proxyPort", 9050);
+        }
+        emit changed(); return;
     }
 
     SessionManager *s = m_session;
@@ -2295,11 +2343,18 @@ bool QmlSettingsBridge::excludeFromDefender()
     if (path.isEmpty() || !QDir(path).exists())
         path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     if (path.isEmpty()) return false;
-    const QString cmd = QStringLiteral("Add-MpPreference -ExclusionPath '%1'").arg(path);
+    // Escape ' for the PowerShell single-quoted literal, then base64(UTF-16LE)
+    // the whole command and run it via -EncodedCommand. This sidesteps the
+    // nested-quoting/command-injection trap of interpolating a path into a
+    // single-quoted string that is itself inside another single-quoted arg.
+    QString escaped = path; escaped.replace(QLatin1Char('\''), QStringLiteral("''"));
+    const QString inner = QStringLiteral("Add-MpPreference -ExclusionPath '%1'").arg(escaped);
+    QByteArray utf16le;
+    for (QChar c : inner) { ushort u = c.unicode(); utf16le.append(char(u & 0xFF)); utf16le.append(char((u >> 8) & 0xFF)); }
+    const QString b64 = QString::fromLatin1(utf16le.toBase64());  // [A-Za-z0-9+/=] — quote-safe
     int ret = QProcess::execute(QStringLiteral("powershell.exe"),
         {QStringLiteral("-Command"),
-         QStringLiteral("Start-Process powershell -ArgumentList '-Command','") + cmd
-             + QStringLiteral("' -Verb RunAs -Wait")});
+         QStringLiteral("Start-Process powershell -ArgumentList '-EncodedCommand','%1' -Verb RunAs -Wait").arg(b64)});
     return ret == 0;
 #else
     return false;   // Windows-only
@@ -2340,29 +2395,38 @@ bool QmlSettingsBridge::setAsDefaultApp()
     ok = (reg.status() == QSettings::NoError);
     if (ok)
         QProcess::startDetached("cmd", {"/c", "assoc", ".torrent=BATorrent.torrent"});
-#elif defined(Q_OS_LINUX)
-    QProcess p;
-    p.start("xdg-mime", {"default", "batorrent.desktop", "application/x-bittorrent"});
-    p.waitForFinished(3000);
-    ok = (p.exitCode() == 0);
-    QProcess p2;
-    p2.start("xdg-mime", {"default", "batorrent.desktop", "x-scheme-handler/magnet"});
-    p2.waitForFinished(3000);
-    ok = ok && (p2.exitCode() == 0);
-#elif defined(Q_OS_MACOS)
-    QProcess p;
-    p.start("duti", {"-s", "com.batorrent.app", ".torrent", "all"});
-    p.waitForFinished(3000);
-    ok = (p.exitCode() == 0);
+#elif defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
+    // A missing helper (xdg-mime / duti) leaves exitCode() at its default 0,
+    // which would look like success — gate on the process actually finishing.
+    auto run = [](const QString &exe, const QStringList &args) {
+        QProcess p;
+        p.start(exe, args);
+        return p.waitForFinished(3000)
+            && p.exitStatus() == QProcess::NormalExit
+            && p.exitCode() == 0;
+    };
+  #if defined(Q_OS_LINUX)
+    ok = run("xdg-mime", {"default", "batorrent.desktop", "application/x-bittorrent"})
+      && run("xdg-mime", {"default", "batorrent.desktop", "x-scheme-handler/magnet"});
+  #else
+    ok = run("duti", {"-s", "com.batorrent.app", ".torrent", "all"});
+  #endif
 #endif
     return ok;
 }
 
 // --- QmlNotificationBridge ---
 
+static void maybeBeep()
+{
+    if (QSettings().value(QStringLiteral("notifSound"), true).toBool())
+        QApplication::beep();
+}
+
 void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &)
 {
     emit notify(tr_("dlg_download_complete"), name, 3);   // 3 = success (green)
+    maybeBeep();
 }
 
 void QmlNotificationBridge::onTorrentError(const QString &message)
@@ -2373,6 +2437,7 @@ void QmlNotificationBridge::onTorrentError(const QString &message)
 void QmlNotificationBridge::onKillSwitchTriggered()
 {
     emit notify(tr_("killswitch_title"), tr_("killswitch_triggered"), 1);
+    maybeBeep();
 }
 
 void QmlNotificationBridge::onRssAutoDownloaded(const QString &feedName, const QString &itemTitle)

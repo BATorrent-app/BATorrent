@@ -11,6 +11,9 @@
 #include <QLocalSocket>
 #include <QStyleFactory>
 #include <QSettings>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickImageProvider>
@@ -20,6 +23,7 @@
 #include "app/translator.h"
 #include "gui/qmlposterbridge.h"
 #include "app/rssmanager.h"
+#include "app/addonmanager.h"
 #include "app/notifier.h"
 #include "torrent/sessionmanager.h"
 #include "app/secretstore.h"
@@ -194,6 +198,33 @@ int main(int argc, char *argv[])
         QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
                          telegram, &TelegramNotifier::onRssAutoDownloaded);
         settingsBridge->setTelegramNotifier(telegram);
+
+        // Media-server library refresh: ping Plex/Jellyfin when a download finishes.
+        auto *mediaNam = new QNetworkAccessManager(&app);
+        QObject::connect(&session, &SessionManager::torrentFinished, &app, [mediaNam](const QString &, const QString &) {
+            QSettings st;
+            if (st.value("plexEnabled", false).toBool()) {
+                const QString url = st.value("plexUrl").toString();
+                const QString token = SecretStore::instance().get("plexToken");
+                if (!url.isEmpty() && !token.isEmpty()) {
+                    QNetworkRequest req(QUrl(url + "/library/sections/all/refresh?X-Plex-Token=" + token));
+                    req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
+                    auto *r = mediaNam->get(req);
+                    QObject::connect(r, &QNetworkReply::finished, r, &QNetworkReply::deleteLater);
+                }
+            }
+            if (st.value("jellyfinEnabled", false).toBool()) {
+                const QString url = st.value("jellyfinUrl").toString();
+                const QString key = SecretStore::instance().get("jellyfinApiKey");
+                if (!url.isEmpty() && !key.isEmpty()) {
+                    QNetworkRequest req(QUrl(url + "/Library/Refresh?api_key=" + key));
+                    req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
+                    auto *r = mediaNam->post(req, QByteArray());
+                    QObject::connect(r, &QNetworkReply::finished, r, &QNetworkReply::deleteLater);
+                }
+            }
+        });
+
         auto *discordBridge = new DiscordRpcBridge(&session, &app);
         QObject::connect(&session, &SessionManager::torrentsUpdated,
                          discordBridge, &DiscordRpcBridge::refresh);
@@ -222,7 +253,12 @@ int main(int argc, char *argv[])
             QString hash = session.torrentHashAt(index);
             if (!hash.isEmpty())
                 resolver->resolve(hash, session.torrentAt(index).name);
+            // auto-add the public tracker list to each new torrent (if enabled)
+            if (AddonManager::instance().autoTrackersEnabled())
+                for (const QString &tr : AddonManager::instance().trackerList())
+                    session.addTracker(index, tr);
         });
+        AddonManager::instance().fetchTrackerList();   // refresh the list on startup
 
         {
             QStringList hashes, names;

@@ -2132,6 +2132,35 @@ Window {
     }
     InputPromptDialog   { id: inputPrompt }
     UpdateDialog        { id: updateDlg }
+
+    // auto-shutdown: cancelable countdown after all downloads finish
+    property int shutdownLeft: 0
+    Timer {
+        id: shutdownTimer; interval: 1000; repeat: true
+        onTriggered: {
+            win.shutdownLeft--
+            if (win.shutdownLeft <= 0) { stop(); shutdownDlg.close(); if (typeof session !== "undefined") session.performShutdown() }
+        }
+    }
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        ignoreUnknownSignals: true
+        function onAllDownloadsComplete() { win.shutdownLeft = 60; shutdownTimer.restart(); shutdownDlg.open() }
+    }
+    BatDialog {
+        id: shutdownDlg
+        title: (i18n.language, i18n.t("shutdown_title"))
+        cardW: 420; cardH: 190
+        showOk: false
+        cancelText: (i18n.language, i18n.t("btn_cancel"))
+        onRejected: shutdownTimer.stop()
+        Text {
+            Layout.fillWidth: true
+            text: i18n.t("shutdown_msg").arg(win.shutdownLeft)
+            color: Theme.t1; font.pointSize: 13; font.family: Theme.fontSans
+            wrapMode: Text.WordWrap
+        }
+    }
     Connections {
         target: typeof updater !== "undefined" ? updater : null
         ignoreUnknownSignals: true
