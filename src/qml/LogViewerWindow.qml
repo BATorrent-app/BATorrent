@@ -100,7 +100,7 @@ Window {
                 anchors.rightMargin: 20
                 spacing: Theme.sp2
                 BtnFlat { text: (i18n.language, i18n.t("logviewer_open_folder2")); onClicked: if (win.api) win.api.openLogsFolder() }
-                BtnFlat { primary: true; text: (i18n.language, i18n.t("logviewer_save2")); onClicked: { if (win.api) saveDlg.currentFile = "file://" + win.api.defaultExportName(); saveDlg.open() } }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("logviewer_save2")); onClicked: { if (win.api) saveDlg.currentFile = (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(win.api.defaultExportName()); saveDlg.open() } }
                 BtnFlat { text: (i18n.language, i18n.t("logviewer_clear")); onClicked: if (win.api) win.api.clearLog() }
                 Item { Layout.fillWidth: true }
                 BtnFlat { text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }

@@ -1079,7 +1079,7 @@ Window {
                     required property string category
                     required property string size
 
-                    readonly property string posterUrl: posterPath && posterPath.length > 0 ? "file://" + posterPath : ""
+                    readonly property string posterUrl: win.fileUrl(posterPath)
 
                     // .poster wrapper (aspect 3:4 ≈ 178:237)
                     Item {
@@ -1352,7 +1352,7 @@ Window {
                     required property int numPeers
                     required property string posterPath
 
-                    readonly property string posterUrl: posterPath && posterPath.length > 0 ? "file://" + posterPath : ""
+                    readonly property string posterUrl: win.fileUrl(posterPath)
 
                     color: win.isRowSelected(index) ? Theme.sel : (listArea.hoveredRow === index ? Theme.hover : "transparent")
 
@@ -1814,7 +1814,7 @@ Window {
                             layer.enabled: true
                             Image {
                                 anchors.fill: parent
-                                source: win.hasSel && session.selectedPoster.length > 0 ? "file://" + session.selectedPoster : ""
+                                source: win.fileUrl(win.hasSel ? session.selectedPoster : "")
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                             }
@@ -2235,6 +2235,13 @@ Window {
     function showWin(loader) {
         loader.active = true
         if (loader.item) { loader.item.show(); loader.item.raise(); loader.item.requestActivate() }
+    }
+    // Build a valid file: URL for a local path. On Windows a path is "C:/…",
+    // so plain "file://"+path yields "file://C:/…" where QUrl reads "C:" as a
+    // host and the image fails to load; Windows needs the triple-slash form.
+    function fileUrl(p) {
+        if (!p || p.length === 0) return ""
+        return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
     Loader { id: searchWinLoader;    active: false; sourceComponent: SearchWindow {} }
     Loader { id: rssWinLoader;       active: false; sourceComponent: RssWindow {} }

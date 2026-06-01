@@ -23,7 +23,8 @@ BatDialog {
     property string posterPath: ""
     property alias savePath: pathFld.text
 
-    readonly property string posterUrl: posterPath && posterPath.length > 0 ? "file://" + posterPath : ""
+    readonly property string posterUrl: posterPath && posterPath.length > 0
+        ? (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(posterPath) : ""
 
     function loadPreview(p, path) {
         dlg.torrentPath = path
