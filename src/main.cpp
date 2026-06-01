@@ -9,6 +9,7 @@
 #include <QFontDatabase>
 #include <QLocalServer>
 #include <QLocalSocket>
+#include <QWindow>
 #include <QStyleFactory>
 #include <QSettings>
 #include <QNetworkAccessManager>
@@ -324,6 +325,37 @@ int main(int argc, char *argv[])
 #ifndef BAT_STORE_BUILD
         updaterBridge->check(true);   // silent check on startup
 #endif
+
+        // Single-instance server (the legacy path had this; the QML path didn't,
+        // so launching again opened a second copy). Listen for forwarded args
+        // from a second launch, raise our window, and add any .torrent/magnet.
+        QObject *rootObj = engine.rootObjects().first();
+        QLocalServer::removeServer(kServerName);
+        auto *instanceServer = new QLocalServer(&app);
+        instanceServer->listen(kServerName);
+        QObject::connect(instanceServer, &QLocalServer::newConnection, &app,
+                         [instanceServer, rootObj, sessionBridge]() {
+            QLocalSocket *client = instanceServer->nextPendingConnection();
+            if (auto *w = qobject_cast<QWindow *>(rootObj)) {
+                w->show(); w->raise(); w->requestActivate();
+            }
+            QObject::connect(client, &QLocalSocket::readyRead, client, [client, sessionBridge]() {
+                const QStringList lines = QString::fromUtf8(client->readAll()).split('\n', Qt::SkipEmptyParts);
+                for (const QString &line : lines) {
+                    if (line.endsWith(".torrent")) sessionBridge->addTorrentFile(line);
+                    else if (line.startsWith("magnet:")) sessionBridge->addMagnetUri(line);
+                }
+                client->deleteLater();
+            });
+        });
+
+        // First-instance CLI args (.torrent / magnet passed on launch)
+        for (int i = 1; i < app.arguments().size(); ++i) {
+            const QString &arg = app.arguments().at(i);
+            if (arg.endsWith(".torrent")) sessionBridge->addTorrentFile(arg);
+            else if (arg.startsWith("magnet:")) sessionBridge->addMagnetUri(arg);
+        }
+
         return app.exec();
     }
 

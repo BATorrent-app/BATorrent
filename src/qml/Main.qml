@@ -54,6 +54,10 @@ Window {
         welcomeDlg.open()
     }
     readonly property var presetCats: ["Apps", "Games", "Movies", "Series"]
+    // Adaptive toolbar: collapse button labels (icon-only) and hide the speed
+    // module on narrower windows so nothing clips when the window shrinks.
+    readonly property bool compactToolbar: width < 1180
+    readonly property bool showSpeedModule: width >= 1100
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
     property string sortColumn: ""
     property bool sortAsc: true
@@ -417,7 +421,7 @@ Window {
         property string icon
         property bool disabled: false
         signal clicked()
-        Layout.preferredWidth: 52
+        Layout.preferredWidth: win.compactToolbar ? 38 : 52
         Layout.preferredHeight: 54
         color: !disabled && tbMa.containsMouse ? Theme.hover : "transparent"
         radius: 8
@@ -434,6 +438,7 @@ Window {
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
+                visible: !win.compactToolbar      // icon-only when the window is narrow
                 text: tb.label
                 color: !tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3
                 font.pointSize: 10.5
@@ -600,8 +605,9 @@ Window {
                 // .tb-spacer
                 Item { Layout.fillWidth: true }
 
-                // .spd-mod (border hair, radius 9, 2 cols)
+                // .spd-mod (border hair, radius 9, 2 cols) — hidden on narrow windows
                 Rectangle {
+                    visible: win.showSpeedModule
                     Layout.preferredHeight: 44
                     Layout.alignment: Qt.AlignVCenter
                     implicitWidth: spdRow.width + 0
