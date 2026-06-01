@@ -1140,6 +1140,10 @@ Window {
                                 source: tile.posterUrl
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
+                                // decode at ~2× display size, not the poster's full
+                                // resolution — cuts memory and decode time per cover.
+                                sourceSize: Qt.size(356, 474)
+                                cache: true
                             }
                             Rectangle {
                                 anchors.left: parent.left
