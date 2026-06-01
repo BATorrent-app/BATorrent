@@ -128,6 +128,12 @@ begin
   else if C is TPanel then TPanel(C).Color := BG_DARK
   else if C is TRichEditViewer then TRichEditViewer(C).Color := BG_PANEL
   else if C is TNewMemo then TNewMemo(C).Color := BG_PANEL
+  else if C is TNewCheckListBox then begin
+    // The finished-page "Launch BATorrent" checkbox + the tasks list are
+    // TNewCheckListBox — their item text stayed black before.
+    TNewCheckListBox(C).Color := BG_DARK;
+    TNewCheckListBox(C).Font.Color := TEXT_COLOR;
+  end
   else if C is TBevel then TBevel(C).Visible := False;
 
   // Foreground: readable text on every text-bearing control. Buttons are left
@@ -231,6 +237,10 @@ begin
   // walk runs before they're parented.
   WizardForm.LicenseAcceptedRadio.Font.Color := TEXT_COLOR;
   WizardForm.LicenseNotAcceptedRadio.Font.Color := TEXT_COLOR;
+  // Re-assert the license memo here too: the RTF is loaded when the page is
+  // first shown (after InitializeWizard), which can reset the memo's colors.
+  WizardForm.LicenseMemo.Color := BG_PANEL;
+  WizardForm.LicenseMemo.Font.Color := TEXT_COLOR;
 end;
 
 // Custom colors for uninstaller too
