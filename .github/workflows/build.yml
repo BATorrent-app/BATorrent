@@ -159,10 +159,12 @@ jobs:
           # Generate at 3x the logical wizard-image size, keeping the exact
           # 164:314 aspect, so WizardImageStretch scales DOWN (crisp) instead of
           # blowing up a 164px bitmap on a 120%/high-DPI wizard (blurry before).
-          # The logo is composited centered at its native square aspect — never
-          # stretched to fill the tall strip.
-          magick -size 492x942 "xc:#0E0A0A" -fill "#1A1A20" -draw "rectangle 0,0 492,6" ( src/images/logo1.png -resize 320x320 ) -gravity center -geometry +0-60 -composite -gravity south -fill "#8A8A99" -font Arial -pointsize 26 -annotate +0+70 "v$version" BMP3:installer/wizard_large.bmp
-          magick -size 165x174 "xc:#0E0A0A" ( src/images/logo1.png -resize 132x132 ) -gravity center -composite BMP3:installer/wizard_small.bmp
+          # Pre-resize the logo to a temp file (PowerShell treats ImageMagick's
+          # "( ... )" grouping as a subexpression, so we avoid parentheses).
+          magick src/images/logo1.png -resize 320x320 logo_large_tmp.png
+          magick -size 492x942 "xc:#0E0A0A" -fill "#1A1A20" -draw "rectangle 0,0 492,6" logo_large_tmp.png -gravity center -geometry +0-60 -composite -gravity south -fill "#8A8A99" -font Arial -pointsize 26 -annotate +0+70 "v$version" "BMP3:installer/wizard_large.bmp"
+          magick src/images/logo1.png -resize 132x132 logo_small_tmp.png
+          magick -size 165x174 "xc:#0E0A0A" logo_small_tmp.png -gravity center -composite "BMP3:installer/wizard_small.bmp"
 
       - name: Build Installer
         shell: pwsh
