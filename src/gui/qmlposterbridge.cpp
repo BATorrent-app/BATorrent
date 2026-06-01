@@ -1351,6 +1351,10 @@ void QmlThemeBridge::removeProfile(int i)
 {
     if (i < 0 || i >= m_profiles.size() || m_profiles.size() <= 1) return;
     m_profiles.removeAt(i);
+    // keep the active selection pointing at the SAME profile: shift down if an
+    // earlier one was removed, clamp if the active one (or past-end) was removed.
+    if (i < m_activeProfile)
+        --m_activeProfile;
     if (m_activeProfile >= m_profiles.size())
         m_activeProfile = m_profiles.size() - 1;
     QSettings().setValue(QStringLiteral("qmlActiveProfile"), m_activeProfile);

@@ -346,9 +346,13 @@ void MetadataResolver::fetchTmdbOverviewEn(const QString &kind, int id,
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
     req.setTransferTimeout(10000);
+    // keep the queue serialized while this fallback request is in flight,
+    // otherwise processQueue() could fire a concurrent request (→ TMDB 429)
+    m_requestInFlight = true;
     QNetworkReply *reply = m_nam->get(req);
-    connect(reply, &QNetworkReply::finished, this, [reply, result, done]() mutable {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, result, done]() mutable {
         reply->deleteLater();
+        m_requestInFlight = false;
         if (reply->error() == QNetworkReply::NoError) {
             const QJsonObject o = QJsonDocument::fromJson(reply->readAll()).object();
             const QString en = o.value(QLatin1String("overview")).toString();

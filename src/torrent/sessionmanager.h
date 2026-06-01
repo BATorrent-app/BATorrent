@@ -405,6 +405,10 @@ private:
     // status() call only when the cache hasn't been populated yet (just after
     // add, before the first state_update_alert).
     lt::torrent_status cachedStatus(const lt::torrent_handle &h) const;
+    // true if a torrent with this info-hash is already in m_torrents (used to
+    // reject re-adding a duplicate; checks our list, not the lingering
+    // libtorrent handle after an async removal).
+    bool isDuplicate(const lt::info_hash_t &ih) const;
     bool effectiveStopAfterDownload(const QString &hash) const;
     qint64 effectiveMaxSeedSeconds(const QString &hash) const;
 

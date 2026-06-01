@@ -940,20 +940,6 @@ Window {
                 onMagnetClicked: magnetDlg.open()
             }
 
-            // click on empty space (behind the grid/list) clears the selection.
-            // Tiles/rows capture their own clicks on top of this; only clicks
-            // that miss an item reach here. The list view already handles its
-            // own empty-area deselect; this covers the grid + general blank area.
-            MouseArea {
-                anchors.fill: parent
-                z: 0
-                acceptedButtons: Qt.LeftButton
-                onClicked: {
-                    if (win.selectedRows.length > 0) {
-                        win.selectedRows = []; win.selected = -1; win._commitSel()
-                    }
-                }
-            }
 
             // anime art (eyes top-right / spider bottom-right). Ported 1:1 from .eyes-accent:
             // the CSS fades the edges via two intersected linear masks; since only Theme.bg sits
@@ -1033,6 +1019,20 @@ Window {
                 model: win.model
                 interactive: true
                 z: 1
+
+                // click on empty grid space clears the selection (tiles have
+                // their own MouseAreas; only blank clicks reach this one, which
+                // sits behind the delegates at z:-1 within the flickable).
+                MouseArea {
+                    anchors.fill: parent
+                    z: -1
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: {
+                        if (win.selectedRows.length > 0) {
+                            win.selectedRows = []; win.selected = -1; win._commitSel()
+                        }
+                    }
+                }
 
                 delegate: Item {
                     id: tile
