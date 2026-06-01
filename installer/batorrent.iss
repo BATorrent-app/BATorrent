@@ -37,11 +37,11 @@ CloseApplications=force
 CloseApplicationsFilter=BATorrent.exe
 RestartApplications=yes
 ArchitecturesInstallIn64BitMode=x64compatible
-; RTF (not the plain LICENSE) so the RichEdit memo on the License page picks
-; up the white text color — plaintext loaded into a TRichEdit defaults to
-; black regardless of LicenseMemo.Font.Color, leaving the EULA unreadable on
-; our dark wizard.
-LicenseFile=LICENSE.rtf
+; No license page: its RichEdit memo + accept/decline radios are Windows control
+; types that ignore Font.Color (unlike the static labels everywhere else), so on
+; our dark wizard the EULA text rendered black-on-dark with no reliable fix. MIT
+; doesn't require click-through acceptance — the license still ships as the
+; LICENSE file in the install dir and shows in the app's About dialog.
 VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany=Mateuscruz19
 VersionInfoDescription=BATorrent - A modern BitTorrent client
@@ -59,6 +59,7 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 [Files]
 Source: "..\release\*"; DestDir: "{app}"; Flags: recursesubdirs
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\BATorrent"; Filename: "{app}\BATorrent.exe"; IconFilename: "{app}\BATorrent.exe"
@@ -188,10 +189,6 @@ begin
   WizardForm.ReadyMemo.Color := BG_PANEL;
   WizardForm.ReadyMemo.Font.Color := TEXT_COLOR;
 
-  // -- License page --
-  WizardForm.LicenseMemo.Color := BG_PANEL;
-  WizardForm.LicenseMemo.Font.Color := TEXT_COLOR;
-
   // -- Page-level header labels (rendered on every page) --
   WizardForm.PageNameLabel.Font.Color := TEXT_COLOR;
   WizardForm.PageDescriptionLabel.Font.Color := TEXT_MUTED;
@@ -228,19 +225,11 @@ end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
-  // Walk the ENTIRE form each time: the license accept/decline radios, task
-  // checkboxes, and the welcome/finish pages live on different containers and
-  // some are created only when their page first shows. Re-theming the whole
-  // WizardForm here guarantees no page keeps a white background or dark text.
+  // Walk the ENTIRE form each time: task checkboxes and the welcome/finish
+  // pages live on different containers and some are created only when their
+  // page first shows. Re-theming the whole WizardForm here guarantees no page
+  // keeps a white background or dark text.
   StyleControlText(WizardForm);
-  // License radios are well-known controls — set them explicitly in case the
-  // walk runs before they're parented.
-  WizardForm.LicenseAcceptedRadio.Font.Color := TEXT_COLOR;
-  WizardForm.LicenseNotAcceptedRadio.Font.Color := TEXT_COLOR;
-  // Re-assert the license memo here too: the RTF is loaded when the page is
-  // first shown (after InitializeWizard), which can reset the memo's colors.
-  WizardForm.LicenseMemo.Color := BG_PANEL;
-  WizardForm.LicenseMemo.Font.Color := TEXT_COLOR;
 end;
 
 // Custom colors for uninstaller too
