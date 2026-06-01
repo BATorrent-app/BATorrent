@@ -14,6 +14,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QSettings>
+#include "translator.h"
 #include <QStandardPaths>
 #include <QUrlQuery>
 
@@ -29,6 +30,20 @@ QString tmdbApiKey()
 }
 const QString TmdbBaseUrl = QStringLiteral("https://api.themoviedb.org/3");
 const QString TmdbPosterBase = QStringLiteral("https://image.tmdb.org/t/p/w342");
+
+// App language → TMDB locale, so titles/overviews/genres come localized.
+QString tmdbLang()
+{
+    switch (Translator::instance().language()) {
+    case Translator::Portuguese: return QStringLiteral("pt-BR");
+    case Translator::Chinese:    return QStringLiteral("zh-CN");
+    case Translator::Japanese:   return QStringLiteral("ja-JP");
+    case Translator::Russian:    return QStringLiteral("ru-RU");
+    case Translator::Spanish:    return QStringLiteral("es-ES");
+    case Translator::German:     return QStringLiteral("de-DE");
+    default:                     return QStringLiteral("en-US");
+    }
+}
 
 const QHash<int, QString> &tmdbGenres()
 {
@@ -164,6 +179,7 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
     query.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
     query.addQueryItem(QStringLiteral("query"), parsed.cleanTitle);
     query.addQueryItem(QStringLiteral("page"), QStringLiteral("1"));
+    query.addQueryItem(QStringLiteral("language"), tmdbLang());
     if (parsed.year > 0)
         query.addQueryItem(QStringLiteral("year"), QString::number(parsed.year));
     url.setQuery(query);
@@ -221,14 +237,23 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
         }
 
         const QString posterPath = item.value(QLatin1String("poster_path")).toString();
-        if (!posterPath.isEmpty()) {
-            downloadPoster(infoHash, TmdbPosterBase + posterPath, result);
-        } else {
-            m_cache.insert(infoHash, result);
-            saveToDisk(infoHash, result);
-            emit metadataReady(infoHash, result);
-            m_rateLimiter.start();
-        }
+        const int tmdbId = item.value(QLatin1String("id")).toInt();
+
+        auto finish = [this, infoHash, posterPath](MetadataResult r) {
+            if (!posterPath.isEmpty()) {
+                downloadPoster(infoHash, TmdbPosterBase + posterPath, r);
+            } else {
+                m_cache.insert(infoHash, r);
+                saveToDisk(infoHash, r);
+                emit metadataReady(infoHash, r);
+                m_rateLimiter.start();
+            }
+        };
+        // empty overview = no translation for this language → fall back to EN
+        if (result.description.isEmpty() && tmdbId > 0 && tmdbLang() != QStringLiteral("en-US"))
+            fetchTmdbOverviewEn(QStringLiteral("movie"), tmdbId, result, finish);
+        else
+            finish(result);
     });
 }
 
@@ -239,6 +264,7 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
     query.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
     query.addQueryItem(QStringLiteral("query"), parsed.cleanTitle);
     query.addQueryItem(QStringLiteral("page"), QStringLiteral("1"));
+    query.addQueryItem(QStringLiteral("language"), tmdbLang());
     if (parsed.year > 0)
         query.addQueryItem(QStringLiteral("first_air_date_year"), QString::number(parsed.year));
     url.setQuery(query);
@@ -289,14 +315,46 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
         }
 
         const QString posterPath = item.value(QLatin1String("poster_path")).toString();
-        if (!posterPath.isEmpty()) {
-            downloadPoster(infoHash, TmdbPosterBase + posterPath, result);
-        } else {
-            m_cache.insert(infoHash, result);
-            saveToDisk(infoHash, result);
-            emit metadataReady(infoHash, result);
-            m_rateLimiter.start();
+        const int tmdbId = item.value(QLatin1String("id")).toInt();
+
+        auto finish = [this, infoHash, posterPath](MetadataResult r) {
+            if (!posterPath.isEmpty()) {
+                downloadPoster(infoHash, TmdbPosterBase + posterPath, r);
+            } else {
+                m_cache.insert(infoHash, r);
+                saveToDisk(infoHash, r);
+                emit metadataReady(infoHash, r);
+                m_rateLimiter.start();
+            }
+        };
+        if (result.description.isEmpty() && tmdbId > 0 && tmdbLang() != QStringLiteral("en-US"))
+            fetchTmdbOverviewEn(QStringLiteral("tv"), tmdbId, result, finish);
+        else
+            finish(result);
+    });
+}
+
+void MetadataResolver::fetchTmdbOverviewEn(const QString &kind, int id,
+                                           MetadataResult result,
+                                           std::function<void(MetadataResult)> done)
+{
+    QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2").arg(kind).arg(id));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
+    q.addQueryItem(QStringLiteral("language"), QStringLiteral("en-US"));
+    url.setQuery(q);
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
+    req.setTransferTimeout(10000);
+    QNetworkReply *reply = m_nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [reply, result, done]() mutable {
+        reply->deleteLater();
+        if (reply->error() == QNetworkReply::NoError) {
+            const QJsonObject o = QJsonDocument::fromJson(reply->readAll()).object();
+            const QString en = o.value(QLatin1String("overview")).toString();
+            if (!en.isEmpty()) result.description = en;
         }
+        done(result);
     });
 }
 
