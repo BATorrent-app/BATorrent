@@ -233,6 +233,13 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         }
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
+        // Reject duplicates — libtorrent dedupes internally, but m_torrents
+        // would otherwise gain a second entry pointing at the same handle and
+        // the torrent would show twice in the list.
+        if (atp.ti && m_session.find_torrent(atp.ti->info_hashes().get_best()).is_valid()) {
+            qDebug() << "[session] addTorrent: duplicate ignored";
+            return;
+        }
         atp.save_path = savePath.toStdString();
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
@@ -269,6 +276,10 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
     try {
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
+        if (atp.ti && m_session.find_torrent(atp.ti->info_hashes().get_best()).is_valid()) {
+            qDebug() << "[session] addTorrentWithPriorities: duplicate ignored";
+            return;
+        }
         atp.save_path = savePath.toStdString();
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
