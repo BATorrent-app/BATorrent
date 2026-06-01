@@ -13,6 +13,7 @@
 #include <QSettings>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickImageProvider>
 #include <QQuickStyle>
 #include <QLocale>
 #include "app/metadataresolver.h"
@@ -25,6 +26,23 @@
 #include "app/utils.h"
 #include "gui/mainwindow.h"
 #include "gui/thememanager.h"
+
+// Serves the app logo recolored for the OS scheme to QML (the system tray
+// icon.source wants a URL, not a QIcon). URL id is "light"/"dark"; the body
+// is swapped to dark text for the "dark"-id (light-background) request.
+class AppLogoImageProvider : public QQuickImageProvider
+{
+public:
+    AppLogoImageProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}
+    QPixmap requestPixmap(const QString &id, QSize *size, const QSize &requested) override
+    {
+        const int sz = requested.width() > 0 ? requested.width() : 256;
+        const bool darkBody = id.startsWith("dark");   // dark logo for light OS bar
+        QPixmap pm = QmlThemeBridge::renderLogo(darkBody, sz, 1.0);
+        if (size) *size = pm.size();
+        return pm;
+    }
+};
 
 static const QString kServerName = QStringLiteral("BATorrent-SingleInstance");
 
@@ -225,7 +243,12 @@ int main(int argc, char *argv[])
         }
         auto *i18nBridge = new QmlI18nBridge(&app);
 
+        // OS-scheme-aware app/window icon (so the white logo isn't invisible on
+        // a light Windows taskbar). The bridge keeps it live on scheme changes.
+        app.setWindowIcon(themeBridge->trayIcon());
+
         QQmlApplicationEngine engine;
+        engine.addImageProvider(QStringLiteral("applogo"), new AppLogoImageProvider());
         engine.rootContext()->setContextProperty("torrentModel", filterProxy);
         engine.rootContext()->setContextProperty("torrentFilter", filterProxy);
         engine.rootContext()->setContextProperty("themeBridge", themeBridge);

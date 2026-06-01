@@ -7,6 +7,8 @@
 
 #include <QAbstractListModel>
 #include <QColor>
+#include <QIcon>
+#include <QPixmap>
 #include <QSortFilterProxyModel>
 #include <QString>
 #include <QTimer>
@@ -282,6 +284,15 @@ class QmlThemeBridge : public QObject
     Q_OBJECT
     Q_PROPERTY(QString themeName READ themeName WRITE setThemeName NOTIFY changed)
     Q_PROPERTY(bool anime READ anime WRITE setAnime NOTIFY changed)
+    // Custom theme (name === "custom"): three user accent colors + a full
+    // background image with adjustable scrim opacity.
+    Q_PROPERTY(QString customPrimary   READ customPrimary   WRITE setCustomPrimary   NOTIFY changed)
+    Q_PROPERTY(QString customSecondary READ customSecondary WRITE setCustomSecondary NOTIFY changed)
+    Q_PROPERTY(QString customTertiary  READ customTertiary  WRITE setCustomTertiary  NOTIFY changed)
+    Q_PROPERTY(QString bgImagePath     READ bgImagePath     WRITE setBgImagePath     NOTIFY changed)
+    Q_PROPERTY(int     bgImageOpacity  READ bgImageOpacity  WRITE setBgImageOpacity  NOTIFY changed)
+    // True when the OS taskbar/tray is in light mode (for logo contrast).
+    Q_PROPERTY(bool osLight READ osLight NOTIFY osSchemeChanged)
 
 public:
     explicit QmlThemeBridge(QObject *parent = nullptr);
@@ -291,12 +302,37 @@ public:
     bool anime() const;
     void setAnime(bool on);
 
+    QString customPrimary() const;
+    void setCustomPrimary(const QString &hex);
+    QString customSecondary() const;
+    void setCustomSecondary(const QString &hex);
+    QString customTertiary() const;
+    void setCustomTertiary(const QString &hex);
+    QString bgImagePath() const;
+    void setBgImagePath(const QString &path);
+    int bgImageOpacity() const;
+    void setBgImageOpacity(int pct);
+
+    bool osLight() const;
+    QIcon trayIcon() const;   // logo recolored for the current OS scheme
+
+    // SVG-swap logo renderer (shared with the image provider). darkBody=true
+    // swaps the off-white body to dark text for light backgrounds.
+    static QPixmap renderLogo(bool darkBody, int size, qreal dpr = 1.0);
+
 signals:
     void changed();
+    void osSchemeChanged();
 
 private:
     QString m_themeName;
     bool m_anime = true;
+    QString m_customPrimary;
+    QString m_customSecondary;
+    QString m_customTertiary;
+    QString m_bgImagePath;
+    int m_bgImageOpacity = 55;
+    bool m_osLight = false;
 };
 
 // Bridge for RSS feeds (wraps RssManager singleton).

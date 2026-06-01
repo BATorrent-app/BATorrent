@@ -341,7 +341,10 @@ Window {
     Platform.SystemTrayIcon {
         id: trayIcon
         visible: true
-        icon.source: "qrc:/images/logo1.png"
+        // Recolor the logo for the OS tray scheme so it isn't invisible on a
+        // light Windows tray. The ?v= suffix busts the image-provider cache.
+        icon.source: (typeof themeBridge !== "undefined" && themeBridge.osLight)
+                     ? "image://applogo/dark?v=l" : "image://applogo/light?v=d"
         icon.mask: false
         tooltip: "BATorrent"
         // Left click / double click restores the window (Windows convention).
@@ -899,6 +902,29 @@ Window {
             clip: true
 
             readonly property bool empty: typeof session !== "undefined" && session.torrentCount === 0
+
+            // full custom background image (z:-1, behind anime art and grid/list).
+            // A theme-bg scrim at user-controlled opacity sits on top for legibility.
+            Item {
+                id: bgImageWrap
+                anchors.fill: parent
+                visible: Theme.hasBgImage && !parent.empty
+                z: -1
+                Image {
+                    anchors.fill: parent
+                    source: Theme.bgImageSource
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    sourceSize.width: parent.width
+                    sourceSize.height: parent.height
+                    cache: false
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    color: Theme.bg
+                    opacity: Theme.bgImageOpacity
+                }
+            }
 
             // empty state (no torrents)
             EmptyState {

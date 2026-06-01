@@ -25,6 +25,9 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QStyleHints>
+#include <QPainter>
+#include <QSvgRenderer>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
@@ -1225,6 +1228,22 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
     QSettings s;
     m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("dark")).toString();
     m_anime = s.value(QStringLiteral("qmlAnime"), false).toBool();
+    m_customPrimary   = s.value(QStringLiteral("qmlCustomPrimary"),   QStringLiteral("#e5332b")).toString();
+    m_customSecondary = s.value(QStringLiteral("qmlCustomSecondary"), QStringLiteral("#d99a2b")).toString();
+    m_customTertiary  = s.value(QStringLiteral("qmlCustomTertiary"),  QStringLiteral("#3fb950")).toString();
+    m_bgImagePath     = s.value(QStringLiteral("qmlBgImagePath"),     QString()).toString();
+    m_bgImageOpacity  = s.value(QStringLiteral("qmlBgImageOpacity"),  55).toInt();
+
+    if (auto *hints = QGuiApplication::styleHints()) {
+        m_osLight = (hints->colorScheme() == Qt::ColorScheme::Light);
+        connect(hints, &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme scheme) {
+            const bool light = (scheme == Qt::ColorScheme::Light);
+            if (light == m_osLight) return;
+            m_osLight = light;
+            QGuiApplication::setWindowIcon(trayIcon());   // taskbar/titlebar, live
+            emit osSchemeChanged();                        // QML tray re-binds
+        });
+    }
 }
 
 QString QmlThemeBridge::themeName() const { return m_themeName; }
@@ -1243,6 +1262,84 @@ void QmlThemeBridge::setAnime(bool on)
     m_anime = on;
     QSettings().setValue(QStringLiteral("qmlAnime"), on);
     emit changed();
+}
+
+QString QmlThemeBridge::customPrimary() const { return m_customPrimary; }
+void QmlThemeBridge::setCustomPrimary(const QString &hex)
+{
+    if (hex == m_customPrimary) return;
+    m_customPrimary = hex;
+    QSettings().setValue(QStringLiteral("qmlCustomPrimary"), hex);
+    emit changed();
+}
+
+QString QmlThemeBridge::customSecondary() const { return m_customSecondary; }
+void QmlThemeBridge::setCustomSecondary(const QString &hex)
+{
+    if (hex == m_customSecondary) return;
+    m_customSecondary = hex;
+    QSettings().setValue(QStringLiteral("qmlCustomSecondary"), hex);
+    emit changed();
+}
+
+QString QmlThemeBridge::customTertiary() const { return m_customTertiary; }
+void QmlThemeBridge::setCustomTertiary(const QString &hex)
+{
+    if (hex == m_customTertiary) return;
+    m_customTertiary = hex;
+    QSettings().setValue(QStringLiteral("qmlCustomTertiary"), hex);
+    emit changed();
+}
+
+QString QmlThemeBridge::bgImagePath() const { return m_bgImagePath; }
+void QmlThemeBridge::setBgImagePath(const QString &path)
+{
+    if (path == m_bgImagePath) return;
+    m_bgImagePath = path;
+    QSettings().setValue(QStringLiteral("qmlBgImagePath"), path);
+    emit changed();
+}
+
+int QmlThemeBridge::bgImageOpacity() const { return m_bgImageOpacity; }
+void QmlThemeBridge::setBgImageOpacity(int pct)
+{
+    if (pct == m_bgImageOpacity) return;
+    m_bgImageOpacity = pct;
+    QSettings().setValue(QStringLiteral("qmlBgImageOpacity"), pct);
+    emit changed();
+}
+
+bool QmlThemeBridge::osLight() const { return m_osLight; }
+
+QPixmap QmlThemeBridge::renderLogo(bool darkBody, int size, qreal dpr)
+{
+    if (dpr <= 0) dpr = 1.0;
+    QFile f(QStringLiteral(":/images/logo.svg"));
+    if (!f.open(QIODevice::ReadOnly))
+        return QPixmap();
+    QByteArray svg = f.readAll();
+    // Body is off-white (#E9E9E8); swap to dark text when the background is
+    // light so it doesn't vanish. The red wings (#E72134) stay in both cases.
+    if (darkBody)
+        svg.replace("#E9E9E8", "#16171a");
+    QSvgRenderer renderer(svg);
+    const int px = int(size * dpr);
+    QPixmap pm(px, px);
+    pm.fill(Qt::transparent);
+    pm.setDevicePixelRatio(dpr);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHint(QPainter::SmoothPixmapTransform);
+    renderer.render(&p, QRectF(0, 0, size, size));   // logical extent (retina fix)
+    return pm;
+}
+
+QIcon QmlThemeBridge::trayIcon() const
+{
+    QIcon icon;
+    for (int sz : {16, 24, 32, 64, 128, 256})
+        icon.addPixmap(renderLogo(m_osLight, sz, 1.0));
+    return icon;
 }
 
 // RSS bridge

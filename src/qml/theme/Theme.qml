@@ -91,6 +91,7 @@ QtObject {
 
     // .sel / .pill.on tint (--c-sel)
     readonly property color sel:
+        name === "custom"   ? Qt.rgba(customPrimaryColor.r, customPrimaryColor.g, customPrimaryColor.b, 0.13) :
         name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.20) :
         name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.13) :
         name === "light"    ? Qt.rgba(229/255,51/255,43/255,0.10) :
@@ -98,6 +99,7 @@ QtObject {
 
     // .pill.on bg (home usa rgba(229,51,43,0.12); reaproveitado p/ accent tint forte)
     readonly property color accentTint:
+        name === "custom"   ? Qt.rgba(customPrimaryColor.r, customPrimaryColor.g, customPrimaryColor.b, 0.12) :
         name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.12) :
         name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.12) : Qt.rgba(229/255,51/255,43/255,0.12)
 
@@ -132,17 +134,28 @@ QtObject {
         name === "sakura"   ? "#b58aa0" :
         name === "darkstar" ? "#645889" : "#5b5c63"
 
+    // ---------- custom theme: user accent colors (name === "custom") ----------
+    // Surfaces/text fall back to the dark palette (the trailing else of every
+    // ternary). Only the three accent families below are user-driven.
+    readonly property color customPrimaryColor:   typeof themeBridge !== "undefined" ? themeBridge.customPrimary   : "#e5332b"
+    readonly property color customSecondaryColor: typeof themeBridge !== "undefined" ? themeBridge.customSecondary : "#d99a2b"
+    readonly property color customTertiaryColor:  typeof themeBridge !== "undefined" ? themeBridge.customTertiary  : "#3fb950"
+
     // ---------- accents (functional) ----------
     // --red (fill)
     readonly property color accent:
+        name === "custom"   ? customPrimaryColor :
         name === "sakura"   ? "#d6336c" :
         name === "darkstar" ? "#a855f7" : "#e5332b"
     // --red-d
     readonly property color accentDark:
+        name === "custom"   ? Qt.darker(customPrimaryColor, 1.35) :
         name === "sakura"   ? "#be185d" :
         name === "darkstar" ? "#7e22ce" : "#c01f18"
-    // --red-t (accent legível sobre o bg)
+    // --red-t (accent legível sobre o bg). Custom inherits dark surfaces, so
+    // lighten a dark primary / darken a light one for readable accent text.
     readonly property color accentText:
+        name === "custom"   ? (customPrimaryColor.hslLightness < 0.55 ? Qt.lighter(customPrimaryColor, 1.25) : Qt.darker(customPrimaryColor, 1.2)) :
         name === "light"    ? "#cf2a22" :
         name === "sakura"   ? "#be185d" :
         name === "darkstar" ? "#c084fc" :
@@ -150,10 +163,12 @@ QtObject {
 
     // --amber (fill: seeding/upload)
     readonly property color amber:
+        name === "custom"   ? customSecondaryColor :
         name === "darkstar" ? "#22d3ee" :
         name === "sakura"   ? "#c8881f" : "#d99a2b"
     // --amber-t (.v-up text)
     readonly property color up:
+        name === "custom"   ? Qt.lighter(customSecondaryColor, 1.2) :
         name === "darkstar" ? "#67e8f9" :
         (name === "light" || name === "sakura") ? "#9a6710" : "#e0b454"
 
@@ -162,7 +177,8 @@ QtObject {
 
     // --grn (verde de saúde: seeds em Search, "Instalado" em Addons, badge "Auto" em RSS)
     // bat-dialog*.css: dark/midnight/darkstar #3fb950 ; light/sakura #2e9c40
-    readonly property color grn: isLight ? "#2e9c40" : "#3fb950"
+    readonly property color grn:
+        name === "custom" ? customTertiaryColor : (isLight ? "#2e9c40" : "#3fb950")
 
     // ---------- anime accent art (per theme) ----------
     readonly property string animeSource:
@@ -173,9 +189,19 @@ QtObject {
     readonly property bool animeBottom: name === "darkstar"   // aranha no canto inferior-direito
     readonly property bool hasAnime: anime && animeSource !== ""
 
+    // ---------- custom full background image (custom theme only) ----------
+    // QSettings stores a plain path; build a file URL (Windows needs file:///).
+    readonly property string bgImageSource:
+        (name === "custom" && typeof themeBridge !== "undefined" && themeBridge.bgImagePath !== "")
+            ? (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(themeBridge.bgImagePath)
+            : ""
+    readonly property real bgImageOpacity:
+        typeof themeBridge !== "undefined" ? themeBridge.bgImageOpacity / 100 : 0.55
+    readonly property bool hasBgImage: bgImageSource !== ""
+
     // troca de tema (chamada pela SettingsWindow — NUNCA por demo control na subbar)
     function cycle() {
-        var order = ["dark", "light", "midnight", "sakura", "darkstar"]
+        var order = ["dark", "light", "midnight", "sakura", "darkstar", "custom"]
         setName(order[(order.indexOf(name) + 1) % order.length])
     }
 }

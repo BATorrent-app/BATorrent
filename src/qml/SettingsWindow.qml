@@ -1,6 +1,8 @@
 // Source: BATorrent Settings.html + batorrent-settings.css (+ settings-data.js)
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls.Basic
+import QtQuick.Dialogs
 import "theme"
 import "widgets"
 
@@ -56,8 +58,13 @@ Window {
             { type: "path", label: (i18n.language, i18n.t("set_move_to2")), placeholder: (i18n.language, i18n.t("set_move_to_ph")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
             { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch"], value: 0 },
-            { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star"], value: 0 },
+            { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
             { type: "anime", label: (i18n.language, i18n.t("set_anime2")) },
+            { type: "color",   key: "customPrimary",   label: (i18n.language, i18n.t("set_custom_primary")),   customOnly: true },
+            { type: "color",   key: "customSecondary", label: (i18n.language, i18n.t("set_custom_secondary")), customOnly: true },
+            { type: "color",   key: "customTertiary",  label: (i18n.language, i18n.t("set_custom_tertiary")),  customOnly: true },
+            { type: "bgimage", key: "bgImagePath",     label: (i18n.language, i18n.t("set_custom_bgimage")),   customOnly: true },
+            { type: "slider",  key: "bgImageOpacity",  label: (i18n.language, i18n.t("set_custom_opacity")),   customOnly: true },
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
             { type: "toggle", label: (i18n.language, i18n.t("settings_start_tray")) },
             { type: "toggle", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
@@ -432,6 +439,11 @@ Window {
         property bool isLast: false
         spacing: 0
 
+        // custom-only rows collapse entirely unless the custom theme is active
+        readonly property bool rowVisible: !field.customOnly || Theme.name === "custom"
+        visible: rowVisible
+        Layout.preferredHeight: rowVisible ? -1 : 0
+
         // .srow
         RowLayout {
             Layout.fillWidth: true
@@ -493,6 +505,9 @@ Window {
                     case "theme": return cTheme
                     case "button": return cButton
                     case "iface": return cSelect
+                    case "color": return cColor
+                    case "bgimage": return cBgImage
+                    case "slider": return cSlider
                     }
                     return null
                 }
@@ -520,11 +535,81 @@ Window {
             id: cTheme
             TSelect {
                 // options index ↔ Theme.name
-                readonly property var names: ["dark", "light", "midnight", "sakura", "darkstar"]
+                readonly property var names: ["dark", "light", "midnight", "sakura", "darkstar", "custom"]
                 implicitWidth: 180
                 model: field.options || []
                 currentIndex: Math.max(0, names.indexOf(Theme.name))
                 onActivated: function(i) { Theme.setName(names[i]) }
+            }
+        }
+        // ---- custom-theme controls (write straight to themeBridge) ----
+        Component {
+            id: cColor
+            RowLayout {
+                spacing: Theme.sp2
+                Rectangle {
+                    implicitWidth: 26; implicitHeight: 26; radius: 6
+                    color: themeBridge ? themeBridge[field.key] : "#000000"
+                    border.color: Theme.hair; border.width: 1
+                }
+                TFld {
+                    implicitWidth: 110; implicitHeight: 30; mono: true
+                    text: themeBridge ? themeBridge[field.key] : ""
+                    placeholder: "#rrggbb"
+                    onEdited: function(t) {
+                        var v = t.charAt(0) === "#" ? t : "#" + t
+                        if (/^#[0-9a-fA-F]{6}$/.test(v)) themeBridge[field.key] = v.toLowerCase()
+                    }
+                }
+                BtnFlat {
+                    text: "…"; sm: true
+                    onClicked: { colorDlg.targetKey = field.key; colorDlg.selectedColor = themeBridge[field.key]; colorDlg.open() }
+                }
+            }
+        }
+        Component {
+            id: cBgImage
+            RowLayout {
+                spacing: Theme.sp2
+                TFld {
+                    implicitWidth: 210; implicitHeight: 30; mono: true
+                    text: themeBridge ? themeBridge.bgImagePath : ""
+                    placeholder: (i18n.language, i18n.t("set_custom_bgimage"))
+                    readonly: true
+                }
+                BtnFlat { text: (i18n.language, i18n.t("settings_browse")); sm: true; onClicked: bgImageDlg.open() }
+                BtnFlat { text: (i18n.language, i18n.t("set_custom_clear")); sm: true; onClicked: themeBridge.bgImagePath = "" }
+            }
+        }
+        Component {
+            id: cSlider
+            RowLayout {
+                spacing: Theme.sp2
+                Slider {
+                    id: opacitySlider
+                    implicitWidth: 150
+                    from: 0; to: 100; stepSize: 1
+                    onMoved: if (themeBridge) themeBridge.bgImageOpacity = Math.round(value)
+                    // Binding (not a plain `value:`) so dragging doesn't destroy
+                    // the link back to the bridge if opacity changes elsewhere.
+                    Binding { target: opacitySlider; property: "value"; value: themeBridge ? themeBridge.bgImageOpacity : 55 }
+                    background: Rectangle {
+                        x: parent.leftPadding; y: parent.topPadding + parent.availableHeight / 2 - height / 2
+                        width: parent.availableWidth; height: 4; radius: 2; color: Theme.track
+                        Rectangle { width: parent.width * parent.parent.visualPosition; height: parent.height; radius: 2; color: Theme.accent }
+                    }
+                    handle: Rectangle {
+                        x: parent.leftPadding + parent.visualPosition * (parent.availableWidth - width)
+                        y: parent.topPadding + parent.availableHeight / 2 - height / 2
+                        implicitWidth: 16; implicitHeight: 16; radius: 8
+                        color: Theme.accent; border.color: Theme.bg; border.width: 2
+                    }
+                }
+                Text {
+                    text: (themeBridge ? themeBridge.bgImageOpacity : 55) + "%"
+                    color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono
+                    Layout.preferredWidth: 36
+                }
             }
         }
         Component {
@@ -611,5 +696,26 @@ Window {
             }
         }
         Component { id: cButton; BtnFlat { text: field.btn || ""; sm: false } }
+    }
+
+    // custom-theme dialogs
+    ColorDialog {
+        id: colorDlg
+        property string targetKey: ""
+        // QML color.toString() is "#AARRGGBB" (alpha first); the last 6 hex
+        // digits are RRGGBB — slice(0,7) would wrongly keep '#'+alpha+RR.
+        onAccepted: if (typeof themeBridge !== "undefined" && targetKey !== "")
+                        themeBridge[targetKey] = "#" + selectedColor.toString().slice(-6)
+    }
+    FileDialog {
+        id: bgImageDlg
+        title: (i18n.language, i18n.t("set_custom_bgimage"))
+        nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.bmp)"]
+        // Store a decoded plain filesystem path (selectedFile is a percent-
+        // encoded URL); Theme.bgImageSource re-encodes it for Image.source.
+        onAccepted: if (typeof themeBridge !== "undefined") {
+            var u = selectedFile.toString().replace(/^file:\/\/\/?/, Qt.platform.os === "windows" ? "" : "/")
+            themeBridge.bgImagePath = decodeURIComponent(u)
+        }
     }
 }
