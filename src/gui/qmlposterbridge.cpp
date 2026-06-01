@@ -1656,10 +1656,11 @@ QString QmlPairingBridge::detectLanIp()
             if (entry.ip().protocol() != QAbstractSocket::IPv4Protocol) continue;
             const QString ip = entry.ip().toString();
             if (ip.startsWith("169.254.")) continue;
-            if (name.startsWith("en") || name.contains("wlan") || name.contains("wlp"))
-                preferred = ip;
-            else if (fallback.isEmpty())
+            if (name.startsWith("en") || name.contains("wlan") || name.contains("wlp")) {
+                if (preferred.isEmpty()) preferred = ip;   // first primary iface wins, deterministic
+            } else if (fallback.isEmpty()) {
                 fallback = ip;
+            }
         }
     }
     return preferred.isEmpty() ? fallback : preferred;

@@ -76,6 +76,11 @@ static void qtMessageHandler(QtMsgType type, const QMessageLogContext &ctx,
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    // Set the org name so default-constructed QSettings() resolves to the same
+    // store as the explicit QSettings("BATorrent","BATorrent") used elsewhere —
+    // otherwise the QML UI's settings (language, theme, …) fork into a separate
+    // store the legacy UI can't see.
+    app.setOrganizationName("BATorrent");
     app.setApplicationName("BATorrent");
     app.setApplicationVersion(APP_VERSION);
     app.setWindowIcon(QIcon(":/images/logo1.png"));

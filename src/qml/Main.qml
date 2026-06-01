@@ -37,7 +37,7 @@ Window {
     property bool gridView: true
     property string activeFilter: "all"
     property string catFilter: ""
-    readonly property var presetCats: ["Programas", "Jogos", "Filmes", "Séries"]
+    readonly property var presetCats: ["Apps", "Games", "Movies", "Series"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
     property string sortColumn: ""
     property bool sortAsc: true
@@ -121,6 +121,19 @@ Window {
     function applyCatFilter(c) {
         win.catFilter = c
         if (typeof torrentFilter !== "undefined") torrentFilter.setCategoryFilter(c)
+    }
+    // Categories are stored/filtered by a stable language-independent value
+    // (presetCats); only the *display* is translated. Switching language must
+    // not desync a torrent's category from the filter/menu, so never store the
+    // translated label.
+    function catLabel(value) {
+        switch (value) {
+        case "Apps":   return i18n.language, i18n.t("cat_apps")
+        case "Games":  return i18n.language, i18n.t("cat_games")
+        case "Movies": return i18n.language, i18n.t("cat_movies")
+        case "Series": return i18n.language, i18n.t("cat_series")
+        default:       return value   // custom category — show as the user typed it
+        }
     }
     function openContext(proxyRow) {
         win.selectRow(proxyRow)
@@ -235,10 +248,10 @@ Window {
             implicitWidth: 180
             delegate: CatItem {}
             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-            CatItem { text: (i18n.language, i18n.t("cat_apps")); onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_apps"))) }
-            CatItem { text: (i18n.language, i18n.t("cat_games"));     onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_games"))) }
-            CatItem { text: (i18n.language, i18n.t("cat_movies"));    onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_movies"))) }
-            CatItem { text: (i18n.language, i18n.t("cat_series"));    onTriggered: session.setSelectedCategory((i18n.language, i18n.t("cat_series"))) }
+            CatItem { text: win.catLabel("Apps");   onTriggered: session.setSelectedCategory("Apps") }
+            CatItem { text: win.catLabel("Games");  onTriggered: session.setSelectedCategory("Games") }
+            CatItem { text: win.catLabel("Movies"); onTriggered: session.setSelectedCategory("Movies") }
+            CatItem { text: win.catLabel("Series"); onTriggered: session.setSelectedCategory("Series") }
             MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
             CatItem { text: (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
             CatItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith(i18n.t("ctx_category"), i18n.t("prompt_category_name"), session.selectedCategory(), i18n.t("prompt_category_eg"), function(t){ session.setSelectedCategory(t) }) }
@@ -806,7 +819,7 @@ Window {
                         spacing: 8
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: win.catFilter.length > 0 ? win.catFilter : (i18n.language, i18n.t("filter_all_categories"))
+                            text: win.catFilter.length > 0 ? win.catLabel(win.catFilter) : (i18n.language, i18n.t("filter_all_categories"))
                             color: win.catFilter.length > 0 ? Theme.t1 : Theme.t2
                             font.pointSize: 12
                             font.family: Theme.fontSans
@@ -832,10 +845,10 @@ Window {
                         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
                         CatItem { text: (i18n.language, i18n.t("filter_all_categories")); onTriggered: win.applyCatFilter("") }
                         MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-                        CatItem { text: (i18n.language, i18n.t("cat_apps")); onTriggered: win.applyCatFilter((i18n.language, i18n.t("cat_apps"))) }
-                        CatItem { text: (i18n.language, i18n.t("cat_games"));     onTriggered: win.applyCatFilter((i18n.language, i18n.t("cat_games"))) }
-                        CatItem { text: (i18n.language, i18n.t("cat_movies"));    onTriggered: win.applyCatFilter((i18n.language, i18n.t("cat_movies"))) }
-                        CatItem { text: (i18n.language, i18n.t("cat_series"));    onTriggered: win.applyCatFilter((i18n.language, i18n.t("cat_series"))) }
+                        CatItem { text: win.catLabel("Apps");   onTriggered: win.applyCatFilter("Apps") }
+                        CatItem { text: win.catLabel("Games");  onTriggered: win.applyCatFilter("Games") }
+                        CatItem { text: win.catLabel("Movies"); onTriggered: win.applyCatFilter("Movies") }
+                        CatItem { text: win.catLabel("Series"); onTriggered: win.applyCatFilter("Series") }
                     }
                 }
 
@@ -1333,7 +1346,7 @@ Window {
                             font.family: Theme.fontSans
                         }
                         Text {
-                            text: lrow.category
+                            text: win.catLabel(lrow.category)
                             Layout.preferredWidth: 90
                             color: Theme.hasAnime ? Theme.t1 : Theme.t3
                             style: Theme.hasAnime ? Text.Outline : Text.Normal
