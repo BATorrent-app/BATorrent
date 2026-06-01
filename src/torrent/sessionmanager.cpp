@@ -692,6 +692,14 @@ void SessionManager::setSequentialDownload(int index, bool sequential)
         m_torrents[index].unset_flags(lt::torrent_flags::sequential_download);
 }
 
+bool SessionManager::isSequentialDownload(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size()) || !m_torrents[index].is_valid())
+        return false;
+    return (m_torrents[index].flags() & lt::torrent_flags::sequential_download)
+           != lt::torrent_flags_t{};
+}
+
 void SessionManager::prioritizeFilePieceBoundaries(int torrentIndex, int fileIndex)
 {
     if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size()))

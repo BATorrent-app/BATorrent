@@ -41,6 +41,8 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QJsonValue>
+#include <cstring>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
@@ -698,6 +700,127 @@ void QmlSessionBridge::setSelectedSequential(bool on)
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setSequentialDownload(r, on);
     emit selectionChanged();
+}
+
+bool QmlSessionBridge::selectedSequential() const
+{
+    return hasSelection() && m_session->isSequentialDownload(m_selectedIndex);
+}
+
+void QmlSessionBridge::setSelectedStopAfter(int mode)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentStopAfterDownload(r, mode);
+    emit selectionChanged();
+}
+
+int QmlSessionBridge::selectedStopAfter() const
+{
+    return hasSelection() ? m_session->torrentStopAfterDownload(m_selectedIndex) : -1;
+}
+
+void QmlSessionBridge::setSelectedMaxSeedDays(int days)
+{
+    const qint64 secs = days < 0 ? -1 : qint64(days) * 86400;
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentMaxSeedSeconds(r, secs);
+    emit selectionChanged();
+}
+
+int QmlSessionBridge::selectedMaxSeedDays() const
+{
+    if (!hasSelection()) return -1;
+    const qint64 s = m_session->torrentMaxSeedSeconds(m_selectedIndex);
+    return s < 0 ? -1 : int(s / 86400);
+}
+
+void QmlSessionBridge::renameSelected(const QString &name)
+{
+    if (hasSelection() && !name.trimmed().isEmpty())
+        m_session->renameFile(m_selectedIndex, 0, name.trimmed());
+    emit selectionChanged();
+}
+
+QString QmlSessionBridge::diagnoseSelectedSlow() const
+{
+    if (!hasSelection()) return QString();
+    TorrentInfo info = m_session->torrentAt(m_selectedIndex);
+    QStringList lines;
+    if (info.paused) lines << "★ " + tr_("diag_paused");
+    else if (info.completed) lines << "★ " + tr_("diag_completed");
+    else if (info.progress >= 1.0f)
+        lines << "★ " + tr_(info.uploadRate == 0 ? "diag_seeding_no_uploaders" : "diag_seeding_ok");
+    else if (info.numPeers == 0) lines << "★ " + tr_("diag_no_peers");
+    else if (info.numSeeds == 0) lines << "★ " + tr_("diag_no_seeds");
+    else if (info.downloadRate == 0) lines << "★ " + tr_("diag_choked");
+    else {
+        const int dlimit = m_session->torrentDownloadLimit(m_selectedIndex);
+        if (dlimit > 0 && info.downloadRate >= dlimit * 1024 * 0.9)
+            lines << "★ " + tr_("diag_at_local_limit").arg(dlimit);
+        else
+            lines << "★ " + tr_("diag_throughput_normal").arg(formatSpeed(info.downloadRate));
+    }
+    lines << "" << tr_("diag_facts");
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_peers"), QString::number(info.numPeers));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("detail_seeds"), QString::number(info.numSeeds));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_down"), formatSpeed(info.downloadRate));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_up"), formatSpeed(info.uploadRate));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_state"), info.stateString);
+    return lines.join('\n');
+}
+
+void QmlSessionBridge::streamSelected()
+{
+    if (!hasSelection()) return;
+    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
+    const int row = m_selectedIndex;
+    auto files = m_session->filesAt(row);
+    TorrentInfo info = m_session->torrentAt(row);
+    int bestIdx = -1; qint64 bestSize = 0;
+    auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
+    for (int i = 0; i < int(files.size()); ++i) {
+        const QString mp = stripBt(files[i].path);
+        for (const auto &ext : videoExts)
+            if (mp.endsWith(ext, Qt::CaseInsensitive)) {
+                if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
+                break;
+            }
+    }
+    if (bestIdx < 0) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
+
+    m_session->setSequentialDownload(row, true);
+    for (int i = 0; i < int(files.size()); ++i)
+        if (i != bestIdx) m_session->setFilePriority(row, i, 0);
+    m_session->setFilePriority(row, bestIdx, 7);
+    m_session->prioritizeFilePieceBoundaries(row, bestIdx);
+
+    m_streamIndex = row; m_streamFileIdx = bestIdx;
+    m_streamFilePath = info.savePath + "/" + files[bestIdx].path;
+
+    if (!m_streamTimer) { m_streamTimer = new QTimer(this); m_streamTimer->setInterval(2000); }
+    QObject::disconnect(m_streamTimer, nullptr, nullptr, nullptr);
+    connect(m_streamTimer, &QTimer::timeout, this, [this]() {
+        if (m_streamIndex < 0 || m_streamIndex >= m_session->torrentCount()) { m_streamTimer->stop(); return; }
+        auto files = m_session->filesAt(m_streamIndex);
+        if (m_streamFileIdx >= int(files.size())) { m_streamTimer->stop(); return; }
+        float prog = files[m_streamFileIdx].progress;
+        qint64 done = qint64(prog * files[m_streamFileIdx].size);
+        if (QFile::exists(m_streamFilePath) && (prog >= 0.02f || done > 5*1024*1024)) {
+            m_streamTimer->stop();
+            bool opened = false;
+#ifdef Q_OS_MACOS
+            for (const QString &app : {"VLC","IINA","QuickTime Player"})
+                if (QProcess::startDetached("open", {"-a", app, m_streamFilePath})) { opened = true; break; }
+            if (!opened) opened = QProcess::startDetached("open", {m_streamFilePath});
+#else
+            opened = QDesktopServices::openUrl(QUrl::fromLocalFile(m_streamFilePath));
+#endif
+            emit toast(tr_("ctx_stream"), opened ? tr_("stream_started").arg(m_session->torrentAt(m_streamIndex).name)
+                                                       : tr_("stream_no_player"));
+        }
+    });
+    m_streamTimer->start();
+    emit toast(tr_("ctx_stream"), tr_("stream_started").arg(info.name));
 }
 
 void QmlSessionBridge::setSelectedCategory(const QString &category)
@@ -2359,6 +2482,101 @@ bool QmlSettingsBridge::excludeFromDefender()
 #else
     return false;   // Windows-only
 #endif
+}
+
+static QString localPath(const QString &p)
+{
+    return p.startsWith(QStringLiteral("file:")) ? QUrl(p).toLocalFile() : p;
+}
+
+QString QmlSettingsBridge::exportSettings(const QString &path)
+{
+    static const QStringList secrets = {"proxyPass","plexToken","jellyfinApiKey","webUiPasswordHash"};
+    QSettings st;
+    QJsonObject obj;
+    for (const auto &k : st.allKeys())
+        if (!secrets.contains(k)) obj[k] = QJsonValue::fromVariant(st.value(k));
+    QFile f(localPath(path));
+    if (!f.open(QIODevice::WriteOnly)) return tr_("full_restore_failed");
+    f.write(QJsonDocument(obj).toJson());
+    return tr_("export_success");
+}
+
+QString QmlSettingsBridge::importSettings(const QString &path)
+{
+    QFile f(localPath(path));
+    if (!f.open(QIODevice::ReadOnly)) return tr_("full_restore_failed");
+    const QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+    if (!doc.isObject()) return tr_("full_restore_bad_format");
+    QSettings st;
+    const QJsonObject obj = doc.object();
+    for (auto it = obj.begin(); it != obj.end(); ++it)
+        st.setValue(it.key(), it.value().toVariant());
+    return tr_("import_success") + "\n" + tr_("import_restart");
+}
+
+QString QmlSettingsBridge::fullBackup(const QString &path)
+{
+    QFile f(localPath(path));
+    if (!f.open(QIODevice::WriteOnly)) return tr_("full_restore_failed");
+    QByteArray archive("BATBACKUP1\n");
+    QList<QPair<QString, QByteArray>> entries;
+    QSettings st;
+    QJsonObject obj;
+    for (const auto &k : st.allKeys()) obj[k] = QJsonValue::fromVariant(st.value(k));
+    entries.append({"settings.json", QJsonDocument(obj).toJson()});
+    QDir resumeDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/resume");
+    if (resumeDir.exists())
+        for (const auto &name : resumeDir.entryList({"*.resume"}, QDir::Files)) {
+            QFile rf(resumeDir.filePath(name));
+            if (rf.open(QIODevice::ReadOnly)) entries.append({"resume/" + name, rf.readAll()});
+        }
+    quint32 count = entries.size();
+    archive.append(reinterpret_cast<const char *>(&count), 4);
+    for (const auto &e : entries) {
+        QByteArray nb = e.first.toUtf8();
+        quint32 nl = nb.size(); quint64 dl = e.second.size();
+        archive.append(reinterpret_cast<const char *>(&nl), 4);
+        archive.append(nb);
+        archive.append(reinterpret_cast<const char *>(&dl), 8);
+        archive.append(e.second);
+    }
+    f.write(archive);
+    return tr_("full_backup_done");
+}
+
+QString QmlSettingsBridge::fullRestore(const QString &path)
+{
+    QFile f(localPath(path));
+    if (!f.open(QIODevice::ReadOnly)) return tr_("full_restore_failed");
+    const QByteArray data = f.readAll();
+    if (!data.startsWith("BATBACKUP1\n")) return tr_("full_restore_bad_format");
+    const char *p = data.constData() + 11, *end = data.constData() + data.size();
+    if (p + 4 > end) return tr_("full_restore_bad_format");
+    quint32 count; memcpy(&count, p, 4); p += 4;
+    const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(base + "/resume");
+    int restored = 0;
+    for (quint32 i = 0; i < count; ++i) {
+        if (end - p < 4) break;
+        quint32 nl; memcpy(&nl, p, 4); p += 4;
+        if (nl > 4096 || static_cast<ptrdiff_t>(nl) > end - p) break;
+        const QString name = QString::fromUtf8(p, nl); p += nl;
+        if (end - p < 8) break;
+        quint64 dl; memcpy(&dl, p, 8); p += 8;
+        if (dl > 1073741824ULL || static_cast<ptrdiff_t>(dl) > end - p) break;
+        const QByteArray payload(p, dl); p += dl;
+        if (name == "settings.json") {
+            const auto obj = QJsonDocument::fromJson(payload).object();
+            QSettings s;
+            for (auto it = obj.begin(); it != obj.end(); ++it) s.setValue(it.key(), it.value().toVariant());
+            ++restored;
+        } else if (name.startsWith("resume/")) {
+            QFile rf(base + "/" + name);
+            if (rf.open(QIODevice::WriteOnly)) { rf.write(payload); ++restored; }
+        }
+    }
+    return tr_("full_restore_done").arg(restored) + "\n" + tr_("import_restart");
 }
 
 QStringList QmlSettingsBridge::networkInterfaces() const

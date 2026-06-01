@@ -260,7 +260,10 @@ Window {
         Sep {}
         CtxItem { text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
         CtxItem { text: (i18n.language, i18n.t("ctx_reveal_file")); onTriggered: session.openSelectedFile() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_stream")); onTriggered: session.streamSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDlg.open() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
+        CtxItem { text: (session.selectedSequential() ? "✓ " : "") + (i18n.language, i18n.t("ctx_sequential")); onTriggered: session.setSelectedSequential(!session.selectedSequential()) }
         CtxItem { text: (i18n.language, i18n.t("ctx_speed_down")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_down"), i18n.t("prompt_speed_kbs"), String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
         CtxItem { text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_up"), i18n.t("prompt_speed_kbs"), String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
         Sep {}
@@ -287,8 +290,18 @@ Window {
         Sep {}
         CtxItem { text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_why_slow")); onTriggered: { diagnoseDlg.body = session.diagnoseSelectedSlow(); diagnoseDlg.open() } }
         CtxItem { text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain")); onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
+        Menu {
+            title: (i18n.language, i18n.t("ctx_seed_rules"))
+            implicitWidth: 220
+            delegate: CtxItem {}
+            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+            CtxItem { text: (i18n.language, i18n.t("ctx_seed_use_default")); onTriggered: { session.setSelectedStopAfter(-1); session.setSelectedMaxSeedDays(-1) } }
+            CtxItem { text: (session.selectedStopAfter() === 1 ? "✓ " : "") + (i18n.language, i18n.t("ctx_stop_after_download")); onTriggered: session.setSelectedStopAfter(session.selectedStopAfter() === 1 ? 0 : 1) }
+            CtxItem { text: (i18n.language, i18n.t("ctx_max_seed_time")); onTriggered: inputPrompt.openWith(i18n.t("ctx_max_seed_time"), i18n.t("ctx_max_seed_prompt"), String(Math.max(0, session.selectedMaxSeedDays())), "0", function(t){ session.setSelectedMaxSeedDays(parseInt(t) || 0) }) }
+        }
         Sep {}
         CtxItem { text: (i18n.language, i18n.t("ctx_remove")); onTriggered: removeDlg.open() }
     }
@@ -396,6 +409,13 @@ Window {
                     : level === 1 ? Platform.SystemTrayIcon.Warning
                     : Platform.SystemTrayIcon.Information, 5000)
         }
+    }
+
+    // session-originated toasts (stream feedback, etc.)
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        ignoreUnknownSignals: true
+        function onToast(title, body) { toastHost.show(title, body, 0) }
     }
 
     // in-app toast stack (overlays the whole window content)
@@ -2138,6 +2158,21 @@ Window {
     }
     InputPromptDialog   { id: inputPrompt }
     UpdateDialog        { id: updateDlg }
+
+    // "why is this slow" diagnostic report
+    BatDialog {
+        id: diagnoseDlg
+        property string body: ""
+        title: (i18n.language, i18n.t("ctx_why_slow"))
+        cardW: 460; cardH: 320
+        showCancel: false
+        Text {
+            Layout.fillWidth: true
+            text: diagnoseDlg.body
+            color: Theme.t2; font.pointSize: 12; font.family: Theme.fontMono
+            wrapMode: Text.WordWrap; lineHeight: 1.4
+        }
+    }
 
     // auto-shutdown: cancelable countdown after all downloads finish
     property int shutdownLeft: 0

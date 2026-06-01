@@ -209,6 +209,11 @@ Window {
             { type: "select", key: "advSeedChoking", label: (i18n.language, i18n.t("adv_seed_choking")), options: [(i18n.language, i18n.t("adv_seedchoke_robin")), (i18n.language, i18n.t("adv_seedchoke_fastest")), (i18n.language, i18n.t("adv_seedchoke_antileech"))], value: 2 },
             { type: "toggle", key: "advRateOverhead", label: (i18n.language, i18n.t("adv_rate_overhead")) },
             { type: "toggle", key: "advIgnoreLan", label: (i18n.language, i18n.t("adv_ignore_lan")), on: true },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_backup")) },
+            { type: "button", action: "exportSettings", label: (i18n.language, i18n.t("action_export_settings")), btn: (i18n.language, i18n.t("btn_export")) },
+            { type: "button", action: "importSettings", label: (i18n.language, i18n.t("action_import_settings")), btn: (i18n.language, i18n.t("btn_import")) },
+            { type: "button", action: "fullBackup", label: (i18n.language, i18n.t("action_full_backup")), btn: (i18n.language, i18n.t("btn_export")) },
+            { type: "button", action: "fullRestore", label: (i18n.language, i18n.t("action_full_restore")), btn: (i18n.language, i18n.t("btn_import")) },
             { type: "group", label: (i18n.language, i18n.t("adv_metadata_api")) },
             { type: "text", key: "tmdbApiKey", label: (i18n.language, i18n.t("set_tmdb2")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_tmdb_note")) },
             { type: "text", key: "igdbClientId", label: (i18n.language, i18n.t("set_igdb_id2")), mono: true, w: "w-md" },
@@ -924,6 +929,30 @@ Window {
             infoDlg.message = dok ? i18n.t("defender_exclude_ok").replace(/:?\s*%1\s*$/, "")
                                   : (i18n.language, i18n.t("defender_exclude_fail"))
             infoDlg.open()
+        } else if (a === "exportSettings") { backupSaveDlg.mode = "export"; backupSaveDlg.currentFile = "batorrent_settings.json"; backupSaveDlg.open() }
+        else if (a === "fullBackup")      { backupSaveDlg.mode = "backup"; backupSaveDlg.currentFile = "batorrent-backup.bat"; backupSaveDlg.open() }
+        else if (a === "importSettings")  { backupOpenDlg.mode = "import"; backupOpenDlg.open() }
+        else if (a === "fullRestore")     { backupOpenDlg.mode = "restore"; backupOpenDlg.open() }
+    }
+    function showInfo(title, msg) { infoDlg.title = title; infoDlg.message = msg; infoDlg.open() }
+    FileDialog {
+        id: backupSaveDlg
+        property string mode: ""
+        fileMode: FileDialog.SaveFile
+        nameFilters: mode === "backup" ? ["BATorrent backup (*.bat)"] : ["JSON (*.json)"]
+        onAccepted: if (typeof settings !== "undefined") {
+            var p = selectedFile.toString()
+            win.showInfo(i18n.t("settings_advanced"), mode === "backup" ? settings.fullBackup(p) : settings.exportSettings(p))
+        }
+    }
+    FileDialog {
+        id: backupOpenDlg
+        property string mode: ""
+        fileMode: FileDialog.OpenFile
+        nameFilters: mode === "restore" ? ["BATorrent backup (*.bat)"] : ["JSON (*.json)"]
+        onAccepted: if (typeof settings !== "undefined") {
+            var p = selectedFile.toString()
+            win.showInfo(i18n.t("settings_advanced"), mode === "restore" ? settings.fullRestore(p) : settings.importSettings(p))
         }
     }
 

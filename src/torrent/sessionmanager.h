@@ -50,6 +50,7 @@ public:
 
     void setFilePriority(int torrentIndex, int fileIndex, int priority);
     void setSequentialDownload(int index, bool sequential);
+    bool isSequentialDownload(int index) const;
     // Boost piece priority for the first/last pieces of a specific file so
     // streaming players can read container headers (mp4 moov atom, mkv
     // cues) and trailing index data before the bulk download completes.

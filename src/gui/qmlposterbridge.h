@@ -192,6 +192,15 @@ public:
     Q_INVOKABLE void setSelectedDownloadLimit(int kbps);
     Q_INVOKABLE void setSelectedUploadLimit(int kbps);
     Q_INVOKABLE void setSelectedSequential(bool on);
+    Q_INVOKABLE bool selectedSequential() const;
+    // per-torrent seed rules: stopAfter -1=use default,0=off,1=on; maxSeedDays -1=default,0=unlimited
+    Q_INVOKABLE void setSelectedStopAfter(int mode);
+    Q_INVOKABLE int  selectedStopAfter() const;
+    Q_INVOKABLE void setSelectedMaxSeedDays(int days);
+    Q_INVOKABLE int  selectedMaxSeedDays() const;
+    Q_INVOKABLE void renameSelected(const QString &name);   // rename the torrent (file 0)
+    Q_INVOKABLE QString diagnoseSelectedSlow() const;       // "why is this slow" report
+    Q_INVOKABLE void streamSelected();                      // prioritize video + open player
     Q_INVOKABLE void setSelectedCategory(const QString &category);
     Q_INVOKABLE void setSelectedTags(const QStringList &tags);
     Q_INVOKABLE void addTrackerToSelected(const QString &url);
@@ -269,6 +278,7 @@ signals:
     void queueMoved(int from, int to);
     void previewPosterReady(const QString &infoHash, const QString &posterPath);
     void allDownloadsComplete();   // fired once when the last active download finishes
+    void toast(const QString &title, const QString &body);   // in-app toast (stream feedback, etc.)
 
 private slots:
     void sampleSpeeds();
@@ -280,6 +290,10 @@ private:
     QList<int> m_selectedRows;
     GeoIpResolver *m_geoIp = nullptr;
     bool m_shutdownArmed = false;   // debounce so the countdown fires once per drain
+    QTimer *m_streamTimer = nullptr;   // polls until a streamed file is buffered
+    QString m_streamFilePath;
+    int m_streamIndex = -1;
+    int m_streamFileIdx = -1;
 
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;
@@ -559,6 +573,12 @@ public:
     Q_INVOKABLE void testTelegram();
     // Windows-only: add the save folder to Windows Defender's exclusion list (UAC prompt).
     Q_INVOKABLE bool excludeFromDefender();
+    // Settings export/import (JSON, secrets excluded) + full backup/restore
+    // (.bat archive: settings + resume data). Each returns a localized result.
+    Q_INVOKABLE QString exportSettings(const QString &path);
+    Q_INVOKABLE QString importSettings(const QString &path);
+    Q_INVOKABLE QString fullBackup(const QString &path);
+    Q_INVOKABLE QString fullRestore(const QString &path);
     // Up/active network interfaces by name (index 0 = "Any"), for the VPN bind select.
     Q_INVOKABLE QStringList networkInterfaces() const;
     void setTelegramNotifier(TelegramNotifier *n) { m_telegram = n; }
