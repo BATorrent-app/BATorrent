@@ -2165,8 +2165,13 @@ void SessionManager::migrateLegacyResumeData()
     // v3.0 added setOrganizationName("BATorrent"), which shifted AppDataLocation
     // from <APPDATA>/BATorrent to <APPDATA>/BATorrent/BATorrent. Pre-3.0 users'
     // .resume/.torrent files live in the old dir; copy them over once so their
-    // torrents don't vanish after upgrading. Non-destructive: only runs when the
-    // new dir has no resume data yet, and copies (never deletes) the originals.
+    // torrents don't vanish after upgrading. Non-destructive: copies (never
+    // deletes) the originals.
+    QSettings s;
+    if (s.value(QStringLiteral("resumeMigrated"), false).toBool())
+        return;   // run exactly once — else removing all torrents would resurrect
+    s.setValue(QStringLiteral("resumeMigrated"), true);
+
     QDir newDir(resumeDataDir());
     if (!newDir.entryList({"*.resume"}, QDir::Files).isEmpty())
         return;   // already populated — nothing to migrate
