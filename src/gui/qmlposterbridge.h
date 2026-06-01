@@ -501,7 +501,7 @@ public:
     explicit QmlI18nBridge(QObject *parent = nullptr) : QObject(parent) {}
     Q_INVOKABLE QString t(const QString &key) const { return tr_(key); }
     int language() const { return static_cast<int>(Translator::instance().language()); }
-    void setLanguage(int lang) {
+    Q_INVOKABLE void setLanguage(int lang) {
         if (lang == language()) return;
         Translator::instance().setLanguage(static_cast<Translator::Language>(lang));
         QSettings().setValue("language", lang);
