@@ -195,6 +195,10 @@ int main(int argc, char *argv[])
 
         QObject::connect(&session, &SessionManager::torrentsUpdated,
                          posterModel, &QmlPosterModel::refresh);
+        // torrentsUpdated isn't emitted once the list is empty, so removing the
+        // last torrent would never refresh the model — connect removal directly.
+        QObject::connect(&session, &SessionManager::torrentRemoved,
+                         posterModel, &QmlPosterModel::refresh);
         QObject::connect(resolver, &MetadataResolver::metadataReady,
                          posterModel, &QmlPosterModel::refresh);
         QObject::connect(sessionBridge, &QmlSessionBridge::queueRefreshNeeded,
