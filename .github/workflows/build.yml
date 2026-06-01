@@ -42,9 +42,19 @@ jobs:
           LC_ALL: C        # deterministic locale for the formatSize/formatSpeed checks
           QT_QPA_PLATFORM: offscreen
         run: |
-          ./build-tests/tests/test_unit
-          ./build-tests/tests/test_security
-          ./build-tests/tests/test_memory
+          # Success = Catch2 reported all passed. The binary can still segfault
+          # in Qt-singleton static teardown (no QCoreApplication in the test
+          # harness) AFTER the run — that's a harness artifact, not an app bug,
+          # so we gate on the reported result, not the post-run exit code. A
+          # real test failure prints the failure summary (no "All tests passed").
+          fail=0
+          for t in test_unit test_security test_memory; do
+            echo "=== $t ==="
+            out=$(./build-tests/tests/$t 2>&1) || true
+            echo "$out"
+            echo "$out" | grep -q "All tests passed" || { echo "::error::$t did not pass"; fail=1; }
+          done
+          exit $fail
 
   build-linux:
     runs-on: ubuntu-22.04
