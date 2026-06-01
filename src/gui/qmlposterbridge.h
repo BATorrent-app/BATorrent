@@ -23,6 +23,7 @@ class SessionManager;
 class MetadataResolver;
 class GeoIpResolver;
 class TelegramNotifier;
+class WebServer;
 
 class QmlPosterModel : public QAbstractListModel
 {
@@ -552,14 +553,18 @@ public:
     Q_INVOKABLE void testTelegram();
     // Windows-only: add the save folder to Windows Defender's exclusion list (UAC prompt).
     Q_INVOKABLE bool excludeFromDefender();
+    // Up/active network interfaces by name (index 0 = "Any"), for the VPN bind select.
+    Q_INVOKABLE QStringList networkInterfaces() const;
     void setTelegramNotifier(TelegramNotifier *n) { m_telegram = n; }
 signals:
     void changed();
     void telegramTestResult(bool ok, const QString &message);
 private:
     static int telegramEventBit(const QString &key);   // toggle key → Events bit (0 if none)
+    void applyWebUi();                                  // (re)start the WebUI server from settings
     SessionManager *m_session;
     TelegramNotifier *m_telegram = nullptr;
+    WebServer *m_webServer = nullptr;
 };
 
 // Exposes the Translator to QML with a reactive `language` property so every

@@ -55,11 +55,11 @@ Window {
         // 0 Geral
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_downloads")) },
-            { type: "path", label: (i18n.language, i18n.t("set_default_save2")), value: "/Users/voce/Downloads/BATorrent" },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_use_default_path")), on: true },
-            { type: "path", label: (i18n.language, i18n.t("set_temp_path2")), placeholder: (i18n.language, i18n.t("set_temp_path_ph")), note: (i18n.language, i18n.t("set_temp_path_note")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_automove")) },
-            { type: "path", label: (i18n.language, i18n.t("set_move_to2")), placeholder: (i18n.language, i18n.t("set_move_to_ph")) },
+            { type: "path", key: "lastSavePath", label: (i18n.language, i18n.t("set_default_save2")) },
+            { type: "toggle", key: "useDefaultPath", label: (i18n.language, i18n.t("settings_use_default_path")), on: true },
+            { type: "path", key: "tempPath", label: (i18n.language, i18n.t("set_temp_path2")), placeholder: (i18n.language, i18n.t("set_temp_path_ph")), note: (i18n.language, i18n.t("set_temp_path_note")) },
+            { type: "toggle", key: "autoMoveEnabled", label: (i18n.language, i18n.t("settings_automove")) },
+            { type: "path", key: "autoMovePath", label: (i18n.language, i18n.t("set_move_to2")), placeholder: (i18n.language, i18n.t("set_move_to_ph")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
             { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch"], value: 0 },
             { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
@@ -74,9 +74,9 @@ Window {
             { type: "bgimage", label: (i18n.language, i18n.t("set_custom_bgimage")),  customOnly: true },
             { type: "slider",  label: (i18n.language, i18n.t("set_custom_opacity")),  customOnly: true },
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_start_tray")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
+            { type: "toggle", key: "startTray", label: (i18n.language, i18n.t("settings_start_tray")) },
+            { type: "toggle", key: "closeToTray", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
+            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
             { type: "toggle", key: "showSplash", label: (i18n.language, i18n.t("settings_show_splash")), on: true },
             { type: "button", action: "default", label: (i18n.language, i18n.t("set_default_app")), btn: (i18n.language, i18n.t("settings_set_default")) }
         ],
@@ -90,7 +90,7 @@ Window {
             { type: "number", key: "seedRatioLimit", label: (i18n.language, i18n.t("set_seed_ratio2")), value: "2.0", note: (i18n.language, i18n.t("set_seed_ratio_note")) },
             { type: "number", key: "maxSeedDays", label: (i18n.language, i18n.t("set_max_seed_days2")), value: "0", suffix: (i18n.language, i18n.t("settings_days")) },
             { type: "toggle", key: "stopAfterDownload", label: (i18n.language, i18n.t("settings_stop_after_download")) },
-            { type: "select", label: (i18n.language, i18n.t("settings_auto_complete")), options: [(i18n.language, i18n.t("auto_complete_never")), (i18n.language, i18n.t("auto_complete_1d")), (i18n.language, i18n.t("auto_complete_3d")), (i18n.language, i18n.t("auto_complete_7d")), (i18n.language, i18n.t("auto_complete_14d")), (i18n.language, i18n.t("auto_complete_30d"))], value: 0, note: (i18n.language, i18n.t("set_auto_complete_note")) },
+            { type: "select", key: "autoComplete", label: (i18n.language, i18n.t("settings_auto_complete")), options: [(i18n.language, i18n.t("auto_complete_never")), (i18n.language, i18n.t("auto_complete_1d")), (i18n.language, i18n.t("auto_complete_3d")), (i18n.language, i18n.t("auto_complete_7d")), (i18n.language, i18n.t("auto_complete_14d")), (i18n.language, i18n.t("auto_complete_30d"))], value: 0, note: (i18n.language, i18n.t("set_auto_complete_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_scheduler")) },
             { type: "toggle", key: "schedulerEnabled", label: (i18n.language, i18n.t("settings_scheduler_enable")), note: (i18n.language, i18n.t("set_scheduler_note")) },
             { type: "number", key: "altDownloadLimit", label: (i18n.language, i18n.t("set_alt_down2")), value: "50", suffix: "KB/s" },
@@ -118,12 +118,12 @@ Window {
         // 3 VPN
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_iface_bind")) },
-            { type: "select", label: (i18n.language, i18n.t("set_iface2")), options: [(i18n.language, i18n.t("settings_iface_any")), "en0 — 192.168.0.12", "utun4 — 10.2.0.2 (VPN)"], value: 2 },
+            { type: "iface", label: (i18n.language, i18n.t("set_iface2")) },
             { type: "toggle", key: "killSwitchEnabled", label: (i18n.language, i18n.t("settings_kill_switch")), on: true, note: (i18n.language, i18n.t("set_killswitch_note")) },
             { type: "toggle", key: "autoResumeOnReconnect", label: (i18n.language, i18n.t("settings_auto_resume")), on: true, note: (i18n.language, i18n.t("set_autoresume_note")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_use_tor")) },
+            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("settings_use_tor")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_power")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_auto_shutdown")) }
+            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("settings_auto_shutdown")) }
         ],
         // 4 Proxy
         [
@@ -134,16 +134,16 @@ Window {
             { type: "text", key: "proxyUser", label: (i18n.language, i18n.t("set_user2")), placeholder: (i18n.language, i18n.t("settings_proxy_user_hint")), w: "w-md" },
             { type: "password", key: "proxyPass", label: (i18n.language, i18n.t("set_pass2")), w: "w-md" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_ip_filter")) },
-            { type: "path", label: (i18n.language, i18n.t("set_blocklist_file")), placeholder: (i18n.language, i18n.t("settings_ip_filter_hint")), note: (i18n.language, i18n.t("set_blocklist_note")) }
+            { type: "path", key: "ipFilterPath", file: true, label: (i18n.language, i18n.t("set_blocklist_file")), placeholder: (i18n.language, i18n.t("settings_ip_filter_hint")), note: (i18n.language, i18n.t("set_blocklist_note")) }
         ],
         // 5 WebUI
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_webserver")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_webui_enable")) },
-            { type: "number", label: (i18n.language, i18n.t("set_port2")), value: "8080" },
-            { type: "text", label: (i18n.language, i18n.t("set_user2")), value: "admin", w: "w-md" },
-            { type: "password", label: (i18n.language, i18n.t("set_pass2")), placeholder: (i18n.language, i18n.t("settings_webui_pass_hint")), w: "w-md" },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_webui_remote")) },
+            { type: "toggle", key: "webUiEnabled", label: (i18n.language, i18n.t("settings_webui_enable")) },
+            { type: "number", key: "webUiPort", label: (i18n.language, i18n.t("set_port2")), value: "8080" },
+            { type: "text", key: "webUiUser", label: (i18n.language, i18n.t("set_user2")), value: "admin", w: "w-md" },
+            { type: "password", key: "webUiPassword", label: (i18n.language, i18n.t("set_pass2")), placeholder: (i18n.language, i18n.t("settings_webui_pass_hint")), w: "w-md" },
+            { type: "toggle", key: "webUiRemoteAccess", label: (i18n.language, i18n.t("settings_webui_remote")) },
             { type: "warning", text: (i18n.language, i18n.t("settings_webui_warning_msg")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_mobile")) },
             { type: "button", action: "pair", label: (i18n.language, i18n.t("pairing_title")), btn: (i18n.language, i18n.t("set_pair_phone")), note: (i18n.language, i18n.t("set_pair_note")) }
@@ -161,19 +161,19 @@ Window {
             { type: "group", label: (i18n.language, i18n.t("set_grp_discord")) },
             { type: "toggle", key: "discordEnabled", label: (i18n.language, i18n.t("set_discord_show")), on: true, note: (i18n.language, i18n.t("set_discord_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_notif_sound")), on: true }
+            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("settings_notif_sound")), on: true }
         ],
         // 7 Addons
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_trackers")) },
-            { type: "toggle", label: (i18n.language, i18n.t("set_auto_trackers2")), on: true, badge: "1.243 carregados" },
+            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("set_auto_trackers2")), on: true, badge: "1.243 carregados" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_torrent_search")) },
-            { type: "toggle", label: (i18n.language, i18n.t("set_torrent_search_enable")) },
-            { type: "text", label: (i18n.language, i18n.t("set_api_url2")), mono: true, placeholder: (i18n.language, i18n.t("set_api_url_ph")), w: "grow" },
+            { type: "toggle", key: "torrentSearchEnabled", label: (i18n.language, i18n.t("set_torrent_search_enable")) },
+            { type: "text", key: "torrentSearchUrl", label: (i18n.language, i18n.t("set_api_url2")), mono: true, placeholder: (i18n.language, i18n.t("set_api_url_ph")), w: "grow" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_media_server")) },
-            { type: "toggle", label: (i18n.language, i18n.t("set_media_plex")) },
-            { type: "toggle", label: (i18n.language, i18n.t("set_media_jellyfin")) },
-            { type: "text", label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" },
+            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("set_media_plex")) },
+            { type: "toggle", hidden: true, label: (i18n.language, i18n.t("set_media_jellyfin")) },
+            { type: "text", hidden: true, label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_extraction")) },
             { type: "toggle", key: "autoExtract", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
             { type: "toggle", key: "autoExtractDelete", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
@@ -182,22 +182,22 @@ Window {
         // 8 Avançado
         [
             { type: "group", label: (i18n.language, i18n.t("adv_disk_io")) },
-            { type: "number", label: (i18n.language, i18n.t("adv_aio_threads")), value: "4" },
-            { type: "number", label: (i18n.language, i18n.t("adv_hashing_threads")), value: "2" },
-            { type: "number", label: (i18n.language, i18n.t("adv_file_pool")), value: "40" },
-            { type: "number", label: (i18n.language, i18n.t("adv_checking_mem")), value: "512", suffix: "×16 KiB" },
-            { type: "number", label: (i18n.language, i18n.t("adv_send_buffer")), value: "500", suffix: "KiB" },
+            { type: "number", key: "advAioThreads", label: (i18n.language, i18n.t("adv_aio_threads")), value: "4" },
+            { type: "number", key: "advHashingThreads", label: (i18n.language, i18n.t("adv_hashing_threads")), value: "2" },
+            { type: "number", key: "advFilePool", label: (i18n.language, i18n.t("adv_file_pool")), value: "40" },
+            { type: "number", key: "advCheckingMem", label: (i18n.language, i18n.t("adv_checking_mem")), value: "512", suffix: "×16 KiB" },
+            { type: "number", key: "advSendBuffer", label: (i18n.language, i18n.t("adv_send_buffer")), value: "500", suffix: "KiB" },
             { type: "group", label: (i18n.language, i18n.t("adv_connections")) },
-            { type: "number", label: (i18n.language, i18n.t("adv_conn_limit")), value: "200" },
-            { type: "number", label: (i18n.language, i18n.t("adv_conn_speed")), value: "30", suffix: "/s" },
-            { type: "number", label: (i18n.language, i18n.t("adv_unchoke_slots")), value: "8" },
-            { type: "number", label: (i18n.language, i18n.t("set_max_uploads_tor")), value: "4" },
-            { type: "number", label: (i18n.language, i18n.t("set_max_conns_tor")), value: "60" },
+            { type: "number", key: "advConnLimit", label: (i18n.language, i18n.t("adv_conn_limit")), value: "200" },
+            { type: "number", key: "advConnSpeed", label: (i18n.language, i18n.t("adv_conn_speed")), value: "30", suffix: "/s" },
+            { type: "number", key: "advUnchokeSlots", label: (i18n.language, i18n.t("adv_unchoke_slots")), value: "8" },
+            { type: "number", key: "advMaxUploadsTor", label: (i18n.language, i18n.t("set_max_uploads_tor")), value: "4" },
+            { type: "number", key: "advMaxConnsTor", label: (i18n.language, i18n.t("set_max_conns_tor")), value: "60" },
             { type: "group", label: (i18n.language, i18n.t("adv_algorithms")) },
-            { type: "segmented", label: (i18n.language, i18n.t("adv_choking_algo")), options: [(i18n.language, i18n.t("adv_choke_fixed")), (i18n.language, i18n.t("adv_choke_rate"))], value: 1 },
-            { type: "select", label: (i18n.language, i18n.t("adv_seed_choking")), options: [(i18n.language, i18n.t("adv_seedchoke_robin")), (i18n.language, i18n.t("adv_seedchoke_fastest")), (i18n.language, i18n.t("adv_seedchoke_antileech"))], value: 2 },
-            { type: "toggle", label: (i18n.language, i18n.t("adv_rate_overhead")) },
-            { type: "toggle", label: (i18n.language, i18n.t("adv_ignore_lan")), on: true },
+            { type: "segmented", key: "advChokingAlgo", label: (i18n.language, i18n.t("adv_choking_algo")), options: [(i18n.language, i18n.t("adv_choke_fixed")), (i18n.language, i18n.t("adv_choke_rate"))], value: 1 },
+            { type: "select", key: "advSeedChoking", label: (i18n.language, i18n.t("adv_seed_choking")), options: [(i18n.language, i18n.t("adv_seedchoke_robin")), (i18n.language, i18n.t("adv_seedchoke_fastest")), (i18n.language, i18n.t("adv_seedchoke_antileech"))], value: 2 },
+            { type: "toggle", key: "advRateOverhead", label: (i18n.language, i18n.t("adv_rate_overhead")) },
+            { type: "toggle", key: "advIgnoreLan", label: (i18n.language, i18n.t("adv_ignore_lan")), on: true },
             { type: "group", label: (i18n.language, i18n.t("adv_metadata_api")) },
             { type: "text", key: "tmdbApiKey", label: (i18n.language, i18n.t("set_tmdb2")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_tmdb_note")) },
             { type: "text", key: "igdbClientId", label: (i18n.language, i18n.t("set_igdb_id2")), mono: true, w: "w-md" },
@@ -205,8 +205,8 @@ Window {
             { type: "group", label: (i18n.language, i18n.t("diag_title")) },
             { type: "button", action: "defender", winOnly: true, label: (i18n.language, i18n.t("settings_defender_exclude")), btn: (i18n.language, i18n.t("settings_defender_exclude")), note: (i18n.language, i18n.t("tip_defender_exclude")) },
             { type: "toggle", key: "verboseLogging", label: (i18n.language, i18n.t("settings_verbose_log")), note: (i18n.language, i18n.t("set_verbose_note")) },
-            { type: "text", label: (i18n.language, i18n.t("set_run_on_complete2")), mono: true, placeholder: "notify-send \"%N concluído\"", w: "grow" },
-            { type: "path", label: (i18n.language, i18n.t("set_watched_folder2")), placeholder: (i18n.language, i18n.t("settings_watched_hint")) }
+            { type: "text", key: "runOnComplete", label: (i18n.language, i18n.t("set_run_on_complete2")), mono: true, placeholder: "notify-send \"%N concluído\"", w: "grow" },
+            { type: "path", key: "watchedFolder", label: (i18n.language, i18n.t("set_watched_folder2")), placeholder: (i18n.language, i18n.t("settings_watched_hint")) }
         ]
     ]
 
@@ -451,6 +451,7 @@ Window {
         // custom-only rows collapse unless the custom theme is active; win-only collapse off Windows
         readonly property bool rowVisible: (!field.customOnly || Theme.name === "custom")
                                            && (!field.winOnly || Qt.platform.os === "windows")
+                                           && field.hidden !== true
         visible: rowVisible
         Layout.preferredHeight: rowVisible ? -1 : 0
 
@@ -502,10 +503,11 @@ Window {
             // .sctrl — control by type
             Loader {
                 Layout.alignment: Qt.AlignVCenter
-                visible: field.type !== "warning" && field.type !== "path" && field.type !== "timerange" && field.type !== "days"
+                visible: field.type !== "warning" && field.type !== "timerange" && field.type !== "days"
                 sourceComponent: {
                     switch (field.type) {
                     case "toggle": return cToggle
+                    case "path": return cPath
                     case "anime": return cAnime
                     case "number": return cNumber
                     case "text": return cText
@@ -514,7 +516,7 @@ Window {
                     case "segmented": return cSegmented
                     case "theme": return cTheme
                     case "button": return cButton
-                    case "iface": return cSelect
+                    case "iface": return cIface
                     case "profiles": return cProfiles
                     case "color": return cColor
                     case "bgimage": return cBgImage
@@ -532,8 +534,12 @@ Window {
 
         // ---- control components ----
         Component { id: cToggle; TToggle {
-            on: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) === true : field.on === true
-            onToggled: function(v) { if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, v) }
+            on: (field.key === "torrentSearchEnabled" && typeof search !== "undefined") ? search.torrentSearchEnabled
+                : (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) === true : field.on === true
+            onToggled: function(v) {
+                if (field.key === "torrentSearchEnabled" && typeof search !== "undefined") search.torrentSearchEnabled = v
+                else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, v)
+            }
         } }
         Component {
             id: cAnime
@@ -678,9 +684,31 @@ Window {
                 implicitWidth: field.w === "grow" ? 320 : field.w === "w-md" ? 210 : field.w === "w-sm" ? 120 : 180
                 implicitHeight: 30
                 mono: field.mono === true
-                text: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || "")
+                text: (field.key === "torrentSearchUrl" && typeof search !== "undefined") ? search.torrentSearchUrl
+                      : (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || "")
                 placeholder: field.placeholder || ""
-                onEdited: function(t) { if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, t) }
+                onEdited: function(t) {
+                    if (field.key === "torrentSearchUrl" && typeof search !== "undefined") search.torrentSearchUrl = t
+                    else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, t)
+                }
+            }
+        }
+        Component {
+            id: cIface
+            TSelect {
+                implicitWidth: 220
+                model: (typeof settings !== "undefined") ? settings.networkInterfaces() : []
+                currentIndex: {
+                    var cur = (typeof settings !== "undefined") ? (settings.get("outgoingInterface") || "") : ""
+                    if (cur === "") return 0
+                    for (var i = 1; i < model.length; i++)
+                        if (model[i].split(" — ")[0] === cur) return i
+                    return 0
+                }
+                onActivated: function(i) {
+                    if (typeof settings !== "undefined")
+                        settings.set("outgoingInterface", i === 0 ? "" : model[i].split(" — ")[0])
+                }
             }
         }
         Component {
@@ -736,6 +764,26 @@ Window {
             }
         }
         Component { id: cButton; BtnFlat { text: field.btn || ""; sm: false; onClicked: win.runButtonAction(field.action) } }
+        Component {
+            id: cPath
+            RowLayout {
+                spacing: Theme.sp2
+                TFld {
+                    implicitWidth: 280; implicitHeight: 30; mono: true; readonly: true
+                    text: (typeof settings !== "undefined" && field.key !== undefined) ? (settings.get(field.key) || "") : (field.value || "")
+                    placeholder: field.placeholder || ""
+                }
+                BtnFlat {
+                    text: (i18n.language, i18n.t("settings_browse")); sm: true
+                    onClicked: win.openPathPicker(field.key, field.file === true)
+                }
+                BtnFlat {
+                    visible: field.file !== true
+                    text: (i18n.language, i18n.t("set_custom_clear")); sm: true
+                    onClicked: if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, "")
+                }
+            }
+        }
     }
 
     // custom-theme dialogs
@@ -788,6 +836,26 @@ Window {
             infoDlg.message = message
             infoDlg.open()
         }
+    }
+
+    function openPathPicker(key, isFile) {
+        if (isFile) { pathFileDlg.targetKey = key; pathFileDlg.open() }
+        else { pathFolderDlg.targetKey = key; pathFolderDlg.open() }
+    }
+    function decodeLocalPath(u) {
+        return decodeURIComponent(u.toString().replace(/^file:\/\/\/?/, Qt.platform.os === "windows" ? "" : "/"))
+    }
+    FolderDialog {
+        id: pathFolderDlg
+        property string targetKey: ""
+        onAccepted: if (typeof settings !== "undefined" && targetKey !== "")
+                        settings.set(targetKey, win.decodeLocalPath(selectedFolder))
+    }
+    FileDialog {
+        id: pathFileDlg
+        property string targetKey: ""
+        onAccepted: if (typeof settings !== "undefined" && targetKey !== "")
+                        settings.set(targetKey, win.decodeLocalPath(selectedFile))
     }
 
     PairingDialog { id: pairDlg }
