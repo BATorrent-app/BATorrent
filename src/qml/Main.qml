@@ -1020,20 +1020,6 @@ Window {
                 interactive: true
                 z: 1
 
-                // click on empty grid space clears the selection (tiles have
-                // their own MouseAreas; only blank clicks reach this one, which
-                // sits behind the delegates at z:-1 within the flickable).
-                MouseArea {
-                    anchors.fill: parent
-                    z: -1
-                    acceptedButtons: Qt.LeftButton
-                    onClicked: {
-                        if (win.selectedRows.length > 0) {
-                            win.selectedRows = []; win.selected = -1; win._commitSel()
-                        }
-                    }
-                }
-
                 delegate: Item {
                     id: tile
                     width: 178
@@ -1230,6 +1216,34 @@ Window {
                             font.family: Theme.fontMono
                         }
                     }
+                }
+            }
+
+            // Empty-grid click → clear selection. Sits OVER the grid (z:2) and
+            // propagates clicks that land on a tile so tileMa still handles them;
+            // only clicks on blank space (grid.indexAt == -1) deselect. A plain
+            // MouseArea inside the Flickable never received these.
+            MouseArea {
+                anchors.fill: grid
+                visible: win.gridView && !parent.empty
+                enabled: visible
+                z: 2
+                acceptedButtons: Qt.LeftButton
+                propagateComposedEvents: true
+                onClicked: function(mouse) {
+                    var idx = grid.indexAt(mouse.x + grid.contentX, mouse.y + grid.contentY)
+                    if (idx < 0) {
+                        if (win.selectedRows.length > 0) {
+                            win.selectedRows = []; win.selected = -1; win._commitSel()
+                        }
+                    } else {
+                        mouse.accepted = false   // let the tile's MouseArea handle it
+                    }
+                }
+                onPressed: function(mouse) {
+                    // don't swallow the press over a tile, or scrolling/clicks break
+                    if (grid.indexAt(mouse.x + grid.contentX, mouse.y + grid.contentY) >= 0)
+                        mouse.accepted = false
                 }
             }
 
