@@ -20,11 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Qt from aqt (6.7) — Ubuntu's apt Qt (6.2) is too old for the QML
+      # (MultiEffect / QtQuick.Effects needs 6.5+). libtorrent/boost/ssl stay apt.
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: qtmultimedia
+          cache: true
+
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: cmake g++ qt6-base-dev libqt6widgets6 libqt6svg6-dev qt6-multimedia-dev libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
-          version: 2.0
+          packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
+          version: 3.0
 
       - name: Build
         env:
@@ -32,8 +41,7 @@ jobs:
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
-            -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
           cmake --build build
 
       - name: Install to AppDir
@@ -52,6 +60,7 @@ jobs:
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
           export QMAKE=$(which qmake6 2>/dev/null || which qmake)
+          export QML_SOURCES_PATHS=$PWD/src/qml
           ./linuxdeploy-x86_64.AppImage --appdir AppDir \
             --plugin qt \
             --desktop-file AppDir/usr/share/applications/batorrent.desktop \
@@ -133,7 +142,7 @@ jobs:
         run: |
           mkdir release
           Copy-Item build/Release/BATorrent.exe release/
-          windeployqt release/BATorrent.exe
+          windeployqt --qmldir src/qml release/BATorrent.exe
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64.zip
@@ -256,7 +265,7 @@ jobs:
 
       - name: Deploy Qt and create DMG
         run: |
-          macdeployqt dmg/BATorrent.app
+          macdeployqt dmg/BATorrent.app -qmldir=src/qml
           # Ad-hoc codesign so Gatekeeper doesn't block
           codesign --force --deep --sign - dmg/BATorrent.app
           hdiutil create -volname BATorrent -srcfolder dmg -ov -format UDZO BATorrent-macos-arm64.dmg

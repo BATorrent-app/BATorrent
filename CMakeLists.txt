@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(BATorrent VERSION 3.0.0)
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia Quick QuickWidgets QuickControls2 QuickShapes)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia Quick QuickWidgets QuickControls2)
 find_package(LibtorrentRasterbar REQUIRED)
 # Optional: QtKeychain stores credentials in the platform keyring (DPAPI on
 # Windows, Keychain on macOS, kwallet/libsecret on Linux). If missing at
@@ -89,7 +89,7 @@ option(BAT_STORE_BUILD "Disable auto-updater for Microsoft Store submission" OFF
 if(BAT_STORE_BUILD)
     target_compile_definitions(BATorrent PRIVATE BAT_STORE_BUILD)
 endif()
-target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::QuickShapes LibtorrentRasterbar::torrent-rasterbar)
+target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 LibtorrentRasterbar::torrent-rasterbar)
 
 # macOS: bundle metadata. Without these keys, NSStatusItem (the tray icon)
 # can fail to allocate a menu-bar slot — Qt reports the item as visible but
