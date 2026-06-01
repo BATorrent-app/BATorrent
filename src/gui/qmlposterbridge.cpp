@@ -134,13 +134,19 @@ void QmlPosterModel::refresh()
 {
     int newCount = m_session->torrentCount();
     if (newCount > m_lastCount) {
+        // appends always land at the end, so an incremental insert is correct
         beginInsertRows(QModelIndex(), m_lastCount, newCount - 1);
         m_lastCount = newCount;
         endInsertRows();
     } else if (newCount < m_lastCount) {
-        beginRemoveRows(QModelIndex(), newCount, m_lastCount - 1);
+        // a removal can be at ANY index (not just the tail). We only see the
+        // count drop, not which row left, so reset the model to stay in sync —
+        // an incremental tail-remove here desynced the view (removed torrent
+        // stayed visible).
+        beginResetModel();
         m_lastCount = newCount;
-        endRemoveRows();
+        endResetModel();
+        return;
     }
     if (newCount > 0)
         emit dataChanged(index(0), index(newCount - 1));

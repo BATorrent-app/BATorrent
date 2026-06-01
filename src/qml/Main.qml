@@ -1982,9 +1982,26 @@ Window {
         onDropped: function(drop) {
             if (typeof session === "undefined") return
             if (drop.hasUrls) {
+                // Same flow as the Open button: show the preview / choose-folder
+                // dialog instead of adding silently. Dialog handles one file;
+                // extra dropped files are added directly.
+                var first = true
                 for (var i = 0; i < drop.urls.length; ++i) {
                     var u = drop.urls[i].toString()
-                    if (u.toLowerCase().endsWith(".torrent")) session.addTorrentFile(u)
+                    if (!u.toLowerCase().endsWith(".torrent")) continue
+                    if (first) {
+                        first = false
+                        var p = session.previewTorrent(u)
+                        if (p.ok) {
+                            addTorrentDlg.savePath = session.defaultSavePath()
+                            addTorrentDlg.loadPreview(p, u)
+                            addTorrentDlg.open()
+                        } else {
+                            session.addTorrentFile(u)
+                        }
+                    } else {
+                        session.addTorrentFile(u)
+                    }
                 }
                 drop.accept()
             } else if (drop.hasText && drop.text.indexOf("magnet:") === 0) {

@@ -11,7 +11,9 @@ BatDialog {
     cardH: 360
     okText: (i18n.language, i18n.t("addon_remove"))
 
-    property bool deleteFiles: true
+    // default OFF — "Remove" only un-lists the torrent; deleting the downloaded
+    // files is an explicit opt-in (matches qBittorrent/Transmission convention).
+    property bool deleteFiles: false
 
     // .top — warn icon + title + description
     RowLayout {
