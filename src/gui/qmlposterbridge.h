@@ -12,11 +12,14 @@
 #include <QTimer>
 #include <QVariantList>
 #include <QVector>
+#include <QSettings>
 
 #include "../app/addonmanager.h"   // CatalogItem / StreamResult / TorrentSearchResult
+#include "../app/translator.h"
 
 class SessionManager;
 class MetadataResolver;
+class GeoIpResolver;
 
 class QmlPosterModel : public QAbstractListModel
 {
@@ -266,6 +269,7 @@ private:
     MetadataResolver *m_resolver;
     int m_selectedIndex = -1;
     QList<int> m_selectedRows;
+    GeoIpResolver *m_geoIp = nullptr;
 
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;
@@ -485,6 +489,26 @@ signals:
     void changed();
 private:
     SessionManager *m_session;
+};
+
+// Exposes the Translator to QML with a reactive `language` property so every
+// i18n.t("key") binding re-evaluates when the user switches language.
+class QmlI18nBridge : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int language READ language WRITE setLanguage NOTIFY languageChanged)
+public:
+    explicit QmlI18nBridge(QObject *parent = nullptr) : QObject(parent) {}
+    Q_INVOKABLE QString t(const QString &key) const { return tr_(key); }
+    int language() const { return static_cast<int>(Translator::instance().language()); }
+    void setLanguage(int lang) {
+        if (lang == language()) return;
+        Translator::instance().setLanguage(static_cast<Translator::Language>(lang));
+        QSettings().setValue("language", lang);
+        emit languageChanged();
+    }
+signals:
+    void languageChanged();
 };
 
 // Turns background SessionManager / RSS events into a single `notify` signal
