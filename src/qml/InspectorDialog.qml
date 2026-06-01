@@ -108,7 +108,7 @@ BatDialog {
             Tab { idx: 1; text: (i18n.language, i18n.t("set_grp_trackers")) }
             Item { Layout.fillWidth: true }
         }
-        Rectangle { Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
 
         Rectangle {
             Layout.fillWidth: true

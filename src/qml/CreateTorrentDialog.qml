@@ -143,7 +143,7 @@ BatDialog {
                 }
                 TToggle { id: privToggle; on: false }
             }
-            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
             RowLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 12; Layout.bottomMargin: 12

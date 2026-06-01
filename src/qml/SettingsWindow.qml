@@ -530,7 +530,7 @@ Window {
         // full-width controls below (path / warning / timerange / days are stacked)
         // (handled inline above via type; for brevity path uses its own row)
 
-        Rectangle { visible: showDivider; Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+        Rectangle { visible: showDivider; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
 
         // ---- control components ----
         Component { id: cToggle; TToggle {

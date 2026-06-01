@@ -69,7 +69,7 @@ BatDialog {
             // info icon (i circular) — desenhado inline já que não temos info.svg
             Rectangle {
                 Layout.alignment: Qt.AlignTop
-                width: 15; height: 15
+                implicitWidth: 15; implicitHeight: 15
                 radius: 7.5
                 color: "transparent"
                 border.color: Theme.t3

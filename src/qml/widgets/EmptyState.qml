@@ -14,8 +14,8 @@ ColumnLayout {
     Rectangle {
         Layout.alignment: Qt.AlignHCenter
         Layout.bottomMargin: 22
-        width: 86
-        height: 86
+        implicitWidth: 86
+        implicitHeight: 86
         radius: 22
         color: Theme.panel
         border.color: Theme.hair
@@ -60,7 +60,7 @@ ColumnLayout {
 
         Rectangle {
             implicitWidth: openRow.implicitWidth + 32
-            height: 36
+            implicitHeight: 36
             radius: 8
             color: openMa.containsMouse ? Theme.accentDark : Theme.accent
             Row {
@@ -74,7 +74,7 @@ ColumnLayout {
         }
         Rectangle {
             implicitWidth: magRow.implicitWidth + 32
-            height: 36
+            implicitHeight: 36
             radius: 8
             color: Theme.panel
             border.color: magMa.containsMouse ? (Theme.isDark ? Qt.rgba(1,1,1,0.2) : Qt.rgba(0,0,0,0.22)) : Theme.hair

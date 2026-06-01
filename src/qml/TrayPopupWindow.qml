@@ -97,7 +97,7 @@ Window {
                         }
                     }
                     Rectangle {
-                        width: 8; height: 8; radius: 4
+                        implicitWidth: 8; implicitHeight: 8; radius: 4
                         Layout.alignment: Qt.AlignTop
                         color: (pop.sess && pop.sess.activeCount > 0) ? Theme.amber : Theme.t4
                     }
