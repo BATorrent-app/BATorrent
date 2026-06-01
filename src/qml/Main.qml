@@ -325,7 +325,7 @@ Window {
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: inspectFileDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_import_qbt")); onTriggered: importQbtDlg.open() }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_recently_removed")); onTriggered: removedWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_recently_removed")); onTriggered: win.showWin(removedWinLoader) }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_quit")); shortcut: StandardKey.Quit; onTriggered: Qt.quit() }
         }
@@ -341,23 +341,23 @@ Window {
         }
         Platform.Menu {
             title: (i18n.language, i18n.t("menu_settings_title"))
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: settingsWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: win.showWin(settingsWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: rssWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: pairingDlg.open() }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: searchWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.showWin(searchWinLoader) }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: statsWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
         }
         Platform.Menu {
             title: (i18n.language, i18n.t("menu_help_title"))
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_welcome")); onTriggered: welcomeDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_release_notes")); onTriggered: releaseNotesDlg.open() }
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_shortcuts")); onTriggered: shortcutsWin.show() }
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_logs")); shortcut: "Ctrl+Shift+L"; onTriggered: logWin.show() }
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_diagnostics")); onTriggered: diagWin.show() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_shortcuts")); onTriggered: win.showWin(shortcutsWinLoader) }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_logs")); shortcut: "Ctrl+Shift+L"; onTriggered: win.showWin(logWinLoader) }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_diagnostics")); onTriggered: win.showWin(diagWinLoader) }
             Platform.MenuItem {
                 text: (i18n.language, i18n.t("menu_check_updates"))
                 enabled: typeof updater !== "undefined" && updater !== null
@@ -428,7 +428,7 @@ Window {
         onOpenMagnet:   { win.show(); win.raise(); win.requestActivate(); magnetDlg.open() }
         onPauseAll:     if (typeof session !== "undefined") session.pauseAll()
         onResumeAll:    if (typeof session !== "undefined") session.resumeAll()
-        onOpenSettings: { settingsWin.show() }
+        onOpenSettings: { win.showWin(settingsWinLoader) }
         onQuitApp:      Qt.quit()
     }
 
@@ -616,11 +616,11 @@ Window {
                 TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: removeDlg.open() }
                 TGrpDiv {}
                 // G4: Buscar, RSS
-                TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: searchWin.show() }
-                TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: rssWin.show() }
+                TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: win.showWin(searchWinLoader) }
+                TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: win.showWin(rssWinLoader) }
                 TGrpDiv {}
                 // G5: Config.
-                TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: settingsWin.show() }
+                TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: win.showWin(settingsWinLoader) }
 
                 // .tb-spacer
                 Item { Layout.fillWidth: true }
@@ -2221,22 +2221,29 @@ Window {
         onActionRequested: function(action) {
             if (action === "open") openFileDlg.open()
             else if (action === "magnet") magnetDlg.open()
-            else if (action === "search") searchWin.show()
-            else if (action === "rss") rssWin.show()
+            else if (action === "search") win.showWin(searchWinLoader)
+            else if (action === "rss") win.showWin(rssWinLoader)
         }
     }
     ReleaseNotesDialog  { id: releaseNotesDlg }
     AboutDialog         { id: aboutDlg }
 
-    // ================== TOP-LEVEL WINDOWS ==================
-    SearchWindow         { id: searchWin;   visible: false }
-    RssWindow            { id: rssWin;      visible: false }
-    SettingsWindow       { id: settingsWin; visible: false }
-    ShortcutsWindow      { id: shortcutsWin; visible: false }
-    StatisticsWindow     { id: statsWin;    visible: false }
-    RemovedHistoryWindow { id: removedWin;  visible: false }
-    LogViewerWindow      { id: logWin;      visible: false }
-    DiagnosticsWindow    { id: diagWin;     visible: false }
+    // ================== TOP-LEVEL WINDOWS (lazy) ==================
+    // Built on first open via Loader, not at startup — instantiating all of
+    // them eagerly (SettingsWindow alone is huge) stalled the UI thread for
+    // seconds on launch and inflated memory. showWin() creates then shows.
+    function showWin(loader) {
+        loader.active = true
+        if (loader.item) { loader.item.show(); loader.item.raise(); loader.item.requestActivate() }
+    }
+    Loader { id: searchWinLoader;    active: false; sourceComponent: SearchWindow {} }
+    Loader { id: rssWinLoader;       active: false; sourceComponent: RssWindow {} }
+    Loader { id: settingsWinLoader;  active: false; sourceComponent: SettingsWindow {} }
+    Loader { id: shortcutsWinLoader; active: false; sourceComponent: ShortcutsWindow {} }
+    Loader { id: statsWinLoader;     active: false; sourceComponent: StatisticsWindow {} }
+    Loader { id: removedWinLoader;   active: false; sourceComponent: RemovedHistoryWindow {} }
+    Loader { id: logWinLoader;       active: false; sourceComponent: LogViewerWindow {} }
+    Loader { id: diagWinLoader;      active: false; sourceComponent: DiagnosticsWindow {} }
     InspectorDialog      { id: inspectorDlg }
     PairingDialog        { id: pairingDlg }
 
@@ -2255,7 +2262,7 @@ Window {
         onAccepted: if (typeof session !== "undefined") session.importQbittorrent(importQbtDlg.selectedFolder.toString().replace(/^file:\/\//, ""))
     }
 
-    Shortcut { sequences: [StandardKey.HelpContents]; onActivated: shortcutsWin.show() }
+    Shortcut { sequences: [StandardKey.HelpContents]; onActivated: win.showWin(shortcutsWinLoader) }
     Shortcut { sequence: "Ctrl+F"; onActivated: searchInput.forceActiveFocus() }
     Shortcut { sequence: "Ctrl+R"; onActivated: if (typeof session !== "undefined") session.forceRecheckSelected() }
     // reorder queue: vertical in list, horizontal in grid (tiles sit side by side)
