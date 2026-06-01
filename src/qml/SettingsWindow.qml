@@ -684,6 +684,7 @@ Window {
                 implicitWidth: field.w === "grow" ? 320 : field.w === "w-md" ? 210 : field.w === "w-sm" ? 120 : 180
                 implicitHeight: 30
                 mono: field.mono === true
+                password: field.type === "password"
                 text: (field.key === "torrentSearchUrl" && typeof search !== "undefined") ? search.torrentSearchUrl
                       : (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || "")
                 placeholder: field.placeholder || ""

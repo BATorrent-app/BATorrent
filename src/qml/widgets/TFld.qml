@@ -14,6 +14,7 @@ Rectangle {
     property alias placeholder: input.placeholderText
     property bool mono: false
     property bool readonly: false
+    property bool password: false
     signal edited(string text)
 
     implicitWidth: 240
@@ -45,6 +46,7 @@ Rectangle {
             font.pointSize: fld.mono ? 11.5 : 12.5
             font.family: fld.mono ? Theme.fontMono : Theme.fontSans
             readOnly: fld.readonly
+            echoMode: fld.password ? TextInput.Password : TextInput.Normal
             verticalAlignment: TextInput.AlignVCenter
             background: null
             padding: 0
