@@ -11,7 +11,7 @@ Window {
     minimumWidth: 480
     minimumHeight: 420
     color: Theme.bg
-    title: "Estatísticas"
+    title: (i18n.language, i18n.t("stats_title"))
 
     readonly property var sess: typeof session !== "undefined" ? session : null
     property var stats: ({})
@@ -35,7 +35,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: "Estatísticas"; color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("stats_title")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -45,9 +45,9 @@ Window {
             Layout.margins: Theme.sp6
             spacing: Theme.sp2
 
-            Eyebrow { text: "VISÃO GERAL"; red: true }
+            Eyebrow { text: (i18n.language, i18n.t("stats_overview")); red: true }
             Text {
-                text: "Estatísticas de transferência"
+                text: (i18n.language, i18n.t("stats_title2"))
                 color: Theme.t1
                 font.pointSize: 18; font.weight: Font.Bold; font.letterSpacing: -0.3
                 font.family: Theme.fontSans
@@ -63,22 +63,22 @@ Window {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignTop
                     spacing: Theme.sp1
-                    Text { text: "TODO O PERÍODO"; color: Theme.t4; font.pointSize: 9.5; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans; Layout.bottomMargin: Theme.sp1 }
-                    KV { k: "Baixado"; v: win.stats.totalDownloaded || "—" }
-                    KV { k: "Enviado"; v: win.stats.totalUploaded || "—" }
-                    KV { k: "Proporção"; v: win.stats.totalRatio || "—" }
-                    KV { k: "Torrents"; v: win.stats.torrentsAdded !== undefined ? String(win.stats.torrentsAdded) : "—" }
-                    KV { k: "Tempo ativo"; v: win.stats.uptime || "—" }
+                    Text { text: (i18n.language, i18n.t("stats_alltime2")); color: Theme.t4; font.pointSize: 9.5; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans; Layout.bottomMargin: Theme.sp1 }
+                    KV { k: (i18n.language, i18n.t("detail_kv_downloaded")); v: win.stats.totalDownloaded || "—" }
+                    KV { k: (i18n.language, i18n.t("detail_kv_uploaded")); v: win.stats.totalUploaded || "—" }
+                    KV { k: (i18n.language, i18n.t("stats_ratio")); v: win.stats.totalRatio || "—" }
+                    KV { k: (i18n.language, i18n.t("search_source_torrents")); v: win.stats.torrentsAdded !== undefined ? String(win.stats.torrentsAdded) : "—" }
+                    KV { k: (i18n.language, i18n.t("stats_uptime2")); v: win.stats.uptime || "—" }
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignTop
                     spacing: Theme.sp1
-                    Text { text: "ESTA SESSÃO"; color: Theme.t4; font.pointSize: 9.5; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans; Layout.bottomMargin: Theme.sp1 }
-                    KV { k: "Baixado"; v: win.stats.sessionDownloaded || "—" }
-                    KV { k: "Enviado"; v: win.stats.sessionUploaded || "—" }
-                    KV { k: "Proporção"; v: win.stats.sessionRatio || "—" }
-                    KV { k: "Tempo ativo"; v: win.stats.uptime || "—" }
+                    Text { text: (i18n.language, i18n.t("stats_session2")); color: Theme.t4; font.pointSize: 9.5; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans; Layout.bottomMargin: Theme.sp1 }
+                    KV { k: (i18n.language, i18n.t("detail_kv_downloaded")); v: win.stats.sessionDownloaded || "—" }
+                    KV { k: (i18n.language, i18n.t("detail_kv_uploaded")); v: win.stats.sessionUploaded || "—" }
+                    KV { k: (i18n.language, i18n.t("stats_ratio")); v: win.stats.sessionRatio || "—" }
+                    KV { k: (i18n.language, i18n.t("stats_uptime2")); v: win.stats.uptime || "—" }
                 }
             }
         }
@@ -93,7 +93,7 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
                 Item { Layout.fillWidth: true }
-                BtnFlat { primary: true; text: "Fechar"; onClicked: win.close() }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
             }
         }
     }

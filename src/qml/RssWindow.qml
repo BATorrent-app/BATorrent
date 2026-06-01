@@ -13,7 +13,7 @@ Window {
     minimumWidth: 620
     minimumHeight: 420
     color: Theme.bg
-    title: "RSS"
+    title: (i18n.language, i18n.t("tb_rss"))
 
     property int selectedFeed: 0
 
@@ -30,8 +30,8 @@ Window {
     Connections {
         target: typeof rss !== "undefined" ? rss : null
         ignoreUnknownSignals: true
-        function onErrorOccurred(message) { win.statusMsg = "Erro: " + message }
-        function onAutoDownloaded(feedName, itemTitle) { win.statusMsg = "Auto-baixado: " + itemTitle }
+        function onErrorOccurred(message) { win.statusMsg = (i18n.language, i18n.t("create_error_prefix")) + message }
+        function onAutoDownloaded(feedName, itemTitle) { win.statusMsg = (i18n.language, i18n.t("rss_autodl_prefix")) + itemTitle }
     }
 
     // feed settings editor
@@ -65,12 +65,12 @@ Window {
                 anchors.fill: parent
                 anchors.margins: Theme.sp5
                 spacing: Theme.sp3
-                Text { text: "Configurações do feed"; color: Theme.t1; font.pointSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_feed_settings2")); color: Theme.t1; font.pointSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
 
-                Text { text: "Filtro (regex de auto-download)"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_filter2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 TFld { id: edFilter; Layout.fillWidth: true; mono: true; placeholder: "ex: 1080p|2160p" }
 
-                Text { text: "Pasta de destino (vazio = padrão)"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_save_path2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 PathFld { id: edPath; Layout.fillWidth: true; onBrowseClicked: edFolderDlg.open() }
 
                 RowLayout {
@@ -78,14 +78,14 @@ Window {
                     spacing: Theme.sp4
                     ColumnLayout {
                         spacing: 6
-                        Text { text: "Intervalo (min)"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                        Text { text: (i18n.language, i18n.t("rss_interval2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                         TFld { id: edInterval; Layout.preferredWidth: 100; placeholder: "30" }
                     }
                     Item { Layout.fillWidth: true }
                     ColumnLayout {
                         spacing: 6
-                        RowLayout { spacing: 8; Text { text: "Habilitado"; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans } Item { Layout.fillWidth: true } TToggle { id: edEnabled } }
-                        RowLayout { spacing: 8; Text { text: "Auto-baixar"; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans } Item { Layout.fillWidth: true } TToggle { id: edAuto } }
+                        RowLayout { spacing: 8; Text { text: (i18n.language, i18n.t("rss_enabled")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans } Item { Layout.fillWidth: true } TToggle { id: edEnabled } }
+                        RowLayout { spacing: 8; Text { text: (i18n.language, i18n.t("rss_auto2")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans } Item { Layout.fillWidth: true } TToggle { id: edAuto } }
                     }
                 }
 
@@ -93,9 +93,9 @@ Window {
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    BtnFlat { text: "Cancelar"; onClicked: editOverlay.visible = false }
+                    BtnFlat { text: (i18n.language, i18n.t("btn_cancel")); onClicked: editOverlay.visible = false }
                     BtnFlat {
-                        primary: true; text: "Salvar"
+                        primary: true; text: (i18n.language, i18n.t("logviewer_save2"))
                         onClicked: {
                             if (typeof rss !== "undefined" && editOverlay.feedIdx >= 0)
                                 rss.updateFeedSettings(editOverlay.feedIdx, edFilter.text, edPath.text,
@@ -129,15 +129,15 @@ Window {
                 anchors.fill: parent
                 anchors.margins: Theme.sp5
                 spacing: Theme.sp3
-                Text { text: "Adicionar feed RSS"; color: Theme.t1; font.pointSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_add_feed")); color: Theme.t1; font.pointSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 TFld { id: addUrl; Layout.fillWidth: true; mono: true; placeholder: "https://exemplo.com/rss.xml" }
                 Item { Layout.fillHeight: true }
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    BtnFlat { text: "Cancelar"; onClicked: { addUrl.text = ""; addOverlay.visible = false } }
+                    BtnFlat { text: (i18n.language, i18n.t("btn_cancel")); onClicked: { addUrl.text = ""; addOverlay.visible = false } }
                     BtnFlat {
-                        primary: true; text: "Adicionar"
+                        primary: true; text: (i18n.language, i18n.t("add_torrent_add_btn"))
                         onClicked: {
                             if (typeof rss !== "undefined" && addUrl.text.trim().length > 0) rss.addFeed(addUrl.text)
                             addUrl.text = ""; addOverlay.visible = false
@@ -157,12 +157,12 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: "RSS"; color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("tb_rss")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Text {
                 visible: win.statusMsg.length > 0
                 anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
                 text: win.statusMsg
-                color: win.statusMsg.indexOf("Erro") === 0 ? Theme.accentText : Theme.t4
+                color: win.statusMsg.indexOf((i18n.language, i18n.t("dlg_error"))) === 0 ? Theme.accentText : Theme.t4
                 font.pointSize: 10.5; font.family: Theme.fontSans
                 elide: Text.ElideRight; width: Math.min(implicitWidth, parent.width / 2)
             }
@@ -180,11 +180,11 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp3
-                Text { text: "Feeds RSS"; color: Theme.t1; font.pointSize: 16; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_feeds2")); color: Theme.t1; font.pointSize: 16; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 TChip { text: win.feedList.length + (win.feedList.length === 1 ? " feed" : " feeds") }
                 Item { Layout.fillWidth: true }
-                BtnFlat { sm: true; text: "Atualizar"; onClicked: if (typeof rss !== "undefined") rss.checkAllFeeds() }
-                BtnFlat { sm: true; primary: true; text: "＋ Adicionar feed"; onClicked: addOverlay.visible = true }
+                BtnFlat { sm: true; text: (i18n.language, i18n.t("settings_refresh")); onClicked: if (typeof rss !== "undefined") rss.checkAllFeeds() }
+                BtnFlat { sm: true; primary: true; text: (i18n.language, i18n.t("rss_add_feed_btn")); onClicked: addOverlay.visible = true }
             }
         }
 
@@ -252,12 +252,12 @@ Window {
                             modal: true
                             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
                             MenuItem {
-                                text: modelData.enabled ? "Desabilitar" : "Habilitar"
+                                text: modelData.enabled ? (i18n.language, i18n.t("rss_disable")) : (i18n.language, i18n.t("rss_enable"))
                                 onTriggered: rss.setFeedEnabled(index, !modelData.enabled)
                             }
-                            MenuItem { text: "Atualizar agora"; onTriggered: rss.checkFeed(index) }
-                            MenuItem { text: "Editar…"; onTriggered: editOverlay.openFor(index) }
-                            MenuItem { text: "Remover feed"; onTriggered: rss.removeFeed(index) }
+                            MenuItem { text: (i18n.language, i18n.t("rss_refresh_now")); onTriggered: rss.checkFeed(index) }
+                            MenuItem { text: (i18n.language, i18n.t("rss_edit")); onTriggered: editOverlay.openFor(index) }
+                            MenuItem { text: (i18n.language, i18n.t("rss_remove_feed")); onTriggered: rss.removeFeed(index) }
                         }
                     }
                 }
@@ -269,7 +269,7 @@ Window {
                     width: parent.width - 32
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
-                    text: "Nenhum feed.\nClique em “＋ Adicionar feed”."
+                    text: (i18n.language, i18n.t("rss_empty2"))
                     color: Theme.t4
                     font.pointSize: 11
                     font.family: Theme.fontSans
@@ -298,7 +298,7 @@ Window {
                             textFormat: Text.StyledText
                             text: (win.curFeed && win.curFeed.filterPattern && win.curFeed.filterPattern.length > 0)
                                 ? "Auto-baixar itens que contenham <b><font color='" + Theme.t1 + "'>" + win.curFeed.filterPattern + "</font></b>"
-                                : "Sem regra de auto-download neste feed"
+                                : (i18n.language, i18n.t("rss_no_rule"))
                             color: Theme.t2
                             font.pointSize: 11.5
                             font.family: Theme.fontSans
@@ -360,7 +360,7 @@ Window {
                                 color: Qt.rgba(63/255, 185/255, 80/255, 0.12)
                                 border.color: Qt.rgba(63/255, 185/255, 80/255, 0.3)
                                 border.width: 1
-                                Text { id: badgeLbl; anchors.centerIn: parent; text: "Baixado"; color: Theme.grn; font.pointSize: 9.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                                Text { id: badgeLbl; anchors.centerIn: parent; text: (i18n.language, i18n.t("detail_kv_downloaded")); color: Theme.grn; font.pointSize: 9.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                             }
                             Text { text: modelData.size; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono }
                             // .dl

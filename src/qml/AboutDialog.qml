@@ -6,10 +6,10 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Sobre o BATorrent"
+    title: (i18n.language, i18n.t("about_title"))
     cardW: 460
     cardH: 540
-    okText: "Doar"
+    okText: (i18n.language, i18n.t("action_donate"))
     showCancel: false
     footHint: "© 2026 · open-source"
 
@@ -39,11 +39,11 @@ BatDialog {
             Layout.alignment: Qt.AlignHCenter
             spacing: 8
             TChip { text: "v2.6.1" }
-            Text { text: "build estável"; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontMono }
+            Text { text: (i18n.language, i18n.t("about_build_stable")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontMono }
         }
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: "Um cliente BitTorrent leve e de código aberto."
+            text: (i18n.language, i18n.t("about_description"))
             color: Theme.t2
             font.pointSize: 11.5
             font.family: Theme.fontSans
@@ -81,7 +81,7 @@ BatDialog {
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
-                text: "Sem telemetria, sem analytics, sem chamadas pra casa. A única requisição de saída é a checagem de release no GitHub — desativável."
+                text: (i18n.language, i18n.t("about_no_telemetry_body"))
                 color: Theme.t3
                 font.pointSize: 10.5
                 font.family: Theme.fontSans
@@ -92,7 +92,7 @@ BatDialog {
 
     // .glabel BIBLIOTECAS
     Text {
-        text: "BIBLIOTECAS"
+        text: (i18n.language, i18n.t("about_libraries"))
         color: Theme.t4
         font.pointSize: 10
         font.weight: Font.Bold
@@ -129,7 +129,7 @@ BatDialog {
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.sp1
-        Text { text: "Licença"; color: Theme.t3; font.pointSize: 12; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("about_license")); color: Theme.t3; font.pointSize: 12; font.family: Theme.fontSans }
         Item { Layout.fillWidth: true }
         Text { text: "MIT"; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontMono }
     }

@@ -11,7 +11,7 @@ Window {
     minimumWidth: 520
     minimumHeight: 380
     color: Theme.bg
-    title: "Removidos recentemente"
+    title: (i18n.language, i18n.t("removed_history_title2"))
 
     readonly property var sess: typeof session !== "undefined" ? session : null
     property var entries: []
@@ -26,7 +26,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: "Removidos recentemente"; color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("removed_history_title2")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -35,7 +35,7 @@ Window {
             Layout.leftMargin: Theme.sp5
             Layout.rightMargin: Theme.sp5
             Layout.topMargin: Theme.sp3
-            text: "Restaure um torrent removido por engano. O histórico guarda os últimos 50."
+            text: (i18n.language, i18n.t("removed_history_desc2"))
             color: Theme.t4
             font.pointSize: 11
             font.family: Theme.fontSans
@@ -72,7 +72,7 @@ Window {
                         Text { text: modelData.size + " · " + modelData.when; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontMono }
                     }
                     BtnFlat {
-                        sm: true; text: "Restaurar"
+                        sm: true; text: (i18n.language, i18n.t("removed_history_restore"))
                         onClicked: { if (win.sess && win.sess.restoreRemoved(modelData.hash)) win.reload() }
                     }
                 }
@@ -83,7 +83,7 @@ Window {
         Text {
             visible: win.entries.length === 0
             Layout.alignment: Qt.AlignHCenter
-            text: "Nenhum torrent removido recentemente."
+            text: (i18n.language, i18n.t("removed_history_empty2"))
             color: Theme.t4
             font.pointSize: 12
             font.family: Theme.fontSans
@@ -98,9 +98,9 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
-                BtnFlat { text: "Limpar histórico"; onClicked: { if (win.sess) { win.sess.clearRemovedHistory(); win.reload() } } }
+                BtnFlat { text: (i18n.language, i18n.t("removed_history_clear2")); onClicked: { if (win.sess) { win.sess.clearRemovedHistory(); win.reload() } } }
                 Item { Layout.fillWidth: true }
-                BtnFlat { primary: true; text: "Fechar"; onClicked: win.close() }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
             }
         }
     }

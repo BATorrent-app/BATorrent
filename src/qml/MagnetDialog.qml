@@ -6,11 +6,11 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Adicionar link magnet"
+    title: (i18n.language, i18n.t("magnet_title"))
     cardW: 480
     cardH: 470
-    footHint: "Aceita vários links, um por linha"
-    okText: "Adicionar"
+    footHint: (i18n.language, i18n.t("magnet_multi_hint"))
+    okText: (i18n.language, i18n.t("add_torrent_add_btn"))
 
     property alias magnetText: magnetArea.text
     onOpenedChanged: if (opened) magnetArea.text = ""
@@ -19,9 +19,9 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.sp1
-        Eyebrow { text: "ADICIONAR"; red: true }
+        Eyebrow { text: (i18n.language, i18n.t("magnet_add")); red: true }
         Text {
-            text: "Link magnet"
+            text: (i18n.language, i18n.t("magnet_link"))
             color: Theme.t1
             font.pointSize: 19
             font.weight: Font.DemiBold
@@ -35,7 +35,7 @@ BatDialog {
         Layout.fillWidth: true
         spacing: 7
         Text {
-            text: "Cole o link magnet"
+            text: (i18n.language, i18n.t("magnet_paste"))
             color: Theme.t3
             font.pointSize: 11
             font.weight: Font.DemiBold
@@ -86,7 +86,7 @@ BatDialog {
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
-                text: "Os metadados (nome e lista de arquivos) serão baixados da rede após adicionar."
+                text: (i18n.language, i18n.t("magnet_meta_hint"))
                 color: Theme.t3
                 font.pointSize: 11
                 font.family: Theme.fontSans
@@ -100,7 +100,7 @@ BatDialog {
         Layout.fillWidth: true
         spacing: 7
         Text {
-            text: "Salvar em"
+            text: (i18n.language, i18n.t("detail_kv_save_to"))
             color: Theme.t3
             font.pointSize: 11
             font.weight: Font.DemiBold
@@ -117,7 +117,7 @@ BatDialog {
         Layout.fillWidth: true
         spacing: 12
         Text {
-            text: "Iniciar imediatamente"
+            text: (i18n.language, i18n.t("addt_start_now"))
             color: Theme.t2
             font.pointSize: 12
             font.family: Theme.fontSans

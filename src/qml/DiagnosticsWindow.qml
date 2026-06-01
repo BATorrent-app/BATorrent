@@ -11,7 +11,7 @@ Window {
     minimumWidth: 480
     minimumHeight: 380
     color: Theme.bg
-    title: "Diagnóstico de rede"
+    title: (i18n.language, i18n.t("diag_title2"))
 
     readonly property var sess: typeof session !== "undefined" ? session : null
     property var diag: ({})
@@ -40,7 +40,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: "Diagnóstico de rede"; color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("diag_title2")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -50,9 +50,9 @@ Window {
             Layout.margins: Theme.sp6
             spacing: Theme.sp4
 
-            Eyebrow { text: "REDE"; red: true }
+            Eyebrow { text: (i18n.language, i18n.t("diag_network")); red: true }
             Text {
-                text: "Status da conexão"
+                text: (i18n.language, i18n.t("diag_conn_status"))
                 color: Theme.t1
                 font.pointSize: 18; font.weight: Font.Bold; font.letterSpacing: -0.3
                 font.family: Theme.fontSans
@@ -73,10 +73,10 @@ Window {
                     anchors.leftMargin: Theme.sp4; anchors.rightMargin: Theme.sp4
                     anchors.topMargin: Theme.sp4
                     spacing: Theme.sp3
-                    Row4 { label: "Escuta"; ok: win.diag.listenOk === true; value: win.diag.listenText || "—" }
-                    Row4 { label: "DHT"; ok: win.diag.dhtOk === true; value: win.diag.dhtText || "—" }
-                    Row4 { label: "NAT / Entrada"; ok: win.diag.natOk === true; value: win.diag.natText || "—" }
-                    Row4 { label: "Alcance da porta"; ok: win.diag.portOk === true; value: win.diag.portText || "—" }
+                    Row4 { label: (i18n.language, i18n.t("diag_listen")); ok: win.diag.listenOk === true; value: win.diag.listenText || "—" }
+                    Row4 { label: (i18n.language, i18n.t("diag_dht")); ok: win.diag.dhtOk === true; value: win.diag.dhtText || "—" }
+                    Row4 { label: (i18n.language, i18n.t("diag_nat")); ok: win.diag.natOk === true; value: win.diag.natText || "—" }
+                    Row4 { label: (i18n.language, i18n.t("diag_port_range")); ok: win.diag.portOk === true; value: win.diag.portText || "—" }
                 }
             }
 
@@ -92,9 +92,9 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
-                BtnFlat { text: "Executar testes"; onClicked: win.run() }
+                BtnFlat { text: (i18n.language, i18n.t("diag_run_tests")); onClicked: win.run() }
                 Item { Layout.fillWidth: true }
-                BtnFlat { primary: true; text: "Fechar"; onClicked: win.close() }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
             }
         }
     }

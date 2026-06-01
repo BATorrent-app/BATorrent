@@ -150,15 +150,15 @@ Window {
             component Div_: Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
 
             Item { Layout.preferredHeight: 4; Layout.fillWidth: true }
-            Row_ { label: qsTr("Mostrar");          shortcut: "Ctrl+1"; onClicked: pop.showApp() }
-            Row_ { label: qsTr("Abrir Torrent…");   shortcut: "Ctrl+O"; onClicked: pop.openTorrent() }
-            Row_ { label: qsTr("Abrir Link Magnet…"); shortcut: "Ctrl+V"; onClicked: pop.openMagnet() }
+            Row_ { label: qsTr((i18n.language, i18n.t("tray_show")));          shortcut: "Ctrl+1"; onClicked: pop.showApp() }
+            Row_ { label: qsTr((i18n.language, i18n.t("tray_open_torrent")));   shortcut: "Ctrl+O"; onClicked: pop.openTorrent() }
+            Row_ { label: qsTr((i18n.language, i18n.t("tray_open_magnet"))); shortcut: "Ctrl+V"; onClicked: pop.openMagnet() }
             Div_ {}
-            Row_ { label: qsTr("Pausar Todos");     onClicked: pop.pauseAll() }
-            Row_ { label: qsTr("Continuar Todos");  onClicked: pop.resumeAll() }
+            Row_ { label: qsTr((i18n.language, i18n.t("tray_pause_all")));     onClicked: pop.pauseAll() }
+            Row_ { label: qsTr((i18n.language, i18n.t("tray_resume_all")));  onClicked: pop.resumeAll() }
             Div_ {}
-            Row_ { label: qsTr("Preferências…");    shortcut: "Ctrl+,"; onClicked: pop.openSettings() }
-            Row_ { label: qsTr("Sair"); danger: true; shortcut: "Ctrl+Q"; onClicked: pop.quitApp() }
+            Row_ { label: qsTr((i18n.language, i18n.t("tray_preferences")));    shortcut: "Ctrl+,"; onClicked: pop.openSettings() }
+            Row_ { label: qsTr((i18n.language, i18n.t("tray_quit"))); danger: true; shortcut: "Ctrl+Q"; onClicked: pop.quitApp() }
             Item { Layout.preferredHeight: 4; Layout.fillWidth: true }
         }
     }

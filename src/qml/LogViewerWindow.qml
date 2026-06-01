@@ -13,7 +13,7 @@ Window {
     minimumWidth: 640
     minimumHeight: 420
     color: Theme.bg
-    title: "Logs"
+    title: (i18n.language, i18n.t("logviewer_title2"))
 
     readonly property var api: typeof logs !== "undefined" ? logs : null
     onVisibleChanged: {
@@ -23,9 +23,9 @@ Window {
 
     FileDialog {
         id: saveDlg
-        title: "Salvar logs"
+        title: (i18n.language, i18n.t("logviewer_save_logs"))
         fileMode: FileDialog.SaveFile
-        nameFilters: ["Texto (*.txt)"]
+        nameFilters: [(i18n.language, i18n.t("filter_text_files"))]
         onAccepted: api.exportLogs(saveDlg.selectedFile.toString())
     }
 
@@ -44,9 +44,9 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp3
-                Text { text: "Logs"; color: Theme.t1; font.pointSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("logviewer_title2")); color: Theme.t1; font.pointSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
-                Text { text: "Nível:"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("logviewer_level2")); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
                 TSelect {
                     Layout.preferredWidth: 130
                     model: win.api ? win.api.levelNames : []
@@ -99,11 +99,11 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
                 spacing: Theme.sp2
-                BtnFlat { text: "Abrir pasta"; onClicked: if (win.api) win.api.openLogsFolder() }
-                BtnFlat { primary: true; text: "Salvar"; onClicked: { if (win.api) saveDlg.currentFile = "file://" + win.api.defaultExportName(); saveDlg.open() } }
-                BtnFlat { text: "Limpar"; onClicked: if (win.api) win.api.clearLog() }
+                BtnFlat { text: (i18n.language, i18n.t("logviewer_open_folder2")); onClicked: if (win.api) win.api.openLogsFolder() }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("logviewer_save2")); onClicked: { if (win.api) saveDlg.currentFile = "file://" + win.api.defaultExportName(); saveDlg.open() } }
+                BtnFlat { text: (i18n.language, i18n.t("logviewer_clear")); onClicked: if (win.api) win.api.clearLog() }
                 Item { Layout.fillWidth: true }
-                BtnFlat { text: "Fechar"; onClicked: win.close() }
+                BtnFlat { text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
             }
         }
     }

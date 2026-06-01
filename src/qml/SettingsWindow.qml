@@ -11,182 +11,182 @@ Window {
     minimumWidth: 740
     minimumHeight: 480
     color: Theme.bg
-    title: "Preferências"
+    title: (i18n.language, i18n.t("settings_heading"))
 
     property int sec: 0
 
     // ---- nav metadata ----
     readonly property var navs: [
-        { nav: "Geral",               icon: "qrc:/icons/set-general.svg" },
-        { nav: "Velocidade",          icon: "qrc:/icons/set-speed.svg" },
-        { nav: "Rede",                icon: "qrc:/icons/set-network.svg" },
-        { nav: "VPN / Kill Switch",   icon: "qrc:/icons/set-vpn.svg" },
-        { nav: "Proxy & Filtro de IP",icon: "qrc:/icons/set-proxy.svg" },
-        { nav: "WebUI & Pareamento",  icon: "qrc:/icons/set-webui.svg" },
-        { nav: "Notificações",        icon: "qrc:/icons/set-notif.svg" },
-        { nav: "Addons & Mídia",      icon: "qrc:/icons/set-addons.svg" },
-        { nav: "Avançado",            icon: "qrc:/icons/set-advanced.svg" }
+        { nav: (i18n.language, i18n.t("detail_general")),               icon: "qrc:/icons/set-general.svg" },
+        { nav: (i18n.language, i18n.t("detail_kv_speed")),          icon: "qrc:/icons/set-speed.svg" },
+        { nav: (i18n.language, i18n.t("settings_network")),                icon: "qrc:/icons/set-network.svg" },
+        { nav: (i18n.language, i18n.t("set_nav_vpn")),   icon: "qrc:/icons/set-vpn.svg" },
+        { nav: (i18n.language, i18n.t("set_nav_proxy")),icon: "qrc:/icons/set-proxy.svg" },
+        { nav: (i18n.language, i18n.t("set_nav_webui")),  icon: "qrc:/icons/set-webui.svg" },
+        { nav: (i18n.language, i18n.t("set_nav_notif")),        icon: "qrc:/icons/set-notif.svg" },
+        { nav: (i18n.language, i18n.t("set_nav_addons")),      icon: "qrc:/icons/set-addons.svg" },
+        { nav: (i18n.language, i18n.t("settings_advanced")),            icon: "qrc:/icons/set-advanced.svg" }
     ]
 
     readonly property var heads: [
-        { eyebrow: "PREFERÊNCIAS", h: "Geral", sub: "Pastas de download, idioma, aparência e comportamento na bandeja do sistema." },
-        { eyebrow: "PREFERÊNCIAS", h: "Limites de Velocidade", sub: "Limites globais e alternativos, regras de seeding e agendamento por horário." },
-        { eyebrow: "PREFERÊNCIAS", h: "Rede", sub: "Porta de escuta, descoberta de peers, criptografia e privacidade do protocolo." },
-        { eyebrow: "PREFERÊNCIAS", h: "VPN / Kill Switch", sub: "Vincule o tráfego a uma interface e proteja contra vazamentos fora da VPN." },
-        { eyebrow: "PREFERÊNCIAS", h: "Proxy & Filtro de IP", sub: "Roteie peers e trackers por um proxy e descarte faixas de IP por blocklist." },
-        { eyebrow: "PREFERÊNCIAS", h: "WebUI & Pareamento", sub: "Controle o BATorrent pelo navegador e pareie o celular na mesma rede." },
-        { eyebrow: "PREFERÊNCIAS", h: "Notificações", sub: "Receba avisos via Telegram, mostre atividade no Discord e ative sons." },
-        { eyebrow: "PREFERÊNCIAS", h: "Addons & Mídia", sub: "Trackers automáticos, busca de torrents, servidores de mídia e extração." },
-        { eyebrow: "PREFERÊNCIAS", h: "Avançado", sub: "Ajuste fino de I/O de disco, conexões, algoritmos de choke e APIs de metadados." }
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("detail_general")), sub: (i18n.language, i18n.t("set_sub_general")) },
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("settings_speed")), sub: (i18n.language, i18n.t("set_sub_speed")) },
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("settings_network")), sub: (i18n.language, i18n.t("set_sub_network")) },
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("set_nav_vpn")), sub: (i18n.language, i18n.t("set_sub_vpn")) },
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("set_nav_proxy")), sub: (i18n.language, i18n.t("set_sub_proxy")) },
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("set_nav_webui")), sub: (i18n.language, i18n.t("set_sub_webui")) },
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("set_nav_notif")), sub: (i18n.language, i18n.t("set_sub_notif")) },
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("set_nav_addons")), sub: (i18n.language, i18n.t("set_sub_addons")) },
+        { eyebrow: (i18n.language, i18n.t("set_eyebrow")), h: (i18n.language, i18n.t("settings_advanced")), sub: (i18n.language, i18n.t("set_sub_advanced")) }
     ]
 
     // ---- fields per section (settings-data.js, verbatim) ----
     readonly property var sections: [
         // 0 Geral
         [
-            { type: "group", label: "Downloads" },
-            { type: "path", label: "Pasta padrão para salvar", value: "/Users/voce/Downloads/BATorrent" },
-            { type: "toggle", label: "Sempre usar pasta padrão (pular diálogo de pasta)", on: true },
-            { type: "path", label: "Caminho temporário de download", placeholder: "Baixar para esta pasta primeiro, mover ao concluir", note: "Downloads incompletos vão para cá primeiro, depois movem para o destino quando terminam." },
-            { type: "toggle", label: "Mover downloads concluídos automaticamente" },
-            { type: "path", label: "Mover para", placeholder: "Pasta de destino final" },
-            { type: "group", label: "Aparência" },
-            { type: "select", isLang: true, label: "Idioma", options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch"], value: 0 },
-            { type: "theme", label: "Tema", options: ["Escuro", "Claro", "Midnight", "Sakura", "Dark Star"], value: 0 },
-            { type: "anime", label: "Modo Anime (arte de fundo)" },
-            { type: "group", label: "Sistema" },
-            { type: "toggle", label: "Iniciar minimizado na bandeja" },
-            { type: "toggle", label: "Fechar para a bandeja ao invés de sair", on: true },
-            { type: "toggle", label: "Tocar som nas notificações", on: true },
-            { type: "toggle", label: "Tocar som de morcego ao iniciar" },
-            { type: "button", label: "Aplicativo padrão", btn: "Definir BATorrent como app padrão de torrent" }
+            { type: "group", label: (i18n.language, i18n.t("set_grp_downloads")) },
+            { type: "path", label: (i18n.language, i18n.t("set_default_save2")), value: "/Users/voce/Downloads/BATorrent" },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_use_default_path")), on: true },
+            { type: "path", label: (i18n.language, i18n.t("set_temp_path2")), placeholder: (i18n.language, i18n.t("set_temp_path_ph")), note: (i18n.language, i18n.t("set_temp_path_note")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_automove")) },
+            { type: "path", label: (i18n.language, i18n.t("set_move_to2")), placeholder: (i18n.language, i18n.t("set_move_to_ph")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
+            { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch"], value: 0 },
+            { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star"], value: 0 },
+            { type: "anime", label: (i18n.language, i18n.t("set_anime2")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_start_tray")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_splash_sound")) },
+            { type: "button", label: (i18n.language, i18n.t("set_default_app")), btn: (i18n.language, i18n.t("settings_set_default")) }
         ],
         // 1 Velocidade
         [
-            { type: "group", label: "Limites globais" },
-            { type: "number", key: "downloadLimit", label: "Máximo de download", value: "0", suffix: "KB/s", note: "0 = ilimitado" },
-            { type: "number", key: "uploadLimit", label: "Máximo de upload", value: "200", suffix: "KB/s", note: "0 = ilimitado" },
-            { type: "number", key: "maxActiveDownloads", label: "Downloads ativos simultâneos", value: "5", note: "0 = ilimitado" },
-            { type: "group", label: "Seeding" },
-            { type: "number", key: "seedRatioLimit", label: "Parar de semear na proporção", value: "2.0", note: "Pausa o seeding quando upload ÷ download alcança essa razão. 0 = sem limite." },
-            { type: "number", key: "maxSeedDays", label: "Parar de semear após", value: "0", suffix: "dias" },
-            { type: "toggle", key: "stopAfterDownload", label: "Parar de semear ao concluir o download" },
-            { type: "select", label: "Marcar como Concluído após", options: ["Nunca", "1 dia", "3 dias", "7 dias", "14 dias", "30 dias"], value: 0, note: "Depois desse tempo contínuo de seeding, marca o torrent como Concluído (verde, pausado)." },
-            { type: "group", label: "Agendamento de Velocidade" },
-            { type: "toggle", key: "schedulerEnabled", label: "Habilitar agendamento de velocidade", note: "Troca para os limites alternativos em uma janela de horário e dias configurados." },
-            { type: "number", key: "altDownloadLimit", label: "Limite alt. download", value: "50", suffix: "KB/s" },
-            { type: "number", key: "altUploadLimit", label: "Limite alt. upload", value: "20", suffix: "KB/s" },
-            { type: "timerange", label: "Ativo das", from: "08:00", to: "18:00" },
-            { type: "days", label: "Dias", value: [1,2,3,4,5] }
+            { type: "group", label: (i18n.language, i18n.t("set_grp_global_limits")) },
+            { type: "number", key: "downloadLimit", label: (i18n.language, i18n.t("set_max_down2")), value: "0", suffix: "KB/s", note: (i18n.language, i18n.t("note_unlimited")) },
+            { type: "number", key: "uploadLimit", label: (i18n.language, i18n.t("set_max_up2")), value: "200", suffix: "KB/s", note: (i18n.language, i18n.t("note_unlimited")) },
+            { type: "number", key: "maxActiveDownloads", label: (i18n.language, i18n.t("set_max_active2")), value: "5", note: (i18n.language, i18n.t("note_unlimited")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_seeding")) },
+            { type: "number", key: "seedRatioLimit", label: (i18n.language, i18n.t("set_seed_ratio2")), value: "2.0", note: (i18n.language, i18n.t("set_seed_ratio_note")) },
+            { type: "number", key: "maxSeedDays", label: (i18n.language, i18n.t("set_max_seed_days2")), value: "0", suffix: (i18n.language, i18n.t("settings_days")) },
+            { type: "toggle", key: "stopAfterDownload", label: (i18n.language, i18n.t("settings_stop_after_download")) },
+            { type: "select", label: (i18n.language, i18n.t("settings_auto_complete")), options: [(i18n.language, i18n.t("auto_complete_never")), (i18n.language, i18n.t("auto_complete_1d")), (i18n.language, i18n.t("auto_complete_3d")), (i18n.language, i18n.t("auto_complete_7d")), (i18n.language, i18n.t("auto_complete_14d")), (i18n.language, i18n.t("auto_complete_30d"))], value: 0, note: (i18n.language, i18n.t("set_auto_complete_note")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_scheduler")) },
+            { type: "toggle", key: "schedulerEnabled", label: (i18n.language, i18n.t("settings_scheduler_enable")), note: (i18n.language, i18n.t("set_scheduler_note")) },
+            { type: "number", key: "altDownloadLimit", label: (i18n.language, i18n.t("set_alt_down2")), value: "50", suffix: "KB/s" },
+            { type: "number", key: "altUploadLimit", label: (i18n.language, i18n.t("set_alt_up2")), value: "20", suffix: "KB/s" },
+            { type: "timerange", label: (i18n.language, i18n.t("set_sched_from2")), from: "08:00", to: "18:00" },
+            { type: "days", label: (i18n.language, i18n.t("set_sched_days2")), value: [1,2,3,4,5] }
         ],
         // 2 Rede
         [
-            { type: "group", label: "Conexão" },
-            { type: "number", key: "listenPort", label: "Porta de escuta", value: "6881", note: "Conexões de peers chegam por aqui. Combine com a regra de port-forward do seu roteador." },
-            { type: "toggle", key: "randomPort", label: "Usar porta aleatória a cada inicialização" },
-            { type: "number", key: "maxConnections", label: "Máximo de conexões", value: "200" },
-            { type: "group", label: "Protocolo" },
-            { type: "toggle", key: "dhtEnabled", label: "Habilitar DHT (descoberta de peers sem tracker)", on: true, note: "Descobre peers sem precisar de tracker. Desabilite em trackers privados (BEP-27)." },
-            { type: "toggle", key: "utpEnabled", label: "Habilitar µTP (transporte de peer via UDP)", on: true },
-            { type: "segmented", key: "encryptionMode", label: "Criptografia do protocolo", options: ["Habilitada", "Forçada", "Desabilitada"], value: 0, note: "Forçado = só criptografado. Muitos provedores limitam BitTorrent em texto plano." },
-            { type: "segmented", key: "speedUnit", label: "Exibir velocidades em", options: ["Bytes (KB/s)", "Bits (Kbps)"], value: 0 },
-            { type: "group", label: "Privacidade" },
-            { type: "toggle", key: "anonymousMode", label: "Modo anônimo (ocultar ID do cliente)", note: "Oculta nome/versão do cliente nos handshakes e desativa anúncios UPnP/NAT-PMP." },
-            { type: "toggle", key: "forceIpv4", label: "Forçar somente IPv4" },
-            { type: "toggle", key: "ptMode", label: "Modo PT (compatível com private trackers)", note: "Desliga DHT/PEX/LSD, força handshake anônimo e anuncia em todas as tiers." },
-            { type: "toggle", key: "blockLeechers", label: "Bloquear clientes vampiros (Xunlei, QQDownload, Baidu)", on: true }
+            { type: "group", label: (i18n.language, i18n.t("set_grp_connection")) },
+            { type: "number", key: "listenPort", label: (i18n.language, i18n.t("set_listen_port2")), value: "6881", note: (i18n.language, i18n.t("set_listen_port_note")) },
+            { type: "toggle", key: "randomPort", label: (i18n.language, i18n.t("settings_random_port")) },
+            { type: "number", key: "maxConnections", label: (i18n.language, i18n.t("set_max_conn2")), value: "200" },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_protocol")) },
+            { type: "toggle", key: "dhtEnabled", label: (i18n.language, i18n.t("settings_enable_dht")), on: true, note: (i18n.language, i18n.t("set_dht_note")) },
+            { type: "toggle", key: "utpEnabled", label: (i18n.language, i18n.t("settings_enable_utp")), on: true },
+            { type: "segmented", key: "encryptionMode", label: (i18n.language, i18n.t("set_encryption2")), options: [(i18n.language, i18n.t("set_enc_enabled_opt")), (i18n.language, i18n.t("set_enc_forced_opt")), (i18n.language, i18n.t("settings_enc_disabled"))], value: 0, note: (i18n.language, i18n.t("set_encryption_note")) },
+            { type: "segmented", key: "speedUnit", label: (i18n.language, i18n.t("settings_speed_unit")), options: [(i18n.language, i18n.t("set_speed_bytes_opt")), (i18n.language, i18n.t("set_speed_bits_opt"))], value: 0 },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_privacy")) },
+            { type: "toggle", key: "anonymousMode", label: (i18n.language, i18n.t("settings_anonymous_mode")), note: (i18n.language, i18n.t("set_anon_note")) },
+            { type: "toggle", key: "forceIpv4", label: (i18n.language, i18n.t("settings_force_ipv4")) },
+            { type: "toggle", key: "ptMode", label: (i18n.language, i18n.t("settings_pt_mode")), note: (i18n.language, i18n.t("set_pt_note")) },
+            { type: "toggle", key: "blockLeechers", label: (i18n.language, i18n.t("settings_block_leechers")), on: true }
         ],
         // 3 VPN
         [
-            { type: "group", label: "Vínculo de Interface" },
-            { type: "select", label: "Interface de rede", options: ["Qualquer (padrão)", "en0 — 192.168.0.12", "utun4 — 10.2.0.2 (VPN)"], value: 2 },
-            { type: "toggle", key: "killSwitchEnabled", label: "Pausar torrents se a interface cair (Kill Switch)", on: true, note: "Pausa todo torrent ativo no instante em que a interface ligada cair." },
-            { type: "toggle", key: "autoResumeOnReconnect", label: "Retomar automaticamente quando a interface voltar", on: true, note: "Retoma apenas os torrents que o kill switch pausou — não os que você pausou manualmente." },
-            { type: "toggle", label: "Usar Tor (SOCKS5 127.0.0.1:9050)" },
-            { type: "group", label: "Energia" },
-            { type: "toggle", label: "Desligar PC quando todos os downloads terminarem" }
+            { type: "group", label: (i18n.language, i18n.t("set_grp_iface_bind")) },
+            { type: "select", label: (i18n.language, i18n.t("set_iface2")), options: [(i18n.language, i18n.t("settings_iface_any")), "en0 — 192.168.0.12", "utun4 — 10.2.0.2 (VPN)"], value: 2 },
+            { type: "toggle", key: "killSwitchEnabled", label: (i18n.language, i18n.t("settings_kill_switch")), on: true, note: (i18n.language, i18n.t("set_killswitch_note")) },
+            { type: "toggle", key: "autoResumeOnReconnect", label: (i18n.language, i18n.t("settings_auto_resume")), on: true, note: (i18n.language, i18n.t("set_autoresume_note")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_use_tor")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_power")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_auto_shutdown")) }
         ],
         // 4 Proxy
         [
-            { type: "group", label: "Proxy" },
-            { type: "select", key: "proxyType", label: "Tipo de proxy", options: ["Nenhum", "SOCKS5", "HTTP"], value: 0, note: "Roteia todo o tráfego de peers + trackers através de proxy SOCKS5 ou HTTP." },
-            { type: "text", key: "proxyHost", label: "Host", mono: true, placeholder: "127.0.0.1", w: "w-md" },
-            { type: "number", key: "proxyPort", label: "Porta", value: "1080" },
-            { type: "text", key: "proxyUser", label: "Usuário", placeholder: "Opcional", w: "w-md" },
-            { type: "password", key: "proxyPass", label: "Senha", w: "w-md" },
-            { type: "group", label: "Filtragem de IP" },
-            { type: "path", label: "Arquivo de blocklist", placeholder: "Blocklist P2P (.txt, .p2p, .dat)", note: "Faixas de IP carregadas são descartadas antes do handshake." }
+            { type: "group", label: (i18n.language, i18n.t("set_grp_proxy")) },
+            { type: "select", key: "proxyType", label: (i18n.language, i18n.t("set_proxy_type2")), options: [(i18n.language, i18n.t("settings_proxy_none")), "SOCKS5", "HTTP"], value: 0, note: (i18n.language, i18n.t("set_proxy_type_note")) },
+            { type: "text", key: "proxyHost", label: (i18n.language, i18n.t("set_proxy_host2")), mono: true, placeholder: "127.0.0.1", w: "w-md" },
+            { type: "number", key: "proxyPort", label: (i18n.language, i18n.t("set_port2")), value: "1080" },
+            { type: "text", key: "proxyUser", label: (i18n.language, i18n.t("set_user2")), placeholder: (i18n.language, i18n.t("settings_proxy_user_hint")), w: "w-md" },
+            { type: "password", key: "proxyPass", label: (i18n.language, i18n.t("set_pass2")), w: "w-md" },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_ip_filter")) },
+            { type: "path", label: (i18n.language, i18n.t("set_blocklist_file")), placeholder: (i18n.language, i18n.t("settings_ip_filter_hint")), note: (i18n.language, i18n.t("set_blocklist_note")) }
         ],
         // 5 WebUI
         [
-            { type: "group", label: "Servidor Web" },
-            { type: "toggle", label: "Habilitar WebUI" },
-            { type: "number", label: "Porta", value: "8080" },
-            { type: "text", label: "Usuário", value: "admin", w: "w-md" },
-            { type: "password", label: "Senha", placeholder: "Deixe vazio para manter a atual", w: "w-md" },
-            { type: "toggle", label: "Permitir acesso remoto (bind 0.0.0.0)" },
-            { type: "warning", text: "Habilitar acesso remoto expõe a WebUI para sua rede. Use uma VPN ou proxy reverso com HTTPS para acesso remoto seguro." },
-            { type: "group", label: "Mobile" },
-            { type: "button", label: "Parear celular", btn: "Parear celular…", note: "Mostra uma URL LAN copiável pra você abrir a WebUI no celular." }
+            { type: "group", label: (i18n.language, i18n.t("set_grp_webserver")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_webui_enable")) },
+            { type: "number", label: (i18n.language, i18n.t("set_port2")), value: "8080" },
+            { type: "text", label: (i18n.language, i18n.t("set_user2")), value: "admin", w: "w-md" },
+            { type: "password", label: (i18n.language, i18n.t("set_pass2")), placeholder: (i18n.language, i18n.t("settings_webui_pass_hint")), w: "w-md" },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_webui_remote")) },
+            { type: "warning", text: (i18n.language, i18n.t("settings_webui_warning_msg")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_mobile")) },
+            { type: "button", label: (i18n.language, i18n.t("pairing_title")), btn: (i18n.language, i18n.t("set_pair_phone")), note: (i18n.language, i18n.t("set_pair_note")) }
         ],
         // 6 Notificações
         [
-            { type: "group", label: "Telegram" },
-            { type: "text", label: "Token do bot", mono: true, placeholder: "123456:ABC-DEF…", w: "grow", note: "Crie um bot via @BotFather no Telegram e cole o HTTP API token aqui." },
-            { type: "text", label: "Chat ID", mono: true, placeholder: "@seucanal ou ID numérico", w: "w-md" },
-            { type: "toggle", label: "Notificar ao concluir download", on: true },
-            { type: "toggle", label: "Notificar ao acionar kill switch" },
-            { type: "toggle", label: "Notificar em auto-download RSS" },
-            { type: "toggle", label: "Notificar em erro de torrent" },
-            { type: "button", label: "Teste", btn: "Enviar mensagem teste" },
-            { type: "group", label: "Discord" },
-            { type: "toggle", label: "Mostrar atividade no perfil do Discord", note: "Discord Rich Presence — mostra seu status de download/seeding. Requer o app Discord rodando." },
-            { type: "group", label: "Sistema" },
-            { type: "toggle", label: "Tocar som nas notificações", on: true }
+            { type: "group", label: (i18n.language, i18n.t("set_grp_telegram")) },
+            { type: "text", label: (i18n.language, i18n.t("settings_telegram_token")), mono: true, placeholder: "123456:ABC-DEF…", w: "grow", note: (i18n.language, i18n.t("set_telegram_token_note")) },
+            { type: "text", label: (i18n.language, i18n.t("settings_telegram_chat")), mono: true, placeholder: "@seucanal ou ID numérico", w: "w-md" },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_telegram_finished")), on: true },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_telegram_killswitch")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_telegram_rss")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_telegram_error")) },
+            { type: "button", label: (i18n.language, i18n.t("set_test_btn")), btn: (i18n.language, i18n.t("settings_telegram_test")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_discord")) },
+            { type: "toggle", label: (i18n.language, i18n.t("set_discord_show")), note: (i18n.language, i18n.t("set_discord_note")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_notif_sound")), on: true }
         ],
         // 7 Addons
         [
-            { type: "group", label: "Trackers" },
-            { type: "toggle", label: "Adicionar trackers públicos automaticamente em novos torrents", on: true, badge: "1.243 carregados" },
-            { type: "group", label: "Busca de Torrents" },
-            { type: "toggle", label: "Habilitar busca de torrents" },
-            { type: "text", label: "URL da API", mono: true, placeholder: "URL de uma API de busca compatível", w: "grow" },
-            { type: "group", label: "Servidor de Mídia" },
-            { type: "toggle", label: "Notificar Plex ao concluir download" },
-            { type: "toggle", label: "Notificar Jellyfin / Emby ao concluir download" },
-            { type: "text", label: "Chave API", mono: true, w: "w-md" },
-            { type: "group", label: "Extração" },
-            { type: "toggle", label: "Extrair arquivos automaticamente (RAR/ZIP/7z) ao concluir", note: "Requer 7-Zip (Windows) ou unrar/unzip (macOS/Linux) instalado." },
-            { type: "toggle", label: "Excluir arquivos compactados após extração" },
-            { type: "text", label: "Senhas de arquivos", placeholder: "senha1; senha2; online-fix.me", w: "grow" }
+            { type: "group", label: (i18n.language, i18n.t("set_grp_trackers")) },
+            { type: "toggle", label: (i18n.language, i18n.t("set_auto_trackers2")), on: true, badge: "1.243 carregados" },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_torrent_search")) },
+            { type: "toggle", label: (i18n.language, i18n.t("set_torrent_search_enable")) },
+            { type: "text", label: (i18n.language, i18n.t("set_api_url2")), mono: true, placeholder: (i18n.language, i18n.t("set_api_url_ph")), w: "grow" },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_media_server")) },
+            { type: "toggle", label: (i18n.language, i18n.t("set_media_plex")) },
+            { type: "toggle", label: (i18n.language, i18n.t("set_media_jellyfin")) },
+            { type: "text", label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_extraction")) },
+            { type: "toggle", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
+            { type: "toggle", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
+            { type: "text", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "senha1; senha2; online-fix.me", w: "grow" }
         ],
         // 8 Avançado
         [
-            { type: "group", label: "E/S de Disco" },
-            { type: "number", label: "Threads de I/O assíncrono", value: "4" },
-            { type: "number", label: "Threads de hash", value: "2" },
-            { type: "number", label: "Tamanho do pool de arquivos", value: "40" },
-            { type: "number", label: "Memória de verificação", value: "512", suffix: "×16 KiB" },
-            { type: "number", label: "Buffer de envio", value: "500", suffix: "KiB" },
-            { type: "group", label: "Conexões" },
-            { type: "number", label: "Limite global de conexões", value: "200" },
-            { type: "number", label: "Velocidade de conexão", value: "30", suffix: "/s" },
-            { type: "number", label: "Slots de unchoke", value: "8" },
-            { type: "number", label: "Máx. uploads por torrent", value: "4" },
-            { type: "number", label: "Máx. conexões por torrent", value: "60" },
-            { type: "group", label: "Algoritmos" },
-            { type: "segmented", label: "Algoritmo de choke", options: ["Slots fixos", "Baseado em taxa"], value: 1 },
-            { type: "select", label: "Choke de seed", options: ["Alternado", "Upload mais rápido", "Anti-leech"], value: 2 },
-            { type: "toggle", label: "Incluir overhead IP nos limites de taxa" },
-            { type: "toggle", label: "Isentar peers LAN dos limites de velocidade", on: true },
-            { type: "group", label: "API de Metadados" },
-            { type: "text", key: "tmdbApiKey", label: "TMDB API key", mono: true, w: "grow", note: "Key gratuita de themoviedb.org — posters de filmes/séries." },
-            { type: "text", key: "igdbClientId", label: "IGDB Client ID", mono: true, w: "w-md" },
-            { type: "text", key: "igdbClientSecret", label: "IGDB Client secret", mono: true, w: "w-md" },
-            { type: "group", label: "Diagnóstico" },
-            { type: "toggle", key: "verboseLogging", label: "Logs detalhados (nível Debug)", note: "Captura detalhes extras de eventos do libtorrent. Use ao reportar um bug; desligue depois." },
-            { type: "text", label: "Executar ao concluir", mono: true, placeholder: "notify-send \"%N concluído\"", w: "grow" },
-            { type: "path", label: "Pasta monitorada", placeholder: "Pasta para monitorar arquivos .torrent" }
+            { type: "group", label: (i18n.language, i18n.t("adv_disk_io")) },
+            { type: "number", label: (i18n.language, i18n.t("adv_aio_threads")), value: "4" },
+            { type: "number", label: (i18n.language, i18n.t("adv_hashing_threads")), value: "2" },
+            { type: "number", label: (i18n.language, i18n.t("adv_file_pool")), value: "40" },
+            { type: "number", label: (i18n.language, i18n.t("adv_checking_mem")), value: "512", suffix: "×16 KiB" },
+            { type: "number", label: (i18n.language, i18n.t("adv_send_buffer")), value: "500", suffix: "KiB" },
+            { type: "group", label: (i18n.language, i18n.t("adv_connections")) },
+            { type: "number", label: (i18n.language, i18n.t("adv_conn_limit")), value: "200" },
+            { type: "number", label: (i18n.language, i18n.t("adv_conn_speed")), value: "30", suffix: "/s" },
+            { type: "number", label: (i18n.language, i18n.t("adv_unchoke_slots")), value: "8" },
+            { type: "number", label: (i18n.language, i18n.t("set_max_uploads_tor")), value: "4" },
+            { type: "number", label: (i18n.language, i18n.t("set_max_conns_tor")), value: "60" },
+            { type: "group", label: (i18n.language, i18n.t("adv_algorithms")) },
+            { type: "segmented", label: (i18n.language, i18n.t("adv_choking_algo")), options: [(i18n.language, i18n.t("adv_choke_fixed")), (i18n.language, i18n.t("adv_choke_rate"))], value: 1 },
+            { type: "select", label: (i18n.language, i18n.t("adv_seed_choking")), options: [(i18n.language, i18n.t("adv_seedchoke_robin")), (i18n.language, i18n.t("adv_seedchoke_fastest")), (i18n.language, i18n.t("adv_seedchoke_antileech"))], value: 2 },
+            { type: "toggle", label: (i18n.language, i18n.t("adv_rate_overhead")) },
+            { type: "toggle", label: (i18n.language, i18n.t("adv_ignore_lan")), on: true },
+            { type: "group", label: (i18n.language, i18n.t("adv_metadata_api")) },
+            { type: "text", key: "tmdbApiKey", label: (i18n.language, i18n.t("set_tmdb2")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_tmdb_note")) },
+            { type: "text", key: "igdbClientId", label: (i18n.language, i18n.t("set_igdb_id2")), mono: true, w: "w-md" },
+            { type: "text", key: "igdbClientSecret", label: (i18n.language, i18n.t("set_igdb_secret2")), mono: true, w: "w-md" },
+            { type: "group", label: (i18n.language, i18n.t("diag_title")) },
+            { type: "toggle", key: "verboseLogging", label: (i18n.language, i18n.t("settings_verbose_log")), note: (i18n.language, i18n.t("set_verbose_note")) },
+            { type: "text", label: (i18n.language, i18n.t("set_run_on_complete2")), mono: true, placeholder: "notify-send \"%N concluído\"", w: "grow" },
+            { type: "path", label: (i18n.language, i18n.t("set_watched_folder2")), placeholder: (i18n.language, i18n.t("settings_watched_hint")) }
         ]
     ]
 
@@ -216,7 +216,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: "Preferências"; color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("settings_heading")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -247,7 +247,7 @@ Window {
                         Layout.preferredHeight: 32
                         Layout.bottomMargin: Theme.sp3
                         icon: "qrc:/icons/search.svg"
-                        placeholder: "Buscar configuração…"
+                        placeholder: (i18n.language, i18n.t("set_search_config_ph"))
                     }
 
                     // .snav
@@ -414,12 +414,12 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
-                Text { text: "As alterações são aplicadas ao confirmar"; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("set_changes_on_confirm")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
                 Row {
                     spacing: Theme.sp2
-                    BtnFlat { text: "Cancelar"; onClicked: win.close() }
-                    BtnFlat { primary: true; text: "OK"; onClicked: win.close() }
+                    BtnFlat { text: (i18n.language, i18n.t("btn_cancel")); onClicked: win.close() }
+                    BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_ok")); onClicked: win.close() }
                 }
             }
         }

@@ -6,10 +6,10 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Bem-vindo ao BATorrent"
+    title: (i18n.language, i18n.t("welcome_window_title"))
     cardW: 560
     cardH: 470
-    okText: "Começar"
+    okText: (i18n.language, i18n.t("welcome_start"))
     showCancel: false
 
     property bool dontShow: false
@@ -28,10 +28,10 @@ BatDialog {
             sourceSize: Qt.size(104, 104)
             fillMode: Image.PreserveAspectFit
         }
-        Eyebrow { Layout.alignment: Qt.AlignHCenter; text: "BEM-VINDO"; red: true }
+        Eyebrow { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("welcome_eyebrow")); red: true }
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: "Pronto pra compartilhar."
+            text: (i18n.language, i18n.t("welcome_heading"))
             color: Theme.t1
             font.pointSize: 25
             font.weight: Font.Black
@@ -42,7 +42,7 @@ BatDialog {
             Layout.maximumWidth: 400
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
-            text: "BATorrent é um cliente BitTorrent leve e open-source. Funcional, escuro, focado."
+            text: (i18n.language, i18n.t("welcome_blurb2"))
             color: Theme.t2
             font.pointSize: 12.5
             font.family: Theme.fontSans
@@ -59,10 +59,10 @@ BatDialog {
 
         Repeater {
             model: [
-                { icon: "qrc:/icons/open.svg",     t: "Abrir .torrent",  d: "Adicionar arquivo do disco" },
-                { icon: "qrc:/icons/magnet.svg",   t: "Colar magnet",    d: "Da área de transferência" },
-                { icon: "qrc:/icons/search.svg",   t: "Buscar",          d: "Stremio · Torrentio" },
-                { icon: "qrc:/icons/rss.svg",      t: "Inscrever RSS",   d: "Auto-baixar novos" }
+                { icon: "qrc:/icons/open.svg",     t: (i18n.language, i18n.t("welcome_card_open_title")),  d: (i18n.language, i18n.t("welcome_card_open_desc")) },
+                { icon: "qrc:/icons/magnet.svg",   t: (i18n.language, i18n.t("empty_paste_btn")),    d: (i18n.language, i18n.t("welcome_card_magnet_desc")) },
+                { icon: "qrc:/icons/search.svg",   t: (i18n.language, i18n.t("empty_search_btn")),          d: (i18n.language, i18n.t("welcome_card_search_desc")) },
+                { icon: "qrc:/icons/rss.svg",      t: (i18n.language, i18n.t("welcome_card_rss_title")),   d: (i18n.language, i18n.t("welcome_card_rss_desc")) }
             ]
             delegate: Rectangle {
                 Layout.fillWidth: true
@@ -98,12 +98,12 @@ BatDialog {
     }
 
     // footer checkbox handled via footHint slot — but checklist puts checkbox at footer-left.
-    // BatDialog footer only has hint+buttons; embed the "não mostrar" as last body row aligned bottom.
+    // BatDialog footer only has hint+buttons; embed the (i18n.language, i18n.t("welcome_dont_show2")) as last body row aligned bottom.
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: 4
         spacing: 8
         TChk { id: dsChk; on: dlg.dontShow; onToggled: function(v) { dlg.dontShow = v } }
-        Text { text: "Não mostrar novamente"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("welcome_dont_show")); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
     }
 }

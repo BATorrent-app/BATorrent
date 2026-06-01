@@ -7,21 +7,21 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Inspecionar torrent"
+    title: (i18n.language, i18n.t("inspector_title2"))
     cardW: 600
     cardH: 560
-    okText: "Fechar"
+    okText: (i18n.language, i18n.t("release_notes_close"))
     showCancel: false
 
     readonly property var sess: typeof session !== "undefined" ? session : null
     property string filePath: ""
     property var info: ({})
     property int tab: 0
-    property string copyLabel: "Copiar hash"
+    property string copyLabel: (i18n.language, i18n.t("inspector_copy_hash"))
 
     function load(path) {
         filePath = path
-        copyLabel = "Copiar hash"
+        copyLabel = (i18n.language, i18n.t("inspector_copy_hash"))
         tab = 0
         info = sess ? sess.previewTorrent(path) : ({})
         open()
@@ -34,7 +34,7 @@ BatDialog {
         spacing: Theme.sp3
         Text {
             Layout.fillWidth: true
-            text: "Falha ao ler o arquivo: " + (dlg.info.error || "")
+            text: (i18n.language, i18n.t("inspector_read_fail")) + (dlg.info.error || "")
             color: Theme.accentText
             font.pointSize: 12
             font.family: Theme.fontSans
@@ -67,10 +67,10 @@ BatDialog {
             component MK: Text { color: Theme.t3; font.pointSize: 11.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             component MV: Text { Layout.fillWidth: true; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans; wrapMode: Text.WrapAnywhere }
 
-            MK { text: "Tamanho" }   MV { text: dlg.info.totalSize || "—" }
-            MK { text: "Arquivos" }  MV { text: dlg.info.fileCount !== undefined ? String(dlg.info.fileCount) : "—" }
-            MK { text: "Pedaços" }   MV { text: dlg.info.pieces || "—" }
-            MK { text: "Hash" }
+            MK { text: (i18n.language, i18n.t("add_torrent_col_size")) }   MV { text: dlg.info.totalSize || "—" }
+            MK { text: (i18n.language, i18n.t("detail_files")) }  MV { text: dlg.info.fileCount !== undefined ? String(dlg.info.fileCount) : "—" }
+            MK { text: (i18n.language, i18n.t("detail_pieces")) }   MV { text: dlg.info.pieces || "—" }
+            MK { text: (i18n.language, i18n.t("detail_kv_hash")) }
             TextEdit {
                 Layout.fillWidth: true
                 text: dlg.info.infoHash || ""
@@ -81,14 +81,14 @@ BatDialog {
                 font.family: Theme.fontMono
                 wrapMode: TextEdit.WrapAnywhere
             }
-            MK { visible: dlg.info.creator !== undefined; text: "Criador" }
+            MK { visible: dlg.info.creator !== undefined; text: (i18n.language, i18n.t("inspector_creator2")) }
             MV { visible: dlg.info.creator !== undefined; text: dlg.info.creator || "" }
-            MK { visible: dlg.info.created !== undefined; text: "Criado em" }
+            MK { visible: dlg.info.created !== undefined; text: (i18n.language, i18n.t("inspector_created")) }
             MV { visible: dlg.info.created !== undefined; text: dlg.info.created || "" }
-            MK { visible: dlg.info.comment !== undefined; text: "Comentário" }
+            MK { visible: dlg.info.comment !== undefined; text: (i18n.language, i18n.t("inspector_comment")) }
             MV { visible: dlg.info.comment !== undefined; text: dlg.info.comment || "" }
-            MK { visible: dlg.info.isPrivate === true; text: "Privado" }
-            MV { visible: dlg.info.isPrivate === true; text: "Sim" }
+            MK { visible: dlg.info.isPrivate === true; text: (i18n.language, i18n.t("inspector_private")) }
+            MV { visible: dlg.info.isPrivate === true; text: (i18n.language, i18n.t("inspector_yes")) }
         }
 
         // tabs: Files / Trackers
@@ -104,8 +104,8 @@ BatDialog {
                 font.family: Theme.fontSans
                 MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: dlg.tab = parent.idx }
             }
-            Tab { idx: 0; text: "Arquivos" }
-            Tab { idx: 1; text: "Trackers" }
+            Tab { idx: 0; text: (i18n.language, i18n.t("detail_files")) }
+            Tab { idx: 1; text: (i18n.language, i18n.t("set_grp_trackers")) }
             Item { Layout.fillWidth: true }
         }
         Rectangle { Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
@@ -159,7 +159,7 @@ BatDialog {
             Text {
                 anchors.centerIn: parent
                 visible: dlg.tab === 1 && (!dlg.info.trackers || dlg.info.trackers.length === 0)
-                text: "Sem trackers"
+                text: (i18n.language, i18n.t("inspector_no_trackers2"))
                 color: Theme.t4
                 font.pointSize: 11.5
                 font.family: Theme.fontSans
@@ -173,12 +173,12 @@ BatDialog {
             spacing: Theme.sp2
             BtnFlat {
                 text: dlg.copyLabel
-                onClicked: { if (dlg.sess) { dlg.sess.copyToClipboard(dlg.info.infoHash || ""); dlg.copyLabel = "Copiado!" } }
+                onClicked: { if (dlg.sess) { dlg.sess.copyToClipboard(dlg.info.infoHash || ""); dlg.copyLabel = (i18n.language, i18n.t("inspector_copied")) } }
             }
             Item { Layout.fillWidth: true }
             BtnFlat {
                 primary: true
-                text: "Adicionar agora"
+                text: (i18n.language, i18n.t("inspector_add_now"))
                 onClicked: { if (dlg.sess) dlg.sess.addTorrentFile(dlg.filePath); dlg.close() }
             }
         }

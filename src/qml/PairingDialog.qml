@@ -6,22 +6,22 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Parear celular"
+    title: (i18n.language, i18n.t("pairing_title"))
     cardW: 460
     cardH: 560
-    okText: "Fechar"
+    okText: (i18n.language, i18n.t("release_notes_close"))
     showCancel: false
 
     readonly property var api: typeof pairing !== "undefined" ? pairing : null
-    property string copyLabel: "Copiar URL"
+    property string copyLabel: (i18n.language, i18n.t("pairing_copy"))
     property var rows: api ? api.qrRows() : []
 
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.sp1
-        Eyebrow { text: "PAREAMENTO"; red: true }
+        Eyebrow { text: (i18n.language, i18n.t("pairing_eyebrow")); red: true }
         Text {
-            text: "Parear celular"
+            text: (i18n.language, i18n.t("pairing_title"))
             color: Theme.t1
             font.pointSize: 19; font.weight: Font.DemiBold; font.letterSpacing: -0.3
             font.family: Theme.fontSans
@@ -29,7 +29,7 @@ BatDialog {
         Text {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
-            text: "Abra a câmera do celular e aponte para o QR, ou digite a URL no navegador. O aparelho precisa estar na mesma rede."
+            text: (i18n.language, i18n.t("pairing_scan_hint"))
             color: Theme.t3
             font.pointSize: 12
             font.family: Theme.fontSans
@@ -41,7 +41,7 @@ BatDialog {
         visible: !dlg.api || !dlg.api.available
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
-        text: "Nenhuma interface de rede ativa encontrada. Conecte-se ao Wi-Fi ou à rede cabeada."
+        text: (i18n.language, i18n.t("pairing_no_iface"))
         color: Theme.accentText
         font.pointSize: 12
         font.family: Theme.fontSans
@@ -98,8 +98,8 @@ BatDialog {
         visible: dlg.api && dlg.api.available
         Layout.fillWidth: true
         spacing: Theme.sp2
-        BtnFlat { text: dlg.copyLabel; onClicked: { if (dlg.api) { dlg.api.copyUrl(); dlg.copyLabel = "Copiado!" } } }
+        BtnFlat { text: dlg.copyLabel; onClicked: { if (dlg.api) { dlg.api.copyUrl(); dlg.copyLabel = (i18n.language, i18n.t("inspector_copied")) } } }
         Item { Layout.fillWidth: true }
-        BtnFlat { primary: true; text: "Abrir no navegador"; onClicked: if (dlg.api) dlg.api.openBrowser() }
+        BtnFlat { primary: true; text: (i18n.language, i18n.t("pairing_open_browser")); onClicked: if (dlg.api) dlg.api.openBrowser() }
     }
 }

@@ -11,7 +11,7 @@ Window {
     minimumWidth: 620
     minimumHeight: 420
     color: Theme.bg
-    title: "Buscar torrents"
+    title: (i18n.language, i18n.t("search_heading"))
 
     readonly property var api: typeof search !== "undefined" ? search : null
     readonly property string sourceKey: {
@@ -38,7 +38,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: "Buscar torrents"; color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("search_heading")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -62,7 +62,7 @@ Window {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
                     icon: "qrc:/icons/search.svg"
-                    placeholder: "Buscar…"
+                    placeholder: (i18n.language, i18n.t("search_input"))
                     onEdited: win.runSearch()
                 }
                 TSelect {
@@ -80,7 +80,7 @@ Window {
                     model: win.api ? win.api.categories : []
                     textRole: "label"
                 }
-                BtnFlat { primary: true; text: "Buscar"; onClicked: win.runSearch() }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: win.runSearch() }
             }
         }
 
@@ -96,10 +96,10 @@ Window {
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp4
                 property bool torrentish: win.api && (win.api.mode === "torrent" || win.api.mode === "games")
-                Text { text: "NOME"; Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { text: "TAMANHO"; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { visible: parent.torrentish; text: "SEEDS"; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { visible: parent.torrentish; text: "LEECH"; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("search_col_name2")); Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("search_col_size2")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_seeds2")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_leech")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Item { Layout.preferredWidth: 36 }
             }
         }
@@ -117,8 +117,8 @@ Window {
             Text {
                 anchors.centerIn: parent
                 visible: resultsView.count === 0
-                text: win.api && win.api.searching ? "Buscando…"
-                     : (win.api && win.api.statusText.length > 0 ? win.api.statusText : "Digite algo e pressione Buscar")
+                text: win.api && win.api.searching ? (i18n.language, i18n.t("search_searching2"))
+                     : (win.api && win.api.statusText.length > 0 ? win.api.statusText : (i18n.language, i18n.t("search_prompt")))
                 color: Theme.t4
                 font.pointSize: 12.5
                 font.family: Theme.fontSans
@@ -212,10 +212,10 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
                 spacing: Theme.sp2
-                BtnFlat { visible: win.api && win.api.inStreams; text: "‹ Voltar"; onClicked: if (win.api) win.api.back() }
+                BtnFlat { visible: win.api && win.api.inStreams; text: (i18n.language, i18n.t("search_back2")); onClicked: if (win.api) win.api.back() }
                 Text { text: win.api ? win.api.statusText : ""; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
-                BtnFlat { text: "Fechar"; onClicked: win.close() }
+                BtnFlat { text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
             }
         }
     }

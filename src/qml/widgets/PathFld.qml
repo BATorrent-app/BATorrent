@@ -1,4 +1,4 @@
-// Source: bat-dialog.css .path — Row gap 8: .field (flex 1, mono) + "Procurar…" button.
+// Source: bat-dialog.css .path — Row gap 8: .field (flex 1, mono) + (i18n.language, i18n.t("pathfld_browse")) button.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
@@ -7,7 +7,7 @@ RowLayout {
     id: pth
     property alias text: fld.text
     property alias placeholder: fld.placeholder
-    property string browseLabel: "Procurar…"
+    property string browseLabel: (i18n.language, i18n.t("pathfld_browse"))
     signal browseClicked()
 
     spacing: Theme.sp2

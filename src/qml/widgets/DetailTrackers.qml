@@ -16,15 +16,15 @@ ColumnLayout {
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
-            Text { text: "URL"; Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "TIER"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "STATUS"; Layout.preferredWidth: 200; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("tracker_url_col")); Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailtrackers_tier")); Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailtrackers_status")); Layout.preferredWidth: 200; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
         }
     }
     Text {
         visible: pane.trackers.length === 0
         Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 18
-        text: "Sem trackers"; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontSans
+        text: (i18n.language, i18n.t("inspector_no_trackers2")); color: Theme.t4; font.pointSize: 11; font.family: Theme.fontSans
     }
     ListView {
         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; model: pane.trackers

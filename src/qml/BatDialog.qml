@@ -26,8 +26,8 @@ Item {
     property int cardW: 480
     property int cardH: 460
     property string footHint: ""
-    property string okText: "OK"
-    property string cancelText: "Cancelar"
+    property string okText: (i18n.language, i18n.t("btn_ok"))
+    property string cancelText: (i18n.language, i18n.t("btn_cancel"))
     property bool showFooter: true
     property bool showCancel: true
     property bool showOk: true

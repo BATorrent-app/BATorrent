@@ -6,12 +6,12 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Notas de versão"
+    title: (i18n.language, i18n.t("release_notes_title2"))
     cardW: 540
     cardH: 560
-    okText: "Fechar"
+    okText: (i18n.language, i18n.t("release_notes_close"))
     showCancel: false
-    footHint: "CHANGELOG.md · fonte de verdade"
+    footHint: (i18n.language, i18n.t("rn_changelog_src"))
 
     // .nhead
     RowLayout {
@@ -35,11 +35,11 @@ BatDialog {
             spacing: 3
             RowLayout {
                 spacing: 8
-                Eyebrow { text: "NOVIDADES"; red: true }
+                Eyebrow { text: (i18n.language, i18n.t("release_notes_eyebrow")); red: true }
                 TChip { text: "v2.6.1" }
             }
             Text {
-                text: "Confira o que mudou"
+                text: (i18n.language, i18n.t("release_notes_check"))
                 color: Theme.t1
                 font.pointSize: 19
                 font.weight: Font.DemiBold
@@ -99,12 +99,12 @@ BatDialog {
     }
 
     ClGroup {
-        tag: "Correção crítica"
+        tag: (i18n.language, i18n.t("rn_critical_fix"))
         tagColor: Theme.accentText
         items: [
             "Corrigido o <b><font color='" + Theme.t1 + "'>auto-updater</font></b> quebrado desde a v2.5.0.",
-            "Timeout de rede reduzido para 15s nas checagens de release.",
-            "Atualização manual da 2.5 → 2.6 documentada no README."
+            (i18n.language, i18n.t("rn_net_timeout")),
+            (i18n.language, i18n.t("rn_manual_update"))
         ]
     }
 
@@ -119,14 +119,14 @@ BatDialog {
     }
 
     ClGroup {
-        tag: "Plugins de busca"
-        items: [ "The Pirate Bay e Nyaa.si agora vêm embutidos como provedores de busca." ]
+        tag: (i18n.language, i18n.t("rn_search_plugins"))
+        items: [ (i18n.language, i18n.t("rn_search_plugins_body")) ]
     }
     ClGroup {
-        tag: "Tradução & Categorias"
+        tag: (i18n.language, i18n.t("rn_i18n_cats"))
         items: [
-            "683+ chaves traduzidas em 7 idiomas, migradas para JSON (<code>translator.cpp</code>).",
-            "Caminhos de salvamento temporários por categoria."
+            (i18n.language, i18n.t("rn_i18n_body")),
+            (i18n.language, i18n.t("rn_cats_body"))
         ]
     }
 }

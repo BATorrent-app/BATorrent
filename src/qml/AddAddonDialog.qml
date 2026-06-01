@@ -6,12 +6,12 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Addons"
+    title: (i18n.language, i18n.t("addon_heading"))
     cardW: 560
     cardH: 600
-    okText: "Fechar"
+    okText: (i18n.language, i18n.t("release_notes_close"))
     showCancel: false
-    footHint: errorText.length > 0 ? errorText : "Instale apenas addons em que você confia"
+    footHint: errorText.length > 0 ? errorText : (i18n.language, i18n.t("addon_trust_warn"))
 
     property string errorText: ""
     readonly property var addonsApi: typeof addons !== "undefined" ? addons : null
@@ -26,9 +26,9 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.sp1
-        Eyebrow { text: "ADDONS"; red: true }
+        Eyebrow { text: (i18n.language, i18n.t("addon_eyebrow2")); red: true }
         Text {
-            text: "Addons & Extensões"
+            text: (i18n.language, i18n.t("addon_heading2"))
             color: Theme.t1
             font.pointSize: 19
             font.weight: Font.DemiBold
@@ -39,7 +39,7 @@ BatDialog {
             Layout.fillWidth: true
             Layout.maximumWidth: 460
             wrapMode: Text.WordWrap
-            text: "Estenda o BATorrent com extensões da comunidade para catálogos, streams e busca."
+            text: (i18n.language, i18n.t("addon_intro"))
             color: Theme.t3
             font.pointSize: 12
             font.family: Theme.fontSans
@@ -50,7 +50,7 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text { text: "URL do manifesto"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("addon_manifest_url")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.sp2
@@ -61,7 +61,7 @@ BatDialog {
                 placeholder: "https://addon.exemplo.com/manifest.json"
                 onEdited: function(t) { dlg.installUrl(t) }
             }
-            BtnFlat { primary: true; text: "Instalar"; onClicked: dlg.installUrl(urlFld.text) }
+            BtnFlat { primary: true; text: (i18n.language, i18n.t("addon_install_btn")); onClicked: dlg.installUrl(urlFld.text) }
         }
     }
 
@@ -78,7 +78,7 @@ BatDialog {
         Layout.fillWidth: true
         spacing: Theme.sp2
         Text {
-            text: "INSTALADOS"
+            text: (i18n.language, i18n.t("addon_installed2"))
             color: Theme.t4
             font.pointSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
             font.family: Theme.fontSans; font.capitalization: Font.AllUppercase
@@ -95,7 +95,7 @@ BatDialog {
             border.width: 1
             Text {
                 anchors.centerIn: parent
-                text: "Nenhum addon instalado ainda."
+                text: (i18n.language, i18n.t("addon_none_installed"))
                 color: Theme.t4; font.pointSize: 11.5; font.family: Theme.fontSans
             }
         }
@@ -153,7 +153,7 @@ BatDialog {
                                 on: modelData.enabled
                                 onToggled: function(v) { if (dlg.addonsApi) dlg.addonsApi.setEnabled(index, v) }
                             }
-                            BtnFlat { sm: true; text: "Remover"; onClicked: if (dlg.addonsApi) dlg.addonsApi.removeAddon(index) }
+                            BtnFlat { sm: true; text: (i18n.language, i18n.t("addon_remove")); onClicked: if (dlg.addonsApi) dlg.addonsApi.removeAddon(index) }
                         }
                         Rectangle { visible: index < (dlg.addonsApi ? dlg.addonsApi.installed.length - 1 : 0); Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
                     }
@@ -167,7 +167,7 @@ BatDialog {
         Layout.fillWidth: true
         spacing: Theme.sp2
         Text {
-            text: "SUGERIDOS"
+            text: (i18n.language, i18n.t("addon_suggested2"))
             color: Theme.t4
             font.pointSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
             font.family: Theme.fontSans; font.capitalization: Font.AllUppercase
@@ -216,9 +216,9 @@ BatDialog {
                                 visible: modelData.installed
                                 spacing: 6
                                 IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/play.svg"; tint: Theme.up; s: 14 }
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: "Instalado"; color: Theme.up; font.pointSize: 11; font.family: Theme.fontSans }
+                                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("addon_installed_chip")); color: Theme.up; font.pointSize: 11; font.family: Theme.fontSans }
                             }
-                            BtnFlat { visible: !modelData.installed; sm: true; text: "Instalar"; onClicked: if (dlg.addonsApi) dlg.addonsApi.addAddon(modelData.url) }
+                            BtnFlat { visible: !modelData.installed; sm: true; text: (i18n.language, i18n.t("addon_install_btn")); onClicked: if (dlg.addonsApi) dlg.addonsApi.addAddon(modelData.url) }
                         }
                         Rectangle { visible: index < (dlg.addonsApi ? dlg.addonsApi.suggested.length - 1 : 0); Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
                     }
@@ -232,7 +232,7 @@ BatDialog {
         Layout.fillWidth: true
         spacing: Theme.sp2
         Text {
-            text: "AUTOMÁTICO"
+            text: (i18n.language, i18n.t("addon_automatic"))
             color: Theme.t4
             font.pointSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
             font.family: Theme.fontSans; font.capitalization: Font.AllUppercase
@@ -259,7 +259,7 @@ BatDialog {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        Text { text: "Adicionar trackers públicos automaticamente"; color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
+                        Text { text: (i18n.language, i18n.t("addon_auto_trackers2")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
                         Text { text: (dlg.addonsApi ? dlg.addonsApi.trackerCount : 0) + " trackers carregados"; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                     }
                     TToggle {
@@ -276,8 +276,8 @@ BatDialog {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        Text { text: "Habilitar busca de torrents"; color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
-                        Text { text: "Permite a janela de busca usar a API configurada"; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                        Text { text: (i18n.language, i18n.t("set_torrent_search_enable")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
+                        Text { text: (i18n.language, i18n.t("addon_search_enable_hint")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                     }
                     TToggle {
                         on: dlg.addonsApi ? dlg.addonsApi.torrentSearchEnabled : false
@@ -292,7 +292,7 @@ BatDialog {
                     Layout.topMargin: 12; Layout.bottomMargin: 12
                     mono: true
                     text: dlg.addonsApi ? dlg.addonsApi.torrentSearchUrl : ""
-                    placeholder: "URL da API de busca"
+                    placeholder: (i18n.language, i18n.t("addon_search_api_url"))
                     onEdited: function(t) { if (dlg.addonsApi) dlg.addonsApi.torrentSearchUrl = t }
                 }
             }

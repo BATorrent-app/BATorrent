@@ -10,8 +10,8 @@ ColumnLayout {
     spacing: 0
 
     function priName(p) {
-        switch (p) { case 0: return "Pular"; case 1: return "Baixa"; case 7: return "Alta" }
-        return "Normal"
+        switch (p) { case 0: return (i18n.language, i18n.t("priority_skip")); case 1: return (i18n.language, i18n.t("priority_low")); case 7: return (i18n.language, i18n.t("priority_high")) }
+        return (i18n.language, i18n.t("priority_normal"))
     }
 
     Rectangle {
@@ -21,16 +21,16 @@ ColumnLayout {
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
-            Text { text: "NOME"; Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "PROGRESSO"; Layout.preferredWidth: 128; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "TAMANHO"; Layout.preferredWidth: 74; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "PRIOR."; Layout.preferredWidth: 70; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("search_col_name2")); Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailfiles_progress")); Layout.preferredWidth: 128; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("search_col_size2")); Layout.preferredWidth: 74; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailfiles_priority")); Layout.preferredWidth: 70; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
         }
     }
     Text {
         visible: pane.files.length === 0
         Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 18
-        text: "Sem arquivos"; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontSans
+        text: (i18n.language, i18n.t("detailfiles_empty")); color: Theme.t4; font.pointSize: 11; font.family: Theme.fontSans
     }
     ListView {
         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; model: pane.files

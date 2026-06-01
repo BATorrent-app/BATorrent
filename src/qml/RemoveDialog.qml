@@ -6,10 +6,10 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Remover torrent"
+    title: (i18n.language, i18n.t("remove_title2"))
     cardW: 440
     cardH: 360
-    okText: "Remover"
+    okText: (i18n.language, i18n.t("addon_remove"))
 
     property bool deleteFiles: true
 
@@ -40,7 +40,7 @@ BatDialog {
             Layout.fillWidth: true
             spacing: 6
             Text {
-                text: "Remover este torrent?"
+                text: (i18n.language, i18n.t("remove_confirm_q"))
                 color: Theme.t1
                 font.pointSize: 16
                 font.weight: Font.DemiBold
@@ -84,13 +84,13 @@ BatDialog {
                 Layout.fillWidth: true
                 spacing: 2
                 Text {
-                    text: "Também excluir os arquivos do disco"
+                    text: (i18n.language, i18n.t("remove_also_files"))
                     color: Theme.t1
                     font.pointSize: 12.5
                     font.family: Theme.fontSans
                 }
                 Text {
-                    text: "Apaga 62.1 GB já baixados permanentemente"
+                    text: (i18n.language, i18n.t("remove_delete_note"))
                     color: Theme.t4
                     font.pointSize: 10.5
                     font.family: Theme.fontSans

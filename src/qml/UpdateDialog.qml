@@ -10,7 +10,7 @@ BatDialog {
     cardW: 460
     cardH: 240
     showOk: false
-    cancelText: qsTr("Fechar")
+    cancelText: qsTr((i18n.language, i18n.t("release_notes_close")))
 
     property string version: ""
     property string url: ""
@@ -22,20 +22,20 @@ BatDialog {
     function showAvailable(v, u, a) {
         version = v; url = u; assetName = a
         downloading = false; pct = 0
-        statusText = qsTr("Versão %1 disponível.").arg(v)
-        title = qsTr("Atualização disponível")
+        statusText = qsTr((i18n.language, i18n.t("update_available_msg"))).arg(v)
+        title = qsTr((i18n.language, i18n.t("update_available_title")))
         open()
     }
     function showNone() {
         downloading = false
-        title = qsTr("Atualizações")
-        statusText = qsTr("Você já está na versão mais recente.")
+        title = qsTr((i18n.language, i18n.t("update_title2")))
+        statusText = qsTr((i18n.language, i18n.t("update_uptodate")))
         open()
     }
     function showError(msg) {
         downloading = false
-        title = qsTr("Atualizações")
-        statusText = qsTr("Erro: ") + msg
+        title = qsTr((i18n.language, i18n.t("update_title2")))
+        statusText = qsTr((i18n.language, i18n.t("create_error_prefix"))) + msg
         open()
     }
 
@@ -43,7 +43,7 @@ BatDialog {
         target: typeof updater !== "undefined" ? updater : null
         ignoreUnknownSignals: true
         function onProgress(percent) { dlg.pct = percent }
-        function onReady() { dlg.statusText = qsTr("Baixado — reiniciando…") }
+        function onReady() { dlg.statusText = qsTr((i18n.language, i18n.t("update_restarting"))) }
         function onFailed(message) { dlg.showError(message) }
     }
 
@@ -85,14 +85,14 @@ BatDialog {
             Item { Layout.fillWidth: true }
             BtnFlat {
                 visible: dlg.version.length > 0 && !dlg.downloading
-                text: qsTr("Pular esta versão")
+                text: qsTr((i18n.language, i18n.t("update_skip")))
                 onClicked: { if (typeof updater !== "undefined" && updater) updater.skipVersion(dlg.version); dlg.close() }
             }
             BtnFlat {
                 primary: true
                 visible: dlg.version.length > 0
                 enabled: !dlg.downloading
-                text: dlg.downloading ? qsTr("Baixando… %1%").arg(dlg.pct) : qsTr("Baixar e instalar")
+                text: dlg.downloading ? qsTr((i18n.language, i18n.t("update_downloading_pct"))).arg(dlg.pct) : qsTr((i18n.language, i18n.t("update_install_btn")))
                 onClicked: {
                     if (typeof updater === "undefined" || !updater) return
                     dlg.downloading = true

@@ -11,42 +11,42 @@ Window {
     minimumWidth: 520
     minimumHeight: 480
     color: Theme.bg
-    title: "Atalhos de teclado"
+    title: (i18n.language, i18n.t("shortcuts_title2"))
 
     readonly property var groups: [
-        { title: "Aplicativo", rows: [
-            { k: "Ctrl+,", d: "Abrir Configurações" },
-            { k: "Ctrl+Q", d: "Sair do BATorrent" },
-            { k: "Ctrl+W", d: "Fechar janela" },
-            { k: "F1", d: "Mostrar esta referência de atalhos" },
-            { k: "Ctrl+Shift+L", d: "Abrir visualizador de logs" }
+        { title: (i18n.language, i18n.t("shortcuts_app")), rows: [
+            { k: "Ctrl+,", d: (i18n.language, i18n.t("sc_open_settings")) },
+            { k: "Ctrl+Q", d: (i18n.language, i18n.t("sc_quit")) },
+            { k: "Ctrl+W", d: (i18n.language, i18n.t("sc_close_window")) },
+            { k: "F1", d: (i18n.language, i18n.t("sc_show_shortcuts")) },
+            { k: "Ctrl+Shift+L", d: (i18n.language, i18n.t("sc_open_logs")) }
         ] },
-        { title: "Torrents", rows: [
-            { k: "Ctrl+O", d: "Adicionar torrent de arquivo" },
-            { k: "Ctrl+U", d: "Adicionar torrent de magnet/URL" },
-            { k: "Ctrl+N", d: "Criar novo torrent" },
-            { k: "Delete", d: "Remover torrent selecionado" },
-            { k: "Shift+Delete", d: "Remover torrent + dados" },
-            { k: "Ctrl+A", d: "Selecionar todos os torrents" },
-            { k: "Espaço", d: "Pausar/retomar selecionado" },
-            { k: "Ctrl+R", d: "Forçar verificação do selecionado" },
-            { k: "Ctrl+F", d: "Focar campo de busca/filtro" }
+        { title: (i18n.language, i18n.t("search_source_torrents")), rows: [
+            { k: "Ctrl+O", d: (i18n.language, i18n.t("sc_add_file")) },
+            { k: "Ctrl+U", d: (i18n.language, i18n.t("sc_add_magnet")) },
+            { k: "Ctrl+N", d: (i18n.language, i18n.t("sc_create")) },
+            { k: "Delete", d: (i18n.language, i18n.t("sc_remove")) },
+            { k: "Shift+Delete", d: (i18n.language, i18n.t("sc_remove_data")) },
+            { k: "Ctrl+A", d: (i18n.language, i18n.t("sc_select_all")) },
+            { k: (i18n.language, i18n.t("key_space")), d: (i18n.language, i18n.t("sc_pause_resume")) },
+            { k: "Ctrl+R", d: (i18n.language, i18n.t("sc_recheck")) },
+            { k: "Ctrl+F", d: (i18n.language, i18n.t("sc_focus_search")) }
         ] },
-        { title: "Fila", rows: [
-            { k: "Ctrl+↑", d: "Subir na fila" },
-            { k: "Ctrl+↓", d: "Descer na fila" },
-            { k: "Ctrl+Home", d: "Mover para o topo da fila" },
-            { k: "Ctrl+End", d: "Mover para o fim da fila" }
+        { title: (i18n.language, i18n.t("shortcuts_queue")), rows: [
+            { k: "Ctrl+↑", d: (i18n.language, i18n.t("sc_queue_up")) },
+            { k: "Ctrl+↓", d: (i18n.language, i18n.t("sc_queue_down")) },
+            { k: "Ctrl+Home", d: (i18n.language, i18n.t("sc_queue_top")) },
+            { k: "Ctrl+End", d: (i18n.language, i18n.t("sc_queue_bottom")) }
         ] },
-        { title: "Visualização", rows: [
-            { k: "Ctrl+1", d: "Mostrar todos" },
-            { k: "Ctrl+2", d: "Mostrar baixando" },
-            { k: "Ctrl+3", d: "Mostrar semeando" },
-            { k: "Ctrl+4", d: "Mostrar concluídos" },
-            { k: "Ctrl+5", d: "Mostrar ativos" },
-            { k: "Ctrl+6", d: "Mostrar inativos" },
-            { k: "F5", d: "Atualizar visualização" },
-            { k: "Ctrl+Shift+T", d: "Alternar tema" }
+        { title: (i18n.language, i18n.t("shortcuts_view")), rows: [
+            { k: "Ctrl+1", d: (i18n.language, i18n.t("sc_show_all")) },
+            { k: "Ctrl+2", d: (i18n.language, i18n.t("sc_show_downloading")) },
+            { k: "Ctrl+3", d: (i18n.language, i18n.t("sc_show_seeding")) },
+            { k: "Ctrl+4", d: (i18n.language, i18n.t("sc_show_completed")) },
+            { k: "Ctrl+5", d: (i18n.language, i18n.t("sc_show_active")) },
+            { k: "Ctrl+6", d: (i18n.language, i18n.t("sc_show_inactive")) },
+            { k: "F5", d: (i18n.language, i18n.t("sc_refresh_view")) },
+            { k: "Ctrl+Shift+T", d: (i18n.language, i18n.t("sc_toggle_theme")) }
         ] }
     ]
 
@@ -58,7 +58,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: "Atalhos de teclado"; color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("shortcuts_title2")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -137,7 +137,7 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
                 Item { Layout.fillWidth: true }
-                BtnFlat { primary: true; text: "Fechar"; onClicked: win.close() }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
             }
         }
     }

@@ -7,12 +7,12 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Criar torrent"
+    title: (i18n.language, i18n.t("create_title2"))
     cardW: 560
     cardH: 620
     showOk: false
-    cancelText: "Fechar"
-    footHint: "Salva um arquivo .torrent"
+    cancelText: (i18n.language, i18n.t("release_notes_close"))
+    footHint: (i18n.language, i18n.t("create_subtitle"))
 
     readonly property var sess: typeof session !== "undefined" ? session : null
     property bool busy: false
@@ -22,7 +22,7 @@ BatDialog {
 
     FolderDialog {
         id: srcFolderDlg
-        title: "Escolher pasta de origem"
+        title: (i18n.language, i18n.t("create_pick_folder"))
         onAccepted: {
             sourceFld.text = srcFolderDlg.selectedFolder.toString().replace(/^file:\/\//, "")
             if (dlg.sess && outputFld.text.length === 0)
@@ -31,7 +31,7 @@ BatDialog {
     }
     FileDialog {
         id: srcFileDlg
-        title: "Escolher arquivo de origem"
+        title: (i18n.language, i18n.t("create_pick_file"))
         onAccepted: {
             sourceFld.text = srcFileDlg.selectedFile.toString().replace(/^file:\/\//, "")
             if (dlg.sess && outputFld.text.length === 0)
@@ -40,9 +40,9 @@ BatDialog {
     }
     FileDialog {
         id: outDlg
-        title: "Salvar torrent como"
+        title: (i18n.language, i18n.t("create_save_as_dlg"))
         fileMode: FileDialog.SaveFile
-        nameFilters: ["Torrent (*.torrent)"]
+        nameFilters: [(i18n.language, i18n.t("filter_torrent_files"))]
         onAccepted: outputFld.text = outDlg.selectedFile.toString().replace(/^file:\/\//, "")
     }
 
@@ -50,9 +50,9 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.sp1
-        Eyebrow { text: "NOVO"; red: true }
+        Eyebrow { text: (i18n.language, i18n.t("create_new_badge")); red: true }
         Text {
-            text: "Criar torrent"
+            text: (i18n.language, i18n.t("create_title2"))
             color: Theme.t1
             font.pointSize: 19; font.weight: Font.DemiBold; font.letterSpacing: -0.3
             font.family: Theme.fontSans
@@ -65,10 +65,10 @@ BatDialog {
         spacing: 7
         RowLayout {
             Layout.fillWidth: true
-            Text { text: "Origem (arquivo ou pasta)"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("create_source2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Item { Layout.fillWidth: true }
-            BtnFlat { sm: true; text: "Arquivo…"; onClicked: srcFileDlg.open() }
-            BtnFlat { sm: true; text: "Pasta…"; onClicked: srcFolderDlg.open() }
+            BtnFlat { sm: true; text: (i18n.language, i18n.t("create_file_btn")); onClicked: srcFileDlg.open() }
+            BtnFlat { sm: true; text: (i18n.language, i18n.t("create_folder_btn")); onClicked: srcFolderDlg.open() }
         }
         PathFld { id: sourceFld; Layout.fillWidth: true; placeholder: "/caminho/para/origem"; onBrowseClicked: srcFolderDlg.open() }
     }
@@ -77,7 +77,7 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text { text: "Trackers (um por linha)"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("create_trackers2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         TArea {
             id: trackersArea
             Layout.fillWidth: true
@@ -93,18 +93,18 @@ BatDialog {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 7
-            Text { text: "Tamanho de peça"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("create_piece_size2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             TSelect {
                 id: pieceSel
                 Layout.fillWidth: true
-                model: ["Automático", "256 KB", "512 KB", "1 MB", "2 MB", "4 MB", "8 MB"]
+                model: [(i18n.language, i18n.t("create_auto")), "256 KB", "512 KB", "1 MB", "2 MB", "4 MB", "8 MB"]
                 currentIndex: 0
             }
         }
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 7
-            Text { text: "Comentário (opcional)"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("create_comment2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             TFld { id: commentFld; Layout.fillWidth: true; placeholder: "ex: build noturna" }
         }
     }
@@ -113,7 +113,7 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text { text: "Salvar como"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("create_save_as")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         PathFld { id: outputFld; Layout.fillWidth: true; placeholder: "/caminho/saida.torrent"; onBrowseClicked: outDlg.open() }
     }
 
@@ -138,8 +138,8 @@ BatDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    Text { text: "Torrent privado"; color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
-                    Text { text: "Desativa DHT, PEX e LSD — para trackers privados"; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                    Text { text: (i18n.language, i18n.t("create_private2")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
+                    Text { text: (i18n.language, i18n.t("create_private_hint")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                 }
                 TToggle { id: privToggle; on: false }
             }
@@ -151,8 +151,8 @@ BatDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    Text { text: "Iniciar seeding após criar"; color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
-                    Text { text: "Adiciona o torrent e começa a semear"; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                    Text { text: (i18n.language, i18n.t("create_start_seed")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
+                    Text { text: (i18n.language, i18n.t("create_start_seed_hint")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                 }
                 TToggle { id: seedToggle; on: true }
             }
@@ -167,14 +167,14 @@ BatDialog {
             id: statusTxt
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
-            text: dlg.busy ? "Criando torrent…" : ""
-            color: text.indexOf("Erro") === 0 ? Theme.accentText : Theme.t3
+            text: dlg.busy ? (i18n.language, i18n.t("create_creating")) : ""
+            color: text.indexOf((i18n.language, i18n.t("dlg_error"))) === 0 ? Theme.accentText : Theme.t3
             font.pointSize: 11
             font.family: Theme.fontSans
         }
         BtnFlat {
             primary: true
-            text: dlg.busy ? "Criando…" : "Criar"
+            text: dlg.busy ? (i18n.language, i18n.t("create_creating_btn")) : (i18n.language, i18n.t("create_btn2"))
             enabled: !dlg.busy && sourceFld.text.length > 0 && outputFld.text.length > 0
             onClicked: dlg.doCreate()
         }
@@ -183,7 +183,7 @@ BatDialog {
     function doCreate() {
         if (!dlg.sess) return
         dlg.busy = true
-        statusTxt.text = "Criando torrent…"
+        statusTxt.text = (i18n.language, i18n.t("create_creating"))
         // synchronous in the bridge; defer one tick so the UI shows the busy state
         Qt.callLater(function() {
             var err = dlg.sess.createTorrent({
@@ -197,7 +197,7 @@ BatDialog {
             })
             dlg.busy = false
             if (err && err.length > 0) {
-                statusTxt.text = "Erro: " + err
+                statusTxt.text = (i18n.language, i18n.t("create_error_prefix")) + err
             } else {
                 statusTxt.text = ""
                 dlg.close()

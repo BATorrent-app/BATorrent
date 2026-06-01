@@ -16,18 +16,18 @@ ColumnLayout {
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
-            Text { text: "PAÍS"; Layout.preferredWidth: 40; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "ENDEREÇO IP"; Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "CLIENTE"; Layout.preferredWidth: 150; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "PROGR."; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "DOWN"; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-            Text { text: "UP"; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailpeers_country")); Layout.preferredWidth: 40; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailpeers_ip")); Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailpeers_client")); Layout.preferredWidth: 150; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailpeers_progr")); Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailpeers_down")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailpeers_up")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
         }
     }
     Text {
         visible: pane.peers.length === 0
         Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 18
-        text: "Nenhum peer conectado"; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontSans
+        text: (i18n.language, i18n.t("detailpeers_empty")); color: Theme.t4; font.pointSize: 11; font.family: Theme.fontSans
     }
     ListView {
         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; model: pane.peers

@@ -10,7 +10,7 @@ BatDialog {
     id: dlg
     cardW: 440
     cardH: 220
-    okText: "OK"
+    okText: (i18n.language, i18n.t("btn_ok"))
 
     property string promptLabel: ""
     property string promptPlaceholder: ""

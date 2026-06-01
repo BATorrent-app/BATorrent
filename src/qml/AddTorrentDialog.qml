@@ -8,10 +8,10 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    title: "Adicionar torrent"
+    title: (i18n.language, i18n.t("addt_title"))
     cardW: 580
     cardH: 632
-    okText: "Adicionar"
+    okText: (i18n.language, i18n.t("add_torrent_add_btn"))
     footHint: dlg.selectedCount + " de " + dlg.fileCount + " arquivos · " + dlg.totalSize
 
     property string torrentPath: ""
@@ -102,7 +102,7 @@ BatDialog {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 2
-            Eyebrow { text: "CONFIRMAR DOWNLOAD"; red: true }
+            Eyebrow { text: (i18n.language, i18n.t("addt_confirm")); red: true }
             Text {
                 Layout.fillWidth: true
                 text: dlg.torrentName
@@ -123,7 +123,7 @@ BatDialog {
         RowLayout {
             spacing: 10
             TChk { id: selAll; on: true; onToggled: function(v) { for (var i=0;i<fileModel.count;i++) fileModel.setProperty(i,"on",v); dlg.recount() } }
-            Text { text: "Selecionar arquivos"; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("addt_select_files")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
         }
         Item { Layout.fillWidth: true }
         Text {
@@ -167,7 +167,7 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text { text: "Salvar em"; color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("detail_kv_save_to")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         PathFld { id: pathFld; Layout.fillWidth: true }
     }
 
@@ -175,7 +175,7 @@ BatDialog {
     RowLayout {
         Layout.fillWidth: true
         spacing: 12
-        Text { text: "Iniciar imediatamente"; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("addt_start_now")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
         Item { Layout.fillWidth: true }
         TToggle { on: true }
     }
