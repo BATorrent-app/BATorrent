@@ -17,6 +17,10 @@ Window {
 
     property int sec: 0
 
+    // active custom-theme profile map; re-read on any profile data change
+    readonly property var ap: (typeof themeBridge !== "undefined" && themeBridge.customProfiles.length > 0)
+                              ? themeBridge.customProfiles[themeBridge.activeProfile] : ({})
+
     // Instant-apply settings: Esc / ⌘W just close (nothing to confirm).
     Shortcut { sequences: [StandardKey.Cancel]; onActivated: win.close() }
     Shortcut { sequences: [StandardKey.Close];  onActivated: win.close() }
@@ -60,11 +64,15 @@ Window {
             { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch"], value: 0 },
             { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
             { type: "anime", label: (i18n.language, i18n.t("set_anime2")) },
-            { type: "color",   key: "customPrimary",   label: (i18n.language, i18n.t("set_custom_primary")),   customOnly: true },
-            { type: "color",   key: "customSecondary", label: (i18n.language, i18n.t("set_custom_secondary")), customOnly: true },
-            { type: "color",   key: "customTertiary",  label: (i18n.language, i18n.t("set_custom_tertiary")),  customOnly: true },
-            { type: "bgimage", key: "bgImagePath",     label: (i18n.language, i18n.t("set_custom_bgimage")),   customOnly: true },
-            { type: "slider",  key: "bgImageOpacity",  label: (i18n.language, i18n.t("set_custom_opacity")),   customOnly: true },
+            { type: "profiles", label: (i18n.language, i18n.t("set_custom_profile")),   customOnly: true },
+            { type: "color",  role: "bg",        label: (i18n.language, i18n.t("set_custom_bg")),        customOnly: true },
+            { type: "color",  role: "panel",     label: (i18n.language, i18n.t("set_custom_panel")),     customOnly: true },
+            { type: "color",  role: "text",      label: (i18n.language, i18n.t("set_custom_text")),      customOnly: true },
+            { type: "color",  role: "primary",   label: (i18n.language, i18n.t("set_custom_primary")),   customOnly: true },
+            { type: "color",  role: "secondary", label: (i18n.language, i18n.t("set_custom_secondary")), customOnly: true },
+            { type: "color",  role: "tertiary",  label: (i18n.language, i18n.t("set_custom_tertiary")),  customOnly: true },
+            { type: "bgimage", label: (i18n.language, i18n.t("set_custom_bgimage")),  customOnly: true },
+            { type: "slider",  label: (i18n.language, i18n.t("set_custom_opacity")),  customOnly: true },
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
             { type: "toggle", label: (i18n.language, i18n.t("settings_start_tray")) },
             { type: "toggle", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
@@ -505,6 +513,7 @@ Window {
                     case "theme": return cTheme
                     case "button": return cButton
                     case "iface": return cSelect
+                    case "profiles": return cProfiles
                     case "color": return cColor
                     case "bgimage": return cBgImage
                     case "slider": return cSlider
@@ -542,28 +551,58 @@ Window {
                 onActivated: function(i) { Theme.setName(names[i]) }
             }
         }
-        // ---- custom-theme controls (write straight to themeBridge) ----
+        // ---- custom-theme controls (operate on the active profile) ----
+        Component {
+            id: cProfiles
+            RowLayout {
+                spacing: Theme.sp2
+                TSelect {
+                    implicitWidth: 150
+                    model: {
+                        var names = []
+                        if (typeof themeBridge !== "undefined")
+                            for (var i = 0; i < themeBridge.customProfiles.length; i++)
+                                names.push(themeBridge.customProfiles[i].name)
+                        return names
+                    }
+                    currentIndex: themeBridge ? themeBridge.activeProfile : 0
+                    onActivated: function(i) { if (themeBridge) themeBridge.activeProfile = i }
+                }
+                BtnFlat { text: "+"; sm: true; onClicked: if (themeBridge) themeBridge.activeProfile = themeBridge.addProfile() }
+                BtnFlat {
+                    text: (i18n.language, i18n.t("set_custom_rename")); sm: true
+                    onClicked: { renameDlg.idx = themeBridge.activeProfile; renameField.text = themeBridge.customProfiles[themeBridge.activeProfile].name; renameDlg.open() }
+                }
+                BtnFlat {
+                    text: (i18n.language, i18n.t("set_custom_clear")); sm: true
+                    enabled: themeBridge && themeBridge.customProfiles.length > 1
+                    onClicked: if (themeBridge) themeBridge.removeProfile(themeBridge.activeProfile)
+                }
+            }
+        }
         Component {
             id: cColor
             RowLayout {
                 spacing: Theme.sp2
+                readonly property string cur: (win.ap && win.ap[field.role]) ? win.ap[field.role] : "#000000"
                 Rectangle {
                     implicitWidth: 26; implicitHeight: 26; radius: 6
-                    color: themeBridge ? themeBridge[field.key] : "#000000"
+                    color: parent.cur
                     border.color: Theme.hair; border.width: 1
                 }
                 TFld {
                     implicitWidth: 110; implicitHeight: 30; mono: true
-                    text: themeBridge ? themeBridge[field.key] : ""
+                    text: parent.cur
                     placeholder: "#rrggbb"
                     onEdited: function(t) {
                         var v = t.charAt(0) === "#" ? t : "#" + t
-                        if (/^#[0-9a-fA-F]{6}$/.test(v)) themeBridge[field.key] = v.toLowerCase()
+                        if (/^#[0-9a-fA-F]{6}$/.test(v) && themeBridge)
+                            themeBridge.setProfileColor(themeBridge.activeProfile, field.role, v.toLowerCase())
                     }
                 }
                 BtnFlat {
                     text: "…"; sm: true
-                    onClicked: { colorDlg.targetKey = field.key; colorDlg.selectedColor = themeBridge[field.key]; colorDlg.open() }
+                    onClicked: { colorDlg.targetRole = field.role; colorDlg.selectedColor = parent.cur; colorDlg.open() }
                 }
             }
         }
@@ -573,12 +612,12 @@ Window {
                 spacing: Theme.sp2
                 TFld {
                     implicitWidth: 210; implicitHeight: 30; mono: true
-                    text: themeBridge ? themeBridge.bgImagePath : ""
+                    text: (win.ap && win.ap.image) ? win.ap.image : ""
                     placeholder: (i18n.language, i18n.t("set_custom_bgimage"))
                     readonly: true
                 }
                 BtnFlat { text: (i18n.language, i18n.t("settings_browse")); sm: true; onClicked: bgImageDlg.open() }
-                BtnFlat { text: (i18n.language, i18n.t("set_custom_clear")); sm: true; onClicked: themeBridge.bgImagePath = "" }
+                BtnFlat { text: (i18n.language, i18n.t("set_custom_clear")); sm: true; onClicked: if (themeBridge) themeBridge.setProfileImage(themeBridge.activeProfile, "") }
             }
         }
         Component {
@@ -589,10 +628,9 @@ Window {
                     id: opacitySlider
                     implicitWidth: 150
                     from: 0; to: 100; stepSize: 1
-                    onMoved: if (themeBridge) themeBridge.bgImageOpacity = Math.round(value)
-                    // Binding (not a plain `value:`) so dragging doesn't destroy
-                    // the link back to the bridge if opacity changes elsewhere.
-                    Binding { target: opacitySlider; property: "value"; value: themeBridge ? themeBridge.bgImageOpacity : 55 }
+                    onMoved: if (themeBridge) themeBridge.setProfileOpacity(themeBridge.activeProfile, Math.round(value))
+                    // Binding (not a plain `value:`) so dragging doesn't break the link.
+                    Binding { target: opacitySlider; property: "value"; value: (win.ap && win.ap.opacity !== undefined) ? win.ap.opacity : 55 }
                     background: Rectangle {
                         x: parent.leftPadding; y: parent.topPadding + parent.availableHeight / 2 - height / 2
                         width: parent.availableWidth; height: 4; radius: 2; color: Theme.track
@@ -606,7 +644,7 @@ Window {
                     }
                 }
                 Text {
-                    text: (themeBridge ? themeBridge.bgImageOpacity : 55) + "%"
+                    text: ((win.ap && win.ap.opacity !== undefined) ? win.ap.opacity : 55) + "%"
                     color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono
                     Layout.preferredWidth: 36
                 }
@@ -701,11 +739,12 @@ Window {
     // custom-theme dialogs
     ColorDialog {
         id: colorDlg
-        property string targetKey: ""
+        property string targetRole: ""
         // QML color.toString() is "#AARRGGBB" (alpha first); the last 6 hex
         // digits are RRGGBB — slice(0,7) would wrongly keep '#'+alpha+RR.
-        onAccepted: if (typeof themeBridge !== "undefined" && targetKey !== "")
-                        themeBridge[targetKey] = "#" + selectedColor.toString().slice(-6)
+        onAccepted: if (typeof themeBridge !== "undefined" && targetRole !== "")
+                        themeBridge.setProfileColor(themeBridge.activeProfile, targetRole,
+                                                    "#" + selectedColor.toString().slice(-6))
     }
     FileDialog {
         id: bgImageDlg
@@ -715,7 +754,21 @@ Window {
         // encoded URL); Theme.bgImageSource re-encodes it for Image.source.
         onAccepted: if (typeof themeBridge !== "undefined") {
             var u = selectedFile.toString().replace(/^file:\/\/\/?/, Qt.platform.os === "windows" ? "" : "/")
-            themeBridge.bgImagePath = decodeURIComponent(u)
+            themeBridge.setProfileImage(themeBridge.activeProfile, decodeURIComponent(u))
+        }
+    }
+    // rename the active profile
+    Dialog {
+        id: renameDlg
+        property int idx: 0
+        anchors.centerIn: parent
+        modal: true
+        title: (i18n.language, i18n.t("set_custom_rename"))
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onAccepted: if (themeBridge && renameField.text.length > 0) themeBridge.renameProfile(idx, renameField.text)
+        contentItem: TFld {
+            id: renameField
+            implicitWidth: 240; implicitHeight: 32
         }
     }
 }

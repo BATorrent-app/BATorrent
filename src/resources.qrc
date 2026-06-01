@@ -76,6 +76,7 @@
 <file>../src/qml/widgets/DetailFiles.qml</file>
 <file>../src/qml/widgets/DetailTrackers.qml</file>
 <file>../src/qml/widgets/DetailPieces.qml</file>
+<file>../src/qml/widgets/ToastHost.qml</file>
 <file>fonts/Inter-Regular.ttf</file>
 <file>fonts/Inter-Medium.ttf</file>
 <file>fonts/Inter-SemiBold.ttf</file>

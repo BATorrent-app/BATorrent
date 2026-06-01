@@ -268,7 +268,7 @@ Window {
         CtxItem { text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain")); onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
         Sep {}
-        CtxItem { text: (i18n.language, i18n.t("action_remove")); onTriggered: removeDlg.open() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_remove")); onTriggered: removeDlg.open() }
     }
 
     Shortcut { sequence: StandardKey.SelectAll; onActivated: win.selectAll() }
@@ -360,11 +360,14 @@ Window {
         }
     }
 
-    // Background events → native OS notification via the tray icon.
+    // Background events → in-app toast (when the window is up) AND the native
+    // OS notification (so it's seen when minimized/in the tray). Both, like the
+    // legacy app.
     Connections {
         target: typeof notifications !== "undefined" ? notifications : null
         ignoreUnknownSignals: true
         function onNotify(title, body, level) {
+            toastHost.show(title, body, level)
             if (trayIcon.supportsMessages)
                 trayIcon.showMessage(title, body,
                     level === 2 ? Platform.SystemTrayIcon.Critical
@@ -372,6 +375,9 @@ Window {
                     : Platform.SystemTrayIcon.Information, 5000)
         }
     }
+
+    // in-app toast stack (overlays the whole window content)
+    ToastHost { id: toastHost }
 
     TrayPopupWindow {
         id: trayPopup

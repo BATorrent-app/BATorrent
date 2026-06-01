@@ -28,6 +28,9 @@
 #include <QStyleHints>
 #include <QPainter>
 #include <QSvgRenderer>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
@@ -1228,11 +1231,10 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
     QSettings s;
     m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("dark")).toString();
     m_anime = s.value(QStringLiteral("qmlAnime"), false).toBool();
-    m_customPrimary   = s.value(QStringLiteral("qmlCustomPrimary"),   QStringLiteral("#e5332b")).toString();
-    m_customSecondary = s.value(QStringLiteral("qmlCustomSecondary"), QStringLiteral("#d99a2b")).toString();
-    m_customTertiary  = s.value(QStringLiteral("qmlCustomTertiary"),  QStringLiteral("#3fb950")).toString();
-    m_bgImagePath     = s.value(QStringLiteral("qmlBgImagePath"),     QString()).toString();
-    m_bgImageOpacity  = s.value(QStringLiteral("qmlBgImageOpacity"),  55).toInt();
+    loadProfiles();
+    m_activeProfile = s.value(QStringLiteral("qmlActiveProfile"), 0).toInt();
+    if (m_activeProfile < 0 || m_activeProfile >= m_profiles.size())
+        m_activeProfile = 0;
 
     if (auto *hints = QGuiApplication::styleHints()) {
         m_osLight = (hints->colorScheme() == Qt::ColorScheme::Light);
@@ -1264,50 +1266,148 @@ void QmlThemeBridge::setAnime(bool on)
     emit changed();
 }
 
-QString QmlThemeBridge::customPrimary() const { return m_customPrimary; }
-void QmlThemeBridge::setCustomPrimary(const QString &hex)
+// ---- custom profiles ----
+
+QVariantMap QmlThemeBridge::defaultProfile(const QString &name)
 {
-    if (hex == m_customPrimary) return;
-    m_customPrimary = hex;
-    QSettings().setValue(QStringLiteral("qmlCustomPrimary"), hex);
+    QVariantMap p;
+    p["name"]      = name;
+    p["bg"]        = QStringLiteral("#0e0e10");
+    p["panel"]     = QStringLiteral("#141416");
+    p["text"]      = QStringLiteral("#f3f3f4");
+    p["primary"]   = QStringLiteral("#e5332b");
+    p["secondary"] = QStringLiteral("#d99a2b");
+    p["tertiary"]  = QStringLiteral("#3fb950");
+    p["image"]     = QString();
+    p["opacity"]   = 55;
+    return p;
+}
+
+void QmlThemeBridge::loadProfiles()
+{
+    QSettings s;
+    const QByteArray json = s.value(QStringLiteral("qmlCustomProfiles")).toByteArray();
+    if (!json.isEmpty()) {
+        const auto doc = QJsonDocument::fromJson(json);
+        if (doc.isArray()) {
+            m_profiles.clear();
+            for (const auto &v : doc.array()) {
+                // backfill any missing keys from the default so a partial/old
+                // profile never collapses the palette to empty colors
+                QVariantMap p = defaultProfile(QString());
+                const QVariantMap stored = v.toObject().toVariantMap();
+                for (auto it = stored.cbegin(); it != stored.cend(); ++it)
+                    p[it.key()] = it.value();
+                m_profiles << p;
+            }
+        }
+    }
+    if (m_profiles.isEmpty())
+        m_profiles << defaultProfile(QStringLiteral("Custom 1"));
+}
+
+void QmlThemeBridge::saveProfiles()
+{
+    QJsonArray arr;
+    for (const auto &v : m_profiles)
+        arr.append(QJsonObject::fromVariantMap(v.toMap()));
+    QSettings().setValue(QStringLiteral("qmlCustomProfiles"),
+                         QJsonDocument(arr).toJson(QJsonDocument::Compact));
+}
+
+QVariantList QmlThemeBridge::customProfiles() const { return m_profiles; }
+
+QVariantMap QmlThemeBridge::activeMap() const
+{
+    if (m_activeProfile >= 0 && m_activeProfile < m_profiles.size())
+        return m_profiles.at(m_activeProfile).toMap();
+    return defaultProfile(QStringLiteral("Custom 1"));
+}
+
+int QmlThemeBridge::activeProfile() const { return m_activeProfile; }
+void QmlThemeBridge::setActiveProfile(int i)
+{
+    if (i == m_activeProfile || i < 0 || i >= m_profiles.size()) return;
+    m_activeProfile = i;
+    QSettings().setValue(QStringLiteral("qmlActiveProfile"), i);
     emit changed();
 }
 
-QString QmlThemeBridge::customSecondary() const { return m_customSecondary; }
-void QmlThemeBridge::setCustomSecondary(const QString &hex)
+int QmlThemeBridge::addProfile()
 {
-    if (hex == m_customSecondary) return;
-    m_customSecondary = hex;
-    QSettings().setValue(QStringLiteral("qmlCustomSecondary"), hex);
+    m_profiles << defaultProfile(QStringLiteral("Custom %1").arg(m_profiles.size() + 1));
+    saveProfiles();
+    emit profilesChanged();
+    return m_profiles.size() - 1;
+}
+
+void QmlThemeBridge::removeProfile(int i)
+{
+    if (i < 0 || i >= m_profiles.size() || m_profiles.size() <= 1) return;
+    m_profiles.removeAt(i);
+    if (m_activeProfile >= m_profiles.size())
+        m_activeProfile = m_profiles.size() - 1;
+    QSettings().setValue(QStringLiteral("qmlActiveProfile"), m_activeProfile);
+    saveProfiles();
+    emit profilesChanged();
     emit changed();
 }
 
-QString QmlThemeBridge::customTertiary() const { return m_customTertiary; }
-void QmlThemeBridge::setCustomTertiary(const QString &hex)
+void QmlThemeBridge::renameProfile(int i, const QString &name)
 {
-    if (hex == m_customTertiary) return;
-    m_customTertiary = hex;
-    QSettings().setValue(QStringLiteral("qmlCustomTertiary"), hex);
-    emit changed();
+    if (i < 0 || i >= m_profiles.size()) return;
+    QVariantMap p = m_profiles.at(i).toMap();
+    if (p.value("name").toString() == name) return;
+    p["name"] = name;
+    m_profiles[i] = p;
+    saveProfiles();
+    emit profilesChanged();
 }
 
-QString QmlThemeBridge::bgImagePath() const { return m_bgImagePath; }
-void QmlThemeBridge::setBgImagePath(const QString &path)
+void QmlThemeBridge::setProfileColor(int i, const QString &role, const QString &hex)
 {
-    if (path == m_bgImagePath) return;
-    m_bgImagePath = path;
-    QSettings().setValue(QStringLiteral("qmlBgImagePath"), path);
-    emit changed();
+    if (i < 0 || i >= m_profiles.size()) return;
+    QVariantMap p = m_profiles.at(i).toMap();
+    if (p.value(role).toString() == hex) return;
+    p[role] = hex;
+    m_profiles[i] = p;
+    saveProfiles();
+    emit profilesChanged();
+    if (i == m_activeProfile) emit changed();
 }
 
-int QmlThemeBridge::bgImageOpacity() const { return m_bgImageOpacity; }
-void QmlThemeBridge::setBgImageOpacity(int pct)
+void QmlThemeBridge::setProfileImage(int i, const QString &path)
 {
-    if (pct == m_bgImageOpacity) return;
-    m_bgImageOpacity = pct;
-    QSettings().setValue(QStringLiteral("qmlBgImageOpacity"), pct);
-    emit changed();
+    if (i < 0 || i >= m_profiles.size()) return;
+    QVariantMap p = m_profiles.at(i).toMap();
+    if (p.value("image").toString() == path) return;
+    p["image"] = path;
+    m_profiles[i] = p;
+    saveProfiles();
+    emit profilesChanged();
+    if (i == m_activeProfile) emit changed();
 }
+
+void QmlThemeBridge::setProfileOpacity(int i, int pct)
+{
+    if (i < 0 || i >= m_profiles.size()) return;
+    QVariantMap p = m_profiles.at(i).toMap();
+    if (p.value("opacity").toInt() == pct) return;
+    p["opacity"] = pct;
+    m_profiles[i] = p;
+    saveProfiles();
+    emit profilesChanged();
+    if (i == m_activeProfile) emit changed();
+}
+
+QString QmlThemeBridge::cBg()        const { return activeMap().value("bg").toString(); }
+QString QmlThemeBridge::cPanel()     const { return activeMap().value("panel").toString(); }
+QString QmlThemeBridge::cText()      const { return activeMap().value("text").toString(); }
+QString QmlThemeBridge::cPrimary()   const { return activeMap().value("primary").toString(); }
+QString QmlThemeBridge::cSecondary() const { return activeMap().value("secondary").toString(); }
+QString QmlThemeBridge::cTertiary()  const { return activeMap().value("tertiary").toString(); }
+QString QmlThemeBridge::cBgImage()   const { return activeMap().value("image").toString(); }
+int     QmlThemeBridge::cBgOpacity() const { return activeMap().value("opacity").toInt(); }
 
 bool QmlThemeBridge::osLight() const { return m_osLight; }
 
@@ -1984,18 +2084,17 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
 
 void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &)
 {
-    emit notify(QStringLiteral("Download concluído"), name, 0);
+    emit notify(tr_("dlg_download_complete"), name, 3);   // 3 = success (green)
 }
 
 void QmlNotificationBridge::onTorrentError(const QString &message)
 {
-    emit notify(QStringLiteral("Erro no torrent"), message, 2);
+    emit notify(tr_("dlg_error"), message, 2);
 }
 
 void QmlNotificationBridge::onKillSwitchTriggered()
 {
-    emit notify(QStringLiteral("Kill switch ativado"),
-                QStringLiteral("A VPN caiu — os torrents foram pausados."), 1);
+    emit notify(tr_("killswitch_title"), tr_("killswitch_triggered"), 1);
 }
 
 void QmlNotificationBridge::onRssAutoDownloaded(const QString &feedName, const QString &itemTitle)

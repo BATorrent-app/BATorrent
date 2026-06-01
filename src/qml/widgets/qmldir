@@ -14,3 +14,4 @@ DetailPeers 1.0 DetailPeers.qml
 DetailFiles 1.0 DetailFiles.qml
 DetailTrackers 1.0 DetailTrackers.qml
 DetailPieces 1.0 DetailPieces.qml
+ToastHost 1.0 ToastHost.qml
