@@ -20,6 +20,7 @@
 #include "app/translator.h"
 #include "gui/qmlposterbridge.h"
 #include "app/rssmanager.h"
+#include "app/notifier.h"
 #include "torrent/sessionmanager.h"
 #include "app/secretstore.h"
 #include "app/logger.h"
@@ -182,6 +183,17 @@ int main(int argc, char *argv[])
                          notificationBridge, &QmlNotificationBridge::onKillSwitchTriggered);
         QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
                          notificationBridge, &QmlNotificationBridge::onRssAutoDownloaded);
+        // Telegram webhook notifications (same event surfaces as the toasts above).
+        auto *telegram = new TelegramNotifier(&app);
+        QObject::connect(&session, &SessionManager::torrentFinished,
+                         telegram, &TelegramNotifier::onTorrentFinished);
+        QObject::connect(&session, &SessionManager::killSwitchTriggered,
+                         telegram, &TelegramNotifier::onKillSwitchTriggered);
+        QObject::connect(&session, &SessionManager::torrentError,
+                         telegram, &TelegramNotifier::onTorrentError);
+        QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
+                         telegram, &TelegramNotifier::onRssAutoDownloaded);
+        settingsBridge->setTelegramNotifier(telegram);
         auto *discordBridge = new DiscordRpcBridge(&session, &app);
         QObject::connect(&session, &SessionManager::torrentsUpdated,
                          discordBridge, &DiscordRpcBridge::refresh);

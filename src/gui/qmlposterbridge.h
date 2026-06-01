@@ -22,6 +22,7 @@
 class SessionManager;
 class MetadataResolver;
 class GeoIpResolver;
+class TelegramNotifier;
 
 class QmlPosterModel : public QAbstractListModel
 {
@@ -545,10 +546,20 @@ public:
     explicit QmlSettingsBridge(SessionManager *session, QObject *parent = nullptr);
     Q_INVOKABLE QVariant get(const QString &key) const;
     Q_INVOKABLE void set(const QString &key, const QVariant &v);
+    // Register BATorrent as the default .torrent / magnet handler. Returns success.
+    Q_INVOKABLE bool setAsDefaultApp();
+    // Post a test message to the configured Telegram chat; result via telegramTestResult.
+    Q_INVOKABLE void testTelegram();
+    // Windows-only: add the save folder to Windows Defender's exclusion list (UAC prompt).
+    Q_INVOKABLE bool excludeFromDefender();
+    void setTelegramNotifier(TelegramNotifier *n) { m_telegram = n; }
 signals:
     void changed();
+    void telegramTestResult(bool ok, const QString &message);
 private:
+    static int telegramEventBit(const QString &key);   // toggle key → Events bit (0 if none)
     SessionManager *m_session;
+    TelegramNotifier *m_telegram = nullptr;
 };
 
 // Exposes the Translator to QML with a reactive `language` property so every

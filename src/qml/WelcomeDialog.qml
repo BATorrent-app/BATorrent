@@ -14,6 +14,8 @@ BatDialog {
 
     property bool dontShow: false
 
+    signal actionRequested(string action)   // open / magnet / search / rss
+
     // .hero (centralizado)
     ColumnLayout {
         Layout.fillWidth: true
@@ -59,10 +61,10 @@ BatDialog {
 
         Repeater {
             model: [
-                { icon: "qrc:/icons/open.svg",     t: (i18n.language, i18n.t("welcome_card_open_title")),  d: (i18n.language, i18n.t("welcome_card_open_desc")) },
-                { icon: "qrc:/icons/magnet.svg",   t: (i18n.language, i18n.t("empty_paste_btn")),    d: (i18n.language, i18n.t("welcome_card_magnet_desc")) },
-                { icon: "qrc:/icons/search.svg",   t: (i18n.language, i18n.t("empty_search_btn")),          d: (i18n.language, i18n.t("welcome_card_search_desc")) },
-                { icon: "qrc:/icons/rss.svg",      t: (i18n.language, i18n.t("welcome_card_rss_title")),   d: (i18n.language, i18n.t("welcome_card_rss_desc")) }
+                { act: "open",   icon: "qrc:/icons/open.svg",     t: (i18n.language, i18n.t("welcome_card_open_title")),  d: (i18n.language, i18n.t("welcome_card_open_desc")) },
+                { act: "magnet", icon: "qrc:/icons/magnet.svg",   t: (i18n.language, i18n.t("empty_paste_btn")),    d: (i18n.language, i18n.t("welcome_card_magnet_desc")) },
+                { act: "search", icon: "qrc:/icons/search.svg",   t: (i18n.language, i18n.t("empty_search_btn")),          d: (i18n.language, i18n.t("welcome_card_search_desc")) },
+                { act: "rss",    icon: "qrc:/icons/rss.svg",      t: (i18n.language, i18n.t("welcome_card_rss_title")),   d: (i18n.language, i18n.t("welcome_card_rss_desc")) }
             ]
             delegate: Rectangle {
                 Layout.fillWidth: true
@@ -92,7 +94,13 @@ BatDialog {
                         Text { text: modelData.d; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
                     }
                 }
-                MouseArea { id: cardMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
+                MouseArea {
+                    id: cardMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: { dlg.actionRequested(modelData.act); dlg.close() }
+                }
             }
         }
     }

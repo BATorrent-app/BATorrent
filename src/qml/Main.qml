@@ -62,7 +62,9 @@ Window {
 
     // ----- state→color helpers (keyed by real stateKey) -----
     function fillFor(k) {
-        if (k === "seeding" || k === "finished" || k === "completed") return Theme.amber
+        // 100% (seeding/finished/completed): stay red, but a deeper shade than the
+        // active-download accent so it still reads as "done".
+        if (k === "seeding" || k === "finished" || k === "completed") return Theme.accentDark
         if (k === "paused" || k === "queued") return Theme.pausedFill
         return Theme.accent
     }
@@ -2136,6 +2138,12 @@ Window {
         id: welcomeDlg
         onAccepted: if (dontShow && typeof settings !== "undefined") settings.set("welcomeShown", true)
         onRejected: if (dontShow && typeof settings !== "undefined") settings.set("welcomeShown", true)
+        onActionRequested: function(action) {
+            if (action === "open") openFileDlg.open()
+            else if (action === "magnet") magnetDlg.open()
+            else if (action === "search") searchWin.show()
+            else if (action === "rss") rssWin.show()
+        }
     }
     ReleaseNotesDialog  { id: releaseNotesDlg }
     AboutDialog         { id: aboutDlg }

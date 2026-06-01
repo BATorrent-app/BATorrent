@@ -78,7 +78,7 @@ Window {
             { type: "toggle", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
             { type: "toggle", label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
             { type: "toggle", key: "showSplash", label: (i18n.language, i18n.t("settings_show_splash")), on: true },
-            { type: "button", label: (i18n.language, i18n.t("set_default_app")), btn: (i18n.language, i18n.t("settings_set_default")) }
+            { type: "button", action: "default", label: (i18n.language, i18n.t("set_default_app")), btn: (i18n.language, i18n.t("settings_set_default")) }
         ],
         // 1 Velocidade
         [
@@ -146,20 +146,20 @@ Window {
             { type: "toggle", label: (i18n.language, i18n.t("settings_webui_remote")) },
             { type: "warning", text: (i18n.language, i18n.t("settings_webui_warning_msg")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_mobile")) },
-            { type: "button", label: (i18n.language, i18n.t("pairing_title")), btn: (i18n.language, i18n.t("set_pair_phone")), note: (i18n.language, i18n.t("set_pair_note")) }
+            { type: "button", action: "pair", label: (i18n.language, i18n.t("pairing_title")), btn: (i18n.language, i18n.t("set_pair_phone")), note: (i18n.language, i18n.t("set_pair_note")) }
         ],
         // 6 Notificações
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_telegram")) },
-            { type: "text", label: (i18n.language, i18n.t("settings_telegram_token")), mono: true, placeholder: "123456:ABC-DEF…", w: "grow", note: (i18n.language, i18n.t("set_telegram_token_note")) },
-            { type: "text", label: (i18n.language, i18n.t("settings_telegram_chat")), mono: true, placeholder: "@seucanal ou ID numérico", w: "w-md" },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_telegram_finished")), on: true },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_telegram_killswitch")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_telegram_rss")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_telegram_error")) },
-            { type: "button", label: (i18n.language, i18n.t("set_test_btn")), btn: (i18n.language, i18n.t("settings_telegram_test")) },
+            { type: "text", key: "telegramToken", label: (i18n.language, i18n.t("settings_telegram_token")), mono: true, placeholder: "123456:ABC-DEF…", w: "grow", note: (i18n.language, i18n.t("set_telegram_token_note")) },
+            { type: "text", key: "telegramChatId", label: (i18n.language, i18n.t("settings_telegram_chat")), mono: true, placeholder: "@seucanal ou ID numérico", w: "w-md" },
+            { type: "toggle", key: "telegramEvtFinished", label: (i18n.language, i18n.t("settings_telegram_finished")), on: true },
+            { type: "toggle", key: "telegramEvtKill", label: (i18n.language, i18n.t("settings_telegram_killswitch")) },
+            { type: "toggle", key: "telegramEvtRss", label: (i18n.language, i18n.t("settings_telegram_rss")) },
+            { type: "toggle", key: "telegramEvtError", label: (i18n.language, i18n.t("settings_telegram_error")) },
+            { type: "button", action: "telegram", label: (i18n.language, i18n.t("set_test_btn")), btn: (i18n.language, i18n.t("settings_telegram_test")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_discord")) },
-            { type: "toggle", label: (i18n.language, i18n.t("set_discord_show")), note: (i18n.language, i18n.t("set_discord_note")) },
+            { type: "toggle", key: "discordEnabled", label: (i18n.language, i18n.t("set_discord_show")), on: true, note: (i18n.language, i18n.t("set_discord_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
             { type: "toggle", label: (i18n.language, i18n.t("settings_notif_sound")), on: true }
         ],
@@ -175,9 +175,9 @@ Window {
             { type: "toggle", label: (i18n.language, i18n.t("set_media_jellyfin")) },
             { type: "text", label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_extraction")) },
-            { type: "toggle", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
-            { type: "text", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "senha1; senha2; online-fix.me", w: "grow" }
+            { type: "toggle", key: "autoExtract", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
+            { type: "toggle", key: "autoExtractDelete", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
+            { type: "text", key: "extractPasswords", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "senha1; senha2; online-fix.me", w: "grow" }
         ],
         // 8 Avançado
         [
@@ -203,6 +203,7 @@ Window {
             { type: "text", key: "igdbClientId", label: (i18n.language, i18n.t("set_igdb_id2")), mono: true, w: "w-md" },
             { type: "text", key: "igdbClientSecret", label: (i18n.language, i18n.t("set_igdb_secret2")), mono: true, w: "w-md" },
             { type: "group", label: (i18n.language, i18n.t("diag_title")) },
+            { type: "button", action: "defender", winOnly: true, label: (i18n.language, i18n.t("settings_defender_exclude")), btn: (i18n.language, i18n.t("settings_defender_exclude")), note: (i18n.language, i18n.t("tip_defender_exclude")) },
             { type: "toggle", key: "verboseLogging", label: (i18n.language, i18n.t("settings_verbose_log")), note: (i18n.language, i18n.t("set_verbose_note")) },
             { type: "text", label: (i18n.language, i18n.t("set_run_on_complete2")), mono: true, placeholder: "notify-send \"%N concluído\"", w: "grow" },
             { type: "path", label: (i18n.language, i18n.t("set_watched_folder2")), placeholder: (i18n.language, i18n.t("settings_watched_hint")) }
@@ -447,8 +448,9 @@ Window {
         property bool isLast: false
         spacing: 0
 
-        // custom-only rows collapse entirely unless the custom theme is active
-        readonly property bool rowVisible: !field.customOnly || Theme.name === "custom"
+        // custom-only rows collapse unless the custom theme is active; win-only collapse off Windows
+        readonly property bool rowVisible: (!field.customOnly || Theme.name === "custom")
+                                           && (!field.winOnly || Qt.platform.os === "windows")
         visible: rowVisible
         Layout.preferredHeight: rowVisible ? -1 : 0
 
@@ -733,7 +735,7 @@ Window {
                 }
             }
         }
-        Component { id: cButton; BtnFlat { text: field.btn || ""; sm: false } }
+        Component { id: cButton; BtnFlat { text: field.btn || ""; sm: false; onClicked: win.runButtonAction(field.action) } }
     }
 
     // custom-theme dialogs
@@ -757,6 +759,52 @@ Window {
             themeBridge.setProfileImage(themeBridge.activeProfile, decodeURIComponent(u))
         }
     }
+    // action buttons (default-app / pair phone)
+    function runButtonAction(a) {
+        if (a === "default") {
+            var ok = (typeof settings !== "undefined") && settings.setAsDefaultApp()
+            infoDlg.title = (i18n.language, i18n.t("set_default_app"))
+            infoDlg.message = ok ? (i18n.language, i18n.t("settings_default_success"))
+                                 : (i18n.language, i18n.t("settings_default_failed"))
+            infoDlg.open()
+        } else if (a === "pair") {
+            pairDlg.open()
+        } else if (a === "telegram") {
+            if (typeof settings !== "undefined") settings.testTelegram()
+        } else if (a === "defender") {
+            var dok = (typeof settings !== "undefined") && settings.excludeFromDefender()
+            infoDlg.title = "Windows Defender"
+            infoDlg.message = dok ? i18n.t("defender_exclude_ok").replace(/:?\s*%1\s*$/, "")
+                                  : (i18n.language, i18n.t("defender_exclude_fail"))
+            infoDlg.open()
+        }
+    }
+
+    Connections {
+        target: typeof settings !== "undefined" ? settings : null
+        ignoreUnknownSignals: true
+        function onTelegramTestResult(ok, message) {
+            infoDlg.title = (i18n.language, i18n.t("settings_telegram_test"))
+            infoDlg.message = message
+            infoDlg.open()
+        }
+    }
+
+    PairingDialog { id: pairDlg }
+
+    Dialog {
+        id: infoDlg
+        property string message: ""
+        anchors.centerIn: parent
+        modal: true
+        standardButtons: Dialog.Ok
+        contentItem: Text {
+            text: infoDlg.message
+            color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans
+            wrapMode: Text.WordWrap
+        }
+    }
+
     // rename the active profile
     Dialog {
         id: renameDlg

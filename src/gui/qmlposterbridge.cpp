@@ -14,6 +14,11 @@
 #include "../app/geoip.h"
 #include "../app/discordrpc.h"
 #include "../app/updater.h"
+#include "../app/notifier.h"
+#include "../app/secretstore.h"
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 #include <QDateTime>
 
 #include <QNetworkInterface>
@@ -22,6 +27,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QProcess>
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -2065,19 +2071,61 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "tempPath")            return s->tempPath();
     if (key == "contentLayout")       return s->contentLayout();
     if (key == "torrentExportDir")    return s->torrentExportDir();
+    if (key == "extractPasswords")    return s->extractPasswords().join(QStringLiteral("; "));
     if (key == "autoExtract")         return s->autoExtract();
     if (key == "autoExtractDelete")   return s->autoExtractDelete();
     if (key == "runOnComplete")       return s->runOnComplete();
     if (key == "watchedFolder")       return s->watchedFolder();
     if (key == "autoMoveEnabled")     return s->autoMoveEnabled();
     if (key == "autoMovePath")        return s->autoMovePath();
+    // telegram (token lives in the keychain; events are a bitmask)
+    if (key == "telegramToken")   return SecretStore::instance().get("telegramBotToken");
+    {
+        int bit = telegramEventBit(key);
+        if (bit) {
+            QSettings st;
+            int mask = st.value("telegramEvents", 0x0F).toInt();   // default: all on
+            return bool(mask & bit);
+        }
+    }
+    if (key == "discordEnabled") { QSettings st; return st.value("discordEnabled", true).toBool(); }
     // UI-only prefs + media API keys
     QSettings st;
     return st.value(key);
 }
 
+// Maps a per-event toggle key to its TelegramNotifier::Events bit (0 if not one).
+int QmlSettingsBridge::telegramEventBit(const QString &key)
+{
+    if (key == "telegramEvtFinished") return 1 << 0;
+    if (key == "telegramEvtKill")     return 1 << 1;
+    if (key == "telegramEvtRss")      return 1 << 2;
+    if (key == "telegramEvtError")    return 1 << 3;
+    return 0;
+}
+
 void QmlSettingsBridge::set(const QString &key, const QVariant &v)
 {
+    // telegram: token → keychain, events → bitmask, chatId → settings; reload after.
+    if (key == "telegramToken") {
+        SecretStore::instance().set("telegramBotToken", v.toString());
+        if (m_telegram) m_telegram->reload();
+        emit changed(); return;
+    }
+    if (int bit = telegramEventBit(key)) {
+        QSettings st;
+        int mask = st.value("telegramEvents", 0x0F).toInt();
+        if (v.toBool()) mask |= bit; else mask &= ~bit;
+        st.setValue("telegramEvents", mask);
+        if (m_telegram) m_telegram->reload();
+        emit changed(); return;
+    }
+    if (key == "telegramChatId") {
+        QSettings st; st.setValue("telegramChatId", v);
+        if (m_telegram) m_telegram->reload();
+        emit changed(); return;
+    }
+
     SessionManager *s = m_session;
     if (key == "downloadLimit")            s->setDownloadLimit(v.toInt());
     else if (key == "uploadLimit")         s->setUploadLimit(v.toInt());
@@ -2112,6 +2160,12 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     else if (key == "tempPath")            s->setTempPath(v.toString());
     else if (key == "contentLayout")       s->setContentLayout(v.toInt());
     else if (key == "torrentExportDir")    s->setTorrentExportDir(v.toString());
+    else if (key == "extractPasswords") {
+        QStringList pw;
+        const auto parts = v.toString().split(QRegularExpression(QStringLiteral("[;\\n]")), Qt::SkipEmptyParts);
+        for (const QString &p : parts) { QString t = p.trimmed(); if (!t.isEmpty()) pw << t; }
+        s->setExtractPasswords(pw);
+    }
     else if (key == "autoExtract")         s->setAutoExtract(v.toBool());
     else if (key == "autoExtractDelete")   s->setAutoExtractDelete(v.toBool());
     else if (key == "runOnComplete")       s->setRunOnComplete(v.toString());
@@ -2120,6 +2174,89 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     else if (key == "autoMovePath")        s->setAutoMove(s->autoMoveEnabled(), v.toString());
     else { QSettings st; st.setValue(key, v); }
     emit changed();
+}
+
+void QmlSettingsBridge::testTelegram()
+{
+    const QString token = SecretStore::instance().get("telegramBotToken");
+    QSettings st;
+    const QString chatId = st.value("telegramChatId").toString();
+    if (token.isEmpty() || chatId.isEmpty()) {
+        emit telegramTestResult(false, tr_("settings_telegram_test_missing"));
+        return;
+    }
+    auto *nam = new QNetworkAccessManager(this);
+    QUrl url(QStringLiteral("https://api.telegram.org/bot%1/sendMessage").arg(token));
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    QJsonObject body;
+    body.insert("chat_id", chatId);
+    body.insert("text", QStringLiteral("🦇 BATorrent test — webhook works."));
+    auto *reply = nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        if (reply->error() == QNetworkReply::NoError)
+            emit telegramTestResult(true, tr_("settings_telegram_test_ok"));
+        else
+            emit telegramTestResult(false, QStringLiteral("✗ %1").arg(reply->errorString()));
+        reply->deleteLater();
+        nam->deleteLater();
+    });
+}
+
+bool QmlSettingsBridge::excludeFromDefender()
+{
+#if defined(Q_OS_WIN) && !defined(BAT_STORE_BUILD)
+    QSettings s;
+    QString path = s.value(QStringLiteral("lastSavePath")).toString();
+    if (path.isEmpty() || !QDir(path).exists())
+        path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    if (path.isEmpty()) return false;
+    const QString cmd = QStringLiteral("Add-MpPreference -ExclusionPath '%1'").arg(path);
+    int ret = QProcess::execute(QStringLiteral("powershell.exe"),
+        {QStringLiteral("-Command"),
+         QStringLiteral("Start-Process powershell -ArgumentList '-Command','") + cmd
+             + QStringLiteral("' -Verb RunAs -Wait")});
+    return ret == 0;
+#else
+    return false;   // Windows-only
+#endif
+}
+
+bool QmlSettingsBridge::setAsDefaultApp()
+{
+    const QString exe = QCoreApplication::applicationFilePath();
+    bool ok = false;
+#ifdef Q_OS_WIN
+    const QString nativeExe = QDir::toNativeSeparators(exe);
+    QSettings reg("HKEY_CURRENT_USER\\Software\\Classes", QSettings::NativeFormat);
+    reg.setValue(".torrent/.", "BATorrent.torrent");
+    reg.setValue("BATorrent.torrent/.", "BATorrent Torrent File");
+    reg.setValue("BATorrent.torrent/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
+    reg.setValue("BATorrent.torrent/DefaultIcon/.", nativeExe + ",0");
+    reg.setValue("magnet/.", "URL:Magnet Protocol");
+    reg.setValue("magnet/URL Protocol", "");
+    reg.setValue("magnet/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
+    reg.setValue("magnet/DefaultIcon/.", nativeExe + ",0");
+    reg.sync();
+    ok = (reg.status() == QSettings::NoError);
+    if (ok)
+        QProcess::startDetached("cmd", {"/c", "assoc", ".torrent=BATorrent.torrent"});
+#elif defined(Q_OS_LINUX)
+    QProcess p;
+    p.start("xdg-mime", {"default", "batorrent.desktop", "application/x-bittorrent"});
+    p.waitForFinished(3000);
+    ok = (p.exitCode() == 0);
+    QProcess p2;
+    p2.start("xdg-mime", {"default", "batorrent.desktop", "x-scheme-handler/magnet"});
+    p2.waitForFinished(3000);
+    ok = ok && (p2.exitCode() == 0);
+#elif defined(Q_OS_MACOS)
+    QProcess p;
+    p.start("duti", {"-s", "com.batorrent.app", ".torrent", "all"});
+    p.waitForFinished(3000);
+    ok = (p.exitCode() == 0);
+#endif
+    return ok;
 }
 
 // --- QmlNotificationBridge ---
@@ -2162,6 +2299,7 @@ DiscordRpcBridge::DiscordRpcBridge(SessionManager *session, QObject *parent)
 void DiscordRpcBridge::refresh()
 {
     if (!m_rpc || m_rpc->clientId().isEmpty()) return;
+    if (!QSettings().value("discordEnabled", true).toBool()) { m_rpc->clearActivity(); return; }
     // Mirror MainWindow::refreshDiscordPresence: feature the fastest active
     // download; otherwise report seeding count; otherwise idle.
     int seeding = 0, featured = -1, featuredRate = 0;
