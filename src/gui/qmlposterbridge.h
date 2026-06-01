@@ -300,6 +300,7 @@ class QmlThemeBridge : public QObject
     Q_PROPERTY(int     cBgOpacity READ cBgOpacity NOTIFY changed)
     // True when the OS taskbar/tray is in light mode (for logo contrast).
     Q_PROPERTY(bool osLight READ osLight NOTIFY osSchemeChanged)
+    Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
 
 public:
     explicit QmlThemeBridge(QObject *parent = nullptr);
@@ -331,6 +332,9 @@ public:
     int cBgOpacity() const;
 
     bool osLight() const;
+    QString appVersion() const;
+    Q_INVOKABLE QString releaseNotes() const;     // changelog HTML (shared with legacy dialog)
+    Q_INVOKABLE QVariantList libraries() const;   // [{nm,v}] real linked-library versions
     QIcon trayIcon() const;   // logo recolored for the current OS scheme
 
     // SVG-swap logo renderer (shared with the image provider). darkBody=true

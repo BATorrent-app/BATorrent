@@ -25,6 +25,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QCoreApplication>
 #include <QStyleHints>
 #include <QPainter>
 #include <QSvgRenderer>
@@ -40,6 +41,9 @@
 #include <libtorrent/file_storage.hpp>
 #include <libtorrent/create_torrent.hpp>
 #include <libtorrent/bencode.hpp>
+#include <libtorrent/version.hpp>
+#include <openssl/opensslv.h>
+#include <boost/version.hpp>
 #include <memory>
 #include <sstream>
 
@@ -270,9 +274,12 @@ bool QmlTorrentFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &s
     if (m_filterState == QStringLiteral("all"))
         return true;
 
+    if (m_filterState == QStringLiteral("active")) {
+        // active = actually transferring (down or up), matching activeCount
+        return src->data(idx, QmlPosterModel::DownRateRole).toLongLong() > 0
+            || src->data(idx, QmlPosterModel::UpRateRole).toLongLong() > 0;
+    }
     QString key = src->data(idx, QmlPosterModel::StateKeyRole).toString();
-    if (m_filterState == QStringLiteral("active"))
-        return key == QStringLiteral("downloading") || key == QStringLiteral("seeding");
     return key == m_filterState;
 }
 
@@ -347,7 +354,7 @@ int QmlSessionBridge::activeCount() const
     int n = 0;
     for (int i = 0; i < m_session->torrentCount(); ++i) {
         auto info = m_session->torrentAt(i);
-        if (!info.paused && info.progress < 1.0f) ++n;
+        if (info.downloadRate > 0 || info.uploadRate > 0) ++n;   // transferring
     }
     return n;
 }
@@ -1420,6 +1427,31 @@ QString QmlThemeBridge::cBgImage()   const { return activeMap().value("image").t
 int     QmlThemeBridge::cBgOpacity() const { return activeMap().value("opacity").toInt(); }
 
 bool QmlThemeBridge::osLight() const { return m_osLight; }
+
+QString QmlThemeBridge::appVersion() const { return QCoreApplication::applicationVersion(); }
+
+QString QmlThemeBridge::releaseNotes() const
+{
+    QFile f(QStringLiteral(":/CHANGELOG.md"));   // the real source of truth
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+        return QString();
+    return QString::fromUtf8(f.readAll());
+}
+
+QVariantList QmlThemeBridge::libraries() const
+{
+    QVariantList out;
+    auto add = [&](const QString &nm, const QString &v) {
+        QVariantMap m; m["nm"] = nm; m["v"] = v; out << m;
+    };
+    add("Qt", QString::fromLatin1(qVersion()));
+    add("libtorrent-rasterbar", QStringLiteral(LIBTORRENT_VERSION));
+#ifdef OPENSSL_VERSION_STR
+    add("OpenSSL", QStringLiteral(OPENSSL_VERSION_STR));
+#endif
+    add("Boost", QString::fromLatin1(BOOST_LIB_VERSION).replace('_', '.'));
+    return out;
+}
 
 QPixmap QmlThemeBridge::renderLogo(bool darkBody, int size, qreal dpr)
 {

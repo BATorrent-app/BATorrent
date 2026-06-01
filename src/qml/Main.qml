@@ -37,6 +37,18 @@ Window {
     property bool gridView: true
     property string activeFilter: "all"
     property string catFilter: ""
+    // startup splash — shown on every launch unless disabled in Settings
+    property bool showSplash: false
+    Component.onCompleted: {
+        showSplash = (typeof settings === "undefined") || settings.get("showSplash") !== false
+        if (!showSplash) win.maybeShowWelcome()
+    }
+    // welcome on first launch — shows until the user ticks "don't show again"
+    function maybeShowWelcome() {
+        if (typeof settings === "undefined") return
+        if (settings.get("welcomeShown") === true) return
+        welcomeDlg.open()
+    }
     readonly property var presetCats: ["Apps", "Games", "Movies", "Series"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
     property string sortColumn: ""
@@ -2011,27 +2023,12 @@ Window {
         onDropped: function(drop) {
             if (typeof session === "undefined") return
             if (drop.hasUrls) {
-                // Same flow as the Open button: show the preview / choose-folder
-                // dialog instead of adding silently. Dialog handles one file;
-                // extra dropped files are added directly.
-                var first = true
-                for (var i = 0; i < drop.urls.length; ++i) {
-                    var u = drop.urls[i].toString()
-                    if (!u.toLowerCase().endsWith(".torrent")) continue
-                    if (first) {
-                        first = false
-                        var p = session.previewTorrent(u)
-                        if (p.ok) {
-                            addTorrentDlg.savePath = session.defaultSavePath()
-                            addTorrentDlg.loadPreview(p, u)
-                            addTorrentDlg.open()
-                        } else {
-                            session.addTorrentFile(u)
-                        }
-                    } else {
-                        session.addTorrentFile(u)
-                    }
-                }
+                // Queue every dropped .torrent so each gets the preview/choose-folder
+                // dialog in turn, instead of only the first.
+                var urls = []
+                for (var i = 0; i < drop.urls.length; ++i)
+                    urls.push(drop.urls[i].toString())
+                win.enqueueTorrentUrls(urls)
                 drop.accept()
             } else if (drop.hasText && drop.text.indexOf("magnet:") === 0) {
                 session.addMagnetUri(drop.text); drop.accept()
@@ -2084,9 +2081,40 @@ Window {
         id: magnetDlg
         onAccepted: if (magnetText.length > 0 && typeof session !== "undefined") session.addMagnetUri(magnetText)
     }
+    // pending .torrent paths awaiting the add dialog (filled by drops / multi-open)
+    property var torrentQueue: []
+    // drive opens off a timer so the dialog never opens inside the drop event or
+    // the dialog's own accept/close handler (both fight focus on macOS).
+    Timer { id: queueTimer; interval: 130; onTriggered: win.processTorrentQueue() }
+    function enqueueTorrentUrls(urls) {
+        for (var i = 0; i < urls.length; ++i) {
+            var u = urls[i]
+            if (u.toLowerCase().endsWith(".torrent")) win.torrentQueue.push(u)
+        }
+        queueTimer.restart()
+    }
+    function processTorrentQueue() {
+        if (typeof session === "undefined") { win.torrentQueue = []; return }
+        if (addTorrentDlg.opened) return        // wait until the current one closes
+        while (win.torrentQueue.length > 0) {
+            var u = win.torrentQueue.shift()
+            var p = session.previewTorrent(u)
+            if (p && p.ok) {
+                addTorrentDlg.savePath = session.defaultSavePath()
+                addTorrentDlg.loadPreview(p, u)
+                addTorrentDlg.open()
+                return                          // resume on accept/reject
+            }
+            session.addTorrentFile(u)           // unpreviewable → add directly, keep going
+        }
+    }
     AddTorrentDialog {
         id: addTorrentDlg
-        onAccepted: if (typeof session !== "undefined") session.addTorrentWithPrefs(torrentPath, savePath, priorities())
+        onAccepted: {
+            if (typeof session !== "undefined") session.addTorrentWithPrefs(torrentPath, savePath, priorities())
+            queueTimer.restart()                // open the next once this one has closed
+        }
+        onRejected: queueTimer.restart()
     }
     RemoveDialog {
         id: removeDlg
@@ -2104,7 +2132,11 @@ Window {
     }
     CreateTorrentDialog { id: createDlg }
     AddAddonDialog      { id: addAddonDlg }
-    WelcomeDialog       { id: welcomeDlg }
+    WelcomeDialog {
+        id: welcomeDlg
+        onAccepted: if (dontShow && typeof settings !== "undefined") settings.set("welcomeShown", true)
+        onRejected: if (dontShow && typeof settings !== "undefined") settings.set("welcomeShown", true)
+    }
     ReleaseNotesDialog  { id: releaseNotesDlg }
     AboutDialog         { id: aboutDlg }
 
@@ -2155,4 +2187,14 @@ Window {
     Shortcut { sequence: "Ctrl+5"; onActivated: win.setFilter("active") }
     Shortcut { sequence: "Ctrl+6"; onActivated: win.setFilter("paused") }
     Shortcut { sequence: "Ctrl+Shift+T"; onActivated: Theme.cycle() }
+
+    // startup splash overlay (above everything, incl. toasts at z:9000)
+    Loader {
+        active: win.showSplash
+        anchors.fill: parent
+        z: 10000
+        sourceComponent: Splash {
+            onFinished: { win.showSplash = false; win.maybeShowWelcome() }
+        }
+    }
 }

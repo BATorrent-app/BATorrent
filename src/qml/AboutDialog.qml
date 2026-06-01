@@ -38,7 +38,7 @@ BatDialog {
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 8
-            TChip { text: "v2.6.1" }
+            TChip { text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : "" }
             Text { text: (i18n.language, i18n.t("about_build_stable")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontMono }
         }
         Text {
@@ -103,12 +103,8 @@ BatDialog {
         Layout.fillWidth: true
         spacing: 0
         Repeater {
-            model: [
-                { nm: "Qt", v: "6.10.2" },
-                { nm: "libtorrent-rasterbar", v: "2.0.11" },
-                { nm: "OpenSSL", v: "3.6.1" },
-                { nm: "Boost", v: "1.86" }
-            ]
+            id: libsRep
+            model: (typeof themeBridge !== "undefined") ? themeBridge.libraries() : []
             delegate: ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
@@ -120,7 +116,7 @@ BatDialog {
                     Item { Layout.fillWidth: true }
                     Text { text: modelData.v; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono }
                 }
-                Rectangle { visible: index < 3; Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+                Rectangle { visible: index < libsRep.count - 1; Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
             }
         }
     }

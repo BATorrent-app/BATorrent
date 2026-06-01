@@ -1,5 +1,39 @@
 # Changelog
 
+## v3.0.0
+
+### New interface — full QML rewrite
+- **Entire UI rebuilt in Qt Quick / QML**, replacing the QWidget interface — every screen ported: main window, settings, add/create torrent, search, RSS, statistics, diagnostics, inspector, log viewer, pairing, shortcuts, removed history, welcome, about, release notes
+- Real-time speed graph, functional detail tabs (general, peers, files, trackers, pieces), drag-and-drop, native menu bar, and right-click context menus
+- Multi-select, column sorting, grid reorder with animations, full-row hover, and arrow-key navigation
+- Poster/cover art grid with TMDB / IGDB metadata resolution and localized synopses
+
+### Theming
+- **Custom theme profiles** — create, rename, and delete full palettes (background, panel, text + three accent colors), each with an optional background image and adjustable opacity
+- Five built-in themes; midnight shifted from purple to blue; per-platform mono/sans fonts
+- OS-scheme-aware logo so the white mark stays visible on light Windows taskbars/trays
+
+### Startup splash v2.0
+- Minimalist stroke animation that draws the bat outline, fills uniformly, and fades in the wordmark — no audio, shown every launch with a toggle in Settings
+
+### System integration
+- System tray with left-click restore and a right-click menu (speed, pause/resume all, quit); rich tray popup with live counts and DOWN/UP speeds
+- Desktop notifications for finished / error / kill-switch / RSS events
+- Discord Rich Presence and a fixed auto-updater
+
+### Localization
+- GeoIP peer country flags
+- All windows and dialogs translated across 7 languages with live language switching
+
+### Fixes
+- Welcome dialog now shows again on first launch
+- About and Release Notes pull real data (app version, linked-library versions, and the changelog) instead of hardcoded values
+- "Active" filter and its count now agree — both mean *actually transferring* (idle seeders are no longer listed as active)
+- Dropping several .torrent files at once shows the add dialog for each in sequence
+- Reject duplicate torrents on add; deselect on empty-area click
+
+---
+
 ## v2.6.1
 
 ### Critical fix

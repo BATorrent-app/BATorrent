@@ -1,6 +1,7 @@
 <RCC>
 <qresource prefix="/">
 <file>images/logo.svg</file>
+<file alias="CHANGELOG.md">../CHANGELOG.md</file>
 <file>images/logo1.png</file>
 <file>images/eyes-dark.png</file>
 <file>images/eyes-midnight.png</file>
@@ -35,6 +36,7 @@
 <file>icons/set-addons.svg</file>
 <file>icons/set-advanced.svg</file>
 <file>../src/qml/Main.qml</file>
+<file>../src/qml/Splash.qml</file>
         <file>../src/qml/TrayPopupWindow.qml</file>
         <file>../src/qml/UpdateDialog.qml</file>
         <file>../src/qml/InputPromptDialog.qml</file>
@@ -81,7 +83,6 @@
 <file>fonts/Inter-Medium.ttf</file>
 <file>fonts/Inter-SemiBold.ttf</file>
 <file>fonts/Inter-Bold.ttf</file>
-<file>sounds/batsound.mp3</file>
 <file>../translations/en.json</file>
 <file>../translations/pt.json</file>
 <file>../translations/zh.json</file>

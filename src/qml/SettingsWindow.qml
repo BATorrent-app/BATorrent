@@ -77,7 +77,7 @@ Window {
             { type: "toggle", label: (i18n.language, i18n.t("settings_start_tray")) },
             { type: "toggle", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
             { type: "toggle", label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
-            { type: "toggle", label: (i18n.language, i18n.t("settings_splash_sound")) },
+            { type: "toggle", key: "showSplash", label: (i18n.language, i18n.t("settings_show_splash")), on: true },
             { type: "button", label: (i18n.language, i18n.t("set_default_app")), btn: (i18n.language, i18n.t("settings_set_default")) }
         ],
         // 1 Velocidade
