@@ -268,7 +268,7 @@ Window {
         CtxItem { text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain")); onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
         Sep {}
-        CtxItem { text: (i18n.language, i18n.t("action_remove")); onTriggered: removeDlg.open() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_remove")); onTriggered: removeDlg.open() }
     }
 
     Shortcut { sequence: StandardKey.SelectAll; onActivated: win.selectAll() }
@@ -341,7 +341,10 @@ Window {
     Platform.SystemTrayIcon {
         id: trayIcon
         visible: true
-        icon.source: "qrc:/images/logo1.png"
+        // Recolor the logo for the OS tray scheme so it isn't invisible on a
+        // light Windows tray. The ?v= suffix busts the image-provider cache.
+        icon.source: (typeof themeBridge !== "undefined" && themeBridge.osLight)
+                     ? "image://applogo/dark?v=l" : "image://applogo/light?v=d"
         icon.mask: false
         tooltip: "BATorrent"
         // Left click / double click restores the window (Windows convention).
@@ -357,11 +360,14 @@ Window {
         }
     }
 
-    // Background events → native OS notification via the tray icon.
+    // Background events → in-app toast (when the window is up) AND the native
+    // OS notification (so it's seen when minimized/in the tray). Both, like the
+    // legacy app.
     Connections {
         target: typeof notifications !== "undefined" ? notifications : null
         ignoreUnknownSignals: true
         function onNotify(title, body, level) {
+            toastHost.show(title, body, level)
             if (trayIcon.supportsMessages)
                 trayIcon.showMessage(title, body,
                     level === 2 ? Platform.SystemTrayIcon.Critical
@@ -369,6 +375,9 @@ Window {
                     : Platform.SystemTrayIcon.Information, 5000)
         }
     }
+
+    // in-app toast stack (overlays the whole window content)
+    ToastHost { id: toastHost }
 
     TrayPopupWindow {
         id: trayPopup
@@ -900,6 +909,29 @@ Window {
 
             readonly property bool empty: typeof session !== "undefined" && session.torrentCount === 0
 
+            // full custom background image (z:-1, behind anime art and grid/list).
+            // A theme-bg scrim at user-controlled opacity sits on top for legibility.
+            Item {
+                id: bgImageWrap
+                anchors.fill: parent
+                visible: Theme.hasBgImage && !parent.empty
+                z: -1
+                Image {
+                    anchors.fill: parent
+                    source: Theme.bgImageSource
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    sourceSize.width: parent.width
+                    sourceSize.height: parent.height
+                    cache: false
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    color: Theme.bg
+                    opacity: Theme.bgImageOpacity
+                }
+            }
+
             // empty state (no torrents)
             EmptyState {
                 anchors.centerIn: parent
@@ -907,6 +939,7 @@ Window {
                 onOpenClicked: openFileDlg.open()
                 onMagnetClicked: magnetDlg.open()
             }
+
 
             // anime art (eyes top-right / spider bottom-right). Ported 1:1 from .eyes-accent:
             // the CSS fades the edges via two intersected linear masks; since only Theme.bg sits
@@ -987,6 +1020,20 @@ Window {
                 interactive: true
                 z: 1
 
+                // click on empty grid space clears the selection (tiles have
+                // their own MouseAreas; only blank clicks reach this one, which
+                // sits behind the delegates at z:-1 within the flickable).
+                MouseArea {
+                    anchors.fill: parent
+                    z: -1
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: {
+                        if (win.selectedRows.length > 0) {
+                            win.selectedRows = []; win.selected = -1; win._commitSel()
+                        }
+                    }
+                }
+
                 delegate: Item {
                     id: tile
                     width: 178
@@ -1016,16 +1063,17 @@ Window {
                             radius: 10
                             color: "#161618"
                             visible: tile.posterUrl === ""
-                            Text {
-                                anchors.right: parent.right
-                                anchors.bottom: parent.bottom
-                                anchors.rightMargin: -10
-                                anchors.bottomMargin: -22
-                                text: (tile.metaTitle || tile.torrentName).charAt(0).toUpperCase()
-                                color: Qt.rgba(1, 1, 1, 0.05)
-                                font.pointSize: 105
-                                font.weight: Font.Bold
-                                font.family: Theme.fontSans
+                            // watermark: BATorrent logo (not the title's first letter)
+                            Image {
+                                anchors.centerIn: parent
+                                width: parent.width * 0.5
+                                height: width
+                                source: "qrc:/images/logo.svg"
+                                sourceSize: Qt.size(width * 2, width * 2)
+                                fillMode: Image.PreserveAspectFit
+                                opacity: 0.06
+                                layer.enabled: Theme.isLight
+                                layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
                             }
                             Text {
                                 anchors.left: parent.left; anchors.top: parent.top
@@ -1271,7 +1319,6 @@ Window {
                             PosterThumb {
                                 Layout.alignment: Qt.AlignVCenter
                                 posterUrl: lrow.posterUrl
-                                letter: lrow.torrentName.length > 0 ? lrow.torrentName.charAt(0).toUpperCase() : ""
                             }
                             Text {
                                 Layout.fillWidth: true
@@ -1950,9 +1997,26 @@ Window {
         onDropped: function(drop) {
             if (typeof session === "undefined") return
             if (drop.hasUrls) {
+                // Same flow as the Open button: show the preview / choose-folder
+                // dialog instead of adding silently. Dialog handles one file;
+                // extra dropped files are added directly.
+                var first = true
                 for (var i = 0; i < drop.urls.length; ++i) {
                     var u = drop.urls[i].toString()
-                    if (u.toLowerCase().endsWith(".torrent")) session.addTorrentFile(u)
+                    if (!u.toLowerCase().endsWith(".torrent")) continue
+                    if (first) {
+                        first = false
+                        var p = session.previewTorrent(u)
+                        if (p.ok) {
+                            addTorrentDlg.savePath = session.defaultSavePath()
+                            addTorrentDlg.loadPreview(p, u)
+                            addTorrentDlg.open()
+                        } else {
+                            session.addTorrentFile(u)
+                        }
+                    } else {
+                        session.addTorrentFile(u)
+                    }
                 }
                 drop.accept()
             } else if (drop.hasText && drop.text.indexOf("magnet:") === 0) {

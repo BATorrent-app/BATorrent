@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "nameparser.h"
+#include <QSet>
 
 #include <QRegularExpression>
 
@@ -136,11 +137,31 @@ ParsedName NameParser::parse(const QString &rawName)
 
     static const QRegularExpression multiSpace(QStringLiteral("\\s{2,}"));
     work.replace(multiSpace, QStringLiteral(" "));
+    // strip leftover separators stranded at the edges after tag removal
+    // (e.g. "Hades II-" once the -DODI repacker is gone)
+    static const QRegularExpression edgeJunk(QStringLiteral("^[\\s.\\-_]+|[\\s.\\-_]+$"));
+    work.remove(edgeJunk);
     work = work.trimmed();
 
+    // Roman numerals stay upper-case (Hades II, Final Fantasy VII); a naive
+    // toLower+capitalize would wrongly produce "Ii"/"Vii".
+    static const QRegularExpression romanRe(
+        QStringLiteral("^(?=[mdclxvi]+$)m{0,3}(?:cm|cd|d?c{0,3})(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})$"),
+        QRegularExpression::CaseInsensitiveOption);
+    // English words that are coincidentally valid roman numerals — don't shout
+    // these to upper-case ("Mix" must not become "MIX").
+    static const QSet<QString> romanFalsePositives = {
+        QStringLiteral("mix"), QStringLiteral("di"), QStringLiteral("mi"),
+        QStringLiteral("li"), QStringLiteral("xi"), QStringLiteral("mc"),
+        QStringLiteral("dc"), QStringLiteral("cd"), QStringLiteral("dim"),
+        QStringLiteral("mid"), QStringLiteral("did"), QStringLiteral("lid")
+    };
     QStringList words = work.split(QLatin1Char(' '), Qt::SkipEmptyParts);
     for (QString &w : words) {
-        if (!w.isEmpty()) {
+        if (w.isEmpty()) continue;
+        if (romanRe.match(w).hasMatch() && !romanFalsePositives.contains(w.toLower())) {
+            w = w.toUpper();          // II, VII, IV, X …
+        } else {
             w = w.toLower();
             w[0] = w[0].toUpper();
         }

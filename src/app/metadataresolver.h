@@ -10,6 +10,7 @@
 #include <QQueue>
 #include <QPair>
 #include <QTimer>
+#include <functional>
 #include "nameparser.h"
 
 class QNetworkAccessManager;
@@ -46,6 +47,10 @@ private:
     void queryTmdbTv(const QString &infoHash, const ParsedName &parsed);
     void queryIgdb(const QString &infoHash, const ParsedName &parsed);
     void ensureIgdbToken();
+    // Re-fetch the English overview when the localized TMDB result had none,
+    // then continue via `done`. kind = "movie" | "tv".
+    void fetchTmdbOverviewEn(const QString &kind, int id, MetadataResult result,
+                             std::function<void(MetadataResult)> done);
     void downloadPoster(const QString &infoHash, const QString &url, const MetadataResult &partial);
     void loadFromDisk(const QString &infoHash);
     void saveToDisk(const QString &infoHash, const MetadataResult &result);

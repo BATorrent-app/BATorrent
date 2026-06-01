@@ -7,6 +7,8 @@
 
 #include <QAbstractListModel>
 #include <QColor>
+#include <QIcon>
+#include <QPixmap>
 #include <QSortFilterProxyModel>
 #include <QString>
 #include <QTimer>
@@ -282,6 +284,22 @@ class QmlThemeBridge : public QObject
     Q_OBJECT
     Q_PROPERTY(QString themeName READ themeName WRITE setThemeName NOTIFY changed)
     Q_PROPERTY(bool anime READ anime WRITE setAnime NOTIFY changed)
+    // Custom theme (name === "custom"): a list of user profiles, each a full
+    // palette (6 colors + bg image + opacity). The active one drives Theme.qml.
+    Q_PROPERTY(QVariantList customProfiles READ customProfiles NOTIFY profilesChanged)
+    Q_PROPERTY(int activeProfile READ activeProfile WRITE setActiveProfile NOTIFY changed)
+    // Active-profile colors, read by Theme.qml (no per-token signal needed —
+    // changed() re-evaluates all of them).
+    Q_PROPERTY(QString cBg        READ cBg        NOTIFY changed)
+    Q_PROPERTY(QString cPanel     READ cPanel     NOTIFY changed)
+    Q_PROPERTY(QString cText      READ cText      NOTIFY changed)
+    Q_PROPERTY(QString cPrimary   READ cPrimary   NOTIFY changed)
+    Q_PROPERTY(QString cSecondary READ cSecondary NOTIFY changed)
+    Q_PROPERTY(QString cTertiary  READ cTertiary  NOTIFY changed)
+    Q_PROPERTY(QString cBgImage   READ cBgImage   NOTIFY changed)
+    Q_PROPERTY(int     cBgOpacity READ cBgOpacity NOTIFY changed)
+    // True when the OS taskbar/tray is in light mode (for logo contrast).
+    Q_PROPERTY(bool osLight READ osLight NOTIFY osSchemeChanged)
 
 public:
     explicit QmlThemeBridge(QObject *parent = nullptr);
@@ -291,12 +309,50 @@ public:
     bool anime() const;
     void setAnime(bool on);
 
+    // ---- custom profiles ----
+    QVariantList customProfiles() const;       // list of {name,bg,panel,text,primary,secondary,tertiary,image,opacity}
+    int activeProfile() const;
+    void setActiveProfile(int i);
+    Q_INVOKABLE int addProfile();              // appends a default profile, returns its index
+    Q_INVOKABLE void removeProfile(int i);     // keeps at least one profile
+    Q_INVOKABLE void renameProfile(int i, const QString &name);
+    Q_INVOKABLE void setProfileColor(int i, const QString &role, const QString &hex);  // role: bg/panel/text/primary/secondary/tertiary
+    Q_INVOKABLE void setProfileImage(int i, const QString &path);
+    Q_INVOKABLE void setProfileOpacity(int i, int pct);
+
+    // active-profile accessors (Theme.qml)
+    QString cBg() const;
+    QString cPanel() const;
+    QString cText() const;
+    QString cPrimary() const;
+    QString cSecondary() const;
+    QString cTertiary() const;
+    QString cBgImage() const;
+    int cBgOpacity() const;
+
+    bool osLight() const;
+    QIcon trayIcon() const;   // logo recolored for the current OS scheme
+
+    // SVG-swap logo renderer (shared with the image provider). darkBody=true
+    // swaps the off-white body to dark text for light backgrounds.
+    static QPixmap renderLogo(bool darkBody, int size, qreal dpr = 1.0);
+
 signals:
     void changed();
+    void profilesChanged();
+    void osSchemeChanged();
 
 private:
+    void loadProfiles();
+    void saveProfiles();
+    QVariantMap activeMap() const;
+    static QVariantMap defaultProfile(const QString &name);
+
     QString m_themeName;
     bool m_anime = true;
+    QVariantList m_profiles;
+    int m_activeProfile = 0;
+    bool m_osLight = false;
 };
 
 // Bridge for RSS feeds (wraps RssManager singleton).

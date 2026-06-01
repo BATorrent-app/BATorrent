@@ -219,6 +219,15 @@ SessionManager::~SessionManager()
     Logger::instance().log(Logger::Info, QStringLiteral("--- log closed ---"));
 }
 
+bool SessionManager::isDuplicate(const lt::info_hash_t &ih) const
+{
+    for (const auto &h : m_torrents) {
+        if (h.is_valid() && h.info_hashes() == ih)
+            return true;
+    }
+    return false;
+}
+
 void SessionManager::addTorrent(const QString &filePath, const QString &savePath)
 {
     try {
@@ -233,6 +242,14 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         }
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
+        // Reject duplicates by checking our own list (not m_session.find_torrent,
+        // whose handle lingers after the async remove_torrent — that would wrongly
+        // block a legit re-add right after removal). m_torrents is erased
+        // synchronously on remove, so it reflects the visible state.
+        if (atp.ti && isDuplicate(atp.ti->info_hashes())) {
+            qDebug() << "[session] addTorrent: duplicate ignored";
+            return;
+        }
         atp.save_path = savePath.toStdString();
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
@@ -269,6 +286,10 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
     try {
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
+        if (atp.ti && isDuplicate(atp.ti->info_hashes())) {
+            qDebug() << "[session] addTorrentWithPriorities: duplicate ignored";
+            return;
+        }
         atp.save_path = savePath.toStdString();
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
