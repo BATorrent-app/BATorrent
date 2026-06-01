@@ -255,7 +255,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("settings_heading")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("settings_heading")); color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -331,7 +331,7 @@ Window {
                                     Layout.fillWidth: true
                                     text: modelData.nav
                                     color: win.sec === index ? Theme.t1 : (nrMa.containsMouse ? Theme.t1 : Theme.t2)
-                                    font.pointSize: 12.5
+                                    font.pixelSize: 13
                                     font.family: Theme.fontSans
                                     elide: Text.ElideRight
                                 }
@@ -365,7 +365,7 @@ Window {
                         Layout.topMargin: 6
                         text: win.heads[win.sec].h
                         color: Theme.t1
-                        font.pointSize: 19
+                        font.pixelSize: 19
                         font.weight: Font.DemiBold
                         font.letterSpacing: -0.3
                         font.family: Theme.fontSans
@@ -377,7 +377,7 @@ Window {
                         wrapMode: Text.WordWrap
                         text: win.heads[win.sec].sub
                         color: Theme.t3
-                        font.pointSize: 12
+                        font.pixelSize: 12
                         font.family: Theme.fontSans
                         lineHeight: 1.5
                     }
@@ -398,7 +398,7 @@ Window {
                                 Layout.leftMargin: 2
                                 text: modelData.label
                                 color: Theme.t4
-                                font.pointSize: 10
+                                font.pixelSize: 10
                                 font.weight: Font.Bold
                                 font.letterSpacing: 0.8
                                 font.family: Theme.fontSans
@@ -453,7 +453,7 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
-                Text { text: (i18n.language, i18n.t("set_changes_instant")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("set_changes_instant")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
                 BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_close")); onClicked: win.close() }
             }
@@ -496,7 +496,7 @@ Window {
                     Text {
                         text: field.label
                         color: Theme.t1
-                        font.pointSize: 12.5
+                        font.pixelSize: 13
                         font.family: Theme.fontSans
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
@@ -510,7 +510,7 @@ Window {
                         color: Theme.field
                         border.color: Theme.hair
                         border.width: 1
-                        Text { id: bdg; anchors.centerIn: parent; text: field.badge || ""; color: Theme.t3; font.pointSize: 9.5; font.family: Theme.fontMono }
+                        Text { id: bdg; anchors.centerIn: parent; text: field.badge || ""; color: Theme.t3; font.pixelSize: 10; font.family: Theme.fontMono }
                     }
                 }
                 Text {
@@ -518,7 +518,7 @@ Window {
                     Layout.fillWidth: true          // wrap within the text column, never under the control
                     text: field.note || ""
                     color: Theme.t4
-                    font.pointSize: 10.5
+                    font.pixelSize: 11
                     font.family: Theme.fontSans
                     wrapMode: Text.WordWrap
                     lineHeight: 1.5
@@ -566,13 +566,13 @@ Window {
             Layout.topMargin: 12
             Layout.bottomMargin: 12
             spacing: Theme.sp3
-            Text { text: "⚠"; color: Theme.amber; font.pointSize: 13; Layout.alignment: Qt.AlignTop }
+            Text { text: "⚠"; color: Theme.amber; font.pixelSize: 13; Layout.alignment: Qt.AlignTop }
             Text {
                 Layout.fillWidth: true
                 visible: field.type === "warning"
                 text: field.text || ""
                 color: Theme.t3
-                font.pointSize: 11
+                font.pixelSize: 11
                 font.family: Theme.fontSans
                 wrapMode: Text.WordWrap
                 lineHeight: 1.45
@@ -704,7 +704,7 @@ Window {
                 }
                 Text {
                     text: ((win.ap && win.ap.opacity !== undefined) ? win.ap.opacity : 55) + "%"
-                    color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono
+                    color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono
                     Layout.preferredWidth: 36
                 }
             }
@@ -720,13 +720,13 @@ Window {
                         anchors.fill: parent; anchors.rightMargin: 10
                         text: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || "")
                         color: Theme.t1
-                        font.pointSize: 12; font.family: Theme.fontMono
+                        font.pixelSize: 12; font.family: Theme.fontMono
                         horizontalAlignment: TextInput.AlignRight
                         verticalAlignment: TextInput.AlignVCenter
                         onEditingFinished: if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, text)
                     }
                 }
-                Text { visible: field.suffix !== undefined; text: field.suffix || ""; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontMono }
+                Text { visible: field.suffix !== undefined; text: field.suffix || ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
             }
         }
         Component {
@@ -805,7 +805,7 @@ Window {
                                 anchors.centerIn: parent
                                 text: modelData
                                 color: index === parent.parent.parent.curIdx ? Theme.accentText : Theme.t3
-                                font.pointSize: 11
+                                font.pixelSize: 11
                                 font.weight: Font.Medium
                                 font.family: Theme.fontSans
                             }
@@ -845,20 +845,20 @@ Window {
                     model: [{ k: "scheduleFromHour" }, { k: "scheduleToHour" }]
                     delegate: Row {
                         spacing: Theme.sp2
-                        Text { visible: index === 1; text: "—"; color: Theme.t4; font.pointSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                        Text { visible: index === 1; text: "—"; color: Theme.t4; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                         Rectangle {
                             width: 64; height: 30; radius: 7
                             color: Theme.field; border.color: Theme.hair; border.width: 1
                             TextInput {
                                 anchors.fill: parent; anchors.margins: 6
                                 text: (typeof settings !== "undefined") ? String(settings.get(modelData.k)) : "0"
-                                color: Theme.t1; font.pointSize: 12; font.family: Theme.fontMono
+                                color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono
                                 horizontalAlignment: TextInput.AlignHCenter; verticalAlignment: TextInput.AlignVCenter
                                 validator: IntValidator { bottom: 0; top: 23 }
                                 onEditingFinished: if (typeof settings !== "undefined") settings.set(modelData.k, Math.max(0, Math.min(23, parseInt(text) || 0)))
                             }
                         }
-                        Text { text: "h"; color: Theme.t4; font.pointSize: 11; anchors.verticalCenter: parent.verticalCenter }
+                        Text { text: "h"; color: Theme.t4; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
                     }
                 }
             }
@@ -876,7 +876,7 @@ Window {
                         readonly property bool sel: (parent.mask & (1 << index)) !== 0
                         color: sel ? Theme.accent : Theme.field
                         border.color: sel ? Theme.accent : Theme.hair; border.width: 1
-                        Text { anchors.centerIn: parent; text: modelData; color: parent.sel ? Theme.accentText : Theme.t3; font.pointSize: 10.5; font.weight: Font.Medium; font.family: Theme.fontSans }
+                        Text { anchors.centerIn: parent; text: modelData; color: parent.sel ? Theme.accentText : Theme.t3; font.pixelSize: 11; font.weight: Font.Medium; font.family: Theme.fontSans }
                         MouseArea {
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                             onClicked: if (typeof settings !== "undefined") {
@@ -1001,7 +1001,7 @@ Window {
         standardButtons: Dialog.Ok
         contentItem: Text {
             text: infoDlg.message
-            color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans
+            color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
             wrapMode: Text.WordWrap
         }
     }

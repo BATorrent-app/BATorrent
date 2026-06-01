@@ -23,7 +23,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("magnet_link"))
             color: Theme.t1
-            font.pointSize: 19
+            font.pixelSize: 19
             font.weight: Font.DemiBold
             font.letterSpacing: -0.3
             font.family: Theme.fontSans
@@ -37,7 +37,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("magnet_paste"))
             color: Theme.t3
-            font.pointSize: 11
+            font.pixelSize: 11
             font.weight: Font.DemiBold
             font.family: Theme.fontSans
         }
@@ -78,7 +78,7 @@ BatDialog {
                     anchors.centerIn: parent
                     text: "i"
                     color: Theme.t3
-                    font.pointSize: 9
+                    font.pixelSize: 9
                     font.weight: Font.Bold
                     font.family: Theme.fontSans
                 }
@@ -88,7 +88,7 @@ BatDialog {
                 wrapMode: Text.WordWrap
                 text: (i18n.language, i18n.t("magnet_meta_hint"))
                 color: Theme.t3
-                font.pointSize: 11
+                font.pixelSize: 11
                 font.family: Theme.fontSans
                 lineHeight: 1.4
             }
@@ -102,7 +102,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("detail_kv_save_to"))
             color: Theme.t3
-            font.pointSize: 11
+            font.pixelSize: 11
             font.weight: Font.DemiBold
             font.family: Theme.fontSans
         }
@@ -119,7 +119,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("addt_start_now"))
             color: Theme.t2
-            font.pointSize: 12
+            font.pixelSize: 12
             font.family: Theme.fontSans
         }
         Item { Layout.fillWidth: true }

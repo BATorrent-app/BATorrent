@@ -34,7 +34,7 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         text: (i18n.language, i18n.t("empty_title"))
         color: Theme.t1
-        font.pointSize: 19
+        font.pixelSize: 19
         font.weight: Font.DemiBold
         font.letterSpacing: -0.3
         font.family: Theme.fontSans
@@ -47,7 +47,7 @@ ColumnLayout {
         wrapMode: Text.WordWrap
         text: (i18n.language, i18n.t("empty_body2"))
         color: Theme.t3
-        font.pointSize: 12.5
+        font.pixelSize: 13
         font.family: Theme.fontSans
         lineHeight: 1.55
     }
@@ -68,7 +68,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 8
                 IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/open.svg"; tint: "#ffffff"; s: 16 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("welcome_card_open_title")); color: "#ffffff"; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("welcome_card_open_title")); color: "#ffffff"; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             }
             MouseArea { id: openMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.openClicked() }
         }
@@ -84,7 +84,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 8
                 IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/magnet.svg"; tint: Theme.t1; s: 16 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("empty_paste_btn")); color: Theme.t1; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("empty_paste_btn")); color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             }
             MouseArea { id: magMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.magnetClicked() }
         }
@@ -96,6 +96,6 @@ ColumnLayout {
         Layout.topMargin: 26
         spacing: 8
         IconImg { src: "qrc:/icons/upload.svg"; tint: Theme.t4; s: 14 }
-        Text { text: (i18n.language, i18n.t("empty_drag_hint")); color: Theme.t4; font.pointSize: 11; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("empty_drag_hint")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
     }
 }

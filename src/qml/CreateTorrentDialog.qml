@@ -54,7 +54,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("create_title2"))
             color: Theme.t1
-            font.pointSize: 19; font.weight: Font.DemiBold; font.letterSpacing: -0.3
+            font.pixelSize: 19; font.weight: Font.DemiBold; font.letterSpacing: -0.3
             font.family: Theme.fontSans
         }
     }
@@ -65,7 +65,7 @@ BatDialog {
         spacing: 7
         RowLayout {
             Layout.fillWidth: true
-            Text { text: (i18n.language, i18n.t("create_source2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("create_source2")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Item { Layout.fillWidth: true }
             BtnFlat { sm: true; text: (i18n.language, i18n.t("create_file_btn")); onClicked: srcFileDlg.open() }
             BtnFlat { sm: true; text: (i18n.language, i18n.t("create_folder_btn")); onClicked: srcFolderDlg.open() }
@@ -77,7 +77,7 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text { text: (i18n.language, i18n.t("create_trackers2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("create_trackers2")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         TArea {
             id: trackersArea
             Layout.fillWidth: true
@@ -93,7 +93,7 @@ BatDialog {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 7
-            Text { text: (i18n.language, i18n.t("create_piece_size2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("create_piece_size2")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             TSelect {
                 id: pieceSel
                 Layout.fillWidth: true
@@ -104,7 +104,7 @@ BatDialog {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 7
-            Text { text: (i18n.language, i18n.t("create_comment2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("create_comment2")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             TFld { id: commentFld; Layout.fillWidth: true; placeholder: "ex: build noturna" }
         }
     }
@@ -113,7 +113,7 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text { text: (i18n.language, i18n.t("create_save_as")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("create_save_as")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         PathFld { id: outputFld; Layout.fillWidth: true; placeholder: "/caminho/saida.torrent"; onBrowseClicked: outDlg.open() }
     }
 
@@ -138,8 +138,8 @@ BatDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    Text { text: (i18n.language, i18n.t("create_private2")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
-                    Text { text: (i18n.language, i18n.t("create_private_hint")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                    Text { text: (i18n.language, i18n.t("create_private2")); color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans }
+                    Text { text: (i18n.language, i18n.t("create_private_hint")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 }
                 TToggle { id: privToggle; on: false }
             }
@@ -151,8 +151,8 @@ BatDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    Text { text: (i18n.language, i18n.t("create_start_seed")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
-                    Text { text: (i18n.language, i18n.t("create_start_seed_hint")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                    Text { text: (i18n.language, i18n.t("create_start_seed")); color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans }
+                    Text { text: (i18n.language, i18n.t("create_start_seed_hint")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 }
                 TToggle { id: seedToggle; on: true }
             }
@@ -169,7 +169,7 @@ BatDialog {
             wrapMode: Text.WordWrap
             text: dlg.busy ? (i18n.language, i18n.t("create_creating")) : ""
             color: text.indexOf((i18n.language, i18n.t("dlg_error"))) === 0 ? Theme.accentText : Theme.t3
-            font.pointSize: 11
+            font.pixelSize: 11
             font.family: Theme.fontSans
         }
         BtnFlat {

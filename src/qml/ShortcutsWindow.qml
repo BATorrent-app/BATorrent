@@ -58,7 +58,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("shortcuts_title2")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("shortcuts_title2")); color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -87,7 +87,7 @@ Window {
                         Text {
                             text: modelData.title.toUpperCase()
                             color: Theme.t4
-                            font.pointSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
+                            font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
                             font.family: Theme.fontSans
                         }
                         Repeater {
@@ -108,7 +108,7 @@ Window {
                                         anchors.centerIn: parent
                                         text: modelData.k
                                         color: Theme.t2
-                                        font.pointSize: 11.5
+                                        font.pixelSize: 12
                                         font.family: Theme.fontMono
                                     }
                                 }
@@ -116,7 +116,7 @@ Window {
                                     Layout.fillWidth: true
                                     text: modelData.d
                                     color: Theme.t2
-                                    font.pointSize: 12
+                                    font.pixelSize: 12
                                     font.family: Theme.fontSans
                                     wrapMode: Text.WordWrap
                                 }

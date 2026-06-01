@@ -23,7 +23,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("pairing_title"))
             color: Theme.t1
-            font.pointSize: 19; font.weight: Font.DemiBold; font.letterSpacing: -0.3
+            font.pixelSize: 19; font.weight: Font.DemiBold; font.letterSpacing: -0.3
             font.family: Theme.fontSans
         }
         Text {
@@ -31,7 +31,7 @@ BatDialog {
             wrapMode: Text.WordWrap
             text: (i18n.language, i18n.t("pairing_scan_hint"))
             color: Theme.t3
-            font.pointSize: 12
+            font.pixelSize: 12
             font.family: Theme.fontSans
         }
     }
@@ -43,7 +43,7 @@ BatDialog {
         wrapMode: Text.WordWrap
         text: (i18n.language, i18n.t("pairing_no_iface"))
         color: Theme.accentText
-        font.pointSize: 12
+        font.pixelSize: 12
         font.family: Theme.fontSans
     }
 
@@ -89,7 +89,7 @@ BatDialog {
             anchors.centerIn: parent
             text: dlg.api ? dlg.api.url : ""
             color: Theme.t1
-            font.pointSize: 15; font.weight: Font.Bold
+            font.pixelSize: 15; font.weight: Font.Bold
             font.family: Theme.fontMono
         }
     }

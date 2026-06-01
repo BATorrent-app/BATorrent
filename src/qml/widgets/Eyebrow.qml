@@ -7,7 +7,7 @@ import "../theme"
 Text {
     property bool red: false
     color: red ? Theme.accent : Theme.t4
-    font.pointSize: 9
+    font.pixelSize: 9
     font.weight: Font.Bold
     font.letterSpacing: 1.8
     font.family: Theme.fontSans

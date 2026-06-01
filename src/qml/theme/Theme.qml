@@ -40,8 +40,11 @@ QtObject {
     readonly property int sp5: 24
     readonly property int sp6: 32
 
-    // ---------- fonts (--sys / --mono, strings idênticas) ----------
-    readonly property string fontSans: Qt.platform.os === "windows" ? "Segoe UI" : (Qt.platform.os === "osx" ? ".AppleSystemUIFont" : "sans-serif")
+    // ---------- fonts ----------
+    // Inter is bundled (added via QFontDatabase in main.cpp) and used on every
+    // platform so the UI is pixel-identical across macOS/Windows/Linux — the
+    // system fonts (SF / Segoe UI) diverge in family and metrics otherwise.
+    readonly property string fontSans: "Inter"
     readonly property string fontMono: Qt.platform.os === "windows" ? "Consolas" : (Qt.platform.os === "osx" ? "Menlo" : "monospace")
 
     // ---------- surfaces ----------

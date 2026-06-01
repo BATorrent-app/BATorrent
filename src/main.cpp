@@ -19,6 +19,7 @@
 #include <QQmlContext>
 #include <QQuickImageProvider>
 #include <QQuickStyle>
+#include <QQuickWindow>
 #include <QLocale>
 #include "app/metadataresolver.h"
 #include "app/translator.h"
@@ -160,6 +161,13 @@ int main(int argc, char *argv[])
     QFont defaultFont("Inter", 10);
     defaultFont.setStyleStrategy(QFont::PreferAntialias);
     app.setFont(defaultFont);
+
+#ifdef Q_OS_WIN
+    // Distance-field text (the Qt Quick default) renders soft on low-DPI
+    // Windows monitors; the platform rasterizer is crisper there. macOS keeps
+    // the default — it looks right on Retina and matches the existing build.
+    QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
+#endif
 
     // QML is the default UI. The old QWidget UI stays reachable via --legacy
     // as a safety net during the migration.

@@ -43,7 +43,7 @@ Rectangle {
             Layout.fillHeight: true
             color: Theme.t1
             placeholderTextColor: Theme.t4
-            font.pointSize: fld.mono ? 11.5 : 12.5
+            font.pixelSize: fld.mono ? 12 : 13
             font.family: fld.mono ? Theme.fontMono : Theme.fontSans
             readOnly: fld.readonly
             echoMode: fld.password ? TextInput.Password : TextInput.Normal

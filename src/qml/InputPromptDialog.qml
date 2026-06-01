@@ -36,7 +36,7 @@ BatDialog {
             text: dlg.promptLabel
             visible: dlg.promptLabel.length > 0
             color: Theme.t3
-            font.pointSize: 11
+            font.pixelSize: 11
             font.weight: Font.DemiBold
             font.family: Theme.fontSans
             Layout.fillWidth: true

@@ -68,27 +68,27 @@ Item {
                         Text {
                             text: "BATORRENT"
                             color: card.eyebrowColor
-                            font.pointSize: 8; font.weight: Font.Bold
+                            font.pixelSize: 8; font.weight: Font.Bold
                             font.letterSpacing: 1.2; font.family: Theme.fontSans
                             Layout.fillWidth: true
                         }
                         Text {
                             text: (i18n.language, i18n.t("toast_now"))
-                            color: Theme.t4; font.pointSize: 8; font.family: Theme.fontSans
+                            color: Theme.t4; font.pixelSize: 8; font.family: Theme.fontSans
                         }
                     }
                     Text {
                         width: parent.width
                         text: mTitle
                         color: Theme.t1
-                        font.pointSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                        font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans
                         elide: Text.ElideRight
                     }
                     Text {
                         width: parent.width
                         text: mBody
                         color: Theme.t3
-                        font.pointSize: 9; font.family: Theme.fontMono
+                        font.pixelSize: 9; font.family: Theme.fontMono
                         elide: Text.ElideRight
                         visible: mBody.length > 0
                     }

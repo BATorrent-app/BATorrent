@@ -40,7 +40,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             text: btn.text
             color: btn.primary ? "#ffffff" : (ma.containsMouse ? Theme.t1 : Theme.t2)
-            font.pointSize: btn.sm ? 11.5 : 12
+            font.pixelSize: btn.sm ? 11 : 12
             font.weight: btn.primary ? Font.DemiBold : Font.Medium
             font.family: Theme.fontSans
         }

@@ -38,7 +38,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("search_heading")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("search_heading")); color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -96,10 +96,10 @@ Window {
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp4
                 property bool torrentish: win.api && (win.api.mode === "torrent" || win.api.mode === "games")
-                Text { text: (i18n.language, i18n.t("search_col_name2")); Layout.fillWidth: true; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { text: (i18n.language, i18n.t("search_col_size2")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_seeds2")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_leech")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pointSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("search_col_name2")); Layout.fillWidth: true; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("search_col_size2")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_seeds2")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_leech")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Item { Layout.preferredWidth: 36 }
             }
         }
@@ -120,7 +120,7 @@ Window {
                 text: win.api && win.api.searching ? (i18n.language, i18n.t("search_searching2"))
                      : (win.api && win.api.statusText.length > 0 ? win.api.statusText : (i18n.language, i18n.t("search_prompt")))
                 color: Theme.t4
-                font.pointSize: 12.5
+                font.pixelSize: 13
                 font.family: Theme.fontSans
             }
 
@@ -148,7 +148,7 @@ Window {
                                 Layout.fillWidth: true
                                 text: modelData.name
                                 color: Theme.t1
-                                font.pointSize: 12.5
+                                font.pixelSize: 13
                                 font.family: Theme.fontSans
                                 elide: Text.ElideRight
                             }
@@ -158,13 +158,13 @@ Window {
                             visible: (modelData.sub || "").length > 0
                             text: modelData.sub || ""
                             color: Theme.t4
-                            font.pointSize: 10
+                            font.pixelSize: 10
                             font.family: Theme.fontSans
                         }
                     }
-                    Text { text: modelData.sizeStr || ""; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontMono }
-                    Text { visible: (modelData.seeds || "").length > 0; text: modelData.seeds || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: modelData.hasSeeds ? Theme.grn : Theme.t4; font.pointSize: 12; font.family: Theme.fontMono }
-                    Text { visible: (modelData.leech || "").length > 0; text: modelData.leech || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pointSize: 12; font.family: Theme.fontMono }
+                    Text { text: modelData.sizeStr || ""; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
+                    Text { visible: (modelData.seeds || "").length > 0; text: modelData.seeds || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: modelData.hasSeeds ? Theme.grn : Theme.t4; font.pixelSize: 12; font.family: Theme.fontMono }
+                    Text { visible: (modelData.leech || "").length > 0; text: modelData.leech || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
                     Item {
                         Layout.preferredWidth: 36
                         Rectangle {
@@ -178,7 +178,7 @@ Window {
                                 anchors.centerIn: parent
                                 text: (win.api && win.api.mode === "catalog") ? "›" : "+"
                                 color: addMa.containsMouse ? Theme.accentText : Theme.t3
-                                font.pointSize: 15
+                                font.pixelSize: 15
                             }
                             MouseArea {
                                 id: addMa
@@ -213,7 +213,7 @@ Window {
                 anchors.rightMargin: 20
                 spacing: Theme.sp2
                 BtnFlat { visible: win.api && win.api.inStreams; text: (i18n.language, i18n.t("search_back2")); onClicked: if (win.api) win.api.back() }
-                Text { text: win.api ? win.api.statusText : ""; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                Text { text: win.api ? win.api.statusText : ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
                 BtnFlat { text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
             }

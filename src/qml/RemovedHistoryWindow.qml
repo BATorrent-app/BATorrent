@@ -26,7 +26,7 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("removed_history_title2")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("removed_history_title2")); color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -37,7 +37,7 @@ Window {
             Layout.topMargin: Theme.sp3
             text: (i18n.language, i18n.t("removed_history_desc2"))
             color: Theme.t4
-            font.pointSize: 11
+            font.pixelSize: 11
             font.family: Theme.fontSans
             wrapMode: Text.WordWrap
         }
@@ -68,8 +68,8 @@ Window {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        Text { Layout.fillWidth: true; text: modelData.name; color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans; elide: Text.ElideRight }
-                        Text { text: modelData.size + " · " + modelData.when; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontMono }
+                        Text { Layout.fillWidth: true; text: modelData.name; color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans; elide: Text.ElideRight }
+                        Text { text: modelData.size + " · " + modelData.when; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
                     }
                     BtnFlat {
                         sm: true; text: (i18n.language, i18n.t("removed_history_restore"))
@@ -85,7 +85,7 @@ Window {
             Layout.alignment: Qt.AlignHCenter
             text: (i18n.language, i18n.t("removed_history_empty2"))
             color: Theme.t4
-            font.pointSize: 12
+            font.pixelSize: 12
             font.family: Theme.fontSans
         }
 

@@ -36,7 +36,7 @@ BatDialog {
             Layout.fillWidth: true
             text: (i18n.language, i18n.t("inspector_read_fail")) + (dlg.info.error || "")
             color: Theme.accentText
-            font.pointSize: 12
+            font.pixelSize: 12
             font.family: Theme.fontSans
             wrapMode: Text.WordWrap
         }
@@ -52,7 +52,7 @@ BatDialog {
             Layout.fillWidth: true
             text: dlg.info.name || ""
             color: Theme.t1
-            font.pointSize: 16; font.weight: Font.Bold; font.letterSpacing: -0.2
+            font.pixelSize: 16; font.weight: Font.Bold; font.letterSpacing: -0.2
             font.family: Theme.fontSans
             wrapMode: Text.WordWrap
         }
@@ -64,8 +64,8 @@ BatDialog {
             columnSpacing: Theme.sp4
             rowSpacing: 6
 
-            component MK: Text { color: Theme.t3; font.pointSize: 11.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-            component MV: Text { Layout.fillWidth: true; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans; wrapMode: Text.WrapAnywhere }
+            component MK: Text { color: Theme.t3; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            component MV: Text { Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; wrapMode: Text.WrapAnywhere }
 
             MK { text: (i18n.language, i18n.t("add_torrent_col_size")) }   MV { text: dlg.info.totalSize || "—" }
             MK { text: (i18n.language, i18n.t("detail_files")) }  MV { text: dlg.info.fileCount !== undefined ? String(dlg.info.fileCount) : "—" }
@@ -77,7 +77,7 @@ BatDialog {
                 readOnly: true
                 selectByMouse: true
                 color: Theme.t1
-                font.pointSize: 11
+                font.pixelSize: 11
                 font.family: Theme.fontMono
                 wrapMode: TextEdit.WrapAnywhere
             }
@@ -99,7 +99,7 @@ BatDialog {
             component Tab: Text {
                 property int idx: 0
                 color: dlg.tab === idx ? Theme.t1 : Theme.t3
-                font.pointSize: 12.5
+                font.pixelSize: 13
                 font.weight: dlg.tab === idx ? Font.DemiBold : Font.Normal
                 font.family: Theme.fontSans
                 MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: dlg.tab = parent.idx }
@@ -131,8 +131,8 @@ BatDialog {
                     width: ListView.view.width
                     height: 26
                     spacing: Theme.sp3
-                    Text { Layout.fillWidth: true; leftPadding: 6; text: modelData.path; color: Theme.t2; font.pointSize: 11; font.family: Theme.fontMono; elide: Text.ElideMiddle }
-                    Text { rightPadding: 6; text: modelData.size; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono }
+                    Text { Layout.fillWidth: true; leftPadding: 6; text: modelData.path; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono; elide: Text.ElideMiddle }
+                    Text { rightPadding: 6; text: modelData.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
                 }
             }
             ListView {
@@ -151,7 +151,7 @@ BatDialog {
                     verticalAlignment: Text.AlignVCenter
                     text: modelData
                     color: Theme.t2
-                    font.pointSize: 11
+                    font.pixelSize: 11
                     font.family: Theme.fontMono
                     elide: Text.ElideRight
                 }
@@ -161,7 +161,7 @@ BatDialog {
                 visible: dlg.tab === 1 && (!dlg.info.trackers || dlg.info.trackers.length === 0)
                 text: (i18n.language, i18n.t("inspector_no_trackers2"))
                 color: Theme.t4
-                font.pointSize: 11.5
+                font.pixelSize: 12
                 font.family: Theme.fontSans
             }
         }

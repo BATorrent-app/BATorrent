@@ -65,12 +65,12 @@ Window {
                 anchors.fill: parent
                 anchors.margins: Theme.sp5
                 spacing: Theme.sp3
-                Text { text: (i18n.language, i18n.t("rss_feed_settings2")); color: Theme.t1; font.pointSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_feed_settings2")); color: Theme.t1; font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
 
-                Text { text: (i18n.language, i18n.t("rss_filter2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_filter2")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 TFld { id: edFilter; Layout.fillWidth: true; mono: true; placeholder: "ex: 1080p|2160p" }
 
-                Text { text: (i18n.language, i18n.t("rss_save_path2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_save_path2")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 PathFld { id: edPath; Layout.fillWidth: true; onBrowseClicked: edFolderDlg.open() }
 
                 RowLayout {
@@ -78,14 +78,14 @@ Window {
                     spacing: Theme.sp4
                     ColumnLayout {
                         spacing: 6
-                        Text { text: (i18n.language, i18n.t("rss_interval2")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                        Text { text: (i18n.language, i18n.t("rss_interval2")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                         TFld { id: edInterval; Layout.preferredWidth: 100; placeholder: "30" }
                     }
                     Item { Layout.fillWidth: true }
                     ColumnLayout {
                         spacing: 6
-                        RowLayout { spacing: 8; Text { text: (i18n.language, i18n.t("rss_enabled")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans } Item { Layout.fillWidth: true } TToggle { id: edEnabled } }
-                        RowLayout { spacing: 8; Text { text: (i18n.language, i18n.t("rss_auto2")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans } Item { Layout.fillWidth: true } TToggle { id: edAuto } }
+                        RowLayout { spacing: 8; Text { text: (i18n.language, i18n.t("rss_enabled")); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans } Item { Layout.fillWidth: true } TToggle { id: edEnabled } }
+                        RowLayout { spacing: 8; Text { text: (i18n.language, i18n.t("rss_auto2")); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans } Item { Layout.fillWidth: true } TToggle { id: edAuto } }
                     }
                 }
 
@@ -129,7 +129,7 @@ Window {
                 anchors.fill: parent
                 anchors.margins: Theme.sp5
                 spacing: Theme.sp3
-                Text { text: (i18n.language, i18n.t("rss_add_feed")); color: Theme.t1; font.pointSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_add_feed")); color: Theme.t1; font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 TFld { id: addUrl; Layout.fillWidth: true; mono: true; placeholder: "https://exemplo.com/rss.xml" }
                 Item { Layout.fillHeight: true }
                 RowLayout {
@@ -157,13 +157,13 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
             color: Theme.elev
-            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("tb_rss")); color: Theme.t2; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("tb_rss")); color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Text {
                 visible: win.statusMsg.length > 0
                 anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
                 text: win.statusMsg
                 color: win.statusMsg.indexOf((i18n.language, i18n.t("dlg_error"))) === 0 ? Theme.accentText : Theme.t4
-                font.pointSize: 10.5; font.family: Theme.fontSans
+                font.pixelSize: 11; font.family: Theme.fontSans
                 elide: Text.ElideRight; width: Math.min(implicitWidth, parent.width / 2)
             }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
@@ -180,7 +180,7 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp3
-                Text { text: (i18n.language, i18n.t("rss_feeds2")); color: Theme.t1; font.pointSize: 16; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("rss_feeds2")); color: Theme.t1; font.pixelSize: 16; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 TChip { text: win.feedList.length + (win.feedList.length === 1 ? " feed" : " feeds") }
                 Item { Layout.fillWidth: true }
                 BtnFlat { sm: true; text: (i18n.language, i18n.t("settings_refresh")); onClicked: if (typeof rss !== "undefined") rss.checkAllFeeds() }
@@ -231,11 +231,11 @@ Window {
                                 Layout.fillWidth: true
                                 text: modelData.name
                                 color: win.selectedFeed === index ? Theme.t1 : (feedMa.containsMouse ? Theme.t1 : Theme.t2)
-                                font.pointSize: 12.5
+                                font.pixelSize: 13
                                 font.family: Theme.fontSans
                                 elide: Text.ElideRight
                             }
-                            Text { text: modelData.count; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono }
+                            Text { text: modelData.count; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
                         }
                         MouseArea {
                             id: feedMa; anchors.fill: parent; hoverEnabled: true
@@ -271,7 +271,7 @@ Window {
                     wrapMode: Text.WordWrap
                     text: (i18n.language, i18n.t("rss_empty2"))
                     color: Theme.t4
-                    font.pointSize: 11
+                    font.pixelSize: 11
                     font.family: Theme.fontSans
                 }
             }
@@ -300,7 +300,7 @@ Window {
                                 ? "Auto-baixar itens que contenham <b><font color='" + Theme.t1 + "'>" + win.curFeed.filterPattern + "</font></b>"
                                 : (i18n.language, i18n.t("rss_no_rule"))
                             color: Theme.t2
-                            font.pointSize: 11.5
+                            font.pixelSize: 12
                             font.family: Theme.fontSans
                         }
                         Item { Layout.fillWidth: true }
@@ -339,7 +339,7 @@ Window {
                                     Layout.fillWidth: true
                                     text: modelData.title
                                     color: Theme.t1
-                                    font.pointSize: 12.5
+                                    font.pixelSize: 13
                                     font.family: Theme.fontSans
                                     elide: Text.ElideRight
                                 }
@@ -347,7 +347,7 @@ Window {
                                     visible: (modelData.date || "").length > 0
                                     text: modelData.date || ""
                                     color: Theme.t4
-                                    font.pointSize: 10
+                                    font.pixelSize: 10
                                     font.family: Theme.fontMono
                                 }
                             }
@@ -360,9 +360,9 @@ Window {
                                 color: Qt.rgba(63/255, 185/255, 80/255, 0.12)
                                 border.color: Qt.rgba(63/255, 185/255, 80/255, 0.3)
                                 border.width: 1
-                                Text { id: badgeLbl; anchors.centerIn: parent; text: (i18n.language, i18n.t("detail_kv_downloaded")); color: Theme.grn; font.pointSize: 9.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                                Text { id: badgeLbl; anchors.centerIn: parent; text: (i18n.language, i18n.t("detail_kv_downloaded")); color: Theme.grn; font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                             }
-                            Text { text: modelData.size; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono }
+                            Text { text: modelData.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
                             // .dl
                             Rectangle {
                                 Layout.preferredWidth: 28; Layout.preferredHeight: 28

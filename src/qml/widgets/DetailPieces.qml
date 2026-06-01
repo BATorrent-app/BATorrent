@@ -22,7 +22,7 @@ ColumnLayout {
               ? (i18n.language, i18n.t("detailpieces_empty"))
               : pane.doneCount + " / " + pane.total + " " + (i18n.language, i18n.t("word_pieces")) + " (" + (pane.total > 0 ? Math.round(pane.doneCount / pane.total * 100) : 0) + "%)"
         color: Theme.t3
-        font.pointSize: 11.5
+        font.pixelSize: 12
         font.family: Theme.fontSans
     }
 

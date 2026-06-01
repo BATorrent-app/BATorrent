@@ -55,7 +55,7 @@ BatDialog {
             Layout.fillWidth: true
             text: dlg.statusText
             color: Theme.t2
-            font.pointSize: 12
+            font.pixelSize: 12
             font.family: Theme.fontSans
             wrapMode: Text.WordWrap
         }

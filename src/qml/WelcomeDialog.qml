@@ -35,7 +35,7 @@ BatDialog {
             Layout.alignment: Qt.AlignHCenter
             text: (i18n.language, i18n.t("welcome_heading"))
             color: Theme.t1
-            font.pointSize: 25
+            font.pixelSize: 25
             font.weight: Font.Black
             font.family: Theme.fontSans
         }
@@ -46,7 +46,7 @@ BatDialog {
             wrapMode: Text.WordWrap
             text: (i18n.language, i18n.t("welcome_blurb2"))
             color: Theme.t2
-            font.pointSize: 12.5
+            font.pixelSize: 13
             font.family: Theme.fontSans
         }
     }
@@ -90,8 +90,8 @@ BatDialog {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        Text { text: modelData.t; color: Theme.t1; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                        Text { text: modelData.d; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                        Text { text: modelData.t; color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                        Text { text: modelData.d; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                     }
                 }
                 MouseArea {
@@ -112,6 +112,6 @@ BatDialog {
         Layout.topMargin: 4
         spacing: 8
         TChk { id: dsChk; on: dlg.dontShow; onToggled: function(v) { dlg.dontShow = v } }
-        Text { text: (i18n.language, i18n.t("welcome_dont_show")); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("welcome_dont_show")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
     }
 }

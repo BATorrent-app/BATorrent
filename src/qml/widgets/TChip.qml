@@ -21,7 +21,7 @@ Rectangle {
         anchors.centerIn: parent
         text: chip.text
         color: chip.red ? Theme.accentText : Theme.t3
-        font.pointSize: 10
+        font.pixelSize: 10
         font.family: Theme.fontMono
     }
 }

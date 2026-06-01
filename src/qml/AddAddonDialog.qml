@@ -30,7 +30,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("addon_heading2"))
             color: Theme.t1
-            font.pointSize: 19
+            font.pixelSize: 19
             font.weight: Font.DemiBold
             font.letterSpacing: -0.3
             font.family: Theme.fontSans
@@ -41,7 +41,7 @@ BatDialog {
             wrapMode: Text.WordWrap
             text: (i18n.language, i18n.t("addon_intro"))
             color: Theme.t3
-            font.pointSize: 12
+            font.pixelSize: 12
             font.family: Theme.fontSans
         }
     }
@@ -50,7 +50,7 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text { text: (i18n.language, i18n.t("addon_manifest_url")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("addon_manifest_url")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.sp2
@@ -80,7 +80,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("addon_installed2"))
             color: Theme.t4
-            font.pointSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
+            font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
             font.family: Theme.fontSans; font.capitalization: Font.AllUppercase
         }
 
@@ -96,7 +96,7 @@ BatDialog {
             Text {
                 anchors.centerIn: parent
                 text: (i18n.language, i18n.t("addon_none_installed"))
-                color: Theme.t4; font.pointSize: 11.5; font.family: Theme.fontSans
+                color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
             }
         }
 
@@ -138,15 +138,15 @@ BatDialog {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
-                                Text { text: modelData.name; color: Theme.t1; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans; elide: Text.ElideRight; Layout.fillWidth: true }
+                                Text { text: modelData.name; color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; elide: Text.ElideRight; Layout.fillWidth: true }
                                 Text {
                                     visible: modelData.description.length > 0
-                                    text: modelData.description; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans
+                                    text: modelData.description; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans
                                     elide: Text.ElideRight; Layout.fillWidth: true
                                 }
                                 Text {
                                     visible: modelData.types.length > 0
-                                    text: modelData.types; color: Theme.t4; font.pointSize: 9.5; font.family: Theme.fontMono
+                                    text: modelData.types; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontMono
                                 }
                             }
                             TToggle {
@@ -169,7 +169,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("addon_suggested2"))
             color: Theme.t4
-            font.pointSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
+            font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
             font.family: Theme.fontSans; font.capitalization: Font.AllUppercase
         }
 
@@ -209,14 +209,14 @@ BatDialog {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
-                                Text { text: modelData.name; color: Theme.t1; font.pointSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                                Text { text: modelData.description; color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans; elide: Text.ElideRight; Layout.fillWidth: true }
+                                Text { text: modelData.name; color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                                Text { text: modelData.description; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; elide: Text.ElideRight; Layout.fillWidth: true }
                             }
                             Row {
                                 visible: modelData.installed
                                 spacing: 6
                                 IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/play.svg"; tint: Theme.up; s: 14 }
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("addon_installed_chip")); color: Theme.up; font.pointSize: 11; font.family: Theme.fontSans }
+                                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("addon_installed_chip")); color: Theme.up; font.pixelSize: 11; font.family: Theme.fontSans }
                             }
                             BtnFlat { visible: !modelData.installed; sm: true; text: (i18n.language, i18n.t("addon_install_btn")); onClicked: if (dlg.addonsApi) dlg.addonsApi.addAddon(modelData.url) }
                         }
@@ -234,7 +234,7 @@ BatDialog {
         Text {
             text: (i18n.language, i18n.t("addon_automatic"))
             color: Theme.t4
-            font.pointSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
+            font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
             font.family: Theme.fontSans; font.capitalization: Font.AllUppercase
         }
 
@@ -259,8 +259,8 @@ BatDialog {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        Text { text: (i18n.language, i18n.t("addon_auto_trackers2")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
-                        Text { text: (dlg.addonsApi ? dlg.addonsApi.trackerCount : 0) + " " + (i18n.language, i18n.t("word_trackers_loaded")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                        Text { text: (i18n.language, i18n.t("addon_auto_trackers2")); color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans }
+                        Text { text: (dlg.addonsApi ? dlg.addonsApi.trackerCount : 0) + " " + (i18n.language, i18n.t("word_trackers_loaded")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                     }
                     TToggle {
                         on: dlg.addonsApi ? dlg.addonsApi.autoTrackers : false
@@ -276,8 +276,8 @@ BatDialog {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        Text { text: (i18n.language, i18n.t("set_torrent_search_enable")); color: Theme.t1; font.pointSize: 12.5; font.family: Theme.fontSans }
-                        Text { text: (i18n.language, i18n.t("addon_search_enable_hint")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontSans }
+                        Text { text: (i18n.language, i18n.t("set_torrent_search_enable")); color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans }
+                        Text { text: (i18n.language, i18n.t("addon_search_enable_hint")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                     }
                     TToggle {
                         on: dlg.addonsApi ? dlg.addonsApi.torrentSearchEnabled : false

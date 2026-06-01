@@ -14,7 +14,10 @@ Window {
     visible: true
     width: 1360
     height: 884
-    minimumWidth: 1000
+    // floor wide enough that the full toolbar (labels + speed module) always
+    // fits — below this the RowLayout would have to clip, which is what made
+    // the old icon-only "compact" hack feel broken.
+    minimumWidth: 1100
     minimumHeight: 640
     color: Theme.bg
     title: "BATorrent"
@@ -54,10 +57,6 @@ Window {
         welcomeDlg.open()
     }
     readonly property var presetCats: ["Apps", "Games", "Movies", "Series"]
-    // Adaptive toolbar: collapse button labels (icon-only) and hide the speed
-    // module on narrower windows so nothing clips when the window shrinks.
-    readonly property bool compactToolbar: width < 1180
-    readonly property bool showSpeedModule: width >= 1100
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
     property string sortColumn: ""
     property bool sortAsc: true
@@ -200,7 +199,7 @@ Window {
             leftPadding: 14; rightPadding: 14
             text: cmi.text
             color: cmi.highlighted ? Theme.t1 : Theme.t2
-            font.pointSize: 12; font.family: Theme.fontSans
+            font.pixelSize: 12; font.family: Theme.fontSans
             verticalAlignment: Text.AlignVCenter
         }
         background: Rectangle { color: cmi.highlighted ? Theme.hover : "transparent"; radius: 5 }
@@ -227,7 +226,7 @@ Window {
                 rightPadding: 14
                 text: ci.text
                 color: ci.highlighted ? Theme.t1 : Theme.t2
-                font.pointSize: 12
+                font.pixelSize: 12
                 font.family: Theme.fontSans
                 verticalAlignment: Text.AlignVCenter
             }
@@ -441,7 +440,8 @@ Window {
         property string icon
         property bool disabled: false
         signal clicked()
-        Layout.preferredWidth: win.compactToolbar ? 38 : 52
+        Layout.preferredWidth: 52
+        Layout.minimumWidth: 52          // never let the RowLayout squeeze/clip the button
         Layout.preferredHeight: 54
         color: !disabled && tbMa.containsMouse ? Theme.hover : "transparent"
         radius: 8
@@ -458,10 +458,9 @@ Window {
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                visible: !win.compactToolbar      // icon-only when the window is narrow
                 text: tb.label
                 color: !tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3
-                font.pointSize: 10.5
+                font.pixelSize: 11
                 font.family: Theme.fontSans
                 font.weight: Font.Medium
             }
@@ -506,7 +505,7 @@ Window {
                 anchors.verticalCenter: parent.verticalCenter
                 text: pi.label
                 color: pi.on ? Theme.accentText : (piMa.containsMouse ? Theme.t2 : Theme.t3)
-                font.pointSize: 12
+                font.pixelSize: 12
                 font.family: Theme.fontSans
                 font.weight: Font.Medium
             }
@@ -514,7 +513,7 @@ Window {
                 anchors.verticalCenter: parent.verticalCenter
                 text: pi.count
                 color: pi.on ? Theme.accentText : Theme.t4
-                font.pointSize: 11
+                font.pixelSize: 11
                 font.family: Theme.fontMono
             }
         }
@@ -551,14 +550,14 @@ Window {
                 color: win.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : (Theme.hasAnime ? Theme.t2 : Theme.t4))
                 style: Theme.hasAnime ? Text.Outline : Text.Normal
                 styleColor: Theme.isLight ? "#ffffff" : "#000000"
-                font.pointSize: 10.5; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans
+                font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: win.sortColumn === hc.col
                 text: win.sortAsc ? "▲" : "▼"
                 color: Theme.accent
-                font.pointSize: 7
+                font.pixelSize: 7
             }
         }
         MouseArea { id: hcMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.toggleSort(hc.col) }
@@ -625,9 +624,8 @@ Window {
                 // .tb-spacer
                 Item { Layout.fillWidth: true }
 
-                // .spd-mod (border hair, radius 9, 2 cols) — hidden on narrow windows
+                // .spd-mod (border hair, radius 9, 2 cols)
                 Rectangle {
-                    visible: win.showSpeedModule
                     Layout.preferredHeight: 44
                     Layout.alignment: Qt.AlignVCenter
                     implicitWidth: spdRow.width + 0
@@ -652,7 +650,7 @@ Window {
                                 Text {
                                     text: (i18n.language, i18n.t("graph_download"))
                                     color: Theme.t4
-                                    font.pointSize: 9
+                                    font.pixelSize: 9
                                     font.weight: Font.Bold
                                     font.letterSpacing: 1
                                     font.family: Theme.fontSans
@@ -669,7 +667,7 @@ Window {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"
                                         color: Theme.accentText
-                                        font.pointSize: 13
+                                        font.pixelSize: 13
                                         font.weight: Font.Bold
                                         font.family: Theme.fontMono
                                     }
@@ -689,7 +687,7 @@ Window {
                                 Text {
                                     text: (i18n.language, i18n.t("graph_upload"))
                                     color: Theme.t4
-                                    font.pointSize: 9
+                                    font.pixelSize: 9
                                     font.weight: Font.Bold
                                     font.letterSpacing: 1
                                     font.family: Theme.fontSans
@@ -706,7 +704,7 @@ Window {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"
                                         color: Theme.up
-                                        font.pointSize: 13
+                                        font.pixelSize: 13
                                         font.family: Theme.fontMono
                                     }
                                 }
@@ -757,7 +755,7 @@ Window {
                             Layout.fillHeight: true
                             verticalAlignment: TextInput.AlignVCenter
                             color: Theme.t1
-                            font.pointSize: 12.5
+                            font.pixelSize: 13
                             font.family: Theme.fontSans
                             clip: true
                             onTextChanged: if (typeof torrentFilter !== "undefined") torrentFilter.setSearchText(text)
@@ -806,7 +804,7 @@ Window {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: (i18n.language, i18n.t("view_grid"))
                                     color: win.gridView ? Theme.t1 : Theme.t3
-                                    font.pointSize: 11.5
+                                    font.pixelSize: 12
                                     font.weight: Font.Medium
                                     font.family: Theme.fontSans
                                 }
@@ -832,7 +830,7 @@ Window {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: (i18n.language, i18n.t("view_list"))
                                     color: !win.gridView ? Theme.t1 : Theme.t3
-                                    font.pointSize: 11.5
+                                    font.pixelSize: 12
                                     font.weight: Font.Medium
                                     font.family: Theme.fontSans
                                 }
@@ -874,7 +872,7 @@ Window {
                             anchors.verticalCenter: parent.verticalCenter
                             text: win.catFilter.length > 0 ? win.catLabel(win.catFilter) : (i18n.language, i18n.t("filter_all_categories"))
                             color: win.catFilter.length > 0 ? Theme.t1 : Theme.t2
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.family: Theme.fontSans
                         }
                         IconImg {
@@ -929,7 +927,7 @@ Window {
                             anchors.verticalCenter: parent.verticalCenter
                             text: (i18n.language, i18n.t("action_donate"))
                             color: Theme.accentText
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.weight: Font.DemiBold
                             font.family: Theme.fontSans
                         }
@@ -1110,7 +1108,7 @@ Window {
                                 anchors.leftMargin: 13; anchors.topMargin: 12
                                 text: tile.category
                                 color: Qt.rgba(1, 1, 1, 0.42)
-                                font.pointSize: 9.5; font.weight: Font.Bold; font.letterSpacing: 1.3
+                                font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.3
                                 font.capitalization: Font.AllUppercase
                                 font.family: Theme.fontSans
                             }
@@ -1120,7 +1118,7 @@ Window {
                                 anchors.leftMargin: 13; anchors.rightMargin: 13; anchors.bottomMargin: 15
                                 text: tile.metaTitle || tile.torrentName
                                 color: "#f5f5f6"
-                                font.pointSize: 18; font.weight: Font.Bold; font.letterSpacing: -0.3
+                                font.pixelSize: 18; font.weight: Font.Bold; font.letterSpacing: -0.3
                                 font.family: Theme.fontSans
                                 wrapMode: Text.WordWrap
                                 maximumLineCount: 3
@@ -1183,7 +1181,7 @@ Window {
                             anchors.bottomMargin: 12
                             text: tile.metaTitle || tile.torrentName
                             color: "#f5f5f6"
-                            font.pointSize: 15
+                            font.pixelSize: 15
                             font.weight: Font.Bold
                             font.letterSpacing: -0.2
                             font.family: Theme.fontSans
@@ -1252,7 +1250,7 @@ Window {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: tile.stateString
                                 color: win.textFor(tile.stateKey)
-                                font.pointSize: 11.5
+                                font.pixelSize: 12
                                 font.family: Theme.fontSans
                             }
                         }
@@ -1260,7 +1258,7 @@ Window {
                         Text {
                             text: tile.size
                             color: Theme.t4
-                            font.pointSize: 11.5
+                            font.pixelSize: 12
                             font.family: Theme.fontMono
                         }
                     }
@@ -1387,7 +1385,7 @@ Window {
                                 Layout.alignment: Qt.AlignVCenter
                                 text: lrow.torrentName
                                 color: Theme.t1
-                                font.pointSize: 13
+                                font.pixelSize: 13
                                 font.family: Theme.fontSans
                                 elide: Text.ElideRight
                             }
@@ -1397,7 +1395,7 @@ Window {
                             Layout.preferredWidth: 78
                             horizontalAlignment: Text.AlignRight
                             color: Theme.t2
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.family: Theme.fontMono
                         }
                         // .prog — QWidget ProgressDelegate style: surfaceAlt track,
@@ -1424,7 +1422,7 @@ Window {
                                     anchors.centerIn: parent
                                     text: (lrow.progress * 100).toFixed(1) + "%"
                                     color: (parent.width / 2) < (parent.width * lrow.progress - 4) ? "#ffffff" : Theme.t1
-                                    font.pointSize: 9
+                                    font.pixelSize: 9
                                     font.weight: Font.DemiBold
                                     font.family: Theme.fontSans
                                 }
@@ -1435,7 +1433,7 @@ Window {
                             Layout.preferredWidth: 78
                             horizontalAlignment: Text.AlignRight
                             color: lrow.downRate > 0 ? Theme.accentText : Theme.t4
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.family: Theme.fontMono
                         }
                         Text {
@@ -1443,14 +1441,14 @@ Window {
                             Layout.preferredWidth: 78
                             horizontalAlignment: Text.AlignRight
                             color: lrow.upRate > 0 ? Theme.up : Theme.t4
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.family: Theme.fontMono
                         }
                         Text {
                             text: lrow.stateString
                             Layout.preferredWidth: 110
                             color: win.textFor(lrow.stateKey)
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.weight: Theme.hasAnime ? Font.DemiBold : Font.Medium
                             font.family: Theme.fontSans
                         }
@@ -1460,7 +1458,7 @@ Window {
                             color: Theme.hasAnime ? Theme.t1 : Theme.t3
                             style: Theme.hasAnime ? Text.Outline : Text.Normal
                             styleColor: Theme.isLight ? "#ffffff" : "#000000"
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.weight: Theme.hasAnime ? Font.Medium : Font.Normal
                             font.family: Theme.fontSans
                             elide: Text.ElideRight
@@ -1472,7 +1470,7 @@ Window {
                             color: lrow.numPeers === 0 ? (Theme.hasAnime ? Theme.t2 : Theme.t4) : (Theme.hasAnime ? Theme.t1 : Theme.t2)
                             style: Theme.hasAnime ? Text.Outline : Text.Normal
                             styleColor: Theme.isLight ? "#ffffff" : "#000000"
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.weight: Theme.hasAnime ? Font.Medium : Font.Normal
                             font.family: Theme.fontMono
                         }
@@ -1640,7 +1638,7 @@ Window {
                 anchors.leftMargin: Theme.sp4
                 text: graphPanel.scaleText(graphPanel.scaledMax)
                 color: Theme.t4
-                font.pointSize: 10
+                font.pixelSize: 10
                 font.family: Theme.fontSans
             }
             Row {
@@ -1652,12 +1650,12 @@ Window {
                 Row {
                     spacing: 6
                     Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
                 }
                 Row {
                     spacing: 6
                     Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
 
@@ -1754,7 +1752,7 @@ Window {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: modelData.label
                                         color: parent.parent.on ? Theme.t1 : (dtabMa.containsMouse ? Theme.t2 : Theme.t3)
-                                        font.pointSize: 12.5
+                                        font.pixelSize: 13
                                         font.weight: parent.parent.on ? Font.DemiBold : Font.Medium
                                         font.family: Theme.fontSans
                                     }
@@ -1763,7 +1761,7 @@ Window {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: modelData.ct
                                         color: Theme.t4
-                                        font.pointSize: 11
+                                        font.pixelSize: 11
                                         font.family: Theme.fontMono
                                     }
                                 }
@@ -1865,7 +1863,7 @@ Window {
                         Text {
                             text: win.hasSel ? (session.selectedMetaTitle.length > 0 ? session.selectedMetaTitle : session.selectedName) : (i18n.language, i18n.t("empty_no_selection"))
                             color: Theme.t1
-                            font.pointSize: 17
+                            font.pixelSize: 17
                             font.weight: Font.DemiBold
                             font.letterSpacing: -0.2
                             font.family: Theme.fontSans
@@ -1876,7 +1874,7 @@ Window {
                             visible: win.hasSel && session.selectedMetaInfo.length > 0
                             text: win.hasSel ? session.selectedMetaInfo : ""
                             color: Theme.t3
-                            font.pointSize: 11.5
+                            font.pixelSize: 12
                             font.family: Theme.fontSans
                         }
                         Text {
@@ -1887,7 +1885,7 @@ Window {
                             maximumLineCount: 4
                             elide: Text.ElideRight
                             color: Theme.t2
-                            font.pointSize: 12
+                            font.pixelSize: 12
                             font.family: Theme.fontSans
                             lineHeight: 1.55
                             text: win.hasSel ? session.selectedDescription : ""
@@ -1910,7 +1908,7 @@ Window {
                             Text {
                                 text: (i18n.language, i18n.t("detail_section_info"))
                                 color: Theme.t4
-                                font.pointSize: 10
+                                font.pixelSize: 10
                                 font.weight: Font.Bold
                                 font.letterSpacing: 0.8
                                 font.family: Theme.fontSans
@@ -1925,9 +1923,9 @@ Window {
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
-                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                                     Item { Layout.fillWidth: true }
-                                    Text { text: modelData.v; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans; elide: Text.ElideMiddle; Layout.maximumWidth: 110; horizontalAlignment: Text.AlignRight }
+                                    Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideMiddle; Layout.maximumWidth: 110; horizontalAlignment: Text.AlignRight }
                                 }
                             }
                         }
@@ -1941,7 +1939,7 @@ Window {
                             Text {
                                 text: (i18n.language, i18n.t("detail_section_transfer"))
                                 color: Theme.t4
-                                font.pointSize: 10
+                                font.pixelSize: 10
                                 font.weight: Font.Bold
                                 font.letterSpacing: 0.8
                                 font.family: Theme.fontSans
@@ -1956,9 +1954,9 @@ Window {
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
-                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                                     Item { Layout.fillWidth: true }
-                                    Text { text: modelData.v; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans }
+                                    Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
                                 }
                             }
                         }
@@ -1972,7 +1970,7 @@ Window {
                             Text {
                                 text: (i18n.language, i18n.t("detail_section_peers"))
                                 color: Theme.t4
-                                font.pointSize: 10
+                                font.pixelSize: 10
                                 font.weight: Font.Bold
                                 font.letterSpacing: 0.8
                                 font.family: Theme.fontSans
@@ -1986,9 +1984,9 @@ Window {
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
-                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                                    Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                                     Item { Layout.fillWidth: true }
-                                    Text { text: modelData.v; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans }
+                                    Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
                                 }
                             }
                         }
@@ -2022,20 +2020,20 @@ Window {
                           ? session.torrentCount + " torrents · " + session.activeCount + " ativos"
                           : "0 torrents"
                     color: Theme.t4
-                    font.pointSize: 11.5
+                    font.pixelSize: 12
                     font.family: Theme.fontSans
                 }
                 Item { Layout.fillWidth: true }
                 Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent }
-                Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono }
+                Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
                 Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.amber }
-                Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono }
+                Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
                 Text {
                     text: typeof session !== "undefined"
                           ? "·  Total " + session.totalDownloaded + " ↓ · " + session.totalUploaded + " ↑ · Ratio " + session.globalRatio
                           : ""
                     color: Theme.t4
-                    font.pointSize: 11.5
+                    font.pixelSize: 12
                     font.family: Theme.fontSans
                 }
             }
@@ -2090,8 +2088,8 @@ Window {
                 anchors.centerIn: parent
                 spacing: 12
                 IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/magnet.svg"; tint: Theme.accentText; s: 52 }
-                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("dnd_drop_title")); color: Theme.t1; font.pointSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans }
-                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("dnd_drop_sub")); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("dnd_drop_title")); color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans }
+                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("dnd_drop_sub")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
             }
         }
     }
@@ -2173,7 +2171,7 @@ Window {
         Text {
             Layout.fillWidth: true
             text: diagnoseDlg.body
-            color: Theme.t2; font.pointSize: 12; font.family: Theme.fontMono
+            color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono
             wrapMode: Text.WordWrap; lineHeight: 1.4
         }
     }
@@ -2202,7 +2200,7 @@ Window {
         Text {
             Layout.fillWidth: true
             text: i18n.t("shutdown_msg").arg(win.shutdownLeft)
-            color: Theme.t1; font.pointSize: 13; font.family: Theme.fontSans
+            color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans
             wrapMode: Text.WordWrap
         }
     }

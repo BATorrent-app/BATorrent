@@ -8,7 +8,7 @@ import "../theme"
 ComboBox {
     id: cb
     implicitHeight: 30
-    font.pointSize: 12
+    font.pixelSize: 12
     font.family: Theme.fontSans
 
     contentItem: Text {
@@ -67,7 +67,7 @@ ComboBox {
         contentItem: Text {
             text: modelData
             color: Theme.t1
-            font.pointSize: 12
+            font.pixelSize: 12
             font.family: Theme.fontSans
             verticalAlignment: Text.AlignVCenter
             leftPadding: 8

@@ -89,11 +89,11 @@ Window {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 1
-                        Text { text: "BATorrent"; color: Theme.t1; font.pointSize: 12.5; font.weight: Font.Bold; font.family: Theme.fontSans }
+                        Text { text: "BATorrent"; color: Theme.t1; font.pixelSize: 13; font.weight: Font.Bold; font.family: Theme.fontSans }
                         Text {
                             text: (pop.sess ? pop.sess.torrentCount : 0) + " torrents · "
                                 + (pop.sess ? pop.sess.activeCount : 0) + " " + (i18n.language, i18n.t("word_active"))
-                            color: Theme.t3; font.pointSize: 10; font.family: Theme.fontMono
+                            color: Theme.t3; font.pixelSize: 10; font.family: Theme.fontMono
                         }
                     }
                     Rectangle {
@@ -122,8 +122,8 @@ Window {
                             required property var modelData
                             Layout.fillWidth: true
                             spacing: 2
-                            Text { text: modelData.eb; color: modelData.c; font.pointSize: 8; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans }
-                            Text { text: modelData.val; color: Theme.t1; font.pointSize: 14; font.weight: Font.Bold; font.family: Theme.fontMono }
+                            Text { text: modelData.eb; color: modelData.c; font.pixelSize: 8; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans }
+                            Text { text: modelData.val; color: Theme.t1; font.pixelSize: 14; font.weight: Font.Bold; font.family: Theme.fontMono }
                         }
                     }
                 }
@@ -142,8 +142,8 @@ Window {
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: 14; anchors.rightMargin: 12
-                    Text { text: r.label; color: r.danger ? Theme.accentText : Theme.t1; font.pointSize: 11; font.family: Theme.fontSans; Layout.fillWidth: true }
-                    Text { text: r.shortcut; visible: r.shortcut.length > 0; color: Theme.t4; font.pointSize: 9.5; font.family: Theme.fontMono }
+                    Text { text: r.label; color: r.danger ? Theme.accentText : Theme.t1; font.pixelSize: 11; font.family: Theme.fontSans; Layout.fillWidth: true }
+                    Text { text: r.shortcut; visible: r.shortcut.length > 0; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontMono }
                 }
                 MouseArea { id: rma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { r.clicked(); pop.hide() } }
             }

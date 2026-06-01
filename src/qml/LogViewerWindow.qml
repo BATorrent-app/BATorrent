@@ -44,9 +44,9 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp3
-                Text { text: (i18n.language, i18n.t("logviewer_title2")); color: Theme.t1; font.pointSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("logviewer_title2")); color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
-                Text { text: (i18n.language, i18n.t("logviewer_level2")); color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t("logviewer_level2")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                 TSelect {
                     Layout.preferredWidth: 130
                     model: win.api ? win.api.levelNames : []
@@ -73,7 +73,7 @@ Window {
                     readOnly: true
                     text: win.api ? win.api.text : ""
                     color: Theme.t2
-                    font.pointSize: 11
+                    font.pixelSize: 11
                     font.family: Theme.fontMono
                     wrapMode: TextArea.NoWrap
                     background: null

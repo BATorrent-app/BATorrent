@@ -85,7 +85,7 @@ Item {
                     id: ttl
                     anchors.centerIn: parent
                     color: Theme.t2
-                    font.pointSize: 12.5
+                    font.pixelSize: 13
                     font.weight: Font.DemiBold
                     font.family: Theme.fontSans
                 }
@@ -148,7 +148,7 @@ Item {
                     Text {
                         text: dlg.footHint
                         color: Theme.t4
-                        font.pointSize: 10.5
+                        font.pixelSize: 11
                         font.family: Theme.fontSans
                     }
                     Item { Layout.fillWidth: true }

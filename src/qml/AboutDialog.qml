@@ -31,21 +31,21 @@ BatDialog {
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 0
-            Text { text: "BAT"; color: Theme.accent; font.pointSize: 22; font.weight: Font.Black; font.letterSpacing: 1; font.family: Theme.fontSans }
-            Text { text: "orrent"; color: Theme.t1; font.pointSize: 22; font.weight: Font.Black; font.letterSpacing: 1; font.family: Theme.fontSans }
+            Text { text: "BAT"; color: Theme.accent; font.pixelSize: 22; font.weight: Font.Black; font.letterSpacing: 1; font.family: Theme.fontSans }
+            Text { text: "orrent"; color: Theme.t1; font.pixelSize: 22; font.weight: Font.Black; font.letterSpacing: 1; font.family: Theme.fontSans }
         }
         // .vrow
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 8
             TChip { text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : "" }
-            Text { text: (i18n.language, i18n.t("about_build_stable")); color: Theme.t4; font.pointSize: 10.5; font.family: Theme.fontMono }
+            Text { text: (i18n.language, i18n.t("about_build_stable")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
         }
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: (i18n.language, i18n.t("about_description"))
             color: Theme.t2
-            font.pointSize: 11.5
+            font.pixelSize: 12
             font.family: Theme.fontSans
         }
     }
@@ -76,14 +76,14 @@ BatDialog {
                 Layout.alignment: Qt.AlignTop
                 radius: 8
                 color: Theme.field
-                Text { anchors.centerIn: parent; text: "🛡"; font.pointSize: 14 }
+                Text { anchors.centerIn: parent; text: "🛡"; font.pixelSize: 14 }
             }
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 text: (i18n.language, i18n.t("about_no_telemetry_body"))
                 color: Theme.t3
-                font.pointSize: 10.5
+                font.pixelSize: 11
                 font.family: Theme.fontSans
                 lineHeight: 1.45
             }
@@ -94,7 +94,7 @@ BatDialog {
     Text {
         text: (i18n.language, i18n.t("about_libraries"))
         color: Theme.t4
-        font.pointSize: 10
+        font.pixelSize: 10
         font.weight: Font.Bold
         font.letterSpacing: 0.8
         font.family: Theme.fontSans
@@ -112,9 +112,9 @@ BatDialog {
                     Layout.fillWidth: true
                     Layout.topMargin: 8
                     Layout.bottomMargin: 8
-                    Text { text: modelData.nm; color: Theme.t1; font.pointSize: 12; font.family: Theme.fontSans }
+                    Text { text: modelData.nm; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
                     Item { Layout.fillWidth: true }
-                    Text { text: modelData.v; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono }
+                    Text { text: modelData.v; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
                 }
                 Rectangle { visible: index < libsRep.count - 1; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
             }
@@ -125,8 +125,8 @@ BatDialog {
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.sp1
-        Text { text: (i18n.language, i18n.t("about_license")); color: Theme.t3; font.pointSize: 12; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("about_license")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
         Item { Layout.fillWidth: true }
-        Text { text: "MIT"; color: Theme.t2; font.pointSize: 12; font.family: Theme.fontMono }
+        Text { text: "MIT"; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
     }
 }

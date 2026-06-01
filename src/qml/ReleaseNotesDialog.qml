@@ -42,7 +42,7 @@ BatDialog {
             Text {
                 text: (i18n.language, i18n.t("release_notes_check"))
                 color: Theme.t1
-                font.pointSize: 19
+                font.pixelSize: 19
                 font.weight: Font.DemiBold
                 font.letterSpacing: -0.3
                 font.family: Theme.fontSans
@@ -59,7 +59,7 @@ BatDialog {
         textFormat: Text.MarkdownText
         text: (typeof themeBridge !== "undefined") ? themeBridge.releaseNotes() : ""
         color: Theme.t2
-        font.pointSize: 11.5
+        font.pixelSize: 12
         font.family: Theme.fontSans
         lineHeight: 1.4
         onLinkActivated: function(link) { Qt.openUrlExternally(link) }

@@ -26,7 +26,7 @@ Rectangle {
             id: input
             color: Theme.t1
             placeholderTextColor: Theme.t4
-            font.pointSize: 11.5
+            font.pixelSize: 12
             font.family: Theme.fontMono
             wrapMode: TextArea.Wrap
             background: null

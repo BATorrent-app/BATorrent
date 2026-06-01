@@ -107,13 +107,13 @@ BatDialog {
             Text {
                 Layout.fillWidth: true
                 text: dlg.torrentName
-                color: Theme.t1; font.pointSize: 19; font.weight: Font.DemiBold
+                color: Theme.t1; font.pixelSize: 19; font.weight: Font.DemiBold
                 font.letterSpacing: -0.3; font.family: Theme.fontSans
                 elide: Text.ElideRight
             }
             Text {
                 text: dlg.totalSize + " · " + dlg.fileCount + " itens"
-                color: Theme.t3; font.pointSize: 11.5; font.family: Theme.fontMono
+                color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono
             }
         }
     }
@@ -124,12 +124,12 @@ BatDialog {
         RowLayout {
             spacing: 10
             TChk { id: selAll; on: true; onToggled: function(v) { for (var i=0;i<fileModel.count;i++) fileModel.setProperty(i,"on",v); dlg.recount() } }
-            Text { text: (i18n.language, i18n.t("addt_select_files")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("addt_select_files")); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans }
         }
         Item { Layout.fillWidth: true }
         Text {
             text: dlg.selectedCount + " de " + dlg.fileCount + " · " + dlg.totalSize
-            color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono
+            color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono
         }
     }
 
@@ -151,14 +151,14 @@ BatDialog {
                     anchors.rightMargin: 14
                     spacing: 10
                     TChk { Layout.alignment: Qt.AlignVCenter; on: model.on; onToggled: function(v) { fileModel.setProperty(index, "on", v); dlg.recount() } }
-                    Text { text: model.dir ? "📁" : "📄"; color: model.dir ? Theme.amber : Theme.t3; font.pointSize: 13 }
+                    Text { text: model.dir ? "📁" : "📄"; color: model.dir ? Theme.amber : Theme.t3; font.pixelSize: 13 }
                     Text {
                         Layout.fillWidth: true
                         text: model.path; color: Theme.t1
-                        font.pointSize: 12; font.weight: model.dir ? Font.DemiBold : Font.Normal
+                        font.pixelSize: 12; font.weight: model.dir ? Font.DemiBold : Font.Normal
                         font.family: Theme.fontSans; elide: Text.ElideMiddle
                     }
-                    Text { text: model.size; color: Theme.t4; font.pointSize: 11; font.family: Theme.fontMono; visible: model.size !== "" }
+                    Text { text: model.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono; visible: model.size !== "" }
                 }
             }
         }
@@ -168,7 +168,7 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text { text: (i18n.language, i18n.t("detail_kv_save_to")); color: Theme.t3; font.pointSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("detail_kv_save_to")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         PathFld { id: pathFld; Layout.fillWidth: true }
     }
 
@@ -176,7 +176,7 @@ BatDialog {
     RowLayout {
         Layout.fillWidth: true
         spacing: 12
-        Text { text: (i18n.language, i18n.t("addt_start_now")); color: Theme.t2; font.pointSize: 12; font.family: Theme.fontSans }
+        Text { text: (i18n.language, i18n.t("addt_start_now")); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans }
         Item { Layout.fillWidth: true }
         TToggle { on: true }
     }

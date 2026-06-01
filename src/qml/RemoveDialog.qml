@@ -34,7 +34,7 @@ BatDialog {
                 anchors.centerIn: parent
                 text: "⚠"
                 color: Theme.accentText
-                font.pointSize: 20
+                font.pixelSize: 20
             }
         }
 
@@ -44,7 +44,7 @@ BatDialog {
             Text {
                 text: (i18n.language, i18n.t("remove_confirm_q"))
                 color: Theme.t1
-                font.pointSize: 16
+                font.pixelSize: 16
                 font.weight: Font.DemiBold
                 font.family: Theme.fontSans
             }
@@ -53,7 +53,7 @@ BatDialog {
                 Layout.maximumWidth: 320
                 wrapMode: Text.WordWrap
                 color: Theme.t3
-                font.pointSize: 12
+                font.pixelSize: 12
                 font.family: Theme.fontSans
                 textFormat: Text.StyledText
                 text: "Você está prestes a remover <font color='" + Theme.t2 + "'><b>Forza.Horizon.6-CODEX</b></font> da lista. Esta ação não pode ser desfeita."
@@ -88,13 +88,13 @@ BatDialog {
                 Text {
                     text: (i18n.language, i18n.t("remove_also_files"))
                     color: Theme.t1
-                    font.pointSize: 12.5
+                    font.pixelSize: 13
                     font.family: Theme.fontSans
                 }
                 Text {
                     text: (i18n.language, i18n.t("remove_delete_note"))
                     color: Theme.t4
-                    font.pointSize: 10.5
+                    font.pixelSize: 11
                     font.family: Theme.fontSans
                 }
             }
