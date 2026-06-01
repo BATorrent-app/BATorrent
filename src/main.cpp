@@ -14,7 +14,9 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
+#include <QLocale>
 #include "app/metadataresolver.h"
+#include "app/translator.h"
 #include "gui/qmlposterbridge.h"
 #include "app/rssmanager.h"
 #include "torrent/sessionmanager.h"
@@ -199,6 +201,25 @@ int main(int argc, char *argv[])
         auto *filterProxy = new QmlTorrentFilterProxy(&app);
         filterProxy->setSourceModel(posterModel);
 
+        {
+            QSettings s;
+            int lang = 0;
+            if (s.contains("language")) {
+                lang = s.value("language").toInt();
+            } else {
+                const QString sys = QLocale::system().name().toLower();
+                if      (sys.startsWith("pt")) lang = 1;
+                else if (sys.startsWith("zh")) lang = 2;
+                else if (sys.startsWith("ja")) lang = 3;
+                else if (sys.startsWith("ru")) lang = 4;
+                else if (sys.startsWith("es")) lang = 5;
+                else if (sys.startsWith("de")) lang = 6;
+                else                           lang = 0;
+            }
+            Translator::instance().setLanguage(static_cast<Translator::Language>(lang));
+        }
+        auto *i18nBridge = new QmlI18nBridge(&app);
+
         QQmlApplicationEngine engine;
         engine.rootContext()->setContextProperty("torrentModel", filterProxy);
         engine.rootContext()->setContextProperty("torrentFilter", filterProxy);
@@ -211,6 +232,7 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("logs", logBridge);
         engine.rootContext()->setContextProperty("pairing", pairingBridge);
         engine.rootContext()->setContextProperty("notifications", notificationBridge);
+        engine.rootContext()->setContextProperty("i18n", i18nBridge);
 #ifndef BAT_STORE_BUILD
         engine.rootContext()->setContextProperty("updater", updaterBridge);
 #else

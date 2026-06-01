@@ -51,7 +51,7 @@ Window {
             { type: "toggle", label: "Mover downloads concluídos automaticamente" },
             { type: "path", label: "Mover para", placeholder: "Pasta de destino final" },
             { type: "group", label: "Aparência" },
-            { type: "select", label: "Idioma", options: ["Português", "English", "Español", "日本語", "Русский", "中文", "Deutsch"], value: 0 },
+            { type: "select", isLang: true, label: "Idioma", options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch"], value: 0 },
             { type: "theme", label: "Tema", options: ["Escuro", "Claro", "Midnight", "Sakura", "Dark Star"], value: 0 },
             { type: "anime", label: "Modo Anime (arte de fundo)" },
             { type: "group", label: "Sistema" },
@@ -563,8 +563,8 @@ Window {
             TSelect {
                 implicitWidth: 180
                 model: field.options || []
-                currentIndex: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || 0)
-                onActivated: function(i) { if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, i) }
+                currentIndex: field.isLang ? i18n.language : ((typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || 0))
+                onActivated: function(i) { if (field.isLang) i18n.setLanguage(i); else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, i) }
             }
         }
         Component {
