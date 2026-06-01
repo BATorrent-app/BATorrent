@@ -940,6 +940,21 @@ Window {
                 onMagnetClicked: magnetDlg.open()
             }
 
+            // click on empty space (behind the grid/list) clears the selection.
+            // Tiles/rows capture their own clicks on top of this; only clicks
+            // that miss an item reach here. The list view already handles its
+            // own empty-area deselect; this covers the grid + general blank area.
+            MouseArea {
+                anchors.fill: parent
+                z: 0
+                acceptedButtons: Qt.LeftButton
+                onClicked: {
+                    if (win.selectedRows.length > 0) {
+                        win.selectedRows = []; win.selected = -1; win._commitSel()
+                    }
+                }
+            }
+
             // anime art (eyes top-right / spider bottom-right). Ported 1:1 from .eyes-accent:
             // the CSS fades the edges via two intersected linear masks; since only Theme.bg sits
             // behind the art, we reproduce it with two bg-colored gradient scrims (left + bottom/top).
@@ -1048,16 +1063,17 @@ Window {
                             radius: 10
                             color: "#161618"
                             visible: tile.posterUrl === ""
-                            Text {
-                                anchors.right: parent.right
-                                anchors.bottom: parent.bottom
-                                anchors.rightMargin: -10
-                                anchors.bottomMargin: -22
-                                text: (tile.metaTitle || tile.torrentName).charAt(0).toUpperCase()
-                                color: Qt.rgba(1, 1, 1, 0.05)
-                                font.pointSize: 105
-                                font.weight: Font.Bold
-                                font.family: Theme.fontSans
+                            // watermark: BATorrent logo (not the title's first letter)
+                            Image {
+                                anchors.centerIn: parent
+                                width: parent.width * 0.5
+                                height: width
+                                source: "qrc:/images/logo.svg"
+                                sourceSize: Qt.size(width * 2, width * 2)
+                                fillMode: Image.PreserveAspectFit
+                                opacity: 0.06
+                                layer.enabled: Theme.isLight
+                                layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
                             }
                             Text {
                                 anchors.left: parent.left; anchors.top: parent.top
@@ -1303,7 +1319,6 @@ Window {
                             PosterThumb {
                                 Layout.alignment: Qt.AlignVCenter
                                 posterUrl: lrow.posterUrl
-                                letter: lrow.torrentName.length > 0 ? lrow.torrentName.charAt(0).toUpperCase() : ""
                             }
                             Text {
                                 Layout.fillWidth: true

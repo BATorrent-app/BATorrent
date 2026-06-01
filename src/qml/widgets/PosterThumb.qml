@@ -7,7 +7,6 @@ import "../theme"
 Item {
     id: thumb
     property string posterUrl: ""
-    property string letter: ""
     implicitWidth: 30
     implicitHeight: 40
 
