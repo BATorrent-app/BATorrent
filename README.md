@@ -20,6 +20,18 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/clang-tidy.yml"><img alt="clang-tidy" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/clang-tidy.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/cppcheck.yml"><img alt="cppcheck" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/cppcheck.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/semgrep.yml"><img alt="Semgrep" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/semgrep.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/osv-scanner.yml"><img alt="OSV-Scanner" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/osv-scanner.yml/badge.svg"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/Mateuscruz19/BAT-Torrent"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/Mateuscruz19/BAT-Torrent/badge"></a>
+  <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
+  <a href="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent/badge"></a>
+</p>
+
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Overview
