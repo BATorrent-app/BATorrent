@@ -614,7 +614,9 @@ void QmlSessionBridge::queueUpSelected()
     }
     m_selectedRows = newRows;
     m_selectedIndex = newRows.isEmpty() ? -1 : newRows.last();
-    emit queueRefreshNeeded();
+    // queueMoved already drives QmlPosterModel::moveRow (a real beginMoveRows),
+    // so the rows slide smoothly. A queueRefreshNeeded here would re-emit
+    // dataChanged for the whole list and reload every cover → full-screen flash.
     emit selectionChanged(); emit selectionListsChanged();
 }
 
@@ -638,7 +640,7 @@ void QmlSessionBridge::queueDownSelected()
     }
     m_selectedRows = newRows;
     m_selectedIndex = newRows.isEmpty() ? -1 : newRows.first();
-    emit queueRefreshNeeded();
+    // see queueUpSelected: moveRow handles the visual move; no full refresh.
     emit selectionChanged(); emit selectionListsChanged();
 }
 
@@ -651,18 +653,34 @@ static QList<int> resolveRows(const QList<int> &rows, int idx)
 
 void QmlSessionBridge::queueTopSelected()
 {
-    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+    QList<int> rows = resolveRows(m_selectedRows, m_selectedIndex);
+    if (rows.size() == 1 && rows.first() > 0) {
+        int r = rows.first();
         m_session->setTorrentQueuePosition(r, 0);
-    emit queueRefreshNeeded();
+        emit queueMoved(r, 0);                 // smooth move, no flash
+        m_selectedRows = {0};
+        m_selectedIndex = 0;
+    } else {
+        for (int r : rows) m_session->setTorrentQueuePosition(r, 0);
+        emit queueRefreshNeeded();
+    }
     emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::queueBottomSelected()
 {
     const int last = m_session->torrentCount() - 1;
-    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+    QList<int> rows = resolveRows(m_selectedRows, m_selectedIndex);
+    if (rows.size() == 1 && rows.first() < last) {
+        int r = rows.first();
         m_session->setTorrentQueuePosition(r, last);
-    emit queueRefreshNeeded();
+        emit queueMoved(r, last);              // smooth move, no flash
+        m_selectedRows = {last};
+        m_selectedIndex = last;
+    } else {
+        for (int r : rows) m_session->setTorrentQueuePosition(r, last);
+        emit queueRefreshNeeded();
+    }
     emit selectionChanged(); emit selectionListsChanged();
 }
 
