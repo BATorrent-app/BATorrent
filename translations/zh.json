@@ -563,6 +563,7 @@
   "rss_minutes_suffix": "分钟",
   "rss_never_checked": "从未检查",
   "rss_no_rule": "此订阅没有自动下载规则",
+  "rss_rule_body": "自动下载包含 %1 的项目",
   "rss_preset_btn": "预设 ▾",
   "rss_refresh_all": "全部刷新",
   "rss_refresh_now": "立即刷新",

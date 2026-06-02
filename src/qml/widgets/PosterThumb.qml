@@ -41,6 +41,8 @@ Item {
             source: thumb.posterUrl
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
+            cache: true
+            sourceSize: Qt.size(64, 86)   // drawn tiny in list view — don't decode full-res
         }
     }
     Rectangle {

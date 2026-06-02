@@ -5,6 +5,7 @@
 #ifndef SECRETSTORE_H
 #define SECRETSTORE_H
 
+#include <QHash>
 #include <QString>
 
 // Synchronous wrapper over QtKeychain. When QtKeychain isn't available at
@@ -39,6 +40,12 @@ public:
 
 private:
     SecretStore() = default;
+    // In-memory cache: the keychain round-trip blocks the calling thread (up
+    // to 5 s on a cold keyring), so reading the same secret repeatedly — e.g.
+    // a Plex/Jellyfin token on every torrent completion, or a settings field
+    // bound in QML — would stall the UI each time. We're the only writer, so
+    // set() keeps the cache coherent.
+    QHash<QString, QString> m_cache;
 };
 
 #endif

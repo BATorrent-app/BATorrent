@@ -761,7 +761,14 @@ Window {
                             font.pixelSize: 13
                             font.family: Theme.fontSans
                             clip: true
-                            onTextChanged: if (typeof torrentFilter !== "undefined") torrentFilter.setSearchText(text)
+                            // debounce: re-filtering the whole list on every
+                            // keystroke stutters with a large library
+                            onTextChanged: searchDebounce.restart()
+                            Timer {
+                                id: searchDebounce
+                                interval: 150
+                                onTriggered: if (typeof torrentFilter !== "undefined") torrentFilter.setSearchText(searchInput.text)
+                            }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: (i18n.language, i18n.t("search_heading"))
@@ -1821,6 +1828,8 @@ Window {
                                 source: win.fileUrl(win.hasSel ? session.selectedPoster : "")
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
+                                cache: true
+                                sourceSize: Qt.size(208, 292)
                             }
                         }
                         Rectangle {
