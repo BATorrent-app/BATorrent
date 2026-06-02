@@ -55,7 +55,20 @@ inline void revealInFileManager(const QString &path)
         auto *thread = QThread::create([target]() {
             if (SUCCEEDED(::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE))) {
                 if (PIDLIST_ABSOLUTE pidl = ::ILCreateFromPathW(reinterpret_cast<const wchar_t *>(target.utf16()))) {
-                    ::SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
+                    // Split into parent folder + child and select the child, rather
+                    // than passing the item itself as pidlFolder with no children.
+                    // For a folder that latter form makes Explorer *enter* it (or, on
+                    // some builds, open the parent with nothing highlighted) — the
+                    // "lands in Downloads, folder not selected" bug. An explicit child
+                    // highlights it inside its parent for both files and folders.
+                    if (PIDLIST_ABSOLUTE parent = ::ILClone(pidl); parent && ::ILRemoveLastID(parent)) {
+                        PCUITEMID_CHILD child = ::ILFindLastID(pidl);
+                        ::SHOpenFolderAndSelectItems(parent, 1, &child, 0);
+                        ::ILFree(parent);
+                    } else {
+                        if (parent) ::ILFree(parent);
+                        ::SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
+                    }
                     ::ILFree(pidl);
                 }
                 ::CoUninitialize();
