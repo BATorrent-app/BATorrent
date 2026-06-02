@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g. 2.5.1.0 — must be 4-part for MSIX)'
+        description: 'Version (e.g. 3.0.0.0 — must be 4-part for MSIX)'
         required: true
-        default: '2.5.1.0'
+        default: '3.0.0.0'
 
 permissions:
   contents: read

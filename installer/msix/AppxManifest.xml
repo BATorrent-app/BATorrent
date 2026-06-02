@@ -12,7 +12,7 @@
        certificate info page. -->
   <Identity
     Name="BATorrent.BATorrent"
-    Version="2.5.1.0"
+    Version="3.0.0.0"
     Publisher="CN=D838099A-EE48-4F66-92B6-2A44F20C37EF"
     ProcessorArchitecture="x64" />
 

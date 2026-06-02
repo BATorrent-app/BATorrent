@@ -32,6 +32,14 @@
 - Dropping several .torrent files at once shows the add dialog for each in sequence
 - Reject duplicate torrents on add; deselect on empty-area click
 
+### Windows
+- **"Open containing folder"** now reliably opens the parent and highlights the torrent's file/folder, instead of landing in Documents/Downloads with nothing selected (uses the shell API directly, like qBittorrent)
+- Cover/poster art loads correctly (fixed `file:` URL handling)
+- Fixed a UI freeze when selecting a torrent
+- Text rendering and fonts now match macOS — crisp, same size and weight
+- Faster, smoother startup (windows load lazily) and a sharper splash animation
+- Status colors corrected: completed is green, seeding amber, paused gray
+
 ---
 
 ## v2.6.1
