@@ -213,7 +213,9 @@ ctest --test-dir build
 ### Quality & security
 
 - **Automated tests** — 79 cases / 632 assertions (unit, security and
-  memory-safety) run on every build in CI.
+  memory-safety) run on every build in CI. Policy: when backend functionality
+  is added or changed, a test is added to the Catch2 suite where practical
+  (recent examples: resume-data migration and updater version comparison).
 - **Sanitizers** — the full suite passes clean under **AddressSanitizer** and
   **UndefinedBehaviorSanitizer**: 0 leaks, use-after-free, or undefined
   behaviour.
