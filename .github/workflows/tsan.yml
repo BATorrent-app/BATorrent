@@ -43,6 +43,7 @@ jobs:
       - name: Run tests under ThreadSanitizer
         env:
           QT_QPA_PLATFORM: offscreen
+          TSAN_OPTIONS: suppressions=${{ github.workspace }}/.github/tsan-suppressions.txt
         run: |
           fail=0
           for t in test_unit test_security test_memory; do

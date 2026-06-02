@@ -1,0 +1,10 @@
+# ThreadSanitizer suppressions — third-party library internals only.
+#
+# BATorrent's own logic runs on the GUI thread; libtorrent runs on its own
+# threads behind a thread-safe alert queue (see the concurrency audit). The
+# only races TSan reports are inside the glib event loop (eventfd) and Qt's
+# event posting, which use synchronization TSan cannot model. They are not
+# BATorrent bugs.
+race:libglib-2.0.so
+race:libgobject-2.0.so
+race:libQt6Core.so
