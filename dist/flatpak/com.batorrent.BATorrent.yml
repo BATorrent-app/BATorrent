@@ -48,9 +48,13 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: archive
-        url: https://github.com/Mateuscruz19/BAT-Torrent/archive/refs/tags/v2.5.1.tar.gz
-        sha256: 5218de308188cd4fa606baba28f2d461ae486097f42e4b686616c61946638ef6
+        url: https://github.com/Mateuscruz19/BAT-Torrent/archive/refs/tags/v3.0.0.tar.gz
+        # TODO: fill in once the v3.0.0 tag exists:
+        #   curl -sL <url> | sha256sum
+        sha256: 0000000000000000000000000000000000000000000000000000000000000000
     post-install:
       - install -Dm644 dist/batorrent.desktop /app/share/applications/com.batorrent.BATorrent.desktop
+      # Flathub requires the icon and the Icon= key to be named after the app-id.
+      - sed -i 's/^Icon=.*/Icon=com.batorrent.BATorrent/' /app/share/applications/com.batorrent.BATorrent.desktop
       - install -Dm644 src/images/logo1.png /app/share/icons/hicolor/256x256/apps/com.batorrent.BATorrent.png
       - install -Dm644 dist/flatpak/com.batorrent.BATorrent.metainfo.xml /app/share/metainfo/com.batorrent.BATorrent.metainfo.xml

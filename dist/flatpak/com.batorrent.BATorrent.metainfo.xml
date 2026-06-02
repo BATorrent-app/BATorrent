@@ -2,16 +2,29 @@
 <component type="desktop-application">
   <id>com.batorrent.BATorrent</id>
   <name>BATorrent</name>
-  <summary>Open-source BitTorrent client with VPN kill switch, anti-Xunlei, and 7 languages</summary>
+  <summary>BitTorrent client with a VPN kill switch</summary>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <developer id="com.batorrent">
     <name>Mateus Cruz</name>
   </developer>
   <description>
-    <p>BATorrent is a modern, cross-platform BitTorrent client focused on privacy, performance, and clarity. Built from scratch in C++ with Qt 6 and libtorrent-rasterbar.</p>
-    <p>Features include VPN kill switch, private tracker (PT) mode, Tor proxy preset, anti-Xunlei/leecher peer blocking, Telegram notifications, Discord Rich Presence, WebUI with QR pairing, RSS auto-download with Nyaa presets, and full support for 7 languages.</p>
-    <p>No ads, no telemetry, no account required. MIT licensed.</p>
+    <p>
+      BATorrent is a BitTorrent client built with Qt 6 and libtorrent. It
+      downloads and seeds torrents and magnet links, and adds privacy and
+      automation features for people who run a VPN or use private trackers.
+    </p>
+    <p>What it does:</p>
+    <ul>
+      <li>A kill switch that stops all traffic if the VPN drops, bound to a chosen network interface</li>
+      <li>A private-tracker mode that turns off DHT, PEX and local peer discovery per torrent</li>
+      <li>RSS auto-downloading with filters, including presets for anime feeds</li>
+      <li>A built-in web interface that pairs with a phone through a QR code</li>
+      <li>Cover art and synopses for movies, shows and games, shown in a poster grid</li>
+      <li>Desktop, Telegram and Discord notifications when a download finishes or fails</li>
+      <li>An interface translated into seven languages</li>
+    </ul>
+    <p>It shows no ads, collects no telemetry, and needs no account.</p>
   </description>
   <launchable type="desktop-id">com.batorrent.BATorrent.desktop</launchable>
   <url type="homepage">https://github.com/Mateuscruz19/BAT-Torrent</url>
@@ -22,22 +35,51 @@
   <categories>
     <category>Network</category>
     <category>FileTransfer</category>
-    <category>P2P</category>
   </categories>
-  <provides>
-    <binary>BATorrent</binary>
-    <mediatype>application/x-bittorrent</mediatype>
-    <mediatype>x-scheme-handler/magnet</mediatype>
-  </provides>
+  <keywords>
+    <keyword>torrent</keyword>
+    <keyword>magnet</keyword>
+    <keyword>p2p</keyword>
+    <keyword>download</keyword>
+  </keywords>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/Mateuscruz19/BAT-Torrent/v3.0.0/src/images/image1.png</image>
+      <caption>The main window in the dark theme</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/Mateuscruz19/BAT-Torrent/v3.0.0/src/images/image2.png</image>
+      <caption>The main window in the light theme</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/Mateuscruz19/BAT-Torrent/v3.0.0/src/images/image3.png</image>
+      <caption>Per-torrent details, with peers and file priorities</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/Mateuscruz19/BAT-Torrent/v3.0.0/src/images/image4.png</image>
+      <caption>Settings</caption>
+    </screenshot>
+  </screenshots>
   <releases>
+    <release version="3.0.0" date="2026-06-02">
+      <description>
+        <p>The interface has been rebuilt in Qt Quick. This release also adds:</p>
+        <ul>
+          <li>Custom theme profiles with optional background images, alongside five built-in themes</li>
+          <li>A poster grid that fetches cover art and synopses for movies, shows and games</li>
+          <li>GeoIP country flags for connected peers</li>
+          <li>A reworked startup animation and a richer system-tray popup</li>
+        </ul>
+      </description>
+    </release>
     <release version="2.5.1" date="2026-05-24">
       <description>
-        <p>Anti-Xunlei peer blocking, thunder:// link decoding, auto-detect system language, disk-full protection.</p>
+        <p>Per-torrent peer blocking, faster system-language detection, and protection against running out of disk space.</p>
       </description>
     </release>
     <release version="2.5.0" date="2026-05-24">
       <description>
-        <p>PT mode, Tor preset, Telegram webhook, Discord Rich Presence, QR pairing, Smart Paste, Torrent Inspector, Tags, Force Start, Full Backup, Gitee mirror, locale formatting, 7 languages with 622 keys each.</p>
+        <p>Private-tracker mode, Telegram and Discord notifications, QR pairing for the web interface, a torrent inspector, tags, and seven-language support.</p>
       </description>
     </release>
   </releases>

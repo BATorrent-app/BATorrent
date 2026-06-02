@@ -5,5 +5,5 @@ Comment=BitTorrent Client
 Exec=BATorrent %U
 Icon=batorrent
 Terminal=false
-Categories=Network;FileTransfer;P2P;
+Categories=Network;FileTransfer;
 MimeType=application/x-bittorrent;x-scheme-handler/magnet;
