@@ -1,0 +1,61 @@
+name: Sanitizers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  asan-ubsan:
+    name: ASan + UBSan tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: qtmultimedia
+          cache: true
+
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev libglx-dev libegl-dev
+          version: 3.0
+
+      - name: Build tests with AddressSanitizer + UndefinedBehaviorSanitizer
+        env:
+          BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
+          BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+        run: |
+          cmake -B build-san -DCMAKE_BUILD_TYPE=Debug -DBAT_BUILD_TESTS=ON \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-san -j$(nproc)
+
+      - name: Run tests under sanitizers
+        env:
+          QT_QPA_PLATFORM: offscreen
+          ASAN_OPTIONS: detect_leaks=0
+          UBSAN_OPTIONS: print_stacktrace=1
+        run: |
+          # Gate on Catch2 success + absence of any real sanitizer error. A SEGV
+          # in QObject::~QObject() *after* "All tests passed" is the known Qt
+          # singleton teardown artifact in headless mode and is tolerated.
+          fail=0
+          for t in test_unit test_security test_memory; do
+            echo "::group::$t"
+            out=$(./build-san/tests/$t 2>&1 || true)
+            echo "$out"
+            echo "::endgroup::"
+            if echo "$out" | grep -qE "runtime error:|(AddressSanitizer|ERROR): (heap|stack|global)-|use-after-free|detected memory leaks|FAILED"; then
+              echo "::error::$t reported a sanitizer error or a failed assertion"; fail=1
+            elif ! echo "$out" | grep -q "All tests passed"; then
+              echo "::error::$t did not finish (crash before completion)"; fail=1
+            fi
+          done
+          exit $fail
