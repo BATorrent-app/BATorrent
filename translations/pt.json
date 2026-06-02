@@ -563,6 +563,7 @@
   "rss_minutes_suffix": "min",
   "rss_never_checked": "Nunca verificado",
   "rss_no_rule": "Sem regra de auto-download neste feed",
+  "rss_rule_body": "Auto-baixar itens que contenham %1",
   "rss_preset_btn": "Presets ▾",
   "rss_refresh_all": "Atualizar Todos",
   "rss_refresh_now": "Atualizar agora",

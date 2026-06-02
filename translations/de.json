@@ -563,6 +563,7 @@
   "rss_minutes_suffix": "Min.",
   "rss_never_checked": "Nie geprüft",
   "rss_no_rule": "Keine Auto-Download-Regel für diesen Feed",
+  "rss_rule_body": "Einträge automatisch herunterladen, die %1 enthalten",
   "rss_preset_btn": "Presets ▾",
   "rss_refresh_all": "Alle aktualisieren",
   "rss_refresh_now": "Jetzt aktualisieren",

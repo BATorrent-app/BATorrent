@@ -563,6 +563,7 @@
   "rss_minutes_suffix": "мин",
   "rss_never_checked": "Не проверялось",
   "rss_no_rule": "Нет правила автозагрузки для этой ленты",
+  "rss_rule_body": "Автоматически загружать элементы, содержащие %1",
   "rss_preset_btn": "Пресеты ▾",
   "rss_refresh_all": "Обновить все",
   "rss_refresh_now": "Обновить сейчас",

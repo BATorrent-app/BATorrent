@@ -563,6 +563,7 @@
   "rss_minutes_suffix": "分",
   "rss_never_checked": "未チェック",
   "rss_no_rule": "このフィードに自動ダウンロードのルールはありません",
+  "rss_rule_body": "%1 を含むアイテムを自動ダウンロード",
   "rss_preset_btn": "プリセット ▾",
   "rss_refresh_all": "すべて更新",
   "rss_refresh_now": "今すぐ更新",

@@ -55,19 +55,23 @@ bool SecretStore::isSecure() const
 
 QString SecretStore::get(const QString &key)
 {
+    auto it = m_cache.constFind(key);
+    if (it != m_cache.constEnd()) return it.value();
 #ifdef HAVE_QTKEYCHAIN
     auto *job = new QKeychain::ReadPasswordJob(QString::fromLatin1(kServiceName));
     job->setKey(key);
-    if (!runJob(job)) return {};
-    if (job->error() != QKeychain::NoError) return {};
-    return job->textData();
+    if (!runJob(job)) return {};   // timed out — don't cache, retry next time
+    QString value = (job->error() == QKeychain::NoError) ? job->textData() : QString();
 #else
-    return QSettings("BATorrent", "BATorrent").value(key).toString();
+    QString value = QSettings("BATorrent", "BATorrent").value(key).toString();
 #endif
+    m_cache.insert(key, value);
+    return value;
 }
 
 void SecretStore::set(const QString &key, const QString &value)
 {
+    m_cache.insert(key, value);   // we're the only writer — keep the cache coherent
 #ifdef HAVE_QTKEYCHAIN
     if (value.isEmpty()) {
         auto *job = new QKeychain::DeletePasswordJob(QString::fromLatin1(kServiceName));
