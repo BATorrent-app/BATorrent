@@ -312,6 +312,15 @@ private:
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;
     QVector<int> m_uploadHistory;
+
+    // Counts/totals recomputed in one pass per stats tick (recomputeAggregates)
+    // so the seven count/speed getters don't each re-loop the whole library on
+    // every QML read (~10 O(torrents) passes/sec → 1).
+    void recomputeAggregates();
+    int m_activeCount = 0, m_downloadingCount = 0, m_seedingCount = 0,
+        m_pausedCount = 0, m_completedCount = 0;
+    int m_totalDownRate = 0, m_totalUpRate = 0;
+    bool m_anyDownloading = false;
     static constexpr int HistoryMaxPoints = 60;
 };
 

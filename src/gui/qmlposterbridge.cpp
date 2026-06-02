@@ -334,6 +334,7 @@ QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *re
     m_sampleTimer.setInterval(1000);
     connect(&m_sampleTimer, &QTimer::timeout, this, &QmlSessionBridge::sampleSpeeds);
     m_sampleTimer.start();
+    recomputeAggregates();   // so the pills show real counts before the first tick
 
     m_geoIp = new GeoIpResolver(this);
     connect(m_geoIp, &GeoIpResolver::resolved, this, [this](const QString &, const QString &) {
@@ -392,67 +393,13 @@ int QmlSessionBridge::historyMaxBytes() const
 
 int QmlSessionBridge::torrentCount() const { return m_session->torrentCount(); }
 
-int QmlSessionBridge::activeCount() const
-{
-    int n = 0;
-    for (int i = 0; i < m_session->torrentCount(); ++i) {
-        auto info = m_session->torrentAt(i);
-        if (info.downloadRate > 0 || info.uploadRate > 0) ++n;   // transferring
-    }
-    return n;
-}
-
-int QmlSessionBridge::downloadingCount() const
-{
-    int n = 0;
-    for (int i = 0; i < m_session->torrentCount(); ++i) {
-        auto info = m_session->torrentAt(i);
-        if (!info.paused && info.progress < 1.0f) ++n;
-    }
-    return n;
-}
-
-int QmlSessionBridge::seedingCount() const
-{
-    int n = 0;
-    for (int i = 0; i < m_session->torrentCount(); ++i) {
-        auto info = m_session->torrentAt(i);
-        if (!info.paused && info.progress >= 1.0f && !info.completed) ++n;
-    }
-    return n;
-}
-
-int QmlSessionBridge::pausedCount() const
-{
-    int n = 0;
-    for (int i = 0; i < m_session->torrentCount(); ++i)
-        if (m_session->torrentAt(i).paused) ++n;
-    return n;
-}
-
-int QmlSessionBridge::completedCount() const
-{
-    int n = 0;
-    for (int i = 0; i < m_session->torrentCount(); ++i)
-        if (m_session->torrentAt(i).completed) ++n;
-    return n;
-}
-
-QString QmlSessionBridge::totalDownSpeed() const
-{
-    int total = 0;
-    for (int i = 0; i < m_session->torrentCount(); ++i)
-        total += m_session->torrentAt(i).downloadRate;
-    return formatSpeed(total);
-}
-
-QString QmlSessionBridge::totalUpSpeed() const
-{
-    int total = 0;
-    for (int i = 0; i < m_session->torrentCount(); ++i)
-        total += m_session->torrentAt(i).uploadRate;
-    return formatSpeed(total);
-}
+int QmlSessionBridge::activeCount() const      { return m_activeCount; }
+int QmlSessionBridge::downloadingCount() const { return m_downloadingCount; }
+int QmlSessionBridge::seedingCount() const     { return m_seedingCount; }
+int QmlSessionBridge::pausedCount() const      { return m_pausedCount; }
+int QmlSessionBridge::completedCount() const   { return m_completedCount; }
+QString QmlSessionBridge::totalDownSpeed() const { return formatSpeed(m_totalDownRate); }
+QString QmlSessionBridge::totalUpSpeed() const   { return formatSpeed(m_totalUpRate); }
 
 QString QmlSessionBridge::totalDownloaded() const { return formatSize(m_session->globalDownloaded()); }
 QString QmlSessionBridge::totalUploaded() const { return formatSize(m_session->globalUploaded()); }
@@ -1420,8 +1367,28 @@ QString QmlSessionBridge::selectedMetaInfo() const
     return parts.join(QStringLiteral(" · "));
 }
 
+void QmlSessionBridge::recomputeAggregates()
+{
+    m_activeCount = m_downloadingCount = m_seedingCount = 0;
+    m_pausedCount = m_completedCount = 0;
+    m_totalDownRate = m_totalUpRate = 0;
+    m_anyDownloading = false;
+    const int n = m_session->torrentCount();
+    for (int i = 0; i < n; ++i) {
+        const auto info = m_session->torrentAt(i);
+        m_totalDownRate += info.downloadRate;
+        m_totalUpRate   += info.uploadRate;
+        if (info.downloadRate > 0 || info.uploadRate > 0) ++m_activeCount;
+        if (info.paused) ++m_pausedCount;
+        if (!info.paused && info.progress < 1.0f) { ++m_downloadingCount; m_anyDownloading = true; }
+        if (!info.paused && info.progress >= 1.0f && !info.completed) ++m_seedingCount;
+        if (info.completed) ++m_completedCount;
+    }
+}
+
 void QmlSessionBridge::emitStats()
 {
+    recomputeAggregates();   // one library pass feeds every count/speed getter
     emit statsChanged();
     // NOT selectionListsChanged: this fires every ~1s and must not rebuild the
     // heavy per-selection lists (peers/files/trackers/pieces). The live scalar
@@ -1432,14 +1399,8 @@ void QmlSessionBridge::emitStats()
     // once the moment nothing is downloading anymore. Re-arms when a new
     // download starts, so each "drain" triggers at most one countdown.
     if (QSettings().value(QStringLiteral("autoShutdown"), false).toBool()) {
-        int n = m_session->torrentCount();
-        bool anyDownloading = false;
-        for (int i = 0; i < n; ++i) {
-            auto info = m_session->torrentAt(i);
-            if (!info.paused && info.progress < 1.0f) { anyDownloading = true; break; }
-        }
-        if (anyDownloading) m_shutdownArmed = true;
-        else if (m_shutdownArmed && n > 0) { m_shutdownArmed = false; emit allDownloadsComplete(); }
+        if (m_anyDownloading) m_shutdownArmed = true;
+        else if (m_shutdownArmed && m_session->torrentCount() > 0) { m_shutdownArmed = false; emit allDownloadsComplete(); }
     } else {
         m_shutdownArmed = false;
     }
