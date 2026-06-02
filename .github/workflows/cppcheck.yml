@@ -1,0 +1,25 @@
+name: cppcheck
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  cppcheck:
+    name: cppcheck static analysis
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          # Gate on the high-confidence "error" severity (null derefs, leaks,
+          # buffer overruns, UB). Style/perf noise is not failed on.
+          cppcheck --quiet --std=c++17 --library=qt \
+            --inline-suppr --suppress=missingInclude --suppress=missingIncludeSystem \
+            --error-exitcode=1 -I src src/app src/torrent src/gui src/webui
