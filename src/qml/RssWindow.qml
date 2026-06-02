@@ -108,7 +108,7 @@ Window {
         }
         FolderDialog {
             id: edFolderDlg
-            onAccepted: edPath.text = edFolderDlg.selectedFolder.toString().replace(/^file:\/\//, "")
+            onAccepted: edPath.text = session.urlToLocalPath(edFolderDlg.selectedFolder.toString())
         }
     }
 

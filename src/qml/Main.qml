@@ -311,7 +311,7 @@ Window {
     FolderDialog {
         id: setLocationDlg
         title: (i18n.language, i18n.t("ctx_move_storage_title"))
-        onAccepted: session.moveSelectedStorage(setLocationDlg.selectedFolder.toString().replace(/^file:\/\//, ""))
+        onAccepted: session.moveSelectedStorage(session.urlToLocalPath(setLocationDlg.selectedFolder.toString()))
     }
 
     // ================== NATIVE MENU BAR (ported from mainwindow.cpp) ==================
@@ -2125,7 +2125,7 @@ Window {
     // ================== OVERLAY DIALOGS (in-app, backdrop covers all) ==================
     MagnetDialog {
         id: magnetDlg
-        onAccepted: if (magnetText.length > 0 && typeof session !== "undefined") session.addMagnetUri(magnetText)
+        onAccepted: if (magnetText.length > 0 && typeof session !== "undefined") session.addMagnetUri(magnetText, savePath)
     }
     // pending .torrent paths awaiting the add dialog (filled by drops / multi-open)
     property var torrentQueue: []
@@ -2269,14 +2269,14 @@ Window {
         id: inspectFileDlg
         title: (i18n.language, i18n.t("inspector_title"))
         nameFilters: ["Torrent (*.torrent)"]
-        onAccepted: inspectorDlg.load(inspectFileDlg.selectedFile.toString().replace(/^file:\/\//, ""))
+        onAccepted: inspectorDlg.load(session.urlToLocalPath(inspectFileDlg.selectedFile.toString()))
     }
 
     // Import torrents from an existing qBittorrent install (choose default save path)
     FolderDialog {
         id: importQbtDlg
         title: (i18n.language, i18n.t("import_savepath_title"))
-        onAccepted: if (typeof session !== "undefined") session.importQbittorrent(importQbtDlg.selectedFolder.toString().replace(/^file:\/\//, ""))
+        onAccepted: if (typeof session !== "undefined") session.importQbittorrent(session.urlToLocalPath(importQbtDlg.selectedFolder.toString()))
     }
 
     Shortcut { sequences: [StandardKey.HelpContents]; onActivated: win.showWin(shortcutsWinLoader) }

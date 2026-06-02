@@ -24,7 +24,7 @@ BatDialog {
         id: srcFolderDlg
         title: (i18n.language, i18n.t("create_pick_folder"))
         onAccepted: {
-            sourceFld.text = srcFolderDlg.selectedFolder.toString().replace(/^file:\/\//, "")
+            sourceFld.text = session.urlToLocalPath(srcFolderDlg.selectedFolder.toString())
             if (dlg.sess && outputFld.text.length === 0)
                 outputFld.text = dlg.sess.suggestTorrentOutput(sourceFld.text)
         }
@@ -33,7 +33,7 @@ BatDialog {
         id: srcFileDlg
         title: (i18n.language, i18n.t("create_pick_file"))
         onAccepted: {
-            sourceFld.text = srcFileDlg.selectedFile.toString().replace(/^file:\/\//, "")
+            sourceFld.text = session.urlToLocalPath(srcFileDlg.selectedFile.toString())
             if (dlg.sess && outputFld.text.length === 0)
                 outputFld.text = dlg.sess.suggestTorrentOutput(sourceFld.text)
         }
@@ -43,7 +43,7 @@ BatDialog {
         title: (i18n.language, i18n.t("create_save_as_dlg"))
         fileMode: FileDialog.SaveFile
         nameFilters: [(i18n.language, i18n.t("filter_torrent_files"))]
-        onAccepted: outputFld.text = outDlg.selectedFile.toString().replace(/^file:\/\//, "")
+        onAccepted: outputFld.text = session.urlToLocalPath(outDlg.selectedFile.toString())
     }
 
     // 1. eyebrow + title

@@ -512,6 +512,7 @@
   "release_notes_title2": "Release notes",
   "remove_also_files": "Also delete the files from disk",
   "remove_confirm_q": "Remove this torrent?",
+  "remove_confirm_body": "You are about to remove %1 from the list. This action cannot be undone.",
   "remove_delete_note": "Permanently erases the downloaded data",
   "remove_title2": "Remove torrent",
   "removed_history_clear": "Clear all",

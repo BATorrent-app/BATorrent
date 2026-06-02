@@ -56,7 +56,9 @@ BatDialog {
                 font.pixelSize: 12
                 font.family: Theme.fontSans
                 textFormat: Text.StyledText
-                text: "Você está prestes a remover <font color='" + Theme.t2 + "'><b>Forza.Horizon.6-CODEX</b></font> da lista. Esta ação não pode ser desfeita."
+                text: (i18n.language, i18n.t("remove_confirm_body"))
+                    .arg("<font color='" + Theme.t2 + "'><b>"
+                         + (typeof session !== "undefined" ? session.selectedName : "") + "</b></font>")
             }
         }
     }

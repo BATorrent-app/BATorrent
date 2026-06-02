@@ -512,6 +512,7 @@
   "release_notes_title2": "Примечания к выпуску",
   "remove_also_files": "Также удалить файлы с диска",
   "remove_confirm_q": "Удалить этот торрент?",
+  "remove_confirm_body": "Вы собираетесь удалить %1 из списка. Это действие нельзя отменить.",
   "remove_delete_note": "Безвозвратно удаляет загруженные данные",
   "remove_title2": "Удалить торрент",
   "removed_history_clear": "Очистить всё",

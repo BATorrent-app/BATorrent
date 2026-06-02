@@ -512,6 +512,7 @@
   "release_notes_title2": "リリースノート",
   "remove_also_files": "ディスク上のファイルも削除する",
   "remove_confirm_q": "このトレントを削除しますか？",
+  "remove_confirm_body": "%1 をリストから削除しようとしています。この操作は取り消せません。",
   "remove_delete_note": "ダウンロード済みデータを完全に削除します",
   "remove_title2": "トレントを削除",
   "removed_history_clear": "すべてクリア",

@@ -512,6 +512,7 @@
   "release_notes_title2": "更新日志",
   "remove_also_files": "同时从磁盘删除文件",
   "remove_confirm_q": "删除此种子？",
+  "remove_confirm_body": "您即将从列表中移除 %1。此操作无法撤销。",
   "remove_delete_note": "永久删除已下载的数据",
   "remove_title2": "删除种子",
   "removed_history_clear": "全部清除",

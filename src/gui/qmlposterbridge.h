@@ -164,7 +164,7 @@ public:
     Q_INVOKABLE void pauseAll();
     Q_INVOKABLE void resumeAll();
     Q_INVOKABLE void addTorrentFile(const QString &filePath);
-    Q_INVOKABLE void addMagnetUri(const QString &uri);
+    Q_INVOKABLE void addMagnetUri(const QString &uri, const QString &savePath = QString());
     Q_INVOKABLE QVariantMap previewTorrent(const QString &filePath) const;
     Q_INVOKABLE void resolvePreview(const QString &infoHash, const QString &name);
     Q_INVOKABLE void addTorrentWithPrefs(const QString &filePath, const QString &savePath,
@@ -186,6 +186,11 @@ public:
     Q_INVOKABLE void toggleSelectedPause();
     Q_INVOKABLE void stopSeedingSelected();
     Q_INVOKABLE void smartPaste();
+
+    // Convert a FileDialog url ("file:///C:/x" / "file:///x") to a native local
+    // path. QML's naive `replace(/^file:\/\//,"")` left a leading slash before
+    // the Windows drive letter ("/C:/x"), breaking every picker on Windows.
+    Q_INVOKABLE QString urlToLocalPath(const QString &url) const;
 
     // per-torrent edits (wrap SessionManager against the current selection)
     Q_INVOKABLE void moveSelectedStorage(const QString &path);

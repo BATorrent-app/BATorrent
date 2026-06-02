@@ -691,6 +691,13 @@ void QmlSessionBridge::stopSeedingSelected()
     emit selectionChanged(); emit selectionListsChanged();
 }
 
+QString QmlSessionBridge::urlToLocalPath(const QString &url) const
+{
+    if (url.startsWith(QStringLiteral("file:")))
+        return QUrl(url).toLocalFile();
+    return url;
+}
+
 void QmlSessionBridge::moveSelectedStorage(const QString &path)
 {
     if (path.isEmpty()) return;
@@ -1156,10 +1163,10 @@ void QmlSessionBridge::addTorrentFile(const QString &filePath)
     m_session->addTorrent(local, defaultSavePath());
 }
 
-void QmlSessionBridge::addMagnetUri(const QString &uri)
+void QmlSessionBridge::addMagnetUri(const QString &uri, const QString &savePath)
 {
     if (uri.isEmpty()) return;
-    m_session->addMagnet(uri, defaultSavePath());
+    m_session->addMagnet(uri, savePath.isEmpty() ? defaultSavePath() : savePath);
 }
 
 QVariantMap QmlSessionBridge::previewTorrent(const QString &filePath) const

@@ -1,6 +1,7 @@
 // Source: BATorrent Magnet.html + bat-dialog.css
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import "theme"
 import "widgets"
 
@@ -13,7 +14,17 @@ BatDialog {
     okText: (i18n.language, i18n.t("add_torrent_add_btn"))
 
     property alias magnetText: magnetArea.text
-    onOpenedChanged: if (opened) magnetArea.text = ""
+    property alias savePath: pathFld.text
+    onOpenedChanged: if (opened) {
+        magnetArea.text = ""
+        if (typeof session !== "undefined") pathFld.text = session.defaultSavePath()
+    }
+
+    FolderDialog {
+        id: magFolderDlg
+        onAccepted: if (typeof session !== "undefined")
+            pathFld.text = session.urlToLocalPath(magFolderDlg.selectedFolder.toString())
+    }
 
     // ----- col 1: eyebrow + title -----
     ColumnLayout {
@@ -107,8 +118,9 @@ BatDialog {
             font.family: Theme.fontSans
         }
         PathFld {
+            id: pathFld
             Layout.fillWidth: true
-            text: "/Users/voce/Downloads"
+            onBrowseClicked: magFolderDlg.open()
         }
     }
 

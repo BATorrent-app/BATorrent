@@ -512,6 +512,7 @@
   "release_notes_title2": "Notas de la versión",
   "remove_also_files": "Eliminar también los archivos del disco",
   "remove_confirm_q": "¿Eliminar este torrent?",
+  "remove_confirm_body": "Estás a punto de quitar %1 de la lista. Esta acción no se puede deshacer.",
   "remove_delete_note": "Borra permanentemente los datos descargados",
   "remove_title2": "Eliminar torrent",
   "removed_history_clear": "Limpiar todo",
