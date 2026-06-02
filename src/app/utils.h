@@ -41,34 +41,31 @@ inline void revealInFileManager(const QString &path)
         info = QFileInfo(parent.absolutePath());
     }
 
-    const QString native = QDir::toNativeSeparators(info.absoluteFilePath());
+    // qBittorrent's rule, copied faithfully: a folder is *opened* (you land
+    // inside it, seeing only that torrent's files), a single file has its
+    // parent opened with the file *selected*. Dropping the user into a shared
+    // save folder like Downloads — possibly tens of thousands of files — with
+    // nothing useful selected is exactly the failure we're avoiding. The
+    // walk-up above can also leave `info` at an ancestor directory, which this
+    // treats as the folder case.
+    const bool isDir = info.isDir();
+    const QString full = info.absoluteFilePath();
+    const QString native = QDir::toNativeSeparators(full);
 
 #if defined(Q_OS_WIN)
-    if (exists) {
-        // Reveal via the shell API, NOT `explorer.exe /select,`. The
-        // command-line form silently opens the user's Documents (or the last
-        // folder) whenever the path contains spaces, unicode, or a comma — the
-        // "lands in a random folder" bug. SHOpenFolderAndSelectItems takes a
-        // PIDL, so nothing is parsed from a string. (Same approach qBittorrent
-        // uses.) Runs on a short-lived thread because it needs its own COM apt.
+    if (isDir) {
+        QProcess::startDetached("explorer.exe", {native});
+    } else {
+        // Select the file via the shell API, NOT `explorer.exe /select,`. The
+        // command-line form silently opens Documents whenever the path has
+        // spaces, unicode, or a comma. SHOpenFolderAndSelectItems takes a PIDL,
+        // so nothing is parsed from a string. (qBittorrent's openFolderSelect.)
+        // Runs on a short-lived thread because it needs its own COM apartment.
         const QString target = native;
         auto *thread = QThread::create([target]() {
             if (SUCCEEDED(::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE))) {
                 if (PIDLIST_ABSOLUTE pidl = ::ILCreateFromPathW(reinterpret_cast<const wchar_t *>(target.utf16()))) {
-                    // Split into parent folder + child and select the child, rather
-                    // than passing the item itself as pidlFolder with no children.
-                    // For a folder that latter form makes Explorer *enter* it (or, on
-                    // some builds, open the parent with nothing highlighted) — the
-                    // "lands in Downloads, folder not selected" bug. An explicit child
-                    // highlights it inside its parent for both files and folders.
-                    if (PIDLIST_ABSOLUTE parent = ::ILClone(pidl); parent && ::ILRemoveLastID(parent)) {
-                        PCUITEMID_CHILD child = ::ILFindLastID(pidl);
-                        ::SHOpenFolderAndSelectItems(parent, 1, &child, 0);
-                        ::ILFree(parent);
-                    } else {
-                        if (parent) ::ILFree(parent);
-                        ::SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
-                    }
+                    ::SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
                     ::ILFree(pidl);
                 }
                 ::CoUninitialize();
@@ -76,35 +73,30 @@ inline void revealInFileManager(const QString &path)
         });
         QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
         thread->start();
-    } else {
-        // Fell back to an ancestor directory — just open it (no selection).
-        QProcess::startDetached("explorer.exe", {native});
     }
 #elif defined(Q_OS_MACOS)
-    if (exists)
-        QProcess::startDetached("open", {"-R", info.absoluteFilePath()});
+    if (isDir)
+        QProcess::startDetached("open", {full});
     else
-        QProcess::startDetached("open", {info.absoluteFilePath()});
+        QProcess::startDetached("open", {"-R", full});
 #else
-    if (exists) {
+    if (isDir) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(full));
+    } else {
         // Most Linux file managers (Nautilus, Dolphin, Nemo, Caja, ...)
-        // advertise the FreeDesktop FileManager1 D-Bus interface, which
-        // can highlight a specific URI. Try it first, fall back to opening
-        // the parent dir.
+        // advertise the FreeDesktop FileManager1 D-Bus interface, which can
+        // highlight a specific URI. Try it first, fall back to the parent dir.
         QStringList args = {
             "--session",
             "--dest=org.freedesktop.FileManager1",
             "--type=method_call",
             "/org/freedesktop/FileManager1",
             "org.freedesktop.FileManager1.ShowItems",
-            QString("array:string:%1")
-                .arg(QUrl::fromLocalFile(info.absoluteFilePath()).toString()),
+            QString("array:string:%1").arg(QUrl::fromLocalFile(full).toString()),
             "string:"
         };
         if (!QProcess::startDetached("dbus-send", args))
             QDesktopServices::openUrl(QUrl::fromLocalFile(info.absolutePath()));
-    } else {
-        QDesktopServices::openUrl(QUrl::fromLocalFile(info.absoluteFilePath()));
     }
 #endif
 }
