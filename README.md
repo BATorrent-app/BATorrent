@@ -23,6 +23,7 @@
 <p align="center">
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml/badge.svg"></a>
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/tsan.yml"><img alt="ThreadSanitizer" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/tsan.yml/badge.svg"></a>
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/clang-tidy.yml"><img alt="clang-tidy" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/clang-tidy.yml/badge.svg"></a>
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/cppcheck.yml"><img alt="cppcheck" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/cppcheck.yml/badge.svg"></a>
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/semgrep.yml"><img alt="Semgrep" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/semgrep.yml/badge.svg"></a>
