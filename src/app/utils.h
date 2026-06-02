@@ -13,6 +13,11 @@
 #include <QProcess>
 #include <QUrl>
 
+#if defined(Q_OS_WIN)
+#include <QThread>
+#include <shlobj.h>
+#endif
+
 // Open the system's file manager pointed at `path`, with that path
 // highlighted/selected if the platform supports it. If the path itself
 // doesn't exist on disk we walk up to the nearest ancestor that does and
@@ -40,14 +45,26 @@ inline void revealInFileManager(const QString &path)
 
 #if defined(Q_OS_WIN)
     if (exists) {
-        // explorer.exe /select,"C:\path\to\file" opens the folder with the
-        // file highlighted. The comma after /select is required and there
-        // must be no space after it.
-        QProcess::startDetached("explorer.exe", {QStringLiteral("/select,") + native});
+        // Reveal via the shell API, NOT `explorer.exe /select,`. The
+        // command-line form silently opens the user's Documents (or the last
+        // folder) whenever the path contains spaces, unicode, or a comma — the
+        // "lands in a random folder" bug. SHOpenFolderAndSelectItems takes a
+        // PIDL, so nothing is parsed from a string. (Same approach qBittorrent
+        // uses.) Runs on a short-lived thread because it needs its own COM apt.
+        const QString target = native;
+        auto *thread = QThread::create([target]() {
+            if (SUCCEEDED(::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE))) {
+                if (PIDLIST_ABSOLUTE pidl = ::ILCreateFromPathW(reinterpret_cast<const wchar_t *>(target.utf16()))) {
+                    ::SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
+                    ::ILFree(pidl);
+                }
+                ::CoUninitialize();
+            }
+        });
+        QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+        thread->start();
     } else {
-        // We fell back to a directory — Explorer opens it directly with no
-        // /select so we don't trigger the "missing target → Documents"
-        // behavior.
+        // Fell back to an ancestor directory — just open it (no selection).
         QProcess::startDetached("explorer.exe", {native});
     }
 #elif defined(Q_OS_MACOS)
