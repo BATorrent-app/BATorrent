@@ -2908,17 +2908,53 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
                 QString program;
 
 #ifdef Q_OS_WIN
-                program = QStringLiteral("7z.exe");
+                // Prefer 7-Zip (silent CLI, every format). Many Windows users
+                // only have WinRAR, though, so fall back to it: UnRAR.exe is a
+                // silent CLI for .rar, and WinRAR.exe handles every format.
+                QString sevenZip;
                 for (const QString &path : {
                          QStringLiteral("C:/Program Files/7-Zip/7z.exe"),
-                         QStringLiteral("C:/Program Files (x86)/7-Zip/7z.exe")}) {
-                    if (QFile::exists(path)) { program = path; break; }
+                         QStringLiteral("C:/Program Files (x86)/7-Zip/7z.exe")})
+                    if (QFile::exists(path)) { sevenZip = path; break; }
+                if (sevenZip.isEmpty())
+                    sevenZip = QStandardPaths::findExecutable(QStringLiteral("7z"));
+
+                QString winrarDir;
+                for (const QString &dir : {
+                         QStringLiteral("C:/Program Files/WinRAR/"),
+                         QStringLiteral("C:/Program Files (x86)/WinRAR/")})
+                    if (QFile::exists(dir + QStringLiteral("WinRAR.exe"))) { winrarDir = dir; break; }
+
+                const bool isRar = archive.endsWith(QStringLiteral(".rar"), Qt::CaseInsensitive);
+                if (!sevenZip.isEmpty()) {
+                    program = sevenZip;
+                    args << QStringLiteral("x") << archive
+                         << QStringLiteral("-o") + extractDir
+                         << QStringLiteral("-y") << QStringLiteral("-aoa");
+                    if (!password.isEmpty())
+                        args << QStringLiteral("-p") + password;
+                } else if (isRar && !winrarDir.isEmpty()
+                           && QFile::exists(winrarDir + QStringLiteral("UnRAR.exe"))) {
+                    program = winrarDir + QStringLiteral("UnRAR.exe");
+                    args << QStringLiteral("x") << QStringLiteral("-y") << QStringLiteral("-o+")
+                         << (password.isEmpty() ? QStringLiteral("-p-")        // never prompt
+                                                : QStringLiteral("-p") + password)
+                         << archive << extractDir + QStringLiteral("/");
+                } else if (!winrarDir.isEmpty()) {
+                    program = winrarDir + QStringLiteral("WinRAR.exe");
+                    args << QStringLiteral("x") << QStringLiteral("-y")
+                         << QStringLiteral("-ibck") << QStringLiteral("-inul");
+                    if (!password.isEmpty())
+                        args << QStringLiteral("-p") + password;
+                    args << archive << extractDir + QStringLiteral("/");
+                } else {
+                    program = QStringLiteral("7z.exe");   // last resort: rely on PATH
+                    args << QStringLiteral("x") << archive
+                         << QStringLiteral("-o") + extractDir
+                         << QStringLiteral("-y") << QStringLiteral("-aoa");
+                    if (!password.isEmpty())
+                        args << QStringLiteral("-p") + password;
                 }
-                args << QStringLiteral("x") << archive
-                     << QStringLiteral("-o") + extractDir
-                     << QStringLiteral("-y") << QStringLiteral("-aoa");
-                if (!password.isEmpty())
-                    args << QStringLiteral("-p") + password;
 #else
                 if (archive.endsWith(QStringLiteral(".rar"))) {
                     program = QStringLiteral("unrar");
