@@ -2900,6 +2900,7 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
             *self = [this, archive, extractDir, attempts, self](int idx) {
                 if (idx >= attempts.size()) {
                     qDebug() << "[session] extraction failed (all passwords tried):" << archive;
+                    emit torrentError(tr_("extract_failed").arg(QFileInfo(archive).fileName()));
                     return;
                 }
 

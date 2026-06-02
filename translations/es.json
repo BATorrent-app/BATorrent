@@ -367,6 +367,7 @@
   "empty_seeding_t": "No está sembrando nada",
   "empty_title": "Aún no hay torrents",
   "error_disk_full": "Disco lleno — todas las descargas pausadas. Libera espacio y reanuda manualmente.",
+  "extract_failed": "Error al extraer (contraseña incorrecta o falta 7-Zip/WinRAR): %1",
   "export_success": "Configuración exportada correctamente.",
   "file_name": "Archivo",
   "file_priority": "Prioridad",

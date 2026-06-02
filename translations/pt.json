@@ -367,6 +367,7 @@
   "empty_seeding_t": "Não está semeando nada",
   "empty_title": "Nenhum torrent ainda",
   "error_disk_full": "Disco cheio — todos os downloads pausados. Libere espaço e retome manualmente.",
+  "extract_failed": "Falha na extração (senha errada ou 7-Zip/WinRAR ausente): %1",
   "export_success": "Configurações exportadas com sucesso.",
   "file_name": "Arquivo",
   "file_priority": "Prioridade",

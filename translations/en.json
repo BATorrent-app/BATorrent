@@ -367,6 +367,7 @@
   "empty_seeding_t": "Not seeding anything",
   "empty_title": "No torrents yet",
   "error_disk_full": "Disk full — all downloads paused. Free up space and resume manually.",
+  "extract_failed": "Extraction failed (wrong password or missing 7-Zip/WinRAR): %1",
   "export_success": "Settings exported successfully.",
   "file_name": "File",
   "file_priority": "Priority",

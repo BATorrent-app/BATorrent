@@ -367,6 +367,7 @@
   "empty_seeding_t": "何もシードしていません",
   "empty_title": "トレントはまだありません",
   "error_disk_full": "ディスクフル — 全ダウンロードを一時停止しました。空きを増やして手動で再開してください。",
+  "extract_failed": "展開に失敗しました（パスワード違いか 7-Zip/WinRAR 未インストール）: %1",
   "export_success": "設定のエクスポートに成功しました。",
   "file_name": "ファイル",
   "file_priority": "優先度",

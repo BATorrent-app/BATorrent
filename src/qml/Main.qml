@@ -284,11 +284,12 @@ Window {
             implicitWidth: 200
             delegate: CatItem {}
             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-            CatItem { text: win.catLabel("Apps");   onTriggered: session.setSelectedCategory("Apps") }
-            CatItem { text: win.catLabel("Games");  onTriggered: session.setSelectedCategory("Games") }
-            CatItem { text: win.catLabel("Movies"); onTriggered: session.setSelectedCategory("Movies") }
-            CatItem { text: win.catLabel("Series"); onTriggered: session.setSelectedCategory("Series") }
-            CatItem { text: (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
+            CatItem { text: (session.selectedCategory() === "Apps"   ? "✓ " : "") + win.catLabel("Apps");   onTriggered: session.setSelectedCategory("Apps") }
+            CatItem { text: (session.selectedCategory() === "Games"  ? "✓ " : "") + win.catLabel("Games");  onTriggered: session.setSelectedCategory("Games") }
+            CatItem { text: (session.selectedCategory() === "Movies" ? "✓ " : "") + win.catLabel("Movies"); onTriggered: session.setSelectedCategory("Movies") }
+            CatItem { text: (session.selectedCategory() === "Series" ? "✓ " : "") + win.catLabel("Series"); onTriggered: session.setSelectedCategory("Series") }
+            MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+            CatItem { text: (session.selectedCategory() === "" ? "✓ " : "") + (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
             CatItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith(i18n.t("ctx_category"), i18n.t("prompt_category_name"), session.selectedCategory(), i18n.t("prompt_category_eg"), function(t){ session.setSelectedCategory(t) }) }
             MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
             CatItem { text: (i18n.language, i18n.t("ctx_add_tag")); onTriggered: inputPrompt.openWith(i18n.t("prompt_add_tag_title"), i18n.t("prompt_new_tag"), "", i18n.t("prompt_tag_eg"), function(t){ if (t.length === 0) return; var tags = session.selectedTagList(); if (tags.indexOf(t) < 0) { tags.push(t); session.setSelectedTags(tags) } }) }

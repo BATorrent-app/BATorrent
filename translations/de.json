@@ -367,6 +367,7 @@
   "empty_seeding_t": "Seede nichts",
   "empty_title": "Noch keine Torrents",
   "error_disk_full": "Datenträger voll — alle Downloads pausiert. Speicher freigeben und manuell fortsetzen.",
+  "extract_failed": "Entpacken fehlgeschlagen (falsches Passwort oder 7-Zip/WinRAR fehlt): %1",
   "export_success": "Einstellungen erfolgreich exportiert.",
   "file_name": "Datei",
   "file_priority": "Priorität",

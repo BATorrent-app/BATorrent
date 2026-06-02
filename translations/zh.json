@@ -367,6 +367,7 @@
   "empty_seeding_t": "没有正在做种的内容",
   "empty_title": "暂无种子",
   "error_disk_full": "磁盘已满 — 所有下载已暂停。释放空间后手动恢复。",
+  "extract_failed": "解压失败（密码错误或未安装 7-Zip/WinRAR）：%1",
   "export_success": "设置导出成功。",
   "file_name": "文件",
   "file_priority": "优先级",
