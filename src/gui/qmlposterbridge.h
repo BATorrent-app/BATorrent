@@ -130,10 +130,10 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(bool selectedCompleted READ selectedCompleted NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedAtFullProgress READ selectedAtFullProgress NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedPaused READ selectedPaused NOTIFY selectionChanged)
-    Q_PROPERTY(QVariantList selectedPeerList READ selectedPeerList NOTIFY selectionChanged)
-    Q_PROPERTY(QVariantList selectedFiles READ selectedFiles NOTIFY selectionChanged)
-    Q_PROPERTY(QVariantList selectedTrackers READ selectedTrackers NOTIFY selectionChanged)
-    Q_PROPERTY(QVariantList selectedPieces READ selectedPieces NOTIFY selectionChanged)
+    Q_PROPERTY(QVariantList selectedPeerList READ selectedPeerList NOTIFY selectionListsChanged)
+    Q_PROPERTY(QVariantList selectedFiles READ selectedFiles NOTIFY selectionListsChanged)
+    Q_PROPERTY(QVariantList selectedTrackers READ selectedTrackers NOTIFY selectionListsChanged)
+    Q_PROPERTY(QVariantList selectedPieces READ selectedPieces NOTIFY selectionListsChanged)
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
 
 public:
@@ -273,6 +273,10 @@ public:
 signals:
     void statsChanged();
     void selectionChanged();
+    // Heavy per-selection lists (peers/files/trackers/pieces) notify on this
+    // instead of selectionChanged, which fires every ~1s from emitStats() and
+    // would otherwise rebuild those big lists every second.
+    void selectionListsChanged();
     void historyChanged();
     void queueRefreshNeeded();
     void queueMoved(int from, int to);
@@ -649,6 +653,7 @@ private:
     DiscordRPC *m_rpc = nullptr;
     QTimer m_timer;
     qint64 m_sessionStart = 0;
+    QString m_lastActivityKey;   // skip resending an identical presence each tick
 };
 
 // Exposes the GitHub-release auto-updater to QML. Disabled (not instantiated)

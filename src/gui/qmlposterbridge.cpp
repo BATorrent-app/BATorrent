@@ -305,7 +305,7 @@ QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *re
 
     m_geoIp = new GeoIpResolver(this);
     connect(m_geoIp, &GeoIpResolver::resolved, this, [this](const QString &, const QString &) {
-        emit selectionChanged();
+        emit selectionChanged(); emit selectionListsChanged();
     });
 
     if (m_resolver) {
@@ -431,14 +431,14 @@ void QmlSessionBridge::setSelectedIndex(int index)
     m_selectedRows.clear();
     if (index >= 0) m_selectedRows << index;
     m_selectedIndex = index;
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::setSelectedRows(const QList<int> &rows)
 {
     m_selectedRows = rows;
     m_selectedIndex = rows.isEmpty() ? -1 : rows.last();
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 QList<int> QmlSessionBridge::selectedRows() const { return m_selectedRows; }
@@ -471,7 +471,7 @@ void QmlSessionBridge::removeSelected()
     for (int r : rows) m_session->removeTorrent(r, false);
     m_selectedRows.clear();
     m_selectedIndex = -1;
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::removeSelectedWithFiles()
@@ -479,7 +479,7 @@ void QmlSessionBridge::removeSelectedWithFiles()
     if (m_selectedIndex >= 0) {
         m_session->removeTorrent(m_selectedIndex, true);
         m_selectedIndex = -1;
-        emit selectionChanged();
+        emit selectionChanged(); emit selectionListsChanged();
     }
 }
 
@@ -564,25 +564,25 @@ void QmlSessionBridge::smartPaste()
 void QmlSessionBridge::setSelectedForceStart(bool on)
 {
     if (hasSelection()) m_session->setForceStart(m_selectedIndex, on);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::setSelectedSuperSeeding(bool on)
 {
     if (hasSelection()) m_session->setSuperSeeding(m_selectedIndex, on);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::markSelectedCompleted()
 {
     if (hasSelection()) m_session->markCompleted(m_selectedIndex);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::unmarkSelectedCompleted()
 {
     if (hasSelection()) m_session->unmarkCompleted(m_selectedIndex);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::forceRecheckSelected()
@@ -615,7 +615,7 @@ void QmlSessionBridge::queueUpSelected()
     m_selectedRows = newRows;
     m_selectedIndex = newRows.isEmpty() ? -1 : newRows.last();
     emit queueRefreshNeeded();
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::queueDownSelected()
@@ -639,7 +639,7 @@ void QmlSessionBridge::queueDownSelected()
     m_selectedRows = newRows;
     m_selectedIndex = newRows.isEmpty() ? -1 : newRows.first();
     emit queueRefreshNeeded();
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 // resolve the active rows (multi-select, falling back to the focus index)
@@ -654,7 +654,7 @@ void QmlSessionBridge::queueTopSelected()
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentQueuePosition(r, 0);
     emit queueRefreshNeeded();
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::queueBottomSelected()
@@ -663,14 +663,14 @@ void QmlSessionBridge::queueBottomSelected()
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentQueuePosition(r, last);
     emit queueRefreshNeeded();
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::stopSeedingSelected()
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->stopSeedingTorrent(r);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::moveSelectedStorage(const QString &path)
@@ -678,28 +678,28 @@ void QmlSessionBridge::moveSelectedStorage(const QString &path)
     if (path.isEmpty()) return;
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->moveStorage(r, path);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::setSelectedDownloadLimit(int kbps)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentDownloadLimit(r, kbps);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::setSelectedUploadLimit(int kbps)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentUploadLimit(r, kbps);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::setSelectedSequential(bool on)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setSequentialDownload(r, on);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 bool QmlSessionBridge::selectedSequential() const
@@ -711,7 +711,7 @@ void QmlSessionBridge::setSelectedStopAfter(int mode)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentStopAfterDownload(r, mode);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 int QmlSessionBridge::selectedStopAfter() const
@@ -724,7 +724,7 @@ void QmlSessionBridge::setSelectedMaxSeedDays(int days)
     const qint64 secs = days < 0 ? -1 : qint64(days) * 86400;
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentMaxSeedSeconds(r, secs);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 int QmlSessionBridge::selectedMaxSeedDays() const
@@ -738,7 +738,7 @@ void QmlSessionBridge::renameSelected(const QString &name)
 {
     if (hasSelection() && !name.trimmed().isEmpty())
         m_session->renameFile(m_selectedIndex, 0, name.trimmed());
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 QString QmlSessionBridge::diagnoseSelectedSlow() const
@@ -827,14 +827,14 @@ void QmlSessionBridge::setSelectedCategory(const QString &category)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentCategory(r, category);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::setSelectedTags(const QStringList &tags)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentTags(r, tags);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::addTrackerToSelected(const QString &url)
@@ -842,7 +842,7 @@ void QmlSessionBridge::addTrackerToSelected(const QString &url)
     if (url.isEmpty()) return;
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->addTracker(r, url);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::removeTrackerFromSelected(const QString &url)
@@ -852,21 +852,21 @@ void QmlSessionBridge::removeTrackerFromSelected(const QString &url)
     for (const auto &t : m_session->trackersAt(m_selectedIndex))
         if (t.url != url) keep << t.url;
     m_session->replaceTrackers(m_selectedIndex, keep);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::renameSelectedFile(int fileIndex, const QString &newName)
 {
     if (!hasSelection() || newName.isEmpty()) return;
     m_session->renameFile(m_selectedIndex, fileIndex, newName);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::setSelectedFilePriority(int fileIndex, int priority)
 {
     if (!hasSelection()) return;
     m_session->setFilePriority(m_selectedIndex, fileIndex, priority);
-    emit selectionChanged();
+    emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::copySelectedName()
@@ -1366,6 +1366,9 @@ QString QmlSessionBridge::selectedMetaInfo() const
 void QmlSessionBridge::emitStats()
 {
     emit statsChanged();
+    // NOT selectionListsChanged: this fires every ~1s and must not rebuild the
+    // heavy per-selection lists (peers/files/trackers/pieces). The live scalar
+    // selected* props still refresh via selectionChanged.
     emit selectionChanged();
 
     // Auto-shutdown arming: when enabled and at least one torrent exists, fire
@@ -2681,7 +2684,10 @@ DiscordRpcBridge::DiscordRpcBridge(SessionManager *session, QObject *parent)
 void DiscordRpcBridge::refresh()
 {
     if (!m_rpc || m_rpc->clientId().isEmpty()) return;
-    if (!QSettings().value("discordEnabled", true).toBool()) { m_rpc->clearActivity(); return; }
+    if (!QSettings().value("discordEnabled", true).toBool()) {
+        if (!m_lastActivityKey.isEmpty()) { m_rpc->clearActivity(); m_lastActivityKey.clear(); }
+        return;
+    }
     // Mirror MainWindow::refreshDiscordPresence: feature the fastest active
     // download; otherwise report seeding count; otherwise idle.
     int seeding = 0, featured = -1, featuredRate = 0;
@@ -2694,19 +2700,26 @@ void DiscordRpcBridge::refresh()
             featured = i;
         }
     }
+    QString details, state;
     if (featured >= 0) {
         TorrentInfo info = m_session->torrentAt(featured);
-        const QString name = info.name.left(64);
-        const QString state = QStringLiteral("%1% · ↓ %2")
+        details = info.name.left(64);
+        state = QStringLiteral("%1% · ↓ %2")
             .arg(static_cast<int>(info.progress * 100))
             .arg(formatSpeed(info.downloadRate));
-        m_rpc->setActivity(name, state, m_sessionStart);
     } else if (seeding > 0) {
-        m_rpc->setActivity(tr_("discord_seeding").arg(seeding),
-                           tr_("discord_seeding_state"), m_sessionStart);
+        details = tr_("discord_seeding").arg(seeding);
+        state = tr_("discord_seeding_state");
     } else {
-        m_rpc->setActivity(tr_("discord_idle"), QString(), m_sessionStart);
+        details = tr_("discord_idle");
     }
+    // Connected to torrentsUpdated (~1s); only push to Discord when the visible
+    // presence actually changed — re-sending the same payload every second is
+    // wasted JSON + socket writes (and Discord rate-limits presence anyway).
+    const QString key = details + QLatin1Char('\x1f') + state;
+    if (key == m_lastActivityKey) return;
+    m_lastActivityKey = key;
+    m_rpc->setActivity(details, state, m_sessionStart);
 }
 
 // --- QmlUpdaterBridge ---
