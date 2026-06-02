@@ -252,14 +252,16 @@ int main(int argc, char *argv[])
 
         QObject::connect(&session, &SessionManager::torrentsUpdated,
                          posterModel, &QmlPosterModel::refresh);
-        // torrentsUpdated isn't emitted once the list is empty, so removing the
-        // last torrent would never refresh the model — connect removal directly.
+        // Index-aware removal — beginRemoveRows for the exact row instead of a
+        // full model reset, so the grid doesn't flash and jump to the top.
         QObject::connect(&session, &SessionManager::torrentRemoved,
-                         posterModel, &QmlPosterModel::refresh);
+                         posterModel, &QmlPosterModel::removeRow);
+        // A resolved poster only touches one row's poster/title roles.
         QObject::connect(resolver, &MetadataResolver::metadataReady,
-                         posterModel, &QmlPosterModel::refresh);
+                         posterModel, &QmlPosterModel::posterResolved);
+        // Explicit edits (rename/category/restore/import) need every role.
         QObject::connect(sessionBridge, &QmlSessionBridge::queueRefreshNeeded,
-                         posterModel, &QmlPosterModel::refresh);
+                         posterModel, &QmlPosterModel::refreshFull);
         QObject::connect(sessionBridge, &QmlSessionBridge::queueMoved,
                          posterModel, &QmlPosterModel::moveRow);
         QObject::connect(&session, &SessionManager::torrentAdded,

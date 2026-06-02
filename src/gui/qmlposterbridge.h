@@ -55,10 +55,15 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
 public slots:
-    void refresh();
+    void refresh();                         // periodic tick: volatile roles only
+    void refreshFull();                     // explicit edits: all roles
+    void removeRow(int index);              // index-aware delete (no full reset)
+    void posterResolved(const QString &hash); // one row's poster/title only
     void moveRow(int from, int to);
 
 private:
+    void syncCount();                       // insert/remove rows to match session
+    void emitRows(bool fullRoles);          // dataChanged over the whole list
     SessionManager *m_session;
     MetadataResolver *m_resolver;
     int m_lastCount = 0;

@@ -145,7 +145,7 @@ void QmlPosterModel::moveRow(int from, int to)
     endMoveRows();
 }
 
-void QmlPosterModel::refresh()
+void QmlPosterModel::syncCount()
 {
     int newCount = m_session->torrentCount();
     if (newCount > m_lastCount) {
@@ -154,17 +154,49 @@ void QmlPosterModel::refresh()
         m_lastCount = newCount;
         endInsertRows();
     } else if (newCount < m_lastCount) {
-        // a removal can be at ANY index (not just the tail). We only see the
-        // count drop, not which row left, so reset the model to stay in sync —
-        // an incremental tail-remove here desynced the view (removed torrent
-        // stayed visible).
+        // Safety net only: removals are normally handled by removeRow() with the
+        // exact index. If we somehow get here desynced, reset to stay correct.
         beginResetModel();
         m_lastCount = newCount;
         endResetModel();
-        return;
     }
-    if (newCount > 0)
-        emit dataChanged(index(0), index(newCount - 1));
+}
+
+void QmlPosterModel::emitRows(bool fullRoles)
+{
+    if (m_lastCount <= 0) return;
+    // The per-second tick only changes live stats; re-reading the immutable
+    // roles (poster/name/size) every tick re-ran the cover's layer+MultiEffect
+    // pipeline and made the proxy re-sort live. Send only the volatile roles on
+    // the tick; full edits (rename/category/restore) use fullRoles.
+    static const QList<int> volatileRoles = {
+        ProgressRole, StateKeyRole, StateStringRole, DownSpeedRole,
+        UpSpeedRole, NumPeersRole, DownRateRole, UpRateRole };
+    if (fullRoles)
+        emit dataChanged(index(0), index(m_lastCount - 1));
+    else
+        emit dataChanged(index(0), index(m_lastCount - 1), volatileRoles);
+}
+
+void QmlPosterModel::refresh()      { syncCount(); emitRows(false); }
+void QmlPosterModel::refreshFull()  { syncCount(); emitRows(true); }
+
+void QmlPosterModel::removeRow(int index)
+{
+    if (index < 0 || index >= m_lastCount) { syncCount(); return; }
+    beginRemoveRows(QModelIndex(), index, index);
+    --m_lastCount;
+    endRemoveRows();
+}
+
+void QmlPosterModel::posterResolved(const QString &hash)
+{
+    for (int row = 0; row < m_lastCount; ++row) {
+        if (m_session->torrentHashAt(row) == hash) {
+            emit dataChanged(index(row), index(row), {PosterPathRole, MetaTitleRole});
+            return;
+        }
+    }
 }
 
 // Filter proxy
