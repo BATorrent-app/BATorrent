@@ -116,7 +116,9 @@ endif()
 
 # Windows: target Windows 7+ to silence Boost.Asio warnings
 if(WIN32)
-    target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601)
+    # NOMINMAX: <shlobj.h>/<windows.h> otherwise define max()/min() macros that
+    # break libtorrent headers (aligned_union.hpp uses std::max).
+    target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601 NOMINMAX)
     # shell32/ole32: SHOpenFolderAndSelectItems for "reveal in Explorer"
     target_link_libraries(BATorrent PRIVATE shell32 ole32)
 endif()
