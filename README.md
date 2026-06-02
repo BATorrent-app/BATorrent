@@ -74,6 +74,7 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 - **Content layout** — Original, Create subfolder, or No subfolder controls how multi-file torrents are laid out on disk
 - **Excluded file patterns** — regex rules to auto-skip files (e.g. `.nfo`, `.txt`, `sample`) when adding a torrent
 - **Temp download path** — download to a staging folder first, auto-move to the save path on completion (keeps media servers from scanning partials)
+- **Auto-extract archives** — unpacks `.rar`/`.zip`/`.7z` automatically on completion, with a password list for protected archives (uses 7-Zip or WinRAR on Windows, `unrar`/`unzip` on macOS/Linux)
 - Categories, drag-and-drop reorder, and right-click context actions
 - Import existing state from qBittorrent
 - Create new `.torrent` files from any file or folder
@@ -125,18 +126,20 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 - **Discord Rich Presence** — shows "Downloading X · 67%" on your Discord profile with "Download BATorrent" and "View on GitHub" buttons. Works out of the box.
 
 ### Interface
-- Three themes — Dark, Light (warm cream "Comfortable" palette), and Midnight — with a global QPalette override so plain widgets follow the active theme.
+- **Six themes** — Dark, Light (warm cream "Comfortable" palette), Midnight, Sakura, Dark Star, and a fully **Custom** theme (your own background image + accent colours), each with optional **anime accent art**.
+- **Automatic cover art** — fetches movie/series posters (TMDB) and game art (IGDB) from the torrent name for a poster **grid view**; toggle to a compact list view.
 - Real-time speed graph, detailed panel (General · Peers · Files · Trackers · Pieces), state-coloured progress bars, click-to-focus tray notifications.
 - Custom tray popup (cross-platform) with live speeds, active-torrent preview with ETA, VPN status, and quit affordance.
 - Filter pills with live counts (All / Active / Downloading / Seeding / Completed / Paused / Finished / Queued), search bar, and category filter.
 - Drag and drop for both `.torrent` files and magnet links.
-- **Seven UI languages** with auto-detection: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 630+ translated strings with English fallback for missing keys.
+- **Seven UI languages** with auto-detection: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 1,000+ translated strings with English fallback for missing keys.
 - Speed display in bytes (KB/s, MB/s) or bits (Kbps, Mbps) — togglable in Settings.
 - Locale-aware number formatting (e.g. `1 234,5` for Russian locale).
 
 ### System
 - Auto-update with configurable source: **GitHub** (default) or **Gitee** (China mirror) or disabled.
 - Auto-shutdown when all downloads complete (60 s cancellable countdown).
+- **Windows Defender exclusion** — one click adds the download folder to Defender's exclusion list, so it stops flagging/scanning downloaded files (UAC-elevated).
 - **Full backup/restore** of all settings + resume data in a single archive for cross-machine migration.
 - **Recently removed** history (last 50 torrents, one-click restore).
 - **Force start** — bypass the active-downloads queue cap for a single torrent.
