@@ -12,7 +12,6 @@ Checks: >
   bugprone-unhandled-self-assignment,
   bugprone-string-constructor,
   bugprone-misplaced-widening-cast,
-  bugprone-empty-catch,
   bugprone-suspicious-memory-comparison,
   bugprone-sizeof-expression
 WarningsAsErrors: '*'

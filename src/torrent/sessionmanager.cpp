@@ -1087,7 +1087,7 @@ void SessionManager::checkAndBlockLeechers()
                         auto addr = p.ip.address();
                         filter.add_rule(addr, addr, lt::ip_filter::blocked);
                         filterChanged = true;
-                    } catch (...) {}
+                    } catch (...) { /* malformed peer address — skip blocking it */ }
                     ++m_blockedLeecherCount;
                     qDebug() << "[session] blocked leecher peer:" << QString::fromStdString(p.ip.address().to_string()) << "client:" << pid.left(8);
                     break;
@@ -2530,7 +2530,7 @@ void SessionManager::loadIpFilter(const QString &filePath)
             if (ec1 || ec2) continue;
             filter.add_rule(addr1, addr2, lt::ip_filter::blocked);
             ++count;
-        } catch (...) {}
+        } catch (...) { /* skip an unparseable blocklist range */ }
     }
 
     m_session.set_ip_filter(filter);

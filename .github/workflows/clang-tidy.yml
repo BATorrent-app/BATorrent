@@ -23,11 +23,23 @@ jobs:
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: cmake clang-tidy libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev libglx-dev libegl-dev
+          packages: cmake libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev libglx-dev libegl-dev
           version: 3.0
 
-      - name: Configure + build (generates moc/qrc so headers resolve)
+      # The default Ubuntu clang-tidy (v14) can't parse Qt 6.7 / libstdc++-12
+      # headers. Use a modern LLVM so the frontend handles them, and build with
+      # the same clang so the flags in compile_commands match.
+      - name: Install LLVM 17
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null
+          sudo add-apt-repository -y 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main'
+          sudo apt-get update
+          sudo apt-get install -y clang-17 clang-tidy-17
+
+      - name: Configure + build (clang-17, exports compile_commands)
         env:
+          CC: clang-17
+          CXX: clang++-17
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
@@ -37,8 +49,7 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          run-clang-tidy -p build -quiet \
-            $(git ls-files 'src/*.cpp') 2>&1 | tee tidy.log
+          run-clang-tidy-17 -p build -quiet $(git ls-files 'src/*.cpp') 2>&1 | tee tidy.log
           if grep -qE "warning:|error:" tidy.log; then
             echo "::error::clang-tidy found issues"; exit 1
           fi
