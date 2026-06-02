@@ -1,0 +1,19 @@
+# Real-bug checks only — the Clang Static Analyzer plus a tight set of
+# high-confidence bugprone checks. Style/modernize/naming noise is left off so
+# a green run actually means "no latent bugs found", not "no opinions".
+Checks: >
+  -*,
+  clang-analyzer-*,
+  bugprone-use-after-move,
+  bugprone-dangling-handle,
+  bugprone-integer-division,
+  bugprone-suspicious-semicolon,
+  bugprone-infinite-loop,
+  bugprone-unhandled-self-assignment,
+  bugprone-string-constructor,
+  bugprone-misplaced-widening-cast,
+  bugprone-empty-catch,
+  bugprone-suspicious-memory-comparison,
+  bugprone-sizeof-expression
+WarningsAsErrors: '*'
+HeaderFilterRegex: 'src/.*'

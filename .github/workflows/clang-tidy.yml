@@ -1,0 +1,44 @@
+name: clang-tidy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  clang-tidy:
+    name: clang-tidy + Clang Static Analyzer
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: qtmultimedia
+          cache: true
+
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: cmake clang-tidy libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev libglx-dev libegl-dev
+          version: 3.0
+
+      - name: Configure + build (generates moc/qrc so headers resolve)
+        env:
+          BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
+          BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cmake --build build -j$(nproc)
+
+      - name: Run clang-tidy
+        run: |
+          run-clang-tidy -p build -quiet \
+            $(git ls-files 'src/*.cpp') 2>&1 | tee tidy.log
+          if grep -qE "warning:|error:" tidy.log; then
+            echo "::error::clang-tidy found issues"; exit 1
+          fi
