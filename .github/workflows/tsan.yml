@@ -1,0 +1,56 @@
+name: ThreadSanitizer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tsan:
+    name: ThreadSanitizer tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: qtmultimedia
+          cache: true
+
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev libglx-dev libegl-dev
+          version: 3.0
+
+      - name: Build tests with ThreadSanitizer
+        env:
+          BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
+          BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+        run: |
+          cmake -B build-tsan -DCMAKE_BUILD_TYPE=Debug -DBAT_BUILD_TESTS=ON \
+            -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
+          cmake --build build-tsan -j$(nproc)
+
+      - name: Run tests under ThreadSanitizer
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          fail=0
+          for t in test_unit test_security test_memory; do
+            echo "::group::$t"
+            out=$(./build-tsan/tests/$t 2>&1 || true)
+            echo "$out"
+            echo "::endgroup::"
+            if echo "$out" | grep -qE "WARNING: ThreadSanitizer: data race|FAILED"; then
+              echo "::error::$t reported a data race or failed assertion"; fail=1
+            elif ! echo "$out" | grep -q "All tests passed"; then
+              echo "::error::$t did not finish"; fail=1
+            fi
+          done
+          exit $fail
