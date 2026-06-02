@@ -15,8 +15,6 @@
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BAT-Torrent/total?style=flat-square&color=dc2626"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
-  <img alt="C++" src="https://img.shields.io/badge/C%2B%2B-17-dc2626?style=flat-square&logo=c%2B%2B">
-  <img alt="Qt" src="https://img.shields.io/badge/Qt-6-dc2626?style=flat-square&logo=qt">
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
@@ -25,7 +23,6 @@
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
   <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
   <a href="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent/badge"></a>
-  <a href="https://scorecard.dev/viewer/?uri=github.com/Mateuscruz19/BAT-Torrent"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/Mateuscruz19/BAT-Torrent/badge"></a>
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
