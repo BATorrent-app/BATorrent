@@ -76,14 +76,16 @@ Window {
         return Theme.accent
     }
     function textFor(k) {
-        if (k === "seeding" || k === "finished" || k === "completed") return Theme.up
+        if (k === "finished" || k === "completed") return Theme.grn   // done = green
+        if (k === "seeding") return Theme.up                          // seeding = amber
         if (k === "paused" || k === "queued") return Theme.t3
         return Theme.accentText
     }
     function dotFor(k) {
-        if (k === "seeding" || k === "finished" || k === "completed") return Theme.amber
-        if (k === "paused" || k === "queued") return Theme.t4
-        return Theme.accent
+        if (k === "finished" || k === "completed") return Theme.grn   // done = green
+        if (k === "seeding") return Theme.amber                       // seeding = amber
+        if (k === "paused" || k === "queued") return Theme.t4         // paused = gray
+        return Theme.accent                                           // downloading = red
     }
     function _commitSel() {
         if (typeof session === "undefined" || typeof torrentFilter === "undefined") return

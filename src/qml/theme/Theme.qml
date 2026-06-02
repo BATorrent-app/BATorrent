@@ -207,7 +207,7 @@ QtObject {
         name === "dark"     ? "qrc:/images/eyes-dark.png" :
         name === "midnight" ? "qrc:/images/eyes-midnight.png" :
         name === "sakura"   ? "qrc:/images/eyes-sakura.png" :
-        name === "darkstar" ? "qrc:/images/spider.jpg" : ""   // light: nenhuma
+        name === "darkstar" ? "qrc:/images/spider.png" : ""   // light: nenhuma
     readonly property bool animeBottom: name === "darkstar"   // aranha no canto inferior-direito
     readonly property bool hasAnime: anime && animeSource !== ""
 
