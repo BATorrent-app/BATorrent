@@ -1156,6 +1156,12 @@ void QmlSessionBridge::addTorrentFile(const QString &filePath)
     m_session->addTorrent(local, defaultSavePath());
 }
 
+void QmlSessionBridge::requestAddTorrentFile(const QString &filePath)
+{
+    if (filePath.isEmpty()) return;
+    emit openTorrentRequested(filePath);
+}
+
 void QmlSessionBridge::addMagnetUri(const QString &uri, const QString &savePath)
 {
     if (uri.isEmpty()) return;

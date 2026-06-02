@@ -173,6 +173,9 @@ public:
     Q_INVOKABLE void pauseAll();
     Q_INVOKABLE void resumeAll();
     Q_INVOKABLE void addTorrentFile(const QString &filePath);
+    // Ask the UI to add a .torrent via the add dialog (used by the file-
+    // association / CLI / single-instance paths in main.cpp).
+    void requestAddTorrentFile(const QString &filePath);
     Q_INVOKABLE void addMagnetUri(const QString &uri, const QString &savePath = QString());
     Q_INVOKABLE QVariantMap previewTorrent(const QString &filePath) const;
     Q_INVOKABLE void resolvePreview(const QString &infoHash, const QString &name);
@@ -297,6 +300,10 @@ signals:
     void previewPosterReady(const QString &infoHash, const QString &posterPath);
     void allDownloadsComplete();   // fired once when the last active download finishes
     void toast(const QString &title, const QString &body);   // in-app toast (stream feedback, etc.)
+    // A .torrent arrived from outside the UI (file association, CLI, second
+    // instance). QML routes it through the same add dialog as a drag-drop so
+    // the user always picks save path / files — never a silent auto-download.
+    void openTorrentRequested(const QString &path);
 
 private slots:
     void sampleSpeeds();
