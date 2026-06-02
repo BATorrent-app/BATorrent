@@ -30,7 +30,7 @@ jobs:
         run: ./osv-scanner scan --recursive --format sarif --output osv.sarif . || true
 
       - name: Upload to code scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: ${{ hashFiles('osv.sarif') != '' }}
         with:
           sarif_file: osv.sarif
