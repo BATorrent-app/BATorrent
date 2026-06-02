@@ -13,8 +13,15 @@
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BAT-Torrent/total?style=flat-square&color=dc2626"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
-  <img alt="C++" src="https://img.shields.io/badge/C%2B%2B-17-dc2626?style=flat-square&logo=c%2B%2B">
-  <img alt="Qt" src="https://img.shields.io/badge/Qt-6-dc2626?style=flat-square&logo=qt">
+  <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
+  <a href="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent/badge"></a>
+  <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
@@ -62,6 +69,7 @@ BATorrent 是一款注重隐私、性能和清晰度的现代跨平台 BitTorren
 - **内容布局** — 原始、创建子文件夹或不创建子文件夹，控制多文件种子的磁盘布局
 - **排除文件模式** — 正则规则自动跳过文件（如 `.nfo`、`.txt`、`sample`）
 - **临时下载路径** — 先下载到暂存文件夹，完成后自动移至保存路径（防止媒体服务器扫描不完整文件）
+- **自动解压压缩包** — 完成后自动解压 `.rar`/`.zip`/`.7z`，并支持为受密码保护的压缩包配置密码列表（Windows 上使用 7-Zip 或 WinRAR，macOS/Linux 上使用 `unrar`/`unzip`）
 - 分类管理、拖放排序和右键菜单操作
 - 从 qBittorrent 导入现有状态
 - 从任意文件或文件夹创建新的 `.torrent` 文件
@@ -113,18 +121,20 @@ BATorrent 是一款注重隐私、性能和清晰度的现代跨平台 BitTorren
 - **Discord Rich Presence** — 在 Discord 个人资料上显示"正在下载 X · 67%"，附带"下载 BATorrent"和"在 GitHub 查看"按钮。开箱即用。
 
 ### 界面
-- 三套主题 — 深色、浅色（暖色奶油"舒适"配色）和午夜 — 通过全局 QPalette 覆盖，使普通控件也跟随当前主题。
+- **六套主题** — 深色、浅色（暖色奶油"舒适"配色）、午夜、樱花、暗星，以及完全 **自定义** 主题（自定义背景图片 + 强调色），每套主题均可选 **动漫风格点缀图**。
+- **自动封面图** — 根据种子名称获取电影/剧集海报（TMDB）和游戏封面（IGDB），以海报 **网格视图** 展示；可切换为紧凑的列表视图。
 - 实时速度图表、详情面板（概要 · 对等方 · 文件 · Tracker · 分块）、按状态着色的进度条、点击聚焦的托盘通知。
 - 自定义托盘弹窗（跨平台），显示实时速度、活动种子预览及预计剩余时间、网络代理状态和退出操作。
 - 过滤标签及实时计数（全部 / 活动 / 下载中 / 做种中 / 已完成 / 已暂停 / 已结束 / 排队中），搜索栏和分类筛选。
 - 支持拖放 `.torrent` 文件和磁力链接。
-- **七种界面语言**，支持自动检测：English、Português (BR)、Español、Deutsch、Русский、日本語、中文 — 630+ 条翻译字符串，缺失键自动回退英文。
+- **七种界面语言**，支持自动检测：English、Português (BR)、Español、Deutsch、Русский、日本語、中文 — 1,000+ 条翻译字符串，缺失键自动回退英文。
 - 速度显示可选字节（KB/s、MB/s）或比特（Kbps、Mbps）— 在设置中切换。
 - 区域感知的数字格式化（例如俄语区域显示 `1 234,5`）。
 
 ### 系统
 - 自动更新，可配置来源：**GitHub**（默认）或 **Gitee**（中国镜像）或禁用。
 - 所有下载完成后自动关机（60 秒可取消倒计时）。
+- **Windows Defender 排除项** — 一键将下载文件夹添加到 Defender 的排除列表，使其不再标记/扫描已下载的文件（需 UAC 提权）。
 - **完整备份/恢复** 所有设置 + 恢复数据，打包为单个归档文件，方便跨机器迁移。
 - **最近删除** 历史记录（最近 50 个种子，一键恢复）。
 - **强制启动** — 为单个种子绕过活动下载队列上限。

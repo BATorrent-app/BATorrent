@@ -13,8 +13,15 @@
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BAT-Torrent/total?style=flat-square&color=dc2626"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
-  <img alt="C++" src="https://img.shields.io/badge/C%2B%2B-17-dc2626?style=flat-square&logo=c%2B%2B">
-  <img alt="Qt" src="https://img.shields.io/badge/Qt-6-dc2626?style=flat-square&logo=qt">
+  <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
+  <a href="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent/badge"></a>
+  <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
@@ -62,6 +69,7 @@
 - **Структура содержимого** — Оригинал, Создать подпапку или Без подпапки управляет расположением многофайловых торрентов на диске
 - **Шаблоны исключения файлов** — regex-правила для автоматического пропуска файлов (например, `.nfo`, `.txt`, `sample`) при добавлении торрента
 - **Временный путь загрузки** — сначала скачивает в промежуточную папку, автоматически перемещает в папку сохранения по завершении (защита от сканирования частичных файлов медиасервером)
+- **Автораспаковка архивов** — автоматически распаковывает `.rar`/`.zip`/`.7z` по завершении, со списком паролей для защищённых архивов (использует 7-Zip или WinRAR на Windows, `unrar`/`unzip` на macOS/Linux)
 - Категории, перетаскивание для изменения порядка, контекстное меню
 - Импорт состояния из qBittorrent
 - Создание новых файлов `.torrent` из любого файла или папки
@@ -113,18 +121,20 @@
 - **Discord Rich Presence** — показывает «Downloading X · 67%» в вашем профиле Discord с кнопками «Download BATorrent» и «View on GitHub». Работает из коробки.
 
 ### Интерфейс
-- Три темы — Тёмная, Светлая (тёплая кремовая палитра «Comfortable») и Midnight — с глобальным переопределением QPalette, чтобы все виджеты следовали активной теме.
+- **Шесть тем** — Тёмная, Светлая (тёплая кремовая палитра «Comfortable»), Midnight, Sakura, Dark Star и полностью **Пользовательская** тема (собственное фоновое изображение + акцентные цвета), каждая с опциональным **аниме-акцентным артом**.
+- **Автоматические обложки** — подгружает постеры фильмов/сериалов (TMDB) и арты игр (IGDB) по названию торрента для **сеточного просмотра** постеров; переключается на компактный список.
 - График скорости в реальном времени, панель подробностей (Общее · Пиры · Файлы · Трекеры · Части), прогресс-бары с цветовой кодировкой состояния, уведомления в трее с фокусировкой по клику.
 - Пользовательское всплывающее окно в трее (кроссплатформенное) с текущими скоростями, превью активных торрентов с расчётным временем, статусом VPN и кнопкой выхода.
 - Фильтры-пиллы с подсчётом в реальном времени (Все / Активные / Загружаются / Раздаются / Завершены / На паузе / Финишировали / В очереди), строка поиска и фильтр по категориям.
 - Перетаскивание как для файлов `.torrent`, так и для magnet-ссылок.
-- **Семь языков интерфейса** с автоопределением: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 630+ переведённых строк с откатом на английский для отсутствующих ключей.
+- **Семь языков интерфейса** с автоопределением: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 1 000+ переведённых строк с откатом на английский для отсутствующих ключей.
 - Отображение скорости в байтах (KB/s, MB/s) или битах (Kbps, Mbps) — переключается в Настройках.
 - Форматирование чисел с учётом локали (например, `1 234,5` для русской локали).
 
 ### Система
 - Автообновление с настраиваемым источником: **GitHub** (по умолчанию), **Gitee** (зеркало для Китая) или отключено.
 - Автовыключение компьютера при завершении всех загрузок (обратный отсчёт 60 секунд с возможностью отмены).
+- **Исключение в Windows Defender** — один клик добавляет папку загрузок в список исключений Defender, чтобы он перестал помечать и сканировать скачанные файлы (с повышением прав через UAC).
 - **Полное резервное копирование/восстановление** всех настроек и данных докачки в одном архиве для переноса между машинами.
 - **История недавно удалённых** (последние 50 торрентов, восстановление в один клик).
 - **Принудительный запуск** — обход лимита активных загрузок в очереди для отдельного торрента.

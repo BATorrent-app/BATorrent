@@ -15,8 +15,15 @@
   <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BAT-Torrent/total?style=flat-square&color=dc2626"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
-  <img alt="C++" src="https://img.shields.io/badge/C%2B%2B-17-dc2626?style=flat-square&logo=c%2B%2B">
-  <img alt="Qt" src="https://img.shields.io/badge/Qt-6-dc2626?style=flat-square&logo=qt">
+  <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
+  <a href="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent/badge"></a>
+  <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
@@ -64,6 +71,7 @@ Alle Artefakte werden durch den [Build & Release](.github/workflows/build.yml)-W
 - **Inhaltslayout** — Original, Unterordner erstellen oder Kein Unterordner steuert die Festplattenstruktur von Multi-Datei-Torrents
 - **Ausschluss-Dateimuster** — Regex-Regeln zum automatischen Uberspringen von Dateien (z.B. `.nfo`, `.txt`, `sample`) beim Hinzufugen eines Torrents
 - **Temporarer Download-Pfad** — ladt zuerst in einen Staging-Ordner herunter, verschiebt automatisch zum Speicherpfad nach Abschluss (verhindert das Scannen von Teildownloads durch Medienserver)
+- **Automatisches Entpacken von Archiven** — entpackt `.rar`/`.zip`/`.7z` automatisch bei Abschluss, mit einer Passwortliste für geschützte Archive (nutzt 7-Zip oder WinRAR unter Windows, `unrar`/`unzip` unter macOS/Linux)
 - Kategorien, Neuanordnung per Drag-and-Drop und Kontextaktionen per Rechtsklick
 - Bestehenden Status aus qBittorrent importieren
 - Neue `.torrent`-Dateien aus beliebigen Dateien oder Ordnern erstellen
@@ -115,18 +123,20 @@ Alle Artefakte werden durch den [Build & Release](.github/workflows/build.yml)-W
 - **Discord Rich Presence** — zeigt "Downloading X · 67%" in deinem Discord-Profil mit den Buttons "Download BATorrent" und "View on GitHub". Funktioniert sofort.
 
 ### Oberfläche
-- Drei Themes — Dunkel, Hell (warme Cremepalette "Comfortable") und Midnight — mit einem globalen QPalette-Override, damit einfache Widgets dem aktiven Theme folgen.
+- **Sechs Themes** — Dunkel, Hell (warme Cremepalette "Comfortable"), Midnight, Sakura, Dark Star und ein vollständig **anpassbares** Theme (eigenes Hintergrundbild + Akzentfarben), jeweils mit optionaler **Anime-Akzentgrafik**.
+- **Automatische Cover-Art** — holt Filme-/Serienposter (TMDB) und Spielegrafiken (IGDB) aus dem Torrent-Namen für eine Poster-**Rasteransicht**; umschaltbar auf eine kompakte Listenansicht.
 - Echtzeit-Geschwindigkeitsdiagramm, Detailpanel (Allgemein · Peers · Dateien · Tracker · Stücke), statusfarbene Fortschrittsbalken, Tray-Benachrichtigungen mit Klick-Fokus.
 - Benutzerdefiniertes Tray-Popup (plattformübergreifend) mit Live-Geschwindigkeiten, Vorschau aktiver Torrents mit ETA, VPN-Status und Beenden-Option.
 - Filterschaltflächen mit Live-Zählern (Alle / Aktiv / Herunterladen / Seeden / Abgeschlossen / Pausiert / Fertig / Warteschlange), Suchleiste und Kategoriefilter.
 - Drag-and-Drop für `.torrent`-Dateien und Magnet-Links.
-- **Sieben UI-Sprachen** mit automatischer Erkennung: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 630+ übersetzte Zeichenketten mit englischem Fallback für fehlende Schlüssel.
+- **Sieben UI-Sprachen** mit automatischer Erkennung: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 1.000+ übersetzte Zeichenketten mit englischem Fallback für fehlende Schlüssel.
 - Geschwindigkeitsanzeige in Bytes (KB/s, MB/s) oder Bits (Kbps, Mbps) — umschaltbar in den Einstellungen.
 - Locale-bewusste Zahlenformatierung (z. B. `1 234,5` für russisches Locale).
 
 ### System
 - Automatische Aktualisierung mit konfigurierbarer Quelle: **GitHub** (Standard) oder **Gitee** (China-Mirror) oder deaktiviert.
 - Automatisches Herunterfahren, wenn alle Downloads abgeschlossen sind (60 s abbrechbarer Countdown).
+- **Windows-Defender-Ausnahme** — ein Klick fügt den Download-Ordner zur Ausnahmeliste von Defender hinzu, sodass heruntergeladene Dateien nicht mehr markiert/gescannt werden (UAC-erhöht).
 - **Vollständige Sicherung/Wiederherstellung** aller Einstellungen + Wiederaufnahmedaten in einem einzelnen Archiv für die Migration zwischen Rechnern.
 - **Kürzlich entfernte** Historie (letzte 50 Torrents, Wiederherstellung mit einem Klick).
 - **Erzwungener Start** — umgeht das Limit aktiver Downloads in der Warteschlange für einen einzelnen Torrent.
