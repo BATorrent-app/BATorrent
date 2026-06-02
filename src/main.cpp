@@ -268,10 +268,16 @@ int main(int argc, char *argv[])
         QObject::connect(sessionBridge, &QmlSessionBridge::queueMoved,
                          posterModel, &QmlPosterModel::moveRow);
         QObject::connect(&session, &SessionManager::torrentAdded,
-                         &app, [&session, resolver](int index) {
+                         &app, [&session, resolver, notificationBridge](int index) {
+            const auto info = session.torrentAt(index);
             QString hash = session.torrentHashAt(index);
             if (!hash.isEmpty())
-                resolver->resolve(hash, session.torrentAt(index).name);
+                resolver->resolve(hash, info.name);
+            // Toast on user-initiated adds. Resume-loaded torrents don't reach
+            // here: loadResumeData() runs in the SessionManager ctor, before
+            // this connection exists.
+            notificationBridge->onTorrentAdded(
+                info.totalSize > 0 ? info.name + " · " + formatSize(info.totalSize) : info.name);
             // auto-add the public tracker list to each new torrent (if enabled)
             if (AddonManager::instance().autoTrackersEnabled())
                 for (const QString &tr : AddonManager::instance().trackerList())

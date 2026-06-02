@@ -2676,6 +2676,11 @@ static void maybeBeep()
         QApplication::beep();
 }
 
+void QmlNotificationBridge::onTorrentAdded(const QString &name)
+{
+    emit notify(tr_("notif_torrent_added"), name, 0);   // 0 = info
+}
+
 void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &)
 {
     emit notify(tr_("dlg_download_complete"), name, 3);   // 3 = success (green)

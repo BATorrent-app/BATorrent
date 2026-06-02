@@ -649,6 +649,7 @@ public:
     explicit QmlNotificationBridge(QObject *parent = nullptr) : QObject(parent) {}
 
 public slots:
+    void onTorrentAdded(const QString &name);
     void onTorrentFinished(const QString &name, const QString &infoHash);
     void onTorrentError(const QString &message);
     void onKillSwitchTriggered();
