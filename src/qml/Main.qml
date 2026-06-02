@@ -1263,6 +1263,11 @@ Window {
                                     win.selectRow(tile.index, mouse.modifiers)
                                 }
                             }
+                            onDoubleClicked: function(mouse) {
+                                if (mouse.button !== Qt.RightButton) {
+                                    win.selectRow(tile.index, 0); session.openSelectedFile()
+                                }
+                            }
                         }
                     }
 
@@ -1592,7 +1597,11 @@ Window {
                     }
                 }
                 onDoubleClicked: function(mouse) {
-                    if (rowAt(mouse.y, mouse.x) >= 0) session.openSaveFolder()
+                    var r = rowAt(mouse.y, mouse.x)
+                    // select the clicked row first so we reveal *that* torrent,
+                    // not whatever was selected before, then open its folder
+                    // with the file highlighted.
+                    if (r >= 0) { win.selectRow(r, 0); session.openSelectedFile() }
                 }
 
                 Rectangle {

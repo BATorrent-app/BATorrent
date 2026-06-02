@@ -898,7 +898,7 @@ void QmlSessionBridge::openSelectedFile()
 {
     if (!hasSelection()) return;
     const QString path = m_session->torrentRootPath(m_selectedIndex);
-    if (!path.isEmpty()) QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+    if (!path.isEmpty()) revealInFileManager(path);   // open the folder with the item selected
 }
 
 void QmlSessionBridge::importQbittorrent(const QString &savePath)
