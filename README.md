@@ -210,6 +210,22 @@ cmake --build build
 ctest --test-dir build
 ```
 
+### Quality & security
+
+- **Automated tests** — 79 cases / 632 assertions (unit, security and
+  memory-safety) run on every build in CI.
+- **Sanitizers** — the full suite passes clean under **AddressSanitizer** and
+  **UndefinedBehaviorSanitizer**: 0 leaks, use-after-free, or undefined
+  behaviour.
+- **Security review** — before each release the code is reviewed for memory
+  and thread safety and the usual web/security classes: WebUI authentication,
+  command injection, path traversal, input validation (torrents, magnets,
+  RSS), and secret handling (stored in the OS keychain, never in plaintext).
+
+Secrets live in the OS keychain (Keychain on macOS, Credential Manager on
+Windows, the Secret Service on Linux); the embedded WebUI only binds to the
+network when a username and password are set.
+
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Project layout
