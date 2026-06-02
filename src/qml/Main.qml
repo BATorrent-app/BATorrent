@@ -2000,10 +2000,16 @@ Window {
                   }
                   }
                   // --- 1: Peers · 2: Arquivos · 3: Trackers · 4: Pedaços ---
-                  DetailPeers    { peers:    win.hasSel ? session.selectedPeerList  : [] }
-                  DetailFiles    { files:    win.hasSel ? session.selectedFiles     : [] }
-                  DetailTrackers { trackers: win.hasSel ? session.selectedTrackers  : [] }
-                  DetailPieces   { pieces:   win.hasSel ? session.selectedPieces    : [] }
+                  // Only build the heavy list for the tab that's actually open.
+                  // StackLayout instantiates every child and keeps its bindings
+                  // live, so without the tab guard, clicking a torrent rebuilt
+                  // ALL of these at once — and selectedPieces alone is one entry
+                  // per piece (hundreds of thousands on a big torrent), which
+                  // froze the GUI thread on every single selection.
+                  DetailPeers    { peers:    (win.hasSel && win.detailTab === 1) ? session.selectedPeerList : [] }
+                  DetailFiles    { files:    (win.hasSel && win.detailTab === 2) ? session.selectedFiles    : [] }
+                  DetailTrackers { trackers: (win.hasSel && win.detailTab === 3) ? session.selectedTrackers : [] }
+                  DetailPieces   { pieces:   (win.hasSel && win.detailTab === 4) ? session.selectedPieces   : [] }
                 }
             }
         }
