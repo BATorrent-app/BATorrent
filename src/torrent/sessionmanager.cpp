@@ -1559,7 +1559,10 @@ QString SessionManager::torrentRootPath(int index) const
                 if (slash > 0) rel = rel.left(slash);
             }
             QString found = existsOnDisk(save + QLatin1Char('/') + rel);
-            if (!found.isEmpty()) return found;
+            if (!found.isEmpty()) {
+                qInfo().noquote() << "[reveal] root via file_path:" << found;
+                return found;
+            }
         }
     }
 
@@ -1570,7 +1573,10 @@ QString SessionManager::torrentRootPath(int index) const
     QString name = QString::fromStdString(st.name);
     if (!name.isEmpty()) {
         QString found = existsOnDisk(save + QLatin1Char('/') + name);
-        if (!found.isEmpty()) return found;
+        if (!found.isEmpty()) {
+            qInfo().noquote() << "[reveal] root via name:" << found;
+            return found;
+        }
     }
 
     // Strategy 3: scan save_path for a directory or file whose name
@@ -1580,12 +1586,18 @@ QString SessionManager::torrentRootPath(int index) const
         const QDir dir(save);
         const auto entries = dir.entryList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
         for (const QString &entry : entries) {
-            if (entry.compare(name, Qt::CaseInsensitive) == 0)
+            if (entry.compare(name, Qt::CaseInsensitive) == 0) {
+                qInfo().noquote() << "[reveal] root via dir scan:" << (save + QLatin1Char('/') + entry);
                 return save + QLatin1Char('/') + entry;
+            }
         }
     }
 
-    // All strategies exhausted — fall back to the save directory itself.
+    // All strategies exhausted — fall back to the save directory itself. If
+    // this fires, the torrent's folder/file wasn't found on disk under
+    // save_path — the reveal lands in the (possibly huge) save folder.
+    qWarning().noquote() << "[reveal] FELL BACK to save_path:" << save
+                         << "| torrent name=" << name;
     return save;
 }
 

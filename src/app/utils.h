@@ -7,6 +7,7 @@
 
 #include <QString>
 #include <QDir>
+#include <QDebug>
 #include <QDesktopServices>
 #include <QFileInfo>
 #include <QLocale>
@@ -51,6 +52,9 @@ inline void revealInFileManager(const QString &path)
     const bool isDir = info.isDir();
     const QString full = info.absoluteFilePath();
     const QString native = QDir::toNativeSeparators(full);
+
+    qInfo().noquote() << "[reveal] in=" << path << "| resolved=" << native
+                      << "| isDir=" << isDir << "| existed=" << exists;
 
 #if defined(Q_OS_WIN)
     if (isDir) {

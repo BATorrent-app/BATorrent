@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
             QObject::connect(client, &QLocalSocket::readyRead, client, [client, sessionBridge]() {
                 const QStringList lines = QString::fromUtf8(client->readAll()).split('\n', Qt::SkipEmptyParts);
                 for (const QString &line : lines) {
-                    if (line.endsWith(".torrent")) sessionBridge->addTorrentFile(line);
+                    if (line.endsWith(".torrent")) sessionBridge->requestAddTorrentFile(line);
                     else if (line.startsWith("magnet:")) sessionBridge->addMagnetUri(line);
                 }
                 client->deleteLater();
@@ -392,7 +392,7 @@ int main(int argc, char *argv[])
         // First-instance CLI args (.torrent / magnet passed on launch)
         for (int i = 1; i < app.arguments().size(); ++i) {
             const QString &arg = app.arguments().at(i);
-            if (arg.endsWith(".torrent")) sessionBridge->addTorrentFile(arg);
+            if (arg.endsWith(".torrent")) sessionBridge->requestAddTorrentFile(arg);
             else if (arg.startsWith("magnet:")) sessionBridge->addMagnetUri(arg);
         }
 

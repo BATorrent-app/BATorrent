@@ -2176,6 +2176,12 @@ Window {
     // drive opens off a timer so the dialog never opens inside the drop event or
     // the dialog's own accept/close handler (both fight focus on macOS).
     Timer { id: queueTimer; interval: 130; onTriggered: win.processTorrentQueue() }
+    // .torrent opened from outside (file association / CLI / second instance):
+    // run it through the same queue+dialog as a drop, never a silent add.
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        function onOpenTorrentRequested(path) { win.enqueueTorrentUrls([path]) }
+    }
     function enqueueTorrentUrls(urls) {
         for (var i = 0; i < urls.length; ++i) {
             var u = urls[i]
