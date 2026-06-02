@@ -297,7 +297,7 @@ Window {
                         Text {
                             textFormat: Text.StyledText
                             text: (win.curFeed && win.curFeed.filterPattern && win.curFeed.filterPattern.length > 0)
-                                ? (i18n.language, i18n.t("rss_rule_body")).arg("<b><font color='" + Theme.t1 + "'>" + win.curFeed.filterPattern + "</font></b>")
+                                ? (i18n.language, i18n.t("rss_rule_body")).arg("<b><font color='" + Theme.t1 + "'>" + win.curFeed.filterPattern.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</font></b>")
                                 : (i18n.language, i18n.t("rss_no_rule"))
                             color: Theme.t2
                             font.pixelSize: 12

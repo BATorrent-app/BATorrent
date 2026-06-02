@@ -256,6 +256,9 @@ int main(int argc, char *argv[])
         // full model reset, so the grid doesn't flash and jump to the top.
         QObject::connect(&session, &SessionManager::torrentRemoved,
                          posterModel, &QmlPosterModel::removeRow);
+        // Keep the bridge's stored selection indices valid across a removal.
+        QObject::connect(&session, &SessionManager::torrentRemoved,
+                         sessionBridge, &QmlSessionBridge::onTorrentRemoved);
         // A resolved poster only touches one row's poster/title roles.
         QObject::connect(resolver, &MetadataResolver::metadataReady,
                          posterModel, &QmlPosterModel::posterResolved);

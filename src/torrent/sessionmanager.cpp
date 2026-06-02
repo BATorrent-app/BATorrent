@@ -669,6 +669,7 @@ void SessionManager::addTracker(int index, const QString &url)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
+    if (!m_torrents[index].is_valid()) return;   // add_tracker throws on an invalid handle
     lt::announce_entry ae(url.toStdString());
     m_torrents[index].add_tracker(ae);
 }
@@ -677,6 +678,7 @@ void SessionManager::setFilePriority(int torrentIndex, int fileIndex, int priori
 {
     if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size()))
         return;
+    if (!m_torrents[torrentIndex].is_valid()) return;   // file_priority throws on an invalid handle
     m_torrents[torrentIndex].file_priority(
         lt::file_index_t(fileIndex),
         static_cast<lt::download_priority_t>(static_cast<std::uint8_t>(priority)));

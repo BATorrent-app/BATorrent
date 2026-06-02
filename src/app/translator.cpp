@@ -29,8 +29,12 @@ void Translator::setLanguage(Language lang)
     m_strings.clear();
     loadLanguage(codes[static_cast<int>(lang)], m_strings);
 
+    // installTranslator/removeTranslator are QCoreApplication members — use the
+    // base instance directly so we don't downcast qApp to QApplication (UB when
+    // the app is a plain QCoreApplication, e.g. under the test harness).
+    QCoreApplication *coreApp = QCoreApplication::instance();
     static QTranslator *qtTr = nullptr;
-    if (qtTr) { qApp->removeTranslator(qtTr); delete qtTr; }
+    if (qtTr) { coreApp->removeTranslator(qtTr); delete qtTr; }
     qtTr = new QTranslator;
     static const QMap<Language, QString> qtLocales = {
         {Portuguese, "pt_BR"}, {Chinese, "zh_CN"}, {Japanese, "ja"},
@@ -39,7 +43,7 @@ void Translator::setLanguage(Language lang)
     const QString locale = qtLocales.value(lang, "en");
     if (qtTr->load("qt_" + locale,
             QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
-        qApp->installTranslator(qtTr);
+        coreApp->installTranslator(qtTr);
     }
 }
 

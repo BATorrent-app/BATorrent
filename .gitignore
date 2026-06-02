@@ -28,3 +28,4 @@ MARKETING_PLAN.md
 
 # local test build dir
 build-tests/
+build-asan/

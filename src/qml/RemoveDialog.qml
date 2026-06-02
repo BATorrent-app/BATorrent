@@ -56,9 +56,14 @@ BatDialog {
                 font.pixelSize: 12
                 font.family: Theme.fontSans
                 textFormat: Text.StyledText
+                // escape the torrent name — it's StyledText and the name is
+                // attacker-controlled (from the .torrent / magnet), so raw
+                // markup would let a crafted name inject into the dialog.
                 text: (i18n.language, i18n.t("remove_confirm_body"))
                     .arg("<font color='" + Theme.t2 + "'><b>"
-                         + (typeof session !== "undefined" ? session.selectedName : "") + "</b></font>")
+                         + (typeof session !== "undefined" ? session.selectedName : "")
+                             .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                         + "</b></font>")
             }
         }
     }

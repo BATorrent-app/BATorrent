@@ -1512,11 +1512,14 @@ void MainWindow::startWebServer()
     if (webUiEnabled) {
         m_webServer = new WebServer(m_session, this);
         int port = settings.value("webUiPort", 8080).toInt();
-        bool remote = settings.value("webUiRemoteAccess", false).toBool();
         QString user = settings.value("webUiUser", "admin").toString();
         QString passHash = SecretStore::instance().get("webUiPasswordHash");
-        if (!user.isEmpty() && !passHash.isEmpty())
+        const bool hasAuth = !user.isEmpty() && !passHash.isEmpty();
+        if (hasAuth)
             m_webServer->setCredentials(user, passHash);
+        // Never expose the server to the network without credentials — bind to
+        // localhost unless auth is configured (mirrors the QML path).
+        bool remote = settings.value("webUiRemoteAccess", false).toBool() && hasAuth;
         m_webServer->start(static_cast<quint16>(port), remote);
     }
 }

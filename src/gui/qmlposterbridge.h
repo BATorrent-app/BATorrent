@@ -161,6 +161,10 @@ public:
 
     Q_INVOKABLE void setSelectedIndex(int index);
     Q_INVOKABLE void setSelectedRows(const QList<int> &rows);
+    // Keep the stored selection (source-model indices) in sync when a torrent is
+    // removed, so a later batch action doesn't hit a different torrent that
+    // shifted into the old index.
+    void onTorrentRemoved(int index);
     Q_INVOKABLE QList<int> selectedRows() const;
     Q_INVOKABLE void pauseSelected();
     Q_INVOKABLE void resumeSelected();

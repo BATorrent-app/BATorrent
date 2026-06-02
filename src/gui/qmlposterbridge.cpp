@@ -422,6 +422,20 @@ void QmlSessionBridge::setSelectedRows(const QList<int> &rows)
 
 QList<int> QmlSessionBridge::selectedRows() const { return m_selectedRows; }
 
+void QmlSessionBridge::onTorrentRemoved(int index)
+{
+    QList<int> updated;
+    for (int r : m_selectedRows) {
+        if (r == index) continue;          // the selected torrent itself is gone
+        updated << (r > index ? r - 1 : r); // rows after it shifted down by one
+    }
+    bool changed = updated != m_selectedRows;
+    m_selectedRows = updated;
+    if (m_selectedIndex == index)      { m_selectedIndex = -1; changed = true; }
+    else if (m_selectedIndex > index)  { --m_selectedIndex;    changed = true; }
+    if (changed) { emit selectionChanged(); emit selectionListsChanged(); }
+}
+
 void QmlSessionBridge::pauseSelected()
 {
     if (m_selectedRows.isEmpty()) {

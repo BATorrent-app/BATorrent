@@ -444,8 +444,12 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
     req.setHeader(QNetworkRequest::ContentTypeHeader, "text/plain");
     req.setTransferTimeout(10000);
 
+    // escape the quoted search term — cleanTitle comes from the torrent name,
+    // so a stray " or \ would break out of the Apicalypse string literal.
+    QString safeTitle = parsed.cleanTitle;
+    safeTitle.replace('\\', QStringLiteral("\\\\")).replace('"', QStringLiteral("\\\""));
     QString body = QStringLiteral("search \"%1\"; fields name,summary,rating,first_release_date,genres.name,platforms.name,cover.image_id; limit 5;")
-        .arg(parsed.cleanTitle);
+        .arg(safeTitle);
 
     m_requestInFlight = true;
     auto *reply = m_nam->post(req, body.toUtf8());
