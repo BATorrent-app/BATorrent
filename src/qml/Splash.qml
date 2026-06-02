@@ -72,6 +72,10 @@ Item {
             Shape {
                 id: bat
                 width: 1024; height: 1024
+                // CurveRenderer has its own analytic anti-aliasing; the default
+                // GeometryRenderer relies on MSAA, which the Windows swapchain
+                // runs at 1x, so the bat outline came out jagged there.
+                preferredRendererType: Shape.CurveRenderer
                 transform: Scale { xScale: wrap.width / 1024; yScale: wrap.height / 1024 }
 
                 ShapePath {
