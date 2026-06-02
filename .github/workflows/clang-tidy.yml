@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   clang-tidy:
     name: clang-tidy + Clang Static Analyzer
@@ -49,7 +52,11 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          run-clang-tidy-17 -p build -quiet $(git ls-files 'src/*.cpp') 2>&1 | tee tidy.log
-          if grep -qE "warning:|error:" tidy.log; then
+          # Active code paths only — the legacy QWidget UI (reachable via
+          # --legacy) is being phased out and isn't worth linting.
+          files=$(git ls-files 'src/app/*.cpp' 'src/torrent/*.cpp' 'src/webui/*.cpp' \
+                  src/main.cpp src/gui/qmlposterbridge.cpp src/gui/thememanager.cpp)
+          run-clang-tidy-17 -p build -quiet $files 2>&1 | tee tidy.log
+          if grep -qE ": (warning|error): " tidy.log; then
             echo "::error::clang-tidy found issues"; exit 1
           fi

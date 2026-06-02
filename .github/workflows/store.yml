@@ -13,6 +13,9 @@ on:
         required: true
         default: '2.5.1.0'
 
+permissions:
+  contents: read
+
 jobs:
   build-msix:
     runs-on: windows-latest

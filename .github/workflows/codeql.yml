@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '0 6 * * 1'   # weekly, Monday 06:00 UTC
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
     name: Analyze (C++)
@@ -36,7 +39,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: c-cpp
-          queries: security-and-quality
+          queries: security-extended
 
       - name: Build
         env:

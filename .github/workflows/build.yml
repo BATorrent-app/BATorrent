@@ -14,6 +14,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   # Test suite (Catch2): runs the unit/security/memory tests so regressions —
   # especially resume-data migration and auto-update version detection — are
