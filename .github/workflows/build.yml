@@ -189,7 +189,7 @@ jobs:
           windeployqt --qmldir src/qml release/BATorrent.exe
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
-          Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64.zip
+          Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
       - name: Generate installer wizard images
         shell: pwsh
@@ -223,7 +223,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-zip
-          path: BATorrent-windows-x86_64.zip
+          path: BATorrent-windows-x86_64-portable.zip
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
@@ -374,7 +374,7 @@ jobs:
         with:
           files: |
             linux-build/BATorrent-linux-x86_64.AppImage
-            windows-zip/BATorrent-windows-x86_64.zip
+            windows-zip/BATorrent-windows-x86_64-portable.zip
             windows-installer/BATorrent-setup-x86_64.exe
             macos-build/BATorrent-macos-arm64.dmg
           body_path: /tmp/release_notes.md
