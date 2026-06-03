@@ -3,7 +3,17 @@
 ## v3.0.1
 
 ### Windows / Linux
-- **Restored the menu bar** (File, Torrent, Settings, Help — including Preferences, Check for Updates, and About). It had vanished on Windows because the previous bar only rendered as a macOS-style global menu; it now draws inside the window on Windows and Linux while macOS keeps the native global menu.
+- **Restored the menu bar** (File, Torrent, Settings, Help — including Preferences, Check for Updates, and About). It had vanished on Windows because the previous bar only rendered as a macOS-style global menu; it now draws inside the window while macOS keeps the native global menu.
+
+### Covers & titles
+- Much stronger title parsing: leading release-site prefixes (`www.foo.com - `, `[ tracker.net ] - `) are stripped, and for episodes only the show name before SxxExx is used — so `www.UIndex.org - Euphoria US S03E08 in God We trust` resolves as Euphoria.
+- Grid and list tiles no longer show a blank label when the cover hasn't resolved — they fall back to the parsed title, then the raw torrent name. List mode now matches grid.
+- Episode tiles show SxxExx, so several episodes of one show are distinguishable.
+
+### Notifications
+- Finished / error / kill-switch / RSS events show as real OS notifications again (visible when the window is minimized), not only in-app toasts.
+
+### Misc
 - The portable Windows download is now named `BATorrent-windows-x86_64-portable.zip` so the installer is the obvious choice.
 
 ---
