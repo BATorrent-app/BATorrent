@@ -12,6 +12,15 @@ ParsedName NameParser::parse(const QString &rawName)
     ParsedName result;
     QString work = rawName;
 
+    // Strip a leading release-site prefix: "www.foo.com - ", "[foo.net]",
+    // "bar.org_", etc. These pollute the title so the TMDB/IGDB lookup misses
+    // (e.g. "www.sitedotorrent.com - euphoria s3ep7" → "euphoria"). Requires a
+    // separator after the domain so a bare name like "Doom.com" isn't eaten.
+    static const QRegularExpression siteRe(
+        QStringLiteral("^\\s*[\\[(]?\\s*(?:[\\w\\-]+\\.)+(?:com|net|org|tv|me|info|io|cc|to|se|club|site|xyz|top|biz|us|uk|pro|app|online|life)\\b(?:[\\])][\\s]*|[\\s]*[-_:]+[\\s]*|[\\s]+)"),
+        QRegularExpression::CaseInsensitiveOption);
+    work.remove(siteRe);
+
     // Strip file extension
     static const QRegularExpression extRe(QStringLiteral("\\.(bin|mkv|avi|mp4|mov|wmv|flv|webm|m4v|ts|iso|rar|zip|7z|torrent)$"),
         QRegularExpression::CaseInsensitiveOption);
@@ -39,7 +48,10 @@ ParsedName NameParser::parse(const QString &rawName)
         result.season = m.captured(1).toInt();
         result.episode = m.captured(2).toInt();
         result.contentType = ContentType::Series;
-        work.remove(m.capturedStart(), m.capturedLength());
+        // The show title is everything *before* the SxxExx marker; the rest is
+        // the episode name (e.g. "in God We trust"), which would break the
+        // TMDB lookup. Drop it.
+        work.truncate(m.capturedStart());
     } else {
         m = altSeRe.match(work);
         if (m.hasMatch()) {

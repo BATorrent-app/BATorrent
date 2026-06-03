@@ -425,12 +425,19 @@ Window {
         target: typeof notifications !== "undefined" ? notifications : null
         ignoreUnknownSignals: true
         function onNotify(title, body, level) {
-            toastHost.show(title, body, level)
-            if (trayIcon.supportsMessages)
+            // Background-relevant events (finished, error, kill switch, RSS) go
+            // to the OS notification area like the legacy app, so they're visible
+            // even when BATorrent is minimized. `supportsMessages` reads false on
+            // Windows even when showMessage works, so gate on `available`; the
+            // in-app toast is only a fallback when there's no system tray at all.
+            if (trayIcon.available) {
                 trayIcon.showMessage(title, body,
                     level === 2 ? Platform.SystemTrayIcon.Critical
                     : level === 1 ? Platform.SystemTrayIcon.Warning
                     : Platform.SystemTrayIcon.Information, 5000)
+            } else {
+                toastHost.show(title, body, level)
+            }
         }
     }
 

@@ -5,6 +5,7 @@
 #include "qmlposterbridge.h"
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
+#include "../app/nameparser.h"
 #include "../app/rssmanager.h"
 #include "../app/addonmanager.h"
 #include "../app/logger.h"
@@ -96,11 +97,24 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         return QString();
     }
     case MetaTitleRole: {
+        const ParsedName pn = NameParser::parse(info.name);
+        QString title;
         if (m_resolver && m_resolver->hasCached(hash)) {
             auto meta = m_resolver->cached(hash);
-            if (meta.valid) return meta.title;
+            if (meta.valid) title = meta.title;
         }
-        return QString();
+        // No resolved cover yet (or the lookup failed): fall back to the parsed
+        // title (grid/list tiles were blank on placeholder posters), then to the
+        // raw name if parsing strips everything.
+        if (title.isEmpty()) title = pn.cleanTitle.trimmed();
+        if (title.isEmpty()) title = info.name;
+        // For an episode, append SxxExx so several episodes of the same show are
+        // distinguishable — they share one resolved cover/title otherwise.
+        if (pn.contentType == ContentType::Series && pn.season >= 0 && pn.episode >= 0)
+            title += QStringLiteral(" S%1E%2")
+                         .arg(pn.season, 2, 10, QLatin1Char('0'))
+                         .arg(pn.episode, 2, 10, QLatin1Char('0'));
+        return title;
     }
     case StateStringRole: return info.stateString;
     case DownSpeedRole:   return formatSpeed(info.downloadRate);
