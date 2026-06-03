@@ -64,6 +64,12 @@ TEST_CASE("roman numerals stay upper-case", "[nameparser]")
     CHECK(P("Final Fantasy VII Remake").cleanTitle == "Final Fantasy VII Remake");
 }
 
+TEST_CASE("audio channel layouts don't leak into the title", "[nameparser]")
+{
+    CHECK(P("The.Batman.2022.2160p.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-FLUX").cleanTitle == "The Batman");
+    CHECK(P("Shogun.2024.S01E01.MULTi.1080p.WEB.H264-FW").cleanTitle == "Shogun");
+}
+
 TEST_CASE("anime fansub naming: [Group] Title - NN is an episode", "[nameparser]")
 {
     auto f = P("[SubsPlease] Sousou no Frieren - 28 (1080p) [9C4F2E3A].mkv");

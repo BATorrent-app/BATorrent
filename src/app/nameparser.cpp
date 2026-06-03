@@ -140,6 +140,14 @@ ParsedName NameParser::parse(const QString &rawName)
         }
     }
 
+    // Audio channel layouts leak into the title ("DDP5.1" -> "Ddp5 1") because
+    // codec+channel combos are too many to list. Strip "[codec]N.N" tokens
+    // (DDP5.1, DD+5.1, 7.1, 2.0, TrueHD7.1…) generically.
+    static const QRegularExpression audioRe(
+        QStringLiteral("[.\\s\\-](?:DDPA|DDP|DD\\+|TrueHD|Atmos|EAC3|AC3|DTS(?:-?HD)?|AAC|FLAC|DD)?[ .]?\\d\\.\\d(?=[.\\s\\-\\[\\]()]|$)"),
+        QRegularExpression::CaseInsensitiveOption);
+    if (mediaTagFound) work.remove(audioRe);
+
     if (mediaTagFound && result.contentType == ContentType::Unknown)
         result.contentType = ContentType::Movie;
 
