@@ -446,6 +446,7 @@ void AddonManager::searchTorrents(const QString &query, int category)
 
     QNetworkRequest req{QUrl(searchUrl)};
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/2.0");
+    req.setTransferTimeout(15000);   // don't let a slow provider hang the search UI
     auto *reply = m_net->get(req);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
@@ -719,6 +720,7 @@ void AddonManager::searchWithProvider(int providerIndex, const QString &query, i
 
     QNetworkRequest req{QUrl(url)};
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/" APP_VERSION);
+    req.setTransferTimeout(15000);   // a slow/dead provider must not hang the search UI
     auto *reply = m_net->get(req);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply, p]() {
