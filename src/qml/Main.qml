@@ -309,7 +309,6 @@ Window {
             implicitWidth: 230
             delegate: CtxItem {}
             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-            CtxItem { text: (i18n.language, i18n.t("ctx_reveal_file")); onTriggered: session.openSelectedFile() }
             CtxItem { text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDlg.open() }
             CtxItem { text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
             CtxItem { text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }

@@ -495,9 +495,10 @@ void QmlSessionBridge::copyInfoHash()
 
 void QmlSessionBridge::openSaveFolder()
 {
-    if (!hasSelection()) return;
-    QString path = m_session->torrentAt(m_selectedIndex).savePath;
-    if (!path.isEmpty()) QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+    // Same behavior as a double-click: reveal the torrent's own folder/file,
+    // not the bare save_path. Was opening save_path directly (e.g. Downloads),
+    // which is why right-click "open folder" diverged from double-click.
+    openSelectedFile();
 }
 
 bool QmlSessionBridge::selectedForceStart() const
