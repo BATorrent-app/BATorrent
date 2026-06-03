@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.0.1
+
+### Windows / Linux
+- **Restored the menu bar** (File, Torrent, Settings, Help — including Preferences, Check for Updates, and About). It had vanished on Windows because the previous bar only rendered as a macOS-style global menu; it now draws inside the window on Windows and Linux while macOS keeps the native global menu.
+- The portable Windows download is now named `BATorrent-windows-x86_64-portable.zip` so the installer is the obvious choice.
+
+---
+
 ## v3.0.0
 
 ### New interface — full QML rewrite
