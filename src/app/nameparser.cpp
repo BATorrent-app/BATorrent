@@ -17,7 +17,7 @@ ParsedName NameParser::parse(const QString &rawName)
     // (e.g. "www.sitedotorrent.com - euphoria s3ep7" → "euphoria"). Requires a
     // separator after the domain so a bare name like "Doom.com" isn't eaten.
     static const QRegularExpression siteRe(
-        QStringLiteral("^\\s*[\\[(]?\\s*(?:[\\w\\-]+\\.)+(?:com|net|org|tv|me|info|io|cc|to|se|club|site|xyz|top|biz|us|uk|pro|app|online|life)\\b(?:[\\])][\\s]*|[\\s]*[-_:]+[\\s]*|[\\s]+)"),
+        QStringLiteral("^\\s*[\\[(]?\\s*(?:[\\w\\-]+\\.)+(?:com|net|org|tv|me|info|io|cc|to|se|club|site|xyz|top|biz|us|uk|pro|app|online|life|eu|ru|in|ws|la|pw|is|ag|tw|st|sx|cr|nu)\\b[\\s\\]\\)\\-_:]+"),
         QRegularExpression::CaseInsensitiveOption);
     work.remove(siteRe);
 
