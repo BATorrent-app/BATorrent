@@ -305,6 +305,17 @@ Window {
             CtxItem { text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
         }
         Menu {
+            title: (i18n.language, i18n.t("ctx_fix_cover"))
+            implicitWidth: 200
+            delegate: CtxItem {}
+            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+            CtxItem { text: win.catLabel("Movies"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "movie") }) }
+            CtxItem { text: win.catLabel("Series"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "series") }) }
+            CtxItem { text: win.catLabel("Games"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Cyberpunk 2077", function(t){ session.relinkSelectedCover(t, "game") }) }
+            MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+            CtxItem { text: (i18n.language, i18n.t("ctx_no_cover")); onTriggered: session.clearSelectedCover() }
+        }
+        Menu {
             title: (i18n.language, i18n.t("ctx_grp_more"))
             implicitWidth: 230
             delegate: CtxItem {}

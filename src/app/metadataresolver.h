@@ -37,6 +37,10 @@ public:
     MetadataResult cached(const QString &infoHash) const;
     bool hasCached(const QString &infoHash) const;
     void batchResolve(const QStringList &infoHashes, const QStringList &torrentNames);
+    // Manual override when the auto match was wrong: re-link the cover/title
+    // with a user-supplied query + explicit type, or clear it to no cover.
+    void resolveManual(const QString &infoHash, const QString &query, ContentType type);
+    void clearMetadata(const QString &infoHash);
 
 signals:
     void metadataReady(const QString &infoHash, const MetadataResult &result);

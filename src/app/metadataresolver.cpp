@@ -150,6 +150,34 @@ void MetadataResolver::batchResolve(const QStringList &infoHashes, const QString
         processQueue();
 }
 
+void MetadataResolver::resolveManual(const QString &infoHash, const QString &query, ContentType type)
+{
+    // User-driven re-link when the auto match was wrong. Parse the typed query
+    // (so "Love 2015" still yields a year), but force the user's chosen type,
+    // and drop any cached entry so the cache-skip in resolve() doesn't block the
+    // re-query. The new result is cached + saved, so it persists and auto-resolve
+    // never clobbers it.
+    ParsedName parsed = NameParser::parse(query);
+    if (parsed.cleanTitle.trimmed().isEmpty())
+        parsed.cleanTitle = query.trimmed();
+    parsed.contentType = type;
+    m_cache.remove(infoHash);
+    m_queue.enqueue({infoHash, parsed});
+    if (!m_requestInFlight && !m_rateLimiter.isActive())
+        processQueue();
+}
+
+void MetadataResolver::clearMetadata(const QString &infoHash)
+{
+    // "No cover" — a valid-but-empty entry shows the placeholder + the parsed/raw
+    // title, and (being cached) is never auto-resolved again.
+    MetadataResult r;
+    r.valid = true;
+    m_cache.insert(infoHash, r);
+    saveToDisk(infoHash, r);
+    emit metadataReady(infoHash, r);
+}
+
 void MetadataResolver::processQueue()
 {
     if (m_queue.isEmpty() || m_requestInFlight)

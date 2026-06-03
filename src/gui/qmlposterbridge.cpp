@@ -916,6 +916,24 @@ void QmlSessionBridge::openSelectedFile()
     if (!path.isEmpty()) revealInFileManager(path);   // open the folder with the item selected
 }
 
+void QmlSessionBridge::relinkSelectedCover(const QString &query, const QString &typeStr)
+{
+    if (!hasSelection() || !m_resolver || query.trimmed().isEmpty()) return;
+    const QString hash = m_session->torrentHashAt(m_selectedIndex);
+    if (hash.isEmpty()) return;
+    const ContentType type = typeStr == QLatin1String("series") ? ContentType::Series
+                           : typeStr == QLatin1String("game")   ? ContentType::Game
+                                                                : ContentType::Movie;
+    m_resolver->resolveManual(hash, query.trimmed(), type);
+}
+
+void QmlSessionBridge::clearSelectedCover()
+{
+    if (!hasSelection() || !m_resolver) return;
+    const QString hash = m_session->torrentHashAt(m_selectedIndex);
+    if (!hash.isEmpty()) m_resolver->clearMetadata(hash);
+}
+
 void QmlSessionBridge::importQbittorrent(const QString &savePath)
 {
     m_session->importFromQBittorrent(savePath);

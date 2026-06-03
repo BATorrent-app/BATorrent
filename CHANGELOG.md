@@ -9,6 +9,7 @@
 - Much stronger title parsing: leading release-site prefixes (`www.foo.com - `, `[ tracker.net ] - `) are stripped, and for episodes only the show name before SxxExx is used — so `www.UIndex.org - Euphoria US S03E08 in God We trust` resolves as Euphoria.
 - Grid and list tiles no longer show a blank label when the cover hasn't resolved — they fall back to the parsed title, then the raw torrent name. List mode now matches grid.
 - Episode tiles show SxxExx, so several episodes of one show are distinguishable.
+- **Fix a wrong cover** from the right-click menu: re-link a torrent to the correct Movie / Series / Game title, or clear it with "No cover". The override is remembered and never overwritten by auto-matching.
 
 ### Notifications
 - Finished / error / kill-switch / RSS events show as real OS notifications again (visible when the window is minimized), not only in-app toasts.

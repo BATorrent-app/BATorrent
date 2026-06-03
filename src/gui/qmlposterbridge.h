@@ -226,6 +226,10 @@ public:
     Q_INVOKABLE void setSelectedFilePriority(int fileIndex, int priority);
     Q_INVOKABLE void copySelectedName();
     Q_INVOKABLE void openSelectedFile();
+    // Manual cover/title fix for the selected torrent when the auto match was
+    // wrong. typeStr = "movie" | "series" | "game".
+    Q_INVOKABLE void relinkSelectedCover(const QString &query, const QString &typeStr);
+    Q_INVOKABLE void clearSelectedCover();
     Q_INVOKABLE void importQbittorrent(const QString &savePath);
     // Create a .torrent (mirrors the validated synchronous logic from
     // createtorrentdialog.cpp). Returns "" on success, else an error message.
