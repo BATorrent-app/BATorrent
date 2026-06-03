@@ -44,6 +44,7 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <cstring>
+#include <algorithm>
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSettings>
@@ -1881,9 +1882,15 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
     connect(&mgr, &AddonManager::torrentSearchResults, this,
             [this](const QList<TorrentSearchResult> &results) {
         m_torrentCache = results;
+        // Healthiest first. The add target is m_torrentCache[index] and m_results
+        // is built in this same sorted order, so the indices stay aligned.
+        std::sort(m_torrentCache.begin(), m_torrentCache.end(),
+                  [](const TorrentSearchResult &a, const TorrentSearchResult &b) {
+                      return a.seeders > b.seeders;
+                  });
         if (m_mode != "torrent" && m_mode != "games") return;
         m_results.clear();
-        for (const auto &r : results) {
+        for (const auto &r : m_torrentCache) {
             QVariantMap m;
             m["name"] = r.name;
             m["sub"] = "";
