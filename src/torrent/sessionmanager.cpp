@@ -1551,13 +1551,21 @@ QString SessionManager::torrentRootPath(int index) const
     // from the torrent metadata and matches what libtorrent wrote to disk.
     auto ti = h.torrent_file();
     if (ti && ti->num_files() > 0) {
-        QString rel = QString::fromStdString(
-            ti->files().file_path(lt::file_index_t(0)));
+        // libtorrent's file_path uses the native separator ('\' on Windows),
+        // so normalize to '/' before stripping — otherwise indexOf('/') misses
+        // the folder boundary on Windows and we resolve to file index 0 (an
+        // arbitrary .dll / .rNN), selecting it instead of opening the folder.
+        QString rel = QDir::fromNativeSeparators(QString::fromStdString(
+            ti->files().file_path(lt::file_index_t(0))));
+        if (ti->num_files() > 1) {
+            const int slash = rel.indexOf(QLatin1Char('/'));
+            // Strip to the top-level folder. A multi-file torrent with no
+            // common folder (files written straight into save_path) has no
+            // slash — leave rel empty so we fall through to save_path rather
+            // than selecting an arbitrary first file.
+            rel = slash > 0 ? rel.left(slash) : QString();
+        }
         if (!rel.isEmpty()) {
-            if (ti->num_files() > 1) {
-                int slash = rel.indexOf('/');
-                if (slash > 0) rel = rel.left(slash);
-            }
             QString found = existsOnDisk(save + QLatin1Char('/') + rel);
             if (!found.isEmpty()) {
                 qInfo().noquote() << "[reveal] root via file_path:" << found;
