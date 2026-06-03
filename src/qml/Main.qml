@@ -1495,6 +1495,7 @@ Window {
 
                     required property int index
                     required property string torrentName
+                    required property string metaTitle
                     required property string stateKey
                     required property real progress
                     required property string stateString
@@ -1540,7 +1541,7 @@ Window {
                             Text {
                                 Layout.fillWidth: true
                                 Layout.alignment: Qt.AlignVCenter
-                                text: lrow.torrentName
+                                text: lrow.metaTitle || lrow.torrentName
                                 color: Theme.t1
                                 font.pixelSize: 13
                                 font.family: Theme.fontSans
