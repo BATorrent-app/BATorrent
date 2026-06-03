@@ -32,6 +32,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/gui/torrentfilter.cpp
     ${CMAKE_SOURCE_DIR}/src/gui/thememanager.cpp
     ${CMAKE_SOURCE_DIR}/src/app/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/nameparser.cpp
 )
 
 set(COMMON_LIBS
@@ -139,9 +140,10 @@ endfunction()
 # =============================================================================
 #  TEST TARGETS
 # =============================================================================
-bat_add_test(test_security test_security.cpp)
-bat_add_test(test_memory   test_memory.cpp)
-bat_add_test(test_unit     test_unit.cpp)
+bat_add_test(test_security   test_security.cpp)
+bat_add_test(test_memory     test_memory.cpp)
+bat_add_test(test_unit       test_unit.cpp)
+bat_add_test(test_nameparser test_nameparser.cpp)
 
 # =============================================================================
 #  Convenience: run all analysis tools
