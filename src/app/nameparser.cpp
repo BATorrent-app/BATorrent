@@ -62,6 +62,21 @@ ParsedName NameParser::parse(const QString &rawName)
         }
     }
 
+    // Anime fansub convention: "[Group] Title - NN (...)" — the number after the
+    // " - " is the absolute episode. Gated on a leading [group] bracket so it
+    // never fires on "Adele - 30" (an album) or "Movie - 2" (a sequel).
+    if (result.season < 0) {
+        static const QRegularExpression animeRe(
+            QStringLiteral("^\\s*\\[[^\\]]+\\]\\s*(.+?)\\s+-\\s+(\\d{1,4})(?=\\s|\\[|\\(|$)"));
+        const QRegularExpressionMatch am = animeRe.match(work);
+        if (am.hasMatch()) {
+            result.season = 1;
+            result.episode = am.captured(2).toInt();
+            result.contentType = ContentType::Series;
+            work = am.captured(1);
+        }
+    }
+
     static const QStringList repackers = {
         QStringLiteral("FitGirl"), QStringLiteral("DODI"), QStringLiteral("CODEX"),
         QStringLiteral("PLAZA"), QStringLiteral("RUNE"), QStringLiteral("EMPRESS"),

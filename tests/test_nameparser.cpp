@@ -63,3 +63,20 @@ TEST_CASE("roman numerals stay upper-case", "[nameparser]")
 {
     CHECK(P("Final Fantasy VII Remake").cleanTitle == "Final Fantasy VII Remake");
 }
+
+TEST_CASE("anime fansub naming: [Group] Title - NN is an episode", "[nameparser]")
+{
+    auto f = P("[SubsPlease] Sousou no Frieren - 28 (1080p) [9C4F2E3A].mkv");
+    CHECK(f.cleanTitle == "Sousou No Frieren");
+    CHECK(f.contentType == ContentType::Series);
+    CHECK(f.episode == 28);
+
+    auto o = P("[HorribleSubs] One Piece - 1085 [720p].mkv");
+    CHECK(o.cleanTitle == "One Piece");
+    CHECK(o.episode == 1085);
+
+    // An album "Artist - NN" without a leading [group] must NOT become an episode.
+    auto a = P("Adele - 30 (2021) [FLAC]");
+    CHECK(a.contentType != ContentType::Series);
+    CHECK(a.episode == -1);
+}
