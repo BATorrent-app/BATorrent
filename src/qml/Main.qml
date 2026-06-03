@@ -378,7 +378,7 @@ Window {
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: win.showWin(settingsWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { if (typeof pairing !== "undefined") pairing.refresh(); pairingDlg.open() } }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.showWin(searchWinLoader) }
             Platform.MenuSeparator {}
@@ -692,7 +692,7 @@ Window {
                 BarItem { text: (i18n.language, i18n.t("menu_preferences")); onTriggered: win.showWin(settingsWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
                 BarItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
-                BarItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { if (typeof pairing !== "undefined") pairing.refresh(); pairingDlg.open() } }
+                BarItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
                 BarSep {}
                 BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.showWin(searchWinLoader) }
                 BarSep {}

@@ -44,6 +44,7 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <cstring>
+#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
@@ -2286,6 +2287,55 @@ void QmlSettingsBridge::applyWebUi()
     // credentials, force localhost-only even if remote access was requested.
     bool remote = st.value("webUiRemoteAccess", false).toBool() && hasAuth;
     m_webServer->start(quint16(st.value("webUiPort", 8080).toInt()), remote);
+}
+
+QString QmlSettingsBridge::enablePairing()
+{
+    // Readable strong password (no 0/O/1/I/l ambiguity — it gets typed on a phone).
+    static const QString alphabet =
+        QStringLiteral("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789");
+    QString pw;
+    for (int i = 0; i < 14; ++i)
+        pw.append(alphabet.at(QRandomGenerator::global()->bounded(alphabet.size())));
+
+    QSettings st;
+    st.setValue("webUiEnabled", true);
+    st.setValue("webUiRemoteAccess", true);
+    if (st.value("webUiUser").toString().isEmpty())
+        st.setValue("webUiUser", QStringLiteral("admin"));
+    // Plaintext in the encrypted store so the pairing screen can re-display it;
+    // the server only ever sees the hash.
+    SecretStore::instance().set("webUiPassword", pw);
+    SecretStore::instance().set("webUiPasswordHash",
+        QString::fromLatin1(QCryptographicHash::hash(pw.toUtf8(), QCryptographicHash::Sha256).toHex()));
+    applyWebUi();
+    emit changed();
+    return pw;
+}
+
+void QmlSettingsBridge::disablePairing()
+{
+    QSettings().setValue("webUiRemoteAccess", false);   // back to localhost-only; WebUI stays on locally
+    applyWebUi();
+    emit changed();
+}
+
+bool QmlSettingsBridge::pairingActive() const
+{
+    QSettings st;
+    return st.value("webUiEnabled", false).toBool()
+        && st.value("webUiRemoteAccess", false).toBool()
+        && !SecretStore::instance().get("webUiPasswordHash").isEmpty();
+}
+
+QString QmlSettingsBridge::webUiUser() const
+{
+    return QSettings().value("webUiUser", QStringLiteral("admin")).toString();
+}
+
+QString QmlSettingsBridge::webUiPassword() const
+{
+    return SecretStore::instance().get("webUiPassword");
 }
 
 QVariant QmlSettingsBridge::get(const QString &key) const

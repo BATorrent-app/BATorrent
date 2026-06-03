@@ -626,6 +626,14 @@ public:
     Q_INVOKABLE QString fullRestore(const QString &path);
     // Up/active network interfaces by name (index 0 = "Any"), for the VPN bind select.
     Q_INVOKABLE QStringList networkInterfaces() const;
+    // One-tap phone pairing (the recommended "scan and connect" flow): enable the
+    // WebUI, generate a strong password, allow LAN access — secure but zero manual
+    // setup. enablePairing returns the plaintext password to display.
+    Q_INVOKABLE QString enablePairing();
+    Q_INVOKABLE void disablePairing();
+    Q_INVOKABLE bool pairingActive() const;
+    Q_INVOKABLE QString webUiUser() const;
+    Q_INVOKABLE QString webUiPassword() const;   // plaintext from the secure store, for display
     void setTelegramNotifier(TelegramNotifier *n) { m_telegram = n; }
 signals:
     void changed();
