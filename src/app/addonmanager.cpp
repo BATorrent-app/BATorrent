@@ -515,12 +515,23 @@ void AddonManager::installDefaultProviders()
         {"nyaa_api", "Nyaa.si",
          "https://nyaa.si/api/v2?q={query}&limit=50",
          "torrents", "title", "info_hash", "total_size", "seeders", "leechers", true},
+        // Open torrent database (no login), returns raw-byte sizes + real swarm
+        // counts. Global content; safe to enable like apibay/nyaa.
+        {"torrents_csv", "Torrents-CSV",
+         "https://torrents-csv.com/service/search?q={query}&size=50",
+         "torrents", "name", "infohash", "size_bytes", "seeders", "leechers", true},
         // RuTor via TorAPI scrapes the (registration-walled) Russian/CIS trackers
         // server-side and returns the info_hash, so the magnet downloads over DHT
         // without the user ever logging in. Off by default — it routes the query
         // through a third-party instance; the URL is editable to self-host TorAPI.
         {"rutor_torapi", "RuTor (TorAPI · CIS)",
          "https://torapi.vercel.app/api/search/title/rutor?query={query}",
+         "", "Name", "Hash", "Size", "Seeds", "Peers", false},
+        // RuTracker needs a login, so the public TorAPI can't search it. Off by
+        // default and only useful pointed at a self-hosted TorAPI that holds your
+        // RuTracker account — edit the URL to your instance, then enable.
+        {"rutracker_torapi", "RuTracker (TorAPI — self-host login)",
+         "https://torapi.vercel.app/api/search/title/rutracker?query={query}",
          "", "Name", "Hash", "Size", "Seeds", "Peers", false},
     };
 
