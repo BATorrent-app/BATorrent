@@ -639,6 +639,10 @@ Window {
             component BarSep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
             component BarMenu: Menu {
                 implicitWidth: 240
+                // Breathing room so the first/last item don't get clipped by the
+                // rounded (radius 8) background corners — the "cut tail" on the
+                // last entry.
+                topPadding: 6; bottomPadding: 6
                 delegate: BarItem {}
                 background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
             }
