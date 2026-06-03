@@ -2119,33 +2119,45 @@ bool QmlAddonBridge::isInstalled(const QString &url) const
 
 QString QmlPairingBridge::detectLanIp()
 {
-    QString preferred, fallback;
+    // Score IPv4 addresses by how "real LAN" they look. The old version keyed
+    // off interface *names* ("en"/"wlan"), which don't exist on Windows — there
+    // it fell through to the first non-primary interface, often a Radmin/Hamachi
+    // VPN adapter (26.x / 25.x), so the QR pointed at the wrong network.
+    QString best;
+    int bestScore = -1;
     for (const auto &iface : QNetworkInterface::allInterfaces()) {
         const auto flags = iface.flags();
         if (!flags.testFlag(QNetworkInterface::IsUp)) continue;
         if (!flags.testFlag(QNetworkInterface::IsRunning)) continue;
         if (flags.testFlag(QNetworkInterface::IsLoopBack)) continue;
-        const QString name = iface.name();
+        if (flags.testFlag(QNetworkInterface::IsPointToPoint)) continue;   // most VPN tunnels
         for (const auto &entry : iface.addressEntries()) {
             if (entry.ip().protocol() != QAbstractSocket::IPv4Protocol) continue;
             const QString ip = entry.ip().toString();
-            if (ip.startsWith("169.254.")) continue;
-            if (name.startsWith("en") || name.contains("wlan") || name.contains("wlp")) {
-                if (preferred.isEmpty()) preferred = ip;   // first primary iface wins, deterministic
-            } else if (fallback.isEmpty()) {
-                fallback = ip;
-            }
+            if (ip.startsWith("169.254.")) continue;                 // link-local
+            if (ip.startsWith("25.") || ip.startsWith("26.")) continue; // Hamachi / Radmin VPN
+            int score = 1;
+            if      (ip.startsWith("192.168.")) score = 4;           // typical home LAN
+            else if (ip.startsWith("10."))      score = 3;
+            else if (ip.startsWith("172."))     score = 3;
+            if (flags.testFlag(QNetworkInterface::CanBroadcast)) score += 1; // real NIC, not a tunnel
+            if (score > bestScore) { bestScore = score; best = ip; }
         }
     }
-    return preferred.isEmpty() ? fallback : preferred;
+    return best;
 }
 
 QmlPairingBridge::QmlPairingBridge(QObject *parent) : QObject(parent)
 {
-    const int port = QSettings().value(QStringLiteral("webui/port"), 8080).toInt();
+    refresh();
+}
+
+void QmlPairingBridge::refresh()
+{
+    const int port = QSettings().value(QStringLiteral("webUiPort"), 8080).toInt();   // same key the server binds
     const QString ip = detectLanIp();
-    if (!ip.isEmpty())
-        m_url = QStringLiteral("http://%1:%2/").arg(ip).arg(port);
+    m_url = ip.isEmpty() ? QString() : QStringLiteral("http://%1:%2/").arg(ip).arg(port);
+    emit changed();
 }
 
 void QmlPairingBridge::copyUrl()

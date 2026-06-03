@@ -14,7 +14,8 @@ BatDialog {
 
     readonly property var api: typeof pairing !== "undefined" ? pairing : null
     property string copyLabel: (i18n.language, i18n.t("pairing_copy"))
-    property var rows: api ? api.qrRows() : []
+    // re-evaluate when the bridge recomputes the URL (api.url notifies on refresh)
+    property var rows: (api && api.url, api ? api.qrRows() : [])
 
     ColumnLayout {
         Layout.fillWidth: true
