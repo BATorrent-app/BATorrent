@@ -591,6 +591,110 @@ Window {
         anchors.fill: parent
         spacing: 0
 
+        // ===== IN-WINDOW MENU BAR (Windows/Linux) =====
+        // Qt.labs.platform.MenuBar (above) only renders as a *global* menu bar
+        // (macOS, or a Linux global-menu shell) — on Windows it shows nothing,
+        // so the whole File/Torrent/Settings/Help menu vanished there. Mirror
+        // the same menus in a Qt Quick MenuBar that draws inside the window;
+        // shown only where the native one doesn't apply.
+        MenuBar {
+            id: winMenuBar
+            visible: Qt.platform.os !== "osx"
+            Layout.fillWidth: true
+            Layout.preferredHeight: visible ? implicitHeight : 0
+
+            background: Rectangle {
+                color: Theme.elev
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
+            }
+            delegate: MenuBarItem {
+                id: mbarItem
+                padding: 6; leftPadding: 12; rightPadding: 12
+                contentItem: Text {
+                    text: mbarItem.text
+                    color: Theme.t1
+                    font.pixelSize: 13
+                    font.family: Theme.fontSans
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle {
+                    color: (mbarItem.highlighted || mbarItem.down) ? Theme.hover : "transparent"
+                    radius: 5
+                }
+            }
+
+            component BarItem: MenuItem {
+                id: bi
+                implicitHeight: 30; padding: 0
+                contentItem: Text {
+                    leftPadding: 14; rightPadding: 28
+                    text: bi.text
+                    color: !bi.enabled ? Theme.t4 : (bi.highlighted ? Theme.t1 : Theme.t2)
+                    font.pixelSize: 12
+                    font.family: Theme.fontSans
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle { color: bi.highlighted ? Theme.hover : "transparent"; radius: 5 }
+            }
+            component BarSep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
+            component BarMenu: Menu {
+                implicitWidth: 240
+                delegate: BarItem {}
+                background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+            }
+
+            BarMenu {
+                title: (i18n.language, i18n.t("menu_file_title"))
+                BarItem { text: (i18n.language, i18n.t("menu_open_torrent")); onTriggered: openFileDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_add_magnet")); onTriggered: magnetDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_create_torrent")); onTriggered: createDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: inspectFileDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_import_qbt")); onTriggered: importQbtDlg.open() }
+                BarSep {}
+                BarItem { text: (i18n.language, i18n.t("menu_recently_removed")); onTriggered: win.showWin(removedWinLoader) }
+                BarSep {}
+                BarItem { text: (i18n.language, i18n.t("menu_quit")); onTriggered: Qt.quit() }
+            }
+            BarMenu {
+                title: (i18n.language, i18n.t("menu_torrent_title"))
+                BarItem { text: (i18n.language, i18n.t("menu_pause")); enabled: win.hasSel; onTriggered: session.pauseSelected() }
+                BarItem { text: (i18n.language, i18n.t("menu_resume")); enabled: win.hasSel; onTriggered: session.resumeSelected() }
+                BarSep {}
+                BarItem { text: (i18n.language, i18n.t("menu_pause_all")); onTriggered: if (typeof session !== "undefined") session.pauseAll() }
+                BarItem { text: (i18n.language, i18n.t("menu_resume_all")); onTriggered: if (typeof session !== "undefined") session.resumeAll() }
+                BarSep {}
+                BarItem { text: (i18n.language, i18n.t("menu_remove")); enabled: win.hasSel; onTriggered: removeDlg.open() }
+            }
+            BarMenu {
+                title: (i18n.language, i18n.t("menu_settings_title"))
+                BarItem { text: (i18n.language, i18n.t("menu_preferences")); onTriggered: win.showWin(settingsWinLoader) }
+                BarItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
+                BarItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: pairingDlg.open() }
+                BarSep {}
+                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.showWin(searchWinLoader) }
+                BarSep {}
+                BarItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
+                BarItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
+            }
+            BarMenu {
+                title: (i18n.language, i18n.t("menu_help_title"))
+                BarItem { text: (i18n.language, i18n.t("menu_welcome")); onTriggered: welcomeDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_release_notes")); onTriggered: releaseNotesDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_shortcuts")); onTriggered: win.showWin(shortcutsWinLoader) }
+                BarItem { text: (i18n.language, i18n.t("menu_logs")); onTriggered: win.showWin(logWinLoader) }
+                BarItem { text: (i18n.language, i18n.t("menu_diagnostics")); onTriggered: win.showWin(diagWinLoader) }
+                BarItem {
+                    text: (i18n.language, i18n.t("menu_check_updates"))
+                    enabled: typeof updater !== "undefined" && updater !== null
+                    onTriggered: if (typeof updater !== "undefined" && updater) updater.check(false)
+                }
+                BarSep {}
+                BarItem { text: (i18n.language, i18n.t("menu_donate")); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
+                BarItem { text: (i18n.language, i18n.t("menu_about")); onTriggered: aboutDlg.open() }
+            }
+        }
+
         // ================== TOOLBAR ==================
         Rectangle {
             Layout.fillWidth: true
