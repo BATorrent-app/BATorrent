@@ -1201,7 +1201,10 @@ Window {
                 rightMargin: Theme.sp4
                 cellWidth: 178 + Theme.sp4
                 cellHeight: 286
-                populate: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic } }
+                // No `populate` transition: it re-runs (fading every tile from 0)
+                // when the filter proxy reports a reorder as a re-layout, which read
+                // as the whole grid flashing. The container's opacity Behavior already
+                // covers the initial fade-in. (List view has no populate, never flashed.)
                 add: Transition {
                     NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic }
                     NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: 180; easing.type: Easing.OutCubic }
