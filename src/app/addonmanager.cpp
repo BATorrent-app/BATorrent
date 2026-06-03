@@ -9,6 +9,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QUrl>
 
@@ -505,21 +506,34 @@ void AddonManager::searchTorrents(const QString &query, int category)
 void AddonManager::installDefaultProviders()
 {
     QSettings s("BATorrent", "BATorrent");
-    if (s.value("searchProvidersInitialized", false).toBool())
-        return;
-    s.setValue("searchProvidersInitialized", true);
 
-    struct Def { QString id, name, url, arr, nm, hash, sz, seed, leech; };
-    QList<Def> defaults = {
+    struct Def { QString id, name, url, arr, nm, hash, sz, seed, leech; bool enabled; };
+    const QList<Def> defaults = {
         {"apibay", "The Pirate Bay (apibay)",
          "https://apibay.org/q.php?q={query}&cat={category}",
-         "", "name", "info_hash", "size", "seeders", "leechers"},
+         "", "name", "info_hash", "size", "seeders", "leechers", true},
         {"nyaa_api", "Nyaa.si",
          "https://nyaa.si/api/v2?q={query}&limit=50",
-         "torrents", "title", "info_hash", "total_size", "seeders", "leechers"},
+         "torrents", "title", "info_hash", "total_size", "seeders", "leechers", true},
+        // RuTor via TorAPI scrapes the (registration-walled) Russian/CIS trackers
+        // server-side and returns the info_hash, so the magnet downloads over DHT
+        // without the user ever logging in. Off by default — it routes the query
+        // through a third-party instance; the URL is editable to self-host TorAPI.
+        {"rutor_torapi", "RuTor (TorAPI · CIS)",
+         "https://torapi.vercel.app/api/search/title/rutor?query={query}",
+         "", "Name", "Hash", "Size", "Seeds", "Peers", false},
     };
 
+    // Seed each built-in once (tracked by id) so a new provider reaches existing
+    // users on update, while one the user deleted never resurrects.
+    QStringList seeded = s.value("seededProviderIds").toStringList();
+    if (seeded.isEmpty() && s.value("searchProvidersInitialized", false).toBool())
+        seeded << QStringLiteral("apibay") << QStringLiteral("nyaa_api");  // pre-seed-flag users
+    bool changed = false;
     for (const auto &d : defaults) {
+        if (seeded.contains(d.id)) continue;
+        seeded << d.id;
+        changed = true;
         bool exists = false;
         for (const auto &p : m_searchProviders)
             if (p.id == d.id) { exists = true; break; }
@@ -528,11 +542,13 @@ void AddonManager::installDefaultProviders()
             p.id = d.id; p.name = d.name; p.urlTemplate = d.url;
             p.arrayPath = d.arr; p.namePath = d.nm; p.hashPath = d.hash;
             p.sizePath = d.sz; p.seedersPath = d.seed; p.leechersPath = d.leech;
-            p.enabled = true; p.builtIn = true;
+            p.enabled = d.enabled; p.builtIn = true;
             m_searchProviders.append(p);
         }
     }
-    saveSearchProviders();
+    s.setValue("searchProvidersInitialized", true);
+    s.setValue("seededProviderIds", seeded);
+    if (changed) saveSearchProviders();
 }
 
 void AddonManager::loadSearchProviders()
@@ -606,6 +622,30 @@ void AddonManager::setSearchProviderEnabled(int index, bool enabled)
     saveSearchProviders();
 }
 
+// Size can arrive as raw bytes (apibay/nyaa) or a human string like "28.47 GB"
+// (the TorAPI providers scrape display text). Accept both.
+static qint64 parseSizeValue(const QJsonValue &v)
+{
+    if (v.isDouble()) return static_cast<qint64>(v.toDouble());
+    QString s = v.toString().trimmed();
+    s.replace(QChar(0x00A0), QLatin1Char(' '));   // TorAPI separates number/unit with NBSP
+    if (s.isEmpty()) return 0;
+    bool ok = false;
+    const qint64 plain = s.toLongLong(&ok);
+    if (ok) return plain;
+    static const QRegularExpression re(
+        QStringLiteral("([\\d.,]+)\\s*([KMGT]?)i?B"), QRegularExpression::CaseInsensitiveOption);
+    const auto m = re.match(s);
+    if (!m.hasMatch()) return 0;
+    const double num = m.captured(1).replace(QLatin1Char(','), QLatin1Char('.')).toDouble();
+    const QString u = m.captured(2).toUpper();
+    const double mult = u == QLatin1String("K") ? 1024.0
+                      : u == QLatin1String("M") ? 1024.0 * 1024
+                      : u == QLatin1String("G") ? 1024.0 * 1024 * 1024
+                      : u == QLatin1String("T") ? 1024.0 * 1024 * 1024 * 1024 : 1.0;
+    return static_cast<qint64>(num * mult);
+}
+
 QList<TorrentSearchResult> AddonManager::parseProviderResponse(
     const SearchProvider &p, const QByteArray &data)
 {
@@ -639,7 +679,7 @@ QList<TorrentSearchResult> AddonManager::parseProviderResponse(
         TorrentSearchResult r;
         r.name = name;
         r.infoHash = infoHash;
-        r.size = obj.value(p.sizePath).toVariant().toLongLong();
+        r.size = parseSizeValue(obj.value(p.sizePath));
         r.seeders = obj.value(p.seedersPath).toVariant().toInt();
         r.leechers = obj.value(p.leechersPath).toVariant().toInt();
         r.category = obj.value("category").toString();
