@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: bat-dialog.css .chk — checkbox 17×17.
 // off: bg field; border 1 hair; check oculto.
 // on:  bg accent; border transparent; check svg 11px #fff opacity 1.

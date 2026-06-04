@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: batorrent-settings.css .select / bat-dialog .select
 // height 30, appearance none, padding 0 30 0 10, bg Theme.field, border 1px Theme.hair, radius 7.
 // caret triângulo Theme.t3 à direita. :focus → border Theme.accent.
@@ -11,14 +15,27 @@ ComboBox {
     font.pixelSize: 12
     font.family: Theme.fontSans
 
-    contentItem: Text {
-        text: cb.displayText
-        color: Theme.t1
-        font: cb.font
-        verticalAlignment: Text.AlignVCenter
+    // optional per-item leading icon (parallel to model; e.g. language flags).
+    // empty array → plain text select, unchanged.
+    property var icons: []
+
+    contentItem: Row {
         leftPadding: 10
-        rightPadding: 30
-        elide: Text.ElideRight
+        spacing: 7
+        Image {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: source != ""
+            source: (cb.currentIndex >= 0 && cb.currentIndex < cb.icons.length) ? cb.icons[cb.currentIndex] : ""
+            width: 20; height: 14; sourceSize.height: 28; fillMode: Image.PreserveAspectFit; smooth: true
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: cb.displayText
+            color: Theme.t1
+            font: cb.font
+            rightPadding: 30
+            elide: Text.ElideRight
+        }
     }
 
     background: Rectangle {
@@ -64,13 +81,22 @@ ComboBox {
     delegate: ItemDelegate {
         width: cb.width - 8
         height: 28
-        contentItem: Text {
-            text: modelData
-            color: Theme.t1
-            font.pixelSize: 12
-            font.family: Theme.fontSans
-            verticalAlignment: Text.AlignVCenter
+        contentItem: Row {
             leftPadding: 8
+            spacing: 7
+            Image {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: source != ""
+                source: (index < cb.icons.length) ? cb.icons[index] : ""
+                width: 20; height: 14; sourceSize.height: 28; fillMode: Image.PreserveAspectFit; smooth: true
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: modelData
+                color: Theme.t1
+                font.pixelSize: 12
+                font.family: Theme.fontSans
+            }
         }
         background: Rectangle {
             radius: 5

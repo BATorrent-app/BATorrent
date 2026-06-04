@@ -110,15 +110,11 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString globalRatio READ globalRatio NOTIFY statsChanged)
     Q_PROPERTY(QVariantList downloadHistory READ downloadHistory NOTIFY historyChanged)
     Q_PROPERTY(QVariantList uploadHistory READ uploadHistory NOTIFY historyChanged)
-    Q_PROPERTY(int historyMaxBytes READ historyMaxBytes NOTIFY historyChanged)
 
     Q_PROPERTY(QString selectedName READ selectedName NOTIFY selectionChanged)
-    Q_PROPERTY(QString selectedSavePath READ selectedSavePath NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedSize READ selectedSize NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedHash READ selectedHash NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDownloaded READ selectedDownloaded NOTIFY selectionChanged)
-    Q_PROPERTY(QString selectedUploaded READ selectedUploaded NOTIFY selectionChanged)
-    Q_PROPERTY(QString selectedSpeed READ selectedSpeed NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDownSpeed READ selectedDownSpeed NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedUpSpeed READ selectedUpSpeed NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedEta READ selectedEta NOTIFY selectionChanged)
@@ -133,7 +129,6 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(bool selectedForceStart READ selectedForceStart NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedSuperSeeding READ selectedSuperSeeding NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedCompleted READ selectedCompleted NOTIFY selectionChanged)
-    Q_PROPERTY(bool selectedAtFullProgress READ selectedAtFullProgress NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedPaused READ selectedPaused NOTIFY selectionChanged)
     Q_PROPERTY(QVariantList selectedPeerList READ selectedPeerList NOTIFY selectionListsChanged)
     Q_PROPERTY(QVariantList selectedFiles READ selectedFiles NOTIFY selectionListsChanged)
@@ -157,9 +152,7 @@ public:
     QString globalRatio() const;
     QVariantList downloadHistory() const;
     QVariantList uploadHistory() const;
-    int historyMaxBytes() const;
 
-    Q_INVOKABLE void setSelectedIndex(int index);
     Q_INVOKABLE void setSelectedRows(const QList<int> &rows);
     // Keep the stored selection (source-model indices) in sync when a torrent is
     // removed, so a later batch action doesn't hit a different torrent that
@@ -195,7 +188,6 @@ public:
     Q_INVOKABLE void queueDownSelected();
     Q_INVOKABLE void queueTopSelected();
     Q_INVOKABLE void queueBottomSelected();
-    Q_INVOKABLE void toggleSelectedPause();
     Q_INVOKABLE void stopSeedingSelected();
     Q_INVOKABLE void smartPaste();
 
@@ -254,15 +246,11 @@ public:
     Q_INVOKABLE QString selectedCategory() const;
     Q_INVOKABLE QStringList selectedTagList() const;
     Q_INVOKABLE QStringList categories() const;
-    Q_INVOKABLE QStringList allTags() const;
 
     QString selectedName() const;
-    QString selectedSavePath() const;
     QString selectedSize() const;
     QString selectedHash() const;
     QString selectedDownloaded() const;
-    QString selectedUploaded() const;
-    QString selectedSpeed() const;
     QString selectedDownSpeed() const;
     QString selectedUpSpeed() const;
     QString selectedEta() const;
@@ -277,7 +265,6 @@ public:
     bool selectedForceStart() const;
     bool selectedSuperSeeding() const;
     bool selectedCompleted() const;
-    bool selectedAtFullProgress() const;
     bool selectedPaused() const;
     QVariantList selectedPeerList() const;
     QVariantList selectedFiles() const;
@@ -553,8 +540,10 @@ public:
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void copyUrl();
     Q_INVOKABLE void openBrowser();
+    Q_INVOKABLE void copyText(const QString &t);   // copy an arbitrary string (the password)
     // QR as a list of row strings ("0101…"), one char per module. Empty on failure.
     Q_INVOKABLE QStringList qrRows() const;
+    Q_INVOKABLE QStringList qrRowsForUrl(const QString &url) const;   // QR for a URL with creds
 
 signals:
     void changed();

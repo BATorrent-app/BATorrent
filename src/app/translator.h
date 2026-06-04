@@ -11,7 +11,7 @@
 class Translator
 {
 public:
-    enum Language { English, Portuguese, Chinese, Japanese, Russian, Spanish, German };
+    enum Language { English, Portuguese, Chinese, Japanese, Russian, Spanish, German, Ukrainian };
 
     static Translator &instance();
 

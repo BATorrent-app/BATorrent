@@ -2883,29 +2883,39 @@ QStringList SessionManager::extractPasswords() const { return m_extractPasswords
 void SessionManager::extractArchives(const QString &savePath, const QString &torrentName)
 {
     QDir dir(savePath);
+
+    // Scope strictly to THIS torrent's own content. Scanning the shared save root
+    // used to pick up every sibling torrent's archives and extract them all at
+    // once — a flood of extractor processes that could freeze the machine.
     QStringList archives;
-
-    // Scan for archives in save path (including torrent subfolder)
-    QStringList dirs = {savePath};
-    QString subDir = dir.filePath(torrentName);
-    if (QDir(subDir).exists()) dirs << subDir;
-
-    for (const QString &d : dirs) {
-        QDir scanDir(d);
-        for (const auto &fi : scanDir.entryInfoList(
-                 {"*.rar", "*.zip", "*.7z", "*.tar.gz", "*.tar.bz2"},
-                 QDir::Files)) {
-            if (fi.fileName().contains(QStringLiteral(".part")) &&
-                !fi.fileName().endsWith(QStringLiteral(".part1.rar")) &&
-                !fi.fileName().endsWith(QStringLiteral(".part01.rar")))
-                continue;
-            archives << fi.absoluteFilePath();
-        }
+    const QString content = dir.filePath(torrentName);
+    const QFileInfo contentInfo(content);
+    auto keepArchive = [](const QFileInfo &fi) {
+        // multi-part: keep only the first part; the extractor pulls in the rest
+        return !(fi.fileName().contains(QStringLiteral(".part"))
+                 && !fi.fileName().endsWith(QStringLiteral(".part1.rar"))
+                 && !fi.fileName().endsWith(QStringLiteral(".part01.rar")));
+    };
+    if (contentInfo.isDir()) {                          // multi-file torrent → its own folder
+        for (const auto &fi : QDir(content).entryInfoList(
+                 {"*.rar", "*.zip", "*.7z", "*.tar.gz", "*.tar.bz2"}, QDir::Files))
+            if (keepArchive(fi)) archives << fi.absoluteFilePath();
+    } else if (contentInfo.isFile()) {                  // single-file torrent that is an archive
+        const QString n = contentInfo.fileName().toLower();
+        if ((n.endsWith(QStringLiteral(".rar")) || n.endsWith(QStringLiteral(".zip"))
+             || n.endsWith(QStringLiteral(".7z")) || n.endsWith(QStringLiteral(".tar.gz"))
+             || n.endsWith(QStringLiteral(".tar.bz2"))) && keepArchive(contentInfo))
+            archives << content;
     }
 
     if (archives.isEmpty()) return;
 
-    for (const QString &archive : archives) {
+    // Serialize: one archive at a time so a multi-archive torrent never opens a
+    // swarm of extractor windows. Each archive still retries every password first.
+    auto processArchive = std::make_shared<std::function<void(int)>>();
+    *processArchive = [this, archives, processArchive](int ai) {
+        if (ai >= archives.size()) return;
+        const QString archive = archives.at(ai);
         QFileInfo fi(archive);
         QString extractDir = fi.absolutePath();
 
@@ -2915,12 +2925,13 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
         attempts << QString();
         attempts << passwords;
 
-        auto tryExtract = [this, archive, extractDir, attempts](int attemptIdx) {
+        auto tryExtract = [this, archive, extractDir, attempts, processArchive, ai](int attemptIdx) {
             auto self = std::make_shared<std::function<void(int)>>();
-            *self = [this, archive, extractDir, attempts, self](int idx) {
+            *self = [this, archive, extractDir, attempts, self, processArchive, ai](int idx) {
                 if (idx >= attempts.size()) {
                     qDebug() << "[session] extraction failed (all passwords tried):" << archive;
                     emit torrentError(tr_("extract_failed").arg(QFileInfo(archive).fileName()));
+                    (*processArchive)(ai + 1);          // move on to the next archive
                     return;
                 }
 
@@ -3004,7 +3015,7 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
 
                 auto *proc = new QProcess(this);
                 connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                        this, [this, proc, archive, idx, self](int exitCode, QProcess::ExitStatus) {
+                        this, [this, proc, archive, idx, self, processArchive, ai](int exitCode, QProcess::ExitStatus) {
                     proc->deleteLater();
                     if (exitCode == 0) {
                         qDebug() << "[session] extraction complete:" << archive;
@@ -3022,6 +3033,7 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
                                 }
                             }
                         }
+                        (*processArchive)(ai + 1);     // success → next archive in the queue
                     } else {
                         (*self)(idx + 1);
                     }
@@ -3031,7 +3043,8 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
             (*self)(attemptIdx);
         };
         tryExtract(0);
-    }
+    };
+    (*processArchive)(0);
 }
 
 // --- Temp path ---

@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 #include "translator.h"
-#include <QApplication>
+#include <QCoreApplication>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -25,7 +25,7 @@ Translator::Translator()
 void Translator::setLanguage(Language lang)
 {
     m_lang = lang;
-    static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de"};
+    static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk"};
     m_strings.clear();
     loadLanguage(codes[static_cast<int>(lang)], m_strings);
 
@@ -38,7 +38,7 @@ void Translator::setLanguage(Language lang)
     qtTr = new QTranslator;
     static const QMap<Language, QString> qtLocales = {
         {Portuguese, "pt_BR"}, {Chinese, "zh_CN"}, {Japanese, "ja"},
-        {Russian, "ru"}, {Spanish, "es"}, {German, "de"},
+        {Russian, "ru"}, {Spanish, "es"}, {German, "de"}, {Ukrainian, "uk"},
     };
     const QString locale = qtLocales.value(lang, "en");
     if (qtTr->load("qt_" + locale,

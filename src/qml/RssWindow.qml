@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: BATorrent RSS.html (bat-dialog.css + <style> inline)
 import QtQuick
 import QtQuick.Controls.Basic

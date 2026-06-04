@@ -9,18 +9,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BAT-Torrent/total?style=flat-square&color=dc2626"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BATorrent/total?style=flat-square&color=dc2626"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml/badge.svg"></a>
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml/badge.svg"></a>
   <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
-  <a href="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent/badge"></a>
+  <a href="https://www.codefactor.io/repository/github/mateuscruz19/batorrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/batorrent/badge"></a>
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
@@ -48,9 +48,11 @@ BATorrent 是一款注重隐私、性能和清晰度的现代跨平台 BitTorren
 
 | 平台 | 格式 | 备注 |
 |---|---|---|
-| Windows | [安装程序 (`.exe`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) · [便携版 (`.zip`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | Windows 10+（x86_64） |
-| macOS | [磁盘映像 (`.dmg`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | macOS 12+（Apple Silicon） |
-| Linux | [AppImage](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | Glibc 2.35+（x86_64） |
+| Windows | [安装程序 (`.exe`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) · [便携版 (`.zip`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Windows 10+（x86_64） |
+| macOS | **`brew install --cask Mateuscruz19/batorrent/batorrent`**（推荐）· [磁盘映像 (`.dmg`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | macOS 12+（Apple Silicon） |
+| Linux | [AppImage](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Glibc 2.35+（x86_64） |
+
+> **macOS — 关于安全提示：** 当前版本尚未经过 Apple 公证（开发者计划需付费，对个人项目是一道门槛）。**用 Homebrew 最省事** —— `brew` 在安装时会移除隔离标记，应用直接打开，不会弹出 Gatekeeper 提示。若使用 `.dmg`，首次请右键点击应用并选择**打开**，以绕过"无法验证开发者"的提示。
 
 所有构建产物均由 [Build & Release](.github/workflows/build.yml) 工作流在每次打标签发布时自动生成。
 
@@ -148,7 +150,7 @@ BATorrent 是一款注重隐私、性能和清晰度的现代跨平台 BitTorren
 
 ## 快速开始
 
-1. 从[发布页面](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest)下载适合你平台的版本。
+1. 从[发布页面](https://github.com/Mateuscruz19/BATorrent/releases/latest)下载适合你平台的版本。
 2. 首次启动时，欢迎对话框将引导你设置默认保存路径、主题和语言。
 3. 将 `.torrent` 文件或磁力链接拖放到窗口中 — 或使用 **文件 → 打开种子** / **文件 → 添加磁力链接**。
 4. 可选：在 **设置 → 网络代理** 中绑定出站接口，并在添加敏感种子前启用断网保护。

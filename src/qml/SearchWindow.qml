@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: BATorrent Search.html — wired to QmlSearchBridge (`search`).
 import QtQuick
 import QtQuick.Layouts

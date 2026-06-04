@@ -8,7 +8,6 @@
 #include <QFile>
 #include <QMutex>
 #include <QString>
-#include <QStringList>
 
 class Logger
 {

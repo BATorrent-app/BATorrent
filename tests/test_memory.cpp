@@ -17,8 +17,6 @@
 
 #include "webui/webserver.h"
 #include "torrent/sessionmanager.h"
-#include "gui/torrentmodel.h"
-#include "gui/torrentfilter.h"
 #include "app/utils.h"
 
 // ============================================================================
@@ -201,58 +199,6 @@ TEST_CASE("Memory: abrupt disconnect cleanup", "[memory][connections]")
 }
 
 // ============================================================================
-//  TORRENT MODEL MEMORY
-// ============================================================================
-
-TEST_CASE("Memory: TorrentModel refresh x1000", "[memory][model]")
-{
-    CRT_GUARD();
-    app();
-    SessionManager session;
-    TorrentModel model(&session);
-
-    for (int i = 0; i < 1000; ++i)
-        model.refresh();
-
-    REQUIRE(model.rowCount() == 0);
-}
-
-TEST_CASE("Memory: TorrentFilter cycle x500", "[memory][model]")
-{
-    CRT_GUARD();
-    app();
-    SessionManager session;
-    TorrentModel model(&session);
-    TorrentFilter filter;
-    filter.setSourceModel(&model);
-
-    QStringList states = {"", "__active__", "Downloading", "Seeding", "Paused", ""};
-    for (int i = 0; i < 500; ++i) {
-        filter.setStateFilter(states[i % states.size()]);
-        filter.setNameFilter(i % 2 == 0 ? "test" : "");
-        model.refresh();
-    }
-
-    REQUIRE(filter.rowCount() == 0);
-}
-
-TEST_CASE("Memory: filter create/destroy x100", "[memory][model]")
-{
-    CRT_GUARD();
-    app();
-    SessionManager session;
-    TorrentModel model(&session);
-
-    for (int i = 0; i < 100; ++i) {
-        auto *f = new TorrentFilter;
-        f->setSourceModel(&model);
-        f->setStateFilter("Downloading");
-        f->setNameFilter("test");
-        delete f;
-    }
-}
-
-// ============================================================================
 //  QT PARENT-CHILD OWNERSHIP
 // ============================================================================
 
@@ -274,25 +220,6 @@ TEST_CASE("Memory: parent delete cleans up WebServer + SessionManager", "[memory
 
     REQUIRE(pSrv.isNull());
     REQUIRE(pSes.isNull());
-}
-
-TEST_CASE("Memory: parent delete cleans up Model + Filter", "[memory][ownership]")
-{
-    CRT_GUARD();
-    app();
-    auto *parent  = new QObject;
-    auto *session = new SessionManager(parent);
-    auto *model   = new TorrentModel(session, parent);
-    auto *filter  = new TorrentFilter(parent);
-    filter->setSourceModel(model);
-
-    QPointer<TorrentModel>  pM(model);
-    QPointer<TorrentFilter> pF(filter);
-
-    delete parent;
-
-    REQUIRE(pM.isNull());
-    REQUIRE(pF.isNull());
 }
 
 // ============================================================================
@@ -363,24 +290,6 @@ TEST_CASE("Memory: IP filter clear cycles", "[memory][ipfilter]")
         session.clearIpFilter();
 
     REQUIRE(session.ipFilterCount() == 0);
-}
-
-// ============================================================================
-//  MIME DATA LIFECYCLE
-// ============================================================================
-
-TEST_CASE("Memory: mimeData create/delete x100", "[memory][mime]")
-{
-    CRT_GUARD();
-    app();
-    SessionManager session;
-    TorrentModel model(&session);
-
-    for (int i = 0; i < 100; ++i) {
-        QModelIndexList list;
-        QMimeData *m = model.mimeData(list);
-        delete m;
-    }
 }
 
 // ============================================================================

@@ -5,59 +5,50 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BATorrent</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+/* Tokens read 1:1 from the desktop app's dark theme (src/qml/theme/Theme.qml)
+   so the WebUI is the same product, not a separate-looking dashboard. */
 :root {
-  --bg-deep: #08080a;
-  --bg: #0e0e12;
-  --bg-elevated: #151519;
-  --bg-card: #1a1a20;
-  --bg-hover: #22222a;
-  --border: #2a2a35;
-  --border-light: #35354a;
-  --crimson: #dc2626;
-  --crimson-glow: #ef4444;
-  --crimson-dark: #991b1b;
-  --crimson-bg: rgba(220, 38, 38, 0.08);
-  --crimson-bg-hover: rgba(220, 38, 38, 0.15);
-  --chrome: #c8c8d0;
-  --chrome-bright: #e8e8f0;
-  --chrome-dim: #8888a0;
-  --chrome-muted: #555568;
-  --green: #22c55e;
-  --green-bg: rgba(34, 197, 94, 0.1);
-  --amber: #f59e0b;
-  --amber-bg: rgba(245, 158, 11, 0.1);
-  --blue: #3b82f6;
-  --blue-bg: rgba(59, 130, 246, 0.1);
+  --bg-deep: #0a0a0b;
+  --bg: #0e0e10;
+  --bg-elevated: #141416;
+  --bg-card: #141416;
+  --bg-hover: #18181b;
+  --border: rgba(255,255,255,0.08);
+  --border-light: rgba(255,255,255,0.14);
+  --crimson: #e5332b;
+  --crimson-glow: #ec6a64;
+  --crimson-dark: #c01f18;
+  --crimson-bg: rgba(229,51,43,0.12);
+  --crimson-bg-hover: rgba(229,51,43,0.18);
+  --chrome: #b4b5ba;
+  --chrome-bright: #f3f3f4;
+  --chrome-dim: #818288;
+  --chrome-muted: #5b5c63;
+  --green: #3fb950;
+  --green-bg: rgba(63,185,80,0.12);
+  --amber: #d99a2b;
+  --amber-bg: rgba(217,154,43,0.12);
+  --blue: #4f8cff;
+  --blue-bg: rgba(79,140,255,0.12);
   --radius: 10px;
-  --radius-sm: 6px;
-  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --radius-lg: 14px;
   --shadow: 0 4px 24px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 48px rgba(0,0,0,0.6);
-  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-lg: 0 8px 48px rgba(0,0,0,0.55);
+  --transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Outfit', sans-serif;
-  background: var(--bg-deep);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
   color: var(--chrome);
   min-height: 100vh;
   overflow-x: hidden;
-}
-
-/* ── Noise texture overlay ── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 256px;
-  pointer-events: none;
-  z-index: 9999;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ── Scrollbar ── */
@@ -71,7 +62,7 @@ body::before {
 
 /* ── Top Bar ── */
 .topbar {
-  background: var(--bg);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
   padding: 0 24px;
   height: 56px;
@@ -81,8 +72,6 @@ body::before {
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(16px);
-  background: rgba(14, 14, 18, 0.85);
 }
 
 .brand {
@@ -92,32 +81,27 @@ body::before {
 }
 
 .brand svg {
-  width: 28px;
-  height: 28px;
-  filter: drop-shadow(0 0 8px rgba(220, 38, 38, 0.3));
+  width: 26px;
+  height: 26px;
 }
 
 .brand h1 {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, var(--chrome-bright) 0%, var(--chrome-dim) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--chrome-bright);
 }
 
 .brand .tag {
   font-size: 9px;
   font-weight: 600;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--crimson);
+  color: var(--crimson-glow);
   background: var(--crimson-bg);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--crimson-bg-hover);
 }
 
 .topbar-right {
@@ -184,7 +168,7 @@ body::before {
   border-radius: var(--radius-sm);
   background: var(--bg-elevated);
   color: var(--chrome);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -207,7 +191,6 @@ body::before {
 .btn-primary:hover {
   background: var(--crimson-glow);
   border-color: var(--crimson-glow);
-  box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
 }
 
 .btn svg {
@@ -254,7 +237,7 @@ body::before {
   border-radius: 4px;
   background: transparent;
   color: var(--chrome-muted);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -284,7 +267,7 @@ body::before {
 
 .search-box:focus-within {
   border-color: var(--crimson-dark);
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+  box-shadow: 0 0 0 2px rgba(229, 51, 43, 0.1);
 }
 
 .search-box svg {
@@ -299,7 +282,7 @@ body::before {
   border: none;
   outline: none;
   color: var(--chrome);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   padding: 7px 0;
   width: 200px;
@@ -368,7 +351,7 @@ tbody tr:hover td { background: var(--bg-elevated); }
 
 tr.selected td {
   background: var(--crimson-bg) !important;
-  border-bottom-color: rgba(220, 38, 38, 0.15);
+  border-bottom-color: rgba(229, 51, 43, 0.15);
 }
 
 tr.selected td:first-child {
@@ -414,13 +397,11 @@ tr.selected td:first-child {
 }
 
 .progress-fill.downloading {
-  background: linear-gradient(90deg, #16a34a, #22c55e);
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+  background: var(--green);
 }
 
 .progress-fill.seeding {
-  background: linear-gradient(90deg, #d97706, #f59e0b);
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+  background: var(--amber);
 }
 
 .progress-fill.paused {
@@ -428,7 +409,7 @@ tr.selected td:first-child {
 }
 
 .progress-fill.complete {
-  background: linear-gradient(90deg, #16a34a, #22c55e);
+  background: var(--green);
 }
 
 .progress-pct {
@@ -471,9 +452,6 @@ tr.selected td:first-child {
 
 .badge-checking { background: var(--blue-bg); color: var(--blue); }
 .badge-checking::before { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
-
-.badge-error { background: var(--crimson-bg); color: var(--crimson-glow); }
-.badge-error::before { background: var(--crimson-glow); box-shadow: 0 0 6px var(--crimson-glow); }
 
 /* ── Row Actions ── */
 .row-actions {
@@ -542,7 +520,7 @@ tr.selected .row-actions { opacity: 1; }
   border: none;
   background: none;
   color: var(--chrome-muted);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -697,7 +675,7 @@ tr.selected .row-actions { opacity: 1; }
 .modal input:focus {
   outline: none;
   border-color: var(--crimson-dark);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  box-shadow: 0 0 0 3px rgba(229, 51, 43, 0.1);
 }
 
 .modal input::placeholder { color: var(--chrome-muted); }
@@ -874,14 +852,12 @@ tr.selected .row-actions { opacity: 1; }
   <!-- Top Bar -->
   <header class="topbar">
     <div class="brand">
-      <svg viewBox="0 0 100 80" fill="none">
-        <path d="M50 72C50 72 8 50 2 20C2 20 18 35 35 28C35 28 42 22 50 8C58 22 65 28 65 28C82 35 98 20 98 20C92 50 50 72 50 72Z" fill="url(#batG)" stroke="url(#batS)" stroke-width="1.5"/>
-        <circle cx="50" cy="35" r="12" fill="none" stroke="url(#batS)" stroke-width="1.5"/>
-        <path d="M45 38C45 38 47 34 50 34C53 34 55 38 55 38" fill="none" stroke="url(#batS)" stroke-width="1"/>
-        <defs>
-          <linearGradient id="batG" x1="10" y1="10" x2="90" y2="70"><stop stop-color="#c8c8d0"/><stop offset="1" stop-color="#555568"/></linearGradient>
-          <linearGradient id="batS" x1="10" y1="10" x2="90" y2="70"><stop stop-color="#e8e8f0"/><stop offset="0.7" stop-color="#888"/><stop offset="1" stop-color="#dc2626"/></linearGradient>
-        </defs>
+      <!-- Real BATorrent logo (from src/images/logo.svg) — inlined because the WebUI server only serves / and /api -->
+      <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#E9E9E8" d="M538.537 172.298C664.779 188.363 759.287 293.88 742.198 423.784C734.863 479.539 707.18 525.394 668.451 565.101C650.374 583.787 629.569 604.252 613.322 624.2C574.423 671.424 545.56 726.083 528.497 784.838C521.123 810.471 516.378 836.708 514.066 863.255C513.616 868.431 512.363 877.957 512.498 882.893L511.498 882.977C511.627 876.689 510.771 868.185 510.168 861.839C507.609 835.434 502.677 809.312 495.431 783.792C479.504 727.629 452.421 675.252 415.801 629.788C385.628 592.402 347.846 560.946 320.014 521.882C300.016 493.815 287.288 458.143 282.392 424.21C274.164 367.065 289.165 309.006 324.044 262.999C362.966 211.053 418.716 181.898 482.267 172.802L481.603 173.925C461.232 180.122 448.23 184.205 429.764 194.352C309.464 260.459 292.068 430.182 421.943 498.427C439.331 507.564 451.987 512.123 470.779 517.383C457.444 486.212 450.765 456.914 454.173 422.612C454.617 418.143 456.442 407.396 457.908 403.247C460.184 421.457 463.685 434.427 475.872 448.056C507.285 483.188 556.318 459.786 563.655 417.429C564.712 411.326 564.974 406.556 565.171 400.511C572.759 428.935 571.532 460.603 563.225 488.761C560.243 498.873 556.389 508.149 552.36 517.883C615.516 501.141 670.624 461.1 687.723 395.01C699.394 349.898 690.019 301.639 665.831 262.163C636.392 214.115 592.182 186.363 538.242 172.686L538.537 172.298Z"/>
+        <path fill="#E9E9E8" d="M534.008 137.411C648.749 143.524 756.122 195.847 831.643 282.447C893.601 351.834 933.363 438.184 945.804 530.371C953.541 586.098 951.051 624.449 940.261 678.953C938.082 638.28 921.564 603.747 891.269 576.48C860.592 549.066 820.214 535.078 779.153 537.64C763.925 538.481 746.282 541.63 731.301 544.334C741.532 527.187 750.581 512.126 758.617 493.701C780.31 443.799 784.814 388.106 771.423 335.366C754.467 268.442 708.694 211.261 649.676 176.269C619.513 158.283 586.193 146.22 551.507 140.729C548.971 140.316 537.277 138.311 535.296 138.521L534.008 137.411Z"/>
+        <path fill="#E9E9E8" d="M82.9909 682.051C78.2625 660.041 75.0019 626.663 74.4772 603.623C72.0046 477.587 120.087 355.806 207.994 265.454C269.472 201.792 349.451 159.128 436.565 143.524C452.471 140.661 473.891 137.869 490.114 137.493L489.501 138.553C485.347 138.269 469.916 140.988 465.142 141.934C422.892 149.917 383.041 167.501 348.665 193.33C293.641 234.87 257.179 293.616 247.752 362.231C240.624 415.946 251.007 470.528 277.361 517.874C282.571 527.37 287.836 536.391 294.4 545.028C273.07 541.15 254.256 537.224 232.504 537.504C190.645 537.659 150.632 554.756 121.587 584.899C93.9304 613.43 82.393 642.632 82.9909 682.051Z"/>
+        <path fill="#E72134" d="M773.437 568.224C776.099 568.239 778.762 568.296 781.422 568.394C820.72 569.914 859.997 587.145 886.575 616.213C907.716 639.336 921.992 671.567 924.975 702.732C926.28 716.369 925.819 728.73 925.218 742.334C922.542 726.099 919.874 713.612 913.579 698.268C897.264 658.508 865.646 631.714 826.624 615.746C806.49 607.891 785.041 603.954 763.429 604.148C723.603 604.615 685.029 618.138 653.63 642.643C639.783 653.35 630.708 662.582 618.592 674.951C631.201 655.204 637.335 643.058 654.416 625.385C689.089 589.512 722.723 569.75 773.437 568.224Z"/>
       </svg>
       <h1>BATorrent</h1>
       <span class="tag">WebUI</span>
@@ -905,7 +881,7 @@ tr.selected .row-actions { opacity: 1; }
 
       <div class="actions">
         <button class="btn" onclick="showModal('magnetModal')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v6a3 3 0 0 1-3 3h0a3 3 0 0 1-3-3V7a1 1 0 0 1 1-1h0a1 1 0 0 1 1 1v6"/><path d="M15 7a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v6a3 3 0 0 1-3 3h0a3 3 0 0 1-3-3V7a1 1 0 0 1 1-1h0a1 1 0 0 1 1 1v6"/><path d="M9 12v5a5 5 0 0 0 5 5h0"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15a6 6 0 0 0 12 0v-6"/><path d="M2 9v6h4V9z"/><path d="M18 9v6h4V9z"/><line x1="6" y1="9" x2="6" y2="3"/><line x1="18" y1="9" x2="18" y2="3"/></svg>
           Magnet
         </button>
         <button class="btn btn-primary" onclick="showModal('uploadModal')">

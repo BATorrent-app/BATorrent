@@ -11,18 +11,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BAT-Torrent/total?style=flat-square&color=dc2626"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BATorrent/total?style=flat-square&color=dc2626"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml/badge.svg"></a>
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml/badge.svg"></a>
   <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
-  <a href="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent/badge"></a>
+  <a href="https://www.codefactor.io/repository/github/mateuscruz19/batorrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/batorrent/badge"></a>
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
@@ -45,7 +45,7 @@ BATorrent is a desktop BitTorrent client that prioritises clarity, performance, 
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
-> **Update notice:** versions 2.5.0 through 2.6.0 had a bug where the auto-updater silently failed. If you're on one of these versions, please [download the latest release manually](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest). The updater works correctly from v2.6.1 onward.
+> **Update notice:** versions 2.5.0 through 2.6.0 had a bug where the auto-updater silently failed. If you're on one of these versions, please [download the latest release manually](https://github.com/Mateuscruz19/BATorrent/releases/latest). The updater works correctly from v2.6.1 onward.
 
 ## Download
 
@@ -53,11 +53,13 @@ Pre-built binaries for the latest release:
 
 | Platform | Format | Notes |
 |---|---|---|
-| Windows | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [Installer (`.exe`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) · [Portable (`.zip`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | Windows 10+ (x86_64) |
-| macOS | [Disk image (`.dmg`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | macOS 12+ (Apple Silicon) |
-| Linux | [AppImage](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | Glibc 2.35+ (x86_64) |
+| Windows | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [Installer (`.exe`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) · [Portable (`.zip`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Windows 10+ (x86_64) |
+| macOS | **`brew install --cask Mateuscruz19/batorrent/batorrent`** (recommended) · [Disk image (`.dmg`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | macOS 12+ (Apple Silicon) |
+| Linux | [AppImage](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Glibc 2.35+ (x86_64) |
 
 All artefacts are produced by the [Build & Release](.github/workflows/build.yml) workflow on every tagged release.
+
+> **macOS — about the security prompt:** the build isn't notarised yet (Apple's Developer Program is a paid hurdle for a one-person project). **Homebrew is the smoothest path** — `brew` strips the quarantine flag on install, so the app just opens, no Gatekeeper dialog. If you grab the `.dmg` instead, right-click the app and choose **Open** the first time to get past the "unidentified developer" prompt. The Windows builds are headed for a free OpenSSF/SignPath signature as the project grows.
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
@@ -153,7 +155,7 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 
 ## Getting started
 
-1. Download the build for your platform from the [releases page](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest).
+1. Download the build for your platform from the [releases page](https://github.com/Mateuscruz19/BATorrent/releases/latest).
 2. On first launch the welcome dialog walks through the default save path, theme, and language.
 3. Drag a `.torrent` file or magnet link onto the window — or use **File → Open Torrent** / **File → Add Magnet**.
 4. Optional: bind the outgoing interface in **Settings → VPN** and enable the kill switch before adding sensitive torrents.

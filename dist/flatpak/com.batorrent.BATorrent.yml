@@ -48,7 +48,7 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: archive
-        url: https://github.com/Mateuscruz19/BAT-Torrent/archive/refs/tags/v3.0.0.tar.gz
+        url: https://github.com/Mateuscruz19/BATorrent/archive/refs/tags/v3.0.0.tar.gz
         # TODO: fill in once the v3.0.0 tag exists:
         #   curl -sL <url> | sha256sum
         sha256: 0000000000000000000000000000000000000000000000000000000000000000

@@ -26,6 +26,14 @@
 <file>icons/chevron.svg</file>
 <file>icons/heart.svg</file>
 <file>icons/close.svg</file>
+<file>icons/flags/en.svg</file>
+<file>icons/flags/pt.svg</file>
+<file>icons/flags/zh.svg</file>
+<file>icons/flags/ja.svg</file>
+<file>icons/flags/ru.svg</file>
+<file>icons/flags/es.svg</file>
+<file>icons/flags/de.svg</file>
+<file>icons/flags/uk.svg</file>
 <file>icons/set-general.svg</file>
 <file>icons/set-speed.svg</file>
 <file>icons/set-network.svg</file>
@@ -90,5 +98,6 @@
 <file>../translations/ru.json</file>
 <file>../translations/es.json</file>
 <file>../translations/de.json</file>
+<file>../translations/uk.json</file>
 </qresource>
 </RCC>

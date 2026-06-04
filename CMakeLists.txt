@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 3.0.1)
+project(BATorrent VERSION 3.0.2)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia Quick QuickWidgets QuickControls2)
 find_package(LibtorrentRasterbar REQUIRED)
 # Optional: QtKeychain stores credentials in the platform keyring (DPAPI on
@@ -31,41 +31,14 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/notifier.cpp
     src/app/qrcodegen.cpp
     src/app/discordrpc.cpp
-    src/gui/mainwindow.cpp
-    src/gui/torrentmodel.cpp
-    src/gui/torrentfilter.cpp
-    src/gui/progressdelegate.cpp
-    src/gui/detailspanel.cpp
-    src/gui/piecemapwidget.cpp
-    src/gui/settingsdialog.cpp
-    src/gui/welcomedialog.cpp
-    src/gui/createtorrentdialog.cpp
-    src/gui/addtorrentdialog.cpp
     src/app/secretstore.cpp
-    src/gui/speedgraph.cpp
-    src/gui/batwidget.cpp
-    src/gui/toast.cpp
     src/app/updater.cpp
     src/app/addonmanager.cpp
-    src/gui/addondialog.cpp
-    src/gui/searchdialog.cpp
-    src/gui/rssdialog.cpp
     src/app/rssmanager.cpp
     src/app/geoip.cpp
-    src/gui/thememanager.cpp
-    src/gui/releasenotesdialog.cpp
-    src/gui/statisticsdialog.cpp
-    src/gui/traypopup.cpp
-    src/gui/shortcutsdialog.cpp
-    src/gui/logviewerdialog.cpp
-    src/gui/diagnosticsdialog.cpp
-    src/gui/pairingdialog.cpp
-    src/gui/removedhistorydialog.cpp
-    src/gui/torrentinspectordialog.cpp
-    src/gui/posterview.cpp
-    src/gui/qmlposterbridge.cpp
     src/app/nameparser.cpp
     src/app/metadataresolver.cpp
+    src/gui/qmlposterbridge.cpp
     src/webui/webserver.cpp
     ${RESOURCES}
     ${WIN_RC}

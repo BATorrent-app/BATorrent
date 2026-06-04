@@ -1,5 +1,32 @@
 # Changelog
 
+## v3.0.2
+
+### Phone pairing & WebUI
+- The browser WebUI was **reskinned to match the desktop app** — same dark palette, Inter font, flat surfaces, the real BATorrent logo (it was a random bat before), and a proper magnet icon. It now looks like the same product, not a separate dashboard.
+- **Pairing is one tap and zero typing**: the generated WebUI password is now copyable, and the QR code carries the credentials — scanning it from your phone logs straight in (no typing the IP or password), then drops the credentials from the address bar.
+
+### Search
+- Two new providers: **RuTor** (CIS sources, no login, via a public TorAPI relay) and **Torrents-CSV**.
+- Results are **sorted by seeders** (healthiest first), and each search now times out after 15 s so one dead provider can't hang the UI.
+
+### Files & trackers
+- **Per-file priority** is back: right-click a file in the detail panel to set Skip / Low / Normal / High.
+- **Rename an individual file** inside a torrent (double-click or the file menu), separate from renaming the torrent.
+- **Remove a tracker** from a torrent (the ✕ on a tracker row); adding was already there.
+- **Smart Paste on Ctrl+V** — paste a magnet, a 40-char info-hash, or a `.torrent` URL straight from the clipboard and it's added immediately (text fields still paste text normally).
+
+### Covers & titles
+- Anime fansub naming (`[Group] Title - NN`) now resolves to the right show.
+- Audio channel layouts in titles (`DDP5.1`, `7.1`, …) are stripped so they don't pollute cover matching.
+
+### Under the hood
+- **The legacy QWidget interface is gone.** QML had been the only UI since 3.0.0 (reachable old code lived behind a hidden `--legacy` flag); with parity confirmed, the entire QWidget layer — main window, every dialog, the theme manager — was removed (~13,400 lines). The four restored actions above were features that backend already supported but the QML port had never wired.
+- **macOS:** the WebUI password *hash* moved out of the keychain into app settings, so launching the app no longer pops a login-keychain password prompt on unsigned builds. The actual password still lives in the keychain.
+- Cleanup: ~400 orphaned translation strings and a batch of dead code removed; internal duplication collapsed; an `ARCHITECTURE.md` added for contributors. Unit / security / memory tests and the ASan/UBSan/TSan sanitizers stay green.
+
+---
+
 ## v3.0.1
 
 ### Windows / Linux

@@ -25,7 +25,6 @@
 #include <QDateTime>
 
 #include <QNetworkInterface>
-#include "thememanager.h"
 
 #include <QClipboard>
 #include <QDesktopServices>
@@ -399,14 +398,6 @@ QVariantList QmlSessionBridge::uploadHistory() const
     return out;
 }
 
-int QmlSessionBridge::historyMaxBytes() const
-{
-    int m = 1024;
-    for (int v : m_downloadHistory) if (v > m) m = v;
-    for (int v : m_uploadHistory) if (v > m) m = v;
-    return m;
-}
-
 int QmlSessionBridge::torrentCount() const { return m_session->torrentCount(); }
 
 int QmlSessionBridge::activeCount() const      { return m_activeCount; }
@@ -420,14 +411,6 @@ QString QmlSessionBridge::totalUpSpeed() const   { return formatSpeed(m_totalUpR
 QString QmlSessionBridge::totalDownloaded() const { return formatSize(m_session->globalDownloaded()); }
 QString QmlSessionBridge::totalUploaded() const { return formatSize(m_session->globalUploaded()); }
 QString QmlSessionBridge::globalRatio() const { return QString::number(m_session->globalRatio(), 'f', 2); }
-
-void QmlSessionBridge::setSelectedIndex(int index)
-{
-    m_selectedRows.clear();
-    if (index >= 0) m_selectedRows << index;
-    m_selectedIndex = index;
-    emit selectionChanged(); emit selectionListsChanged();
-}
 
 void QmlSessionBridge::setSelectedRows(const QList<int> &rows)
 {
@@ -532,23 +515,9 @@ bool QmlSessionBridge::selectedCompleted() const
     return hasSelection() && m_session->torrentAt(m_selectedIndex).completed;
 }
 
-bool QmlSessionBridge::selectedAtFullProgress() const
-{
-    return hasSelection() && m_session->torrentAt(m_selectedIndex).progress >= 1.0f;
-}
-
 bool QmlSessionBridge::selectedPaused() const
 {
     return hasSelection() && m_session->torrentAt(m_selectedIndex).paused;
-}
-
-void QmlSessionBridge::toggleSelectedPause()
-{
-    if (!hasSelection()) return;
-    if (m_session->torrentAt(m_selectedIndex).paused)
-        m_session->resumeTorrent(m_selectedIndex);
-    else
-        m_session->pauseTorrent(m_selectedIndex);
 }
 
 void QmlSessionBridge::smartPaste()
@@ -1106,7 +1075,6 @@ QStringList QmlSessionBridge::selectedTagList() const
 }
 
 QStringList QmlSessionBridge::categories() const { return m_session->categories(); }
-QStringList QmlSessionBridge::allTags() const { return m_session->allTags(); }
 
 QVariantList QmlSessionBridge::selectedPeerList() const
 {
@@ -1288,12 +1256,6 @@ QString QmlSessionBridge::selectedName() const
     return m_session->torrentAt(m_selectedIndex).name;
 }
 
-QString QmlSessionBridge::selectedSavePath() const
-{
-    if (!hasSelection()) return {};
-    return m_session->torrentAt(m_selectedIndex).savePath;
-}
-
 QString QmlSessionBridge::selectedSize() const
 {
     if (!hasSelection()) return {};
@@ -1314,20 +1276,6 @@ QString QmlSessionBridge::selectedDownloaded() const
     auto info = m_session->torrentAt(m_selectedIndex);
     return QString("%1 (%2%)").arg(formatSize(info.totalDone))
                               .arg(info.progress * 100.0, 0, 'f', 1);
-}
-
-QString QmlSessionBridge::selectedUploaded() const
-{
-    if (!hasSelection()) return {};
-    auto info = m_session->torrentAt(m_selectedIndex);
-    return formatSize(static_cast<qint64>(info.totalDone * info.ratio));
-}
-
-QString QmlSessionBridge::selectedSpeed() const
-{
-    if (!hasSelection()) return {};
-    auto info = m_session->torrentAt(m_selectedIndex);
-    return QString("↓ %1   ↑ %2").arg(formatSpeed(info.downloadRate), formatSpeed(info.uploadRate));
 }
 
 QString QmlSessionBridge::selectedDownSpeed() const
@@ -2173,16 +2121,26 @@ void QmlPairingBridge::copyUrl()
     if (!m_url.isEmpty()) QGuiApplication::clipboard()->setText(m_url);
 }
 
+void QmlPairingBridge::copyText(const QString &t)
+{
+    if (!t.isEmpty()) QGuiApplication::clipboard()->setText(t);
+}
+
 void QmlPairingBridge::openBrowser()
 {
     if (!m_url.isEmpty()) QDesktopServices::openUrl(QUrl(m_url));
 }
 
-QStringList QmlPairingBridge::qrRows() const
+QStringList QmlPairingBridge::qrRows() const { return qrRowsForUrl(m_url); }
+
+// QR matrix for an arbitrary URL — lets the dialog encode the URL *with* the
+// pairing credentials so the phone signs in by scanning, while the on-screen
+// URL stays clean (no password shown).
+QStringList QmlPairingBridge::qrRowsForUrl(const QString &url) const
 {
     QStringList rows;
-    if (m_url.isEmpty()) return rows;
-    const qrgen::Matrix m = qrgen::encode(m_url);
+    if (url.isEmpty()) return rows;
+    const qrgen::Matrix m = qrgen::encode(url);
     if (m.size == 0) return rows;
     for (int y = 0; y < m.size; ++y) {
         QString s;
@@ -2286,7 +2244,7 @@ void QmlSettingsBridge::applyWebUi()
     if (!st.value("webUiEnabled", false).toBool()) return;
     m_webServer = new WebServer(m_session, this);
     const QString user = st.value("webUiUser", "admin").toString();
-    const QString passHash = SecretStore::instance().get("webUiPasswordHash");
+    const QString passHash = st.value("webUiPasswordHash").toString();   // hash, not a secret → QSettings (no keychain prompt at boot)
     const bool hasAuth = !user.isEmpty() && !passHash.isEmpty();
     if (hasAuth)
         m_webServer->setCredentials(user, passHash);
@@ -2310,10 +2268,11 @@ QString QmlSettingsBridge::enablePairing()
     st.setValue("webUiRemoteAccess", true);
     if (st.value("webUiUser").toString().isEmpty())
         st.setValue("webUiUser", QStringLiteral("admin"));
-    // Plaintext in the encrypted store so the pairing screen can re-display it;
-    // the server only ever sees the hash.
+    // Plaintext → keychain (the pairing screen re-displays it). Hash → QSettings
+    // (the server only ever needs the hash; keeping it out of the keychain avoids
+    // a login-keychain prompt on every cold start of the unsigned macOS build).
     SecretStore::instance().set("webUiPassword", pw);
-    SecretStore::instance().set("webUiPasswordHash",
+    st.setValue("webUiPasswordHash",
         QString::fromLatin1(QCryptographicHash::hash(pw.toUtf8(), QCryptographicHash::Sha256).toHex()));
     applyWebUi();
     emit changed();
@@ -2332,7 +2291,7 @@ bool QmlSettingsBridge::pairingActive() const
     QSettings st;
     return st.value("webUiEnabled", false).toBool()
         && st.value("webUiRemoteAccess", false).toBool()
-        && !SecretStore::instance().get("webUiPasswordHash").isEmpty();
+        && !st.value("webUiPasswordHash").toString().isEmpty();
 }
 
 QString QmlSettingsBridge::webUiUser() const
@@ -2475,9 +2434,10 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     if (key.startsWith(QStringLiteral("webUi"))) {
         if (key == "webUiPassword") {
             const QString p = v.toString();
-            // empty → clear the stored credential (lets the user remove/rotate it)
-            SecretStore::instance().set("webUiPasswordHash", p.isEmpty() ? QString()
-                : QString::fromLatin1(QCryptographicHash::hash(p.toUtf8(), QCryptographicHash::Sha256).toHex()));
+            // hash lives in QSettings (no keychain prompt at boot); empty clears it
+            if (p.isEmpty()) QSettings().remove("webUiPasswordHash");
+            else QSettings().setValue("webUiPasswordHash",
+                QString::fromLatin1(QCryptographicHash::hash(p.toUtf8(), QCryptographicHash::Sha256).toHex()));
         } else if (key == "webUiEnabled")      { QSettings().setValue("webUiEnabled", v.toBool()); }
         else if (key == "webUiPort")           { QSettings().setValue("webUiPort", v.toInt()); }
         else if (key == "webUiRemoteAccess")   { QSettings().setValue("webUiRemoteAccess", v.toBool()); }

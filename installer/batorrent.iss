@@ -3,7 +3,7 @@
 
 ; Version is injected by CI via ISCC /DMyAppVersion=x.y.z; fallback for local builds.
 #ifndef MyAppVersion
-  #define MyAppVersion "3.0.1"
+  #define MyAppVersion "3.0.2"
 #endif
 
 [Setup]
@@ -11,9 +11,9 @@ AppName=BATorrent
 AppVersion={#MyAppVersion}
 AppVerName=BATorrent {#MyAppVersion}
 AppPublisher=Mateuscruz19
-AppPublisherURL=https://github.com/Mateuscruz19/BAT-Torrent
-AppSupportURL=https://github.com/Mateuscruz19/BAT-Torrent/issues
-AppUpdatesURL=https://github.com/Mateuscruz19/BAT-Torrent/releases
+AppPublisherURL=https://github.com/Mateuscruz19/BATorrent
+AppSupportURL=https://github.com/Mateuscruz19/BATorrent/issues
+AppUpdatesURL=https://github.com/Mateuscruz19/BATorrent/releases
 DefaultDirName={autopf}\BATorrent
 DefaultGroupName=BATorrent
 OutputDir=..\output

@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Update available / download dialog, driven by the `updater` bridge.
 // Only reachable in non-Store builds (the bridge is null otherwise).
 import QtQuick

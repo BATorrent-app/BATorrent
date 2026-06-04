@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: BATorrent Add Torrent.html + bat-dialog.css
 // Data-driven: populated from session.previewTorrent(path). OK → addTorrentWithPrefs.
 import QtQuick

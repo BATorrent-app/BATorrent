@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: bat-dialog.css  (tokens em Theme.qml)
 // Overlay reutilizável: backdrop full-fill + card centralizado (titlebar + body slot + footer).
 // Instanciado dentro da Main (não é Window) para o backdrop cobrir o app inteiro (inset:0).

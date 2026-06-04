@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: BATorrent About.html + bat-dialog.css + <style> inline
 import QtQuick
 import QtQuick.Layouts
@@ -70,14 +74,6 @@ BatDialog {
             anchors.rightMargin: 13
             spacing: 11
 
-            Rectangle {
-                Layout.preferredWidth: 30
-                Layout.preferredHeight: 30
-                Layout.alignment: Qt.AlignTop
-                radius: 8
-                color: Theme.field
-                Text { anchors.centerIn: parent; text: "🛡"; font.pixelSize: 14 }
-            }
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
@@ -118,6 +114,30 @@ BatDialog {
                 }
                 Rectangle { visible: index < libsRep.count - 1; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
             }
+        }
+    }
+
+    // translation credits — community contributors
+    Text {
+        text: (i18n.language, i18n.t("about_translations"))
+        color: Theme.t4
+        font.pixelSize: 10
+        font.weight: Font.Bold
+        font.letterSpacing: 0.8
+        font.family: Theme.fontSans
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.topMargin: 8
+        Layout.bottomMargin: 8
+        Text { text: "🇺🇦 Українська"; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
+        Item { Layout.fillWidth: true }
+        Text {
+            text: "<a href=\"https://github.com/dkindratyuk-web\">dkindratyuk-web</a>"
+            textFormat: Text.RichText
+            linkColor: Theme.accentText
+            color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono
+            onLinkActivated: function(link) { Qt.openUrlExternally(link) }
         }
     }
 

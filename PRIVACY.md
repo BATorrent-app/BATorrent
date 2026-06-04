@@ -42,8 +42,8 @@ All data is stored on your machine only:
 
 ## Open source
 
-BATorrent is open source under the MIT license. The full source code is available at [github.com/Mateuscruz19/BAT-Torrent](https://github.com/Mateuscruz19/BAT-Torrent) for audit.
+BATorrent is open source under the MIT license. The full source code is available at [github.com/Mateuscruz19/BATorrent](https://github.com/Mateuscruz19/BATorrent) for audit.
 
 ## Contact
 
-For privacy questions: [GitHub Issues](https://github.com/Mateuscruz19/BAT-Torrent/issues) or Discord ([Mateus Cruz](https://discord.com/users/241995362057977856)).
+For privacy questions: [GitHub Issues](https://github.com/Mateuscruz19/BATorrent/issues) or Discord ([Mateus Cruz](https://discord.com/users/241995362057977856)).

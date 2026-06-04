@@ -39,7 +39,7 @@ jobs:
       - name: Build tests
         run: |
           cmake -B build-tests -DBAT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build-tests -j$(nproc) --target test_unit test_security test_memory test_nameparser
+          cmake --build build-tests -j$(nproc) --target test_unit test_security test_memory test_nameparser test_bridge
       - name: Run tests
         env:
           LC_ALL: C        # deterministic locale for the formatSize/formatSpeed checks
@@ -51,13 +51,15 @@ jobs:
           # so we gate on the reported result, not the post-run exit code. A
           # real test failure prints the failure summary (no "All tests passed").
           fail=0
-          for t in test_unit test_security test_memory test_nameparser; do
+          for t in test_unit test_security test_memory test_nameparser test_bridge; do
             echo "=== $t ==="
             out=$(./build-tests/tests/$t 2>&1) || true
             echo "$out"
             echo "$out" | grep -q "All tests passed" || { echo "::error::$t did not pass"; fail=1; }
           done
           exit $fail
+      - name: WebUI JS tests
+        run: node --test tests/webui/test_webui.mjs
 
   build-linux:
     runs-on: ubuntu-22.04

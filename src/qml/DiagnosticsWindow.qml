@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Network diagnostics snapshot. session.diagnostics() (QmlSessionBridge).
 import QtQuick
 import QtQuick.Layouts

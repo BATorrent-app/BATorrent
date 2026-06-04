@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // In-app toast stack — QML port of the legacy gui/toast.cpp widget.
 // Cards slide up from the bottom-right of the content area, auto-dismiss after
 // 5s (paused on hover), fade in/out, and are clickable. Kind tints the eyebrow.

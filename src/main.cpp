@@ -10,7 +10,6 @@
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QWindow>
-#include <QStyleFactory>
 #include <QSettings>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -32,8 +31,6 @@
 #include "app/secretstore.h"
 #include "app/logger.h"
 #include "app/utils.h"
-#include "gui/mainwindow.h"
-#include "gui/thememanager.h"
 
 // Serves the app logo recolored for the OS scheme to QML (the system tray
 // icon.source wants a URL, not a QIcon). URL id is "light"/"dark"; the body
@@ -131,26 +128,28 @@ int main(int argc, char *argv[])
     // rate would otherwise translate to ~10 QSettings opens/sec).
     setSpeedUnit(QSettings("BATorrent", "BATorrent").value("speedUnit", 0).toInt());
 
-    // Force the Fusion style application-wide. Native Windows styles
-    // (WindowsVista / Windows11) ignore certain QPalette colors and overrule
-    // stylesheet background-color on some user configurations — high-
-    // contrast accessibility mode is the most common cause but it can also
-    // happen with certain shell themes. Fusion paints purely from
-    // QPalette + stylesheet, so the theme renders identically on every
-    // Windows config and the previous "white/gray Settings dialog" reports
-    // can't recur.
-    if (QStyle *fusion = QStyleFactory::create("Fusion"))
-        app.setStyle(fusion);
-
-    // Initial popup QSS (QMessageBox / QInputDialog / QToolTip). Re-applied
-    // by MainWindow::applyTheme on every theme change so popups stay in sync.
-    app.setStyleSheet(ThemeManager::instance().appPopupStyleSheet());
-
     // One-time migration of plaintext secrets from QSettings into the OS
     // keyring (no-op on subsequent runs and on builds without QtKeychain).
     SecretStore::instance().migrateFromSettings({
-        "proxyPass", "plexToken", "jellyfinApiKey", "webUiPasswordHash"
+        "proxyPass", "plexToken", "jellyfinApiKey"
     });
+
+    // webUiPasswordHash used to live in the keychain, but on unsigned macOS
+    // builds reading it at every cold start pops a login-keychain prompt. It's
+    // only a SHA-256 hash (not a usable credential), so it now lives in
+    // QSettings; pull any existing one back out of the keychain (one-time — the
+    // plaintext webUiPassword stays in the keychain). Reading a missing item
+    // doesn't prompt, so users who never enabled the WebUI see nothing.
+    {
+        QSettings st;
+        if (!st.contains("webUiPasswordHash")) {
+            const QString h = SecretStore::instance().get("webUiPasswordHash");
+            if (!h.isEmpty()) {
+                st.setValue("webUiPasswordHash", h);
+                SecretStore::instance().set("webUiPasswordHash", QString());
+            }
+        }
+    }
 
     // Single-instance check: if another instance is running, forward args and quit
     QString argsPayload = collectArgs(app.arguments());
@@ -171,10 +170,8 @@ int main(int argc, char *argv[])
     // platform so Windows matches macOS. Native Windows rendering was crisper
     // but rendered the Inter weights noticeably thinner than the Mac reference.
 
-    // QML is the default UI. The old QWidget UI stays reachable via --legacy
-    // as a safety net during the migration.
-    if (!app.arguments().contains("--legacy")) {
-        QQuickStyle::setStyle("Basic");
+    QQuickStyle::setStyle("Basic");
+    {
 
         SessionManager session;
 
@@ -311,6 +308,7 @@ int main(int argc, char *argv[])
                 else if (sys.startsWith("ru")) lang = 4;
                 else if (sys.startsWith("es")) lang = 5;
                 else if (sys.startsWith("de")) lang = 6;
+                else if (sys.startsWith("uk")) lang = 7;
                 else                           lang = 0;
             }
             Translator::instance().setLanguage(static_cast<Translator::Language>(lang));
@@ -398,43 +396,4 @@ int main(int argc, char *argv[])
 
         return app.exec();
     }
-
-    SessionManager session;
-    MainWindow window(&session);
-    window.show();
-
-    // Start local server to receive args from new instances
-    QLocalServer::removeServer(kServerName); // clean up stale socket
-    QLocalServer server;
-    server.listen(kServerName);
-    QObject::connect(&server, &QLocalServer::newConnection, [&]() {
-        QLocalSocket *client = server.nextPendingConnection();
-        // Always bring window to front when another instance tries to open
-        window.showNormal();
-        window.raise();
-        window.activateWindow();
-        QObject::connect(client, &QLocalSocket::readyRead, [&window, client]() {
-            QString data = QString::fromUtf8(client->readAll());
-            const QStringList lines = data.split('\n', Qt::SkipEmptyParts);
-            for (const QString &line : lines) {
-                if (line.endsWith(".torrent"))
-                    window.addTorrentFromCli(line);
-                else if (line.startsWith("magnet:"))
-                    window.addMagnetFromCli(line);
-            }
-            client->deleteLater();
-        });
-    });
-
-    // Handle CLI arguments for the first instance
-    const QStringList args = app.arguments();
-    for (int i = 1; i < args.size(); ++i) {
-        const QString &arg = args[i];
-        if (arg.endsWith(".torrent"))
-            window.addTorrentFromCli(arg);
-        else if (arg.startsWith("magnet:"))
-            window.addMagnetFromCli(arg);
-    }
-
-    return app.exec();
 }

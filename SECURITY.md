@@ -11,7 +11,7 @@ Please report security vulnerabilities **privately**, not in a public issue:
 
 - Preferred: open a private advisory via GitHub →
   **Security → Report a vulnerability**
-  (https://github.com/Mateuscruz19/BAT-Torrent/security/advisories/new)
+  (https://github.com/Mateuscruz19/BATorrent/security/advisories/new)
 - Or email **mateuscruz2077@gmail.com** with the details.
 
 Include the affected version, the platform, reproduction steps, and the impact.

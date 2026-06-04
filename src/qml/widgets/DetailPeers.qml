@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Peers pane for the detail panel. Data: session.selectedPeerList
 // rows: { ip, port, client, downSpeed, upSpeed, progress }
 import QtQuick

@@ -146,7 +146,10 @@ void WebServer::dispatch(QTcpSocket *socket, const QByteArray &requestData)
         return;
     }
     const QByteArray method = requestLine.left(sp1);
-    const QByteArray path   = requestLine.mid(sp1 + 1, sp2 - sp1 - 1);
+    QByteArray path = requestLine.mid(sp1 + 1, sp2 - sp1 - 1);
+    QByteArray query;
+    const int qmark = path.indexOf('?');
+    if (qmark >= 0) { query = path.mid(qmark + 1); path.truncate(qmark); }   // route on the bare path
 
     // Split headers from body so auth/cookie parsing can never accidentally
     // read attacker-supplied bytes that live in the request body.
@@ -157,6 +160,31 @@ void WebServer::dispatch(QTcpSocket *socket, const QByteArray &requestData)
                                            : QByteArray();
 
     const QString clientIp = socket->peerAddress().toString();
+
+    // QR pairing: a scanned URL of the form  /?pair=base64(user:pass)  signs the
+    // device in once (issues a session cookie) and 302-redirects to a clean "/",
+    // so the phone never types the password and it isn't left in the address bar.
+    if (!m_user.isEmpty() && method == "GET" && query.contains("pair=")) {
+        QByteArray pairVal;
+        for (const QByteArray &kv : query.split('&'))
+            if (kv.startsWith("pair=")) { pairVal = kv.mid(5); break; }
+        const QByteArray decoded = QByteArray::fromBase64(QByteArray::fromPercentEncoding(pairVal));
+        const int colon = decoded.indexOf(':');
+        if (colon > 0) {
+            const QByteArray u = decoded.left(colon);
+            const QByteArray pHash = QCryptographicHash::hash(decoded.mid(colon + 1),
+                                        QCryptographicHash::Sha256).toHex();
+            if (constantTimeEquals(u, m_user.toUtf8())
+                && constantTimeEquals(pHash, m_passwordHash.toUtf8())) {
+                const QByteArray token = issueSessionCookie();
+                const QByteArray extra = "Location: /\r\nSet-Cookie: BATSID=" + token
+                    + "; HttpOnly; SameSite=Strict; Path=/\r\n";
+                sendResponse(socket, 302, "Found", QByteArray(), "text/plain", extra);
+                return;
+            }
+        }
+        // invalid/forged pair token → fall through to the normal auth gate
+    }
 
     // Login endpoint sits before the auth gate so unauthenticated clients
     // can post their credentials.
@@ -253,11 +281,6 @@ void WebServer::dispatch(QTcpSocket *socket, const QByteArray &requestData)
         QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
         segment.chop(QByteArray("/files").length());
         sendJson(socket, 200, handleGetTorrentFiles(QString::fromUtf8(segment)));
-    }
-    else if (method == "GET" && path.contains("/trackers")) {
-        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
-        segment.chop(QByteArray("/trackers").length());
-        sendJson(socket, 200, handleGetTorrentTrackers(QString::fromUtf8(segment)));
     }
     else {
         sendError(socket, 404, "Not Found");
@@ -515,22 +538,6 @@ QByteArray WebServer::handleGetTorrentFiles(const QString &hash)
     return QJsonDocument(arr).toJson(QJsonDocument::Compact);
 }
 
-QByteArray WebServer::handleGetTorrentTrackers(const QString &hash)
-{
-    int idx = findTorrentByHash(hash);
-    if (idx < 0) return "[]";
-
-    auto trackers = m_session->trackersAt(idx);
-    QJsonArray arr;
-    for (const auto &t : trackers) {
-        QJsonObject obj;
-        obj["url"] = t.url;
-        obj["tier"] = t.tier;
-        obj["status"] = t.status;
-        arr.append(obj);
-    }
-    return QJsonDocument(arr).toJson(QJsonDocument::Compact);
-}
 
 QByteArray WebServer::handleGetStatus()
 {

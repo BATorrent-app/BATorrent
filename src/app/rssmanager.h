@@ -55,7 +55,6 @@ public:
     // Items
     QList<RssItem> itemsForFeed(int index) const;
     void downloadItem(int feedIndex, int itemIndex);
-    void markDownloaded(const QString &feedUrl, const QString &link);
 
     // Persistence
     void loadFeeds();

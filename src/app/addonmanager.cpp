@@ -13,6 +13,24 @@
 #include <QSettings>
 #include <QUrl>
 
+namespace {
+// Public trackers appended to magnets built from a bare info_hash so freshly
+// added results can find peers before any tracker/DHT bootstrap.
+QString magnetTrackerParams()
+{
+    static const QStringList trackers = {
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://open.stealth.si:80/announce",
+        "udp://tracker.openbittorrent.com:6969/announce",
+        "udp://exodus.desync.com:6969/announce",
+    };
+    QString params;
+    for (const auto &t : trackers)
+        params += "&tr=" + QUrl::toPercentEncoding(t);
+    return params;
+}
+}
+
 AddonManager &AddonManager::instance()
 {
     static AddonManager mgr;
@@ -464,16 +482,7 @@ void AddonManager::searchTorrents(const QString &query, int category)
             return;
         }
 
-        // Default public trackers for magnet links
-        QStringList defaultTrackers = {
-            "udp://tracker.opentrackr.org:1337/announce",
-            "udp://open.stealth.si:80/announce",
-            "udp://tracker.openbittorrent.com:6969/announce",
-            "udp://exodus.desync.com:6969/announce",
-        };
-        QString trackerParams;
-        for (const auto &t : defaultTrackers)
-            trackerParams += "&tr=" + QUrl::toPercentEncoding(t);
+        const QString trackerParams = magnetTrackerParams();
 
         QList<TorrentSearchResult> results;
         QJsonArray arr = doc.array();
@@ -672,14 +681,7 @@ QList<TorrentSearchResult> AddonManager::parseProviderResponse(
         if (v.isArray()) arr = v.toArray();
     }
 
-    QStringList defaultTrackers = {
-        "udp://tracker.opentrackr.org:1337/announce",
-        "udp://open.stealth.si:80/announce",
-        "udp://tracker.openbittorrent.com:6969/announce",
-    };
-    QString trackerParams;
-    for (const auto &t : defaultTrackers)
-        trackerParams += "&tr=" + QUrl::toPercentEncoding(t);
+    const QString trackerParams = magnetTrackerParams();
 
     QList<TorrentSearchResult> results;
     for (const auto &val : arr) {

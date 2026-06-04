@@ -28,11 +28,16 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/app/rssmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/app/addonmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/app/updater.cpp
-    ${CMAKE_SOURCE_DIR}/src/gui/torrentmodel.cpp
-    ${CMAKE_SOURCE_DIR}/src/gui/torrentfilter.cpp
-    ${CMAKE_SOURCE_DIR}/src/gui/thememanager.cpp
     ${CMAKE_SOURCE_DIR}/src/app/logger.cpp
     ${CMAKE_SOURCE_DIR}/src/app/nameparser.cpp
+    # C++<->QML bridge layer + its backend deps (for test_bridge)
+    ${CMAKE_SOURCE_DIR}/src/gui/qmlposterbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/metadataresolver.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/qrcodegen.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/geoip.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/discordrpc.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/notifier.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/secretstore.cpp
 )
 
 set(COMMON_LIBS
@@ -40,6 +45,9 @@ set(COMMON_LIBS
     LibtorrentRasterbar::torrent-rasterbar
     Catch2::Catch2WithMain
 )
+if(WIN32)
+    list(APPEND COMMON_LIBS shell32 ole32)   # shell ops pulled in via the bridge deps
+endif()
 
 set(COMMON_DEFS APP_VERSION="test")
 if(WIN32)
@@ -144,12 +152,13 @@ bat_add_test(test_security   test_security.cpp)
 bat_add_test(test_memory     test_memory.cpp)
 bat_add_test(test_unit       test_unit.cpp)
 bat_add_test(test_nameparser test_nameparser.cpp)
+bat_add_test(test_bridge     test_bridge.cpp)
 
 # =============================================================================
 #  Convenience: run all analysis tools
 # =============================================================================
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
-    DEPENDS test_security test_memory test_unit
+    DEPENDS test_security test_memory test_unit test_nameparser test_bridge
     COMMENT "Running all BATorrent tests..."
 )

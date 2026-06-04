@@ -343,11 +343,6 @@ void RssManager::downloadItem(int feedIndex, int itemIndex)
     saveFeeds();
 }
 
-void RssManager::markDownloaded(const QString &, const QString &link)
-{
-    m_downloadedLinks.insert(link);
-}
-
 // --- Persistence ---
 
 void RssManager::loadFeeds()

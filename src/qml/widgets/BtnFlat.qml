@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: bat-dialog.css .btn — flat/cancel button.
 // height 32 (sm:28); padding 0 14 (sm: 0 11); radius 7; font 12/500 (sm: 11.5); bg field; border hair; color t2.
 // :hover → border rgba dark/light boost + color t1.

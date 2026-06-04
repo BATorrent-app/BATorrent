@@ -541,7 +541,6 @@ Matrix encode(const QString &text)
     // Apply all 8 masks, score each, keep the best.
     Grid best = g;
     int bestScore = INT32_MAX;
-    int bestMask = 0;
     for (int m = 0; m < 8; ++m) {
         Grid candidate = g;
         applyMask(candidate, m);
@@ -549,11 +548,9 @@ Matrix encode(const QString &text)
         const int s = penaltyScore(candidate);
         if (s < bestScore) {
             bestScore = s;
-            bestMask = m;
             best = std::move(candidate);
         }
     }
-    (void)bestMask;
 
     Matrix out;
     out.size = best.size;

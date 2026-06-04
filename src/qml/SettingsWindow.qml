@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: BATorrent Settings.html + batorrent-settings.css (+ settings-data.js)
 import QtQuick
 import QtQuick.Layouts
@@ -69,7 +73,7 @@ Window {
             { type: "toggle", key: "autoMoveEnabled", label: (i18n.language, i18n.t("settings_automove")) },
             { type: "path", key: "autoMovePath", label: (i18n.language, i18n.t("set_move_to2")), placeholder: (i18n.language, i18n.t("set_move_to_ph")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
-            { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch"], value: 0 },
+            { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch", "Українська"], icons: ["qrc:/icons/flags/en.svg", "qrc:/icons/flags/pt.svg", "qrc:/icons/flags/zh.svg", "qrc:/icons/flags/ja.svg", "qrc:/icons/flags/ru.svg", "qrc:/icons/flags/es.svg", "qrc:/icons/flags/de.svg", "qrc:/icons/flags/uk.svg"], value: 0 },
             { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
             { type: "anime", label: (i18n.language, i18n.t("set_anime2")) },
             { type: "profiles", label: (i18n.language, i18n.t("set_custom_profile")),   customOnly: true },
@@ -768,6 +772,7 @@ Window {
             TSelect {
                 implicitWidth: 180
                 model: field.options || []
+                icons: field.icons || []
                 currentIndex: {
                     if (field.isLang) return i18n.language
                     var v = (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : field.value

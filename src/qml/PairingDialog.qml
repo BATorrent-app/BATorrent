@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // WebUI phone pairing: one tap enables the WebUI with a generated password and
 // LAN access, then shows the QR + URL + credentials. `pairing` + `settings` bridges.
 import QtQuick
@@ -16,16 +20,24 @@ BatDialog {
     readonly property var api: typeof pairing !== "undefined" ? pairing : null
     readonly property var set: typeof settings !== "undefined" ? settings : null
     property string copyLabel: (i18n.language, i18n.t("pairing_copy"))
+    property string pwCopyLabel: (i18n.language, i18n.t("pairing_copy"))
     property bool active: false
     property string pw: ""
     property var rows: []
+
+    // The QR encodes the URL with the credentials baked in (/?pair=base64(user:pass)),
+    // so scanning it logs the phone straight in — no typing the IP or password.
+    function pairUrl() {
+        if (!api || !api.url || !set) return ""
+        return api.url + "?pair=" + encodeURIComponent(Qt.btoa(set.webUiUser() + ":" + dlg.pw))
+    }
 
     // Called on open (from the menu) and after enable/disable so the QR and
     // credentials reflect the current server state.
     function reload() {
         if (api) api.refresh()
         if (set) { active = set.pairingActive(); pw = set.webUiPassword() }
-        rows = (api && active) ? api.qrRows() : []
+        rows = (api && active) ? api.qrRowsForUrl(pairUrl()) : []
     }
     Component.onCompleted: reload()
 
@@ -61,7 +73,7 @@ BatDialog {
             dlg.pw = dlg.set.enablePairing()
             dlg.active = true
             if (dlg.api) dlg.api.refresh()
-            dlg.rows = dlg.api ? dlg.api.qrRows() : []
+            dlg.rows = dlg.api ? dlg.api.qrRowsForUrl(dlg.pairUrl()) : []
         }
     }
 
@@ -129,6 +141,10 @@ BatDialog {
                 Text { text: dlg.pw; color: Theme.t1; font.pixelSize: 14; font.weight: Font.Bold; font.family: Theme.fontMono }
             }
             Item { Layout.fillWidth: true }
+            BtnFlat {
+                text: dlg.pwCopyLabel
+                onClicked: { if (dlg.api) { dlg.api.copyText(dlg.pw); dlg.pwCopyLabel = (i18n.language, i18n.t("inspector_copied")) } }
+            }
         }
     }
 

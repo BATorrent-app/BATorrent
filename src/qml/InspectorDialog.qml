@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Inspect a .torrent file before adding. session.previewTorrent() (extended).
 import QtQuick
 import QtQuick.Layouts

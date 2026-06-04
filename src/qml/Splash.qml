@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Startup splash v2.0 — "Stroke": the bat's outline is drawn (stroke-dashoffset),
 // then the whole logo fills uniformly while the white border fades out fast, with
 // a soft red glow + wordmark. Ported 1:1 from the approved HTML prototype.

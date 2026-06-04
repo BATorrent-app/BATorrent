@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Source: BATorrent Home.html + batorrent-home.css (+ batorrent-home.js model)
 import QtQuick
 import QtQuick.Controls.Basic
@@ -341,6 +345,16 @@ Window {
     }
 
     Shortcut { sequence: StandardKey.SelectAll; onActivated: win.selectAll() }
+    // Smart Paste: Ctrl+V adds a magnet / 40-char hash / .torrent URL straight from
+    // the clipboard — unless a text field has focus (then let it paste text).
+    Shortcut {
+        sequence: StandardKey.Paste
+        onActivated: {
+            var f = win.activeFocusItem
+            if (f && f.cursorPosition !== undefined) return
+            session.smartPaste()
+        }
+    }
 
     // "Definir local…" — move the selected torrent's storage to a new folder
     FolderDialog {
@@ -399,7 +413,7 @@ Window {
             }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_donate")); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_about")); onTriggered: aboutDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_about")); role: Platform.MenuItem.AboutRole; onTriggered: aboutDlg.open() }
         }
     }
 
@@ -1570,8 +1584,7 @@ Window {
                             font.pixelSize: 12
                             font.family: Theme.fontMono
                         }
-                        // .prog — QWidget ProgressDelegate style: surfaceAlt track,
-                        // state-colored fill, centered % (white over fill, t1 over track)
+                        // progress: surfaceAlt track, state-colored fill, centered % (white over fill, t1 over track)
                         Item {
                             Layout.preferredWidth: 104
                             Layout.preferredHeight: 18
@@ -2180,7 +2193,13 @@ Window {
                   // per piece (hundreds of thousands on a big torrent), which
                   // froze the GUI thread on every single selection.
                   DetailPeers    { peers:    (win.hasSel && win.detailTab === 1) ? session.selectedPeerList : [] }
-                  DetailFiles    { files:    (win.hasSel && win.detailTab === 2) ? session.selectedFiles    : [] }
+                  DetailFiles {
+                      files: (win.hasSel && win.detailTab === 2) ? session.selectedFiles : []
+                      onRenameFile: function(idx, current) {
+                          inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), current, "",
+                              function(t){ if (t.length > 0) session.renameSelectedFile(idx, t) })
+                      }
+                  }
                   DetailTrackers { trackers: (win.hasSel && win.detailTab === 3) ? session.selectedTrackers : [] }
                   DetailPieces   { pieces:   (win.hasSel && win.detailTab === 4) ? session.selectedPieces   : [] }
                 }
@@ -2263,7 +2282,7 @@ Window {
         Behavior on opacity { OpacityAnimator { duration: 150; easing.type: Easing.OutCubic } }
         Rectangle {
             anchors.centerIn: parent
-            width: 360; height: 200; radius: Theme.radiusLg !== undefined ? 16 : 16
+            width: 360; height: 200; radius: 16
             color: Theme.panel
             border.color: Theme.accent
             border.width: 2

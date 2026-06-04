@@ -9,18 +9,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BAT-Torrent/total?style=flat-square&color=dc2626"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BAT-Torrent?style=flat-square&color=dc2626"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BATorrent/total?style=flat-square&color=dc2626"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/codeql.yml/badge.svg"></a>
-  <a href="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BAT-Torrent/actions/workflows/sanitizers.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml/badge.svg"></a>
+  <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml/badge.svg"></a>
   <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
-  <a href="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/bat-torrent/badge"></a>
+  <a href="https://www.codefactor.io/repository/github/mateuscruz19/batorrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/batorrent/badge"></a>
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
@@ -50,11 +50,13 @@ Binarios pre-compilados para a versao mais recente:
 
 | Plataforma | Formato | Observacoes |
 |---|---|---|
-| Windows | [Instalador (`.exe`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) · [Portatil (`.zip`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | Windows 10+ (x86_64) |
-| macOS | [Imagem de disco (`.dmg`)](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | macOS 12+ (Apple Silicon) |
-| Linux | [AppImage](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest) | Glibc 2.35+ (x86_64) |
+| Windows | [Instalador (`.exe`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) · [Portatil (`.zip`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Windows 10+ (x86_64) |
+| macOS | **`brew install --cask Mateuscruz19/batorrent/batorrent`** (recomendado) · [Imagem de disco (`.dmg`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | macOS 12+ (Apple Silicon) |
+| Linux | [AppImage](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Glibc 2.35+ (x86_64) |
 
 Todos os artefatos sao gerados pelo workflow [Build & Release](.github/workflows/build.yml) em cada release com tag.
+
+> **macOS — sobre o aviso de seguranca:** o build ainda nao e notarizado (o programa de desenvolvedor da Apple e pago, um obstaculo pra um projeto de uma pessoa so). **O Homebrew e o caminho mais tranquilo** — o `brew` remove a flag de quarentena na instalacao, entao o app simplesmente abre, sem o aviso do Gatekeeper. Se voce baixar o `.dmg`, clique com o botao direito no app e escolha **Abrir** na primeira vez pra passar do aviso de "desenvolvedor nao identificado". Os builds de Windows vao ganhar assinatura gratuita (OpenSSF/SignPath) conforme o projeto cresce.
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
@@ -150,7 +152,7 @@ Todos os artefatos sao gerados pelo workflow [Build & Release](.github/workflows
 
 ## Primeiros passos
 
-1. Baixe o build para sua plataforma na [pagina de releases](https://github.com/Mateuscruz19/BAT-Torrent/releases/latest).
+1. Baixe o build para sua plataforma na [pagina de releases](https://github.com/Mateuscruz19/BATorrent/releases/latest).
 2. Na primeira execucao, o dialogo de boas-vindas guia voce pelo caminho de salvamento padrao, tema e idioma.
 3. Arraste um arquivo `.torrent` ou magnet link para a janela — ou use **Arquivo → Abrir Torrent** / **Arquivo → Adicionar Magnet**.
 4. Opcional: vincule a interface de saida em **Configuracoes → VPN** e ative o kill switch antes de adicionar torrents sensiveis.

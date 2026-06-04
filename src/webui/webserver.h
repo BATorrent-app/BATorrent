@@ -67,7 +67,6 @@ private:
     QByteArray handleGetTorrents();
     QByteArray handleGetTorrentPeers(const QString &hash);
     QByteArray handleGetTorrentFiles(const QString &hash);
-    QByteArray handleGetTorrentTrackers(const QString &hash);
     QByteArray handleGetStatus();
     bool handleAddTorrent(const QByteArray &body);
     bool handleUploadTorrent(const QByteArray &requestData, const QByteArray &boundary);

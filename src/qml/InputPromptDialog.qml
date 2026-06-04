@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Reusable single-field prompt (rate limits, category, tag, tracker, …).
 // Open via openWith(title, label, value, placeholder, callback); the trimmed
 // text is passed to the callback when the user confirms.

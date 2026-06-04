@@ -27,10 +27,10 @@
     <p>It shows no ads, collects no telemetry, and needs no account.</p>
   </description>
   <launchable type="desktop-id">com.batorrent.BATorrent.desktop</launchable>
-  <url type="homepage">https://github.com/Mateuscruz19/BAT-Torrent</url>
-  <url type="bugtracker">https://github.com/Mateuscruz19/BAT-Torrent/issues</url>
+  <url type="homepage">https://github.com/Mateuscruz19/BATorrent</url>
+  <url type="bugtracker">https://github.com/Mateuscruz19/BATorrent/issues</url>
   <url type="donation">https://github.com/sponsors/Mateuscruz19</url>
-  <url type="vcs-browser">https://github.com/Mateuscruz19/BAT-Torrent</url>
+  <url type="vcs-browser">https://github.com/Mateuscruz19/BATorrent</url>
   <content_rating type="oars-1.1" />
   <categories>
     <category>Network</category>
@@ -44,19 +44,19 @@
   </keywords>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/Mateuscruz19/BAT-Torrent/v3.0.0/src/images/image1.png</image>
+      <image>https://raw.githubusercontent.com/Mateuscruz19/BATorrent/v3.0.0/src/images/image1.png</image>
       <caption>The main window in the dark theme</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Mateuscruz19/BAT-Torrent/v3.0.0/src/images/image2.png</image>
+      <image>https://raw.githubusercontent.com/Mateuscruz19/BATorrent/v3.0.0/src/images/image2.png</image>
       <caption>The main window in the light theme</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Mateuscruz19/BAT-Torrent/v3.0.0/src/images/image3.png</image>
+      <image>https://raw.githubusercontent.com/Mateuscruz19/BATorrent/v3.0.0/src/images/image3.png</image>
       <caption>Per-torrent details, with peers and file priorities</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Mateuscruz19/BAT-Torrent/v3.0.0/src/images/image4.png</image>
+      <image>https://raw.githubusercontent.com/Mateuscruz19/BATorrent/v3.0.0/src/images/image4.png</image>
       <caption>Settings</caption>
     </screenshot>
   </screenshots>

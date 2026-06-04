@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Rich tray popup shown on right-click of the system tray icon. Mirrors the
 // legacy TrayPopup: header (logo + name + counts), DOWN/UP speed strip, and a
 // list of menu actions. VPN / auto-shutdown rows from the legacy version are

@@ -2,6 +2,9 @@
 build/
 build-release/
 
+# macOS
+.DS_Store
+
 # clangd (symlink to build/compile_commands.json)
 compile_commands.json
 
@@ -23,8 +26,8 @@ compile_commands.json
 *.so
 *.a
 
-# Internal docs (not for public repo)
-MARKETING_PLAN.md
+# Internal docs / notes (not for the public repo) — drop anything in here
+/internal/
 
 # local test build dir
 build-tests/

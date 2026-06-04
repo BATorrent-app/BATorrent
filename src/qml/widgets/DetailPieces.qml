@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Pieces pane for the detail panel. Data: session.selectedPieces (array of bool)
 import QtQuick
 import QtQuick.Layouts

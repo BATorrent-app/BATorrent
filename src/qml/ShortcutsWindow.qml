@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
 // Keyboard shortcuts reference. Static data (ported from shortcutsdialog.cpp), no bridge.
 import QtQuick
 import QtQuick.Layouts

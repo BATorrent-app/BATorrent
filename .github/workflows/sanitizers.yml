@@ -51,7 +51,7 @@ jobs:
           # in QObject::~QObject() *after* "All tests passed" is the known Qt
           # singleton teardown artifact in headless mode and is tolerated.
           fail=0
-          for t in test_unit test_security test_memory test_nameparser; do
+          for t in test_unit test_security test_memory test_nameparser test_bridge; do
             echo "::group::$t"
             out=$(./build-san/tests/$t 2>&1 || true)
             echo "$out"

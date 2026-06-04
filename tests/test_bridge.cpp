@@ -1,0 +1,265 @@
+// SPDX-License-Identifier: MIT
+// BATorrent C++<->QML bridge tests (Catch2 v3)
+//
+// Covers the qmlposterbridge layer that the QML UI depends on but no other test
+// exercised. Runs headless via the "offscreen" platform so the GUI-adjacent
+// bridges (clipboard, painter, style hints) construct without a display.
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <QApplication>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QTemporaryDir>
+#include <QElapsedTimer>
+#include <QEventLoop>
+#include <QFile>
+#include <QDir>
+#include <QFileInfo>
+#include <QVariantMap>
+
+#include <libtorrent/file_storage.hpp>
+#include <libtorrent/create_torrent.hpp>
+#include <libtorrent/bencode.hpp>
+
+#include "torrent/sessionmanager.h"
+#include "app/metadataresolver.h"
+#include "gui/qmlposterbridge.h"
+
+namespace lt = libtorrent;
+
+// Pump the Qt event loop until pred() holds or the timeout elapses; SessionManager
+// adds/renames torrents asynchronously (libtorrent alerts), so reads need to settle.
+template <typename Pred>
+static bool pumpUntil(Pred pred, int timeoutMs = 8000)
+{
+    QElapsedTimer t; t.start();
+    while (!pred() && t.elapsed() < timeoutMs)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
+    return pred();
+}
+
+// Build a real, private (offline — no DHT/LSD/PEX) multi-file .torrent under `dir`
+// and return its path. Mirrors the create flow in qmlposterbridge.cpp.
+static QString makeFixtureTorrent(const QString &dir)
+{
+    const QString content = dir + "/bat_fixture";
+    QDir().mkpath(content + "/sub");
+    auto writeN = [](const QString &p, int n) {
+        QFile f(p); f.open(QIODevice::WriteOnly); f.write(QByteArray(n, 'x')); f.close();
+    };
+    writeN(content + "/a.txt", 100);
+    writeN(content + "/sub/b.txt", 200);
+
+    lt::file_storage fs;
+    lt::add_files(fs, content.toStdString());
+    lt::create_torrent ct(fs, 16384, lt::create_torrent::v1_only);   // classic v1 → no v2 pad files
+    ct.add_tracker("udp://tracker.test:6969/announce", 0);
+    ct.set_priv(true);                                  // private → fully offline
+    lt::set_piece_hashes(ct, dir.toStdString());        // parent of "bat_fixture"
+
+    std::vector<char> buf;
+    lt::bencode(std::back_inserter(buf), ct.generate());
+    const QString out = dir + "/sample.torrent";
+    QFile f(out); f.open(QIODevice::WriteOnly);
+    f.write(buf.data(), static_cast<qsizetype>(buf.size()));
+    f.close();
+    return out;
+}
+
+// ============================================================================
+//  Headless Qt app singleton (offscreen) + isolated settings store
+// ============================================================================
+static int   s_argc = 1;
+static char  s_arg0[] = "test_bridge";
+static char *s_argv[] = { s_arg0, nullptr };
+
+static QApplication &app()
+{
+    static QApplication *a = [] {
+        qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Sandbox all paths + settings: empty session, isolated QSettings, never
+        // touches (or migrates from) the user's real BATorrent data.
+        QStandardPaths::setTestModeEnabled(true);
+        // A dedicated org that shares NOTHING with the real app or other test
+        // binaries — so wiping our own data dir can never touch real user data or
+        // another suite's fixtures.
+        QCoreApplication::setOrganizationName("BATorrentBridgeTest");
+        QCoreApplication::setApplicationName("BATorrentBridgeTest");
+        // Clear only OUR own leaf dirs so every run starts with an empty session
+        // and isolated settings (never the parent — that's another suite's space).
+        for (auto loc : { QStandardPaths::AppDataLocation, QStandardPaths::AppConfigLocation }) {
+            const QString p = QStandardPaths::writableLocation(loc);
+            if (!p.isEmpty()) QDir(p).removeRecursively();
+        }
+        return new QApplication(s_argc, s_argv);
+    }();
+    return *a;
+}
+
+// ============================================================================
+//  QmlPairingBridge — the pairing QR (pure: qrcodegen, no session/GUI)
+// ============================================================================
+TEST_CASE("Pairing: qrRowsForUrl encodes a square binary matrix", "[bridge][pairing]")
+{
+    app();
+    QmlPairingBridge p;
+
+    const QStringList rows = p.qrRowsForUrl(QStringLiteral("http://192.168.0.10:8080/?pair=YWRtaW46cHc"));
+    REQUIRE_FALSE(rows.isEmpty());
+
+    const int n = rows.size();
+    for (const QString &r : rows) {
+        REQUIRE(r.size() == n);                       // square
+        for (const QChar c : r)
+            REQUIRE((c == QLatin1Char('0') || c == QLatin1Char('1')));   // binary only
+    }
+}
+
+TEST_CASE("Pairing: encoding is deterministic", "[bridge][pairing]")
+{
+    app();
+    QmlPairingBridge p;
+    const QString url = QStringLiteral("http://10.0.0.5:8080/?pair=dXNlcjpzZWNyZXQ");
+    REQUIRE(p.qrRowsForUrl(url) == p.qrRowsForUrl(url));
+}
+
+TEST_CASE("Pairing: empty URL yields no QR rows", "[bridge][pairing]")
+{
+    app();
+    QmlPairingBridge p;
+    REQUIRE(p.qrRowsForUrl(QString()).isEmpty());     // empty/garbage URL → no matrix
+}
+
+// ============================================================================
+//  QmlThemeBridge — theme name persistence
+// ============================================================================
+TEST_CASE("Theme: themeName round-trips through settings", "[bridge][theme]")
+{
+    app();
+    QmlThemeBridge t;
+    t.setThemeName(QStringLiteral("midnight"));
+    REQUIRE(t.themeName() == QStringLiteral("midnight"));
+
+    QmlThemeBridge t2;                                // a fresh bridge reads the persisted value
+    REQUIRE(t2.themeName() == QStringLiteral("midnight"));
+
+    t.setThemeName(QStringLiteral("dark"));           // restore default-ish
+}
+
+// ============================================================================
+//  QmlSessionBridge — selection state with no torrents
+// ============================================================================
+TEST_CASE("Session bridge: empty session has no selection", "[bridge][session]")
+{
+    app();
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    REQUIRE(bridge.torrentCount() == 0);
+    REQUIRE_FALSE(bridge.hasSelection());
+    REQUIRE(bridge.selectedName().isEmpty());
+    REQUIRE(bridge.selectedFiles().isEmpty());
+    REQUIRE(bridge.selectedPeerList().isEmpty());
+    REQUIRE(bridge.selectedTrackers().isEmpty());
+}
+
+// ============================================================================
+//  QmlSettingsBridge — pairing flag derives from QSettings (post-keychain move)
+// ============================================================================
+TEST_CASE("Settings bridge: pairingActive reflects settings, not the keychain", "[bridge][settings]")
+{
+    app();
+    QSettings st;
+    st.setValue("webUiEnabled", false);              // keep the ctor from starting a server
+    SessionManager session;
+    QmlSettingsBridge bridge(&session);
+
+    REQUIRE(bridge.webUiUser() == QStringLiteral("admin"));
+    REQUIRE_FALSE(bridge.pairingActive());
+
+    st.setValue("webUiEnabled", true);
+    st.setValue("webUiRemoteAccess", true);
+    st.setValue("webUiPasswordHash", QStringLiteral("deadbeef"));
+    REQUIRE(bridge.pairingActive());
+
+    st.setValue("webUiPasswordHash", QString());     // no credential → not paired
+    REQUIRE_FALSE(bridge.pairingActive());
+
+    st.setValue("webUiEnabled", false);
+    st.setValue("webUiRemoteAccess", false);
+}
+
+// ============================================================================
+//  QmlPosterModel / QmlTorrentFilterProxy — empty-model contract
+// ============================================================================
+TEST_CASE("Poster model: empty model, roles defined", "[bridge][model]")
+{
+    app();
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlPosterModel model(&session, &resolver);
+
+    REQUIRE(model.rowCount() == 0);
+    REQUIRE_FALSE(model.roleNames().isEmpty());
+
+    QmlTorrentFilterProxy proxy;
+    proxy.setSourceModel(&model);
+    REQUIRE(proxy.rowCount() == 0);
+}
+
+// ============================================================================
+//  QmlSessionBridge with a REAL loaded torrent — the methods that need content
+// ============================================================================
+TEST_CASE("Session bridge: a loaded torrent exposes and mutates files/trackers", "[bridge][session][torrent]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    const QString torrentPath = makeFixtureTorrent(tmp.path());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    session.addTorrent(torrentPath, tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == 1; }));
+
+    bridge.setSelectedRows({0});
+    REQUIRE(bridge.hasSelection());
+
+    // --- read side (from the torrent metadata, deterministic once loaded) ---
+    REQUIRE_FALSE(bridge.selectedName().isEmpty());
+    REQUIRE_FALSE(bridge.selectedHash().isEmpty());
+    REQUIRE_FALSE(bridge.selectedSize().isEmpty());
+
+    QVariantList files = bridge.selectedFiles();
+    REQUIRE(files.size() == 2);
+
+    const int trackers0 = bridge.selectedTrackers().size();
+    REQUIRE(trackers0 >= 1);                              // the tracker baked in at create
+
+    // --- per-file priority ---
+    bridge.setSelectedFilePriority(0, 0);                 // Skip file 0
+    REQUIRE(pumpUntil([&] {
+        return bridge.selectedFiles().value(0).toMap().value("priority").toInt() == 0;
+    }));
+
+    // --- add / remove tracker ---
+    bridge.addTrackerToSelected("udp://added.test:80/announce");
+    REQUIRE(pumpUntil([&] { return bridge.selectedTrackers().size() > trackers0; }));
+    bridge.removeTrackerFromSelected("udp://added.test:80/announce");
+    REQUIRE(pumpUntil([&] { return bridge.selectedTrackers().size() == trackers0; }));
+
+    // --- rename a file (async libtorrent file_renamed alert) ---
+    bridge.renameSelectedFile(0, "renamed_fixture.txt");
+    REQUIRE(pumpUntil([&] {
+        const QVariantList fl = bridge.selectedFiles();
+        for (const QVariant &v : fl)
+            if (v.toMap().value("path").toString().contains("renamed_fixture"))
+                return true;
+        return false;
+    }));
+}
