@@ -24,7 +24,19 @@ Window {
         return (srcSel.currentIndex >= 0 && srcSel.currentIndex < s.length) ? s[srcSel.currentIndex].key : "stremio"
     }
     readonly property bool isLegacy: sourceKey === "legacy"
+    readonly property bool isGames: sourceKey === "games"
+    property bool showGameMgr: false
+    property var gameList: []
 
+    function reloadGames() { gameList = (api ? api.gameSources() : []) }
+
+    Connections {
+        target: win.api
+        ignoreUnknownSignals: true
+        function onGameSourcesChanged() { win.reloadGames() }
+    }
+
+    onShowGameMgrChanged: if (showGameMgr) reloadGames()
     onVisibleChanged: if (visible && api) api.refreshSources()
 
     function runSearch() {
@@ -219,7 +231,105 @@ Window {
                 BtnFlat { visible: win.api && win.api.inStreams; text: (i18n.language, i18n.t("search_back2")); onClicked: if (win.api) win.api.back() }
                 Text { text: win.api ? win.api.statusText : ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
+                BtnFlat { visible: win.isGames; text: (i18n.language, i18n.t("game_sources_btn")); onClicked: win.showGameMgr = true }
                 BtnFlat { text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
+            }
+        }
+    }
+
+    // Game-catalog manager overlay (neutral: the user adds their own source URLs)
+    Rectangle {
+        anchors.fill: parent
+        visible: win.showGameMgr
+        color: "#aa000000"
+        MouseArea { anchors.fill: parent; onClicked: win.showGameMgr = false }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - 48, 520)
+            height: Math.min(parent.height - 48, 420)
+            radius: 12
+            color: Theme.elev
+            border.color: Theme.hair
+            border.width: 1
+            MouseArea { anchors.fill: parent }   // swallow clicks so the dim layer doesn't close it
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: Theme.sp4
+
+                Text { text: (i18n.language, i18n.t("game_sources_title")); color: Theme.t1; font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text {
+                    Layout.fillWidth: true
+                    text: (i18n.language, i18n.t("game_sources_hint"))
+                    color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans
+                    wrapMode: Text.WordWrap
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.sp3
+                    TFld {
+                        id: srcUrlFld
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 34
+                        placeholder: "https://…/catalog.json"
+                        onEdited: addBtn.add()
+                    }
+                    BtnFlat {
+                        id: addBtn
+                        primary: true
+                        text: (i18n.language, i18n.t("game_sources_add"))
+                        function add() {
+                            var u = srcUrlFld.text.trim()
+                            if (u.length === 0 || !win.api) return
+                            win.api.addGameSource("", u)
+                            srcUrlFld.text = ""
+                        }
+                        onClicked: add()
+                    }
+                }
+
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: win.gameList
+                    boundsBehavior: Flickable.StopAtBounds
+                    Text {
+                        anchors.centerIn: parent
+                        visible: parent.count === 0
+                        text: (i18n.language, i18n.t("game_sources_empty"))
+                        color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
+                    }
+                    delegate: Rectangle {
+                        required property var modelData
+                        width: ListView.view.width
+                        height: 40
+                        color: "transparent"
+                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.rightMargin: 4
+                            spacing: Theme.sp3
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.url
+                                color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono
+                                elide: Text.ElideMiddle
+                            }
+                            BtnFlat { text: (i18n.language, i18n.t("game_sources_remove")); onClicked: if (win.api) win.api.removeGameSource(modelData.url) }
+                        }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Item { Layout.fillWidth: true }
+                    BtnFlat { text: (i18n.language, i18n.t("game_sources_refresh")); onClicked: if (win.api) win.api.refreshGames() }
+                    BtnFlat { primary: true; text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.showGameMgr = false }
+                }
             }
         }
     }

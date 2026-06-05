@@ -1860,6 +1860,15 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
         setStatus(err);
     });
 
+    connect(&GameSourceManager::instance(), &GameSourceManager::refreshed, this, [this](int count) {
+        emit gameSourcesChanged();
+        if (m_mode != "games" || m_pendingGameQuery.isEmpty()) return;
+        const QString q = m_pendingGameQuery;
+        m_pendingGameQuery.clear();
+        if (count > 0) runGameSearch(q);
+        else { setSearching(false); setStatus("Nenhum jogo encontrado nos catálogos."); }
+    });
+
     QSettings s;
     m_savePath = s.value(QStringLiteral("lastSavePath")).toString();
     if (m_savePath.isEmpty() || !QDir(m_savePath).exists())
@@ -1936,6 +1945,18 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     if (sourceKey == "games") {
         m_isGameSearch = true;
         setMode("games");
+        auto &gsm = GameSourceManager::instance();
+        if (gsm.gameCount() == 0 && !gsm.sources().isEmpty()) {
+            m_pendingGameQuery = q;          // search once the catalogs finish loading
+            setSearching(true);
+            setStatus("Carregando catálogos de jogos…");
+            gsm.refresh();
+            return;
+        }
+        if (gsm.gameCount() > 0) { runGameSearch(q); return; }
+        // No game catalogs configured → fall back to the bundled torrent provider's
+        // Games category so the search isn't empty out of the box.
+        m_gameCache.clear();
         setSearching(true);
         setStatus("Buscando…");
         mgr.searchTorrents(q, 400);
@@ -1960,6 +1981,55 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     }
 }
 
+void QmlSearchBridge::runGameSearch(const QString &query)
+{
+    m_gameCache = GameSourceManager::instance().search(query);
+    m_torrentCache.clear();
+    m_results.clear();
+    for (const auto &g : m_gameCache) {
+        QVariantMap m;
+        m["name"] = g.cleanTitle.isEmpty() ? g.title : g.cleanTitle;
+        m["sub"] = g.source;
+        m["sizeStr"] = g.fileSize;
+        m["seeds"] = ""; m["leech"] = ""; m["hasSeeds"] = false;
+        m["repacker"] = detectRepacker(g.title);
+        m_results << m;
+    }
+    emit resultsChanged();
+    setSearching(false);
+    setStatus(QString("%1 resultados").arg(m_gameCache.size()));
+}
+
+QVariantList QmlSearchBridge::gameSources() const
+{
+    QVariantList out;
+    for (const auto &s : GameSourceManager::instance().sources()) {
+        QVariantMap m; m["name"] = s.first; m["url"] = s.second; out << m;
+    }
+    return out;
+}
+
+void QmlSearchBridge::addGameSource(const QString &name, const QString &url)
+{
+    GameSourceManager::instance().addSource(name, url);
+    emit gameSourcesChanged();
+    refreshGames();
+}
+
+void QmlSearchBridge::removeGameSource(const QString &url)
+{
+    GameSourceManager::instance().removeSource(url);
+    emit gameSourcesChanged();
+    refreshGames();
+}
+
+void QmlSearchBridge::refreshGames()
+{
+    if (GameSourceManager::instance().sources().isEmpty()) { emit gameSourcesChanged(); return; }
+    setStatus("Carregando catálogos de jogos…");
+    GameSourceManager::instance().refresh();
+}
+
 void QmlSearchBridge::activateResult(int index)
 {
     auto &mgr = AddonManager::instance();
@@ -1980,6 +2050,11 @@ void QmlSearchBridge::activateResult(int index)
             m_session->addMagnet(s.magnet, m_savePath);
             setStatus(QString("Adicionado: %1").arg(s.title));
         }
+    } else if (m_mode == "games" && !m_gameCache.isEmpty()) {
+        if (index < 0 || index >= m_gameCache.size()) return;
+        const auto &g = m_gameCache[index];
+        m_session->addMagnet(g.magnet, m_savePath);
+        setStatus(QString("Adicionado: %1").arg(g.cleanTitle.isEmpty() ? g.title : g.cleanTitle));
     } else {
         if (index < 0 || index >= m_torrentCache.size()) return;
         const auto &r = m_torrentCache[index];

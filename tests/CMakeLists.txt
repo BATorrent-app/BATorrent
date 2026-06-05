@@ -30,6 +30,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/app/updater.cpp
     ${CMAKE_SOURCE_DIR}/src/app/logger.cpp
     ${CMAKE_SOURCE_DIR}/src/app/nameparser.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/gamesourcemanager.cpp
     # C++<->QML bridge layer + its backend deps (for test_bridge)
     ${CMAKE_SOURCE_DIR}/src/gui/qmlposterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/app/metadataresolver.cpp
@@ -153,12 +154,13 @@ bat_add_test(test_memory     test_memory.cpp)
 bat_add_test(test_unit       test_unit.cpp)
 bat_add_test(test_nameparser test_nameparser.cpp)
 bat_add_test(test_bridge     test_bridge.cpp)
+bat_add_test(test_gamesource test_gamesource.cpp)
 
 # =============================================================================
 #  Convenience: run all analysis tools
 # =============================================================================
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
-    DEPENDS test_security test_memory test_unit test_nameparser test_bridge
+    DEPENDS test_security test_memory test_unit test_nameparser test_bridge test_gamesource
     COMMENT "Running all BATorrent tests..."
 )

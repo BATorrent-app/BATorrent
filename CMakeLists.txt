@@ -38,6 +38,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/geoip.cpp
     src/app/nameparser.cpp
     src/app/metadataresolver.cpp
+    src/app/gamesourcemanager.cpp
     src/gui/qmlposterbridge.cpp
     src/webui/webserver.cpp
     ${RESOURCES}

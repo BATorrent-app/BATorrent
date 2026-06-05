@@ -17,6 +17,7 @@
 #include <QSettings>
 
 #include "../app/addonmanager.h"   // CatalogItem / StreamResult / TorrentSearchResult
+#include "../app/gamesourcemanager.h"   // GameDownload
 #include "../app/translator.h"
 
 class SessionManager;
@@ -460,17 +461,25 @@ public:
     Q_INVOKABLE void activateResult(int index);   // catalog→streams; else add magnet
     Q_INVOKABLE void back();                       // streams → catalog
 
+    // Hydra-format game catalogs the user adds (neutral infra — nothing bundled).
+    Q_INVOKABLE QVariantList gameSources() const;          // [{name, url}]
+    Q_INVOKABLE void addGameSource(const QString &name, const QString &url);
+    Q_INVOKABLE void removeGameSource(const QString &url);
+    Q_INVOKABLE void refreshGames();
+
 signals:
     void sourcesChanged();
     void resultsChanged();
     void modeChanged();
     void searchingChanged();
     void statusChanged();
+    void gameSourcesChanged();
 
 private:
     void setSearching(bool on);
     void setStatus(const QString &s);
     void setMode(const QString &m);
+    void runGameSearch(const QString &query);
     static QString detectRepacker(const QString &name);
 
     SessionManager *m_session;
@@ -484,6 +493,8 @@ private:
     QList<CatalogItem> m_catalogCache;
     QList<StreamResult> m_streamCache;
     QList<TorrentSearchResult> m_torrentCache;
+    QList<GameDownload> m_gameCache;
+    QString m_pendingGameQuery;
     QVariantList m_catalogResultsSnapshot;
 };
 

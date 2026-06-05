@@ -24,6 +24,7 @@
 #include "app/metadataresolver.h"
 #include "app/translator.h"
 #include "gui/qmlposterbridge.h"
+#include "app/gamesourcemanager.h"
 #include "app/rssmanager.h"
 #include "app/addonmanager.h"
 #include "app/notifier.h"
@@ -184,6 +185,22 @@ int main(int argc, char *argv[])
         auto *settingsBridge = new QmlSettingsBridge(&session, &app);
         auto *addonBridge = new QmlAddonBridge(&app);
         auto *searchBridge = new QmlSearchBridge(&session, &app);
+
+#ifndef BAT_STORE_BUILD
+        // Seed a default community game catalog once so "Jogos" works out of the
+        // box (open → search → download). Store builds stay clean. The user can
+        // remove it; the seed flag keeps it from coming back.
+        {
+            QSettings gs;
+            if (!gs.value(QStringLiteral("gameSourcesSeeded"), false).toBool()) {
+                gs.setValue(QStringLiteral("gameSourcesSeeded"), true);
+                auto &gsm = GameSourceManager::instance();
+                if (gsm.sources().isEmpty())
+                    gsm.addSource(QStringLiteral("RuTracker (Combined)"),
+                                  QStringLiteral("https://raw.githubusercontent.com/Jdjsjjqq/rutracker-hydra/main/combined_torrents.json"));
+            }
+        }
+#endif
         auto *logBridge = new QmlLogBridge(&app);
         auto *pairingBridge = new QmlPairingBridge(&app);
         auto *notificationBridge = new QmlNotificationBridge(&app);
