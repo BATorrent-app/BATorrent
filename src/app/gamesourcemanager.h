@@ -36,7 +36,7 @@ public:
     void removeSource(const QString &url);
     QList<QPair<QString, QString>> sources() const;   // (name, url)
 
-    void refresh();                                   // fetch every source, re-index
+    void refresh(bool forceNetwork = false);          // re-index; uses disk cache unless forced
     QList<GameDownload> search(const QString &query, int limit = 100) const;
     int gameCount() const { return m_games.size(); }
 
@@ -55,6 +55,10 @@ private:
     GameSourceManager();
     void loadSources();
     void saveSources();
+    void fetchSource(const QString &name, const QString &url);
+    static QString cachePath(const QString &url);
+    static QByteArray readCache(const QString &url, bool freshOnly);   // freshOnly → honor TTL
+    static void writeCache(const QString &url, const QByteArray &data);
 
     QList<GameDownload> m_games;
     QList<QPair<QString, QString>> m_sources;

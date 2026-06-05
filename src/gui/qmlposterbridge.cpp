@@ -2011,23 +2011,25 @@ QVariantList QmlSearchBridge::gameSources() const
 
 void QmlSearchBridge::addGameSource(const QString &name, const QString &url)
 {
-    GameSourceManager::instance().addSource(name, url);
+    auto &gsm = GameSourceManager::instance();
+    gsm.addSource(name, url);
     emit gameSourcesChanged();
-    refreshGames();
+    if (!gsm.sources().isEmpty()) { setStatus("Carregando catálogos de jogos…"); gsm.refresh(false); }
 }
 
 void QmlSearchBridge::removeGameSource(const QString &url)
 {
-    GameSourceManager::instance().removeSource(url);
+    auto &gsm = GameSourceManager::instance();
+    gsm.removeSource(url);
     emit gameSourcesChanged();
-    refreshGames();
+    gsm.refresh(false);   // re-index remaining from cache
 }
 
 void QmlSearchBridge::refreshGames()
 {
     if (GameSourceManager::instance().sources().isEmpty()) { emit gameSourcesChanged(); return; }
     setStatus("Carregando catálogos de jogos…");
-    GameSourceManager::instance().refresh();
+    GameSourceManager::instance().refresh(true);   // manual refresh → bypass cache
 }
 
 void QmlSearchBridge::activateResult(int index)
