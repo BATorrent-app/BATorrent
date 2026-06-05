@@ -24,6 +24,7 @@
 
 #include "torrent/sessionmanager.h"
 #include "app/metadataresolver.h"
+#include "app/gamesourcemanager.h"
 #include "gui/qmlposterbridge.h"
 
 namespace lt = libtorrent;
@@ -163,6 +164,32 @@ TEST_CASE("Session bridge: empty session has no selection", "[bridge][session]")
     REQUIRE(bridge.selectedFiles().isEmpty());
     REQUIRE(bridge.selectedPeerList().isEmpty());
     REQUIRE(bridge.selectedTrackers().isEmpty());
+}
+
+// ============================================================================
+//  QmlSearchBridge — "Tudo" aggregates every source into one flat result list
+// ============================================================================
+TEST_CASE("Search bridge: 'Tudo' merges loaded game catalog synchronously", "[bridge][search]")
+{
+    app();
+    SessionManager session;
+    QmlSearchBridge bridge(&session);
+
+    // Pre-load a catalog so the aggregate path resolves without the network.
+    const QByteArray cat = R"({"name":"Test","downloads":[
+        {"title":"Cyberpunk 2077 [FitGirl Repack]","uris":["magnet:?xt=urn:btih:aaaa"],"fileSize":"58 GB"},
+        {"title":"Elden Ring [DODI]","uris":["magnet:?xt=urn:btih:bbbb"],"fileSize":"45 GB"}]})";
+    REQUIRE(GameSourceManager::instance().indexCatalog("Test", cat) == 2);
+
+    bridge.search("all", "cyberpunk", 0);
+
+    // Games append synchronously; any torrent providers would arrive later (async),
+    // so right after the call only the matching game is present.
+    REQUIRE(bridge.mode() == "all");
+    const QVariantList results = bridge.results();
+    REQUIRE(results.size() == 1);
+    CHECK(results[0].toMap().value("name").toString() == "Cyberpunk 2077");
+    CHECK(results[0].toMap().value("sub").toString() == "Test");
 }
 
 // ============================================================================

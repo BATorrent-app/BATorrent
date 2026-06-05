@@ -24,7 +24,7 @@ Window {
         return (srcSel.currentIndex >= 0 && srcSel.currentIndex < s.length) ? s[srcSel.currentIndex].key : "stremio"
     }
     readonly property bool isLegacy: sourceKey === "legacy"
-    readonly property bool isGames: sourceKey === "games"
+    readonly property bool isGames: sourceKey === "games" || sourceKey === "all"
     property bool showGameMgr: false
     property var gameList: []
 
@@ -111,7 +111,7 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp4
-                property bool torrentish: win.api && (win.api.mode === "torrent" || win.api.mode === "games")
+                property bool torrentish: win.api && (win.api.mode === "torrent" || win.api.mode === "games" || win.api.mode === "all")
                 Text { text: (i18n.language, i18n.t("search_col_name2")); Layout.fillWidth: true; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Text { text: (i18n.language, i18n.t("search_col_size2")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_seeds2")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }

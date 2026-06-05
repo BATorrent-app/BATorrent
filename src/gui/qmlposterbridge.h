@@ -480,6 +480,9 @@ private:
     void setStatus(const QString &s);
     void setMode(const QString &m);
     void runGameSearch(const QString &query);
+    void appendGameRows(const QList<GameDownload> &games);
+    void appendTorrentRows(const QList<TorrentSearchResult> &results);
+    void finishAggregateSource();
     static QString detectRepacker(const QString &name);
 
     SessionManager *m_session;
@@ -488,8 +491,11 @@ private:
     QString m_lastQuery;
     bool m_searching = false;
     bool m_isGameSearch = false;
+    bool m_aggregate = false;          // "Tudo": merge every source into one list
+    int m_pendingSources = 0;          // async sources still running in aggregate
     QString m_status;
     QVariantList m_results;
+    QStringList m_resultMagnets;        // magnet per flat result row (add target)
     QList<CatalogItem> m_catalogCache;
     QList<StreamResult> m_streamCache;
     QList<TorrentSearchResult> m_torrentCache;
