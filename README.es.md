@@ -39,7 +39,7 @@ Soy un desarrollador solo en Brasil. Quería un cliente de torrent que se tomara
 ## El aspecto
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="Cambiando entre los temas integrados" width="820">
+  <img src="src/images/themes.gif" alt="Cambiando entre los temas integrados" width="860">
 </p>
 
 <p align="center">

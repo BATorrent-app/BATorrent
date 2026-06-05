@@ -39,7 +39,7 @@ Sou um desenvolvedor sozinho no Brasil. Eu queria um cliente de torrent que leva
 ## O visual
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="Alternando entre os temas embutidos" width="820">
+  <img src="src/images/themes.gif" alt="Alternando entre os temas embutidos" width="860">
 </p>
 
 <p align="center">

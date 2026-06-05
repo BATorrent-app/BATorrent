@@ -39,7 +39,7 @@
 ## Як це виглядає
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="Перемикання між вбудованими темами" width="820">
+  <img src="src/images/themes.gif" alt="Перемикання між вбудованими темами" width="860">
 </p>
 
 <p align="center">

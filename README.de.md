@@ -39,7 +39,7 @@ Ich bin ein einzelner Entwickler in Brasilien. Ich wollte einen Torrent-Client, 
 ## Das Aussehen
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="Wechsel zwischen den integrierten Themes" width="820">
+  <img src="src/images/themes.gif" alt="Wechsel zwischen den integrierten Themes" width="860">
 </p>
 
 <p align="center">

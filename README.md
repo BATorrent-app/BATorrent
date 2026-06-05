@@ -39,7 +39,7 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 ## The look
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="Switching between built-in themes" width="820">
+  <img src="src/images/themes.gif" alt="Switching between built-in themes" width="860">
 </p>
 
 <p align="center">

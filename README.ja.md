@@ -39,7 +39,7 @@
 ## 見た目
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="内蔵テーマの切り替え" width="820">
+  <img src="src/images/themes.gif" alt="内蔵テーマの切り替え" width="860">
 </p>
 
 <p align="center">

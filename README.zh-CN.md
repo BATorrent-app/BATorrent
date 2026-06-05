@@ -39,7 +39,7 @@
 ## 外观
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="在内置主题之间切换" width="820">
+  <img src="src/images/themes.gif" alt="在内置主题之间切换" width="860">
 </p>
 
 <p align="center">
