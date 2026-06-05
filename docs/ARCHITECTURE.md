@@ -2,8 +2,8 @@
 
 A map of how BATorrent is put together: where things live, how the layers talk,
 and the non-obvious gotchas. Aimed at anyone (human or AI) about to change the
-code. For *what* the app does, see the [README](README.md); for the engineering
-contract and conventions, see [`CLAUDE.md`](CLAUDE.md).
+code. For *what* the app does, see the [README](../README.md); for the engineering
+contract and conventions, see [`CLAUDE.md`](../CLAUDE.md).
 
 BATorrent is a desktop BitTorrent client: a **libtorrent** engine wrapped in C++,
 driven by a **Qt 6 / QML** UI, with an optional browser **WebUI**. One process,
