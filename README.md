@@ -43,8 +43,12 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 </p>
 
 <p align="center">
-  <img src="src/images/image2.png" alt="Light theme" width="420">
-  <img src="src/images/image4.png" alt="Settings" width="420">
+  <img src="src/images/shot-grid.jpg" alt="Cover-art grid" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-list.jpg" alt="List view" width="425">
+  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="425">
 </p>
 
 - **Automatic cover art** — it reads the torrent name and pulls the real poster (movies & shows via TMDB, games via IGDB) into a grid view. One click flips to a tight list.

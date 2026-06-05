@@ -43,8 +43,12 @@
 </p>
 
 <p align="center">
-  <img src="src/images/image2.png" alt="Світла тема" width="420">
-  <img src="src/images/image4.png" alt="Налаштування" width="420">
+  <img src="src/images/shot-grid.jpg" alt="Cover-art grid" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-list.jpg" alt="List view" width="425">
+  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="425">
 </p>
 
 - **Автоматичні обкладинки** — читає назву торента й підтягує справжній постер (фільми та серіали через TMDB, ігри через IGDB) у вигляд-сітку. Один клік перемикає на компактний список.

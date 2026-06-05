@@ -43,8 +43,12 @@
 </p>
 
 <p align="center">
-  <img src="src/images/image2.png" alt="Светлая тема" width="420">
-  <img src="src/images/image4.png" alt="Настройки" width="420">
+  <img src="src/images/shot-grid.ru.jpg" alt="Сетка обложек" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-list.ru.jpg" alt="Список" width="425">
+  <img src="src/images/shot-theme.ru.jpg" alt="Тема Sakura" width="425">
 </p>
 
 - **Автоматические обложки** — читает имя торрента и подтягивает настоящий постер (фильмы и сериалы через TMDB, игры через IGDB) в вид-сетку. Один клик переключает на компактный список.

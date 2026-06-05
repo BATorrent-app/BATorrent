@@ -43,8 +43,12 @@ Soy un desarrollador solo en Brasil. Quería un cliente de torrent que se tomara
 </p>
 
 <p align="center">
-  <img src="src/images/image2.png" alt="Tema claro" width="420">
-  <img src="src/images/image4.png" alt="Ajustes" width="420">
+  <img src="src/images/shot-grid.jpg" alt="Cover-art grid" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-list.jpg" alt="List view" width="425">
+  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="425">
 </p>
 
 - **Carátulas automáticas** — lee el nombre del torrent y trae el póster real (películas y series vía TMDB, juegos vía IGDB) a una vista de cuadrícula. Un clic cambia a una lista compacta.
