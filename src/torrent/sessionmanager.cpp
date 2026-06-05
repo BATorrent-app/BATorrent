@@ -1317,6 +1317,12 @@ void SessionManager::markCompleted(int index)
     if (m_completedTorrents.contains(hash)) return;
     m_completedTorrents.insert(hash);
     saveCompletedSet();
+    // Freeze it completely: priority 0 on every file so libtorrent never re-downloads
+    // anything — even if the user deletes the extracted archives and a recheck later
+    // finds them missing. Pause alone doesn't stop a fastresume-rejected recheck.
+    if (auto ti = h.torrent_file())
+        h.prioritize_files(std::vector<lt::download_priority_t>(
+            static_cast<std::size_t>(ti->num_files()), lt::dont_download));
     h.pause();
     emit torrentsUpdated();
 }
@@ -1332,6 +1338,12 @@ void SessionManager::unmarkCompleted(int index)
     QString hash = QString::fromStdString(
         (std::ostringstream() << st.info_hashes.get_best()).str());
     if (m_completedTorrents.remove(hash)) {
+        // Un-freeze: restore default priority on every file and resume, so it seeds
+        // again (and re-fetches anything the user deleted, since they want it back).
+        if (auto ti = h.torrent_file())
+            h.prioritize_files(std::vector<lt::download_priority_t>(
+                static_cast<std::size_t>(ti->num_files()), lt::default_priority));
+        h.resume();
         saveCompletedSet();
         emit torrentsUpdated();
     }

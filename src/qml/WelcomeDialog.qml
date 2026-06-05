@@ -115,7 +115,9 @@ BatDialog {
         Layout.fillWidth: true
         Layout.topMargin: 4
         spacing: 8
-        TChk { id: dsChk; on: dlg.dontShow; onToggled: function(v) { dlg.dontShow = v } }
+        // Persist the moment it's ticked — the dialog can close via an action card
+        // (dlg.close(), no accepted signal) or the X, so don't rely on onAccepted.
+        TChk { id: dsChk; on: dlg.dontShow; onToggled: function(v) { dlg.dontShow = v; if (typeof settings !== "undefined") settings.set("welcomeShown", v) } }
         Text { text: (i18n.language, i18n.t("welcome_dont_show")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
     }
 }
