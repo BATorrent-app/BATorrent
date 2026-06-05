@@ -1,251 +1,123 @@
-🌐 [English](README.md) | [Português](README.pt-BR.md) | **中文** | [日本語](README.ja.md) | [Русский](README.ru.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<p align="center">
+  <a href="README.md">English</a> | <a href="README.pt-BR.md">Português</a> | <b>中文</b> | <a href="README.ja.md">日本語</a> | <a href="README.ru.md">Русский</a> | <a href="README.es.md">Español</a> | <a href="README.de.md">Deutsch</a> | <a href="README.ua.md">Українська</a>
+</p>
 
 <p align="center">
-  <img src="src/images/logo.svg" alt="BATorrent" width="160">
+  <img src="src/images/logo.svg" alt="BATorrent" width="140">
 </p>
 
 <h1 align="center">BATorrent</h1>
 
+<p align="center">
+  <i>有颜值的 BitTorrent 客户端 — 电影封面、六款主题、零广告。</i>
 </p>
 
 <p align="center">
   <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
   <a href="https://github.com/Mateuscruz19/BATorrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BATorrent/total?style=flat-square&color=dc2626"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
-  <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
-  <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
+  <img alt="Platforms" src="https://img.shields.io/badge/Windows%20·%20macOS%20·%20Linux-dc2626?style=flat-square">
+  <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
+</p>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+
+<p align="center">
+  <img src="src/images/with_startup.gif" alt="BATorrent — 打开即用，封面自动加载" width="860">
+</p>
+
+大多数 BT 客户端长得像报税表。这一个把你的下载呈现为 **一墙电影、剧集和游戏封面** — 就像你在 Netflix 或 Steam 上看到的那样 — 还能用六款主题（或你自己的壁纸）来装扮它。底层是久经考验的 **libtorrent** 引擎，所以它不是中看不中用的玩具：而是一个恰好还有点品味的真正客户端。
+
+> **无广告。无遥测。无「Pro」版。无需账号。** 它唯一会自行发起的请求是 GitHub 更新检查，而且可以关闭。源代码就在这里 — 阅读 [`updater.cpp`](src/app/updater.cpp)，自己来验证。
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+
+## 为什么会有这个项目
+
+我是巴西的一名独立开发者。我想要一个认真对待隐私、在每个桌面平台上原生运行、而且看起来不像 2009 年做的 BT 客户端 — 既然找不到，我就自己做了一个。它免费且采用 **MIT 许可**：没有附加条件，不会日后偷偷加入遥测，也不会被悄悄卖给一家加塞广告的公司。支持八种语言，因为「好用」不应该意味着「只有英文」。
+
+## 外观
+
+<p align="center">
+  <img src="src/images/themes.gif" alt="在内置主题之间切换" width="820">
 </p>
 
 <p align="center">
+  <img src="src/images/image2.png" alt="浅色主题" width="420">
+  <img src="src/images/image4.png" alt="设置" width="420">
+</p>
+
+- **自动封面** — 它读取种子名称，把真实海报（电影和剧集来自 TMDB，游戏来自 IGDB）拉取到网格视图。一键切换到紧凑列表。
+- **六款主题** — Dark、Light、Midnight、Sakura、Dark Star，以及一个完全 **自定义** 的主题（你自己的背景 + 强调色），每款都可选动漫风格的点缀插画。
+- 实时速度图、按状态着色的进度、带实时速度和剩余时间的托盘弹窗 — 这些细节让它*感觉*完整。
+
+## 它到底能做什么
+
+| | |
+|---|---|
+| 🔒 **隐私优先** | 绑定到 VPN 网络接口 + **断网保护（kill switch）**（隧道断开即切断所有流量）、面向私有站（PT）的 PT 模式、Tor 预设、匿名握手、屏蔽迅雷/QQ 等吸血客户端 |
+| 🔎 **查找与添加** | 内置搜索（含开放的 CIS/RuTor 源，无需登录）、智能粘贴（Ctrl+V 识别 magnet / `thunder://` / 哈希）、带正则过滤的 RSS 自动下载、拖放 |
+| 📱 **随处掌控** | 浏览器 WebUI + **二维码配对** — 用手机扫一扫，无需手输 IP。二维码在本地生成，你的地址绝不离开本机 |
+| 📺 **观看与整理** | 边下边播、自动解压压缩包、分类 + 标签、完成时刷新 Plex/Jellyfin/Emby 媒体库 |
+| 🔔 **保持知情** | 原生桌面通知、Telegram 提醒、Discord Rich Presence（「正在下载 X · 67%」） |
+
+<details>
+<summary><b>……以及长尾功能</b>（点击展开）</summary>
+
+单文件优先级 · 顺序下载 · 自动注入 Tracker · 内容布局控制 · 排除文件正则 · 临时下载目录 · 带做种时长窗口的「已完成」状态 · 文件出错时自动暂停 · 全局 + 单种子的分享率/时间限制 · 带宽计划（按小时 + 按星期）· 从 qBittorrent 导入 · 创建 `.torrent` 文件 · 种子检查器 · IP 屏蔽列表 · 协议加密 · Gitee 更新镜像 · 完成后自动关机 · Windows Defender 排除 · 完整备份/恢复 · 最近删除历史 · 强制开始 · 内置日志查看器 + 诊断 + IP 泄漏测试 · 按区域设置格式化 · 键盘快捷键。
+
+</details>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+
+## 获取
+
+| 平台 | | |
+|---|---|---|
+| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [安装版](https://github.com/Mateuscruz19/BATorrent/releases/latest) · [便携版](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Windows 10+ |
+| **macOS** | **`brew install --cask Mateuscruz19/batorrent/batorrent`** · [`.dmg`](https://github.com/Mateuscruz19/BATorrent/releases/latest) | macOS 12+ · Apple Silicon |
+| **Linux** | [AppImage](https://github.com/Mateuscruz19/BATorrent/releases/latest) | glibc 2.35+ |
+
+然后把 `.torrent` 文件或 magnet 链接拖到窗口里就行。就这么简单。
+
+<sub>**macOS：** 尚未进行公证（Apple 的开发者计划需付费）。Homebrew 最省心 — `brew` 会移除隔离标记，应用直接打开，不会弹 Gatekeeper 提示。若用 `.dmg`，首次请右键 → **打开**。</sub>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+
+<details>
+<summary><b>从源码构建与工程说明</b></summary>
+
+### 依赖
+C++17 · CMake 3.16+ · Qt 6（`Widgets`、`Network`、`Svg`、`Multimedia`）· libtorrent-rasterbar 2.0+ · Boost · Qt6Keychain（可选）。
+
+```bash
+# Debian / Ubuntu
+sudo apt install build-essential cmake qt6-base-dev qt6-svg-dev qt6-multimedia-dev \
+    libtorrent-rasterbar-dev libboost-dev libssl-dev
+cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && ./build/BATorrent
+```
+（macOS：`brew install qt libtorrent-rasterbar boost openssl`。Windows：Qt 安装器 + `vcpkg install libtorrent:x64-windows`。）
+
+### 质量与安全
+
+<p>
   <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml/badge.svg"></a>
   <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml/badge.svg"></a>
-  <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
   <a href="https://www.codefactor.io/repository/github/mateuscruz19/batorrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/batorrent/badge"></a>
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+- **测试** — 每次 CI 构建都运行 Catch2 测试套件（单元、安全、内存）；新的后端行为都会配测试。
+- **Sanitizers** — 在 AddressSanitizer + UndefinedBehaviorSanitizer 下干净通过（0 泄漏 / use-after-free / UB）。
+- **审查** — 每次发布前都会检查内存/线程安全、WebUI 鉴权、注入、路径穿越、输入校验和密钥处理。密钥保存在系统钥匙串中，绝不明文存储；只有在你设置密码后，WebUI 才会对网络开放。
 
-## 概述
-
-BATorrent 是一款注重隐私、性能和清晰度的现代跨平台 BitTorrent 客户端。它将成熟的 libtorrent-rasterbar 引擎与精心调校的 Qt 6 界面相结合，提供远程控制 WebUI、RSS 自动下载、兼容 Stremio 的搜索、网络代理流量隔离以及内置媒体服务器集成。
-
-> **无遥测、无分析、无后台通信。** 应用唯一在未经用户操作的情况下发出的网络请求是 GitHub 版本检查，且可在设置中关闭。你可以在 [`src/app/updater.cpp`](src/app/updater.cpp) 中自行审计。
-
-![主窗口 — 深色主题](src/images/image1.png)
-
-![主窗口 — 浅色主题](src/images/image2.png)
-
-![详情面板](src/images/image3.png)
-
-![设置对话框](src/images/image4.png)
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## 下载
-
-各平台最新版本的预构建二进制文件：
-
-| 平台 | 格式 | 备注 |
-|---|---|---|
-| Windows | [安装程序 (`.exe`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) · [便携版 (`.zip`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Windows 10+（x86_64） |
-| macOS | **`brew install --cask Mateuscruz19/batorrent/batorrent`**（推荐）· [磁盘映像 (`.dmg`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | macOS 12+（Apple Silicon） |
-| Linux | [AppImage](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Glibc 2.35+（x86_64） |
-
-> **macOS — 关于安全提示：** 当前版本尚未经过 Apple 公证（开发者计划需付费，对个人项目是一道门槛）。**用 Homebrew 最省事** —— `brew` 在安装时会移除隔离标记，应用直接打开，不会弹出 Gatekeeper 提示。若使用 `.dmg`，首次请右键点击应用并选择**打开**，以绕过"无法验证开发者"的提示。
-
-所有构建产物均由 [Build & Release](.github/workflows/build.yml) 工作流在每次打标签发布时自动生成。
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## 功能特性
-
-### 种子管理
-- `.torrent` 文件和磁力链接，支持持久化恢复数据
-- **Thunder:// 链接解码** — 中文论坛常用迅雷的 `thunder://` 格式分享链接；BATorrent 通过智能粘贴（Ctrl+V）自动解码
-- **智能粘贴** — 当剪贴板中有磁力链接、info hash 或 thunder:// 链接时，按 Ctrl+V 立即弹出添加提示
-- **种子检查器** — 在开始下载前预览 `.torrent` 文件信息（名称、大小、文件列表、Tracker、哈希值、创建者、私有标志）
-- 按文件设置优先级、顺序下载、手动校验和重新宣告
-- 自动注入 Tracker，来源为 [ngosang/trackerslist](https://github.com/ngosang/trackerslist)
-- 多标签系统（自由标签，每个种子可同时拥有多个标签和单个分类）
-- **内容布局** — 原始、创建子文件夹或不创建子文件夹，控制多文件种子的磁盘布局
-- **排除文件模式** — 正则规则自动跳过文件（如 `.nfo`、`.txt`、`sample`）
-- **临时下载路径** — 先下载到暂存文件夹，完成后自动移至保存路径（防止媒体服务器扫描不完整文件）
-- **自动解压压缩包** — 完成后自动解压 `.rar`/`.zip`/`.7z`，并支持为受密码保护的压缩包配置密码列表（Windows 上使用 7-Zip 或 WinRAR，macOS/Linux 上使用 `unrar`/`unzip`）
-- 分类管理、拖放排序和右键菜单操作
-- 从 qBittorrent 导入现有状态
-- 从任意文件或文件夹创建新的 `.torrent` 文件
-
-### 状态管理
-- **已完成** 状态 — 可手动标记，也可在设定的做种时间（1、3、7、14 或 30 天）后自动提升。与做种中/已完成状态不同，跨重启持久化保存。
-- **停止按钮** 可冻结已完成的种子而不移除；**恢复** 按钮取消标记并重新加入做种池。
-- 停止做种规则：全局分享率限制和最大做种时间，支持按种子单独覆盖。
-- **文件错误时自动暂停** — 如果 libtorrent 无法读取已完成种子的文件（例如外置硬盘被拔出），将暂停而非静默重新下载。
-
-### 内容发现
-- **RSS 自动下载**，支持正则过滤、按订阅源设置保存路径、间隔调度和重复检测。可处理磁力链接、`.torrent` URL 和 `<enclosure>` 标签。
-- **兼容 Stremio 的搜索**，通过内置的 Cinemeta 和 Torrentio 插件搜索电影和剧集。
-
-### 流媒体播放
-- 边下边播 — 支持 `.mp4`、`.mkv`、`.avi`、`.mov`、`.wmv`、`.flv`、`.webm`、`.m4v`、`.ts` 格式。
-- 自动检测 VLC 和 IINA，未找到时回退到系统默认播放器。
-
-### 网络代理与流量保护
-- **接口绑定** 将所有种子流量锁定到指定的网络接口（如 `tun0`、`utun4`）。
-- **断网保护（Kill Switch）** 当绑定的接口断开时立即暂停所有活动种子，可选在接口恢复时自动继续。
-- **PT 模式** — 一键私有 Tracker 合规：禁用 DHT/PEX/LSD，强制匿名握手，向所有层级宣告。M-Team、TorrentLeech 等比率追踪社区必备。
-- **反吸血屏蔽** — 自动检测并封禁迅雷（Thunder）、QQ旋风、百度网盘 P2P 等只下载不做种的客户端。通过 BitTorrent 握手中的 peer_id 前缀进行检测。**这是 BATorrent 的核心卖点之一——保护你的上传带宽不被吸血客户端窃取。**
-- **匿名模式** — 在握手中隐藏客户端名称/版本，禁用 UPnP/NAT-PMP 广告。
-- **Tor 代理预设** — 一键填充 SOCKS5 127.0.0.1:9050。
-- **强制 IPv4** — 拒绝 IPv6 对等方，防止隧道未覆盖 IPv6 时的地址泄露。
-- 支持检测 WireGuard、Mullvad、NordLynx、ProtonVPN 及通用 tun/tap 接口。
-- SOCKS5 和 HTTP 代理，支持身份认证。
-- IP 屏蔽列表支持（P2P 格式）。
-- 协议加密：启用 / 强制 / 禁用。
-
-### WebUI
-- 基于浏览器的控制面板，地址为 `http://localhost:8080`（端口和远程访问可配置）。
-- **二维码配对** — 用手机扫描二维码即可打开 WebUI，无需输入 IP 地址。二维码由纯 C++ 在本地生成（你的局域网地址绝不会离开本机）。
-- REST API，JSON 格式响应；支持磁力链接或 `.torrent` 文件上传添加；暂停 / 恢复 / 删除；按种子查看文件和对等方。
-- SHA-256 哈希 Basic Auth，主题匹配的深色 UI，完全响应式移动端布局。
-
-### 带宽与调度
-- 独立的下载和上传速度限制。
-- 备用速度配置，支持按小时和星期几设定计划（支持跨夜时间段）。
-- 按种子和全局的分享率及做种时间限制。
-
-### 媒体服务器集成
-- 下载完成时通知 **Plex**、**Jellyfin** 或 **Emby** 扫描媒体库。
-- 每个服务器可单独配置 URL 和令牌 / API 密钥。
-
-### 通知与集成
-- **Telegram Webhook** — 下载完成、断网保护触发、RSS 自动下载和种子错误等事件推送到任意 Telegram 聊天，通过 Bot Token 实现。支持按事件勾选 + 测试按钮。
-- **Discord Rich Presence** — 在 Discord 个人资料上显示"正在下载 X · 67%"，附带"下载 BATorrent"和"在 GitHub 查看"按钮。开箱即用。
-
-### 界面
-- **六套主题** — 深色、浅色（暖色奶油"舒适"配色）、午夜、樱花、暗星，以及完全 **自定义** 主题（自定义背景图片 + 强调色），每套主题均可选 **动漫风格点缀图**。
-- **自动封面图** — 根据种子名称获取电影/剧集海报（TMDB）和游戏封面（IGDB），以海报 **网格视图** 展示；可切换为紧凑的列表视图。
-- 实时速度图表、详情面板（概要 · 对等方 · 文件 · Tracker · 分块）、按状态着色的进度条、点击聚焦的托盘通知。
-- 自定义托盘弹窗（跨平台），显示实时速度、活动种子预览及预计剩余时间、网络代理状态和退出操作。
-- 过滤标签及实时计数（全部 / 活动 / 下载中 / 做种中 / 已完成 / 已暂停 / 已结束 / 排队中），搜索栏和分类筛选。
-- 支持拖放 `.torrent` 文件和磁力链接。
-- **七种界面语言**，支持自动检测：English、Português (BR)、Español、Deutsch、Русский、日本語、中文 — 1,000+ 条翻译字符串，缺失键自动回退英文。
-- 速度显示可选字节（KB/s、MB/s）或比特（Kbps、Mbps）— 在设置中切换。
-- 区域感知的数字格式化（例如俄语区域显示 `1 234,5`）。
-
-### 系统
-- 自动更新，可配置来源：**GitHub**（默认）或 **Gitee**（中国镜像）或禁用。
-- 所有下载完成后自动关机（60 秒可取消倒计时）。
-- **Windows Defender 排除项** — 一键将下载文件夹添加到 Defender 的排除列表，使其不再标记/扫描已下载的文件（需 UAC 提权）。
-- **完整备份/恢复** 所有设置 + 恢复数据，打包为单个归档文件，方便跨机器迁移。
-- **最近删除** 历史记录（最近 50 个种子，一键恢复）。
-- **强制启动** — 为单个种子绕过活动下载队列上限。
-- 内置**日志查看器**，支持文件轮转（5 MB/文件，保留 3 个）、级别筛选、导出用于提交 Bug 报告，以及 `--debug` 命令行参数。
-- **诊断对话框** — 健康检查（保存路径、端口、DHT、加密、网络代理、吸血客户端屏蔽）+ 出站 IP 泄露测试（通过 api.ipify.org）。
-- 命令行参数：启动时可传入任意数量的 `.torrent` 路径或 `magnet:` URI；后续启动会转发到已运行的实例。
-- 版本更新后首次启动时自动弹出更新日志。
-- 快捷键及 `?` 快速参考对话框。
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## 快速开始
-
-1. 从[发布页面](https://github.com/Mateuscruz19/BATorrent/releases/latest)下载适合你平台的版本。
-2. 首次启动时，欢迎对话框将引导你设置默认保存路径、主题和语言。
-3. 将 `.torrent` 文件或磁力链接拖放到窗口中 — 或使用 **文件 → 打开种子** / **文件 → 添加磁力链接**。
-4. 可选：在 **设置 → 网络代理** 中绑定出站接口，并在添加敏感种子前启用断网保护。
-
-> **代理提示：** 当设置了**接口绑定**后，所有宣告和对等方连接都只通过该接口发出。如果接口断开，断网保护将暂停一切直到恢复。
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## 从源码构建
-
-### 依赖要求
-- C++17 工具链（GCC 11+、Clang 14+ 或 MSVC 19.30+）
-- CMake 3.16+
-- Qt 6（`Widgets`、`Network`、`Svg`、`Multimedia`）
-- libtorrent-rasterbar 2.0+
-- Boost（libtorrent 的传递依赖）
-- 可选：Qt6Keychain（将凭据存储在操作系统密钥环中，而非明文 QSettings）
-
-### Linux
-
-```bash
-# Debian / Ubuntu
-sudo apt install build-essential cmake \
-    qt6-base-dev qt6-svg-dev qt6-multimedia-dev \
-    libtorrent-rasterbar-dev libboost-dev libssl-dev
-
-# Arch
-sudo pacman -S cmake qt6-base qt6-svg qt6-multimedia \
-    libtorrent-rasterbar boost openssl
-
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
-./build/BATorrent
-```
-
-### macOS
-
-```bash
-brew install qt libtorrent-rasterbar boost openssl
-cmake -B build -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="$(brew --prefix qt);$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)"
-cmake --build build -j
-open build/BATorrent.app
-```
-
-### Windows
-
-通过官方安装程序安装 Qt 6，通过 vcpkg 安装 libtorrent：
-
-```powershell
-vcpkg install libtorrent:x64-windows
-cmake -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
-cmake --build build --config Release
-```
-
-### 测试
-
-测试套件为可选构建：
-
-```bash
-cmake -B build -DBAT_BUILD_TESTS=ON
-cmake --build build
-ctest --test-dir build
-```
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## 项目结构
-
-```
-src/
-├── torrent/      libtorrent 封装、恢复数据、队列、做种规则
-├── app/          翻译器、更新器、RSS、插件、密钥存储、GeoIP
-├── gui/          Qt Widgets UI（主窗口、对话框、详情面板、托盘弹窗）
-├── webui/        内嵌 HTTP 服务器 + 浏览器 UI
-└── main.cpp      单实例启动、命令行解析、主题设置
-.github/
-└── workflows/    Linux AppImage、macOS DMG、Windows 安装程序 + zip
-installer/        用于 Windows 安装程序的 Inno Setup 脚本
-dist/             Linux 打包用的 desktop 文件和资源
-```
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+</details>
 
 ## 参与贡献
 
-欢迎提交 Issue 和 Pull Request。对于较大的改动，请先开一个 Issue 讨论方案。可以通过 **Build & Release** 工作流（`workflow_dispatch`）为任意分支生成预构建产物。
-
-报告 Bug 时，请附上：
-- 平台和版本（`帮助 → 关于`）
-- 复现步骤
-- `~/.local/share/BATorrent/`（Linux）、`~/Library/Application Support/BATorrent/`（macOS）或 `%APPDATA%\BATorrent\`（Windows）中涉及恢复数据或设置的相关部分。
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+欢迎提交 Issue 和 PR — 非琐碎的改动请先开 Issue。报告 Bug 时请附上你的平台 + 版本（`帮助 → 关于`）和复现步骤。尤其欢迎翻译。
 
 ## 许可证
 
-[MIT](LICENSE) © 2024–2026 Mateus Cruz
+[MIT](LICENSE) © 2024–2026 Mateus Cruz · 于巴西制作 🦇

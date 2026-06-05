@@ -34,7 +34,7 @@ Most torrent clients look like a tax form. This one shows your downloads as a **
 
 ## Why this exists
 
-I'm one developer in Brazil. I wanted a torrent client that took privacy seriously, ran natively on every desktop, and didn't look like it was built in 2009 — and I couldn't find one, so I built it. It's free and **MIT-licensed**: no strings, no telemetry sneaking in later, and it can't be quietly sold to a company that bolts on ads. Seven languages, because "useful" shouldn't mean "English only."
+I'm one developer in Brazil. I wanted a torrent client that took privacy seriously, ran natively on every desktop, and didn't look like it was built in 2009 — and I couldn't find one, so I built it. It's free and **MIT-licensed**: no strings, no telemetry sneaking in later, and it can't be quietly sold to a company that bolts on ads. Eight languages, because "useful" shouldn't mean "English only."
 
 ## The look
 
