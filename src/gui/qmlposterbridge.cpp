@@ -1899,10 +1899,13 @@ QVariantList QmlSearchBridge::sources() const
     };
     add("stremio", "Stremio (catálogo)");
     auto &mgr = AddonManager::instance();
-    if (mgr.torrentSearchEnabled()) {
+    if (mgr.torrentSearchEnabled())
         add("legacy", "Torrents");
+    // Games search is independent of the torrent provider: show it whenever a
+    // game catalog is configured (a default is seeded on first run), or as a
+    // fallback when the torrent provider is on (TPB Games category).
+    if (!GameSourceManager::instance().sources().isEmpty() || mgr.torrentSearchEnabled())
         add("games", "Jogos");
-    }
     const auto providers = mgr.searchProviders();
     for (int i = 0; i < providers.size(); ++i)
         if (providers[i].enabled)
@@ -2472,6 +2475,9 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "webUiPassword")      return QString();   // never expose the stored hash
     // media-server secrets live in the keychain; never echoed back to the UI
     if (key == "plexToken" || key == "jellyfinApiKey") return QString();
+    // Force a real bool: the Windows registry stores bool as DWORD and reads it
+    // back as int, so a raw `=== true` check in QML fails and the dialog re-shows.
+    if (key == "welcomeShown") { QSettings st; return st.value(QStringLiteral("welcomeShown"), false).toBool(); }
     // UI-only prefs + media API keys
     QSettings st;
     return st.value(key);
