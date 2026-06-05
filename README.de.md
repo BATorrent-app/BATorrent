@@ -47,8 +47,11 @@ Ich bin ein einzelner Entwickler in Brasilien. Ich wollte einen Torrent-Client, 
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.jpg" alt="List view" width="425">
-  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="425">
+  <img src="src/images/shot-list.jpg" alt="List view" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="860">
 </p>
 
 - **Automatische Cover** — liest den Torrent-Namen und holt das echte Poster (Filme & Serien über TMDB, Spiele über IGDB) in eine Rasteransicht. Ein Klick wechselt zur kompakten Liste.

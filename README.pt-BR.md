@@ -47,8 +47,11 @@ Sou um desenvolvedor sozinho no Brasil. Eu queria um cliente de torrent que leva
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.pt.jpg" alt="Visão em lista" width="425">
-  <img src="src/images/shot-settings.pt.jpg" alt="Preferências" width="425">
+  <img src="src/images/shot-list.pt.jpg" alt="Visão em lista" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-settings.pt.jpg" alt="Preferências" width="860">
 </p>
 
 - **Capa automática** — ele lê o nome do torrent e busca o pôster real (filmes e séries via TMDB, jogos via IGDB) numa visão em grade. Um clique alterna para uma lista compacta.

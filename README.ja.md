@@ -47,8 +47,11 @@
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.jpg" alt="List view" width="425">
-  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="425">
+  <img src="src/images/shot-list.jpg" alt="List view" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="860">
 </p>
 
 - **自動カバーアート** — トレント名を読み取り、本物のポスター（映画・ドラマは TMDB、ゲームは IGDB）をグリッド表示に取り込みます。1クリックでコンパクトなリスト表示に切り替え。

@@ -47,8 +47,11 @@
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.ua.jpg" alt="Список" width="425">
-  <img src="src/images/shot-theme.ua.jpg" alt="Тема Dark Star" width="425">
+  <img src="src/images/shot-list.ua.jpg" alt="Список" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-theme.ua.jpg" alt="Тема Dark Star" width="860">
 </p>
 
 - **Автоматичні обкладинки** — читає назву торента й підтягує справжній постер (фільми та серіали через TMDB, ігри через IGDB) у вигляд-сітку. Один клік перемикає на компактний список.

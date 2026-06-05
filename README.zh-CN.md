@@ -47,8 +47,11 @@
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.jpg" alt="List view" width="425">
-  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="425">
+  <img src="src/images/shot-list.jpg" alt="List view" width="860">
+</p>
+
+<p align="center">
+  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="860">
 </p>
 
 - **自动封面** — 它读取种子名称，把真实海报（电影和剧集来自 TMDB，游戏来自 IGDB）拉取到网格视图。一键切换到紧凑列表。
