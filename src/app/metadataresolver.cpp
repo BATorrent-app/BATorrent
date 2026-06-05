@@ -458,7 +458,10 @@ void MetadataResolver::ensureIgdbToken()
 static QString foldTitle(const QString &s)
 {
     QString n = s.normalized(QString::NormalizationForm_KD);
-    n.remove(QRegularExpression(QStringLiteral("[\\x{0300}-\\x{036F}]")));
+    n.remove(QRegularExpression(QStringLiteral("[\\x{0300}-\\x{036F}]")));   // diacritics
+    // Drop apostrophes so "Baldur's" == "Baldurs" — torrent names usually strip
+    // them while IGDB/TMDB keep them, which sank the token-overlap score.
+    n.remove(QRegularExpression(QStringLiteral("['\\x{2019}\\x{2018}`]")));
     return n.toLower();
 }
 
