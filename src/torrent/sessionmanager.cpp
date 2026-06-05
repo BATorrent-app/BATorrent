@@ -274,6 +274,7 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
         incrementTorrentCount();
+        stageResumeSave(h);   // persist now — an idle 0%/no-peer torrent never
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     } catch (const std::exception &e) {
@@ -318,6 +319,7 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
         incrementTorrentCount();
+        stageResumeSave(h);   // persist immediately (see addTorrent)
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     } catch (const std::exception &e) {
         emit torrentError(QString::fromStdString(e.what()));
@@ -1680,6 +1682,14 @@ qint64 SessionManager::effectiveMaxSeedSeconds(const QString &hash) const
     return m_maxSeedSeconds;
 }
 
+void SessionManager::stageResumeSave(const lt::torrent_handle &h)
+{
+    if (!h.is_valid()) return;
+    h.save_resume_data(lt::torrent_handle::save_info_dict);
+    m_lastResumeSaveAt[h] = QDateTime::currentSecsSinceEpoch();
+    ++m_resumeOutstanding;
+}
+
 void SessionManager::saveResumeData()
 {
     // QSettings writes are cheap (memory-backed; flushed on app exit) so we
@@ -2188,6 +2198,7 @@ void SessionManager::processAlerts()
                     mr->handle.rename_file(i, original + ".!bt");
                 }
             }
+            stageResumeSave(mr->handle);   // persist the magnet now it has metadata
         }
         // File done — drop the .!bt suffix so the file appears with its
         // final name in the file manager and media server scans. The

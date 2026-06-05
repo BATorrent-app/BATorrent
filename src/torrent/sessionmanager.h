@@ -412,6 +412,9 @@ private:
     // suffix so media servers ignore in-progress files. Stripped back as
     // each file completes (see file_completed_alert handling).
     void applyIncompleteSuffix(lt::add_torrent_params &atp);
+    // Request an immediate resume-data write for a handle (so a freshly-added,
+    // never-downloaded torrent survives a restart). Mirrors the piece_finished path.
+    void stageResumeSave(const lt::torrent_handle &h);
     QString torrentHash(int index) const;
     // Fetch the cached torrent_status for a handle, falling back to a live
     // status() call only when the cache hasn't been populated yet (just after
