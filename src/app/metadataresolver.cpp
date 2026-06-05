@@ -471,7 +471,21 @@ static QSet<QString> titleTokens(const QString &s)
     const auto parts = foldTitle(s).split(QRegularExpression(QStringLiteral("[^a-z0-9]+")), Qt::SkipEmptyParts);
     static const QSet<QString> stop = { QStringLiteral("the"), QStringLiteral("a"),
         QStringLiteral("of"), QStringLiteral("and"), QStringLiteral("edition") };
-    for (const auto &p : parts) if (!stop.contains(p)) out.insert(p);
+    // Canonicalize sequel numerals so "GTA V" == "GTA 5" and "Final Fantasy VII"
+    // == "...7". Applied to both query and API result, so it only ever helps the
+    // overlap. Single i/c/d/l/m left out — too word-like, rarely a sequel number.
+    static const QHash<QString, QString> roman = {
+        {QStringLiteral("ii"),"2"},{QStringLiteral("iii"),"3"},{QStringLiteral("iv"),"4"},
+        {QStringLiteral("v"),"5"},{QStringLiteral("vi"),"6"},{QStringLiteral("vii"),"7"},
+        {QStringLiteral("viii"),"8"},{QStringLiteral("ix"),"9"},{QStringLiteral("x"),"10"},
+        {QStringLiteral("xi"),"11"},{QStringLiteral("xii"),"12"},{QStringLiteral("xiii"),"13"},
+        {QStringLiteral("xiv"),"14"},{QStringLiteral("xv"),"15"}
+    };
+    for (const auto &p : parts) {
+        if (stop.contains(p)) continue;
+        const auto it = roman.constFind(p);
+        out.insert(it != roman.constEnd() ? it.value() : p);
+    }
     return out;
 }
 
