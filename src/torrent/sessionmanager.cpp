@@ -378,6 +378,20 @@ QString SessionManager::takeCoverHint(const QString &hash)
     return m_coverHints.take(hash);
 }
 
+QStringList SessionManager::torrentFileNames(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return {};
+    const auto &h = m_torrents[index];
+    if (!h.is_valid()) return {};
+    auto ti = h.torrent_file();
+    if (!ti) return {};
+    QStringList out;
+    const auto &fs = ti->files();
+    for (lt::file_index_t i(0); i < fs.end_file(); ++i)
+        out << QString::fromStdString(fs.file_path(i));
+    return out;
+}
+
 void SessionManager::checkMagnetTimeouts()
 {
     if (m_magnetTimeoutSeconds <= 0 || m_magnetAddedAt.empty())

@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
                 if (!hint.isEmpty())
                     resolver->resolveManual(hash, hint, ContentType::Game);
                 else
-                    resolver->resolve(hash, info.name);
+                    resolver->resolve(hash, info.name, session.torrentFileNames(index));
             }
             // Toast on user-initiated adds. Resume-loaded torrents don't reach
             // here: loadResumeData() runs in the SessionManager ctor, before

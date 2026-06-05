@@ -112,12 +112,20 @@ MetadataResolver::MetadataResolver(QObject *parent)
     }
 }
 
-void MetadataResolver::resolve(const QString &infoHash, const QString &torrentName)
+void MetadataResolver::resolve(const QString &infoHash, const QString &torrentName,
+                               const QStringList &fileNames)
 {
     if (m_cache.contains(infoHash))
         return;
 
     ParsedName parsed = NameParser::parse(torrentName);
+    // The file payload outranks the name for game-vs-movie (a name can lie). Keep
+    // a name-derived Series though — episode markers there are reliable, and a
+    // single-episode torrent looks like a movie by file count alone.
+    if (!fileNames.isEmpty() && parsed.contentType != ContentType::Series) {
+        const ContentType byFiles = NameParser::classifyByFiles(fileNames);
+        if (byFiles != ContentType::Unknown) parsed.contentType = byFiles;
+    }
     qDebug() << "[metadata] resolve:" << torrentName << "->" << parsed.cleanTitle
              << "type:" << static_cast<int>(parsed.contentType);
     m_queue.enqueue({infoHash, parsed});
@@ -446,6 +454,36 @@ void MetadataResolver::ensureIgdbToken()
     });
 }
 
+// Accent/diacritic-folded lowercase, so "Ragnarök" == "Ragnarok".
+static QString foldTitle(const QString &s)
+{
+    QString n = s.normalized(QString::NormalizationForm_KD);
+    n.remove(QRegularExpression(QStringLiteral("[\\x{0300}-\\x{036F}]")));
+    return n.toLower();
+}
+
+static QSet<QString> titleTokens(const QString &s)
+{
+    QSet<QString> out;
+    const auto parts = foldTitle(s).split(QRegularExpression(QStringLiteral("[^a-z0-9]+")), Qt::SkipEmptyParts);
+    static const QSet<QString> stop = { QStringLiteral("the"), QStringLiteral("a"),
+        QStringLiteral("of"), QStringLiteral("and"), QStringLiteral("edition") };
+    for (const auto &p : parts) if (!stop.contains(p)) out.insert(p);
+    return out;
+}
+
+// Jaccard token overlap, 0..1. Picks the right API result instead of results[0]
+// (e.g. "God of War Ragnarök" → the real game, not "Ragnarok War of Chaos").
+static double titleSimilarity(const QString &a, const QString &b)
+{
+    const QSet<QString> ta = titleTokens(a), tb = titleTokens(b);
+    if (ta.isEmpty() || tb.isEmpty()) return 0.0;
+    int inter = 0;
+    for (const auto &t : ta) if (tb.contains(t)) ++inter;
+    const int uni = ta.size() + tb.size() - inter;
+    return uni ? double(inter) / double(uni) : 0.0;
+}
+
 void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &parsed)
 {
     QString clientId = igdbClientId();
@@ -498,31 +536,27 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
         QJsonArray results = QJsonDocument::fromJson(reply->readAll()).array();
         qDebug() << "[metadata] IGDB results:" << results.size() << "for" << parsed.cleanTitle;
 
-        // Find best match — prefer exact title match, then contains
+        // Pick the result whose title is most similar to the query (folded token
+        // overlap), with a small bonus when the release year matches. This beats
+        // taking results[0], which is how a loose IGDB search returned the wrong
+        // game. Below the threshold we trust nothing (placeholder > wrong cover).
         QJsonObject item;
-        bool found = false;
+        double bestScore = 0.0;
         for (const auto &v : results) {
-            QJsonObject obj = v.toObject();
-            QString resultName = obj.value(QLatin1String("name")).toString();
-            if (resultName.compare(parsed.cleanTitle, Qt::CaseInsensitive) == 0) {
-                item = obj; found = true; break;
-            }
-        }
-        if (!found) {
-            for (const auto &v : results) {
-                QJsonObject obj = v.toObject();
-                QString resultName = obj.value(QLatin1String("name")).toString();
-                if (resultName.contains(parsed.cleanTitle, Qt::CaseInsensitive)
-                    || parsed.cleanTitle.contains(resultName, Qt::CaseInsensitive)) {
-                    item = obj; found = true; break;
+            const QJsonObject obj = v.toObject();
+            double score = titleSimilarity(parsed.cleanTitle, obj.value(QLatin1String("name")).toString());
+            if (parsed.year > 0) {
+                const qint64 rel = qint64(obj.value(QLatin1String("first_release_date")).toDouble());
+                if (rel > 0) {
+                    const int ry = QDateTime::fromSecsSinceEpoch(rel).date().year();
+                    if (qAbs(ry - parsed.year) <= 1) score += 0.15;
                 }
             }
+            if (score > bestScore) { bestScore = score; item = obj; }
         }
-        // Short titles need exact match to avoid false positives
-        if (!found && parsed.cleanTitle.length() > 4 && !results.isEmpty()) {
-            item = results[0].toObject();
-            found = true;
-        }
+        // Exact (folded) title match always passes; otherwise need decent overlap.
+        const bool found = bestScore >= 0.34
+            || foldTitle(item.value(QLatin1String("name")).toString()) == foldTitle(parsed.cleanTitle);
 
         if (!found) {
             qDebug() << "[metadata] IGDB: no confident match for" << parsed.cleanTitle;

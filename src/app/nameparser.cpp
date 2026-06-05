@@ -4,6 +4,7 @@
 
 #include "nameparser.h"
 #include <QSet>
+#include <algorithm>
 
 #include <QRegularExpression>
 
@@ -11,6 +12,11 @@ ParsedName NameParser::parse(const QString &rawName)
 {
     ParsedName result;
     QString work = rawName;
+
+    // Token scores accumulated across the strip pipeline. The final type is the
+    // winner of game vs video (Series is decided earlier by SxxExx markers).
+    int gameScore = 0;
+    int videoScore = 0;
 
     // Strip a leading release-site prefix: "www.foo.com - ", "[foo.net]",
     // "bar.org_", etc. These pollute the title so the TMDB/IGDB lookup misses
@@ -95,10 +101,31 @@ ParsedName NameParser::parse(const QString &rawName)
             QRegularExpression::CaseInsensitiveOption);
         m = repackRe.match(work);
         if (m.hasMatch()) {
-            result.contentType = ContentType::Game;
+            gameScore += 10;                 // a known repacker is a strong game signal
             result.repackerTag = repacker;
             work.remove(m.capturedStart(1), m.capturedLength(1));
             break;
+        }
+    }
+
+    // Game-specific tokens that aren't repacker group names. Unambiguous enough
+    // not to appear in movie/series titles (platform/DRM/crack markers).
+    static const QStringList gameTokens = {
+        QStringLiteral("Goldberg"), QStringLiteral("Denuvo"), QStringLiteral("CrackFix"),
+        QStringLiteral("SteamRip"), QStringLiteral("Steam-Rip"), QStringLiteral("DRM-Free"),
+        QStringLiteral("DRMFree"), QStringLiteral("NSP"), QStringLiteral("XCI"),
+        QStringLiteral("RPCS3"), QStringLiteral("Ryujinx"), QStringLiteral("RGH"),
+        QStringLiteral("JTAG"), QStringLiteral("PS3"), QStringLiteral("PSVita")
+    };
+    for (const QString &tok : gameTokens) {
+        QString escaped = QRegularExpression::escape(tok);
+        QRegularExpression tokRe(
+            QStringLiteral("(?:^|[.\\s\\-\\[\\]()])(%1)(?:$|[.\\s\\-\\[\\]()])").arg(escaped),
+            QRegularExpression::CaseInsensitiveOption);
+        m = tokRe.match(work);
+        if (m.hasMatch()) {
+            gameScore += 3;
+            work.remove(m.capturedStart(1), m.capturedLength(1));
         }
     }
 
@@ -136,6 +163,7 @@ ParsedName NameParser::parse(const QString &rawName)
         m = tagRe.match(work);
         if (m.hasMatch()) {
             mediaTagFound = true;
+            videoScore += 1;            // resolution/codec/source/audio → video lean
             work.remove(m.capturedStart(1), m.capturedLength(1));
         }
     }
@@ -148,8 +176,19 @@ ParsedName NameParser::parse(const QString &rawName)
         QRegularExpression::CaseInsensitiveOption);
     if (mediaTagFound) work.remove(audioRe);
 
-    if (mediaTagFound && result.contentType == ContentType::Unknown)
+    // Type by score (Series was already decided by SxxExx/anime markers above).
+    if (result.contentType == ContentType::Series) {
+        result.typeConfidence = 0.9;
+    } else if (gameScore > 0 && gameScore >= videoScore) {
+        result.contentType = ContentType::Game;
+    } else if (videoScore > 0) {
         result.contentType = ContentType::Movie;
+    }
+    if (result.contentType != ContentType::Series) {
+        const int top = std::max(gameScore, videoScore);
+        const int low = std::min(gameScore, videoScore);
+        result.typeConfidence = top == 0 ? 0.0 : double(top - low) / double(top);
+    }
 
     static const QRegularExpression yearRe(QStringLiteral("\\b((?:19|20)(?:0|1|2)\\d)\\b"));
     QRegularExpressionMatchIterator it = yearRe.globalMatch(work);
@@ -166,6 +205,27 @@ ParsedName NameParser::parse(const QString &rawName)
 
     work.replace(QLatin1Char('.'), QLatin1Char(' '));
     work.replace(QLatin1Char('_'), QLatin1Char(' '));
+
+    // RuTracker titles are often bilingual ("Ведьмак 3 / The Witcher 3"). TMDB/
+    // IGDB are Latin-indexed, so keep the most-Latin half (split on "/"), or just
+    // drop Cyrillic runs when there's no separator. Never strip to nothing.
+    static const QRegularExpression cyrillicRe(QStringLiteral("[\\x{0400}-\\x{04FF}]+"));
+    static const QRegularExpression latinRe(QStringLiteral("[A-Za-z]"));
+    if (work.contains(cyrillicRe)) {
+        if (work.contains(QLatin1Char('/'))) {
+            QString best; qsizetype bestLatin = -1;
+            const auto parts = work.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+            for (const QString &p : parts) {
+                const qsizetype n = p.count(latinRe);
+                if (n > bestLatin) { bestLatin = n; best = p; }
+            }
+            if (bestLatin > 0) work = best;
+        } else if (work.contains(latinRe)) {
+            QString latin = work;
+            latin.remove(cyrillicRe);
+            if (latin.contains(latinRe)) work = latin;
+        }
+    }
 
     static const QRegularExpression trailingGroupRe(QStringLiteral("\\s*-\\s*[A-Za-z0-9]+$"));
     work.remove(trailingGroupRe);
@@ -204,4 +264,39 @@ ParsedName NameParser::parse(const QString &rawName)
     result.cleanTitle = words.join(QLatin1Char(' '));
 
     return result;
+}
+
+ContentType NameParser::classifyByFiles(const QStringList &fileNames)
+{
+    // Extensions that only a game/app payload carries, vs. video containers.
+    static const QSet<QString> gameExt = {
+        QStringLiteral("exe"), QStringLiteral("bin"), QStringLiteral("dll"),
+        QStringLiteral("iso"), QStringLiteral("msi"), QStringLiteral("cab"),
+        QStringLiteral("pak"), QStringLiteral("dat"), QStringLiteral("asar"),
+        QStringLiteral("uasset"), QStringLiteral("vpk"), QStringLiteral("nsp"),
+        QStringLiteral("xci"), QStringLiteral("pkg")
+    };
+    static const QSet<QString> videoExt = {
+        QStringLiteral("mkv"), QStringLiteral("mp4"), QStringLiteral("avi"),
+        QStringLiteral("mov"), QStringLiteral("wmv"), QStringLiteral("m4v"),
+        QStringLiteral("ts"), QStringLiteral("flv"), QStringLiteral("webm"),
+        QStringLiteral("m2ts")
+    };
+    static const QRegularExpression epRe(
+        QStringLiteral("s\\d{1,2}e\\d{1,3}|\\b\\d{1,2}x\\d{2,3}\\b"),
+        QRegularExpression::CaseInsensitiveOption);
+
+    int game = 0, video = 0, episodes = 0;
+    for (const QString &f : fileNames) {
+        const QString ext = f.section(QLatin1Char('.'), -1).toLower();
+        if (gameExt.contains(ext)) {
+            ++game;
+        } else if (videoExt.contains(ext)) {
+            ++video;
+            if (epRe.match(f.section(QLatin1Char('/'), -1)).hasMatch()) ++episodes;
+        }
+    }
+    if (game > video) return ContentType::Game;   // a few intro videos don't outweigh a game payload
+    if (video > 0)    return episodes >= 2 ? ContentType::Series : ContentType::Movie;
+    return ContentType::Unknown;
 }

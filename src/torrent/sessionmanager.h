@@ -47,6 +47,7 @@ public:
 
     int torrentCount() const;
     TorrentInfo torrentAt(int index) const;
+    QStringList torrentFileNames(int index) const;   // relative file paths, empty pre-metadata
     std::vector<PeerInfo> peersAt(int index) const;
     std::vector<FileInfo> filesAt(int index) const;
     std::vector<TrackerInfo> trackersAt(int index) const;

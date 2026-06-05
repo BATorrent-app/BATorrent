@@ -33,7 +33,10 @@ class MetadataResolver : public QObject
 public:
     explicit MetadataResolver(QObject *parent = nullptr);
 
-    void resolve(const QString &infoHash, const QString &torrentName);
+    // fileNames (optional): the torrent's file list. The payload is the strongest
+    // type signal, so it settles game-vs-movie when the name is ambiguous.
+    void resolve(const QString &infoHash, const QString &torrentName,
+                 const QStringList &fileNames = QStringList());
     MetadataResult cached(const QString &infoHash) const;
     bool hasCached(const QString &infoHash) const;
     void batchResolve(const QStringList &infoHashes, const QStringList &torrentNames);

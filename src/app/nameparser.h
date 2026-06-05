@@ -17,12 +17,20 @@ struct ParsedName {
     int episode = -1;
     ContentType contentType = ContentType::Unknown;
     QString repackerTag;
+    // 0..1 — how confident the type guess is, from the margin between the
+    // game/video token scores. Low confidence → caller should lean on stronger
+    // signals (file list, source) or fall back to a placeholder.
+    double typeConfidence = 0.0;
 };
 
 class NameParser
 {
 public:
     static ParsedName parse(const QString &rawName);
+
+    // Type inferred purely from a torrent's file list — the strongest signal
+    // (a name can lie, the payload can't). Returns Unknown when it's ambiguous.
+    static ContentType classifyByFiles(const QStringList &fileNames);
 };
 
 #endif

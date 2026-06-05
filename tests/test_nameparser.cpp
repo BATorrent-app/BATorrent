@@ -86,3 +86,29 @@ TEST_CASE("anime fansub naming: [Group] Title - NN is an episode", "[nameparser]
     CHECK(a.contentType != ContentType::Series);
     CHECK(a.episode == -1);
 }
+
+TEST_CASE("type scoring: game tokens win over a stray video tag", "[nameparser]")
+{
+    // No repacker group, but a Denuvo marker → still a game.
+    CHECK(P("Hogwarts Legacy Denuvo Bypass").contentType == ContentType::Game);
+    CHECK(P("Elden Ring [Goldberg]").contentType == ContentType::Game);
+    // A movie REPACK release must stay a movie (REPACK is ambiguous, not a game token).
+    CHECK(P("Dune Part Two 2024 1080p REPACK x264").contentType == ContentType::Movie);
+}
+
+TEST_CASE("bilingual RuTracker titles drop the Cyrillic half", "[nameparser]")
+{
+    CHECK(P("Ведьмак 3 / The Witcher 3").cleanTitle == "The Witcher 3");
+    // Pure-Latin titles are untouched.
+    CHECK(P("The Witcher 3").cleanTitle == "The Witcher 3");
+}
+
+TEST_CASE("classifyByFiles: payload extensions decide the type", "[nameparser]")
+{
+    CHECK(NameParser::classifyByFiles({"setup.exe", "data1.bin", "data2.bin"}) == ContentType::Game);
+    CHECK(NameParser::classifyByFiles({"Movie.2024.1080p.mkv"}) == ContentType::Movie);
+    CHECK(NameParser::classifyByFiles({"Show.S01E01.mkv", "Show.S01E02.mkv", "Show.S01E03.mkv"}) == ContentType::Series);
+    CHECK(NameParser::classifyByFiles({"readme.txt"}) == ContentType::Unknown);
+    // A game with a bundled intro video still reads as a game (payload dominates).
+    CHECK(NameParser::classifyByFiles({"game.exe", "d3d.dll", "intro.mkv"}) == ContentType::Game);
+}
