@@ -3,272 +3,121 @@
 </p>
 
 <p align="center">
-  <img src="src/images/logo.svg" alt="BATorrent" width="160">
+  <img src="src/images/logo.svg" alt="BATorrent" width="140">
 </p>
 
 <h1 align="center">BATorrent</h1>
 
+<p align="center">
+  <i>The BitTorrent client with a face — movie covers, six themes, zero ads.</i>
 </p>
 
 <p align="center">
   <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
   <a href="https://github.com/Mateuscruz19/BATorrent/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Mateuscruz19/BATorrent/total?style=flat-square&color=dc2626"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Mateuscruz19/BATorrent?style=flat-square&color=dc2626"></a>
-  <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-dc2626?style=flat-square">
-  <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-available-dc2626?style=flat-square&logo=microsoft"></a>
+  <img alt="Platforms" src="https://img.shields.io/badge/Windows%20·%20macOS%20·%20Linux-dc2626?style=flat-square">
+  <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
+</p>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+
+<p align="center">
+  <img src="src/images/with_startup.gif" alt="BATorrent — open and go, covers resolve automatically" width="860">
+</p>
+
+Most torrent clients look like a tax form. This one shows your downloads as a **wall of movie, show, and game covers** — the same thing you'd recognise on Netflix or Steam — and lets you dress it in six themes (or your own wallpaper). Under the hood it's the battle-tested **libtorrent** engine, so it's not a pretty toy: it's a real client that just happens to have taste.
+
+> **No ads. No telemetry. No "Pro" tier. No account.** The only request it makes on its own is the GitHub update check, and you can turn that off. The source is right here — read [`updater.cpp`](src/app/updater.cpp) and see for yourself.
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+
+## Why this exists
+
+I'm one developer in Brazil. I wanted a torrent client that took privacy seriously, ran natively on every desktop, and didn't look like it was built in 2009 — and I couldn't find one, so I built it. It's free and **MIT-licensed**: no strings, no telemetry sneaking in later, and it can't be quietly sold to a company that bolts on ads. Seven languages, because "useful" shouldn't mean "English only."
+
+## The look
+
+<p align="center">
+  <img src="src/images/themes.gif" alt="Switching between built-in themes" width="820">
 </p>
 
 <p align="center">
+  <img src="src/images/image2.png" alt="Light theme" width="420">
+  <img src="src/images/image4.png" alt="Settings" width="420">
+</p>
+
+- **Automatic cover art** — it reads the torrent name and pulls the real poster (movies & shows via TMDB, games via IGDB) into a grid view. One click flips to a tight list.
+- **Six themes** — Dark, Light, Midnight, Sakura, Dark Star, and a fully **Custom** one (your own background + accent colours), each with optional anime accent art.
+- Real-time speed graph, state-coloured progress, a rich tray popup with live speeds and ETA — the details that make it *feel* finished.
+
+## What it actually does
+
+| | |
+|---|---|
+| 🔒 **Privacy first** | VPN interface binding + **kill switch** (drops all traffic if the tunnel dies), PT mode for private trackers, Tor preset, anonymous handshake, anti-leecher blocking |
+| 🔎 **Find & add** | Built-in search (incl. open CIS/RuTor sources, no login), Smart Paste (magnet / `thunder://` / hash on Ctrl+V), RSS auto-download with regex filters, drag-and-drop |
+| 📱 **Control it anywhere** | Browser WebUI with **QR pairing** — scan from your phone, no typing IPs. The QR is generated locally; your address never leaves the machine |
+| 📺 **Watch & organise** | Stream while downloading, auto-extract archives, categories + tags, Plex/Jellyfin/Emby library refresh on completion |
+| 🔔 **Stay in the loop** | Native desktop notifications, Telegram alerts, Discord Rich Presence ("Downloading X · 67%") |
+
+<details>
+<summary><b>…and the long tail</b> (click to expand)</summary>
+
+Per-file priority · sequential download · auto-tracker injection · content-layout control · excluded-file regex · temp download path · completed-state with seeding windows · auto-pause on file errors · global + per-torrent ratio/time limits · bandwidth scheduler (hour + day) · import from qBittorrent · create `.torrent` files · torrent inspector · IP blocklists · protocol encryption · Gitee update mirror · auto-shutdown when done · Windows Defender exclusion · full backup/restore · recently-removed history · force start · built-in log viewer + diagnostics + IP-leak test · locale-aware formatting · keyboard shortcuts.
+
+</details>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+
+## Get it
+
+| Platform | | |
+|---|---|---|
+| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [Installer](https://github.com/Mateuscruz19/BATorrent/releases/latest) · [Portable](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Windows 10+ |
+| **macOS** | **`brew install --cask Mateuscruz19/batorrent/batorrent`** · [`.dmg`](https://github.com/Mateuscruz19/BATorrent/releases/latest) | macOS 12+ · Apple Silicon |
+| **Linux** | [AppImage](https://github.com/Mateuscruz19/BATorrent/releases/latest) | glibc 2.35+ |
+
+Then just drop a `.torrent` or magnet onto the window. That's it.
+
+<sub>**macOS:** not notarised yet (Apple's dev program is paid). Homebrew is the smoothest path — `brew` strips the quarantine flag, so it opens with no Gatekeeper prompt. With the `.dmg`, right-click → **Open** the first time.</sub>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+
+<details>
+<summary><b>Build from source & engineering notes</b></summary>
+
+### Requirements
+C++17 · CMake 3.16+ · Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`) · libtorrent-rasterbar 2.0+ · Boost · optional Qt6Keychain.
+
+```bash
+# Debian / Ubuntu
+sudo apt install build-essential cmake qt6-base-dev qt6-svg-dev qt6-multimedia-dev \
+    libtorrent-rasterbar-dev libboost-dev libssl-dev
+cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && ./build/BATorrent
+```
+(macOS: `brew install qt libtorrent-rasterbar boost openssl`. Windows: Qt installer + `vcpkg install libtorrent:x64-windows`.)
+
+### Quality & security
+
+<p>
   <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/codeql.yml/badge.svg"></a>
   <a href="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml"><img alt="Sanitizers" src="https://github.com/Mateuscruz19/BATorrent/actions/workflows/sanitizers.yml/badge.svg"></a>
-  <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Mateuscruz19_BAT-Torrent"><img alt="Quality Gate" src="https://sonarcloud.io/api/project_badges/measure?project=Mateuscruz19_BAT-Torrent&metric=alert_status"></a>
   <a href="https://www.codefactor.io/repository/github/mateuscruz19/batorrent"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mateuscruz19/batorrent/badge"></a>
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+- **Tests** — Catch2 suite (unit, security, memory) on every CI build; new backend behaviour gets a test.
+- **Sanitizers** — passes clean under AddressSanitizer + UndefinedBehaviorSanitizer (0 leaks / UAF / UB).
+- **Reviewed** before each release for memory/thread safety, WebUI auth, injection, path traversal, input validation, and secret handling. Secrets live in the OS keychain, never plaintext; the WebUI only binds to the network once you set a password.
 
-## Overview
-
-BATorrent is a desktop BitTorrent client that prioritises clarity, performance, and privacy. It pairs the mature libtorrent-rasterbar engine with a hand-tuned Qt 6 interface, a remote-control WebUI, RSS auto-downloading, Stremio-compatible search, VPN-aware traffic isolation, and built-in media-server integration.
-
-> **No telemetry, no analytics, no calls home.** The only outbound request the app initiates without you is the GitHub release check, which can be disabled in Settings. Audit it yourself in [`src/app/updater.cpp`](src/app/updater.cpp).
-<img width="1280" height="808" alt="image" src="https://github.com/user-attachments/assets/1d560e7a-06bc-443d-8e07-9189e74b0953" />
-
-![Main window — Dark theme](src/images/image1.png)
-
-![Main window — Light theme](src/images/image2.png)
-
-![Details panel](src/images/image3.png)
-
-![Settings dialog](src/images/image4.png)
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-> **Update notice:** versions 2.5.0 through 2.6.0 had a bug where the auto-updater silently failed. If you're on one of these versions, please [download the latest release manually](https://github.com/Mateuscruz19/BATorrent/releases/latest). The updater works correctly from v2.6.1 onward.
-
-## Download
-
-Pre-built binaries for the latest release:
-
-| Platform | Format | Notes |
-|---|---|---|
-| Windows | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [Installer (`.exe`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) · [Portable (`.zip`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Windows 10+ (x86_64) |
-| macOS | **`brew install --cask Mateuscruz19/batorrent/batorrent`** (recommended) · [Disk image (`.dmg`)](https://github.com/Mateuscruz19/BATorrent/releases/latest) | macOS 12+ (Apple Silicon) |
-| Linux | [AppImage](https://github.com/Mateuscruz19/BATorrent/releases/latest) | Glibc 2.35+ (x86_64) |
-
-All artefacts are produced by the [Build & Release](.github/workflows/build.yml) workflow on every tagged release.
-
-> **macOS — about the security prompt:** the build isn't notarised yet (Apple's Developer Program is a paid hurdle for a one-person project). **Homebrew is the smoothest path** — `brew` strips the quarantine flag on install, so the app just opens, no Gatekeeper dialog. If you grab the `.dmg` instead, right-click the app and choose **Open** the first time to get past the "unidentified developer" prompt. The Windows builds are headed for a free OpenSSF/SignPath signature as the project grows.
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## Features
-
-### Torrents
-- `.torrent` files and magnet links with persistent resume data
-- **Thunder:// link decoding** — Chinese forums share links in Xunlei's `thunder://` format; BATorrent decodes them automatically via Smart Paste (Ctrl+V)
-- **Smart Paste** — Ctrl+V with a magnet link, info hash, or thunder:// link on the clipboard prompts to add instantly
-- **Torrent inspector** — preview a `.torrent` file (name, size, files, trackers, hash, creator, private flag) before committing to download
-- Per-file priority, sequential download, manual recheck and reannounce
-- Auto-tracker injection from [ngosang/trackerslist](https://github.com/ngosang/trackerslist)
-- Multi-tag system (free-form, multiple tags per torrent alongside single category)
-- **Content layout** — Original, Create subfolder, or No subfolder controls how multi-file torrents are laid out on disk
-- **Excluded file patterns** — regex rules to auto-skip files (e.g. `.nfo`, `.txt`, `sample`) when adding a torrent
-- **Temp download path** — download to a staging folder first, auto-move to the save path on completion (keeps media servers from scanning partials)
-- **Auto-extract archives** — unpacks `.rar`/`.zip`/`.7z` automatically on completion, with a password list for protected archives (uses 7-Zip or WinRAR on Windows, `unrar`/`unzip` on macOS/Linux)
-- Categories, drag-and-drop reorder, and right-click context actions
-- Import existing state from qBittorrent
-- Create new `.torrent` files from any file or folder
-
-### State management
-- **Completed** state — manually marked or auto-promoted after a configurable seeding window (1, 3, 7, 14, or 30 days). Distinct from Seeding/Finished, persisted across restarts.
-- **Stop button** that freezes a finished torrent without removing it; **Resume** un-marks and re-enters the seeding pool.
-- Stop-seeding rules: global ratio limit and maximum seed time, with per-torrent overrides.
-- **Auto-pause on file errors** — if libtorrent can't read a finished torrent's files (e.g. external drive unplugged), it pauses instead of silently re-downloading.
-
-### Discovery
-- **RSS auto-download** with regex filters, per-feed save paths, interval scheduling, and duplicate detection. Handles magnet links, `.torrent` URLs, and `<enclosure>` tags.
-- **Stremio-compatible search** for movies and series via the bundled Cinemeta and Torrentio addons.
-
-### Streaming
-- Play while downloading — `.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.ts`.
-- Auto-detects VLC and IINA, falls back to the system default player.
-
-### VPN & privacy
-- **Interface binding** locks all torrent traffic to a chosen network interface (e.g. `tun0`, `utun4`).
-- **Kill switch** pauses every active torrent the moment the bound interface drops, with optional auto-resume when it returns.
-- **PT mode** — one-toggle private tracker compliance: disables DHT/PEX/LSD, forces anonymous handshake, announces to every tier. Required by M-Team, TorrentLeech, and most ratio-tracked communities.
-- **Anti-leecher blocking** — auto-detects and bans Xunlei (Thunder), QQDownload, Baidu Netdisk P2P, and other clients that download without seeding back. Detected by peer_id prefix in the BitTorrent handshake.
-- **Anonymous mode** — hides client name/version in handshakes, disables UPnP/NAT-PMP advertisements.
-- **Tor proxy preset** — one click fills SOCKS5 127.0.0.1:9050.
-- **Force IPv4** — rejects IPv6 peers to prevent v6 leaks when the tunnel doesn't cover it.
-- VPN detection for WireGuard, Mullvad, NordLynx, ProtonVPN, generic tun/tap.
-- SOCKS5 and HTTP proxy with authentication.
-- IP blocklist support (P2P format).
-- Protocol encryption: enabled / forced / disabled.
-
-### WebUI
-- Browser-based control panel on `http://localhost:8080` (port and remote access configurable).
-- **QR code pairing** — scan a QR from your phone to open the WebUI instantly, no IP typing. QR generated locally in pure C++ (your LAN address never leaves the machine).
-- REST API with JSON responses; add by magnet or `.torrent` upload; pause / resume / remove; per-torrent file and peer views.
-- SHA-256 hashed Basic Auth, theme-matched dark UI, fully responsive mobile layout.
-
-### Bandwidth & scheduling
-- Independent download and upload limits.
-- Alternative speed profile with hour-of-day + day-of-week schedule (overnight ranges supported).
-- Per-torrent and global seed-ratio and seed-time limits.
-
-### Media-server integration
-- Notifies **Plex**, **Jellyfin**, or **Emby** to scan the library when a download completes.
-- Configurable URL and token / API key per server.
-
-### Notifications & integrations
-- **Telegram webhook** — download complete, kill switch fired, RSS auto-download, and torrent errors pushed to any Telegram chat via bot token. Per-event checkboxes + Test button.
-- **Discord Rich Presence** — shows "Downloading X · 67%" on your Discord profile with "Download BATorrent" and "View on GitHub" buttons. Works out of the box.
-
-### Interface
-- **Six themes** — Dark, Light (warm cream "Comfortable" palette), Midnight, Sakura, Dark Star, and a fully **Custom** theme (your own background image + accent colours), each with optional **anime accent art**.
-- **Automatic cover art** — fetches movie/series posters (TMDB) and game art (IGDB) from the torrent name for a poster **grid view**; toggle to a compact list view.
-- Real-time speed graph, detailed panel (General · Peers · Files · Trackers · Pieces), state-coloured progress bars, click-to-focus tray notifications.
-- Custom tray popup (cross-platform) with live speeds, active-torrent preview with ETA, VPN status, and quit affordance.
-- Filter pills with live counts (All / Active / Downloading / Seeding / Completed / Paused / Finished / Queued), search bar, and category filter.
-- Drag and drop for both `.torrent` files and magnet links.
-- **Eight UI languages** with auto-detection: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文, Українська — 1,000+ translated strings with English fallback for missing keys.
-- Speed display in bytes (KB/s, MB/s) or bits (Kbps, Mbps) — togglable in Settings.
-- Locale-aware number formatting (e.g. `1 234,5` for Russian locale).
-
-### System
-- Auto-update with configurable source: **GitHub** (default) or **Gitee** (China mirror) or disabled.
-- Auto-shutdown when all downloads complete (60 s cancellable countdown).
-- **Windows Defender exclusion** — one click adds the download folder to Defender's exclusion list, so it stops flagging/scanning downloaded files (UAC-elevated).
-- **Full backup/restore** of all settings + resume data in a single archive for cross-machine migration.
-- **Recently removed** history (last 50 torrents, one-click restore).
-- **Force start** — bypass the active-downloads queue cap for a single torrent.
-- Built-in **log viewer** with file rotation (5 MB/file, keep 3), level filter, export for bug reports, and `--debug` CLI flag.
-- **Diagnostics dialog** — health check (save path, port, DHT, encryption, VPN, leecher blocking) + outgoing IP leak test (via api.ipify.org).
-- CLI args: pass any number of `.torrent` paths or `magnet:` URIs at launch; subsequent launches forward to the running instance.
-- Changelog auto-popup on first launch after a version bump.
-- Keyboard shortcuts and `?` quick-reference dialog.
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## Getting started
-
-1. Download the build for your platform from the [releases page](https://github.com/Mateuscruz19/BATorrent/releases/latest).
-2. On first launch the welcome dialog walks through the default save path, theme, and language.
-3. Drag a `.torrent` file or magnet link onto the window — or use **File → Open Torrent** / **File → Add Magnet**.
-4. Optional: bind the outgoing interface in **Settings → VPN** and enable the kill switch before adding sensitive torrents.
-
-> **VPN tip:** when **Interface binding** is set, every announce and peer connection leaves through that interface only. If the interface goes down, the kill switch pauses everything until it comes back.
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## Build from source
-
-### Requirements
-- C++17 toolchain (GCC 11+, Clang 14+, or MSVC 19.30+)
-- CMake 3.16+
-- Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`)
-- libtorrent-rasterbar 2.0+
-- Boost (transitive dependency of libtorrent)
-- Optional: Qt6Keychain (stores credentials in the OS keyring instead of plaintext QSettings)
-
-### Linux
-
-```bash
-# Debian / Ubuntu
-sudo apt install build-essential cmake \
-    qt6-base-dev qt6-svg-dev qt6-multimedia-dev \
-    libtorrent-rasterbar-dev libboost-dev libssl-dev
-
-# Arch
-sudo pacman -S cmake qt6-base qt6-svg qt6-multimedia \
-    libtorrent-rasterbar boost openssl
-
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
-./build/BATorrent
-```
-
-### macOS
-
-```bash
-brew install qt libtorrent-rasterbar boost openssl
-cmake -B build -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="$(brew --prefix qt);$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)"
-cmake --build build -j
-open build/BATorrent.app
-```
-
-### Windows
-
-Install Qt 6 via the official installer and libtorrent via vcpkg:
-
-```powershell
-vcpkg install libtorrent:x64-windows
-cmake -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
-cmake --build build --config Release
-```
-
-### Tests
-
-The test suite is opt-in:
-
-```bash
-cmake -B build -DBAT_BUILD_TESTS=ON
-cmake --build build
-ctest --test-dir build
-```
-
-### Quality & security
-
-- **Automated tests** — 79 cases / 632 assertions (unit, security and
-  memory-safety) run on every build in CI. Policy: when backend functionality
-  is added or changed, a test is added to the Catch2 suite where practical
-  (recent examples: resume-data migration and updater version comparison).
-- **Sanitizers** — the full suite passes clean under **AddressSanitizer** and
-  **UndefinedBehaviorSanitizer**: 0 leaks, use-after-free, or undefined
-  behaviour.
-- **Security review** — before each release the code is reviewed for memory
-  and thread safety and the usual web/security classes: WebUI authentication,
-  command injection, path traversal, input validation (torrents, magnets,
-  RSS), and secret handling (stored in the OS keychain, never in plaintext).
-
-Secrets live in the OS keychain (Keychain on macOS, Credential Manager on
-Windows, the Secret Service on Linux); the embedded WebUI only binds to the
-network when a username and password are set.
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
-## Project layout
-
-```
-src/
-├── torrent/      libtorrent wrapper, resume data, queue, seeding rules
-├── app/          translator, updater, RSS, addons, secret store, GeoIP
-├── gui/          Qt Widgets UI (main window, dialogs, details, tray popup)
-├── webui/        embedded HTTP server + browser UI
-└── main.cpp      single-instance bootstrap, CLI parsing, theming
-.github/
-└── workflows/    Linux AppImage, macOS DMG, Windows installer + zip
-installer/        Inno Setup script for the Windows installer
-dist/             desktop file + assets for Linux packaging
-```
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+</details>
 
 ## Contributing
 
-Issues and pull requests are welcome. For non-trivial changes, please open an issue first to discuss the approach. Pre-built artefacts can be produced for any branch via the **Build & Release** workflow (`workflow_dispatch`).
-
-When reporting a bug, attach:
-- Platform + version (`Help → About`)
-- Steps to reproduce
-- The relevant section of `~/.local/share/BATorrent/` (Linux), `~/Library/Application Support/BATorrent/` (macOS), or `%APPDATA%\BATorrent\` (Windows) if it involves resume data or settings.
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+Issues and PRs welcome — for anything non-trivial, open an issue first. Bug reports: include your platform + version (`Help → About`) and steps to reproduce. Translations especially appreciated.
 
 ## License
 
-[MIT](LICENSE) © 2024–2026 Mateus Cruz
+[MIT](LICENSE) © 2024–2026 Mateus Cruz · made in Brazil 🦇
