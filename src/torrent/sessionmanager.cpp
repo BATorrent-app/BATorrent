@@ -600,7 +600,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
     return info;
 }
 
-std::vector<PeerInfo> SessionManager::peersAt(int index) const
+std::vector<PeerInfo> SessionManager::peersAt(int index, int maxPeers) const
 {
     std::vector<PeerInfo> result;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
@@ -611,6 +611,16 @@ std::vector<PeerInfo> SessionManager::peersAt(int index) const
     try {
         std::vector<lt::peer_info> peers;
         m_torrents[index].get_peer_info(peers);
+
+        // Cap huge swarms (9k+) to the most active peers before building the
+        // QString-heavy PeerInfo — the long tail isn't worth the work/UI cost.
+        if (maxPeers > 0 && peers.size() > static_cast<std::size_t>(maxPeers)) {
+            std::partial_sort(peers.begin(), peers.begin() + maxPeers, peers.end(),
+                [](const lt::peer_info &a, const lt::peer_info &b) {
+                    return (a.down_speed + a.up_speed) > (b.down_speed + b.up_speed);
+                });
+            peers.resize(maxPeers);
+        }
 
         for (const auto &p : peers) {
             PeerInfo pi;

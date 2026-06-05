@@ -352,8 +352,16 @@ QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *re
     recomputeAggregates();   // so the pills show real counts before the first tick
 
     m_geoIp = new GeoIpResolver(this);
-    connect(m_geoIp, &GeoIpResolver::resolved, this, [this](const QString &, const QString &) {
+    // A big swarm resolves hundreds of peer IPs one-by-one; emitting on each one
+    // rebuilt the whole peer list every time, and each rebuild re-queued lookups
+    // — a feedback storm that lagged forever. Coalesce into ≤1 rebuild/sec.
+    m_peerListThrottle.setSingleShot(true);
+    m_peerListThrottle.setInterval(1000);
+    connect(&m_peerListThrottle, &QTimer::timeout, this, [this]() {
         emit selectionChanged(); emit selectionListsChanged();
+    });
+    connect(m_geoIp, &GeoIpResolver::resolved, this, [this](const QString &, const QString &) {
+        if (!m_peerListThrottle.isActive()) m_peerListThrottle.start();
     });
 
     if (m_resolver) {
@@ -1080,18 +1088,10 @@ QVariantList QmlSessionBridge::selectedPeerList() const
 {
     QVariantList out;
     if (!hasSelection()) return out;
-    auto peers = m_session->peersAt(m_selectedIndex);
-    // A big swarm (9k+ peers) froze the UI for seconds: building a QVariantMap
-    // per peer + a geo lookup each, every refresh. Show only the most active
-    // peers (the ones worth looking at) and drop the long tail.
-    constexpr int kMaxPeerRows = 500;
-    if (peers.size() > kMaxPeerRows) {
-        std::partial_sort(peers.begin(), peers.begin() + kMaxPeerRows, peers.end(),
-            [](const PeerInfo &a, const PeerInfo &b) {
-                return (a.downloadRate + a.uploadRate) > (b.downloadRate + b.uploadRate);
-            });
-        peers.resize(kMaxPeerRows);
-    }
+    // A big swarm (9k+ peers) froze the UI: a QVariantMap + geo lookup per peer,
+    // every refresh. Cap to the 500 most active (capped inside peersAt, before
+    // the QString-heavy conversion); the total count is shown in the panel.
+    auto peers = m_session->peersAt(m_selectedIndex, 500);
     out.reserve(peers.size());
     for (const auto &p : peers) {
         QVariantMap m;

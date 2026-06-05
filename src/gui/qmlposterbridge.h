@@ -306,6 +306,7 @@ private:
     int m_selectedIndex = -1;
     QList<int> m_selectedRows;
     GeoIpResolver *m_geoIp = nullptr;
+    QTimer m_peerListThrottle;      // coalesce geo-lookup results into ≤1 peer-list rebuild/sec
     bool m_shutdownArmed = false;   // debounce so the countdown fires once per drain
     QTimer *m_streamTimer = nullptr;   // polls until a streamed file is buffered
     QString m_streamFilePath;
