@@ -8,6 +8,7 @@
 #include <QObject>
 #include <QHash>
 #include <QQueue>
+#include <QSet>
 #include <QTimer>
 
 class QNetworkAccessManager;
@@ -32,6 +33,7 @@ private:
     QNetworkAccessManager *m_nam;
     QHash<QString, QString> m_cache; // IP -> country code
     QQueue<QString> m_queue;
+    QSet<QString> m_queued;   // O(1) membership — m_queue.contains() was O(n), O(n²) under a 9k-peer flood
     QTimer m_rateLimiter;
     bool m_requestInFlight = false;
 };

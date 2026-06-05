@@ -1081,6 +1081,17 @@ QVariantList QmlSessionBridge::selectedPeerList() const
     QVariantList out;
     if (!hasSelection()) return out;
     auto peers = m_session->peersAt(m_selectedIndex);
+    // A big swarm (9k+ peers) froze the UI for seconds: building a QVariantMap
+    // per peer + a geo lookup each, every refresh. Show only the most active
+    // peers (the ones worth looking at) and drop the long tail.
+    constexpr int kMaxPeerRows = 500;
+    if (peers.size() > kMaxPeerRows) {
+        std::partial_sort(peers.begin(), peers.begin() + kMaxPeerRows, peers.end(),
+            [](const PeerInfo &a, const PeerInfo &b) {
+                return (a.downloadRate + a.uploadRate) > (b.downloadRate + b.uploadRate);
+            });
+        peers.resize(kMaxPeerRows);
+    }
     out.reserve(peers.size());
     for (const auto &p : peers) {
         QVariantMap m;

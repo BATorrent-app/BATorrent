@@ -28,10 +28,11 @@ void GeoIpResolver::resolve(const QString &ip)
     }
 
     // Already queued
-    if (m_queue.contains(ip))
+    if (m_queued.contains(ip))
         return;
 
     m_queue.enqueue(ip);
+    m_queued.insert(ip);
 
     // Kick off processing if not already waiting
     if (!m_rateLimiter.isActive() && !m_requestInFlight)
@@ -49,6 +50,7 @@ void GeoIpResolver::processQueue()
         return;
 
     QString ip = m_queue.dequeue();
+    m_queued.remove(ip);
 
     // Skip if resolved while queued
     if (m_cache.contains(ip)) {
