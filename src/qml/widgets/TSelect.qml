@@ -92,7 +92,10 @@ ComboBox {
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: modelData
+                // honor textRole for object models ({key,label}); plain string
+                // models (no textRole) fall back to modelData unchanged.
+                text: (cb.textRole.length > 0 && modelData && modelData[cb.textRole] !== undefined)
+                      ? modelData[cb.textRole] : modelData
                 color: Theme.t1
                 font.pixelSize: 12
                 font.family: Theme.fontSans
