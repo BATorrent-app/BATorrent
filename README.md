@@ -1,5 +1,5 @@
 <p align="center">
-  <b>English</b> | <a href="README.pt-BR.md">Português</a> | <a href="README.zh-CN.md">中文</a> | <a href="README.ja.md">日本語</a> | <a href="README.ru.md">Русский</a> | <a href="README.es.md">Español</a> | <a href="README.de.md">Deutsch</a>
+  <b>English</b> | <a href="README.pt-BR.md">Português</a> | <a href="README.zh-CN.md">中文</a> | <a href="README.ja.md">日本語</a> | <a href="README.ru.md">Русский</a> | <a href="README.es.md">Español</a> | <a href="README.de.md">Deutsch</a> | <a href="README.ua.md">Українська</a>
 </p>
 
 <p align="center">
@@ -134,7 +134,7 @@ All artefacts are produced by the [Build & Release](.github/workflows/build.yml)
 - Custom tray popup (cross-platform) with live speeds, active-torrent preview with ETA, VPN status, and quit affordance.
 - Filter pills with live counts (All / Active / Downloading / Seeding / Completed / Paused / Finished / Queued), search bar, and category filter.
 - Drag and drop for both `.torrent` files and magnet links.
-- **Seven UI languages** with auto-detection: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文 — 1,000+ translated strings with English fallback for missing keys.
+- **Eight UI languages** with auto-detection: English, Português (BR), Español, Deutsch, Русский, 日本語, 中文, Українська — 1,000+ translated strings with English fallback for missing keys.
 - Speed display in bytes (KB/s, MB/s) or bits (Kbps, Mbps) — togglable in Settings.
 - Locale-aware number formatting (e.g. `1 234,5` for Russian locale).
 
