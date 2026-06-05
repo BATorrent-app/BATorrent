@@ -1,5 +1,24 @@
 # Changelog
 
+## v3.0.3
+
+### Games
+- New **"All" search** that queries every source at once (game catalogs + torrent indexers) and merges the results — picking a single source is now optional. Game search consumes Hydra-format community catalogs (a default is seeded on first run, and you can remove it), downloads with cover art and clean titles, and caches catalogs for instant reuse.
+
+### Covers & titles
+- Adding a game now shows the **right name and cover instantly**, no restart needed. The matcher combines several signals — the torrent's file list, edition/qualifier stripping (`Early Access`, `Complete Edition`, `GOTY`), apostrophes (`Baldur's` = `Baldurs`), roman/arabic numerals (`GTA V` = `GTA 5`) and Cyrillic titles — and validates the API result instead of guessing, so it stops landing on the wrong title.
+
+### Fixes
+- A **completed torrent could start re-downloading** when the `.!bt` incomplete-file mapping desynced from disk. It now reconciles against what's actually on disk and self-heals on launch.
+- **Added torrents vanished on restart** unless they had downloaded data — every added torrent now persists immediately.
+- The **Peers tab no longer freezes** on large swarms (9k+ peers).
+- The **welcome dialog no longer reappears** on Windows after you tick "don't show again".
+
+### Interface
+- Reworked README with demo GIFs and **localized screenshots** (the app shown in your own language).
+- **Ukrainian** added — now eight UI languages.
+- About: the Ukrainian flag renders correctly and the **Donate** button opens GitHub Sponsors.
+
 ## v3.0.2
 
 ### Phone pairing & WebUI
