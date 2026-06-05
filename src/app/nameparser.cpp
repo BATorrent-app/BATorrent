@@ -42,6 +42,17 @@ ParsedName NameParser::parse(const QString &rawName)
         QRegularExpression::CaseInsensitiveOption);
     work.remove(gameTagRe);
 
+    // Strip edition / release qualifiers that aren't part of the real title and
+    // sink the IGDB/TMDB search (e.g. "Hades II Early Access" returns nothing,
+    // "... Complete Edition" is noise). Both the "<X> Edition" forms and the
+    // common standalone qualifiers.
+    static const QRegularExpression editionRe(QStringLiteral(
+        "\\b(?:(?:Deluxe|Complete|Definitive|Ultimate|Standard|Gold|Premium|Collector'?s|"
+        "Anniversary|Enhanced|Legacy|Day[ .]One|Special|Limited|Digital|Game[ .]of[ .]the[ .]Year)"
+        "[ .]Edition|Early[ .]Access|Game[ .]of[ .]the[ .]Year|GOTY|Anthology)\\b"),
+        QRegularExpression::CaseInsensitiveOption);
+    work.remove(editionRe);
+
     static const QRegularExpression seRe(
         QStringLiteral("S(\\d{1,2})E(\\d{1,3})"),
         QRegularExpression::CaseInsensitiveOption);
@@ -147,7 +158,10 @@ ParsedName NameParser::parse(const QString &rawName)
         QStringLiteral("DTS-HD"), QStringLiteral("Atmos"), QStringLiteral("TrueHD"),
         QStringLiteral("FLAC"), QStringLiteral("MP3"), QStringLiteral("EAC3"),
         QStringLiteral("DD5.1"), QStringLiteral("7.1"),
-        QStringLiteral("REMUX"), QStringLiteral("PROPER"), QStringLiteral("REPACK"),
+        QStringLiteral("REMUX"), QStringLiteral("PROPER"),
+        // "REPACK" intentionally NOT here — it's ambiguous (game repack vs movie
+        // re-release). Movie repacks also carry resolution+codec, so dropping it
+        // keeps movie detection while stopping "Game [Repack]" from scoring video.
         QStringLiteral("EXTENDED"), QStringLiteral("UNRATED"), QStringLiteral("DIRECTOR"),
         QStringLiteral("IMAX"), QStringLiteral("3D"), QStringLiteral("HDR"),
         QStringLiteral("HDR10"), QStringLiteral("DV"), QStringLiteral("DoVi"),

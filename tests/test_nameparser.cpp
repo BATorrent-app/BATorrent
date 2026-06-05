@@ -96,6 +96,23 @@ TEST_CASE("type scoring: game tokens win over a stray video tag", "[nameparser]"
     CHECK(P("Dune Part Two 2024 1080p REPACK x264").contentType == ContentType::Movie);
 }
 
+TEST_CASE("edition/release qualifiers are stripped from the title", "[nameparser]")
+{
+    CHECK(P("Hades II Early Access").cleanTitle == "Hades II");
+    CHECK(P("The Witcher 3 Wild Hunt Complete Edition").cleanTitle == "The Witcher 3 Wild Hunt");
+    CHECK(P("Hogwarts Legacy Deluxe Edition").cleanTitle == "Hogwarts Legacy");
+    CHECK(P("Cyberpunk 2077 Ultimate Edition").cleanTitle == "Cyberpunk 2077");
+    CHECK(P("Skyrim Special Edition").cleanTitle == "Skyrim");
+}
+
+TEST_CASE("a lone [Repack] tag doesn't misclassify a game as a movie", "[nameparser]")
+{
+    // No resolution/codec/year — "Repack" alone must not score video.
+    CHECK(P("Red Dead Redemption 2 [Repack]").contentType != ContentType::Movie);
+    // A real movie repack still has resolution+codec, so it stays a movie.
+    CHECK(P("Dune Part Two 2024 1080p REPACK x264").contentType == ContentType::Movie);
+}
+
 TEST_CASE("bilingual RuTracker titles drop the Cyrillic half", "[nameparser]")
 {
     CHECK(P("Ведьмак 3 / The Witcher 3").cleanTitle == "The Witcher 3");
