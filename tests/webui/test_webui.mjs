@@ -6,9 +6,10 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const html = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '../../src/webui/index.html'),
@@ -21,10 +22,14 @@ const start = html.indexOf('function fmtBytes');
 const end = html.indexOf('/* ── Filtering ── */');
 assert.ok(start >= 0 && end > start, 'WebUI helper block not found in index.html');
 
-const { fmtBytes, fmtSpeed, classifyState, stateLabel, progressClass } = new Function(
+// Write the extracted helper block to a temp ES module and import it — standard
+// module loading exercises the real shipped code without eval / new Function.
+const tmpModule = join(mkdtempSync(join(tmpdir(), 'batorrent-webui-')), 'helpers.mjs');
+writeFileSync(tmpModule,
   html.slice(start, end) +
-    '\nreturn { fmtBytes, fmtSpeed, classifyState, stateLabel, progressClass };',
-)();
+    '\nexport { fmtBytes, fmtSpeed, classifyState, stateLabel, progressClass };\n');
+const { fmtBytes, fmtSpeed, classifyState, stateLabel, progressClass } =
+  await import(pathToFileURL(tmpModule).href);
 
 test('fmtBytes scales and rounds by unit', () => {
   assert.equal(fmtBytes(0), '0 B');

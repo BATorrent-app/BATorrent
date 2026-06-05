@@ -20,10 +20,10 @@ jobs:
   build-msix:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v4
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
         with:
           version: '6.7.*'
           modules: qtmultimedia
@@ -36,7 +36,7 @@ jobs:
 
       - name: Cache vcpkg installed packages
         id: cache-vcpkg
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: C:\vcpkg\installed
           key: vcpkg-libtorrent-x64-windows-v1
@@ -47,7 +47,7 @@ jobs:
 
       - name: Cache choco packages
         id: cache-choco
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             C:\ProgramData\chocolatey\lib\imagemagick
@@ -122,7 +122,7 @@ jobs:
           Write-Host "Created BATorrent-store.msix"
 
       - name: Upload MSIX
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: msix-store
           path: BATorrent-store.msix
