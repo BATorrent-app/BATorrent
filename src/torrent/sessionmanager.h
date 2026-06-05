@@ -27,7 +27,11 @@ public:
     ~SessionManager();
 
     void addTorrent(const QString &filePath, const QString &savePath);
-    void addMagnet(const QString &uri, const QString &savePath);
+    // coverHint (optional): a clean title (e.g. from a game catalog) used as the
+    // instant display name and as an accurate cover-lookup query, so magnet adds
+    // don't sit nameless/placeholder until metadata arrives.
+    void addMagnet(const QString &uri, const QString &savePath, const QString &coverHint = QString());
+    QString takeCoverHint(const QString &hash);   // consumes the hint set at add time
 
     // Same as addTorrent but with up-front file priorities (0..7 per file).
     // Used by AddTorrentDialog so unchecked files never start downloading
@@ -489,6 +493,12 @@ private:
     QString m_tempPath;
     // Hash -> intended final save path (only when temp path is active)
     QMap<QString, QString> m_torrentIntendedPath;
+    // Real info-hash (from the magnet URI) for magnets added this session, so a
+    // row has a stable, unique key before metadata arrives — without it,
+    // torrentHash() returns empty pre-metadata and the cover/name never resolve.
+    std::map<lt::torrent_handle, QString> m_magnetHashes;
+    // Hash -> clean-title cover hint (e.g. from a game catalog), consumed once.
+    QMap<QString, QString> m_coverHints;
 
     // Content layout: 0=Original, 1=CreateSubfolder, 2=NoSubfolder
     int m_contentLayout = 0;

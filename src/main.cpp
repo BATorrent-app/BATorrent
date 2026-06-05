@@ -282,8 +282,16 @@ int main(int argc, char *argv[])
                          &app, [&session, resolver, notificationBridge](int index) {
             const auto info = session.torrentAt(index);
             QString hash = session.torrentHashAt(index);
-            if (!hash.isEmpty())
-                resolver->resolve(hash, info.name);
+            if (!hash.isEmpty()) {
+                // A game add carries a clean catalog title — query IGDB directly
+                // with it (forced Game type) instead of guessing from the messy
+                // torrent/metadata name, which mismatched (e.g. GoW Ragnarök).
+                const QString hint = session.takeCoverHint(hash);
+                if (!hint.isEmpty())
+                    resolver->resolveManual(hash, hint, ContentType::Game);
+                else
+                    resolver->resolve(hash, info.name);
+            }
             // Toast on user-initiated adds. Resume-loaded torrents don't reach
             // here: loadResumeData() runs in the SessionManager ctor, before
             // this connection exists.

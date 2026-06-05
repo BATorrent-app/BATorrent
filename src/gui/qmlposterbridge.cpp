@@ -1938,6 +1938,7 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     m_pendingGameQuery.clear();
     m_results.clear();
     m_resultMagnets.clear();
+    m_resultTitles.clear();
     m_torrentCache.clear();
     m_gameCache.clear();
     emit resultsChanged();
@@ -2016,6 +2017,7 @@ void QmlSearchBridge::appendGameRows(const QList<GameDownload> &games)
         m["repacker"] = detectRepacker(g.title);
         m_results << m;
         m_resultMagnets << g.magnet;
+        m_resultTitles << (g.cleanTitle.isEmpty() ? g.title : g.cleanTitle);
     }
     emit resultsChanged();
 }
@@ -2036,6 +2038,7 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         m["repacker"] = (m_mode == "games" || m_mode == "all") ? detectRepacker(r.name) : QString();
         m_results << m;
         m_resultMagnets << r.magnet;
+        m_resultTitles << QString();        // torrent rows have no game cover hint
     }
     emit resultsChanged();
 }
@@ -2051,6 +2054,7 @@ void QmlSearchBridge::runGameSearch(const QString &query)
 {
     m_results.clear();
     m_resultMagnets.clear();
+    m_resultTitles.clear();
     m_gameCache = GameSourceManager::instance().search(query);
     appendGameRows(m_gameCache);
     setSearching(false);
@@ -2113,7 +2117,8 @@ void QmlSearchBridge::activateResult(int index)
         if (index < 0 || index >= m_resultMagnets.size()) return;
         const QString magnet = m_resultMagnets[index];
         if (magnet.isEmpty()) return;
-        m_session->addMagnet(magnet, m_savePath);
+        const QString hint = index < m_resultTitles.size() ? m_resultTitles[index] : QString();
+        m_session->addMagnet(magnet, m_savePath, hint);   // hint = clean game title, "" for torrents
         const QString name = index < m_results.size() ? m_results[index].toMap().value("name").toString() : QString();
         setStatus(name.isEmpty() ? QStringLiteral("Adicionado") : QString("Adicionado: %1").arg(name));
     }

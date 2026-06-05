@@ -496,6 +496,7 @@ private:
     QString m_status;
     QVariantList m_results;
     QStringList m_resultMagnets;        // magnet per flat result row (add target)
+    QStringList m_resultTitles;         // clean game title per row (cover hint), "" for torrents
     QList<CatalogItem> m_catalogCache;
     QList<StreamResult> m_streamCache;
     QList<TorrentSearchResult> m_torrentCache;

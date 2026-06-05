@@ -337,7 +337,7 @@ void SessionManager::applyIncompleteSuffix(lt::add_torrent_params &atp)
     }
 }
 
-void SessionManager::addMagnet(const QString &uri, const QString &savePath)
+void SessionManager::addMagnet(const QString &uri, const QString &savePath, const QString &coverHint)
 {
     try {
         qDebug() << "[session] addMagnet:" << uri.left(80) << "save:" << savePath;
@@ -346,21 +346,36 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath)
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
 
+        // Real hash from the URI (known even before metadata, unlike a magnet's
+        // torrent_status which reports all-zeros until then).
+        const QString realHash = QString::fromStdString(
+            (std::ostringstream() << atp.info_hashes.get_best()).str());
+
+        if (!coverHint.isEmpty()) {
+            atp.name = coverHint.toStdString();        // instant display name
+            m_coverHints[realHash] = coverHint;
+        }
+
         if (!m_tempPath.isEmpty() && QDir(m_tempPath).exists()) {
-            std::string hash = (std::ostringstream() << atp.info_hashes.get_best()).str();
-            m_torrentIntendedPath[QString::fromStdString(hash)] = savePath;
+            m_torrentIntendedPath[realHash] = savePath;
             atp.save_path = m_tempPath.toStdString();
         }
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
         m_magnetAddedAt[h] = QDateTime::currentSecsSinceEpoch();
+        m_magnetHashes[h] = realHash;
         incrementTorrentCount();
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     } catch (const std::exception &e) {
         emit torrentError(QString::fromStdString(e.what()));
     }
+}
+
+QString SessionManager::takeCoverHint(const QString &hash)
+{
+    return m_coverHints.take(hash);
 }
 
 void SessionManager::checkMagnetTimeouts()
@@ -1158,10 +1173,13 @@ QString SessionManager::torrentHash(int index) const
     // Magnet links report an all-zeros hash from get_best() until metadata
     // is downloaded. Returning that string would cause every still-resolving
     // magnet to share the same key — categories and per-torrent seeding
-    // overrides set on one would silently apply to all others. Refuse to
-    // expose the hash until libtorrent has the real one.
-    if (!st.has_metadata)
-        return {};
+    // overrides set on one would silently apply to all others. Use the real
+    // per-magnet hash captured from the URI at add time instead, so the row has
+    // a stable unique key (cover/name resolve without waiting for metadata).
+    if (!st.has_metadata) {
+        auto it = m_magnetHashes.find(m_torrents[index]);
+        return it != m_magnetHashes.end() ? it->second : QString();
+    }
     return QString::fromStdString(
         (std::ostringstream() << st.info_hashes.get_best()).str());
 }
