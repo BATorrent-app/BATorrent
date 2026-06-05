@@ -11,6 +11,14 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QRegularExpression>
+#include <QStandardPaths>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QCryptographicHash>
+#include <QDateTime>
+
+static constexpr qint64 kCacheTtlSecs = 12 * 60 * 60;   // catalogs change ~daily
 
 // Several popular catalogs (FitGirl, DODI, …) 403 a non-browser User-Agent —
 // this is the wall that makes the feature look "impossible" without it.
@@ -129,27 +137,66 @@ QList<GameDownload> GameSourceManager::search(const QString &query, int limit) c
     return out;
 }
 
-void GameSourceManager::refresh()
+QString GameSourceManager::cachePath(const QString &url)
+{
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+                        + QStringLiteral("/gamecatalogs");
+    const QString key = QString::fromLatin1(
+        QCryptographicHash::hash(url.toUtf8(), QCryptographicHash::Md5).toHex());
+    return dir + QLatin1Char('/') + key + QStringLiteral(".json");
+}
+
+QByteArray GameSourceManager::readCache(const QString &url, bool freshOnly)
+{
+    QFileInfo fi(cachePath(url));
+    if (!fi.exists()) return {};
+    if (freshOnly && fi.lastModified().secsTo(QDateTime::currentDateTime()) > kCacheTtlSecs) return {};
+    QFile f(fi.filePath());
+    if (!f.open(QIODevice::ReadOnly)) return {};
+    return f.readAll();
+}
+
+void GameSourceManager::writeCache(const QString &url, const QByteArray &data)
+{
+    const QString path = cachePath(url);
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QFile f(path);
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) f.write(data);
+}
+
+void GameSourceManager::fetchSource(const QString &name, const QString &url)
+{
+    QNetworkRequest req{QUrl(url)};
+    req.setHeader(QNetworkRequest::UserAgentHeader, QString::fromLatin1(kBrowserUA));
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                     QNetworkRequest::NoLessSafeRedirectPolicy);
+    req.setTransferTimeout(30000);
+    QNetworkReply *reply = m_net.get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, name, url]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            const QByteArray body = reply->readAll();
+            if (indexCatalog(name, body) > 0) writeCache(url, body);
+        } else {
+            const QByteArray stale = readCache(url, false);   // network down → use stale if any
+            if (!stale.isEmpty()) indexCatalog(name, stale);
+            else emit sourceError(name, reply->errorString());
+        }
+        reply->deleteLater();
+        if (--m_pending == 0) emit refreshed(m_games.size());
+    });
+}
+
+void GameSourceManager::refresh(bool forceNetwork)
 {
     m_games.clear();
-    m_pending = m_sources.size();
-    if (m_pending == 0) { emit refreshed(0); return; }
-
+    QList<QPair<QString, QString>> toFetch;
     for (const auto &src : m_sources) {
-        const QString name = src.first;
-        QNetworkRequest req{QUrl(src.second)};
-        req.setHeader(QNetworkRequest::UserAgentHeader, QString::fromLatin1(kBrowserUA));
-        req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                         QNetworkRequest::NoLessSafeRedirectPolicy);
-        req.setTransferTimeout(30000);
-        QNetworkReply *reply = m_net.get(req);
-        connect(reply, &QNetworkReply::finished, this, [this, reply, name]() {
-            if (reply->error() == QNetworkReply::NoError)
-                indexCatalog(name, reply->readAll());
-            else
-                emit sourceError(name, reply->errorString());
-            reply->deleteLater();
-            if (--m_pending == 0) emit refreshed(m_games.size());
-        });
+        const QByteArray cached = forceNetwork ? QByteArray() : readCache(src.second, true);
+        if (!cached.isEmpty()) indexCatalog(src.first, cached);
+        else toFetch.append(src);
     }
+
+    m_pending = toFetch.size();
+    if (m_pending == 0) { emit refreshed(m_games.size()); return; }
+    for (const auto &src : toFetch) fetchSource(src.first, src.second);
 }
