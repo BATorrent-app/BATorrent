@@ -17,6 +17,8 @@ BatDialog {
     showCancel: false
     footHint: "© 2026 · open-source"
 
+    onAccepted: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
+
     // .ahero
     ColumnLayout {
         Layout.fillWidth: true
@@ -130,7 +132,13 @@ BatDialog {
         Layout.fillWidth: true
         Layout.topMargin: 8
         Layout.bottomMargin: 8
-        Text { text: "🇺🇦 Українська"; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
+        // SVG flag, not an emoji — flag emojis render as "UA" text on Windows.
+        Image {
+            source: "qrc:/icons/flags/uk.svg"
+            Layout.preferredWidth: 20; Layout.preferredHeight: 14
+            sourceSize.height: 28; fillMode: Image.PreserveAspectFit; smooth: true
+        }
+        Text { text: "Українська"; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
         Item { Layout.fillWidth: true }
         Text {
             text: "<a href=\"https://github.com/dkindratyuk-web\">dkindratyuk-web</a>"
