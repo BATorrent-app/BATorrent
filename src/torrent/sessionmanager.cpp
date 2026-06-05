@@ -337,7 +337,8 @@ void SessionManager::applyIncompleteSuffix(lt::add_torrent_params &atp)
     }
 }
 
-void SessionManager::addMagnet(const QString &uri, const QString &savePath, const QString &coverHint)
+void SessionManager::addMagnet(const QString &uri, const QString &savePath,
+                               const QString &coverHint, int coverType)
 {
     try {
         qDebug() << "[session] addMagnet:" << uri.left(80) << "save:" << savePath;
@@ -353,7 +354,7 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath, cons
 
         if (!coverHint.isEmpty()) {
             atp.name = coverHint.toStdString();        // instant display name
-            m_coverHints[realHash] = coverHint;
+            m_coverHints[realHash] = CoverHint{coverHint, coverType};
         }
 
         if (!m_tempPath.isEmpty() && QDir(m_tempPath).exists()) {
@@ -373,7 +374,7 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath, cons
     }
 }
 
-QString SessionManager::takeCoverHint(const QString &hash)
+SessionManager::CoverHint SessionManager::takeCoverHint(const QString &hash)
 {
     return m_coverHints.take(hash);
 }

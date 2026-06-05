@@ -502,6 +502,8 @@ private:
     QList<TorrentSearchResult> m_torrentCache;
     QList<GameDownload> m_gameCache;
     QString m_pendingGameQuery;
+    QString m_streamHintTitle;          // parent catalog title for a Stremio stream add
+    int m_streamHintType = -1;          // its ContentType (Movie/Series) as int
     QVariantList m_catalogResultsSnapshot;
 };
 

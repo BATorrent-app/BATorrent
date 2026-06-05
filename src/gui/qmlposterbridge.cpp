@@ -2099,6 +2099,11 @@ void QmlSearchBridge::activateResult(int index)
     if (m_mode == "catalog") {
         if (index < 0 || index >= m_catalogCache.size()) return;
         const auto &it = m_catalogCache[index];
+        // Carry the catalog item's clean title + type into the stream add, so the
+        // cover resolves from Stremio's metadata, not the messy torrent title.
+        m_streamHintTitle = it.year > 0 ? QString("%1 %2").arg(it.name).arg(it.year) : it.name;
+        m_streamHintType = it.type == QLatin1String("series") ? static_cast<int>(ContentType::Series)
+                         : it.type == QLatin1String("movie")  ? static_cast<int>(ContentType::Movie) : -1;
         setMode("streams");
         m_results.clear();
         emit resultsChanged();
@@ -2110,7 +2115,7 @@ void QmlSearchBridge::activateResult(int index)
         if (index < 0 || index >= m_streamCache.size()) return;
         const auto &s = m_streamCache[index];
         if (s.magnet.startsWith("magnet:")) {
-            m_session->addMagnet(s.magnet, m_savePath);
+            m_session->addMagnet(s.magnet, m_savePath, m_streamHintTitle, m_streamHintType);
             setStatus(QString("Adicionado: %1").arg(s.title));
         }
     } else {   // torrent / games / all → every flat row carries its own magnet
@@ -2118,7 +2123,8 @@ void QmlSearchBridge::activateResult(int index)
         const QString magnet = m_resultMagnets[index];
         if (magnet.isEmpty()) return;
         const QString hint = index < m_resultTitles.size() ? m_resultTitles[index] : QString();
-        m_session->addMagnet(magnet, m_savePath, hint);   // hint = clean game title, "" for torrents
+        const int type = hint.isEmpty() ? -1 : static_cast<int>(ContentType::Game);
+        m_session->addMagnet(magnet, m_savePath, hint, type);   // hint = clean game title, "" for torrents
         const QString name = index < m_results.size() ? m_results[index].toMap().value("name").toString() : QString();
         setStatus(name.isEmpty() ? QStringLiteral("Adicionado") : QString("Adicionado: %1").arg(name));
     }

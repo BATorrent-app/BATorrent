@@ -283,12 +283,13 @@ int main(int argc, char *argv[])
             const auto info = session.torrentAt(index);
             QString hash = session.torrentHashAt(index);
             if (!hash.isEmpty()) {
-                // A game add carries a clean catalog title — query IGDB directly
-                // with it (forced Game type) instead of guessing from the messy
-                // torrent/metadata name, which mismatched (e.g. GoW Ragnarök).
-                const QString hint = session.takeCoverHint(hash);
-                if (!hint.isEmpty())
-                    resolver->resolveManual(hash, hint, ContentType::Game);
+                // A catalog add carries a clean title + known type (game catalog →
+                // Game, Stremio → Movie/Series). Query the API directly with it
+                // instead of guessing from the messy torrent/metadata name, which
+                // mismatched (e.g. GoW Ragnarök → wrong game).
+                const auto hint = session.takeCoverHint(hash);
+                if (!hint.title.isEmpty() && hint.type >= 0)
+                    resolver->resolveManual(hash, hint.title, static_cast<ContentType>(hint.type));
                 else
                     resolver->resolve(hash, info.name, session.torrentFileNames(index));
             }

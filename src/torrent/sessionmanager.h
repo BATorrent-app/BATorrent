@@ -27,11 +27,15 @@ public:
     ~SessionManager();
 
     void addTorrent(const QString &filePath, const QString &savePath);
-    // coverHint (optional): a clean title (e.g. from a game catalog) used as the
-    // instant display name and as an accurate cover-lookup query, so magnet adds
-    // don't sit nameless/placeholder until metadata arrives.
-    void addMagnet(const QString &uri, const QString &savePath, const QString &coverHint = QString());
-    QString takeCoverHint(const QString &hash);   // consumes the hint set at add time
+    // A clean title + content type known at add time (game catalog → Game,
+    // Stremio → Movie/Series). type is ContentType as int, -1 = none.
+    struct CoverHint { QString title; int type = -1; };
+    // coverHint (optional): used as the instant display name and an accurate,
+    // correctly-typed cover-lookup query, so magnet adds don't sit nameless /
+    // placeholder (or mis-typed) until metadata arrives.
+    void addMagnet(const QString &uri, const QString &savePath,
+                   const QString &coverHint = QString(), int coverType = -1);
+    CoverHint takeCoverHint(const QString &hash);   // consumes the hint set at add time
 
     // Same as addTorrent but with up-front file priorities (0..7 per file).
     // Used by AddTorrentDialog so unchecked files never start downloading
@@ -498,8 +502,8 @@ private:
     // row has a stable, unique key before metadata arrives — without it,
     // torrentHash() returns empty pre-metadata and the cover/name never resolve.
     std::map<lt::torrent_handle, QString> m_magnetHashes;
-    // Hash -> clean-title cover hint (e.g. from a game catalog), consumed once.
-    QMap<QString, QString> m_coverHints;
+    // Hash -> clean-title + type cover hint (game catalog / Stremio), consumed once.
+    QMap<QString, CoverHint> m_coverHints;
 
     // Content layout: 0=Original, 1=CreateSubfolder, 2=NoSubfolder
     int m_contentLayout = 0;
