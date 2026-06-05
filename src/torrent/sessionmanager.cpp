@@ -1823,6 +1823,31 @@ void SessionManager::loadResumeData()
                        | lt::torrent_flags::disable_pex;
         }
 
+        // Reconcile the ".!bt" incomplete-suffix mapping with what's on disk. A
+        // resume/strip race can leave the saved mapping pointing at "X.!bt" while
+        // the finished data sits at "X" (or vice-versa) — libtorrent then can't
+        // find it and re-downloads a torrent that's already complete. Point each
+        // file at whichever variant has full-size data on disk; the recheck still
+        // hash-validates, so a wrong guess just re-downloads (no data loss).
+        if (atp.ti) {
+            const QString savePath = QString::fromStdString(atp.save_path);
+            const auto &fs = atp.ti->files();
+            for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
+                std::string eff = atp.renamed_files.count(i) ? atp.renamed_files[i]
+                                                             : fs.file_path(i);
+                const bool suffixed = eff.size() >= 4 && eff.compare(eff.size() - 4, 4, ".!bt") == 0;
+                const std::string base = suffixed ? eff.substr(0, eff.size() - 4) : eff;
+                const std::int64_t wantSize = fs.file_size(i);
+                const QString basePath = QDir(savePath).filePath(
+                    QDir::fromNativeSeparators(QString::fromStdString(base)));
+                const QFileInfo plain(basePath), bt(basePath + QStringLiteral(".!bt"));
+                std::string chosen = eff;
+                if (plain.isFile() && plain.size() == wantSize)   chosen = base;
+                else if (bt.isFile() && bt.size() == wantSize)    chosen = base + ".!bt";
+                if (chosen != eff) atp.renamed_files[i] = chosen;
+            }
+        }
+
         lt::torrent_handle h;
         try {
             h = m_session.add_torrent(atp);
