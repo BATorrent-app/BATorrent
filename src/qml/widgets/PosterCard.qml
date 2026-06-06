@@ -31,23 +31,45 @@ Item {
         scale: ma.containsMouse ? 1.04 : 1.0
         Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
-        // placeholder bg + dimmed logo
+        // skeleton placeholder with a shimmer sweep while the cover downloads;
+        // crossfades out as the poster fades in.
         Rectangle {
+            id: ph
             anchors.fill: parent
             radius: 10
             color: "#161618"
+            clip: true
             border.color: ma.containsMouse ? Theme.accent : Theme.hair
             border.width: 1
+            opacity: imgSrc.status === Image.Ready ? 0 : 1
+            Behavior on opacity { NumberAnimation { duration: 300 } }
             Behavior on border.color { ColorAnimation { duration: 140 } }
             Image {
                 anchors.centerIn: parent
-                visible: imgSrc.status !== Image.Ready
                 width: parent.width * 0.4
                 height: width
                 source: "qrc:/images/logo.svg"
                 sourceSize: Qt.size(width * 2, width * 2)
                 fillMode: Image.PreserveAspectFit
-                opacity: 0.4
+                opacity: 0.32
+            }
+            Rectangle {
+                width: parent.width * 0.7
+                height: parent.height * 2.2
+                rotation: 18
+                y: -parent.height * 0.6
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#00ffffff" }
+                    GradientStop { position: 0.5; color: "#16ffffff" }
+                    GradientStop { position: 1.0; color: "#00ffffff" }
+                }
+                x: -parent.width
+                NumberAnimation on x {
+                    from: -parent.width; to: parent.width * 1.7
+                    duration: 1200; loops: Animation.Infinite
+                    running: imgSrc.status !== Image.Ready
+                }
             }
         }
 
@@ -67,7 +89,8 @@ Item {
             source: imgSrc
             maskEnabled: true
             maskSource: imgMask
-            visible: imgSrc.status === Image.Ready
+            opacity: imgSrc.status === Image.Ready ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
         }
 
         // rating pill
