@@ -768,28 +768,7 @@ Window {
                 anchors.rightMargin: Theme.sp4
                 spacing: Theme.sp2
 
-                // .brand (logo 30, padding-left 4)
-                Image {
-                    Layout.preferredWidth: 30
-                    Layout.preferredHeight: 30
-                    Layout.leftMargin: 4
-                    Layout.alignment: Qt.AlignVCenter
-                    source: "qrc:/images/logo.svg"
-                    sourceSize: Qt.size(60, 60)
-                    fillMode: Image.PreserveAspectFit
-                    layer.enabled: Theme.isLight
-                    layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
-                }
-                // .brand-div (1×26 hair, margin 0 4)
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.preferredHeight: 26
-                    Layout.leftMargin: 4
-                    Layout.rightMargin: 4
-                    Layout.alignment: Qt.AlignVCenter
-                    color: Theme.hair
-                }
-
+                // brand moved to the nav rail; toolbar starts at the actions
                 // G1: Abrir, Magnet
                 TBtn { label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/open.svg";  onClicked: openFileDlg.open() }
                 TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: magnetDlg.open() }

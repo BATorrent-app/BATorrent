@@ -4,21 +4,39 @@
 
 // Left navigation rail for the 4.0 hub. Switches the main content stack between
 // Downloads / Discover / Search / HUB; Settings (bottom) opens its window.
-// Animated: selection accent bar, hover/active color fades.
+// Animated: selection accent bar, hover/active color fades, collapse/expand.
+// Collapsible: a chevron at the bottom toggles icon-only mode (state persisted).
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import QtQuick.Effects
 import "theme"
 import "widgets"
 
 Rectangle {
     id: rail
-    implicitWidth: 188
+    implicitWidth: collapsed ? 64 : 188
     color: Theme.elev
+    clip: true
 
     property int currentIndex: 0
     property bool discoverVisible: true     // gated off in store builds (step ⑦)
+    property bool collapsed: false
     signal settingsClicked()
+
+    Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+    // QSettings stores bool differently per platform (macOS plist=bool, Windows
+    // registry=int, Linux INI=string), so persist as 0/1 and read all forms.
+    Component.onCompleted: {
+        if (typeof settings === "undefined") return
+        var v = settings.get("navRailCollapsed")
+        collapsed = (v === true || v === 1 || v === "1" || v === "true")
+    }
+    function toggleCollapsed() {
+        collapsed = !collapsed
+        if (typeof settings !== "undefined") settings.set("navRailCollapsed", collapsed ? 1 : 0)
+    }
 
     // right hairline
     Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.hair }
@@ -54,6 +72,8 @@ Rectangle {
                 text: "BATorrent"
                 color: Theme.t1
                 font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
+                opacity: rail.collapsed ? 0 : 1
+                Behavior on opacity { NumberAnimation { duration: 140 } }
             }
         }
 
@@ -93,7 +113,7 @@ Rectangle {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 17
+                    anchors.leftMargin: rail.collapsed ? 13 : 17
                     anchors.rightMargin: 12
                     spacing: 13
                     IconImg {
@@ -111,7 +131,9 @@ Rectangle {
                         font.pixelSize: 14
                         font.weight: navItem.active ? Font.DemiBold : Font.Medium
                         font.family: Theme.fontSans
+                        opacity: rail.collapsed ? 0 : 1
                         Behavior on color { ColorAnimation { duration: 140 } }
+                        Behavior on opacity { NumberAnimation { duration: 140 } }
                     }
                 }
                 MouseArea {
@@ -121,18 +143,20 @@ Rectangle {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: rail.currentIndex = navItem.modelData.page
                 }
+                ToolTip.text: navItem.modelData.label
+                ToolTip.visible: rail.collapsed && itemMa.containsMouse
+                ToolTip.delay: 400
             }
         }
 
-        Item { Layout.fillHeight: true }   // push Settings to the bottom
+        Item { Layout.fillHeight: true }   // push Settings + collapse to the bottom
 
-        // ----- settings (bottom) -----
+        // ----- settings -----
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 46
             Layout.leftMargin: 10
             Layout.rightMargin: 10
-            Layout.bottomMargin: 12
             Rectangle {
                 anchors.fill: parent
                 radius: 10
@@ -141,7 +165,7 @@ Rectangle {
             }
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 17
+                anchors.leftMargin: rail.collapsed ? 13 : 17
                 anchors.rightMargin: 12
                 spacing: 13
                 IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/settings.svg"; tint: Theme.t3; s: 18 }
@@ -153,6 +177,8 @@ Rectangle {
                     font.pixelSize: 14
                     font.weight: Font.Medium
                     font.family: Theme.fontSans
+                    opacity: rail.collapsed ? 0 : 1
+                    Behavior on opacity { NumberAnimation { duration: 140 } }
                 }
             }
             MouseArea {
@@ -162,6 +188,59 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: rail.settingsClicked()
             }
+            ToolTip.text: "Settings"
+            ToolTip.visible: rail.collapsed && setMa.containsMouse
+            ToolTip.delay: 400
+        }
+
+        // ----- collapse / expand toggle (bottom) -----
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 46
+            Layout.leftMargin: 10
+            Layout.rightMargin: 10
+            Layout.bottomMargin: 12
+            Rectangle {
+                anchors.fill: parent
+                radius: 10
+                color: tglMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
+                Behavior on color { ColorAnimation { duration: 140 } }
+            }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: rail.collapsed ? 13 : 17
+                anchors.rightMargin: 12
+                spacing: 13
+                IconImg {
+                    Layout.alignment: Qt.AlignVCenter
+                    src: "qrc:/icons/chevron.svg"
+                    tint: Theme.t3
+                    s: 18
+                    rotation: rail.collapsed ? -90 : 90   // down chevron → right (expand) / left (collapse)
+                    Behavior on rotation { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Collapse"
+                    color: Theme.t2
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    font.family: Theme.fontSans
+                    opacity: rail.collapsed ? 0 : 1
+                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                }
+            }
+            MouseArea {
+                id: tglMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: rail.toggleCollapsed()
+            }
+            ToolTip.text: "Expand"
+            ToolTip.visible: rail.collapsed && tglMa.containsMouse
+            ToolTip.delay: 400
         }
     }
 }
