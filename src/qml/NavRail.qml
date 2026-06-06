@@ -56,24 +56,16 @@ Rectangle {
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 66
+            // brand = just the bat mark, matching the rest of the app (no wordmark)
             Image {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left; anchors.leftMargin: 18
-                width: 28; height: 28
+                width: 30; height: 30
                 source: "qrc:/images/logo.svg"
-                sourceSize: Qt.size(56, 56)
+                sourceSize: Qt.size(60, 60)
                 fillMode: Image.PreserveAspectFit
                 layer.enabled: Theme.isLight
                 layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left; anchors.leftMargin: 54
-                text: "BATorrent"
-                color: Theme.t1
-                font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
-                opacity: rail.collapsed ? 0 : 1
-                Behavior on opacity { NumberAnimation { duration: 140 } }
             }
         }
 
