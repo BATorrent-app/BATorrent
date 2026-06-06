@@ -18,6 +18,11 @@ Window {
     minimumWidth: 560; minimumHeight: 360
     color: "#000000"
     title: win.mediaTitle.length > 0 ? ("BATorrent — " + win.mediaTitle) : "BATorrent"
+    // standalone, non-transient window — otherwise macOS treats it as an
+    // auxiliary window and won't enter the native fullscreen space (menu bar +
+    // Dock stay on top).
+    flags: Qt.Window
+    transientParent: null
 
     property string streamUrl: ""
     property string mediaTitle: ""
