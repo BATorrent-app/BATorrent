@@ -96,7 +96,7 @@ if(WIN32)
     # break libtorrent headers (aligned_union.hpp uses std::max).
     target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601 NOMINMAX)
     # shell32/ole32: SHOpenFolderAndSelectItems for "reveal in Explorer"
-    target_link_libraries(BATorrent PRIVATE shell32 ole32)
+    target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi)
 endif()
 
 # Linux: install rules for icon and .desktop file

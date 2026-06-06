@@ -34,6 +34,15 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QApplication>
+#include <QWindow>
+#include <QEvent>
+#ifdef Q_OS_WIN
+#  include <windows.h>
+#  include <dwmapi.h>
+#  ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#    define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#  endif
+#endif
 #include <QCoreApplication>
 #include <QStyleHints>
 #include <QPainter>
@@ -1537,6 +1546,7 @@ void QmlSessionBridge::performShutdown()
 
 QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
 {
+    qApp->installEventFilter(this);   // paint each window's native title bar (Windows)
     QSettings s;
     m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("dark")).toString();
     m_anime = s.value(QStringLiteral("qmlAnime"), false).toBool();
@@ -1566,6 +1576,43 @@ void QmlThemeBridge::setThemeName(const QString &n)
     m_themeName = n;
     QSettings().setValue(QStringLiteral("qmlThemeName"), n);
     emit changed();
+    refreshTitleBars();   // recolor native title bars to match the new theme
+}
+
+// ---- native title bar (Windows leaves it light regardless of theme) ----
+
+bool QmlThemeBridge::eventFilter(QObject *o, QEvent *e)
+{
+    if (e->type() == QEvent::Show) {
+        if (auto *w = qobject_cast<QWindow *>(o))
+            applyTitleBar(w, darkTitleBar());
+    }
+    return QObject::eventFilter(o, e);
+}
+
+bool QmlThemeBridge::darkTitleBar() const
+{
+    // light-ish themes → light title bar; dark/midnight/custom → dark.
+    return !(m_themeName == QLatin1String("light") || m_themeName == QLatin1String("sakura"));
+}
+
+void QmlThemeBridge::applyTitleBar(QWindow *w, bool dark)
+{
+#ifdef Q_OS_WIN
+    if (!w) return;
+    const BOOL on = dark ? TRUE : FALSE;
+    DwmSetWindowAttribute(reinterpret_cast<HWND>(w->winId()),
+                          DWMWA_USE_IMMERSIVE_DARK_MODE, &on, sizeof(on));
+#else
+    Q_UNUSED(w); Q_UNUSED(dark);
+#endif
+}
+
+void QmlThemeBridge::refreshTitleBars()
+{
+    const bool dark = darkTitleBar();
+    const auto windows = QGuiApplication::topLevelWindows();
+    for (QWindow *w : windows) applyTitleBar(w, dark);
 }
 
 bool QmlThemeBridge::anime() const { return m_anime; }

@@ -25,6 +25,8 @@ class MetadataResolver;
 class GeoIpResolver;
 class TelegramNotifier;
 class WebServer;
+class QWindow;
+class QEvent;
 
 class QmlPosterModel : public QAbstractListModel
 {
@@ -405,11 +407,19 @@ signals:
     void profilesChanged();
     void osSchemeChanged();
 
+protected:
+    // Catch each top-level window's Show to paint its native title bar dark/light
+    // to match the app theme (Windows leaves it white otherwise).
+    bool eventFilter(QObject *o, QEvent *e) override;
+
 private:
     void loadProfiles();
     void saveProfiles();
     QVariantMap activeMap() const;
     static QVariantMap defaultProfile(const QString &name);
+    bool darkTitleBar() const;                     // true unless a light-ish theme
+    static void applyTitleBar(QWindow *w, bool dark);
+    void refreshTitleBars();                       // re-apply to all open windows
 
     QString m_themeName;
     bool m_anime = true;
