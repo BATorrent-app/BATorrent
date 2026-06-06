@@ -1451,7 +1451,9 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
             const bool light = (scheme == Qt::ColorScheme::Light);
             if (light == m_osLight) return;
             m_osLight = light;
-            QGuiApplication::setWindowIcon(trayIcon());   // taskbar/titlebar, live
+#ifndef Q_OS_MACOS
+            QGuiApplication::setWindowIcon(trayIcon());   // taskbar/titlebar, live (macOS Dock uses .icns)
+#endif
             emit osSchemeChanged();                        // QML tray re-binds
         });
     }
