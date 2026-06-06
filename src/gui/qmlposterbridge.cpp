@@ -532,6 +532,17 @@ void QmlSessionBridge::smartPaste()
 {
     QString clip = QGuiApplication::clipboard()->text().trimmed();
     if (clip.isEmpty()) return;
+    // Xunlei thunder:// links: base64 of "AA" + the real URL + "ZZ". Decode, then
+    // fall through to the normal handling (it usually wraps a magnet or .torrent).
+    if (clip.startsWith(QStringLiteral("thunder://"), Qt::CaseInsensitive)) {
+        QString dec = QString::fromUtf8(
+            QByteArray::fromBase64(clip.mid(10).toLatin1())).trimmed();
+        if (dec.startsWith(QStringLiteral("AA"), Qt::CaseInsensitive)
+            && dec.endsWith(QStringLiteral("ZZ"), Qt::CaseInsensitive))
+            dec = dec.mid(2, dec.size() - 4);
+        clip = dec.trimmed();
+        if (clip.isEmpty()) return;
+    }
     if (clip.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)) {
         addMagnetUri(clip);
         return;
@@ -781,6 +792,35 @@ QString QmlSessionBridge::diagnoseSelectedSlow() const
     return lines.join('\n');
 }
 
+// Prefer a content-sniffing player (VLC/mpv/IINA) — they play a still-downloading
+// or ".!bt"-suffixed file that the OS default handler would refuse — then fall back.
+static bool launchMediaPlayer(const QString &path)
+{
+#if defined(Q_OS_MACOS)
+    for (const QString &app : {QStringLiteral("VLC"), QStringLiteral("IINA"),
+                               QStringLiteral("mpv"), QStringLiteral("QuickTime Player")})
+        if (QProcess::startDetached(QStringLiteral("open"), {QStringLiteral("-a"), app, path}))
+            return true;
+    return QProcess::startDetached(QStringLiteral("open"), {path});
+#elif defined(Q_OS_WIN)
+    static const QStringList exes = {
+        QStringLiteral("C:/Program Files/VideoLAN/VLC/vlc.exe"),
+        QStringLiteral("C:/Program Files (x86)/VideoLAN/VLC/vlc.exe"),
+        QStringLiteral("C:/Program Files/mpv/mpv.exe")};
+    for (const QString &exe : exes)
+        if (QFile::exists(exe) && QProcess::startDetached(exe, {path}))
+            return true;
+    for (const QString &cmd : {QStringLiteral("vlc"), QStringLiteral("mpv")})
+        if (QProcess::startDetached(cmd, {path})) return true;
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+#else
+    for (const QString &cmd : {QStringLiteral("vlc"), QStringLiteral("mpv"),
+                               QStringLiteral("celluloid")})
+        if (QProcess::startDetached(cmd, {path})) return true;
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+#endif
+}
+
 void QmlSessionBridge::streamSelected()
 {
     if (!hasSelection()) return;
@@ -800,6 +840,7 @@ void QmlSessionBridge::streamSelected()
     }
     if (bestIdx < 0) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
 
+    m_session->resumeTorrent(row);   // a paused torrent would never buffer
     m_session->setSequentialDownload(row, true);
     for (int i = 0; i < int(files.size()); ++i)
         if (i != bestIdx) m_session->setFilePriority(row, i, 0);
@@ -807,28 +848,33 @@ void QmlSessionBridge::streamSelected()
     m_session->prioritizeFilePieceBoundaries(row, bestIdx);
 
     m_streamIndex = row; m_streamFileIdx = bestIdx;
-    m_streamFilePath = info.savePath + "/" + files[bestIdx].path;
+    m_streamFilePath = stripBt(info.savePath + "/" + files[bestIdx].path);   // nice name, no ".!bt"
+    m_streamTries = 0;
 
     if (!m_streamTimer) { m_streamTimer = new QTimer(this); m_streamTimer->setInterval(2000); }
     QObject::disconnect(m_streamTimer, nullptr, nullptr, nullptr);
-    connect(m_streamTimer, &QTimer::timeout, this, [this]() {
+    connect(m_streamTimer, &QTimer::timeout, this, [this, stripBt]() {
         if (m_streamIndex < 0 || m_streamIndex >= m_session->torrentCount()) { m_streamTimer->stop(); return; }
         auto files = m_session->filesAt(m_streamIndex);
         if (m_streamFileIdx >= int(files.size())) { m_streamTimer->stop(); return; }
-        float prog = files[m_streamFileIdx].progress;
-        qint64 done = qint64(prog * files[m_streamFileIdx].size);
-        if (QFile::exists(m_streamFilePath) && (prog >= 0.02f || done > 5*1024*1024)) {
+        TorrentInfo cur = m_session->torrentAt(m_streamIndex);
+        // Row may have shifted to a different torrent (list reordered/removed) — bail.
+        if (stripBt(cur.savePath + "/" + files[m_streamFileIdx].path) != m_streamFilePath) {
+            m_streamTimer->stop(); return;
+        }
+        // Open the finished file, or the in-progress ".!bt" if that's what's on disk.
+        QString actual = m_streamFilePath;
+        if (!QFile::exists(actual) && QFile::exists(actual + QStringLiteral(".!bt")))
+            actual += QStringLiteral(".!bt");
+        const float prog = files[m_streamFileIdx].progress;
+        const qint64 done = qint64(prog * files[m_streamFileIdx].size);
+        if (QFile::exists(actual) && (prog >= 0.02f || done > 5*1024*1024)) {
             m_streamTimer->stop();
-            bool opened = false;
-#ifdef Q_OS_MACOS
-            for (const QString &app : {"VLC","IINA","QuickTime Player"})
-                if (QProcess::startDetached("open", {"-a", app, m_streamFilePath})) { opened = true; break; }
-            if (!opened) opened = QProcess::startDetached("open", {m_streamFilePath});
-#else
-            opened = QDesktopServices::openUrl(QUrl::fromLocalFile(m_streamFilePath));
-#endif
-            emit toast(tr_("ctx_stream"), opened ? tr_("stream_started").arg(m_session->torrentAt(m_streamIndex).name)
-                                                       : tr_("stream_no_player"));
+            const bool opened = launchMediaPlayer(actual);
+            emit toast(tr_("ctx_stream"), opened ? tr_("stream_started").arg(cur.name)
+                                                 : tr_("stream_no_player"));
+        } else if (++m_streamTries > 300) {   // ~10 min with no buffer (dead torrent) — give up
+            m_streamTimer->stop();
         }
     });
     m_streamTimer->start();
@@ -1451,7 +1497,9 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
             const bool light = (scheme == Qt::ColorScheme::Light);
             if (light == m_osLight) return;
             m_osLight = light;
-            QGuiApplication::setWindowIcon(trayIcon());   // taskbar/titlebar, live
+#ifndef Q_OS_MACOS
+            QGuiApplication::setWindowIcon(trayIcon());   // taskbar/titlebar, live (macOS Dock uses .icns)
+#endif
             emit osSchemeChanged();                        // QML tray re-binds
         });
     }
@@ -1891,6 +1939,18 @@ QString QmlSearchBridge::detectRepacker(const QString &name)
     if (lower.contains("codex")) return "CODEX";
     if (lower.contains("plaza")) return "PLAZA";
     if (lower.contains("skidrow")) return "SKIDROW";
+    if (lower.contains("kaoskrew") || lower.contains("kaos krew")) return "KaOsKrew";
+    if (lower.contains("tenoke")) return "TENOKE";
+    if (lower.contains("empress")) return "EMPRESS";
+    if (lower.contains("razor1911") || lower.contains("razor 1911")) return "Razor1911";
+    if (lower.contains("goldberg")) return "Goldberg";
+    if (lower.contains("0xdeadc0de") || lower.contains("0xdeadcode")) return "0xdeadc0de";
+    if (lower.contains("masquerade")) return "Masquerade";
+    if (lower.contains("chovka")) return "Chovka";
+    if (lower.contains("tinyrepacks") || lower.contains("tiny repacks")) return "Tiny Repacks";
+    if (lower.contains("cpy")) return "CPY";
+    if (lower.contains("-flt") || lower.contains("flt]")) return "FLT";
+    if (lower.contains("-rune") || lower.contains("rune]")) return "RUNE";
     return "";
 }
 

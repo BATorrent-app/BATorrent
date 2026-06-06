@@ -108,7 +108,9 @@ int main(int argc, char *argv[])
     app.setOrganizationName("BATorrent");
     app.setApplicationName("BATorrent");
     app.setApplicationVersion(APP_VERSION);
-    app.setWindowIcon(QIcon(":/images/logo1.png"));
+#ifndef Q_OS_MACOS
+    app.setWindowIcon(QIcon(":/images/logo1.png"));   // macOS Dock uses the bundled .icns (issue #14)
+#endif
     app.setQuitOnLastWindowClosed(false); // keep running in tray when window is closed
 
     // CLI flag: --debug / -d forces verbose logging for this session (without
@@ -346,7 +348,11 @@ int main(int argc, char *argv[])
 
         // OS-scheme-aware app/window icon (so the white logo isn't invisible on
         // a light Windows taskbar). The bridge keeps it live on scheme changes.
+        // Skipped on macOS: setWindowIcon hijacks the Dock tile, overriding the
+        // bundled .icns and any user customization (issue #14).
+#ifndef Q_OS_MACOS
         app.setWindowIcon(themeBridge->trayIcon());
+#endif
 
         QQmlApplicationEngine engine;
         engine.addImageProvider(QStringLiteral("applogo"), new AppLogoImageProvider());
