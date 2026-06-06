@@ -198,6 +198,7 @@ int main(int argc, char *argv[])
         auto *settingsBridge = new QmlSettingsBridge(&session, &app);
         auto *addonBridge = new QmlAddonBridge(&app);
         auto *searchBridge = new QmlSearchBridge(&session, &app);
+        searchBridge->setResolver(resolver);
         auto *discoveryService = new DiscoveryService(&app);
 
 #ifndef BAT_STORE_BUILD

@@ -1961,6 +1961,9 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
             m["sub"] = it.type;
             m["sizeStr"] = it.year > 0 ? QString::number(it.year) : QString();
             m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+            m["poster"] = it.poster; m["coverHash"] = "";
+            m["seedsN"] = 0; m["sizeBytes"] = 0;
+            fillMediaAttrs(m, it.name);
             m_results << m;
         }
         emit resultsChanged();
@@ -1979,6 +1982,10 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
             m["sub"] = s.addonName;
             m["sizeStr"] = s.size > 0 ? formatSize(s.size) : QString();
             m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+            m["poster"] = m_streamHintPoster; m["coverHash"] = "";
+            m["quality"] = s.quality;
+            m["seedsN"] = 0; m["sizeBytes"] = s.size;
+            fillMediaAttrs(m, s.title);
             m_results << m;
         }
         emit resultsChanged();
@@ -2053,6 +2060,75 @@ QString QmlSearchBridge::detectRepacker(const QString &name)
     if (lower.contains("-flt") || lower.contains("flt]")) return "FLT";
     if (lower.contains("-rune") || lower.contains("rune]")) return "RUNE";
     return "";
+}
+
+void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
+{
+    auto has = [&](const char *pat) {
+        return name.contains(QRegularExpression(QLatin1String(pat),
+                                                QRegularExpression::CaseInsensitiveOption));
+    };
+    if (m.value(QStringLiteral("quality")).toString().isEmpty()) {
+        QString q;
+        if (has("2160p|\\b4k\\b|\\buhd\\b")) q = QStringLiteral("4K");
+        else if (has("1080p")) q = QStringLiteral("1080p");
+        else if (has("720p")) q = QStringLiteral("720p");
+        else if (has("480p|360p")) q = QStringLiteral("480p");
+        m["quality"] = q;
+    }
+    QString src;
+    if (has("remux")) src = QStringLiteral("Remux");
+    else if (has("blu-?ray|\\bbdrip\\b|\\bbrrip\\b")) src = QStringLiteral("BluRay");
+    else if (has("web-?dl|web-?rip|\\bweb\\b")) src = QStringLiteral("WEB");
+    else if (has("\\bhdtv\\b|\\bpdtv\\b")) src = QStringLiteral("HDTV");
+    else if (has("dvdrip|\\bdvd\\b")) src = QStringLiteral("DVD");
+    else if (has("\\bcam\\b|hdcam|telesync|\\bts\\b")) src = QStringLiteral("CAM");
+    m["source"] = src;
+    QString codec;
+    if (has("x265|h\\.?265|hevc")) codec = QStringLiteral("HEVC");
+    else if (has("x264|h\\.?264|\\bavc\\b")) codec = QStringLiteral("x264");
+    else if (has("av1")) codec = QStringLiteral("AV1");
+    m["codec"] = codec;
+    m["hdr"] = has("\\bhdr\\b|hdr10|dolby ?vision");
+}
+
+void QmlSearchBridge::setResolver(MetadataResolver *r)
+{
+    m_resolver = r;
+    if (!m_resolver) return;
+    connect(m_resolver, &MetadataResolver::metadataReady, this,
+            [this](const QString &infoHash, const MetadataResult &meta) {
+        if (!meta.valid || meta.posterPath.isEmpty()) return;
+        for (auto &v : m_results) {
+            QVariantMap m = v.toMap();
+            if (m.value(QStringLiteral("coverHash")).toString() == infoHash
+                && m.value(QStringLiteral("poster")).toString().isEmpty()) {
+                m["poster"] = meta.posterPath;
+                v = m;
+            }
+        }
+        emit coverReady(infoHash, meta.posterPath);
+    });
+}
+
+void QmlSearchBridge::resolveCover(int index)
+{
+    if (!m_resolver || index < 0 || index >= m_results.size()) return;
+    const QVariantMap m = m_results[index].toMap();
+    if (!m.value(QStringLiteral("poster")).toString().isEmpty()) return;
+    const QString hash = m.value(QStringLiteral("coverHash")).toString();
+    if (hash.isEmpty()) return;
+    if (m_resolver->hasCached(hash)) {
+        const auto meta = m_resolver->cached(hash);
+        if (meta.valid && !meta.posterPath.isEmpty()) {
+            QVariantMap mm = m;
+            mm["poster"] = meta.posterPath;
+            m_results[index] = mm;
+            emit coverReady(hash, meta.posterPath);
+        }
+        return;
+    }
+    m_resolver->resolve(hash, m.value(QStringLiteral("name")).toString());
 }
 
 QVariantList QmlSearchBridge::sources() const
@@ -2187,6 +2263,9 @@ void QmlSearchBridge::appendGameRows(const QList<GameDownload> &games)
         m["sizeStr"] = g.fileSize;
         m["seeds"] = ""; m["leech"] = ""; m["hasSeeds"] = false;
         m["repacker"] = detectRepacker(g.title);
+        m["poster"] = ""; m["coverHash"] = "";
+        m["seedsN"] = 0; m["sizeBytes"] = 0;
+        fillMediaAttrs(m, g.title);
         m_results << m;
         m_resultMagnets << g.magnet;
         m_resultTitles << (g.cleanTitle.isEmpty() ? g.title : g.cleanTitle);
@@ -2208,6 +2287,9 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         m["leech"] = QString::number(r.leechers);
         m["hasSeeds"] = r.seeders > 0;
         m["repacker"] = (m_mode == "games" || m_mode == "all") ? detectRepacker(r.name) : QString();
+        m["poster"] = ""; m["coverHash"] = r.infoHash;
+        m["seedsN"] = r.seeders; m["sizeBytes"] = static_cast<qlonglong>(r.size);
+        fillMediaAttrs(m, r.name);
         m_results << m;
         m_resultMagnets << r.magnet;
         m_resultTitles << QString();        // torrent rows have no game cover hint
@@ -2276,6 +2358,7 @@ void QmlSearchBridge::activateResult(int index)
         m_streamHintTitle = it.year > 0 ? QString("%1 %2").arg(it.name).arg(it.year) : it.name;
         m_streamHintType = it.type == QLatin1String("series") ? static_cast<int>(ContentType::Series)
                          : it.type == QLatin1String("movie")  ? static_cast<int>(ContentType::Movie) : -1;
+        m_streamHintPoster = it.poster;
         setMode("streams");
         m_results.clear();
         emit resultsChanged();
@@ -2313,6 +2396,9 @@ void QmlSearchBridge::back()
         m["sub"] = it.type;
         m["sizeStr"] = it.year > 0 ? QString::number(it.year) : QString();
         m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+        m["poster"] = it.poster; m["coverHash"] = "";
+        m["seedsN"] = 0; m["sizeBytes"] = 0;
+        fillMediaAttrs(m, it.name);
         m_results << m;
     }
     emit resultsChanged();

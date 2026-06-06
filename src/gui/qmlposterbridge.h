@@ -488,6 +488,11 @@ public:
     Q_INVOKABLE void removeGameSource(const QString &url);
     Q_INVOKABLE void refreshGames();
 
+    // Lazily resolve a TMDB cover for a torrent row (by its info hash) as it
+    // scrolls into view — mirrors the Downloads grid's on-demand resolution.
+    void setResolver(MetadataResolver *r);
+    Q_INVOKABLE void resolveCover(int index);
+
 signals:
     void sourcesChanged();
     void resultsChanged();
@@ -495,6 +500,7 @@ signals:
     void searchingChanged();
     void statusChanged();
     void gameSourcesChanged();
+    void coverReady(const QString &infoHash, const QString &posterPath);
 
 private:
     void setSearching(bool on);
@@ -505,6 +511,11 @@ private:
     void appendTorrentRows(const QList<TorrentSearchResult> &results);
     void finishAggregateSource();
     static QString detectRepacker(const QString &name);
+    // Parse quality/source/codec/hdr tokens out of a release name for filtering.
+    static void fillMediaAttrs(QVariantMap &m, const QString &name);
+
+    MetadataResolver *m_resolver = nullptr;
+    QString m_streamHintPoster;         // activated catalog item's poster, for stream rows
 
     SessionManager *m_session;
     QString m_mode;
