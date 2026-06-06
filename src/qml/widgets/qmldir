@@ -10,6 +10,7 @@ PathFld 1.0 PathFld.qml
 Eyebrow 1.0 Eyebrow.qml
 EmptyState 1.0 EmptyState.qml
 PosterThumb 1.0 PosterThumb.qml
+PosterCard 1.0 PosterCard.qml
 DetailPeers 1.0 DetailPeers.qml
 DetailFiles 1.0 DetailFiles.qml
 DetailTrackers 1.0 DetailTrackers.qml

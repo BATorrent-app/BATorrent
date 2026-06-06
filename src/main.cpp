@@ -22,6 +22,7 @@
 #include <QSGRendererInterface>
 #include <QLocale>
 #include "app/metadataresolver.h"
+#include "app/discoveryservice.h"
 #include "app/translator.h"
 #include "gui/qmlposterbridge.h"
 #include "app/gamesourcemanager.h"
@@ -185,6 +186,7 @@ int main(int argc, char *argv[])
         auto *settingsBridge = new QmlSettingsBridge(&session, &app);
         auto *addonBridge = new QmlAddonBridge(&app);
         auto *searchBridge = new QmlSearchBridge(&session, &app);
+        auto *discoveryService = new DiscoveryService(&app);
 
 #ifndef BAT_STORE_BUILD
         // Seed a default community game catalog once so "Jogos" works out of the
@@ -355,6 +357,7 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("settings", settingsBridge);
         engine.rootContext()->setContextProperty("addons", addonBridge);
         engine.rootContext()->setContextProperty("search", searchBridge);
+        engine.rootContext()->setContextProperty("discovery", discoveryService);
         engine.rootContext()->setContextProperty("logs", logBridge);
         engine.rootContext()->setContextProperty("pairing", pairingBridge);
         engine.rootContext()->setContextProperty("notifications", notificationBridge);

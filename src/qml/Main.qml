@@ -2247,7 +2247,13 @@ Window {
         }
                 }
                 // ----- page 1: Discover -----
-                DiscoverView { Layout.fillWidth: true; Layout.fillHeight: true }
+                DiscoverView {
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    onOpenSearch: function(q) {
+                        if (typeof search !== "undefined") search.search("all", q)
+                        navRail.currentIndex = 2
+                    }
+                }
                 // ----- page 2: Search -----
                 SearchView { Layout.fillWidth: true; Layout.fillHeight: true }
                 // ----- page 3: HUB -----

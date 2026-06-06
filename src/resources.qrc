@@ -86,6 +86,7 @@
 <file>../src/qml/widgets/Eyebrow.qml</file>
 <file>../src/qml/widgets/EmptyState.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
+<file>../src/qml/widgets/PosterCard.qml</file>
 <file>../src/qml/widgets/DetailPeers.qml</file>
 <file>../src/qml/widgets/DetailFiles.qml</file>
 <file>../src/qml/widgets/DetailTrackers.qml</file>
