@@ -21,7 +21,7 @@ Window {
     // floor wide enough that the full toolbar (labels + speed module) always
     // fits — below this the RowLayout would have to clip, which is what made
     // the old icon-only "compact" hack feel broken.
-    minimumWidth: 1100
+    minimumWidth: 1288   // +188 for the nav rail (content area stays >=1100 so the toolbar never clips)
     minimumHeight: 640
     color: Theme.bg
     title: "BATorrent"
@@ -730,6 +730,30 @@ Window {
                 BarItem { text: (i18n.language, i18n.t("menu_about")); onTriggered: aboutDlg.open() }
             }
         }
+
+        // ===== nav rail + content stack (4.0 hub shell) =====
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+
+            NavRail {
+                id: navRail
+                Layout.fillHeight: true
+                onSettingsClicked: win.showWin(settingsWinLoader)
+            }
+
+            StackLayout {
+                id: contentStack
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: navRail.currentIndex
+
+                // ----- page 0: Downloads (original main column) -----
+                ColumnLayout {
+                    spacing: 0
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
 
         // ================== TOOLBAR ==================
         Rectangle {
@@ -2240,6 +2264,15 @@ Window {
                     font.pixelSize: 12
                     font.family: Theme.fontSans
                 }
+            }
+        }
+                }
+                // ----- page 1: Discover -----
+                DiscoverView { Layout.fillWidth: true; Layout.fillHeight: true }
+                // ----- page 2: Search -----
+                SearchView { Layout.fillWidth: true; Layout.fillHeight: true }
+                // ----- page 3: HUB -----
+                HubView { Layout.fillWidth: true; Layout.fillHeight: true }
             }
         }
     }
