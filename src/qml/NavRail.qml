@@ -69,15 +69,16 @@ Rectangle {
                 layer.enabled: Theme.isLight
                 layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
             }
-            // wordmark in New Rocker (OFL) — a real logotype, not a UI font
-            Text {
+            // wordmark in New Rocker (OFL) — a real logotype, not a UI font.
+            // Two-tone: BAT in accent (echoes the bat's red), orrent in t1.
+            Row {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left; anchors.leftMargin: 52
-                text: "BATorrent"
-                color: Theme.t1
-                font.family: "New Rocker"; font.pixelSize: 21
+                spacing: 0
                 opacity: rail.collapsed ? 0 : 1
                 Behavior on opacity { NumberAnimation { duration: 140 } }
+                Text { text: "BAT"; color: Theme.accent; font.family: "New Rocker"; font.pixelSize: 21 }
+                Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 21 }
             }
         }
 
