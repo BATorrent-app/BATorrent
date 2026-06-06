@@ -7,6 +7,7 @@
 // Animated: selection accent bar, hover/active color fades.
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import "theme"
 import "widgets"
 
