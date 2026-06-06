@@ -53,10 +53,12 @@ Rectangle {
         spacing: 2
 
         // ----- brand header -----
+        // Standard collapsible-rail pattern: icon + wordmark when expanded, icon
+        // only when collapsed. Wordmark matches the splash brand (BAT accent +
+        // orrent t1) so it reads as the logotype, not generic text.
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 66
-            // brand = bat mark (left) + app version filling the old wordmark space
             Image {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left; anchors.leftMargin: 18
@@ -67,13 +69,13 @@ Rectangle {
                 layer.enabled: Theme.isLight
                 layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
             }
+            // wordmark in New Rocker (OFL) — a real logotype, not a UI font
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left; anchors.leftMargin: 58
-                text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : ""
-                color: Theme.t3
-                font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 0.5
-                font.family: Theme.fontMono
+                anchors.left: parent.left; anchors.leftMargin: 52
+                text: "BATorrent"
+                color: Theme.t1
+                font.family: "New Rocker"; font.pixelSize: 21
                 opacity: rail.collapsed ? 0 : 1
                 Behavior on opacity { NumberAnimation { duration: 140 } }
             }
@@ -201,7 +203,6 @@ Rectangle {
             Layout.preferredHeight: 46
             Layout.leftMargin: 10
             Layout.rightMargin: 10
-            Layout.bottomMargin: 12
             Rectangle {
                 anchors.fill: parent
                 radius: 10
@@ -243,6 +244,19 @@ Rectangle {
             ToolTip.text: "Expand"
             ToolTip.visible: rail.collapsed && tglMa.containsMouse
             ToolTip.delay: 400
+        }
+
+        // ----- version (bottom) -----
+        Text {
+            Layout.fillWidth: true
+            Layout.leftMargin: 18
+            Layout.bottomMargin: 12
+            text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : ""
+            color: Theme.t4
+            font.pixelSize: 10; font.weight: Font.Medium; font.letterSpacing: 0.4
+            font.family: Theme.fontMono
+            opacity: rail.collapsed ? 0 : 1
+            Behavior on opacity { NumberAnimation { duration: 140 } }
         }
     }
 }

@@ -163,6 +163,7 @@ int main(int argc, char *argv[])
     QFontDatabase::addApplicationFont(":/fonts/Inter-Medium.ttf");
     QFontDatabase::addApplicationFont(":/fonts/Inter-SemiBold.ttf");
     QFontDatabase::addApplicationFont(":/fonts/Inter-Bold.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/NewRocker-Regular.ttf");   // brand wordmark
 
     QFont defaultFont("Inter", 10);
     defaultFont.setStyleStrategy(QFont::PreferAntialias);
