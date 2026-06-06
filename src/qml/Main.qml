@@ -447,35 +447,43 @@ Window {
     // Background events → in-app toast (when the window is up) AND the native
     // OS notification (so it's seen when minimized/in the tray). Both, like the
     // legacy app.
+    // Unified notification: when the window is up, show the custom toast at the
+    // screen corner; when minimized / hidden in the tray, fall back to the native
+    // OS notification so it's seen with the app closed.
+    function notifyUser(title, body, level) {
+        var shown = win.visible
+                    && win.visibility !== Window.Minimized
+                    && win.visibility !== Window.Hidden
+        if (shown) {
+            toastHost.show(title, body, level)
+        } else if (trayIcon.available) {
+            // `supportsMessages` reads false on Windows even when showMessage
+            // works, so gate on `available`.
+            trayIcon.showMessage(title, body,
+                level === 2 ? Platform.SystemTrayIcon.Critical
+                : level === 1 ? Platform.SystemTrayIcon.Warning
+                : Platform.SystemTrayIcon.Information, 5000)
+        } else {
+            toastHost.show(title, body, level)
+        }
+    }
+
+    // background events (finished, error, kill switch, RSS)
     Connections {
         target: typeof notifications !== "undefined" ? notifications : null
         ignoreUnknownSignals: true
-        function onNotify(title, body, level) {
-            // Background-relevant events (finished, error, kill switch, RSS) go
-            // to the OS notification area like the legacy app, so they're visible
-            // even when BATorrent is minimized. `supportsMessages` reads false on
-            // Windows even when showMessage works, so gate on `available`; the
-            // in-app toast is only a fallback when there's no system tray at all.
-            if (trayIcon.available) {
-                trayIcon.showMessage(title, body,
-                    level === 2 ? Platform.SystemTrayIcon.Critical
-                    : level === 1 ? Platform.SystemTrayIcon.Warning
-                    : Platform.SystemTrayIcon.Information, 5000)
-            } else {
-                toastHost.show(title, body, level)
-            }
-        }
+        function onNotify(title, body, level) { win.notifyUser(title, body, level) }
     }
 
     // session-originated toasts (stream feedback, etc.)
     Connections {
         target: typeof session !== "undefined" ? session : null
         ignoreUnknownSignals: true
-        function onToast(title, body) { toastHost.show(title, body, 0) }
+        function onToast(title, body) { win.notifyUser(title, body, 0) }
     }
 
-    // in-app toast stack (overlays the whole window content)
-    ToastHost { id: toastHost }
+    // custom toast cards, pinned to the screen's bottom-right (native-like)
+    ToastOverlay { id: toastHost }
 
     TrayPopupWindow {
         id: trayPopup
