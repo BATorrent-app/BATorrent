@@ -56,7 +56,7 @@ Rectangle {
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 66
-            // brand = just the bat mark, matching the rest of the app (no wordmark)
+            // brand = bat mark (left) + app version filling the old wordmark space
             Image {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left; anchors.leftMargin: 18
@@ -66,6 +66,16 @@ Rectangle {
                 fillMode: Image.PreserveAspectFit
                 layer.enabled: Theme.isLight
                 layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left; anchors.leftMargin: 58
+                text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : ""
+                color: Theme.t3
+                font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 0.5
+                font.family: Theme.fontMono
+                opacity: rail.collapsed ? 0 : 1
+                Behavior on opacity { NumberAnimation { duration: 140 } }
             }
         }
 
