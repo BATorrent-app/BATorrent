@@ -27,7 +27,7 @@ GitHub build can offer an easier in-app add-on browser; the store stays neutral
 (users add sources by URL there).
 
 ## Build steps
-- [ ] **① Nav-rail shell** — Main.qml → rail + content StackLayout; move the current toolbar+grid into a Downloads page. Animated page transitions.
+- [~] **① Nav-rail shell** — `NavRail.qml` (animated: accent bar, hover/active fades) + `DiscoverView`/`SearchView`/`HubView` stubs created & registered in qrc. **Remaining:** wrap Main.qml content in `[rail | StackLayout]` (move toolbar+grid into a Downloads page; bind `currentIndex`; rail `settingsClicked`→ settings window; animated page transitions).
 - [ ] **② Search page** — promote `SearchWindow` to a content page `SearchView.qml` (poster grid, repacker chips, complex filters: repacker/size/seeders/source/category). Reuses `QmlSearchBridge`.
 - [ ] **③ Discover** — `src/app/discoveryservice.{h,cpp}` (TMDB `/trending` + `/popular`, IGDB popular; 12h disk cache) + `DiscoverView.qml` (rotating hero + horizontal poster rows). Click → `QmlSearchBridge::search("all", title)`.
 - [ ] **④ Engine** — `src/webui/streamserver.{h,cpp}` (127.0.0.1, `GET /stream/<hash>/<idx>`, 206/Range, incremental write) + SessionManager `handleByInfoHash` & `prioritizeRange` (`set_piece_deadline`/`have_piece`) + `PlayerWindow.qml` (QtMultimedia FFmpeg backend, resume, external-player fallback).

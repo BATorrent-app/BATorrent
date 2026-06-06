@@ -67,6 +67,10 @@
 <file>../src/qml/LogViewerWindow.qml</file>
 <file>../src/qml/DiagnosticsWindow.qml</file>
 <file>../src/qml/PairingDialog.qml</file>
+<file>../src/qml/NavRail.qml</file>
+<file>../src/qml/DiscoverView.qml</file>
+<file>../src/qml/SearchView.qml</file>
+<file>../src/qml/HubView.qml</file>
 <file>../src/qml/theme/Theme.qml</file>
 <file>../src/qml/theme/qmldir</file>
 <file>../src/qml/widgets/qmldir</file>
