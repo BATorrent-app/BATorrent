@@ -126,6 +126,15 @@ Rectangle {
                     Layout.fillWidth: true
                     spacing: 10
 
+                    // selective rendering: a row only loads its covers once it
+                    // scrolls within the viewport (+buffer), then stays loaded —
+                    // so the visible rows show first instead of all ~40 at once.
+                    readonly property bool inView: (y + height) > (flick.contentY - 400)
+                                                   && y < (flick.contentY + flick.height + 400)
+                    property bool everInView: false
+                    onInViewChanged: if (inView) everInView = true
+                    Component.onCompleted: if (inView) everInView = true
+
                     Text {
                         text: rowItem.modelData.label
                         color: Theme.t1
@@ -141,7 +150,7 @@ Rectangle {
                         boundsBehavior: Flickable.StopAtBounds
                         leftMargin: Theme.sp5
                         rightMargin: Theme.sp5
-                        model: rowItem.modelData.items
+                        model: rowItem.everInView ? rowItem.modelData.items : []
                         delegate: PosterCard {
                             id: pcard
                             required property var modelData
