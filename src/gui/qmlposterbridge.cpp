@@ -913,6 +913,16 @@ QString QmlSessionBridge::streamUrl(int row)
     return QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(bestIdx);
 }
 
+void QmlSessionBridge::openExternalForHash(const QString &infoHash, int fileIndex)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return;
+    const QString path = m_session->streamFilePath(row, fileIndex);
+    if (path.isEmpty()) return;
+    if (!launchMediaPlayer(path))
+        emit toast(tr_("ctx_stream"), tr_("stream_no_player"));
+}
+
 void QmlSessionBridge::playSelected()
 {
     if (!hasSelection()) return;

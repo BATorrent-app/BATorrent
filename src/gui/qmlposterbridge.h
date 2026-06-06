@@ -215,6 +215,8 @@ public:
     // Local-stream URL for a torrent's best video file (preps priorities too);
     // empty if no video / no stream server / metadata not ready.
     Q_INVOKABLE QString streamUrl(int row);
+    // Hand off to the OS media player for the exact file being watched.
+    Q_INVOKABLE void openExternalForHash(const QString &infoHash, int fileIndex);
     void setStreamPort(quint16 port) { m_streamPort = port; }
     Q_INVOKABLE void setSelectedCategory(const QString &category);
     Q_INVOKABLE void setSelectedTags(const QStringList &tags);

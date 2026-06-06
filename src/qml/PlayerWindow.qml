@@ -25,6 +25,25 @@ Window {
     property int fileIndex: 0
     readonly property string resumeKey: "resume_" + infoHash + "_" + fileIndex
     property bool resumed: false
+    property bool muted: false
+
+    // small pill button for the controls bar
+    component PChip: Rectangle {
+        id: chip
+        property string label: ""
+        property bool active: false
+        signal clicked()
+        implicitHeight: 26
+        implicitWidth: ct.width + 18
+        radius: 7
+        color: chip.active ? Theme.accent : (cma.containsMouse ? "#33ffffff" : "#1d1d20")
+        Text {
+            id: ct; anchors.centerIn: parent; text: chip.label
+            color: chip.active ? Theme.accentText : Theme.t1
+            font.pixelSize: 12; font.weight: Font.Medium; font.family: Theme.fontSans
+        }
+        MouseArea { id: cma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chip.clicked() }
+    }
 
     function fmt(ms) {
         if (ms <= 0) return "0:00"
@@ -53,7 +72,7 @@ Window {
         id: player
         source: win.streamUrl
         videoOutput: videoOut
-        audioOutput: AudioOutput { id: audio; volume: volSlider.value }
+        audioOutput: AudioOutput { id: audio; volume: volSlider.value; muted: win.muted }
         onDurationChanged: {
             if (!win.resumed && duration > 0 && typeof settings !== "undefined") {
                 win.resumed = true
@@ -103,7 +122,53 @@ Window {
             visible: player.error !== MediaPlayer.NoError
             primary: true
             text: (i18n.language, i18n.t("player_open_external"))
-            onClicked: { win.saveResume(); if (typeof session !== "undefined") session.streamSelected(); win.close() }
+            onClicked: { win.saveResume(); win.openExternal(); win.close() }
+        }
+    }
+
+    function openExternal() {
+        if (typeof session !== "undefined")
+            session.openExternalForHash(win.infoHash, win.fileIndex)
+    }
+    function togglePlay() {
+        player.playbackState === MediaPlayer.PlayingState ? player.pause() : player.play()
+    }
+    function toggleFullscreen() {
+        win.visibility = (win.visibility === Window.FullScreen) ? Window.Windowed : Window.FullScreen
+    }
+    function seekBy(ms) {
+        if (player.seekable) player.position = Math.max(0, Math.min(player.duration, player.position + ms))
+    }
+    function bumpVolume(d) { volSlider.value = Math.max(0, Math.min(1, volSlider.value + d)) }
+
+    // track pickers (embedded audio / subtitle streams)
+    Menu {
+        id: audioMenu
+        Repeater {
+            model: player.audioTracks.length
+            MenuItem {
+                required property int index
+                text: (i18n.language, i18n.t("player_audio")) + " " + (index + 1)
+                checkable: true; checked: player.activeAudioTrack === index
+                onTriggered: player.activeAudioTrack = index
+            }
+        }
+    }
+    Menu {
+        id: subMenu
+        MenuItem {
+            text: (i18n.language, i18n.t("player_subs_off"))
+            checkable: true; checked: player.activeSubtitleTrack < 0
+            onTriggered: player.activeSubtitleTrack = -1
+        }
+        Repeater {
+            model: player.subtitleTracks.length
+            MenuItem {
+                required property int index
+                text: (i18n.language, i18n.t("player_subs")) + " " + (index + 1)
+                checkable: true; checked: player.activeSubtitleTrack === index
+                onTriggered: player.activeSubtitleTrack = index
+            }
         }
     }
 
@@ -111,22 +176,24 @@ Window {
     Rectangle {
         id: bar
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        height: 56
-        color: "#cc101012"
+        height: 54
+        color: "#dd0e0e10"
         visible: win.visibility !== Window.FullScreen || barHover.containsMouse
 
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 14; anchors.rightMargin: 14
-            spacing: 12
+            spacing: 9
 
+            PChip { Layout.alignment: Qt.AlignVCenter; label: "−" + "10"; onClicked: win.seekBy(-10000) }
             IconImg {
                 Layout.alignment: Qt.AlignVCenter
                 src: player.playbackState === MediaPlayer.PlayingState ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
-                tint: Theme.t1; s: 20
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                    onClicked: player.playbackState === MediaPlayer.PlayingState ? player.pause() : player.play() }
+                tint: Theme.t1; s: 22
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.togglePlay() }
             }
+            PChip { Layout.alignment: Qt.AlignVCenter; label: "+10"; onClicked: win.seekBy(10000) }
+
             Text { text: win.fmt(player.position); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
             Slider {
                 id: seek
@@ -137,13 +204,42 @@ Window {
                 onMoved: player.position = value
             }
             Text { text: win.fmt(player.duration); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
-            IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/play.svg"; tint: Theme.t3; s: 16; visible: false }
-            Slider { id: volSlider; Layout.preferredWidth: 90; from: 0; to: 1; value: 0.9 }
+
+            PChip {
+                Layout.alignment: Qt.AlignVCenter
+                visible: player.audioTracks.length > 1
+                label: (i18n.language, i18n.t("player_audio"))
+                onClicked: audioMenu.popup()
+            }
+            PChip {
+                Layout.alignment: Qt.AlignVCenter
+                visible: player.subtitleTracks.length > 0
+                active: player.activeSubtitleTrack >= 0
+                label: (i18n.language, i18n.t("player_subs"))
+                onClicked: subMenu.popup()
+            }
+            PChip {
+                Layout.alignment: Qt.AlignVCenter
+                active: win.muted
+                label: (i18n.language, i18n.t("player_mute"))
+                onClicked: win.muted = !win.muted
+            }
+            Slider { id: volSlider; Layout.preferredWidth: 80; Layout.alignment: Qt.AlignVCenter; from: 0; to: 1; value: 0.9 }
+
+            PChip { Layout.alignment: Qt.AlignVCenter; label: (i18n.language, i18n.t("player_external")); onClicked: { win.saveResume(); win.openExternal() } }
+            PChip { Layout.alignment: Qt.AlignVCenter; label: "⛶"; onClicked: win.toggleFullscreen() }
         }
         MouseArea { id: barHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
     }
 
     Component.onCompleted: if (win.streamUrl.length > 0) player.play()
-    Keys.onSpacePressed: player.playbackState === MediaPlayer.PlayingState ? player.pause() : player.play()
-    Keys.onEscapePressed: win.visibility === Window.FullScreen ? (win.visibility = Window.Windowed) : win.close()
+
+    Shortcut { sequence: "Space";  onActivated: win.togglePlay() }
+    Shortcut { sequence: "Right";  onActivated: win.seekBy(10000) }
+    Shortcut { sequence: "Left";   onActivated: win.seekBy(-10000) }
+    Shortcut { sequence: "Up";     onActivated: win.bumpVolume(0.05) }
+    Shortcut { sequence: "Down";   onActivated: win.bumpVolume(-0.05) }
+    Shortcut { sequence: "F";      onActivated: win.toggleFullscreen() }
+    Shortcut { sequence: "M";      onActivated: win.muted = !win.muted }
+    Shortcut { sequence: "Escape"; onActivated: win.visibility === Window.FullScreen ? (win.visibility = Window.Windowed) : win.close() }
 }
