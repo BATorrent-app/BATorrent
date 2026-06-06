@@ -881,6 +881,50 @@ void QmlSessionBridge::streamSelected()
     emit toast(tr_("ctx_stream"), tr_("stream_started").arg(info.name));
 }
 
+QString QmlSessionBridge::streamUrl(int row)
+{
+    if (m_streamPort == 0) return {};
+    if (row < 0 || row >= m_session->torrentCount()) return {};
+    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
+    auto files = m_session->filesAt(row);
+    auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
+    int bestIdx = -1; qint64 bestSize = 0;
+    for (int i = 0; i < int(files.size()); ++i) {
+        const QString mp = stripBt(files[i].path);
+        for (const auto &ext : videoExts)
+            if (mp.endsWith(ext, Qt::CaseInsensitive)) {
+                if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
+                break;
+            }
+    }
+    if (bestIdx < 0) return {};
+    const QString hash = m_session->torrentHashAt(row);
+    if (hash.isEmpty()) return {};
+
+    // same prep as the external stream: resume, sequential, only the video
+    // file at full priority, and boost the header/index pieces.
+    m_session->resumeTorrent(row);
+    m_session->setSequentialDownload(row, true);
+    for (int i = 0; i < int(files.size()); ++i)
+        if (i != bestIdx) m_session->setFilePriority(row, i, 0);
+    m_session->setFilePriority(row, bestIdx, 7);
+    m_session->prioritizeFilePieceBoundaries(row, bestIdx);
+
+    return QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(bestIdx);
+}
+
+void QmlSessionBridge::playSelected()
+{
+    if (!hasSelection()) return;
+    const int row = m_selectedIndex;
+    const QString url = streamUrl(row);
+    if (url.isEmpty()) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
+    const TorrentInfo info = m_session->torrentAt(row);
+    const QString hash = m_session->torrentHashAt(row);
+    const int fileIdx = url.section('/', -1).toInt();
+    emit openPlayer(url, info.name, hash, fileIdx);
+}
+
 void QmlSessionBridge::setSelectedCategory(const QString &category)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))

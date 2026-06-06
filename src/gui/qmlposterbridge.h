@@ -210,7 +210,12 @@ public:
     Q_INVOKABLE int  selectedMaxSeedDays() const;
     Q_INVOKABLE void renameSelected(const QString &name);   // rename the torrent (file 0)
     Q_INVOKABLE QString diagnoseSelectedSlow() const;       // "why is this slow" report
-    Q_INVOKABLE void streamSelected();                      // prioritize video + open player
+    Q_INVOKABLE void streamSelected();                      // prioritize video + open EXTERNAL player
+    Q_INVOKABLE void playSelected();                        // prioritize video + open the embedded player
+    // Local-stream URL for a torrent's best video file (preps priorities too);
+    // empty if no video / no stream server / metadata not ready.
+    Q_INVOKABLE QString streamUrl(int row);
+    void setStreamPort(quint16 port) { m_streamPort = port; }
     Q_INVOKABLE void setSelectedCategory(const QString &category);
     Q_INVOKABLE void setSelectedTags(const QStringList &tags);
     Q_INVOKABLE void addTrackerToSelected(const QString &url);
@@ -292,6 +297,7 @@ signals:
     void previewPosterReady(const QString &infoHash, const QString &posterPath);
     void allDownloadsComplete();   // fired once when the last active download finishes
     void toast(const QString &title, const QString &body);   // in-app toast (stream feedback, etc.)
+    void openPlayer(const QString &url, const QString &title, const QString &infoHash, int fileIndex);
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
     // the user always picks save path / files — never a silent auto-download.
@@ -303,6 +309,7 @@ private slots:
 private:
     SessionManager *m_session;
     MetadataResolver *m_resolver;
+    quint16 m_streamPort = 0;
     int m_selectedIndex = -1;
     QList<int> m_selectedRows;
     GeoIpResolver *m_geoIp = nullptr;
@@ -312,6 +319,7 @@ private:
     QString m_streamFilePath;
     int m_streamIndex = -1;
     int m_streamFileIdx = -1;
+    int m_streamTries = 0;          // stop polling for buffer after a while (dead torrent)
 
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;

@@ -42,6 +42,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/gamesourcemanager.cpp
     src/gui/qmlposterbridge.cpp
     src/webui/webserver.cpp
+    src/webui/streamserver.cpp
     ${RESOURCES}
     ${WIN_RC}
     ${MACOSX_APP_ICON}

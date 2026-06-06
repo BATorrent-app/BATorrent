@@ -25,6 +25,7 @@
 #include "app/discoveryservice.h"
 #include "app/translator.h"
 #include "gui/qmlposterbridge.h"
+#include "webui/streamserver.h"
 #include "app/gamesourcemanager.h"
 #include "app/rssmanager.h"
 #include "app/addonmanager.h"
@@ -184,6 +185,14 @@ int main(int argc, char *argv[])
         auto *posterModel = new QmlPosterModel(&session, resolver, &app);
         auto *themeBridge = new QmlThemeBridge(&app);
         auto *sessionBridge = new QmlSessionBridge(&session, resolver, &app);
+        // Local stream server for the embedded player (4.0 step ④).
+        auto *streamServer = new StreamServer(&session, &app);
+        if (streamServer->start()) {
+            sessionBridge->setStreamPort(streamServer->port());
+            qInfo() << "[stream] listening on 127.0.0.1:" << streamServer->port();
+        } else {
+            qWarning() << "[stream] failed to start local stream server";
+        }
         RssManager::instance().setSession(&session, sessionBridge->defaultSavePath());
         auto *rssBridge = new QmlRssBridge(&app);
         auto *settingsBridge = new QmlSettingsBridge(&session, &app);

@@ -258,6 +258,7 @@ Window {
         CtxItem { text: (i18n.language, i18n.t("tb_pause")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
         CtxItem { text: (i18n.language, i18n.t("tb_resume")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_play")); onTriggered: session.playSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stream")); onTriggered: session.streamSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
         Sep {}
@@ -2476,6 +2477,15 @@ Window {
     Loader { id: removedWinLoader;   active: false; sourceComponent: RemovedHistoryWindow {} }
     Loader { id: logWinLoader;       active: false; sourceComponent: LogViewerWindow {} }
     Loader { id: diagWinLoader;      active: false; sourceComponent: DiagnosticsWindow {} }
+    Loader { id: playerWinLoader;    active: false; sourceComponent: PlayerWindow {} }
+    Connections {
+        target: session
+        function onOpenPlayer(url, title, hash, fileIndex) {
+            playerWinLoader.active = true
+            var w = playerWinLoader.item
+            if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, title, hash, fileIndex) }
+        }
+    }
     InspectorDialog      { id: inspectorDlg }
     PairingDialog        { id: pairingDlg }
 

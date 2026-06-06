@@ -58,6 +58,7 @@
 <file>../src/qml/ReleaseNotesDialog.qml</file>
 <file>../src/qml/AboutDialog.qml</file>
 <file>../src/qml/SearchWindow.qml</file>
+<file>../src/qml/PlayerWindow.qml</file>
 <file>../src/qml/RssWindow.qml</file>
 <file>../src/qml/SettingsWindow.qml</file>
 <file>../src/qml/ShortcutsWindow.qml</file>
