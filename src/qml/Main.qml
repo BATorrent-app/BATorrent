@@ -394,7 +394,7 @@ Window {
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.showWin(searchWinLoader) }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: navRail.currentIndex = 2 }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
@@ -708,7 +708,7 @@ Window {
                 BarItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
                 BarSep {}
-                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.showWin(searchWinLoader) }
+                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: navRail.currentIndex = 2 }
                 BarSep {}
                 BarItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
@@ -782,7 +782,7 @@ Window {
                 TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: removeDlg.open() }
                 TGrpDiv {}
                 // G4: Buscar, RSS
-                TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: win.showWin(searchWinLoader) }
+                TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: navRail.currentIndex = 2 }
                 TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: win.showWin(rssWinLoader) }
                 TGrpDiv {}
                 // G5: Config.
@@ -2441,7 +2441,7 @@ Window {
         onActionRequested: function(action) {
             if (action === "open") openFileDlg.open()
             else if (action === "magnet") magnetDlg.open()
-            else if (action === "search") win.showWin(searchWinLoader)
+            else if (action === "search") navRail.currentIndex = 2
             else if (action === "rss") win.showWin(rssWinLoader)
         }
     }
@@ -2463,7 +2463,6 @@ Window {
         if (!p || p.length === 0) return ""
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
-    Loader { id: searchWinLoader;    active: false; sourceComponent: SearchWindow {} }
     Loader { id: rssWinLoader;       active: false; sourceComponent: RssWindow {} }
     Loader { id: settingsWinLoader;  active: false; sourceComponent: SettingsWindow {} }
     Loader { id: shortcutsWinLoader; active: false; sourceComponent: ShortcutsWindow {} }
