@@ -2477,7 +2477,13 @@ Window {
     Loader { id: removedWinLoader;   active: false; sourceComponent: RemovedHistoryWindow {} }
     Loader { id: logWinLoader;       active: false; sourceComponent: LogViewerWindow {} }
     Loader { id: diagWinLoader;      active: false; sourceComponent: DiagnosticsWindow {} }
-    Loader { id: playerWinLoader;    active: false; sourceComponent: PlayerWindow {} }
+    Loader {
+        id: playerWinLoader; active: false
+        sourceComponent: PlayerWindow {
+            // closing the window tears the player down so reopening starts fresh
+            onClosed: Qt.callLater(function() { playerWinLoader.active = false })
+        }
+    }
     Connections {
         target: session
         function onOpenPlayer(url, title, hash, fileIndex) {

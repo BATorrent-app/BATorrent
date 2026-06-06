@@ -112,7 +112,10 @@ Window {
 
     // periodic + lifecycle resume saves
     Timer { interval: 5000; running: player.playbackState === MediaPlayer.PlayingState; repeat: true; onTriggered: win.saveResume() }
-    onClosing: win.saveResume()
+    // X must actually stop playback (the window only hides while the app keeps
+    // running in tray) and tear down the player so reopening starts fresh.
+    signal closed()
+    onClosing: { win.saveResume(); player.stop(); win.closed() }
 
     Rectangle { anchors.fill: parent; color: "#000000" }
 
