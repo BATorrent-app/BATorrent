@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.0.4
+
+### Fixes
+- **macOS Dock icon** no longer appears transparent and can now be customized. The app was overriding the Dock tile at runtime (re-applying the monochrome tray bat on every launch and on light/dark switches), which on some setups left a see-through icon and blocked custom icons. It now leaves the bundled app icon in place. (#14)
+
+### Icon
+- Enlarged the bat within the macOS app icon so it fills the rounded square better.
+
 ## v3.0.3
 
 ### Games
