@@ -26,6 +26,8 @@ Window {
     readonly property string resumeKey: "resume_" + infoHash + "_" + fileIndex
     property bool resumed: false
     property bool muted: false
+    property bool controlsShown: true
+    readonly property bool fullscreen: win.visibility === Window.FullScreen
 
     // small pill button for the controls bar
     component PChip: Rectangle {
@@ -43,6 +45,27 @@ Window {
             font.pixelSize: 12; font.weight: Font.Medium; font.family: Theme.fontSans
         }
         MouseArea { id: cma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chip.clicked() }
+    }
+
+    // slim, themed slider (no default "ball" handle)
+    component PSlider: Slider {
+        id: sl
+        implicitHeight: 16
+        background: Rectangle {
+            x: sl.leftPadding; y: sl.topPadding + sl.availableHeight / 2 - height / 2
+            width: sl.availableWidth; height: 4; radius: 2
+            color: "#3a3a42"
+            Rectangle { width: sl.visualPosition * parent.width; height: parent.height; radius: 2; color: Theme.accent }
+        }
+        handle: Rectangle {
+            x: sl.leftPadding + sl.visualPosition * (sl.availableWidth - width)
+            y: sl.topPadding + sl.availableHeight / 2 - height / 2
+            implicitWidth: (sl.pressed || sl.hovered) ? 14 : 11
+            implicitHeight: implicitWidth
+            radius: implicitWidth / 2
+            color: "#ffffff"
+            Behavior on implicitWidth { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
+        }
     }
 
     function fmt(ms) {
@@ -91,15 +114,20 @@ Window {
     VideoOutput {
         id: videoOut
         anchors.fill: parent
-        anchors.bottomMargin: bar.visible ? bar.height : 0
+        // overlay the bar in fullscreen; keep it below the video when windowed
+        anchors.bottomMargin: win.fullscreen ? 0 : (bar.visible ? bar.height : 0)
         fillMode: VideoOutput.PreserveAspectFit
     }
 
-    // click video to toggle play/pause
+    // click toggles play/pause, double-click toggles fullscreen, movement
+    // reveals the controls (and hides the cursor once they auto-hide)
     MouseArea {
         anchors.fill: videoOut
-        onClicked: player.playbackState === MediaPlayer.PlayingState ? player.pause() : player.play()
-        onDoubleClicked: win.visibility = (win.visibility === Window.FullScreen) ? Window.Windowed : Window.FullScreen
+        hoverEnabled: true
+        cursorShape: (win.fullscreen && !win.controlsShown) ? Qt.BlankCursor : Qt.ArrowCursor
+        onPositionChanged: win.showControls()
+        onClicked: win.togglePlay()
+        onDoubleClicked: win.toggleFullscreen()
     }
 
     // buffering / error overlay
@@ -140,6 +168,11 @@ Window {
         if (player.seekable) player.position = Math.max(0, Math.min(player.duration, player.position + ms))
     }
     function bumpVolume(d) { volSlider.value = Math.max(0, Math.min(1, volSlider.value + d)) }
+    function showControls() { win.controlsShown = true; if (win.fullscreen) idle.restart() }
+
+    // auto-hide the bar after inactivity while in fullscreen
+    Timer { id: idle; interval: 3000; onTriggered: if (win.fullscreen) win.controlsShown = false }
+    onFullscreenChanged: { win.controlsShown = true; if (win.fullscreen) idle.restart() }
 
     // track pickers (embedded audio / subtitle streams)
     Menu {
@@ -176,9 +209,16 @@ Window {
     Rectangle {
         id: bar
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        height: 54
-        color: "#dd0e0e10"
-        visible: win.visibility !== Window.FullScreen || barHover.containsMouse
+        height: 56
+        // top→bottom scrim so controls read over bright video
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#00000000" }
+            GradientStop { position: 0.25; color: "#aa0a0a0c" }
+            GradientStop { position: 1.0; color: "#f00a0a0c" }
+        }
+        opacity: (!win.fullscreen || win.controlsShown) ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
 
         RowLayout {
             anchors.fill: parent
@@ -194,16 +234,16 @@ Window {
             }
             PChip { Layout.alignment: Qt.AlignVCenter; label: "+10"; onClicked: win.seekBy(10000) }
 
-            Text { text: win.fmt(player.position); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
-            Slider {
+            Text { text: win.fmt(player.position); color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono }
+            PSlider {
                 id: seek
-                Layout.fillWidth: true
+                Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
                 from: 0; to: Math.max(1, player.duration)
                 value: player.position
                 enabled: player.seekable
                 onMoved: player.position = value
             }
-            Text { text: win.fmt(player.duration); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
+            Text { text: win.fmt(player.duration); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
 
             PChip {
                 Layout.alignment: Qt.AlignVCenter
@@ -224,12 +264,16 @@ Window {
                 label: (i18n.language, i18n.t("player_mute"))
                 onClicked: win.muted = !win.muted
             }
-            Slider { id: volSlider; Layout.preferredWidth: 80; Layout.alignment: Qt.AlignVCenter; from: 0; to: 1; value: 0.9 }
+            PSlider { id: volSlider; Layout.preferredWidth: 76; Layout.alignment: Qt.AlignVCenter; from: 0; to: 1; value: 0.9 }
 
             PChip { Layout.alignment: Qt.AlignVCenter; label: (i18n.language, i18n.t("player_external")); onClicked: { win.saveResume(); win.openExternal() } }
             PChip { Layout.alignment: Qt.AlignVCenter; label: "⛶"; onClicked: win.toggleFullscreen() }
         }
-        MouseArea { id: barHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+        MouseArea {
+            id: barHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton
+            onContainsMouseChanged: if (containsMouse) win.showControls()
+            onPositionChanged: win.showControls()
+        }
     }
 
     Component.onCompleted: if (win.streamUrl.length > 0) player.play()
