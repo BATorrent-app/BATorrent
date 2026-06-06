@@ -71,7 +71,7 @@ QString cacheFile()
 }
 
 const qint64 CacheTtlSecs = 12 * 60 * 60;
-const int CacheVersion = 3;   // bump when the row schema/order changes (invalidates stale cache)
+const int CacheVersion = 4;   // bump when the row schema/order changes (invalidates stale cache)
 
 } // namespace
 
@@ -214,11 +214,28 @@ QVariantList gamesToItems(const QList<QJsonObject> &objs, int cap)
         if (name.isEmpty() || seen.contains(name)) continue;
         seen.append(name);
         const qint64 rel = qint64(o.value(QLatin1String("first_release_date")).toDouble());
+        // games have no backdrop field — use an artwork (or a screenshot) so they
+        // can headline the hero banner too.
+        QString backdrop;
+        const QJsonArray arts = o.value(QLatin1String("artworks")).toArray();
+        if (!arts.isEmpty()) {
+            const QString aid = arts.first().toObject().value(QLatin1String("image_id")).toString();
+            if (!aid.isEmpty())
+                backdrop = QStringLiteral("https://images.igdb.com/igdb/image/upload/t_1080p/%1.jpg").arg(aid);
+        }
+        if (backdrop.isEmpty()) {
+            const QJsonArray shots = o.value(QLatin1String("screenshots")).toArray();
+            if (!shots.isEmpty()) {
+                const QString sid = shots.first().toObject().value(QLatin1String("image_id")).toString();
+                if (!sid.isEmpty())
+                    backdrop = QStringLiteral("https://images.igdb.com/igdb/image/upload/t_screenshot_huge/%1.jpg").arg(sid);
+            }
+        }
         QVariantMap m;
         m.insert(QStringLiteral("title"), name);
         m.insert(QStringLiteral("poster"),
                  QStringLiteral("https://images.igdb.com/igdb/image/upload/t_cover_big/%1.jpg").arg(imageId));
-        m.insert(QStringLiteral("backdrop"), QString());
+        m.insert(QStringLiteral("backdrop"), backdrop);
         m.insert(QStringLiteral("year"), rel > 0
                  ? QString::number(QDateTime::fromSecsSinceEpoch(rel).date().year()) : QString());
         m.insert(QStringLiteral("rating"), o.value(QLatin1String("rating")).toDouble() / 10.0);
@@ -289,7 +306,7 @@ void DiscoveryService::fetchIgdbGamesByIds(int order, const QString &label, cons
     QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
     setIgdbHeaders(req);
     const QByteArray body = QStringLiteral(
-        "fields id,name,summary,rating,first_release_date,cover.image_id;"
+        "fields id,name,summary,rating,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id;"
         " where id = (%1) & cover != null; limit %2;")
         .arg(idStrs.join(QLatin1Char(','))).arg(ids.size()).toUtf8();
 
@@ -328,7 +345,7 @@ void DiscoveryService::fetchIgdbRecent(int order, const QString &label)
         QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
         setIgdbHeaders(req);
         const QByteArray body = QStringLiteral(
-            "fields name,summary,rating,first_release_date,cover.image_id;"
+            "fields name,summary,rating,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id;"
             " where cover != null & first_release_date > %1 & first_release_date <= %2 & rating_count >= 3;"
             " sort first_release_date desc; limit 40;").arg(from).arg(now).toUtf8();
 
@@ -364,20 +381,28 @@ void DiscoveryService::assembleAndEmit()
     for (auto it = m_accum.constBegin(); it != m_accum.constEnd(); ++it)
         m_rows.append(it.value());
 
-    // hero: top items that carry a backdrop + overview (TMDB trending), de-duped.
+    // hero: round-robin one item per row per pass, so the banner mixes movies,
+    // games and series (not 6 movies). Needs a backdrop + overview.
     m_hero.clear();
     QStringList seen;
-    for (auto it = m_accum.constBegin(); it != m_accum.constEnd() && m_hero.size() < 6; ++it) {
+    QList<QVariantList> rowItems;
+    int maxItems = 0;
+    for (auto it = m_accum.constBegin(); it != m_accum.constEnd(); ++it) {
         const QVariantList items = it.value().value(QStringLiteral("items")).toList();
-        for (const QVariant &v : items) {
-            const QVariantMap m = v.toMap();
-            const QString backdrop = m.value(QStringLiteral("backdrop")).toString();
+        rowItems.append(items);
+        maxItems = qMax(maxItems, int(items.size()));
+    }
+    for (int col = 0; col < maxItems && m_hero.size() < 6; ++col) {
+        for (const QVariantList &items : rowItems) {
+            if (m_hero.size() >= 6) break;
+            if (col >= items.size()) continue;
+            const QVariantMap m = items[col].toMap();
+            if (m.value(QStringLiteral("backdrop")).toString().isEmpty()
+                || m.value(QStringLiteral("overview")).toString().isEmpty()) continue;
             const QString title = m.value(QStringLiteral("title")).toString();
-            if (backdrop.isEmpty() || m.value(QStringLiteral("overview")).toString().isEmpty()) continue;
             if (seen.contains(title)) continue;
             seen.append(title);
             m_hero.append(m);
-            if (m_hero.size() >= 6) break;
         }
     }
 
