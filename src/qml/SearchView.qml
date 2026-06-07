@@ -32,6 +32,7 @@ Rectangle {
     property string qualityFilter: ""
     property string sourceFilter: ""
     property string repackerFilter: ""
+    property string providerFilter: ""
     property int minSeeds: 0
     property string sortKey: ""        // "" = provider order (relevance)
 
@@ -73,6 +74,7 @@ Rectangle {
     readonly property var qualityOptions: distinctTokens("quality", ["4K", "1080p", "720p", "480p"])
     readonly property var sourceOptions: distinctTokens("source", ["Remux", "BluRay", "WEB", "HDTV", "DVD", "CAM"])
     readonly property var repackerOptions: distinctTokens("repacker", [])
+    readonly property var providerOptions: distinctTokens("provider", [])
 
     function computeView() {
         if (!api) return []
@@ -82,6 +84,7 @@ Rectangle {
         if (qualityFilter !== "") arr = arr.filter(function (r) { return r.quality === qualityFilter })
         if (sourceFilter !== "") arr = arr.filter(function (r) { return r.source === sourceFilter })
         if (repackerFilter !== "") arr = arr.filter(function (r) { return r.repacker === repackerFilter })
+        if (providerFilter !== "") arr = arr.filter(function (r) { return r.provider === providerFilter })
         if (minSeeds > 0) arr = arr.filter(function (r) { return (r.seedsN || 0) >= minSeeds })
         if (sortKey === "seeders") arr.sort(function (a, b) { return (b.seedsN || 0) - (a.seedsN || 0) })
         else if (sortKey === "size") arr.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) })
@@ -104,8 +107,8 @@ Rectangle {
     }
 
     function clearFilters() {
-        qualityFilter = ""; sourceFilter = ""; repackerFilter = ""; minSeeds = 0; sortKey = ""
-        qualSel.currentIndex = 0; srcFiltSel.currentIndex = 0
+        qualityFilter = ""; sourceFilter = ""; repackerFilter = ""; providerFilter = ""; minSeeds = 0; sortKey = ""
+        qualSel.currentIndex = 0; srcFiltSel.currentIndex = 0; provSel.currentIndex = 0
         repSel.currentIndex = 0; seedSel.currentIndex = 0; sortSel.currentIndex = 0
     }
 
@@ -199,6 +202,15 @@ Rectangle {
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp3
 
+                // provider / origin
+                TSelect {
+                    id: provSel
+                    visible: page.providerOptions.length > 1
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 150
+                    model: [i18n.t("search_provider_all")].concat(page.providerOptions)
+                    onActivated: page.providerFilter = currentIndex <= 0 ? "" : currentText
+                }
                 // quality (video modes only)
                 TSelect {
                     id: qualSel
@@ -217,13 +229,13 @@ Rectangle {
                     model: [i18n.t("search_filter_all")].concat(page.sourceOptions)
                     onActivated: page.sourceFilter = currentIndex <= 0 ? "" : currentText
                 }
-                // repacker (game modes)
+                // repacker (any mode that has repacked releases)
                 TSelect {
                     id: repSel
-                    visible: page.isGames && page.repackerOptions.length > 0
+                    visible: page.repackerOptions.length > 0
                     Layout.preferredHeight: 30
                     Layout.preferredWidth: 140
-                    model: [i18n.t("search_filter_all")].concat(page.repackerOptions)
+                    model: [i18n.t("search_repacker_all")].concat(page.repackerOptions)
                     onActivated: page.repackerFilter = currentIndex <= 0 ? "" : currentText
                 }
                 // min seeders (video modes)
@@ -255,7 +267,7 @@ Rectangle {
                 }
                 BtnFlat {
                     visible: page.qualityFilter !== "" || page.sourceFilter !== "" || page.repackerFilter !== ""
-                             || page.minSeeds > 0 || page.sortKey !== ""
+                             || page.providerFilter !== "" || page.minSeeds > 0 || page.sortKey !== ""
                     text: (i18n.language, i18n.t("search_filter_clear"))
                     onClicked: page.clearFilters()
                 }
@@ -385,19 +397,12 @@ Rectangle {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 6
+                            SourceTag { text: row.modelData.sub || row.modelData.provider || "" }
                             MetaTag { text: row.modelData.quality || ""; accent: true }
                             MetaTag { text: row.modelData.source || "" }
                             MetaTag { text: row.modelData.codec || "" }
                             MetaTag { text: row.modelData.hdr ? "HDR" : ""; accent: true }
-                            Text {
-                                visible: (row.modelData.sub || "").length > 0
-                                Layout.fillWidth: true
-                                text: row.modelData.sub || ""
-                                color: Theme.t4
-                                font.pixelSize: 10
-                                font.family: Theme.fontSans
-                                elide: Text.ElideRight
-                            }
+                            Item { Layout.fillWidth: true }
                         }
                     }
                     Text { text: row.modelData.sizeStr || ""; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
@@ -599,6 +604,27 @@ Rectangle {
         font.pixelSize: 10
         font.weight: Font.DemiBold
         font.family: Theme.fontSans
+    }
+
+    // inline helper: origin pill (which source/provider returned the row)
+    component SourceTag: Rectangle {
+        property alias text: srcLabel.text
+        visible: srcLabel.text.length > 0
+        implicitWidth: srcLabel.implicitWidth + 14
+        implicitHeight: 16
+        radius: 8
+        color: "transparent"
+        border.color: Theme.hair
+        border.width: 1
+        Text {
+            id: srcLabel
+            anchors.centerIn: parent
+            color: Theme.t2
+            font.pixelSize: 9
+            font.weight: Font.DemiBold
+            font.letterSpacing: 0.3
+            font.family: Theme.fontSans
+        }
     }
 
     // inline helper: label/value stat for the detail drawer

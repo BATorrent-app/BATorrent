@@ -1980,6 +1980,7 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
             QVariantMap m;
             m["name"] = s.title;
             m["sub"] = s.addonName;
+            m["provider"] = s.addonName;
             m["sizeStr"] = s.size > 0 ? formatSize(s.size) : QString();
             m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
             m["poster"] = m_streamHintPoster; m["coverHash"] = "";
@@ -2260,6 +2261,7 @@ void QmlSearchBridge::appendGameRows(const QList<GameDownload> &games)
         QVariantMap m;
         m["name"] = g.cleanTitle.isEmpty() ? g.title : g.cleanTitle;
         m["sub"] = g.source;
+        m["provider"] = g.source;
         m["sizeStr"] = g.fileSize;
         m["seeds"] = ""; m["leech"] = ""; m["hasSeeds"] = false;
         m["repacker"] = detectRepacker(g.title);
@@ -2281,12 +2283,13 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
     for (const auto &r : sorted) {
         QVariantMap m;
         m["name"] = r.name;
-        m["sub"] = "";
+        m["sub"] = r.provider;
+        m["provider"] = r.provider;
         m["sizeStr"] = r.size > 0 ? formatSize(r.size) : QString();
         m["seeds"] = QString::number(r.seeders);
         m["leech"] = QString::number(r.leechers);
         m["hasSeeds"] = r.seeders > 0;
-        m["repacker"] = (m_mode == "games" || m_mode == "all") ? detectRepacker(r.name) : QString();
+        m["repacker"] = detectRepacker(r.name);
         m["poster"] = ""; m["coverHash"] = r.infoHash;
         m["seedsN"] = r.seeders; m["sizeBytes"] = static_cast<qlonglong>(r.size);
         fillMediaAttrs(m, r.name);

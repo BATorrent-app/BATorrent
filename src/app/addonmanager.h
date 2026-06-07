@@ -49,6 +49,7 @@ struct TorrentSearchResult {
     int seeders = 0;
     int leechers = 0;
     QString category;
+    QString provider;   // display name of the source that returned this row
 };
 
 // Search provider — a named torrent search engine with URL template + JSON mapping.

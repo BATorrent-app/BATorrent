@@ -466,6 +466,8 @@
   "search_source_torrents": "Torrents",
   "search_filter_all": "All",
   "search_filter_clear": "Clear",
+  "search_provider_all": "All sources",
+  "search_repacker_all": "All repacks",
   "search_seeds_any": "Any seeders",
   "search_sort_relevance": "Relevance",
   "search_sort_seeders": "Most seeders",
