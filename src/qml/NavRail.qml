@@ -43,9 +43,9 @@ Rectangle {
 
     readonly property var items: [
         { icon: "qrc:/icons/download.svg", label: "Downloads", page: 0 },
-        { icon: "qrc:/icons/grid.svg",     label: "Discover",  page: 1 },
+        { icon: "qrc:/icons/discover.svg", label: "Discover",  page: 1 },
         { icon: "qrc:/icons/search.svg",   label: "Search",    page: 2 },
-        { icon: "qrc:/icons/play.svg",     label: "HUB",       page: 3 }
+        { icon: "qrc:/icons/hub.svg",      label: "HUB",       page: 3 }
     ]
 
     ColumnLayout {

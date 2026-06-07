@@ -758,6 +758,17 @@ Window {
                 Layout.fillHeight: true
                 currentIndex: navRail.currentIndex
 
+                // premium page switch: the new page fades + rises in
+                transform: Translate { id: pageShift }
+                onCurrentIndexChanged: pageSwitchAnim.restart()
+                SequentialAnimation {
+                    id: pageSwitchAnim
+                    ParallelAnimation {
+                        NumberAnimation { target: contentStack; property: "opacity"; from: 0.0; to: 1.0; duration: 190; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: pageShift; property: "y"; from: 12; to: 0; duration: 240; easing.type: Easing.OutCubic }
+                    }
+                }
+
                 // ----- page 0: Downloads (original main column) -----
                 ColumnLayout {
                     spacing: 0
