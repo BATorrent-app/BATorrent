@@ -25,6 +25,11 @@ Item {
         .sort(function (a, b) { return (b.lastPlayed || 0) - (a.lastPlayed || 0) }).slice(0, 3)
     readonly property bool empty: library.length === 0 && gameItems.length === 0
 
+    // continue rails are sized to hold exactly 3 cards each
+    readonly property int railCardW: 134
+    readonly property int railSpacing: 16
+    readonly property int railW: 3 * railCardW + 2 * railSpacing
+
     function refresh() {
         library = api ? api.movieLibrary() : []
         gameItems = api ? api.gameLibrary() : []
@@ -81,38 +86,39 @@ Item {
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
                 spacing: 32
 
+                // each rail is sized to hold exactly 3 cards (cards row or placeholder)
                 ColumnLayout {
-                    Layout.fillWidth: true; Layout.alignment: Qt.AlignTop
+                    Layout.preferredWidth: page.railW; Layout.alignment: Qt.AlignTop
                     spacing: 12
                     Text {
                         text: (i18n.language, i18n.t("hub_continue"))
                         color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
                     }
                     Row {
-                        spacing: 16
+                        spacing: page.railSpacing
                         visible: page.continueItems.length > 0
                         Repeater {
                             model: page.continueItems
-                            delegate: HubCard { cardW: 134; item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
+                            delegate: HubCard { cardW: page.railCardW; item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
                         }
                     }
                     RailPlaceholder { visible: page.continueItems.length === 0; text: (i18n.language, i18n.t("hub_watch_placeholder")) }
                 }
 
                 ColumnLayout {
-                    Layout.fillWidth: true; Layout.alignment: Qt.AlignTop
+                    Layout.preferredWidth: page.railW; Layout.alignment: Qt.AlignTop
                     spacing: 12
                     Text {
                         text: (i18n.language, i18n.t("hub_continue_playing"))
                         color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
                     }
                     Row {
-                        spacing: 16
+                        spacing: page.railSpacing
                         visible: page.continuePlaying.length > 0
                         Repeater {
                             model: page.continuePlaying
                             delegate: HubCard {
-                                cardW: 134; item: modelData; requireDoubleClick: true
+                                cardW: page.railCardW; item: modelData; requireDoubleClick: true
                                 onPlay: page.playGame(modelData.infoHash)
                                 onContext: gameMenu.openFor(modelData.infoHash)
                             }
@@ -120,6 +126,8 @@ Item {
                     }
                     RailPlaceholder { visible: page.continuePlaying.length === 0; text: (i18n.language, i18n.t("hub_play_placeholder")) }
                 }
+
+                Item { Layout.fillWidth: true }   // keep both rails left-aligned at their 3-card width
             }
 
             // Your games
@@ -178,7 +186,7 @@ Item {
     component RailPlaceholder: Rectangle {
         property alias text: ph.text
         Layout.fillWidth: true
-        Layout.preferredHeight: 92
+        Layout.preferredHeight: Math.round(page.railCardW * 1.5)   // a poster-sized empty slot
         radius: 10
         color: "transparent"
         border.color: Theme.hairSoft; border.width: 1
