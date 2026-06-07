@@ -34,6 +34,7 @@ set(COMMON_SOURCES
     # C++<->QML bridge layer + its backend deps (for test_bridge)
     ${CMAKE_SOURCE_DIR}/src/gui/qmlposterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/app/metadataresolver.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/app/qrcodegen.cpp
     ${CMAKE_SOURCE_DIR}/src/app/geoip.cpp
     ${CMAKE_SOURCE_DIR}/src/app/discordrpc.cpp
