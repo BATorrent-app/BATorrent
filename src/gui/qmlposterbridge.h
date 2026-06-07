@@ -463,6 +463,7 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QVariantList sources READ sources NOTIFY sourcesChanged)
     Q_PROPERTY(QVariantList categories READ categories CONSTANT)
     Q_PROPERTY(QVariantList results READ results NOTIFY resultsChanged)
+    Q_PROPERTY(QString activeQuery READ activeQuery NOTIFY resultsChanged) // for client-side relevance ranking
     Q_PROPERTY(QString mode READ mode NOTIFY modeChanged)        // titles|catalog|streams|torrent|games
     Q_PROPERTY(bool inStreams READ inStreams NOTIFY modeChanged)
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY modeChanged) // sources view reachable from a title/catalog
@@ -475,6 +476,7 @@ public:
     QVariantList sources() const;
     QVariantList categories() const;
     QVariantList results() const;
+    QString activeQuery() const;
     QString mode() const;
     bool inStreams() const;
     bool canGoBack() const;
@@ -536,6 +538,7 @@ private:
     bool m_fromTitles = false;          // sources view was opened by picking a title
     bool m_titleSources = false;        // current flat list is one picked title's torrents
     QString m_titleQuery;               // the free-text query behind the current titles
+    QString m_activeQuery;              // effective query of the current flat list (for relevance)
 
     SessionManager *m_session;
     QString m_mode;

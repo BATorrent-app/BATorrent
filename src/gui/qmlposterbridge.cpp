@@ -2178,6 +2178,7 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     m_pendingGameQuery.clear();
     emit resultsChanged();
 
+    m_activeQuery = title;
     auto &mgr = AddonManager::instance();
     const bool isGame = (type == QLatin1String("game"));
     m_aggregate = true;
@@ -2225,6 +2226,7 @@ void QmlSearchBridge::rawAggregateSearch(const QString &q, int categoryCode)
     m_pendingGameQuery.clear();
     emit resultsChanged();
 
+    m_activeQuery = q;
     auto &mgr = AddonManager::instance();
     m_aggregate = true;
     m_titleSources = false;         // raw mixed list → keep per-row covers
@@ -2286,6 +2288,7 @@ QVariantList QmlSearchBridge::categories() const
 }
 
 QVariantList QmlSearchBridge::results() const { return m_results; }
+QString QmlSearchBridge::activeQuery() const { return m_activeQuery; }
 QString QmlSearchBridge::mode() const { return m_mode; }
 bool QmlSearchBridge::inStreams() const { return m_mode == "streams"; }
 bool QmlSearchBridge::canGoBack() const { return m_mode == "streams" || m_fromTitles; }
@@ -2304,6 +2307,7 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     const QString q = query.trimmed();
     if (q.isEmpty()) return;
     m_lastQuery = q;
+    m_activeQuery = q;
     m_aggregate = false;
     m_titleSources = false;
     m_pendingGameQuery.clear();

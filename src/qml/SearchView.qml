@@ -86,11 +86,32 @@ Rectangle {
     readonly property var repackerOptions: distinctTokens("repacker", [])
     readonly property var providerOptions: distinctTokens("provider", [])
 
+    // significant query words (drop articles/prepositions that match everything)
+    function sigWords(q) {
+        var stop = { "the": 1, "of": 1, "a": 1, "an": 1, "and": 1, "or": 1, "to": 1, "in": 1, "on": 1 }
+        return (q || "").toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length > 0 && !stop[w] })
+    }
+    // whole-word match count: "blast" must NOT match "last"
+    function relScore(name, qwords) {
+        if (qwords.length === 0) return 0
+        var set = {}
+        var nw = (name || "").toLowerCase().split(/[^a-z0-9]+/)
+        for (var i = 0; i < nw.length; i++) if (nw[i].length > 0) set[nw[i]] = true
+        var s = 0
+        for (var j = 0; j < qwords.length; j++) if (set[qwords[j]]) s++
+        return s
+    }
+
     function computeView() {
         if (!api) return []
         var arr = []
         var res = api.results
-        for (var i = 0; i < res.length; i++) { var o = res[i]; o._idx = i; arr.push(o) }
+        var qwords = sigWords(api.activeQuery)
+        for (var i = 0; i < res.length; i++) {
+            var o = res[i]; o._idx = i
+            o._rel = relScore(o.name, qwords)
+            arr.push(o)
+        }
         if (qualityFilter !== "") arr = arr.filter(function (r) { return r.quality === qualityFilter })
         if (sourceFilter !== "") arr = arr.filter(function (r) { return r.source === sourceFilter })
         if (repackerFilter !== "") arr = arr.filter(function (r) { return r.repacker === repackerFilter })
@@ -99,6 +120,8 @@ Rectangle {
         if (sortKey === "seeders") arr.sort(function (a, b) { return (b.seedsN || 0) - (a.seedsN || 0) })
         else if (sortKey === "size") arr.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) })
         else if (sortKey === "name") arr.sort(function (a, b) { return (a.name || "").localeCompare(b.name || "") })
+        // default = Relevance: best query-word match first, original order as tiebreak
+        else if (qwords.length > 0) arr.sort(function (a, b) { return (b._rel - a._rel) || (a._idx - b._idx) })
         return arr
     }
 
