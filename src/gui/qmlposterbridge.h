@@ -22,6 +22,7 @@
 
 class SessionManager;
 class MetadataResolver;
+class DiscoveryService;
 class GeoIpResolver;
 class TelegramNotifier;
 class WebServer;
@@ -462,8 +463,9 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QVariantList sources READ sources NOTIFY sourcesChanged)
     Q_PROPERTY(QVariantList categories READ categories CONSTANT)
     Q_PROPERTY(QVariantList results READ results NOTIFY resultsChanged)
-    Q_PROPERTY(QString mode READ mode NOTIFY modeChanged)        // catalog|streams|torrent|games
+    Q_PROPERTY(QString mode READ mode NOTIFY modeChanged)        // titles|catalog|streams|torrent|games
     Q_PROPERTY(bool inStreams READ inStreams NOTIFY modeChanged)
+    Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY modeChanged) // sources view reachable from a title/catalog
     Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
 public:
@@ -474,6 +476,7 @@ public:
     QVariantList results() const;
     QString mode() const;
     bool inStreams() const;
+    bool canGoBack() const;
     bool searching() const;
     QString statusText() const;
 
@@ -492,6 +495,11 @@ public:
     // scrolls into view — mirrors the Downloads grid's on-demand resolution.
     void setResolver(MetadataResolver *r);
     Q_INVOKABLE void resolveCover(int index);
+
+    // Title-first search (default "Tudo"): resolve the query to real works via
+    // DiscoveryService, then drill into a picked title's torrents.
+    void setDiscovery(DiscoveryService *d);
+    Q_INVOKABLE void searchRaw();   // escape hatch: flat aggregate over every source
 
 signals:
     void sourcesChanged();
@@ -513,9 +521,15 @@ private:
     static QString detectRepacker(const QString &name);
     // Parse quality/source/codec/hdr tokens out of a release name for filtering.
     static void fillMediaAttrs(QVariantMap &m, const QString &name);
+    // Flat aggregate search over every enabled source (the old "Tudo" behavior).
+    void rawAggregateSearch(const QString &q, int categoryCode);
 
     MetadataResolver *m_resolver = nullptr;
+    DiscoveryService *m_discovery = nullptr;
     QString m_streamHintPoster;         // activated catalog item's poster, for stream rows
+    QVariantList m_titleCache;          // works grid, restored when leaving the sources view
+    bool m_fromTitles = false;          // sources view was opened by picking a title
+    QString m_titleQuery;               // the free-text query behind the current titles
 
     SessionManager *m_session;
     QString m_mode;

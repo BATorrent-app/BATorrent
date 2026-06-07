@@ -200,6 +200,7 @@ int main(int argc, char *argv[])
         auto *searchBridge = new QmlSearchBridge(&session, &app);
         searchBridge->setResolver(resolver);
         auto *discoveryService = new DiscoveryService(&app);
+        searchBridge->setDiscovery(discoveryService);
 
 #ifndef BAT_STORE_BUILD
         // Seed a default community game catalog once so "Jogos" works out of the

@@ -17,6 +17,7 @@
 #include <QStandardPaths>
 #include <QUrlQuery>
 #include <QHash>
+#include <QSet>
 #include <algorithm>
 #include "translator.h"
 
@@ -117,6 +118,144 @@ void DiscoveryService::refresh()
         fetchIgdbTrending(1, tr_("discover_trending_games"));   // games of the moment — kept high
         fetchIgdbRecent(3, tr_("discover_new_games"));
     }
+}
+
+void DiscoveryService::searchTitles(const QString &query)
+{
+    const QString q = query.trimmed();
+    if (q.isEmpty()) return;
+    m_searchQuery = q;
+    m_searchWorks.clear();
+    m_searchPending = 0;
+
+    const bool haveTmdb = !tmdbApiKey().isEmpty();
+    const bool haveIgdb = !igdbClientId().isEmpty() && !igdbClientSecret().isEmpty();
+    if (!haveTmdb && !haveIgdb) {
+        emit titleResults(q, QVariantList());   // no keys → caller falls back to raw
+        return;
+    }
+    if (haveTmdb) searchTmdbTitles(q);
+    if (haveIgdb) searchIgdbTitles(q);
+}
+
+void DiscoveryService::searchTmdbTitles(const QString &query)
+{
+    ++m_searchPending;
+
+    QUrl url(TmdbBaseUrl + QStringLiteral("/search/multi"));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
+    q.addQueryItem(QStringLiteral("language"), tmdbLang());
+    q.addQueryItem(QStringLiteral("query"), query);
+    q.addQueryItem(QStringLiteral("include_adult"), QStringLiteral("false"));
+    q.addQueryItem(QStringLiteral("page"), QStringLiteral("1"));
+    url.setQuery(q);
+
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
+    req.setTransferTimeout(12000);
+
+    QNetworkReply *reply = m_nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        if (reply->error() == QNetworkReply::NoError) {
+            const QJsonArray results = QJsonDocument::fromJson(reply->readAll())
+                                           .object().value(QLatin1String("results")).toArray();
+            for (const QJsonValue &v : results) {
+                const QJsonObject o = v.toObject();
+                const QString mt = o.value(QLatin1String("media_type")).toString();
+                if (mt != QLatin1String("movie") && mt != QLatin1String("tv")) continue;
+                const QString poster = o.value(QLatin1String("poster_path")).toString();
+                if (poster.isEmpty()) continue;
+                const bool isTv = mt == QLatin1String("tv");
+                const QString date = o.value(isTv ? QLatin1String("first_air_date")
+                                                   : QLatin1String("release_date")).toString();
+                QVariantMap m;
+                m.insert(QStringLiteral("title"), o.value(isTv ? QLatin1String("name")
+                                                               : QLatin1String("title")).toString());
+                m.insert(QStringLiteral("poster"), TmdbPosterBase + poster);
+                m.insert(QStringLiteral("year"), date.length() >= 4 ? date.left(4) : QString());
+                m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
+                m.insert(QStringLiteral("type"), isTv ? QStringLiteral("series") : QStringLiteral("movie"));
+                m_searchWorks.append(m);
+            }
+        }
+        maybeFinishSearch();
+    });
+}
+
+void DiscoveryService::searchIgdbTitles(const QString &query)
+{
+    ++m_searchPending;
+    ensureIgdbToken([this, query]() {
+        if (m_igdbToken.isEmpty()) { maybeFinishSearch(); return; }
+
+        QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
+        setIgdbHeaders(req);
+        QString safe = query;
+        safe.replace(QLatin1Char('"'), QLatin1Char(' '));
+        const QByteArray body = QStringLiteral(
+            "search \"%1\"; fields name,cover.image_id,first_release_date,total_rating;"
+            " where cover != null & category = (0,8,9,10,11); limit 20;").arg(safe).toUtf8();
+
+        QNetworkReply *reply = m_nam->post(req, body);
+        connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+            reply->deleteLater();
+            if (reply->error() == QNetworkReply::NoError) {
+                const QJsonArray arr = QJsonDocument::fromJson(reply->readAll()).array();
+                for (const QJsonValue &v : arr) {
+                    const QJsonObject o = v.toObject();
+                    const QString imageId = o.value(QLatin1String("cover")).toObject()
+                                                .value(QLatin1String("image_id")).toString();
+                    if (imageId.isEmpty()) continue;
+                    const QString name = o.value(QLatin1String("name")).toString();
+                    if (name.isEmpty()) continue;
+                    const qint64 rel = qint64(o.value(QLatin1String("first_release_date")).toDouble());
+                    QVariantMap m;
+                    m.insert(QStringLiteral("title"), name);
+                    m.insert(QStringLiteral("poster"),
+                             QStringLiteral("https://images.igdb.com/igdb/image/upload/t_cover_big/%1.jpg").arg(imageId));
+                    m.insert(QStringLiteral("year"), rel > 0
+                             ? QString::number(QDateTime::fromSecsSinceEpoch(rel).date().year()) : QString());
+                    m.insert(QStringLiteral("rating"), o.value(QLatin1String("total_rating")).toDouble() / 10.0);
+                    m.insert(QStringLiteral("type"), QStringLiteral("game"));
+                    m_searchWorks.append(m);
+                }
+            } else {
+                qDebug() << "[search] IGDB title search error:" << reply->errorString();
+            }
+            maybeFinishSearch();
+        });
+    });
+}
+
+void DiscoveryService::maybeFinishSearch()
+{
+    if (--m_searchPending > 0) return;
+
+    const QString ql = m_searchQuery.toLower();
+    auto score = [&ql](const QVariant &v) {
+        const QString t = v.toMap().value(QStringLiteral("title")).toString().toLower();
+        if (t == ql) return 0;
+        if (t.startsWith(ql)) return 1;
+        if (t.contains(ql)) return 2;
+        return 3;
+    };
+    std::stable_sort(m_searchWorks.begin(), m_searchWorks.end(),
+                     [&score](const QVariant &a, const QVariant &b) { return score(a) < score(b); });
+
+    QVariantList out;
+    QSet<QString> seen;
+    for (const QVariant &v : std::as_const(m_searchWorks)) {
+        const QVariantMap m = v.toMap();
+        const QString key = m.value(QStringLiteral("title")).toString().toLower() + QLatin1Char('|')
+                          + m.value(QStringLiteral("year")).toString() + QLatin1Char('|')
+                          + m.value(QStringLiteral("type")).toString();
+        if (seen.contains(key)) continue;
+        seen.insert(key);
+        out.append(v);
+    }
+    emit titleResults(m_searchQuery, out);
 }
 
 void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type)

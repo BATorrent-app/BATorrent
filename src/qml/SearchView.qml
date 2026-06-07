@@ -23,6 +23,7 @@ Rectangle {
     readonly property bool isLegacy: sourceKey === "legacy"
     readonly property bool isGames: sourceKey === "games" || sourceKey === "all"
     readonly property bool isCatalog: api && api.mode === "catalog"
+    readonly property bool isTitles: api && api.mode === "titles"
     readonly property bool isFlatList: api && (api.mode === "torrent" || api.mode === "games"
                                               || api.mode === "all" || api.mode === "streams")
     property bool showGameMgr: false
@@ -43,6 +44,13 @@ Rectangle {
     property string detailPoster: ""
 
     function reloadGames() { gameList = (api ? api.gameSources() : []) }
+
+    function typeLabel(t) {
+        if (t === "movie") return i18n.t("search_type_movie")
+        if (t === "series") return i18n.t("search_type_series")
+        if (t === "game") return i18n.t("search_type_game")
+        return ""
+    }
 
     // Local paths (resolver covers) need a file: URL; http/qrc pass through.
     function fileUrl(p) {
@@ -274,10 +282,11 @@ Rectangle {
             }
         }
 
-        // results header (columns adapt to mode)
+        // results header (columns adapt to mode) — flat list only
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 30
+            visible: !page.isTitles
             color: "transparent"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
             RowLayout {
@@ -298,10 +307,11 @@ Rectangle {
         // results
         ListView {
             id: resultsView
+            visible: !page.isTitles
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            model: page.viewModel
+            model: page.isTitles ? [] : page.viewModel
             boundsBehavior: Flickable.StopAtBounds
             cacheBuffer: 240
 
@@ -449,6 +459,70 @@ Rectangle {
             }
         }
 
+        // titles grid (step 1: pick the actual movie/series/game, one cover each)
+        GridView {
+            id: titlesView
+            visible: page.isTitles
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            model: page.isTitles ? (page.api ? page.api.results : []) : []
+            cellWidth: 174
+            cellHeight: 286
+            leftMargin: Theme.sp5; rightMargin: Theme.sp5; topMargin: Theme.sp4; bottomMargin: Theme.sp4
+            boundsBehavior: Flickable.StopAtBounds
+            cacheBuffer: 600
+
+            ColumnLayout {
+                anchors.centerIn: parent
+                width: Math.min(parent.width - 80, 360)
+                spacing: 10
+                visible: titlesView.count === 0
+                IconImg {
+                    Layout.alignment: Qt.AlignHCenter
+                    src: "qrc:/icons/search.svg"; tint: Theme.t4; s: 38
+                    opacity: page.api && page.api.searching ? 0.4 : 0.7
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: page.api && page.api.searching ? (i18n.language, i18n.t("search_searching2"))
+                         : (page.api && page.api.statusText.length > 0 ? page.api.statusText
+                            : (i18n.language, i18n.t("search_prompt")))
+                    color: Theme.t2; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: !(page.api && page.api.searching)
+                    text: (i18n.language, i18n.t("search_prompt_sub"))
+                    color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
+                    horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
+                }
+            }
+
+            delegate: Item {
+                required property var modelData
+                required property int index
+                width: titlesView.cellWidth
+                height: titlesView.cellHeight
+                PosterCard {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    posterW: 150
+                    title: modelData.name || ""
+                    poster: modelData.poster || ""
+                    year: {
+                        var y = modelData.year || ""
+                        var t = page.typeLabel(modelData.type || "")
+                        return t.length > 0 ? (y.length > 0 ? y + "  ·  " + t : t) : y
+                    }
+                    rating: modelData.rating || 0
+                    type: modelData.type || ""
+                    onActivated: if (page.api) page.api.activateResult(index)
+                }
+            }
+        }
+
         // footer
         Rectangle {
             Layout.fillWidth: true
@@ -460,9 +534,14 @@ Rectangle {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
                 spacing: Theme.sp2
-                BtnFlat { visible: page.api && page.api.inStreams; text: (i18n.language, i18n.t("search_back2")); onClicked: if (page.api) page.api.back() }
+                BtnFlat { visible: page.api && page.api.canGoBack; text: (i18n.language, i18n.t("search_back2")); onClicked: if (page.api) page.api.back() }
                 Text { text: page.api ? page.api.statusText : ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
+                BtnFlat {
+                    visible: page.isTitles && page.api && page.api.results.length > 0
+                    text: (i18n.language, i18n.t("search_raw_results"))
+                    onClicked: if (page.api) page.api.searchRaw()
+                }
                 BtnFlat { visible: page.isGames; text: (i18n.language, i18n.t("game_sources_btn")); onClicked: page.showGameMgr = true }
             }
         }

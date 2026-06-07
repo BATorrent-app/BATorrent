@@ -34,13 +34,23 @@ public:
     Q_INVOKABLE void load();      // serve fresh cache if any, else fetch
     Q_INVOKABLE void refresh();   // force a network fetch
 
+    // Title-first search: resolve a free-text query to real works (movies,
+    // series, games) before any torrent lookup. Emits titleResults().
+    Q_INVOKABLE void searchTitles(const QString &query);
+
 signals:
     void rowsChanged();
     void heroChanged();
     void loadingChanged();
     void statusChanged();
+    // works: [{ title, year, type: movie|series|game, poster, rating }]
+    void titleResults(const QString &query, const QVariantList &works);
 
 private:
+    void searchTmdbTitles(const QString &query);
+    void searchIgdbTitles(const QString &query);
+    void maybeFinishSearch();
+
     void fetchTmdb(int order, const QString &path, const QString &label, const QString &type);
     void fetchIgdbTrending(int order, const QString &label);   // IGDB popularity = games of the moment
     void fetchIgdbRecent(int order, const QString &label);     // recently released games
@@ -66,6 +76,11 @@ private:
 
     QString m_igdbToken;
     qint64 m_igdbTokenExpiry = 0;
+
+    // title-search state (independent of the trending rows above)
+    int m_searchPending = 0;
+    QString m_searchQuery;
+    QVariantList m_searchWorks;
 };
 
 #endif

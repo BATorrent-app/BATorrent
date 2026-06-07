@@ -5,6 +5,7 @@
 #include "qmlposterbridge.h"
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
+#include "../app/discoveryservice.h"
 #include "../app/nameparser.h"
 #include "../app/rssmanager.h"
 #include "../app/addonmanager.h"
@@ -2132,6 +2133,82 @@ void QmlSearchBridge::resolveCover(int index)
     m_resolver->resolve(hash, m.value(QStringLiteral("name")).toString());
 }
 
+void QmlSearchBridge::setDiscovery(DiscoveryService *d)
+{
+    m_discovery = d;
+    if (!m_discovery) return;
+    connect(m_discovery, &DiscoveryService::titleResults, this,
+            [this](const QString &query, const QVariantList &works) {
+        if (query != m_titleQuery || m_mode != QLatin1String("titles")) return;   // stale
+        if (works.isEmpty()) { rawAggregateSearch(query, 0); return; }            // no match → raw
+        m_results.clear();
+        m_resultMagnets.clear();
+        m_resultTitles.clear();
+        for (const QVariant &v : works) {
+            const QVariantMap w = v.toMap();
+            QVariantMap row;
+            row["name"]    = w.value(QStringLiteral("title"));
+            row["title"]   = w.value(QStringLiteral("title"));
+            row["sub"]     = w.value(QStringLiteral("type"));
+            row["sizeStr"] = w.value(QStringLiteral("year"));
+            row["year"]    = w.value(QStringLiteral("year"));
+            row["type"]    = w.value(QStringLiteral("type"));
+            row["poster"]  = w.value(QStringLiteral("poster"));
+            row["rating"]  = w.value(QStringLiteral("rating"));
+            row["coverHash"] = QString();
+            row["isTitle"] = true;
+            m_results << row;
+        }
+        m_titleCache = m_results;
+        setSearching(false);
+        setStatus(QString("%1 títulos").arg(m_results.size()));
+        emit resultsChanged();
+    });
+}
+
+void QmlSearchBridge::searchRaw()
+{
+    if (m_titleQuery.isEmpty()) return;
+    // keep the title context so "back" still returns to the titles grid
+    m_fromTitles = !m_titleCache.isEmpty();
+    rawAggregateSearch(m_titleQuery, 0);
+}
+
+void QmlSearchBridge::rawAggregateSearch(const QString &q, int categoryCode)
+{
+    m_results.clear();
+    m_resultMagnets.clear();
+    m_resultTitles.clear();
+    m_torrentCache.clear();
+    m_gameCache.clear();
+    m_pendingGameQuery.clear();
+    emit resultsChanged();
+
+    auto &mgr = AddonManager::instance();
+    m_aggregate = true;
+    m_isGameSearch = false;
+    setMode("all");
+    setSearching(true);
+    setStatus("Buscando…");
+    m_pendingSources = 0;
+    auto &gsm = GameSourceManager::instance();
+    if (gsm.gameCount() > 0) {
+        appendGameRows(gsm.search(q));
+    } else if (!gsm.sources().isEmpty()) {
+        m_pendingGameQuery = q;          // catalogs load async; counts as a pending source
+        ++m_pendingSources;
+        gsm.refresh();
+    }
+    const auto providers = mgr.searchProviders();
+    for (int i = 0; i < providers.size(); ++i)
+        if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q); }
+    if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, categoryCode); }
+    if (m_pendingSources == 0) {
+        setSearching(false);
+        setStatus(QString("%1 resultados").arg(m_results.size()));
+    }
+}
+
 QVariantList QmlSearchBridge::sources() const
 {
     QVariantList out;
@@ -2169,6 +2246,7 @@ QVariantList QmlSearchBridge::categories() const
 QVariantList QmlSearchBridge::results() const { return m_results; }
 QString QmlSearchBridge::mode() const { return m_mode; }
 bool QmlSearchBridge::inStreams() const { return m_mode == "streams"; }
+bool QmlSearchBridge::canGoBack() const { return m_mode == "streams" || m_fromTitles; }
 bool QmlSearchBridge::searching() const { return m_searching; }
 QString QmlSearchBridge::statusText() const { return m_status; }
 
@@ -2194,28 +2272,17 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
 
     auto &mgr = AddonManager::instance();
     if (sourceKey == "all") {
-        m_aggregate = true;
-        m_isGameSearch = false;
-        setMode("all");
+        // Title-first: resolve the query to real works (TMDB/IGDB), then let the
+        // user drill into one title's torrents. Falls back to a flat aggregate
+        // when no metadata service/keys are available or nothing matches.
+        m_fromTitles = false;
+        m_titleQuery = q;
+        setMode("titles");
         setSearching(true);
-        setStatus("Buscando…");
-        m_pendingSources = 0;
-        auto &gsm = GameSourceManager::instance();
-        if (gsm.gameCount() > 0) {
-            appendGameRows(gsm.search(q));
-        } else if (!gsm.sources().isEmpty()) {
-            m_pendingGameQuery = q;          // catalogs load async; counts as a pending source
-            ++m_pendingSources;
-            gsm.refresh();
-        }
-        const auto providers = mgr.searchProviders();
-        for (int i = 0; i < providers.size(); ++i)
-            if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q); }
-        if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, categoryCode); }
-        if (m_pendingSources == 0) {
-            setSearching(false);
-            setStatus(QString("%1 resultados").arg(m_results.size()));
-        }
+        setStatus("Buscando títulos…");
+        if (m_discovery) m_discovery->searchTitles(q);
+        else rawAggregateSearch(q, categoryCode);
+        return;
     } else if (sourceKey == "games") {
         m_isGameSearch = true;
         setMode("games");
@@ -2353,6 +2420,19 @@ void QmlSearchBridge::refreshGames()
 void QmlSearchBridge::activateResult(int index)
 {
     auto &mgr = AddonManager::instance();
+    if (m_mode == "titles") {
+        if (index < 0 || index >= m_results.size()) return;
+        const QVariantMap w = m_results[index].toMap();
+        const QString title = w.value(QStringLiteral("name")).toString();
+        const QString year  = w.value(QStringLiteral("year")).toString();
+        const QString type  = w.value(QStringLiteral("type")).toString();
+        // movies disambiguate well with a year; games/series search cleaner by title alone
+        QString tq = (type == QLatin1String("movie") && !year.isEmpty())
+                   ? title + QLatin1Char(' ') + year : title;
+        m_fromTitles = true;
+        rawAggregateSearch(tq, type == QLatin1String("game") ? 400 : 0);
+        return;
+    }
     if (m_mode == "catalog") {
         if (index < 0 || index >= m_catalogCache.size()) return;
         const auto &it = m_catalogCache[index];
@@ -2390,6 +2470,18 @@ void QmlSearchBridge::activateResult(int index)
 
 void QmlSearchBridge::back()
 {
+    if (m_fromTitles && m_mode != "streams") {   // sources view → back to the titles grid
+        m_fromTitles = false;
+        m_aggregate = false;
+        m_results = m_titleCache;
+        m_resultMagnets.clear();
+        m_resultTitles.clear();
+        setMode("titles");
+        setSearching(false);
+        setStatus(QString("%1 títulos").arg(m_results.size()));
+        emit resultsChanged();
+        return;
+    }
     if (m_mode != "streams") return;
     setMode("catalog");
     m_results.clear();
