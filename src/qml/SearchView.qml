@@ -120,8 +120,13 @@ Rectangle {
         if (sortKey === "seeders") arr.sort(function (a, b) { return (b.seedsN || 0) - (a.seedsN || 0) })
         else if (sortKey === "size") arr.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) })
         else if (sortKey === "name") arr.sort(function (a, b) { return (a.name || "").localeCompare(b.name || "") })
-        // default = Relevance: best query-word match first, original order as tiebreak
-        else if (qwords.length > 0) arr.sort(function (a, b) { return (b._rel - a._rel) || (a._idx - b._idx) })
+        // default = Relevance: best query-word match, then the user's own language
+        // (e.g. Portuguese dub first for a pt-BR app), then original order.
+        else arr.sort(function (a, b) {
+            var rd = (b._rel || 0) - (a._rel || 0); if (rd) return rd
+            var nd = (b.native ? 1 : 0) - (a.native ? 1 : 0); if (nd) return nd
+            return a._idx - b._idx
+        })
         return arr
     }
 
@@ -443,6 +448,7 @@ Rectangle {
                             Layout.fillWidth: true
                             spacing: 6
                             SourceTag { text: row.modelData.sub || row.modelData.provider || "" }
+                            MetaTag { text: row.modelData.lang || ""; accent: row.modelData.native === true }
                             MetaTag { text: row.modelData.quality || ""; accent: true }
                             MetaTag { text: row.modelData.source || "" }
                             MetaTag { text: row.modelData.codec || "" }
@@ -674,6 +680,7 @@ Rectangle {
                 Flow {
                     Layout.fillWidth: true
                     spacing: 6
+                    TChip { visible: page.selected && (page.selected.lang || "").length > 0; text: page.selected ? (page.selected.lang || "") : "" }
                     TChip { visible: page.selected && (page.selected.quality || "").length > 0; text: page.selected ? (page.selected.quality || "") : "" }
                     TChip { visible: page.selected && (page.selected.source || "").length > 0; text: page.selected ? (page.selected.source || "") : "" }
                     TChip { visible: page.selected && (page.selected.codec || "").length > 0; text: page.selected ? (page.selected.codec || "") : "" }

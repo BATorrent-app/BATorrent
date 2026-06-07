@@ -540,8 +540,9 @@ private:
     void appendTorrentRows(const QList<TorrentSearchResult> &results);
     void finishAggregateSource();
     static QString detectRepacker(const QString &name);
-    // Parse quality/source/codec/hdr tokens out of a release name for filtering.
+    // Parse quality/source/codec/hdr/lang tokens out of a release name for filtering.
     static void fillMediaAttrs(QVariantMap &m, const QString &name);
+    static QString appLangCode();   // the app UI language as a release-tag code (PT/EN/…)
     // Flat aggregate search over every enabled source (the old "Tudo" behavior).
     void rawAggregateSearch(const QString &q, int categoryCode);
     // Type-scoped drill-down for a picked title: games hit game catalogs + the

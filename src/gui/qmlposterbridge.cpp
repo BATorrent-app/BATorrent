@@ -2312,6 +2312,41 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
     else if (has("av1")) codec = QStringLiteral("AV1");
     m["codec"] = codec;
     m["hdr"] = has("\\bhdr\\b|hdr10|dolby ?vision");
+
+    // Spoken language, parsed from the release name's audio tags. Used to float
+    // the user's own language to the top and to label each result.
+    QString lang;
+    if (has("\\bmulti\\b|dual[ ._-]?(a|á)udio|dual[ ._-]?lat")) lang = QStringLiteral("MULTI");
+    else if (has("dublado|dual[ ._-]?(a|á)udio|nacional|\\bpt[ ._-]?br\\b|\\bptbr\\b|portugu[eê]s|\\btuga\\b|leg(endado)?[ ._-]?pt")) lang = QStringLiteral("PT");
+    else if (has("\\bcastellano\\b|espa[nñ]ol|\\blatino\\b|\\bspanish\\b")) lang = QStringLiteral("ES");
+    else if (has("\\bgerman\\b|deutsch|\\bger\\b")) lang = QStringLiteral("DE");
+    else if (has("\\bitalian\\b|\\bita\\b")) lang = QStringLiteral("IT");
+    else if (has("\\bfrench\\b|\\bfra\\b|\\btruefrench\\b|\\bvostfr\\b")) lang = QStringLiteral("FR");
+    else if (has("\\brus(sian)?\\b|дубляж|русск")
+             || name.contains(QRegularExpression(QStringLiteral("[\\x{0400}-\\x{04FF}]")))) lang = QStringLiteral("RU");
+    else if (has("\\bjapanese\\b|\\bjpn\\b")) lang = QStringLiteral("JA");
+    else if (has("ukrain|\\bukr\\b")) lang = QStringLiteral("UK");
+    else if (has("\\bchinese\\b|\\bchs\\b|\\bcht\\b|\\bmandarin\\b")) lang = QStringLiteral("ZH");
+    else if (has("\\benglish\\b|\\beng\\b")) lang = QStringLiteral("EN");
+    m["lang"] = lang;
+
+    const QString appLang = appLangCode();
+    m["native"] = !lang.isEmpty()
+                  && (lang == appLang || (appLang != QLatin1String("EN") && lang == QLatin1String("MULTI")));
+}
+
+QString QmlSearchBridge::appLangCode()
+{
+    switch (Translator::instance().language()) {
+    case Translator::Portuguese: return QStringLiteral("PT");
+    case Translator::Spanish:    return QStringLiteral("ES");
+    case Translator::German:     return QStringLiteral("DE");
+    case Translator::Russian:    return QStringLiteral("RU");
+    case Translator::Japanese:   return QStringLiteral("JA");
+    case Translator::Chinese:    return QStringLiteral("ZH");
+    case Translator::Ukrainian:  return QStringLiteral("UK");
+    default:                     return QStringLiteral("EN");
+    }
 }
 
 void QmlSearchBridge::setResolver(MetadataResolver *r)
