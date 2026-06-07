@@ -229,6 +229,8 @@ public:
     Q_INVOKABLE QVariantList movieLibrary() const;
     // Open a library item in the embedded player (resolves row from info hash).
     Q_INVOKABLE void playByHash(const QString &infoHash);
+    // Forget a movie's resume position (drops it from HUB "Continue watching").
+    Q_INVOKABLE void clearResume(const QString &infoHash, int fileIndex);
     // HUB (games) — minimal: list game torrents (cover/progress) and launch them
     // via a user-set executable (no auto-detection yet — improved gradually).
     Q_INVOKABLE QVariantList gameLibrary() const;

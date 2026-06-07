@@ -1011,11 +1011,21 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
         m["resumeMs"]   = resumeMs;
+        m["durMs"]      = durMs;
         m["resumeAt"]   = resumeAt;                       // last-watched timestamp (ms)
         m["watchedPct"] = (durMs > 0 && resumeMs > 0) ? double(resumeMs) / double(durMs) : 0.0;
         out << m;
     }
     return out;
+}
+
+void QmlSessionBridge::clearResume(const QString &infoHash, int fileIndex)
+{
+    const QString rk = QStringLiteral("resume_%1_%2").arg(infoHash).arg(fileIndex);
+    QSettings s;
+    s.remove(rk);
+    s.remove(rk + QStringLiteral("_dur"));
+    s.remove(rk + QStringLiteral("_at"));
 }
 
 void QmlSessionBridge::playByHash(const QString &infoHash)

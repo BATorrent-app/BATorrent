@@ -30,12 +30,39 @@ Item {
     readonly property int railSpacing: 16
     readonly property int railW: 3 * railCardW + 2 * railSpacing
 
+    // library search + sort (applies to the Movies/Games grids, not the rails)
+    property string librarySearch: ""
+    property string librarySort: "recent"   // recent | name
+
     function refresh() {
         library = api ? api.movieLibrary() : []
         gameItems = api ? api.gameLibrary() : []
     }
     onVisibleChanged: if (visible) refresh()
     Component.onCompleted: refresh()
+
+    // live: a download finishing while the HUB is open shows up without re-entering
+    Connections {
+        target: page.api
+        ignoreUnknownSignals: true
+        function onTorrentFinished(name, hash) { if (page.visible) page.refresh() }
+    }
+
+    function applyView(list) {
+        var q = librarySearch.trim().toLowerCase()
+        var arr = q.length > 0
+            ? list.filter(function (i) { return (i.title || "").toLowerCase().indexOf(q) >= 0 })
+            : list.slice()
+        if (librarySort === "name")
+            arr.sort(function (a, b) { return (a.title || "").localeCompare(b.title || "") })
+        return arr
+    }
+    function fmtTime(ms) {
+        if (!ms || ms <= 0) return ""
+        var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60
+        function pad(n) { return (n < 10 ? "0" : "") + n }
+        return (h > 0 ? h + ":" + pad(m) : m + "") + ":" + pad(ss)
+    }
 
     function fileUrl(p) {
         if (!p || p.length === 0) return ""
@@ -79,6 +106,27 @@ Item {
                 color: Theme.t1; font.pixelSize: 25; font.weight: Font.Bold; font.family: Theme.fontSans
             }
 
+            // library search + sort
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                spacing: Theme.sp3
+                visible: page.library.length > 0 || page.gameItems.length > 0
+                TFld {
+                    Layout.preferredWidth: 260; Layout.preferredHeight: 32
+                    icon: "qrc:/icons/search.svg"; clearable: true
+                    placeholder: (i18n.language, i18n.t("hub_search_lib"))
+                    onTextChanged: page.librarySearch = text
+                }
+                Item { Layout.fillWidth: true }
+                TSelect {
+                    Layout.preferredWidth: 150; Layout.preferredHeight: 32
+                    property var keys: ["recent", "name"]
+                    model: [i18n.t("hub_sort_recent"), i18n.t("hub_sort_name")]
+                    onActivated: page.librarySort = keys[currentIndex]
+                }
+            }
+
             // Continue watching | Continue playing — side by side, ≤3 each, with a
             // placeholder prompt when nothing has been watched/played yet.
             RowLayout {
@@ -99,7 +147,11 @@ Item {
                         visible: page.continueItems.length > 0
                         Repeater {
                             model: page.continueItems
-                            delegate: HubCard { cardW: page.railCardW; item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
+                            delegate: HubCard {
+                                cardW: page.railCardW; item: modelData
+                                onPlay: if (page.api) page.api.playByHash(modelData.infoHash)
+                                onContext: continueMenu.openFor(modelData.infoHash, modelData.fileIndex)
+                            }
                         }
                     }
                     RailPlaceholder { visible: page.continueItems.length === 0; text: (i18n.language, i18n.t("hub_watch_placeholder")) }
@@ -146,7 +198,7 @@ Item {
                     rowSpacing: 20
                     columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
                     Repeater {
-                        model: page.gameItems
+                        model: page.applyView(page.gameItems)
                         delegate: HubCard {
                             item: modelData
                             requireDoubleClick: true
@@ -174,7 +226,7 @@ Item {
                     rowSpacing: 20
                     columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
                     Repeater {
-                        model: page.library
+                        model: page.applyView(page.library)
                         delegate: HubCard { item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
                     }
                 }
@@ -264,6 +316,20 @@ Item {
                 }
             }
 
+            // elapsed / total time (resume)
+            Rectangle {
+                visible: (card.item.watchedPct || 0) > 0 && (card.item.durMs || 0) > 0
+                anchors.bottom: parent.bottom; anchors.right: parent.right
+                anchors.bottomMargin: 12; anchors.rightMargin: 6
+                radius: 5; color: "#cc000000"
+                implicitWidth: tlabel.width + 12; implicitHeight: 17
+                Text {
+                    id: tlabel; anchors.centerIn: parent
+                    text: page.fmtTime(card.item.resumeMs) + " / " + page.fmtTime(card.item.durMs)
+                    color: "#e8e8ec"; font.pixelSize: 9; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                }
+            }
+
             // watched-% bar
             Rectangle {
                 visible: (card.item.watchedPct || 0) > 0
@@ -339,6 +405,32 @@ Item {
         GItem {
             text: (i18n.language, i18n.t("hub_open_folder"))
             onTriggered: if (page.api) Qt.openUrlExternally(page.fileUrl(page.api.gameFolder(gameMenu.hash)))
+        }
+    }
+
+    Menu {
+        id: continueMenu
+        property string hash: ""
+        property int fileIdx: 0
+        function openFor(h, f) { hash = h; fileIdx = f || 0; popup() }
+        modal: true
+        implicitWidth: 210
+        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+        MenuItem {
+            id: cmItem
+            implicitHeight: 30
+            padding: 0
+            contentItem: Text {
+                leftPadding: 14; rightPadding: 14
+                text: (i18n.language, i18n.t("hub_remove_continue"))
+                color: cmItem.highlighted ? Theme.t1 : Theme.t2
+                font.pixelSize: 12; font.family: Theme.fontSans; verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle { color: cmItem.highlighted ? Theme.hover : "transparent"; radius: 5 }
+            onTriggered: {
+                if (page.api) page.api.clearResume(continueMenu.hash, continueMenu.fileIdx)
+                page.refresh()
+            }
         }
     }
 }
