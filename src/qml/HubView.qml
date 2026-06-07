@@ -95,40 +95,44 @@ Item {
                 color: Theme.t1; font.pixelSize: 25; font.weight: Font.Bold; font.family: Theme.fontSans
             }
 
-            // Continue watching | Continue playing — side by side, ≤3 each
+            // Continue watching | Continue playing — side by side, ≤3 each, with a
+            // placeholder prompt when nothing has been watched/played yet.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
                 spacing: 32
-                visible: page.continueItems.length > 0 || page.continuePlaying.length > 0
+                visible: page.library.length > 0 || page.gameItems.length > 0
 
                 ColumnLayout {
                     Layout.fillWidth: true; Layout.alignment: Qt.AlignTop
                     spacing: 12
-                    visible: page.continueItems.length > 0
+                    visible: page.library.length > 0
                     Text {
                         text: (i18n.language, i18n.t("hub_continue"))
                         color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
                     }
                     Row {
                         spacing: 16
+                        visible: page.continueItems.length > 0
                         Repeater {
                             model: page.continueItems
                             delegate: HubCard { cardW: 134; item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
                         }
                     }
+                    RailPlaceholder { visible: page.continueItems.length === 0; text: (i18n.language, i18n.t("hub_watch_placeholder")) }
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true; Layout.alignment: Qt.AlignTop
                     spacing: 12
-                    visible: page.continuePlaying.length > 0
+                    visible: page.gameItems.length > 0
                     Text {
                         text: (i18n.language, i18n.t("hub_continue_playing"))
                         color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
                     }
                     Row {
                         spacing: 16
+                        visible: page.continuePlaying.length > 0
                         Repeater {
                             model: page.continuePlaying
                             delegate: HubCard {
@@ -138,6 +142,7 @@ Item {
                             }
                         }
                     }
+                    RailPlaceholder { visible: page.continuePlaying.length === 0; text: (i18n.language, i18n.t("hub_play_placeholder")) }
                 }
             }
 
@@ -190,6 +195,23 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    // dashed-feel prompt shown in a "continue" rail when it has nothing yet
+    component RailPlaceholder: Rectangle {
+        property alias text: ph.text
+        Layout.fillWidth: true
+        Layout.preferredHeight: 92
+        radius: 10
+        color: "transparent"
+        border.color: Theme.hairSoft; border.width: 1
+        Text {
+            id: ph
+            anchors.centerIn: parent
+            width: parent.width - 32
+            color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
+            horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
         }
     }
 

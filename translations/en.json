@@ -483,6 +483,8 @@
   "hub_greeting": "What shall we do today?",
   "hub_continue": "Continue watching",
   "hub_continue_playing": "Continue playing",
+  "hub_watch_placeholder": "Start a movie and it'll show up here.",
+  "hub_play_placeholder": "Play a game and it'll show up here.",
   "hub_movies": "Your movies",
   "hub_games": "Your games",
   "hub_empty_title": "Nothing here yet",
