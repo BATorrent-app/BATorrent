@@ -71,10 +71,23 @@ Item {
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
 
+    // Play a movie: single video → play; multiple (a series) → pick an episode.
+    function playMovie(item) {
+        if (!api) return
+        if (item.videos && item.videos.length > 1) episodeMenu.openFor(item)
+        else api.playByHash(item.infoHash)
+    }
     // Play a game: launchGame uses the manual exe if set, else auto-detects one,
     // else opens the folder. "Set executable…" (right-click) is the override.
     function playGame(hash) {
         if (api) api.launchGame(hash)
+    }
+    function fmtAgo(ms) {
+        if (!ms || ms <= 0) return ""
+        var d = Math.floor((Date.now() - ms) / 86400000)
+        if (d <= 0) return i18n.t("hub_today")
+        if (d === 1) return i18n.t("hub_yesterday")
+        return i18n.t("hub_days_ago").replace("%1", d)
     }
     function openExePicker(hash, launchAfter) {
         exePicker.pendingHash = hash
@@ -150,7 +163,7 @@ Item {
                             model: page.continueItems
                             delegate: HubCard {
                                 cardW: page.railCardW; item: modelData
-                                onPlay: if (page.api) page.api.playByHash(modelData.infoHash)
+                                onPlay: page.playMovie(modelData)
                                 onContext: continueMenu.openFor(modelData.infoHash, modelData.fileIndex)
                             }
                         }
@@ -261,7 +274,7 @@ Item {
                     columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
                     Repeater {
                         model: page.applyView(page.library)
-                        delegate: HubCard { item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
+                        delegate: HubCard { item: modelData; onPlay: page.playMovie(modelData) }
                     }
                 }
             }
@@ -379,6 +392,7 @@ Item {
         }
 
         Text {
+            id: titleLabel
             anchors.top: art.bottom; anchors.topMargin: 8
             width: card.cardW
             text: card.item.title || ""
@@ -386,6 +400,14 @@ Item {
             font.pixelSize: 12; font.weight: Font.Medium; font.family: Theme.fontSans
             elide: Text.ElideRight; maximumLineCount: 1
             Behavior on color { ColorAnimation { duration: 140 } }
+        }
+        Text {
+            anchors.top: titleLabel.bottom; anchors.topMargin: 2
+            width: card.cardW
+            visible: (card.item.lastPlayed || 0) > 0
+            text: page.fmtAgo(card.item.lastPlayed || 0)
+            color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans
+            elide: Text.ElideRight
         }
 
         MouseArea {
@@ -464,6 +486,35 @@ Item {
             onTriggered: {
                 if (page.api) page.api.clearResume(continueMenu.hash, continueMenu.fileIdx)
                 page.refresh()
+            }
+        }
+    }
+
+    // episode picker for multi-video torrents (series)
+    Menu {
+        id: episodeMenu
+        property string hash: ""
+        property var videos: []
+        function openFor(item) { hash = item.infoHash; videos = item.videos || []; popup() }
+        modal: true
+        implicitWidth: 360
+        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+        Repeater {
+            model: episodeMenu.videos
+            MenuItem {
+                id: epItem
+                required property var modelData
+                implicitHeight: 30
+                padding: 0
+                contentItem: Text {
+                    leftPadding: 14; rightPadding: 14
+                    text: epItem.modelData.name
+                    color: epItem.highlighted ? Theme.t1 : Theme.t2
+                    font.pixelSize: 12; font.family: Theme.fontSans
+                    verticalAlignment: Text.AlignVCenter; elide: Text.ElideMiddle
+                }
+                background: Rectangle { color: epItem.highlighted ? Theme.hover : "transparent"; radius: 5 }
+                onTriggered: if (page.api) page.api.playFile(episodeMenu.hash, epItem.modelData.idx)
             }
         }
     }

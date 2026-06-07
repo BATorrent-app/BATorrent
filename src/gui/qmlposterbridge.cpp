@@ -957,6 +957,23 @@ void QmlSessionBridge::playSelected()
     emit openPlayer(url, info.name, hash, fileIdx);
 }
 
+void QmlSessionBridge::playFile(const QString &infoHash, int fileIndex)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0 || m_streamPort == 0) return;
+    auto files = m_session->filesAt(row);
+    if (fileIndex < 0 || fileIndex >= int(files.size())) return;
+    m_session->resumeTorrent(row);
+    m_session->setSequentialDownload(row, true);
+    for (int i = 0; i < int(files.size()); ++i)
+        m_session->setFilePriority(row, i, i == fileIndex ? 7 : 0);
+    m_session->prioritizeFilePieceBoundaries(row, fileIndex);
+    const QString hash = m_session->torrentHashAt(row);
+    const TorrentInfo info = m_session->torrentAt(row);
+    emit openPlayer(QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(fileIndex),
+                    info.name, hash, fileIndex);
+}
+
 QVariantList QmlSessionBridge::movieLibrary() const
 {
     static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
@@ -967,11 +984,16 @@ QVariantList QmlSessionBridge::movieLibrary() const
     for (int row = 0; row < n; ++row) {
         auto files = m_session->filesAt(row);
         int bestIdx = -1; qint64 bestSize = 0;
+        QVariantList videos;                             // all video files (for episode picking)
         for (int i = 0; i < int(files.size()); ++i) {
             const QString mp = stripBt(files[i].path);
             for (const auto &ext : videoExts)
                 if (mp.endsWith(ext, Qt::CaseInsensitive)) {
                     if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
+                    QVariantMap vf;
+                    vf["idx"] = i;
+                    vf["name"] = QFileInfo(mp).fileName();
+                    videos << vf;
                     break;
                 }
         }
@@ -1008,6 +1030,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["year"]       = year > 0 ? QString::number(year) : QString();
         m["poster"]     = poster;
         m["fileIndex"]  = bestIdx;
+        m["videos"]     = videos;                         // [{idx,name}] — >1 means episodes
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
         m["resumeMs"]   = resumeMs;
