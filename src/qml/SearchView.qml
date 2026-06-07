@@ -24,6 +24,8 @@ Rectangle {
     readonly property bool isGames: sourceKey === "games" || sourceKey === "all"
     readonly property bool isCatalog: api && api.mode === "catalog"
     readonly property bool isTitles: api && api.mode === "titles"
+    // a single picked title's torrents (or Stremio streams) don't need per-row covers
+    readonly property bool showRowThumbs: !(api && api.singleTitleView)
     readonly property bool isFlatList: api && (api.mode === "torrent" || api.mode === "games"
                                               || api.mode === "all" || api.mode === "streams")
     property bool showGameMgr: false
@@ -295,7 +297,7 @@ Rectangle {
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp4
                 property bool torrentish: page.api && (page.api.mode === "torrent" || page.api.mode === "games" || page.api.mode === "all")
-                Item { Layout.preferredWidth: 46 }   // thumb column
+                Item { Layout.preferredWidth: 46; visible: page.showRowThumbs }   // thumb column
                 Text { text: (i18n.language, i18n.t("search_col_name2")); Layout.fillWidth: true; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Text { text: (i18n.language, i18n.t("search_col_size2")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_seeds2")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
@@ -366,7 +368,7 @@ Rectangle {
                 color: resMa.containsMouse ? Theme.hover : "transparent"
                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
 
-                Component.onCompleted: if (posterSrc === "" && coverHash !== "" && page.api) page.api.resolveCover(srcIndex)
+                Component.onCompleted: if (page.showRowThumbs && posterSrc === "" && coverHash !== "" && page.api) page.api.resolveCover(srcIndex)
                 Connections {
                     target: page.api
                     ignoreUnknownSignals: true
@@ -382,6 +384,7 @@ Rectangle {
                     spacing: Theme.sp4
 
                     PosterThumb {
+                        visible: page.showRowThumbs
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: 36
                         implicitHeight: 48

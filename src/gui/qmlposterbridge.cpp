@@ -2181,6 +2181,7 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     auto &mgr = AddonManager::instance();
     const bool isGame = (type == QLatin1String("game"));
     m_aggregate = true;
+    m_titleSources = true;          // rows are one picked title → page drops per-row covers
     m_isGameSearch = isGame;
     setMode("all");
     setSearching(true);
@@ -2226,6 +2227,7 @@ void QmlSearchBridge::rawAggregateSearch(const QString &q, int categoryCode)
 
     auto &mgr = AddonManager::instance();
     m_aggregate = true;
+    m_titleSources = false;         // raw mixed list → keep per-row covers
     m_isGameSearch = false;
     setMode("all");
     setSearching(true);
@@ -2287,6 +2289,7 @@ QVariantList QmlSearchBridge::results() const { return m_results; }
 QString QmlSearchBridge::mode() const { return m_mode; }
 bool QmlSearchBridge::inStreams() const { return m_mode == "streams"; }
 bool QmlSearchBridge::canGoBack() const { return m_mode == "streams" || m_fromTitles; }
+bool QmlSearchBridge::singleTitleView() const { return m_titleSources || m_mode == "streams"; }
 bool QmlSearchBridge::searching() const { return m_searching; }
 QString QmlSearchBridge::statusText() const { return m_status; }
 
@@ -2302,6 +2305,7 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     if (q.isEmpty()) return;
     m_lastQuery = q;
     m_aggregate = false;
+    m_titleSources = false;
     m_pendingGameQuery.clear();
     m_results.clear();
     m_resultMagnets.clear();

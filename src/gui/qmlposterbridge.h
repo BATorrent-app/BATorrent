@@ -466,6 +466,7 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QString mode READ mode NOTIFY modeChanged)        // titles|catalog|streams|torrent|games
     Q_PROPERTY(bool inStreams READ inStreams NOTIFY modeChanged)
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY modeChanged) // sources view reachable from a title/catalog
+    Q_PROPERTY(bool singleTitleView READ singleTitleView NOTIFY modeChanged) // list is one picked title → drop per-row covers
     Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
 public:
@@ -477,6 +478,7 @@ public:
     QString mode() const;
     bool inStreams() const;
     bool canGoBack() const;
+    bool singleTitleView() const;
     bool searching() const;
     QString statusText() const;
 
@@ -532,6 +534,7 @@ private:
     QString m_streamHintPoster;         // activated catalog item's poster, for stream rows
     QVariantList m_titleCache;          // works grid, restored when leaving the sources view
     bool m_fromTitles = false;          // sources view was opened by picking a title
+    bool m_titleSources = false;        // current flat list is one picked title's torrents
     QString m_titleQuery;               // the free-text query behind the current titles
 
     SessionManager *m_session;
