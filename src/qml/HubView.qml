@@ -54,30 +54,10 @@ Item {
 
     Rectangle { anchors.fill: parent; color: Theme.bg }
 
-    // empty state
-    ColumnLayout {
-        anchors.centerIn: parent
-        width: Math.min(parent.width - 80, 360)
-        spacing: 12
-        visible: page.empty
-        IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/play.svg"; tint: Theme.t4; s: 44 }
-        Text {
-            Layout.alignment: Qt.AlignHCenter; Layout.fillWidth: true
-            text: (i18n.language, i18n.t("hub_empty_title"))
-            color: Theme.t2; font.pixelSize: 16; font.weight: Font.DemiBold; font.family: Theme.fontSans
-            horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
-        }
-        Text {
-            Layout.alignment: Qt.AlignHCenter; Layout.fillWidth: true
-            text: (i18n.language, i18n.t("hub_empty_sub"))
-            color: Theme.t4; font.pixelSize: 13; font.family: Theme.fontSans
-            horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
-        }
-    }
-
+    // The hub always shows its structure (greeting + the two continue rails) so
+    // a fresh, empty library reads as onboarding rather than a dead screen.
     Flickable {
         anchors.fill: parent
-        visible: !page.empty
         contentHeight: col.implicitHeight + 32
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -101,12 +81,10 @@ Item {
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
                 spacing: 32
-                visible: page.library.length > 0 || page.gameItems.length > 0
 
                 ColumnLayout {
                     Layout.fillWidth: true; Layout.alignment: Qt.AlignTop
                     spacing: 12
-                    visible: page.library.length > 0
                     Text {
                         text: (i18n.language, i18n.t("hub_continue"))
                         color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
@@ -125,7 +103,6 @@ Item {
                 ColumnLayout {
                     Layout.fillWidth: true; Layout.alignment: Qt.AlignTop
                     spacing: 12
-                    visible: page.gameItems.length > 0
                     Text {
                         text: (i18n.language, i18n.t("hub_continue_playing"))
                         color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
