@@ -93,6 +93,7 @@ Window {
         if (typeof settings === "undefined" || player.duration <= 0) return
         // remember the runtime so the HUB can draw a "watched %" bar on the poster
         settings.set(resumeKey + "_dur", Math.floor(player.duration))
+        settings.set(resumeKey + "_at", Date.now())   // recency for HUB "Continue watching"
         // near the end → clear (watched); otherwise remember the position
         if (player.position > player.duration - 15000) settings.set(resumeKey, 0)
         else if (player.position > 5000) settings.set(resumeKey, Math.floor(player.position))

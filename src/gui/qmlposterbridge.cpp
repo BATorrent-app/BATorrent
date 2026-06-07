@@ -988,6 +988,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         const QString rk = QStringLiteral("resume_%1_%2").arg(hash).arg(bestIdx);
         const qint64 resumeMs = s.value(rk, 0).toLongLong();
         const qint64 durMs    = s.value(rk + QStringLiteral("_dur"), 0).toLongLong();
+        const qint64 resumeAt = s.value(rk + QStringLiteral("_at"), 0).toLongLong();
 
         QVariantMap m;
         m["infoHash"]   = hash;
@@ -998,6 +999,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
         m["resumeMs"]   = resumeMs;
+        m["resumeAt"]   = resumeAt;                       // last-watched timestamp (ms)
         m["watchedPct"] = (durMs > 0 && resumeMs > 0) ? double(resumeMs) / double(durMs) : 0.0;
         out << m;
     }
@@ -1057,9 +1059,10 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["infoHash"]  = hash;
         m["title"]     = title.isEmpty() ? info.name : title;
         m["poster"]    = poster;
-        m["progress"]  = double(info.progress);
-        m["completed"] = info.completed;
-        m["hasExe"]    = !gameExe(hash).isEmpty();
+        m["progress"]   = double(info.progress);
+        m["completed"]  = info.completed;
+        m["hasExe"]     = !gameExe(hash).isEmpty();
+        m["lastPlayed"] = QSettings().value(QStringLiteral("gamePlayed/") + hash, 0).toLongLong();
         out << m;
     }
     return out;
@@ -1092,6 +1095,7 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
     if (!exe.isEmpty() && QFile::exists(exe)) {
         const QString wd = QFileInfo(exe).absolutePath();
         if (QProcess::startDetached(exe, {}, wd)) {
+            QSettings().setValue(QStringLiteral("gamePlayed/") + infoHash, QDateTime::currentMSecsSinceEpoch());
             emit toast(tr_("hub_game_launch"), QFileInfo(exe).completeBaseName());
             return;
         }

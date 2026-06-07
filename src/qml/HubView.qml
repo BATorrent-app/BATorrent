@@ -18,7 +18,11 @@ Item {
     property var api: typeof session !== "undefined" ? session : null
     property var library: []
     property var gameItems: []
+    // most-recent first, capped — the two "continue" rails at the top
     readonly property var continueItems: library.filter(function (i) { return (i.resumeMs || 0) > 0 })
+        .sort(function (a, b) { return (b.resumeAt || 0) - (a.resumeAt || 0) }).slice(0, 3)
+    readonly property var continuePlaying: gameItems.filter(function (i) { return (i.lastPlayed || 0) > 0 })
+        .sort(function (a, b) { return (b.lastPlayed || 0) - (a.lastPlayed || 0) }).slice(0, 3)
     readonly property bool empty: library.length === 0 && gameItems.length === 0
 
     function refresh() {
@@ -81,59 +85,66 @@ Item {
         ColumnLayout {
             id: col
             width: parent.width
-            spacing: 20
+            spacing: 22
 
-            // Continue watching
-            ColumnLayout {
+            // greeting
+            Text {
                 Layout.fillWidth: true
-                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5; Layout.topMargin: Theme.sp5
-                spacing: 12
-                visible: page.continueItems.length > 0
-                Text {
-                    text: (i18n.language, i18n.t("hub_continue"))
-                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
-                }
-                ListView {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 268
-                    orientation: ListView.Horizontal
-                    spacing: 16
-                    clip: true
-                    model: page.continueItems
-                    boundsBehavior: Flickable.StopAtBounds
-                    delegate: HubCard { item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
-                }
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5; Layout.topMargin: Theme.sp5 + 4
+                text: (i18n.language, i18n.t("hub_greeting"))
+                color: Theme.t1; font.pixelSize: 25; font.weight: Font.Bold; font.family: Theme.fontSans
             }
 
-            // Movies grid
-            ColumnLayout {
+            // Continue watching | Continue playing — side by side, ≤3 each
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
-                Layout.topMargin: page.continueItems.length > 0 ? 0 : Theme.sp5
-                spacing: 12
-                visible: page.library.length > 0
-                Text {
-                    text: (i18n.language, i18n.t("hub_movies"))
-                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                spacing: 32
+                visible: page.continueItems.length > 0 || page.continuePlaying.length > 0
+
+                ColumnLayout {
+                    Layout.fillWidth: true; Layout.alignment: Qt.AlignTop
+                    spacing: 12
+                    visible: page.continueItems.length > 0
+                    Text {
+                        text: (i18n.language, i18n.t("hub_continue"))
+                        color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
+                    }
+                    Row {
+                        spacing: 16
+                        Repeater {
+                            model: page.continueItems
+                            delegate: HubCard { cardW: 134; item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
+                        }
+                    }
                 }
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 18
-                    rowSpacing: 20
-                    columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
-                    Repeater {
-                        model: page.library
-                        delegate: HubCard { item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
+
+                ColumnLayout {
+                    Layout.fillWidth: true; Layout.alignment: Qt.AlignTop
+                    spacing: 12
+                    visible: page.continuePlaying.length > 0
+                    Text {
+                        text: (i18n.language, i18n.t("hub_continue_playing"))
+                        color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
+                    }
+                    Row {
+                        spacing: 16
+                        Repeater {
+                            model: page.continuePlaying
+                            delegate: HubCard {
+                                cardW: 134; item: modelData; requireDoubleClick: true
+                                onPlay: page.playGame(modelData.infoHash)
+                                onContext: gameMenu.openFor(modelData.infoHash)
+                            }
+                        }
                     }
                 }
             }
 
-            // Games grid (minimal: list + Play via a user-set executable)
+            // Your games
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
-                Layout.topMargin: page.library.length > 0 ? 0 : Theme.sp5
-                Layout.bottomMargin: Theme.sp5
                 spacing: 12
                 visible: page.gameItems.length > 0
                 Text {
@@ -153,6 +164,29 @@ Item {
                             onPlay: page.playGame(modelData.infoHash)
                             onContext: gameMenu.openFor(modelData.infoHash)
                         }
+                    }
+                }
+            }
+
+            // Your movies
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                Layout.bottomMargin: Theme.sp5
+                spacing: 12
+                visible: page.library.length > 0
+                Text {
+                    text: (i18n.language, i18n.t("hub_movies"))
+                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columnSpacing: 18
+                    rowSpacing: 20
+                    columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
+                    Repeater {
+                        model: page.library
+                        delegate: HubCard { item: modelData; onPlay: if (page.api) page.api.playByHash(modelData.infoHash) }
                     }
                 }
             }
