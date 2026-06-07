@@ -1,5 +1,42 @@
 # Changelog
 
+## v4.0.0 — "Hub"
+
+BATorrent becomes a media hub: **find → download → search → watch/play**, all around the cover-art identity. A left nav rail (collapsible) swaps between pages with smooth transitions.
+
+### Discover
+- A new **Discover** page: rotating hero + rows of trending/popular **movies, series and games** (TMDB + IGDB), cover-art forward. Click anything to search for it.
+
+### Search, rebuilt
+- **Title-first search**: type once and pick the actual work (e.g. *God of War Ragnarök*) from a poster grid before seeing downloads — one cover per title, games and movies mixed by relevance.
+- Then drill into that title's **downloads** with real filters: **quality, source, repacker, provider/origin and seeders**, plus a relevance sort that matches whole words (so "blast" ≠ "last").
+- Each result shows **where it came from** (RuTracker, Torrents, …); raw torrents resolve covers on demand. A "raw results" escape hatch is always available.
+
+### HUB — watch & play
+- **Watch movies in a built-in player** with **resume** (it remembers where you stopped) and a **watched-% bar** on each poster — stream while it's still downloading.
+- **Continue watching** and **Continue playing** rails up top, then your movies and games libraries.
+- **Games**: launch from the hub — it auto-detects the executable (or you set it once), with Install/Open-folder actions.
+
+### Fixes
+- A completed torrent that you'd **streamed no longer re-announces "download complete" on every launch** (its skipped sidecar files no longer make it look unfinished).
+
+### Other
+- Fully translated across all **8 languages**.
+
+## v3.0.4
+
+### Fixes
+- **The app now launches on a clean Windows install** — it was missing the Visual C++ runtime; the build now ships the MSVC runtime DLLs, so the installer, the portable build and winget all work without a separate redistributable.
+
+### Search & add
+- **Restored `thunder://` link decoding** in Smart Paste — paste a Xunlei `thunder://` link and it's decoded to the underlying magnet / torrent and added.
+
+### Games
+- **Game search now matches across words and labels the source.** Typing "god of war fitgirl" finds FitGirl's repack (and typing just "fitgirl" lists all of theirs), and results show the repacker (FitGirl, DODI, RUNE, TENOKE, …) so you can see where a download comes from.
+
+### Streaming
+- **Hardened "stream while downloading"** — it opens the correct file even with the incomplete-file (`.!bt`) suffix, prefers VLC / mpv / IINA (which play a still-downloading file) with a clean fallback to your default player on Windows, macOS and Linux, and stops waiting if the torrent has no seeders.
+
 ## v3.0.3
 
 ### Games

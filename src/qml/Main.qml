@@ -1103,43 +1103,8 @@ Window {
                     }
                 }
 
-                // .donate (♥ Doar)
-                Rectangle {
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredHeight: 34
-                    implicitWidth: donRow.implicitWidth + 26
-                    color: donMa.containsMouse ? Qt.rgba(229/255, 51/255, 43/255, 0.10) : "transparent"
-                    border.color: Qt.rgba(229/255, 51/255, 43/255, 0.4)
-                    border.width: 1
-                    radius: 8
-
-                    Row {
-                        id: donRow
-                        anchors.centerIn: parent
-                        spacing: 7
-                        IconImg {
-                            anchors.verticalCenter: parent.verticalCenter
-                            src: "qrc:/icons/heart.svg"
-                            tint: Theme.accentText
-                            s: 14
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: (i18n.language, i18n.t("action_donate"))
-                            color: Theme.accentText
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            font.family: Theme.fontSans
-                        }
-                    }
-                    MouseArea {
-                        id: donMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
-                    }
-                }
+                // donate moved to the nav rail (bottom) — it was cramped here
+                // and got clipped when the filter row filled up.
             }
         }
 

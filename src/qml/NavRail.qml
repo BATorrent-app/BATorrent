@@ -41,12 +41,19 @@ Rectangle {
     // right hairline
     Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.hair }
 
-    readonly property var items: [
-        { icon: "qrc:/icons/download.svg", label: "Downloads", page: 0 },
-        { icon: "qrc:/icons/discover.svg", label: "Discover",  page: 1 },
-        { icon: "qrc:/icons/search.svg",   label: "Search",    page: 2 },
-        { icon: "qrc:/icons/hub.svg",      label: "HUB",       page: 3 }
-    ]
+    readonly property var items: buildItems()
+    function buildItems() {
+        var all = [
+            { icon: "qrc:/icons/download.svg", label: "Downloads", page: 0 },
+            { icon: "qrc:/icons/discover.svg", label: "Discover",  page: 1 },
+            { icon: "qrc:/icons/search.svg",   label: "Search",    page: 2 },
+            { icon: "qrc:/icons/hub.svg",      label: "HUB",       page: 3 }
+        ]
+        // Store builds hide Discover (page 1); other pages keep their indices.
+        if (typeof isStoreBuild !== "undefined" && isStoreBuild)
+            return all.filter(function (x) { return x.page !== 1 })
+        return all
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -154,7 +161,49 @@ Rectangle {
             }
         }
 
-        Item { Layout.fillHeight: true }   // push Settings + collapse to the bottom
+        Item { Layout.fillHeight: true }   // push donate + Settings + collapse to the bottom
+
+        // ----- donate (solid red heart) -----
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 46
+            Layout.leftMargin: 10
+            Layout.rightMargin: 10
+            Rectangle {
+                anchors.fill: parent
+                radius: 10
+                color: donMa.containsMouse ? Qt.rgba(229/255, 51/255, 43/255, 0.12) : "transparent"
+                Behavior on color { ColorAnimation { duration: 140 } }
+            }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: rail.collapsed ? 13 : 17
+                anchors.rightMargin: 12
+                spacing: 13
+                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/heart.svg"; tint: Theme.accent; s: 18 }
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: (i18n.language, i18n.t("action_donate"))
+                    color: Theme.t2
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    font.family: Theme.fontSans
+                    opacity: rail.collapsed ? 0 : 1
+                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                }
+            }
+            MouseArea {
+                id: donMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
+            }
+            ToolTip.text: (i18n.language, i18n.t("action_donate"))
+            ToolTip.visible: rail.collapsed && donMa.containsMouse
+            ToolTip.delay: 400
+        }
 
         // ----- settings -----
         Item {

@@ -3,7 +3,7 @@
 
 ; Version is injected by CI via ISCC /DMyAppVersion=x.y.z; fallback for local builds.
 #ifndef MyAppVersion
-  #define MyAppVersion "3.0.3"
+  #define MyAppVersion "4.0.0"
 #endif
 
 [Setup]

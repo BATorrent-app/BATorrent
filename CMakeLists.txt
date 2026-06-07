@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 3.0.4)
+project(BATorrent VERSION 4.0.0)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia Quick QuickWidgets QuickControls2)
 find_package(LibtorrentRasterbar REQUIRED)
 # Optional: QtKeychain stores credentials in the platform keyring (DPAPI on

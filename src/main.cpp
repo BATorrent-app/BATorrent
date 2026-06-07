@@ -376,6 +376,13 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("addons", addonBridge);
         engine.rootContext()->setContextProperty("search", searchBridge);
         engine.rootContext()->setContextProperty("discovery", discoveryService);
+        // Store builds stay neutral: hide Discover (the curated browse surface).
+        // Everything else (Search/HUB) is identical.
+#ifdef BAT_STORE_BUILD
+        engine.rootContext()->setContextProperty("isStoreBuild", true);
+#else
+        engine.rootContext()->setContextProperty("isStoreBuild", false);
+#endif
         engine.rootContext()->setContextProperty("logs", logBridge);
         engine.rootContext()->setContextProperty("pairing", pairingBridge);
         engine.rootContext()->setContextProperty("notifications", notificationBridge);
