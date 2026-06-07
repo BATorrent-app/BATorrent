@@ -52,8 +52,10 @@ private:
     void searchIgdbTitles(const QString &query);
     void maybeFinishSearch();
 
-    void fetchTmdb(int order, const QString &path, const QString &label, const QString &type);
-    void fetchIgdbTrending(int order, const QString &label);   // IGDB popularity = games of the moment
+    void fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
+                   const QList<QPair<QString, QString>> &extra = {});
+    void fetchIgdbTrending(int order, const QString &label);   // hot + recent games (hype-typed)
+    void fetchIgdbHypeIds(int order, const QString &label);    // popularity primitives for the hype type
     void fetchIgdbRecent(int order, const QString &label);     // recently released games
     void fetchIgdbGamesByIds(int order, const QString &label, const QList<qint64> &ids);
     void setIgdbHeaders(QNetworkRequest &req) const;
@@ -77,6 +79,7 @@ private:
 
     QString m_igdbToken;
     qint64 m_igdbTokenExpiry = 0;
+    int m_hypeTypeId = 0;   // IGDB "Want to Play" popularity_type, resolved once per session
 
     // title-search state (independent of the trending rows above)
     int m_searchPending = 0;

@@ -18,6 +18,8 @@
 #include <QUrlQuery>
 #include <QHash>
 #include <QSet>
+#include <QLocale>
+#include <QPair>
 #include <algorithm>
 #include "translator.h"
 
@@ -71,8 +73,30 @@ QString cacheFile()
            + QStringLiteral("/discover/discover.json");
 }
 
+// The user's country (ISO 3166), for country-relative TMDB rows. From the system
+// locale (e.g. "pt_BR" → BR), falling back to the app UI language's home country.
+QString discoverRegion()
+{
+    const QString sys = QLocale::system().name();        // e.g. "pt_BR"
+    const int us = sys.indexOf(QLatin1Char('_'));
+    if (us >= 0 && sys.size() >= us + 3) {
+        const QString cc = sys.mid(us + 1, 2).toUpper();
+        if (cc[0].isLetter() && cc[1].isLetter()) return cc;
+    }
+    switch (Translator::instance().language()) {
+    case Translator::Portuguese: return QStringLiteral("BR");
+    case Translator::Russian:    return QStringLiteral("RU");
+    case Translator::Japanese:   return QStringLiteral("JP");
+    case Translator::German:     return QStringLiteral("DE");
+    case Translator::Spanish:    return QStringLiteral("ES");
+    case Translator::Ukrainian:  return QStringLiteral("UA");
+    case Translator::Chinese:    return QStringLiteral("CN");
+    default:                     return QStringLiteral("US");
+    }
+}
+
 const qint64 CacheTtlSecs = 12 * 60 * 60;
-const int CacheVersion = 4;   // bump when the row schema/order changes (invalidates stale cache)
+const int CacheVersion = 5;   // bump when the row schema/order/source changes (invalidates stale cache)
 
 } // namespace
 
@@ -109,10 +133,20 @@ void DiscoveryService::refresh()
     setStatus(QString());
 
     if (haveTmdb) {
-        fetchTmdb(0, QStringLiteral("/trending/movie/week"), tr_("discover_trending_movies"), QStringLiteral("movie"));
-        fetchTmdb(2, QStringLiteral("/trending/tv/week"),    tr_("discover_trending_series"), QStringLiteral("series"));
-        fetchTmdb(4, QStringLiteral("/movie/popular"),       tr_("discover_popular_movies"),  QStringLiteral("movie"));
-        fetchTmdb(5, QStringLiteral("/tv/popular"),          tr_("discover_popular_series"),  QStringLiteral("series"));
+        // Country-relative "trending": popularity-sorted titles available to stream/
+        // rent/buy in the user's region (TMDB /trending has no region param).
+        const QString region = discoverRegion();
+        const QList<QPair<QString, QString>> regionDiscover = {
+            { QStringLiteral("sort_by"), QStringLiteral("popularity.desc") },
+            { QStringLiteral("watch_region"), region },
+            { QStringLiteral("with_watch_monetization_types"),
+              QStringLiteral("flatrate|free|ads|rent|buy") }
+        };
+        const QList<QPair<QString, QString>> regionOnly = { { QStringLiteral("region"), region } };
+        fetchTmdb(0, QStringLiteral("/discover/movie"), tr_("discover_trending_movies"), QStringLiteral("movie"),  regionDiscover);
+        fetchTmdb(2, QStringLiteral("/discover/tv"),    tr_("discover_trending_series"), QStringLiteral("series"), regionDiscover);
+        fetchTmdb(4, QStringLiteral("/movie/popular"),  tr_("discover_popular_movies"),  QStringLiteral("movie"),  regionOnly);
+        fetchTmdb(5, QStringLiteral("/tv/popular"),     tr_("discover_popular_series"),  QStringLiteral("series"));
     }
     if (haveIgdb) {
         fetchIgdbTrending(1, tr_("discover_trending_games"));   // games of the moment — kept high
@@ -282,7 +316,8 @@ bool DiscoveryService::hasMetadataKeys() const
     return haveTmdb || haveIgdb;
 }
 
-void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type)
+void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
+                                 const QList<QPair<QString, QString>> &extra)
 {
     ++m_pending;
 
@@ -291,6 +326,7 @@ void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &
     q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
     q.addQueryItem(QStringLiteral("language"), tmdbLang());
     q.addQueryItem(QStringLiteral("page"), QStringLiteral("1"));
+    for (const auto &kv : extra) q.addQueryItem(kv.first, kv.second);
     url.setQuery(q);
 
     QNetworkRequest req(url);
@@ -375,6 +411,19 @@ QVariantList gamesToItems(const QList<QJsonObject> &objs, int cap)
         if (imageId.isEmpty()) continue;
         const QString name = o.value(QLatin1String("name")).toString();
         if (name.isEmpty() || seen.contains(name)) continue;
+        // IGDB has no "free" flag — drop the obvious free/live-service titles that
+        // dominate popularity but make no sense to download via torrent.
+        static const QStringList freeLiveService = {
+            "counter-strike", "dota 2", "league of legends", "fortnite", "valorant",
+            "apex legends", "warframe", "genshin", "honkai", "roblox", "marvel rivals",
+            "the finals", "overwatch", "destiny 2", "path of exile", "team fortress",
+            "warzone", "rocket league", "fall guys", "brawlhalla", "lost ark", "new world",
+            "throne and liberty", "once human", "delta force", "naraka", "smite",
+            "war thunder", "world of tanks", "world of warships" };
+        const QString lname = name.toLower();
+        bool freeLs = false;
+        for (const QString &d : freeLiveService) if (lname.contains(d)) { freeLs = true; break; }
+        if (freeLs) continue;
         seen.append(name);
         const qint64 rel = qint64(o.value(QLatin1String("first_release_date")).toDouble());
         // games have no backdrop field — use an artwork (or a screenshot) so they
@@ -437,27 +486,58 @@ void DiscoveryService::fetchIgdbTrending(int order, const QString &label)
             maybeFinish();
             return;
         }
-        QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/popularity_primitives"))};
+        if (m_hypeTypeId > 0) { fetchIgdbHypeIds(order, label); return; }
+        // Resolve a torrent-relevant popularity type once. The default primitive
+        // (Visits) just ranks perennial free games (LoL/CS/GTA V). Prefer "Global
+        // Top Sellers" (paid games selling now), then "Want to Play" (anticipation)
+        // — combined with the recent-release filter below, that's "hot & new".
+        QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/popularity_types"))};
         setIgdbHeaders(req);
-        const QByteArray body = "fields game_id,value; sort value desc; limit 60;";
-        QNetworkReply *reply = m_nam->post(req, body);
+        QNetworkReply *reply = m_nam->post(req, QByteArray("fields id,name; limit 50;"));
         connect(reply, &QNetworkReply::finished, this, [this, reply, order, label]() {
             reply->deleteLater();
-            QList<qint64> ids;
+            int sellers = 0, want = 0, playing = 0;
             if (reply->error() == QNetworkReply::NoError) {
                 const QJsonArray arr = QJsonDocument::fromJson(reply->readAll()).array();
                 for (const QJsonValue &v : arr) {
-                    const qint64 gid = qint64(v.toObject().value(QLatin1String("game_id")).toDouble());
-                    if (gid > 0 && !ids.contains(gid)) ids.append(gid);
-                    if (ids.size() >= 40) break;
+                    const QJsonObject o = v.toObject();
+                    const QString name = o.value(QLatin1String("name")).toString().toLower();
+                    const int id = o.value(QLatin1String("id")).toInt();
+                    if (name.contains(QLatin1String("top seller"))) sellers = id;
+                    else if (name.contains(QLatin1String("want to play"))) want = id;
+                    else if (name.contains(QLatin1String("playing"))) playing = id;
                 }
-            } else {
-                qDebug() << "[discover] IGDB popularity error:" << reply->errorString();
             }
-            qDebug() << "[discover] IGDB trending ids:" << ids.size();
-            if (ids.isEmpty()) { maybeFinish(); return; }
-            fetchIgdbGamesByIds(order, label, ids);
+            m_hypeTypeId = sellers ? sellers : (want ? want : (playing ? playing : 9));   // 9 = Global Top Sellers
+            fetchIgdbHypeIds(order, label);
         });
+    });
+}
+
+void DiscoveryService::fetchIgdbHypeIds(int order, const QString &label)
+{
+    QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/popularity_primitives"))};
+    setIgdbHeaders(req);
+    // Big pool: most of these get filtered out by the recent-release window in
+    // fetchIgdbGamesByIds, so we over-fetch to still land ~24 recent hyped games.
+    const QByteArray body = QStringLiteral(
+        "fields game_id,value; where popularity_type = %1; sort value desc; limit 120;")
+        .arg(m_hypeTypeId).toUtf8();
+    QNetworkReply *reply = m_nam->post(req, body);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, order, label]() {
+        reply->deleteLater();
+        QList<qint64> ids;
+        if (reply->error() == QNetworkReply::NoError) {
+            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll()).array();
+            for (const QJsonValue &v : arr) {
+                const qint64 gid = qint64(v.toObject().value(QLatin1String("game_id")).toDouble());
+                if (gid > 0 && !ids.contains(gid)) ids.append(gid);
+            }
+        } else {
+            qDebug() << "[discover] IGDB popularity error:" << reply->errorString();
+        }
+        if (ids.isEmpty()) { maybeFinish(); return; }
+        fetchIgdbGamesByIds(order, label, ids);
     });
 }
 
@@ -466,12 +546,17 @@ void DiscoveryService::fetchIgdbGamesByIds(int order, const QString &label, cons
     QStringList idStrs;
     for (qint64 id : ids) idStrs << QString::number(id);
 
+    // Only keep ones released in the last ~10 months (and already out — torrentable),
+    // so the hype list becomes "hot & new", not perennial anticipated/old titles.
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    const qint64 from = now - qint64(300) * 86400;
+
     QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
     setIgdbHeaders(req);
     const QByteArray body = QStringLiteral(
         "fields id,name,summary,rating,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id;"
-        " where id = (%1) & cover != null; limit %2;")
-        .arg(idStrs.join(QLatin1Char(','))).arg(ids.size()).toUtf8();
+        " where id = (%1) & cover != null & first_release_date >= %3 & first_release_date <= %4; limit %2;")
+        .arg(idStrs.join(QLatin1Char(','))).arg(ids.size()).arg(from).arg(now).toUtf8();
 
     QNetworkReply *reply = m_nam->post(req, body);
     connect(reply, &QNetworkReply::finished, this, [this, reply, order, label, ids]() {
@@ -579,6 +664,7 @@ bool DiscoveryService::loadFromCache()
     if (!f.open(QIODevice::ReadOnly)) return false;
     const QJsonObject o = QJsonDocument::fromJson(f.readAll()).object();
     if (o.value(QLatin1String("v")).toInt() != CacheVersion) return false;
+    if (o.value(QLatin1String("region")).toString() != discoverRegion()) return false;  // region changed → refetch
     const QDateTime savedAt = QDateTime::fromString(o.value(QLatin1String("savedAt")).toString(), Qt::ISODate);
     if (!savedAt.isValid()) return false;
     if (savedAt.secsTo(QDateTime::currentDateTimeUtc()) > CacheTtlSecs) return false;
@@ -598,6 +684,7 @@ void DiscoveryService::saveToCache()
     QDir().mkpath(QFileInfo(cacheFile()).absolutePath());
     QJsonObject o;
     o.insert(QStringLiteral("v"), CacheVersion);
+    o.insert(QStringLiteral("region"), discoverRegion());
     o.insert(QStringLiteral("savedAt"), QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
     o.insert(QStringLiteral("rows"), QJsonArray::fromVariantList(m_rows));
     o.insert(QStringLiteral("hero"), QJsonArray::fromVariantList(m_hero));
