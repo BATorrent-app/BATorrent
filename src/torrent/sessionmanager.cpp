@@ -143,6 +143,8 @@ SessionManager::SessionManager(QObject *parent)
     }
     for (const auto &h : settings.value("completedTorrents").toStringList())
         m_completedTorrents.insert(h);
+    m_completedAtStartup = m_completedTorrents;   // freeze: don't re-notify these
+    m_sessionStartMs = QDateTime::currentMSecsSinceEpoch();
 
     // Load categories
     settings.beginGroup("categories");
@@ -2162,10 +2164,20 @@ void SessionManager::processAlerts()
                 if (m_autoExtract)
                     extractArchives(QString::fromStdString(st.save_path), name);
 
-                qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
-                executeOnComplete(name, QString::fromStdString(st.save_path),
-                                  hash, st.total_wanted);
-                emit torrentFinished(name, hash);
+                // Don't re-announce a torrent that just re-verified/re-finished on
+                // resume. Two cases: it was persisted complete (completedAtStartup),
+                // or it rechecks-and-redownloads a sliver every launch and finishes
+                // within the startup window. The storage side-effects above still
+                // run; only the user-facing completion (script + notification +
+                // media-server webhook) is muted.
+                const bool resumeRefinish = m_completedAtStartup.contains(hash)
+                    || (QDateTime::currentMSecsSinceEpoch() - m_sessionStartMs) < 120000;
+                if (!resumeRefinish) {
+                    qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
+                    executeOnComplete(name, QString::fromStdString(st.save_path),
+                                      hash, st.total_wanted);
+                    emit torrentFinished(name, hash);
+                }
             }
 
             // Remove from queue-paused set in either case (it's no longer
