@@ -2235,12 +2235,12 @@ Window {
                 DiscoverView {
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onOpenSearch: function(q) {
-                        if (typeof search !== "undefined") search.search("all", q)
                         navRail.currentIndex = 2
+                        searchPage.runQuery(q)   // fills the bar + runs (no ghost search)
                     }
                 }
                 // ----- page 2: Search -----
-                SearchView { Layout.fillWidth: true; Layout.fillHeight: true }
+                SearchView { id: searchPage; Layout.fillWidth: true; Layout.fillHeight: true }
                 // ----- page 3: HUB -----
                 HubView { id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true }
             }
@@ -2475,6 +2475,31 @@ Window {
             playerWinLoader.active = true
             var w = playerWinLoader.item
             if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, title, hash, fileIndex) }
+        }
+    }
+
+    // Adding a torrent from Search jumps to Downloads and selects it once it lands
+    // (the add is async, so retry briefly until the torrent shows up in the model).
+    Connections {
+        target: typeof search !== "undefined" ? search : null
+        ignoreUnknownSignals: true
+        function onAddedTorrent(infoHash) {
+            navRail.currentIndex = 0
+            selectAddedTimer.hash = infoHash || ""
+            selectAddedTimer.tries = 0
+            selectAddedTimer.restart()
+        }
+    }
+    Timer {
+        id: selectAddedTimer
+        property string hash: ""
+        property int tries: 0
+        interval: 200; repeat: true
+        onTriggered: {
+            tries++
+            if (hash === "") { stop(); return }
+            if (session.selectByInfoHash(hash)) { stop(); return }
+            if (tries >= 15) stop()
         }
     }
     InspectorDialog      { id: inspectorDlg }

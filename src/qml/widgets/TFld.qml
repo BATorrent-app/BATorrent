@@ -19,6 +19,7 @@ Rectangle {
     property bool mono: false
     property bool readonly: false
     property bool password: false
+    property bool clearable: false   // shows an ✕ to empty the field when it has text
     signal edited(string text)
 
     implicitWidth: 240
@@ -55,6 +56,21 @@ Rectangle {
             background: null
             padding: 0
             onEditingFinished: fld.edited(text)
+        }
+        IconImg {
+            visible: fld.clearable && input.text.length > 0
+            Layout.alignment: Qt.AlignVCenter
+            src: "qrc:/icons/close.svg"
+            tint: clearMa.containsMouse ? Theme.t1 : Theme.t4
+            s: 13
+            MouseArea {
+                id: clearMa
+                anchors.fill: parent
+                anchors.margins: -5
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: { input.text = ""; input.forceActiveFocus(); fld.edited("") }
+            }
         }
     }
 }

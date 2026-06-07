@@ -158,6 +158,9 @@ public:
     QVariantList uploadHistory() const;
 
     Q_INVOKABLE void setSelectedRows(const QList<int> &rows);
+    // Select a torrent by its info hash (source row). Returns false if it isn't
+    // in the model yet — used to focus a torrent just added from Search.
+    Q_INVOKABLE bool selectByInfoHash(const QString &infoHash);
     // Keep the stored selection (source-model indices) in sync when a torrent is
     // removed, so a later batch action doesn't hit a different torrent that
     // shifted into the old index.
@@ -526,6 +529,7 @@ signals:
     void statusChanged();
     void gameSourcesChanged();
     void coverReady(const QString &infoHash, const QString &posterPath);
+    void addedTorrent(const QString &infoHash);   // a magnet was added from Search
 
 private:
     void setSearching(bool on);

@@ -197,7 +197,10 @@ void QmlPosterModel::emitRows(bool fullRoles)
     // the tick; full edits (rename/category/restore) use fullRoles.
     static const QList<int> volatileRoles = {
         ProgressRole, StateKeyRole, StateStringRole, DownSpeedRole,
-        UpSpeedRole, NumPeersRole, DownRateRole, UpRateRole };
+        UpSpeedRole, NumPeersRole, DownRateRole, UpRateRole,
+        // size resolves once a magnet's metadata arrives — without it the grid
+        // (and list) stay stuck at "0 B" until some full refresh happens.
+        SizeRole, SizeBytesRole };
     if (fullRoles)
         emit dataChanged(index(0), index(m_lastCount - 1));
     else
@@ -436,6 +439,14 @@ void QmlSessionBridge::setSelectedRows(const QList<int> &rows)
     m_selectedRows = rows;
     m_selectedIndex = rows.isEmpty() ? -1 : rows.last();
     emit selectionChanged(); emit selectionListsChanged();
+}
+
+bool QmlSessionBridge::selectByInfoHash(const QString &infoHash)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return false;
+    setSelectedRows({row});
+    return true;
 }
 
 QList<int> QmlSessionBridge::selectedRows() const { return m_selectedRows; }
@@ -2678,6 +2689,14 @@ void QmlSearchBridge::refreshGames()
     GameSourceManager::instance().refresh(true);   // manual refresh → bypass cache
 }
 
+static QString btihFromMagnet(const QString &magnet)
+{
+    static const QRegularExpression re(QStringLiteral("xt=urn:btih:([A-Za-z0-9]+)"),
+                                       QRegularExpression::CaseInsensitiveOption);
+    const auto m = re.match(magnet);
+    return m.hasMatch() ? m.captured(1) : QString();
+}
+
 void QmlSearchBridge::activateResult(int index)
 {
     auto &mgr = AddonManager::instance();
@@ -2712,6 +2731,7 @@ void QmlSearchBridge::activateResult(int index)
         if (s.magnet.startsWith("magnet:")) {
             m_session->addMagnet(s.magnet, m_savePath, m_streamHintTitle, m_streamHintType);
             setStatus(QString("Adicionado: %1").arg(s.title));
+            emit addedTorrent(btihFromMagnet(s.magnet));
         }
     } else {   // torrent / games / all → every flat row carries its own magnet
         if (index < 0 || index >= m_resultMagnets.size()) return;
@@ -2720,8 +2740,12 @@ void QmlSearchBridge::activateResult(int index)
         const QString hint = index < m_resultTitles.size() ? m_resultTitles[index] : QString();
         const int type = hint.isEmpty() ? -1 : static_cast<int>(ContentType::Game);
         m_session->addMagnet(magnet, m_savePath, hint, type);   // hint = clean game title, "" for torrents
-        const QString name = index < m_results.size() ? m_results[index].toMap().value("name").toString() : QString();
+        const QVariantMap rm = index < m_results.size() ? m_results[index].toMap() : QVariantMap();
+        const QString name = rm.value(QStringLiteral("name")).toString();
         setStatus(name.isEmpty() ? QStringLiteral("Adicionado") : QString("Adicionado: %1").arg(name));
+        QString hash = rm.value(QStringLiteral("coverHash")).toString();   // torrent rows carry the hash
+        if (hash.isEmpty()) hash = btihFromMagnet(magnet);
+        emit addedTorrent(hash);
     }
 }
 

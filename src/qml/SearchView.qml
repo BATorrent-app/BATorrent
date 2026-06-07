@@ -166,6 +166,14 @@ Rectangle {
         api.search(page.sourceKey, queryFld.text, cat)
     }
 
+    // External entry (e.g. clicking a Discover poster): reflect the query in the
+    // bar instead of running a "ghost" search, then run it title-first ("Tudo").
+    function runQuery(text) {
+        queryFld.text = text
+        srcSel.currentIndex = 0
+        runSearch()
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -199,6 +207,7 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
                     icon: "qrc:/icons/search.svg"
+                    clearable: true
                     placeholder: (i18n.language, i18n.t("search_input"))
                     onEdited: page.runSearch()
                 }
