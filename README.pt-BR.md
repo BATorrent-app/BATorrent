@@ -63,7 +63,7 @@ Sou um desenvolvedor sozinho no Brasil. Eu queria um cliente de torrent que leva
 | | |
 |---|---|
 | 🔒 **Privacidade em primeiro lugar** | Vínculo à interface da VPN + **kill switch** (corta todo o tráfego se o túnel cair), modo PT para trackers privados, preset Tor, handshake anônimo, bloqueio anti-leecher |
-| 🔎 **Achar e adicionar** | Busca embutida (inclui fontes abertas CIS/RuTor, sem login), Colar Inteligente (magnet / `thunder://` / hash no Ctrl+V), download automático por RSS com filtros regex, arrastar e soltar |
+| 🔎 **Achar e adicionar** | Busca embutida (inclui fontes abertas CIS/RuTor, sem login), Colar Inteligente (magnet / `.torrent` / `thunder://` / hash no Ctrl+V), download automático por RSS com filtros regex, arrastar e soltar |
 | 📱 **Controle de qualquer lugar** | WebUI no navegador com **pareamento por QR** — escaneie do celular, sem digitar IP. O QR é gerado localmente; seu endereço nunca sai da máquina |
 | 📺 **Assistir e organizar** | Assista enquanto baixa, extração automática de arquivos, categorias + tags, atualização da biblioteca Plex/Jellyfin/Emby ao concluir |
 | 🔔 **Fique por dentro** | Notificações nativas do desktop, alertas no Telegram, Discord Rich Presence ("Baixando X · 67%") |

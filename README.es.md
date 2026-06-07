@@ -63,7 +63,7 @@ Soy un desarrollador solo en Brasil. Quería un cliente de torrent que se tomara
 | | |
 |---|---|
 | 🔒 **Privacidad primero** | Vinculación a la interfaz de la VPN + **kill switch** (corta todo el tráfico si el túnel cae), modo PT para trackers privados, preajuste Tor, handshake anónimo, bloqueo anti-leecher |
-| 🔎 **Buscar y añadir** | Búsqueda integrada (incl. fuentes abiertas CIS/RuTor, sin login), Pegado Inteligente (magnet / `thunder://` / hash con Ctrl+V), descarga automática por RSS con filtros regex, arrastrar y soltar |
+| 🔎 **Buscar y añadir** | Búsqueda integrada (incl. fuentes abiertas CIS/RuTor, sin login), Pegado Inteligente (magnet / `.torrent` / `thunder://` / hash con Ctrl+V), descarga automática por RSS con filtros regex, arrastrar y soltar |
 | 📱 **Contrólalo desde cualquier sitio** | WebUI en el navegador con **emparejamiento por QR** — escanea desde el móvil, sin teclear IPs. El QR se genera localmente; tu dirección nunca sale de la máquina |
 | 📺 **Ver y organizar** | Reproduce mientras descargas, extracción automática de archivos, categorías + etiquetas, actualización de la biblioteca Plex/Jellyfin/Emby al completar |
 | 🔔 **Mantente al tanto** | Notificaciones nativas de escritorio, alertas de Telegram, Discord Rich Presence ("Descargando X · 67%") |
