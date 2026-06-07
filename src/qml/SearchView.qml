@@ -197,6 +197,21 @@ Rectangle {
         onTriggered: page.runSearch()
     }
 
+    // Auto-pick the "best" release of a picked title and add it: prefer the user's
+    // language, then resolution (1080p sweet spot), then most seeders.
+    function pickBest() {
+        if (!api) return
+        var res = api.results
+        var qrank = { "1080p": 4, "4K": 3, "720p": 2, "480p": 1 }
+        var bestIdx = -1, bestScore = -1
+        for (var i = 0; i < res.length; i++) {
+            var r = res[i]
+            var score = (r.native ? 1e9 : 0) + (qrank[r.quality] || 0) * 1e6 + (r.seedsN || 0)
+            if (score > bestScore) { bestScore = score; bestIdx = i }
+        }
+        if (bestIdx >= 0) api.activateResult(bestIdx)
+    }
+
     // External entry (e.g. clicking a Discover poster): reflect the query in the
     // bar instead of running a "ghost" search, then run it title-first ("Tudo").
     function runQuery(text) {
@@ -373,6 +388,13 @@ Rectangle {
                 Text {
                     text: page.viewModel.length + " / " + (page.api ? page.api.results.length : 0)
                     color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono
+                }
+                BtnFlat {
+                    // one-click "best" release for a picked title (quality + seeders + your language)
+                    visible: page.api && page.api.singleTitleView && page.api.results.length > 0
+                    primary: true
+                    text: (i18n.language, i18n.t("search_get_best"))
+                    onClicked: page.pickBest()
                 }
                 BtnFlat {
                     visible: page.qualityFilter !== "" || page.sourceFilter !== "" || page.repackerFilter !== ""
