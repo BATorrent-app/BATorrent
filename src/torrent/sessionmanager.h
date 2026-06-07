@@ -67,6 +67,26 @@ public:
     // streaming players can read container headers (mp4 moov atom, mkv
     // cues) and trailing index data before the bulk download completes.
     void prioritizeFilePieceBoundaries(int torrentIndex, int fileIndex);
+
+    // --- streaming (4.0 embedded player) — read by the local StreamServer ---
+    // Index of the torrent with this info-hash, or -1. (reverse of torrentHashAt)
+    int torrentIndexByInfoHash(const QString &infoHash) const;
+    // Absolute on-disk path for a file — the finished file or its ".!bt"
+    // in-progress copy, whichever exists. Empty if unavailable.
+    QString streamFilePath(int torrentIndex, int fileIndex) const;
+    // Total size of a file in bytes (0 if unavailable).
+    qint64 streamFileSize(int torrentIndex, int fileIndex) const;
+    // Is the byte at `byteInFile` already on disk (its piece complete)?
+    bool streamByteAvailable(int torrentIndex, int fileIndex, qint64 byteInFile) const;
+    // Contiguous on-disk bytes starting at `fromByte` (capped), so the server
+    // reads only what's safely written. 0 if the start byte isn't ready yet.
+    qint64 streamContiguousAvailableBytes(int torrentIndex, int fileIndex,
+                                          qint64 fromByte, qint64 cap = 8 * 1024 * 1024) const;
+    // Urgency-fetch a window of pieces from `startByte` forward (seek): sets
+    // increasing piece deadlines so libtorrent fetches them in playback order.
+    void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte,
+                                 int windowPieces = 24);
+
     // Rename one file in the torrent (libtorrent's rename_file). The path
     // is interpreted relative to the torrent's save_path.
     void renameFile(int torrentIndex, int fileIndex, const QString &newRelativePath);
@@ -454,6 +474,11 @@ private:
     // "completedTorrents". A torrent in this set is paused on resume and
     // displayed in the green "completed" state regardless of seeding flags.
     QSet<QString> m_completedTorrents;
+    // Snapshot of completed hashes at startup: a torrent that resumes already
+    // complete re-fires torrent_finished_alert (and may re-verify a sliver),
+    // so we suppress its "download complete" notification to avoid spamming it
+    // on every launch.
+    QSet<QString> m_completedAtStartup;
     // Info-hashes that bypass the active-downloads queue cap.
     QSet<QString> m_forceStartHashes;
     qint64 m_autoCompleteSeconds = 0; // 0 = disabled

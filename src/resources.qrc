@@ -20,6 +20,8 @@
 <file>icons/search.svg</file>
 <file>icons/rss.svg</file>
 <file>icons/grid.svg</file>
+<file>icons/discover.svg</file>
+<file>icons/hub.svg</file>
 <file>icons/list.svg</file>
 <file>icons/download.svg</file>
 <file>icons/upload.svg</file>
@@ -57,7 +59,8 @@
 <file>../src/qml/WelcomeDialog.qml</file>
 <file>../src/qml/ReleaseNotesDialog.qml</file>
 <file>../src/qml/AboutDialog.qml</file>
-<file>../src/qml/SearchWindow.qml</file>
+<file>../src/qml/PlayerWindow.qml</file>
+<file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/RssWindow.qml</file>
 <file>../src/qml/SettingsWindow.qml</file>
 <file>../src/qml/ShortcutsWindow.qml</file>
@@ -67,6 +70,10 @@
 <file>../src/qml/LogViewerWindow.qml</file>
 <file>../src/qml/DiagnosticsWindow.qml</file>
 <file>../src/qml/PairingDialog.qml</file>
+<file>../src/qml/NavRail.qml</file>
+<file>../src/qml/DiscoverView.qml</file>
+<file>../src/qml/SearchView.qml</file>
+<file>../src/qml/HubView.qml</file>
 <file>../src/qml/theme/Theme.qml</file>
 <file>../src/qml/theme/qmldir</file>
 <file>../src/qml/widgets/qmldir</file>
@@ -82,6 +89,7 @@
 <file>../src/qml/widgets/Eyebrow.qml</file>
 <file>../src/qml/widgets/EmptyState.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
+<file>../src/qml/widgets/PosterCard.qml</file>
 <file>../src/qml/widgets/DetailPeers.qml</file>
 <file>../src/qml/widgets/DetailFiles.qml</file>
 <file>../src/qml/widgets/DetailTrackers.qml</file>
@@ -91,6 +99,7 @@
 <file>fonts/Inter-Medium.ttf</file>
 <file>fonts/Inter-SemiBold.ttf</file>
 <file>fonts/Inter-Bold.ttf</file>
+<file>fonts/NewRocker-Regular.ttf</file>
 <file>../translations/en.json</file>
 <file>../translations/pt.json</file>
 <file>../translations/zh.json</file>

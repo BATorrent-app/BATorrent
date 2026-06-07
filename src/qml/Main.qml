@@ -21,7 +21,7 @@ Window {
     // floor wide enough that the full toolbar (labels + speed module) always
     // fits — below this the RowLayout would have to clip, which is what made
     // the old icon-only "compact" hack feel broken.
-    minimumWidth: 1100
+    minimumWidth: 1288   // +188 for the nav rail (content area stays >=1100 so the toolbar never clips)
     minimumHeight: 640
     color: Theme.bg
     title: "BATorrent"
@@ -258,6 +258,7 @@ Window {
         CtxItem { text: (i18n.language, i18n.t("tb_pause")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
         CtxItem { text: (i18n.language, i18n.t("tb_resume")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_play")); onTriggered: session.playSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stream")); onTriggered: session.streamSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
         Sep {}
@@ -394,7 +395,7 @@ Window {
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.showWin(searchWinLoader) }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: navRail.currentIndex = 2 }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
@@ -446,35 +447,43 @@ Window {
     // Background events → in-app toast (when the window is up) AND the native
     // OS notification (so it's seen when minimized/in the tray). Both, like the
     // legacy app.
+    // Unified notification: when the window is up, show the custom toast at the
+    // screen corner; when minimized / hidden in the tray, fall back to the native
+    // OS notification so it's seen with the app closed.
+    function notifyUser(title, body, level) {
+        var shown = win.visible
+                    && win.visibility !== Window.Minimized
+                    && win.visibility !== Window.Hidden
+        if (shown) {
+            toastHost.show(title, body, level)
+        } else if (trayIcon.available) {
+            // `supportsMessages` reads false on Windows even when showMessage
+            // works, so gate on `available`.
+            trayIcon.showMessage(title, body,
+                level === 2 ? Platform.SystemTrayIcon.Critical
+                : level === 1 ? Platform.SystemTrayIcon.Warning
+                : Platform.SystemTrayIcon.Information, 5000)
+        } else {
+            toastHost.show(title, body, level)
+        }
+    }
+
+    // background events (finished, error, kill switch, RSS)
     Connections {
         target: typeof notifications !== "undefined" ? notifications : null
         ignoreUnknownSignals: true
-        function onNotify(title, body, level) {
-            // Background-relevant events (finished, error, kill switch, RSS) go
-            // to the OS notification area like the legacy app, so they're visible
-            // even when BATorrent is minimized. `supportsMessages` reads false on
-            // Windows even when showMessage works, so gate on `available`; the
-            // in-app toast is only a fallback when there's no system tray at all.
-            if (trayIcon.available) {
-                trayIcon.showMessage(title, body,
-                    level === 2 ? Platform.SystemTrayIcon.Critical
-                    : level === 1 ? Platform.SystemTrayIcon.Warning
-                    : Platform.SystemTrayIcon.Information, 5000)
-            } else {
-                toastHost.show(title, body, level)
-            }
-        }
+        function onNotify(title, body, level) { win.notifyUser(title, body, level) }
     }
 
     // session-originated toasts (stream feedback, etc.)
     Connections {
         target: typeof session !== "undefined" ? session : null
         ignoreUnknownSignals: true
-        function onToast(title, body) { toastHost.show(title, body, 0) }
+        function onToast(title, body) { win.notifyUser(title, body, 0) }
     }
 
-    // in-app toast stack (overlays the whole window content)
-    ToastHost { id: toastHost }
+    // custom toast cards, pinned to the screen's bottom-right (native-like)
+    ToastOverlay { id: toastHost }
 
     TrayPopupWindow {
         id: trayPopup
@@ -708,7 +717,7 @@ Window {
                 BarItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
                 BarSep {}
-                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.showWin(searchWinLoader) }
+                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: navRail.currentIndex = 2 }
                 BarSep {}
                 BarItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
@@ -731,6 +740,41 @@ Window {
             }
         }
 
+        // ===== nav rail + content stack (4.0 hub shell) =====
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+
+            NavRail {
+                id: navRail
+                Layout.fillHeight: true
+                onSettingsClicked: win.showWin(settingsWinLoader)
+            }
+
+            StackLayout {
+                id: contentStack
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: navRail.currentIndex
+
+                // premium page switch: the new page fades + rises in
+                transform: Translate { id: pageShift }
+                onCurrentIndexChanged: pageSwitchAnim.restart()
+                SequentialAnimation {
+                    id: pageSwitchAnim
+                    ParallelAnimation {
+                        NumberAnimation { target: contentStack; property: "opacity"; from: 0.0; to: 1.0; duration: 190; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: pageShift; property: "y"; from: 12; to: 0; duration: 240; easing.type: Easing.OutCubic }
+                    }
+                }
+
+                // ----- page 0: Downloads (original main column) -----
+                ColumnLayout {
+                    spacing: 0
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
         // ================== TOOLBAR ==================
         Rectangle {
             Layout.fillWidth: true
@@ -744,28 +788,7 @@ Window {
                 anchors.rightMargin: Theme.sp4
                 spacing: Theme.sp2
 
-                // .brand (logo 30, padding-left 4)
-                Image {
-                    Layout.preferredWidth: 30
-                    Layout.preferredHeight: 30
-                    Layout.leftMargin: 4
-                    Layout.alignment: Qt.AlignVCenter
-                    source: "qrc:/images/logo.svg"
-                    sourceSize: Qt.size(60, 60)
-                    fillMode: Image.PreserveAspectFit
-                    layer.enabled: Theme.isLight
-                    layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
-                }
-                // .brand-div (1×26 hair, margin 0 4)
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.preferredHeight: 26
-                    Layout.leftMargin: 4
-                    Layout.rightMargin: 4
-                    Layout.alignment: Qt.AlignVCenter
-                    color: Theme.hair
-                }
-
+                // brand moved to the nav rail; toolbar starts at the actions
                 // G1: Abrir, Magnet
                 TBtn { label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/open.svg";  onClicked: openFileDlg.open() }
                 TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: magnetDlg.open() }
@@ -779,7 +802,7 @@ Window {
                 TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: removeDlg.open() }
                 TGrpDiv {}
                 // G4: Buscar, RSS
-                TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: win.showWin(searchWinLoader) }
+                TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: navRail.currentIndex = 2 }
                 TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: win.showWin(rssWinLoader) }
                 TGrpDiv {}
                 // G5: Config.
@@ -1080,43 +1103,8 @@ Window {
                     }
                 }
 
-                // .donate (♥ Doar)
-                Rectangle {
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredHeight: 34
-                    implicitWidth: donRow.implicitWidth + 26
-                    color: donMa.containsMouse ? Qt.rgba(229/255, 51/255, 43/255, 0.10) : "transparent"
-                    border.color: Qt.rgba(229/255, 51/255, 43/255, 0.4)
-                    border.width: 1
-                    radius: 8
-
-                    Row {
-                        id: donRow
-                        anchors.centerIn: parent
-                        spacing: 7
-                        IconImg {
-                            anchors.verticalCenter: parent.verticalCenter
-                            src: "qrc:/icons/heart.svg"
-                            tint: Theme.accentText
-                            s: 14
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: (i18n.language, i18n.t("action_donate"))
-                            color: Theme.accentText
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            font.family: Theme.fontSans
-                        }
-                    }
-                    MouseArea {
-                        id: donMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
-                    }
-                }
+                // donate moved to the nav rail (bottom) — it was cramped here
+                // and got clipped when the filter row filled up.
             }
         }
 
@@ -2242,6 +2230,21 @@ Window {
                 }
             }
         }
+                }
+                // ----- page 1: Discover -----
+                DiscoverView {
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    onOpenSearch: function(q) {
+                        if (typeof search !== "undefined") search.search("all", q)
+                        navRail.currentIndex = 2
+                    }
+                }
+                // ----- page 2: Search -----
+                SearchView { Layout.fillWidth: true; Layout.fillHeight: true }
+                // ----- page 3: HUB -----
+                HubView { id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true }
+            }
+        }
     }
 
     // ================== DRAG & DROP (.torrent / magnet) ==================
@@ -2429,7 +2432,7 @@ Window {
         onActionRequested: function(action) {
             if (action === "open") openFileDlg.open()
             else if (action === "magnet") magnetDlg.open()
-            else if (action === "search") win.showWin(searchWinLoader)
+            else if (action === "search") navRail.currentIndex = 2
             else if (action === "rss") win.showWin(rssWinLoader)
         }
     }
@@ -2451,7 +2454,6 @@ Window {
         if (!p || p.length === 0) return ""
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
-    Loader { id: searchWinLoader;    active: false; sourceComponent: SearchWindow {} }
     Loader { id: rssWinLoader;       active: false; sourceComponent: RssWindow {} }
     Loader { id: settingsWinLoader;  active: false; sourceComponent: SettingsWindow {} }
     Loader { id: shortcutsWinLoader; active: false; sourceComponent: ShortcutsWindow {} }
@@ -2459,6 +2461,22 @@ Window {
     Loader { id: removedWinLoader;   active: false; sourceComponent: RemovedHistoryWindow {} }
     Loader { id: logWinLoader;       active: false; sourceComponent: LogViewerWindow {} }
     Loader { id: diagWinLoader;      active: false; sourceComponent: DiagnosticsWindow {} }
+    Loader {
+        id: playerWinLoader; active: false
+        sourceComponent: PlayerWindow {
+            // closing the window tears the player down so reopening starts fresh,
+            // and refreshes the HUB so the watched-% bar reflects this session
+            onClosed: Qt.callLater(function() { playerWinLoader.active = false; if (hubPage) hubPage.refresh() })
+        }
+    }
+    Connections {
+        target: session
+        function onOpenPlayer(url, title, hash, fileIndex) {
+            playerWinLoader.active = true
+            var w = playerWinLoader.item
+            if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, title, hash, fileIndex) }
+        }
+    }
     InspectorDialog      { id: inspectorDlg }
     PairingDialog        { id: pairingDlg }
 

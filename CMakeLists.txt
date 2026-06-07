@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 3.0.4)
+project(BATorrent VERSION 4.0.0)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia Quick QuickWidgets QuickControls2)
 find_package(LibtorrentRasterbar REQUIRED)
 # Optional: QtKeychain stores credentials in the platform keyring (DPAPI on
@@ -38,9 +38,11 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/geoip.cpp
     src/app/nameparser.cpp
     src/app/metadataresolver.cpp
+    src/app/discoveryservice.cpp
     src/app/gamesourcemanager.cpp
     src/gui/qmlposterbridge.cpp
     src/webui/webserver.cpp
+    src/webui/streamserver.cpp
     ${RESOURCES}
     ${WIN_RC}
     ${MACOSX_APP_ICON}
@@ -94,7 +96,7 @@ if(WIN32)
     # break libtorrent headers (aligned_union.hpp uses std::max).
     target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601 NOMINMAX)
     # shell32/ole32: SHOpenFolderAndSelectItems for "reveal in Explorer"
-    target_link_libraries(BATorrent PRIVATE shell32 ole32)
+    target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi)
 endif()
 
 # Linux: install rules for icon and .desktop file

@@ -500,6 +500,7 @@ void AddonManager::searchTorrents(const QString &query, int category)
             r.seeders = obj.value("seeders").toVariant().toInt();
             r.leechers = obj.value("leechers").toVariant().toInt();
             r.category = obj.value("category").toString();
+            r.provider = QStringLiteral("Torrents");
             r.magnet = QString("magnet:?xt=urn:btih:%1&dn=%2%3")
                 .arg(infoHash, QUrl::toPercentEncoding(name), trackerParams);
 
@@ -697,6 +698,7 @@ QList<TorrentSearchResult> AddonManager::parseProviderResponse(
         r.seeders = obj.value(p.seedersPath).toVariant().toInt();
         r.leechers = obj.value(p.leechersPath).toVariant().toInt();
         r.category = obj.value("category").toString();
+        r.provider = p.name;
         r.magnet = QString("magnet:?xt=urn:btih:%1&dn=%2%3")
             .arg(infoHash, QUrl::toPercentEncoding(name), trackerParams);
         results.append(r);

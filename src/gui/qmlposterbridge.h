@@ -22,9 +22,12 @@
 
 class SessionManager;
 class MetadataResolver;
+class DiscoveryService;
 class GeoIpResolver;
 class TelegramNotifier;
 class WebServer;
+class QWindow;
+class QEvent;
 
 class QmlPosterModel : public QAbstractListModel
 {
@@ -210,7 +213,27 @@ public:
     Q_INVOKABLE int  selectedMaxSeedDays() const;
     Q_INVOKABLE void renameSelected(const QString &name);   // rename the torrent (file 0)
     Q_INVOKABLE QString diagnoseSelectedSlow() const;       // "why is this slow" report
-    Q_INVOKABLE void streamSelected();                      // prioritize video + open player
+    Q_INVOKABLE void streamSelected();                      // prioritize video + open EXTERNAL player
+    Q_INVOKABLE void playSelected();                        // prioritize video + open the embedded player
+    // Local-stream URL for a torrent's best video file (preps priorities too);
+    // empty if no video / no stream server / metadata not ready.
+    Q_INVOKABLE QString streamUrl(int row);
+    // Hand off to the OS media player for the exact file being watched.
+    Q_INVOKABLE void openExternalForHash(const QString &infoHash, int fileIndex);
+    // HUB (movies): the library of watchable video torrents (completed or with
+    // enough buffered to start), each with its best video file, cover, download
+    // progress and resume/watched position.
+    Q_INVOKABLE QVariantList movieLibrary() const;
+    // Open a library item in the embedded player (resolves row from info hash).
+    Q_INVOKABLE void playByHash(const QString &infoHash);
+    // HUB (games) — minimal: list game torrents (cover/progress) and launch them
+    // via a user-set executable (no auto-detection yet — improved gradually).
+    Q_INVOKABLE QVariantList gameLibrary() const;
+    Q_INVOKABLE QString gameExe(const QString &infoHash) const;        // saved exe path, "" if unset
+    Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
+    Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
+    Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
+    void setStreamPort(quint16 port) { m_streamPort = port; }
     Q_INVOKABLE void setSelectedCategory(const QString &category);
     Q_INVOKABLE void setSelectedTags(const QStringList &tags);
     Q_INVOKABLE void addTrackerToSelected(const QString &url);
@@ -292,6 +315,7 @@ signals:
     void previewPosterReady(const QString &infoHash, const QString &posterPath);
     void allDownloadsComplete();   // fired once when the last active download finishes
     void toast(const QString &title, const QString &body);   // in-app toast (stream feedback, etc.)
+    void openPlayer(const QString &url, const QString &title, const QString &infoHash, int fileIndex);
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
     // the user always picks save path / files — never a silent auto-download.
@@ -303,6 +327,7 @@ private slots:
 private:
     SessionManager *m_session;
     MetadataResolver *m_resolver;
+    quint16 m_streamPort = 0;
     int m_selectedIndex = -1;
     QList<int> m_selectedRows;
     GeoIpResolver *m_geoIp = nullptr;
@@ -312,6 +337,7 @@ private:
     QString m_streamFilePath;
     int m_streamIndex = -1;
     int m_streamFileIdx = -1;
+    int m_streamTries = 0;          // stop polling for buffer after a while (dead torrent)
 
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;
@@ -395,11 +421,19 @@ signals:
     void profilesChanged();
     void osSchemeChanged();
 
+protected:
+    // Catch each top-level window's Show to paint its native title bar dark/light
+    // to match the app theme (Windows leaves it white otherwise).
+    bool eventFilter(QObject *o, QEvent *e) override;
+
 private:
     void loadProfiles();
     void saveProfiles();
     QVariantMap activeMap() const;
     static QVariantMap defaultProfile(const QString &name);
+    bool darkTitleBar() const;                     // true unless a light-ish theme
+    static void applyTitleBar(QWindow *w, bool dark);
+    void refreshTitleBars();                       // re-apply to all open windows
 
     QString m_themeName;
     bool m_anime = true;
@@ -442,8 +476,11 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QVariantList sources READ sources NOTIFY sourcesChanged)
     Q_PROPERTY(QVariantList categories READ categories CONSTANT)
     Q_PROPERTY(QVariantList results READ results NOTIFY resultsChanged)
-    Q_PROPERTY(QString mode READ mode NOTIFY modeChanged)        // catalog|streams|torrent|games
+    Q_PROPERTY(QString activeQuery READ activeQuery NOTIFY resultsChanged) // for client-side relevance ranking
+    Q_PROPERTY(QString mode READ mode NOTIFY modeChanged)        // titles|catalog|streams|torrent|games
     Q_PROPERTY(bool inStreams READ inStreams NOTIFY modeChanged)
+    Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY modeChanged) // sources view reachable from a title/catalog
+    Q_PROPERTY(bool singleTitleView READ singleTitleView NOTIFY modeChanged) // list is one picked title → drop per-row covers
     Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
 public:
@@ -452,8 +489,11 @@ public:
     QVariantList sources() const;
     QVariantList categories() const;
     QVariantList results() const;
+    QString activeQuery() const;
     QString mode() const;
     bool inStreams() const;
+    bool canGoBack() const;
+    bool singleTitleView() const;
     bool searching() const;
     QString statusText() const;
 
@@ -468,6 +508,16 @@ public:
     Q_INVOKABLE void removeGameSource(const QString &url);
     Q_INVOKABLE void refreshGames();
 
+    // Lazily resolve a TMDB cover for a torrent row (by its info hash) as it
+    // scrolls into view — mirrors the Downloads grid's on-demand resolution.
+    void setResolver(MetadataResolver *r);
+    Q_INVOKABLE void resolveCover(int index);
+
+    // Title-first search (default "Tudo"): resolve the query to real works via
+    // DiscoveryService, then drill into a picked title's torrents.
+    void setDiscovery(DiscoveryService *d);
+    Q_INVOKABLE void searchRaw();   // escape hatch: flat aggregate over every source
+
 signals:
     void sourcesChanged();
     void resultsChanged();
@@ -475,6 +525,7 @@ signals:
     void searchingChanged();
     void statusChanged();
     void gameSourcesChanged();
+    void coverReady(const QString &infoHash, const QString &posterPath);
 
 private:
     void setSearching(bool on);
@@ -485,6 +536,22 @@ private:
     void appendTorrentRows(const QList<TorrentSearchResult> &results);
     void finishAggregateSource();
     static QString detectRepacker(const QString &name);
+    // Parse quality/source/codec/hdr tokens out of a release name for filtering.
+    static void fillMediaAttrs(QVariantMap &m, const QString &name);
+    // Flat aggregate search over every enabled source (the old "Tudo" behavior).
+    void rawAggregateSearch(const QString &q, int categoryCode);
+    // Type-scoped drill-down for a picked title: games hit game catalogs + the
+    // games category; movies/series hit video torrents only (no game catalogs).
+    void searchSourcesForWork(const QString &title, const QString &year, const QString &type);
+
+    MetadataResolver *m_resolver = nullptr;
+    DiscoveryService *m_discovery = nullptr;
+    QString m_streamHintPoster;         // activated catalog item's poster, for stream rows
+    QVariantList m_titleCache;          // works grid, restored when leaving the sources view
+    bool m_fromTitles = false;          // sources view was opened by picking a title
+    bool m_titleSources = false;        // current flat list is one picked title's torrents
+    QString m_titleQuery;               // the free-text query behind the current titles
+    QString m_activeQuery;              // effective query of the current flat list (for relevance)
 
     SessionManager *m_session;
     QString m_mode;

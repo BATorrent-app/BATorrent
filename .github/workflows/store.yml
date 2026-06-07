@@ -67,7 +67,13 @@ jobs:
       - name: Convert PNG to ICO
         run: magick src/images/logo1.png -define icon:auto-resize=256,64,48,32,16 src/images/logo1.ico
 
-      - name: Build (Store variant — auto-updater disabled)
+      - name: Build (Store variant — auto-updater disabled, Discover hidden)
+        env:
+          # Discover is hidden in Store builds, but Search (title-first) and the
+          # HUB still use TMDB/IGDB for covers/metadata, so keys are still baked.
+          BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
+          BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `

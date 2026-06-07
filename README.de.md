@@ -63,7 +63,7 @@ Ich bin ein einzelner Entwickler in Brasilien. Ich wollte einen Torrent-Client, 
 | | |
 |---|---|
 | 🔒 **Privatsphäre zuerst** | VPN-Interface-Bindung + **Kill Switch** (kappt allen Verkehr, wenn der Tunnel abbricht), PT-Modus für private Tracker, Tor-Voreinstellung, anonymer Handshake, Anti-Leecher-Blockade |
-| 🔎 **Finden & hinzufügen** | Integrierte Suche (inkl. offene CIS/RuTor-Quellen, ohne Login), Smart Paste (Magnet / `thunder://` / Hash per Strg+V), RSS-Auto-Download mit Regex-Filtern, Drag & Drop |
+| 🔎 **Finden & hinzufügen** | Integrierte Suche (inkl. offene CIS/RuTor-Quellen, ohne Login), Smart Paste (Magnet / `.torrent` / `thunder://` / Hash per Strg+V), RSS-Auto-Download mit Regex-Filtern, Drag & Drop |
 | 📱 **Von überall steuern** | Browser-WebUI mit **QR-Kopplung** — vom Handy scannen, keine IPs tippen. Der QR-Code wird lokal erzeugt; deine Adresse verlässt den Rechner nie |
 | 📺 **Ansehen & ordnen** | Streamen während des Downloads, automatisches Entpacken von Archiven, Kategorien + Tags, Plex/Jellyfin/Emby-Bibliotheksaktualisierung bei Abschluss |
 | 🔔 **Auf dem Laufenden bleiben** | Native Desktop-Benachrichtigungen, Telegram-Alerts, Discord Rich Presence („Lädt X · 67%") |

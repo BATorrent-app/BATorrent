@@ -5,6 +5,7 @@
 #include "qmlposterbridge.h"
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
+#include "../app/discoveryservice.h"
 #include "../app/nameparser.h"
 #include "../app/rssmanager.h"
 #include "../app/addonmanager.h"
@@ -29,11 +30,21 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QDirIterator>
 #include <QProcess>
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QApplication>
+#include <QWindow>
+#include <QEvent>
+#ifdef Q_OS_WIN
+#  include <windows.h>
+#  include <dwmapi.h>
+#  ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#    define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#  endif
+#endif
 #include <QCoreApplication>
 #include <QStyleHints>
 #include <QPainter>
@@ -532,6 +543,17 @@ void QmlSessionBridge::smartPaste()
 {
     QString clip = QGuiApplication::clipboard()->text().trimmed();
     if (clip.isEmpty()) return;
+    // Xunlei thunder:// links: base64 of "AA" + the real URL + "ZZ". Decode, then
+    // fall through to the normal handling (it usually wraps a magnet or .torrent).
+    if (clip.startsWith(QStringLiteral("thunder://"), Qt::CaseInsensitive)) {
+        QString dec = QString::fromUtf8(
+            QByteArray::fromBase64(clip.mid(10).toLatin1())).trimmed();
+        if (dec.startsWith(QStringLiteral("AA"), Qt::CaseInsensitive)
+            && dec.endsWith(QStringLiteral("ZZ"), Qt::CaseInsensitive))
+            dec = dec.mid(2, dec.size() - 4);
+        clip = dec.trimmed();
+        if (clip.isEmpty()) return;
+    }
     if (clip.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)) {
         addMagnetUri(clip);
         return;
@@ -781,6 +803,35 @@ QString QmlSessionBridge::diagnoseSelectedSlow() const
     return lines.join('\n');
 }
 
+// Prefer a content-sniffing player (VLC/mpv/IINA) — they play a still-downloading
+// or ".!bt"-suffixed file that the OS default handler would refuse — then fall back.
+static bool launchMediaPlayer(const QString &path)
+{
+#if defined(Q_OS_MACOS)
+    for (const QString &app : {QStringLiteral("VLC"), QStringLiteral("IINA"),
+                               QStringLiteral("mpv"), QStringLiteral("QuickTime Player")})
+        if (QProcess::startDetached(QStringLiteral("open"), {QStringLiteral("-a"), app, path}))
+            return true;
+    return QProcess::startDetached(QStringLiteral("open"), {path});
+#elif defined(Q_OS_WIN)
+    static const QStringList exes = {
+        QStringLiteral("C:/Program Files/VideoLAN/VLC/vlc.exe"),
+        QStringLiteral("C:/Program Files (x86)/VideoLAN/VLC/vlc.exe"),
+        QStringLiteral("C:/Program Files/mpv/mpv.exe")};
+    for (const QString &exe : exes)
+        if (QFile::exists(exe) && QProcess::startDetached(exe, {path}))
+            return true;
+    for (const QString &cmd : {QStringLiteral("vlc"), QStringLiteral("mpv")})
+        if (QProcess::startDetached(cmd, {path})) return true;
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+#else
+    for (const QString &cmd : {QStringLiteral("vlc"), QStringLiteral("mpv"),
+                               QStringLiteral("celluloid")})
+        if (QProcess::startDetached(cmd, {path})) return true;
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+#endif
+}
+
 void QmlSessionBridge::streamSelected()
 {
     if (!hasSelection()) return;
@@ -800,6 +851,7 @@ void QmlSessionBridge::streamSelected()
     }
     if (bestIdx < 0) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
 
+    m_session->resumeTorrent(row);   // a paused torrent would never buffer
     m_session->setSequentialDownload(row, true);
     for (int i = 0; i < int(files.size()); ++i)
         if (i != bestIdx) m_session->setFilePriority(row, i, 0);
@@ -807,32 +859,299 @@ void QmlSessionBridge::streamSelected()
     m_session->prioritizeFilePieceBoundaries(row, bestIdx);
 
     m_streamIndex = row; m_streamFileIdx = bestIdx;
-    m_streamFilePath = info.savePath + "/" + files[bestIdx].path;
+    m_streamFilePath = stripBt(info.savePath + "/" + files[bestIdx].path);   // nice name, no ".!bt"
+    m_streamTries = 0;
 
     if (!m_streamTimer) { m_streamTimer = new QTimer(this); m_streamTimer->setInterval(2000); }
     QObject::disconnect(m_streamTimer, nullptr, nullptr, nullptr);
-    connect(m_streamTimer, &QTimer::timeout, this, [this]() {
+    connect(m_streamTimer, &QTimer::timeout, this, [this, stripBt]() {
         if (m_streamIndex < 0 || m_streamIndex >= m_session->torrentCount()) { m_streamTimer->stop(); return; }
         auto files = m_session->filesAt(m_streamIndex);
         if (m_streamFileIdx >= int(files.size())) { m_streamTimer->stop(); return; }
-        float prog = files[m_streamFileIdx].progress;
-        qint64 done = qint64(prog * files[m_streamFileIdx].size);
-        if (QFile::exists(m_streamFilePath) && (prog >= 0.02f || done > 5*1024*1024)) {
+        TorrentInfo cur = m_session->torrentAt(m_streamIndex);
+        // Row may have shifted to a different torrent (list reordered/removed) — bail.
+        if (stripBt(cur.savePath + "/" + files[m_streamFileIdx].path) != m_streamFilePath) {
+            m_streamTimer->stop(); return;
+        }
+        // Open the finished file, or the in-progress ".!bt" if that's what's on disk.
+        QString actual = m_streamFilePath;
+        if (!QFile::exists(actual) && QFile::exists(actual + QStringLiteral(".!bt")))
+            actual += QStringLiteral(".!bt");
+        const float prog = files[m_streamFileIdx].progress;
+        const qint64 done = qint64(prog * files[m_streamFileIdx].size);
+        if (QFile::exists(actual) && (prog >= 0.02f || done > 5*1024*1024)) {
             m_streamTimer->stop();
-            bool opened = false;
-#ifdef Q_OS_MACOS
-            for (const QString &app : {"VLC","IINA","QuickTime Player"})
-                if (QProcess::startDetached("open", {"-a", app, m_streamFilePath})) { opened = true; break; }
-            if (!opened) opened = QProcess::startDetached("open", {m_streamFilePath});
-#else
-            opened = QDesktopServices::openUrl(QUrl::fromLocalFile(m_streamFilePath));
-#endif
-            emit toast(tr_("ctx_stream"), opened ? tr_("stream_started").arg(m_session->torrentAt(m_streamIndex).name)
-                                                       : tr_("stream_no_player"));
+            const bool opened = launchMediaPlayer(actual);
+            emit toast(tr_("ctx_stream"), opened ? tr_("stream_started").arg(cur.name)
+                                                 : tr_("stream_no_player"));
+        } else if (++m_streamTries > 300) {   // ~10 min with no buffer (dead torrent) — give up
+            m_streamTimer->stop();
         }
     });
     m_streamTimer->start();
     emit toast(tr_("ctx_stream"), tr_("stream_started").arg(info.name));
+}
+
+QString QmlSessionBridge::streamUrl(int row)
+{
+    if (m_streamPort == 0) return {};
+    if (row < 0 || row >= m_session->torrentCount()) return {};
+    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
+    auto files = m_session->filesAt(row);
+    auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
+    int bestIdx = -1; qint64 bestSize = 0;
+    for (int i = 0; i < int(files.size()); ++i) {
+        const QString mp = stripBt(files[i].path);
+        for (const auto &ext : videoExts)
+            if (mp.endsWith(ext, Qt::CaseInsensitive)) {
+                if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
+                break;
+            }
+    }
+    if (bestIdx < 0) return {};
+    const QString hash = m_session->torrentHashAt(row);
+    if (hash.isEmpty()) return {};
+
+    // same prep as the external stream: resume, sequential, only the video
+    // file at full priority, and boost the header/index pieces.
+    m_session->resumeTorrent(row);
+    m_session->setSequentialDownload(row, true);
+    for (int i = 0; i < int(files.size()); ++i)
+        if (i != bestIdx) m_session->setFilePriority(row, i, 0);
+    m_session->setFilePriority(row, bestIdx, 7);
+    m_session->prioritizeFilePieceBoundaries(row, bestIdx);
+
+    return QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(bestIdx);
+}
+
+void QmlSessionBridge::openExternalForHash(const QString &infoHash, int fileIndex)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return;
+    const QString path = m_session->streamFilePath(row, fileIndex);
+    if (path.isEmpty()) return;
+    if (!launchMediaPlayer(path))
+        emit toast(tr_("ctx_stream"), tr_("stream_no_player"));
+}
+
+void QmlSessionBridge::playSelected()
+{
+    if (!hasSelection()) return;
+    const int row = m_selectedIndex;
+    const QString url = streamUrl(row);
+    if (url.isEmpty()) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
+    const TorrentInfo info = m_session->torrentAt(row);
+    const QString hash = m_session->torrentHashAt(row);
+    const int fileIdx = url.section('/', -1).toInt();
+    emit openPlayer(url, info.name, hash, fileIdx);
+}
+
+QVariantList QmlSessionBridge::movieLibrary() const
+{
+    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
+    auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
+    QSettings s;
+    QVariantList out;
+    const int n = m_session->torrentCount();
+    for (int row = 0; row < n; ++row) {
+        auto files = m_session->filesAt(row);
+        int bestIdx = -1; qint64 bestSize = 0;
+        for (int i = 0; i < int(files.size()); ++i) {
+            const QString mp = stripBt(files[i].path);
+            for (const auto &ext : videoExts)
+                if (mp.endsWith(ext, Qt::CaseInsensitive)) {
+                    if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
+                    break;
+                }
+        }
+        if (bestIdx < 0) continue;                       // no video file
+
+        const TorrentInfo info = m_session->torrentAt(row);
+        const float fprog = files[bestIdx].progress;
+        const qint64 done = qint64(double(fprog) * files[bestIdx].size);
+        const bool watchable = info.completed || fprog >= 0.02f || done > 5 * 1024 * 1024;
+        if (!watchable) continue;                        // not enough buffered to start
+
+        const QString hash = m_session->torrentHashAt(row);
+        if (hash.isEmpty()) continue;
+
+        QString poster, title = info.name;
+        int year = 0;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const auto meta = m_resolver->cached(hash);
+            if (meta.valid) {
+                if (!meta.posterPath.isEmpty()) poster = QUrl::fromLocalFile(meta.posterPath).toString();
+                if (!meta.title.isEmpty()) title = meta.title;
+                year = meta.year;
+            }
+        }
+
+        const QString rk = QStringLiteral("resume_%1_%2").arg(hash).arg(bestIdx);
+        const qint64 resumeMs = s.value(rk, 0).toLongLong();
+        const qint64 durMs    = s.value(rk + QStringLiteral("_dur"), 0).toLongLong();
+        const qint64 resumeAt = s.value(rk + QStringLiteral("_at"), 0).toLongLong();
+
+        QVariantMap m;
+        m["infoHash"]   = hash;
+        m["title"]      = title;
+        m["year"]       = year > 0 ? QString::number(year) : QString();
+        m["poster"]     = poster;
+        m["fileIndex"]  = bestIdx;
+        m["progress"]   = double(fprog);                 // download progress 0..1
+        m["completed"]  = info.completed;
+        m["resumeMs"]   = resumeMs;
+        m["resumeAt"]   = resumeAt;                       // last-watched timestamp (ms)
+        m["watchedPct"] = (durMs > 0 && resumeMs > 0) ? double(resumeMs) / double(durMs) : 0.0;
+        out << m;
+    }
+    return out;
+}
+
+void QmlSessionBridge::playByHash(const QString &infoHash)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return;
+    const QString url = streamUrl(row);                  // preps priorities + picks the best video
+    if (url.isEmpty()) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
+    const TorrentInfo info = m_session->torrentAt(row);
+    const int fileIdx = url.section('/', -1).toInt();
+    emit openPlayer(url, info.name, infoHash, fileIdx);
+}
+
+QVariantList QmlSessionBridge::gameLibrary() const
+{
+    QVariantList out;
+    const int n = m_session->torrentCount();
+    for (int row = 0; row < n; ++row) {
+        const TorrentInfo info = m_session->torrentAt(row);
+        const QString hash = m_session->torrentHashAt(row);
+        if (hash.isEmpty()) continue;
+
+        bool isGame = false;
+        QString poster, title;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const auto meta = m_resolver->cached(hash);
+            if (meta.valid && meta.contentType == ContentType::Game) {
+                isGame = true;
+                title = meta.title;
+                if (!meta.posterPath.isEmpty()) poster = QUrl::fromLocalFile(meta.posterPath).toString();
+            }
+        }
+        if (!isGame) {
+            const ParsedName pn = NameParser::parse(info.name);
+            if (pn.contentType == ContentType::Game) {
+                isGame = true;
+                title = pn.cleanTitle.isEmpty() ? info.name : pn.cleanTitle;
+            } else {
+                bool hasExe = false, hasVideo = false;
+                const auto files = m_session->filesAt(row);
+                for (const auto &f : files) {
+                    const QString p = f.path.toLower();
+                    if (p.endsWith(QStringLiteral(".exe"))) hasExe = true;
+                    else if (p.endsWith(QStringLiteral(".mkv")) || p.endsWith(QStringLiteral(".mp4"))
+                             || p.endsWith(QStringLiteral(".avi"))) hasVideo = true;
+                }
+                if (hasExe && !hasVideo) { isGame = true; title = pn.cleanTitle.isEmpty() ? info.name : pn.cleanTitle; }
+            }
+        }
+        if (!isGame) continue;
+
+        QVariantMap m;
+        m["infoHash"]  = hash;
+        m["title"]     = title.isEmpty() ? info.name : title;
+        m["poster"]    = poster;
+        m["progress"]   = double(info.progress);
+        m["completed"]  = info.completed;
+        m["hasExe"]     = !gameExe(hash).isEmpty();
+        m["lastPlayed"] = QSettings().value(QStringLiteral("gamePlayed/") + hash, 0).toLongLong();
+        out << m;
+    }
+    return out;
+}
+
+QString QmlSessionBridge::gameExe(const QString &infoHash) const
+{
+    return QSettings().value(QStringLiteral("gameExe/") + infoHash).toString();
+}
+
+void QmlSessionBridge::setGameExe(const QString &infoHash, const QString &fileUrl)
+{
+    const QString path = fileUrl.startsWith(QStringLiteral("file:")) ? QUrl(fileUrl).toLocalFile() : fileUrl;
+    if (path.isEmpty()) return;
+    QSettings().setValue(QStringLiteral("gameExe/") + infoHash, path);
+}
+
+QString QmlSessionBridge::gameFolder(const QString &infoHash) const
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return {};
+    const TorrentInfo info = m_session->torrentAt(row);
+    const QString root = info.savePath + QStringLiteral("/") + info.name;
+    return QFileInfo(root).isDir() ? root : info.savePath;
+}
+
+// Best-guess game executable inside a folder. Skips redists/uninstallers,
+// treats setup/installer separately, and prefers the largest .exe near the
+// root (where a game's main binary usually lives). A heuristic — the user can
+// always override via "Set executable…". Returns "" if nothing runnable.
+static QString autodetectGameExe(const QString &folder, bool *isInstaller)
+{
+    if (isInstaller) *isInstaller = false;
+    if (folder.isEmpty()) return {};
+    static const QStringList skip = {
+        "unins", "redist", "vcredist", "vc_redist", "directx", "dxsetup", "dotnet",
+        "dotnetfx", "oalinst", "_commonredist", "prereq", "crashreport", "crashpad",
+        "python", "benchmark", "config", "settings", "cleanup" };
+    static const QStringList installerHints = { "setup", "install" };
+
+    QString bestGame, installer;
+    qint64 bestScore = -1;
+    int scanned = 0;
+    QDirIterator it(folder, {QStringLiteral("*.exe")}, QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext() && scanned < 4000) {
+        const QString path = it.next();
+        ++scanned;
+        const QString lower = QFileInfo(path).fileName().toLower();
+        bool skipIt = false;
+        for (const auto &s : skip) if (lower.contains(s)) { skipIt = true; break; }
+        if (skipIt) continue;
+        bool inst = false;
+        for (const auto &s : installerHints) if (lower.contains(s)) { inst = true; break; }
+        if (inst) { if (installer.isEmpty()) installer = path; continue; }
+
+        const QString rel = path.mid(folder.size());
+        const int depth = rel.count(QLatin1Char('/'));
+        qint64 score = QFileInfo(path).size();
+        if (depth <= 1) score += qint64(800) * 1024 * 1024;            // root binary strongly preferred
+        if (lower.contains("launcher")) score -= qint64(300) * 1024 * 1024;
+        if (score > bestScore) { bestScore = score; bestGame = path; }
+    }
+    if (!bestGame.isEmpty()) return bestGame;
+    if (!installer.isEmpty()) { if (isInstaller) *isInstaller = true; return installer; }
+    return {};
+}
+
+void QmlSessionBridge::launchGame(const QString &infoHash)
+{
+    QString exe = gameExe(infoHash);              // a manual override always wins
+    bool isInstaller = false;
+    if (exe.isEmpty() || !QFile::exists(exe))
+        exe = autodetectGameExe(gameFolder(infoHash), &isInstaller);
+
+    if (!exe.isEmpty() && QFile::exists(exe)) {
+        const QString wd = QFileInfo(exe).absolutePath();
+        if (QProcess::startDetached(exe, {}, wd)) {
+            QSettings().setValue(QStringLiteral("gamePlayed/") + infoHash, QDateTime::currentMSecsSinceEpoch());
+            emit toast(isInstaller ? tr_("hub_game_installing") : tr_("hub_game_launch"),
+                       QFileInfo(exe).completeBaseName());
+            return;
+        }
+    }
+    // nothing runnable found → open the folder so the user can run/set it
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return;
+    const TorrentInfo info = m_session->torrentAt(row);
+    revealTorrentRoot(info.savePath, info.name);
 }
 
 void QmlSessionBridge::setSelectedCategory(const QString &category)
@@ -1437,6 +1756,7 @@ void QmlSessionBridge::performShutdown()
 
 QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
 {
+    qApp->installEventFilter(this);   // paint each window's native title bar (Windows)
     QSettings s;
     m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("dark")).toString();
     m_anime = s.value(QStringLiteral("qmlAnime"), false).toBool();
@@ -1466,6 +1786,43 @@ void QmlThemeBridge::setThemeName(const QString &n)
     m_themeName = n;
     QSettings().setValue(QStringLiteral("qmlThemeName"), n);
     emit changed();
+    refreshTitleBars();   // recolor native title bars to match the new theme
+}
+
+// ---- native title bar (Windows leaves it light regardless of theme) ----
+
+bool QmlThemeBridge::eventFilter(QObject *o, QEvent *e)
+{
+    if (e->type() == QEvent::Show) {
+        if (auto *w = qobject_cast<QWindow *>(o))
+            applyTitleBar(w, darkTitleBar());
+    }
+    return QObject::eventFilter(o, e);
+}
+
+bool QmlThemeBridge::darkTitleBar() const
+{
+    // light-ish themes → light title bar; dark/midnight/custom → dark.
+    return !(m_themeName == QLatin1String("light") || m_themeName == QLatin1String("sakura"));
+}
+
+void QmlThemeBridge::applyTitleBar(QWindow *w, bool dark)
+{
+#ifdef Q_OS_WIN
+    if (!w) return;
+    const BOOL on = dark ? TRUE : FALSE;
+    DwmSetWindowAttribute(reinterpret_cast<HWND>(w->winId()),
+                          DWMWA_USE_IMMERSIVE_DARK_MODE, &on, sizeof(on));
+#else
+    Q_UNUSED(w); Q_UNUSED(dark);
+#endif
+}
+
+void QmlThemeBridge::refreshTitleBars()
+{
+    const bool dark = darkTitleBar();
+    const auto windows = QGuiApplication::topLevelWindows();
+    for (QWindow *w : windows) applyTitleBar(w, dark);
 }
 
 bool QmlThemeBridge::anime() const { return m_anime; }
@@ -1814,6 +2171,9 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
             m["sub"] = it.type;
             m["sizeStr"] = it.year > 0 ? QString::number(it.year) : QString();
             m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+            m["poster"] = it.poster; m["coverHash"] = "";
+            m["seedsN"] = 0; m["sizeBytes"] = 0;
+            fillMediaAttrs(m, it.name);
             m_results << m;
         }
         emit resultsChanged();
@@ -1830,8 +2190,13 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
             QVariantMap m;
             m["name"] = s.title;
             m["sub"] = s.addonName;
+            m["provider"] = s.addonName;
             m["sizeStr"] = s.size > 0 ? formatSize(s.size) : QString();
             m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+            m["poster"] = m_streamHintPoster; m["coverHash"] = "";
+            m["quality"] = s.quality;
+            m["seedsN"] = 0; m["sizeBytes"] = s.size;
+            fillMediaAttrs(m, s.title);
             m_results << m;
         }
         emit resultsChanged();
@@ -1893,7 +2258,208 @@ QString QmlSearchBridge::detectRepacker(const QString &name)
     if (lower.contains("codex")) return "CODEX";
     if (lower.contains("plaza")) return "PLAZA";
     if (lower.contains("skidrow")) return "SKIDROW";
+    if (lower.contains("kaoskrew") || lower.contains("kaos krew")) return "KaOsKrew";
+    if (lower.contains("tenoke")) return "TENOKE";
+    if (lower.contains("empress")) return "EMPRESS";
+    if (lower.contains("razor1911") || lower.contains("razor 1911")) return "Razor1911";
+    if (lower.contains("goldberg")) return "Goldberg";
+    if (lower.contains("0xdeadc0de") || lower.contains("0xdeadcode")) return "0xdeadc0de";
+    if (lower.contains("masquerade")) return "Masquerade";
+    if (lower.contains("chovka")) return "Chovka";
+    if (lower.contains("tinyrepacks") || lower.contains("tiny repacks")) return "Tiny Repacks";
+    if (lower.contains("cpy")) return "CPY";
+    if (lower.contains("-flt") || lower.contains("flt]")) return "FLT";
+    if (lower.contains("-rune") || lower.contains("rune]")) return "RUNE";
     return "";
+}
+
+void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
+{
+    auto has = [&](const char *pat) {
+        return name.contains(QRegularExpression(QLatin1String(pat),
+                                                QRegularExpression::CaseInsensitiveOption));
+    };
+    if (m.value(QStringLiteral("quality")).toString().isEmpty()) {
+        QString q;
+        if (has("2160p|\\b4k\\b|\\buhd\\b")) q = QStringLiteral("4K");
+        else if (has("1080p")) q = QStringLiteral("1080p");
+        else if (has("720p")) q = QStringLiteral("720p");
+        else if (has("480p|360p")) q = QStringLiteral("480p");
+        m["quality"] = q;
+    }
+    QString src;
+    if (has("remux")) src = QStringLiteral("Remux");
+    else if (has("blu-?ray|\\bbdrip\\b|\\bbrrip\\b")) src = QStringLiteral("BluRay");
+    else if (has("web-?dl|web-?rip|\\bweb\\b")) src = QStringLiteral("WEB");
+    else if (has("\\bhdtv\\b|\\bpdtv\\b")) src = QStringLiteral("HDTV");
+    else if (has("dvdrip|\\bdvd\\b")) src = QStringLiteral("DVD");
+    else if (has("\\bcam\\b|hdcam|telesync|\\bts\\b")) src = QStringLiteral("CAM");
+    m["source"] = src;
+    QString codec;
+    if (has("x265|h\\.?265|hevc")) codec = QStringLiteral("HEVC");
+    else if (has("x264|h\\.?264|\\bavc\\b")) codec = QStringLiteral("x264");
+    else if (has("av1")) codec = QStringLiteral("AV1");
+    m["codec"] = codec;
+    m["hdr"] = has("\\bhdr\\b|hdr10|dolby ?vision");
+}
+
+void QmlSearchBridge::setResolver(MetadataResolver *r)
+{
+    m_resolver = r;
+    if (!m_resolver) return;
+    connect(m_resolver, &MetadataResolver::metadataReady, this,
+            [this](const QString &infoHash, const MetadataResult &meta) {
+        if (!meta.valid || meta.posterPath.isEmpty()) return;
+        for (auto &v : m_results) {
+            QVariantMap m = v.toMap();
+            if (m.value(QStringLiteral("coverHash")).toString() == infoHash
+                && m.value(QStringLiteral("poster")).toString().isEmpty()) {
+                m["poster"] = meta.posterPath;
+                v = m;
+            }
+        }
+        emit coverReady(infoHash, meta.posterPath);
+    });
+}
+
+void QmlSearchBridge::resolveCover(int index)
+{
+    if (!m_resolver || index < 0 || index >= m_results.size()) return;
+    const QVariantMap m = m_results[index].toMap();
+    if (!m.value(QStringLiteral("poster")).toString().isEmpty()) return;
+    const QString hash = m.value(QStringLiteral("coverHash")).toString();
+    if (hash.isEmpty()) return;
+    if (m_resolver->hasCached(hash)) {
+        const auto meta = m_resolver->cached(hash);
+        if (meta.valid && !meta.posterPath.isEmpty()) {
+            QVariantMap mm = m;
+            mm["poster"] = meta.posterPath;
+            m_results[index] = mm;
+            emit coverReady(hash, meta.posterPath);
+        }
+        return;
+    }
+    m_resolver->resolve(hash, m.value(QStringLiteral("name")).toString());
+}
+
+void QmlSearchBridge::setDiscovery(DiscoveryService *d)
+{
+    m_discovery = d;
+    if (!m_discovery) return;
+    connect(m_discovery, &DiscoveryService::titleResults, this,
+            [this](const QString &query, const QVariantList &works) {
+        if (query != m_titleQuery || m_mode != QLatin1String("titles")) return;   // stale
+        m_results.clear();
+        m_resultMagnets.clear();
+        m_resultTitles.clear();
+        for (const QVariant &v : works) {
+            const QVariantMap w = v.toMap();
+            QVariantMap row;
+            row["name"]    = w.value(QStringLiteral("title"));
+            row["title"]   = w.value(QStringLiteral("title"));
+            row["sub"]     = w.value(QStringLiteral("type"));
+            row["sizeStr"] = w.value(QStringLiteral("year"));
+            row["year"]    = w.value(QStringLiteral("year"));
+            row["type"]    = w.value(QStringLiteral("type"));
+            row["poster"]  = w.value(QStringLiteral("poster"));
+            row["rating"]  = w.value(QStringLiteral("rating"));
+            row["coverHash"] = QString();
+            row["isTitle"] = true;
+            m_results << row;
+        }
+        m_titleCache = m_results;
+        setSearching(false);
+        // Stay in the grid even when empty — the page shows an empty state with a
+        // "raw results" escape, so the flow is consistent (never silently flips).
+        setStatus(m_results.isEmpty() ? QStringLiteral("Nenhum título encontrado")
+                                      : QString("%1 títulos").arg(m_results.size()));
+        emit resultsChanged();
+    });
+}
+
+void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &year, const QString &type)
+{
+    m_results.clear();
+    m_resultMagnets.clear();
+    m_resultTitles.clear();
+    m_torrentCache.clear();
+    m_gameCache.clear();
+    m_pendingGameQuery.clear();
+    emit resultsChanged();
+
+    m_activeQuery = title;
+    auto &mgr = AddonManager::instance();
+    const bool isGame = (type == QLatin1String("game"));
+    m_aggregate = true;
+    m_titleSources = true;          // rows are one picked title → page drops per-row covers
+    m_isGameSearch = isGame;
+    setMode("all");
+    setSearching(true);
+    setStatus("Buscando…");
+    m_pendingSources = 0;
+
+    if (isGame) {
+        auto &gsm = GameSourceManager::instance();
+        if (gsm.gameCount() > 0) appendGameRows(gsm.search(title));
+        else if (!gsm.sources().isEmpty()) { m_pendingGameQuery = title; ++m_pendingSources; gsm.refresh(); }
+    }
+    // movies disambiguate well with a year; games/series search cleaner by title
+    const QString q = (type == QLatin1String("movie") && !year.isEmpty())
+                    ? title + QLatin1Char(' ') + year : title;
+    const int cat = isGame ? 400 : 200;   // 400 = games, 200 = video
+    const auto providers = mgr.searchProviders();
+    for (int i = 0; i < providers.size(); ++i)
+        if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q, cat); }
+    if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, cat); }
+    if (m_pendingSources == 0) {
+        setSearching(false);
+        setStatus(QString("%1 resultados").arg(m_results.size()));
+    }
+}
+
+void QmlSearchBridge::searchRaw()
+{
+    if (m_titleQuery.isEmpty()) return;
+    // keep the title context so "back" still returns to the titles grid
+    m_fromTitles = !m_titleCache.isEmpty();
+    rawAggregateSearch(m_titleQuery, 0);
+}
+
+void QmlSearchBridge::rawAggregateSearch(const QString &q, int categoryCode)
+{
+    m_results.clear();
+    m_resultMagnets.clear();
+    m_resultTitles.clear();
+    m_torrentCache.clear();
+    m_gameCache.clear();
+    m_pendingGameQuery.clear();
+    emit resultsChanged();
+
+    m_activeQuery = q;
+    auto &mgr = AddonManager::instance();
+    m_aggregate = true;
+    m_titleSources = false;         // raw mixed list → keep per-row covers
+    m_isGameSearch = false;
+    setMode("all");
+    setSearching(true);
+    setStatus("Buscando…");
+    m_pendingSources = 0;
+    auto &gsm = GameSourceManager::instance();
+    if (gsm.gameCount() > 0) {
+        appendGameRows(gsm.search(q));
+    } else if (!gsm.sources().isEmpty()) {
+        m_pendingGameQuery = q;          // catalogs load async; counts as a pending source
+        ++m_pendingSources;
+        gsm.refresh();
+    }
+    const auto providers = mgr.searchProviders();
+    for (int i = 0; i < providers.size(); ++i)
+        if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q); }
+    if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, categoryCode); }
+    if (m_pendingSources == 0) {
+        setSearching(false);
+        setStatus(QString("%1 resultados").arg(m_results.size()));
+    }
 }
 
 QVariantList QmlSearchBridge::sources() const
@@ -1931,8 +2497,11 @@ QVariantList QmlSearchBridge::categories() const
 }
 
 QVariantList QmlSearchBridge::results() const { return m_results; }
+QString QmlSearchBridge::activeQuery() const { return m_activeQuery; }
 QString QmlSearchBridge::mode() const { return m_mode; }
 bool QmlSearchBridge::inStreams() const { return m_mode == "streams"; }
+bool QmlSearchBridge::canGoBack() const { return m_mode == "streams" || m_fromTitles; }
+bool QmlSearchBridge::singleTitleView() const { return m_titleSources || m_mode == "streams"; }
 bool QmlSearchBridge::searching() const { return m_searching; }
 QString QmlSearchBridge::statusText() const { return m_status; }
 
@@ -1947,7 +2516,9 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     const QString q = query.trimmed();
     if (q.isEmpty()) return;
     m_lastQuery = q;
+    m_activeQuery = q;
     m_aggregate = false;
+    m_titleSources = false;
     m_pendingGameQuery.clear();
     m_results.clear();
     m_resultMagnets.clear();
@@ -1958,28 +2529,21 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
 
     auto &mgr = AddonManager::instance();
     if (sourceKey == "all") {
-        m_aggregate = true;
-        m_isGameSearch = false;
-        setMode("all");
+        // Title-first: resolve the query to real works (TMDB/IGDB), then let the
+        // user drill into one title's torrents. Only when a metadata service with
+        // keys is available — otherwise go straight to the flat aggregate.
+        if (!m_discovery || !m_discovery->hasMetadataKeys()) {
+            rawAggregateSearch(q, categoryCode);
+            return;
+        }
+        m_fromTitles = false;
+        m_titleCache.clear();
+        m_titleQuery = q;
+        setMode("titles");
         setSearching(true);
-        setStatus("Buscando…");
-        m_pendingSources = 0;
-        auto &gsm = GameSourceManager::instance();
-        if (gsm.gameCount() > 0) {
-            appendGameRows(gsm.search(q));
-        } else if (!gsm.sources().isEmpty()) {
-            m_pendingGameQuery = q;          // catalogs load async; counts as a pending source
-            ++m_pendingSources;
-            gsm.refresh();
-        }
-        const auto providers = mgr.searchProviders();
-        for (int i = 0; i < providers.size(); ++i)
-            if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q); }
-        if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, categoryCode); }
-        if (m_pendingSources == 0) {
-            setSearching(false);
-            setStatus(QString("%1 resultados").arg(m_results.size()));
-        }
+        setStatus("Buscando títulos…");
+        m_discovery->searchTitles(q);
+        return;
     } else if (sourceKey == "games") {
         m_isGameSearch = true;
         setMode("games");
@@ -2025,9 +2589,13 @@ void QmlSearchBridge::appendGameRows(const QList<GameDownload> &games)
         QVariantMap m;
         m["name"] = g.cleanTitle.isEmpty() ? g.title : g.cleanTitle;
         m["sub"] = g.source;
+        m["provider"] = g.source;
         m["sizeStr"] = g.fileSize;
         m["seeds"] = ""; m["leech"] = ""; m["hasSeeds"] = false;
         m["repacker"] = detectRepacker(g.title);
+        m["poster"] = ""; m["coverHash"] = "";
+        m["seedsN"] = 0; m["sizeBytes"] = 0;
+        fillMediaAttrs(m, g.title);
         m_results << m;
         m_resultMagnets << g.magnet;
         m_resultTitles << (g.cleanTitle.isEmpty() ? g.title : g.cleanTitle);
@@ -2043,12 +2611,16 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
     for (const auto &r : sorted) {
         QVariantMap m;
         m["name"] = r.name;
-        m["sub"] = "";
+        m["sub"] = r.provider;
+        m["provider"] = r.provider;
         m["sizeStr"] = r.size > 0 ? formatSize(r.size) : QString();
         m["seeds"] = QString::number(r.seeders);
         m["leech"] = QString::number(r.leechers);
         m["hasSeeds"] = r.seeders > 0;
-        m["repacker"] = (m_mode == "games" || m_mode == "all") ? detectRepacker(r.name) : QString();
+        m["repacker"] = detectRepacker(r.name);
+        m["poster"] = ""; m["coverHash"] = r.infoHash;
+        m["seedsN"] = r.seeders; m["sizeBytes"] = static_cast<qlonglong>(r.size);
+        fillMediaAttrs(m, r.name);
         m_results << m;
         m_resultMagnets << r.magnet;
         m_resultTitles << QString();        // torrent rows have no game cover hint
@@ -2109,6 +2681,15 @@ void QmlSearchBridge::refreshGames()
 void QmlSearchBridge::activateResult(int index)
 {
     auto &mgr = AddonManager::instance();
+    if (m_mode == "titles") {
+        if (index < 0 || index >= m_results.size()) return;
+        const QVariantMap w = m_results[index].toMap();
+        m_fromTitles = true;
+        searchSourcesForWork(w.value(QStringLiteral("name")).toString(),
+                             w.value(QStringLiteral("year")).toString(),
+                             w.value(QStringLiteral("type")).toString());
+        return;
+    }
     if (m_mode == "catalog") {
         if (index < 0 || index >= m_catalogCache.size()) return;
         const auto &it = m_catalogCache[index];
@@ -2117,6 +2698,7 @@ void QmlSearchBridge::activateResult(int index)
         m_streamHintTitle = it.year > 0 ? QString("%1 %2").arg(it.name).arg(it.year) : it.name;
         m_streamHintType = it.type == QLatin1String("series") ? static_cast<int>(ContentType::Series)
                          : it.type == QLatin1String("movie")  ? static_cast<int>(ContentType::Movie) : -1;
+        m_streamHintPoster = it.poster;
         setMode("streams");
         m_results.clear();
         emit resultsChanged();
@@ -2145,6 +2727,18 @@ void QmlSearchBridge::activateResult(int index)
 
 void QmlSearchBridge::back()
 {
+    if (m_fromTitles && m_mode != "streams") {   // sources view → back to the titles grid
+        m_fromTitles = false;
+        m_aggregate = false;
+        m_results = m_titleCache;
+        m_resultMagnets.clear();
+        m_resultTitles.clear();
+        setMode("titles");
+        setSearching(false);
+        setStatus(QString("%1 títulos").arg(m_results.size()));
+        emit resultsChanged();
+        return;
+    }
     if (m_mode != "streams") return;
     setMode("catalog");
     m_results.clear();
@@ -2154,6 +2748,9 @@ void QmlSearchBridge::back()
         m["sub"] = it.type;
         m["sizeStr"] = it.year > 0 ? QString::number(it.year) : QString();
         m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+        m["poster"] = it.poster; m["coverHash"] = "";
+        m["seedsN"] = 0; m["sizeBytes"] = 0;
+        fillMediaAttrs(m, it.name);
         m_results << m;
     }
     emit resultsChanged();

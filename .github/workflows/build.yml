@@ -188,7 +188,7 @@ jobs:
         run: |
           mkdir release
           Copy-Item build/Release/BATorrent.exe release/
-          windeployqt --qmldir src/qml release/BATorrent.exe
+          windeployqt --qmldir src/qml --compiler-runtime release/BATorrent.exe
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip

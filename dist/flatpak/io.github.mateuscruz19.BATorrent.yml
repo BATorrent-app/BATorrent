@@ -1,25 +1,23 @@
-app-id: com.batorrent.BATorrent
+app-id: io.github.mateuscruz19.BATorrent
 runtime: org.kde.Platform
-runtime-version: '6.7'
+runtime-version: '6.10'
 sdk: org.kde.Sdk
 command: BATorrent
 
 finish-args:
-  # Network access for BitTorrent + WebUI + tracker announces
+  # BitTorrent + WebUI + tracker announces
   - --share=network
-  # Filesystem for save paths + resume data
+  # Save paths + resume data (reviewers may ask to narrow to xdg-download)
   - --filesystem=home
   # System tray
   - --talk-name=org.kde.StatusNotifierWatcher
-  # D-Bus notifications
+  # Desktop notifications
   - --talk-name=org.freedesktop.Notifications
-  # File manager reveal (org.freedesktop.FileManager1)
+  # "Open containing folder"
   - --talk-name=org.freedesktop.FileManager1
-  # X11 + Wayland
   - --share=ipc
   - --socket=fallback-x11
   - --socket=wayland
-  # GPU for Qt rendering
   - --device=dri
 
 modules:
@@ -48,13 +46,17 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: archive
-        url: https://github.com/Mateuscruz19/BATorrent/archive/refs/tags/v3.0.0.tar.gz
-        # TODO: fill in once the v3.0.0 tag exists:
-        #   curl -sL <url> | sha256sum
-        sha256: 0000000000000000000000000000000000000000000000000000000000000000
+        url: https://github.com/Mateuscruz19/BATorrent/archive/refs/tags/v3.0.3.tar.gz
+        sha256: 8db56af53287b22fe819a385c1deae5e28131ac710673c92d2a5f4d62abdefeb
+      # Shipped from the Flathub PR (not yet in the v3.0.3 tarball):
+      - type: file
+        path: io.github.mateuscruz19.BATorrent.metainfo.xml
+      - type: file
+        path: io.github.mateuscruz19.BATorrent.png
     post-install:
-      - install -Dm644 dist/batorrent.desktop /app/share/applications/com.batorrent.BATorrent.desktop
-      # Flathub requires the icon and the Icon= key to be named after the app-id.
-      - sed -i 's/^Icon=.*/Icon=com.batorrent.BATorrent/' /app/share/applications/com.batorrent.BATorrent.desktop
-      - install -Dm644 src/images/logo1.png /app/share/icons/hicolor/256x256/apps/com.batorrent.BATorrent.png
-      - install -Dm644 dist/flatpak/com.batorrent.BATorrent.metainfo.xml /app/share/metainfo/com.batorrent.BATorrent.metainfo.xml
+      - rm -f /app/share/applications/batorrent.desktop
+      - rm -f /app/share/icons/hicolor/*/apps/batorrent.png
+      - install -Dm644 dist/batorrent.desktop /app/share/applications/io.github.mateuscruz19.BATorrent.desktop
+      - sed -i 's/^Icon=.*/Icon=io.github.mateuscruz19.BATorrent/' /app/share/applications/io.github.mateuscruz19.BATorrent.desktop
+      - install -Dm644 io.github.mateuscruz19.BATorrent.png /app/share/icons/hicolor/512x512/apps/io.github.mateuscruz19.BATorrent.png
+      - install -Dm644 io.github.mateuscruz19.BATorrent.metainfo.xml /app/share/metainfo/io.github.mateuscruz19.BATorrent.metainfo.xml

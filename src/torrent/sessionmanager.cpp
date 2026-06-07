@@ -143,6 +143,7 @@ SessionManager::SessionManager(QObject *parent)
     }
     for (const auto &h : settings.value("completedTorrents").toStringList())
         m_completedTorrents.insert(h);
+    m_completedAtStartup = m_completedTorrents;   // freeze: don't re-notify these
 
     // Load categories
     settings.beginGroup("categories");
@@ -777,6 +778,125 @@ void SessionManager::prioritizeFilePieceBoundaries(int torrentIndex, int fileInd
     };
     for (int k = 0; k < numToBoost; ++k) boost(firstPiece + k);
     for (int k = 0; k < numToBoost; ++k) boost(lastPiece - k);
+}
+
+// ---- streaming helpers (read by the local StreamServer) ----
+
+int SessionManager::torrentIndexByInfoHash(const QString &infoHash) const
+{
+    if (infoHash.isEmpty()) return -1;
+    for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i)
+        if (torrentHash(i).compare(infoHash, Qt::CaseInsensitive) == 0)
+            return i;
+    return -1;
+}
+
+QString SessionManager::streamFilePath(int torrentIndex, int fileIndex) const
+{
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size())) return {};
+    const auto &h = m_torrents[torrentIndex];
+    if (!h.is_valid()) return {};
+    auto ti = h.torrent_file();
+    if (!ti) return {};
+    const auto &fs = ti->files();
+    if (fileIndex < 0 || fileIndex >= ti->num_files()) return {};
+
+    const QString savePath = QString::fromStdString(h.status(lt::torrent_handle::query_save_path).save_path);
+    QString rel = QString::fromStdString(fs.file_path(lt::file_index_t(fileIndex)));
+    rel.replace('\\', '/');   // libtorrent uses the native separator on Windows
+    QString abs = savePath + QLatin1Char('/') + rel;
+
+    if (QFileInfo::exists(abs)) return abs;
+    // toggle the ".!bt" incomplete suffix — the on-disk name may lag the mapping
+    if (abs.endsWith(QStringLiteral(".!bt"))) {
+        const QString plain = abs.chopped(4);
+        if (QFileInfo::exists(plain)) return plain;
+    } else if (QFileInfo::exists(abs + QStringLiteral(".!bt"))) {
+        return abs + QStringLiteral(".!bt");
+    }
+    return abs;   // best guess (may not exist yet)
+}
+
+qint64 SessionManager::streamFileSize(int torrentIndex, int fileIndex) const
+{
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size())) return 0;
+    const auto &h = m_torrents[torrentIndex];
+    if (!h.is_valid()) return 0;
+    auto ti = h.torrent_file();
+    if (!ti) return 0;
+    if (fileIndex < 0 || fileIndex >= ti->num_files()) return 0;
+    return ti->files().file_size(lt::file_index_t(fileIndex));
+}
+
+bool SessionManager::streamByteAvailable(int torrentIndex, int fileIndex, qint64 byteInFile) const
+{
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size())) return false;
+    const auto &h = m_torrents[torrentIndex];
+    if (!h.is_valid()) return false;
+    auto ti = h.torrent_file();
+    if (!ti) return false;
+    if (fileIndex < 0 || fileIndex >= ti->num_files()) return false;
+    const int pieceSize = ti->piece_length();
+    if (pieceSize <= 0) return false;
+    const qint64 off = ti->files().file_offset(lt::file_index_t(fileIndex)) + byteInFile;
+    const int piece = int(off / pieceSize);
+    if (piece < 0 || piece >= ti->num_pieces()) return false;
+    return h.have_piece(lt::piece_index_t(piece));
+}
+
+qint64 SessionManager::streamContiguousAvailableBytes(int torrentIndex, int fileIndex,
+                                                      qint64 fromByte, qint64 cap) const
+{
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size())) return 0;
+    const auto &h = m_torrents[torrentIndex];
+    if (!h.is_valid()) return 0;
+    auto ti = h.torrent_file();
+    if (!ti) return 0;
+    if (fileIndex < 0 || fileIndex >= ti->num_files()) return 0;
+    const int pieceSize = ti->piece_length();
+    if (pieceSize <= 0) return 0;
+    const auto &fs = ti->files();
+    const qint64 fileOffset = fs.file_offset(lt::file_index_t(fileIndex));
+    const qint64 fileSize   = fs.file_size(lt::file_index_t(fileIndex));
+    if (fromByte < 0 || fromByte >= fileSize) return 0;
+
+    const qint64 globalPos = fileOffset + fromByte;
+    const int numPieces = ti->num_pieces();
+    int piece = int(globalPos / pieceSize);
+    if (piece < 0 || piece >= numPieces || !h.have_piece(lt::piece_index_t(piece))) return 0;
+
+    // Extend across the contiguous run of available pieces.
+    qint64 availEndGlobal = qint64(piece + 1) * pieceSize;
+    while (availEndGlobal - globalPos < cap) {
+        const int next = int(availEndGlobal / pieceSize);
+        if (next >= numPieces || !h.have_piece(lt::piece_index_t(next))) break;
+        availEndGlobal = qint64(next + 1) * pieceSize;
+    }
+    availEndGlobal = qMin(availEndGlobal, fileOffset + fileSize);
+    return qMin(cap, availEndGlobal - globalPos);
+}
+
+void SessionManager::streamSetDeadlineWindow(int torrentIndex, int fileIndex,
+                                             qint64 startByte, int windowPieces)
+{
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size())) return;
+    auto &h = m_torrents[torrentIndex];
+    if (!h.is_valid()) return;
+    auto ti = h.torrent_file();
+    if (!ti) return;
+    if (fileIndex < 0 || fileIndex >= ti->num_files()) return;
+    const int pieceSize = ti->piece_length();
+    if (pieceSize <= 0) return;
+    const int numPieces = ti->num_pieces();
+    const qint64 off = ti->files().file_offset(lt::file_index_t(fileIndex)) + qMax<qint64>(0, startByte);
+    const int firstPiece = int(off / pieceSize);
+    for (int k = 0; k < windowPieces; ++k) {
+        const int p = firstPiece + k;
+        if (p < 0 || p >= numPieces) break;
+        if (h.have_piece(lt::piece_index_t(p))) continue;
+        h.piece_priority(lt::piece_index_t(p), lt::download_priority_t(7));
+        h.set_piece_deadline(lt::piece_index_t(p), k * 40);   // ms — increasing = playback order
+    }
 }
 
 void SessionManager::renameFile(int torrentIndex, int fileIndex,
@@ -1842,6 +1962,8 @@ void SessionManager::loadResumeData()
         if (atp.ti) {
             const QString savePath = QString::fromStdString(atp.save_path);
             const auto &fs = atp.ti->files();
+            const auto &prio = atp.file_priorities;
+            bool allWantedFullSize = fs.num_files() > 0;
             for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
                 std::string eff = atp.renamed_files.count(i) ? atp.renamed_files[i]
                                                              : fs.file_path(i);
@@ -1854,7 +1976,27 @@ void SessionManager::loadResumeData()
                 std::string chosen = eff;
                 if (plain.isFile() && plain.size() == wantSize)   chosen = base;
                 else if (bt.isFile() && bt.size() == wantSize)    chosen = base + ".!bt";
+                else {
+                    // Only files the user actually wants count toward completeness.
+                    // Stream-while-watch sets every non-video file (e.g. YTS's
+                    // .txt/.jpg) to priority 0, so they never hit disk — without
+                    // this guard the torrent looks "incomplete" and re-finishes
+                    // (re-firing "download complete") on every launch.
+                    const std::size_t idx = static_cast<std::size_t>(static_cast<int>(i));
+                    const bool wanted = idx >= prio.size() || prio[idx] != lt::dont_download;
+                    if (wanted) allWantedFullSize = false;
+                }
                 if (chosen != eff) atp.renamed_files[i] = chosen;
+            }
+            // All wanted files present at full size → complete for what the user
+            // kept. Load in seed_mode so libtorrent trusts it instead of
+            // re-checking/re-downloading on launch, and remember it as
+            // already-complete so the inevitable finish alert doesn't re-notify.
+            if (allWantedFullSize) {
+                atp.flags |= lt::torrent_flags::seed_mode;
+                const QString hash = QString::fromStdString(
+                    (std::ostringstream() << atp.ti->info_hashes().get_best()).str());
+                m_completedAtStartup.insert(hash);
             }
         }
 
@@ -2043,10 +2185,19 @@ void SessionManager::processAlerts()
                 if (m_autoExtract)
                     extractArchives(QString::fromStdString(st.save_path), name);
 
-                qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
-                executeOnComplete(name, QString::fromStdString(st.save_path),
-                                  hash, st.total_wanted);
-                emit torrentFinished(name, hash);
+                // Complete torrents now load in seed_mode (see loadResumeData) so
+                // they no longer re-check/re-download and re-fire this alert on
+                // launch. The remaining guard covers a torrent already persisted
+                // complete that still somehow re-finishes — its storage side
+                // effects run, but the user-facing completion (script +
+                // notification + media-server webhook) is muted.
+                const bool resumeRefinish = m_completedAtStartup.contains(hash);
+                if (!resumeRefinish) {
+                    qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
+                    executeOnComplete(name, QString::fromStdString(st.save_path),
+                                      hash, st.total_wanted);
+                    emit torrentFinished(name, hash);
+                }
             }
 
             // Remove from queue-paused set in either case (it's no longer

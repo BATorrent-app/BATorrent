@@ -152,8 +152,8 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             opacity: Math.min(1, root.wordFade / 500)
             transform: Translate { y: (1 - Math.min(1, root.wordFade / 500)) * 8 }
-            Text { text: "BAT"; color: "#e5332b"; font.pixelSize: 30; font.weight: Font.Bold; font.family: Theme.fontSans }
-            Text { text: "orrent"; color: "#f3f3f4"; font.pixelSize: 30; font.weight: Font.Bold; font.family: Theme.fontSans }
+            Text { text: "BAT"; color: "#e5332b"; font.pixelSize: 34; font.family: "New Rocker" }
+            Text { text: "orrent"; color: "#f3f3f4"; font.pixelSize: 34; font.family: "New Rocker" }
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
