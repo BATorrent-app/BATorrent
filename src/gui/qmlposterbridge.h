@@ -220,6 +220,12 @@ public:
     Q_INVOKABLE QString streamUrl(int row);
     // Hand off to the OS media player for the exact file being watched.
     Q_INVOKABLE void openExternalForHash(const QString &infoHash, int fileIndex);
+    // HUB (movies): the library of watchable video torrents (completed or with
+    // enough buffered to start), each with its best video file, cover, download
+    // progress and resume/watched position.
+    Q_INVOKABLE QVariantList movieLibrary() const;
+    // Open a library item in the embedded player (resolves row from info hash).
+    Q_INVOKABLE void playByHash(const QString &infoHash);
     void setStreamPort(quint16 port) { m_streamPort = port; }
     Q_INVOKABLE void setSelectedCategory(const QString &category);
     Q_INVOKABLE void setSelectedTags(const QStringList &tags);

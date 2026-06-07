@@ -945,6 +945,76 @@ void QmlSessionBridge::playSelected()
     emit openPlayer(url, info.name, hash, fileIdx);
 }
 
+QVariantList QmlSessionBridge::movieLibrary() const
+{
+    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
+    auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
+    QSettings s;
+    QVariantList out;
+    const int n = m_session->torrentCount();
+    for (int row = 0; row < n; ++row) {
+        auto files = m_session->filesAt(row);
+        int bestIdx = -1; qint64 bestSize = 0;
+        for (int i = 0; i < int(files.size()); ++i) {
+            const QString mp = stripBt(files[i].path);
+            for (const auto &ext : videoExts)
+                if (mp.endsWith(ext, Qt::CaseInsensitive)) {
+                    if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
+                    break;
+                }
+        }
+        if (bestIdx < 0) continue;                       // no video file
+
+        const TorrentInfo info = m_session->torrentAt(row);
+        const float fprog = files[bestIdx].progress;
+        const qint64 done = qint64(double(fprog) * files[bestIdx].size);
+        const bool watchable = info.completed || fprog >= 0.02f || done > 5 * 1024 * 1024;
+        if (!watchable) continue;                        // not enough buffered to start
+
+        const QString hash = m_session->torrentHashAt(row);
+        if (hash.isEmpty()) continue;
+
+        QString poster, title = info.name;
+        int year = 0;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const auto meta = m_resolver->cached(hash);
+            if (meta.valid) {
+                if (!meta.posterPath.isEmpty()) poster = QUrl::fromLocalFile(meta.posterPath).toString();
+                if (!meta.title.isEmpty()) title = meta.title;
+                year = meta.year;
+            }
+        }
+
+        const QString rk = QStringLiteral("resume_%1_%2").arg(hash).arg(bestIdx);
+        const qint64 resumeMs = s.value(rk, 0).toLongLong();
+        const qint64 durMs    = s.value(rk + QStringLiteral("_dur"), 0).toLongLong();
+
+        QVariantMap m;
+        m["infoHash"]   = hash;
+        m["title"]      = title;
+        m["year"]       = year > 0 ? QString::number(year) : QString();
+        m["poster"]     = poster;
+        m["fileIndex"]  = bestIdx;
+        m["progress"]   = double(fprog);                 // download progress 0..1
+        m["completed"]  = info.completed;
+        m["resumeMs"]   = resumeMs;
+        m["watchedPct"] = (durMs > 0 && resumeMs > 0) ? double(resumeMs) / double(durMs) : 0.0;
+        out << m;
+    }
+    return out;
+}
+
+void QmlSessionBridge::playByHash(const QString &infoHash)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return;
+    const QString url = streamUrl(row);                  // preps priorities + picks the best video
+    if (url.isEmpty()) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
+    const TorrentInfo info = m_session->torrentAt(row);
+    const int fileIdx = url.section('/', -1).toInt();
+    emit openPlayer(url, info.name, infoHash, fileIdx);
+}
+
 void QmlSessionBridge::setSelectedCategory(const QString &category)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))

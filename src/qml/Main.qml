@@ -2266,7 +2266,7 @@ Window {
                 // ----- page 2: Search -----
                 SearchView { Layout.fillWidth: true; Layout.fillHeight: true }
                 // ----- page 3: HUB -----
-                HubView { Layout.fillWidth: true; Layout.fillHeight: true }
+                HubView { id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true }
             }
         }
     }
@@ -2488,8 +2488,9 @@ Window {
     Loader {
         id: playerWinLoader; active: false
         sourceComponent: PlayerWindow {
-            // closing the window tears the player down so reopening starts fresh
-            onClosed: Qt.callLater(function() { playerWinLoader.active = false })
+            // closing the window tears the player down so reopening starts fresh,
+            // and refreshes the HUB so the watched-% bar reflects this session
+            onClosed: Qt.callLater(function() { playerWinLoader.active = false; if (hubPage) hubPage.refresh() })
         }
     }
     Connections {
