@@ -520,6 +520,7 @@ public:
     // DiscoveryService, then drill into a picked title's torrents.
     void setDiscovery(DiscoveryService *d);
     Q_INVOKABLE void searchRaw();   // escape hatch: flat aggregate over every source
+    Q_INVOKABLE void copyMagnet(int index);   // copy a flat result's magnet to the clipboard
 
 signals:
     void sourcesChanged();

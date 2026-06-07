@@ -7,6 +7,7 @@
 // Wired to QmlSearchBridge (`search`).
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls.Basic
 import "theme"
 import "widgets"
 
@@ -164,11 +165,36 @@ Rectangle {
     onShowGameMgrChanged: if (showGameMgr) reloadGames()
     onVisibleChanged: if (visible && api) api.refreshSources()
 
+    // ---- recent searches (persisted) ----
+    property var recentList: []
+    Component.onCompleted: {
+        if (typeof settings !== "undefined") {
+            try { recentList = JSON.parse(settings.get("searchRecent") || "[]") } catch (e) { recentList = [] }
+        }
+    }
+    function pushRecent(q) {
+        q = (q || "").trim()
+        if (q.length === 0) return
+        var list = recentList.filter(function (x) { return x.toLowerCase() !== q.toLowerCase() })
+        list.unshift(q)
+        recentList = list.slice(0, 8)
+        if (typeof settings !== "undefined") settings.set("searchRecent", JSON.stringify(recentList))
+    }
+
     function runSearch() {
         if (!api) return
         clearFilters()
         var cat = (isLegacy && catSel.currentIndex >= 0) ? api.categories[catSel.currentIndex].code : 0
         api.search(page.sourceKey, queryFld.text, cat)
+    }
+    // Committed search (Enter or a Discover/recent pick) — also records it as recent.
+    function commitSearch() { runSearch(); pushRecent(queryFld.text) }
+
+    // Debounced live search while typing (title-first hits TMDB+IGDB, so debounce).
+    Timer {
+        id: searchDebounce
+        interval: 450; repeat: false
+        onTriggered: page.runSearch()
     }
 
     // External entry (e.g. clicking a Discover poster): reflect the query in the
@@ -176,7 +202,7 @@ Rectangle {
     function runQuery(text) {
         queryFld.text = text
         srcSel.currentIndex = 0
-        runSearch()
+        commitSearch()
     }
 
     ColumnLayout {
@@ -214,7 +240,11 @@ Rectangle {
                     icon: "qrc:/icons/search.svg"
                     clearable: true
                     placeholder: (i18n.language, i18n.t("search_input"))
-                    onEdited: page.runSearch()
+                    onEdited: page.commitSearch()              // Enter / focus-out
+                    onTextChanged: {
+                        if (text.trim().length >= 2) searchDebounce.restart()
+                        else searchDebounce.stop()
+                    }
                 }
                 TSelect {
                     id: srcSel
@@ -231,7 +261,39 @@ Rectangle {
                     model: page.api ? page.api.categories : []
                     textRole: "label"
                 }
-                BtnFlat { primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: page.runSearch() }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: page.commitSearch() }
+            }
+        }
+
+        // recent searches — chips shown while the box is empty
+        Flow {
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5; Layout.topMargin: 2
+            spacing: 8
+            visible: queryFld.text.length === 0 && page.recentList.length > 0
+            Text {
+                text: (i18n.language, i18n.t("search_recent")) + ":"
+                color: Theme.t4; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                height: 24; verticalAlignment: Text.AlignVCenter
+            }
+            Repeater {
+                model: page.recentList
+                delegate: Rectangle {
+                    required property var modelData
+                    radius: 12
+                    color: rcMa.containsMouse ? Theme.hover : Theme.field
+                    border.color: Theme.hair; border.width: 1
+                    implicitWidth: rcTxt.implicitWidth + 22
+                    implicitHeight: 24
+                    Text {
+                        id: rcTxt; anchors.centerIn: parent; text: modelData
+                        color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontSans
+                    }
+                    MouseArea {
+                        id: rcMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: page.runQuery(modelData)
+                    }
+                }
             }
         }
 
@@ -488,10 +550,14 @@ Rectangle {
                     id: resMa
                     anchors.fill: parent
                     hoverEnabled: true
-                    acceptedButtons: Qt.LeftButton
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                     z: -1
-                    onClicked: {
+                    onClicked: function (mouse) {
                         if (!page.api) return
+                        if (mouse.button === Qt.RightButton) {
+                            if (!page.isCatalog) rowMenu.openFor(row.srcIndex)
+                            return
+                        }
                         if (page.isCatalog) page.api.activateResult(row.srcIndex)
                         else page.openDetail(row.modelData)
                     }
@@ -757,6 +823,35 @@ Rectangle {
         spacing: 2
         Text { text: stat.label; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.5; font.family: Theme.fontSans }
         Text { text: stat.value; color: stat.valueColor; font.pixelSize: 13; font.family: Theme.fontMono }
+    }
+
+    // per-result right-click menu
+    Menu {
+        id: rowMenu
+        property int idx: -1
+        function openFor(i) { idx = i; popup() }
+        modal: true
+        implicitWidth: 190
+        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+        component RMItem: MenuItem {
+            id: rmi
+            implicitHeight: 30
+            padding: 0
+            contentItem: Text {
+                leftPadding: 14; rightPadding: 14
+                text: rmi.text; color: rmi.highlighted ? Theme.t1 : Theme.t2
+                font.pixelSize: 12; font.family: Theme.fontSans; verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle { color: rmi.highlighted ? Theme.hover : "transparent"; radius: 5 }
+        }
+        RMItem {
+            text: page.isCatalog ? (i18n.language, i18n.t("search_view_streams")) : (i18n.language, i18n.t("search_add"))
+            onTriggered: if (page.api && rowMenu.idx >= 0) page.api.activateResult(rowMenu.idx)
+        }
+        RMItem {
+            text: (i18n.language, i18n.t("search_copy_magnet"))
+            onTriggered: if (page.api && rowMenu.idx >= 0) page.api.copyMagnet(rowMenu.idx)
+        }
     }
 
     // Game-catalog manager overlay (neutral: the user adds their own source URLs)
