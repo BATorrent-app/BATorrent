@@ -144,7 +144,6 @@ SessionManager::SessionManager(QObject *parent)
     for (const auto &h : settings.value("completedTorrents").toStringList())
         m_completedTorrents.insert(h);
     m_completedAtStartup = m_completedTorrents;   // freeze: don't re-notify these
-    m_sessionStartMs = QDateTime::currentMSecsSinceEpoch();
 
     // Load categories
     settings.beginGroup("categories");
@@ -1963,6 +1962,8 @@ void SessionManager::loadResumeData()
         if (atp.ti) {
             const QString savePath = QString::fromStdString(atp.save_path);
             const auto &fs = atp.ti->files();
+            const auto &prio = atp.file_priorities;
+            bool allWantedFullSize = fs.num_files() > 0;
             for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
                 std::string eff = atp.renamed_files.count(i) ? atp.renamed_files[i]
                                                              : fs.file_path(i);
@@ -1975,7 +1976,27 @@ void SessionManager::loadResumeData()
                 std::string chosen = eff;
                 if (plain.isFile() && plain.size() == wantSize)   chosen = base;
                 else if (bt.isFile() && bt.size() == wantSize)    chosen = base + ".!bt";
+                else {
+                    // Only files the user actually wants count toward completeness.
+                    // Stream-while-watch sets every non-video file (e.g. YTS's
+                    // .txt/.jpg) to priority 0, so they never hit disk — without
+                    // this guard the torrent looks "incomplete" and re-finishes
+                    // (re-firing "download complete") on every launch.
+                    const std::size_t idx = static_cast<std::size_t>(static_cast<int>(i));
+                    const bool wanted = idx >= prio.size() || prio[idx] != lt::dont_download;
+                    if (wanted) allWantedFullSize = false;
+                }
                 if (chosen != eff) atp.renamed_files[i] = chosen;
+            }
+            // All wanted files present at full size → complete for what the user
+            // kept. Load in seed_mode so libtorrent trusts it instead of
+            // re-checking/re-downloading on launch, and remember it as
+            // already-complete so the inevitable finish alert doesn't re-notify.
+            if (allWantedFullSize) {
+                atp.flags |= lt::torrent_flags::seed_mode;
+                const QString hash = QString::fromStdString(
+                    (std::ostringstream() << atp.ti->info_hashes().get_best()).str());
+                m_completedAtStartup.insert(hash);
             }
         }
 
@@ -2164,14 +2185,13 @@ void SessionManager::processAlerts()
                 if (m_autoExtract)
                     extractArchives(QString::fromStdString(st.save_path), name);
 
-                // Don't re-announce a torrent that just re-verified/re-finished on
-                // resume. Two cases: it was persisted complete (completedAtStartup),
-                // or it rechecks-and-redownloads a sliver every launch and finishes
-                // within the startup window. The storage side-effects above still
-                // run; only the user-facing completion (script + notification +
-                // media-server webhook) is muted.
-                const bool resumeRefinish = m_completedAtStartup.contains(hash)
-                    || (QDateTime::currentMSecsSinceEpoch() - m_sessionStartMs) < 120000;
+                // Complete torrents now load in seed_mode (see loadResumeData) so
+                // they no longer re-check/re-download and re-fire this alert on
+                // launch. The remaining guard covers a torrent already persisted
+                // complete that still somehow re-finishes — its storage side
+                // effects run, but the user-facing completion (script +
+                // notification + media-server webhook) is muted.
+                const bool resumeRefinish = m_completedAtStartup.contains(hash);
                 if (!resumeRefinish) {
                     qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
                     executeOnComplete(name, QString::fromStdString(st.save_path),

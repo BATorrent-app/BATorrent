@@ -479,7 +479,6 @@ private:
     // so we suppress its "download complete" notification to avoid spamming it
     // on every launch.
     QSet<QString> m_completedAtStartup;
-    qint64 m_sessionStartMs = 0;        // for the startup grace that mutes resume re-finishes
     // Info-hashes that bypass the active-downloads queue cap.
     QSet<QString> m_forceStartHashes;
     qint64 m_autoCompleteSeconds = 0; // 0 = disabled
