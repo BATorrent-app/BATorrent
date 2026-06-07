@@ -226,6 +226,13 @@ public:
     Q_INVOKABLE QVariantList movieLibrary() const;
     // Open a library item in the embedded player (resolves row from info hash).
     Q_INVOKABLE void playByHash(const QString &infoHash);
+    // HUB (games) — minimal: list game torrents (cover/progress) and launch them
+    // via a user-set executable (no auto-detection yet — improved gradually).
+    Q_INVOKABLE QVariantList gameLibrary() const;
+    Q_INVOKABLE QString gameExe(const QString &infoHash) const;        // saved exe path, "" if unset
+    Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
+    Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
+    Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
     void setStreamPort(quint16 port) { m_streamPort = port; }
     Q_INVOKABLE void setSelectedCategory(const QString &category);
     Q_INVOKABLE void setSelectedTags(const QStringList &tags);

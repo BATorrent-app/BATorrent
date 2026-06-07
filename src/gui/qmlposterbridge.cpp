@@ -1015,6 +1015,94 @@ void QmlSessionBridge::playByHash(const QString &infoHash)
     emit openPlayer(url, info.name, infoHash, fileIdx);
 }
 
+QVariantList QmlSessionBridge::gameLibrary() const
+{
+    QVariantList out;
+    const int n = m_session->torrentCount();
+    for (int row = 0; row < n; ++row) {
+        const TorrentInfo info = m_session->torrentAt(row);
+        const QString hash = m_session->torrentHashAt(row);
+        if (hash.isEmpty()) continue;
+
+        bool isGame = false;
+        QString poster, title;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const auto meta = m_resolver->cached(hash);
+            if (meta.valid && meta.contentType == ContentType::Game) {
+                isGame = true;
+                title = meta.title;
+                if (!meta.posterPath.isEmpty()) poster = QUrl::fromLocalFile(meta.posterPath).toString();
+            }
+        }
+        if (!isGame) {
+            const ParsedName pn = NameParser::parse(info.name);
+            if (pn.contentType == ContentType::Game) {
+                isGame = true;
+                title = pn.cleanTitle.isEmpty() ? info.name : pn.cleanTitle;
+            } else {
+                bool hasExe = false, hasVideo = false;
+                const auto files = m_session->filesAt(row);
+                for (const auto &f : files) {
+                    const QString p = f.path.toLower();
+                    if (p.endsWith(QStringLiteral(".exe"))) hasExe = true;
+                    else if (p.endsWith(QStringLiteral(".mkv")) || p.endsWith(QStringLiteral(".mp4"))
+                             || p.endsWith(QStringLiteral(".avi"))) hasVideo = true;
+                }
+                if (hasExe && !hasVideo) { isGame = true; title = pn.cleanTitle.isEmpty() ? info.name : pn.cleanTitle; }
+            }
+        }
+        if (!isGame) continue;
+
+        QVariantMap m;
+        m["infoHash"]  = hash;
+        m["title"]     = title.isEmpty() ? info.name : title;
+        m["poster"]    = poster;
+        m["progress"]  = double(info.progress);
+        m["completed"] = info.completed;
+        m["hasExe"]    = !gameExe(hash).isEmpty();
+        out << m;
+    }
+    return out;
+}
+
+QString QmlSessionBridge::gameExe(const QString &infoHash) const
+{
+    return QSettings().value(QStringLiteral("gameExe/") + infoHash).toString();
+}
+
+void QmlSessionBridge::setGameExe(const QString &infoHash, const QString &fileUrl)
+{
+    const QString path = fileUrl.startsWith(QStringLiteral("file:")) ? QUrl(fileUrl).toLocalFile() : fileUrl;
+    if (path.isEmpty()) return;
+    QSettings().setValue(QStringLiteral("gameExe/") + infoHash, path);
+}
+
+QString QmlSessionBridge::gameFolder(const QString &infoHash) const
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return {};
+    const TorrentInfo info = m_session->torrentAt(row);
+    const QString root = info.savePath + QStringLiteral("/") + info.name;
+    return QFileInfo(root).isDir() ? root : info.savePath;
+}
+
+void QmlSessionBridge::launchGame(const QString &infoHash)
+{
+    const QString exe = gameExe(infoHash);
+    if (!exe.isEmpty() && QFile::exists(exe)) {
+        const QString wd = QFileInfo(exe).absolutePath();
+        if (QProcess::startDetached(exe, {}, wd)) {
+            emit toast(tr_("hub_game_launch"), QFileInfo(exe).completeBaseName());
+            return;
+        }
+    }
+    // no (valid) exe set → open the folder so the user can pick/run it
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return;
+    const TorrentInfo info = m_session->torrentAt(row);
+    revealTorrentRoot(info.savePath, info.name);
+}
+
 void QmlSessionBridge::setSelectedCategory(const QString &category)
 {
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))

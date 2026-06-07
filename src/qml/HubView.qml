@@ -8,6 +8,8 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import QtQuick.Controls.Basic
+import QtQuick.Dialogs
 import "theme"
 import "widgets"
 
@@ -15,11 +17,36 @@ Item {
     id: page
     property var api: typeof session !== "undefined" ? session : null
     property var library: []
+    property var gameItems: []
     readonly property var continueItems: library.filter(function (i) { return (i.resumeMs || 0) > 0 })
+    readonly property bool empty: library.length === 0 && gameItems.length === 0
 
-    function refresh() { library = api ? api.movieLibrary() : [] }
+    function refresh() {
+        library = api ? api.movieLibrary() : []
+        gameItems = api ? api.gameLibrary() : []
+    }
     onVisibleChanged: if (visible) refresh()
     Component.onCompleted: refresh()
+
+    function fileUrl(p) {
+        if (!p || p.length === 0) return ""
+        if (p.indexOf("file:") === 0) return p
+        return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
+    }
+
+    // Play a game: run the user-set exe if any, otherwise let them pick it first.
+    function playGame(hash) {
+        if (!api) return
+        if (api.gameExe(hash).length > 0) api.launchGame(hash)
+        else openExePicker(hash, true)
+    }
+    function openExePicker(hash, launchAfter) {
+        exePicker.pendingHash = hash
+        exePicker.launchAfter = launchAfter
+        var folder = api ? api.gameFolder(hash) : ""
+        if (folder.length > 0) exePicker.currentFolder = page.fileUrl(folder)
+        exePicker.open()
+    }
 
     Rectangle { anchors.fill: parent; color: Theme.bg }
 
@@ -28,7 +55,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(parent.width - 80, 360)
         spacing: 12
-        visible: page.library.length === 0
+        visible: page.empty
         IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/play.svg"; tint: Theme.t4; s: 44 }
         Text {
             Layout.alignment: Qt.AlignHCenter; Layout.fillWidth: true
@@ -46,7 +73,7 @@ Item {
 
     Flickable {
         anchors.fill: parent
-        visible: page.library.length > 0
+        visible: !page.empty
         contentHeight: col.implicitHeight + 32
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -78,13 +105,13 @@ Item {
                 }
             }
 
-            // Library grid
+            // Movies grid
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
                 Layout.topMargin: page.continueItems.length > 0 ? 0 : Theme.sp5
-                Layout.bottomMargin: Theme.sp5
                 spacing: 12
+                visible: page.library.length > 0
                 Text {
                     text: (i18n.language, i18n.t("hub_movies"))
                     color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
@@ -100,6 +127,35 @@ Item {
                     }
                 }
             }
+
+            // Games grid (minimal: list + Play via a user-set executable)
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                Layout.topMargin: page.library.length > 0 ? 0 : Theme.sp5
+                Layout.bottomMargin: Theme.sp5
+                spacing: 12
+                visible: page.gameItems.length > 0
+                Text {
+                    text: (i18n.language, i18n.t("hub_games"))
+                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columnSpacing: 18
+                    rowSpacing: 20
+                    columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
+                    Repeater {
+                        model: page.gameItems
+                        delegate: HubCard {
+                            item: modelData
+                            requireDoubleClick: true
+                            onPlay: page.playGame(modelData.infoHash)
+                            onContext: gameMenu.openFor(modelData.infoHash)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -109,8 +165,10 @@ Item {
         id: card
         property var item
         property int cardW: 150
+        property bool requireDoubleClick: false
         readonly property int cardH: Math.round(cardW * 1.5)
         signal play()
+        signal context()
         implicitWidth: cardW
         implicitHeight: cardH + 38
 
@@ -193,7 +251,54 @@ Item {
         MouseArea {
             id: ma; anchors.fill: parent
             hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-            onClicked: card.play()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: function (mouse) {
+                if (mouse.button === Qt.RightButton) { card.context(); return }
+                if (!card.requireDoubleClick) card.play()
+            }
+            onDoubleClicked: if (card.requireDoubleClick) card.play()
+        }
+    }
+
+    // ---- games: manual executable picker + per-game context menu ----
+    FileDialog {
+        id: exePicker
+        property string pendingHash: ""
+        property bool launchAfter: true
+        title: (i18n.language, i18n.t("hub_set_exe"))
+        onAccepted: {
+            if (!page.api || pendingHash.length === 0) return
+            page.api.setGameExe(pendingHash, selectedFile.toString())
+            page.refresh()
+            if (launchAfter) page.api.launchGame(pendingHash)
+        }
+    }
+
+    Menu {
+        id: gameMenu
+        property string hash: ""
+        function openFor(h) { hash = h; popup() }
+        modal: true
+        implicitWidth: 200
+        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+        component GItem: MenuItem {
+            id: gi
+            implicitHeight: 30
+            padding: 0
+            contentItem: Text {
+                leftPadding: 14; rightPadding: 14
+                text: gi.text; color: gi.highlighted ? Theme.t1 : Theme.t2
+                font.pixelSize: 12; font.family: Theme.fontSans; verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle { color: gi.highlighted ? Theme.hover : "transparent"; radius: 5 }
+        }
+        GItem {
+            text: (i18n.language, i18n.t("hub_set_exe"))
+            onTriggered: page.openExePicker(gameMenu.hash, false)
+        }
+        GItem {
+            text: (i18n.language, i18n.t("hub_open_folder"))
+            onTriggered: if (page.api) Qt.openUrlExternally(page.fileUrl(page.api.gameFolder(gameMenu.hash)))
         }
     }
 }
