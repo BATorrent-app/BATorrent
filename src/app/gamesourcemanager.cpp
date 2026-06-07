@@ -128,8 +128,16 @@ QList<GameDownload> GameSourceManager::search(const QString &query, int limit) c
     QList<GameDownload> out;
     const QString q = query.trimmed().toLower();
     if (q.isEmpty()) return out;
+    // Match all whitespace-separated tokens (any order) against the raw title, so
+    // "god of war fitgirl" hits "God of War [FitGirl Repack]" and typing just
+    // "fitgirl" returns every FitGirl entry.
+    const auto tokens = q.split(QChar(' '), Qt::SkipEmptyParts);
     for (const GameDownload &g : m_games) {
-        if (g.title.toLower().contains(q)) {
+        const QString hay = g.title.toLower();
+        bool all = true;
+        for (const QString &t : tokens)
+            if (!hay.contains(t)) { all = false; break; }
+        if (all) {
             out.append(g);
             if (out.size() >= limit) break;
         }
