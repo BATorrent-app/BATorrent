@@ -194,9 +194,11 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
         setIgdbHeaders(req);
         QString safe = query;
         safe.replace(QLatin1Char('"'), QLatin1Char(' '));
+        // No category filter here: it's unreliable across IGDB game records and
+        // was hiding legitimate matches. Relevance from `search` is enough.
         const QByteArray body = QStringLiteral(
             "search \"%1\"; fields name,cover.image_id,first_release_date,total_rating;"
-            " where cover != null & category = (0,8,9,10,11); limit 20;").arg(safe).toUtf8();
+            " where cover != null; limit 20;").arg(safe).toUtf8();
 
         QNetworkReply *reply = m_nam->post(req, body);
         connect(reply, &QNetworkReply::finished, this, [this, reply]() {
@@ -241,12 +243,27 @@ void DiscoveryService::maybeFinishSearch()
         if (t.contains(ql)) return 2;
         return 3;
     };
-    std::stable_sort(m_searchWorks.begin(), m_searchWorks.end(),
-                     [&score](const QVariant &a, const QVariant &b) { return score(a) < score(b); });
+    auto byScore = [&score](const QVariant &a, const QVariant &b) { return score(a) < score(b); };
+
+    // Split by kind, relevance-sort each, then interleave so movies and games
+    // mix from the top instead of "all movies, then all games".
+    QVariantList vids, games;
+    for (const QVariant &v : std::as_const(m_searchWorks)) {
+        if (v.toMap().value(QStringLiteral("type")).toString() == QLatin1String("game")) games.append(v);
+        else vids.append(v);
+    }
+    std::stable_sort(vids.begin(), vids.end(), byScore);
+    std::stable_sort(games.begin(), games.end(), byScore);
+
+    QVariantList merged;
+    for (int i = 0; i < vids.size() || i < games.size(); ++i) {
+        if (i < games.size()) merged.append(games[i]);   // game first: queries are usually game-led
+        if (i < vids.size())  merged.append(vids[i]);
+    }
 
     QVariantList out;
     QSet<QString> seen;
-    for (const QVariant &v : std::as_const(m_searchWorks)) {
+    for (const QVariant &v : std::as_const(merged)) {
         const QVariantMap m = v.toMap();
         const QString key = m.value(QStringLiteral("title")).toString().toLower() + QLatin1Char('|')
                           + m.value(QStringLiteral("year")).toString() + QLatin1Char('|')
@@ -256,6 +273,13 @@ void DiscoveryService::maybeFinishSearch()
         out.append(v);
     }
     emit titleResults(m_searchQuery, out);
+}
+
+bool DiscoveryService::hasMetadataKeys() const
+{
+    const bool haveTmdb = !tmdbApiKey().isEmpty();
+    const bool haveIgdb = !igdbClientId().isEmpty() && !igdbClientSecret().isEmpty();
+    return haveTmdb || haveIgdb;
 }
 
 void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type)

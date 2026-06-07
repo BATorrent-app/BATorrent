@@ -2140,7 +2140,6 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
     connect(m_discovery, &DiscoveryService::titleResults, this,
             [this](const QString &query, const QVariantList &works) {
         if (query != m_titleQuery || m_mode != QLatin1String("titles")) return;   // stale
-        if (works.isEmpty()) { rawAggregateSearch(query, 0); return; }            // no match → raw
         m_results.clear();
         m_resultMagnets.clear();
         m_resultTitles.clear();
@@ -2161,9 +2160,50 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         }
         m_titleCache = m_results;
         setSearching(false);
-        setStatus(QString("%1 títulos").arg(m_results.size()));
+        // Stay in the grid even when empty — the page shows an empty state with a
+        // "raw results" escape, so the flow is consistent (never silently flips).
+        setStatus(m_results.isEmpty() ? QStringLiteral("Nenhum título encontrado")
+                                      : QString("%1 títulos").arg(m_results.size()));
         emit resultsChanged();
     });
+}
+
+void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &year, const QString &type)
+{
+    m_results.clear();
+    m_resultMagnets.clear();
+    m_resultTitles.clear();
+    m_torrentCache.clear();
+    m_gameCache.clear();
+    m_pendingGameQuery.clear();
+    emit resultsChanged();
+
+    auto &mgr = AddonManager::instance();
+    const bool isGame = (type == QLatin1String("game"));
+    m_aggregate = true;
+    m_isGameSearch = isGame;
+    setMode("all");
+    setSearching(true);
+    setStatus("Buscando…");
+    m_pendingSources = 0;
+
+    if (isGame) {
+        auto &gsm = GameSourceManager::instance();
+        if (gsm.gameCount() > 0) appendGameRows(gsm.search(title));
+        else if (!gsm.sources().isEmpty()) { m_pendingGameQuery = title; ++m_pendingSources; gsm.refresh(); }
+    }
+    // movies disambiguate well with a year; games/series search cleaner by title
+    const QString q = (type == QLatin1String("movie") && !year.isEmpty())
+                    ? title + QLatin1Char(' ') + year : title;
+    const int cat = isGame ? 400 : 200;   // 400 = games, 200 = video
+    const auto providers = mgr.searchProviders();
+    for (int i = 0; i < providers.size(); ++i)
+        if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q, cat); }
+    if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, cat); }
+    if (m_pendingSources == 0) {
+        setSearching(false);
+        setStatus(QString("%1 resultados").arg(m_results.size()));
+    }
 }
 
 void QmlSearchBridge::searchRaw()
@@ -2273,15 +2313,19 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     auto &mgr = AddonManager::instance();
     if (sourceKey == "all") {
         // Title-first: resolve the query to real works (TMDB/IGDB), then let the
-        // user drill into one title's torrents. Falls back to a flat aggregate
-        // when no metadata service/keys are available or nothing matches.
+        // user drill into one title's torrents. Only when a metadata service with
+        // keys is available — otherwise go straight to the flat aggregate.
+        if (!m_discovery || !m_discovery->hasMetadataKeys()) {
+            rawAggregateSearch(q, categoryCode);
+            return;
+        }
         m_fromTitles = false;
+        m_titleCache.clear();
         m_titleQuery = q;
         setMode("titles");
         setSearching(true);
         setStatus("Buscando títulos…");
-        if (m_discovery) m_discovery->searchTitles(q);
-        else rawAggregateSearch(q, categoryCode);
+        m_discovery->searchTitles(q);
         return;
     } else if (sourceKey == "games") {
         m_isGameSearch = true;
@@ -2423,14 +2467,10 @@ void QmlSearchBridge::activateResult(int index)
     if (m_mode == "titles") {
         if (index < 0 || index >= m_results.size()) return;
         const QVariantMap w = m_results[index].toMap();
-        const QString title = w.value(QStringLiteral("name")).toString();
-        const QString year  = w.value(QStringLiteral("year")).toString();
-        const QString type  = w.value(QStringLiteral("type")).toString();
-        // movies disambiguate well with a year; games/series search cleaner by title alone
-        QString tq = (type == QLatin1String("movie") && !year.isEmpty())
-                   ? title + QLatin1Char(' ') + year : title;
         m_fromTitles = true;
-        rawAggregateSearch(tq, type == QLatin1String("game") ? 400 : 0);
+        searchSourcesForWork(w.value(QStringLiteral("name")).toString(),
+                             w.value(QStringLiteral("year")).toString(),
+                             w.value(QStringLiteral("type")).toString());
         return;
     }
     if (m_mode == "catalog") {

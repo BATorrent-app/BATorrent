@@ -538,7 +538,7 @@ Rectangle {
                 Text { text: page.api ? page.api.statusText : ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
                 BtnFlat {
-                    visible: page.isTitles && page.api && page.api.results.length > 0
+                    visible: page.isTitles && page.api && !page.api.searching
                     text: (i18n.language, i18n.t("search_raw_results"))
                     onClicked: if (page.api) page.api.searchRaw()
                 }

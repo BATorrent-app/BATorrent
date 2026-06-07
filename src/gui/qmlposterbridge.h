@@ -523,6 +523,9 @@ private:
     static void fillMediaAttrs(QVariantMap &m, const QString &name);
     // Flat aggregate search over every enabled source (the old "Tudo" behavior).
     void rawAggregateSearch(const QString &q, int categoryCode);
+    // Type-scoped drill-down for a picked title: games hit game catalogs + the
+    // games category; movies/series hit video torrents only (no game catalogs).
+    void searchSourcesForWork(const QString &title, const QString &year, const QString &type);
 
     MetadataResolver *m_resolver = nullptr;
     DiscoveryService *m_discovery = nullptr;

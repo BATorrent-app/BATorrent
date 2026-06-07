@@ -37,6 +37,7 @@ public:
     // Title-first search: resolve a free-text query to real works (movies,
     // series, games) before any torrent lookup. Emits titleResults().
     Q_INVOKABLE void searchTitles(const QString &query);
+    bool hasMetadataKeys() const;   // false → caller should skip the title step
 
 signals:
     void rowsChanged();
