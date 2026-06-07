@@ -30,6 +30,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QDirIterator>
 #include <QProcess>
 #include <QFile>
 #include <QFileInfo>
@@ -1089,18 +1090,64 @@ QString QmlSessionBridge::gameFolder(const QString &infoHash) const
     return QFileInfo(root).isDir() ? root : info.savePath;
 }
 
+// Best-guess game executable inside a folder. Skips redists/uninstallers,
+// treats setup/installer separately, and prefers the largest .exe near the
+// root (where a game's main binary usually lives). A heuristic — the user can
+// always override via "Set executable…". Returns "" if nothing runnable.
+static QString autodetectGameExe(const QString &folder, bool *isInstaller)
+{
+    if (isInstaller) *isInstaller = false;
+    if (folder.isEmpty()) return {};
+    static const QStringList skip = {
+        "unins", "redist", "vcredist", "vc_redist", "directx", "dxsetup", "dotnet",
+        "dotnetfx", "oalinst", "_commonredist", "prereq", "crashreport", "crashpad",
+        "python", "benchmark", "config", "settings", "cleanup" };
+    static const QStringList installerHints = { "setup", "install" };
+
+    QString bestGame, installer;
+    qint64 bestScore = -1;
+    int scanned = 0;
+    QDirIterator it(folder, {QStringLiteral("*.exe")}, QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext() && scanned < 4000) {
+        const QString path = it.next();
+        ++scanned;
+        const QString lower = QFileInfo(path).fileName().toLower();
+        bool skipIt = false;
+        for (const auto &s : skip) if (lower.contains(s)) { skipIt = true; break; }
+        if (skipIt) continue;
+        bool inst = false;
+        for (const auto &s : installerHints) if (lower.contains(s)) { inst = true; break; }
+        if (inst) { if (installer.isEmpty()) installer = path; continue; }
+
+        const QString rel = path.mid(folder.size());
+        const int depth = rel.count(QLatin1Char('/'));
+        qint64 score = QFileInfo(path).size();
+        if (depth <= 1) score += qint64(800) * 1024 * 1024;            // root binary strongly preferred
+        if (lower.contains("launcher")) score -= qint64(300) * 1024 * 1024;
+        if (score > bestScore) { bestScore = score; bestGame = path; }
+    }
+    if (!bestGame.isEmpty()) return bestGame;
+    if (!installer.isEmpty()) { if (isInstaller) *isInstaller = true; return installer; }
+    return {};
+}
+
 void QmlSessionBridge::launchGame(const QString &infoHash)
 {
-    const QString exe = gameExe(infoHash);
+    QString exe = gameExe(infoHash);              // a manual override always wins
+    bool isInstaller = false;
+    if (exe.isEmpty() || !QFile::exists(exe))
+        exe = autodetectGameExe(gameFolder(infoHash), &isInstaller);
+
     if (!exe.isEmpty() && QFile::exists(exe)) {
         const QString wd = QFileInfo(exe).absolutePath();
         if (QProcess::startDetached(exe, {}, wd)) {
             QSettings().setValue(QStringLiteral("gamePlayed/") + infoHash, QDateTime::currentMSecsSinceEpoch());
-            emit toast(tr_("hub_game_launch"), QFileInfo(exe).completeBaseName());
+            emit toast(isInstaller ? tr_("hub_game_installing") : tr_("hub_game_launch"),
+                       QFileInfo(exe).completeBaseName());
             return;
         }
     }
-    // no (valid) exe set → open the folder so the user can pick/run it
+    // nothing runnable found → open the folder so the user can run/set it
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return;
     const TorrentInfo info = m_session->torrentAt(row);

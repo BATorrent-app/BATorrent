@@ -38,11 +38,10 @@ Item {
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
 
-    // Play a game: run the user-set exe if any, otherwise let them pick it first.
+    // Play a game: launchGame uses the manual exe if set, else auto-detects one,
+    // else opens the folder. "Set executable…" (right-click) is the override.
     function playGame(hash) {
-        if (!api) return
-        if (api.gameExe(hash).length > 0) api.launchGame(hash)
-        else openExePicker(hash, true)
+        if (api) api.launchGame(hash)
     }
     function openExePicker(hash, launchAfter) {
         exePicker.pendingHash = hash
