@@ -2463,6 +2463,15 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     }
 }
 
+void QmlSearchBridge::copyMagnet(int index)
+{
+    if (index < 0 || index >= m_resultMagnets.size()) return;
+    const QString magnet = m_resultMagnets[index];
+    if (magnet.isEmpty()) return;
+    QGuiApplication::clipboard()->setText(magnet);
+    setStatus(tr_("search_magnet_copied"));
+}
+
 void QmlSearchBridge::searchRaw()
 {
     if (m_titleQuery.isEmpty()) return;
