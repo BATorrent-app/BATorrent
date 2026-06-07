@@ -647,6 +647,7 @@ Rectangle {
                     }
                     rating: modelData.rating || 0
                     type: modelData.type || ""
+                    synopsis: modelData.overview || ""
                     watchlistEnabled: typeof session !== "undefined"
                     saved: typeof session !== "undefined"
                            && (session.watchlist, session.inWatchlist(modelData.name || "", modelData.type || ""))

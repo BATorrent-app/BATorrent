@@ -271,6 +271,16 @@ Window {
             }
             PChip {
                 Layout.alignment: Qt.AlignVCenter
+                readonly property var speeds: [0.5, 1.0, 1.25, 1.5, 2.0]
+                active: player.playbackRate !== 1.0
+                label: player.playbackRate + "×"
+                onClicked: {
+                    var i = speeds.indexOf(player.playbackRate)
+                    player.playbackRate = speeds[(i + 1) % speeds.length]
+                }
+            }
+            PChip {
+                Layout.alignment: Qt.AlignVCenter
                 active: win.muted
                 label: (i18n.language, i18n.t("player_mute"))
                 onClicked: win.muted = !win.muted

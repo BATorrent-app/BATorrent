@@ -2457,6 +2457,7 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
             row["type"]    = w.value(QStringLiteral("type"));
             row["poster"]  = w.value(QStringLiteral("poster"));
             row["rating"]  = w.value(QStringLiteral("rating"));
+            row["overview"] = w.value(QStringLiteral("overview"));
             row["coverHash"] = QString();
             row["isTitle"] = true;
             m_results << row;

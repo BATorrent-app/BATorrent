@@ -96,7 +96,7 @@ QString discoverRegion()
 }
 
 const qint64 CacheTtlSecs = 12 * 60 * 60;
-const int CacheVersion = 5;   // bump when the row schema/order/source changes (invalidates stale cache)
+const int CacheVersion = 6;   // bump when the row schema/order/source changes (invalidates stale cache)
 
 } // namespace
 
@@ -147,6 +147,15 @@ void DiscoveryService::refresh()
         fetchTmdb(2, QStringLiteral("/discover/tv"),    tr_("discover_trending_series"), QStringLiteral("series"), regionDiscover);
         fetchTmdb(4, QStringLiteral("/movie/popular"),  tr_("discover_popular_movies"),  QStringLiteral("movie"),  regionOnly);
         fetchTmdb(5, QStringLiteral("/tv/popular"),     tr_("discover_popular_series"),  QStringLiteral("series"));
+        // genre shelves (popular within a genre, region-aware)
+        auto genre = [regionDiscover](int id) {
+            QList<QPair<QString, QString>> e = regionDiscover;
+            e.append({ QStringLiteral("with_genres"), QString::number(id) });
+            return e;
+        };
+        fetchTmdb(6, QStringLiteral("/discover/movie"), tr_("discover_genre_action"), QStringLiteral("movie"), genre(28));
+        fetchTmdb(7, QStringLiteral("/discover/movie"), tr_("discover_genre_comedy"), QStringLiteral("movie"), genre(35));
+        fetchTmdb(8, QStringLiteral("/discover/movie"), tr_("discover_genre_horror"), QStringLiteral("movie"), genre(27));
     }
     if (haveIgdb) {
         fetchIgdbTrending(1, tr_("discover_trending_games"));   // games of the moment — kept high
@@ -210,6 +219,7 @@ void DiscoveryService::searchTmdbTitles(const QString &query)
                 m.insert(QStringLiteral("poster"), TmdbPosterBase + poster);
                 m.insert(QStringLiteral("year"), date.length() >= 4 ? date.left(4) : QString());
                 m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
+                m.insert(QStringLiteral("overview"), o.value(QLatin1String("overview")).toString());
                 m.insert(QStringLiteral("type"), isTv ? QStringLiteral("series") : QStringLiteral("movie"));
                 m_searchWorks.append(m);
             }
@@ -231,7 +241,7 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
         // No category filter here: it's unreliable across IGDB game records and
         // was hiding legitimate matches. Relevance from `search` is enough.
         const QByteArray body = QStringLiteral(
-            "search \"%1\"; fields name,cover.image_id,first_release_date,total_rating;"
+            "search \"%1\"; fields name,cover.image_id,first_release_date,total_rating,summary;"
             " where cover != null; limit 20;").arg(safe).toUtf8();
 
         QNetworkReply *reply = m_nam->post(req, body);
@@ -254,6 +264,7 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
                     m.insert(QStringLiteral("year"), rel > 0
                              ? QString::number(QDateTime::fromSecsSinceEpoch(rel).date().year()) : QString());
                     m.insert(QStringLiteral("rating"), o.value(QLatin1String("total_rating")).toDouble() / 10.0);
+                    m.insert(QStringLiteral("overview"), o.value(QLatin1String("summary")).toString());
                     m.insert(QStringLiteral("type"), QStringLiteral("game"));
                     m_searchWorks.append(m);
                 }

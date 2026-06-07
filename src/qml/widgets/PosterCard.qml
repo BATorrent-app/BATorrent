@@ -6,6 +6,7 @@
 // rounded mask, hover scale + ring, title + year/rating below. Emits activated().
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Controls.Basic
 import "../theme"
 
 Item {
@@ -19,6 +20,7 @@ Item {
 
     property int posterW: 150
     readonly property int posterH: Math.round(posterW * 1.5)
+    property string synopsis: ""    // optional: shown as a hover tooltip
     // optional "My List" toggle (only shown when watchlistEnabled)
     property bool watchlistEnabled: false
     property bool saved: false
@@ -143,6 +145,19 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: card.activated()
+    }
+
+    // synopsis on hover
+    ToolTip {
+        parent: card
+        visible: card.synopsis.length > 0 && ma.containsMouse
+        delay: 550
+        x: card.posterW + 8; y: 0
+        contentItem: Text {
+            text: card.synopsis; width: 260; wrapMode: Text.WordWrap
+            color: Theme.t1; font.pixelSize: 11; font.family: Theme.fontSans
+        }
+        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 6 }
     }
 
     // "My List" toggle — on top of the main MouseArea so it gets the click

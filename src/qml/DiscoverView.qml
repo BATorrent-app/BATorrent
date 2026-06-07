@@ -172,6 +172,7 @@ Rectangle {
                             year: pcard.modelData.year
                             rating: pcard.modelData.rating
                             type: pcard.modelData.type
+                            synopsis: pcard.modelData.overview || ""
                             watchlistEnabled: typeof session !== "undefined"
                             saved: typeof session !== "undefined"
                                    && (session.watchlist, session.inWatchlist(pcard.modelData.title, pcard.modelData.type))
