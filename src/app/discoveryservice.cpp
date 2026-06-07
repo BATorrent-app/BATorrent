@@ -626,8 +626,22 @@ void DiscoveryService::maybeFinish()
 void DiscoveryService::assembleAndEmit()
 {
     m_rows.clear();
-    for (auto it = m_accum.constBegin(); it != m_accum.constEnd(); ++it)
-        m_rows.append(it.value());
+    // De-dup across rows: a title in Trending shouldn't repeat in Popular, etc.
+    // Keep the first occurrence (rows are in priority order).
+    QSet<QString> seenTitles;
+    for (auto it = m_accum.constBegin(); it != m_accum.constEnd(); ++it) {
+        QVariantMap row = it.value();
+        QVariantList kept;
+        for (const QVariant &v : row.value(QStringLiteral("items")).toList()) {
+            const QVariantMap m = v.toMap();
+            const QString key = m.value(QStringLiteral("title")).toString().toLower()
+                              + QLatin1Char('|') + m.value(QStringLiteral("type")).toString();
+            if (seenTitles.contains(key)) continue;
+            seenTitles.insert(key);
+            kept.append(v);
+        }
+        if (!kept.isEmpty()) { row[QStringLiteral("items")] = kept; m_rows.append(row); }
+    }
 
     // hero: round-robin one item per row per pass, so the banner mixes movies,
     // games and series (not 6 movies). Needs a backdrop + overview.

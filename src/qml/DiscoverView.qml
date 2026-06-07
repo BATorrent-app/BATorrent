@@ -99,6 +99,18 @@ Rectangle {
                             elide: Text.ElideRight
                         }
                         Text {
+                            Layout.fillWidth: true
+                            visible: text.length > 0
+                            text: {
+                                if (!page.heroItem) return ""
+                                var parts = []
+                                if ((page.heroItem.year || "").length > 0) parts.push(page.heroItem.year)
+                                if ((page.heroItem.rating || 0) > 0) parts.push("★ " + page.heroItem.rating.toFixed(1))
+                                return parts.join("    ·    ")
+                            }
+                            color: "#c8c8cc"; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                        }
+                        Text {
                             text: page.heroItem ? page.heroItem.overview : ""
                             color: "#d8d8dc"
                             font.pixelSize: 13; font.family: Theme.fontSans
@@ -170,17 +182,65 @@ Rectangle {
         }
     }
 
-    // loading / empty state
+    // skeleton while the first fetch is in flight
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.topMargin: 326
+        anchors.leftMargin: Theme.sp5
+        spacing: 26
+        visible: page.api && page.api.loading && page.rowList.length === 0
+        Repeater {
+            model: 3
+            ColumnLayout {
+                spacing: 10
+                Rectangle { width: 150; height: 16; radius: 4; color: "#1b1b20" }
+                RowLayout {
+                    spacing: 16
+                    Repeater {
+                        model: 7
+                        Rectangle { width: 150; height: 225; radius: 10; color: "#161618"; border.color: Theme.hair; border.width: 1 }
+                    }
+                }
+            }
+        }
+    }
+
+    // empty / no-keys state (not loading)
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 14
-        visible: page.rowList.length === 0
-        BusyIndicator { Layout.alignment: Qt.AlignHCenter; running: page.api && page.api.loading; visible: running }
+        visible: page.rowList.length === 0 && !(page.api && page.api.loading)
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: page.api && page.api.loading ? (i18n.language, i18n.t("discover_loading"))
-                 : (page.api && page.api.statusText.length > 0 ? page.api.statusText : (i18n.language, i18n.t("discover_empty")))
+            text: page.api && page.api.statusText.length > 0 ? page.api.statusText : (i18n.language, i18n.t("discover_empty"))
             color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
+        }
+    }
+
+    // manual refresh (spins while loading)
+    Rectangle {
+        anchors.top: parent.top; anchors.right: parent.right
+        anchors.topMargin: Theme.sp4; anchors.rightMargin: Theme.sp4
+        width: 34; height: 34; radius: 17
+        visible: page.rowList.length > 0
+        color: rfMa.containsMouse ? Theme.hover : Qt.rgba(0, 0, 0, 0.35)
+        border.color: Theme.hair; border.width: 1
+        IconImg {
+            anchors.centerIn: parent
+            src: "qrc:/icons/refresh.svg"
+            tint: rfMa.containsMouse ? Theme.t1 : Theme.t3
+            s: 16
+            RotationAnimation on rotation {
+                running: page.api && page.api.loading
+                from: 0; to: 360; duration: 900; loops: Animation.Infinite
+            }
+        }
+        MouseArea {
+            id: rfMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: if (page.api) page.api.refresh()
         }
     }
 }
