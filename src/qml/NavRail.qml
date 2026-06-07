@@ -55,6 +55,25 @@ Rectangle {
         return all
     }
 
+    // Geometry of a nav target, mapped into `mapTo`'s coords (for the tour
+    // spotlight). key: a page number, "settings", or "rail" (the whole rail).
+    function itemRect(key, mapTo) {
+        if (key === "rail") {
+            var rp = rail.mapToItem(mapTo, 0, 0)
+            return Qt.rect(rp.x, rp.y, rail.width, rail.height)
+        }
+        var it = (key === "settings") ? settingsItem : null
+        if (!it) {
+            for (var i = 0; i < navRepeater.count; i++) {
+                var d = navRepeater.itemAt(i)
+                if (d && d.modelData && d.modelData.page === key && d.visible) { it = d; break }
+            }
+        }
+        if (!it) return Qt.rect(0, 0, 0, 0)
+        var p = it.mapToItem(mapTo, 0, 0)
+        return Qt.rect(p.x, p.y, it.width, it.height)
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 2
@@ -93,6 +112,7 @@ Rectangle {
 
         // ----- nav items -----
         Repeater {
+            id: navRepeater
             model: rail.items
             delegate: Item {
                 id: navItem
@@ -207,6 +227,7 @@ Rectangle {
 
         // ----- settings -----
         Item {
+            id: settingsItem
             Layout.fillWidth: true
             Layout.preferredHeight: 46
             Layout.leftMargin: 10

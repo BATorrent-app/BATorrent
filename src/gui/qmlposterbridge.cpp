@@ -1846,6 +1846,7 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
     m_activeProfile = s.value(QStringLiteral("qmlActiveProfile"), 0).toInt();
     if (m_activeProfile < 0 || m_activeProfile >= m_profiles.size())
         m_activeProfile = 0;
+    m_appIconChoice = s.value(QStringLiteral("appIconChoice"), QStringLiteral("default")).toString();
 
     if (auto *hints = QGuiApplication::styleHints()) {
         m_osLight = (hints->colorScheme() == Qt::ColorScheme::Light);
@@ -1853,9 +1854,8 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
             const bool light = (scheme == Qt::ColorScheme::Light);
             if (light == m_osLight) return;
             m_osLight = light;
-#ifndef Q_OS_MACOS
-            QGuiApplication::setWindowIcon(trayIcon());   // taskbar/titlebar, live (macOS Dock uses .icns)
-#endif
+            // re-tint the scheme-aware logo, but keep a user-chosen custom icon
+            applyAppIcon(m_appIconChoice);
             emit osSchemeChanged();                        // QML tray re-binds
         });
     }
@@ -2119,6 +2119,76 @@ QIcon QmlThemeBridge::trayIcon() const
     for (int sz : {16, 24, 32, 64, 128, 256})
         icon.addPixmap(renderLogo(m_osLight, sz, 1.0));
     return icon;
+}
+
+// ---- app-icon picker (theme-independent; issue #15) ----
+
+QString QmlThemeBridge::appIconChoice() const { return m_appIconChoice; }
+
+QVariantList QmlThemeBridge::appIcons() const
+{
+    QVariantList out;
+    const auto add = [&](const QString &key, const QString &preview) {
+        QVariantMap m; m["key"] = key; m["preview"] = preview; out << m;
+    };
+    add(QStringLiteral("default"),  QStringLiteral("qrc:/images/logo1.png"));
+    add(QStringLiteral("dark"),     QStringLiteral("qrc:/images/appicons/dark.png"));
+    add(QStringLiteral("light"),    QStringLiteral("qrc:/images/appicons/light.png"));
+    add(QStringLiteral("midnight"), QStringLiteral("qrc:/images/appicons/midnight.png"));
+    add(QStringLiteral("sakura"),   QStringLiteral("qrc:/images/appicons/sakura.png"));
+    add(QStringLiteral("darkstar"), QStringLiteral("qrc:/images/appicons/darkstar.png"));
+    return out;
+}
+
+QIcon QmlThemeBridge::iconForKey(const QString &key)
+{
+    QString path;
+    if (key == QLatin1String("dark"))          path = QStringLiteral(":/images/appicons/dark.png");
+    else if (key == QLatin1String("light"))    path = QStringLiteral(":/images/appicons/light.png");
+    else if (key == QLatin1String("midnight")) path = QStringLiteral(":/images/appicons/midnight.png");
+    else if (key == QLatin1String("sakura"))   path = QStringLiteral(":/images/appicons/sakura.png");
+    else if (key == QLatin1String("darkstar")) path = QStringLiteral(":/images/appicons/darkstar.png");
+    else return QIcon();
+
+    QPixmap src(path);
+    if (src.isNull()) return QIcon();
+    QIcon icon;
+    for (int sz : {16, 24, 32, 64, 128, 256, 512})
+        icon.addPixmap(src.scaled(sz, sz, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    return icon;
+}
+
+// Sets the live window icon: macOS Dock + Windows taskbar/window. "default"
+// keeps the bundled .icns on macOS (issue #14) and the scheme-aware logo
+// elsewhere; a custom pick overrides the Dock on purpose.
+void QmlThemeBridge::applyAppIcon(const QString &key)
+{
+    if (key.isEmpty() || key == QLatin1String("default")) {
+#ifndef Q_OS_MACOS
+        QGuiApplication::setWindowIcon(trayIcon());
+#endif
+        return;
+    }
+    const QIcon icon = iconForKey(key);
+    if (!icon.isNull())
+        QGuiApplication::setWindowIcon(icon);
+}
+
+void QmlThemeBridge::setAppIcon(const QString &key)
+{
+    const QString k = key.isEmpty() ? QStringLiteral("default") : key;
+    if (k != m_appIconChoice) {
+        m_appIconChoice = k;
+        QSettings().setValue(QStringLiteral("appIconChoice"), k);
+        emit appIconChanged();
+    }
+    applyAppIcon(k);
+}
+
+void QmlThemeBridge::applySavedAppIcon()
+{
+    if (!m_appIconChoice.isEmpty() && m_appIconChoice != QLatin1String("default"))
+        applyAppIcon(m_appIconChoice);
 }
 
 // RSS bridge

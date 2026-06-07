@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Onboarding & updates
+- **Welcome / What's New screen** — one screen that greets you on first install and, after each update, carries a personal note from the dev plus that version's highlights and a link to the full release notes. (Born from a real need: a past broken auto-update left no way to reach users between releases.)
+- **Guided interactive tour** — a coach-marks walkthrough (dimmed backdrop, callouts with arrows pointing at the nav rail, adding a torrent, Discover, Search, HUB and Settings). Runs once automatically after the first welcome/update screen — on a fresh install and once for everyone updating into this release — is skippable, and re-runnable anytime from **Help → Interactive tutorial**.
+
+### Appearance
+- **App-icon picker** (Settings → Appearance) — choose the live Dock/taskbar icon from a set of styles, **independent of the UI theme** (so a dark icon pairs with a light theme). Doesn't change the file-manager icon (`.app`/`.exe`), which comes from the signed bundle. Icon pack contributed by **@dkindratyuk-web** (#15).
+
 ## v4.0.0 — "Hub"
 
 BATorrent becomes a media hub: **find → download → search → watch/play**, all around the cover-art identity. A left nav rail (collapsible) swaps between pages with smooth transitions.

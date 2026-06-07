@@ -147,17 +147,27 @@ Item {
         onClicked: card.activated()
     }
 
-    // synopsis on hover
+    // synopsis on hover — a fixed-width card beside the poster. The explicit
+    // width is essential: a bare Text reports its full unwrapped line as
+    // implicitWidth, so the tooltip would stretch across the whole window.
     ToolTip {
+        id: synTip
         parent: card
         visible: card.synopsis.length > 0 && ma.containsMouse
         delay: 550
-        x: card.posterW + 8; y: 0
+        width: 300
+        padding: 12
+        x: card.posterW + 10
+        y: (card.posterH - height) / 2   // centered beside the poster (Popup clamps to the window)
         contentItem: Text {
-            text: card.synopsis; width: 260; wrapMode: Text.WordWrap
-            color: Theme.t1; font.pixelSize: 11; font.family: Theme.fontSans
+            text: card.synopsis
+            width: synTip.availableWidth
+            wrapMode: Text.WordWrap
+            maximumLineCount: 9
+            elide: Text.ElideRight
+            color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; lineHeight: 1.38
         }
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 6 }
+        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 9 }
     }
 
     // "My List" toggle — on top of the main MouseArea so it gets the click

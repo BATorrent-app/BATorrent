@@ -10,6 +10,11 @@
 <file>images/hollow.webp</file>
 <file>images/007.jpg</file>
 <file>images/forza.png</file>
+<file>images/appicons/dark.png</file>
+<file>images/appicons/light.png</file>
+<file>images/appicons/midnight.png</file>
+<file>images/appicons/sakura.png</file>
+<file>images/appicons/darkstar.png</file>
 <file>icons/open.svg</file>
 <file>icons/magnet.svg</file>
 <file>icons/pause.svg</file>
@@ -57,8 +62,9 @@
 <file>../src/qml/AddTorrentDialog.qml</file>
 <file>../src/qml/CreateTorrentDialog.qml</file>
 <file>../src/qml/AddAddonDialog.qml</file>
-<file>../src/qml/WelcomeDialog.qml</file>
 <file>../src/qml/ReleaseNotesDialog.qml</file>
+<file>../src/qml/WelcomeDialog.qml</file>
+<file>../src/qml/TourOverlay.qml</file>
 <file>../src/qml/AboutDialog.qml</file>
 <file>../src/qml/PlayerWindow.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>

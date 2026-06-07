@@ -54,11 +54,38 @@ Window {
             win.visible = false
         if (!showSplash) win.maybeShowWelcome()
     }
-    // welcome on first launch — shows until the user ticks "don't show again"
+    // first launch → the interactive tour (opens with a welcome step); an update
+    // (version changed) → the what's-new screen. Once each, never both, never on
+    // a plain relaunch.
     function maybeShowWelcome() {
         if (typeof settings === "undefined") return
-        if (settings.get("welcomeShown") === true) return
-        welcomeDlg.open()
+        var cur = (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? themeBridge.appVersion : ""
+        var firstRun = settings.get("welcomeShown") !== true
+        if (firstRun) {
+            settings.set("welcomeShown", true)
+            welcomeDlg.mode = "welcome"
+            welcomeDlg.open()
+        } else if (cur.length > 0 && settings.get("lastSeenVersion") !== cur) {
+            welcomeDlg.mode = "update"
+            welcomeDlg.open()
+        }
+        if (cur.length > 0) settings.set("lastSeenVersion", cur)
+    }
+
+    // The tour runs once ever, right after the first welcome/update screen the
+    // user closes (fresh install OR the big update). Later updates: dialog only.
+    function maybeStartTour() {
+        if (typeof settings === "undefined") return
+        if (settings.get("tourSeen") !== true) {
+            settings.set("tourSeen", true)
+            tourOverlay.start()
+        }
+    }
+
+    function rectIn(item, ref) {
+        if (!item || !ref) return Qt.rect(0, 0, 0, 0)
+        var p = item.mapToItem(ref, 0, 0)
+        return Qt.rect(p.x, p.y, item.width, item.height)
     }
     readonly property var presetCats: ["Apps", "Games", "Movies", "Series"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
@@ -402,7 +429,8 @@ Window {
         }
         Platform.Menu {
             title: (i18n.language, i18n.t("menu_help_title"))
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_welcome")); onTriggered: welcomeDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_tour")); onTriggered: tourOverlay.start() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_whatsnew")); onTriggered: { welcomeDlg.mode = "update"; welcomeDlg.open() } }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_release_notes")); onTriggered: releaseNotesDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_shortcuts")); onTriggered: win.showWin(shortcutsWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_logs")); shortcut: "Ctrl+Shift+L"; onTriggered: win.showWin(logWinLoader) }
@@ -724,7 +752,8 @@ Window {
             }
             BarMenu {
                 title: (i18n.language, i18n.t("menu_help_title"))
-                BarItem { text: (i18n.language, i18n.t("menu_welcome")); onTriggered: welcomeDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_tour")); onTriggered: tourOverlay.start() }
+                BarItem { text: (i18n.language, i18n.t("menu_whatsnew")); onTriggered: { welcomeDlg.mode = "update"; welcomeDlg.open() } }
                 BarItem { text: (i18n.language, i18n.t("menu_release_notes")); onTriggered: releaseNotesDlg.open() }
                 BarItem { text: (i18n.language, i18n.t("menu_shortcuts")); onTriggered: win.showWin(shortcutsWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_logs")); onTriggered: win.showWin(logWinLoader) }
@@ -790,7 +819,7 @@ Window {
 
                 // brand moved to the nav rail; toolbar starts at the actions
                 // G1: Abrir, Magnet
-                TBtn { label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/open.svg";  onClicked: openFileDlg.open() }
+                TBtn { id: tbOpen; label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/open.svg";  onClicked: openFileDlg.open() }
                 TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: magnetDlg.open() }
                 TGrpDiv {}
                 // G2: Pausar, Retomar, Parar
@@ -2428,19 +2457,36 @@ Window {
     }
     CreateTorrentDialog { id: createDlg }
     AddAddonDialog      { id: addAddonDlg }
+    ReleaseNotesDialog  { id: releaseNotesDlg }
     WelcomeDialog {
         id: welcomeDlg
-        onAccepted: if (dontShow && typeof settings !== "undefined") settings.set("welcomeShown", true)
-        onRejected: if (dontShow && typeof settings !== "undefined") settings.set("welcomeShown", true)
-        onActionRequested: function(action) {
-            if (action === "open") openFileDlg.open()
-            else if (action === "magnet") magnetDlg.open()
-            else if (action === "search") navRail.currentIndex = 2
-            else if (action === "rss") win.showWin(rssWinLoader)
-        }
+        onAccepted: win.maybeStartTour()
+        onRejected: win.maybeStartTour()        // closing via X/backdrop also leads into the tour
+        onOpenReleaseNotes: releaseNotesDlg.open()
     }
-    ReleaseNotesDialog  { id: releaseNotesDlg }
     AboutDialog         { id: aboutDlg }
+
+    TourOverlay {
+        id: tourOverlay
+        onPageRequested: function(page) { navRail.currentIndex = page }
+        // step 0 is the welcome (centered, no spotlight); the rest spotlight the UI
+        // bat/pose vary per step so all 3 candidate SVGs (noto/twemoji/openmoji)
+        // and poses (perch/hang, left/right) show in one run — for picking one.
+        steps: (i18n.language, [
+            { page: 0, title: i18n.t("tour_s1_t"), text: i18n.t("tour_s1_d"),
+              rectFn: function() { return navRail.itemRect("rail", tourOverlay) } },
+            { page: 0, title: i18n.t("tour_s2_t"), text: i18n.t("tour_s2_d"),
+              rectFn: function() { return win.rectIn(tbOpen, tourOverlay) } },
+            { page: 1, title: i18n.t("tour_s3_t"), text: i18n.t("tour_s3_d"),
+              rectFn: function() { return navRail.itemRect(1, tourOverlay) } },
+            { page: 2, title: i18n.t("tour_s4_t"), text: i18n.t("tour_s4_d"),
+              rectFn: function() { return navRail.itemRect(2, tourOverlay) } },
+            { page: 3, title: i18n.t("tour_s5_t"), text: i18n.t("tour_s5_d"),
+              rectFn: function() { return navRail.itemRect(3, tourOverlay) } },
+            { page: 0, title: i18n.t("tour_s6_t"), text: i18n.t("tour_s6_d"),
+              rectFn: function() { return navRail.itemRect("settings", tourOverlay) } }
+        ])
+    }
 
     // ================== TOP-LEVEL WINDOWS (lazy) ==================
     // Built on first open via Loader, not at startup — instantiating all of

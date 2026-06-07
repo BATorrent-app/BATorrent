@@ -364,6 +364,9 @@ int main(int argc, char *argv[])
 #ifndef Q_OS_MACOS
         app.setWindowIcon(themeBridge->trayIcon());
 #endif
+        // A user-chosen custom app icon overrides the above on all platforms
+        // (incl. the macOS Dock — intended; the default keeps the bundled .icns).
+        themeBridge->applySavedAppIcon();
 
         QQmlApplicationEngine engine;
         engine.addImageProvider(QStringLiteral("applogo"), new AppLogoImageProvider());

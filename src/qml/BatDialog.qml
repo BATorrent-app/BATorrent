@@ -46,7 +46,9 @@ Item {
         opacity: dlg.anim
         color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.5)
                             : Qt.rgba(20/255, 20/255, 28/255, 0.32)
-        MouseArea { anchors.fill: parent; onClicked: { dlg.rejected(); dlg.close() } }
+        // also swallow wheel/trackpad scroll so it doesn't reach the list behind
+        MouseArea { anchors.fill: parent; onClicked: { dlg.rejected(); dlg.close() }
+            onWheel: function(wheel) { wheel.accepted = true } }
     }
 
     // shadow behind card
@@ -72,8 +74,9 @@ Item {
         border.color: Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.14)
         border.width: 1
         clip: true
-        // swallow backdrop clicks landing on the card
-        MouseArea { anchors.fill: parent }
+        // swallow backdrop clicks + scroll landing on the card chrome (the body
+        // Flickable, above this, still scrolls normally)
+        MouseArea { anchors.fill: parent; onWheel: function(wheel) { wheel.accepted = true } }
 
         ColumnLayout {
             anchors.fill: parent

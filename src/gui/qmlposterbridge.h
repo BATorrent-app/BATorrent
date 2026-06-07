@@ -389,6 +389,10 @@ class QmlThemeBridge : public QObject
     // True when the OS taskbar/tray is in light mode (for logo contrast).
     Q_PROPERTY(bool osLight READ osLight NOTIFY osSchemeChanged)
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
+    // App-icon picker — independent of the UI theme (issue #15). Swaps the live
+    // Dock (macOS) / taskbar+window (Windows) icon; does NOT touch the signed
+    // bundle's Finder/.exe icon.
+    Q_PROPERTY(QString appIconChoice READ appIconChoice WRITE setAppIcon NOTIFY appIconChanged)
 
 public:
     explicit QmlThemeBridge(QObject *parent = nullptr);
@@ -425,6 +429,13 @@ public:
     Q_INVOKABLE QVariantList libraries() const;   // [{nm,v}] real linked-library versions
     QIcon trayIcon() const;   // logo recolored for the current OS scheme
 
+    // ---- app-icon picker ----
+    QString appIconChoice() const;
+    Q_INVOKABLE void setAppIcon(const QString &key);   // persist + apply live
+    Q_INVOKABLE QVariantList appIcons() const;         // [{key,label,preview}]
+    void applySavedAppIcon();                          // startup: apply a saved non-default pick
+    static QIcon iconForKey(const QString &key);       // multi-size icon from a bundled png
+
     // SVG-swap logo renderer (shared with the image provider). darkBody=true
     // swaps the off-white body to dark text for light backgrounds.
     static QPixmap renderLogo(bool darkBody, int size, qreal dpr = 1.0);
@@ -433,6 +444,7 @@ signals:
     void changed();
     void profilesChanged();
     void osSchemeChanged();
+    void appIconChanged();
 
 protected:
     // Catch each top-level window's Show to paint its native title bar dark/light
@@ -453,6 +465,8 @@ private:
     QVariantList m_profiles;
     int m_activeProfile = 0;
     bool m_osLight = false;
+    QString m_appIconChoice;
+    void applyAppIcon(const QString &key);   // sets QGuiApplication window icon
 };
 
 // Bridge for RSS feeds (wraps RssManager singleton).
