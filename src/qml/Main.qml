@@ -2242,7 +2242,10 @@ Window {
                 // ----- page 2: Search -----
                 SearchView { id: searchPage; Layout.fillWidth: true; Layout.fillHeight: true }
                 // ----- page 3: HUB -----
-                HubView { id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true }
+                HubView {
+                    id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
+                    onOpenSearch: function(q) { navRail.currentIndex = 2; searchPage.runQuery(q) }
+                }
             }
         }
     }

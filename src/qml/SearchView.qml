@@ -647,6 +647,12 @@ Rectangle {
                     }
                     rating: modelData.rating || 0
                     type: modelData.type || ""
+                    watchlistEnabled: typeof session !== "undefined"
+                    saved: typeof session !== "undefined"
+                           && (session.watchlist, session.inWatchlist(modelData.name || "", modelData.type || ""))
+                    onWatchlistToggle: if (typeof session !== "undefined") session.toggleWatchlist({
+                        title: modelData.name || "", type: modelData.type || "",
+                        poster: modelData.poster || "", year: modelData.year || "" })
                     onActivated: if (page.api) page.api.activateResult(index)
                 }
             }

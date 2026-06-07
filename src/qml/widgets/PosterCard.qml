@@ -19,6 +19,10 @@ Item {
 
     property int posterW: 150
     readonly property int posterH: Math.round(posterW * 1.5)
+    // optional "My List" toggle (only shown when watchlistEnabled)
+    property bool watchlistEnabled: false
+    property bool saved: false
+    signal watchlistToggle()
 
     implicitWidth: posterW
     implicitHeight: posterH + 42
@@ -139,5 +143,26 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: card.activated()
+    }
+
+    // "My List" toggle — on top of the main MouseArea so it gets the click
+    Rectangle {
+        visible: card.watchlistEnabled && (ma.containsMouse || wlMa.containsMouse || card.saved)
+        x: 6; y: 6
+        width: 26; height: 26; radius: 13
+        color: wlMa.containsMouse ? "#cc000000" : "#99000000"
+        IconImg {
+            anchors.centerIn: parent
+            src: "qrc:/icons/heart.svg"
+            tint: card.saved ? Theme.accent : "#ffffff"
+            s: 14
+        }
+        MouseArea {
+            id: wlMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: card.watchlistToggle()
+        }
     }
 }

@@ -101,6 +101,7 @@ private:
 class QmlSessionBridge : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QVariantList watchlist READ watchlist NOTIFY watchlistChanged)   // saved titles ("My List")
     Q_PROPERTY(int torrentCount READ torrentCount NOTIFY statsChanged)
     Q_PROPERTY(int activeCount READ activeCount NOTIFY statsChanged)
     Q_PROPERTY(int downloadingCount READ downloadingCount NOTIFY statsChanged)
@@ -231,6 +232,10 @@ public:
     Q_INVOKABLE void playByHash(const QString &infoHash);
     // Forget a movie's resume position (drops it from HUB "Continue watching").
     Q_INVOKABLE void clearResume(const QString &infoHash, int fileIndex);
+    // Watchlist ("My List") — saved titles (not torrents), persisted in QSettings.
+    QVariantList watchlist() const;
+    Q_INVOKABLE bool inWatchlist(const QString &title, const QString &type) const;
+    Q_INVOKABLE void toggleWatchlist(const QVariantMap &item);   // {title,type,poster,year}
     // HUB (games) — minimal: list game torrents (cover/progress) and launch them
     // via a user-set executable (no auto-detection yet — improved gradually).
     Q_INVOKABLE QVariantList gameLibrary() const;
@@ -309,6 +314,7 @@ public:
 
 signals:
     void statsChanged();
+    void watchlistChanged();
     void selectionChanged();
     // Heavy per-selection lists (peers/files/trackers/pieces) notify on this
     // instead of selectionChanged, which fires every ~1s from emitStats() and

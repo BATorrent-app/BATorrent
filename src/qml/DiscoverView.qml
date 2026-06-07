@@ -172,6 +172,12 @@ Rectangle {
                             year: pcard.modelData.year
                             rating: pcard.modelData.rating
                             type: pcard.modelData.type
+                            watchlistEnabled: typeof session !== "undefined"
+                            saved: typeof session !== "undefined"
+                                   && (session.watchlist, session.inWatchlist(pcard.modelData.title, pcard.modelData.type))
+                            onWatchlistToggle: if (typeof session !== "undefined") session.toggleWatchlist({
+                                title: pcard.modelData.title, type: pcard.modelData.type,
+                                poster: pcard.modelData.poster, year: pcard.modelData.year })
                             onActivated: page.openSearch(pcard.modelData.title)
                         }
                     }

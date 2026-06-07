@@ -15,6 +15,7 @@ import "widgets"
 
 Item {
     id: page
+    signal openSearch(string query)
     property var api: typeof session !== "undefined" ? session : null
     property var library: []
     property var gameItems: []
@@ -180,6 +181,39 @@ Item {
                 }
 
                 Item { Layout.fillWidth: true }   // keep both rails left-aligned at their 3-card width
+            }
+
+            // My List (saved titles) — click to find it in Search; heart to remove
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                spacing: 12
+                visible: page.api && page.api.watchlist.length > 0
+                Text {
+                    text: (i18n.language, i18n.t("hub_mylist"))
+                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                }
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 268
+                    orientation: ListView.Horizontal
+                    spacing: 16
+                    clip: true
+                    model: page.api ? page.api.watchlist : []
+                    boundsBehavior: Flickable.StopAtBounds
+                    delegate: PosterCard {
+                        required property var modelData
+                        posterW: 150
+                        title: modelData.title || ""
+                        poster: modelData.poster || ""
+                        year: modelData.year || ""
+                        type: modelData.type || ""
+                        watchlistEnabled: true
+                        saved: true
+                        onWatchlistToggle: if (page.api) page.api.toggleWatchlist(modelData)
+                        onActivated: page.openSearch(modelData.title || "")
+                    }
+                }
             }
 
             // Your games

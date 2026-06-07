@@ -1019,6 +1019,44 @@ QVariantList QmlSessionBridge::movieLibrary() const
     return out;
 }
 
+QVariantList QmlSessionBridge::watchlist() const
+{
+    const QByteArray raw = QSettings().value(QStringLiteral("watchlist")).toString().toUtf8();
+    return QJsonDocument::fromJson(raw).array().toVariantList();
+}
+
+bool QmlSessionBridge::inWatchlist(const QString &title, const QString &type) const
+{
+    const QVariantList list = watchlist();
+    for (const QVariant &v : list) {
+        const QVariantMap m = v.toMap();
+        if (m.value(QStringLiteral("title")).toString() == title
+            && m.value(QStringLiteral("type")).toString() == type)
+            return true;
+    }
+    return false;
+}
+
+void QmlSessionBridge::toggleWatchlist(const QVariantMap &item)
+{
+    const QString title = item.value(QStringLiteral("title")).toString();
+    const QString type = item.value(QStringLiteral("type")).toString();
+    if (title.isEmpty()) return;
+    QVariantList list = watchlist();
+    bool removed = false;
+    for (int i = 0; i < list.size(); ++i) {
+        const QVariantMap m = list[i].toMap();
+        if (m.value(QStringLiteral("title")).toString() == title
+            && m.value(QStringLiteral("type")).toString() == type) {
+            list.removeAt(i); removed = true; break;
+        }
+    }
+    if (!removed) list.prepend(item);
+    QSettings().setValue(QStringLiteral("watchlist"),
+                         QString::fromUtf8(QJsonDocument(QJsonArray::fromVariantList(list)).toJson(QJsonDocument::Compact)));
+    emit watchlistChanged();
+}
+
 void QmlSessionBridge::clearResume(const QString &infoHash, int fileIndex)
 {
     const QString rk = QStringLiteral("resume_%1_%2").arg(infoHash).arg(fileIndex);
