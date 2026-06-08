@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## v4.0.0 — "Hub"
+
+BATorrent becomes a media hub: **find → download → search → watch/play**, all around the cover-art identity. A left nav rail (collapsible) swaps between pages with smooth transitions.
 
 ### Onboarding & updates
 - **Welcome / What's New screen** — one screen that greets you on first install and, after each update, carries a personal note from the dev plus that version's highlights and a link to the full release notes. (Born from a real need: a past broken auto-update left no way to reach users between releases.)
@@ -8,10 +10,6 @@
 
 ### Appearance
 - **App-icon picker** (Settings → Appearance) — choose the live Dock/taskbar icon from a set of styles, **independent of the UI theme** (so a dark icon pairs with a light theme). Doesn't change the file-manager icon (`.app`/`.exe`), which comes from the signed bundle. Icon pack contributed by **@dkindratyuk-web** (#15).
-
-## v4.0.0 — "Hub"
-
-BATorrent becomes a media hub: **find → download → search → watch/play**, all around the cover-art identity. A left nav rail (collapsible) swaps between pages with smooth transitions.
 
 ### Discover
 - A new **Discover** page: rotating hero + rows of trending/popular **movies, series and games** (TMDB + IGDB), cover-art forward. Click anything to search for it.
@@ -25,6 +23,10 @@ BATorrent becomes a media hub: **find → download → search → watch/play**, 
 - **Watch movies in a built-in player** with **resume** (it remembers where you stopped) and a **watched-% bar** on each poster — stream while it's still downloading.
 - **Continue watching** and **Continue playing** rails up top, then your movies and games libraries.
 - **Games**: launch from the hub — it auto-detects the executable (or you set it once), with Install/Open-folder actions.
+
+### Reliability
+- **Auto-update hardening** — the downloaded installer is verified against its published size before it runs (no more bricking on a truncated/blocked download), a boot-crash **safe mode** offers recovery (reset settings / get latest) if startup fails twice, and the update dialog always has a manual **"Download manually"** fallback.
+- **The Peers tab no longer lags on large swarms** — failed geo-IP lookups are negative-cached and the peer list only refreshes while the tab is open.
 
 ### Fixes
 - A completed torrent that you'd **streamed no longer re-announces "download complete" on every launch** (its skipped sidecar files no longer make it look unfinished).
