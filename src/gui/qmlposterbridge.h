@@ -308,6 +308,10 @@ public:
     QVariantList selectedPieces() const;
     bool hasSelection() const;
 
+    // The Peers detail tab is expensive (pulls every peer from libtorrent), so the
+    // peer list only refreshes per tick while that tab is actually open.
+    Q_INVOKABLE void setDetailPeersActive(bool active);
+
     void emitStats();
 
     // Auto-shutdown: power off the machine after all downloads complete (the QML
@@ -345,6 +349,7 @@ private:
     QList<int> m_selectedRows;
     GeoIpResolver *m_geoIp = nullptr;
     QTimer m_peerListThrottle;      // coalesce geo-lookup results into ≤1 peer-list rebuild/sec
+    bool m_detailPeersActive = false;   // true only while the Peers detail tab is open
     bool m_shutdownArmed = false;   // debounce so the countdown fires once per drain
     QTimer *m_streamTimer = nullptr;   // polls until a streamed file is buffered
     QString m_streamFilePath;

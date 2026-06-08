@@ -34,6 +34,7 @@ private:
     QHash<QString, QString> m_cache; // IP -> country code
     QQueue<QString> m_queue;
     QSet<QString> m_queued;   // O(1) membership — m_queue.contains() was O(n), O(n²) under a 9k-peer flood
+    QSet<QString> m_failed;   // negative cache: IPs that didn't resolve (private/CGNAT, rate-limited, errors) so a churning swarm doesn't re-queue them every rebuild forever
     QTimer m_rateLimiter;
     bool m_requestInFlight = false;
 };

@@ -95,6 +95,9 @@ Window {
     }
     readonly property var presetCats: ["Apps", "Games", "Movies", "Series"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
+    // The Peers tab pulls every peer from libtorrent — only keep it live while open.
+    readonly property bool peersTabOpen: win.hasSel && win.detailTab === 1
+    onPeersTabOpenChanged: if (typeof session !== "undefined") session.setDetailPeersActive(peersTabOpen)
     property string sortColumn: ""
     property bool sortAsc: true
 

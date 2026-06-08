@@ -1199,6 +1199,13 @@ QStringList QmlSessionBridge::selectedTagList() const
 
 QStringList QmlSessionBridge::categories() const { return m_session->categories(); }
 
+void QmlSessionBridge::setDetailPeersActive(bool active)
+{
+    if (m_detailPeersActive == active) return;
+    m_detailPeersActive = active;
+    if (active) emit selectionListsChanged();   // fill the panel immediately on open
+}
+
 QVariantList QmlSessionBridge::selectedPeerList() const
 {
     QVariantList out;
@@ -1523,6 +1530,9 @@ void QmlSessionBridge::emitStats()
     // heavy per-selection lists (peers/files/trackers/pieces). The live scalar
     // selected* props still refresh via selectionChanged.
     emit selectionChanged();
+    // Exception: keep the peer list live (speeds/progress) only while the Peers
+    // tab is actually open — gated so it costs nothing the rest of the time.
+    if (m_detailPeersActive) emit selectionListsChanged();
 
     // Auto-shutdown arming: when enabled and at least one torrent exists, fire
     // once the moment nothing is downloading anymore. Re-arms when a new
