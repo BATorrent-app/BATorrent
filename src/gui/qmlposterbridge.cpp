@@ -2067,6 +2067,14 @@ bool QmlThemeBridge::osLight() const { return m_osLight; }
 
 QString QmlThemeBridge::appVersion() const { return QCoreApplication::applicationVersion(); }
 
+void QmlThemeBridge::markBootHealthy() const
+{
+    QSettings st;
+    st.setValue(QStringLiteral("bootInProgress"), false);
+    st.setValue(QStringLiteral("bootCrashes"), 0);
+    st.sync();
+}
+
 QString QmlThemeBridge::releaseNotes() const
 {
     QFile f(QStringLiteral(":/CHANGELOG.md"));   // the real source of truth

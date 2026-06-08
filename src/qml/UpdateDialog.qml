@@ -87,6 +87,14 @@ BatDialog {
             Layout.topMargin: Theme.sp2
             spacing: Theme.sp3
             Item { Layout.fillWidth: true }
+            // always-available fallback: opens the download in the browser, so a
+            // broken/blocked auto-update never leaves the user stuck.
+            BtnFlat {
+                visible: !dlg.downloading
+                text: (i18n.language, i18n.t("update_manual"))
+                onClicked: Qt.openUrlExternally(dlg.url.length > 0 ? dlg.url
+                           : "https://github.com/Mateuscruz19/BATorrent/releases/latest")
+            }
             BtnFlat {
                 visible: dlg.version.length > 0 && !dlg.downloading
                 text: (i18n.language, i18n.t("update_skip"))

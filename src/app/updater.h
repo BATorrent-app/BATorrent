@@ -39,6 +39,7 @@ private:
 
     QNetworkAccessManager m_nam;
     QString m_latestVersion;
+    qint64 m_expectedSize = 0;   // asset byte size from the release JSON (0 = unknown, skip check)
 };
 
 #endif

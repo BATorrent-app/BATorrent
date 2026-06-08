@@ -143,6 +143,7 @@ void Updater::parseReleaseInfo(QNetworkReply *reply)
         QJsonObject asset = val.toObject();
         if (asset.value("name").toString() == wantedAsset) {
             QString url = asset.value("browser_download_url").toString();
+            m_expectedSize = asset.value("size").toVariant().toLongLong();  // 0 if absent (e.g. Gitee)
             emit updateAvailable(m_latestVersion, url, wantedAsset);
             return;
         }
@@ -188,6 +189,15 @@ void Updater::onDownloadFinished(QNetworkReply *reply, const QString &assetName)
     }
     file.write(reply->readAll());
     file.close();
+
+    // Integrity gate: a truncated download or an HTML error page (served with a
+    // 200) would otherwise be run as an installer and could brick the install.
+    // Reject anything that doesn't match the asset's published byte size.
+    if (m_expectedSize > 0 && file.size() != m_expectedSize) {
+        QFile::remove(destPath);
+        emit errorOccurred("Download looks incomplete or corrupted — please download manually.");
+        return;
+    }
 
     emit updateReady();
     launchUpdaterScript(destPath);

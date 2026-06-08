@@ -54,6 +54,12 @@ Window {
             win.visible = false
         if (!showSplash) win.maybeShowWelcome()
     }
+    // once the app has survived a few seconds, clear the boot-crash sentinel
+    // (used by main.cpp's safe-mode recovery)
+    Timer {
+        interval: 3500; running: true; repeat: false
+        onTriggered: if (typeof themeBridge !== "undefined") themeBridge.markBootHealthy()
+    }
     // first launch → the interactive tour (opens with a welcome step); an update
     // (version changed) → the what's-new screen. Once each, never both, never on
     // a plain relaunch.

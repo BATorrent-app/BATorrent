@@ -21,6 +21,13 @@
 #include <QQuickWindow>
 #include <QSGRendererInterface>
 #include <QLocale>
+#include <QMessageBox>
+#include <QPushButton>
+#include <QDesktopServices>
+#include <QProcess>
+#include <QDir>
+#include <QStandardPaths>
+#include <QUrl>
 #include "app/metadataresolver.h"
 #include "app/discoveryservice.h"
 #include "app/translator.h"
@@ -160,6 +167,47 @@ int main(int argc, char *argv[])
     QString argsPayload = collectArgs(app.arguments());
     if (sendToRunningInstance(argsPayload))
         return 0;
+
+    // --- boot-health sentinel: catch a crash during startup (e.g. corrupt resume
+    // data, or a bad auto-update) and offer recovery BEFORE the risky init runs
+    // again. markBootHealthy() (called from QML once the UI is up) clears it.
+    bool safeMode = false;
+    {
+        QSettings st;
+        int crashes = st.value("bootCrashes", 0).toInt();
+        if (st.value("bootInProgress", false).toBool())
+            ++crashes;                         // last boot never reported healthy
+        st.setValue("bootCrashes", crashes);
+        st.setValue("bootInProgress", true);
+        st.sync();
+
+        if (crashes >= 2) {
+            QMessageBox box;
+            box.setIcon(QMessageBox::Warning);
+            box.setWindowTitle("BATorrent — Recovery");
+            box.setText("BATorrent didn't start properly the last couple of times.");
+            box.setInformativeText("You can reset settings, get the latest version, or try starting normally.");
+            QPushButton *resetBtn = box.addButton("Reset settings & restart", QMessageBox::DestructiveRole);
+            QPushButton *dlBtn    = box.addButton("Download latest", QMessageBox::ActionRole);
+            QPushButton *contBtn  = box.addButton("Continue anyway", QMessageBox::AcceptRole);
+            box.setDefaultButton(contBtn);
+            box.exec();
+            if (box.clickedButton() == resetBtn) {
+                const QString resumeDir =
+                    QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/resume";
+                QSettings().clear();
+                QSettings().sync();
+                QDir(resumeDir).removeRecursively();
+                QProcess::startDetached(QApplication::applicationFilePath(), {});
+                return 0;
+            }
+            if (box.clickedButton() == dlBtn) {
+                QDesktopServices::openUrl(QUrl("https://github.com/Mateuscruz19/BATorrent/releases/latest"));
+                return 0;
+            }
+            safeMode = true;   // continue, but skip the auto update-check this run
+        }
+    }
 
     // Load Inter font family
     QFontDatabase::addApplicationFont(":/fonts/Inter-Regular.ttf");
@@ -418,7 +466,8 @@ int main(int argc, char *argv[])
                 QStringLiteral("[render] scene graph backend: %1").arg(QLatin1String(backend)));
         }
 #ifndef BAT_STORE_BUILD
-        updaterBridge->check(true);   // silent check on startup
+        if (!safeMode)                // in safe mode, don't re-trigger a possibly-bad auto-update
+            updaterBridge->check(true);   // silent check on startup
 #endif
 
         // Single-instance server (the legacy path had this; the QML path didn't,

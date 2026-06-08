@@ -813,5 +813,6 @@
   "tour_s0_d": "我带你快速了解一下——大约 30 秒。",
   "tour_start": "开始",
   "welcome_tour_hint": "我们会用一个快速导览带你了解。",
-  "menu_whatsnew": "更新内容"
+  "menu_whatsnew": "更新内容",
+  "update_manual": "手动下载"
 }
