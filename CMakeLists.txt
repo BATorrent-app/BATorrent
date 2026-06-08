@@ -41,6 +41,11 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/discoveryservice.cpp
     src/app/gamesourcemanager.cpp
     src/gui/qmlposterbridge.cpp
+    src/gui/qmlpostermodel.cpp
+    src/gui/qmlsessionbridge.cpp
+    src/gui/qmlthemebridge.cpp
+    src/gui/qmlsearchbridge.cpp
+    src/gui/qmlsettingsbridge.cpp
     src/webui/webserver.cpp
     src/webui/streamserver.cpp
     ${RESOURCES}

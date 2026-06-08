@@ -31,8 +31,13 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/app/logger.cpp
     ${CMAKE_SOURCE_DIR}/src/app/nameparser.cpp
     ${CMAKE_SOURCE_DIR}/src/app/gamesourcemanager.cpp
-    # C++<->QML bridge layer + its backend deps (for test_bridge)
+    # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
     ${CMAKE_SOURCE_DIR}/src/gui/qmlposterbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/gui/qmlpostermodel.cpp
+    ${CMAKE_SOURCE_DIR}/src/gui/qmlsessionbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/gui/qmlthemebridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/gui/qmlsearchbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/gui/qmlsettingsbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/app/metadataresolver.cpp
     ${CMAKE_SOURCE_DIR}/src/app/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/app/qrcodegen.cpp
