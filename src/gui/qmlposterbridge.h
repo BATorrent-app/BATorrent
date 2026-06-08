@@ -136,6 +136,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(bool selectedCompleted READ selectedCompleted NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedPaused READ selectedPaused NOTIFY selectionChanged)
     Q_PROPERTY(QVariantList selectedPeerList READ selectedPeerList NOTIFY selectionListsChanged)
+    Q_PROPERTY(bool peersLoading READ peersLoading NOTIFY selectionListsChanged)  // true while the first peer build is pending
     Q_PROPERTY(QVariantList selectedFiles READ selectedFiles NOTIFY selectionListsChanged)
     Q_PROPERTY(QVariantList selectedTrackers READ selectedTrackers NOTIFY selectionListsChanged)
     Q_PROPERTY(QVariantList selectedPieces READ selectedPieces NOTIFY selectionListsChanged)
@@ -303,6 +304,7 @@ public:
     bool selectedCompleted() const;
     bool selectedPaused() const;
     QVariantList selectedPeerList() const;
+    bool peersLoading() const { return m_peersLoading; }
     QVariantList selectedFiles() const;
     QVariantList selectedTrackers() const;
     QVariantList selectedPieces() const;
@@ -350,6 +352,9 @@ private:
     GeoIpResolver *m_geoIp = nullptr;
     QTimer m_peerListThrottle;      // coalesce geo-lookup results into ≤1 peer-list rebuild/sec
     bool m_detailPeersActive = false;   // true only while the Peers detail tab is open
+    bool m_peersLoading = false;        // first peer build pending (show placeholder)
+    QVariantList m_peerCache;           // built off the click / per tick, not on the QML binding path
+    void rebuildPeerCache();            // heavy peersAt build → cache (deferred, never on the click)
     bool m_shutdownArmed = false;   // debounce so the countdown fires once per drain
     QTimer *m_streamTimer = nullptr;   // polls until a streamed file is buffered
     QString m_streamFilePath;

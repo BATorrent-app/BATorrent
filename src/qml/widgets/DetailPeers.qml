@@ -11,6 +11,7 @@ import "../theme"
 ColumnLayout {
     id: pane
     property var peers: []
+    property bool loading: false   // building the peer list (deferred off the click)
     spacing: 0
 
     Rectangle {
@@ -29,9 +30,24 @@ ColumnLayout {
         }
     }
     Text {
-        visible: pane.peers.length === 0
+        visible: pane.peers.length === 0 && !pane.loading
         Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 18
         text: (i18n.language, i18n.t("detailpeers_empty")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans
+    }
+    // loading placeholder — skeleton rows while the peer list is being built
+    ColumnLayout {
+        visible: pane.loading && pane.peers.length === 0
+        Layout.fillWidth: true; Layout.topMargin: 6; spacing: 0
+        Repeater {
+            model: 8
+            delegate: RowLayout {
+                Layout.fillWidth: true; Layout.preferredHeight: 32
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5; spacing: Theme.sp4
+                Rectangle { Layout.preferredWidth: 22; Layout.preferredHeight: 12; radius: 6; color: Theme.field }
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 12; radius: 6; color: Theme.field; opacity: 0.6 }
+                Rectangle { Layout.preferredWidth: 60; Layout.preferredHeight: 12; radius: 6; color: Theme.field; opacity: 0.45 }
+            }
+        }
     }
     ListView {
         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; model: pane.peers

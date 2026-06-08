@@ -1203,16 +1203,35 @@ void QmlSessionBridge::setDetailPeersActive(bool active)
 {
     if (m_detailPeersActive == active) return;
     m_detailPeersActive = active;
-    if (active) emit selectionListsChanged();   // fill the panel immediately on open
+    if (active) {
+        // Show a placeholder instantly, then build the (heavy) peer list off the
+        // click on the next event-loop turn — opening the tab never blocks.
+        m_peersLoading = true;
+        m_peerCache.clear();
+        emit selectionListsChanged();
+        QTimer::singleShot(0, this, [this]() { rebuildPeerCache(); });
+    } else {
+        m_peerCache.clear();
+        m_peersLoading = false;
+    }
 }
 
-QVariantList QmlSessionBridge::selectedPeerList() const
+// Cheap getter — the QML binding reads the cache, never touches libtorrent.
+QVariantList QmlSessionBridge::selectedPeerList() const { return m_peerCache; }
+
+// Heavy build (peersAt pulls every peer from libtorrent). Runs deferred / per
+// tick while the Peers tab is open — never on the QML binding path or the click.
+void QmlSessionBridge::rebuildPeerCache()
 {
+    if (!m_detailPeersActive || !hasSelection()) {
+        if (!m_peerCache.isEmpty()) { m_peerCache.clear(); emit selectionListsChanged(); }
+        m_peersLoading = false;
+        return;
+    }
     QVariantList out;
-    if (!hasSelection()) return out;
-    // A big swarm (9k+ peers) froze the UI: a QVariantMap + geo lookup per peer,
-    // every refresh. Cap to the 500 most active (capped inside peersAt, before
-    // the QString-heavy conversion); the total count is shown in the panel.
+    // A big swarm (9k+ peers) froze the UI: a QVariantMap + geo lookup per peer.
+    // Cap to the 500 most active (capped inside peersAt, before the QString-heavy
+    // conversion); the total count is shown in the panel.
     auto peers = m_session->peersAt(m_selectedIndex, 500);
     out.reserve(peers.size());
     for (const auto &p : peers) {
@@ -1229,7 +1248,9 @@ QVariantList QmlSessionBridge::selectedPeerList() const
         m["flag"] = cc.isEmpty() ? QString() : countryCodeToFlag(cc);
         out << m;
     }
-    return out;
+    m_peerCache = out;
+    m_peersLoading = false;
+    emit selectionListsChanged();
 }
 
 QVariantList QmlSessionBridge::selectedFiles() const
@@ -1532,7 +1553,7 @@ void QmlSessionBridge::emitStats()
     emit selectionChanged();
     // Exception: keep the peer list live (speeds/progress) only while the Peers
     // tab is actually open — gated so it costs nothing the rest of the time.
-    if (m_detailPeersActive) emit selectionListsChanged();
+    if (m_detailPeersActive) rebuildPeerCache();
 
     // Auto-shutdown arming: when enabled and at least one torrent exists, fire
     // once the moment nothing is downloading anymore. Re-arms when a new

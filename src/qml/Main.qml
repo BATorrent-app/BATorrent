@@ -2218,7 +2218,8 @@ Window {
                   // ALL of these at once — and selectedPieces alone is one entry
                   // per piece (hundreds of thousands on a big torrent), which
                   // froze the GUI thread on every single selection.
-                  DetailPeers    { peers:    (win.hasSel && win.detailTab === 1) ? session.selectedPeerList : [] }
+                  DetailPeers    { peers:    (win.hasSel && win.detailTab === 1) ? session.selectedPeerList : []
+                                   loading:  win.peersTabOpen && session.peersLoading }
                   DetailFiles {
                       files: (win.hasSel && win.detailTab === 2) ? session.selectedFiles : []
                       onRenameFile: function(idx, current) {
