@@ -570,8 +570,13 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
             }
             for (const QString &t : tops) {
                 if (t.isEmpty()) continue;
-                trashTargets << QDir(savePath).filePath(t)
-                             << QDir(savePath).filePath(t + ".!bt");
+                // the in-memory file_path may already carry the incomplete-file
+                // ".!bt" suffix (rename_file persists on the handle) — normalize
+                // to the base name and target both on-disk variants
+                QString base = t;
+                if (base.endsWith(QLatin1String(".!bt"))) base.chop(4);
+                trashTargets << QDir(savePath).filePath(base)
+                             << QDir(savePath).filePath(base + QStringLiteral(".!bt"));
             }
         }
 

@@ -1123,3 +1123,77 @@ TEST_CASE("SubtitleSearch: Gestdown end-to-end for a known series episode", "[in
     INFO("cues parsed: " << cues.size());
     REQUIRE(cues.size() > 50);   // a real episode has hundreds of cues
 }
+
+// ============================================================================
+//  DELETE-TO-TRASH (remove with files must be recoverable, never a hard erase)
+// ============================================================================
+
+#include <libtorrent/create_torrent.hpp>
+#include <libtorrent/bencode.hpp>
+
+#ifdef Q_OS_MACOS
+TEST_CASE("SessionManager: remove with files moves the data to the trash", "[integration][trash]")
+{
+    app();
+    QTemporaryDir work;
+    REQUIRE(work.isValid());
+
+    const QString payload = work.filePath("bat-trash-test.bin");
+    {
+        QFile f(payload);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write(QByteArray(256 * 1024, 'x'));
+    }
+
+    // build a real .torrent for the junk file
+    lt::file_storage fs;
+    lt::add_files(fs, payload.toStdString());
+    lt::create_torrent ct(fs);
+    lt::set_piece_hashes(ct, QFileInfo(payload).absolutePath().toStdString());
+    std::vector<char> buf;
+    lt::bencode(std::back_inserter(buf), ct.generate());
+    const QString torrentPath = work.filePath("bat-trash-test.torrent");
+    {
+        QFile f(torrentPath);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write(buf.data(), static_cast<qint64>(buf.size()));
+    }
+
+    SessionManager session;
+    const int before = session.torrentCount();
+    session.addTorrent(torrentPath, QFileInfo(payload).absolutePath());
+    REQUIRE(session.torrentCount() == before + 1);
+    const int idx = session.torrentCount() - 1;
+
+    // let libtorrent check the (already complete) data
+    QTest::qWait(1500);
+    QCoreApplication::processEvents();
+
+    session.removeTorrent(idx, true);
+
+    // the trash move is deferred 900ms past remove_torrent
+    QElapsedTimer t;
+    t.start();
+    while (QFileInfo::exists(payload) && t.elapsed() < 8000)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+
+    const QString trashed = QDir::homePath() + "/.Trash/bat-trash-test.bin";
+    REQUIRE(!QFileInfo::exists(payload));      // gone from the save location…
+    REQUIRE(QFileInfo::exists(trashed));       // …and recoverable from the Trash
+    QFile::remove(trashed);                    // cleanup
+}
+#endif
+
+#ifdef Q_OS_MACOS
+TEST_CASE("QFile::moveToTrash works in this environment", "[trash-env]")
+{
+    QTemporaryDir tmp;
+    const QString p = tmp.filePath("bat-trashenv-probe.txt");
+    { QFile f(p); REQUIRE(f.open(QIODevice::WriteOnly)); f.write("x"); }
+    QString moved = p;
+    const bool ok = QFile::moveToTrash(moved);
+    INFO("moveToTrash returned " << ok << ", new path: " << moved.toStdString());
+    REQUIRE(ok);
+    REQUIRE(!QFileInfo::exists(p));
+}
+#endif

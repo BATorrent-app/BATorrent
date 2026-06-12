@@ -945,13 +945,6 @@ Window {
                 // G5: Config.
                 TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: win.showWin(settingsWinLoader) }
 
-                // G6: alt-speed (turtle) manual toggle
-                TBtn {
-                    label: (i18n.language, i18n.t("tb_alt_speed"))
-                    icon: "qrc:/icons/turtle.svg"
-                    active: typeof session !== "undefined" && session.altSpeedsActive
-                    onClicked: if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive)
-                }
 
                 // .tb-spacer
                 Item { Layout.fillWidth: true }
@@ -1676,6 +1669,9 @@ Window {
                     required property string posterPath
 
                     readonly property string posterUrl: win.fileUrl(posterPath)
+                    // the "stalled why" tooltip is driven by listArea (its z:2
+                    // hover-exclusive MouseArea starves any in-delegate handler)
+                    readonly property Item stateCell: lrowStateText
 
                     color: win.isRowSelected(index) ? Theme.sel : (listArea.hoveredRow === index ? Theme.hover : "transparent")
 
@@ -1770,17 +1766,13 @@ Window {
                             font.family: Theme.fontMono
                         }
                         Text {
+                            id: lrowStateText
                             text: lrow.stateString
                             Layout.preferredWidth: 110
                             color: win.textFor(lrow.stateKey)
                             font.pixelSize: 12
                             font.weight: Theme.hasAnime ? Font.DemiBold : Font.Medium
                             font.family: Theme.fontSans
-                            // why a "Downloading" row sits at 0 B/s — hover the state
-                            HoverHandler { id: stateHover; enabled: lrow.stateDetail.length > 0 }
-                            ToolTip.visible: stateHover.hovered && lrow.stateDetail.length > 0
-                            ToolTip.text: lrow.stateDetail
-                            ToolTip.delay: 350
                         }
                         Text {
                             text: win.catLabel(lrow.category)
@@ -1826,6 +1818,53 @@ Window {
                 property real startY: 0
                 property int pressRow: -1
 
+                // "stalled why" tooltip over the State cell — owned here because
+                // this hover-exclusive MouseArea starves in-delegate handlers
+                property string tipText: ""
+                property point tipPos: Qt.point(0, 0)
+                Timer {
+                    id: stateTipDelay
+                    interval: 350
+                    onTriggered: if (listArea.tipText.length > 0) stateTip.visible = true
+                }
+                function updateStateTip(mx, my) {
+                    var row = rowAt(my, mx)
+                    var d = row >= 0 ? list.itemAtIndex(row) : null
+                    if (d && d.stateDetail !== undefined && d.stateDetail.length > 0 && !dragging) {
+                        var p = d.stateCell.mapToItem(listArea, 0, 0)
+                        if (mx >= p.x - 6 && mx <= p.x + d.stateCell.width + 6) {
+                            tipText = d.stateDetail
+                            tipPos = Qt.point(p.x, p.y + 26)
+                            if (!stateTip.visible) stateTipDelay.restart()
+                            return
+                        }
+                    }
+                    tipText = ""
+                    stateTipDelay.stop()
+                    stateTip.visible = false
+                }
+                Rectangle {
+                    id: stateTip
+                    visible: false
+                    x: Math.max(8, Math.min(listArea.tipPos.x, listArea.width - width - 8))
+                    y: listArea.tipPos.y
+                    z: 10
+                    radius: 7
+                    color: Theme.panel
+                    border.color: Theme.hair
+                    border.width: 1
+                    width: stateTipText.implicitWidth + 20
+                    height: stateTipText.implicitHeight + 12
+                    Text {
+                        id: stateTipText
+                        anchors.centerIn: parent
+                        text: listArea.tipText
+                        color: Theme.t1
+                        font.pixelSize: 11
+                        font.family: Theme.fontSans
+                    }
+                }
+
                 function rowAt(my, mx) {
                     if (!win.model || list.count === 0) return -1
                     // use the ListView's own layout so detection lines up exactly
@@ -1836,6 +1875,7 @@ Window {
 
                 onPositionChanged: function(mouse) {
                     hoveredRow = rowAt(mouse.y, mouse.x)
+                    updateStateTip(mouse.x, mouse.y)
                     if (pressed && !dragging &&
                         (Math.abs(mouse.x - startX) > 8 || Math.abs(mouse.y - startY) > 8))
                         dragging = true
@@ -1846,7 +1886,7 @@ Window {
                         marquee.height = Math.abs(mouse.y - startY)
                     }
                 }
-                onExited: hoveredRow = -1
+                onExited: { hoveredRow = -1; tipText = ""; stateTipDelay.stop(); stateTip.visible = false }
                 onPressed: function(mouse) {
                     startX = mouse.x; startY = mouse.y
                     pressRow = rowAt(mouse.y, mouse.x)
@@ -2373,6 +2413,32 @@ Window {
                     font.pixelSize: 12
                     font.family: Theme.fontSans
                 }
+                // alt-speed (turtle): a mode toggle lives with the other status
+                // signals, not among the toolbar actions
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: Theme.sp2
+                    width: 26; height: 22; radius: 6
+                    readonly property bool on: typeof session !== "undefined" && session.altSpeedsActive
+                    color: on ? Theme.accentTint : (turtleMa.containsMouse ? Theme.hover : "transparent")
+                    IconImg {
+                        anchors.centerIn: parent
+                        src: "qrc:/icons/turtle.svg"
+                        tint: parent.on ? Theme.accentText : Theme.t4
+                        s: 15
+                    }
+                    MouseArea {
+                        id: turtleMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive)
+                    }
+                    ToolTip.text: (i18n.language, i18n.t("tb_alt_speed"))
+                    ToolTip.visible: turtleMa.containsMouse
+                    ToolTip.delay: 400
+                }
+
                 // port reachability (UPnP/NAT-PMP + listen heuristic)
                 Row {
                     id: portInd
