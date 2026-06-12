@@ -228,6 +228,8 @@ public:
 
     // Manual tracker / disk operations
     void forceRecheck(int index);
+    // Write the torrent's .torrent metadata to destPath (qBittorrent's "Export").
+    bool exportTorrent(int index, const QString &destPath);
     void forceReannounce(int index);
 
     // info-hash for a torrent at the given index, or empty string if metadata
@@ -371,6 +373,19 @@ public:
     void setScheduleDays(int daysMask); // bit 0=Mon..6=Sun
     int scheduleDays() const;
     bool altSpeedsActive() const;
+    // Manual "turtle" toggle — flip alt speed limits on/off independent of the
+    // scheduler. Applies the alt (or normal) ceiling to libtorrent immediately.
+    void setAltSpeedsActive(bool active);
+
+    // Pre-allocate the full file size on disk before downloading (vs sparse).
+    void setPreallocate(bool on);
+    bool preallocate() const;
+    // Force a hash recheck when adding a torrent whose data already exists.
+    void setAutoRecheck(bool on);
+    bool autoRecheck() const;
+    // Listen-port reachability heuristic from UPnP/NAT-PMP + listen state.
+    // 0=checking, 1=open, 2=firewalled, 3=closed.
+    int portStatus() const;
 
     // Asynchronous "save everything" trigger. Each torrent gets a
     // save_resume_data() request; the writes happen in processAlerts when
@@ -417,6 +432,8 @@ signals:
     void torrentError(const QString &message);
     void killSwitchTriggered();
     void interfaceRestored();
+    void altSpeedsActiveChanged(bool active);
+    void portStatusChanged(int status);
 
 private slots:
     void updateStats();
@@ -432,6 +449,10 @@ private:
     // suffix so media servers ignore in-progress files. Stripped back as
     // each file completes (see file_completed_alert handling).
     void applyIncompleteSuffix(lt::add_torrent_params &atp);
+    // Set sparse vs full allocation on a torrent being added (pre-allocate option).
+    void applyStorageMode(lt::add_torrent_params &atp);
+    // Recompute the port-reachability heuristic from listen/portmap state.
+    void updatePortStatus();
     // Request an immediate resume-data write for a handle (so a freshly-added,
     // never-downloaded torrent survives a restart). Mirrors the piece_finished path.
     void stageResumeSave(const lt::torrent_handle &h);
@@ -609,6 +630,11 @@ private:
     int m_scheduleToHour = 7;
     int m_scheduleDays = 0x7F; // all days
     bool m_altSpeedsActive = false;
+    bool m_preallocate = false;
+    bool m_autoRecheck = false;
+    int m_portStatus = 0;     // 0=checking,1=open,2=firewalled,3=closed
+    bool m_listenOk = false;
+    bool m_portmapOk = false;
     int m_normalDownLimit = 0;
     int m_normalUpLimit = 0;
 };

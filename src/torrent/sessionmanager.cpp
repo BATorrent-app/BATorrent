@@ -10,6 +10,8 @@
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
 #include <libtorrent/magnet_uri.hpp>
+#include <libtorrent/create_torrent.hpp>
+#include <libtorrent/bencode.hpp>
 #include <libtorrent/write_resume_data.hpp>
 #include <libtorrent/read_resume_data.hpp>
 #include <libtorrent/alert_types.hpp>
@@ -20,6 +22,7 @@
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QFile>
+#include <QUrl>
 #include <QSettings>
 #include <QNetworkInterface>
 #include <QDateTime>
@@ -35,6 +38,9 @@ SessionManager::SessionManager(QObject *parent)
     pack.set_int(lt::settings_pack::alert_mask,
                  lt::alert_category::status | lt::alert_category::error
                  | lt::alert_category::storage
+                 // port_mapping delivers portmap/portmap_error alerts used by
+                 // the listen-port reachability indicator.
+                 | lt::alert_category::port_mapping
                  // piece_progress delivers piece_finished_alert; we use it
                  // to opportunistically save resume data (rate-limited to
                  // once per minute per torrent) so a crash mid-download
@@ -185,6 +191,38 @@ SessionManager::SessionManager(QObject *parent)
         m_perTorrentUpLimit[key] = settings.value(key).toInt();
     settings.endGroup();
 
+    // Restore persisted speed / queue / network / VPN / proxy preferences. The
+    // matching setters write these on change; without this replay they reset to
+    // defaults every launch (the "settings don't save" bug). outgoingInterface
+    // must run before listenPort so the port binds onto the chosen interface.
+    if (settings.contains("downloadLimit")) setDownloadLimit(settings.value("downloadLimit").toInt());
+    if (settings.contains("uploadLimit"))   setUploadLimit(settings.value("uploadLimit").toInt());
+    setMaxActiveDownloads(settings.value("maxActiveDownloads", 0).toInt());
+    setSeedRatioLimit(settings.value("seedRatioLimit", 0.0).toFloat());
+    setAltSpeedLimits(settings.value("altDownLimit", 0).toInt(),
+                      settings.value("altUpLimit", 0).toInt());
+    setScheduleFromHour(settings.value("scheduleFromHour", 0).toInt());
+    setScheduleToHour(settings.value("scheduleToHour", 0).toInt());
+    setScheduleDays(settings.value("scheduleDays", 0).toInt());
+    setSchedulerEnabled(settings.value("schedulerEnabled", false).toBool());
+    if (settings.contains("maxConnections")) setMaxConnections(settings.value("maxConnections").toInt());
+    if (settings.contains("dhtEnabled"))     setDhtEnabled(settings.value("dhtEnabled").toBool());
+    if (settings.contains("utpEnabled"))     setUtpEnabled(settings.value("utpEnabled").toBool());
+    if (settings.contains("encryptionMode")) setEncryptionMode(settings.value("encryptionMode").toInt());
+    const QString persistedIface = settings.value("outgoingInterface").toString();
+    if (!persistedIface.isEmpty()) setOutgoingInterface(persistedIface);
+    if (settings.value("listenPort", 0).toInt() > 0) setListenPort(settings.value("listenPort").toInt());
+    setKillSwitchEnabled(settings.value("killSwitchEnabled", false).toBool());
+    setAutoResumeOnReconnect(settings.value("autoResumeOnReconnect", false).toBool());
+    if (settings.value("proxyType", 0).toInt() != 0)
+        setProxySettings(settings.value("proxyType").toInt(), settings.value("proxyHost").toString(),
+                         settings.value("proxyPort").toInt(), settings.value("proxyUser").toString(),
+                         settings.value("proxyPass").toString());
+    setAutoMove(settings.value("autoMoveEnabled", false).toBool(),
+                settings.value("autoMovePath").toString());
+    m_preallocate = settings.value("preallocate", false).toBool();
+    m_autoRecheck = settings.value("autoRecheck", false).toBool();
+
     // Crash-loop guard. The only place a bad/corrupt resume file can hard-crash
     // the process is the synchronous parse inside loadResumeData(). So we raise
     // the flag right before it and lower it right after: if the parse crashes,
@@ -264,6 +302,7 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         applyContentLayout(atp);
         applyExcludedPatterns(atp);
         applyIncompleteSuffix(atp);
+        applyStorageMode(atp);
 
         // Temp path: download to temp dir, move to real path on finish
         if (!m_tempPath.isEmpty() && QDir(m_tempPath).exists()) {
@@ -275,6 +314,7 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
         incrementTorrentCount();
+        if (m_autoRecheck && h.is_valid()) h.force_recheck();   // verify pre-existing data on disk
         stageResumeSave(h);   // persist now — an idle 0%/no-peer torrent never
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
@@ -310,6 +350,7 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
         applyContentLayout(atp);
         applyExcludedPatterns(atp);
         applyIncompleteSuffix(atp);
+        applyStorageMode(atp);
 
         if (!m_tempPath.isEmpty() && QDir(m_tempPath).exists()) {
             std::string hash = (std::ostringstream() << atp.ti->info_hashes().get_best()).str();
@@ -320,6 +361,7 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
         incrementTorrentCount();
+        if (m_autoRecheck && h.is_valid()) h.force_recheck();   // verify pre-existing data on disk
         stageResumeSave(h);   // persist immediately (see addTorrent)
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
     } catch (const std::exception &e) {
@@ -364,6 +406,7 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath,
             m_torrentIntendedPath[realHash] = savePath;
             atp.save_path = m_tempPath.toStdString();
         }
+        applyStorageMode(atp);
 
         lt::torrent_handle h = m_session.add_torrent(atp);
         m_torrents.push_back(h);
@@ -1074,6 +1117,7 @@ void SessionManager::setDownloadLimit(int kbps)
     // restores. So always update m_normalDownLimit, and only push to
     // libtorrent immediately if alt mode isn't active.
     m_normalDownLimit = kbps;
+    QSettings("BATorrent", "BATorrent").setValue("downloadLimit", kbps);
     if (m_altSpeedsActive)
         return;
     lt::settings_pack pack;
@@ -1084,6 +1128,7 @@ void SessionManager::setDownloadLimit(int kbps)
 void SessionManager::setUploadLimit(int kbps)
 {
     m_normalUpLimit = kbps;
+    QSettings("BATorrent", "BATorrent").setValue("uploadLimit", kbps);
     if (m_altSpeedsActive)
         return;
     lt::settings_pack pack;
@@ -1119,6 +1164,7 @@ void SessionManager::setListenPort(int port)
     QString iface = QString("%1:%2").arg(listenAddr).arg(port);
     pack.set_str(lt::settings_pack::listen_interfaces, iface.toStdString());
     m_session.apply_settings(pack);
+    QSettings("BATorrent", "BATorrent").setValue("listenPort", port);
 }
 
 int SessionManager::listenPort() const
@@ -1131,6 +1177,7 @@ void SessionManager::setMaxConnections(int max)
     lt::settings_pack pack;
     pack.set_int(lt::settings_pack::connections_limit, max);
     m_session.apply_settings(pack);
+    QSettings("BATorrent", "BATorrent").setValue("maxConnections", max);
 }
 
 int SessionManager::maxConnections() const
@@ -1144,6 +1191,7 @@ void SessionManager::setDhtEnabled(bool enabled)
     lt::settings_pack pack;
     pack.set_bool(lt::settings_pack::enable_dht, enabled);
     m_session.apply_settings(pack);
+    QSettings("BATorrent", "BATorrent").setValue("dhtEnabled", enabled);
 }
 
 bool SessionManager::dhtEnabled() const
@@ -1162,6 +1210,7 @@ void SessionManager::setUtpEnabled(bool enabled)
     pack.set_bool(lt::settings_pack::enable_outgoing_tcp, true);
     pack.set_bool(lt::settings_pack::enable_incoming_tcp, true);
     m_session.apply_settings(pack);
+    QSettings("BATorrent", "BATorrent").setValue("utpEnabled", enabled);
 }
 
 bool SessionManager::utpEnabled() const
@@ -1274,6 +1323,7 @@ void SessionManager::setEncryptionMode(int mode)
     pack.set_int(lt::settings_pack::out_enc_policy, policy);
     pack.set_int(lt::settings_pack::in_enc_policy, policy);
     m_session.apply_settings(pack);
+    QSettings("BATorrent", "BATorrent").setValue("encryptionMode", mode);
 }
 
 int SessionManager::encryptionMode() const
@@ -1284,6 +1334,7 @@ int SessionManager::encryptionMode() const
 void SessionManager::setSeedRatioLimit(float ratio)
 {
     m_seedRatioLimit = ratio;
+    QSettings("BATorrent", "BATorrent").setValue("seedRatioLimit", ratio);
 }
 
 float SessionManager::seedRatioLimit() const
@@ -2280,6 +2331,20 @@ void SessionManager::processAlerts()
         }
         if (auto *lf = lt::alert_cast<lt::listen_failed_alert>(a)) {
             emit torrentError(QString::fromStdString(lf->message()));
+            m_listenOk = false;
+            updatePortStatus();
+        }
+        if (lt::alert_cast<lt::listen_succeeded_alert>(a)) {
+            m_listenOk = true;
+            updatePortStatus();
+        }
+        if (lt::alert_cast<lt::portmap_alert>(a)) {
+            m_portmapOk = true;
+            updatePortStatus();
+        }
+        if (lt::alert_cast<lt::portmap_error_alert>(a)) {
+            m_portmapOk = false;
+            updatePortStatus();
         }
         if (auto *mf = lt::alert_cast<lt::metadata_failed_alert>(a)) {
             emit torrentError(QString::fromStdString(mf->message()));
@@ -2559,6 +2624,7 @@ void SessionManager::setOutgoingInterface(const QString &interfaceName)
 {
     qDebug() << "[session] setOutgoingInterface:" << interfaceName;
     m_outgoingInterface = interfaceName;
+    QSettings("BATorrent", "BATorrent").setValue("outgoingInterface", interfaceName);
     m_killSwitchActive = false;
     // Resume torrents that the killswitch paused — otherwise switching VPNs
     // or going back to "any interface" leaves them paused forever.
@@ -2603,6 +2669,7 @@ QString SessionManager::outgoingInterface() const
 void SessionManager::setKillSwitchEnabled(bool enabled)
 {
     m_killSwitchEnabled = enabled;
+    QSettings("BATorrent", "BATorrent").setValue("killSwitchEnabled", enabled);
     if (!enabled) {
         m_killSwitchActive = false;
         for (auto &h : m_killSwitchPaused) {
@@ -2620,6 +2687,7 @@ bool SessionManager::killSwitchEnabled() const
 void SessionManager::setAutoResumeOnReconnect(bool enabled)
 {
     m_autoResume = enabled;
+    QSettings("BATorrent", "BATorrent").setValue("autoResumeOnReconnect", enabled);
 }
 
 bool SessionManager::autoResumeOnReconnect() const
@@ -2715,6 +2783,13 @@ void SessionManager::setProxySettings(int type, const QString &host, int port,
     m_proxyPort = port;
     m_proxyUser = user;
     m_proxyPass = pass;
+
+    QSettings st("BATorrent", "BATorrent");
+    st.setValue("proxyType", type);
+    st.setValue("proxyHost", host);
+    st.setValue("proxyPort", port);
+    st.setValue("proxyUser", user);
+    st.setValue("proxyPass", pass);
 
     lt::settings_pack pack;
     if (type == 0) {
@@ -2964,6 +3039,16 @@ void SessionManager::setAltSpeedLimits(int downKbps, int upKbps)
 {
     m_altDownLimit = downKbps;
     m_altUpLimit = upKbps;
+    QSettings st("BATorrent", "BATorrent");
+    st.setValue("altDownLimit", downKbps);
+    st.setValue("altUpLimit", upKbps);
+    // Re-apply live if alt mode is currently active so the new ceiling takes hold.
+    if (m_altSpeedsActive) {
+        lt::settings_pack pack;
+        pack.set_int(lt::settings_pack::download_rate_limit, downKbps > 0 ? downKbps * 1024 : 0);
+        pack.set_int(lt::settings_pack::upload_rate_limit,   upKbps   > 0 ? upKbps   * 1024 : 0);
+        m_session.apply_settings(pack);
+    }
 }
 
 int SessionManager::altDownloadLimit() const { return m_altDownLimit; }
@@ -2972,6 +3057,7 @@ int SessionManager::altUploadLimit() const { return m_altUpLimit; }
 void SessionManager::setSchedulerEnabled(bool enabled)
 {
     m_schedulerEnabled = enabled;
+    QSettings("BATorrent", "BATorrent").setValue("schedulerEnabled", enabled);
     if (!enabled && m_altSpeedsActive) {
         // Restore normal speeds
         m_altSpeedsActive = false;
@@ -2982,15 +3068,82 @@ void SessionManager::setSchedulerEnabled(bool enabled)
 
 bool SessionManager::schedulerEnabled() const { return m_schedulerEnabled; }
 
-void SessionManager::setScheduleFromHour(int hour) { m_scheduleFromHour = hour; }
-void SessionManager::setScheduleToHour(int hour) { m_scheduleToHour = hour; }
+void SessionManager::setScheduleFromHour(int hour) { m_scheduleFromHour = hour; QSettings("BATorrent", "BATorrent").setValue("scheduleFromHour", hour); }
+void SessionManager::setScheduleToHour(int hour) { m_scheduleToHour = hour; QSettings("BATorrent", "BATorrent").setValue("scheduleToHour", hour); }
 int SessionManager::scheduleFromHour() const { return m_scheduleFromHour; }
 int SessionManager::scheduleToHour() const { return m_scheduleToHour; }
 
-void SessionManager::setScheduleDays(int daysMask) { m_scheduleDays = daysMask; }
+void SessionManager::setScheduleDays(int daysMask) { m_scheduleDays = daysMask; QSettings("BATorrent", "BATorrent").setValue("scheduleDays", daysMask); }
 int SessionManager::scheduleDays() const { return m_scheduleDays; }
 
 bool SessionManager::altSpeedsActive() const { return m_altSpeedsActive; }
+
+void SessionManager::setAltSpeedsActive(bool active)
+{
+    if (active == m_altSpeedsActive) return;
+    m_altSpeedsActive = active;
+    const int d = active ? m_altDownLimit : m_normalDownLimit;
+    const int u = active ? m_altUpLimit   : m_normalUpLimit;
+    lt::settings_pack pack;
+    pack.set_int(lt::settings_pack::download_rate_limit, d > 0 ? d * 1024 : 0);
+    pack.set_int(lt::settings_pack::upload_rate_limit,   u > 0 ? u * 1024 : 0);
+    m_session.apply_settings(pack);
+    emit altSpeedsActiveChanged(active);
+}
+
+void SessionManager::setPreallocate(bool on)
+{
+    m_preallocate = on;
+    QSettings("BATorrent", "BATorrent").setValue("preallocate", on);
+}
+bool SessionManager::preallocate() const { return m_preallocate; }
+
+void SessionManager::setAutoRecheck(bool on)
+{
+    m_autoRecheck = on;
+    QSettings("BATorrent", "BATorrent").setValue("autoRecheck", on);
+}
+bool SessionManager::autoRecheck() const { return m_autoRecheck; }
+
+bool SessionManager::exportTorrent(int index, const QString &destPath)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return false;
+    const auto &h = m_torrents[index];
+    if (!h.is_valid()) return false;
+    auto ti = h.torrent_file();
+    if (!ti) return false;   // magnet whose metadata hasn't arrived yet
+    try {
+        lt::create_torrent ct(*ti);
+        std::vector<char> buf;
+        lt::bencode(std::back_inserter(buf), ct.generate());
+        const QString local = destPath.startsWith(QStringLiteral("file:"))
+            ? QUrl(destPath).toLocalFile() : destPath;
+        QFile f(local);
+        if (!f.open(QIODevice::WriteOnly)) return false;
+        f.write(buf.data(), static_cast<qint64>(buf.size()));
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+void SessionManager::applyStorageMode(lt::add_torrent_params &atp)
+{
+    atp.storage_mode = m_preallocate ? lt::storage_mode_allocate
+                                     : lt::storage_mode_sparse;
+}
+
+int SessionManager::portStatus() const { return m_portStatus; }
+
+void SessionManager::updatePortStatus()
+{
+    const int s = !m_listenOk ? 3        // closed — not even listening
+                : m_portmapOk ? 1        // open — UPnP/NAT-PMP mapped the port
+                              : 2;       // firewalled/unknown — listening, no map
+    if (s == m_portStatus) return;
+    m_portStatus = s;
+    emit portStatusChanged(s);
+}
 
 void SessionManager::checkBandwidthSchedule()
 {
@@ -3091,6 +3244,9 @@ void SessionManager::setAutoMove(bool enabled, const QString &path)
 {
     m_autoMoveEnabled = enabled;
     m_autoMovePath = path;
+    QSettings st("BATorrent", "BATorrent");
+    st.setValue("autoMoveEnabled", enabled);
+    st.setValue("autoMovePath", path);
 }
 
 bool SessionManager::autoMoveEnabled() const { return m_autoMoveEnabled; }
@@ -3394,6 +3550,7 @@ void SessionManager::applyExcludedPatterns(lt::add_torrent_params &atp)
 void SessionManager::setMaxActiveDownloads(int max)
 {
     m_maxActiveDownloads = max;
+    QSettings("BATorrent", "BATorrent").setValue("maxActiveDownloads", max);
 }
 
 int SessionManager::maxActiveDownloads() const

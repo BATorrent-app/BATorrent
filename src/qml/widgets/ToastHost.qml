@@ -22,7 +22,7 @@ Item {
         toastModel.insert(0, { mTitle: title || "", mBody: body || "", mKind: kind })
     }
 
-    ListModel { id: toastModel }
+    ListModel { id: toastModel; objectName: "toastModel" }
 
     Column {
         id: stack
