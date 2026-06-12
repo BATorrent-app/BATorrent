@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BATorrent — the BitTorrent client with a face</title>
-<meta name="description" content="Free, open-source BitTorrent client with automatic cover art, a built-in player with subtitles, and a command palette. Native C++/Qt6 for Windows, macOS and Linux. No ads, no telemetry, MIT.">
-<meta property="og:title" content="BATorrent — the BitTorrent client with a face">
-<meta property="og:description" content="Cover art for your downloads, a player that streams while you torrent, Ctrl+K for everything. Open source, no ads, no telemetry.">
+<title>BATorrent — BitTorrent-клиент с лицом</title>
+<meta name="description" content="Бесплатный BitTorrent-клиент с открытым кодом: автоматические обложки, встроенный плеер с субтитрами, командная палитра. Нативный C++/Qt6 для Windows, macOS и Linux. Без рекламы и телеметрии, MIT.">
+<meta property="og:title" content="BATorrent — BitTorrent-клиент с лицом">
+<meta property="og:description" content="Обложки для загрузок, плеер во время скачивания и Ctrl+K для всего. Открытый код, без рекламы и телеметрии.">
 <meta property="og:image" content="https://mateuscruz19.github.io/BATorrent/assets/shot-grid.jpg">
 <meta property="og:type" content="website">
 <link rel="alternate" hreflang="en" href="https://batorrent.com/">
 <link rel="alternate" hreflang="pt-BR" href="https://batorrent.com/pt/">
 <link rel="alternate" hreflang="ru" href="https://batorrent.com/ru/">
 <link rel="alternate" hreflang="x-default" href="https://batorrent.com/">
-<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="icon" type="image/svg+xml" href="../assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=New+Rocker&family=Archivo:wght@400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -396,14 +396,14 @@ footer {
 <nav>
   <div class="wrap nav-inner">
     <a class="brand" href="#">
-      <img src="assets/logo.svg" alt="">
+      <img src="../assets/logo.svg" alt="">
       <span class="wordmark"><b>BAT</b><span>orrent</span></span>
     </a>
     <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#download">Download</a>
-      <a href="pt/" title="Português">PT</a>
-      <a href="ru/" title="Русский">RU</a>
+      <a href="#features">Возможности</a>
+      <a href="#download">Скачать</a>
+      <a href="../" title="English">EN</a>
+      <a href="../pt/" title="Português">PT</a>
       <a class="nav-star" href="https://github.com/Mateuscruz19/BATorrent" target="_blank" rel="noopener">
         ★ GitHub
       </a>
@@ -432,19 +432,19 @@ footer {
   <span class="bat" style="--s:23px; --t:58s; --d:-18s; --o:.4;  --f:.34s; top:30%;" aria-hidden="true"><svg><use href="#bat"/></svg></span>
   <span class="bat red" style="--s:10px; --t:80s; --d:-64s; --o:.26; --f:.20s; top:18%;" aria-hidden="true"><svg><use href="#bat"/></svg></span>
   <div class="wrap stagger">
-    <div class="hero-eyebrow">Free · Open source · No ads · No telemetry</div>
-    <h1>The BitTorrent client<br>with a <span class="accent">face</span>.</h1>
+    <div class="hero-eyebrow">Бесплатно · Открытый код · Без рекламы · Без телеметрии</div>
+    <h1>BitTorrent-клиент<br>с <span class="accent">лицом</span>.</h1>
     <p class="hero-sub">
-      Cover art appears the moment you add a torrent. A built-in player streams while you
-      download — subtitles included. And <b>Ctrl+K</b> does everything else.
+      Обложки появляются сразу после добавления торрента. Встроенный плеер воспроизводит во время
+      загрузки — субтитры включены. А <b>Ctrl+K</b> делает всё остальное.
     </p>
     <div class="hero-ctas">
-      <a class="btn btn-red" href="#download">Download, it's free!</a>
-      <a class="btn btn-ghost" href="https://github.com/Mateuscruz19/BATorrent" target="_blank" rel="noopener">View source</a>
+      <a class="btn btn-red" href="#download">Скачать бесплатно</a>
+      <a class="btn btn-ghost" href="https://github.com/Mateuscruz19/BATorrent" target="_blank" rel="noopener">Исходный код</a>
     </div>
-    <div class="hero-meta"><b id="dl">2,000+</b> downloads &nbsp;—&nbsp; Windows · macOS · Linux &nbsp;—&nbsp; native <b>C++/Qt6</b>, not Electron &nbsp;—&nbsp; <b>MIT</b></div>
+    <div class="hero-meta"><b id="dl">2,000+</b> загрузок &nbsp;—&nbsp; Windows · macOS · Linux &nbsp;—&nbsp; нативный <b>C++/Qt6</b>, не Electron &nbsp;—&nbsp; <b>MIT</b></div>
     <div class="demo">
-      <video src="assets/demo.mp4" autoplay loop muted playsinline poster="assets/shot-grid.jpg"></video>
+      <video src="../assets/demo.mp4" autoplay loop muted playsinline poster="../assets/shot-grid.jpg"></video>
     </div>
   </div>
 </header>
@@ -455,104 +455,104 @@ footer {
   <section id="features">
     <div class="feature reveal">
       <div class="f-copy">
-        <div class="f-eyebrow">Library, not list</div>
-        <h2>Your downloads, with posters.</h2>
-        <p>BATorrent reads release names — movies, shows, games, even messy anime fansub naming — and pulls the real cover art automatically. A torrent list that looks like a streaming library, because that's what it is.</p>
+        <div class="f-eyebrow">Библиотека, а не список</div>
+        <h2>Ваши загрузки — с постерами.</h2>
+        <p>BATorrent разбирает имена релизов — фильмы, сериалы, игры, даже хаотичные названия аниме-фансаба — и автоматически подтягивает настоящие обложки. Список торрентов, который выглядит как библиотека стриминга, потому что так оно и есть.</p>
       </div>
-      <div class="f-shot"><img src="assets/shot-grid.jpg" alt="Cover-art grid view" loading="lazy"></div>
+      <div class="f-shot"><img src="../assets/shot-grid.jpg" alt="Сетка с обложками" loading="lazy"></div>
     </div>
 
     <div class="feature reveal">
       <div class="f-copy">
-        <div class="f-eyebrow">Watch while it downloads</div>
-        <h2>Press play before it finishes.</h2>
-        <p>The built-in player streams from the torrent as pieces arrive, remembers where you stopped, and now finds subtitles for you — load any .srt, or search online sources right from the player. Sync them with one keystroke.</p>
+        <div class="f-eyebrow">Смотрите во время загрузки</div>
+        <h2>Жмите play до конца загрузки.</h2>
+        <p>Встроенный плеер воспроизводит по мере прихода частей, запоминает, где вы остановились, и теперь сам находит субтитры — загрузите любой .srt или ищите онлайн прямо из плеера. Синхронизация — одной клавишей.</p>
       </div>
-      <div class="f-shot"><img src="assets/shot-list.jpg" alt="List view with semantic state colors" loading="lazy"></div>
+      <div class="f-shot"><img src="../assets/shot-list.jpg" alt="Список с цветами состояний" loading="lazy"></div>
     </div>
 
     <div class="feature reveal">
       <div class="f-copy">
-        <div class="f-eyebrow">Keyboard first</div>
-        <h2>One shortcut. <span class="kbd">Ctrl K</span></h2>
-        <p>Jump to any torrent by name. Pause everything. Toggle the speed limit. Open any page or window. The command palette makes the whole app one fuzzy search away — no mouse required.</p>
+        <div class="f-eyebrow">Клавиатура прежде всего</div>
+        <h2>Один шорткат. <span class="kbd">Ctrl K</span></h2>
+        <p>Переход к любому торренту по имени. Пауза всего. Переключение лимита скорости. Любая страница или окно. Командная палитра держит всё приложение на расстоянии одного нечёткого поиска — мышь не нужна.</p>
       </div>
-      <div class="f-shot"><img src="assets/shot-palette.jpg" alt="Command palette" loading="lazy"></div>
+      <div class="f-shot"><img src="../assets/shot-palette.jpg" alt="Командная палитра" loading="lazy"></div>
     </div>
 
     <div class="feature reveal">
       <div class="f-copy">
-        <div class="f-eyebrow">Yours to theme</div>
-        <h2>Six themes. Or build your own.</h2>
-        <p>Dark, Light, Midnight, Sakura, Dark Star — or a fully custom theme with your own colors and background image. Optional anime accent art, and an app icon you pick independently of it all.</p>
+        <div class="f-eyebrow">Настройте под себя</div>
+        <h2>Шесть тем. Или создайте свою.</h2>
+        <p>Dark, Light, Midnight, Sakura, Dark Star — или полностью своя тема с вашими цветами и фоновым изображением. Опциональный аниме-арт и значок приложения, который выбирается независимо от всего этого.</p>
       </div>
-      <div class="f-shot"><img src="assets/shot-theme.jpg" alt="Sakura theme" loading="lazy"></div>
+      <div class="f-shot"><img src="../assets/shot-theme.jpg" alt="Тема Sakura" loading="lazy"></div>
     </div>
   </section>
 
   <section class="trust reveal">
-    <h2>Nothing to <span class="accent">sell</span> you.</h2>
-    <p>No telemetry, no analytics, no phoning home. The only outbound request is the GitHub release check — and it's optional. Built by one developer, in the open, under MIT.</p>
+    <h2>Нам нечего вам <span class="accent">продать</span>.</h2>
+    <p>Без телеметрии, без аналитики, без «звонков домой». Единственный исходящий запрос — проверка новой версии на GitHub, и её можно отключить. Делается одним разработчиком, открыто, под лицензией MIT.</p>
     <div class="trust-chips">
-      <span class="chip"><b>✓</b> No ads</span>
-      <span class="chip"><b>✓</b> No telemetry</span>
-      <span class="chip"><b>✓</b> No accounts</span>
-      <span class="chip"><b>✓</b> No bundleware</span>
-      <span class="chip"><b>✓</b> MIT license</span>
+      <span class="chip"><b>✓</b> Без рекламы</span>
+      <span class="chip"><b>✓</b> Без телеметрии</span>
+      <span class="chip"><b>✓</b> Без аккаунтов</span>
+      <span class="chip"><b>✓</b> Без bundleware</span>
+      <span class="chip"><b>✓</b> Лицензия MIT</span>
     </div>
   </section>
 
   <section class="everything reveal">
-    <h2>And everything a torrent client must have.</h2>
-    <p class="sub">Full power-user parity — none of it traded away for the looks.</p>
+    <h2>И всё, что обязан уметь торрент-клиент.</h2>
+    <p class="sub">Полный паритет для продвинутых пользователей — ничего не принесено в жертву внешности.</p>
     <div class="e-grid">
-      <div class="e-item">Sequential download &amp; streaming</div>
-      <div class="e-item">Stalled torrents explain why</div>
-      <div class="e-item">RSS auto-download with filters</div>
-      <div class="e-item">Web UI with QR phone pairing</div>
-      <div class="e-item">VPN kill switch &amp; proxy</div>
-      <div class="e-item">Per-torrent limits &amp; queueing</div>
-      <div class="e-item">Categories, tags &amp; watch folder</div>
-      <div class="e-item">Game library with launcher</div>
-      <div class="e-item">Telegram &amp; Discord presence</div>
-      <div class="e-item">Trash-safe file removal</div>
-      <div class="e-item">8 languages</div>
-      <div class="e-item">IP filtering &amp; encryption</div>
+      <div class="e-item">Последовательная загрузка и стриминг</div>
+      <div class="e-item">Зависшие торренты объясняют причину</div>
+      <div class="e-item">RSS-автозагрузка с фильтрами</div>
+      <div class="e-item">Web-интерфейс с QR-сопряжением</div>
+      <div class="e-item">Kill switch и прокси</div>
+      <div class="e-item">Лимиты на торрент и очередь</div>
+      <div class="e-item">Категории, теги и папка наблюдения</div>
+      <div class="e-item">Игровая библиотека с лаунчером</div>
+      <div class="e-item">Telegram и Discord-статус</div>
+      <div class="e-item">Удаление в корзину</div>
+      <div class="e-item">8 языков</div>
+      <div class="e-item">IP-фильтр и шифрование</div>
     </div>
   </section>
 
   <section id="download">
-    <h2>Get <span style="color:var(--red)">BAT</span>orrent</h2>
-    <p class="sub">Latest release, straight from GitHub. Also published as web-seeded torrents — of course.</p>
+    <h2>Скачайте <span style="color:var(--red)">BAT</span>orrent</h2>
+    <p class="sub">Свежий релиз прямо с GitHub. И, конечно, в виде web-seeded торрентов.</p>
     <div class="dl-grid">
       <div class="dl-card reveal">
         <div class="dl-os">Windows</div>
-        <div class="dl-note">Windows 10/11, 64-bit</div>
+        <div class="dl-note">Windows 10/11, 64-бит</div>
         <div class="dl-links">
-          <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest/download/BATorrent-setup-x86_64.exe">Installer (.exe)</a>
-          <a class="alt" href="https://github.com/Mateuscruz19/BATorrent/releases/latest/download/BATorrent-windows-x86_64-portable.zip">Portable (.zip)</a>
+          <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest/download/BATorrent-setup-x86_64.exe">Установщик (.exe)</a>
+          <a class="alt" href="https://github.com/Mateuscruz19/BATorrent/releases/latest/download/BATorrent-windows-x86_64-portable.zip">Портативная (.zip)</a>
           <a class="alt" href="https://apps.microsoft.com/search?query=BATorrent" target="_blank" rel="noopener">Microsoft Store</a>
         </div>
       </div>
       <div class="dl-card reveal">
         <div class="dl-os">macOS</div>
-        <div class="dl-note">Apple Silicon — first launch: right-click → Open</div>
+        <div class="dl-note">Apple Silicon — первый запуск: правый клик → Открыть</div>
         <div class="dl-links">
-          <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest/download/BATorrent-macos-arm64.dmg">Download (.dmg)</a>
+          <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest/download/BATorrent-macos-arm64.dmg">Скачать (.dmg)</a>
         </div>
       </div>
       <div class="dl-card reveal">
         <div class="dl-os">Linux</div>
-        <div class="dl-note">Any modern distro</div>
+        <div class="dl-note">Любой современный дистрибутив</div>
         <div class="dl-links">
           <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest/download/BATorrent-linux-x86_64.AppImage">AppImage</a>
         </div>
       </div>
     </div>
     <p class="torrent-note">
-      Unreliable connection to GitHub? Every asset is also published as a
+      GitHub открывается нестабильно? Каждый файл также публикуется как
       <a href="https://github.com/Mateuscruz19/BATorrent/releases/latest" target="_blank" rel="noopener">web-seeded .torrent</a>
-      — a torrent client you can download via torrent.
+      — торрент-клиент, который можно скачать через торрент.
     </p>
   </section>
 </div>
@@ -602,14 +602,14 @@ footer {
 <footer style="margin-top:0">
   <div class="wrap foot-inner">
     <span class="wordmark"><b>BAT</b><span>orrent</span></span>
-    <span>Made by <a href="https://github.com/Mateuscruz19" style="color:var(--t2);text-decoration:none">Mateus Cruz</a> in Brazil 🇧🇷</span>
+    <span>Сделано <a href="https://github.com/Mateuscruz19" style="color:var(--t2);text-decoration:none">Матеусом Крузом</a> в Бразилии 🇧🇷</span>
     <div class="foot-links">
       <a href="https://github.com/Mateuscruz19/BATorrent">GitHub</a>
-      <a href="https://github.com/Mateuscruz19/BATorrent/releases">Releases</a>
-      <a href="https://github.com/Mateuscruz19/BATorrent/blob/main/PRIVACY.md">Privacy</a>
-      <a href="https://github.com/Mateuscruz19/BATorrent/blob/main/README.pt-BR.md">Português</a>
-      <a href="https://github.com/Mateuscruz19/BATorrent/blob/main/README.ru.md">Русский</a>
-      <a href="https://github.com/sponsors/Mateuscruz19">Donate ♥</a>
+      <a href="https://github.com/Mateuscruz19/BATorrent/releases">Релизы</a>
+      <a href="https://github.com/Mateuscruz19/BATorrent/blob/main/PRIVACY.md">Приватность</a>
+      <a href="../">English</a>
+      <a href="../pt/">Português</a>
+      <a href="https://github.com/sponsors/Mateuscruz19">Поддержать ♥</a>
     </div>
   </div>
 </footer>
