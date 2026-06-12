@@ -947,3 +947,69 @@ TEST_CASE("SessionManager: torrentsUpdated signal fires", "[integration][signals
     // Just verify no crash
     REQUIRE(spy.count() >= 0);
 }
+
+// ============================================================================
+//  STATS HISTORY (daily usage collector — Wrapped seed)
+// ============================================================================
+
+#include "app/statshistory.h"
+#include <QTemporaryDir>
+#include <QDate>
+
+TEST_CASE("StatsHistory: accumulates deltas and persists across sessions", "[stats]")
+{
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    const QString path = tmp.filePath("stats-history.json");
+    const QString today = QDate::currentDate().toString(Qt::ISODate);
+
+    {
+        StatsHistory h(path);
+        h.recordTransfer(1000, 500);    // baseline only — no delta yet
+        h.recordTransfer(3000, 900);    // +2000 down, +400 up
+        h.recordAdded();
+        h.recordAdded();
+        h.recordCompleted("Movies");
+        h.recordCompleted("");
+        h.flush();
+    }
+
+    {
+        StatsHistory h(path);
+        const QJsonObject day = h.days().value(today).toObject();
+        REQUIRE(day.value("down").toDouble() == 2000.0);
+        REQUIRE(day.value("up").toDouble() == 400.0);
+        REQUIRE(day.value("added").toDouble() == 2.0);
+        REQUIRE(day.value("completed").toDouble() == 2.0);
+        const QJsonObject cats = day.value("cats").toObject();
+        REQUIRE(cats.value("Movies").toInt() == 1);
+        REQUIRE(cats.value("uncategorized").toInt() == 1);
+
+        // second session: baseline re-seeds, only new growth counts
+        h.recordTransfer(50, 10);
+        h.recordTransfer(150, 60);      // +100 down, +50 up
+        h.flush();
+    }
+
+    {
+        StatsHistory h(path);
+        const QJsonObject day = h.days().value(today).toObject();
+        REQUIRE(day.value("down").toDouble() == 2100.0);
+        REQUIRE(day.value("up").toDouble() == 450.0);
+    }
+}
+
+TEST_CASE("StatsHistory: negative deltas are clamped", "[stats]")
+{
+    QTemporaryDir tmp;
+    const QString path = tmp.filePath("s.json");
+    const QString today = QDate::currentDate().toString(Qt::ISODate);
+
+    StatsHistory h(path);
+    h.recordTransfer(5000, 5000);
+    h.recordTransfer(4000, 6000);   // down shrank (counter quirk) → clamp; up +1000
+    h.flush();
+    const QJsonObject day = h.days().value(today).toObject();
+    REQUIRE(day.value("down").toDouble() == 0.0);
+    REQUIRE(day.value("up").toDouble() == 1000.0);
+}

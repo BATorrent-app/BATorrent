@@ -247,6 +247,10 @@ SessionManager::SessionManager(QObject *parent)
         settings.sync();
     }
 
+    m_statsHistory = std::make_unique<StatsHistory>(
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+            .filePath(QStringLiteral("stats-history.json")));
+
     connect(&m_updateTimer, &QTimer::timeout, this, &SessionManager::updateStats);
     m_updateTimer.start(1000);
 }
@@ -2148,6 +2152,14 @@ void SessionManager::updateStats()
     m_session.post_torrent_updates();
 
     processAlerts();
+    // daily usage history sample (cheap: cachedStatus sums), every 5s
+    {
+        static int statsTick = 0;
+        if (++statsTick >= 5 && m_statsHistory) {
+            statsTick = 0;
+            m_statsHistory->recordTransfer(globalDownloaded(), globalUploaded());
+        }
+    }
     checkSeedRatios();
     checkSeedingLimits();
     checkAutoComplete();
@@ -2292,6 +2304,7 @@ void SessionManager::processAlerts()
                 const bool resumeRefinish = m_completedAtStartup.contains(hash);
                 if (!resumeRefinish) {
                     qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
+                    if (m_statsHistory) m_statsHistory->recordCompleted(m_categories.value(hash));
                     executeOnComplete(name, QString::fromStdString(st.save_path),
                                       hash, st.total_wanted);
                     emit torrentFinished(name, hash);
@@ -2809,6 +2822,7 @@ SessionManager::DetailedStats SessionManager::detailedStats() const
 
 void SessionManager::incrementTorrentCount()
 {
+    if (m_statsHistory) m_statsHistory->recordAdded();
     QSettings settings("BATorrent", "BATorrent");
     int count = settings.value("totalTorrentsAdded", 0).toInt();
     settings.setValue("totalTorrentsAdded", count + 1);

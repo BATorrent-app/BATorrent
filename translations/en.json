@@ -889,5 +889,8 @@
   "port_checking": "Checking…",
   "ctx_export_torrent": "Export .torrent…",
   "export_torrent_ok": "Exported the .torrent file.",
-  "export_torrent_failed": "Couldn't export the .torrent (no metadata yet?)."
+  "export_torrent_failed": "Couldn't export the .torrent (no metadata yet?).",
+  "crash_toast_title": "Previous session ended unexpectedly",
+  "crash_toast_body": "If it crashed, you can report it — a log snippet is attached for review.",
+  "crash_toast_action": "Report on GitHub"
 }

@@ -6,6 +6,7 @@
 #define SESSIONMANAGER_H
 
 #include "types.h"
+#include "../app/statshistory.h"
 #include <QObject>
 #include <QTimer>
 #include <QString>
@@ -16,6 +17,7 @@
 #include <QMap>
 #include <QSet>
 #include <map>
+#include <memory>
 #include <vector>
 #include <set>
 
@@ -476,6 +478,7 @@ private:
     // tick on top of all the other periodic checks.
     mutable std::map<lt::torrent_handle, lt::torrent_status> m_statusCache;
     QTimer m_updateTimer;
+    std::unique_ptr<StatsHistory> m_statsHistory;
     bool m_dhtEnabled = true;
     int m_encryptionMode = 0;
     bool m_utpEnabled = true;

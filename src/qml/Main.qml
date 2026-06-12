@@ -572,6 +572,21 @@ Window {
         id: toastHost
         onActionTriggered: function(actionId) {
             if (actionId === "logs") win.showWin(logWinLoader)
+            else if (actionId === "crashreport" && typeof logs !== "undefined")
+                Qt.openUrlExternally(logs.crashReportUrl())
+        }
+    }
+
+    // unclean shutdown last run → one quiet, actionable toast (never auto-sends
+    // anything; the GitHub issue opens pre-filled in the browser for review)
+    Timer {
+        interval: 4000
+        running: true
+        repeat: false
+        onTriggered: {
+            if (typeof logs !== "undefined" && logs.previousSessionCrashed())
+                toastHost.show(i18n.t("crash_toast_title"), i18n.t("crash_toast_body"), 1,
+                               "crashreport", i18n.t("crash_toast_action"))
         }
     }
 

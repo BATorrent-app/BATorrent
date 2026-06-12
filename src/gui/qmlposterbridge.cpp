@@ -3,6 +3,8 @@
 // See LICENSE file for details
 
 #include "qmlposterbridge.h"
+#include <QSysInfo>
+#include <QUrlQuery>
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
 #include "../app/discoveryservice.h"
@@ -403,6 +405,32 @@ bool QmlLogBridge::exportLogs(const QString &filePath)
     out.write(Logger::instance().readAllLogs().toUtf8());
     out.close();
     return true;
+}
+
+bool QmlLogBridge::previousSessionCrashed() const
+{
+    return Logger::instance().previousSessionCrashed();
+}
+
+// Pre-filled GitHub issue (user reviews in the browser before sending —
+// nothing is transmitted by the app itself)
+QString QmlLogBridge::crashReportUrl() const
+{
+    const QString version = QCoreApplication::applicationVersion();
+    const QString body = QStringLiteral(
+        "**Version:** %1\n**OS:** %2\n\n"
+        "**What were you doing when it happened?**\n\n(describe here)\n\n"
+        "<details><summary>Log tail (auto-captured from the previous run)</summary>\n\n"
+        "```\n%3\n```\n</details>\n")
+        .arg(version, QSysInfo::prettyProductName(), Logger::instance().crashTail());
+    QUrl url(QStringLiteral("https://github.com/Mateuscruz19/BATorrent/issues/new"));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("title"),
+                   QStringLiteral("[crash] BATorrent %1 ended unexpectedly").arg(version));
+    q.addQueryItem(QStringLiteral("labels"), QStringLiteral("bug"));
+    q.addQueryItem(QStringLiteral("body"), body);
+    url.setQuery(q);
+    return url.toString(QUrl::FullyEncoded);
 }
 
 QString QmlLogBridge::defaultExportName() const

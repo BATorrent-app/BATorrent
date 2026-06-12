@@ -889,5 +889,8 @@
   "state_choked": "Peers verbunden, aber keiner lädt gerade zu uns hoch",
   "palette_placeholder": "Befehl oder Torrent-Namen eingeben…",
   "palette_hint_toggle": "Umschalten",
-  "palette_hint_page": "Zur Seite"
+  "palette_hint_page": "Zur Seite",
+  "crash_toast_title": "Letzte Sitzung wurde unerwartet beendet",
+  "crash_toast_body": "Falls es ein Absturz war, kannst du ihn melden — ein Log-Auszug liegt zur Prüfung bei.",
+  "crash_toast_action": "Auf GitHub melden"
 }

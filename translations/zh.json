@@ -889,5 +889,8 @@
   "state_choked": "已连接用户，但目前没有人向我们上传",
   "palette_placeholder": "输入命令或种子名称…",
   "palette_hint_toggle": "切换",
-  "palette_hint_page": "前往页面"
+  "palette_hint_page": "前往页面",
+  "crash_toast_title": "上次会话意外结束",
+  "crash_toast_body": "如果是崩溃，您可以报告 — 日志片段已附上供您确认。",
+  "crash_toast_action": "在 GitHub 上报告"
 }

@@ -39,10 +39,12 @@ void Logger::init()
     {
         QFile readCheck(currentLogPath());
         if (readCheck.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QByteArray tail = readCheck.readAll().right(200);
+            QByteArray tail = readCheck.readAll().right(4000);
             readCheck.close();
-            if (!tail.isEmpty() && !tail.contains("--- log closed ---")
+            if (!tail.isEmpty() && !tail.right(200).contains("--- log closed ---")
                 && tail.contains("--- log opened ---")) {
+                m_prevCrashed = true;
+                m_crashTail = QString::fromUtf8(tail.right(1800));
                 writeLine(Warning, QStringLiteral("--- previous session ended abnormally (crash or force-kill) ---"));
             }
         }

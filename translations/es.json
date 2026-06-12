@@ -889,5 +889,8 @@
   "state_choked": "Pares conectados, pero ninguno nos está subiendo ahora",
   "palette_placeholder": "Escribe un comando o nombre de torrent…",
   "palette_hint_toggle": "Alternar",
-  "palette_hint_page": "Ir a la página"
+  "palette_hint_page": "Ir a la página",
+  "crash_toast_title": "La sesión anterior terminó inesperadamente",
+  "crash_toast_body": "Si fue un fallo, puedes reportarlo — se adjunta un fragmento del registro para revisar.",
+  "crash_toast_action": "Reportar en GitHub"
 }

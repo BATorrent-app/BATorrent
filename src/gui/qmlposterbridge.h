@@ -727,6 +727,8 @@ public:
     Q_INVOKABLE void openLogsFolder();
     Q_INVOKABLE bool exportLogs(const QString &filePath);
     Q_INVOKABLE QString defaultExportName() const;
+    Q_INVOKABLE bool previousSessionCrashed() const;
+    Q_INVOKABLE QString crashReportUrl() const;
 
 signals:
     void textChanged();

@@ -1,5 +1,42 @@
 # Changelog
 
+## v4.2.0 — "Polish"
+
+The release where BATorrent starts *feeling* like the app it already was. No new pages, no new tabs — hundreds of small decisions instead: every dialog answers Esc, every control shows focus, every state explains itself. Plus one big power feature.
+
+### Highlights
+- **Command palette** — press **Ctrl/⌘+K** anywhere: jump to any torrent by name, pause/resume everything, toggle alt speed, open any page or window. One box, fuzzy search, no mouse.
+- **Unified window chrome (macOS)** — the native title bar is gone; the window controls sit inside the app. No more gray strip fighting your theme. (Windows/Linux keep native chrome for now.)
+- **Torrents explain why they're stuck** — hover a stalled torrent's state and it tells you: no peers yet, no seeds connected, peers not uploading, or the actual error. The eternal silent "stalled" finally speaks.
+- **Delete sends data to the trash** — "remove with files" now moves data to the system trash instead of erasing it permanently. Recoverable by design.
+- **Free disk space in the status bar**, next to your totals.
+
+### Fixed
+- **Mixed-language UI** — search source/category names, result counts, status texts, the port diagnostics and the nav rail no longer show Portuguese in a non-Portuguese UI. (All 8 languages got a full pass.)
+- **Duplicate search results** are deduplicated by infohash across providers.
+- **HTML entities in result titles** (`&ndash;` and friends) now render as real characters.
+- **Settings labels** no longer leak `&` accelerator marks ("&Export Settings").
+- **Peers tab** country column no longer overlaps the IP header.
+- **Update check errors** no longer pop a dialog on silent startup checks.
+- The **port status indicator** moved from the crowded filter bar (where it clipped) to the status bar.
+
+### Polish
+- **Esc closes every dialog and window; Enter confirms** — including stacked dialogs.
+- **Keyboard focus rings** on every control (Tab around the whole app) and **press feedback** on every button.
+- **Semantic state colors**: completed reads green, seeding amber — a 100% red pill no longer looks like an error.
+- **Anime accent art** becomes a subtle watermark in list view so row data always wins the contrast fight (grid keeps it bold).
+- **Search results without covers** get per-title generated placeholders instead of a repeated logo.
+- **Richer Statistics window** — live speed graph, per-state counts, all-time vs session columns.
+- **Real empty states** for RSS (with a call-to-action) and search (with a hint when nothing matches).
+- Discover skeletons follow the theme and pulse while loading; search shows a real spinner.
+- About dialog links to GitHub, releases and the privacy policy.
+
+### Under the hood
+- Crash detection now offers a **one-click pre-filled GitHub issue** (opt-in toast, with the log tail for review) — nothing is ever sent automatically; the privacy policy is unchanged.
+- The app keeps a tiny **local daily usage history** (bytes, torrents added/completed per category) — fully offline, feeds upcoming statistics features.
+- Shared menu/dialog components, motion/focus design tokens, and a stats-history test suite.
+
+
 ## v4.1.0 — "Parity"
 
 A community-driven release: everything here came straight from your reports and requests. It closes the remaining gaps with qBittorrent and fixes the Windows settings/tray/splash issues several of you hit.

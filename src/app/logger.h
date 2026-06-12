@@ -26,6 +26,12 @@ public:
     // any thread.
     void log(Level l, const QString &msg);
 
+    // Unclean-shutdown detection (set during init): drives the opt-in
+    // "report on GitHub" toast. The tail is captured before this session
+    // starts appending, so it's the *previous* run's last lines.
+    bool previousSessionCrashed() const { return m_prevCrashed; }
+    QString crashTail() const { return m_crashTail; }
+
     // File-system access for the Log viewer dialog and the manual export.
     QString logsDir() const;
     QString currentLogPath() const;
@@ -39,6 +45,8 @@ public:
     static Level levelFromName(const QString &name);
 
 private:
+    bool m_prevCrashed = false;
+    QString m_crashTail;
     Logger() = default;
     void rotateIfNeeded();
     void writeLine(Level l, const QString &msg);

@@ -889,5 +889,8 @@
   "state_choked": "Peers conectados, mas nenhum está enviando para nós agora",
   "palette_placeholder": "Digite um comando ou nome de torrent…",
   "palette_hint_toggle": "Alternar",
-  "palette_hint_page": "Ir para página"
+  "palette_hint_page": "Ir para página",
+  "crash_toast_title": "A sessão anterior terminou inesperadamente",
+  "crash_toast_body": "Se foi um crash, você pode reportar — um trecho do log vai anexado para revisão.",
+  "crash_toast_action": "Reportar no GitHub"
 }

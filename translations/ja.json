@@ -889,5 +889,8 @@
   "state_choked": "ピアは接続中ですが、現在誰もアップロードしていません",
   "palette_placeholder": "コマンドまたはトレント名を入力…",
   "palette_hint_toggle": "切替",
-  "palette_hint_page": "ページへ移動"
+  "palette_hint_page": "ページへ移動",
+  "crash_toast_title": "前回のセッションは予期せず終了しました",
+  "crash_toast_body": "クラッシュの場合は報告できます — ログの抜粋を確認用に添付します。",
+  "crash_toast_action": "GitHubで報告"
 }

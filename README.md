@@ -54,8 +54,13 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
   <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="860">
 </p>
 
+<p align="center">
+  <img src="src/images/palette-demo.gif" alt="Command palette (Ctrl/⌘+K): fuzzy-find any torrent or action" width="860">
+</p>
+
 - **Automatic cover art** — it reads the torrent name and pulls the real poster (movies & shows via TMDB, games via IGDB) into a grid view. One click flips to a tight list.
 - **Six themes** — Dark, Light, Midnight, Sakura, Dark Star, and a fully **Custom** one (your own background + accent colours), each with optional anime accent art.
+- **Command palette** — Ctrl/⌘+K jumps to any torrent or action: pause all, toggle alt speed, open any page, no mouse needed.
 - Real-time speed graph, state-coloured progress, a rich tray popup with live speeds and ETA — the details that make it *feel* finished.
 
 ## What it actually does
