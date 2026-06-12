@@ -904,5 +904,9 @@
   "subsearch_sync": "Untertitel-Sync",
   "player_speed": "Geschwindigkeit",
   "set_os_key": "OpenSubtitles-API-Schlüssel",
-  "set_os_key_note": "Kostenloser Schlüssel von opensubtitles.com — aktiviert die Filmsuche im Player. Serien gehen ohne."
+  "set_os_key_note": "Kostenloser Schlüssel von opensubtitles.com — aktiviert die Filmsuche im Player. Serien gehen ohne.",
+  "star_ask_title": "Gefällt dir BATorrent?",
+  "star_ask_body": "Ein GitHub-Stern hilft anderen, die App zu finden — ein Klick, große Wirkung.",
+  "star_ask_action": "Auf GitHub sternen",
+  "about_star": "Stern auf GitHub"
 }

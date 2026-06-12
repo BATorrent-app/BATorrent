@@ -904,5 +904,9 @@
   "subsearch_sync": "字幕の同期",
   "player_speed": "速度",
   "set_os_key": "OpenSubtitles APIキー",
-  "set_os_key_note": "opensubtitles.comの無料キー — プレイヤーでの映画字幕検索を有効化。シリーズはキー不要。"
+  "set_os_key_note": "opensubtitles.comの無料キー — プレイヤーでの映画字幕検索を有効化。シリーズはキー不要。",
+  "star_ask_title": "BATorrentを楽しんでいますか？",
+  "star_ask_body": "GitHubのスターでより多くの人に届きます — ワンクリックで大きな違い。",
+  "star_ask_action": "GitHubでスター",
+  "about_star": "GitHubでスター"
 }

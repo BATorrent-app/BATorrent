@@ -574,6 +574,31 @@ Window {
             if (actionId === "logs") win.showWin(logWinLoader)
             else if (actionId === "crashreport" && typeof logs !== "undefined")
                 Qt.openUrlExternally(logs.crashReportUrl())
+            else if (actionId === "star")
+                Qt.openUrlExternally("https://github.com/Mateuscruz19/BATorrent")
+        }
+    }
+
+    // one-time star ask: only after the app earned it (14+ days and 10+
+    // launches), dismissible, never repeats — converts long-time users, the
+    // segment download counts prove we lose
+    Timer {
+        interval: 8000
+        running: true
+        repeat: false
+        onTriggered: {
+            if (typeof settings === "undefined") return
+            if (settings.get("starAskShown") === true) return
+            var first = Number(settings.get("firstLaunchAt") || 0)
+            var count = Number(settings.get("launchCount") || 0) + 1
+            if (first === 0) { settings.set("firstLaunchAt", Date.now()); settings.set("launchCount", 1); return }
+            settings.set("launchCount", count)
+            var days = (Date.now() - first) / 86400000
+            if (days >= 14 && count >= 10) {
+                settings.set("starAskShown", true)
+                toastHost.show(i18n.t("star_ask_title"), i18n.t("star_ask_body"), 0,
+                               "star", i18n.t("star_ask_action"))
+            }
         }
     }
 

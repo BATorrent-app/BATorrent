@@ -904,5 +904,9 @@
   "subsearch_sync": "Sincronía de subtítulos",
   "player_speed": "Velocidad",
   "set_os_key": "Clave de API de OpenSubtitles",
-  "set_os_key_note": "Clave gratuita en opensubtitles.com — habilita la búsqueda de subtítulos de películas. Las series funcionan sin ella."
+  "set_os_key_note": "Clave gratuita en opensubtitles.com — habilita la búsqueda de subtítulos de películas. Las series funcionan sin ella.",
+  "star_ask_title": "¿Te gusta BATorrent?",
+  "star_ask_body": "Una estrella en GitHub ayuda a que más gente lo encuentre — un clic, gran diferencia.",
+  "star_ask_action": "Dar estrella en GitHub",
+  "about_star": "Estrella en GitHub"
 }

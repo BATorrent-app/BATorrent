@@ -78,6 +78,13 @@ BatDialog {
             Text { text: "·"; color: Theme.t4; font.pixelSize: 11 }
             ALink { text: (i18n.language, i18n.t("about_link_privacy")); url: "https://github.com/Mateuscruz19/BATorrent/blob/main/PRIVACY.md" }
         }
+        BtnFlat {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.topMargin: 4
+            sm: true
+            text: "★ " + (i18n.language, i18n.t("about_star"))
+            onClicked: Qt.openUrlExternally("https://github.com/Mateuscruz19/BATorrent")
+        }
     }
 
     // .privacy card

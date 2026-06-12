@@ -371,14 +371,31 @@ jobs:
           # Write to file to avoid quoting issues
           echo "$NOTES" > /tmp/release_notes.md
 
+      # Web-seeded .torrent per asset: downloads work even when github.com is
+      # unreachable (degraded RU routes) as long as one peer is around — and
+      # with zero peers the GitHub URL itself serves as the HTTP seed.
+      - name: Build release .torrents (web-seeded)
+        run: |
+          for f in linux-build/BATorrent-linux-x86_64.AppImage \
+                   windows-zip/BATorrent-windows-x86_64-portable.zip \
+                   windows-installer/BATorrent-setup-x86_64.exe \
+                   macos-build/BATorrent-macos-arm64.dmg; do
+            python3 scripts/make_release_torrent.py "$f" \
+              "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$(basename "$f")"
+          done
+
       - name: Create Release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             linux-build/BATorrent-linux-x86_64.AppImage
+            linux-build/BATorrent-linux-x86_64.AppImage.torrent
             windows-zip/BATorrent-windows-x86_64-portable.zip
+            windows-zip/BATorrent-windows-x86_64-portable.zip.torrent
             windows-installer/BATorrent-setup-x86_64.exe
+            windows-installer/BATorrent-setup-x86_64.exe.torrent
             macos-build/BATorrent-macos-arm64.dmg
+            macos-build/BATorrent-macos-arm64.dmg.torrent
           body_path: /tmp/release_notes.md
 
       # Trigger the Store MSIX build automatically after GitHub Release

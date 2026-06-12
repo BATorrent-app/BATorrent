@@ -904,5 +904,9 @@
   "subsearch_sync": "Sincronia da legenda",
   "player_speed": "Velocidade",
   "set_os_key": "Chave de API da OpenSubtitles",
-  "set_os_key_note": "Chave grátis em opensubtitles.com — habilita busca de legendas de filmes no player. Séries funcionam sem."
+  "set_os_key_note": "Chave grátis em opensubtitles.com — habilita busca de legendas de filmes no player. Séries funcionam sem.",
+  "star_ask_title": "Curtindo o BATorrent?",
+  "star_ask_body": "Uma estrela no GitHub ajuda mais gente a encontrar o app — um clique, grande diferença.",
+  "star_ask_action": "Dar estrela no GitHub",
+  "about_star": "Dar estrela no GitHub"
 }
