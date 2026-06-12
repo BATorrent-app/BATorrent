@@ -892,5 +892,17 @@
   "palette_hint_page": "前往页面",
   "crash_toast_title": "上次会话意外结束",
   "crash_toast_body": "如果是崩溃，您可以报告 — 日志片段已附上供您确认。",
-  "crash_toast_action": "在 GitHub 上报告"
+  "crash_toast_action": "在 GitHub 上报告",
+  "player_subs_external": "外部",
+  "player_load_subtitle": "加载字幕…",
+  "filter_subtitle_files": "字幕 (*.srt *.vtt)",
+  "subsearch_menu": "在线搜索字幕…",
+  "subsearch_title": "在线字幕",
+  "subsearch_empty": "未找到字幕。请尝试其他结果或手动加载文件。",
+  "subsearch_no_sources": "对于电影，请在设置 → 高级中添加免费的 OpenSubtitles API 密钥（剧集可通过 Gestdown 无需密钥）。",
+  "subsearch_dl_failed": "字幕下载失败",
+  "subsearch_sync": "字幕同步",
+  "player_speed": "速度",
+  "set_os_key": "OpenSubtitles API 密钥",
+  "set_os_key_note": "在 opensubtitles.com 免费获取 — 启用播放器中的电影字幕搜索。剧集无需密钥。"
 }

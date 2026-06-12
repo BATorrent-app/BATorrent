@@ -892,5 +892,17 @@
   "palette_hint_page": "Перейти на сторінку",
   "crash_toast_title": "Попередній сеанс завершився неочікувано",
   "crash_toast_body": "Якщо це був збій, можна повідомити — фрагмент журналу додано для перевірки.",
-  "crash_toast_action": "Повідомити на GitHub"
+  "crash_toast_action": "Повідомити на GitHub",
+  "player_subs_external": "Зовнішні",
+  "player_load_subtitle": "Завантажити субтитри…",
+  "filter_subtitle_files": "Субтитри (*.srt *.vtt)",
+  "subsearch_menu": "Шукати субтитри онлайн…",
+  "subsearch_title": "Онлайн-субтитри",
+  "subsearch_empty": "Субтитри не знайдено. Спробуйте інший результат або завантажте файл.",
+  "subsearch_no_sources": "Для фільмів додайте безкоштовний ключ API OpenSubtitles у Налаштування → Додатково (серіали працюють без ключа через Gestdown).",
+  "subsearch_dl_failed": "Не вдалося завантажити субтитри",
+  "subsearch_sync": "Синхронізація субтитрів",
+  "player_speed": "Швидкість",
+  "set_os_key": "Ключ API OpenSubtitles",
+  "set_os_key_note": "Безкоштовний ключ на opensubtitles.com — вмикає пошук субтитрів до фільмів. Серіали працюють без нього."
 }

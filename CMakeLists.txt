@@ -28,6 +28,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/sessionmanager.cpp
     src/app/translator.cpp
     src/app/statshistory.cpp
+    src/app/subtitleparser.cpp
+    src/app/subtitlesearch.cpp
     src/app/logger.cpp
     src/app/notifier.cpp
     src/app/qrcodegen.cpp

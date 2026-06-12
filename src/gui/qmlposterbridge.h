@@ -269,6 +269,8 @@ public:
     Q_INVOKABLE void openSelectedFile();
     Q_INVOKABLE void copySelectedContentPath();
     Q_INVOKABLE QVariantList torrentPalette() const;
+    Q_INVOKABLE QVariantList loadSubtitleFile(const QString &path);
+    Q_INVOKABLE QString findSidecarSubtitle(const QString &infoHash, int fileIndex);
     // Manual cover/title fix for the selected torrent when the auto match was
     // wrong. typeStr = "movie" | "series" | "game".
     Q_INVOKABLE void relinkSelectedCover(const QString &query, const QString &typeStr);
@@ -705,6 +707,37 @@ private:
 
 // Log viewer backend. Logger has no signal, so we poll the file delta (1s)
 // exactly like the old LogViewerDialog and re-emit a Qt signal to QML.
+class SubtitleSearch;
+
+// Player-facing subtitle search/download (OpenSubtitles + Gestdown)
+class QmlSubtitleBridge : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
+    Q_PROPERTY(QVariantList results READ results NOTIFY resultsChanged)
+public:
+    explicit QmlSubtitleBridge(SessionManager *session, QObject *parent = nullptr);
+
+    bool searching() const { return m_searching; }
+    QVariantList results() const;
+    Q_INVOKABLE void searchFor(const QString &infoHash, int fileIndex, const QString &mediaTitle);
+    Q_INVOKABLE void download(int index);
+    Q_INVOKABLE bool hasOpenSubtitlesKey() const;
+
+signals:
+    void searchingChanged();
+    void resultsChanged();
+    void subtitleReady(const QString &path);
+    void searchError(const QString &message);
+
+private:
+    SessionManager *m_session;
+    SubtitleSearch *m_search;
+    QString m_targetDir;
+    QString m_baseName;
+    bool m_searching = false;
+};
+
 class QmlLogBridge : public QObject
 {
     Q_OBJECT

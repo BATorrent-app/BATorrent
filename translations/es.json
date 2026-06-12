@@ -892,5 +892,17 @@
   "palette_hint_page": "Ir a la página",
   "crash_toast_title": "La sesión anterior terminó inesperadamente",
   "crash_toast_body": "Si fue un fallo, puedes reportarlo — se adjunta un fragmento del registro para revisar.",
-  "crash_toast_action": "Reportar en GitHub"
+  "crash_toast_action": "Reportar en GitHub",
+  "player_subs_external": "Externos",
+  "player_load_subtitle": "Cargar subtítulos…",
+  "filter_subtitle_files": "Subtítulos (*.srt *.vtt)",
+  "subsearch_menu": "Buscar subtítulos en línea…",
+  "subsearch_title": "Subtítulos en línea",
+  "subsearch_empty": "No se encontraron subtítulos. Prueba otro resultado o carga un archivo.",
+  "subsearch_no_sources": "Para películas, añade una clave gratuita de OpenSubtitles en Ajustes → Avanzado (las series funcionan sin clave vía Gestdown).",
+  "subsearch_dl_failed": "Error al descargar el subtítulo",
+  "subsearch_sync": "Sincronía de subtítulos",
+  "player_speed": "Velocidad",
+  "set_os_key": "Clave de API de OpenSubtitles",
+  "set_os_key_note": "Clave gratuita en opensubtitles.com — habilita la búsqueda de subtítulos de películas. Las series funcionan sin ella."
 }

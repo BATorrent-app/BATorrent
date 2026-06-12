@@ -892,5 +892,17 @@
   "palette_hint_page": "Zur Seite",
   "crash_toast_title": "Letzte Sitzung wurde unerwartet beendet",
   "crash_toast_body": "Falls es ein Absturz war, kannst du ihn melden — ein Log-Auszug liegt zur Prüfung bei.",
-  "crash_toast_action": "Auf GitHub melden"
+  "crash_toast_action": "Auf GitHub melden",
+  "player_subs_external": "Extern",
+  "player_load_subtitle": "Untertitel laden…",
+  "filter_subtitle_files": "Untertitel (*.srt *.vtt)",
+  "subsearch_menu": "Untertitel online suchen…",
+  "subsearch_title": "Online-Untertitel",
+  "subsearch_empty": "Keine Untertitel gefunden. Anderes Ergebnis versuchen oder Datei laden.",
+  "subsearch_no_sources": "Für Filme einen kostenlosen OpenSubtitles-API-Schlüssel in Einstellungen → Erweitert hinterlegen (Serien gehen ohne, via Gestdown).",
+  "subsearch_dl_failed": "Untertitel-Download fehlgeschlagen",
+  "subsearch_sync": "Untertitel-Sync",
+  "player_speed": "Geschwindigkeit",
+  "set_os_key": "OpenSubtitles-API-Schlüssel",
+  "set_os_key_note": "Kostenloser Schlüssel von opensubtitles.com — aktiviert die Filmsuche im Player. Serien gehen ohne."
 }

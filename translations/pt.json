@@ -892,5 +892,17 @@
   "palette_hint_page": "Ir para página",
   "crash_toast_title": "A sessão anterior terminou inesperadamente",
   "crash_toast_body": "Se foi um crash, você pode reportar — um trecho do log vai anexado para revisão.",
-  "crash_toast_action": "Reportar no GitHub"
+  "crash_toast_action": "Reportar no GitHub",
+  "player_subs_external": "Externa",
+  "player_load_subtitle": "Carregar legenda…",
+  "filter_subtitle_files": "Legendas (*.srt *.vtt)",
+  "subsearch_menu": "Buscar legendas online…",
+  "subsearch_title": "Legendas online",
+  "subsearch_empty": "Nenhuma legenda encontrada. Tente outro resultado ou carregue um arquivo.",
+  "subsearch_no_sources": "Para filmes, adicione uma chave grátis da OpenSubtitles em Ajustes → Avançado (séries funcionam sem chave via Gestdown).",
+  "subsearch_dl_failed": "Falha ao baixar a legenda",
+  "subsearch_sync": "Sincronia da legenda",
+  "player_speed": "Velocidade",
+  "set_os_key": "Chave de API da OpenSubtitles",
+  "set_os_key_note": "Chave grátis em opensubtitles.com — habilita busca de legendas de filmes no player. Séries funcionam sem."
 }

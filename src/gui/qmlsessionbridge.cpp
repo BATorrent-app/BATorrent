@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "qmlposterbridge.h"
+#include "../app/subtitleparser.h"
 #include <QStorageInfo>
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
@@ -672,6 +673,45 @@ void QmlSessionBridge::openExternalForHash(const QString &infoHash, int fileInde
     if (path.isEmpty()) return;
     if (!launchMediaPlayer(path))
         emit toast(tr_("ctx_stream"), tr_("stream_no_player"));
+}
+
+// External subtitles for the built-in player: parse to plain cue maps the
+// QML overlay can binary-search.
+QVariantList QmlSessionBridge::loadSubtitleFile(const QString &path)
+{
+    QString p = path;
+    if (p.startsWith(QLatin1String("file://"))) p = QUrl(p).toLocalFile();
+    QVariantList out;
+    const auto cues = SubtitleParser::parseFile(p);
+    out.reserve(cues.size());
+    for (const auto &c : cues) {
+        QVariantMap m;
+        m["start"] = c.startMs;
+        m["end"] = c.endMs;
+        m["text"] = c.text;
+        out << m;
+    }
+    return out;
+}
+
+QString QmlSessionBridge::findSidecarSubtitle(const QString &infoHash, int fileIndex)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return {};
+    QString video = m_session->streamFilePath(row, fileIndex);
+    if (video.isEmpty()) return {};
+    if (video.endsWith(QLatin1String(".!bt"))) video.chop(4);
+    const QFileInfo vi(video);
+    const QString base = vi.completeBaseName();
+    QDir dir = vi.dir();
+    for (const char *ext : {"srt", "vtt"}) {
+        const QString exact = dir.filePath(base + QLatin1Char('.') + QLatin1String(ext));
+        if (QFileInfo::exists(exact)) return exact;
+    }
+    // language-suffixed sidecars ("Movie.pt-BR.srt") sort first by name
+    const QStringList matches = dir.entryList({base + QStringLiteral("*.srt"), base + QStringLiteral("*.vtt")},
+                                              QDir::Files, QDir::Name);
+    return matches.isEmpty() ? QString() : dir.filePath(matches.first());
 }
 
 void QmlSessionBridge::playSelected()

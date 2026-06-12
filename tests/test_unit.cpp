@@ -1013,3 +1013,113 @@ TEST_CASE("StatsHistory: negative deltas are clamped", "[stats]")
     REQUIRE(day.value("down").toDouble() == 0.0);
     REQUIRE(day.value("up").toDouble() == 1000.0);
 }
+
+// ============================================================================
+//  SUBTITLE PARSER (external .srt/.vtt for the built-in player)
+// ============================================================================
+
+#include "app/subtitleparser.h"
+
+TEST_CASE("SubtitleParser: basic SRT with CRLF, index lines and italics", "[subs]")
+{
+    const QString srt =
+        "1\r\n00:00:01,000 --> 00:00:03,500\r\nHello <i>world</i>\r\n\r\n"
+        "2\r\n00:01:00,250 --> 00:01:02,000\r\nSecond line\r\nwrapped\r\n\r\n";
+    const auto cues = SubtitleParser::parseSrt(srt);
+    REQUIRE(cues.size() == 2);
+    REQUIRE(cues[0].startMs == 1000);
+    REQUIRE(cues[0].endMs == 3500);
+    REQUIRE(cues[0].text == "Hello <i>world</i>");
+    REQUIRE(cues[1].startMs == 60250);
+    REQUIRE(cues[1].text == "Second line<br/>wrapped");
+}
+
+TEST_CASE("SubtitleParser: strips ASS overrides and unknown tags, skips malformed", "[subs]")
+{
+    const QString srt =
+        "1\n00:00:01,000 --> 00:00:02,000\n{\\an8}<font color=\"red\">Top</font> text\n\n"
+        "garbage block without timing\n\n"
+        "3\n00:00:05,000 --> 00:00:04,000\nend before start: dropped\n\n"
+        "4\n00:00:06,000 --> 00:00:07,000\n<b>kept</b>\n";
+    const auto cues = SubtitleParser::parseSrt(srt);
+    REQUIRE(cues.size() == 2);
+    REQUIRE(cues[0].text == "Top text");
+    REQUIRE(cues[1].text == "<b>kept</b>");
+}
+
+TEST_CASE("SubtitleParser: WEBVTT header, NOTE blocks, cue settings, mm:ss times", "[subs]")
+{
+    const QString vtt =
+        "WEBVTT\n\nNOTE this is a comment\nstill the comment\n\n"
+        "intro\n00:05.000 --> 00:07.500 align:start position:10%\n- Hi there\n\n"
+        "01:00:00.000 --> 01:00:02.000\nOne hour in\n";
+    const auto cues = SubtitleParser::parseVtt(vtt);
+    REQUIRE(cues.size() == 2);
+    REQUIRE(cues[0].startMs == 5000);
+    REQUIRE(cues[0].endMs == 7500);
+    REQUIRE(cues[0].text == "- Hi there");
+    REQUIRE(cues[1].startMs == 3600000);
+}
+
+TEST_CASE("SubtitleParser: Latin-1 fallback for unlabeled Windows files", "[subs]")
+{
+    QTemporaryDir tmp;
+    const QString path = tmp.filePath("legenda.srt");
+    {
+        QFile f(path);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        // "ação" in Latin-1 — invalid as UTF-8, must fall back
+        f.write("1\n00:00:01,000 --> 00:00:02,000\n");
+        f.write(QByteArray("a\xE7\xE3o\n"));
+    }
+    const auto cues = SubtitleParser::parseFile(path);
+    REQUIRE(cues.size() == 1);
+    REQUIRE(cues[0].text == QString::fromUtf8("ação"));
+}
+
+// ============================================================================
+//  SUBTITLE SEARCH (network integration — Gestdown, keyless)
+// ============================================================================
+
+#include "app/subtitlesearch.h"
+
+TEST_CASE("SubtitleSearch: Gestdown end-to-end for a known series episode", "[integration][subs-net]")
+{
+    app();
+    SubtitleSearch search;
+    QSignalSpy finished(&search, &SubtitleSearch::searchFinished);
+    REQUIRE(finished.isValid());
+
+    search.search("Arcane.S02E01.1080p.WEB-DL", {"en"});
+
+    QElapsedTimer timer;
+    timer.start();
+    while (finished.count() == 0 && timer.elapsed() < 30000)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    REQUIRE(finished.count() > 0);
+
+    // network may legitimately be down — only assert the full chain when the
+    // provider answered (same tolerance as the updater integration test)
+    if (search.results().isEmpty()) {
+        WARN("Gestdown returned no results (offline or API change?) — chain not exercised");
+        return;
+    }
+    REQUIRE(search.results().first().provider == "Gestdown");
+    REQUIRE(search.results().first().language == "en");
+
+    QTemporaryDir tmp;
+    QSignalSpy dlDone(&search, &SubtitleSearch::downloadFinished);
+    QSignalSpy dlErr(&search, &SubtitleSearch::errorOccurred);
+    search.download(0, tmp.path(), "Arcane.S02E01.test");
+
+    timer.restart();
+    while (dlDone.count() == 0 && dlErr.count() == 0 && timer.elapsed() < 30000)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    REQUIRE(dlDone.count() > 0);
+
+    const QString path = dlDone.takeFirst().at(0).toString();
+    REQUIRE(path.endsWith(".en.srt"));
+    const auto cues = SubtitleParser::parseFile(path);
+    INFO("cues parsed: " << cues.size());
+    REQUIRE(cues.size() > 50);   // a real episode has hundreds of cues
+}

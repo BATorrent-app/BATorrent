@@ -15,6 +15,7 @@
 #include "../app/qrcodegen.h"
 #include "../app/utils.h"
 #include "../app/translator.h"
+#include "../app/subtitlesearch.h"
 #include "../app/geoip.h"
 #include "../app/discordrpc.h"
 #include "../app/updater.h"
@@ -332,6 +333,75 @@ QStringList QmlPairingBridge::qrRowsForUrl(const QString &url) const
         rows << s;
     }
     return rows;
+}
+
+// ===================== QmlLogBridge =====================
+
+// ===================== QmlSubtitleBridge =====================
+
+QmlSubtitleBridge::QmlSubtitleBridge(SessionManager *session, QObject *parent)
+    : QObject(parent), m_session(session), m_search(new SubtitleSearch(this))
+{
+    connect(m_search, &SubtitleSearch::resultsChanged, this, &QmlSubtitleBridge::resultsChanged);
+    connect(m_search, &SubtitleSearch::searchFinished, this, [this]() {
+        m_searching = false;
+        emit searchingChanged();
+    });
+    connect(m_search, &SubtitleSearch::downloadFinished, this, &QmlSubtitleBridge::subtitleReady);
+    connect(m_search, &SubtitleSearch::errorOccurred, this, &QmlSubtitleBridge::searchError);
+}
+
+bool QmlSubtitleBridge::hasOpenSubtitlesKey() const
+{
+    bool has = !QSettings("BATorrent", "BATorrent").value("osApiKey").toString().trimmed().isEmpty();
+#ifdef BAT_OS_KEY
+    has = true;
+#endif
+    return has;
+}
+
+QVariantList QmlSubtitleBridge::results() const
+{
+    QVariantList out;
+    const auto rs = m_search->results();
+    out.reserve(rs.size());
+    for (const auto &r : rs) {
+        QVariantMap m;
+        m["provider"] = r.provider;
+        m["name"] = r.name;
+        m["language"] = r.language;
+        out << m;
+    }
+    return out;
+}
+
+void QmlSubtitleBridge::searchFor(const QString &infoHash, int fileIndex, const QString &mediaTitle)
+{
+    QString video = m_session->streamFilePath(m_session->torrentIndexByInfoHash(infoHash), fileIndex);
+    if (video.endsWith(QLatin1String(".!bt"))) video.chop(4);
+    const QFileInfo vi(video);
+    if (video.isEmpty()) {
+        m_targetDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+        m_baseName = mediaTitle;
+    } else {
+        m_targetDir = vi.dir().absolutePath();
+        m_baseName = vi.completeBaseName();
+    }
+    // the filename carries S/E + release tags the parser feeds on; the resolved
+    // display title doesn't
+    const QString queryName = vi.fileName().isEmpty() ? mediaTitle : vi.fileName();
+    static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk"};
+    QStringList langs{QString::fromLatin1(codes[static_cast<int>(Translator::instance().language())])};
+    if (!langs.contains(QStringLiteral("en"))) langs << QStringLiteral("en");
+    m_searching = true;
+    emit searchingChanged();
+    m_search->search(queryName, langs);
+}
+
+void QmlSubtitleBridge::download(int index)
+{
+    if (m_targetDir.isEmpty()) return;
+    m_search->download(index, m_targetDir, m_baseName);
 }
 
 // ===================== QmlLogBridge =====================

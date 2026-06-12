@@ -266,6 +266,7 @@ int main(int argc, char *argv[])
         }
 #endif
         auto *logBridge = new QmlLogBridge(&app);
+        auto *subtitleBridge = new QmlSubtitleBridge(&session, &app);
         auto *pairingBridge = new QmlPairingBridge(&app);
         auto *notificationBridge = new QmlNotificationBridge(&app);
         QObject::connect(&session, &SessionManager::torrentFinished,
@@ -435,6 +436,7 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("isStoreBuild", false);
 #endif
         engine.rootContext()->setContextProperty("logs", logBridge);
+        engine.rootContext()->setContextProperty("subsearch", subtitleBridge);
         engine.rootContext()->setContextProperty("pairing", pairingBridge);
         engine.rootContext()->setContextProperty("notifications", notificationBridge);
         engine.rootContext()->setContextProperty("i18n", i18nBridge);

@@ -892,5 +892,17 @@
   "palette_hint_page": "ページへ移動",
   "crash_toast_title": "前回のセッションは予期せず終了しました",
   "crash_toast_body": "クラッシュの場合は報告できます — ログの抜粋を確認用に添付します。",
-  "crash_toast_action": "GitHubで報告"
+  "crash_toast_action": "GitHubで報告",
+  "player_subs_external": "外部",
+  "player_load_subtitle": "字幕を読み込む…",
+  "filter_subtitle_files": "字幕 (*.srt *.vtt)",
+  "subsearch_menu": "オンラインで字幕を検索…",
+  "subsearch_title": "オンライン字幕",
+  "subsearch_empty": "字幕が見つかりません。別の結果を試すか、ファイルを読み込んでください。",
+  "subsearch_no_sources": "映画の場合は設定→詳細で無料のOpenSubtitles APIキーを追加してください（シリーズはGestdown経由でキー不要）。",
+  "subsearch_dl_failed": "字幕のダウンロードに失敗しました",
+  "subsearch_sync": "字幕の同期",
+  "player_speed": "速度",
+  "set_os_key": "OpenSubtitles APIキー",
+  "set_os_key_note": "opensubtitles.comの無料キー — プレイヤーでの映画字幕検索を有効化。シリーズはキー不要。"
 }

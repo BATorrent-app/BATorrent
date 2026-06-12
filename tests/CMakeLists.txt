@@ -25,6 +25,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/app/translator.cpp
     ${CMAKE_SOURCE_DIR}/src/app/statshistory.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/subtitleparser.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/subtitlesearch.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
     ${CMAKE_SOURCE_DIR}/src/app/rssmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/app/addonmanager.cpp

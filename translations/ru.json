@@ -892,5 +892,17 @@
   "palette_hint_page": "Перейти на страницу",
   "crash_toast_title": "Предыдущий сеанс завершился неожиданно",
   "crash_toast_body": "Если это был сбой, можно сообщить — фрагмент журнала приложен для проверки.",
-  "crash_toast_action": "Сообщить на GitHub"
+  "crash_toast_action": "Сообщить на GitHub",
+  "player_subs_external": "Внешние",
+  "player_load_subtitle": "Загрузить субтитры…",
+  "filter_subtitle_files": "Субтитры (*.srt *.vtt)",
+  "subsearch_menu": "Найти субтитры онлайн…",
+  "subsearch_title": "Онлайн-субтитры",
+  "subsearch_empty": "Субтитры не найдены. Попробуйте другой результат или загрузите файл.",
+  "subsearch_no_sources": "Для фильмов добавьте бесплатный ключ API OpenSubtitles в Настройки → Дополнительно (сериалы работают без ключа через Gestdown).",
+  "subsearch_dl_failed": "Не удалось скачать субтитры",
+  "subsearch_sync": "Синхронизация субтитров",
+  "player_speed": "Скорость",
+  "set_os_key": "Ключ API OpenSubtitles",
+  "set_os_key_note": "Бесплатный ключ на opensubtitles.com — включает поиск субтитров к фильмам в плеере. Сериалы работают без него."
 }

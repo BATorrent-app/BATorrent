@@ -892,5 +892,17 @@
   "export_torrent_failed": "Couldn't export the .torrent (no metadata yet?).",
   "crash_toast_title": "Previous session ended unexpectedly",
   "crash_toast_body": "If it crashed, you can report it — a log snippet is attached for review.",
-  "crash_toast_action": "Report on GitHub"
+  "crash_toast_action": "Report on GitHub",
+  "player_subs_external": "External",
+  "player_load_subtitle": "Load subtitle…",
+  "filter_subtitle_files": "Subtitles (*.srt *.vtt)",
+  "subsearch_menu": "Search subtitles online…",
+  "subsearch_title": "Online subtitles",
+  "subsearch_empty": "No subtitles found. Try another result, or load a file manually.",
+  "subsearch_no_sources": "For movies, add a free OpenSubtitles API key in Settings → Advanced (series work without it via Gestdown).",
+  "subsearch_dl_failed": "Subtitle download failed",
+  "subsearch_sync": "Subtitle sync",
+  "player_speed": "Speed",
+  "set_os_key": "OpenSubtitles API key",
+  "set_os_key_note": "Free key from opensubtitles.com — enables movie subtitle search in the player. Series work without it."
 }
