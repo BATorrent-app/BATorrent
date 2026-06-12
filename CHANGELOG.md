@@ -1,5 +1,33 @@
 # Changelog
 
+## v4.1.0 — "Parity"
+
+A community-driven release: everything here came straight from your reports and requests. It closes the remaining gaps with qBittorrent and fixes the Windows settings/tray/splash issues several of you hit.
+
+### Fixed
+- **Settings now actually save.** A whole class of preferences — speed limits (and the alternative limits), max active downloads, seed ratio, listen port, max connections, DHT/uTP/encryption, VPN interface, kill switch and proxy — weren't being persisted and reset to defaults on every launch. They now round-trip correctly. (Thanks to everyone who reported "the upload limit always goes back to 0".)
+- **Splash and tray toggles stick on Windows.** Turning off the startup animation (or "close to tray") no longer reverts — the Windows registry stored these booleans as integers and the UI was misreading them.
+- **Close-to-tray hint.** The first time the window hides to the tray you get a one-time notification, so the app doesn't look like it vanished (Windows 11 tucks new tray icons into the overflow).
+- **macOS Dock icon size.** The icon filled its canvas edge-to-edge and rendered larger than neighbouring apps; it now uses the standard safe-area padding.
+- **Native file picker language.** The "Torrent file / All files" filter in the open dialog follows the app language instead of being hard-coded.
+
+### Added — qBittorrent parity
+- **Alternative speed limits toggle** — a turtle button in the toolbar flips your throttled limits on/off instantly, independent of the scheduler.
+- **Follow system theme** — switch light/dark automatically with the OS (Settings → Appearance).
+- **Pre-allocate disk space** — reserve the full file size up front to reduce fragmentation (Settings → Downloads).
+- **Recheck data on add** — optionally force a hash check when adding a torrent, so existing or partial files on disk are detected.
+- **Port status indicator** — a 🟢/🟡/🔴 dot in the status bar shows whether your listen port looks reachable (UPnP/NAT-PMP + listen state; fully local, no external check).
+- **Add torrent from URL** — File → Add torrent from URL (Ctrl+U) fetches a remote `.torrent` and routes it through the normal add dialog.
+- **Export .torrent** — right-click a torrent → Export .torrent to save its metadata file.
+
+### Already there (in case you missed it)
+- **Watch folder** — auto-add `.torrent` files dropped into a monitored directory (Settings → Files). This release just surfaces it.
+- Incomplete files already carry a **`.!bt`** suffix until they finish.
+
+### Under the hood
+- Regression tests for the settings-persistence and Windows boolean bugs.
+- A new **Qt Quick Test** harness covering the startup splash and the design-system widgets.
+
 ## v4.0.0 — "Hub"
 
 BATorrent becomes a media hub: **find → download → search → watch/play**, all around the cover-art identity. A left nav rail (collapsible) swaps between pages with smooth transitions.
