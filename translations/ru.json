@@ -904,5 +904,9 @@
   "subsearch_sync": "Синхронизация субтитров",
   "player_speed": "Скорость",
   "set_os_key": "Ключ API OpenSubtitles",
-  "set_os_key_note": "Бесплатный ключ на opensubtitles.com — включает поиск субтитров к фильмам в плеере. Сериалы работают без него."
+  "set_os_key_note": "Бесплатный ключ на opensubtitles.com — включает поиск субтитров к фильмам в плеере. Сериалы работают без него.",
+  "star_ask_title": "Нравится BATorrent?",
+  "star_ask_body": "Звезда на GitHub помогает другим найти приложение — один клик, большая разница.",
+  "star_ask_action": "Поставить звезду",
+  "about_star": "Звезда на GitHub"
 }

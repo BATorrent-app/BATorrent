@@ -904,5 +904,9 @@
   "subsearch_sync": "Subtitle sync",
   "player_speed": "Speed",
   "set_os_key": "OpenSubtitles API key",
-  "set_os_key_note": "Free key from opensubtitles.com — enables movie subtitle search in the player. Series work without it."
+  "set_os_key_note": "Free key from opensubtitles.com — enables movie subtitle search in the player. Series work without it.",
+  "star_ask_title": "Enjoying BATorrent?",
+  "star_ask_body": "A GitHub star helps more people find it — one click, big difference.",
+  "star_ask_action": "Star on GitHub",
+  "about_star": "Star on GitHub"
 }

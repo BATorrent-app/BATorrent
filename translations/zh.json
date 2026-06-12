@@ -904,5 +904,9 @@
   "subsearch_sync": "字幕同步",
   "player_speed": "速度",
   "set_os_key": "OpenSubtitles API 密钥",
-  "set_os_key_note": "在 opensubtitles.com 免费获取 — 启用播放器中的电影字幕搜索。剧集无需密钥。"
+  "set_os_key_note": "在 opensubtitles.com 免费获取 — 启用播放器中的电影字幕搜索。剧集无需密钥。",
+  "star_ask_title": "喜欢 BATorrent 吗？",
+  "star_ask_body": "在 GitHub 上点个星标能让更多人发现它 — 一次点击，意义重大。",
+  "star_ask_action": "在 GitHub 加星",
+  "about_star": "在 GitHub 加星"
 }
