@@ -141,6 +141,8 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QVariantList selectedTrackers READ selectedTrackers NOTIFY selectionListsChanged)
     Q_PROPERTY(QVariantList selectedPieces READ selectedPieces NOTIFY selectionListsChanged)
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
+    Q_PROPERTY(bool altSpeedsActive READ altSpeedsActive NOTIFY altSpeedsActiveChanged)
+    Q_PROPERTY(int portStatus READ portStatus NOTIFY portStatusChanged)
 
 public:
     explicit QmlSessionBridge(SessionManager *session, MetadataResolver *resolver, QObject *parent = nullptr);
@@ -179,6 +181,11 @@ public:
     // association / CLI / single-instance paths in main.cpp).
     void requestAddTorrentFile(const QString &filePath);
     Q_INVOKABLE void addMagnetUri(const QString &uri, const QString &savePath = QString());
+    // Fetch a .torrent from an http(s) URL, then route it through the add flow.
+    Q_INVOKABLE void addTorrentUrl(const QString &url);
+    bool altSpeedsActive() const;
+    int portStatus() const;
+    Q_INVOKABLE void setAltSpeedsActive(bool active);
     Q_INVOKABLE QVariantMap previewTorrent(const QString &filePath) const;
     Q_INVOKABLE void resolvePreview(const QString &infoHash, const QString &name);
     Q_INVOKABLE void addTorrentWithPrefs(const QString &filePath, const QString &savePath,
@@ -192,6 +199,7 @@ public:
     Q_INVOKABLE void markSelectedCompleted();
     Q_INVOKABLE void unmarkSelectedCompleted();
     Q_INVOKABLE void forceRecheckSelected();
+    Q_INVOKABLE bool exportSelectedTorrent(const QString &destPath);
     Q_INVOKABLE void forceReannounceSelected();
     Q_INVOKABLE void queueUpSelected();
     Q_INVOKABLE void queueDownSelected();
@@ -339,6 +347,8 @@ signals:
     // instance). QML routes it through the same add dialog as a drag-drop so
     // the user always picks save path / files — never a silent auto-download.
     void openTorrentRequested(const QString &path);
+    void altSpeedsActiveChanged();
+    void portStatusChanged();
 
 private slots:
     void sampleSpeeds();
@@ -381,6 +391,7 @@ class QmlThemeBridge : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString themeName READ themeName WRITE setThemeName NOTIFY changed)
+    Q_PROPERTY(bool followSystem READ followSystem WRITE setFollowSystem NOTIFY changed)
     Q_PROPERTY(bool anime READ anime WRITE setAnime NOTIFY changed)
     // Custom theme (name === "custom"): a list of user profiles, each a full
     // palette (6 colors + bg image + opacity). The active one drives Theme.qml.
@@ -409,6 +420,8 @@ public:
 
     QString themeName() const;
     void setThemeName(const QString &n);
+    bool followSystem() const;
+    void setFollowSystem(bool on);
     bool anime() const;
     void setAnime(bool on);
 
@@ -472,6 +485,7 @@ private:
     void refreshTitleBars();                       // re-apply to all open windows
 
     QString m_themeName;
+    bool m_followSystem = false;
     bool m_anime = true;
     QVariantList m_profiles;
     int m_activeProfile = 0;

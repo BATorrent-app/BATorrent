@@ -76,6 +76,7 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
     qApp->installEventFilter(this);   // paint each window's native title bar (Windows)
     QSettings s;
     m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("dark")).toString();
+    m_followSystem = s.value(QStringLiteral("qmlFollowSystem"), false).toBool();
     m_anime = s.value(QStringLiteral("qmlAnime"), false).toBool();
     loadProfiles();
     m_activeProfile = s.value(QStringLiteral("qmlActiveProfile"), 0).toInt();
@@ -92,18 +93,44 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
             // re-tint the scheme-aware logo, but keep a user-chosen custom icon
             applyAppIcon(m_appIconChoice);
             emit osSchemeChanged();                        // QML tray re-binds
+            if (m_followSystem) {                          // OS flipped → swap theme
+                emit changed();
+                refreshTitleBars();
+            }
         });
     }
 }
 
-QString QmlThemeBridge::themeName() const { return m_themeName; }
+QString QmlThemeBridge::themeName() const
+{
+    // When following the OS, the effective theme tracks the system scheme so the
+    // whole palette (Theme.qml binds to this) swaps light/dark automatically.
+    if (m_followSystem) return m_osLight ? QStringLiteral("light") : QStringLiteral("dark");
+    return m_themeName;
+}
 void QmlThemeBridge::setThemeName(const QString &n)
 {
-    if (n == m_themeName) return;
+    // Picking a theme by hand turns off "follow system" — otherwise the choice
+    // would be silently overridden on the next OS scheme change.
+    if (m_followSystem) {
+        m_followSystem = false;
+        QSettings().setValue(QStringLiteral("qmlFollowSystem"), false);
+    }
+    if (n == m_themeName) { emit changed(); return; }
     m_themeName = n;
     QSettings().setValue(QStringLiteral("qmlThemeName"), n);
     emit changed();
     refreshTitleBars();   // recolor native title bars to match the new theme
+}
+
+bool QmlThemeBridge::followSystem() const { return m_followSystem; }
+void QmlThemeBridge::setFollowSystem(bool on)
+{
+    if (on == m_followSystem) return;
+    m_followSystem = on;
+    QSettings().setValue(QStringLiteral("qmlFollowSystem"), on);
+    emit changed();
+    refreshTitleBars();
 }
 
 // ---- native title bar (Windows leaves it light regardless of theme) ----
@@ -120,7 +147,8 @@ bool QmlThemeBridge::eventFilter(QObject *o, QEvent *e)
 bool QmlThemeBridge::darkTitleBar() const
 {
     // light-ish themes → light title bar; dark/midnight/custom → dark.
-    return !(m_themeName == QLatin1String("light") || m_themeName == QLatin1String("sakura"));
+    const QString n = themeName();   // effective (accounts for follow-system)
+    return !(n == QLatin1String("light") || n == QLatin1String("sakura"));
 }
 
 void QmlThemeBridge::applyTitleBar(QWindow *w, bool dark)

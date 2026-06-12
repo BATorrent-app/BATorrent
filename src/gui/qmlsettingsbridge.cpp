@@ -58,6 +58,7 @@
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSettings>
+#include <QSet>
 #include <QStandardPaths>
 #include <QUrl>
 
@@ -180,6 +181,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "ipFilterPath")        return s->ipFilterPath();
     // files / media
     if (key == "tempPath")            return s->tempPath();
+    if (key == "preallocate")         return s->preallocate();
+    if (key == "autoRecheck")         return s->autoRecheck();
     if (key == "contentLayout")       return s->contentLayout();
     if (key == "torrentExportDir")    return s->torrentExportDir();
     if (key == "extractPasswords")    return s->extractPasswords().join(QStringLiteral("; "));
@@ -235,6 +238,21 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     // Force a real bool: the Windows registry stores bool as DWORD and reads it
     // back as int, so a raw `=== true` check in QML fails and the dialog re-shows.
     if (key == "welcomeShown") { QSettings st; return st.value(QStringLiteral("welcomeShown"), false).toBool(); }
+    // Same DWORD-vs-int trap for every generic UI bool toggle (close-to-tray,
+    // splash, etc. "forgetting" they were turned off). Coerce to a real bool when
+    // the key is set; leave it invalid when unset so QML's own `on:`/strict-compare
+    // defaults still apply.
+    static const QSet<QString> uiBoolKeys = {
+        QStringLiteral("closeToTray"), QStringLiteral("showSplash"), QStringLiteral("startTray"),
+        QStringLiteral("notifSound"), QStringLiteral("randomPort"), QStringLiteral("autoShutdown"),
+        QStringLiteral("autoTrackers"), QStringLiteral("torrentSearchEnabled"),
+        QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
+        QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen")
+    };
+    if (uiBoolKeys.contains(key)) {
+        QSettings st;
+        return st.contains(key) ? QVariant(st.value(key).toBool()) : QVariant();
+    }
     // UI-only prefs + media API keys
     QSettings st;
     return st.value(key);
@@ -351,6 +369,8 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     else if (key == "proxyPass")           s->setProxySettings(s->proxyType(), s->proxyHost(), s->proxyPort(), s->proxyUser(), v.toString());
     else if (key == "ipFilterPath")        { QString p = v.toString(); if (p.isEmpty()) s->clearIpFilter(); else s->loadIpFilter(p); }
     else if (key == "tempPath")            s->setTempPath(v.toString());
+    else if (key == "preallocate")         s->setPreallocate(v.toBool());
+    else if (key == "autoRecheck")         s->setAutoRecheck(v.toBool());
     else if (key == "contentLayout")       s->setContentLayout(v.toInt());
     else if (key == "torrentExportDir")    s->setTorrentExportDir(v.toString());
     else if (key == "extractPasswords") {

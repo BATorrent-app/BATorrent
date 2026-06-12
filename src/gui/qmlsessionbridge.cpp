@@ -101,7 +101,16 @@ QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *re
                 emit previewPosterReady(infoHash, meta.posterPath);
         });
     }
+
+    connect(m_session, &SessionManager::altSpeedsActiveChanged,
+            this, &QmlSessionBridge::altSpeedsActiveChanged);
+    connect(m_session, &SessionManager::portStatusChanged,
+            this, &QmlSessionBridge::portStatusChanged);
 }
+
+bool QmlSessionBridge::altSpeedsActive() const { return m_session->altSpeedsActive(); }
+int QmlSessionBridge::portStatus() const { return m_session->portStatus(); }
+void QmlSessionBridge::setAltSpeedsActive(bool active) { m_session->setAltSpeedsActive(active); }
 
 void QmlSessionBridge::sampleSpeeds()
 {
@@ -322,6 +331,11 @@ void QmlSessionBridge::unmarkSelectedCompleted()
 void QmlSessionBridge::forceRecheckSelected()
 {
     if (hasSelection()) m_session->forceRecheck(m_selectedIndex);
+}
+
+bool QmlSessionBridge::exportSelectedTorrent(const QString &destPath)
+{
+    return hasSelection() && m_session->exportTorrent(m_selectedIndex, destPath);
 }
 
 void QmlSessionBridge::forceReannounceSelected()
@@ -1323,6 +1337,55 @@ void QmlSessionBridge::addMagnetUri(const QString &uri, const QString &savePath)
 {
     if (uri.isEmpty()) return;
     m_session->addMagnet(uri, savePath.isEmpty() ? defaultSavePath() : savePath);
+}
+
+void QmlSessionBridge::addTorrentUrl(const QString &url)
+{
+    const QString u = url.trimmed();
+    if (u.isEmpty()) return;
+    if (u.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)) { addMagnetUri(u); return; }
+
+    const QUrl qurl(u);
+    if (!qurl.isValid() || !(qurl.scheme() == QLatin1String("http") || qurl.scheme() == QLatin1String("https"))) {
+        emit toast(tr_("add_url_failed"), u);
+        return;
+    }
+
+    auto *nam = new QNetworkAccessManager(this);
+    QNetworkRequest req(qurl);
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent"));
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    auto *reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            emit toast(tr_("add_url_failed"), reply->errorString());
+            return;
+        }
+        const QByteArray data = reply->readAll();
+        // A bencoded .torrent always starts with 'd' (a dict). Anything else
+        // (an HTML error page, a redirect to a login wall) is rejected here.
+        if (data.isEmpty() || data.front() != 'd') {
+            emit toast(tr_("add_url_failed"), reply->url().toString());
+            return;
+        }
+        QString name = QFileInfo(reply->url().path()).fileName();
+        if (!name.endsWith(QStringLiteral(".torrent"), Qt::CaseInsensitive))
+            name = QStringLiteral("download.torrent");
+        const QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
+            + QStringLiteral("/bat_%1_%2").arg(QDateTime::currentMSecsSinceEpoch()).arg(name);
+        QFile f(path);
+        if (!f.open(QIODevice::WriteOnly)) {
+            emit toast(tr_("add_url_failed"), path);
+            return;
+        }
+        f.write(data);
+        f.close();
+        // Route through the same add dialog as a dropped file (user picks
+        // save path / files) instead of silently auto-downloading.
+        emit openTorrentRequested(path);
+    });
 }
 
 QVariantMap QmlSessionBridge::previewTorrent(const QString &filePath) const

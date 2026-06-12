@@ -72,9 +72,12 @@ Window {
             { type: "path", key: "tempPath", label: (i18n.language, i18n.t("set_temp_path2")), placeholder: (i18n.language, i18n.t("set_temp_path_ph")), note: (i18n.language, i18n.t("set_temp_path_note")) },
             { type: "toggle", key: "autoMoveEnabled", label: (i18n.language, i18n.t("settings_automove")) },
             { type: "path", key: "autoMovePath", label: (i18n.language, i18n.t("set_move_to2")), placeholder: (i18n.language, i18n.t("set_move_to_ph")) },
+            { type: "toggle", key: "preallocate", label: (i18n.language, i18n.t("set_preallocate")), note: (i18n.language, i18n.t("set_preallocate_note")) },
+            { type: "toggle", key: "autoRecheck", label: (i18n.language, i18n.t("set_auto_recheck")), note: (i18n.language, i18n.t("set_auto_recheck_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
             { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch", "Українська"], icons: ["qrc:/icons/flags/en.svg", "qrc:/icons/flags/pt.svg", "qrc:/icons/flags/zh.svg", "qrc:/icons/flags/ja.svg", "qrc:/icons/flags/ru.svg", "qrc:/icons/flags/es.svg", "qrc:/icons/flags/de.svg", "qrc:/icons/flags/uk.svg"], value: 0 },
             { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
+            { type: "toggle", key: "followSystem", label: (i18n.language, i18n.t("set_follow_system")), note: (i18n.language, i18n.t("set_follow_system_note")) },
             { type: "appicon", label: (i18n.language, i18n.t("set_app_icon")), note: (i18n.language, i18n.t("set_app_icon_note")) },
             { type: "anime", label: (i18n.language, i18n.t("set_anime2")) },
             { type: "profiles", label: (i18n.language, i18n.t("set_custom_profile")),   customOnly: true },
@@ -591,10 +594,12 @@ Window {
         Component { id: cToggle; TToggle {
             on: (field.key === "torrentSearchEnabled" && typeof addons !== "undefined") ? addons.torrentSearchEnabled
                 : (field.key === "autoTrackers" && typeof addons !== "undefined") ? addons.autoTrackers
+                : (field.key === "followSystem" && typeof themeBridge !== "undefined") ? themeBridge.followSystem
                 : win.boolPref(field)
             onToggled: function(v) {
                 if (field.key === "torrentSearchEnabled" && typeof addons !== "undefined") addons.torrentSearchEnabled = v
                 else if (field.key === "autoTrackers" && typeof addons !== "undefined") addons.autoTrackers = v
+                else if (field.key === "followSystem" && typeof themeBridge !== "undefined") themeBridge.followSystem = v
                 else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, v)
             }
         } }

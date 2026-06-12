@@ -34,6 +34,14 @@ Window {
         if (trayIcon.available && toTray) {
             close.accepted = false
             win.hide()
+            // First time only: tell the user where the window went so it doesn't
+            // look like the app vanished (the tray icon hides in the Win11 overflow).
+            if (typeof settings !== "undefined" && settings.get("trayHintShown") !== true) {
+                settings.set("trayHintShown", true)
+                trayIcon.showMessage("BATorrent",
+                    i18n.t("tray_still_running"),
+                    Platform.SystemTrayIcon.Information, 4000)
+            }
         } else {
             Qt.quit()
         }
@@ -364,6 +372,7 @@ Window {
             CtxItem { text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDlg.open() }
             CtxItem { text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
             CtxItem { text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
+            CtxItem { text: (i18n.language, i18n.t("ctx_export_torrent")); onTriggered: exportTorrentDlg.open() }
             CtxItem { text: (i18n.language, i18n.t("ctx_why_slow")); onTriggered: { diagnoseDlg.body = session.diagnoseSelectedSlow(); diagnoseDlg.open() } }
             CtxItem { text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain")); onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
             CtxItem { text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
@@ -406,6 +415,7 @@ Window {
             title: (i18n.language, i18n.t("menu_file_title"))
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_open_torrent")); shortcut: StandardKey.Open; onTriggered: openFileDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_magnet")); shortcut: "Ctrl+M"; onTriggered: magnetDlg.open() }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_url")); shortcut: "Ctrl+U"; onTriggered: inputPrompt.openWith(i18n.t("menu_add_url"), i18n.t("prompt_torrent_url"), "", "https://…/file.torrent", function(t){ if (t.length > 0) session.addTorrentUrl(t) }) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_create_torrent")); onTriggered: createDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: inspectFileDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_import_qbt")); onTriggered: importQbtDlg.open() }
@@ -541,6 +551,7 @@ Window {
         property string label
         property string icon
         property bool disabled: false
+        property bool active: false       // toggled-on state (e.g. alt-speed turtle)
         signal clicked()
         Layout.preferredWidth: 52
         Layout.minimumWidth: 52          // never let the RowLayout squeeze/clip the button
@@ -555,13 +566,13 @@ Window {
             IconImg {
                 anchors.horizontalCenter: parent.horizontalCenter
                 src: tb.icon
-                tint: !tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3
+                tint: tb.active ? Theme.accent : (!tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3)
                 s: 18
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: tb.label
-                color: !tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3
+                color: tb.active ? Theme.accent : (!tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3)
                 font.pixelSize: 11
                 font.family: Theme.fontSans
                 font.weight: Font.Medium
@@ -845,6 +856,14 @@ Window {
                 TGrpDiv {}
                 // G5: Config.
                 TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: win.showWin(settingsWinLoader) }
+
+                // G6: alt-speed (turtle) manual toggle
+                TBtn {
+                    label: (i18n.language, i18n.t("tb_alt_speed"))
+                    icon: "qrc:/icons/turtle.svg"
+                    active: typeof session !== "undefined" && session.altSpeedsActive
+                    onClicked: if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive)
+                }
 
                 // .tb-spacer
                 Item { Layout.fillWidth: true }
@@ -1138,6 +1157,31 @@ Window {
                         CatItem { text: win.catLabel("Games");  onTriggered: win.applyCatFilter("Games") }
                         CatItem { text: win.catLabel("Movies"); onTriggered: win.applyCatFilter("Movies") }
                         CatItem { text: win.catLabel("Series"); onTriggered: win.applyCatFilter("Series") }
+                    }
+                }
+
+                // port reachability indicator (UPnP/NAT-PMP + listen heuristic)
+                Row {
+                    id: portInd
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.minimumWidth: implicitWidth
+                    spacing: 6
+                    property int ps: typeof session !== "undefined" ? session.portStatus : 0
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 9; height: 9; radius: 4.5
+                        color: portInd.ps === 1 ? Theme.grn
+                             : portInd.ps === 2 ? Theme.amber
+                             : portInd.ps === 3 ? Theme.accent : Theme.t4
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: (i18n.language, i18n.t("tb_port") + ": " + (portInd.ps === 1 ? i18n.t("port_open")
+                             : portInd.ps === 2 ? i18n.t("port_firewalled")
+                             : portInd.ps === 3 ? i18n.t("port_closed") : i18n.t("port_checking")))
+                        color: Theme.t3
+                        font.pixelSize: 11
+                        font.family: Theme.fontSans
                     }
                 }
 
@@ -2347,7 +2391,7 @@ Window {
     FileDialog {
         id: openFileDlg
         title: (i18n.language, i18n.t("dlg_open_torrent"))
-        nameFilters: ["Arquivos torrent (*.torrent)", "Todos os arquivos (*)"]
+        nameFilters: [(i18n.language, i18n.t("filter_torrent_files")), (i18n.language, i18n.t("filter_all_files"))]
         onAccepted: {
             if (typeof session === "undefined") return
             var path = selectedFile.toString()
@@ -2568,8 +2612,24 @@ Window {
     FileDialog {
         id: inspectFileDlg
         title: (i18n.language, i18n.t("inspector_title"))
-        nameFilters: ["Torrent (*.torrent)"]
+        nameFilters: [(i18n.language, i18n.t("filter_torrent_files"))]
         onAccepted: inspectorDlg.load(session.urlToLocalPath(inspectFileDlg.selectedFile.toString()))
+    }
+
+    // Export the selected torrent's .torrent metadata to disk (ctx menu)
+    FileDialog {
+        id: exportTorrentDlg
+        title: (i18n.language, i18n.t("ctx_export_torrent"))
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "torrent"
+        nameFilters: [(i18n.language, i18n.t("filter_torrent_files"))]
+        currentFile: (typeof session !== "undefined" && session.selectedName.length > 0)
+                     ? ("file:" + session.selectedName + ".torrent") : "file:export.torrent"
+        onAccepted: {
+            if (typeof session === "undefined") return
+            var ok = session.exportSelectedTorrent(exportTorrentDlg.selectedFile.toString())
+            win.notifyUser("BATorrent", i18n.t(ok ? "export_torrent_ok" : "export_torrent_failed"), ok ? 0 : 2)
+        }
     }
 
     // Import torrents from an existing qBittorrent install (choose default save path)
