@@ -41,13 +41,13 @@ Rectangle {
     // right hairline
     Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.hair }
 
-    readonly property var items: buildItems()
+    readonly property var items: buildItems(i18n.language)
     function buildItems() {
         var all = [
-            { icon: "qrc:/icons/download.svg", label: "Downloads", page: 0 },
-            { icon: "qrc:/icons/discover.svg", label: "Discover",  page: 1 },
-            { icon: "qrc:/icons/search.svg",   label: "Search",    page: 2 },
-            { icon: "qrc:/icons/hub.svg",      label: "HUB",       page: 3 }
+            { icon: "qrc:/icons/download.svg", label: i18n.t("nav_downloads"), page: 0 },
+            { icon: "qrc:/icons/discover.svg", label: i18n.t("nav_discover"),  page: 1 },
+            { icon: "qrc:/icons/search.svg",   label: i18n.t("nav_search"),    page: 2 },
+            { icon: "qrc:/icons/hub.svg",      label: i18n.t("nav_hub"),       page: 3 }
         ]
         // Store builds hide Discover (page 1); other pages keep their indices.
         if (typeof isStoreBuild !== "undefined" && isStoreBuild)
@@ -84,9 +84,12 @@ Rectangle {
         // orrent t1) so it reads as the logotype, not generic text.
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: 66
+            // unified chrome: the traffic lights live in this corner — push the
+            // brand below them instead of underneath
+            Layout.preferredHeight: Theme.unifiedChrome ? 88 : 66
             Image {
                 anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: Theme.unifiedChrome ? 11 : 0
                 anchors.left: parent.left; anchors.leftMargin: 18
                 width: 30; height: 30
                 source: "qrc:/images/logo.svg"
@@ -99,6 +102,7 @@ Rectangle {
             // Two-tone: BAT in accent (echoes the bat's red), orrent in t1.
             Row {
                 anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: Theme.unifiedChrome ? 11 : 0
                 anchors.left: parent.left; anchors.leftMargin: 52
                 spacing: 0
                 opacity: rail.collapsed ? 0 : 1
@@ -247,7 +251,7 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    text: "Settings"
+                    text: (i18n.language, i18n.t("tb_settings"))
                     color: Theme.t2
                     font.pixelSize: 14
                     font.weight: Font.Medium
@@ -263,7 +267,7 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: rail.settingsClicked()
             }
-            ToolTip.text: "Settings"
+            ToolTip.text: (i18n.language, i18n.t("tb_settings"))
             ToolTip.visible: rail.collapsed && setMa.containsMouse
             ToolTip.delay: 400
         }
@@ -296,7 +300,7 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    text: "Collapse"
+                    text: (i18n.language, i18n.t("nav_collapse"))
                     color: Theme.t2
                     font.pixelSize: 14
                     font.weight: Font.Medium
@@ -312,7 +316,7 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: rail.toggleCollapsed()
             }
-            ToolTip.text: "Expand"
+            ToolTip.text: (i18n.language, i18n.t("nav_expand"))
             ToolTip.visible: rail.collapsed && tglMa.containsMouse
             ToolTip.delay: 400
         }

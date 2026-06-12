@@ -20,6 +20,19 @@ Rectangle {
     border.color: on ? "transparent" : Theme.hair
     border.width: 1
 
+    activeFocusOnTab: true
+    Keys.onReturnPressed: { tg.on = !tg.on; tg.toggled(tg.on) }
+    Keys.onSpacePressed: { tg.on = !tg.on; tg.toggled(tg.on) }
+    Rectangle {
+        visible: tg.activeFocus
+        anchors.fill: parent
+        anchors.margins: -3
+        radius: 999
+        color: "transparent"
+        border.color: Theme.focusRing
+        border.width: Theme.focusRingWidth
+    }
+
     Rectangle {
         width: 15
         height: 15

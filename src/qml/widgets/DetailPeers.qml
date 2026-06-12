@@ -21,7 +21,7 @@ ColumnLayout {
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
-            Text { text: (i18n.language, i18n.t("detailpeers_country")); Layout.preferredWidth: 40; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+            Text { text: (i18n.language, i18n.t("detailpeers_country")); Layout.preferredWidth: 56; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
             Text { text: (i18n.language, i18n.t("detailpeers_ip")); Layout.fillWidth: true; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
             Text { text: (i18n.language, i18n.t("detailpeers_client")); Layout.preferredWidth: 150; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
             Text { text: (i18n.language, i18n.t("detailpeers_progr")); Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
@@ -58,7 +58,7 @@ ColumnLayout {
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
-                Text { text: modelData.flag || ""; Layout.preferredWidth: 40; font.pixelSize: 13; font.family: Theme.fontSans }
+                Text { text: modelData.flag || ""; Layout.preferredWidth: 56; font.pixelSize: 13; font.family: Theme.fontSans }
                 Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
                 Text { text: modelData.client; Layout.preferredWidth: 150; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
                 Text { text: Math.round((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }

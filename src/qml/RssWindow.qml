@@ -12,12 +12,14 @@ import "widgets"
 
 Window {
     id: win
+    Shortcut { sequences: [StandardKey.Cancel]; onActivated: win.close() }
     width: 760
     height: 560
     minimumWidth: 620
     minimumHeight: 420
     color: Theme.bg
-    title: (i18n.language, i18n.t("tb_rss"))
+    flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
+    title: Theme.unifiedChrome ? "" : (i18n.language, i18n.t("tb_rss"))
 
     property int selectedFeed: 0
 
@@ -251,17 +253,15 @@ Window {
                                     feedMenu.popup()
                             }
                         }
-                        Menu {
+                        BatMenu {
                             id: feedMenu
-                            modal: true
-                            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-                            MenuItem {
+                            BatMenuItem {
                                 text: modelData.enabled ? (i18n.language, i18n.t("rss_disable")) : (i18n.language, i18n.t("rss_enable"))
                                 onTriggered: rss.setFeedEnabled(index, !modelData.enabled)
                             }
-                            MenuItem { text: (i18n.language, i18n.t("rss_refresh_now")); onTriggered: rss.checkFeed(index) }
-                            MenuItem { text: (i18n.language, i18n.t("rss_edit")); onTriggered: editOverlay.openFor(index) }
-                            MenuItem { text: (i18n.language, i18n.t("rss_remove_feed")); onTriggered: rss.removeFeed(index) }
+                            BatMenuItem { text: (i18n.language, i18n.t("rss_refresh_now")); onTriggered: rss.checkFeed(index) }
+                            BatMenuItem { text: (i18n.language, i18n.t("rss_edit")); onTriggered: editOverlay.openFor(index) }
+                            BatMenuItem { text: (i18n.language, i18n.t("rss_remove_feed")); onTriggered: rss.removeFeed(index) }
                         }
                     }
                 }
@@ -288,6 +288,7 @@ Window {
 
                 // .rule banner
                 Rectangle {
+                    visible: win.curFeed !== null
                     Layout.fillWidth: true
                     Layout.preferredHeight: 38
                     color: Theme.panel
@@ -318,8 +319,38 @@ Window {
                     }
                 }
 
+                // no feeds yet: a real empty state with the only action that matters
+                ColumnLayout {
+                    visible: win.feedList.length === 0
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: Theme.sp3
+                    Item { Layout.fillHeight: true }
+                    IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/rss.svg"; tint: Theme.t4; s: 36 }
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: (i18n.language, i18n.t("rss_empty_title"))
+                        color: Theme.t2; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    }
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: (i18n.language, i18n.t("rss_empty_sub"))
+                        color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    BtnFlat {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: 6
+                        primary: true
+                        text: (i18n.language, i18n.t("rss_add_feed_btn"))
+                        onClicked: addOverlay.visible = true
+                    }
+                    Item { Layout.fillHeight: true }
+                }
+
                 // .ilist
                 ListView {
+                    visible: win.feedList.length > 0
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true

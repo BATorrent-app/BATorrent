@@ -23,29 +23,18 @@ ColumnLayout {
     }
 
     // shared right-click menu (rename + per-file priority)
-    Menu {
+    BatMenu {
         id: fileMenu
         implicitWidth: 200
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        component FItem: MenuItem {
-            id: fi
-            implicitHeight: 30; padding: 0
-            contentItem: Text {
-                leftPadding: 14; rightPadding: 14; text: fi.text
-                color: fi.highlighted ? Theme.t1 : Theme.t2
-                font.pixelSize: 12; font.family: Theme.fontSans; verticalAlignment: Text.AlignVCenter
-            }
-            background: Rectangle { color: fi.highlighted ? Theme.hover : "transparent"; radius: 5 }
-        }
-        FItem {
+        BatMenuItem {
             text: (i18n.language, i18n.t("ctx_rename"))
             onTriggered: { if (pane.menuIdx >= 0) pane.renameFile(pane.menuIdx, pane.files[pane.menuIdx].path) }
         }
-        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-        FItem { text: (i18n.language, i18n.t("priority_skip"));   onTriggered: session.setSelectedFilePriority(pane.menuIdx, 0) }
-        FItem { text: (i18n.language, i18n.t("priority_low"));    onTriggered: session.setSelectedFilePriority(pane.menuIdx, 1) }
-        FItem { text: (i18n.language, i18n.t("priority_normal")); onTriggered: session.setSelectedFilePriority(pane.menuIdx, 4) }
-        FItem { text: (i18n.language, i18n.t("priority_high"));   onTriggered: session.setSelectedFilePriority(pane.menuIdx, 7) }
+        BatMenuSep {}
+        BatMenuItem { text: (i18n.language, i18n.t("priority_skip"));   onTriggered: session.setSelectedFilePriority(pane.menuIdx, 0) }
+        BatMenuItem { text: (i18n.language, i18n.t("priority_low"));    onTriggered: session.setSelectedFilePriority(pane.menuIdx, 1) }
+        BatMenuItem { text: (i18n.language, i18n.t("priority_normal")); onTriggered: session.setSelectedFilePriority(pane.menuIdx, 4) }
+        BatMenuItem { text: (i18n.language, i18n.t("priority_high"));   onTriggered: session.setSelectedFilePriority(pane.menuIdx, 7) }
     }
 
     Rectangle {

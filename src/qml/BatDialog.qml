@@ -21,7 +21,12 @@ Item {
     // 0..1 drives the entrance/exit (backdrop fade + card scale+fade)
     property real anim: 0
     Behavior on anim { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-    onOpenedChanged: anim = opened ? 1 : 0
+    onOpenedChanged: {
+        anim = opened ? 1 : 0
+        if (opened) DialogStack.push(dlg)
+        else DialogStack.pop(dlg)
+    }
+    Component.onDestruction: DialogStack.pop(dlg)
 
     function open()  { opened = true }
     function close() { opened = false }
@@ -37,8 +42,24 @@ Item {
     property bool showOk: true
     default property alias bodyContent: bodyHost.data
 
+    // Return-to-accept is off for dialogs whose body has a multiline editor
+    // (the shortcut would steal the newline).
+    property bool acceptOnReturn: true
+
     signal accepted()
     signal rejected()
+
+    Shortcut {
+        sequences: [StandardKey.Cancel]
+        enabled: dlg.opened && DialogStack.topItem === dlg
+        onActivated: { dlg.rejected(); dlg.close() }
+    }
+    Shortcut {
+        sequences: ["Return", "Enter"]
+        enabled: dlg.opened && DialogStack.topItem === dlg
+                 && dlg.acceptOnReturn && dlg.showFooter && dlg.showOk
+        onActivated: { dlg.accepted(); dlg.close() }
+    }
 
     // backdrop (rgba(0,0,0,0.5) dark / rgba(20,20,28,0.32) light)
     Rectangle {

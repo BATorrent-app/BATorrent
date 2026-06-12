@@ -12,6 +12,7 @@ import "widgets"
 
 Window {
     id: win
+    Shortcut { sequences: [StandardKey.Cancel]; onActivated: win.close() }
     width: 900
     height: 600
     minimumWidth: 640

@@ -129,6 +129,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         return title;
     }
     case StateStringRole: return info.stateString;
+    case StateDetailRole: return info.stateDetail;
     case DownSpeedRole:   return formatSpeed(info.downloadRate);
     case UpSpeedRole:     return formatSpeed(info.uploadRate);
     case SizeRole:        return formatSize(info.totalSize);
@@ -151,6 +152,7 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {PosterPathRole,  "posterPath"},
         {MetaTitleRole,   "metaTitle"},
         {StateStringRole, "stateString"},
+        {StateDetailRole, "stateDetail"},
         {DownSpeedRole,   "downSpeed"},
         {UpSpeedRole,     "upSpeed"},
         {CategoryRole,    "category"},

@@ -186,11 +186,12 @@ Window {
     onFullscreenChanged: { win.controlsShown = true; if (win.fullscreen) idle.restart() }
 
     // track pickers (embedded audio / subtitle streams)
-    Menu {
+    BatMenu {
         id: audioMenu
+        implicitWidth: 180
         Repeater {
             model: player.audioTracks.length
-            MenuItem {
+            BatMenuItem {
                 required property int index
                 text: (i18n.language, i18n.t("player_audio")) + " " + (index + 1)
                 checkable: true; checked: player.activeAudioTrack === index
@@ -198,16 +199,17 @@ Window {
             }
         }
     }
-    Menu {
+    BatMenu {
         id: subMenu
-        MenuItem {
+        implicitWidth: 180
+        BatMenuItem {
             text: (i18n.language, i18n.t("player_subs_off"))
             checkable: true; checked: player.activeSubtitleTrack < 0
             onTriggered: player.activeSubtitleTrack = -1
         }
         Repeater {
             model: player.subtitleTracks.length
-            MenuItem {
+            BatMenuItem {
                 required property int index
                 text: (i18n.language, i18n.t("player_subs")) + " " + (index + 1)
                 checkable: true; checked: player.activeSubtitleTrack === index

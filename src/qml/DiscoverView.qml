@@ -191,25 +191,35 @@ Rectangle {
 
     // skeleton while the first fetch is in flight
     ColumnLayout {
+        id: skeleton
         anchors.fill: parent
-        anchors.topMargin: 326
-        anchors.leftMargin: Theme.sp5
+        anchors.leftMargin: 0
         spacing: 26
         visible: page.api && page.api.loading && page.rowList.length === 0
+        opacity: 0.75
+        SequentialAnimation on opacity {
+            running: skeleton.visible
+            loops: Animation.Infinite
+            NumberAnimation { to: 0.45; duration: 700; easing.type: Easing.InOutQuad }
+            NumberAnimation { to: 0.75; duration: 700; easing.type: Easing.InOutQuad }
+        }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 300; color: Theme.elev }
         Repeater {
-            model: 3
+            model: 2
             ColumnLayout {
                 spacing: 10
-                Rectangle { width: 150; height: 16; radius: 4; color: "#1b1b20" }
+                Layout.leftMargin: Theme.sp5
+                Rectangle { width: 150; height: 16; radius: 4; color: Theme.track }
                 RowLayout {
                     spacing: 16
                     Repeater {
                         model: 7
-                        Rectangle { width: 150; height: 225; radius: 10; color: "#161618"; border.color: Theme.hair; border.width: 1 }
+                        Rectangle { width: 150; height: 225; radius: 10; color: Theme.elev; border.color: Theme.hair; border.width: 1 }
                     }
                 }
             }
         }
+        Item { Layout.fillHeight: true }
     }
 
     // empty / no-keys state (not loading)

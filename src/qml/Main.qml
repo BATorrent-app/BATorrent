@@ -24,7 +24,8 @@ Window {
     minimumWidth: 1288   // +188 for the nav rail (content area stays >=1100 so the toolbar never clips)
     minimumHeight: 640
     color: Theme.bg
-    title: "BATorrent"
+    flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
+    title: Theme.unifiedChrome ? "" : "BATorrent"
 
     // Close button hides to the tray instead of quitting (quitOnLastWindowClosed
     // is false). If no tray is available, really quit so the app can't get stuck
@@ -117,9 +118,10 @@ Window {
 
     // ----- state→color helpers (keyed by real stateKey) -----
     function fillFor(k) {
-        // 100% (seeding/finished/completed): stay red, but a deeper shade than the
-        // active-download accent so it still reads as "done".
-        if (k === "seeding" || k === "finished" || k === "completed") return Theme.accentDark
+        // match the dot/text semantics: done = green, seeding = amber — a red
+        // 100% pill reads as an error at a glance
+        if (k === "finished" || k === "completed") return Theme.grn
+        if (k === "seeding") return Theme.amber
         if (k === "paused" || k === "queued") return Theme.pausedFill
         return Theme.accent
     }
@@ -302,6 +304,7 @@ Window {
         CtxItem { text: (i18n.language, i18n.t("tb_pause")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
         CtxItem { text: (i18n.language, i18n.t("tb_resume")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
+        CtxItem { text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
         CtxItem { text: (i18n.language, i18n.t("ctx_play")); onTriggered: session.playSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stream")); onTriggered: session.streamSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
@@ -502,7 +505,8 @@ Window {
                     && win.visibility !== Window.Minimized
                     && win.visibility !== Window.Hidden
         if (shown) {
-            toastHost.show(title, body, level)
+            toastHost.show(title, body, level,
+                           level === 2 ? "logs" : "", level === 2 ? i18n.t("toast_view_logs") : "")
         } else if (trayIcon.available) {
             // `supportsMessages` reads false on Windows even when showMessage
             // works, so gate on `available`.
@@ -529,8 +533,47 @@ Window {
         function onToast(title, body) { win.notifyUser(title, body, 0) }
     }
 
+    // Ctrl/⌘+K command palette — actions + torrent jump
+    CommandPalette {
+        id: cmdPalette
+        actions: {
+            var l = i18n.language   // re-evaluate labels on language switch
+            return [
+                { label: i18n.t("magnet_title"), run: function() { magnetDlg.open() } },
+                { label: i18n.t("menu_open_torrent"), run: function() { openFileDlg.open() } },
+                { label: i18n.t("menu_create_torrent"), run: function() { createDlg.open() } },
+                { label: i18n.t("menu_pause_all"), run: function() { if (typeof session !== "undefined") session.pauseAll() } },
+                { label: i18n.t("menu_resume_all"), run: function() { if (typeof session !== "undefined") session.resumeAll() } },
+                { label: i18n.t("tb_alt_speed"), hint: i18n.t("palette_hint_toggle"), run: function() { if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive) } },
+                { label: i18n.t("nav_downloads"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 0 } },
+                { label: i18n.t("nav_discover"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 1 } },
+                { label: i18n.t("nav_search"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 2 } },
+                { label: i18n.t("nav_hub"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 3 } },
+                { label: i18n.t("tb_settings"), run: function() { win.showWin(settingsWinLoader) } },
+                { label: i18n.t("menu_rss"), run: function() { win.showWin(rssWinLoader) } },
+                { label: i18n.t("menu_statistics"), run: function() { win.showWin(statsWinLoader) } },
+                { label: i18n.t("menu_logs"), run: function() { win.showWin(logWinLoader) } },
+                { label: i18n.t("menu_diagnostics"), run: function() { win.showWin(diagWinLoader) } },
+                { label: i18n.t("shortcuts_title2"), run: function() { win.showWin(shortcutsWinLoader) } }
+            ]
+        }
+        onTorrentPicked: function(src) {
+            navRail.currentIndex = 0
+            if (typeof torrentFilter === "undefined") return
+            var p = torrentFilter.mapFromSource(src)
+            if (p < 0) { win.setFilter("all"); p = torrentFilter.mapFromSource(src) }
+            if (p >= 0) win.selectRow(p)
+        }
+    }
+    Shortcut { sequence: "Ctrl+K"; onActivated: cmdPalette.toggle() }
+
     // custom toast cards, pinned to the screen's bottom-right (native-like)
-    ToastOverlay { id: toastHost }
+    ToastOverlay {
+        id: toastHost
+        onActionTriggered: function(actionId) {
+            if (actionId === "logs") win.showWin(logWinLoader)
+        }
+    }
 
     TrayPopupWindow {
         id: trayPopup
@@ -559,6 +602,21 @@ Window {
         color: !disabled && tbMa.containsMouse ? Theme.hover : "transparent"
         radius: 8
         opacity: disabled ? 0.35 : 1.0
+
+        activeFocusOnTab: !disabled
+        Keys.onReturnPressed: if (!disabled) tb.clicked()
+        Keys.onSpacePressed: if (!disabled) tb.clicked()
+        scale: tbMa.pressed && !tb.disabled ? Theme.pressScale : 1
+        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+        Rectangle {
+            visible: tb.activeFocus
+            anchors.fill: parent
+            anchors.margins: -2
+            radius: 10
+            color: "transparent"
+            border.color: Theme.focusRing
+            border.width: Theme.focusRingWidth
+        }
 
         Column {
             anchors.centerIn: parent
@@ -609,6 +667,21 @@ Window {
         height: 30
         implicitWidth: pillRow.implicitWidth + 26
         color: on ? Theme.accentTint : (piMa.containsMouse ? Theme.hover : "transparent")
+
+        activeFocusOnTab: true
+        Keys.onReturnPressed: pi.clicked()
+        Keys.onSpacePressed: pi.clicked()
+        scale: piMa.pressed ? Theme.pressScale : 1
+        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+        Rectangle {
+            visible: pi.activeFocus
+            anchors.fill: parent
+            anchors.margins: -2
+            radius: 10
+            color: "transparent"
+            border.color: Theme.focusRing
+            border.width: Theme.focusRingWidth
+        }
 
         Row {
             id: pillRow
@@ -1160,33 +1233,10 @@ Window {
                     }
                 }
 
-                // port reachability indicator (UPnP/NAT-PMP + listen heuristic)
-                Row {
-                    id: portInd
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.minimumWidth: implicitWidth
-                    spacing: 6
-                    property int ps: typeof session !== "undefined" ? session.portStatus : 0
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 9; height: 9; radius: 4.5
-                        color: portInd.ps === 1 ? Theme.grn
-                             : portInd.ps === 2 ? Theme.amber
-                             : portInd.ps === 3 ? Theme.accent : Theme.t4
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: (i18n.language, i18n.t("tb_port") + ": " + (portInd.ps === 1 ? i18n.t("port_open")
-                             : portInd.ps === 2 ? i18n.t("port_firewalled")
-                             : portInd.ps === 3 ? i18n.t("port_closed") : i18n.t("port_checking")))
-                        color: Theme.t3
-                        font.pixelSize: 11
-                        font.family: Theme.fontSans
-                    }
-                }
-
                 // donate moved to the nav rail (bottom) — it was cramped here
                 // and got clipped when the filter row filled up.
+                // (the port indicator now lives in the status bar: it's status,
+                // not a filter, and it was the first thing to clip here)
             }
         }
 
@@ -1249,7 +1299,10 @@ Window {
                     anchors.fill: parent
                     source: Theme.hasAnime ? Theme.animeSource : ""
                     fillMode: Image.PreserveAspectFit
-                    opacity: win.gridView ? 0.9 : 0.6
+                    // list rows put state/peer columns right on top of the art —
+                    // drop it to a watermark there so data wins the contrast fight
+                    opacity: win.gridView ? 0.9 : 0.25
+                    Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
                 }
                 // fade left edge (mask: linear-gradient(90deg, transparent, #000 55%))
                 Rectangle {
@@ -1597,6 +1650,7 @@ Window {
                     required property string stateKey
                     required property real progress
                     required property string stateString
+                    required property string stateDetail
                     required property string size
                     required property string downSpeed
                     required property string upSpeed
@@ -1635,6 +1689,7 @@ Window {
                             PosterThumb {
                                 Layout.alignment: Qt.AlignVCenter
                                 posterUrl: lrow.posterUrl
+                                label: lrow.metaTitle || lrow.torrentName || ""
                             }
                             Text {
                                 Layout.fillWidth: true
@@ -1706,6 +1761,11 @@ Window {
                             font.pixelSize: 12
                             font.weight: Theme.hasAnime ? Font.DemiBold : Font.Medium
                             font.family: Theme.fontSans
+                            // why a "Downloading" row sits at 0 B/s — hover the state
+                            HoverHandler { id: stateHover; enabled: lrow.stateDetail.length > 0 }
+                            ToolTip.visible: stateHover.hovered && lrow.stateDetail.length > 0
+                            ToolTip.text: lrow.stateDetail
+                            ToolTip.delay: 350
                         }
                         Text {
                             text: win.catLabel(lrow.category)
@@ -2292,11 +2352,35 @@ Window {
 
                 Text {
                     text: typeof session !== "undefined"
-                          ? session.torrentCount + " torrents · " + session.activeCount + " ativos"
+                          ? (i18n.language, i18n.t("status_torrents_active")).arg(session.torrentCount).arg(session.activeCount)
                           : "0 torrents"
                     color: Theme.t4
                     font.pixelSize: 12
                     font.family: Theme.fontSans
+                }
+                // port reachability (UPnP/NAT-PMP + listen heuristic)
+                Row {
+                    id: portInd
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: Theme.sp2
+                    spacing: 6
+                    property int ps: typeof session !== "undefined" ? session.portStatus : 0
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 8; height: 8; radius: 4
+                        color: portInd.ps === 1 ? Theme.grn
+                             : portInd.ps === 2 ? Theme.amber
+                             : portInd.ps === 3 ? Theme.accent : Theme.t4
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: (i18n.language, i18n.t("tb_port") + ": " + (portInd.ps === 1 ? i18n.t("port_open")
+                             : portInd.ps === 2 ? i18n.t("port_firewalled")
+                             : portInd.ps === 3 ? i18n.t("port_closed") : i18n.t("port_checking")))
+                        color: Theme.t4
+                        font.pixelSize: 12
+                        font.family: Theme.fontSans
+                    }
                 }
                 Item { Layout.fillWidth: true }
                 Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent }
@@ -2306,6 +2390,15 @@ Window {
                 Text {
                     text: typeof session !== "undefined"
                           ? "·  Total " + session.totalDownloaded + " ↓ · " + session.totalUploaded + " ↑ · Ratio " + session.globalRatio
+                          : ""
+                    color: Theme.t4
+                    font.pixelSize: 12
+                    font.family: Theme.fontSans
+                }
+                Text {
+                    visible: typeof session !== "undefined" && session.freeDiskSpace.length > 0
+                    text: typeof session !== "undefined"
+                          ? "·  " + (i18n.language, i18n.t("status_free_space")).arg(session.freeDiskSpace)
                           : ""
                     color: Theme.t4
                     font.pixelSize: 12

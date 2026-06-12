@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "addonmanager.h"
+#include "utils.h"
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -270,7 +271,7 @@ void AddonManager::searchCatalog(const QString &query)
                         CatalogItem item;
                         item.id = m.value("id").toString();
                         item.type = m.value("type").toString();
-                        item.name = m.value("name").toString();
+                        item.name = decodeHtmlEntities(m.value("name").toString());
                         item.poster = m.value("poster").toString();
                         // Year from releaseInfo or year field
                         QString release = m.value("releaseInfo").toString();
@@ -351,9 +352,9 @@ void AddonManager::getStreams(const QString &type, const QString &id)
                     }
 
                     // Parse title/name for quality info
-                    r.title = s.value("title").toString();
+                    r.title = decodeHtmlEntities(s.value("title").toString());
                     if (r.title.isEmpty())
-                        r.title = s.value("name").toString();
+                        r.title = decodeHtmlEntities(s.value("name").toString());
 
                     // Extract size from behaviorHints
                     QJsonObject hints = s.value("behaviorHints").toObject();
@@ -488,7 +489,7 @@ void AddonManager::searchTorrents(const QString &query, int category)
         QJsonArray arr = doc.array();
         for (const auto &val : arr) {
             QJsonObject obj = val.toObject();
-            QString name = obj.value("name").toString();
+            QString name = decodeHtmlEntities(obj.value("name").toString());
             QString infoHash = obj.value("info_hash").toString();
             if (infoHash.isEmpty() || infoHash == "0")
                 continue;
@@ -687,7 +688,7 @@ QList<TorrentSearchResult> AddonManager::parseProviderResponse(
     QList<TorrentSearchResult> results;
     for (const auto &val : arr) {
         QJsonObject obj = val.toObject();
-        QString name = obj.value(p.namePath).toString();
+        QString name = decodeHtmlEntities(obj.value(p.namePath).toString());
         QString infoHash = obj.value(p.hashPath).toString();
         if (infoHash.isEmpty() || infoHash == "0") continue;
 

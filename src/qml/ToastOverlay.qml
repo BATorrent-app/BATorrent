@@ -26,11 +26,15 @@ Window {
     x: Screen.virtualX + Screen.desktopAvailableWidth - width - edge
     y: Screen.virtualY + Screen.desktopAvailableHeight - height - edge
 
+    // a card's action button was clicked (actionId set via show())
+    signal actionTriggered(string actionId)
+
     // level: 0 info, 1 warning, 2 critical/error, 3 success
-    function show(title, body, level) {
+    function show(title, body, level, actionId, actionText) {
         var kind = level === 3 ? "success" : level === 2 ? "error"
                  : level === 1 ? "warning" : "info"
-        toastModel.insert(0, { mTitle: title || "", mBody: body || "", mKind: kind })
+        toastModel.insert(0, { mTitle: title || "", mBody: body || "", mKind: kind,
+                               mActionId: actionId || "", mActionText: actionText || "" })
     }
 
     ListModel { id: toastModel }
@@ -46,7 +50,7 @@ Window {
             delegate: Rectangle {
                 id: card
                 width: overlay.cardW
-                height: 86
+                height: mActionId !== "" ? 104 : 86
                 radius: 10
                 color: Theme.panel
                 border.width: (mKind === "warning" || mKind === "error") ? 1 : 0
@@ -80,6 +84,7 @@ Window {
                     anchors.right: parent.right; anchors.rightMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 4
+                    z: 2   // the action button must win clicks over the card-wide dismiss area
 
                     RowLayout {
                         width: parent.width
@@ -109,6 +114,23 @@ Window {
                         font.pixelSize: 9; font.family: Theme.fontMono
                         elide: Text.ElideRight
                         visible: mBody.length > 0
+                    }
+                    Text {
+                        visible: mActionId !== ""
+                        text: mActionText
+                        color: actMa.containsMouse ? Theme.t1 : Theme.accentText
+                        font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                        topPadding: 2
+                        MouseArea {
+                            id: actMa
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onEntered: dismissTimer.stop()
+                            onExited: dismissTimer.restart()
+                            onClicked: { overlay.actionTriggered(mActionId); card.dismiss() }
+                        }
                     }
                 }
 

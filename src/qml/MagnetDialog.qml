@@ -14,6 +14,7 @@ BatDialog {
     title: (i18n.language, i18n.t("magnet_title"))
     cardW: 480
     cardH: 470
+    acceptOnReturn: false
     footHint: (i18n.language, i18n.t("magnet_multi_hint"))
     okText: (i18n.language, i18n.t("add_torrent_add_btn"))
 

@@ -19,6 +19,26 @@ Rectangle {
     implicitWidth: row.implicitWidth + (sm ? 22 : 28)
     implicitHeight: sm ? 28 : 32
     radius: 7
+    opacity: enabled ? 1 : 0.45
+
+    activeFocusOnTab: true
+    Keys.onReturnPressed: btn.clicked()
+    Keys.onEnterPressed: btn.clicked()
+    Keys.onSpacePressed: btn.clicked()
+
+    scale: ma.pressed ? Theme.pressScale : 1
+    Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+
+    // keyboard-focus ring (Tab reaches here; mouse clicks never move focus)
+    Rectangle {
+        visible: btn.activeFocus
+        anchors.fill: parent
+        anchors.margins: -3
+        radius: btn.radius + 3
+        color: "transparent"
+        border.color: Theme.focusRing
+        border.width: Theme.focusRingWidth
+    }
     color: btn.primary
         ? (ma.containsMouse ? Theme.accentDark : Theme.accent)
         : (Theme.isDark ? Qt.rgba(0,0,0,0) : Qt.rgba(0,0,0,0))  // transparent (bg vem do field via parent se preciso)

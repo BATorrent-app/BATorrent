@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "qmlposterbridge.h"
+#include <QStorageInfo>
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
 #include "../app/discoveryservice.h"
@@ -1024,6 +1025,30 @@ void QmlSessionBridge::openSelectedFile()
     if (!path.isEmpty()) revealInFileManager(path);   // open the folder with the item selected
 }
 
+QVariantList QmlSessionBridge::torrentPalette() const
+{
+    QVariantList out;
+    const int n = m_session->torrentCount();
+    for (int i = 0; i < n; ++i) {
+        const TorrentInfo info = m_session->torrentAt(i);
+        if (info.name.isEmpty()) continue;
+        QVariantMap m;
+        m["name"] = info.name;
+        m["source"] = i;
+        out << m;
+    }
+    return out;
+}
+
+void QmlSessionBridge::copySelectedContentPath()
+{
+    if (!hasSelection()) return;
+    const QString path = m_session->torrentRootPath(m_selectedIndex);
+    if (path.isEmpty()) return;
+    QGuiApplication::clipboard()->setText(QDir::toNativeSeparators(path));
+    emit toast(tr_("ctx_path_copied"), QDir::toNativeSeparators(path));
+}
+
 void QmlSessionBridge::relinkSelectedCover(const QString &query, const QString &typeStr)
 {
     if (!hasSelection() || !m_resolver || query.trimmed().isEmpty()) return;
@@ -1084,17 +1109,17 @@ QVariantMap QmlSessionBridge::diagnostics() const
     const bool dht = m_session->dhtEnabled();
 
     m["listenOk"] = port > 0;
-    m["listenText"] = port > 0 ? QStringLiteral("Escutando na porta %1").arg(port)
-                               : QStringLiteral("Não está escutando");
+    m["listenText"] = port > 0 ? tr_("port_listening_on").arg(port)
+                               : tr_("port_not_listening");
     m["dhtOk"] = dht;
-    m["dhtText"] = dht ? QStringLiteral("Ativo (%1 nós)").arg(stats.dhtNodes)
-                       : QStringLiteral("Desativado");
+    m["dhtText"] = dht ? tr_("port_dht_active").arg(stats.dhtNodes)
+                       : tr_("port_dht_disabled");
     m["natOk"] = stats.hasIncomingConnections;
-    m["natText"] = stats.hasIncomingConnections ? QStringLiteral("Conexões de entrada OK")
-                                                : QStringLiteral("Sem conexões de entrada");
+    m["natText"] = stats.hasIncomingConnections ? tr_("port_incoming_ok")
+                                                : tr_("port_incoming_none");
     m["portOk"] = stats.peersCount > 0;
-    m["portText"] = stats.peersCount > 0 ? QStringLiteral("%1 peers conectados").arg(stats.peersCount)
-                                         : QStringLiteral("Não confirmado");
+    m["portText"] = stats.peersCount > 0 ? tr_("port_peers_connected").arg(stats.peersCount)
+                                         : tr_("port_unconfirmed");
     return m;
 }
 
@@ -1157,7 +1182,7 @@ QString QmlSessionBridge::createTorrent(const QVariantMap &opts)
         const QString parentDir = srcInfo.absolutePath();
         lt::add_files(fs, source.toStdString());
         if (fs.num_files() == 0)
-            return QStringLiteral("Nenhum arquivo encontrado na origem.");
+            return tr_("create_no_files");
 
         lt::create_torrent ct(fs, pieceSize > 0 ? pieceSize : 0);
 
@@ -1177,7 +1202,7 @@ QString QmlSessionBridge::createTorrent(const QVariantMap &opts)
 
         QFile outFile(output);
         if (!outFile.open(QIODevice::WriteOnly))
-            return QStringLiteral("Não foi possível gravar o arquivo de saída.");
+            return tr_("create_write_failed");
         outFile.write(buf.data(), static_cast<qsizetype>(buf.size()));
         outFile.close();
 
@@ -1308,6 +1333,22 @@ QVariantList QmlSessionBridge::selectedPieces() const
     out.reserve(pieces.size());
     for (bool b : pieces) out << b;
     return out;
+}
+
+// Free space on the default save volume, polled at most every 10s — the
+// status bar binds to statsChanged which ticks every second.
+QString QmlSessionBridge::freeDiskSpace() const
+{
+    static qint64 cached = -1;
+    static qint64 lastCheck = 0;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    if (cached < 0 || now - lastCheck >= 10) {
+        lastCheck = now;
+        const QString path = defaultSavePath();
+        QStorageInfo si(path.isEmpty() ? QDir::homePath() : path);
+        cached = si.isValid() ? si.bytesAvailable() : -1;
+    }
+    return cached >= 0 ? formatSize(cached) : QString();
 }
 
 QString QmlSessionBridge::defaultSavePath() const

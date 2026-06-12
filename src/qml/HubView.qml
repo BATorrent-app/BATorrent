@@ -436,53 +436,29 @@ Item {
         }
     }
 
-    Menu {
+    BatMenu {
         id: gameMenu
         property string hash: ""
         function openFor(h) { hash = h; popup() }
-        modal: true
         implicitWidth: 200
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        component GItem: MenuItem {
-            id: gi
-            implicitHeight: 30
-            padding: 0
-            contentItem: Text {
-                leftPadding: 14; rightPadding: 14
-                text: gi.text; color: gi.highlighted ? Theme.t1 : Theme.t2
-                font.pixelSize: 12; font.family: Theme.fontSans; verticalAlignment: Text.AlignVCenter
-            }
-            background: Rectangle { color: gi.highlighted ? Theme.hover : "transparent"; radius: 5 }
-        }
-        GItem {
+        BatMenuItem {
             text: (i18n.language, i18n.t("hub_set_exe"))
             onTriggered: page.openExePicker(gameMenu.hash, false)
         }
-        GItem {
+        BatMenuItem {
             text: (i18n.language, i18n.t("hub_open_folder"))
             onTriggered: if (page.api) Qt.openUrlExternally(page.fileUrl(page.api.gameFolder(gameMenu.hash)))
         }
     }
 
-    Menu {
+    BatMenu {
         id: continueMenu
         property string hash: ""
         property int fileIdx: 0
         function openFor(h, f) { hash = h; fileIdx = f || 0; popup() }
-        modal: true
         implicitWidth: 210
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        MenuItem {
-            id: cmItem
-            implicitHeight: 30
-            padding: 0
-            contentItem: Text {
-                leftPadding: 14; rightPadding: 14
-                text: (i18n.language, i18n.t("hub_remove_continue"))
-                color: cmItem.highlighted ? Theme.t1 : Theme.t2
-                font.pixelSize: 12; font.family: Theme.fontSans; verticalAlignment: Text.AlignVCenter
-            }
-            background: Rectangle { color: cmItem.highlighted ? Theme.hover : "transparent"; radius: 5 }
+        BatMenuItem {
+            text: (i18n.language, i18n.t("hub_remove_continue"))
             onTriggered: {
                 if (page.api) page.api.clearResume(continueMenu.hash, continueMenu.fileIdx)
                 page.refresh()
@@ -491,29 +467,19 @@ Item {
     }
 
     // episode picker for multi-video torrents (series)
-    Menu {
+    BatMenu {
         id: episodeMenu
         property string hash: ""
         property var videos: []
         function openFor(item) { hash = item.infoHash; videos = item.videos || []; popup() }
-        modal: true
         implicitWidth: 360
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
         Repeater {
             model: episodeMenu.videos
-            MenuItem {
+            BatMenuItem {
                 id: epItem
                 required property var modelData
-                implicitHeight: 30
-                padding: 0
-                contentItem: Text {
-                    leftPadding: 14; rightPadding: 14
-                    text: epItem.modelData.name
-                    color: epItem.highlighted ? Theme.t1 : Theme.t2
-                    font.pixelSize: 12; font.family: Theme.fontSans
-                    verticalAlignment: Text.AlignVCenter; elide: Text.ElideMiddle
-                }
-                background: Rectangle { color: epItem.highlighted ? Theme.hover : "transparent"; radius: 5 }
+                text: epItem.modelData.name
+                elideMode: Text.ElideMiddle
                 onTriggered: if (page.api) page.api.playFile(episodeMenu.hash, epItem.modelData.idx)
             }
         }

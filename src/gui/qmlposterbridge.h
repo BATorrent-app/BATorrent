@@ -11,6 +11,7 @@
 #include <QPixmap>
 #include <QSortFilterProxyModel>
 #include <QString>
+#include <QSet>
 #include <QTimer>
 #include <QVariantList>
 #include <QVector>
@@ -41,6 +42,7 @@ public:
         PosterPathRole,
         MetaTitleRole,
         StateStringRole,
+        StateDetailRole,
         DownSpeedRole,
         UpSpeedRole,
         SizeRole,
@@ -110,6 +112,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(int completedCount READ completedCount NOTIFY statsChanged)
     Q_PROPERTY(QString totalDownSpeed READ totalDownSpeed NOTIFY statsChanged)
     Q_PROPERTY(QString totalUpSpeed READ totalUpSpeed NOTIFY statsChanged)
+    Q_PROPERTY(QString freeDiskSpace READ freeDiskSpace NOTIFY statsChanged)
     Q_PROPERTY(QString totalDownloaded READ totalDownloaded NOTIFY statsChanged)
     Q_PROPERTY(QString totalUploaded READ totalUploaded NOTIFY statsChanged)
     Q_PROPERTY(QString globalRatio READ globalRatio NOTIFY statsChanged)
@@ -155,6 +158,7 @@ public:
     int completedCount() const;
     QString totalDownSpeed() const;
     QString totalUpSpeed() const;
+    QString freeDiskSpace() const;
     QString totalDownloaded() const;
     QString totalUploaded() const;
     QString globalRatio() const;
@@ -263,6 +267,8 @@ public:
     Q_INVOKABLE void setSelectedFilePriority(int fileIndex, int priority);
     Q_INVOKABLE void copySelectedName();
     Q_INVOKABLE void openSelectedFile();
+    Q_INVOKABLE void copySelectedContentPath();
+    Q_INVOKABLE QVariantList torrentPalette() const;
     // Manual cover/title fix for the selected torrent when the auto match was
     // wrong. typeStr = "movie" | "series" | "game".
     Q_INVOKABLE void relinkSelectedCover(const QString &query, const QString &typeStr);
@@ -586,6 +592,7 @@ private:
     void setStatus(const QString &s);
     void setMode(const QString &m);
     void runGameSearch(const QString &query);
+    QSet<QString> currentResultKeys() const;
     void appendGameRows(const QList<GameDownload> &games);
     void appendTorrentRows(const QList<TorrentSearchResult> &results);
     void finishAggregateSource();
@@ -856,7 +863,7 @@ signals:
     void noUpdate(bool silent);
     void progress(int percent);
     void ready();
-    void failed(const QString &message);
+    void failed(const QString &message, bool silent);
 
 private:
     Updater *m_updater;

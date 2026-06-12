@@ -14,6 +14,7 @@ BatDialog {
     title: (i18n.language, i18n.t("create_title2"))
     cardW: 560
     cardH: 620
+    acceptOnReturn: false
     showOk: false
     cancelText: (i18n.language, i18n.t("release_notes_close"))
     footHint: (i18n.language, i18n.t("create_subtitle"))

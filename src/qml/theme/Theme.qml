@@ -206,6 +206,23 @@ QtObject {
     readonly property color grn:
         name === "custom" ? customTertiaryColor : (isLight ? "#2e9c40" : "#3fb950")
 
+    // ---------- window chrome ----------
+    // macOS: secondary windows merge the native titlebar into their own header
+    // band (ExpandedClientAreaHint + NoTitleBarBackgroundHint) so the title
+    // isn't drawn twice. Off elsewhere until tested per-platform.
+    readonly property bool unifiedChrome: Qt.platform.os === "osx"
+
+    // ---------- interaction tokens ----------
+    // Keyboard-focus ring (accent-tinted, drawn as a border 2px outside the
+    // control) and the shared motion scale. Press feedback is scale-only so it
+    // stays on the GPU.
+    readonly property color focusRing: Qt.rgba(accent.r, accent.g, accent.b, 0.9)
+    readonly property int focusRingWidth: 2
+    readonly property real pressScale: 0.97
+    readonly property int durFast: 120
+    readonly property int durBase: 160
+    readonly property int durSlow: 240
+
     // ---------- anime accent art (per theme) ----------
     readonly property string animeSource:
         name === "dark"     ? "qrc:/images/eyes-dark.png" :

@@ -48,7 +48,9 @@ BatDialog {
         ignoreUnknownSignals: true
         function onProgress(percent) { dlg.pct = percent }
         function onReady() { dlg.statusText = (i18n.language, i18n.t("update_restarting")) }
-        function onFailed(message) { dlg.showError(message) }
+        // a failed silent (startup) check stays quiet; failures mid-download or
+        // after a manual check still surface here
+        function onFailed(message, silent) { if (!silent || dlg.opened) dlg.showError(message) }
     }
 
     ColumnLayout {

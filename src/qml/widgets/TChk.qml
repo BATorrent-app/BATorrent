@@ -22,6 +22,19 @@ Rectangle {
     border.color: partial ? Theme.accent : (on ? "transparent" : Theme.hair)
     border.width: 1
 
+    activeFocusOnTab: true
+    Keys.onReturnPressed: { cb.partial = false; cb.on = !cb.on; cb.toggled(cb.on) }
+    Keys.onSpacePressed: { cb.partial = false; cb.on = !cb.on; cb.toggled(cb.on) }
+    Rectangle {
+        visible: cb.activeFocus
+        anchors.fill: parent
+        anchors.margins: -3
+        radius: 7
+        color: "transparent"
+        border.color: Theme.focusRing
+        border.width: Theme.focusRingWidth
+    }
+
     // partial bar
     Rectangle {
         visible: cb.partial && !cb.on

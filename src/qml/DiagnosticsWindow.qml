@@ -10,12 +10,14 @@ import "widgets"
 
 Window {
     id: win
+    Shortcut { sequences: [StandardKey.Cancel]; onActivated: win.close() }
     width: 560
     height: 460
     minimumWidth: 480
     minimumHeight: 380
     color: Theme.bg
-    title: (i18n.language, i18n.t("diag_title2"))
+    flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
+    title: Theme.unifiedChrome ? "" : (i18n.language, i18n.t("diag_title2"))
 
     readonly property var sess: typeof session !== "undefined" ? session : null
     property var diag: ({})

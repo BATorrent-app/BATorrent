@@ -276,6 +276,13 @@ Rectangle {
                     model: page.api ? page.api.categories : []
                     textRole: "label"
                 }
+                // catalog manager belongs next to the source it configures, not
+                // floating in the footer
+                BtnFlat {
+                    visible: page.isGames
+                    text: (i18n.language, i18n.t("game_sources_btn"))
+                    onClicked: page.showGameMgr = true
+                }
                 BtnFlat { primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: page.commitSearch() }
             }
         }
@@ -444,12 +451,18 @@ Rectangle {
                 width: Math.min(parent.width - 80, 360)
                 spacing: 10
                 visible: resultsView.count === 0
+                Spinner {
+                    Layout.alignment: Qt.AlignHCenter
+                    visible: page.api && page.api.searching
+                    s: 30
+                }
                 IconImg {
                     Layout.alignment: Qt.AlignHCenter
+                    visible: !(page.api && page.api.searching)
                     src: "qrc:/icons/search.svg"
                     tint: Theme.t4
                     s: 38
-                    opacity: page.api && page.api.searching ? 0.4 : 0.7
+                    opacity: 0.7
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
@@ -468,7 +481,9 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
                     visible: !(page.api && page.api.searching)
-                    text: (i18n.language, i18n.t("search_prompt_sub"))
+                    text: page.api && page.api.statusText.length > 0 && page.api.results.length === 0
+                          ? (i18n.language, i18n.t("search_empty_hint"))
+                          : (i18n.language, i18n.t("search_prompt_sub"))
                     color: Theme.t4
                     font.pixelSize: 12
                     font.family: Theme.fontSans
@@ -510,6 +525,7 @@ Rectangle {
                         implicitWidth: 36
                         implicitHeight: 48
                         posterUrl: row.posterSrc
+                        label: row.modelData.name || ""
                     }
 
                     ColumnLayout {
@@ -607,10 +623,16 @@ Rectangle {
                 width: Math.min(parent.width - 80, 360)
                 spacing: 10
                 visible: titlesView.count === 0
+                Spinner {
+                    Layout.alignment: Qt.AlignHCenter
+                    visible: page.api && page.api.searching
+                    s: 30
+                }
                 IconImg {
                     Layout.alignment: Qt.AlignHCenter
+                    visible: !(page.api && page.api.searching)
                     src: "qrc:/icons/search.svg"; tint: Theme.t4; s: 38
-                    opacity: page.api && page.api.searching ? 0.4 : 0.7
+                    opacity: 0.7
                 }
                 Text {
                     Layout.fillWidth: true
@@ -623,7 +645,9 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     visible: !(page.api && page.api.searching)
-                    text: (i18n.language, i18n.t("search_prompt_sub"))
+                    text: page.api && page.api.statusText.length > 0 && page.api.results.length === 0
+                          ? (i18n.language, i18n.t("search_empty_hint"))
+                          : (i18n.language, i18n.t("search_prompt_sub"))
                     color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
                     horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
                 }
@@ -678,7 +702,6 @@ Rectangle {
                     text: (i18n.language, i18n.t("search_raw_results"))
                     onClicked: if (page.api) page.api.searchRaw()
                 }
-                BtnFlat { visible: page.isGames; text: (i18n.language, i18n.t("game_sources_btn")); onClicked: page.showGameMgr = true }
             }
         }
     }
@@ -855,29 +878,16 @@ Rectangle {
     }
 
     // per-result right-click menu
-    Menu {
+    BatMenu {
         id: rowMenu
         property int idx: -1
         function openFor(i) { idx = i; popup() }
-        modal: true
         implicitWidth: 190
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        component RMItem: MenuItem {
-            id: rmi
-            implicitHeight: 30
-            padding: 0
-            contentItem: Text {
-                leftPadding: 14; rightPadding: 14
-                text: rmi.text; color: rmi.highlighted ? Theme.t1 : Theme.t2
-                font.pixelSize: 12; font.family: Theme.fontSans; verticalAlignment: Text.AlignVCenter
-            }
-            background: Rectangle { color: rmi.highlighted ? Theme.hover : "transparent"; radius: 5 }
-        }
-        RMItem {
+        BatMenuItem {
             text: page.isCatalog ? (i18n.language, i18n.t("search_view_streams")) : (i18n.language, i18n.t("search_add"))
             onTriggered: if (page.api && rowMenu.idx >= 0) page.api.activateResult(rowMenu.idx)
         }
-        RMItem {
+        BatMenuItem {
             text: (i18n.language, i18n.t("search_copy_magnet"))
             onTriggered: if (page.api && rowMenu.idx >= 0) page.api.copyMagnet(rowMenu.idx)
         }

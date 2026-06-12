@@ -17,7 +17,8 @@ Window {
     minimumWidth: 740
     minimumHeight: 480
     color: Theme.bg
-    title: (i18n.language, i18n.t("settings_heading"))
+    flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
+    title: Theme.unifiedChrome ? "" : (i18n.language, i18n.t("settings_heading"))
 
     property int sec: 0
 
@@ -229,7 +230,7 @@ Window {
             { type: "group", label: (i18n.language, i18n.t("diag_title")) },
             { type: "button", action: "defender", winOnly: true, label: (i18n.language, i18n.t("settings_defender_exclude")), btn: (i18n.language, i18n.t("settings_defender_exclude")), note: (i18n.language, i18n.t("tip_defender_exclude")) },
             { type: "toggle", key: "verboseLogging", label: (i18n.language, i18n.t("settings_verbose_log")), note: (i18n.language, i18n.t("set_verbose_note")) },
-            { type: "text", key: "runOnComplete", label: (i18n.language, i18n.t("set_run_on_complete2")), mono: true, placeholder: "notify-send \"%N concluído\"", w: "grow" },
+            { type: "text", key: "runOnComplete", label: (i18n.language, i18n.t("set_run_on_complete2")), mono: true, placeholder: "notify-send \"%N done\"", w: "grow" },
             { type: "path", key: "watchedFolder", label: (i18n.language, i18n.t("set_watched_folder2")), placeholder: (i18n.language, i18n.t("settings_watched_hint")) }
         ]
     ]
@@ -924,9 +925,11 @@ Window {
                     delegate: Rectangle {
                         width: 30; height: 30; radius: 7
                         readonly property bool sel: (parent.mask & (1 << index)) !== 0
-                        color: sel ? Theme.accent : Theme.field
+                        // tint + border like the filter pills — seven solid accent
+                        // squares in a row read as a warning, not a selection
+                        color: sel ? Theme.accentTint : Theme.field
                         border.color: sel ? Theme.accent : Theme.hair; border.width: 1
-                        Text { anchors.centerIn: parent; text: modelData; color: parent.sel ? Theme.accentText : Theme.t3; font.pixelSize: 11; font.weight: Font.Medium; font.family: Theme.fontSans }
+                        Text { anchors.centerIn: parent; text: modelData; color: parent.sel ? Theme.accentText : Theme.t3; font.pixelSize: 11; font.weight: parent.sel ? Font.DemiBold : Font.Medium; font.family: Theme.fontSans }
                         MouseArea {
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                             onClicked: if (typeof settings !== "undefined") {

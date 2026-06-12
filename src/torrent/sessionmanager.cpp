@@ -545,10 +545,42 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         m_pendingResumeStripCheck.erase(h);
         m_magnetAddedAt.erase(h);
 
-        lt::remove_flags_t flags{};
-        if (deleteFiles)
-            flags = lt::session::delete_files;
-        m_session.remove_torrent(h, flags);
+        // "delete files" sends the data to the OS trash instead of erasing it —
+        // recoverable removal is a safety net users expect from a desktop app.
+        // The move runs shortly after remove_torrent so libtorrent has released
+        // its file handles (Windows can't rename open files). Anything
+        // moveToTrash can't handle is left on disk rather than force-deleted.
+        QStringList trashTargets;
+        if (deleteFiles) {
+            const QString savePath = QString::fromStdString(st.save_path);
+            QSet<QString> tops;
+            if (auto ti = h.torrent_file()) {
+                const auto &fs = ti->files();
+                for (const auto i : fs.file_range()) {
+                    const QString p = QString::fromStdString(std::string(fs.file_path(i)));
+                    const int slash = p.indexOf(QLatin1Char('/'));
+                    tops.insert(slash > 0 ? p.left(slash) : p);
+                }
+            } else {
+                tops.insert(QString::fromStdString(st.name));
+            }
+            for (const QString &t : tops) {
+                if (t.isEmpty()) continue;
+                trashTargets << QDir(savePath).filePath(t)
+                             << QDir(savePath).filePath(t + ".!bt");
+            }
+        }
+
+        m_session.remove_torrent(h, {});
+        if (!trashTargets.isEmpty()) {
+            QTimer::singleShot(900, this, [trashTargets]() {
+                for (const QString &p : trashTargets) {
+                    if (!QFileInfo::exists(p)) continue;
+                    if (!QFile::moveToTrash(p))
+                        qWarning() << "[session] moveToTrash failed, leaving on disk:" << p;
+                }
+            });
+        }
     } catch (const std::exception &e) {
         qWarning() << "[session] removeTorrent exception:" << e.what();
     }
@@ -632,6 +664,21 @@ TorrentInfo SessionManager::torrentAt(int index) const
     } else {
         info.downloadRate = st.download_rate;
         info.uploadRate = st.upload_rate;
+    }
+
+    // qBittorrent's most-repeated complaint is a silent "stalled" — name the
+    // actual blocker so the state cell can explain itself on hover
+    if (!info.completed && !info.paused && info.progress < 1.0f
+            && st.state == lt::torrent_status::downloading
+            && info.downloadRate < 1024) {
+        if (st.errc)
+            info.stateDetail = QString::fromStdString(st.errc.message());
+        else if (info.numPeers == 0)
+            info.stateDetail = m_dhtEnabled ? tr_("state_no_peers_dht") : tr_("state_no_peers");
+        else if (info.numSeeds == 0)
+            info.stateDetail = tr_("state_no_seeds");
+        else
+            info.stateDetail = tr_("state_choked");
     }
 
     qint64 uploaded = st.total_payload_upload;

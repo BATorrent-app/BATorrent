@@ -94,7 +94,7 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
     });
     connect(&mgr, &AddonManager::catalogFinished, this, [this]() {
         setSearching(false);
-        setStatus(QString("%1 resultados").arg(m_catalogCache.size()));
+        setStatus(tr_("search_results_n").arg(m_catalogCache.size()));
     });
     connect(&mgr, &AddonManager::streamResults, this, [this](const QList<StreamResult> &streams) {
         m_streamCache = streams;
@@ -117,7 +117,7 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
     });
     connect(&mgr, &AddonManager::streamFinished, this, [this]() {
         setSearching(false);
-        setStatus(QString("%1 streams").arg(m_streamCache.size()));
+        setStatus(tr_("search_streams_n").arg(m_streamCache.size()));
     });
     connect(&mgr, &AddonManager::torrentSearchResults, this,
             [this](const QList<TorrentSearchResult> &results) {
@@ -130,7 +130,7 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
     connect(&mgr, &AddonManager::torrentSearchFinished, this, [this]() {
         if (m_aggregate) { finishAggregateSource(); return; }
         setSearching(false);
-        setStatus(QString("%1 resultados").arg(m_results.size()));
+        setStatus(tr_("search_results_n").arg(m_results.size()));
     });
     connect(&mgr, &AddonManager::torrentSearchError, this, [this](const QString &err) {
         if (m_aggregate) { finishAggregateSource(); return; }   // one provider failing ≠ whole search
@@ -150,7 +150,7 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
         }
         if (m_mode != "games") return;
         if (count > 0) runGameSearch(q);
-        else { setSearching(false); setStatus("Nenhum jogo encontrado nos catálogos."); }
+        else { setSearching(false); setStatus(tr_("search_no_games")); }
     });
 
     QSettings s;
@@ -321,8 +321,8 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         setSearching(false);
         // Stay in the grid even when empty — the page shows an empty state with a
         // "raw results" escape, so the flow is consistent (never silently flips).
-        setStatus(m_results.isEmpty() ? QStringLiteral("Nenhum título encontrado")
-                                      : QString("%1 títulos").arg(m_results.size()));
+        setStatus(m_results.isEmpty() ? tr_("search_no_titles")
+                                      : tr_("search_titles_n").arg(m_results.size()));
         emit resultsChanged();
     });
 }
@@ -345,7 +345,7 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     m_isGameSearch = isGame;
     setMode("all");
     setSearching(true);
-    setStatus("Buscando…");
+    setStatus(tr_("search_searching2"));
     m_pendingSources = 0;
 
     if (isGame) {
@@ -363,7 +363,7 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, cat); }
     if (m_pendingSources == 0) {
         setSearching(false);
-        setStatus(QString("%1 resultados").arg(m_results.size()));
+        setStatus(tr_("search_results_n").arg(m_results.size()));
     }
 }
 
@@ -401,7 +401,7 @@ void QmlSearchBridge::rawAggregateSearch(const QString &q, int categoryCode)
     m_isGameSearch = false;
     setMode("all");
     setSearching(true);
-    setStatus("Buscando…");
+    setStatus(tr_("search_searching2"));
     m_pendingSources = 0;
     auto &gsm = GameSourceManager::instance();
     if (gsm.gameCount() > 0) {
@@ -417,7 +417,7 @@ void QmlSearchBridge::rawAggregateSearch(const QString &q, int categoryCode)
     if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, categoryCode); }
     if (m_pendingSources == 0) {
         setSearching(false);
-        setStatus(QString("%1 resultados").arg(m_results.size()));
+        setStatus(tr_("search_results_n").arg(m_results.size()));
     }
 }
 
@@ -427,16 +427,16 @@ QVariantList QmlSearchBridge::sources() const
     auto add = [&out](const QString &key, const QString &label) {
         QVariantMap m; m["key"] = key; m["label"] = label; out << m;
     };
-    add("all", "Tudo");                  // default: search every source at once
-    add("stremio", "Stremio (catálogo)");
+    add("all", tr_("search_source_all"));                  // default: search every source at once
+    add("stremio", tr_("search_source_stremio"));
     auto &mgr = AddonManager::instance();
     if (mgr.torrentSearchEnabled())
-        add("legacy", "Torrents");
+        add("legacy", tr_("search_source_torrents"));
     // Games search is independent of the torrent provider: show it whenever a
     // game catalog is configured (a default is seeded on first run), or as a
     // fallback when the torrent provider is on (TPB Games category).
     if (!GameSourceManager::instance().sources().isEmpty() || mgr.torrentSearchEnabled())
-        add("games", "Jogos");
+        add("games", tr_("search_source_games"));
     const auto providers = mgr.searchProviders();
     for (int i = 0; i < providers.size(); ++i)
         if (providers[i].enabled)
@@ -450,8 +450,8 @@ QVariantList QmlSearchBridge::categories() const
     auto add = [&out](int code, const QString &label) {
         QVariantMap m; m["code"] = code; m["label"] = label; out << m;
     };
-    add(0, "Todas"); add(100, "Áudio"); add(200, "Vídeo");
-    add(300, "Apps"); add(400, "Jogos"); add(500, "Outros");
+    add(0, tr_("search_cat_all")); add(100, tr_("search_cat_audio")); add(200, tr_("search_cat_video"));
+    add(300, tr_("search_cat_apps")); add(400, tr_("search_cat_games")); add(500, tr_("search_cat_other"));
     return out;
 }
 
@@ -500,7 +500,7 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
         m_titleQuery = q;
         setMode("titles");
         setSearching(true);
-        setStatus("Buscando títulos…");
+        setStatus(tr_("search_searching_titles"));
         m_discovery->searchTitles(q);
         return;
     } else if (sourceKey == "games") {
@@ -510,7 +510,7 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
         if (gsm.gameCount() == 0 && !gsm.sources().isEmpty()) {
             m_pendingGameQuery = q;          // search once the catalogs finish loading
             setSearching(true);
-            setStatus("Carregando catálogos de jogos…");
+            setStatus(tr_("search_loading_game_catalogs"));
             gsm.refresh();
             return;
         }
@@ -519,32 +519,63 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
         // Games category so the search isn't empty out of the box.
         m_gameCache.clear();
         setSearching(true);
-        setStatus("Buscando…");
+        setStatus(tr_("search_searching2"));
         mgr.searchTorrents(q, 400);
     } else if (sourceKey.startsWith("provider:")) {
         m_isGameSearch = false;
         setMode("torrent");
         setSearching(true);
-        setStatus("Buscando…");
+        setStatus(tr_("search_searching2"));
         mgr.searchWithProvider(sourceKey.mid(9).toInt(), q);
     } else if (sourceKey == "legacy") {
         m_isGameSearch = false;
         setMode("torrent");
         setSearching(true);
-        setStatus("Buscando…");
+        setStatus(tr_("search_searching2"));
         mgr.searchTorrents(q, categoryCode);
     } else {
-        if (!mgr.hasCatalogAddon()) { setStatus("Nenhum addon de catálogo instalado."); return; }
+        if (!mgr.hasCatalogAddon()) { setStatus(tr_("search_no_catalog_addon")); return; }
         setMode("catalog");
         setSearching(true);
-        setStatus("Buscando…");
+        setStatus(tr_("search_searching2"));
         mgr.searchCatalog(q);
     }
 }
 
+static QString btihFromMagnet(const QString &magnet)
+{
+    static const QRegularExpression re(QStringLiteral("xt=urn:btih:([A-Za-z0-9]+)"),
+                                       QRegularExpression::CaseInsensitiveOption);
+    const auto m = re.match(magnet);
+    return m.hasMatch() ? m.captured(1) : QString();
+}
+
+static QString resultDedupeKey(const QString &magnet, const QString &name, qlonglong size)
+{
+    const QString h = btihFromMagnet(magnet).toLower();
+    if (!h.isEmpty()) return h;
+    return name.toLower() + QLatin1Char('|') + QString::number(size);
+}
+
+QSet<QString> QmlSearchBridge::currentResultKeys() const
+{
+    QSet<QString> seen;
+    seen.reserve(m_results.size());
+    for (int i = 0; i < m_results.size() && i < m_resultMagnets.size(); ++i) {
+        const auto rm = m_results[i].toMap();
+        seen.insert(resultDedupeKey(m_resultMagnets[i], rm.value(QStringLiteral("name")).toString(),
+                                    rm.value(QStringLiteral("sizeBytes")).toLongLong()));
+    }
+    return seen;
+}
+
 void QmlSearchBridge::appendGameRows(const QList<GameDownload> &games)
 {
+    QSet<QString> seen = currentResultKeys();
     for (const auto &g : games) {
+        const QString key = resultDedupeKey(g.magnet, g.cleanTitle.isEmpty() ? g.title : g.cleanTitle, 0);
+        if (seen.contains(key)) continue;
+        seen.insert(key);
         QVariantMap m;
         m["name"] = g.cleanTitle.isEmpty() ? g.title : g.cleanTitle;
         m["sub"] = g.source;
@@ -567,7 +598,11 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
     auto sorted = results;
     std::sort(sorted.begin(), sorted.end(),
               [](const TorrentSearchResult &a, const TorrentSearchResult &b) { return a.seeders > b.seeders; });
+    QSet<QString> seen = currentResultKeys();
     for (const auto &r : sorted) {
+        const QString key = resultDedupeKey(r.magnet, r.name, static_cast<qlonglong>(r.size));
+        if (seen.contains(key)) continue;
+        seen.insert(key);
         QVariantMap m;
         m["name"] = r.name;
         m["sub"] = r.provider;
@@ -591,7 +626,7 @@ void QmlSearchBridge::finishAggregateSource()
 {
     if (--m_pendingSources > 0) return;
     setSearching(false);
-    setStatus(QString("%1 resultados").arg(m_results.size()));
+    setStatus(tr_("search_results_n").arg(m_results.size()));
 }
 
 void QmlSearchBridge::runGameSearch(const QString &query)
@@ -602,7 +637,7 @@ void QmlSearchBridge::runGameSearch(const QString &query)
     m_gameCache = GameSourceManager::instance().search(query);
     appendGameRows(m_gameCache);
     setSearching(false);
-    setStatus(QString("%1 resultados").arg(m_results.size()));
+    setStatus(tr_("search_results_n").arg(m_results.size()));
 }
 
 QVariantList QmlSearchBridge::gameSources() const
@@ -619,7 +654,7 @@ void QmlSearchBridge::addGameSource(const QString &name, const QString &url)
     auto &gsm = GameSourceManager::instance();
     gsm.addSource(name, url);
     emit gameSourcesChanged();
-    if (!gsm.sources().isEmpty()) { setStatus("Carregando catálogos de jogos…"); gsm.refresh(false); }
+    if (!gsm.sources().isEmpty()) { setStatus(tr_("search_loading_game_catalogs")); gsm.refresh(false); }
 }
 
 void QmlSearchBridge::removeGameSource(const QString &url)
@@ -633,16 +668,8 @@ void QmlSearchBridge::removeGameSource(const QString &url)
 void QmlSearchBridge::refreshGames()
 {
     if (GameSourceManager::instance().sources().isEmpty()) { emit gameSourcesChanged(); return; }
-    setStatus("Carregando catálogos de jogos…");
+    setStatus(tr_("search_loading_game_catalogs"));
     GameSourceManager::instance().refresh(true);   // manual refresh → bypass cache
-}
-
-static QString btihFromMagnet(const QString &magnet)
-{
-    static const QRegularExpression re(QStringLiteral("xt=urn:btih:([A-Za-z0-9]+)"),
-                                       QRegularExpression::CaseInsensitiveOption);
-    const auto m = re.match(magnet);
-    return m.hasMatch() ? m.captured(1) : QString();
 }
 
 void QmlSearchBridge::activateResult(int index)
@@ -669,16 +696,16 @@ void QmlSearchBridge::activateResult(int index)
         setMode("streams");
         m_results.clear();
         emit resultsChanged();
-        if (!mgr.hasStreamAddon()) { setStatus("Nenhum addon de streams instalado."); return; }
+        if (!mgr.hasStreamAddon()) { setStatus(tr_("search_no_stream_addon")); return; }
         setSearching(true);
-        setStatus(QString("Carregando streams de %1…").arg(it.name));
+        setStatus(tr_("search_loading_streams_from").arg(it.name));
         mgr.getStreams(it.type, it.id);
     } else if (m_mode == "streams") {
         if (index < 0 || index >= m_streamCache.size()) return;
         const auto &s = m_streamCache[index];
         if (s.magnet.startsWith("magnet:")) {
             m_session->addMagnet(s.magnet, m_savePath, m_streamHintTitle, m_streamHintType);
-            setStatus(QString("Adicionado: %1").arg(s.title));
+            setStatus(tr_("search_added_name").arg(s.title));
             emit addedTorrent(btihFromMagnet(s.magnet));
         }
     } else {   // torrent / games / all → every flat row carries its own magnet
@@ -690,7 +717,7 @@ void QmlSearchBridge::activateResult(int index)
         m_session->addMagnet(magnet, m_savePath, hint, type);   // hint = clean game title, "" for torrents
         const QVariantMap rm = index < m_results.size() ? m_results[index].toMap() : QVariantMap();
         const QString name = rm.value(QStringLiteral("name")).toString();
-        setStatus(name.isEmpty() ? QStringLiteral("Adicionado") : QString("Adicionado: %1").arg(name));
+        setStatus(name.isEmpty() ? tr_("search_added") : tr_("search_added_name").arg(name));
         QString hash = rm.value(QStringLiteral("coverHash")).toString();   // torrent rows carry the hash
         if (hash.isEmpty()) hash = btihFromMagnet(magnet);
         emit addedTorrent(hash);
@@ -707,7 +734,7 @@ void QmlSearchBridge::back()
         m_resultTitles.clear();
         setMode("titles");
         setSearching(false);
-        setStatus(QString("%1 títulos").arg(m_results.size()));
+        setStatus(tr_("search_titles_n").arg(m_results.size()));
         emit resultsChanged();
         return;
     }
@@ -726,7 +753,7 @@ void QmlSearchBridge::back()
         m_results << m;
     }
     emit resultsChanged();
-    setStatus(QString("%1 resultados").arg(m_catalogCache.size()));
+    setStatus(tr_("search_results_n").arg(m_catalogCache.size()));
 }
 
 // ===================== QmlAddonBridge =====================

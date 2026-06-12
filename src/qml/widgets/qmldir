@@ -16,3 +16,9 @@ DetailFiles 1.0 DetailFiles.qml
 DetailTrackers 1.0 DetailTrackers.qml
 DetailPieces 1.0 DetailPieces.qml
 ToastHost 1.0 ToastHost.qml
+Spinner 1.0 Spinner.qml
+BatMenu 1.0 BatMenu.qml
+BatMenuItem 1.0 BatMenuItem.qml
+BatMenuSep 1.0 BatMenuSep.qml
+singleton DialogStack 1.0 DialogStack.qml
+SpeedGraph 1.0 SpeedGraph.qml

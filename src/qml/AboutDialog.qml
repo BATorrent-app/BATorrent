@@ -54,6 +54,30 @@ BatDialog {
             font.pixelSize: 12
             font.family: Theme.fontSans
         }
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.topMargin: 2
+            spacing: 14
+            component ALink: Text {
+                property string url
+                color: alMa.containsMouse ? Theme.t1 : Theme.accentText
+                font.pixelSize: 11
+                font.weight: Font.Medium
+                font.family: Theme.fontSans
+                MouseArea {
+                    id: alMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Qt.openUrlExternally(parent.url)
+                }
+            }
+            ALink { text: "GitHub"; url: "https://github.com/Mateuscruz19/BATorrent" }
+            Text { text: "·"; color: Theme.t4; font.pixelSize: 11 }
+            ALink { text: (i18n.language, i18n.t("about_link_releases")); url: "https://github.com/Mateuscruz19/BATorrent/releases" }
+            Text { text: "·"; color: Theme.t4; font.pixelSize: 11 }
+            ALink { text: (i18n.language, i18n.t("about_link_privacy")); url: "https://github.com/Mateuscruz19/BATorrent/blob/main/PRIVACY.md" }
+        }
     }
 
     // .privacy card

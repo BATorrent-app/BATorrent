@@ -8,6 +8,7 @@
 #include <QString>
 #include <QDir>
 #include <QDebug>
+#include <QHash>
 #include <QDesktopServices>
 #include <QFileInfo>
 #include <QLocale>
@@ -126,6 +127,55 @@ inline void revealTorrentRoot(const QString &savePath, const QString &name)
         revealInFileManager(base + ".!bt");
     else
         revealInFileManager(savePath);
+}
+
+// Torrent site APIs ship titles with raw HTML entities ("1966&ndash;1968",
+// "Tom &amp; Jerry"). Entity-only decode — no tag interpretation, so a "<"
+// in a release name passes through untouched.
+inline QString decodeHtmlEntities(QString s)
+{
+    if (!s.contains(QLatin1Char('&'))) return s;
+    static const QHash<QString, QString> named = {
+        {"amp", "&"}, {"lt", "<"}, {"gt", ">"}, {"quot", "\""}, {"apos", "'"},
+        {"nbsp", QString(QChar(0x00A0))}, {"ndash", QString(QChar(0x2013))},
+        {"mdash", QString(QChar(0x2014))}, {"hellip", QString(QChar(0x2026))},
+        {"lsquo", QString(QChar(0x2018))}, {"rsquo", QString(QChar(0x2019))},
+        {"ldquo", QString(QChar(0x201C))}, {"rdquo", QString(QChar(0x201D))},
+        {"trade", QString(QChar(0x2122))}, {"copy", QString(QChar(0x00A9))},
+        {"reg", QString(QChar(0x00AE))}, {"deg", QString(QChar(0x00B0))},
+        {"middot", QString(QChar(0x00B7))}, {"bull", QString(QChar(0x2022))},
+        {"eacute", QString(QChar(0x00E9))}, {"egrave", QString(QChar(0x00E8))},
+        {"agrave", QString(QChar(0x00E0))}, {"ccedil", QString(QChar(0x00E7))},
+        {"uuml", QString(QChar(0x00FC))}, {"ouml", QString(QChar(0x00F6))},
+        {"auml", QString(QChar(0x00E4))}, {"ntilde", QString(QChar(0x00F1))},
+    };
+    QString out;
+    out.reserve(s.size());
+    int i = 0;
+    while (i < s.size()) {
+        if (s[i] != QLatin1Char('&')) { out += s[i++]; continue; }
+        const int semi = s.indexOf(QLatin1Char(';'), i + 1);
+        if (semi < 0 || semi - i > 10) { out += s[i++]; continue; }
+        const QString body = s.mid(i + 1, semi - i - 1);
+        if (body.startsWith(QLatin1Char('#'))) {
+            bool ok = false;
+            const uint code = body.startsWith(QLatin1String("#x"), Qt::CaseInsensitive)
+                                  ? body.mid(2).toUInt(&ok, 16)
+                                  : body.mid(1).toUInt(&ok, 10);
+            if (ok && code > 0 && code <= 0x10FFFF) {
+                const char32_t c = code;
+                out += QString::fromUcs4(&c, 1);
+                i = semi + 1;
+                continue;
+            }
+        } else if (named.contains(body)) {
+            out += named.value(body);
+            i = semi + 1;
+            continue;
+        }
+        out += s[i++];
+    }
+    return out;
 }
 
 // Global speed unit. 0 = bytes (B/s, KB/s, MB/s), 1 = bits (b/s, Kbps, Mbps).

@@ -521,7 +521,8 @@ QmlUpdaterBridge::QmlUpdaterBridge(QObject *parent)
         emit progress(t > 0 ? static_cast<int>((r * 100) / t) : 0);
     });
     connect(m_updater, &Updater::updateReady, this, &QmlUpdaterBridge::ready);
-    connect(m_updater, &Updater::errorOccurred, this, &QmlUpdaterBridge::failed);
+    connect(m_updater, &Updater::errorOccurred, this,
+            [this](const QString &msg) { emit failed(msg, m_silent); });
 }
 
 void QmlUpdaterBridge::check(bool silent)

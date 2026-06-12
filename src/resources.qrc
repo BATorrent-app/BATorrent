@@ -69,6 +69,7 @@
 <file>../src/qml/AboutDialog.qml</file>
 <file>../src/qml/PlayerWindow.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>
+<file>../src/qml/CommandPalette.qml</file>
 <file>../src/qml/RssWindow.qml</file>
 <file>../src/qml/SettingsWindow.qml</file>
 <file>../src/qml/ShortcutsWindow.qml</file>
@@ -96,6 +97,12 @@
 <file>../src/qml/widgets/PathFld.qml</file>
 <file>../src/qml/widgets/Eyebrow.qml</file>
 <file>../src/qml/widgets/EmptyState.qml</file>
+<file>../src/qml/widgets/Spinner.qml</file>
+<file>../src/qml/widgets/BatMenu.qml</file>
+<file>../src/qml/widgets/BatMenuItem.qml</file>
+<file>../src/qml/widgets/BatMenuSep.qml</file>
+<file>../src/qml/widgets/DialogStack.qml</file>
+<file>../src/qml/widgets/SpeedGraph.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
 <file>../src/qml/widgets/PosterCard.qml</file>
 <file>../src/qml/widgets/DetailPeers.qml</file>

@@ -21,6 +21,7 @@ struct TorrentInfo {
     int numPeers;
     int numSeeds;
     QString stateString;
+    QString stateDetail;   // why a downloading torrent isn't moving ("" when fine)
     bool paused;
     bool completed = false;
     float ratio;
