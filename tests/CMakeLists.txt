@@ -163,6 +163,27 @@ bat_add_test(test_bridge     test_bridge.cpp)
 bat_add_test(test_gamesource test_gamesource.cpp)
 
 # =============================================================================
+#  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).
+#  Separate from the Catch2 suites: links the app resources qrc (so
+#  qrc:/src/qml/* + the Theme singleton resolve) instead of COMMON_SOURCES.
+# =============================================================================
+find_package(Qt6 QUIET COMPONENTS Quick QuickTest Qml)
+if(Qt6Quick_FOUND AND Qt6QuickTest_FOUND)
+    set(CMAKE_AUTOMOC ON)
+    qt_add_resources(QML_TEST_RES ${CMAKE_SOURCE_DIR}/src/resources.qrc)
+    qt_add_executable(test_qml ${CMAKE_CURRENT_SOURCE_DIR}/qml/main.cpp ${QML_TEST_RES})
+    target_compile_definitions(test_qml PRIVATE
+        QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
+    target_link_libraries(test_qml PRIVATE Qt6::Quick Qt6::QuickTest Qt6::Qml Qt6::Gui)
+    add_test(NAME test_qml COMMAND test_qml)
+    # Offscreen QPA so it runs in CI / over SSH with no display.
+    set_tests_properties(test_qml PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    list(APPEND BAT_QML_TEST_DEP test_qml)
+else()
+    message(STATUS "[BAT] Qt Quick Test not found — skipping test_qml")
+endif()
+
+# =============================================================================
 #  Convenience: run all analysis tools
 # =============================================================================
 add_custom_target(check

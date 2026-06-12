@@ -17,6 +17,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QVariantMap>
+#include <QMetaType>
 
 #include <libtorrent/file_storage.hpp>
 #include <libtorrent/create_torrent.hpp>
@@ -93,6 +94,9 @@ static QApplication &app()
             const QString p = QStandardPaths::writableLocation(loc);
             if (!p.isEmpty()) QDir(p).removeRecursively();
         }
+        // SessionManager persists to its own explicit org ("BATorrent"), not the
+        // test org above — wipe it too so persisted prefs don't leak across runs.
+        QSettings("BATorrent", "BATorrent").clear();
         return new QApplication(s_argc, s_argv);
     }();
     return *a;
@@ -289,4 +293,77 @@ TEST_CASE("Session bridge: a loaded torrent exposes and mutates files/trackers",
                 return true;
         return false;
     }));
+}
+
+// ============================================================================
+//  SessionManager — speed/queue/network prefs persist across a "restart"
+//  Regression: the QWidget→QML migration left these setters writing only to the
+//  live libtorrent session (never QSettings) and the ctor never reloaded them,
+//  so every limit reset to 0/default on relaunch ("settings don't save").
+// ============================================================================
+TEST_CASE("Session: speed/queue/network prefs survive a restart", "[bridge][session][persist]")
+{
+    app();
+    QSettings("BATorrent", "BATorrent").clear();   // self-contained: don't inherit or leak state
+    {
+        SessionManager s;                       // user changes settings...
+        s.setUploadLimit(123);
+        s.setDownloadLimit(456);
+        s.setMaxActiveDownloads(7);
+        s.setSeedRatioLimit(2.5f);
+        s.setMaxConnections(321);
+        s.setDhtEnabled(false);
+        s.setEncryptionMode(2);
+        s.setPreallocate(true);
+        s.setAutoRecheck(true);
+        QSettings("BATorrent", "BATorrent").sync();   // flush before the "restart"
+    }
+    {
+        SessionManager s2;                      // ...fresh instance = app relaunch
+        // member-backed getters: deterministic right after the ctor's reload
+        REQUIRE(s2.uploadLimit() == 123);
+        REQUIRE(s2.downloadLimit() == 456);
+        REQUIRE(s2.maxActiveDownloads() == 7);
+        REQUIRE(s2.seedRatioLimit() == 2.5f);
+        REQUIRE(s2.dhtEnabled() == false);
+        REQUIRE(s2.encryptionMode() == 2);
+        REQUIRE(s2.preallocate() == true);
+        REQUIRE(s2.autoRecheck() == true);
+    }
+    // The keys that drive live libtorrent state are verified at the storage layer
+    // (the getter reads the async session, which needn't have settled yet).
+    QSettings st("BATorrent", "BATorrent");
+    REQUIRE(st.value("maxConnections").toInt() == 321);
+    REQUIRE(st.value("uploadLimit").toInt() == 123);
+    st.clear();   // leave the store clean for sibling tests / the next run
+}
+
+// ============================================================================
+//  QmlSettingsBridge — UI bool toggles coerce to a real bool on read.
+//  Regression: on the Windows registry a bool round-trips as an int (DWORD), so
+//  QML's `settings.get(key) !== false` saw `0 !== false` → true and the splash /
+//  close-to-tray toggles ignored being switched off.
+// ============================================================================
+TEST_CASE("Settings bridge: UI bool toggles read back as real bool", "[bridge][settings][persist]")
+{
+    app();
+    SessionManager s;
+    QmlSettingsBridge sb(&s);
+
+    // Mimic the Windows DWORD readback: store the toggle as an int, not a bool.
+    QSettings().setValue(QStringLiteral("showSplash"), 0);
+    QSettings().sync();
+
+    const QVariant v = sb.get(QStringLiteral("showSplash"));
+    REQUIRE(v.typeId() == QMetaType::Bool);          // coerced — not the raw int 0
+    REQUIRE(v.toBool() == false);
+    REQUIRE_FALSE(v.toBool() != false);              // the exact compare QML relies on
+
+    sb.set(QStringLiteral("showSplash"), true);
+    REQUIRE(sb.get(QStringLiteral("showSplash")).toBool() == true);
+
+    // An unset toggle stays invalid so QML's own `on:` default still applies.
+    QSettings().remove(QStringLiteral("randomPort"));
+    QSettings().sync();
+    REQUIRE_FALSE(sb.get(QStringLiteral("randomPort")).isValid());
 }

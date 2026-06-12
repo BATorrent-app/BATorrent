@@ -38,8 +38,17 @@ static char  s_arg0[] = "test_unit";
 static char *s_argv[] = { s_arg0, nullptr };
 
 static QCoreApplication &app() {
-    static QCoreApplication a(s_argc, s_argv);
-    return a;
+    static QCoreApplication *a = [] {
+        // SessionManager now persists speed/queue/network prefs to QSettings and
+        // reloads them in its ctor. Enable test mode up front (so it can never
+        // touch real user settings) and wipe the store once per run, so the
+        // default-state tests below aren't polluted by a prior run or sibling test.
+        QStandardPaths::setTestModeEnabled(true);
+        auto *inst = new QCoreApplication(s_argc, s_argv);
+        QSettings("BATorrent", "BATorrent").clear();
+        return inst;
+    }();
+    return *a;
 }
 
 static QByteArray basicAuth(const QString &user, const QString &pass)
