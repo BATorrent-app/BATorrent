@@ -86,9 +86,9 @@ Per-file priority · sequential download · auto-tracker injection · content-la
 
 | Platform | | |
 |---|---|---|
-| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [Installer](https://github.com/BATorrent-app/BATorrent/releases/latest) · [Portable](https://github.com/BATorrent-app/BATorrent/releases/latest) | Windows 10+ |
-| **macOS** | **`brew install --cask Mateuscruz19/batorrent/batorrent`** · [`.dmg`](https://github.com/BATorrent-app/BATorrent/releases/latest) | macOS 12+ · Apple Silicon |
-| **Linux** | [AppImage](https://github.com/BATorrent-app/BATorrent/releases/latest) | glibc 2.35+ |
+| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [Installer](https://batorrent.com/win) · [Portable](https://batorrent.com/portable) | Windows 10+ |
+| **macOS** | **`brew install --cask Mateuscruz19/batorrent/batorrent`** · [`.dmg`](https://batorrent.com/mac) | macOS 12+ · Apple Silicon |
+| **Linux** | [AppImage](https://batorrent.com/linux) | glibc 2.35+ |
 
 Then just drop a `.torrent` or magnet onto the window. That's it.
 
