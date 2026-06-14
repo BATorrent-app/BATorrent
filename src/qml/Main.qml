@@ -57,12 +57,33 @@ Window {
     // startup splash — shown on every launch unless disabled in Settings
     property bool showSplash: false
     Component.onCompleted: {
+        // restore the last window size (only if it's still sane vs the minimums)
+        if (typeof settings !== "undefined") {
+            var sw = Number(settings.get("winWidth") || 0)
+            var sh = Number(settings.get("winHeight") || 0)
+            if (sw >= win.minimumWidth && sw <= Screen.desktopAvailableWidth) win.width = sw
+            if (sh >= win.minimumHeight && sh <= Screen.desktopAvailableHeight) win.height = sh
+        }
         showSplash = (typeof settings === "undefined") || settings.get("showSplash") !== false
         // start hidden in the tray if the user asked for it (and a tray exists)
         if (typeof settings !== "undefined" && settings.get("startTray") === true && trayIcon.available)
             win.visible = false
         if (!showSplash) win.maybeShowWelcome()
     }
+    // persist window size (debounced; only while in normal windowed state so a
+    // maximize/fullscreen doesn't get saved as the restore size)
+    Timer {
+        id: geomSave
+        interval: 600; repeat: false
+        onTriggered: {
+            if (typeof settings === "undefined") return
+            if (win.visibility !== Window.Windowed) return
+            settings.set("winWidth", win.width)
+            settings.set("winHeight", win.height)
+        }
+    }
+    onWidthChanged: if (win.visibility === Window.Windowed) geomSave.restart()
+    onHeightChanged: if (win.visibility === Window.Windowed) geomSave.restart()
     // once the app has survived a few seconds, clear the boot-crash sentinel
     // (used by main.cpp's safe-mode recovery)
     Timer {

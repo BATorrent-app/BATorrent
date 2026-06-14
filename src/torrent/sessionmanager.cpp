@@ -1225,7 +1225,12 @@ void SessionManager::setListenPort(int port)
 
 int SessionManager::listenPort() const
 {
-    return m_session.listen_port();
+    // Prefer the configured value. m_session.listen_port() reports the live
+    // socket, which reads 0 or stale right after a re-bind (libtorrent applies
+    // listen_interfaces asynchronously) — that made the settings field appear
+    // to "reset" to the old port. Fall back to the live port only when unset.
+    const int configured = QSettings("BATorrent", "BATorrent").value("listenPort", 0).toInt();
+    return configured > 0 ? configured : m_session.listen_port();
 }
 
 void SessionManager::setMaxConnections(int max)
