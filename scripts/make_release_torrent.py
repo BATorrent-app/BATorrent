@@ -53,7 +53,7 @@ def main():
     meta = {
         "announce": TRACKERS[0],
         "announce-list": [[t] for t in TRACKERS],
-        "comment": "Official BATorrent release — https://github.com/Mateuscruz19/BATorrent",
+        "comment": "Official BATorrent release — https://github.com/BATorrent-app/BATorrent",
         "created by": "BATorrent release CI",
         "creation date": int(time.time()),
         "url-list": [webseed],

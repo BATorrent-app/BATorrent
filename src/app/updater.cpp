@@ -16,7 +16,7 @@
 #include <QSysInfo>
 
 static const QString GITHUB_API =
-    "https://api.github.com/repos/Mateuscruz19/BATorrent/releases/latest";
+    "https://api.github.com/repos/BATorrent-app/BATorrent/releases/latest";
 static const QString GITEE_API =
     "https://gitee.com/api/v5/repos/Mateuscruz19/BATorrent/releases/latest";
 

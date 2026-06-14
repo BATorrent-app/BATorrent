@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
                 return 0;
             }
             if (box.clickedButton() == dlBtn) {
-                QDesktopServices::openUrl(QUrl("https://github.com/Mateuscruz19/BATorrent/releases/latest"));
+                QDesktopServices::openUrl(QUrl("https://github.com/BATorrent-app/BATorrent/releases/latest"));
                 return 0;
             }
             safeMode = true;   // continue, but skip the auto update-check this run

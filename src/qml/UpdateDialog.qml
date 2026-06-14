@@ -95,7 +95,7 @@ BatDialog {
                 visible: !dlg.downloading
                 text: (i18n.language, i18n.t("update_manual"))
                 onClicked: Qt.openUrlExternally(dlg.url.length > 0 ? dlg.url
-                           : "https://github.com/Mateuscruz19/BATorrent/releases/latest")
+                           : "https://github.com/BATorrent-app/BATorrent/releases/latest")
             }
             BtnFlat {
                 visible: dlg.version.length > 0 && !dlg.downloading

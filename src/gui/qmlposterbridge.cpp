@@ -493,7 +493,7 @@ QString QmlLogBridge::crashReportUrl() const
         "<details><summary>Log tail (auto-captured from the previous run)</summary>\n\n"
         "```\n%3\n```\n</details>\n")
         .arg(version, QSysInfo::prettyProductName(), Logger::instance().crashTail());
-    QUrl url(QStringLiteral("https://github.com/Mateuscruz19/BATorrent/issues/new"));
+    QUrl url(QStringLiteral("https://github.com/BATorrent-app/BATorrent/issues/new"));
     QUrlQuery q;
     q.addQueryItem(QStringLiteral("title"),
                    QStringLiteral("[crash] BATorrent %1 ended unexpectedly").arg(version));
