@@ -87,6 +87,7 @@ if(APPLE)
         MACOSX_BUNDLE_INFO_STRING "BATorrent ${PROJECT_VERSION}"
         MACOSX_BUNDLE_COPYRIGHT "© 2024-2026 Mateus Cruz"
         MACOSX_BUNDLE_ICON_FILE "appicon"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cmake/Info.plist.in"
     )
 endif()
 
