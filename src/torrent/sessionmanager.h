@@ -54,6 +54,8 @@ public:
     int torrentCount() const;
     TorrentInfo torrentAt(int index) const;
     QStringList torrentFileNames(int index) const;   // relative file paths, empty pre-metadata
+    bool torrentHasArchives(int index) const;        // any extractable archive present
+    void extractTorrent(int index, const QString &password);   // manual extract (tries password first)
     std::vector<PeerInfo> peersAt(int index, int maxPeers = 0) const;   // 0 = no cap
     std::vector<FileInfo> filesAt(int index) const;
     std::vector<TrackerInfo> trackersAt(int index) const;
@@ -587,7 +589,8 @@ private:
     QSet<QString> m_securityWarned;          // info-hashes already warned about (warn once)
     QSet<QString> m_defenderExcludedRoots;   // save roots already sent to Defender
     QStringList m_extractPasswords;
-    void extractArchives(const QString &savePath, const QString &torrentName);
+    void extractArchives(const QString &savePath, const QString &torrentName,
+                         const QString &priorityPassword = QString());
 
     // Auto-move
     bool m_autoMoveEnabled = false;

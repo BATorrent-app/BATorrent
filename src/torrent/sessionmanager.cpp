@@ -3518,7 +3518,8 @@ void SessionManager::setExtractPasswords(const QStringList &passwords)
 
 QStringList SessionManager::extractPasswords() const { return m_extractPasswords; }
 
-void SessionManager::extractArchives(const QString &savePath, const QString &torrentName)
+void SessionManager::extractArchives(const QString &savePath, const QString &torrentName,
+                                     const QString &priorityPassword)
 {
     QDir dir(savePath);
 
@@ -3546,17 +3547,18 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
     // Serialize: one archive at a time so a multi-archive torrent never opens a
     // swarm of extractor windows. Each archive still retries every password first.
     auto processArchive = std::make_shared<std::function<void(int)>>();
-    *processArchive = [this, archives, processArchive](int ai) {
+    *processArchive = [this, archives, processArchive, priorityPassword](int ai) {
         if (ai >= archives.size()) return;
         const QString archive = archives.at(ai);
         QFileInfo fi(archive);
         QString extractDir = fi.absolutePath();
 
-        QStringList passwords = m_extractPasswords;
-        // Try without password first, then each password
+        // A user-typed password (manual extract) is tried first, then no
+        // password, then each saved default.
         QStringList attempts;
+        if (!priorityPassword.isEmpty()) attempts << priorityPassword;
         attempts << QString();
-        attempts << passwords;
+        attempts << m_extractPasswords;
 
         auto tryExtract = [this, archive, extractDir, attempts, processArchive, ai](int attemptIdx) {
             auto self = std::make_shared<std::function<void(int)>>();
@@ -3678,6 +3680,28 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
         tryExtract(0);
     };
     (*processArchive)(0);
+}
+
+bool SessionManager::torrentHasArchives(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return false;
+    auto ti = m_torrents[index].torrent_file();
+    if (!ti) return false;
+    const auto &fs = ti->files();
+    QStringList names;
+    for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
+        QString p = QString::fromStdString(fs.file_path(i));
+        if (p.endsWith(QLatin1String(".!bt"))) p.chop(4);
+        names << p;
+    }
+    return !ArchiveScan::archivesToExtract(names).isEmpty();
+}
+
+void SessionManager::extractTorrent(int index, const QString &password)
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return;
+    const TorrentInfo info = torrentAt(index);
+    extractArchives(info.savePath, info.name, password);
 }
 
 // --- Temp path ---

@@ -75,6 +75,10 @@ Window {
             { type: "path", key: "autoMovePath", label: (i18n.language, i18n.t("set_move_to2")), placeholder: (i18n.language, i18n.t("set_move_to_ph")) },
             { type: "toggle", key: "preallocate", label: (i18n.language, i18n.t("set_preallocate")), note: (i18n.language, i18n.t("set_preallocate_note")) },
             { type: "toggle", key: "autoRecheck", label: (i18n.language, i18n.t("set_auto_recheck")), note: (i18n.language, i18n.t("set_auto_recheck_note")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_extraction")) },
+            { type: "toggle", key: "autoExtract", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
+            { type: "toggle", key: "autoExtractDelete", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
+            { type: "text", key: "extractPasswords", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "senha1; senha2; online-fix.me", note: (i18n.language, i18n.t("set_extract_passwords_note")), w: "grow" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
             { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch", "Українська"], icons: ["qrc:/icons/flags/en.svg", "qrc:/icons/flags/pt.svg", "qrc:/icons/flags/zh.svg", "qrc:/icons/flags/ja.svg", "qrc:/icons/flags/ru.svg", "qrc:/icons/flags/es.svg", "qrc:/icons/flags/de.svg", "qrc:/icons/flags/uk.svg"], value: 0 },
             { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
@@ -197,11 +201,7 @@ Window {
             { type: "password", key: "plexToken", label: (i18n.language, i18n.t("set_plex_token")), mono: true, w: "w-md" },
             { type: "toggle", key: "jellyfinEnabled", label: (i18n.language, i18n.t("set_media_jellyfin")) },
             { type: "text", key: "jellyfinUrl", label: (i18n.language, i18n.t("set_jellyfin_url")), mono: true, placeholder: "http://127.0.0.1:8096", w: "grow" },
-            { type: "password", key: "jellyfinApiKey", label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" },
-            { type: "group", label: (i18n.language, i18n.t("set_grp_extraction")) },
-            { type: "toggle", key: "autoExtract", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
-            { type: "toggle", key: "autoExtractDelete", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
-            { type: "text", key: "extractPasswords", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "senha1; senha2; online-fix.me", w: "grow" }
+            { type: "password", key: "jellyfinApiKey", label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" }
         ],
         // 8 Avançado
         [

@@ -332,6 +332,14 @@ Window {
             text: (i18n.language, i18n.t("ctx_defender_exclude"))
             onTriggered: session.excludeTorrentFromDefender(torrentFilter.mapToSource(win.selected))
         }
+        CtxItem {
+            visible: session.selectedHasArchives
+            height: visible ? implicitHeight : 0
+            text: (i18n.language, i18n.t("ctx_extract"))
+            onTriggered: inputPrompt.openWith(i18n.t("ctx_extract"), i18n.t("extract_password_label"),
+                                              "", i18n.t("extract_password_ph"),
+                                              function(pw){ session.extractSelected(pw) })
+        }
         CtxItem { text: (i18n.language, i18n.t("ctx_play")); onTriggered: session.playSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stream")); onTriggered: session.streamSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
@@ -2892,11 +2900,12 @@ Window {
     Shortcut { sequence: "Ctrl+Down";  enabled: !win.gridView; onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
     Shortcut { sequence: "Ctrl+Left";  enabled: win.gridView;  onActivated: if (typeof session !== "undefined") session.queueUpSelected() }
     Shortcut { sequence: "Ctrl+Right"; enabled: win.gridView;  onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
-    // navigate selection
-    Shortcut { sequence: "Up";    onActivated: win.moveSel(win.gridView ? -win.gridCols() : -1) }
-    Shortcut { sequence: "Down";  onActivated: win.moveSel(win.gridView ?  win.gridCols() :  1) }
-    Shortcut { sequence: "Left";  enabled: win.gridView; onActivated: win.moveSel(-1) }
-    Shortcut { sequence: "Right"; enabled: win.gridView; onActivated: win.moveSel(1) }
+    // navigate selection — suppressed while the command palette owns the keyboard
+    // (otherwise the arrows scroll the list behind it instead of its results)
+    Shortcut { sequence: "Up";    enabled: !cmdPalette.opened; onActivated: win.moveSel(win.gridView ? -win.gridCols() : -1) }
+    Shortcut { sequence: "Down";  enabled: !cmdPalette.opened; onActivated: win.moveSel(win.gridView ?  win.gridCols() :  1) }
+    Shortcut { sequence: "Left";  enabled: win.gridView && !cmdPalette.opened; onActivated: win.moveSel(-1) }
+    Shortcut { sequence: "Right"; enabled: win.gridView && !cmdPalette.opened; onActivated: win.moveSel(1) }
     Shortcut { sequence: "Ctrl+1"; onActivated: win.setFilter("all") }
     Shortcut { sequence: "Ctrl+2"; onActivated: win.setFilter("downloading") }
     Shortcut { sequence: "Ctrl+3"; onActivated: win.setFilter("seeding") }

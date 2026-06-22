@@ -265,6 +265,18 @@ bool QmlSessionBridge::excludeTorrentFromDefender(int row)
     return ok;
 }
 
+bool QmlSessionBridge::selectedHasArchives() const
+{
+    return hasSelection() && m_session->torrentHasArchives(m_selectedIndex);
+}
+
+void QmlSessionBridge::extractSelected(const QString &password)
+{
+    if (!hasSelection()) return;
+    m_session->extractTorrent(m_selectedIndex, password);
+    emit toast(tr_("extract_started"), m_session->torrentAt(m_selectedIndex).name);
+}
+
 bool QmlSessionBridge::selectedForceStart() const
 {
     return hasSelection() && m_session->isForceStart(m_selectedIndex);

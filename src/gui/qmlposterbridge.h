@@ -138,6 +138,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(bool selectedSuperSeeding READ selectedSuperSeeding NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedCompleted READ selectedCompleted NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedPaused READ selectedPaused NOTIFY selectionChanged)
+    Q_PROPERTY(bool selectedHasArchives READ selectedHasArchives NOTIFY selectionChanged)
     Q_PROPERTY(QVariantList selectedPeerList READ selectedPeerList NOTIFY selectionListsChanged)
     Q_PROPERTY(bool peersLoading READ peersLoading NOTIFY selectionListsChanged)  // true while the first peer build is pending
     Q_PROPERTY(QVariantList selectedFiles READ selectedFiles NOTIFY selectionListsChanged)
@@ -199,6 +200,7 @@ public:
     Q_INVOKABLE void copyInfoHash();
     Q_INVOKABLE void openSaveFolder();
     Q_INVOKABLE bool excludeTorrentFromDefender(int row);   // Windows: exclude this torrent's folder
+    Q_INVOKABLE void extractSelected(const QString &password);   // manual extract (empty pw allowed)
     Q_INVOKABLE QString defaultSavePath() const;
     Q_INVOKABLE void setSelectedForceStart(bool on);
     Q_INVOKABLE void setSelectedSuperSeeding(bool on);
@@ -321,6 +323,7 @@ public:
     bool selectedSuperSeeding() const;
     bool selectedCompleted() const;
     bool selectedPaused() const;
+    bool selectedHasArchives() const;
     QVariantList selectedPeerList() const;
     bool peersLoading() const { return m_peersLoading; }
     QVariantList selectedFiles() const;
