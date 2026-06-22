@@ -428,6 +428,7 @@ public:
     void scheduleTrash(const QStringList &targets, int attempt);
     void checkMemoryGuard();   // circuit breaker: pause/bail if RSS runs away
     void scanTorrentForThreats(const lt::torrent_handle &h, const QString &name);
+    void noteTorrentFault(const lt::torrent_handle &h, const QString &name);   // auto-pause a thrashing torrent
     void saveSecurityWarned();
     void maybeAutoExcludeDefender(const QString &savePath);   // opt-in, Windows-only
     int totalTorrentsAdded() const;
@@ -539,6 +540,10 @@ private:
     // can request a save without thrashing the disk on every piece. Saved
     // only if the last save was more than kMinResumeSaveIntervalSec ago.
     std::map<lt::torrent_handle, qint64> m_lastResumeSaveAt;
+    // Fault isolation: count clustered errors per torrent; once a torrent keeps
+    // thrashing we pause it so it can't destabilize the rest of the app.
+    std::map<lt::torrent_handle, int> m_faultCount;
+    std::map<lt::torrent_handle, qint64> m_faultLastAt;
     // Info-hashes of recently removed torrents. Used to drop in-flight
     // save_resume_data_alerts that arrive after removeTorrent, which would
     // otherwise re-create the .resume file we just deleted.

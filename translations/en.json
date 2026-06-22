@@ -826,6 +826,7 @@
   "view_grid": "Grid",
   "view_list": "List",
   "warn_low_disk": "Low disk space — only %1 MB remaining. Downloads may fail if disk fills up.",
+  "warn_torrent_faulted": "Paused %1 — it kept hitting errors. Check the file or disk, then resume it.",
   "warn_mem_guard": "Paused all torrents — memory use hit %1 MB (limit %2 MB). This may be a bug; please report it.",
   "warn_suspicious_title": "Security warning",
   "warn_suspicious_body": "%1 contains a file that looks unsafe: %2. Don't run it unless you trust the source.",
