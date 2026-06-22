@@ -7,6 +7,7 @@
 #include "../app/translator.h"
 #include "../app/suspiciousscan.h"
 #include "../app/defender.h"
+#include "../app/archivescan.h"
 #include <QProcess>
 #include <QCoreApplication>
 #if defined(Q_OS_MACOS)
@@ -3524,24 +3525,19 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
     // Scope strictly to THIS torrent's own content. Scanning the shared save root
     // used to pick up every sibling torrent's archives and extract them all at
     // once — a flood of extractor processes that could freeze the machine.
+    // ArchiveScan owns the format + multi-part rules (which volume is the first,
+    // which are continuation parts) and is unit-tested separately.
     QStringList archives;
     const QString content = dir.filePath(torrentName);
     const QFileInfo contentInfo(content);
-    auto keepArchive = [](const QFileInfo &fi) {
-        // multi-part: keep only the first part; the extractor pulls in the rest
-        return !(fi.fileName().contains(QStringLiteral(".part"))
-                 && !fi.fileName().endsWith(QStringLiteral(".part1.rar"))
-                 && !fi.fileName().endsWith(QStringLiteral(".part01.rar")));
-    };
     if (contentInfo.isDir()) {                          // multi-file torrent → its own folder
-        for (const auto &fi : QDir(content).entryInfoList(
-                 {"*.rar", "*.zip", "*.7z", "*.tar.gz", "*.tar.bz2"}, QDir::Files))
-            if (keepArchive(fi)) archives << fi.absoluteFilePath();
+        QStringList names;
+        for (const auto &fi : QDir(content).entryInfoList(QDir::Files))
+            names << fi.fileName();
+        for (const QString &n : ArchiveScan::archivesToExtract(names))
+            archives << QDir(content).filePath(n);
     } else if (contentInfo.isFile()) {                  // single-file torrent that is an archive
-        const QString n = contentInfo.fileName().toLower();
-        if ((n.endsWith(QStringLiteral(".rar")) || n.endsWith(QStringLiteral(".zip"))
-             || n.endsWith(QStringLiteral(".7z")) || n.endsWith(QStringLiteral(".tar.gz"))
-             || n.endsWith(QStringLiteral(".tar.bz2"))) && keepArchive(contentInfo))
+        if (!ArchiveScan::archivesToExtract({contentInfo.fileName()}).isEmpty())
             archives << content;
     }
 

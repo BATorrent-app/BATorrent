@@ -1197,3 +1197,63 @@ TEST_CASE("QFile::moveToTrash works in this environment", "[trash-env]")
     REQUIRE(!QFileInfo::exists(p));
 }
 #endif
+
+// ============================================================================
+//  ArchiveScan — auto-extract archive discovery (formats + multi-part)
+// ============================================================================
+#include "app/archivescan.h"
+
+TEST_CASE("ArchiveScan: plain single archives of every format", "[archive]") {
+    for (const QString &n : {"movie.rar","data.zip","stuff.7z","pack.tar.gz",
+                             "pack.tgz","pack.tar.bz2","pack.tar.xz","blob.gz","blob.xz"}) {
+        REQUIRE(ArchiveScan::isArchive(n));
+        REQUIRE(ArchiveScan::archivesToExtract({n}) == QStringList{n});
+    }
+    REQUIRE(ArchiveScan::archivesToExtract({"film.mkv","cover.jpg"}).isEmpty());
+}
+
+TEST_CASE("ArchiveScan: .partN.rar keeps only the first volume", "[archive]") {
+    QStringList files = {"rls.part1.rar","rls.part2.rar","rls.part3.rar"};
+    REQUIRE(ArchiveScan::archivesToExtract(files) == QStringList{"rls.part1.rar"});
+    // zero-padded variant
+    QStringList padded = {"rls.part01.rar","rls.part02.rar","rls.part10.rar"};
+    REQUIRE(ArchiveScan::archivesToExtract(padded) == QStringList{"rls.part01.rar"});
+    REQUIRE(ArchiveScan::isContinuationPart("rls.part02.rar"));
+    REQUIRE_FALSE(ArchiveScan::isContinuationPart("rls.part01.rar"));
+}
+
+TEST_CASE("ArchiveScan: old .rNN rar split keeps the .rar, drops .r00..", "[archive]") {
+    QStringList files = {"rls.rar","rls.r00","rls.r01","rls.r02"};
+    REQUIRE(ArchiveScan::archivesToExtract(files) == QStringList{"rls.rar"});
+    REQUIRE(ArchiveScan::isContinuationPart("rls.r00"));
+}
+
+TEST_CASE("ArchiveScan: generic .NNN split keeps .001 only", "[archive]") {
+    QStringList files = {"big.7z.001","big.7z.002","big.7z.003"};
+    REQUIRE(ArchiveScan::archivesToExtract(files) == QStringList{"big.7z.001"});
+    REQUIRE(ArchiveScan::isContinuationPart("big.7z.002"));
+    REQUIRE_FALSE(ArchiveScan::isContinuationPart("big.7z.001"));
+}
+
+TEST_CASE("ArchiveScan: split-zip .zNN volumes drop, .zip stays", "[archive]") {
+    QStringList files = {"set.zip","set.z01","set.z02"};
+    REQUIRE(ArchiveScan::archivesToExtract(files) == QStringList{"set.zip"});
+    REQUIRE(ArchiveScan::isContinuationPart("set.z01"));
+}
+
+TEST_CASE("ArchiveScan: case-insensitive and mixed folder", "[archive]") {
+    QStringList files = {"MOVIE.MKV","Bonus.RAR","Bonus.R00","Readme.txt","clip.001","clip.002"};
+    auto out = ArchiveScan::archivesToExtract(files);
+    REQUIRE(out.contains("Bonus.RAR"));
+    REQUIRE(out.contains("clip.001"));
+    REQUIRE_FALSE(out.contains("Bonus.R00"));
+    REQUIRE_FALSE(out.contains("clip.002"));
+    REQUIRE_FALSE(out.contains("MOVIE.MKV"));
+    REQUIRE(out.size() == 2);
+}
+
+TEST_CASE("ArchiveScan: a media file that looks like a part is not an archive", "[archive]") {
+    // ".part1.mkv" must NOT be treated as a rar volume
+    REQUIRE_FALSE(ArchiveScan::isArchive("episode.part1.mkv"));
+    REQUIRE(ArchiveScan::archivesToExtract({"episode.part1.mkv"}).isEmpty());
+}

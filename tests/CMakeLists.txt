@@ -28,6 +28,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/app/subtitleparser.cpp
     ${CMAKE_SOURCE_DIR}/src/app/subtitlesearch.cpp
     ${CMAKE_SOURCE_DIR}/src/app/suspiciousscan.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/archivescan.cpp
     ${CMAKE_SOURCE_DIR}/src/app/defender.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
     ${CMAKE_SOURCE_DIR}/src/app/rssmanager.cpp
