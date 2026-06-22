@@ -57,6 +57,7 @@ private:
     void fetchIgdbTrending(int order, const QString &label);   // hot + recent games (hype-typed)
     void fetchIgdbHypeIds(int order, const QString &label);    // popularity primitives for the hype type
     void fetchIgdbRecent(int order, const QString &label);     // recently released games
+    void fetchIgdbGames(int order, const QString &label, const QString &whereClause, const QString &sort);  // generic games shelf
     void fetchIgdbGamesByIds(int order, const QString &label, const QList<qint64> &ids);
     void setIgdbHeaders(QNetworkRequest &req) const;
     void ensureIgdbToken(std::function<void()> then);

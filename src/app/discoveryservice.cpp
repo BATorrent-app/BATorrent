@@ -132,6 +132,23 @@ void DiscoveryService::refresh()
     setLoading(true);
     setStatus(QString());
 
+    // Games lead (orders 0–6): BATorrent's audience is game-first, so its shelves
+    // come before movies/series. Movies fill in below (orders 10+).
+    if (haveIgdb) {
+        fetchIgdbTrending(0, tr_("discover_trending_games"));   // hot & new
+        fetchIgdbRecent(1, tr_("discover_new_games"));
+        fetchIgdbGames(2, tr_("discover_top_games"),
+                       QStringLiteral("rating != null & rating_count >= 100"), QStringLiteral("rating desc"));
+        auto gameGenre = [this](int order, const QString &label, int gid) {
+            fetchIgdbGames(order, label,
+                           QStringLiteral("genres = (%1) & rating_count >= 5").arg(gid),
+                           QStringLiteral("rating desc"));
+        };
+        gameGenre(3, tr_("discover_game_rpg"),      12);
+        gameGenre(4, tr_("discover_game_shooter"),   5);
+        gameGenre(5, tr_("discover_game_strategy"), 15);
+        gameGenre(6, tr_("discover_game_indie"),    32);
+    }
     if (haveTmdb) {
         // Country-relative "trending": popularity-sorted titles available to stream/
         // rent/buy in the user's region (TMDB /trending has no region param).
@@ -149,32 +166,20 @@ void DiscoveryService::refresh()
             fetchTmdb(order, path, label, type, extra, 1);
             fetchTmdb(order, path, label, type, extra, 2);
         };
-        shelf(0, QStringLiteral("/discover/movie"), tr_("discover_trending_movies"), QStringLiteral("movie"),  regionDiscover);
-        shelf(2, QStringLiteral("/discover/tv"),    tr_("discover_trending_series"), QStringLiteral("series"), regionDiscover);
-        shelf(4, QStringLiteral("/movie/popular"),  tr_("discover_popular_movies"),  QStringLiteral("movie"),  regionOnly);
-        shelf(5, QStringLiteral("/tv/popular"),     tr_("discover_popular_series"),  QStringLiteral("series"), {});
+        shelf(10, QStringLiteral("/discover/movie"), tr_("discover_trending_movies"), QStringLiteral("movie"),  regionDiscover);
+        shelf(11, QStringLiteral("/movie/popular"),  tr_("discover_popular_movies"),  QStringLiteral("movie"),  regionOnly);
+        shelf(12, QStringLiteral("/discover/tv"),    tr_("discover_trending_series"), QStringLiteral("series"), regionDiscover);
+        shelf(13, QStringLiteral("/tv/popular"),     tr_("discover_popular_series"),  QStringLiteral("series"), {});
         // genre shelves (popular within a genre, region-aware)
         auto genre = [regionDiscover](int id) {
             QList<QPair<QString, QString>> e = regionDiscover;
             e.append({ QStringLiteral("with_genres"), QString::number(id) });
             return e;
         };
-        shelf(6,  QStringLiteral("/discover/movie"), tr_("discover_genre_action"),    QStringLiteral("movie"), genre(28));
-        shelf(7,  QStringLiteral("/discover/movie"), tr_("discover_genre_comedy"),    QStringLiteral("movie"), genre(35));
-        shelf(8,  QStringLiteral("/discover/movie"), tr_("discover_genre_horror"),    QStringLiteral("movie"), genre(27));
-        shelf(9,  QStringLiteral("/discover/movie"), tr_("discover_genre_scifi"),     QStringLiteral("movie"), genre(878));
-        shelf(10, QStringLiteral("/discover/movie"), tr_("discover_genre_thriller"),  QStringLiteral("movie"), genre(53));
-        shelf(11, QStringLiteral("/discover/movie"), tr_("discover_genre_animation"), QStringLiteral("movie"), genre(16));
-        shelf(12, QStringLiteral("/discover/movie"), tr_("discover_genre_adventure"), QStringLiteral("movie"), genre(12));
-        shelf(13, QStringLiteral("/discover/movie"), tr_("discover_genre_drama"),     QStringLiteral("movie"), genre(18));
-        shelf(14, QStringLiteral("/discover/movie"), tr_("discover_genre_documentary"), QStringLiteral("movie"), genre(99));
-        // critically-loved shelves (all-time, region-independent)
-        shelf(15, QStringLiteral("/movie/top_rated"), tr_("discover_top_movies"), QStringLiteral("movie"),  {});
-        shelf(16, QStringLiteral("/tv/top_rated"),    tr_("discover_top_series"), QStringLiteral("series"), {});
-    }
-    if (haveIgdb) {
-        fetchIgdbTrending(1, tr_("discover_trending_games"));   // games of the moment — kept high
-        fetchIgdbRecent(3, tr_("discover_new_games"));
+        shelf(14, QStringLiteral("/discover/movie"), tr_("discover_genre_action"), QStringLiteral("movie"), genre(28));
+        shelf(15, QStringLiteral("/discover/movie"), tr_("discover_genre_scifi"),  QStringLiteral("movie"), genre(878));
+        shelf(16, QStringLiteral("/discover/movie"), tr_("discover_genre_horror"), QStringLiteral("movie"), genre(27));
+        shelf(17, QStringLiteral("/movie/top_rated"), tr_("discover_top_movies"),  QStringLiteral("movie"), {});
     }
 }
 
@@ -447,15 +452,35 @@ QVariantList gamesToItems(const QList<QJsonObject> &objs, int cap)
         if (imageId.isEmpty()) continue;
         const QString name = o.value(QLatin1String("name")).toString();
         if (name.isEmpty() || seen.contains(name)) continue;
-        // IGDB has no "free" flag — drop the obvious free/live-service titles that
-        // dominate popularity but make no sense to download via torrent.
+        // IGDB has no "free" flag — drop the obvious free-to-play / live-service /
+        // gacha / MMO titles. They dominate game popularity and ratings but make
+        // no sense to download via torrent (you just install them for free, or
+        // they're server-side). Substrings are specific enough not to catch paid
+        // franchise entries (e.g. "warzone" not "call of duty").
         static const QStringList freeLiveService = {
+            // arena / hero shooters / battle royale
             "counter-strike", "dota 2", "league of legends", "fortnite", "valorant",
-            "apex legends", "warframe", "genshin", "honkai", "roblox", "marvel rivals",
-            "the finals", "overwatch", "destiny 2", "path of exile", "team fortress",
-            "warzone", "rocket league", "fall guys", "brawlhalla", "lost ark", "new world",
-            "throne and liberty", "once human", "delta force", "naraka", "smite",
-            "war thunder", "world of tanks", "world of warships" };
+            "apex legends", "warframe", "roblox", "marvel rivals", "the finals",
+            "overwatch", "destiny 2", "team fortress", "warzone", "rocket league",
+            "fall guys", "brawlhalla", "naraka", "smite", "paladins", "splitgate",
+            "the first descendant", "xdefiant", "deadlock", "multiversus", "the day before",
+            "pubg", "playerunknown", "delta force", "crossfire", "spellbreak", "hyper scape",
+            // gacha / live-service RPG
+            "genshin", "honkai", "wuthering waves", "zenless zone zero", "tower of fantasy",
+            "blue archive", "arknights", "nikke", "goddess of victory", "punishing: gray raven",
+            "epic seven", "summoners war", "raid: shadow legends", "diablo immortal",
+            // MMO (server-side, not torrentable)
+            "lost ark", "new world", "throne and liberty", "once human", "world of warcraft",
+            "final fantasy xiv", "elder scrolls online", "star wars: the old republic",
+            "guild wars", "neverwinter", "runescape", "eve online", "star trek online",
+            "dc universe online", "phantasy star online", "blade and soul", "blade & soul",
+            "tera online", "vindictus", "dauntless", "albion online", "lord of the rings online",
+            // F2P military / vehicle / card
+            "war thunder", "world of tanks", "world of warships", "crossout", "enlisted",
+            "star conflict", "hearthstone", "legends of runeterra", "magic: the gathering arena",
+            "yu-gi-oh! master duel", "yu-gi-oh master duel", "marvel snap",
+            // F2P mobile/crossplay that show up by popularity
+            "mobile legends", "honor of kings", "clash of", "pokemon unite", "pokemon go" };
         const QString lname = name.toLower();
         bool freeLs = false;
         for (const QString &d : freeLiveService) if (lname.contains(d)) { freeLs = true; break; }
@@ -641,6 +666,36 @@ void DiscoveryService::fetchIgdbRecent(int order, const QString &label)
                 items = gamesToItems(toObjects(QJsonDocument::fromJson(reply->readAll()).array()), 24);
             else
                 qDebug() << "[discover] IGDB recent error:" << reply->errorString();
+            QVariantMap row;
+            row.insert(QStringLiteral("label"), label);
+            row.insert(QStringLiteral("items"), items);
+            if (!items.isEmpty()) m_accum.insert(order, row);
+            maybeFinish();
+        });
+    });
+}
+
+// Generic games shelf: any apicalypse where-clause + sort (e.g. a genre, or
+// best-rated). `cover != null` is always enforced so every card has art.
+void DiscoveryService::fetchIgdbGames(int order, const QString &label,
+                                      const QString &whereClause, const QString &sort)
+{
+    ++m_pending;
+    ensureIgdbToken([this, order, label, whereClause, sort]() {
+        if (m_igdbToken.isEmpty()) { maybeFinish(); return; }
+        QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
+        setIgdbHeaders(req);
+        const QByteArray body = QStringLiteral(
+            "fields name,summary,rating,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id;"
+            " where cover != null & %1; sort %2; limit 40;").arg(whereClause, sort).toUtf8();
+        QNetworkReply *reply = m_nam->post(req, body);
+        connect(reply, &QNetworkReply::finished, this, [this, reply, order, label]() {
+            reply->deleteLater();
+            QVariantList items;
+            if (reply->error() == QNetworkReply::NoError)
+                items = gamesToItems(toObjects(QJsonDocument::fromJson(reply->readAll()).array()), 30);
+            else
+                qDebug() << "[discover] IGDB games shelf error:" << reply->errorString();
             QVariantMap row;
             row.insert(QStringLiteral("label"), label);
             row.insert(QStringLiteral("items"), items);
