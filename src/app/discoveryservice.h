@@ -53,7 +53,7 @@ private:
     void maybeFinishSearch();
 
     void fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
-                   const QList<QPair<QString, QString>> &extra = {});
+                   const QList<QPair<QString, QString>> &extra = {}, int page = 1);
     void fetchIgdbTrending(int order, const QString &label);   // hot + recent games (hype-typed)
     void fetchIgdbHypeIds(int order, const QString &label);    // popularity primitives for the hype type
     void fetchIgdbRecent(int order, const QString &label);     // recently released games

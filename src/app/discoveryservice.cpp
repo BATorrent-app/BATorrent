@@ -143,19 +143,34 @@ void DiscoveryService::refresh()
               QStringLiteral("flatrate|free|ads|rent|buy") }
         };
         const QList<QPair<QString, QString>> regionOnly = { { QStringLiteral("region"), region } };
-        fetchTmdb(0, QStringLiteral("/discover/movie"), tr_("discover_trending_movies"), QStringLiteral("movie"),  regionDiscover);
-        fetchTmdb(2, QStringLiteral("/discover/tv"),    tr_("discover_trending_series"), QStringLiteral("series"), regionDiscover);
-        fetchTmdb(4, QStringLiteral("/movie/popular"),  tr_("discover_popular_movies"),  QStringLiteral("movie"),  regionOnly);
-        fetchTmdb(5, QStringLiteral("/tv/popular"),     tr_("discover_popular_series"),  QStringLiteral("series"));
+        // Each shelf pulls two pages (~40 titles) so there's plenty to scroll.
+        auto shelf = [this](int order, const QString &path, const QString &label,
+                            const QString &type, const QList<QPair<QString, QString>> &extra) {
+            fetchTmdb(order, path, label, type, extra, 1);
+            fetchTmdb(order, path, label, type, extra, 2);
+        };
+        shelf(0, QStringLiteral("/discover/movie"), tr_("discover_trending_movies"), QStringLiteral("movie"),  regionDiscover);
+        shelf(2, QStringLiteral("/discover/tv"),    tr_("discover_trending_series"), QStringLiteral("series"), regionDiscover);
+        shelf(4, QStringLiteral("/movie/popular"),  tr_("discover_popular_movies"),  QStringLiteral("movie"),  regionOnly);
+        shelf(5, QStringLiteral("/tv/popular"),     tr_("discover_popular_series"),  QStringLiteral("series"), {});
         // genre shelves (popular within a genre, region-aware)
         auto genre = [regionDiscover](int id) {
             QList<QPair<QString, QString>> e = regionDiscover;
             e.append({ QStringLiteral("with_genres"), QString::number(id) });
             return e;
         };
-        fetchTmdb(6, QStringLiteral("/discover/movie"), tr_("discover_genre_action"), QStringLiteral("movie"), genre(28));
-        fetchTmdb(7, QStringLiteral("/discover/movie"), tr_("discover_genre_comedy"), QStringLiteral("movie"), genre(35));
-        fetchTmdb(8, QStringLiteral("/discover/movie"), tr_("discover_genre_horror"), QStringLiteral("movie"), genre(27));
+        shelf(6,  QStringLiteral("/discover/movie"), tr_("discover_genre_action"),    QStringLiteral("movie"), genre(28));
+        shelf(7,  QStringLiteral("/discover/movie"), tr_("discover_genre_comedy"),    QStringLiteral("movie"), genre(35));
+        shelf(8,  QStringLiteral("/discover/movie"), tr_("discover_genre_horror"),    QStringLiteral("movie"), genre(27));
+        shelf(9,  QStringLiteral("/discover/movie"), tr_("discover_genre_scifi"),     QStringLiteral("movie"), genre(878));
+        shelf(10, QStringLiteral("/discover/movie"), tr_("discover_genre_thriller"),  QStringLiteral("movie"), genre(53));
+        shelf(11, QStringLiteral("/discover/movie"), tr_("discover_genre_animation"), QStringLiteral("movie"), genre(16));
+        shelf(12, QStringLiteral("/discover/movie"), tr_("discover_genre_adventure"), QStringLiteral("movie"), genre(12));
+        shelf(13, QStringLiteral("/discover/movie"), tr_("discover_genre_drama"),     QStringLiteral("movie"), genre(18));
+        shelf(14, QStringLiteral("/discover/movie"), tr_("discover_genre_documentary"), QStringLiteral("movie"), genre(99));
+        // critically-loved shelves (all-time, region-independent)
+        shelf(15, QStringLiteral("/movie/top_rated"), tr_("discover_top_movies"), QStringLiteral("movie"),  {});
+        shelf(16, QStringLiteral("/tv/top_rated"),    tr_("discover_top_series"), QStringLiteral("series"), {});
     }
     if (haveIgdb) {
         fetchIgdbTrending(1, tr_("discover_trending_games"));   // games of the moment — kept high
@@ -328,7 +343,7 @@ bool DiscoveryService::hasMetadataKeys() const
 }
 
 void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
-                                 const QList<QPair<QString, QString>> &extra)
+                                 const QList<QPair<QString, QString>> &extra, int page)
 {
     ++m_pending;
 
@@ -336,7 +351,7 @@ void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &
     QUrlQuery q;
     q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
     q.addQueryItem(QStringLiteral("language"), tmdbLang());
-    q.addQueryItem(QStringLiteral("page"), QStringLiteral("1"));
+    q.addQueryItem(QStringLiteral("page"), QString::number(page));
     for (const auto &kv : extra) q.addQueryItem(kv.first, kv.second);
     url.setQuery(q);
 
@@ -372,10 +387,20 @@ void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &
                 items.append(m);
             }
         }
-        QVariantMap row;
+        // Merge-append: a shelf is fetched across multiple pages, all sharing
+        // one `order`. Dedup by poster URL so a page overlap can't double a title.
+        QVariantMap row = m_accum.value(order);
+        QVariantList merged = row.value(QStringLiteral("items")).toList();
+        QSet<QString> seen;
+        for (const QVariant &v : std::as_const(merged))
+            seen.insert(v.toMap().value(QStringLiteral("poster")).toString());
+        for (const QVariant &v : std::as_const(items)) {
+            const QString key = v.toMap().value(QStringLiteral("poster")).toString();
+            if (!seen.contains(key)) { merged.append(v); seen.insert(key); }
+        }
         row.insert(QStringLiteral("label"), label);
-        row.insert(QStringLiteral("items"), items);
-        if (!items.isEmpty()) m_accum.insert(order, row);
+        row.insert(QStringLiteral("items"), merged);
+        if (!merged.isEmpty()) m_accum.insert(order, row);
         maybeFinish();
     });
 }
