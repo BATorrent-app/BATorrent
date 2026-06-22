@@ -55,6 +55,7 @@ public:
     TorrentInfo torrentAt(int index) const;
     QStringList torrentFileNames(int index) const;   // relative file paths, empty pre-metadata
     bool torrentHasArchives(int index) const;        // any extractable archive present
+    bool torrentHasVideo(int index) const;           // any playable video file present
     void extractTorrent(int index, const QString &password);   // manual extract (tries password first)
     std::vector<PeerInfo> peersAt(int index, int maxPeers = 0) const;   // 0 = no cap
     std::vector<FileInfo> filesAt(int index) const;

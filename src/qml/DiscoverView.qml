@@ -58,7 +58,8 @@ Rectangle {
             // ---------- hero ----------
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 300
+                // cinematic banner: ~44% of the viewport, never cramped
+                Layout.preferredHeight: Math.max(420, Math.round(page.height * 0.44))
                 visible: page.heroItem !== null
 
                 Item {
@@ -203,7 +204,7 @@ Rectangle {
             NumberAnimation { to: 0.45; duration: 700; easing.type: Easing.InOutQuad }
             NumberAnimation { to: 0.75; duration: 700; easing.type: Easing.InOutQuad }
         }
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 300; color: Theme.elev }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: Math.max(420, Math.round(page.height * 0.44)); color: Theme.elev }
         Repeater {
             model: 2
             ColumnLayout {
