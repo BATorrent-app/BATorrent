@@ -6,6 +6,16 @@
 #include "../app/logger.h"
 #include "../app/translator.h"
 #include <QProcess>
+#include <QCoreApplication>
+#if defined(Q_OS_MACOS)
+#include <mach/mach.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
+#include <psapi.h>
+#elif defined(Q_OS_LINUX)
+#include <unistd.h>
+#include <cstdio>
+#endif
 #include <QStorageInfo>
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
@@ -2197,6 +2207,7 @@ void SessionManager::updateStats()
     checkInterfaceStatus();
     checkBandwidthSchedule();
     checkMagnetTimeouts();
+    checkMemoryGuard();
     enforceDownloadQueue();
     if (!m_torrents.empty())
         emit torrentsUpdated();
@@ -2831,6 +2842,70 @@ SessionManager::DetailedStats SessionManager::detailedStats() const
     }
     ds.hasIncomingConnections = m_session.is_listening();
     return ds;
+}
+
+// Resident set size of this process, in bytes; -1 if it can't be read.
+static qint64 currentRssBytes()
+{
+#if defined(Q_OS_MACOS)
+    mach_task_basic_info info;
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO,
+                  reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
+        return static_cast<qint64>(info.resident_size);
+    return -1;
+#elif defined(Q_OS_WIN)
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+        return static_cast<qint64>(pmc.WorkingSetSize);
+    return -1;
+#elif defined(Q_OS_LINUX)
+    qint64 rss = -1;
+    if (FILE *f = std::fopen("/proc/self/statm", "r")) {
+        long total = 0, resident = 0;
+        if (std::fscanf(f, "%ld %ld", &total, &resident) == 2 && resident > 0)
+            rss = static_cast<qint64>(resident) * sysconf(_SC_PAGESIZE);
+        std::fclose(f);
+    }
+    return rss;
+#else
+    return -1;
+#endif
+}
+
+// Safety valve against a runaway allocation bug eating the user's machine.
+// Stage 1 (over the cap): pause everything — the likeliest growth source is
+// piece/disk buffers — and warn, at most once per 5 min. Recoverable.
+// Stage 2 (2× the cap, i.e. the pause didn't help → genuine runaway): save
+// state and quit gracefully before the OS starts swapping/OOM-killing.
+void SessionManager::checkMemoryGuard()
+{
+    const int capMB = QSettings("BATorrent", "BATorrent").value("memGuardMB", 4096).toInt();
+    if (capMB <= 0) return;   // 0 = disabled
+
+    const qint64 rss = currentRssBytes();
+    if (rss < 0) return;
+    const qint64 rssMB = rss / (1024 * 1024);
+
+    if (rssMB >= static_cast<qint64>(capMB) * 2) {
+        qCritical() << "[session] MEMORY GUARD PANIC: RSS" << rssMB
+                    << "MB >= 2x cap" << capMB << "MB — saving state and quitting";
+        saveResumeData();
+        QCoreApplication::quit();
+        return;
+    }
+
+    if (rssMB >= capMB) {
+        static qint64 lastWarn = 0;
+        const qint64 now = QDateTime::currentSecsSinceEpoch();
+        if (now - lastWarn >= 300) {
+            lastWarn = now;
+            qWarning() << "[session] MEMORY GUARD: RSS" << rssMB
+                       << "MB >= cap" << capMB << "MB — pausing all torrents";
+            pauseAll();
+            emit torrentError(tr_("warn_mem_guard").arg(rssMB).arg(capMB));
+        }
+    }
 }
 
 void SessionManager::scheduleTrash(const QStringList &targets, int attempt)
