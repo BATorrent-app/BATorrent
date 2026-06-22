@@ -2366,6 +2366,7 @@ void SessionManager::processAlerts()
                 last = nowTe;
             }
             if (lastErrorAt.size() > 500) lastErrorAt.clear();
+            noteTorrentFault(ea->handle, {});   // isolate it if this keeps happening
         }
         // Surface previously-swallowed alert categories so the user actually
         // hears about disk-full, move-storage failures, port collisions, and
@@ -2419,6 +2420,9 @@ void SessionManager::processAlerts()
                         fe->handle.pause();
                     }
                 }
+                // A still-downloading torrent that keeps hitting file errors
+                // (bad sector, permissions) gets isolated after enough of them.
+                noteTorrentFault(fe->handle, {});
             }
         }
         if (auto *sm = lt::alert_cast<lt::storage_moved_failed_alert>(a)) {
@@ -2928,6 +2932,31 @@ void SessionManager::saveSecurityWarned()
 {
     QSettings("BATorrent", "BATorrent")
         .setValue("securityWarned", QStringList(m_securityWarned.values()));
+}
+
+// Fault isolation: a torrent that keeps erroring (bad disk sector, vanished
+// file, corrupt resume) shouldn't be allowed to thrash forever and drag the
+// whole app down. Count clustered errors; once a torrent crosses the threshold
+// we pause it and tell the user, instead of retrying endlessly.
+void SessionManager::noteTorrentFault(const lt::torrent_handle &h, const QString &name)
+{
+    if (!h.is_valid()) return;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    qint64 &last = m_faultLastAt[h];
+    int &n = m_faultCount[h];
+    if (now - last > 120) n = 0;     // errors must cluster (<2 min apart) to count as thrashing
+    last = now;
+    if (++n < 8) return;
+
+    lt::torrent_status st = h.status();
+    if (!(st.flags & lt::torrent_flags::paused)) {
+        h.pause();
+        const QString nm = name.isEmpty() ? QString::fromStdString(st.name) : name;
+        qWarning() << "[session] fault-isolated torrent (repeated errors):" << nm;
+        emit torrentError(tr_("warn_torrent_faulted").arg(nm));
+    }
+    n = 0;   // reset; if the user fixes it, resumes, and it re-faults, we isolate again
+    if (m_faultCount.size() > 500) { m_faultCount.clear(); m_faultLastAt.clear(); }
 }
 
 // Opt-in (default off): add a new download root to Defender's exclusions once.
