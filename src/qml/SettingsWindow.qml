@@ -95,6 +95,7 @@ Window {
             { type: "toggle", key: "closeToTray", label: (i18n.language, i18n.t("settings_close_to_tray")), on: true },
             { type: "toggle", key: "notifSound", label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
             { type: "toggle", key: "showSplash", label: (i18n.language, i18n.t("settings_show_splash")), on: true },
+            { type: "number", key: "memGuardMB", label: (i18n.language, i18n.t("set_mem_guard")), value: "4096", suffix: "MB", note: (i18n.language, i18n.t("set_mem_guard_hint")) },
             { type: "button", action: "default", label: (i18n.language, i18n.t("set_default_app")), btn: (i18n.language, i18n.t("settings_set_default")) }
         ],
         // 1 Velocidade

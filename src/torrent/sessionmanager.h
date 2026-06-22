@@ -423,6 +423,7 @@ public:
     // Torrent count tracking
     void incrementTorrentCount();
     void scheduleTrash(const QStringList &targets, int attempt);
+    void checkMemoryGuard();   // circuit breaker: pause/bail if RSS runs away
     int totalTorrentsAdded() const;
 
     int importFromQBittorrent(const QString &defaultSavePath);
