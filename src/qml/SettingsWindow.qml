@@ -871,11 +871,32 @@ Window {
         Component {
             id: cPath
             RowLayout {
+                id: pathRow
                 spacing: Theme.sp2
+                function curPath() {
+                    return (typeof settings !== "undefined" && field.key !== undefined)
+                        ? (settings.get(field.key) || "") : (field.value || "")
+                }
                 TFld {
-                    implicitWidth: 220; implicitHeight: 30; mono: true; readonly: true
-                    text: (typeof settings !== "undefined" && field.key !== undefined) ? (settings.get(field.key) || "") : (field.value || "")
+                    id: pathFld
+                    implicitWidth: 220; implicitHeight: 30; mono: true
                     placeholder: field.placeholder || ""
+                    // Driven imperatively (not bound) so it survives both the user
+                    // typing into it AND a Browse pick — settings.get() isn't a
+                    // reactive property, so a plain binding never refreshed on Browse.
+                    Component.onCompleted: text = pathRow.curPath()
+                    onEdited: function(t) {
+                        if (typeof settings !== "undefined" && field.key !== undefined)
+                            settings.set(field.key, t)
+                    }
+                    Connections {
+                        target: typeof settings !== "undefined" ? settings : null
+                        ignoreUnknownSignals: true
+                        function onChanged() {
+                            var v = pathRow.curPath()
+                            if (pathFld.text !== v) pathFld.text = v
+                        }
+                    }
                 }
                 BtnFlat {
                     text: (i18n.language, i18n.t("settings_browse")); sm: true

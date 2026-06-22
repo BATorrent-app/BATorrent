@@ -422,6 +422,7 @@ public:
 
     // Torrent count tracking
     void incrementTorrentCount();
+    void scheduleTrash(const QStringList &targets, int attempt);
     int totalTorrentsAdded() const;
 
     int importFromQBittorrent(const QString &defaultSavePath);

@@ -208,27 +208,23 @@ void QmlSessionBridge::resumeSelected()
     for (int r : m_selectedRows) m_session->resumeTorrent(r);
 }
 
-void QmlSessionBridge::removeSelected()
+// Highest index first, so erasing earlier rows doesn't shift the ones we
+// haven't removed yet. Both remove paths share this so they can't diverge.
+void QmlSessionBridge::removeSelectedRows(bool deleteFiles)
 {
     QList<int> rows = m_selectedRows.isEmpty()
         ? (m_selectedIndex >= 0 ? QList<int>{m_selectedIndex} : QList<int>{})
         : m_selectedRows;
     if (rows.isEmpty()) return;
     std::sort(rows.begin(), rows.end(), std::greater<int>());
-    for (int r : rows) m_session->removeTorrent(r, false);
+    for (int r : rows) m_session->removeTorrent(r, deleteFiles);
     m_selectedRows.clear();
     m_selectedIndex = -1;
     emit selectionChanged(); emit selectionListsChanged();
 }
 
-void QmlSessionBridge::removeSelectedWithFiles()
-{
-    if (m_selectedIndex >= 0) {
-        m_session->removeTorrent(m_selectedIndex, true);
-        m_selectedIndex = -1;
-        emit selectionChanged(); emit selectionListsChanged();
-    }
-}
+void QmlSessionBridge::removeSelected()          { removeSelectedRows(false); }
+void QmlSessionBridge::removeSelectedWithFiles() { removeSelectedRows(true); }
 
 void QmlSessionBridge::pauseAll() { m_session->pauseAll(); }
 void QmlSessionBridge::resumeAll() { m_session->resumeAll(); }

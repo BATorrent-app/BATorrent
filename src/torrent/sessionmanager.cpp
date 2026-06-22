@@ -561,7 +561,11 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
             if (auto ti = h.torrent_file()) {
                 const auto &fs = ti->files();
                 for (const auto i : fs.file_range()) {
-                    const QString p = QString::fromStdString(std::string(fs.file_path(i)));
+                    QString p = QString::fromStdString(std::string(fs.file_path(i)));
+                    // libtorrent reports backslash paths on Windows; normalize so
+                    // multi-file torrents resolve to their top-level folder instead
+                    // of being trashed file-by-file (folder left behind).
+                    p.replace(QLatin1Char('\\'), QLatin1Char('/'));
                     const int slash = p.indexOf(QLatin1Char('/'));
                     tops.insert(slash > 0 ? p.left(slash) : p);
                 }
@@ -580,16 +584,15 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
             }
         }
 
+        // An actively-downloading torrent still has its files open when we ask
+        // libtorrent to drop it; on Windows moveToTrash then hits a sharing
+        // violation and the data is silently left on disk. Pausing first starts
+        // the handle release immediately, and we retry on a backoff (~27s total)
+        // until the handles are gone instead of giving up after one attempt.
+        if (deleteFiles) h.pause();
         m_session.remove_torrent(h, {});
-        if (!trashTargets.isEmpty()) {
-            QTimer::singleShot(900, this, [trashTargets]() {
-                for (const QString &p : trashTargets) {
-                    if (!QFileInfo::exists(p)) continue;
-                    if (!QFile::moveToTrash(p))
-                        qWarning() << "[session] moveToTrash failed, leaving on disk:" << p;
-                }
-            });
-        }
+        if (!trashTargets.isEmpty())
+            scheduleTrash(trashTargets, 0);
     } catch (const std::exception &e) {
         qWarning() << "[session] removeTorrent exception:" << e.what();
     }
@@ -2828,6 +2831,23 @@ SessionManager::DetailedStats SessionManager::detailedStats() const
     }
     ds.hasIncomingConnections = m_session.is_listening();
     return ds;
+}
+
+void SessionManager::scheduleTrash(const QStringList &targets, int attempt)
+{
+    // back off a little more each round; ~30s budget before we give up and leave
+    // the files on disk (never force-delete).
+    const int delay = qMin(2000 + attempt * 800, 4000);
+    QTimer::singleShot(delay, this, [this, targets, attempt]() {
+        QStringList remaining;
+        for (const QString &p : targets) {
+            if (!QFileInfo::exists(p)) continue;          // gone (trashed, or never there)
+            if (!QFile::moveToTrash(p)) remaining << p;   // still locked — try again
+        }
+        if (remaining.isEmpty()) return;
+        if (attempt < 10) scheduleTrash(remaining, attempt + 1);
+        else qWarning() << "[session] moveToTrash gave up (files still locked):" << remaining;
+    });
 }
 
 void SessionManager::incrementTorrentCount()
