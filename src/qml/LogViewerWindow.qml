@@ -18,7 +18,8 @@ Window {
     minimumWidth: 640
     minimumHeight: 420
     color: Theme.bg
-    title: (i18n.language, i18n.t("logviewer_title2"))
+    flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
+    title: Theme.unifiedChrome ? "" : (i18n.language, i18n.t("logviewer_title2"))
 
     readonly property var api: typeof logs !== "undefined" ? logs : null
     onVisibleChanged: {
