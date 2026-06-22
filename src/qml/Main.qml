@@ -1473,6 +1473,21 @@ Window {
 
                     readonly property string posterUrl: win.fileUrl(posterPath)
 
+                    // soft drop shadow under the cover, fading in on hover
+                    Rectangle {
+                        z: -1
+                        width: 178 * 0.84
+                        x: (178 - width) / 2
+                        y: 237 - 10
+                        height: 22
+                        radius: 11
+                        color: "#000000"
+                        opacity: tileMa.containsMouse ? 0.5 : 0
+                        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                        layer.enabled: true
+                        layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 28 }
+                    }
+
                     // .poster wrapper (aspect 3:4 ≈ 178:237)
                     Item {
                         id: posterWrap
