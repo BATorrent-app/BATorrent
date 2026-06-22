@@ -198,6 +198,7 @@ public:
     Q_INVOKABLE void copyMagnetLink();
     Q_INVOKABLE void copyInfoHash();
     Q_INVOKABLE void openSaveFolder();
+    Q_INVOKABLE bool excludeTorrentFromDefender(int row);   // Windows: exclude this torrent's folder
     Q_INVOKABLE QString defaultSavePath() const;
     Q_INVOKABLE void setSelectedForceStart(bool on);
     Q_INVOKABLE void setSelectedSuperSeeding(bool on);
@@ -855,6 +856,7 @@ public slots:
     void onTorrentError(const QString &message);
     void onKillSwitchTriggered();
     void onRssAutoDownloaded(const QString &feedName, const QString &itemTitle);
+    void onSuspiciousFilesDetected(const QString &name, const QStringList &files);
 
 signals:
     // level: 0 = information, 1 = warning, 2 = critical

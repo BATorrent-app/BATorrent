@@ -275,6 +275,8 @@ int main(int argc, char *argv[])
                          notificationBridge, &QmlNotificationBridge::onTorrentError);
         QObject::connect(&session, &SessionManager::killSwitchTriggered,
                          notificationBridge, &QmlNotificationBridge::onKillSwitchTriggered);
+        QObject::connect(&session, &SessionManager::suspiciousFilesDetected,
+                         notificationBridge, &QmlNotificationBridge::onSuspiciousFilesDetected);
         QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
                          notificationBridge, &QmlNotificationBridge::onRssAutoDownloaded);
         // Telegram webhook notifications (same event surfaces as the toasts above).

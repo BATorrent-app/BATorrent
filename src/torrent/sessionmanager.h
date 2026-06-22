@@ -424,6 +424,9 @@ public:
     void incrementTorrentCount();
     void scheduleTrash(const QStringList &targets, int attempt);
     void checkMemoryGuard();   // circuit breaker: pause/bail if RSS runs away
+    void scanTorrentForThreats(const lt::torrent_handle &h, const QString &name);
+    void saveSecurityWarned();
+    void maybeAutoExcludeDefender(const QString &savePath);   // opt-in, Windows-only
     int totalTorrentsAdded() const;
 
     int importFromQBittorrent(const QString &defaultSavePath);
@@ -434,6 +437,7 @@ signals:
     void torrentsUpdated();
     void torrentFinished(const QString &name, const QString &infoHash);
     void torrentError(const QString &message);
+    void suspiciousFilesDetected(const QString &name, const QStringList &files);
     void killSwitchTriggered();
     void interfaceRestored();
     void altSpeedsActiveChanged(bool active);
@@ -578,6 +582,10 @@ private:
     // Auto-extract
     bool m_autoExtract = false;
     bool m_autoExtractDelete = false;
+    bool m_warnSuspiciousFiles = true;
+    bool m_autoDefenderExclude = false;
+    QSet<QString> m_securityWarned;          // info-hashes already warned about (warn once)
+    QSet<QString> m_defenderExcludedRoots;   // save roots already sent to Defender
     QStringList m_extractPasswords;
     void extractArchives(const QString &savePath, const QString &torrentName);
 

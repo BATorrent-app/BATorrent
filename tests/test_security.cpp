@@ -15,6 +15,7 @@
 
 #include "webui/webserver.h"
 #include "torrent/sessionmanager.h"
+#include "app/suspiciousscan.h"
 
 #ifdef BAT_CRT_DEBUG_HEAP
 #  include <crtdbg.h>
@@ -517,4 +518,89 @@ TEST_CASE("Security: ReDoS resistance in RSS regex", "[security][redos]")
 #else
     REQUIRE(ms < 1000);
 #endif
+}
+
+// ============================================================================
+//  Suspicious-file detector (warn-only malware awareness heuristic)
+// ============================================================================
+using SuspiciousScan::ScanFile;
+
+static const qint64 GB = 1024LL * 1024 * 1024;
+static const qint64 MB = 1024LL * 1024;
+
+static bool hasReason(const QList<SuspiciousScan::Finding> &fs, const QString &file, const QString &reason)
+{
+    for (const auto &f : fs)
+        if (f.file == file && f.reason == reason) return true;
+    return false;
+}
+
+TEST_CASE("Suspicious: movie torrent with a setup.exe is flagged as fake codec", "[suspicious]") {
+    auto f = SuspiciousScan::scan({
+        { "The.Film.2026.1080p/film.mp4", 4 * GB },
+        { "The.Film.2026.1080p/setup.exe", 2 * MB },
+    });
+    REQUIRE(f.size() == 1);
+    REQUIRE(hasReason(f, "The.Film.2026.1080p/setup.exe", "fake_codec"));
+}
+
+TEST_CASE("Suspicious: a plain exe in a media torrent is exe_in_media", "[suspicious]") {
+    auto f = SuspiciousScan::scan({
+        { "Album/01 - track.flac", 300 * MB },
+        { "Album/readme.exe",       1 * MB },
+    });
+    REQUIRE(hasReason(f, "Album/readme.exe", "exe_in_media"));
+}
+
+TEST_CASE("Suspicious: double extension is always flagged, even in a game", "[suspicious]") {
+    auto f = SuspiciousScan::scan({
+        { "Game/game.exe",          8 * GB },
+        { "Game/trailer.mp4.exe",   3 * MB },
+    });
+    REQUIRE(hasReason(f, "Game/trailer.mp4.exe", "double_ext"));
+    // game.exe itself must NOT be flagged (media is not dominant here)
+    REQUIRE_FALSE(hasReason(f, "Game/game.exe", "exe_in_media"));
+}
+
+TEST_CASE("Suspicious: a real game (exe + small cutscene) stays SILENT", "[suspicious]") {
+    auto f = SuspiciousScan::scan({
+        { "Game/game.exe",      8 * GB },
+        { "Game/data.bin",      20 * GB },
+        { "Game/intro.mp4",     200 * MB },
+        { "Game/setup.exe",     50 * MB },
+    });
+    REQUIRE(f.isEmpty());
+}
+
+TEST_CASE("Suspicious: a clean movie produces no findings", "[suspicious]") {
+    auto f = SuspiciousScan::scan({
+        { "Movie/movie.mkv", 6 * GB },
+        { "Movie/movie.srt", 80 * 1024 },
+        { "Movie/poster.jpg", 200 * 1024 },
+    });
+    REQUIRE(f.isEmpty());
+}
+
+TEST_CASE("Suspicious: detection is case-insensitive", "[suspicious]") {
+    auto f = SuspiciousScan::scan({
+        { "Movie/MOVIE.MP4",   4 * GB },
+        { "Movie/CRACK.EXE",   3 * MB },
+        { "Movie/Cover.JPG.Scr", 1 * MB },
+    });
+    REQUIRE(hasReason(f, "Movie/CRACK.EXE", "fake_codec"));
+    REQUIRE(hasReason(f, "Movie/Cover.JPG.Scr", "double_ext"));
+}
+
+TEST_CASE("Suspicious: empty / no-media torrent only triggers on double-ext", "[suspicious]") {
+    // a software torrent (no media): a bare installer is expected → silent
+    auto soft = SuspiciousScan::scan({
+        { "App/installer.exe", 500 * MB },
+        { "App/readme.txt",    2 * 1024 },
+    });
+    REQUIRE(soft.isEmpty());
+    // but a double-extension lure is still malware
+    auto lure = SuspiciousScan::scan({
+        { "App/manual.pdf.exe", 1 * MB },
+    });
+    REQUIRE(hasReason(lure, "App/manual.pdf.exe", "double_ext"));
 }

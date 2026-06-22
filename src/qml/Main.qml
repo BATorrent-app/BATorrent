@@ -326,6 +326,12 @@ Window {
         CtxItem { text: (i18n.language, i18n.t("tb_resume")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
         CtxItem { text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
+        CtxItem {
+            visible: Qt.platform.os === "windows"
+            height: visible ? implicitHeight : 0
+            text: (i18n.language, i18n.t("ctx_defender_exclude"))
+            onTriggered: session.excludeTorrentFromDefender(torrentFilter.mapToSource(win.selected))
+        }
         CtxItem { text: (i18n.language, i18n.t("ctx_play")); onTriggered: session.playSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_stream")); onTriggered: session.streamSelected() }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }

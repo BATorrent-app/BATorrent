@@ -8,6 +8,7 @@
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
 #include "../app/discoveryservice.h"
+#include "../app/defender.h"
 #include "../app/nameparser.h"
 #include "../app/rssmanager.h"
 #include "../app/addonmanager.h"
@@ -249,6 +250,19 @@ void QmlSessionBridge::openSaveFolder()
     // not the bare save_path. Was opening save_path directly (e.g. Downloads),
     // which is why right-click "open folder" diverged from double-click.
     openSelectedFile();
+}
+
+bool QmlSessionBridge::excludeTorrentFromDefender(int row)
+{
+    if (row < 0) return false;
+    auto info = m_session->torrentAt(row);
+    // Prefer the torrent's own content folder; fall back to the save root.
+    QString dir = info.savePath;
+    const QString contentDir = QDir(info.savePath).filePath(info.name);
+    if (QDir(contentDir).exists()) dir = contentDir;
+    const bool ok = Defender::addExclusion(dir);
+    emit toast(ok ? tr_("defender_excluded_ok") : tr_("defender_excluded_fail"), info.name);
+    return ok;
 }
 
 bool QmlSessionBridge::selectedForceStart() const

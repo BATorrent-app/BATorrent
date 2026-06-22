@@ -6,6 +6,7 @@
 #include "../torrent/sessionmanager.h"
 #include "../app/metadataresolver.h"
 #include "../app/discoveryservice.h"
+#include "../app/defender.h"
 #include "../app/nameparser.h"
 #include "../app/rssmanager.h"
 #include "../app/addonmanager.h"
@@ -247,7 +248,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         QStringLiteral("notifSound"), QStringLiteral("randomPort"), QStringLiteral("autoShutdown"),
         QStringLiteral("autoTrackers"), QStringLiteral("torrentSearchEnabled"),
         QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
-        QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen")
+        QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
+        QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude")
     };
     if (uiBoolKeys.contains(key)) {
         QSettings st;
@@ -423,28 +425,11 @@ void QmlSettingsBridge::testTelegram()
 
 bool QmlSettingsBridge::excludeFromDefender()
 {
-#if defined(Q_OS_WIN) && !defined(BAT_STORE_BUILD)
     QSettings s;
     QString path = s.value(QStringLiteral("lastSavePath")).toString();
     if (path.isEmpty() || !QDir(path).exists())
         path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-    if (path.isEmpty()) return false;
-    // Escape ' for the PowerShell single-quoted literal, then base64(UTF-16LE)
-    // the whole command and run it via -EncodedCommand. This sidesteps the
-    // nested-quoting/command-injection trap of interpolating a path into a
-    // single-quoted string that is itself inside another single-quoted arg.
-    QString escaped = path; escaped.replace(QLatin1Char('\''), QStringLiteral("''"));
-    const QString inner = QStringLiteral("Add-MpPreference -ExclusionPath '%1'").arg(escaped);
-    QByteArray utf16le;
-    for (QChar c : inner) { ushort u = c.unicode(); utf16le.append(char(u & 0xFF)); utf16le.append(char((u >> 8) & 0xFF)); }
-    const QString b64 = QString::fromLatin1(utf16le.toBase64());  // [A-Za-z0-9+/=] — quote-safe
-    int ret = QProcess::execute(QStringLiteral("powershell.exe"),
-        {QStringLiteral("-Command"),
-         QStringLiteral("Start-Process powershell -ArgumentList '-EncodedCommand','%1' -Verb RunAs -Wait").arg(b64)});
-    return ret == 0;
-#else
-    return false;   // Windows-only
-#endif
+    return Defender::addExclusion(path);
 }
 
 static QString localPath(const QString &p)

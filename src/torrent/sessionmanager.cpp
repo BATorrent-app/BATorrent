@@ -5,6 +5,8 @@
 #include "sessionmanager.h"
 #include "../app/logger.h"
 #include "../app/translator.h"
+#include "../app/suspiciousscan.h"
+#include "../app/defender.h"
 #include <QProcess>
 #include <QCoreApplication>
 #if defined(Q_OS_MACOS)
@@ -141,6 +143,12 @@ SessionManager::SessionManager(QObject *parent)
     m_torrentExportDir = settings.value("torrentExportDir").toString();
     m_tempPath = settings.value("tempPath").toString();
     m_autoExtract = settings.value("autoExtract", false).toBool();
+    m_warnSuspiciousFiles = settings.value("warnSuspiciousFiles", true).toBool();
+    m_autoDefenderExclude = settings.value("autoDefenderExclude", false).toBool();
+    for (const auto &h : settings.value("securityWarned").toStringList())
+        m_securityWarned.insert(h);
+    for (const auto &r : settings.value("defenderExcludedRoots").toStringList())
+        m_defenderExcludedRoots.insert(r);
     m_autoExtractDelete = settings.value("autoExtractDelete", false).toBool();
     m_extractPasswords = settings.value("extractPasswords").toStringList();
     m_contentLayout = settings.value("contentLayout", 0).toInt();
@@ -332,6 +340,8 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         stageResumeSave(h);   // persist now — an idle 0%/no-peer torrent never
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
+        scanTorrentForThreats(h, QString::fromStdString(h.status().name));   // .torrent: metadata is ready now
+        maybeAutoExcludeDefender(QString::fromStdString(atp.save_path));
     } catch (const std::exception &e) {
         emit torrentError(QString::fromStdString(e.what()));
     }
@@ -378,6 +388,8 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
         if (m_autoRecheck && h.is_valid()) h.force_recheck();   // verify pre-existing data on disk
         stageResumeSave(h);   // persist immediately (see addTorrent)
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
+        scanTorrentForThreats(h, QString::fromStdString(h.status().name));   // .torrent: metadata is ready now
+        maybeAutoExcludeDefender(QString::fromStdString(atp.save_path));
     } catch (const std::exception &e) {
         emit torrentError(QString::fromStdString(e.what()));
     }
@@ -429,6 +441,7 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath,
         incrementTorrentCount();
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
+        maybeAutoExcludeDefender(QString::fromStdString(atp.save_path));   // scan happens on metadata_received
     } catch (const std::exception &e) {
         emit torrentError(QString::fromStdString(e.what()));
     }
@@ -2332,6 +2345,7 @@ void SessionManager::processAlerts()
                     executeOnComplete(name, QString::fromStdString(st.save_path),
                                       hash, st.total_wanted);
                     emit torrentFinished(name, hash);
+                    scanTorrentForThreats(fa->handle, name);
                 }
             }
 
@@ -2499,6 +2513,7 @@ void SessionManager::processAlerts()
                 }
             }
             stageResumeSave(mr->handle);   // persist the magnet now it has metadata
+            scanTorrentForThreats(mr->handle, QString::fromStdString(mr->handle.status().name));
         }
         // File done — drop the .!bt suffix so the file appears with its
         // final name in the file manager and media server scans. The
@@ -2906,6 +2921,64 @@ void SessionManager::checkMemoryGuard()
             emit torrentError(tr_("warn_mem_guard").arg(rssMB).arg(capMB));
         }
     }
+}
+
+void SessionManager::saveSecurityWarned()
+{
+    QSettings("BATorrent", "BATorrent")
+        .setValue("securityWarned", QStringList(m_securityWarned.values()));
+}
+
+// Opt-in (default off): add a new download root to Defender's exclusions once.
+// Keyed by save root so torrents sharing a folder cost a single UAC prompt.
+void SessionManager::maybeAutoExcludeDefender(const QString &savePath)
+{
+#if defined(Q_OS_WIN) && !defined(BAT_STORE_BUILD)
+    if (!m_autoDefenderExclude || savePath.isEmpty()) return;
+    if (m_defenderExcludedRoots.contains(savePath)) return;
+    m_defenderExcludedRoots.insert(savePath);
+    QSettings("BATorrent", "BATorrent")
+        .setValue("defenderExcludedRoots", QStringList(m_defenderExcludedRoots.values()));
+    Defender::addExclusion(savePath);
+#else
+    Q_UNUSED(savePath);
+#endif
+}
+
+// Warn-only malware awareness. Runs the local heuristic over the torrent's file
+// list and, if it flags anything, raises a single non-blocking warning per
+// torrent (never blocks, deletes, or claims "safe"). Silent when clean.
+void SessionManager::scanTorrentForThreats(const lt::torrent_handle &h, const QString &name)
+{
+    if (!m_warnSuspiciousFiles || !h.is_valid()) return;
+    auto ti = h.torrent_file();
+    if (!ti) return;
+
+    const QString hash = QString::fromStdString(
+        (std::ostringstream() << h.info_hashes().get_best()).str());
+    if (m_securityWarned.contains(hash)) return;
+
+    const auto &fs = ti->files();
+    QList<SuspiciousScan::ScanFile> scanFiles;
+    for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
+        QString p = QString::fromStdString(fs.file_path(i));
+        if (p.endsWith(QLatin1String(".!bt"))) p.chop(4);   // ignore in-progress suffix
+        scanFiles.append({ p, static_cast<qint64>(fs.file_size(i)) });
+    }
+
+    const auto findings = SuspiciousScan::scan(scanFiles);
+    if (findings.isEmpty()) return;
+
+    m_securityWarned.insert(hash);
+    saveSecurityWarned();
+
+    QStringList files;
+    for (const auto &f : findings) {
+        const QString shown = QFileInfo(f.file).fileName();
+        if (!files.contains(shown)) files << shown;
+    }
+    qWarning() << "[session] suspicious files in" << name << ":" << files;
+    emit suspiciousFilesDetected(name, files);
 }
 
 void SessionManager::scheduleTrash(const QStringList &targets, int attempt)

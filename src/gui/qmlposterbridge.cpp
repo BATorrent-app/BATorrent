@@ -545,6 +545,15 @@ void QmlNotificationBridge::onRssAutoDownloaded(const QString &feedName, const Q
     emit notify(feedName, itemTitle, 0);
 }
 
+void QmlNotificationBridge::onSuspiciousFilesDetected(const QString &name, const QStringList &files)
+{
+    // level 1 = warning (amber), deliberately NOT level 2/error red — this is a
+    // heads-up, not a verdict. Body: "<torrent> · file1, file2".
+    emit notify(tr_("warn_suspicious_title"),
+                tr_("warn_suspicious_body").arg(name, files.join(QStringLiteral(", "))), 1);
+    maybeBeep();
+}
+
 // --- DiscordRpcBridge ---
 
 DiscordRpcBridge::DiscordRpcBridge(SessionManager *session, QObject *parent)
