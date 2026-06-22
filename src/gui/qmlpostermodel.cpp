@@ -104,7 +104,13 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case PosterPathRole: {
         if (m_resolver && m_resolver->hasCached(hash)) {
             auto meta = m_resolver->cached(hash);
-            if (meta.valid) return meta.posterPath;
+            if (meta.valid && !meta.posterPath.isEmpty()) {
+                // Poster files are keyed by info-hash, so "fix cover" overwrites
+                // the same path — append the file's mtime so the URL changes and
+                // QML's (cache:true) Image actually reloads the new art.
+                const qint64 mt = QFileInfo(meta.posterPath).lastModified().toMSecsSinceEpoch();
+                return meta.posterPath + QStringLiteral("?v=") + QString::number(mt);
+            }
         }
         return QString();
     }

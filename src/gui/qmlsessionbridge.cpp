@@ -270,6 +270,11 @@ bool QmlSessionBridge::selectedHasArchives() const
     return hasSelection() && m_session->torrentHasArchives(m_selectedIndex);
 }
 
+bool QmlSessionBridge::selectedHasVideo() const
+{
+    return hasSelection() && m_session->torrentHasVideo(m_selectedIndex);
+}
+
 void QmlSessionBridge::extractSelected(const QString &password)
 {
     if (!hasSelection()) return;
@@ -1649,7 +1654,11 @@ QString QmlSessionBridge::selectedPoster() const
     QString hash = m_session->torrentHashAt(m_selectedIndex);
     if (m_resolver->hasCached(hash)) {
         auto meta = m_resolver->cached(hash);
-        if (meta.valid) return meta.posterPath;
+        if (meta.valid && !meta.posterPath.isEmpty()) {
+            // mtime cache-bust so "fix cover" refreshes the detail-panel art too
+            const qint64 mt = QFileInfo(meta.posterPath).lastModified().toMSecsSinceEpoch();
+            return meta.posterPath + QStringLiteral("?v=") + QString::number(mt);
+        }
     }
     return {};
 }

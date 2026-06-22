@@ -340,8 +340,12 @@ Window {
                                               "", i18n.t("extract_password_ph"),
                                               function(pw){ session.extractSelected(pw) })
         }
-        CtxItem { text: (i18n.language, i18n.t("ctx_play")); onTriggered: session.playSelected() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_stream")); onTriggered: session.streamSelected() }
+        CtxItem {
+            visible: session.selectedHasVideo
+            height: visible ? implicitHeight : 0
+            text: (i18n.language, i18n.t("ctx_play"))
+            onTriggered: session.playSelected()
+        }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
         Sep {}
 

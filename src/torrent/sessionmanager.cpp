@@ -3697,6 +3697,22 @@ bool SessionManager::torrentHasArchives(int index) const
     return !ArchiveScan::archivesToExtract(names).isEmpty();
 }
 
+bool SessionManager::torrentHasVideo(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return false;
+    auto ti = m_torrents[index].torrent_file();
+    if (!ti) return false;
+    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts",".mpg",".mpeg",".m2ts"};
+    const auto &fs = ti->files();
+    for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
+        QString p = QString::fromStdString(fs.file_path(i)).toLower();
+        if (p.endsWith(QLatin1String(".!bt"))) p.chop(4);
+        for (const auto &ext : videoExts)
+            if (p.endsWith(ext)) return true;
+    }
+    return false;
+}
+
 void SessionManager::extractTorrent(int index, const QString &password)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size())) return;

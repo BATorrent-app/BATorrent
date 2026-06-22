@@ -139,6 +139,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(bool selectedCompleted READ selectedCompleted NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedPaused READ selectedPaused NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedHasArchives READ selectedHasArchives NOTIFY selectionChanged)
+    Q_PROPERTY(bool selectedHasVideo READ selectedHasVideo NOTIFY selectionChanged)
     Q_PROPERTY(QVariantList selectedPeerList READ selectedPeerList NOTIFY selectionListsChanged)
     Q_PROPERTY(bool peersLoading READ peersLoading NOTIFY selectionListsChanged)  // true while the first peer build is pending
     Q_PROPERTY(QVariantList selectedFiles READ selectedFiles NOTIFY selectionListsChanged)
@@ -324,6 +325,7 @@ public:
     bool selectedCompleted() const;
     bool selectedPaused() const;
     bool selectedHasArchives() const;
+    bool selectedHasVideo() const;
     QVariantList selectedPeerList() const;
     bool peersLoading() const { return m_peersLoading; }
     QVariantList selectedFiles() const;
