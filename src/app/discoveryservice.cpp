@@ -96,7 +96,7 @@ QString discoverRegion()
 }
 
 const qint64 CacheTtlSecs = 12 * 60 * 60;
-const int CacheVersion = 6;   // bump when the row schema/order/source changes (invalidates stale cache)
+const int CacheVersion = 7;   // bump when the row schema/order/source changes (invalidates stale cache)
 
 } // namespace
 
