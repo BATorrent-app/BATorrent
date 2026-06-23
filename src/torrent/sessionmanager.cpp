@@ -35,6 +35,7 @@
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QFile>
+#include <QSaveFile>
 #include <QUrl>
 #include <QSettings>
 #include <QNetworkInterface>
@@ -2036,11 +2037,13 @@ bool SessionManager::persistResumeAlert(const lt::save_resume_data_alert *rd)
     if (m_removedHashes.contains(hash))
         return false;
     QString filePath = dir.filePath(hash + ".resume");
-    QFile file(filePath);
+    // Atomic: write to a temp file and rename on commit, so a crash mid-write
+    // can never leave a torn/corrupt .resume that a later startup has to quarantine.
+    QSaveFile file(filePath);
     if (!file.open(QIODevice::WriteOnly))
         return false;
     file.write(buf.data(), static_cast<qint64>(buf.size()));
-    return true;
+    return file.commit();
 }
 
 void SessionManager::loadResumeData()

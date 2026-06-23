@@ -162,6 +162,22 @@ endfunction()
 # =============================================================================
 #  TEST TARGETS
 # =============================================================================
+# libFuzzer harness for the untrusted-input parsers (clang only).
+# Configure with -DBAT_FUZZ=ON, then: ./fuzz_nameparser -max_total_time=30
+option(BAT_FUZZ "Build libFuzzer harnesses" OFF)
+if(BAT_FUZZ)
+    add_executable(fuzz_nameparser
+        ${CMAKE_CURRENT_SOURCE_DIR}/fuzz_nameparser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/nameparser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/suspiciousscan.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/archivescan.cpp)
+    target_compile_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined -g)
+    target_link_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined)
+    target_link_libraries(fuzz_nameparser PRIVATE Qt6::Core)
+    target_include_directories(fuzz_nameparser PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    message(STATUS "[BAT] Fuzz harnesses ENABLED")
+endif()
+
 bat_add_test(test_security   test_security.cpp)
 bat_add_test(test_memory     test_memory.cpp)
 bat_add_test(test_unit       test_unit.cpp)
