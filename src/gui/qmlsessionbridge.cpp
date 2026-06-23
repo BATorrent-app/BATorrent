@@ -918,14 +918,17 @@ void QmlSessionBridge::onWatchTick()
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     for (const QString &hash : m_pendingWatch.keys()) {
         const int idx = m_session->torrentIndexByInfoHash(hash);
-        if (idx >= 0 && m_session->torrentHasVideo(idx)) {
+        if (idx >= 0) {
             const TorrentInfo info = m_session->torrentAt(idx);
-            const bool ready = info.completed || info.progress >= 0.02f
-                             || info.totalDone > 5LL * 1024 * 1024;
-            if (ready) {
-                m_pendingWatch.remove(hash);
-                playByHash(hash);
-                continue;
+            emit watchProgress(hash, info.progress);
+            if (m_session->torrentHasVideo(idx)) {
+                const bool ready = info.completed || info.progress >= 0.02f
+                                 || info.totalDone > 5LL * 1024 * 1024;
+                if (ready) {
+                    m_pendingWatch.remove(hash);
+                    playByHash(hash);
+                    continue;
+                }
             }
         }
         if (now - m_pendingWatch.value(hash).second > 120)

@@ -82,6 +82,7 @@
 <file>../src/qml/NavRail.qml</file>
 <file>../src/qml/DiscoverView.qml</file>
 <file>../src/qml/SearchView.qml</file>
+<file>../src/qml/GetWatchOverlay.qml</file>
 <file>../src/qml/HubView.qml</file>
 <file>../src/qml/theme/Theme.qml</file>
 <file>../src/qml/theme/qmldir</file>

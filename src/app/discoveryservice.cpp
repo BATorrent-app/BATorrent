@@ -96,7 +96,7 @@ QString discoverRegion()
 }
 
 const qint64 CacheTtlSecs = 12 * 60 * 60;
-const int CacheVersion = 7;   // bump when the row schema/order/source changes (invalidates stale cache)
+const int CacheVersion = 8;   // bump when the row schema/order/source changes (invalidates stale cache)
 
 } // namespace
 
@@ -347,6 +347,38 @@ bool DiscoveryService::hasMetadataKeys() const
     return haveTmdb || haveIgdb;
 }
 
+void DiscoveryService::fetchTrailer(int tmdbId, const QString &type)
+{
+    if (tmdbId <= 0 || tmdbApiKey().isEmpty()) { emit trailerReady(tmdbId, QString()); return; }
+    const QString kind = (type == QLatin1String("series")) ? QStringLiteral("tv") : QStringLiteral("movie");
+    QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2/videos").arg(kind).arg(tmdbId));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());   // no language: trailers are usually en-tagged
+    url.setQuery(q);
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
+    req.setTransferTimeout(10000);
+    QNetworkReply *reply = m_nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
+        reply->deleteLater();
+        QString key, teaser;
+        if (reply->error() == QNetworkReply::NoError) {
+            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
+                                       .object().value(QLatin1String("results")).toArray();
+            for (const QJsonValue &v : arr) {
+                const QJsonObject o = v.toObject();
+                if (o.value(QLatin1String("site")).toString() != QLatin1String("YouTube")) continue;
+                const QString t = o.value(QLatin1String("type")).toString();
+                const QString k = o.value(QLatin1String("key")).toString();
+                if (t == QLatin1String("Trailer")) { key = k; break; }       // prefer an official trailer
+                if (teaser.isEmpty() && t == QLatin1String("Teaser")) teaser = k;
+            }
+            if (key.isEmpty()) key = teaser;
+        }
+        emit trailerReady(tmdbId, key);
+    });
+}
+
 void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
                                  const QList<QPair<QString, QString>> &extra, int page)
 {
@@ -389,6 +421,7 @@ void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &
                 m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
                 m.insert(QStringLiteral("overview"), o.value(QLatin1String("overview")).toString());
                 m.insert(QStringLiteral("type"), type);
+                m.insert(QStringLiteral("tmdbId"), o.value(QLatin1String("id")).toInt());
                 items.append(m);
             }
         }

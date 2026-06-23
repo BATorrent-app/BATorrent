@@ -625,6 +625,15 @@ Window {
     }
     Shortcut { sequence: "Ctrl+K"; onActivated: cmdPalette.toggle() }
 
+    // "Preparing to watch" overlay for the one-click Get & Watch flow
+    GetWatchOverlay {
+        id: gwOverlay
+        onCanceled: {
+            if (phase === "searching") { if (typeof search !== "undefined") search.cancelGetAndWatch() }
+            else if (hash !== "" && typeof session !== "undefined") session.cancelWatch(hash)
+        }
+    }
+
     // custom toast cards, pinned to the screen's bottom-right (native-like)
     ToastOverlay {
         id: toastHost
@@ -2847,16 +2856,15 @@ Window {
     Connections {
         target: session
         function onOpenPlayer(url, title, hash, fileIndex) {
+            gwOverlay.hide()
             playerWinLoader.active = true
             var w = playerWinLoader.item
             if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, title, hash, fileIndex) }
         }
-        function onWatchBuffering(title) {
-            win.notifyUser(i18n.t("gw_get_and_watch"), i18n.t("gw_buffering").arg(title), 0)
+        function onWatchProgress(hash, percent) {
+            if (gwOverlay.phase === "buffering" && hash === gwOverlay.hash) gwOverlay.percent = percent
         }
-        function onWatchFailed(title) {
-            win.notifyUser(i18n.t("gw_get_and_watch"), i18n.t("gw_failed").arg(title), 1)
-        }
+        function onWatchFailed(title) { gwOverlay.fail(i18n.t("gw_failed").arg(title)) }
     }
 
     // Adding a torrent from Search jumps to Downloads and selects it once it lands
@@ -2870,14 +2878,12 @@ Window {
             selectAddedTimer.tries = 0
             selectAddedTimer.restart()
         }
-        // Get & Watch flow
-        function onWatchSearching(title) {
-            win.notifyUser(i18n.t("gw_get_and_watch"), i18n.t("gw_searching").arg(title), 0)
-        }
-        function onWatchNoRelease(title) {
-            win.notifyUser(i18n.t("gw_get_and_watch"), i18n.t("gw_no_release").arg(title), 1)
-        }
+        // Get & Watch flow → drives the preparing overlay
+        function onWatchSearching(title) { gwOverlay.show("searching", title) }
+        function onWatchNoRelease(title) { gwOverlay.fail(i18n.t("gw_no_release").arg(title)) }
         function onPrepareAndWatch(infoHash, title) {
+            gwOverlay.hash = infoHash
+            gwOverlay.phase = "buffering"
             if (typeof session !== "undefined") session.watchWhenReady(infoHash, title)
         }
     }

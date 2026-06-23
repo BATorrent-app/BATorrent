@@ -679,6 +679,9 @@ Rectangle {
                         title: modelData.name || "", type: modelData.type || "",
                         poster: modelData.poster || "", year: modelData.year || "" })
                     onActivated: if (page.api) page.api.activateResult(index)
+                    onGetWatch: if (page.api) page.api.getAndWatch(modelData.name || "",
+                                                                   modelData.year || "",
+                                                                   modelData.type || "movie")
                 }
             }
         }

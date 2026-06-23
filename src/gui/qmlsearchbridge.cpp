@@ -394,6 +394,7 @@ void QmlSearchBridge::getAndWatch(const QString &title, const QString &year, con
 {
     if (type == QLatin1String("game")) return;   // games are not stream-to-watch (Tema 4)
     m_gwActive = true;
+    m_gwCancelled = false;
     m_gwTitle = title;
     m_gwType = type;
     emit watchSearching(title);
@@ -402,9 +403,16 @@ void QmlSearchBridge::getAndWatch(const QString &title, const QString &year, con
     if (m_gwActive && !m_searching) gwResolve();
 }
 
+void QmlSearchBridge::cancelGetAndWatch()
+{
+    m_gwActive = false;
+    m_gwCancelled = true;
+}
+
 void QmlSearchBridge::gwResolve()
 {
     m_gwActive = false;
+    if (m_gwCancelled) { m_gwCancelled = false; return; }   // user backed out during the search
     const int idx = pickBestResult();
     if (idx < 0 || idx >= m_resultMagnets.size() || m_resultMagnets[idx].isEmpty()) {
         emit watchNoRelease(m_gwTitle);

@@ -39,6 +39,10 @@ public:
     Q_INVOKABLE void searchTitles(const QString &query);
     bool hasMetadataKeys() const;   // false → caller should skip the title step
 
+    // On-demand YouTube trailer key for a TMDB title (list endpoints don't carry
+    // videos, so the Discover hero fetches it lazily). Emits trailerReady.
+    Q_INVOKABLE void fetchTrailer(int tmdbId, const QString &type);
+
 signals:
     void rowsChanged();
     void heroChanged();
@@ -46,6 +50,7 @@ signals:
     void statusChanged();
     // works: [{ title, year, type: movie|series|game, poster, rating }]
     void titleResults(const QString &query, const QVariantList &works);
+    void trailerReady(int tmdbId, const QString &youtubeKey);   // "" if none
 
 private:
     void searchTmdbTitles(const QString &query);

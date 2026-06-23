@@ -364,6 +364,7 @@ signals:
     void toast(const QString &title, const QString &body);   // in-app toast (stream feedback, etc.)
     void openPlayer(const QString &url, const QString &title, const QString &infoHash, int fileIndex);
     void watchBuffering(const QString &title);   // Get&Watch: added, downloading until playable
+    void watchProgress(const QString &infoHash, double percent);   // 0..1, each tick while pending
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
@@ -598,6 +599,7 @@ public:
     // it, then hand the hash off (prepareAndWatch) so the player opens when it
     // buffers. Movie/series only — games are handled separately.
     Q_INVOKABLE void getAndWatch(const QString &title, const QString &year, const QString &type);
+    Q_INVOKABLE void cancelGetAndWatch();   // user cancelled before a release was added
 
 signals:
     void sourcesChanged();
@@ -634,6 +636,7 @@ private:
     void gwResolve();                 // Get&Watch: pick + add once the search settles
 
     bool m_gwActive = false;          // a Get&Watch search is in flight
+    bool m_gwCancelled = false;       // user cancelled mid-search → don't add
     QString m_gwTitle, m_gwType;
 
     MetadataResolver *m_resolver = nullptr;

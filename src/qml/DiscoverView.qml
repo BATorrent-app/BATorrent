@@ -25,6 +25,23 @@ Rectangle {
     property int shownIndex: 0
     readonly property var heroItem: (heroList.length > shownIndex) ? heroList[shownIndex] : null
 
+    // lazily-fetched YouTube key for the current hero (TMDB list endpoints don't
+    // carry videos, so we ask per hero as it shows)
+    property string heroTrailerKey: ""
+    onHeroItemChanged: {
+        heroTrailerKey = ""
+        if (api && heroItem && (heroItem.type === "movie" || heroItem.type === "series")
+            && (heroItem.tmdbId || 0) > 0)
+            api.fetchTrailer(heroItem.tmdbId, heroItem.type)
+    }
+    Connections {
+        target: page.api
+        ignoreUnknownSignals: true
+        function onTrailerReady(tmdbId, youtubeKey) {
+            if (page.heroItem && (page.heroItem.tmdbId || 0) === tmdbId) page.heroTrailerKey = youtubeKey
+        }
+    }
+
     onVisibleChanged: if (visible && api) api.load()
     Component.onCompleted: if (visible && api) api.load()
 
@@ -133,10 +150,9 @@ Rectangle {
                                                                   page.heroItem.type || "movie")
                             }
                             BtnFlat {
-                                visible: page.heroItem && (page.heroItem.trailerKey || "") !== ""
+                                visible: page.heroTrailerKey !== ""
                                 text: (i18n.language, i18n.t("gw_trailer"))
-                                onClicked: if (page.heroItem)
-                                               Qt.openUrlExternally("https://www.youtube.com/watch?v=" + page.heroItem.trailerKey)
+                                onClicked: Qt.openUrlExternally("https://www.youtube.com/watch?v=" + page.heroTrailerKey)
                             }
                             BtnFlat {
                                 primary: page.heroItem && page.heroItem.type === "game"
@@ -199,6 +215,10 @@ Rectangle {
                                 title: pcard.modelData.title, type: pcard.modelData.type,
                                 poster: pcard.modelData.poster, year: pcard.modelData.year })
                             onActivated: page.openSearch(pcard.modelData.title)
+                            onGetWatch: if (typeof search !== "undefined")
+                                            search.getAndWatch(pcard.modelData.title,
+                                                               pcard.modelData.year || "",
+                                                               pcard.modelData.type || "movie")
                         }
                     }
                 }
