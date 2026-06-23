@@ -368,6 +368,7 @@ signals:
     void watchBuffering(const QString &title);   // Get&Watch: added, downloading until playable
     void watchProgress(const QString &infoHash, double percent);   // 0..1, each tick while pending
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
+    void gamesChanged();   // a game started/stopped → refresh the game library
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
     // the user always picks save path / files — never a silent auto-download.
@@ -382,6 +383,9 @@ private slots:
 private:
     SessionManager *m_session;
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
+    QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game
+    QHash<QString, qint64> m_gameStartMs;    // infoHash → launch timestamp (ms)
+    void pollRunningGames();   // detect game exit → record playtime
     MetadataResolver *m_resolver;
     quint16 m_streamPort = 0;
     int m_selectedIndex = -1;

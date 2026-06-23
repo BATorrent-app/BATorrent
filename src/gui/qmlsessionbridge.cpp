@@ -38,6 +38,12 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#else
+#include <csignal>
+#include <cerrno>
+#endif
 #include <QApplication>
 #include <QWindow>
 #include <QEvent>
@@ -966,6 +972,7 @@ void QmlSessionBridge::cancelWatch(const QString &infoHash)
 // become playable; give up after ~2 min of no metadata/seeds.
 void QmlSessionBridge::onWatchTick()
 {
+    pollRunningGames();
     if (m_pendingWatch.isEmpty()) return;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     for (const QString &hash : m_pendingWatch.keys()) {
@@ -998,13 +1005,19 @@ QVariantList QmlSessionBridge::gameLibrary() const
         if (hash.isEmpty()) continue;
 
         bool isGame = false;
-        QString poster, title;
+        QString poster, title, description;
+        QStringList genres;
+        double rating = 0; int gyear = 0;
         if (m_resolver && m_resolver->hasCached(hash)) {
             const auto meta = m_resolver->cached(hash);
             if (meta.valid && meta.contentType == ContentType::Game) {
                 isGame = true;
                 title = meta.title;
                 if (!meta.posterPath.isEmpty()) poster = QUrl::fromLocalFile(meta.posterPath).toString();
+                description = meta.description;
+                genres = meta.genres;
+                rating = meta.rating;
+                gyear = meta.year;
             }
         }
         if (!isGame) {
@@ -1034,6 +1047,13 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["completed"]  = info.completed;
         m["hasExe"]     = !gameExe(hash).isEmpty();
         m["lastPlayed"] = QSettings().value(QStringLiteral("gamePlayed/") + hash, 0).toLongLong();
+        m["description"] = description;
+        m["genres"]     = genres;
+        m["rating"]     = rating;
+        m["year"]       = gyear > 0 ? QString::number(gyear) : QString();
+        m["playSeconds"] = QSettings().value(QStringLiteral("gameSeconds/") + hash, 0).toLongLong();
+        m["launches"]   = QSettings().value(QStringLiteral("gameLaunches/") + hash, 0).toLongLong();
+        m["playing"]    = m_runningGames.contains(hash);
         out << m;
     }
     return out;
@@ -1101,6 +1121,20 @@ static QString autodetectGameExe(const QString &folder, bool *isInstaller)
     return {};
 }
 
+static bool pidAlive(qint64 pid)
+{
+    if (pid <= 0) return false;
+#if defined(Q_OS_WIN)
+    HANDLE h = OpenProcess(SYNCHRONIZE, FALSE, DWORD(pid));
+    if (!h) return false;
+    const DWORD r = WaitForSingleObject(h, 0);
+    CloseHandle(h);
+    return r == WAIT_TIMEOUT;   // still running
+#else
+    return ::kill(pid_t(pid), 0) == 0 || errno != ESRCH;
+#endif
+}
+
 void QmlSessionBridge::launchGame(const QString &infoHash)
 {
     QString exe = gameExe(infoHash);              // a manual override always wins
@@ -1110,8 +1144,20 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
 
     if (!exe.isEmpty() && QFile::exists(exe)) {
         const QString wd = QFileInfo(exe).absolutePath();
-        if (QProcess::startDetached(exe, {}, wd)) {
-            QSettings().setValue(QStringLiteral("gamePlayed/") + infoHash, QDateTime::currentMSecsSinceEpoch());
+        qint64 pid = 0;
+        // Detached so the game survives BATorrent closing; the returned pid lets
+        // us poll for exit and credit playtime.
+        if (QProcess::startDetached(exe, {}, wd, &pid)) {
+            const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+            QSettings s;
+            s.setValue(QStringLiteral("gamePlayed/") + infoHash, nowMs);
+            s.setValue(QStringLiteral("gameLaunches/") + infoHash,
+                       s.value(QStringLiteral("gameLaunches/") + infoHash, 0).toLongLong() + 1);
+            if (!isInstaller && pid > 0 && !m_runningGames.contains(infoHash)) {
+                m_runningGames.insert(infoHash, pid);
+                m_gameStartMs.insert(infoHash, nowMs);
+                emit gamesChanged();   // "playing now"
+            }
             emit toast(isInstaller ? tr_("hub_game_installing") : tr_("hub_game_launch"),
                        QFileInfo(exe).completeBaseName());
             return;
@@ -1122,6 +1168,26 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
     if (row < 0) return;
     const TorrentInfo info = m_session->torrentAt(row);
     revealTorrentRoot(info.savePath, info.name);
+}
+
+// Poll launched games for exit; credit elapsed time to the per-game total.
+void QmlSessionBridge::pollRunningGames()
+{
+    if (m_runningGames.isEmpty()) return;
+    bool changed = false;
+    for (const QString &hash : m_runningGames.keys()) {
+        if (pidAlive(m_runningGames.value(hash))) continue;
+        const qint64 secs = (QDateTime::currentMSecsSinceEpoch() - m_gameStartMs.value(hash)) / 1000;
+        if (secs > 30) {                       // ignore quick bounces / launchers handing off
+            QSettings s;
+            s.setValue(QStringLiteral("gameSeconds/") + hash,
+                       s.value(QStringLiteral("gameSeconds/") + hash, 0).toLongLong() + secs);
+        }
+        m_runningGames.remove(hash);
+        m_gameStartMs.remove(hash);
+        changed = true;
+    }
+    if (changed) emit gamesChanged();
 }
 
 void QmlSessionBridge::setSelectedCategory(const QString &category)

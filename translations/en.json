@@ -561,6 +561,8 @@
   "hub_play_placeholder": "Play a game and it'll show up here.",
   "hub_movies": "Your movies",
   "hub_games": "Your games",
+  "hub_playing_now": "Playing now",
+  "hub_played": "played",
   "hub_empty_title": "Nothing here yet",
   "hub_empty_sub": "Completed movies and games show up here — watch with resume, launch your games.",
   "hub_set_exe": "Set executable…",

@@ -47,6 +47,14 @@ Item {
         target: page.api
         ignoreUnknownSignals: true
         function onTorrentFinished(name, hash) { if (page.visible) page.refresh() }
+        function onGamesChanged() { if (page.visible) page.gameItems = page.api ? page.api.gameLibrary() : [] }
+    }
+
+    // human "12h 30m" / "45m" from seconds
+    function fmtPlaytime(secs) {
+        if (!secs || secs <= 0) return ""
+        var h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60)
+        return h > 0 ? (h + "h " + m + "m") : (m + "m")
     }
 
     function applyView(list) {
@@ -350,6 +358,19 @@ Item {
                 IconImg { anchors.centerIn: parent; src: "qrc:/icons/play.svg"; tint: "white"; s: 40 }
             }
 
+            // "playing now" badge
+            Rectangle {
+                visible: card.item.playing === true
+                anchors.top: parent.top; anchors.right: parent.right; anchors.margins: 6
+                radius: 6; color: Theme.accent
+                implicitWidth: pnl.width + 12; implicitHeight: 18
+                Text {
+                    id: pnl; anchors.centerIn: parent
+                    text: (i18n.language, i18n.t("hub_playing_now"))
+                    color: Theme.accentText; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans
+                }
+            }
+
             // download badge (still downloading)
             Rectangle {
                 visible: !card.item.completed
@@ -404,9 +425,13 @@ Item {
         Text {
             anchors.top: titleLabel.bottom; anchors.topMargin: 2
             width: card.cardW
-            visible: (card.item.lastPlayed || 0) > 0
-            text: page.fmtAgo(card.item.lastPlayed || 0)
-            color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans
+            visible: text.length > 0
+            text: card.item.playing === true ? (i18n.language, i18n.t("hub_playing_now"))
+                : (card.item.playSeconds || 0) > 0 ? page.fmtPlaytime(card.item.playSeconds) + " " + i18n.t("hub_played")
+                : (card.item.lastPlayed || 0) > 0 ? page.fmtAgo(card.item.lastPlayed)
+                : ""
+            color: card.item.playing === true ? Theme.accent : Theme.t4
+            font.pixelSize: 10; font.family: Theme.fontSans
             elide: Text.ElideRight
         }
 
@@ -419,6 +444,35 @@ Item {
                 if (!card.requireDoubleClick) card.play()
             }
             onDoubleClicked: if (card.requireDoubleClick) card.play()
+        }
+
+        // rich hover card: genres + description (games carry IGDB metadata)
+        ToolTip {
+            id: richTip
+            parent: card
+            visible: ma.containsMouse && (card.item.description || "").length > 0
+            delay: 600
+            width: 300
+            padding: 12
+            x: card.cardW + 10
+            y: (card.cardH - height) / 2
+            contentItem: ColumnLayout {
+                spacing: 6
+                Text {
+                    visible: text.length > 0
+                    text: ((card.item.genres && card.item.genres.length > 0) ? card.item.genres.join("  ·  ") : "")
+                          + (((card.item.rating || 0) > 0) ? ((card.item.genres && card.item.genres.length > 0 ? "   " : "") + "★ " + Number(card.item.rating).toFixed(1)) : "")
+                    color: Theme.t4; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    Layout.maximumWidth: 276; wrapMode: Text.WordWrap
+                }
+                Text {
+                    text: card.item.description || ""
+                    width: 276; Layout.maximumWidth: 276
+                    wrapMode: Text.WordWrap; maximumLineCount: 8; elide: Text.ElideRight
+                    color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; lineHeight: 1.35
+                }
+            }
+            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 9 }
         }
     }
 
