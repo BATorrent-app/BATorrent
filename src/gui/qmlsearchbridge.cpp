@@ -7,6 +7,7 @@
 #include "../app/metadataresolver.h"
 #include "../app/discoveryservice.h"
 #include "../app/nameparser.h"
+#include "../app/releasepick.h"
 #include "../app/rssmanager.h"
 #include "../app/addonmanager.h"
 #include "../app/logger.h"
@@ -367,6 +368,58 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     }
 }
 
+static QString btihFromMagnet(const QString &magnet);   // defined below
+
+int QmlSearchBridge::pickBestResult() const
+{
+    QList<ReleasePick::Candidate> cands;
+    cands.reserve(m_results.size());
+    for (const QVariant &v : m_results) {
+        const QVariantMap m = v.toMap();
+        cands.append({ m.value(QStringLiteral("quality")).toString(),
+                       m.value(QStringLiteral("native")).toBool(),
+                       m.value(QStringLiteral("seedsN")).toInt(),
+                       m.value(QStringLiteral("sizeBytes")).toLongLong() });
+    }
+    const QSettings s(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"));
+    // select index → quality token (matches the SettingsWindow "Reprodução" options)
+    static const char *qmap[] = { "Auto", "1080p", "720p", "4K" };
+    const int qi = s.value(QStringLiteral("preferredQuality"), 1).toInt();
+    const QString prefQ = QString::fromLatin1((qi >= 0 && qi < 4) ? qmap[qi] : "1080p");
+    const qint64 maxBytes = s.value(QStringLiteral("preferMaxSize"), 0).toLongLong() * 1024 * 1024;
+    return ReleasePick::best(cands, prefQ, maxBytes);
+}
+
+void QmlSearchBridge::getAndWatch(const QString &title, const QString &year, const QString &type)
+{
+    if (type == QLatin1String("game")) return;   // games are not stream-to-watch (Tema 4)
+    m_gwActive = true;
+    m_gwTitle = title;
+    m_gwType = type;
+    emit watchSearching(title);
+    searchSourcesForWork(title, year, type);      // gwResolve() runs when this settles
+    // If the search had nothing to wait on (no providers), it finished inline.
+    if (m_gwActive && !m_searching) gwResolve();
+}
+
+void QmlSearchBridge::gwResolve()
+{
+    m_gwActive = false;
+    const int idx = pickBestResult();
+    if (idx < 0 || idx >= m_resultMagnets.size() || m_resultMagnets[idx].isEmpty()) {
+        emit watchNoRelease(m_gwTitle);
+        return;
+    }
+    const QString magnet = m_resultMagnets[idx];
+    const QVariantMap rm = m_results[idx].toMap();
+    const QString hint = idx < m_resultTitles.size() ? m_resultTitles[idx] : QString();
+    const int type = hint.isEmpty() ? -1 : static_cast<int>(ContentType::Game);
+    m_session->addMagnet(magnet, m_savePath, hint, type);
+    QString hash = rm.value(QStringLiteral("coverHash")).toString();
+    if (hash.isEmpty()) hash = btihFromMagnet(magnet);
+    emit prepareAndWatch(hash, m_gwTitle);
+}
+
 void QmlSearchBridge::copyMagnet(int index)
 {
     if (index < 0 || index >= m_resultMagnets.size()) return;
@@ -627,6 +680,7 @@ void QmlSearchBridge::finishAggregateSource()
     if (--m_pendingSources > 0) return;
     setSearching(false);
     setStatus(tr_("search_results_n").arg(m_results.size()));
+    if (m_gwActive) gwResolve();
 }
 
 void QmlSearchBridge::runGameSearch(const QString &query)

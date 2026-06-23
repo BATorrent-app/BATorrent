@@ -121,10 +121,28 @@ Rectangle {
                             maximumLineCount: 3
                             elide: Text.ElideRight
                         }
-                        BtnFlat {
-                            primary: true
-                            text: (i18n.language, i18n.t("empty_search_btn"))
-                            onClicked: if (page.heroItem) page.openSearch(page.heroItem.title)
+                        RowLayout {
+                            spacing: 10
+                            BtnFlat {
+                                visible: page.heroItem && page.heroItem.type !== "game"
+                                primary: true
+                                text: (i18n.language, i18n.t("gw_get_and_watch"))
+                                onClicked: if (page.heroItem && typeof search !== "undefined")
+                                               search.getAndWatch(page.heroItem.title,
+                                                                  page.heroItem.year || "",
+                                                                  page.heroItem.type || "movie")
+                            }
+                            BtnFlat {
+                                visible: page.heroItem && (page.heroItem.trailerKey || "") !== ""
+                                text: (i18n.language, i18n.t("gw_trailer"))
+                                onClicked: if (page.heroItem)
+                                               Qt.openUrlExternally("https://www.youtube.com/watch?v=" + page.heroItem.trailerKey)
+                            }
+                            BtnFlat {
+                                primary: page.heroItem && page.heroItem.type === "game"
+                                text: (i18n.language, i18n.t("empty_search_btn"))
+                                onClicked: if (page.heroItem) page.openSearch(page.heroItem.title)
+                            }
                         }
                     }
                 }

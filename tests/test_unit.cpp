@@ -1257,3 +1257,72 @@ TEST_CASE("ArchiveScan: a media file that looks like a part is not an archive", 
     REQUIRE_FALSE(ArchiveScan::isArchive("episode.part1.mkv"));
     REQUIRE(ArchiveScan::archivesToExtract({"episode.part1.mkv"}).isEmpty());
 }
+
+// ============================================================================
+//  ReleasePick — one-click "best release" auto-pick
+// ============================================================================
+#include "app/releasepick.h"
+using ReleasePick::Candidate;
+static const qint64 GB_ = 1024LL * 1024 * 1024;
+
+TEST_CASE("ReleasePick: dead releases (0 seeders) are never chosen", "[release]") {
+    QList<Candidate> c = {
+        {"1080p", true, 0, 8 * GB_},   // perfect but dead
+        {"720p",  false, 5, 2 * GB_},
+    };
+    REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);
+}
+
+TEST_CASE("ReleasePick: honors preferred quality over more seeders", "[release]") {
+    QList<Candidate> c = {
+        {"4K",    false, 500, 40 * GB_},
+        {"1080p", false, 50,  8 * GB_},
+    };
+    REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);   // wants 1080p even with fewer seeders
+    REQUIRE(ReleasePick::best(c, "4K", 0) == 0);
+}
+
+TEST_CASE("ReleasePick: native language breaks ties within a tier", "[release]") {
+    QList<Candidate> c = {
+        {"1080p", false, 200, 8 * GB_},
+        {"1080p", true,  50,  8 * GB_},   // fewer seeders but native
+    };
+    REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);
+}
+
+TEST_CASE("ReleasePick: seeders break ties when quality and native equal", "[release]") {
+    QList<Candidate> c = {
+        {"1080p", false, 30,  8 * GB_},
+        {"1080p", false, 120, 8 * GB_},
+    };
+    REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);
+}
+
+TEST_CASE("ReleasePick: size cap excludes huge releases when a smaller one fits", "[release]") {
+    QList<Candidate> c = {
+        {"4K",    false, 500, 40 * GB_},
+        {"1080p", false, 80,  6 * GB_},
+    };
+    REQUIRE(ReleasePick::best(c, "4K", 10 * GB_) == 1);   // 4K too big → fall to the one under cap
+}
+
+TEST_CASE("ReleasePick: size cap ignored if nothing fits", "[release]") {
+    QList<Candidate> c = {
+        {"4K",    false, 500, 40 * GB_},
+        {"1080p", false, 80,  20 * GB_},
+    };
+    REQUIRE(ReleasePick::best(c, "1080p", 5 * GB_) != -1);   // nothing under 5GB → still pick something alive
+}
+
+TEST_CASE("ReleasePick: Auto prefers 1080p sweet spot", "[release]") {
+    QList<Candidate> c = {
+        {"480p",  false, 999, 1 * GB_},
+        {"1080p", false, 10,  8 * GB_},
+        {"4K",    false, 100, 40 * GB_},
+    };
+    REQUIRE(ReleasePick::best(c, "Auto", 0) == 1);
+}
+
+TEST_CASE("ReleasePick: empty list returns -1", "[release]") {
+    REQUIRE(ReleasePick::best({}, "1080p", 0) == -1);
+}

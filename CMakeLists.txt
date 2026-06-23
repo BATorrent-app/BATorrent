@@ -32,6 +32,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/subtitlesearch.cpp
     src/app/suspiciousscan.cpp
     src/app/archivescan.cpp
+    src/app/releasepick.cpp
     src/app/defender.cpp
     src/app/logger.cpp
     src/app/notifier.cpp

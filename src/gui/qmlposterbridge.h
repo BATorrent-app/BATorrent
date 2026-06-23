@@ -343,6 +343,11 @@ public:
     // side shows a cancelable countdown, then calls performShutdown()).
     Q_INVOKABLE void performShutdown();
 
+    // Get & Watch: after a release is added, watch its hash and auto-open the
+    // player once it's buffered enough. cancelWatch drops a pending request.
+    Q_INVOKABLE void watchWhenReady(const QString &infoHash, const QString &title);
+    Q_INVOKABLE void cancelWatch(const QString &infoHash);
+
 signals:
     void statsChanged();
     void watchlistChanged();
@@ -358,6 +363,8 @@ signals:
     void allDownloadsComplete();   // fired once when the last active download finishes
     void toast(const QString &title, const QString &body);   // in-app toast (stream feedback, etc.)
     void openPlayer(const QString &url, const QString &title, const QString &infoHash, int fileIndex);
+    void watchBuffering(const QString &title);   // Get&Watch: added, downloading until playable
+    void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
     // the user always picks save path / files — never a silent auto-download.
@@ -367,9 +374,11 @@ signals:
 
 private slots:
     void sampleSpeeds();
+    void onWatchTick();   // poll pending Get&Watch hashes; open the player when buffered
 
 private:
     SessionManager *m_session;
+    QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
     MetadataResolver *m_resolver;
     quint16 m_streamPort = 0;
     int m_selectedIndex = -1;
@@ -585,6 +594,10 @@ public:
     void setDiscovery(DiscoveryService *d);
     Q_INVOKABLE void searchRaw();   // escape hatch: flat aggregate over every source
     Q_INVOKABLE void copyMagnet(int index);   // copy a flat result's magnet to the clipboard
+    // One-click "Get & Watch": search the title, auto-pick the best release, add
+    // it, then hand the hash off (prepareAndWatch) so the player opens when it
+    // buffers. Movie/series only — games are handled separately.
+    Q_INVOKABLE void getAndWatch(const QString &title, const QString &year, const QString &type);
 
 signals:
     void sourcesChanged();
@@ -595,6 +608,9 @@ signals:
     void gameSourcesChanged();
     void coverReady(const QString &infoHash, const QString &posterPath);
     void addedTorrent(const QString &infoHash);   // a magnet was added from Search
+    void watchSearching(const QString &title);    // Get&Watch: started looking for a release
+    void watchNoRelease(const QString &title);    // Get&Watch: nothing usable found
+    void prepareAndWatch(const QString &infoHash, const QString &title);   // added → buffer & open
 
 private:
     void setSearching(bool on);
@@ -614,6 +630,11 @@ private:
     // Type-scoped drill-down for a picked title: games hit game catalogs + the
     // games category; movies/series hit video torrents only (no game catalogs).
     void searchSourcesForWork(const QString &title, const QString &year, const QString &type);
+    int pickBestResult() const;       // index of the best release in m_results, or -1
+    void gwResolve();                 // Get&Watch: pick + add once the search settles
+
+    bool m_gwActive = false;          // a Get&Watch search is in flight
+    QString m_gwTitle, m_gwType;
 
     MetadataResolver *m_resolver = nullptr;
     DiscoveryService *m_discovery = nullptr;

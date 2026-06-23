@@ -109,6 +109,8 @@ QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *re
             this, &QmlSessionBridge::altSpeedsActiveChanged);
     connect(m_session, &SessionManager::portStatusChanged,
             this, &QmlSessionBridge::portStatusChanged);
+    connect(m_session, &SessionManager::torrentsUpdated,
+            this, &QmlSessionBridge::onWatchTick);
 }
 
 bool QmlSessionBridge::altSpeedsActive() const { return m_session->altSpeedsActive(); }
@@ -894,6 +896,41 @@ void QmlSessionBridge::playByHash(const QString &infoHash)
     const TorrentInfo info = m_session->torrentAt(row);
     const int fileIdx = url.section('/', -1).toInt();
     emit openPlayer(url, info.name, infoHash, fileIdx);
+}
+
+void QmlSessionBridge::watchWhenReady(const QString &infoHash, const QString &title)
+{
+    if (infoHash.isEmpty()) return;
+    m_pendingWatch.insert(infoHash, qMakePair(title, QDateTime::currentSecsSinceEpoch()));
+    emit watchBuffering(title);
+}
+
+void QmlSessionBridge::cancelWatch(const QString &infoHash)
+{
+    m_pendingWatch.remove(infoHash);
+}
+
+// Runs each ~1s tick: open the player for any pending Get&Watch hash that has
+// become playable; give up after ~2 min of no metadata/seeds.
+void QmlSessionBridge::onWatchTick()
+{
+    if (m_pendingWatch.isEmpty()) return;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    for (const QString &hash : m_pendingWatch.keys()) {
+        const int idx = m_session->torrentIndexByInfoHash(hash);
+        if (idx >= 0 && m_session->torrentHasVideo(idx)) {
+            const TorrentInfo info = m_session->torrentAt(idx);
+            const bool ready = info.completed || info.progress >= 0.02f
+                             || info.totalDone > 5LL * 1024 * 1024;
+            if (ready) {
+                m_pendingWatch.remove(hash);
+                playByHash(hash);
+                continue;
+            }
+        }
+        if (now - m_pendingWatch.value(hash).second > 120)
+            emit watchFailed(m_pendingWatch.take(hash).first);
+    }
 }
 
 QVariantList QmlSessionBridge::gameLibrary() const

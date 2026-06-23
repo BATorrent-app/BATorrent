@@ -2851,6 +2851,12 @@ Window {
             var w = playerWinLoader.item
             if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, title, hash, fileIndex) }
         }
+        function onWatchBuffering(title) {
+            win.notifyUser(i18n.t("gw_get_and_watch"), i18n.t("gw_buffering").arg(title), 0)
+        }
+        function onWatchFailed(title) {
+            win.notifyUser(i18n.t("gw_get_and_watch"), i18n.t("gw_failed").arg(title), 1)
+        }
     }
 
     // Adding a torrent from Search jumps to Downloads and selects it once it lands
@@ -2863,6 +2869,16 @@ Window {
             selectAddedTimer.hash = infoHash || ""
             selectAddedTimer.tries = 0
             selectAddedTimer.restart()
+        }
+        // Get & Watch flow
+        function onWatchSearching(title) {
+            win.notifyUser(i18n.t("gw_get_and_watch"), i18n.t("gw_searching").arg(title), 0)
+        }
+        function onWatchNoRelease(title) {
+            win.notifyUser(i18n.t("gw_get_and_watch"), i18n.t("gw_no_release").arg(title), 1)
+        }
+        function onPrepareAndWatch(infoHash, title) {
+            if (typeof session !== "undefined") session.watchWhenReady(infoHash, title)
         }
     }
     Timer {
