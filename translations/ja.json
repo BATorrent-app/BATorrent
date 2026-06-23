@@ -574,6 +574,8 @@
   "set_preferred_quality": "優先する画質",
   "set_pref_quality_note": "「取得して再生」がリリースを自動選択する際に使用します（該当画質がなければ近い画質にフォールバック）。",
   "set_max_size": "最大サイズ",
+  "set_autoplay_next": "次のエピソードを自動再生",
+  "set_autoplay_next_note": "エピソードが終わったら次を自動で再生します。",
   "set_grp_backup": "バックアップと復元",
   "set_grp_connection": "接続",
   "set_grp_discord": "Discord",

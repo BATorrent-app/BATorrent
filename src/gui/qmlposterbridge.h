@@ -248,6 +248,8 @@ public:
     Q_INVOKABLE QVariantList movieLibrary() const;
     // Open a library item in the embedded player (resolves row from info hash).
     Q_INVOKABLE void playByHash(const QString &infoHash);
+    // Next episode's file index after fileIndex (season/episode order), or -1.
+    Q_INVOKABLE int nextEpisode(const QString &infoHash, int fileIndex) const;
     // Play a specific video file (episode) of a torrent in the embedded player.
     Q_INVOKABLE void playFile(const QString &infoHash, int fileIndex);
     // Forget a movie's resume position (drops it from HUB "Continue watching").

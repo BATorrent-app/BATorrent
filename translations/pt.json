@@ -574,6 +574,8 @@
   "set_preferred_quality": "Qualidade preferida",
   "set_pref_quality_note": "Usado pelo Pegar & Assistir pra escolher um release automaticamente (cai pra qualidades próximas se a exata não existir).",
   "set_max_size": "Tamanho máximo",
+  "set_autoplay_next": "Reproduzir próximo episódio automaticamente",
+  "set_autoplay_next_note": "Quando um episódio termina, toca o próximo automaticamente.",
   "set_grp_backup": "Backup e Restauração",
   "set_grp_connection": "Conexão",
   "set_grp_discord": "Discord",

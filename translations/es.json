@@ -574,6 +574,8 @@
   "set_preferred_quality": "Calidad preferida",
   "set_pref_quality_note": "Lo usa Buscar y ver para elegir un lanzamiento automáticamente (recurre a calidades cercanas si la exacta no está).",
   "set_max_size": "Tamaño máximo",
+  "set_autoplay_next": "Reproducir el siguiente episodio automáticamente",
+  "set_autoplay_next_note": "Cuando termina un episodio, reproduce el siguiente automáticamente.",
   "set_grp_backup": "Copia y Restauración",
   "set_grp_connection": "Conexión",
   "set_grp_discord": "Discord",

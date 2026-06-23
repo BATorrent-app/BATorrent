@@ -124,6 +124,12 @@ Window {
         return (h > 0 ? h + ":" + p(m) : m) + ":" + p(ss)
     }
     // entry point used by Main.qml when (re)opening the player with new media
+    property int nextIdx: -1     // file index of the next episode, or -1
+    function maybePlayNext() {
+        if (typeof session === "undefined" || win.nextIdx < 0) return
+        if (typeof settings !== "undefined" && settings.get("autoplayNext") === false) return  // default on
+        session.playFile(win.infoHash, win.nextIdx)
+    }
     function openMedia(url, title, hash, fileIdx) {
         win.saveResume()
         win.resumed = false
@@ -131,6 +137,7 @@ Window {
         win.mediaTitle = title
         win.infoHash = hash
         win.fileIndex = fileIdx
+        win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
         win.clearExternalSubs()
         if (typeof session !== "undefined") {
             var sc = session.findSidecarSubtitle(hash, fileIdx)
@@ -144,8 +151,10 @@ Window {
         settings.set(resumeKey + "_dur", Math.floor(player.duration))
         settings.set(resumeKey + "_at", Date.now())   // recency for HUB "Continue watching"
         // near the end → clear (watched); otherwise remember the position
-        if (player.position > player.duration - 15000) settings.set(resumeKey, 0)
-        else if (player.position > 5000) settings.set(resumeKey, Math.floor(player.position))
+        if (player.position > player.duration - 15000) {
+            settings.set(resumeKey, 0)
+            settings.set(resumeKey + "_watched", true)
+        } else if (player.position > 5000) settings.set(resumeKey, Math.floor(player.position))
     }
 
     MediaPlayer {
@@ -161,6 +170,7 @@ Window {
                 if (saved > 5000 && saved < duration - 15000) position = saved
             }
         }
+        onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) { win.saveResume(); win.maybePlayNext() }
     }
 
     // periodic + lifecycle resume saves
@@ -515,6 +525,12 @@ Window {
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.togglePlay() }
             }
             PChip { Layout.alignment: Qt.AlignVCenter; label: "+10"; onClicked: win.seekBy(10000) }
+            PChip {
+                Layout.alignment: Qt.AlignVCenter
+                visible: win.nextIdx >= 0
+                label: "⏭"
+                onClicked: if (typeof session !== "undefined") session.playFile(win.infoHash, win.nextIdx)
+            }
 
             Text { text: win.fmt(player.position); color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono }
             PSlider {

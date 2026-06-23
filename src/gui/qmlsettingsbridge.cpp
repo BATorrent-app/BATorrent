@@ -249,7 +249,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         QStringLiteral("autoTrackers"), QStringLiteral("torrentSearchEnabled"),
         QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
         QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
-        QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude")
+        QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude"),
+        QStringLiteral("autoplayNext")
     };
     if (uiBoolKeys.contains(key)) {
         QSettings st;

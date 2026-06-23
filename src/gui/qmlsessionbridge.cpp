@@ -782,16 +782,16 @@ QVariantList QmlSessionBridge::movieLibrary() const
     for (int row = 0; row < n; ++row) {
         auto files = m_session->filesAt(row);
         int bestIdx = -1; qint64 bestSize = 0;
-        QVariantList videos;                             // all video files (for episode picking)
+        struct Vid { int idx; QString name; int season; int episode; };
+        std::vector<Vid> vids;                           // all video files (for episode picking)
         for (int i = 0; i < int(files.size()); ++i) {
             const QString mp = stripBt(files[i].path);
             for (const auto &ext : videoExts)
                 if (mp.endsWith(ext, Qt::CaseInsensitive)) {
                     if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
-                    QVariantMap vf;
-                    vf["idx"] = i;
-                    vf["name"] = QFileInfo(mp).fileName();
-                    videos << vf;
+                    const QString fname = QFileInfo(mp).fileName();
+                    const ParsedName pn = NameParser::parse(fname);
+                    vids.push_back({ i, fname, pn.season, pn.episode });
                     break;
                 }
         }
@@ -805,6 +805,27 @@ QVariantList QmlSessionBridge::movieLibrary() const
 
         const QString hash = m_session->torrentHashAt(row);
         if (hash.isEmpty()) continue;
+
+        // Order episodes by season then episode (loose files first stay by index),
+        // and flag each as watched from its resume record.
+        std::sort(vids.begin(), vids.end(), [](const Vid &a, const Vid &b) {
+            if (a.season != b.season) return a.season < b.season;
+            if (a.episode != b.episode) return a.episode < b.episode;
+            return a.idx < b.idx;
+        });
+        QVariantList videos;
+        bool isSeries = false;
+        for (const Vid &v : vids) {
+            const QString vrk = QStringLiteral("resume_%1_%2").arg(hash).arg(v.idx);
+            QVariantMap vf;
+            vf["idx"] = v.idx;
+            vf["name"] = v.name;
+            vf["season"] = v.season;
+            vf["episode"] = v.episode;
+            vf["watched"] = s.value(vrk + QStringLiteral("_watched"), false).toBool();
+            videos << vf;
+            if (v.season >= 0 && v.episode >= 0) isSeries = true;
+        }
 
         QString poster, title = info.name;
         int year = 0;
@@ -828,7 +849,8 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["year"]       = year > 0 ? QString::number(year) : QString();
         m["poster"]     = poster;
         m["fileIndex"]  = bestIdx;
-        m["videos"]     = videos;                         // [{idx,name}] — >1 means episodes
+        m["videos"]     = videos;                         // [{idx,name,season,episode,watched}] sorted
+        m["isSeries"]   = isSeries;                       // has SxxExx markers → group by season
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
         m["resumeMs"]   = resumeMs;
@@ -896,6 +918,34 @@ void QmlSessionBridge::playByHash(const QString &infoHash)
     const TorrentInfo info = m_session->torrentAt(row);
     const int fileIdx = url.section('/', -1).toInt();
     emit openPlayer(url, info.name, infoHash, fileIdx);
+}
+
+int QmlSessionBridge::nextEpisode(const QString &infoHash, int fileIndex) const
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return -1;
+    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
+    auto files = m_session->filesAt(row);
+    struct V { int idx; int season; int episode; };
+    std::vector<V> vids;
+    for (int i = 0; i < int(files.size()); ++i) {
+        QString mp = files[i].path;
+        if (mp.endsWith(QStringLiteral(".!bt"))) mp.chop(4);
+        for (const auto &ext : videoExts)
+            if (mp.endsWith(ext, Qt::CaseInsensitive)) {
+                const ParsedName pn = NameParser::parse(QFileInfo(mp).fileName());
+                vids.push_back({ i, pn.season, pn.episode });
+                break;
+            }
+    }
+    std::sort(vids.begin(), vids.end(), [](const V &a, const V &b) {
+        if (a.season != b.season) return a.season < b.season;
+        if (a.episode != b.episode) return a.episode < b.episode;
+        return a.idx < b.idx;
+    });
+    for (size_t i = 0; i + 1 < vids.size(); ++i)
+        if (vids[i].idx == fileIndex) return vids[i + 1].idx;
+    return -1;
 }
 
 void QmlSessionBridge::watchWhenReady(const QString &infoHash, const QString &title)

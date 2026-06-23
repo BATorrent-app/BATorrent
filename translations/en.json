@@ -628,6 +628,8 @@
   "set_preferred_quality": "Preferred quality",
   "set_pref_quality_note": "Used by Get & Watch to auto-pick a release (falls back to nearby qualities if the exact one isn't available).",
   "set_max_size": "Max size",
+  "set_autoplay_next": "Autoplay next episode",
+  "set_autoplay_next_note": "When a series episode ends, automatically play the next one.",
   "set_grp_backup": "Backup & Restore",
   "set_grp_connection": "Connection",
   "set_grp_discord": "Discord",

@@ -478,7 +478,14 @@ Item {
             BatMenuItem {
                 id: epItem
                 required property var modelData
-                text: epItem.modelData.name
+                text: {
+                    var m = epItem.modelData
+                    var check = m.watched ? "✓  " : ""
+                    var ep = (m.season >= 0 && m.episode >= 0)
+                        ? "S" + m.season + "·E" + (m.episode < 10 ? "0" + m.episode : m.episode) + "  —  "
+                        : ""
+                    return check + ep + m.name
+                }
                 elideMode: Text.ElideMiddle
                 onTriggered: if (page.api) page.api.playFile(episodeMenu.hash, epItem.modelData.idx)
             }

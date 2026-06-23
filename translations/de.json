@@ -574,6 +574,8 @@
   "set_preferred_quality": "Bevorzugte Qualität",
   "set_pref_quality_note": "Wird von „Holen & ansehen“ genutzt, um automatisch ein Release zu wählen (weicht auf nahe Qualitäten aus).",
   "set_max_size": "Maximale Größe",
+  "set_autoplay_next": "Nächste Folge automatisch abspielen",
+  "set_autoplay_next_note": "Wenn eine Folge endet, automatisch die nächste abspielen.",
   "set_grp_backup": "Sicherung & Wiederherstellung",
   "set_grp_connection": "Verbindung",
   "set_grp_discord": "Discord",

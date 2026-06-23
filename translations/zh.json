@@ -574,6 +574,8 @@
   "set_preferred_quality": "首选画质",
   "set_pref_quality_note": "“获取并观看”据此自动挑选资源（若无精确画质则回退到相近画质）。",
   "set_max_size": "最大体积",
+  "set_autoplay_next": "自动播放下一集",
+  "set_autoplay_next_note": "一集结束后自动播放下一集。",
   "set_grp_backup": "备份与恢复",
   "set_grp_connection": "连接",
   "set_grp_discord": "Discord",
