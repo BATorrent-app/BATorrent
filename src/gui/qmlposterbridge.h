@@ -291,6 +291,7 @@ public:
 
     // Statistics window
     Q_INVOKABLE QVariantMap statistics() const;
+    Q_INVOKABLE QVariantMap wrapped(int year) const;   // "Year in Torrents"
     // Diagnostics window (snapshot of listen/DHT/NAT/port reachability)
     Q_INVOKABLE QVariantMap diagnostics() const;
     // Removed-history window

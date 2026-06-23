@@ -407,6 +407,7 @@ public:
     qint64 globalDownloaded() const;
     qint64 globalUploaded() const;
     float globalRatio() const;
+    QVariantMap statsWrapped(int year) const;   // "Year in Torrents" aggregation
 
     // Per-session statistics
     qint64 sessionDownloaded() const;

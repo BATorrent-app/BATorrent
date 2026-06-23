@@ -35,7 +35,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.55)
-        MouseArea { anchors.fill: parent; onClicked: {}; onWheel: function(w){ w.accepted = true } }
+        MouseArea { anchors.fill: parent; onWheel: function(w){ w.accepted = true } }
     }
 
     Rectangle {

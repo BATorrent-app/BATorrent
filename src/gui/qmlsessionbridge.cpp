@@ -1303,6 +1303,11 @@ void QmlSessionBridge::copyToClipboard(const QString &text)
     if (!text.isEmpty()) QGuiApplication::clipboard()->setText(text);
 }
 
+QVariantMap QmlSessionBridge::wrapped(int year) const
+{
+    return m_session->statsWrapped(year);
+}
+
 QVariantMap QmlSessionBridge::statistics() const
 {
     QVariantMap m;
