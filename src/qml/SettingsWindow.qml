@@ -83,6 +83,7 @@ Window {
             { type: "select", key: "preferredQuality", label: (i18n.language, i18n.t("set_preferred_quality")), options: ["Auto", "1080p", "720p", "2160p"], value: 1, note: (i18n.language, i18n.t("set_pref_quality_note")) },
             { type: "number", key: "preferMaxSize", label: (i18n.language, i18n.t("set_max_size")), value: "0", suffix: "MB", note: (i18n.language, i18n.t("note_unlimited")) },
             { type: "toggle", key: "autoplayNext", on: true, label: (i18n.language, i18n.t("set_autoplay_next")), note: (i18n.language, i18n.t("set_autoplay_next_note")) },
+            { type: "toggle", key: "preferNativeLang", on: true, label: (i18n.language, i18n.t("set_prefer_native")), note: (i18n.language, i18n.t("set_prefer_native_note")) },
             { type: "number", key: "subFontScale", label: (i18n.language, i18n.t("set_sub_size")), value: "100", suffix: "%" },
             { type: "select", key: "subColor", label: (i18n.language, i18n.t("set_sub_color")), options: [(i18n.language, i18n.t("color_white")), (i18n.language, i18n.t("color_yellow")), (i18n.language, i18n.t("color_cyan")), (i18n.language, i18n.t("color_green"))], value: 0 },
             { type: "number", key: "subBgOpacity", label: (i18n.language, i18n.t("set_sub_bg")), value: "0", suffix: "%", note: (i18n.language, i18n.t("set_sub_bg_note")) },

@@ -587,6 +587,8 @@
   "set_max_size": "Tamaño máximo",
   "set_autoplay_next": "Reproducir el siguiente episodio automáticamente",
   "set_autoplay_next_note": "Cuando termina un episodio, reproduce el siguiente automáticamente.",
+  "set_prefer_native": "Priorizar mi idioma",
+  "set_prefer_native_note": "En Buscar y ver y en la búsqueda, prioriza los lanzamientos en tu idioma — incluso por encima de la calidad. Apagado = mejor calidad sin importar el idioma.",
   "set_sub_size": "Tamaño de subtítulos",
   "set_sub_color": "Color de subtítulos",
   "set_sub_bg": "Fondo de subtítulos",

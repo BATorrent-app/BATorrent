@@ -387,7 +387,8 @@ int QmlSearchBridge::pickBestResult() const
     const int qi = s.value(QStringLiteral("preferredQuality"), 1).toInt();
     const QString prefQ = QString::fromLatin1((qi >= 0 && qi < 4) ? qmap[qi] : "1080p");
     const qint64 maxBytes = s.value(QStringLiteral("preferMaxSize"), 0).toLongLong() * 1024 * 1024;
-    return ReleasePick::best(cands, prefQ, maxBytes);
+    const bool preferNative = s.value(QStringLiteral("preferNativeLang"), true).toBool();
+    return ReleasePick::best(cands, prefQ, maxBytes, preferNative);
 }
 
 void QmlSearchBridge::getAndWatch(const QString &title, const QString &year, const QString &type)

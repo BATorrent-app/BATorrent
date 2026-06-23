@@ -27,7 +27,8 @@ int qualityScore(const QString &quality, const QStringList &order)
 
 namespace ReleasePick {
 
-int best(const QList<Candidate> &cands, const QString &preferredQuality, qint64 maxSizeBytes)
+int best(const QList<Candidate> &cands, const QString &preferredQuality,
+         qint64 maxSizeBytes, bool preferNative)
 {
     const QStringList order = preferenceOrder(preferredQuality);
 
@@ -47,12 +48,19 @@ int best(const QList<Candidate> &cands, const QString &preferredQuality, qint64 
         if (anyUnderCap && c.sizeBytes > 0 && c.sizeBytes > maxSizeBytes) continue;
 
         const int q = qualityScore(c.quality, order);
-        // lexicographic: quality, then native, then seeders
-        if (q > bestQ
-            || (q == bestQ && !bestNative && c.native)
-            || (q == bestQ && bestNative == c.native && c.seeders > bestSeeds)) {
-            bestIdx = i; bestQ = q; bestNative = c.native; bestSeeds = c.seeders;
+        bool better;
+        if (bestIdx < 0) {
+            better = true;
+        } else if (preferNative && c.native != bestNative) {
+            better = c.native;                       // language wins over quality
+        } else if (q != bestQ) {
+            better = q > bestQ;
+        } else if (c.native != bestNative) {
+            better = c.native;                       // native breaks a quality tie
+        } else {
+            better = c.seeders > bestSeeds;
         }
+        if (better) { bestIdx = i; bestQ = q; bestNative = c.native; bestSeeds = c.seeders; }
     }
     return bestIdx;
 }

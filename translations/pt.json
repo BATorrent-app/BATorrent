@@ -587,6 +587,8 @@
   "set_max_size": "Tamanho máximo",
   "set_autoplay_next": "Reproduzir próximo episódio automaticamente",
   "set_autoplay_next_note": "Quando um episódio termina, toca o próximo automaticamente.",
+  "set_prefer_native": "Priorizar meu idioma",
+  "set_prefer_native_note": "No Pegar & Assistir e na busca, coloca releases no seu idioma primeiro — mesmo acima da qualidade. Desligado = melhor qualidade independente do idioma.",
   "set_sub_size": "Tamanho da legenda",
   "set_sub_color": "Cor da legenda",
   "set_sub_bg": "Fundo da legenda",

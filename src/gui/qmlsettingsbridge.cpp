@@ -250,7 +250,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
         QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
         QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude"),
-        QStringLiteral("autoplayNext")
+        QStringLiteral("autoplayNext"), QStringLiteral("preferNativeLang")
     };
     if (uiBoolKeys.contains(key)) {
         QSettings st;

@@ -121,13 +121,22 @@ Rectangle {
         if (sortKey === "seeders") arr.sort(function (a, b) { return (b.seedsN || 0) - (a.seedsN || 0) })
         else if (sortKey === "size") arr.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) })
         else if (sortKey === "name") arr.sort(function (a, b) { return (a.name || "").localeCompare(b.name || "") })
-        // default = Relevance: best query-word match, then the user's own language
-        // (e.g. Portuguese dub first for a pt-BR app), then original order.
-        else arr.sort(function (a, b) {
-            var rd = (b._rel || 0) - (a._rel || 0); if (rd) return rd
-            var nd = (b.native ? 1 : 0) - (a.native ? 1 : 0); if (nd) return nd
-            return a._idx - b._idx
-        })
+        // default = Relevance. When viewing one picked title's releases (the watch
+        // context) and "prefer my language" is on, the user's own language leads —
+        // grouped above quality/seeders, Torrentio-style — so a viewer who needs a
+        // dub/sub in their language finds it first.
+        else {
+            var nativeFirst = page.api && page.api.singleTitleView
+                              && (typeof settings === "undefined" || settings.get("preferNativeLang") !== false)
+            arr.sort(function (a, b) {
+                if (nativeFirst) {
+                    var n0 = (b.native ? 1 : 0) - (a.native ? 1 : 0); if (n0) return n0
+                }
+                var rd = (b._rel || 0) - (a._rel || 0); if (rd) return rd
+                var nd = (b.native ? 1 : 0) - (a.native ? 1 : 0); if (nd) return nd
+                return a._idx - b._idx
+            })
+        }
         return arr
     }
 

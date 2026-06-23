@@ -587,6 +587,8 @@
   "set_max_size": "Maximale Größe",
   "set_autoplay_next": "Nächste Folge automatisch abspielen",
   "set_autoplay_next_note": "Wenn eine Folge endet, automatisch die nächste abspielen.",
+  "set_prefer_native": "Meine Sprache bevorzugen",
+  "set_prefer_native_note": "Bei „Holen & ansehen“ und der Suche zuerst Releases in deiner Sprache — auch vor höherer Qualität. Aus = beste Qualität unabhängig von der Sprache.",
   "set_sub_size": "Untertitelgröße",
   "set_sub_color": "Untertitelfarbe",
   "set_sub_bg": "Untertitel-Hintergrund",

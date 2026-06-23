@@ -1290,6 +1290,15 @@ TEST_CASE("ReleasePick: native language breaks ties within a tier", "[release]")
     REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);
 }
 
+TEST_CASE("ReleasePick: native language wins over higher quality (viewer default)", "[release]") {
+    QList<Candidate> c = {
+        {"4K",    false, 800, 40 * GB_},  // best quality + seeders, but not your language
+        {"720p",  true,  20,  3 * GB_},   // your language, lower quality
+    };
+    REQUIRE(ReleasePick::best(c, "1080p", 0, true) == 1);   // preferNative → language first
+    REQUIRE(ReleasePick::best(c, "1080p", 0, false) == 0);  // quality-first mode → 4K
+}
+
 TEST_CASE("ReleasePick: seeders break ties when quality and native equal", "[release]") {
     QList<Candidate> c = {
         {"1080p", false, 30,  8 * GB_},

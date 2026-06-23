@@ -587,6 +587,8 @@
   "set_max_size": "最大サイズ",
   "set_autoplay_next": "次のエピソードを自動再生",
   "set_autoplay_next_note": "エピソードが終わったら次を自動で再生します。",
+  "set_prefer_native": "自分の言語を優先",
+  "set_prefer_native_note": "「取得して再生」や検索で、自分の言語のリリースを優先します（画質より優先）。オフ＝言語に関わらず最高画質。",
   "set_sub_size": "字幕サイズ",
   "set_sub_color": "字幕の色",
   "set_sub_bg": "字幕の背景",

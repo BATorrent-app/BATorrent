@@ -25,7 +25,11 @@ struct Candidate {
 // Returns the index of the best candidate, or -1 if none is usable.
 // preferredQuality: "4K" | "1080p" | "720p" | "Auto"/"" (Auto = 1080p sweet spot).
 // maxSizeBytes: 0 = no cap.
-int best(const QList<Candidate> &cands, const QString &preferredQuality, qint64 maxSizeBytes);
+// preferNative: when true, a release in the user's language wins over a
+// higher-quality one (what most movie/series viewers actually want — Torrentio
+// behaviour). When false, quality leads and native is only a tiebreaker.
+int best(const QList<Candidate> &cands, const QString &preferredQuality,
+         qint64 maxSizeBytes, bool preferNative = true);
 
 }
 

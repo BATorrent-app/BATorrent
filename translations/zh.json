@@ -587,6 +587,8 @@
   "set_max_size": "最大体积",
   "set_autoplay_next": "自动播放下一集",
   "set_autoplay_next_note": "一集结束后自动播放下一集。",
+  "set_prefer_native": "优先我的语言",
+  "set_prefer_native_note": "在“获取并观看”和搜索中，优先列出你语言的资源——即使画质较低。关闭＝不论语言优先最高画质。",
   "set_sub_size": "字幕大小",
   "set_sub_color": "字幕颜色",
   "set_sub_bg": "字幕背景",

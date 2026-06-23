@@ -641,6 +641,8 @@
   "set_max_size": "Max size",
   "set_autoplay_next": "Autoplay next episode",
   "set_autoplay_next_note": "When a series episode ends, automatically play the next one.",
+  "set_prefer_native": "Prefer my language",
+  "set_prefer_native_note": "For Get & Watch and search, put releases in your language first — even over higher quality. Off = best quality regardless of language.",
   "set_sub_size": "Subtitle size",
   "set_sub_color": "Subtitle color",
   "set_sub_bg": "Subtitle background",
