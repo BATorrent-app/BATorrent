@@ -43,6 +43,55 @@ Window {
     property int extSubOffset: 0          // ms; positive shows subtitles later
     readonly property bool extSubsActive: extCues.length > 0
 
+    // subtitle styling (read from settings on each open)
+    property real subScale: 1.0
+    property string subColor: "#ffffff"
+    property real subBgOpacity: 0.0
+    function loadSubStyle() {
+        if (typeof settings === "undefined") return
+        subScale = Math.max(0.5, Number(settings.get("subFontScale") || 100) / 100)
+        var colors = ["#ffffff", "#ffe24a", "#7fdfff", "#9cff9c"]   // White / Yellow / Cyan / Green
+        var ci = Number(settings.get("subColor") || 0)
+        subColor = colors[(ci >= 0 && ci < colors.length) ? ci : 0]
+        subBgOpacity = Math.max(0, Math.min(1, Number(settings.get("subBgOpacity") || 0) / 100))
+    }
+
+    // remember the chosen audio/subtitle track per torrent
+    property bool tracksRestored: false
+    function restoreTracks() {
+        if (win.tracksRestored || typeof settings === "undefined") return
+        if (player.audioTracks.length === 0 && player.subtitleTracks.length === 0) return
+        win.tracksRestored = true
+        var at = settings.get("audioTrack_" + win.infoHash)
+        if (at !== undefined && at !== "" && Number(at) >= 0 && Number(at) < player.audioTracks.length)
+            player.activeAudioTrack = Number(at)
+        var st = settings.get("subTrack_" + win.infoHash)
+        if (st !== undefined && st !== "" && Number(st) < player.subtitleTracks.length)
+            player.activeSubtitleTrack = Number(st)
+    }
+
+    // picture-in-picture: shrink to a small always-on-top corner window
+    property bool pipMode: false
+    property rect savedGeom: Qt.rect(0, 0, 0, 0)
+    function togglePip() {
+        if (!win.pipMode) {
+            win.savedGeom = Qt.rect(win.x, win.y, win.width, win.height)
+            if (win.visibility === Window.FullScreen) win.visibility = Window.Windowed
+            win.flags = Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+            var scr = win.screen
+            win.width = 400; win.height = 225
+            win.x = scr.virtualX + scr.width - 416
+            win.y = scr.virtualY + scr.height - 241
+            win.pipMode = true
+        } else {
+            win.flags = Qt.Window
+            win.width = win.savedGeom.width > 0 ? win.savedGeom.width : 960
+            win.height = win.savedGeom.height > 0 ? win.savedGeom.height : 600
+            win.x = win.savedGeom.x; win.y = win.savedGeom.y
+            win.pipMode = false
+        }
+    }
+
     function loadExternalSubs(path) {
         var cues = (typeof session !== "undefined") ? session.loadSubtitleFile(path) : []
         if (!cues || cues.length === 0) return false
@@ -138,6 +187,8 @@ Window {
         win.infoHash = hash
         win.fileIndex = fileIdx
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
+        win.tracksRestored = false
+        win.loadSubStyle()
         win.clearExternalSubs()
         if (typeof session !== "undefined") {
             var sc = session.findSidecarSubtitle(hash, fileIdx)
@@ -171,6 +222,7 @@ Window {
             }
         }
         onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) { win.saveResume(); win.maybePlayNext() }
+        onTracksChanged: win.restoreTracks()
     }
 
     // periodic + lifecycle resume saves
@@ -225,23 +277,38 @@ Window {
         }
     }
 
-    // external-subtitle overlay (over the video, above the controls bar)
-    Text {
+    // external-subtitle overlay (over the video, above the controls bar) — styled
+    // by the user's subtitle settings (size / color / background)
+    Item {
         visible: win.extCueText.length > 0
-        text: win.extCueText
-        textFormat: Text.StyledText
-        color: "#ffffff"
-        style: Text.Outline
-        styleColor: "#000000"
-        font.pixelSize: Math.max(16, Math.round(win.height * 0.034))
-        font.weight: Font.DemiBold
-        font.family: Theme.fontSans
-        horizontalAlignment: Text.AlignHCenter
-        wrapMode: Text.WordWrap
-        width: Math.min(parent.width * 0.86, 980)
+        width: parent.width
+        height: subText.implicitHeight
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: videoOut.bottom
         anchors.bottomMargin: (win.fullscreen && bar.visible ? bar.height : 0) + 26
+        Rectangle {
+            visible: win.subBgOpacity > 0
+            anchors.centerIn: subText
+            width: subText.paintedWidth + 22
+            height: subText.paintedHeight + 8
+            radius: 6
+            color: Qt.rgba(0, 0, 0, win.subBgOpacity)
+        }
+        Text {
+            id: subText
+            anchors.centerIn: parent
+            text: win.extCueText
+            textFormat: Text.StyledText
+            color: win.subColor
+            style: win.subBgOpacity > 0 ? Text.Normal : Text.Outline
+            styleColor: "#000000"
+            font.pixelSize: Math.max(12, Math.round(win.height * 0.034 * win.subScale))
+            font.weight: Font.DemiBold
+            font.family: Theme.fontSans
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
+            width: Math.min(win.width * 0.86, 980)
+        }
     }
 
     function openExternal() {
@@ -278,7 +345,10 @@ Window {
                 required property int index
                 text: (i18n.language, i18n.t("player_audio")) + " " + (index + 1)
                 checkable: true; checked: player.activeAudioTrack === index
-                onTriggered: player.activeAudioTrack = index
+                onTriggered: {
+                    player.activeAudioTrack = index
+                    if (typeof settings !== "undefined") settings.set("audioTrack_" + win.infoHash, index)
+                }
             }
         }
     }
@@ -296,7 +366,10 @@ Window {
                 required property int index
                 text: (i18n.language, i18n.t("player_subs")) + " " + (index + 1)
                 checkable: true; checked: player.activeSubtitleTrack === index
-                onTriggered: { win.clearExternalSubs(); player.activeSubtitleTrack = index }
+                onTriggered: {
+                    win.clearExternalSubs(); player.activeSubtitleTrack = index
+                    if (typeof settings !== "undefined") settings.set("subTrack_" + win.infoHash, index)
+                }
             }
         }
         BatMenuItem {
@@ -561,6 +634,7 @@ Window {
                 label: "⋯"
                 onClicked: moreMenu.popup()
             }
+            PChip { Layout.alignment: Qt.AlignVCenter; active: win.pipMode; label: "⧉"; onClicked: win.togglePip() }
             PChip { Layout.alignment: Qt.AlignVCenter; label: "⛶"; onClicked: win.toggleFullscreen() }
         }
         MouseArea {
@@ -573,6 +647,7 @@ Window {
     Component.onCompleted: if (win.streamUrl.length > 0) player.play()
 
     Shortcut { sequence: "Space";  onActivated: win.togglePlay() }
+    Shortcut { sequence: "P";      onActivated: win.togglePip() }
     Shortcut { sequence: "Right";  onActivated: win.seekBy(10000) }
     Shortcut { sequence: "Left";   onActivated: win.seekBy(-10000) }
     Shortcut { sequence: "Up";     onActivated: win.bumpVolume(0.05) }
