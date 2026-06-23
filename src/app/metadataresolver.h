@@ -24,6 +24,7 @@ struct MetadataResult {
     QStringList genres;
     QStringList platforms;
     ContentType contentType = ContentType::Unknown;
+    int tmdbId = 0;          // TMDB movie/series id (0 if unknown) — for episode lookups
     bool valid = false;
 };
 

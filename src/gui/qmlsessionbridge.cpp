@@ -828,13 +828,14 @@ QVariantList QmlSessionBridge::movieLibrary() const
         }
 
         QString poster, title = info.name;
-        int year = 0;
+        int year = 0, tmdbId = 0;
         if (m_resolver && m_resolver->hasCached(hash)) {
             const auto meta = m_resolver->cached(hash);
             if (meta.valid) {
                 if (!meta.posterPath.isEmpty()) poster = QUrl::fromLocalFile(meta.posterPath).toString();
                 if (!meta.title.isEmpty()) title = meta.title;
                 year = meta.year;
+                tmdbId = meta.tmdbId;
             }
         }
 
@@ -851,6 +852,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["fileIndex"]  = bestIdx;
         m["videos"]     = videos;                         // [{idx,name,season,episode,watched}] sorted
         m["isSeries"]   = isSeries;                       // has SxxExx markers → group by season
+        m["tmdbId"]     = tmdbId;                          // for TMDB episode-title lookup
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
         m["resumeMs"]   = resumeMs;

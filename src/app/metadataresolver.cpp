@@ -274,6 +274,7 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
 
         const QString posterPath = item.value(QLatin1String("poster_path")).toString();
         const int tmdbId = item.value(QLatin1String("id")).toInt();
+        result.tmdbId = tmdbId;
 
         auto finish = [this, infoHash, posterPath](MetadataResult r) {
             if (!posterPath.isEmpty()) {
@@ -352,6 +353,7 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
 
         const QString posterPath = item.value(QLatin1String("poster_path")).toString();
         const int tmdbId = item.value(QLatin1String("id")).toInt();
+        result.tmdbId = tmdbId;
 
         auto finish = [this, infoHash, posterPath](MetadataResult r) {
             if (!posterPath.isEmpty()) {
@@ -669,6 +671,7 @@ void MetadataResolver::loadFromDisk(const QString &infoHash)
     result.description = obj.value(QLatin1String("description")).toString();
     result.rating = obj.value(QLatin1String("rating")).toDouble();
     result.year = obj.value(QLatin1String("year")).toInt();
+    result.tmdbId = obj.value(QLatin1String("tmdbId")).toInt();
     result.contentType = contentTypeFromString(obj.value(QLatin1String("contentType")).toString());
 
     const QJsonArray genresArr = obj.value(QLatin1String("genres")).toArray();
@@ -695,6 +698,7 @@ void MetadataResolver::saveToDisk(const QString &infoHash, const MetadataResult 
     obj.insert(QLatin1String("description"), result.description);
     obj.insert(QLatin1String("rating"), result.rating);
     obj.insert(QLatin1String("year"), result.year);
+    obj.insert(QLatin1String("tmdbId"), result.tmdbId);
     obj.insert(QLatin1String("genres"), QJsonArray::fromStringList(result.genres));
     obj.insert(QLatin1String("platforms"), QJsonArray::fromStringList(result.platforms));
     obj.insert(QLatin1String("posterFile"), result.posterPath);

@@ -466,13 +466,41 @@ Item {
         }
     }
 
-    // episode picker for multi-video torrents (series)
+    // episode picker for multi-video torrents (series). Pulls real episode
+    // titles from TMDB per season and merges them in live (falls back to file
+    // names if there's no metadata).
     BatMenu {
         id: episodeMenu
         property string hash: ""
         property var videos: []
-        function openFor(item) { hash = item.infoHash; videos = item.videos || []; popup() }
-        implicitWidth: 360
+        property int tmdbId: 0
+        property var titles: ({})      // "season_episode" → title
+        function openFor(item) {
+            hash = item.infoHash
+            videos = item.videos || []
+            tmdbId = item.tmdbId || 0
+            titles = ({})
+            if (tmdbId > 0 && page.api) {
+                var seen = ({})
+                for (var i = 0; i < videos.length; i++) {
+                    var sn = videos[i].season
+                    if (sn >= 0 && !seen[sn]) { seen[sn] = true; page.api.fetchEpisodes(tmdbId, sn) }
+                }
+            }
+            popup()
+        }
+        implicitWidth: 380
+        Connections {
+            target: page.api
+            ignoreUnknownSignals: true
+            function onEpisodesReady(tmdbId, season, episodes) {
+                if (tmdbId !== episodeMenu.tmdbId) return
+                var t = Object.assign({}, episodeMenu.titles)
+                for (var i = 0; i < episodes.length; i++)
+                    t[season + "_" + episodes[i].episode] = episodes[i].name
+                episodeMenu.titles = t
+            }
+        }
         Repeater {
             model: episodeMenu.videos
             BatMenuItem {
@@ -481,10 +509,11 @@ Item {
                 text: {
                     var m = epItem.modelData
                     var check = m.watched ? "✓  " : ""
-                    var ep = (m.season >= 0 && m.episode >= 0)
-                        ? "S" + m.season + "·E" + (m.episode < 10 ? "0" + m.episode : m.episode) + "  —  "
-                        : ""
-                    return check + ep + m.name
+                    if (m.season >= 0 && m.episode >= 0) {
+                        var title = episodeMenu.titles[m.season + "_" + m.episode] || m.name
+                        return check + "S" + m.season + "·E" + (m.episode < 10 ? "0" + m.episode : m.episode) + "  —  " + title
+                    }
+                    return check + m.name
                 }
                 elideMode: Text.ElideMiddle
                 onTriggered: if (page.api) page.api.playFile(episodeMenu.hash, epItem.modelData.idx)

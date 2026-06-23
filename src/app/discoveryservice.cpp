@@ -379,6 +379,37 @@ void DiscoveryService::fetchTrailer(int tmdbId, const QString &type)
     });
 }
 
+void DiscoveryService::fetchEpisodes(int tmdbId, int season)
+{
+    if (tmdbId <= 0 || season < 0 || tmdbApiKey().isEmpty()) { emit episodesReady(tmdbId, season, {}); return; }
+    QUrl url(TmdbBaseUrl + QStringLiteral("/tv/%1/season/%2").arg(tmdbId).arg(season));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
+    q.addQueryItem(QStringLiteral("language"), tmdbLang());
+    url.setQuery(q);
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
+    req.setTransferTimeout(10000);
+    QNetworkReply *reply = m_nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId, season]() {
+        reply->deleteLater();
+        QVariantList eps;
+        if (reply->error() == QNetworkReply::NoError) {
+            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
+                                       .object().value(QLatin1String("episodes")).toArray();
+            for (const QJsonValue &v : arr) {
+                const QJsonObject o = v.toObject();
+                QVariantMap m;
+                m["episode"] = o.value(QLatin1String("episode_number")).toInt();
+                m["name"] = o.value(QLatin1String("name")).toString();
+                m["air_date"] = o.value(QLatin1String("air_date")).toString();
+                eps << m;
+            }
+        }
+        emit episodesReady(tmdbId, season, eps);
+    });
+}
+
 void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
                                  const QList<QPair<QString, QString>> &extra, int page)
 {
