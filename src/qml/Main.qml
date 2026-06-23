@@ -610,6 +610,7 @@ Window {
                 { label: i18n.t("tb_settings"), run: function() { win.showWin(settingsWinLoader) } },
                 { label: i18n.t("menu_rss"), run: function() { win.showWin(rssWinLoader) } },
                 { label: i18n.t("menu_statistics"), run: function() { win.showWin(statsWinLoader) } },
+                { label: i18n.t("wrapped_title"), run: function() { win.showWrapped() } },
                 { label: i18n.t("menu_logs"), run: function() { win.showWin(logWinLoader) } },
                 { label: i18n.t("menu_diagnostics"), run: function() { win.showWin(diagWinLoader) } },
                 { label: i18n.t("shortcuts_title2"), run: function() { win.showWin(shortcutsWinLoader) } }
@@ -2841,7 +2842,12 @@ Window {
     Loader { id: rssWinLoader;       active: false; sourceComponent: RssWindow {} }
     Loader { id: settingsWinLoader;  active: false; sourceComponent: SettingsWindow {} }
     Loader { id: shortcutsWinLoader; active: false; sourceComponent: ShortcutsWindow {} }
-    Loader { id: statsWinLoader;     active: false; sourceComponent: StatisticsWindow {} }
+    Loader { id: statsWinLoader;     active: false; sourceComponent: StatisticsWindow { onOpenWrapped: win.showWrapped() } }
+    Loader { id: wrappedWinLoader;   active: false; sourceComponent: WrappedWindow {} }
+    function showWrapped() {
+        wrappedWinLoader.active = true
+        if (wrappedWinLoader.item) wrappedWinLoader.item.openFor(new Date().getFullYear())
+    }
     Loader { id: removedWinLoader;   active: false; sourceComponent: RemovedHistoryWindow {} }
     Loader { id: logWinLoader;       active: false; sourceComponent: LogViewerWindow {} }
     Loader { id: diagWinLoader;      active: false; sourceComponent: DiagnosticsWindow {} }

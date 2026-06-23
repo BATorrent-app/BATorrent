@@ -11,6 +11,7 @@ import "widgets"
 
 Window {
     id: win
+    signal openWrapped()
     Shortcut { sequences: [StandardKey.Cancel]; onActivated: win.close() }
     flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
     width: 620
@@ -165,6 +166,10 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
+                BtnFlat {
+                    text: "🦇  " + (i18n.language, i18n.t("wrapped_title"))
+                    onClicked: win.openWrapped()
+                }
                 Item { Layout.fillWidth: true }
                 BtnFlat { primary: true; text: (i18n.language, i18n.t("release_notes_close")); onClicked: win.close() }
             }
