@@ -32,3 +32,6 @@ compile_commands.json
 # local test build dir
 build-tests/
 build-asan/
+
+# fork-from-source build dir
+build-fork/

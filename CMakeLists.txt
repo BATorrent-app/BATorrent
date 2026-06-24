@@ -1,7 +1,22 @@
 cmake_minimum_required(VERSION 3.16)
 project(BATorrent VERSION 4.1.0)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia Quick QuickWidgets QuickControls2)
-find_package(LibtorrentRasterbar REQUIRED)
+
+# libtorrent: link the system package by default, or build our vendored fork from
+# source (third_party/libtorrent) when BAT_LIBTORRENT_SOURCE=ON. The source path
+# is what lets us patch the engine; both expose the same `torrent-rasterbar` target.
+option(BAT_LIBTORRENT_SOURCE "Build libtorrent from the vendored source (fork)" OFF)
+if(BAT_LIBTORRENT_SOURCE)
+    set(build_tests OFF CACHE BOOL "" FORCE)
+    set(build_examples OFF CACHE BOOL "" FORCE)
+    set(build_tools OFF CACHE BOOL "" FORCE)
+    add_subdirectory(third_party/libtorrent EXCLUDE_FROM_ALL)
+    set(BAT_TORRENT_LIB torrent-rasterbar)
+    message(STATUS "[BAT] libtorrent: building vendored fork from source")
+else()
+    find_package(LibtorrentRasterbar REQUIRED)
+    set(BAT_TORRENT_LIB LibtorrentRasterbar::torrent-rasterbar)
+endif()
 # Optional: QtKeychain stores credentials in the platform keyring (DPAPI on
 # Windows, Keychain on macOS, kwallet/libsecret on Linux). If missing at
 # build time the app falls back to QSettings — secrets stay in plaintext
@@ -79,7 +94,7 @@ option(BAT_STORE_BUILD "Disable auto-updater for Microsoft Store submission" OFF
 if(BAT_STORE_BUILD)
     target_compile_definitions(BATorrent PRIVATE BAT_STORE_BUILD)
 endif()
-target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 LibtorrentRasterbar::torrent-rasterbar)
+target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 ${BAT_TORRENT_LIB})
 
 # macOS: bundle metadata. Without these keys, NSStatusItem (the tray icon)
 # can fail to allocate a menu-bar slot — Qt reports the item as visible but
@@ -166,4 +181,12 @@ endif()
 option(BAT_BUILD_TESTS "Build the BATorrent test suite" OFF)
 if(BAT_BUILD_TESTS)
     add_subdirectory(tests)
+endif()
+
+# --- Controlled A/B download benchmark (engine/config delta) ---
+option(BAT_BENCH "Build the libtorrent A/B benchmark harness" OFF)
+if(BAT_BENCH)
+    add_executable(bat_bench benchmark/bench.cpp)
+    target_compile_features(bat_bench PRIVATE cxx_std_17)
+    target_link_libraries(bat_bench PRIVATE ${BAT_TORRENT_LIB})
 endif()
