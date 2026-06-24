@@ -27,6 +27,8 @@
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/peer_class.hpp>
 #include <libtorrent/peer_class_type_filter.hpp>
+#include <libtorrent/peer_info.hpp>
+#include <map>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -40,6 +42,7 @@
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <mutex>
 #include <random>
 #include <string>
@@ -50,8 +53,9 @@ namespace fs = std::filesystem;
 namespace lt = libtorrent;
 using clk = std::chrono::steady_clock;
 
-static constexpr int kSeedPort  = 6881;
-static constexpr int kRelayPort = 6890;
+// High ports so the bench never collides with a real torrent client on 6881.
+static constexpr int kSeedPort  = 16881;
+static constexpr int kRelayPort = 16890;
 
 struct Profile {
     std::string name;
@@ -67,7 +71,22 @@ struct Args {
     int trials = 3;
     int rttMs = 0;        // round-trip latency injected by the relay (0 = direct)
     std::string ab = "ramp";
+    std::string seeders;    // comma list of per-seeder caps KB/s (empty = one --seed-rate seeder)
+    std::string seederRtt;  // comma list of per-seeder RTT ms (empty = all --rtt)
 };
+
+static std::vector<int> parseInts(const std::string &csv)
+{
+    std::vector<int> out;
+    std::size_t i = 0;
+    while (i < csv.size()) {
+        std::size_t j = csv.find(',', i);
+        if (j == std::string::npos) j = csv.size();
+        out.push_back(std::atoi(csv.substr(i, j - i).c_str()));
+        i = j + 1;
+    }
+    return out;
+}
 
 // ---- in-process TCP delay relay: models RTT without sudo/dummynet ----------
 namespace relay {
@@ -208,7 +227,8 @@ static lt::add_torrent_params makeTorrent(const fs::path &dir, const Args &a)
 }
 
 // Returns seconds to reach 100% (or -1 on timeout).
-static double runLeech(const std::shared_ptr<lt::torrent_info> &ti, int peerPort,
+static double runLeech(const std::shared_ptr<lt::torrent_info> &ti,
+                       const std::vector<int> &peerPorts,
                        const Profile &prof, const fs::path &saveDir)
 {
     fs::remove_all(saveDir);
@@ -221,6 +241,10 @@ static double runLeech(const std::shared_ptr<lt::torrent_info> &ti, int peerPort
     p.set_bool(lt::settings_pack::enable_lsd, false);
     p.set_bool(lt::settings_pack::enable_upnp, false);
     p.set_bool(lt::settings_pack::enable_natpmp, false);
+    // All seeders live on 127.0.0.1 (distinct ports); without this libtorrent keeps
+    // only ONE connection per IP and silently drops the rest — a harness artifact,
+    // not the swarm behavior we want to measure.
+    p.set_bool(lt::settings_pack::allow_multiple_connections_per_ip, true);
     applyProfile(p, prof);
     lt::session s(p);
 
@@ -228,16 +252,27 @@ static double runLeech(const std::shared_ptr<lt::torrent_info> &ti, int peerPort
     atp.ti = ti;
     atp.save_path = saveDir.string();
     lt::torrent_handle h = s.add_torrent(atp);
-    h.connect_peer(lt::tcp::endpoint(lt::make_address("127.0.0.1"),
-                                     std::uint16_t(peerPort)));
+    for (int port : peerPorts)
+        h.connect_peer(lt::tcp::endpoint(lt::make_address("127.0.0.1"),
+                                         std::uint16_t(port)));
 
     const auto start = clk::now();
     const auto deadline = start + std::chrono::minutes(10);
+    std::map<int, std::int64_t> peerBytes;   // peer port -> payload bytes pulled
     for (;;) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::vector<lt::peer_info> pi;
+        h.get_peer_info(pi);
+        for (const auto &p : pi)
+            peerBytes[p.ip.port()] = std::max(peerBytes[p.ip.port()], p.total_download);
         const lt::torrent_status st = h.status();
-        if (st.is_seeding || st.progress >= 1.0f)
+        if (st.is_seeding || st.progress >= 1.0f) {
+            std::fprintf(stderr, "    peer split:");
+            for (const auto &kv : peerBytes)
+                std::fprintf(stderr, " :%d=%.1fMB", kv.first, kv.second / 1048576.0);
+            std::fprintf(stderr, "\n");
             return std::chrono::duration<double>(clk::now() - start).count();
+        }
         if (clk::now() > deadline)
             return -1.0;
     }
@@ -256,6 +291,8 @@ int main(int argc, char **argv)
         else if (!std::strcmp(argv[i], "--trials")) a.trials = num();
         else if (!std::strcmp(argv[i], "--rtt")) a.rttMs = num();
         else if (!std::strcmp(argv[i], "--ab")) a.ab = str();
+        else if (!std::strcmp(argv[i], "--seeders")) a.seeders = str();
+        else if (!std::strcmp(argv[i], "--seeder-rtt")) a.seederRtt = str();
     }
 
     Profile A, B;
@@ -277,37 +314,58 @@ int main(int argc, char **argv)
     for (int i = 0; i < a.files; ++i)
         writeRandom(dataDir / ("file" + std::to_string(i) + ".bin"), per);
 
-    lt::add_torrent_params seedAtp = makeTorrent(dataDir, a);
+    const lt::add_torrent_params seedAtp = makeTorrent(dataDir, a);
     auto ti = seedAtp.ti;
 
-    // Capped seeder: the deterministic bottleneck both profiles compete against.
-    lt::settings_pack sp;
-    sp.set_str(lt::settings_pack::listen_interfaces,
-               std::string("127.0.0.1:") + std::to_string(kSeedPort));
-    sp.set_bool(lt::settings_pack::enable_dht, false);
-    sp.set_bool(lt::settings_pack::enable_lsd, false);
-    sp.set_int(lt::settings_pack::upload_rate_limit, a.seedRateKBs * 1024);
-    lt::session seeder(sp);
-    // localhost peers land in local_peer_class, which is exempt from the session
-    // rate limit — so cap that class directly, otherwise the bottleneck won't bind.
-    {
-        lt::peer_class_info lpc = seeder.get_peer_class(lt::session_handle::local_peer_class_id);
-        lpc.upload_limit = a.seedRateKBs * 1024;
-        seeder.set_peer_class(lt::session_handle::local_peer_class_id, lpc);
-    }
-    seedAtp.save_path = dataDir.parent_path().string();
-    seedAtp.flags |= lt::torrent_flags::seed_mode;
-    seeder.add_torrent(seedAtp);
+    // One capped seeder per --seeders entry (default: a single --seed-rate seeder).
+    // A heterogeneous mix (one fast + several slow) exercises peer selection and the
+    // slow-peer tail; each seeder optionally gets its own RTT via the relay.
+    std::vector<int> rates = a.seeders.empty() ? std::vector<int>{a.seedRateKBs}
+                                               : parseInts(a.seeders);
+    const std::vector<int> rtts = parseInts(a.seederRtt);
+    std::vector<std::unique_ptr<lt::session>> seeders;
+    std::vector<int> peerPorts;
+    bool needRelay = false;
+    for (std::size_t i = 0; i < rates.size(); ++i) {
+        const int port = kSeedPort + int(i);
+        const int rtt = i < rtts.size() ? rtts[i] : a.rttMs;
 
-    int peerPort = kSeedPort;
-    if (a.rttMs > 0) {
-        std::thread(relay::run, kRelayPort, kSeedPort, a.rttMs).detach();
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));  // let it bind
-        peerPort = kRelayPort;
-    }
+        lt::settings_pack sp;
+        sp.set_str(lt::settings_pack::listen_interfaces,
+                   std::string("127.0.0.1:") + std::to_string(port));
+        sp.set_bool(lt::settings_pack::enable_dht, false);
+        sp.set_bool(lt::settings_pack::enable_lsd, false);
+        sp.set_int(lt::settings_pack::upload_rate_limit, rates[i] * 1024);
+        auto s = std::make_unique<lt::session>(sp);
+        // localhost peers land in local_peer_class, exempt from the session rate
+        // limit — cap that class directly or the bottleneck won't bind.
+        lt::peer_class_info lpc = s->get_peer_class(lt::session_handle::local_peer_class_id);
+        lpc.upload_limit = rates[i] * 1024;
+        s->set_peer_class(lt::session_handle::local_peer_class_id, lpc);
 
-    std::printf("Seeder capped at %d KB/s on 127.0.0.1:%d\n", a.seedRateKBs, kSeedPort);
-    std::printf("A/B: %s vs %s | RTT %dms | %d trials\n",
+        lt::add_torrent_params atp = seedAtp;
+        atp.save_path = dataDir.parent_path().string();
+        atp.flags |= lt::torrent_flags::seed_mode;
+        s->add_torrent(atp);
+        seeders.push_back(std::move(s));
+
+        if (rtt > 0) {
+            const int relayPort = kRelayPort + int(i);
+            std::thread(relay::run, relayPort, port, rtt).detach();
+            peerPorts.push_back(relayPort);
+            needRelay = true;
+        } else {
+            peerPorts.push_back(port);
+        }
+    }
+    if (needRelay)
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));  // let relays bind
+
+    std::printf("Seeders: ");
+    for (std::size_t i = 0; i < rates.size(); ++i)
+        std::printf("%d KB/s%s ", rates[i],
+                    (i < rtts.size() ? rtts[i] : a.rttMs) > 0 ? "(+rtt)" : "");
+    std::printf("\nA/B: %s vs %s | default RTT %dms | %d trials\n",
                 A.name.c_str(), B.name.c_str(), a.rttMs, a.trials);
     std::printf("\n%-12s %8s %8s %12s\n", "profile", "trial", "secs", "MB/s");
     std::printf("------------------------------------------------\n");
@@ -316,7 +374,7 @@ int main(int argc, char **argv)
     int okA = 0, okB = 0;
     for (const Profile *prof : {&A, &B}) {
         for (int t = 1; t <= a.trials; ++t) {
-            const double secs = runLeech(ti, peerPort, *prof, root / ("leech-" + prof->name));
+            const double secs = runLeech(ti, peerPorts, *prof, root / ("leech-" + prof->name));
             const double mbps = secs > 0 ? double(a.sizeMB) / secs : 0;
             std::printf("%-12s %8d %8.2f %12.2f\n", prof->name.c_str(), t, secs, mbps);
             if (secs > 0) {
