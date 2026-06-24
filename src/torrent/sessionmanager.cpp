@@ -109,6 +109,12 @@ SessionManager::SessionManager(QObject *parent)
     pack.set_int(lt::settings_pack::max_queued_disk_bytes, 6 * 1024 * 1024);
     // Deeper outstanding-request pipeline helps high-BDP links (seedboxes, distant CDN/web-seeds).
     pack.set_int(lt::settings_pack::max_out_request_queue, 1500);
+#ifdef BAT_LIBTORRENT_FORK
+    // Fork patch: fill that pipeline geometrically during slow-start instead of
+    // one block per received piece. Measured +9-27% on pipeline-bound transfers
+    // (fat link or high-RTT head) and neutral on bandwidth-capped swarms.
+    pack.set_bool(lt::settings_pack::piece_request_fast_ramp, true);
+#endif
     // Connection tuning: qBT defaults, with a slightly faster connect ramp so a
     // fresh torrent reaches a healthy peer set sooner.
     pack.set_int(lt::settings_pack::connections_limit, 500);

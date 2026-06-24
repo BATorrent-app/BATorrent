@@ -2,16 +2,20 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 //
 // Controlled A/B download benchmark. A single capped seeder feeds a fresh leecher
-// over loopback; we run the leecher twice — once with libtorrent's stock defaults
-// (qBittorrent's baseline, since qBit is also libtorrent) and once with
-// BATorrent's tuned settings — and report time-to-complete. This isolates the
-// engine/config delta the BATorrent-vs-qBittorrent benchmark must prove, with no
-// network, no infra, and no GUI. Add latency/loss with dummynet (`dnctl`) around
-// the loopback to exercise the high-BDP path; raise --files to exercise the disk
-// path (file_pool_size / max_queued_disk_bytes).
+// over loopback; we run the leecher twice and report time-to-complete. This
+// isolates the engine/config delta the BATorrent-vs-qBittorrent benchmark must
+// prove (qBit is also libtorrent), with no network, no infra, and no GUI.
+//
+//   --ab config : stock libtorrent defaults  vs  BATorrent tuned settings_pack
+//   --ab ramp   : same tuned config, piece_request_fast_ramp OFF vs ON — isolates
+//                 the fork's slow-start patch alone (off == stock behavior).
+//
+// Latency is the variable that exercises the request pipeline. --rtt adds it with
+// an in-process TCP delay relay between leecher and seeder (no sudo, deterministic)
+// so the high-BDP path is reproducible. --files raises disk pressure.
 //
 // Build:  cmake -B build -DBAT_BENCH=ON && cmake --build build --target bat_bench
-// Run:    ./bat_bench --size 256 --files 1 --seed-rate 8000 --trials 3
+// Run:    ./bat_bench --ab ramp --rtt 100 --size 64 --seed-rate 8000 --trials 5
 
 #include <libtorrent/session.hpp>
 #include <libtorrent/settings_pack.hpp>
@@ -24,12 +28,19 @@
 #include <libtorrent/peer_class.hpp>
 #include <libtorrent/peer_class_type_filter.hpp>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+
 #include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <random>
 #include <string>
 #include <thread>
@@ -39,13 +50,120 @@ namespace fs = std::filesystem;
 namespace lt = libtorrent;
 using clk = std::chrono::steady_clock;
 
+static constexpr int kSeedPort  = 6881;
+static constexpr int kRelayPort = 6890;
+
+struct Profile {
+    std::string name;
+    bool tuned;       // apply BATorrent's settings_pack tuning
+    bool fastRamp;    // fork: piece_request_fast_ramp
+};
+
 struct Args {
     int sizeMB = 256;
     int files = 1;
     int pieceKB = 0;      // 0 = libtorrent auto
     int seedRateKBs = 8000;
     int trials = 3;
+    int rttMs = 0;        // round-trip latency injected by the relay (0 = direct)
+    std::string ab = "ramp";
 };
+
+// ---- in-process TCP delay relay: models RTT without sudo/dummynet ----------
+namespace relay {
+
+struct Chunk { clk::time_point release; std::vector<char> data; bool eof = false; };
+
+class DelayPipe {
+    std::mutex m_;
+    std::condition_variable cv_;
+    std::deque<Chunk> q_;
+public:
+    void push(Chunk c) {
+        { std::lock_guard<std::mutex> l(m_); q_.push_back(std::move(c)); }
+        cv_.notify_one();
+    }
+    Chunk pop() {
+        std::unique_lock<std::mutex> l(m_);
+        cv_.wait(l, [&] { return !q_.empty(); });
+        const auto rel = q_.front().release;
+        l.unlock();
+        std::this_thread::sleep_until(rel);   // the latency lives here
+        l.lock();
+        Chunk c = std::move(q_.front());
+        q_.pop_front();
+        return c;
+    }
+};
+
+static void reader(int src, DelayPipe *pipe, std::chrono::milliseconds delay)
+{
+    std::vector<char> buf(64 * 1024);
+    for (;;) {
+        const ssize_t n = ::read(src, buf.data(), buf.size());
+        if (n <= 0) { pipe->push({clk::now() + delay, {}, true}); return; }
+        pipe->push({clk::now() + delay,
+                    std::vector<char>(buf.data(), buf.data() + n), false});
+    }
+}
+
+static void writer(int dst, DelayPipe *pipe)
+{
+    for (;;) {
+        Chunk c = pipe->pop();
+        if (c.eof) { ::shutdown(dst, SHUT_WR); return; }
+        const char *p = c.data.data();
+        std::size_t left = c.data.size();
+        while (left) {
+            const ssize_t n = ::write(dst, p, left);
+            if (n <= 0) return;
+            p += n; left -= std::size_t(n);
+        }
+    }
+}
+
+static int dialLoopback(int port)
+{
+    const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+    sockaddr_in a{};
+    a.sin_family = AF_INET;
+    a.sin_port = htons(std::uint16_t(port));
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (::connect(fd, reinterpret_cast<sockaddr *>(&a), sizeof(a)) < 0) {
+        ::close(fd); return -1;
+    }
+    return fd;
+}
+
+static void run(int listenPort, int upstreamPort, int rttMs)
+{
+    const int ls = ::socket(AF_INET, SOCK_STREAM, 0);
+    int one = 1;
+    ::setsockopt(ls, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    sockaddr_in a{};
+    a.sin_family = AF_INET;
+    a.sin_port = htons(std::uint16_t(listenPort));
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (::bind(ls, reinterpret_cast<sockaddr *>(&a), sizeof(a)) < 0) {
+        std::perror("relay bind"); return;
+    }
+    ::listen(ls, 8);
+    const std::chrono::milliseconds delay(rttMs / 2);   // half each way
+    for (;;) {
+        const int cs = ::accept(ls, nullptr, nullptr);
+        if (cs < 0) continue;
+        const int us = dialLoopback(upstreamPort);
+        if (us < 0) { ::close(cs); continue; }
+        auto *up = new DelayPipe();    // leaked per-connection; fine for a bench
+        auto *down = new DelayPipe();
+        std::thread(reader, cs, up, delay).detach();
+        std::thread(writer, us, up).detach();
+        std::thread(reader, us, down, delay).detach();
+        std::thread(writer, cs, down).detach();
+    }
+}
+
+} // namespace relay
 
 static void writeRandom(const fs::path &p, std::size_t bytes)
 {
@@ -64,17 +182,16 @@ static void writeRandom(const fs::path &p, std::size_t bytes)
     }
 }
 
-// The two profiles under test. "stock" leaves libtorrent at its defaults (the
-// qBittorrent baseline); "batorrent" applies our tuning from sessionmanager.cpp.
-static void applyProfile(lt::settings_pack &p, const std::string &profile)
+static void applyProfile(lt::settings_pack &p, const Profile &prof)
 {
-    if (profile == "batorrent") {
+    if (prof.tuned) {
         p.set_int(lt::settings_pack::file_pool_size, 40);
         p.set_int(lt::settings_pack::max_queued_disk_bytes, 6 * 1024 * 1024);
         p.set_int(lt::settings_pack::max_out_request_queue, 1500);
         p.set_int(lt::settings_pack::connection_speed, 50);
         p.set_int(lt::settings_pack::aio_threads, 10);
     }
+    p.set_bool(lt::settings_pack::piece_request_fast_ramp, prof.fastRamp);
 }
 
 static lt::add_torrent_params makeTorrent(const fs::path &dir, const Args &a)
@@ -91,8 +208,8 @@ static lt::add_torrent_params makeTorrent(const fs::path &dir, const Args &a)
 }
 
 // Returns seconds to reach 100% (or -1 on timeout).
-static double runLeech(const std::shared_ptr<lt::torrent_info> &ti, int seedPort,
-                       const std::string &profile, const fs::path &saveDir)
+static double runLeech(const std::shared_ptr<lt::torrent_info> &ti, int peerPort,
+                       const Profile &prof, const fs::path &saveDir)
 {
     fs::remove_all(saveDir);
     fs::create_directories(saveDir);
@@ -104,7 +221,7 @@ static double runLeech(const std::shared_ptr<lt::torrent_info> &ti, int seedPort
     p.set_bool(lt::settings_pack::enable_lsd, false);
     p.set_bool(lt::settings_pack::enable_upnp, false);
     p.set_bool(lt::settings_pack::enable_natpmp, false);
-    applyProfile(p, profile);
+    applyProfile(p, prof);
     lt::session s(p);
 
     lt::add_torrent_params atp;
@@ -112,7 +229,7 @@ static double runLeech(const std::shared_ptr<lt::torrent_info> &ti, int seedPort
     atp.save_path = saveDir.string();
     lt::torrent_handle h = s.add_torrent(atp);
     h.connect_peer(lt::tcp::endpoint(lt::make_address("127.0.0.1"),
-                                     std::uint16_t(seedPort)));
+                                     std::uint16_t(peerPort)));
 
     const auto start = clk::now();
     const auto deadline = start + std::chrono::minutes(10);
@@ -130,12 +247,24 @@ int main(int argc, char **argv)
 {
     Args a;
     for (int i = 1; i < argc; ++i) {
-        auto next = [&]() { return i + 1 < argc ? std::atoi(argv[++i]) : 0; };
-        if (!std::strcmp(argv[i], "--size")) a.sizeMB = next();
-        else if (!std::strcmp(argv[i], "--files")) a.files = next();
-        else if (!std::strcmp(argv[i], "--piece")) a.pieceKB = next();
-        else if (!std::strcmp(argv[i], "--seed-rate")) a.seedRateKBs = next();
-        else if (!std::strcmp(argv[i], "--trials")) a.trials = next();
+        auto num = [&]() { return i + 1 < argc ? std::atoi(argv[++i]) : 0; };
+        auto str = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
+        if (!std::strcmp(argv[i], "--size")) a.sizeMB = num();
+        else if (!std::strcmp(argv[i], "--files")) a.files = num();
+        else if (!std::strcmp(argv[i], "--piece")) a.pieceKB = num();
+        else if (!std::strcmp(argv[i], "--seed-rate")) a.seedRateKBs = num();
+        else if (!std::strcmp(argv[i], "--trials")) a.trials = num();
+        else if (!std::strcmp(argv[i], "--rtt")) a.rttMs = num();
+        else if (!std::strcmp(argv[i], "--ab")) a.ab = str();
+    }
+
+    Profile A, B;
+    if (a.ab == "config") {
+        A = {"stock", false, false};
+        B = {"batorrent", true, true};
+    } else {
+        A = {"ramp-off", true, false};
+        B = {"ramp-on", true, true};
     }
 
     const fs::path root = fs::temp_directory_path() / "bat-bench";
@@ -153,7 +282,8 @@ int main(int argc, char **argv)
 
     // Capped seeder: the deterministic bottleneck both profiles compete against.
     lt::settings_pack sp;
-    sp.set_str(lt::settings_pack::listen_interfaces, "127.0.0.1:6881");
+    sp.set_str(lt::settings_pack::listen_interfaces,
+               std::string("127.0.0.1:") + std::to_string(kSeedPort));
     sp.set_bool(lt::settings_pack::enable_dht, false);
     sp.set_bool(lt::settings_pack::enable_lsd, false);
     sp.set_int(lt::settings_pack::upload_rate_limit, a.seedRateKBs * 1024);
@@ -169,32 +299,42 @@ int main(int argc, char **argv)
     seedAtp.flags |= lt::torrent_flags::seed_mode;
     seeder.add_torrent(seedAtp);
 
-    std::printf("Seeder capped at %d KB/s on 127.0.0.1:6881\n", a.seedRateKBs);
+    int peerPort = kSeedPort;
+    if (a.rttMs > 0) {
+        std::thread(relay::run, kRelayPort, kSeedPort, a.rttMs).detach();
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));  // let it bind
+        peerPort = kRelayPort;
+    }
+
+    std::printf("Seeder capped at %d KB/s on 127.0.0.1:%d\n", a.seedRateKBs, kSeedPort);
+    std::printf("A/B: %s vs %s | RTT %dms | %d trials\n",
+                A.name.c_str(), B.name.c_str(), a.rttMs, a.trials);
     std::printf("\n%-12s %8s %8s %12s\n", "profile", "trial", "secs", "MB/s");
     std::printf("------------------------------------------------\n");
 
-    double sumStock = 0, sumBat = 0;
-    int okStock = 0, okBat = 0;
-    for (const std::string profile : {std::string("stock"), std::string("batorrent")}) {
+    double sumA = 0, sumB = 0;
+    int okA = 0, okB = 0;
+    for (const Profile *prof : {&A, &B}) {
         for (int t = 1; t <= a.trials; ++t) {
-            const double secs = runLeech(ti, 6881, profile, root / ("leech-" + profile));
+            const double secs = runLeech(ti, peerPort, *prof, root / ("leech-" + prof->name));
             const double mbps = secs > 0 ? double(a.sizeMB) / secs : 0;
-            std::printf("%-12s %8d %8.2f %12.2f\n", profile.c_str(), t, secs, mbps);
+            std::printf("%-12s %8d %8.2f %12.2f\n", prof->name.c_str(), t, secs, mbps);
             if (secs > 0) {
-                if (profile == "stock") { sumStock += secs; ++okStock; }
-                else { sumBat += secs; ++okBat; }
+                if (prof == &A) { sumA += secs; ++okA; }
+                else { sumB += secs; ++okB; }
             }
         }
     }
 
     std::printf("------------------------------------------------\n");
-    if (okStock && okBat) {
-        const double avgStock = sumStock / okStock, avgBat = sumBat / okBat;
-        const double delta = (avgStock - avgBat) / avgStock * 100.0;
-        std::printf("avg stock     : %.2fs\n", avgStock);
-        std::printf("avg batorrent : %.2fs\n", avgBat);
+    if (okA && okB) {
+        const double avgA = sumA / okA, avgB = sumB / okB;
+        const double delta = (avgA - avgB) / avgA * 100.0;
+        std::printf("avg %-10s: %.2fs\n", A.name.c_str(), avgA);
+        std::printf("avg %-10s: %.2fs\n", B.name.c_str(), avgB);
         std::printf("delta         : %+.1f%% %s\n", delta,
-                    delta > 0 ? "(BATorrent faster)" : "(no win — tune the scenario)");
+                    delta > 0 ? ("(" + B.name + " faster)").c_str()
+                              : "(no win — tune the scenario)");
     }
     fs::remove_all(root);
     return 0;
