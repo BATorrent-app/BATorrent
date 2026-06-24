@@ -1,0 +1,54 @@
+diff --git a/include/libtorrent/settings_pack.hpp b/include/libtorrent/settings_pack.hpp
+index b3d6f3374..94ff04645 100644
+--- a/include/libtorrent/settings_pack.hpp
++++ b/include/libtorrent/settings_pack.hpp
+@@ -1047,6 +1047,13 @@ namespace aux {
+ 			// created within it to have the NOCOW flag set.
+ 			disk_disable_copy_on_write,
+ 
++			// BATorrent fork: grow the per-peer request pipeline geometrically
++			// during slow-start (TCP-slow-start style) instead of one block per
++			// received piece. Fills a high-BDP pipe in ~log(N) pieces instead of
++			// N, trimming the pipeline-starved head of a download on high-latency
++			// links. Off by default = stock behavior.
++			piece_request_fast_ramp,
++
+ 			max_bool_setting_internal
+ 		};
+ 
+diff --git a/src/peer_connection.cpp b/src/peer_connection.cpp
+index 628fc8b63..10c5005b3 100644
+--- a/src/peer_connection.cpp
++++ b/src/peer_connection.cpp
+@@ -2811,9 +2811,17 @@ namespace libtorrent {
+ 		if (!m_bitfield_received) incoming_have_none();
+ 		if (is_disconnecting()) return;
+ 
+-		// slow-start
++		// slow-start: stock grows the request pipeline one block per received
++		// piece (linear). With piece_request_fast_ramp on, double it each piece
++		// (TCP-slow-start style) so a high-BDP pipe fills in ~log(N) pieces
++		// instead of N. update_desired_queue_size() below clamps it.
+ 		if (m_slow_start)
+-			m_desired_queue_size += 1;
++		{
++			if (m_settings.get_bool(settings_pack::piece_request_fast_ramp))
++				m_desired_queue_size = std::uint16_t(m_desired_queue_size * 2);
++			else
++				m_desired_queue_size += 1;
++		}
+ 
+ 		update_desired_queue_size();
+ 
+diff --git a/src/settings_pack.cpp b/src/settings_pack.cpp
+index cfe695e27..e0676eb52 100644
+--- a/src/settings_pack.cpp
++++ b/src/settings_pack.cpp
+@@ -242,6 +242,7 @@ constexpr int DISK_WRITE_MODE = settings_pack::enable_os_cache;
+ 		SET(socks5_udp_send_local_ep, false, nullptr),
+ 		SET(proxy_send_host_in_connect, false, nullptr),
+ 		SET(disk_disable_copy_on_write, false, nullptr),
++		SET(piece_request_fast_ramp, false, nullptr),
+ 	}});
+ 
+ 	CONSTEXPR_SETTINGS
