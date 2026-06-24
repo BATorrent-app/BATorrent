@@ -40,6 +40,7 @@
 #include "torrent/sessionmanager.h"
 #include "app/secretstore.h"
 #include "app/logger.h"
+#include "app/crashhandler.h"
 #include "app/utils.h"
 
 // Serves the app logo recolored for the OS scheme to QML (the system tray
@@ -127,6 +128,11 @@ int main(int argc, char *argv[])
     const bool debugFlag = app.arguments().contains("--debug")
                         || app.arguments().contains("-d");
     Logger::instance().init();
+    // Capture a backtrace on a fatal crash (the MS-Store crashes have no repro on
+    // the dev box). Installed right after the log is up so startup crashes count too.
+    CrashHandler::install(
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/crashes",
+        APP_VERSION);
     if (debugFlag) {
         Logger::instance().setLevel(Logger::Trace);
         // Make Qt dump the scene-graph/RHI init (which GPU backend it picked and

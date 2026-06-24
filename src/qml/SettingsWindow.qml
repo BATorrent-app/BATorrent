@@ -79,6 +79,7 @@ Window {
             { type: "toggle", key: "autoExtract", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
             { type: "toggle", key: "autoExtractDelete", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
             { type: "text", key: "extractPasswords", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "senha1; senha2; online-fix.me", note: (i18n.language, i18n.t("set_extract_passwords_note")), w: "grow" },
+            { type: "toggle", key: "gameAutoInstall", label: (i18n.language, i18n.t("set_game_autoinstall")), note: (i18n.language, i18n.t("set_game_autoinstall_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_playback")) },
             { type: "select", key: "preferredQuality", label: (i18n.language, i18n.t("set_preferred_quality")), options: ["Auto", "1080p", "720p", "2160p"], value: 1, note: (i18n.language, i18n.t("set_pref_quality_note")) },
             { type: "number", key: "preferMaxSize", label: (i18n.language, i18n.t("set_max_size")), value: "0", suffix: "MB", note: (i18n.language, i18n.t("note_unlimited")) },
@@ -166,6 +167,9 @@ Window {
             { type: "number", key: "proxyPort", label: (i18n.language, i18n.t("set_port2")), value: "1080" },
             { type: "text", key: "proxyUser", label: (i18n.language, i18n.t("set_user2")), placeholder: (i18n.language, i18n.t("settings_proxy_user_hint")), w: "w-md" },
             { type: "password", key: "proxyPass", label: (i18n.language, i18n.t("set_pass2")), w: "w-md" },
+            { type: "toggle", key: "proxyLeakProof", on: true, label: (i18n.language, i18n.t("set_proxy_leakproof")), note: (i18n.language, i18n.t("set_proxy_leakproof_note")) },
+            { type: "button", action: "proxyMullvad", label: (i18n.language, i18n.t("set_proxy_presets")), btn: "Mullvad SOCKS5", note: (i18n.language, i18n.t("set_proxy_presets_note")) },
+            { type: "button", action: "proxyLeakTest", label: (i18n.language, i18n.t("set_proxy_leaktest")), btn: (i18n.language, i18n.t("set_proxy_leaktest_btn")), note: (i18n.language, i18n.t("set_proxy_leaktest_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_ip_filter")) },
             { type: "path", key: "ipFilterPath", file: true, label: (i18n.language, i18n.t("set_blocklist_file")), placeholder: (i18n.language, i18n.t("settings_ip_filter_hint")), note: (i18n.language, i18n.t("set_blocklist_note")) }
         ],
@@ -1016,6 +1020,12 @@ Window {
             infoDlg.message = dok ? i18n.t("defender_exclude_ok").replace(/:?\s*%1\s*$/, "")
                                   : (i18n.language, i18n.t("defender_exclude_fail"))
             infoDlg.open()
+        } else if (a === "proxyMullvad") {
+            if (typeof settings !== "undefined") settings.applyProxyPreset("mullvad")
+            win.showInfo(i18n.t("set_proxy_presets"), i18n.t("set_proxy_preset_applied"))
+        } else if (a === "proxyLeakTest") {
+            if (typeof settings !== "undefined") settings.proxyLeakTest()
+            win.showInfo(i18n.t("set_proxy_leaktest"), i18n.t("set_proxy_leaktest_running"))
         } else if (a === "exportSettings") { backupSaveDlg.mode = "export"; backupSaveDlg.currentFile = "batorrent_settings.json"; backupSaveDlg.open() }
         else if (a === "fullBackup")      { backupSaveDlg.mode = "backup"; backupSaveDlg.currentFile = "batorrent-backup.bat"; backupSaveDlg.open() }
         else if (a === "importSettings")  { backupOpenDlg.mode = "import"; backupOpenDlg.open() }
@@ -1049,6 +1059,12 @@ Window {
         function onTelegramTestResult(ok, message) {
             infoDlg.title = (i18n.language, i18n.t("settings_telegram_test"))
             infoDlg.message = message
+            infoDlg.open()
+        }
+        function onProxyLeakTestResult(ok, message) {
+            infoDlg.title = (i18n.language, i18n.t("set_proxy_leaktest"))
+            infoDlg.message = ok ? i18n.t("set_proxy_leaktest_ok").replace("%1", message)
+                                 : i18n.t("set_proxy_leaktest_fail").replace("%1", message)
             infoDlg.open()
         }
     }

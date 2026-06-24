@@ -22,6 +22,7 @@
 #include "../webui/webserver.h"
 #include <QCryptographicHash>
 #include <QNetworkAccessManager>
+#include <QNetworkProxy>
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QDateTime>
@@ -179,6 +180,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "proxyPort")           return s->proxyPort();
     if (key == "proxyUser")           return s->proxyUser();
     if (key == "proxyPass")           return s->proxyPass();
+    if (key == "proxyLeakProof")      return s->proxyLeakProof();
     if (key == "ipFilterPath")        return s->ipFilterPath();
     // files / media
     if (key == "tempPath")            return s->tempPath();
@@ -250,7 +252,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
         QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
         QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude"),
-        QStringLiteral("autoplayNext"), QStringLiteral("preferNativeLang")
+        QStringLiteral("autoplayNext"), QStringLiteral("preferNativeLang"),
+        QStringLiteral("gameAutoInstall")
     };
     if (uiBoolKeys.contains(key)) {
         QSettings st;
@@ -370,6 +373,7 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     else if (key == "proxyPort")           s->setProxySettings(s->proxyType(), s->proxyHost(), v.toInt(), s->proxyUser(), s->proxyPass());
     else if (key == "proxyUser")           s->setProxySettings(s->proxyType(), s->proxyHost(), s->proxyPort(), v.toString(), s->proxyPass());
     else if (key == "proxyPass")           s->setProxySettings(s->proxyType(), s->proxyHost(), s->proxyPort(), s->proxyUser(), v.toString());
+    else if (key == "proxyLeakProof")      s->setProxyLeakProof(v.toBool());
     else if (key == "ipFilterPath")        { QString p = v.toString(); if (p.isEmpty()) s->clearIpFilter(); else s->loadIpFilter(p); }
     else if (key == "tempPath")            s->setTempPath(v.toString());
     else if (key == "preallocate")         s->setPreallocate(v.toBool());
@@ -580,6 +584,50 @@ bool QmlSettingsBridge::setAsDefaultApp()
   #endif
 #endif
     return ok;
+}
+
+void QmlSettingsBridge::applyProxyPreset(const QString &name)
+{
+    // Mullvad exposes a local SOCKS5 (only while connected to Mullvad); Tor's is
+    // the local daemon. Other providers (AirVPN, etc.) need their own host/creds,
+    // so a preset there just selects SOCKS5 and leaves the fields to the user.
+    QSettings st;
+    if (name == QStringLiteral("mullvad")) {
+        m_session->setProxySettings(1, QStringLiteral("10.64.0.1"), 1080, QString(), QString());
+        st.setValue("proxyType", 1); st.setValue("proxyHost", "10.64.0.1"); st.setValue("proxyPort", 1080);
+    } else if (name == QStringLiteral("tor")) {
+        m_session->setProxySettings(1, QStringLiteral("127.0.0.1"), 9050, QString(), QString());
+        st.setValue("proxyType", 1); st.setValue("proxyHost", "127.0.0.1"); st.setValue("proxyPort", 9050);
+    } else {
+        m_session->setProxySettings(1, m_session->proxyHost(), m_session->proxyPort(),
+                                    m_session->proxyUser(), m_session->proxyPass());
+        st.setValue("proxyType", 1);
+    }
+    emit changed();
+}
+
+void QmlSettingsBridge::proxyLeakTest()
+{
+    const int type = m_session->proxyType();
+    if (type == 0 || m_session->proxyHost().isEmpty()) {
+        emit proxyLeakTestResult(false, QString());
+        return;
+    }
+    auto *nam = new QNetworkAccessManager(this);
+    nam->setProxy(QNetworkProxy(
+        type == 1 ? QNetworkProxy::Socks5Proxy : QNetworkProxy::HttpProxy,
+        m_session->proxyHost(), quint16(m_session->proxyPort()),
+        m_session->proxyUser(), m_session->proxyPass()));
+    QNetworkRequest req(QUrl(QStringLiteral("https://api.ipify.org")));
+    req.setTransferTimeout(8000);
+    QNetworkReply *reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        const bool ok = reply->error() == QNetworkReply::NoError;
+        const QString ip = QString::fromUtf8(reply->readAll()).trimmed();
+        emit proxyLeakTestResult(ok && !ip.isEmpty(), ok ? ip : reply->errorString());
+        reply->deleteLater();
+        nam->deleteLater();
+    });
 }
 
 // --- QmlNotificationBridge ---

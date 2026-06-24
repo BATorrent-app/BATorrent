@@ -100,10 +100,19 @@ SessionManager::SessionManager(QObject *parent)
     pack.set_int(lt::settings_pack::checking_mem_usage, 512);
     pack.set_int(lt::settings_pack::aio_threads, 10);
     pack.set_int(lt::settings_pack::hashing_threads, 2);
-    pack.set_int(lt::settings_pack::file_pool_size, 100);
-    // Connection tuning: qBT defaults
+    // On libtorrent 2.0's mmap disk backend a large file pool throttles throughput
+    // (upstream #6561 — qBT's 5000 cut NVMe speed to a third); 40 matches our UI default.
+    pack.set_int(lt::settings_pack::file_pool_size, 40);
+    // The default 1 MiB disk write queue is the most common real-world download
+    // stall: when it fills, libtorrent stops requesting blocks. 6 MiB keeps the
+    // pipe full without a meaningful memory cost.
+    pack.set_int(lt::settings_pack::max_queued_disk_bytes, 6 * 1024 * 1024);
+    // Deeper outstanding-request pipeline helps high-BDP links (seedboxes, distant CDN/web-seeds).
+    pack.set_int(lt::settings_pack::max_out_request_queue, 1500);
+    // Connection tuning: qBT defaults, with a slightly faster connect ramp so a
+    // fresh torrent reaches a healthy peer set sooner.
     pack.set_int(lt::settings_pack::connections_limit, 500);
-    pack.set_int(lt::settings_pack::connection_speed, 30);
+    pack.set_int(lt::settings_pack::connection_speed, 50);
     pack.set_int(lt::settings_pack::unchoke_slots_limit, 20);
     // Prefer RC4 encryption (like qBittorrent) — some private trackers
     // penalize clients that accept plaintext.
@@ -234,6 +243,7 @@ SessionManager::SessionManager(QObject *parent)
     if (settings.value("listenPort", 0).toInt() > 0) setListenPort(settings.value("listenPort").toInt());
     setKillSwitchEnabled(settings.value("killSwitchEnabled", false).toBool());
     setAutoResumeOnReconnect(settings.value("autoResumeOnReconnect", false).toBool());
+    m_proxyLeakProof = settings.value("proxyLeakProof", true).toBool();
     if (settings.value("proxyType", 0).toInt() != 0)
         setProxySettings(settings.value("proxyType").toInt(), settings.value("proxyHost").toString(),
                          settings.value("proxyPort").toInt(), settings.value("proxyUser").toString(),
@@ -2334,7 +2344,7 @@ void SessionManager::processAlerts()
                     fa->handle.pause();
 
                 if (m_autoExtract)
-                    extractArchives(QString::fromStdString(st.save_path), name);
+                    extractArchives(QString::fromStdString(st.save_path), name, QString(), hash);
 
                 // Complete torrents now load in seed_mode (see loadResumeData) so
                 // they no longer re-check/re-download and re-fire this alert on
@@ -3114,7 +3124,13 @@ void SessionManager::setProxySettings(int type, const QString &host, int port,
     if (type == 0) {
         pack.set_int(lt::settings_pack::proxy_type, lt::settings_pack::none);
         pack.set_bool(lt::settings_pack::proxy_peer_connections, false);
+        pack.set_bool(lt::settings_pack::proxy_tracker_connections, false);
         pack.set_bool(lt::settings_pack::proxy_hostnames, false);
+        // Restore the leak vectors leak-proof mode had disabled.
+        pack.set_bool(lt::settings_pack::enable_upnp, true);
+        pack.set_bool(lt::settings_pack::enable_natpmp, true);
+        pack.set_bool(lt::settings_pack::enable_lsd, true);
+        pack.set_bool(lt::settings_pack::anonymous_mode, m_anonymousMode);
     } else {
         int ltType = (type == 1) ? lt::settings_pack::socks5_pw : lt::settings_pack::http_pw;
         if (user.isEmpty())
@@ -3126,14 +3142,35 @@ void SessionManager::setProxySettings(int type, const QString &host, int port,
             pack.set_str(lt::settings_pack::proxy_username, user.toStdString());
             pack.set_str(lt::settings_pack::proxy_password, pass.toStdString());
         }
-        // Route peer traffic through the proxy too — without this the
-        // proxy only covers trackers and the user's real IP leaks to peers.
-        // Resolve hostnames through the proxy as well so DNS doesn't leak.
+        // Route EVERYTHING through the tunnel — peers, trackers, and DNS — so
+        // neither the real IP nor lookups leak. For SOCKS5, libtorrent carries
+        // uTP/DHT over UDP ASSOCIATE automatically (a TCP-only proxy will drop
+        // those — the leak-proof toggle disables the rest of the leak vectors).
         pack.set_bool(lt::settings_pack::proxy_peer_connections, true);
+        pack.set_bool(lt::settings_pack::proxy_tracker_connections, true);
         pack.set_bool(lt::settings_pack::proxy_hostnames, true);
+        if (m_proxyLeakProof) {
+            // UPnP/NAT-PMP punch a port map advertising the real WAN IP; LSD
+            // broadcasts it on the LAN — both bypass the proxy. Kill them, and
+            // scrub the client fingerprint while tunneled.
+            pack.set_bool(lt::settings_pack::enable_upnp, false);
+            pack.set_bool(lt::settings_pack::enable_natpmp, false);
+            pack.set_bool(lt::settings_pack::enable_lsd, false);
+            pack.set_bool(lt::settings_pack::anonymous_mode, true);
+        }
     }
     m_session.apply_settings(pack);
 }
+
+void SessionManager::setProxyLeakProof(bool enabled)
+{
+    m_proxyLeakProof = enabled;
+    QSettings("BATorrent", "BATorrent").setValue("proxyLeakProof", enabled);
+    // Re-apply the active proxy so the change takes effect immediately.
+    setProxySettings(m_proxyType, m_proxyHost, m_proxyPort, m_proxyUser, m_proxyPass);
+}
+
+bool SessionManager::proxyLeakProof() const { return m_proxyLeakProof; }
 
 int SessionManager::proxyType() const { return m_proxyType; }
 QString SessionManager::proxyHost() const { return m_proxyHost; }
@@ -3598,7 +3635,7 @@ void SessionManager::setExtractPasswords(const QStringList &passwords)
 QStringList SessionManager::extractPasswords() const { return m_extractPasswords; }
 
 void SessionManager::extractArchives(const QString &savePath, const QString &torrentName,
-                                     const QString &priorityPassword)
+                                     const QString &priorityPassword, const QString &infoHash)
 {
     QDir dir(savePath);
 
@@ -3623,11 +3660,17 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
 
     if (archives.isEmpty()) return;
 
+    if (!infoHash.isEmpty()) emit extractionStarted(infoHash);
+    auto allOk = std::make_shared<bool>(true);
+
     // Serialize: one archive at a time so a multi-archive torrent never opens a
     // swarm of extractor windows. Each archive still retries every password first.
     auto processArchive = std::make_shared<std::function<void(int)>>();
-    *processArchive = [this, archives, processArchive, priorityPassword](int ai) {
-        if (ai >= archives.size()) return;
+    *processArchive = [this, archives, processArchive, priorityPassword, infoHash, allOk](int ai) {
+        if (ai >= archives.size()) {
+            if (!infoHash.isEmpty()) emit extractionCompleted(infoHash, *allOk);
+            return;
+        }
         const QString archive = archives.at(ai);
         QFileInfo fi(archive);
         QString extractDir = fi.absolutePath();
@@ -3639,11 +3682,12 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
         attempts << QString();
         attempts << m_extractPasswords;
 
-        auto tryExtract = [this, archive, extractDir, attempts, processArchive, ai](int attemptIdx) {
+        auto tryExtract = [this, archive, extractDir, attempts, processArchive, ai, allOk](int attemptIdx) {
             auto self = std::make_shared<std::function<void(int)>>();
-            *self = [this, archive, extractDir, attempts, self, processArchive, ai](int idx) {
+            *self = [this, archive, extractDir, attempts, self, processArchive, ai, allOk](int idx) {
                 if (idx >= attempts.size()) {
                     qDebug() << "[session] extraction failed (all passwords tried):" << archive;
+                    *allOk = false;
                     emit torrentError(tr_("extract_failed").arg(QFileInfo(archive).fileName()));
                     (*processArchive)(ai + 1);          // move on to the next archive
                     return;
@@ -3796,7 +3840,7 @@ void SessionManager::extractTorrent(int index, const QString &password)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size())) return;
     const TorrentInfo info = torrentAt(index);
-    extractArchives(info.savePath, info.name, password);
+    extractArchives(info.savePath, info.name, password, torrentHashAt(index));
 }
 
 // --- Temp path ---

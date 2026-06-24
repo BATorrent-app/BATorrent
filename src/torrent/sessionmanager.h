@@ -327,6 +327,12 @@ public:
     // Proxy
     void setProxySettings(int type, const QString &host, int port,
                           const QString &user, const QString &pass);
+    // Leak-proof tunnel: route trackers through the proxy too and kill the vectors
+    // that announce the real IP behind a proxy (UPnP/NAT-PMP port maps + LSD
+    // broadcasts) + anonymous_mode. The libtorrent 2.0 equivalent of the old
+    // force_proxy. Re-applies the current proxy when toggled.
+    void setProxyLeakProof(bool enabled);
+    bool proxyLeakProof() const;
     int proxyType() const;
     QString proxyHost() const;
     int proxyPort() const;
@@ -442,6 +448,8 @@ signals:
     void torrentsUpdated();
     void torrentFinished(const QString &name, const QString &infoHash);
     void torrentError(const QString &message);
+    void extractionStarted(const QString &infoHash);
+    void extractionCompleted(const QString &infoHash, bool success);
     void suspiciousFilesDetected(const QString &name, const QStringList &files);
     void killSwitchTriggered();
     void interfaceRestored();
@@ -597,7 +605,8 @@ private:
     QSet<QString> m_defenderExcludedRoots;   // save roots already sent to Defender
     QStringList m_extractPasswords;
     void extractArchives(const QString &savePath, const QString &torrentName,
-                         const QString &priorityPassword = QString());
+                         const QString &priorityPassword = QString(),
+                         const QString &infoHash = QString());
 
     // Auto-move
     bool m_autoMoveEnabled = false;
@@ -632,6 +641,7 @@ private:
     int m_proxyPort = 0;
     QString m_proxyUser;
     QString m_proxyPass;
+    bool m_proxyLeakProof = true;   // kill leak vectors while a proxy is active
 
     // IP filter
     QString m_ipFilterPath;

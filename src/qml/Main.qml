@@ -346,6 +346,21 @@ Window {
             text: (i18n.language, i18n.t("ctx_play"))
             onTriggered: session.playSelected()
         }
+        // Game rows get the same state-driven action as the Hub: Play when ready,
+        // else Install. "Open folder" above stays the secondary action.
+        CtxItem {
+            visible: (win.selected, session.selectedIsGame() && session.selectedGameState() === 4)
+            height: visible ? implicitHeight : 0
+            text: (i18n.language, i18n.t("hub_gs_play"))
+            onTriggered: session.playSelectedGame()
+        }
+        CtxItem {
+            visible: (win.selected, session.selectedIsGame()
+                      && session.selectedGameState() !== 4 && session.selectedGameState() !== 5)
+            height: visible ? implicitHeight : 0
+            text: (i18n.language, i18n.t("hub_gs_install"))
+            onTriggered: session.installSelectedGame()
+        }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
         Sep {}
 
