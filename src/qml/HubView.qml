@@ -90,6 +90,47 @@ Item {
     function playGame(hash) {
         if (api) api.launchGame(hash)
     }
+    // installState ints mirror QmlSessionBridge::GameInstallState:
+    //   0 Downloading · 1 ReadyToInstall · 2 Extracting · 3 Installing
+    //   4 Ready · 5 Playing · 6 NeedsSetup · 7 Failed
+    // The card's primary gesture is state-driven (Steam model): one labelled action,
+    // never a blind "open folder".
+    function gamePrimary(item) {
+        if (!api || !item) return
+        switch (item.installState) {
+        case 4: api.launchGame(item.infoHash); break          // Ready → Play
+        case 1: case 7: api.installGame(item.infoHash); break // Install / Retry → run the chain
+        case 6: page.openExePicker(item.infoHash, true); break // NeedsSetup → pick exe then launch
+        case 3: page.gameMenuOpenFolder(item.infoHash); break  // Installing → reopen the setup folder
+        // 0 Downloading / 2 Extracting / 5 Playing → busy, no-op
+        default: break
+        }
+    }
+    function gameStateLabel(item) {
+        if (!item) return ""
+        switch (item.installState) {
+        case 0: return "↓ " + Math.round((item.progress || 0) * 100) + "%"
+        case 1: return i18n.t("hub_gs_install")
+        case 2: return i18n.t("hub_gs_extracting")
+        case 3: return i18n.t("hub_gs_finish_setup")
+        case 4: return i18n.t("hub_gs_play")
+        case 5: return i18n.t("hub_gs_playing")
+        case 6: return i18n.t("hub_gs_setup")
+        case 7: return i18n.t("hub_gs_retry")
+        }
+        return ""
+    }
+    // actionable (accent) vs busy (muted) — drives the state button's colour
+    function gameStateActionable(item) {
+        if (!item) return false
+        var s = item.installState
+        return s === 1 || s === 4 || s === 6 || s === 7
+    }
+    function gameMenuOpenFolder(hash) {
+        if (!api) return
+        var folder = api.gameFolder(hash)
+        if (folder && folder.length > 0) Qt.openUrlExternally(page.fileUrl(folder))
+    }
     function fmtAgo(ms) {
         if (!ms || ms <= 0) return ""
         var d = Math.floor((Date.now() - ms) / 86400000)
@@ -192,8 +233,8 @@ Item {
                         Repeater {
                             model: page.continuePlaying
                             delegate: HubCard {
-                                cardW: page.railCardW; item: modelData; requireDoubleClick: true
-                                onPlay: page.playGame(modelData.infoHash)
+                                cardW: page.railCardW; item: modelData; isGame: true; requireDoubleClick: true
+                                onPlay: page.gamePrimary(modelData)
                                 onContext: gameMenu.openFor(modelData.infoHash)
                             }
                         }
@@ -256,8 +297,9 @@ Item {
                         model: page.applyView(page.gameItems)
                         delegate: HubCard {
                             item: modelData
+                            isGame: true
                             requireDoubleClick: true
-                            onPlay: page.playGame(modelData.infoHash)
+                            onPlay: page.gamePrimary(modelData)
                             onContext: gameMenu.openFor(modelData.infoHash)
                         }
                     }
@@ -313,6 +355,7 @@ Item {
         property var item
         property int cardW: 150
         property bool requireDoubleClick: false
+        property bool isGame: false
         readonly property int cardH: Math.round(cardW * 1.5)
         signal play()
         signal context()
@@ -350,12 +393,52 @@ Item {
                 Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
             }
 
-            // hover play overlay
+            // hover play overlay (movies: a play glyph; games use the state button below)
             Rectangle {
                 anchors.fill: parent; radius: 10; color: "#66000000"
                 opacity: ma.containsMouse ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: 140 } }
-                IconImg { anchors.centerIn: parent; src: "qrc:/icons/play.svg"; tint: "white"; s: 40 }
+                IconImg {
+                    anchors.centerIn: parent; src: "qrc:/icons/play.svg"; tint: "white"; s: 40
+                    visible: !card.isGame
+                }
+            }
+
+            // games: state-driven primary action (Install / Extracting / Play / …).
+            // The label IS the differentiation — never a blind double-click.
+            Rectangle {
+                id: stateBtn
+                visible: card.isGame && card.item.installState !== 0 && card.item.installState !== 5
+                anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right
+                anchors.margins: 6
+                height: 26; radius: 7
+                readonly property bool actionable: page.gameStateActionable(card.item)
+                color: actionable ? (sbma.containsMouse ? Qt.lighter(Theme.accent, 1.12) : Theme.accent)
+                                  : "#cc1b1b1f"
+                border.color: actionable ? "transparent" : Theme.hair
+                border.width: actionable ? 0 : 1
+                opacity: (ma.containsMouse || actionable) ? 1 : 0.92
+                Behavior on opacity { NumberAnimation { duration: 140 } }
+                Row {
+                    anchors.centerIn: parent; spacing: 5
+                    Spinner {
+                        visible: card.item.installState === 2 || card.item.installState === 3
+                        s: 13; tint: Theme.t2
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        text: page.gameStateLabel(card.item)
+                        color: stateBtn.actionable ? Theme.accentText : Theme.t2
+                        font.pixelSize: 11; font.weight: Font.Bold; font.family: Theme.fontSans
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+                MouseArea {
+                    id: sbma; anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: stateBtn.actionable ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: page.gamePrimary(card.item)
+                }
             }
 
             // "playing now" badge
@@ -495,6 +578,10 @@ Item {
         property string hash: ""
         function openFor(h) { hash = h; popup() }
         implicitWidth: 200
+        BatMenuItem {
+            text: (i18n.language, i18n.t("hub_gs_install"))
+            onTriggered: if (page.api) page.api.installGame(gameMenu.hash)
+        }
         BatMenuItem {
             text: (i18n.language, i18n.t("hub_set_exe"))
             onTriggered: page.openExePicker(gameMenu.hash, false)

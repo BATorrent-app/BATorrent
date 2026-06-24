@@ -1335,3 +1335,96 @@ TEST_CASE("ReleasePick: Auto prefers 1080p sweet spot", "[release]") {
 TEST_CASE("ReleasePick: empty list returns -1", "[release]") {
     REQUIRE(ReleasePick::best({}, "1080p", 0) == -1);
 }
+
+// ---- InstallerProfile: engine detection + silent recipes -------------------
+#include "app/installerprofile.h"
+using IP = InstallerProfile::Engine;
+
+TEST_CASE("InstallerProfile: detects Inno Setup by magic at 0x30", "[installer]") {
+    QByteArray b(0x40, '\0');
+    b.replace(0x30, 4, QByteArray("Inno"));
+    REQUIRE(InstallerProfile::detectEngineFromBytes(b) == IP::InnoSetup);
+}
+
+TEST_CASE("InstallerProfile: detects Inno by data-section marker", "[installer]") {
+    QByteArray b = QByteArray("MZ") + QByteArray(200, '\0') + QByteArray("Inno Setup Setup Data (6.2.0)");
+    REQUIRE(InstallerProfile::detectEngineFromBytes(b) == IP::InnoSetup);
+}
+
+TEST_CASE("InstallerProfile: detects NSIS by DEADBEEF+NullsoftInst", "[installer]") {
+    QByteArray b = QByteArray("\xEF\xBE\xAD\xDE", 4) + QByteArray("NullsoftInst");
+    REQUIRE(InstallerProfile::detectEngineFromBytes(b) == IP::Nsis);
+}
+
+TEST_CASE("InstallerProfile: detects InstallShield by stream marker", "[installer]") {
+    QByteArray b = QByteArray("MZ") + QByteArray(0x40, '\0') + QByteArray("ISSetupStream");
+    REQUIRE(InstallerProfile::detectEngineFromBytes(b) == IP::InstallShield);
+}
+
+TEST_CASE("InstallerProfile: detects MSI/OLE compound magic", "[installer]") {
+    QByteArray b = QByteArray("\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1", 8) + QByteArray(64, '\0');
+    REQUIRE(InstallerProfile::detectEngineFromBytes(b) == IP::Msi);
+}
+
+TEST_CASE("InstallerProfile: detects WinRAR SFX (PE + Rar!)", "[installer]") {
+    QByteArray b = QByteArray("MZ") + QByteArray(0x40, '\0') + QByteArray("Rar!\x1A\x07", 6);
+    REQUIRE(InstallerProfile::detectEngineFromBytes(b) == IP::WinRarSfx);
+}
+
+TEST_CASE("InstallerProfile: an appended archive without a PE is not an SFX", "[installer]") {
+    QByteArray b = QByteArray("PK\x03\x04", 4) + QByteArray("Rar!\x1A\x07", 6);  // no MZ
+    REQUIRE(InstallerProfile::detectEngineFromBytes(b) == IP::Unknown);
+}
+
+TEST_CASE("InstallerProfile: plain bytes are Unknown", "[installer]") {
+    QByteArray b = QByteArray("MZ") + QByteArray(128, '\0') + QByteArray("just a normal program");
+    REQUIRE(InstallerProfile::detectEngineFromBytes(b) == IP::Unknown);
+}
+
+TEST_CASE("InstallerProfile: NSIS silent invocation keeps /D= raw and last", "[installer]") {
+    auto si = InstallerProfile::silentInvocation(IP::Nsis, "setup.exe", "C:/Games/Foo");
+    REQUIRE(si.supported);
+    REQUIRE(si.args == QStringList{ "/S" });
+    REQUIRE(si.rawTail == QString("/D=C:/Games/Foo"));   // never quoted, appended verbatim
+}
+
+TEST_CASE("InstallerProfile: Inno silent invocation passes /DIR=", "[installer]") {
+    auto si = InstallerProfile::silentInvocation(IP::InnoSetup, "setup.exe", "C:/Games/Foo");
+    REQUIRE(si.supported);
+    REQUIRE(si.args.contains("/VERYSILENT"));
+    REQUIRE(si.args.contains("/DIR=C:/Games/Foo"));
+    REQUIRE(si.rawTail.isEmpty());
+}
+
+TEST_CASE("InstallerProfile: MSI is driven through msiexec", "[installer]") {
+    auto si = InstallerProfile::silentInvocation(IP::Msi, "game.msi", "C:/Games/Foo");
+    REQUIRE(si.supported);
+    REQUIRE(si.program == QString("msiexec"));
+    REQUIRE(si.args.contains("game.msi"));
+    REQUIRE(si.args.contains("/qn"));
+}
+
+TEST_CASE("InstallerProfile: unknown engine is not silently runnable", "[installer]") {
+    auto si = InstallerProfile::silentInvocation(IP::Unknown, "setup.exe", "C:/Games/Foo");
+    REQUIRE_FALSE(si.supported);
+}
+
+TEST_CASE("InstallerProfile: tiers — silenceable engines vs guided", "[installer]") {
+    REQUIRE(InstallerProfile::tierForEngine(IP::InnoSetup) == InstallerProfile::Tier::SilentB);
+    REQUIRE(InstallerProfile::tierForEngine(IP::Nsis)      == InstallerProfile::Tier::SilentB);
+    REQUIRE(InstallerProfile::tierForEngine(IP::Unknown)   == InstallerProfile::Tier::GuidedC);
+}
+
+TEST_CASE("InstallerProfile: FitGirl/DODI repacks flagged for guided install", "[installer]") {
+    REQUIRE(InstallerProfile::isLikelyRepack("fitgirl-setup.exe", {}));
+    REQUIRE(InstallerProfile::isLikelyRepack("setup.exe", { "setup-1.bin", "setup-2.bin" }));
+    REQUIRE(InstallerProfile::isLikelyRepack("setup.exe", { "data.arc" }));
+    REQUIRE_FALSE(InstallerProfile::isLikelyRepack("setup.exe", { "game.exe", "data.pak" }));
+}
+
+TEST_CASE("InstallerProfile: scene crack folder detection", "[installer]") {
+    REQUIRE(InstallerProfile::crackDir({ "Game", "CODEX" }) == QString("CODEX"));
+    REQUIRE(InstallerProfile::crackDir({ "data", "Crack" }) == QString("Crack"));
+    REQUIRE(InstallerProfile::crackDir({ "bin", "PLAZA", "redist" }) == QString("PLAZA"));
+    REQUIRE(InstallerProfile::crackDir({ "bin", "data", "assets" }).isEmpty());
+}

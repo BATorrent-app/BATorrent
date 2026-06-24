@@ -33,8 +33,10 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/suspiciousscan.cpp
     src/app/archivescan.cpp
     src/app/releasepick.cpp
+    src/app/installerprofile.cpp
     src/app/defender.cpp
     src/app/logger.cpp
+    src/app/crashhandler.cpp
     src/app/notifier.cpp
     src/app/qrcodegen.cpp
     src/app/discordrpc.cpp
@@ -110,7 +112,7 @@ if(WIN32)
     target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601 NOMINMAX)
     # shell32/ole32: SHOpenFolderAndSelectItems for "reveal in Explorer"
     # psapi: GetProcessMemoryInfo for the memory guard
-    target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi)
+    target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp)
 endif()
 
 # Linux: install rules for icon and .desktop file

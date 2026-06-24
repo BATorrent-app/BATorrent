@@ -265,6 +265,15 @@ public:
     Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
+    // One-click install: extract (if needed) → detect exe → register, or drive the
+    // installer (silent where the engine allows, guided otherwise). Drives the
+    // card's install-state machine surfaced via gameLibrary()'s "installState".
+    Q_INVOKABLE void installGame(const QString &infoHash);
+    // Downloads-list surface: the same install/play action on the selected row.
+    Q_INVOKABLE bool selectedIsGame() const;
+    Q_INVOKABLE int selectedGameState() const;       // GameInstallState, -1 if not a game
+    Q_INVOKABLE void installSelectedGame();
+    Q_INVOKABLE void playSelectedGame();
     void setStreamPort(quint16 port) { m_streamPort = port; }
     Q_INVOKABLE void setSelectedCategory(const QString &category);
     Q_INVOKABLE void setSelectedTags(const QStringList &tags);
@@ -380,12 +389,36 @@ signals:
 private slots:
     void sampleSpeeds();
     void onWatchTick();   // poll pending Get&Watch hashes; open the player when buffered
+    void onExtractionCompleted(const QString &infoHash, bool success);  // chain → detect/install
+    void onGameTorrentFinished(const QString &name, const QString &infoHash);  // auto-install hook
 
 private:
+    // States surfaced to the game card as "installState" (int). Downloading/Ready/
+    // Playing are derived from torrent + run state; the rest are transient overlays
+    // held in m_gameInstallState while an operation is in flight.
+    enum GameInstallState {
+        GIS_Downloading = 0,   // still downloading
+        GIS_ReadyToInstall,    // download done, not installed yet → "Install"
+        GIS_Extracting,        // unpacking archives
+        GIS_Installing,        // installer running (silent) or awaiting user ("finish setup")
+        GIS_Ready,             // exe known → "Play"
+        GIS_Playing,           // process alive
+        GIS_NeedsSetup,        // couldn't find an exe → "Set up game"
+        GIS_Failed,            // extraction failed → "Retry"
+    };
+    int gameInstallState(const QString &infoHash, bool completed) const;
+    bool isGameTorrent(int row) const;               // game detection (metadata → parser → exe/no-video)
+    void finalizeInstall(const QString &infoHash);   // post-extract: detect exe or run installer
+    void runInstaller(const QString &infoHash, const QString &installerExe, const QString &folder);
+    void pollInstallWatch();   // guided installs: watch the folder for a produced exe
+
     SessionManager *m_session;
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game
     QHash<QString, qint64> m_gameStartMs;    // infoHash → launch timestamp (ms)
+    QHash<QString, int> m_gameInstallState;  // infoHash → transient GameInstallState overlay
+    QHash<QString, qint64> m_installWatch;   // infoHash → pid of a guided installer being watched
+    QSet<QString> m_extracted;               // infoHashes already extracted (avoid re-extracting)
     void pollRunningGames();   // detect game exit → record playtime
     MetadataResolver *m_resolver;
     quint16 m_streamPort = 0;
@@ -846,10 +879,17 @@ public:
     Q_INVOKABLE bool pairingActive() const;
     Q_INVOKABLE QString webUiUser() const;
     Q_INVOKABLE QString webUiPassword() const;   // plaintext from the secure store, for display
+    // One-click proxy presets for SOCKS5-capable tunnels (e.g. Mullvad's local
+    // SOCKS5). Fills type/host/port; the user still toggles it on.
+    Q_INVOKABLE void applyProxyPreset(const QString &name);
+    // Verify the tunnel actually carries traffic: compares the external IP seen
+    // directly vs through the proxy. Result via proxyLeakTestResult.
+    Q_INVOKABLE void proxyLeakTest();
     void setTelegramNotifier(TelegramNotifier *n) { m_telegram = n; }
 signals:
     void changed();
     void telegramTestResult(bool ok, const QString &message);
+    void proxyLeakTestResult(bool ok, const QString &message);
 private:
     static int telegramEventBit(const QString &key);   // toggle key → Events bit (0 if none)
     void applyWebUi();                                  // (re)start the WebUI server from settings
