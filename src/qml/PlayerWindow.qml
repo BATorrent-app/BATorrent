@@ -31,6 +31,7 @@ Window {
     property int fileIndex: 0
     readonly property string resumeKey: "resume_" + infoHash + "_" + fileIndex
     property bool resumed: false
+    property int resumeAtMs: 0
     property bool muted: false
     property bool controlsShown: true
 
@@ -218,7 +219,11 @@ Window {
             if (!win.resumed && duration > 0 && typeof settings !== "undefined") {
                 win.resumed = true
                 var saved = Number(settings.get(win.resumeKey) || 0)
-                if (saved > 5000 && saved < duration - 15000) position = saved
+                if (saved > 5000 && saved < duration - 15000) {
+                    position = saved
+                    win.resumeAtMs = saved
+                    resumeCue.show()
+                }
             }
         }
         onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) { win.saveResume(); win.maybePlayNext() }
@@ -251,6 +256,31 @@ Window {
         onPositionChanged: win.showControls()
         onClicked: win.togglePlay()
         onDoubleClicked: win.toggleFullscreen()
+    }
+
+    // resume cue — a brief "↩ 12:34" pill so the viewer notices the movie picked
+    // up where they left off (the jump is otherwise silent and easy to distrust)
+    Rectangle {
+        id: resumeCue
+        function show() { opacity = 1; hideTimer.restart() }
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 28
+        z: 50
+        opacity: 0
+        visible: opacity > 0
+        radius: 999
+        color: "#cc000000"
+        border.color: Theme.accent; border.width: 1
+        implicitWidth: rcLbl.implicitWidth + 26; implicitHeight: 30
+        Behavior on opacity { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
+        Text {
+            id: rcLbl
+            anchors.centerIn: parent
+            text: "↩  " + win.fmt(win.resumeAtMs)
+            color: "white"; font.pixelSize: 13; font.family: Theme.fontMono
+        }
+        Timer { id: hideTimer; interval: 3500; onTriggered: resumeCue.opacity = 0 }
     }
 
     // buffering / error overlay

@@ -551,7 +551,14 @@ Rectangle {
                                 font.family: Theme.fontSans
                                 elide: Text.ElideRight
                             }
-                            TChip { visible: (row.modelData.repacker || "").length > 0; text: row.modelData.repacker || "" }
+                            TChip {
+                                visible: (row.modelData.repacker || "").length > 0
+                                text: row.modelData.repacker || ""
+                                clickable: true
+                                red: page.repackerFilter === (row.modelData.repacker || "")
+                                onClicked: page.repackerFilter =
+                                    (page.repackerFilter === row.modelData.repacker ? "" : (row.modelData.repacker || ""))
+                            }
                         }
                         RowLayout {
                             Layout.fillWidth: true
@@ -815,7 +822,13 @@ Rectangle {
                     TChip { visible: page.selected && (page.selected.source || "").length > 0; text: page.selected ? (page.selected.source || "") : "" }
                     TChip { visible: page.selected && (page.selected.codec || "").length > 0; text: page.selected ? (page.selected.codec || "") : "" }
                     TChip { visible: page.selected && page.selected.hdr; text: "HDR" }
-                    TChip { visible: page.selected && (page.selected.repacker || "").length > 0; text: page.selected ? (page.selected.repacker || "") : "" }
+                    TChip {
+                        visible: page.selected && (page.selected.repacker || "").length > 0
+                        text: page.selected ? (page.selected.repacker || "") : ""
+                        clickable: true
+                        red: page.selected && page.repackerFilter === (page.selected.repacker || "")
+                        onClicked: { page.repackerFilter = page.selected.repacker || ""; page.detailOpen = false }
+                    }
                 }
 
                 // stats grid
