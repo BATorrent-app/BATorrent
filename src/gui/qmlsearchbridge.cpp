@@ -517,7 +517,21 @@ QVariantList QmlSearchBridge::categories() const
     return out;
 }
 
-QVariantList QmlSearchBridge::results() const { return m_results; }
+QVariantList QmlSearchBridge::results() const
+{
+    // Stamp each row's index into the data itself. QML used to add `_idx` by
+    // mutating the map (o._idx = i), but a QVariantMap handed to QML is a copy —
+    // the mutation didn't always stick, leaving srcIndex undefined and breaking
+    // activateResult()/openDetail() ("no source" on every pick).
+    QVariantList out;
+    out.reserve(m_results.size());
+    for (int i = 0; i < m_results.size(); ++i) {
+        QVariantMap m = m_results.at(i).toMap();
+        m[QStringLiteral("_idx")] = i;
+        out.append(m);
+    }
+    return out;
+}
 QString QmlSearchBridge::activeQuery() const { return m_activeQuery; }
 QString QmlSearchBridge::mode() const { return m_mode; }
 bool QmlSearchBridge::inStreams() const { return m_mode == "streams"; }
