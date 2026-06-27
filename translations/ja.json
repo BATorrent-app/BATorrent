@@ -962,6 +962,7 @@
   "nav_hub": "HUB",
   "nav_collapse": "折りたたむ",
   "nav_downloading": "ダウンロード中",
+  "nav_continue": "続ける",
   "nav_expand": "展開",
   "port_listening_on": "ポート %1 で待機中",
   "port_not_listening": "待機していません",

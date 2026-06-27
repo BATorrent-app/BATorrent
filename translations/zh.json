@@ -962,6 +962,7 @@
   "nav_hub": "HUB",
   "nav_collapse": "折叠",
   "nav_downloading": "下载中",
+  "nav_continue": "继续",
   "nav_expand": "展开",
   "port_listening_on": "正在监听端口 %1",
   "port_not_listening": "未监听",

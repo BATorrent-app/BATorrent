@@ -962,6 +962,7 @@
   "nav_hub": "HUB",
   "nav_collapse": "Згорнути",
   "nav_downloading": "Завантаження",
+  "nav_continue": "Продовжити",
   "nav_expand": "Розгорнути",
   "port_listening_on": "Прослуховується порт %1",
   "port_not_listening": "Не прослуховується",

@@ -25,13 +25,19 @@ Rectangle {
     signal settingsClicked()
     signal selectTorrent(string infoHash)
 
-    // "now downloading" rotating card state (mirrors the Discover hero carousel)
-    readonly property var dlList: (typeof session !== "undefined") ? session.activeDownloads : []
+    // Contextual rail slot (rotating carousel, mirrors the Discover hero):
+    // off the Downloads tab → what's downloading; ON Downloads → continue/resume
+    // (the downloads are already on screen there, so show the other useful thing).
+    readonly property var downloadList: (typeof session !== "undefined") ? session.activeDownloads : []
+    readonly property var resumeList: (typeof session !== "undefined") ? session.resumeItems : []
+    readonly property bool slotResume: currentIndex === 0
+    readonly property var dlList: slotResume ? resumeList : downloadList
     property int dlIndex: 0
     property int dlShown: 0
     readonly property var dlItem: (dlList.length > dlShown && dlShown >= 0) ? dlList[dlShown]
                                   : (dlList.length > 0 ? dlList[0] : null)
-    readonly property bool showDl: !collapsed && currentIndex !== 0 && dlList.length > 0
+    readonly property bool showDl: !collapsed && dlList.length > 0
+    onSlotResumeChanged: { dlIndex = 0; dlShown = 0 }
     onDlListChanged: if (dlShown >= dlList.length) dlShown = Math.max(0, dlList.length - 1)
     onDlIndexChanged: dlFade.restart()
     SequentialAnimation {
@@ -390,7 +396,7 @@ Rectangle {
             ToolTip.delay: 400
         }
 
-        // ----- "now downloading" rotating mini card (bottom; hidden on the Downloads tab) -----
+        // ----- contextual rail slot (bottom): downloading off Downloads, continue/resume on it -----
         // height animates 0↔full so switching tabs slides instead of jumping, and a
         // finished/empty list leaves no empty hole.
         ColumnLayout {
@@ -408,54 +414,67 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-                Text { text: (i18n.language, i18n.t("nav_downloading")); color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t(rail.slotResume ? "nav_continue" : "nav_downloading")); color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
                 Text { visible: rail.dlList.length > 1; text: (rail.dlShown + 1) + "/" + rail.dlList.length; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontMono }
             }
 
-            Rectangle {
+            // loose content (no box) — uses the full rail width
+            Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 70
-                radius: 12
-                color: dlHov.hovered ? Theme.hover : Theme.panel
-                border.color: dlHov.hovered ? Theme.accent : Theme.hair; border.width: 1
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Layout.preferredHeight: 60
                 HoverHandler { id: dlHov }
                 RowLayout {
                     id: dlContent
-                    anchors.fill: parent; anchors.margins: 10
-                    spacing: 11
+                    anchors.fill: parent
+                    spacing: 12
                     PosterThumb {
-                        Layout.preferredWidth: 42; Layout.preferredHeight: 50; Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredWidth: 50; Layout.preferredHeight: 60; Layout.alignment: Qt.AlignVCenter
                         posterUrl: rail.dlItem ? (rail.dlItem.poster || "") : ""
-                        label: rail.dlItem ? (rail.dlItem.name || "") : ""
+                        label: rail.dlItem ? (rail.dlItem.title || "") : ""
                     }
                     ColumnLayout {
                         Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
-                        spacing: 5
-                        Text { Layout.fillWidth: true; text: rail.dlItem ? (rail.dlItem.name || "") : ""; color: Theme.t1; font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans; elide: Text.ElideRight }
+                        spacing: 6
+                        Text { Layout.fillWidth: true; text: rail.dlItem ? (rail.dlItem.title || "") : ""; color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; elide: Text.ElideRight }
                         RowLayout {
                             Layout.fillWidth: true; spacing: 6
-                            Text { text: rail.dlItem ? ("↓ " + (rail.dlItem.downSpeed || "")) : ""; color: Theme.accent; font.pixelSize: 12; font.family: Theme.fontMono }
+                            Text {
+                                text: rail.slotResume ? ("▶ " + i18n.t("hub_resume"))
+                                      : (rail.dlItem ? ("↓ " + (rail.dlItem.downSpeed || "")) : "")
+                                color: Theme.accent; font.pixelSize: 13; font.family: Theme.fontMono
+                            }
                             Item { Layout.fillWidth: true }
-                            Text { text: rail.dlItem ? (Math.round((rail.dlItem.progress || 0) * 100) + "%") : ""; color: Theme.t2; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontMono }
+                            Text {
+                                text: rail.slotResume ? (rail.dlItem ? (rail.dlItem.metric || "") : "")
+                                      : (rail.dlItem ? (Math.round((rail.dlItem.progress || 0) * 100) + "%") : "")
+                                color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                            }
                         }
                         Rectangle {
-                            Layout.fillWidth: true; Layout.preferredHeight: 3; radius: 2; color: Theme.track
+                            Layout.fillWidth: true; Layout.preferredHeight: 4; radius: 2; color: Theme.track
                             Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: parent.width * Math.min(1, rail.dlItem ? (rail.dlItem.progress || 0) : 0); radius: 2; color: Theme.accent }
                         }
                     }
                 }
                 MouseArea {
                     id: dlMa; anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                    onClicked: { if (rail.dlItem) rail.selectTorrent(rail.dlItem.infoHash); rail.currentIndex = 0 }
+                    onClicked: {
+                        if (!rail.dlItem) return
+                        if (rail.slotResume) {
+                            if (rail.dlItem.kind === "game") session.launchGame(rail.dlItem.infoHash)
+                            else session.playByHash(rail.dlItem.infoHash)
+                        } else {
+                            rail.selectTorrent(rail.dlItem.infoHash); rail.currentIndex = 0
+                        }
+                    }
                 }
 
                 // hover nav arrows — scale to any number of downloads (no dot explosion)
                 Rectangle {
-                    anchors.left: parent.left; anchors.leftMargin: 3; anchors.verticalCenter: parent.verticalCenter
-                    width: 22; height: 22; radius: 11
-                    color: "#dd15151a"; border.color: Theme.hair; border.width: 1
+                    anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
+                    width: 24; height: 24; radius: 12
+                    color: "#ee15151a"; border.color: Theme.hair; border.width: 1
                     visible: rail.dlList.length > 1
                     opacity: dlHov.hovered ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 130 } }
@@ -464,9 +483,9 @@ Rectangle {
                         onClicked: rail.dlIndex = (rail.dlIndex - 1 + rail.dlList.length) % rail.dlList.length }
                 }
                 Rectangle {
-                    anchors.right: parent.right; anchors.rightMargin: 3; anchors.verticalCenter: parent.verticalCenter
-                    width: 22; height: 22; radius: 11
-                    color: "#dd15151a"; border.color: Theme.hair; border.width: 1
+                    anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                    width: 24; height: 24; radius: 12
+                    color: "#ee15151a"; border.color: Theme.hair; border.width: 1
                     visible: rail.dlList.length > 1
                     opacity: dlHov.hovered ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 130 } }
@@ -475,6 +494,9 @@ Rectangle {
                         onClicked: rail.dlIndex = (rail.dlIndex + 1) % rail.dlList.length }
                 }
             }
+
+            // separator between the card and the version line
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
         }
 
         // ----- version (bottom) -----
