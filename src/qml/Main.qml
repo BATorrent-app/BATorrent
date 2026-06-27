@@ -1554,6 +1554,7 @@ Window {
                     required property real progress
                     required property string posterPath
                     required property string stateString
+                    required property string stateDetail
                     required property string category
                     required property string size
                     required property string downSpeed
