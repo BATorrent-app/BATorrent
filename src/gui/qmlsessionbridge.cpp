@@ -887,6 +887,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
 
         QString poster, title = info.name;
         int year = 0, tmdbId = 0;
+        QStringList genres;
         if (m_resolver && m_resolver->hasCached(hash)) {
             const auto meta = m_resolver->cached(hash);
             if (meta.valid) {
@@ -894,6 +895,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
                 if (!meta.title.isEmpty()) title = meta.title;
                 year = meta.year;
                 tmdbId = meta.tmdbId;
+                genres = meta.genres;
             }
         }
 
@@ -911,6 +913,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["videos"]     = videos;                         // [{idx,name,season,episode,watched}] sorted
         m["isSeries"]   = isSeries;                       // has SxxExx markers → group by season
         m["tmdbId"]     = tmdbId;                          // for TMDB episode-title lookup
+        m["genres"]     = genres;                          // taste signal for HUB recommendations
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
         m["size"]       = info.totalSize;

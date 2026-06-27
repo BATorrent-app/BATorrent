@@ -784,8 +784,17 @@ void DiscoveryService::assembleAndEmit()
     // De-dup across rows: a title in Trending shouldn't repeat in Popular, etc.
     // Keep the first occurrence (rows are in priority order).
     QSet<QString> seenTitles;
+    // Stable canonical genre key per genre-shelf (by fetch order) — lets the HUB
+    // match the user's taste to a shelf without depending on the translated label.
+    static const QHash<int, QString> orderGenre = {
+        {3, QStringLiteral("rpg")},      {4, QStringLiteral("shooter")},
+        {5, QStringLiteral("strategy")}, {6, QStringLiteral("indie")},
+        {14, QStringLiteral("action")},  {15, QStringLiteral("scifi")},
+        {16, QStringLiteral("horror")}
+    };
     for (auto it = m_accum.constBegin(); it != m_accum.constEnd(); ++it) {
         QVariantMap row = it.value();
+        row[QStringLiteral("genre")] = orderGenre.value(it.key());
         QVariantList kept;
         for (const QVariant &v : row.value(QStringLiteral("items")).toList()) {
             const QVariantMap m = v.toMap();
