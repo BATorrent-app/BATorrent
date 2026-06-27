@@ -38,6 +38,53 @@ Item {
         return all.slice(0, 12)
     }
 
+    // ---- "Recommended for you": match your library's top genre to a discovery
+    // genre-shelf. Game genres (IGDB) are English-stable; movie genres handle EN/PT. ----
+    function genreKey(name) {
+        var s = (name || "").toLowerCase()
+        if (s.indexOf("rpg") >= 0 || s.indexOf("role") >= 0) return "rpg"
+        if (s.indexOf("shoot") >= 0 || s.indexOf("tiro") >= 0 || s.indexOf("fps") >= 0) return "shooter"
+        if (s.indexOf("strateg") >= 0 || s.indexOf("estrat") >= 0) return "strategy"
+        if (s.indexOf("indie") >= 0) return "indie"
+        if (s.indexOf("sci") >= 0 || s.indexOf("ficç") >= 0 || s.indexOf("cient") >= 0) return "scifi"
+        if (s.indexOf("horror") >= 0 || s.indexOf("terror") >= 0) return "horror"
+        if (s.indexOf("action") >= 0 || s.indexOf("ação") >= 0 || s.indexOf("acao") >= 0) return "action"
+        return ""
+    }
+    readonly property string topGenre: {
+        var counts = ({})
+        function tally(arr) {
+            if (!arr) return
+            for (var i = 0; i < arr.length; i++) {
+                var k = page.genreKey(arr[i])
+                if (k.length > 0) counts[k] = (counts[k] || 0) + 1
+            }
+        }
+        for (var g = 0; g < gameItems.length; g++) tally(gameItems[g].genres)
+        for (var m = 0; m < library.length; m++) tally(library[m].genres)
+        var best = "", bestN = 0
+        for (var key in counts) if (counts[key] > bestN) { bestN = counts[key]; best = key }
+        return best
+    }
+    readonly property var recommendations: {
+        if (topGenre.length === 0 || !disco) return []
+        var rows = disco.rows || []
+        var have = ({})
+        for (var i = 0; i < library.length; i++) have[(library[i].title || "").toLowerCase()] = true
+        for (var j = 0; j < gameItems.length; j++) have[(gameItems[j].title || "").toLowerCase()] = true
+        var out = []
+        for (var r = 0; r < rows.length && out.length < 12; r++) {
+            if (rows[r].genre !== topGenre) continue
+            var items = rows[r].items || []
+            for (var k = 0; k < items.length && out.length < 12; k++) {
+                var it = items[k]
+                if (have[(it.title || "").toLowerCase()]) continue
+                out.push(it)
+            }
+        }
+        return out
+    }
+
     // continue rails are sized to hold exactly 3 cards each
     readonly property int railCardW: 134
     readonly property int railSpacing: 16
@@ -47,9 +94,12 @@ Item {
     property string librarySearch: ""
     property string librarySort: "recent"   // recent | name
 
+    // discovery feed (shared with the Discover page) — source for recommendations
+    readonly property var disco: typeof discovery !== "undefined" ? discovery : null
     function refresh() {
         library = api ? api.movieLibrary() : []
         gameItems = api ? api.gameLibrary() : []
+        if (disco) disco.load()   // ensure rows exist so "Recommended for you" can populate
     }
     onVisibleChanged: if (visible) refresh()
     Component.onCompleted: refresh()
@@ -413,6 +463,45 @@ Item {
                         onPlay: isGame ? page.gamePrimary(modelData) : page.playMovie(modelData)
                         onContext: isGame ? gameMenu.openFor(modelData.infoHash)
                                           : continueMenu.openFor(modelData.infoHash, modelData.fileIndex)
+                    }
+                }
+            }
+
+            // Recommended for you — discovery picks matching your library's top genre
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                spacing: 12
+                visible: page.recommendations.length > 0
+                Text {
+                    text: (i18n.language, i18n.t("hub_recommended"))
+                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                }
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 268
+                    orientation: ListView.Horizontal
+                    spacing: 16
+                    clip: true
+                    model: page.recommendations
+                    boundsBehavior: Flickable.StopAtBounds
+                    delegate: PosterCard {
+                        required property var modelData
+                        posterW: 150
+                        title: modelData.title || ""
+                        poster: modelData.poster || ""
+                        year: modelData.year || ""
+                        rating: modelData.rating || 0
+                        type: modelData.type || ""
+                        synopsis: modelData.overview || ""
+                        watchlistEnabled: typeof session !== "undefined"
+                        saved: typeof session !== "undefined"
+                               && (session.watchlist, session.inWatchlist(modelData.title, modelData.type))
+                        onWatchlistToggle: if (typeof session !== "undefined") session.toggleWatchlist({
+                            title: modelData.title, type: modelData.type, poster: modelData.poster, year: modelData.year })
+                        onActivated: page.openSearch(modelData.title || "")
+                        onGetWatch: if (typeof search !== "undefined")
+                                        search.getAndWatch(modelData.title || "", modelData.year || "", modelData.type || "movie")
                     }
                 }
             }
