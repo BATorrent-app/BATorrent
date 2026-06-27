@@ -187,6 +187,35 @@ Rectangle {
 
         Item { Layout.fillHeight: true }   // push disk + donate + Settings + collapse to the bottom
 
+        // ----- global activity: what's downloading, visible from any screen -----
+        Rectangle {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.leftMargin: rail.collapsed ? 0 : 18; Layout.rightMargin: rail.collapsed ? 0 : 18
+            Layout.fillWidth: !rail.collapsed
+            Layout.preferredWidth: rail.collapsed ? 40 : -1
+            Layout.preferredHeight: 34
+            visible: typeof session !== "undefined" && session.downloadingCount > 0
+            radius: 9
+            color: apMa.containsMouse ? Theme.hover : Theme.panel
+            border.color: apMa.containsMouse ? Theme.accent : Theme.hair; border.width: 1
+            Behavior on color { ColorAnimation { duration: 120 } }
+            Row {
+                anchors.centerIn: parent; spacing: 7
+                visible: !rail.collapsed
+                IconImg { src: "qrc:/icons/download.svg"; tint: Theme.grn; s: 13; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: typeof session !== "undefined" ? session.totalDownSpeed : ""; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                Rectangle { width: 1; height: 11; color: Theme.hair; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: typeof session !== "undefined" ? session.downloadingCount : ""; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+            }
+            Row {
+                anchors.centerIn: parent; spacing: 3
+                visible: rail.collapsed
+                Rectangle { width: 6; height: 6; radius: 3; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: typeof session !== "undefined" ? session.downloadingCount : ""; color: Theme.t2; font.pixelSize: 10; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+            }
+            MouseArea { id: apMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: rail.currentIndex = 0 }
+        }
+
         // ----- disk usage: one block per volume torrents save to (multi-HD) -----
         Column {
             Layout.fillWidth: true

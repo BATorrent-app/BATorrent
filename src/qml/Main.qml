@@ -1779,14 +1779,18 @@ Window {
                                 Rectangle {
                                     width: 6; height: 6; radius: 3
                                     anchors.verticalCenter: parent.verticalCenter
-                                    color: win.dotFor(tile.stateKey)
+                                    // a stalled download reads amber (health), not the state colour
+                                    color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.dotFor(tile.stateKey)
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: tile.isDownloading ? ("↓ " + tile.downSpeed)
+                                    // surface WHY it's stuck inline (no seeds / no peers …) instead of "↓ 0 B/s"
+                                    text: tile.isDownloading
+                                          ? (tile.stateDetail.length > 0 ? tile.stateDetail : ("↓ " + tile.downSpeed))
                                           : (tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed) : tile.stateString)
-                                    color: win.textFor(tile.stateKey)
+                                    color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.textFor(tile.stateKey)
                                     font.pixelSize: 12; font.family: Theme.fontSans
+                                    elide: Text.ElideRight
                                 }
                             }
                             Text {
