@@ -245,9 +245,9 @@ Rectangle {
         var i = Math.min(u.length - 1, Math.floor(Math.log(b) / Math.log(1024)))
         return (b / Math.pow(1024, i)).toFixed(i >= 3 ? 1 : 0) + " " + u[i]
     }
-    // free bytes on the default save volume (first entry of the DISK indicator)
+    // free bytes on the default save volume (numeric — the string `free` was a fmt'd label)
     readonly property double saveFree: (typeof session !== "undefined" && session.diskVolumes
-        && session.diskVolumes.length > 0) ? (session.diskVolumes[0].free || 0) : -1
+        && session.diskVolumes.length > 0) ? (session.diskVolumes[0].freeBytes || 0) : -1
     readonly property int wontFit: {
         if (saveFree < 0 || !api) return 0
         var n = 0, res = api.results
