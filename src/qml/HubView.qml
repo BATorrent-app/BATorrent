@@ -56,6 +56,17 @@ Item {
         var h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60)
         return h > 0 ? (h + "h " + m + "m") : (m + "m")
     }
+    function fmtLeft(ms) {
+        if (!ms || ms <= 0) return ""
+        var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
+        return i18n.t("hub_time_left").replace("%1", h > 0 ? (h + "h " + m + "m") : (m + "m"))
+    }
+    function fmtSize(b) {
+        if (!b || b <= 0) return ""
+        var u = ["B", "KB", "MB", "GB", "TB"]
+        var i = Math.min(u.length - 1, Math.floor(Math.log(b) / Math.log(1024)))
+        return (b / Math.pow(1024, i)).toFixed(i >= 3 ? 1 : 0) + " " + u[i]
+    }
 
     function applyView(list) {
         var q = librarySearch.trim().toLowerCase()
@@ -126,6 +137,23 @@ Item {
         var s = item.installState
         return s === 1 || s === 4 || s === 6 || s === 7
     }
+    // card footer line: state + size ("Ready to play · 9 GB", "↓ 64% · 12 GB", …)
+    function cardStatus(item, isGame) {
+        if (!item) return ""
+        if (item.playing === true) return i18n.t("hub_playing_now")
+        var sz = page.fmtSize(item.size || 0)
+        var dot = sz ? ("  ·  " + sz) : ""
+        if (isGame) {
+            switch (item.installState) {
+            case 0: return "↓ " + Math.round((item.progress || 0) * 100) + "%" + dot
+            case 4: return i18n.t("hub_ready_to_play") + dot
+            case 1: return i18n.t("hub_installed") + dot
+            default: return page.gameStateLabel(item) + dot
+            }
+        }
+        return item.completed ? (i18n.t("hub_installed") + dot)
+                              : ("↓ " + Math.round((item.progress || 0) * 100) + "%" + dot)
+    }
     function gameMenuOpenFolder(hash) {
         if (!api) return
         var folder = api.gameFolder(hash)
@@ -133,8 +161,9 @@ Item {
     }
     function fmtAgo(ms) {
         if (!ms || ms <= 0) return ""
-        var d = Math.floor((Date.now() - ms) / 86400000)
-        if (d <= 0) return i18n.t("hub_today")
+        var h = Math.floor((Date.now() - ms) / 3600000)
+        if (h < 24) return h < 1 ? i18n.t("hub_today") : i18n.t("hub_hours_ago").replace("%1", h)
+        var d = Math.floor(h / 24)
         if (d === 1) return i18n.t("hub_yesterday")
         return i18n.t("hub_days_ago").replace("%1", d)
     }
@@ -190,59 +219,145 @@ Item {
                 }
             }
 
-            // Continue watching | Continue playing — side by side, ≤3 each, with a
-            // placeholder prompt when nothing has been watched/played yet.
+            // Continue watching + Continue playing — the latest of each as a large
+            // hero with one-click Resume + rich metadata; prompt when empty.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
-                spacing: 32
+                spacing: 20
 
-                // each rail is sized to hold exactly 3 cards (cards row or placeholder)
-                ColumnLayout {
-                    Layout.preferredWidth: page.railW; Layout.alignment: Qt.AlignTop
-                    spacing: 12
-                    Text {
-                        text: (i18n.language, i18n.t("hub_continue"))
-                        color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
+                // ---------- CONTINUE WATCHING ----------
+                Rectangle {
+                    id: cwHero
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 224
+                    radius: 16; color: Theme.elev
+                    border.color: Theme.hair; border.width: 1
+                    clip: true
+                    readonly property var it: page.continueItems.length > 0 ? page.continueItems[0] : null
+
+                    Image { id: cwBg; anchors.fill: parent; visible: false; asynchronous: true; cache: true
+                            source: cwHero.it ? (cwHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop }
+                    MultiEffect { anchors.fill: parent; source: cwBg; blurEnabled: true; blur: 1.0; blurMax: 40
+                                  brightness: -0.35; saturation: -0.1; opacity: cwHero.it ? 0.5 : 0 }
+                    Rectangle {
+                        anchors.fill: parent
+                        gradient: Gradient { orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "#f00e0e10" }
+                            GradientStop { position: 0.62; color: "#cc0e0e10" }
+                            GradientStop { position: 1.0; color: "#660e0e10" }
+                        }
                     }
-                    Row {
-                        spacing: page.railSpacing
-                        visible: page.continueItems.length > 0
-                        Repeater {
-                            model: page.continueItems
-                            delegate: HubCard {
-                                cardW: page.railCardW; item: modelData
-                                onPlay: page.playMovie(modelData)
-                                onContext: continueMenu.openFor(modelData.infoHash, modelData.fileIndex)
+                    RailPlaceholder { anchors.centerIn: parent; visible: cwHero.it === null; text: (i18n.language, i18n.t("hub_watch_placeholder")) }
+
+                    Item {
+                        anchors.fill: parent; anchors.margins: 24
+                        visible: cwHero.it !== null
+
+                        Item {   // crisp poster (right)
+                            id: cwPoster
+                            anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                            height: parent.height; width: height * 0.7
+                            Rectangle { id: cwPC; anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
+                                Image { anchors.fill: parent; source: cwHero.it ? (cwHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true } }
+                            Rectangle { id: cwPM; anchors.fill: parent; radius: 12; color: "white"; visible: false; layer.enabled: true }
+                            MultiEffect { source: cwPC; anchors.fill: parent; maskEnabled: true; maskSource: cwPM
+                                          shadowEnabled: true; shadowBlur: 0.6; shadowColor: "#cc000000"; shadowVerticalOffset: 6 }
+                        }
+
+                        ColumnLayout {
+                            anchors.left: parent.left; anchors.right: cwPoster.left; anchors.rightMargin: 22
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 7
+                            Text { text: (i18n.language, i18n.t("hub_continue")).toUpperCase(); color: Theme.accent; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans }
+                            Text { Layout.fillWidth: true; text: cwHero.it ? (cwHero.it.title || "") : ""; color: "#fff"; font.pixelSize: 27; font.weight: Font.Bold; font.family: Theme.fontSans; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap }
+                            Text {
+                                color: Theme.t3; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                                text: {
+                                    if (!cwHero.it) return ""
+                                    var parts = []
+                                    if ((cwHero.it.year || "").length > 0) parts.push(cwHero.it.year)
+                                    parts.push(cwHero.it.isSeries ? i18n.t("hub_series") : i18n.t("hub_movie"))
+                                    return parts.join("  ·  ")
+                                }
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true; Layout.topMargin: 5; spacing: 12
+                                Rectangle {
+                                    Layout.fillWidth: true; Layout.preferredHeight: 4; Layout.alignment: Qt.AlignVCenter
+                                    radius: 2; color: "#40ffffff"
+                                    Rectangle { width: parent.width * Math.min(1, cwHero.it ? (cwHero.it.watchedPct || 0) : 0); height: parent.height; radius: 2; color: Theme.accent }
+                                }
+                                Text { text: cwHero.it ? (page.fmtTime(cwHero.it.resumeMs) + " / " + page.fmtTime(cwHero.it.durMs)) : ""; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
+                            }
+                            RowLayout {
+                                Layout.topMargin: 6; spacing: 14
+                                BtnFlat { primary: true; icon: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("hub_resume")); onClicked: if (cwHero.it) page.playMovie(cwHero.it) }
+                                Text { text: cwHero.it ? page.fmtLeft((cwHero.it.durMs || 0) - (cwHero.it.resumeMs || 0)) : ""; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                             }
                         }
                     }
-                    RailPlaceholder { visible: page.continueItems.length === 0; text: (i18n.language, i18n.t("hub_watch_placeholder")) }
                 }
 
-                ColumnLayout {
-                    Layout.preferredWidth: page.railW; Layout.alignment: Qt.AlignTop
-                    spacing: 12
-                    Text {
-                        text: (i18n.language, i18n.t("hub_continue_playing"))
-                        color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans
+                // ---------- CONTINUE PLAYING ----------
+                Rectangle {
+                    id: cpHero
+                    Layout.preferredWidth: 384
+                    Layout.preferredHeight: 224
+                    radius: 16; color: Theme.elev
+                    border.color: Theme.hair; border.width: 1
+                    clip: true
+                    readonly property var it: page.continuePlaying.length > 0 ? page.continuePlaying[0] : null
+
+                    Image { id: cpBg; anchors.fill: parent; visible: false; asynchronous: true; cache: true
+                            source: cpHero.it ? (cpHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop }
+                    MultiEffect { anchors.fill: parent; source: cpBg; blurEnabled: true; blur: 1.0; blurMax: 44
+                                  brightness: -0.4; saturation: -0.1; opacity: cpHero.it ? 0.5 : 0 }
+                    Rectangle {
+                        anchors.fill: parent
+                        gradient: Gradient
+                            { GradientStop { position: 0.0; color: "#e00e0e10" } GradientStop { position: 1.0; color: "#aa0e0e10" } }
                     }
-                    Row {
-                        spacing: page.railSpacing
-                        visible: page.continuePlaying.length > 0
-                        Repeater {
-                            model: page.continuePlaying
-                            delegate: HubCard {
-                                cardW: page.railCardW; item: modelData; isGame: true; requireDoubleClick: true
-                                onPlay: page.gamePrimary(modelData)
-                                onContext: gameMenu.openFor(modelData.infoHash)
+                    Text {
+                        anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 20
+                        text: (i18n.language, i18n.t("hub_continue_playing")).toUpperCase()
+                        color: Theme.accent; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans
+                        z: 2
+                    }
+                    RailPlaceholder { anchors.centerIn: parent; visible: cpHero.it === null; text: (i18n.language, i18n.t("hub_play_placeholder")) }
+
+                    RowLayout {
+                        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                        anchors.margins: 20
+                        spacing: 14
+                        visible: cpHero.it !== null
+                        Item {   // small cover
+                            Layout.preferredWidth: 78; Layout.preferredHeight: 104; Layout.alignment: Qt.AlignBottom
+                            Rectangle { id: cpPC; anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
+                                Image { anchors.fill: parent; source: cpHero.it ? (cpHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true } }
+                            Rectangle { id: cpPM; anchors.fill: parent; radius: 10; color: "white"; visible: false; layer.enabled: true }
+                            MultiEffect { source: cpPC; anchors.fill: parent; maskEnabled: true; maskSource: cpPM
+                                          shadowEnabled: true; shadowBlur: 0.6; shadowColor: "#cc000000"; shadowVerticalOffset: 5 }
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true; Layout.alignment: Qt.AlignBottom
+                            spacing: 6
+                            Text { Layout.fillWidth: true; text: cpHero.it ? (cpHero.it.title || "") : ""; color: "#fff"; font.pixelSize: 19; font.weight: Font.Bold; font.family: Theme.fontSans; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap }
+                            Text {
+                                Layout.fillWidth: true; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
+                                text: {
+                                    if (!cpHero.it) return ""
+                                    var parts = []
+                                    if ((cpHero.it.playSeconds || 0) > 0) parts.push(page.fmtPlaytime(cpHero.it.playSeconds) + " " + i18n.t("hub_played"))
+                                    var ago = page.fmtAgo(cpHero.it.lastPlayed)
+                                    if (ago.length > 0) parts.push(ago)
+                                    return parts.join("  ·  ")
+                                }
                             }
+                            BtnFlat { Layout.topMargin: 4; primary: true; icon: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("hub_resume")); onClicked: if (cpHero.it) page.gamePrimary(cpHero.it) }
                         }
                     }
-                    RailPlaceholder { visible: page.continuePlaying.length === 0; text: (i18n.language, i18n.t("hub_play_placeholder")) }
                 }
-
-                Item { Layout.fillWidth: true }   // keep both rails left-aligned at their 3-card width
             }
 
             // My List (saved titles) — click to find it in Search; heart to remove
@@ -454,16 +569,20 @@ Item {
                 }
             }
 
-            // download badge (still downloading)
+            // status pill: Installed (green) / ↓X% (downloading)
             Rectangle {
-                visible: !card.item.completed
                 anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 6
                 radius: 6; color: "#cc000000"
-                implicitWidth: dlt.width + 12; implicitHeight: 18
-                Text {
-                    id: dlt; anchors.centerIn: parent
-                    text: "↓ " + Math.round((card.item.progress || 0) * 100) + "%"
-                    color: Theme.accent; font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                implicitWidth: dlRow.width + 12; implicitHeight: 18
+                Row {
+                    id: dlRow; anchors.centerIn: parent; spacing: 5
+                    Rectangle { visible: card.item.completed; width: 6; height: 6; radius: 3; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: card.item.completed ? i18n.t("hub_installed") : ("↓ " + Math.round((card.item.progress || 0) * 100) + "%")
+                        color: card.item.completed ? Theme.grn : Theme.accent
+                        font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    }
                 }
             }
 
@@ -509,10 +628,7 @@ Item {
             anchors.top: titleLabel.bottom; anchors.topMargin: 2
             width: card.cardW
             visible: text.length > 0
-            text: card.item.playing === true ? (i18n.language, i18n.t("hub_playing_now"))
-                : (card.item.playSeconds || 0) > 0 ? page.fmtPlaytime(card.item.playSeconds) + " " + i18n.t("hub_played")
-                : (card.item.lastPlayed || 0) > 0 ? page.fmtAgo(card.item.lastPlayed)
-                : ""
+            text: (i18n.language, page.cardStatus(card.item, card.isGame))
             color: card.item.playing === true ? Theme.accent : Theme.t4
             font.pixelSize: 10; font.family: Theme.fontSans
             elide: Text.ElideRight
