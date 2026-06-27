@@ -57,14 +57,16 @@ QtObject {
         name === "light"    ? "#ffffff" :
         name === "midnight" ? "#05080f" :
         name === "sakura"   ? "#fde6ef" :
-        name === "darkstar" ? "#0b0612" : "#0e0e10"
+        name === "darkstar" ? "#0b0612" :
+        name === "matrix"   ? "#040806" : "#0e0e10"
 
     readonly property color panel:
         name === "custom"   ? customPanelColor :
         name === "light"    ? "#f4f5f7" :
         name === "midnight" ? "#0f1830" :
         name === "sakura"   ? "#ffffff" :
-        name === "darkstar" ? "#190f2e" : "#141416"
+        name === "darkstar" ? "#190f2e" :
+        name === "matrix"   ? "#081109" : "#141416"
 
     // elevated/recessed surfaces derive from the user's panel so they track it
     readonly property color elev:
@@ -72,7 +74,8 @@ QtObject {
         name === "light"    ? "#eef0f2" :
         name === "midnight" ? "#0b1426" :
         name === "sakura"   ? "#fcdcea" :
-        name === "darkstar" ? "#130b22" : "#18181b"
+        name === "darkstar" ? "#130b22" :
+        name === "matrix"   ? "#0b160d" : "#18181b"
 
     // input/recessed field (--c-field nos diálogos; home não usa, mas mantém coerência)
     readonly property color field:
@@ -80,7 +83,8 @@ QtObject {
         name === "light"    ? "#ffffff" :
         name === "midnight" ? "#080f1f" :
         name === "sakura"   ? "#ffffff" :
-        name === "darkstar" ? "#0a0717" : "#0b0c0d"
+        name === "darkstar" ? "#0a0717" :
+        name === "matrix"   ? "#020604" : "#0b0c0d"
 
     // ---------- hairlines (custom: derived from the user's text color) ----------
     readonly property color hair:
@@ -88,21 +92,24 @@ QtObject {
         name === "light"    ? Qt.rgba(0,0,0,0.11) :
         name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.15) :
         name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.13) :
-        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.14) : Qt.rgba(1,1,1,0.08)
+        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.14) :
+        name === "matrix"   ? Qt.rgba(60/255,224/255,120/255,0.16) : Qt.rgba(1,1,1,0.08)
 
     readonly property color hairSoft:
         name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.07) :
         name === "light"    ? Qt.rgba(0,0,0,0.06) :
         name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.08) :
         name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.07) :
-        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.08) : Qt.rgba(1,1,1,0.05)
+        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.08) :
+        name === "matrix"   ? Qt.rgba(60/255,224/255,120/255,0.08) : Qt.rgba(1,1,1,0.05)
 
     readonly property color hover:
         name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.05) :
         name === "light"    ? Qt.rgba(0,0,0,0.045) :
         name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.06) :
         name === "midnight" ? Qt.rgba(80/255,140/255,245/255,0.07) :
-        name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.10) : Qt.rgba(1,1,1,0.035)
+        name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.10) :
+        name === "matrix"   ? Qt.rgba(43/255,232/255,106/255,0.09) : Qt.rgba(1,1,1,0.035)
 
     // .sel / .pill.on tint (--c-sel)
     readonly property color sel:
@@ -110,20 +117,23 @@ QtObject {
         name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.20) :
         name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.13) :
         name === "light"    ? Qt.rgba(229/255,51/255,43/255,0.10) :
-        name === "midnight" ? Qt.rgba(220/255,38/255,38/255,0.13) : Qt.rgba(229/255,51/255,43/255,0.09)
+        name === "midnight" ? Qt.rgba(220/255,38/255,38/255,0.13) :
+        name === "matrix"   ? Qt.rgba(43/255,232/255,106/255,0.18) : Qt.rgba(229/255,51/255,43/255,0.09)
 
     // .pill.on bg (home usa rgba(229,51,43,0.12); reaproveitado p/ accent tint forte)
     readonly property color accentTint:
         name === "custom"   ? Qt.rgba(customPrimaryColor.r, customPrimaryColor.g, customPrimaryColor.b, 0.12) :
         name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.12) :
-        name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.12) : Qt.rgba(229/255,51/255,43/255,0.12)
+        name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.12) :
+        name === "matrix"   ? Qt.rgba(43/255,232/255,106/255,0.13) : Qt.rgba(229/255,51/255,43/255,0.12)
 
     readonly property color track:
         name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.10) :
         name === "light"    ? Qt.rgba(0,0,0,0.10) :
         name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.16) :
         name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.12) :
-        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.15) : Qt.rgba(1,1,1,0.09)
+        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.15) :
+        name === "matrix"   ? Qt.rgba(60/255,224/255,120/255,0.14) : Qt.rgba(1,1,1,0.09)
 
     // ---------- text (custom: t1 = user color, t2-t4 fade by opacity) ----------
     readonly property color t1:
@@ -131,28 +141,32 @@ QtObject {
         name === "light"    ? "#16171a" :
         name === "midnight" ? "#e4edff" :
         name === "sakura"   ? "#3f1d2e" :
-        name === "darkstar" ? "#efeaff" : "#f3f3f4"
+        name === "darkstar" ? "#efeaff" :
+        name === "matrix"   ? "#c8ffd4" : "#f3f3f4"
 
     readonly property color t2:
         name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.72) :
         name === "light"    ? "#44464d" :
         name === "midnight" ? "#8aa3da" :
         name === "sakura"   ? "#7e4862" :
-        name === "darkstar" ? "#b6aae0" : "#b4b5ba"
+        name === "darkstar" ? "#b6aae0" :
+        name === "matrix"   ? "#84dd9b" : "#b4b5ba"
 
     readonly property color t3:
         name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.52) :
         name === "light"    ? "#6c6e76" :
         name === "midnight" ? "#6a82b8" :
         name === "sakura"   ? "#8a5a70" :
-        name === "darkstar" ? "#8a7eb8" : "#818288"
+        name === "darkstar" ? "#8a7eb8" :
+        name === "matrix"   ? "#519f66" : "#818288"
 
     readonly property color t4:
         name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.36) :
         name === "light"    ? "#9a9da6" :
         name === "midnight" ? "#47588a" :
         name === "sakura"   ? "#b58aa0" :
-        name === "darkstar" ? "#645889" : "#5b5c63"
+        name === "darkstar" ? "#645889" :
+        name === "matrix"   ? "#356b45" : "#5b5c63"
 
     // ---------- custom theme (name === "custom"): active profile colors ----------
     // Six user colors (bg/panel/text + 3 accents). No legibility auto-fixing —
@@ -170,12 +184,14 @@ QtObject {
     readonly property color accent:
         name === "custom"   ? customPrimaryColor :
         name === "sakura"   ? "#d6336c" :
-        name === "darkstar" ? "#a855f7" : "#e5332b"
+        name === "darkstar" ? "#a855f7" :
+        name === "matrix"   ? "#2be86a" : "#e5332b"
     // --red-d
     readonly property color accentDark:
         name === "custom"   ? Qt.darker(customPrimaryColor, 1.35) :
         name === "sakura"   ? "#be185d" :
-        name === "darkstar" ? "#7e22ce" : "#c01f18"
+        name === "darkstar" ? "#7e22ce" :
+        name === "matrix"   ? "#18a84c" : "#c01f18"
     // --red-t (accent text). For custom, just the primary itself — the user
     // owns the contrast (no auto legibility fixing).
     readonly property color accentText:
@@ -183,17 +199,20 @@ QtObject {
         name === "light"    ? "#cf2a22" :
         name === "sakura"   ? "#be185d" :
         name === "darkstar" ? "#c084fc" :
-        name === "midnight" ? "#ef6a64" : "#ec6a64"
+        name === "midnight" ? "#ef6a64" :
+        name === "matrix"   ? "#5dff9b" : "#ec6a64"
 
     // --amber (fill: seeding/upload)
     readonly property color amber:
         name === "custom"   ? customSecondaryColor :
         name === "darkstar" ? "#22d3ee" :
-        name === "sakura"   ? "#c8881f" : "#d99a2b"
+        name === "sakura"   ? "#c8881f" :
+        name === "matrix"   ? "#a6e22e" : "#d99a2b"
     // --amber-t (.v-up text)
     readonly property color up:
         name === "custom"   ? Qt.lighter(customSecondaryColor, 1.2) :
         name === "darkstar" ? "#67e8f9" :
+        name === "matrix"   ? "#c2f06a" :
         (name === "light" || name === "sakura") ? "#9a6710" : "#e0b454"
 
     // .fl-pa (paused fill) — neutral derived from the user's text in custom
@@ -204,7 +223,8 @@ QtObject {
     // --grn (verde de saúde: seeds em Search, "Instalado" em Addons, badge "Auto" em RSS)
     // bat-dialog*.css: dark/midnight/darkstar #3fb950 ; light/sakura #2e9c40
     readonly property color grn:
-        name === "custom" ? customTertiaryColor : (isLight ? "#2e9c40" : "#3fb950")
+        name === "custom" ? customTertiaryColor :
+        name === "matrix" ? "#44e070" : (isLight ? "#2e9c40" : "#3fb950")
 
     // ---------- window chrome ----------
     // macOS: secondary windows merge the native titlebar into their own header
