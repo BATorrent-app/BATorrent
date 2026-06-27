@@ -920,7 +920,17 @@ void SessionManager::prioritizeFilePieceBoundaries(int torrentIndex, int fileInd
             h.piece_priority(lt::piece_index_t(p), lt::download_priority_t(7));
     };
     for (int k = 0; k < numToBoost; ++k) boost(firstPiece + k);
-    for (int k = 0; k < numToBoost; ++k) boost(lastPiece - k);
+    // The tail matters for playback start: an MP4 with its 'moov' atom at EOF is
+    // unplayable until the last pieces arrive. Under sequential_download a high
+    // priority alone won't fetch them early — only a deadline jumps the in-order
+    // queue. Give the tail a deadline so the player can start without waiting for
+    // the whole file. (The head is covered by sequential + the reactive window.)
+    for (int k = 0; k < numToBoost; ++k) {
+        const int p = lastPiece - k;
+        boost(p);
+        if (p >= 0 && p < numPieces)
+            h.set_piece_deadline(lt::piece_index_t(p), 2000);
+    }
 }
 
 // ---- streaming helpers (read by the local StreamServer) ----

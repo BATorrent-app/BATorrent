@@ -421,8 +421,18 @@ void QmlSearchBridge::gwResolve()
     }
     const QString magnet = m_resultMagnets[idx];
     const QVariantMap rm = m_results[idx].toMap();
-    const QString hint = idx < m_resultTitles.size() ? m_resultTitles[idx] : QString();
-    const int type = hint.isEmpty() ? -1 : static_cast<int>(ContentType::Game);
+    // Prefer Get&Watch's known title/type as the cover hint, so the player and
+    // library show the real movie/series poster instead of the raw torrent name
+    // (which is empty until the magnet's metadata resolves → placeholder). Fall
+    // back to the per-row game title for the game flow.
+    QString hint = idx < m_resultTitles.size() ? m_resultTitles[idx] : QString();
+    int type = hint.isEmpty() ? -1 : static_cast<int>(ContentType::Game);
+    if (hint.isEmpty() && !m_gwTitle.isEmpty()) {
+        hint = m_gwTitle;
+        type = m_gwType == QLatin1String("series") ? static_cast<int>(ContentType::Series)
+             : m_gwType == QLatin1String("game")   ? static_cast<int>(ContentType::Game)
+             : static_cast<int>(ContentType::Movie);
+    }
     m_session->addMagnet(magnet, m_savePath, hint, type);
     QString hash = rm.value(QStringLiteral("coverHash")).toString();
     if (hash.isEmpty()) hash = btihFromMagnet(magnet);
