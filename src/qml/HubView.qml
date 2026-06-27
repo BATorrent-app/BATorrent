@@ -67,6 +67,16 @@ Item {
         var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
         return i18n.t("hub_time_left").replace("%1", h > 0 ? (h + "h " + m + "m") : (m + "m"))
     }
+    // S2E05 for the episode you're mid-way through (continue-watching a series)
+    function episodeLabel(item) {
+        if (!item || !item.isSeries || !item.videos) return ""
+        for (var i = 0; i < item.videos.length; i++) {
+            var v = item.videos[i]
+            if (v.idx === item.fileIndex && (v.season > 0 || v.episode > 0))
+                return "S" + v.season + "E" + (v.episode < 10 ? "0" + v.episode : v.episode)
+        }
+        return ""
+    }
     function fmtSize(b) {
         if (!b || b <= 0) return ""
         var u = ["B", "KB", "MB", "GB", "TB"]
@@ -267,8 +277,7 @@ Item {
                             Rectangle { id: cwPC; anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
                                 Image { anchors.fill: parent; source: cwHero.it ? (cwHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true } }
                             Rectangle { id: cwPM; anchors.fill: parent; radius: 14; color: "white"; visible: false; layer.enabled: true }
-                            MultiEffect { source: cwPC; anchors.fill: parent; maskEnabled: true; maskSource: cwPM
-                                          shadowEnabled: true; shadowBlur: 0.6; shadowColor: "#cc000000"; shadowVerticalOffset: 6 }
+                            MultiEffect { source: cwPC; anchors.fill: parent; maskEnabled: true; maskSource: cwPM }
                             Rectangle { anchors.fill: parent; radius: 14; color: "transparent"; border.color: "#33ffffff"; border.width: 1 }
                         }
 
@@ -283,7 +292,9 @@ Item {
                                 text: {
                                     if (!cwHero.it) return ""
                                     var parts = []
-                                    if ((cwHero.it.year || "").length > 0) parts.push(cwHero.it.year)
+                                    var ep = page.episodeLabel(cwHero.it)
+                                    if (ep.length > 0) parts.push(ep)
+                                    else if ((cwHero.it.year || "").length > 0) parts.push(cwHero.it.year)
                                     parts.push(cwHero.it.isSeries ? i18n.t("hub_series") : i18n.t("hub_movie"))
                                     return parts.join("  ·  ")
                                 }
@@ -299,7 +310,8 @@ Item {
                             }
                             RowLayout {
                                 Layout.topMargin: 6; spacing: 14
-                                BtnFlat { primary: true; icon: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("hub_resume")); onClicked: if (cwHero.it) page.playMovie(cwHero.it) }
+                                BtnFlat { primary: true; icon: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("hub_resume"));
+                                          onClicked: if (cwHero.it && api) api.playByHashFile(cwHero.it.infoHash, cwHero.it.fileIndex) }
                                 Text { text: cwHero.it ? page.fmtLeft((cwHero.it.durMs || 0) - (cwHero.it.resumeMs || 0)) : ""; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                             }
                         }
@@ -344,8 +356,7 @@ Item {
                             Rectangle { id: cpPC; anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
                                 Image { anchors.fill: parent; source: cpHero.it ? (cpHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true } }
                             Rectangle { id: cpPM; anchors.fill: parent; radius: 12; color: "white"; visible: false; layer.enabled: true }
-                            MultiEffect { source: cpPC; anchors.fill: parent; maskEnabled: true; maskSource: cpPM
-                                          shadowEnabled: true; shadowBlur: 0.6; shadowColor: "#cc000000"; shadowVerticalOffset: 5 }
+                            MultiEffect { source: cpPC; anchors.fill: parent; maskEnabled: true; maskSource: cpPM }
                             Rectangle { anchors.fill: parent; radius: 12; color: "transparent"; border.color: "#33ffffff"; border.width: 1 }
                         }
                         ColumnLayout {
@@ -397,8 +408,12 @@ Item {
                         type: modelData.type || ""
                         watchlistEnabled: true
                         saved: true
+                        synopsis: modelData.overview || ""
                         onWatchlistToggle: if (page.api) page.api.toggleWatchlist(modelData)
                         onActivated: page.openSearch(modelData.title || "")
+                        // saved titles are now actionable: ▶ fetches + watches in one click
+                        onGetWatch: if (typeof search !== "undefined")
+                                        search.getAndWatch(modelData.title || "", modelData.year || "", modelData.type || "movie")
                     }
                 }
             }
