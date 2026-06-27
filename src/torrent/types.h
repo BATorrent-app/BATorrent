@@ -25,6 +25,9 @@ struct TorrentInfo {
     bool paused;
     bool completed = false;
     float ratio;
+    float availability = 0;     // distributed copies (swarm health)
+    qint64 totalUploaded = 0;
+    qint64 addedTime = 0;       // unix seconds
     QString category;
     QStringList tags;
 };

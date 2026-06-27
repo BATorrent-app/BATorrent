@@ -87,6 +87,10 @@ public:
     // reads only what's safely written. 0 if the start byte isn't ready yet.
     qint64 streamContiguousAvailableBytes(int torrentIndex, int fileIndex,
                                           qint64 fromByte, qint64 cap = 8 * 1024 * 1024) const;
+    // Download stats for the player: { totalBytes, downloadedBytes, progress,
+    // buffered } where progress is the file fraction on disk and buffered is the
+    // contiguous fraction from the start (what's safe to seek to).
+    QVariantMap streamFileStats(int torrentIndex, int fileIndex) const;
     // Urgency-fetch a window of pieces from `startByte` forward (seek): sets
     // increasing piece deadlines so libtorrent fetches them in playback order.
     void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte,

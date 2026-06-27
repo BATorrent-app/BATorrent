@@ -113,11 +113,19 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString totalDownSpeed READ totalDownSpeed NOTIFY statsChanged)
     Q_PROPERTY(QString totalUpSpeed READ totalUpSpeed NOTIFY statsChanged)
     Q_PROPERTY(QString freeDiskSpace READ freeDiskSpace NOTIFY statsChanged)
+    Q_PROPERTY(double diskUsedFraction READ diskUsedFraction NOTIFY statsChanged)
+    // The distinct volumes torrents actually save to (default + per-category
+    // paths) — each { name, free, usedFraction }. Multi-HD users see all of them.
+    Q_PROPERTY(QVariantList diskVolumes READ diskVolumes NOTIFY statsChanged)
     Q_PROPERTY(QString totalDownloaded READ totalDownloaded NOTIFY statsChanged)
     Q_PROPERTY(QString totalUploaded READ totalUploaded NOTIFY statsChanged)
     Q_PROPERTY(QString globalRatio READ globalRatio NOTIFY statsChanged)
     Q_PROPERTY(QVariantList downloadHistory READ downloadHistory NOTIFY historyChanged)
     Q_PROPERTY(QVariantList uploadHistory READ uploadHistory NOTIFY historyChanged)
+    // per-torrent speed history for the SELECTED torrent (in-memory, fills over
+    // time) — drives the details-panel background graph.
+    Q_PROPERTY(QVariantList selectedDownHistory READ selectedDownHistory NOTIFY historyChanged)
+    Q_PROPERTY(QVariantList selectedUpHistory READ selectedUpHistory NOTIFY historyChanged)
 
     Q_PROPERTY(QString selectedName READ selectedName NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedSize READ selectedSize NOTIFY selectionChanged)
@@ -129,6 +137,11 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(int selectedSeeds READ selectedSeeds NOTIFY selectionChanged)
     Q_PROPERTY(int selectedPeers READ selectedPeers NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedRatio READ selectedRatio NOTIFY selectionChanged)
+    Q_PROPERTY(double selectedProgress READ selectedProgress NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedUploaded READ selectedUploaded NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedAvailability READ selectedAvailability NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedAdded READ selectedAdded NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedPath READ selectedPath NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedState READ selectedState NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedPoster READ selectedPoster NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDescription READ selectedDescription NOTIFY selectionChanged)
@@ -161,11 +174,15 @@ public:
     QString totalDownSpeed() const;
     QString totalUpSpeed() const;
     QString freeDiskSpace() const;
+    double diskUsedFraction() const;
+    QVariantList diskVolumes() const;
     QString totalDownloaded() const;
     QString totalUploaded() const;
     QString globalRatio() const;
     QVariantList downloadHistory() const;
     QVariantList uploadHistory() const;
+    QVariantList selectedDownHistory() const;
+    QVariantList selectedUpHistory() const;
 
     Q_INVOKABLE void setSelectedRows(const QList<int> &rows);
     // Select a torrent by its info hash (source row). Returns false if it isn't
@@ -254,6 +271,8 @@ public:
     Q_INVOKABLE void playFile(const QString &infoHash, int fileIndex);
     // Forget a movie's resume position (drops it from HUB "Continue watching").
     Q_INVOKABLE void clearResume(const QString &infoHash, int fileIndex);
+    // Player buffer bar + download badge: { totalBytes, downloadedBytes, progress, buffered }.
+    Q_INVOKABLE QVariantMap streamFileStats(const QString &infoHash, int fileIndex) const;
     // Watchlist ("My List") — saved titles (not torrents), persisted in QSettings.
     QVariantList watchlist() const;
     Q_INVOKABLE bool inWatchlist(const QString &title, const QString &type) const;
@@ -327,6 +346,11 @@ public:
     int selectedSeeds() const;
     int selectedPeers() const;
     QString selectedRatio() const;
+    double selectedProgress() const;
+    QString selectedUploaded() const;
+    QString selectedAvailability() const;
+    QString selectedAdded() const;
+    QString selectedPath() const;
     QString selectedState() const;
     QString selectedPoster() const;
     QString selectedDescription() const;
@@ -440,6 +464,8 @@ private:
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;
     QVector<int> m_uploadHistory;
+    QHash<QString, QVector<int>> m_torrentDownHist;   // per-torrent rate rings (by hash)
+    QHash<QString, QVector<int>> m_torrentUpHist;
 
     // Counts/totals recomputed in one pass per stats tick (recomputeAggregates)
     // so the seven count/speed getters don't each re-loop the whole library on
