@@ -1,5 +1,27 @@
 # Changelog
 
+## v4.3.0 — "Continue"
+
+Pick up where you left off — and see what's actually worth downloading. The library, the player and the discovery screens all got a pass: bigger heros, real swarm health, and a few long-standing bugs put to rest.
+
+### Highlights
+- **Continue watching / playing heros** — the HUB opens on your last movie and last game as large cards: progress, time left, hours played, last played, and a one-click **Resume**.
+- **Player rebuilt** — a solid title bar showing the file's quality/audio, a two-row control deck, a buffer-ahead HUD, and resume that actually sticks (it no longer restarts streamed torrents from zero).
+- **Real source health in Discover & Search** — the featured title shows a live **"N sources · best X GB · seeds"** line (one cached lookup), and the torrent list gets a green/amber/red **seed-health bar**.
+- **Discover type filter** — All / Games / Movies / Series, with a hybrid hero (ambient art + crisp poster) that always has a banner, even for games with no backdrop.
+- **Best match, explicitly** — search surfaces the top title as its own hero instead of just first in the grid.
+
+### Fixed
+- **Paused torrents stay paused** across restarts (they were quietly resuming on launch).
+- **Removed files no longer linger** — the hidden `.parts` sidecar is cleaned up, and a new **"Delete permanently"** option skips the Trash when you're low on disk.
+- **The Downloads search box** no longer stays stuck red after one click, and **Ctrl/⌘+K opens ready to type**.
+- The **repack filter** opens on the first click again.
+
+### Polish
+- A disk-aware search footer warns when results won't fit your free space.
+- "Get best" stepped back from red so it stops competing with the Search button.
+- The Discover hero rotates with clickable dots; the command palette can jump straight to any Settings section.
+
 ## v4.2.0 — "Polish"
 
 The release where BATorrent starts *feeling* like the app it already was. No new pages, no new tabs — hundreds of small decisions instead: every dialog answers Esc, every control shows focus, every state explains itself. Plus one big power feature.

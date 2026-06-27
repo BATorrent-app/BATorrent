@@ -33,6 +33,16 @@ BatDialog {
     // ---- per-release dev note + highlights (SINGLE LANGUAGE; edit per release) ----
     // Key by the exact app version. Rename/add the entry when you bump the version.
     readonly property var releaseContent: ({
+        "4.3.0": {
+            note: "Over 3,000 of you have downloaded BATorrent — thank you, genuinely. I build this solo in my spare time, and I'm now looking for contributors to help it grow: if you write C++/QML (or want to translate it), come say hi on GitHub. New here? Press Ctrl/⌘+K anywhere — it's the fastest way around the whole app.\n\n— Mateus"
+            , highlights: [
+                "Resume your last movie or game right from the HUB",
+                "Rebuilt player with resume that finally sticks",
+                "Real seeds + best size in Discover and Search",
+                "Paused torrents stay paused after a restart",
+                "\"Delete permanently\" for when you're low on disk"
+            ]
+        },
         "4.2.0": {
             note: "This one is about feel. No new pages \u2014 hundreds of small fixes instead: every dialog answers Esc, stalled torrents finally explain WHY, and deleting sends files to the trash, not the void. Press Ctrl/\u2318+K \u2014 that one's my favorite.\n\n\u2014 Mateus"
             , highlights: [
