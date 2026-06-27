@@ -2,12 +2,13 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Discover content page (4.0 step ③). Rotating hero + horizontal poster rows
-// from DiscoveryService (TMDB/IGDB). Click a poster → openSearch(title), which
-// Main.qml routes to the Search page.
+// Discover content page. Type filter (All/Games/Movies/Series) + a contained
+// "hybrid" hero (ambient blurred art + crisp poster) + horizontal poster rows
+// from DiscoveryService (TMDB/IGDB). Click a poster → openSearch(title).
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Effects
 import "theme"
 import "widgets"
 
@@ -21,24 +22,67 @@ Rectangle {
     readonly property var heroList: api ? api.hero : []
     readonly property var rowList: api ? api.rows : []
 
+    // ----- type filter (client-side; rows are homogeneous by item.type) -----
+    property string typeFilter: "all"   // all | game | movie | series
+    // global hero is backdrop-gated and games-first, so it can hold zero movies/
+    // series — when a type is filtered and the global hero has none, derive the
+    // hero from that type's own rows so every filter gets a banner.
+    readonly property var heroFiltered: {
+        if (typeFilter === "all") return heroList
+        var fromHero = heroList.filter(function(h) { return h && h.type === typeFilter })
+        if (fromHero.length > 0) return fromHero
+        var out = []
+        for (var i = 0; i < rowsFiltered.length && out.length < 6; ++i) {
+            var items = rowsFiltered[i].items || []
+            for (var j = 0; j < items.length; ++j) {
+                var it = items[j]
+                if (it && (it.overview || "").length > 0 && (it.poster || "").length > 0) { out.push(it); break }
+            }
+        }
+        return out
+    }
+    readonly property var rowsFiltered: typeFilter === "all" ? rowList
+        : rowList.filter(function(r) { return r && r.items && r.items.length > 0 && r.items[0].type === typeFilter })
+    onTypeFilterChanged: { page.heroIndex = 0; page.shownIndex = 0 }
+
     property int heroIndex: 0
     property int shownIndex: 0
-    readonly property var heroItem: (heroList.length > shownIndex) ? heroList[shownIndex] : null
+    readonly property var heroItem: (heroFiltered.length > shownIndex) ? heroFiltered[shownIndex] : null
 
-    // lazily-fetched YouTube key for the current hero (TMDB list endpoints don't
-    // carry videos, so we ask per hero as it shows)
+    function fmtGB(bytes) {
+        if (!bytes || bytes <= 0) return ""
+        var gb = bytes / (1024 * 1024 * 1024)
+        return (gb >= 10 ? Math.round(gb) : gb.toFixed(1)) + " GB"
+    }
+    function fmtCount(n) {
+        return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n)
+    }
+
+    // lazily-fetched trailer key + source summary for the current hero
     property string heroTrailerKey: ""
+    property var heroSummary: null      // {count, bestSize, maxSeeds} for heroItem.title
     onHeroItemChanged: {
         heroTrailerKey = ""
+        heroSummary = null
         if (api && heroItem && (heroItem.type === "movie" || heroItem.type === "series")
             && (heroItem.tmdbId || 0) > 0)
             api.fetchTrailer(heroItem.tmdbId, heroItem.type)
+        if (typeof search !== "undefined" && heroItem && (heroItem.title || "").length > 0)
+            search.summarizeSources(heroItem.title)
     }
     Connections {
         target: page.api
         ignoreUnknownSignals: true
         function onTrailerReady(tmdbId, youtubeKey) {
             if (page.heroItem && (page.heroItem.tmdbId || 0) === tmdbId) page.heroTrailerKey = youtubeKey
+        }
+    }
+    Connections {
+        target: typeof search !== "undefined" ? search : null
+        ignoreUnknownSignals: true
+        function onSourceSummary(title, count, bestSize, maxSeeds) {
+            if (page.heroItem && page.heroItem.title === title)
+                page.heroSummary = { count: count, bestSize: bestSize, maxSeeds: maxSeeds }
         }
     }
 
@@ -53,10 +97,37 @@ Rectangle {
         NumberAnimation { target: heroContent; property: "opacity"; to: 1; duration: 420; easing.type: Easing.OutCubic }
     }
     Timer {
+        id: heroTimer
         interval: 7000
-        running: page.visible && page.heroList.length > 1
+        running: page.visible && page.heroFiltered.length > 1
         repeat: true
-        onTriggered: page.heroIndex = (page.heroIndex + 1) % page.heroList.length
+        onTriggered: page.heroIndex = (page.heroIndex + 1) % page.heroFiltered.length
+    }
+
+    // segmented filter button
+    component Seg: Rectangle {
+        id: seg
+        property string label
+        property string value
+        readonly property bool on: page.typeFilter === seg.value
+        signal clicked()
+        radius: 8
+        implicitHeight: 30
+        implicitWidth: segTxt.implicitWidth + 26
+        color: on ? Theme.accentTint : (segMa.containsMouse ? Theme.hover : "transparent")
+        Behavior on color { ColorAnimation { duration: 120 } }
+        Text {
+            id: segTxt
+            anchors.centerIn: parent
+            text: seg.label
+            color: seg.on ? Theme.accentText : (segMa.containsMouse ? Theme.t2 : Theme.t3)
+            font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+        }
+        MouseArea {
+            id: segMa; anchors.fill: parent
+            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onClicked: seg.clicked()
+        }
     }
 
     Flickable {
@@ -72,92 +143,232 @@ Rectangle {
             width: flick.width
             spacing: 26
 
-            // ---------- hero ----------
+            // ---------- header: title + filter + refresh (scrolls with content) ----------
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5
+                Layout.rightMargin: Theme.sp4
+                Layout.topMargin: Theme.sp4
+                spacing: 16
+                Text {
+                    text: (i18n.language, i18n.t("nav_discover"))
+                    color: Theme.t1; font.pixelSize: 20; font.weight: Font.Bold; font.family: Theme.fontSans
+                }
+                Seg { label: (i18n.language, i18n.t("filter_all"));   value: "all";    onClicked: page.typeFilter = "all" }
+                Seg { label: (i18n.language, i18n.t("cat_games"));    value: "game";   onClicked: page.typeFilter = "game" }
+                Seg { label: (i18n.language, i18n.t("cat_movies"));   value: "movie";  onClicked: page.typeFilter = "movie" }
+                Seg { label: (i18n.language, i18n.t("cat_series"));   value: "series"; onClicked: page.typeFilter = "series" }
+                Item { Layout.fillWidth: true }
+                Rectangle {
+                    Layout.preferredWidth: 34; Layout.preferredHeight: 34; radius: 17
+                    color: rfMa.containsMouse ? Theme.hover : "transparent"
+                    border.color: Theme.hair; border.width: 1
+                    IconImg {
+                        anchors.centerIn: parent
+                        src: "qrc:/icons/refresh.svg"
+                        tint: rfMa.containsMouse ? Theme.t1 : Theme.t3
+                        s: 16
+                        RotationAnimation on rotation {
+                            running: page.api && page.api.loading
+                            from: 0; to: 360; duration: 900; loops: Animation.Infinite
+                        }
+                    }
+                    MouseArea {
+                        id: rfMa; anchors.fill: parent
+                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: if (page.api) page.api.refresh()
+                    }
+                }
+            }
+
+            // ---------- hybrid hero (contained card) ----------
             Item {
                 Layout.fillWidth: true
-                // cinematic banner: ~44% of the viewport, never cramped
-                Layout.preferredHeight: Math.max(420, Math.round(page.height * 0.44))
+                Layout.preferredHeight: Math.max(340, Math.round(page.height * 0.40))
+                Layout.leftMargin: Theme.sp5
+                Layout.rightMargin: Theme.sp4
                 visible: page.heroItem !== null
 
-                Item {
-                    id: heroContent
+                Rectangle {
                     anchors.fill: parent
+                    radius: 16
+                    color: Theme.elev
+                    border.color: Theme.hair; border.width: 1
+                    clip: true
 
-                    Image {
+                    Item {
+                        id: heroContent
                         anchors.fill: parent
-                        source: page.heroItem ? (page.heroItem.backdrop || "") : ""
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        cache: true
-                    }
-                    // bottom + left scrim for text legibility
-                    Rectangle {
-                        anchors.fill: parent
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: "#00000000" }
-                            GradientStop { position: 0.45; color: "#33000000" }
-                            GradientStop { position: 1.0; color: "#ee0b0b0d" }
+
+                        // ambient background: backdrop, or the poster when the backdrop is bad/missing (games)
+                        Image {
+                            id: heroBg
+                            anchors.fill: parent
+                            source: page.heroItem
+                                ? ((page.heroItem.backdrop && page.heroItem.backdrop.length > 0)
+                                   ? page.heroItem.backdrop : (page.heroItem.poster || ""))
+                                : ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true; cache: true
+                            visible: false
+                        }
+                        MultiEffect {
+                            anchors.fill: heroBg
+                            source: heroBg
+                            blurEnabled: true
+                            blur: 1.0
+                            blurMax: 48
+                            brightness: -0.25
+                            saturation: -0.1
+                        }
+                        // horizontal scrim — heavy on the left for text legibility
+                        Rectangle {
+                            anchors.fill: parent
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0;  color: "#f00b0b0d" }
+                                GradientStop { position: 0.55; color: "#cc0b0b0d" }
+                                GradientStop { position: 1.0;  color: "#700b0b0d" }
+                            }
+                        }
+
+                        // right: crisp poster (rounded via mask)
+                        Item {
+                            id: heroPoster
+                            anchors.right: parent.right; anchors.rightMargin: Theme.sp5
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: Math.min(parent.height - Theme.sp5 * 2, 268)
+                            width: height * 0.67
+                            visible: page.heroItem && (page.heroItem.poster || "").length > 0
+                            Rectangle {
+                                id: hpImg
+                                anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
+                                Image {
+                                    anchors.fill: parent
+                                    source: page.heroItem ? (page.heroItem.poster || "") : ""
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true; cache: true
+                                }
+                            }
+                            Rectangle { id: hpMask; anchors.fill: parent; radius: 12; color: "white"; visible: false; layer.enabled: true }
+                            MultiEffect {
+                                source: hpImg; anchors.fill: parent
+                                maskEnabled: true; maskSource: hpMask
+                                shadowEnabled: true; shadowBlur: 0.7; shadowColor: "#cc000000"; shadowVerticalOffset: 8
+                            }
+                        }
+
+                        // left: text + CTAs
+                        ColumnLayout {
+                            anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                            anchors.right: heroPoster.visible ? heroPoster.left : parent.right
+                            anchors.leftMargin: Theme.sp5; anchors.topMargin: Theme.sp5
+                            anchors.bottomMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
+                            spacing: 9
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {   // eyebrow: FEATURED · TYPE
+                                text: "FEATURED   ·   " + (page.heroItem ? (page.heroItem.type || "").toUpperCase() : "")
+                                color: "#5bc4d4"; font.pixelSize: 11; font.weight: Font.Bold
+                                font.letterSpacing: 1.2; font.family: Theme.fontSans
+                            }
+                            Text {
+                                text: page.heroItem ? page.heroItem.title : ""
+                                color: "#ffffff"
+                                font.pixelSize: 32; font.weight: Font.Bold; font.family: Theme.fontSans
+                                Layout.fillWidth: true; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap
+                            }
+                            RowLayout {   // year · ★rating · ●seeds
+                                spacing: 12
+                                Text {
+                                    visible: text.length > 0
+                                    text: {
+                                        if (!page.heroItem) return ""
+                                        var parts = []
+                                        if ((page.heroItem.year || "").length > 0) parts.push(page.heroItem.year)
+                                        if ((page.heroItem.rating || 0) > 0) parts.push("★ " + page.heroItem.rating.toFixed(1))
+                                        return parts.join("    ·    ")
+                                    }
+                                    color: "#c8c8cc"; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                                }
+                                Row {
+                                    spacing: 6
+                                    visible: page.heroSummary && page.heroSummary.maxSeeds > 0
+                                    Rectangle { width: 7; height: 7; radius: 4; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: page.heroSummary ? (page.fmtCount(page.heroSummary.maxSeeds) + " seeds") : ""
+                                        color: Theme.grn; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                                    }
+                                }
+                            }
+                            Text {
+                                text: page.heroItem ? page.heroItem.overview : ""
+                                color: "#d8d8dc"; font.pixelSize: 13; font.family: Theme.fontSans
+                                Layout.fillWidth: true; Layout.maximumWidth: 620
+                                wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight
+                            }
+                            RowLayout {
+                                spacing: 10
+                                BtnFlat {
+                                    visible: page.heroItem && page.heroItem.type !== "game"
+                                    primary: true
+                                    text: (i18n.language, i18n.t("gw_get_and_watch"))
+                                    onClicked: if (page.heroItem && typeof search !== "undefined")
+                                                   search.getAndWatch(page.heroItem.title,
+                                                                      page.heroItem.year || "",
+                                                                      page.heroItem.type || "movie")
+                                }
+                                BtnFlat {
+                                    visible: page.heroTrailerKey !== ""
+                                    text: (i18n.language, i18n.t("gw_trailer"))
+                                    onClicked: Qt.openUrlExternally("https://www.youtube.com/watch?v=" + page.heroTrailerKey)
+                                }
+                                BtnFlat {
+                                    primary: page.heroItem && page.heroItem.type === "game"
+                                    text: (i18n.language, i18n.t("empty_search_btn"))
+                                    onClicked: if (page.heroItem) page.openSearch(page.heroItem.title)
+                                }
+                                Text {   // N sources · best X GB (when the lookup resolves)
+                                    Layout.leftMargin: 4
+                                    visible: page.heroSummary && page.heroSummary.count > 0
+                                    text: {
+                                        if (!page.heroSummary) return ""
+                                        var s = page.heroSummary.count + " sources"
+                                        if (page.heroSummary.bestSize > 0) s += "    ·    best " + page.fmtGB(page.heroSummary.bestSize)
+                                        return s
+                                    }
+                                    color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontMono
+                                }
+                            }
+
+                            Item { Layout.fillHeight: true }
                         }
                     }
 
-                    ColumnLayout {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
+                    // carousel dots — click to jump between featured items
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
-                        anchors.leftMargin: Theme.sp5
-                        anchors.rightMargin: Theme.sp5
-                        anchors.bottomMargin: Theme.sp5
-                        spacing: 8
-
-                        Text {
-                            text: page.heroItem ? page.heroItem.title : ""
-                            color: "#ffffff"
-                            font.pixelSize: 30; font.weight: Font.Bold; font.family: Theme.fontSans
-                            Layout.fillWidth: true
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            visible: text.length > 0
-                            text: {
-                                if (!page.heroItem) return ""
-                                var parts = []
-                                if ((page.heroItem.year || "").length > 0) parts.push(page.heroItem.year)
-                                if ((page.heroItem.rating || 0) > 0) parts.push("★ " + page.heroItem.rating.toFixed(1))
-                                return parts.join("    ·    ")
-                            }
-                            color: "#c8c8cc"; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                        }
-                        Text {
-                            text: page.heroItem ? page.heroItem.overview : ""
-                            color: "#d8d8dc"
-                            font.pixelSize: 13; font.family: Theme.fontSans
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 620
-                            wrapMode: Text.WordWrap
-                            maximumLineCount: 3
-                            elide: Text.ElideRight
-                        }
-                        RowLayout {
-                            spacing: 10
-                            BtnFlat {
-                                visible: page.heroItem && page.heroItem.type !== "game"
-                                primary: true
-                                text: (i18n.language, i18n.t("gw_get_and_watch"))
-                                onClicked: if (page.heroItem && typeof search !== "undefined")
-                                               search.getAndWatch(page.heroItem.title,
-                                                                  page.heroItem.year || "",
-                                                                  page.heroItem.type || "movie")
-                            }
-                            BtnFlat {
-                                visible: page.heroTrailerKey !== ""
-                                text: (i18n.language, i18n.t("gw_trailer"))
-                                onClicked: Qt.openUrlExternally("https://www.youtube.com/watch?v=" + page.heroTrailerKey)
-                            }
-                            BtnFlat {
-                                primary: page.heroItem && page.heroItem.type === "game"
-                                text: (i18n.language, i18n.t("empty_search_btn"))
-                                onClicked: if (page.heroItem) page.openSearch(page.heroItem.title)
+                        anchors.bottomMargin: Theme.sp4
+                        spacing: 7
+                        z: 5
+                        visible: page.heroFiltered.length > 1
+                        Repeater {
+                            model: page.heroFiltered.length
+                            delegate: Rectangle {
+                                required property int index
+                                width: index === page.shownIndex ? 20 : 7
+                                height: 7; radius: 3.5
+                                color: index === page.shownIndex ? Theme.accent : Qt.rgba(1, 1, 1, 0.35)
+                                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                                Behavior on color { ColorAnimation { duration: 200 } }
+                                MouseArea {
+                                    anchors.fill: parent; anchors.margins: -5
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: { page.heroIndex = index; heroTimer.restart() }
+                                }
                             }
                         }
                     }
@@ -166,27 +377,44 @@ Rectangle {
 
             // ---------- poster rows ----------
             Repeater {
-                model: page.rowList
+                model: page.rowsFiltered
                 delegate: ColumnLayout {
                     id: rowItem
                     required property var modelData
                     Layout.fillWidth: true
                     spacing: 10
 
-                    // selective rendering: a row only loads its covers once it
-                    // scrolls within the viewport (+buffer), then stays loaded —
-                    // so the visible rows show first instead of all ~40 at once.
                     readonly property bool inView: (y + height) > (flick.contentY - 400)
                                                    && y < (flick.contentY + flick.height + 400)
                     property bool everInView: false
                     onInViewChanged: if (inView) everInView = true
                     Component.onCompleted: if (inView) everInView = true
 
-                    Text {
-                        text: rowItem.modelData.label
-                        color: Theme.t1
-                        font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                    RowLayout {
+                        Layout.fillWidth: true
                         Layout.leftMargin: Theme.sp5
+                        Layout.rightMargin: Theme.sp5
+                        spacing: 10
+                        Text {
+                            text: rowItem.modelData.label
+                            color: Theme.t1
+                            font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                        }
+                        Text {   // "See all" → filter to this row's type
+                            visible: rowItem.modelData.items && rowItem.modelData.items.length > 0
+                            text: (i18n.language, i18n.t("see_all"))
+                            color: saMa.containsMouse ? Theme.t1 : Theme.t4
+                            font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans
+                            MouseArea {
+                                id: saMa; anchors.fill: parent; anchors.margins: -4
+                                hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    var items = rowItem.modelData.items
+                                    if (items && items.length > 0) page.typeFilter = items[0].type
+                                }
+                            }
+                        }
+                        Item { Layout.fillWidth: true }
                     }
                     ListView {
                         Layout.fillWidth: true
@@ -242,7 +470,11 @@ Rectangle {
             NumberAnimation { to: 0.45; duration: 700; easing.type: Easing.InOutQuad }
             NumberAnimation { to: 0.75; duration: 700; easing.type: Easing.InOutQuad }
         }
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: Math.max(420, Math.round(page.height * 0.44)); color: Theme.elev }
+        Item { Layout.fillWidth: true; Layout.preferredHeight: 52 }
+        Rectangle {
+            Layout.fillWidth: true; Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp4
+            Layout.preferredHeight: Math.max(340, Math.round(page.height * 0.40)); radius: 16; color: Theme.elev
+        }
         Repeater {
             model: 2
             ColumnLayout {
@@ -261,42 +493,15 @@ Rectangle {
         Item { Layout.fillHeight: true }
     }
 
-    // empty / no-keys state (not loading)
+    // empty / no-keys / empty-filter state (not loading)
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 14
-        visible: page.rowList.length === 0 && !(page.api && page.api.loading)
+        visible: page.rowsFiltered.length === 0 && !(page.api && page.api.loading)
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: page.api && page.api.statusText.length > 0 ? page.api.statusText : (i18n.language, i18n.t("discover_empty"))
             color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
-        }
-    }
-
-    // manual refresh (spins while loading)
-    Rectangle {
-        anchors.top: parent.top; anchors.right: parent.right
-        anchors.topMargin: Theme.sp4; anchors.rightMargin: Theme.sp4
-        width: 34; height: 34; radius: 17
-        visible: page.rowList.length > 0
-        color: rfMa.containsMouse ? Theme.hover : Qt.rgba(0, 0, 0, 0.35)
-        border.color: Theme.hair; border.width: 1
-        IconImg {
-            anchors.centerIn: parent
-            src: "qrc:/icons/refresh.svg"
-            tint: rfMa.containsMouse ? Theme.t1 : Theme.t3
-            s: 16
-            RotationAnimation on rotation {
-                running: page.api && page.api.loading
-                from: 0; to: 360; duration: 900; loops: Animation.Infinite
-            }
-        }
-        MouseArea {
-            id: rfMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: if (page.api) page.api.refresh()
         }
     }
 }
