@@ -42,7 +42,7 @@ Rectangle {
     }
     Timer {
         interval: 5000
-        running: rail.showDl && rail.dlList.length > 1
+        running: rail.showDl && rail.dlList.length > 1 && !dlHov.hovered
         repeat: true
         onTriggered: rail.dlIndex = (rail.dlIndex + 1) % rail.dlList.length
     }
@@ -367,9 +367,10 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 62
                 radius: 11
-                color: dlMa.containsMouse ? Theme.hover : Theme.panel
-                border.color: dlMa.containsMouse ? Theme.accent : Theme.hair; border.width: 1
+                color: dlHov.hovered ? Theme.hover : Theme.panel
+                border.color: dlHov.hovered ? Theme.accent : Theme.hair; border.width: 1
                 Behavior on color { ColorAnimation { duration: 120 } }
+                HoverHandler { id: dlHov }
                 RowLayout {
                     id: dlContent
                     anchors.fill: parent; anchors.margins: 9
@@ -396,25 +397,32 @@ Rectangle {
                     }
                 }
                 MouseArea {
-                    id: dlMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    id: dlMa; anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                     onClicked: { if (rail.dlItem) rail.selectTorrent(rail.dlItem.infoHash); rail.currentIndex = 0 }
                 }
-            }
 
-            Row {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 6
-                visible: rail.dlList.length > 1
-                Repeater {
-                    model: rail.dlList.length
-                    delegate: Rectangle {
-                        required property int index
-                        width: index === rail.dlShown ? 16 : 6; height: 6; radius: 3
-                        color: index === rail.dlShown ? Theme.accent : Qt.rgba(1, 1, 1, 0.3)
-                        Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                        Behavior on color { ColorAnimation { duration: 200 } }
-                        MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: rail.dlIndex = index }
-                    }
+                // hover nav arrows — scale to any number of downloads (no dot explosion)
+                Rectangle {
+                    anchors.left: parent.left; anchors.leftMargin: 3; anchors.verticalCenter: parent.verticalCenter
+                    width: 22; height: 22; radius: 11
+                    color: "#dd15151a"; border.color: Theme.hair; border.width: 1
+                    visible: rail.dlList.length > 1
+                    opacity: dlHov.hovered ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 130 } }
+                    Text { anchors.centerIn: parent; text: "‹"; color: Theme.t1; font.pixelSize: 16; font.family: Theme.fontSans }
+                    MouseArea { anchors.fill: parent; enabled: dlHov.hovered; cursorShape: Qt.PointingHandCursor
+                        onClicked: rail.dlIndex = (rail.dlIndex - 1 + rail.dlList.length) % rail.dlList.length }
+                }
+                Rectangle {
+                    anchors.right: parent.right; anchors.rightMargin: 3; anchors.verticalCenter: parent.verticalCenter
+                    width: 22; height: 22; radius: 11
+                    color: "#dd15151a"; border.color: Theme.hair; border.width: 1
+                    visible: rail.dlList.length > 1
+                    opacity: dlHov.hovered ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 130 } }
+                    Text { anchors.centerIn: parent; text: "›"; color: Theme.t1; font.pixelSize: 16; font.family: Theme.fontSans }
+                    MouseArea { anchors.fill: parent; enabled: dlHov.hovered; cursorShape: Qt.PointingHandCursor
+                        onClicked: rail.dlIndex = (rail.dlIndex + 1) % rail.dlList.length }
                 }
             }
         }

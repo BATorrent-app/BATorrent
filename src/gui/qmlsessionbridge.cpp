@@ -1967,7 +1967,7 @@ QVariantList QmlSessionBridge::activeDownloads() const
 {
     QVariantList out;
     const int n = m_session->torrentCount();
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {   // navigate via hover arrows, so no cap
         const TorrentInfo info = m_session->torrentAt(i);
         if (info.paused || info.completed || info.progress >= 1.0f) continue;
         const QString hash = m_session->torrentHashAt(i);
