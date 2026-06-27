@@ -265,18 +265,24 @@ void QmlSessionBridge::resumeSelected()
 
 // Highest index first, so erasing earlier rows doesn't shift the ones we
 // haven't removed yet. Both remove paths share this so they can't diverge.
-void QmlSessionBridge::removeSelectedRows(bool deleteFiles)
+void QmlSessionBridge::removeSelectedRows(bool deleteFiles, bool permanent)
 {
     QList<int> rows = m_selectedRows.isEmpty()
         ? (m_selectedIndex >= 0 ? QList<int>{m_selectedIndex} : QList<int>{})
         : m_selectedRows;
     if (rows.isEmpty()) return;
+    const int n = rows.size();
     std::sort(rows.begin(), rows.end(), std::greater<int>());
-    for (int r : rows) m_session->removeTorrent(r, deleteFiles);
+    for (int r : rows) m_session->removeTorrent(r, deleteFiles, permanent);
     m_selectedRows.clear();
     m_selectedIndex = -1;
     emit selectionChanged(); emit selectionListsChanged();
+    // set the expectation: trashed files still occupy disk until the Trash is emptied
+    if (deleteFiles)
+        emit toast(permanent ? tr_("remove_deleted") : tr_("remove_trashed"),
+                   n > 1 ? QString::number(n) : QString());
 }
+void QmlSessionBridge::removeSelectedWithFilesPermanent() { removeSelectedRows(true, true); }
 
 void QmlSessionBridge::removeSelected()          { removeSelectedRows(false); }
 void QmlSessionBridge::removeSelectedWithFiles() { removeSelectedRows(true); }
@@ -907,6 +913,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["tmdbId"]     = tmdbId;                          // for TMDB episode-title lookup
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
+        m["size"]       = info.totalSize;
         m["resumeMs"]   = resumeMs;
         m["durMs"]      = durMs;
         m["resumeAt"]   = resumeAt;                       // last-watched timestamp (ms)
@@ -968,6 +975,15 @@ QVariantMap QmlSessionBridge::streamFileStats(const QString &infoHash, int fileI
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return {};
     return m_session->streamFileStats(row, fileIndex);
+}
+
+QString QmlSessionBridge::streamFileName(const QString &infoHash, int fileIndex) const
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return {};
+    const QStringList names = m_session->torrentFileNames(row);
+    if (fileIndex < 0 || fileIndex >= names.size()) return {};
+    return names.at(fileIndex).section('/', -1);   // leaf name
 }
 
 void QmlSessionBridge::playByHash(const QString &infoHash)
@@ -1099,6 +1115,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["poster"]    = poster;
         m["progress"]   = double(info.progress);
         m["completed"]  = info.completed;
+        m["size"]       = info.totalSize;
         m["hasExe"]     = !gameExe(hash).isEmpty();
         m["lastPlayed"] = QSettings().value(QStringLiteral("gamePlayed/") + hash, 0).toLongLong();
         m["description"] = description;

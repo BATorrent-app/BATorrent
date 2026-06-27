@@ -111,6 +111,9 @@ public:
     QString torrentSearchUrl() const;
     void setTorrentSearchUrl(const QString &url);
     void searchTorrents(const QString &query, int category);
+    // Lightweight, isolated one-shot lookup: how many sources, the healthiest one's
+    // size, and the peak seed count for a title. Does NOT touch the search UI pipeline.
+    void summarizeTorrents(const QString &query, int category = 0);
 
 signals:
     void addonAdded(const AddonManifest &manifest);
@@ -123,6 +126,7 @@ signals:
     void torrentSearchResults(const QList<TorrentSearchResult> &results);
     void torrentSearchFinished();
     void torrentSearchError(const QString &error);
+    void torrentSummaryReady(const QString &query, int count, qint64 bestSize, int maxSeeds);
 
 private:
     AddonManager();

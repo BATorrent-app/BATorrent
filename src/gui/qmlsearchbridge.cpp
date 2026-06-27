@@ -139,6 +139,15 @@ QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
         setStatus(err);
     });
 
+    connect(&mgr, &AddonManager::torrentSummaryReady, this,
+            [this](const QString &query, int count, qint64 bestSize, int maxSeeds) {
+        const QString key = query.toLower().trimmed();
+        m_srcSummaryInFlight.remove(key);
+        QVariantList v; v << count << QVariant::fromValue(bestSize) << maxSeeds;
+        m_srcSummaryCache.insert(key, v);
+        emit sourceSummary(query, count, bestSize, maxSeeds);
+    });
+
     connect(&GameSourceManager::instance(), &GameSourceManager::refreshed, this, [this](int count) {
         emit gameSourcesChanged();
         if (m_pendingGameQuery.isEmpty()) return;
@@ -408,6 +417,20 @@ void QmlSearchBridge::cancelGetAndWatch()
 {
     m_gwActive = false;
     m_gwCancelled = true;
+}
+
+void QmlSearchBridge::summarizeSources(const QString &title)
+{
+    const QString key = title.toLower().trimmed();
+    if (key.isEmpty()) return;
+    if (m_srcSummaryCache.contains(key)) {
+        const QVariantList v = m_srcSummaryCache.value(key);
+        emit sourceSummary(title, v.value(0).toInt(), v.value(1).toLongLong(), v.value(2).toInt());
+        return;
+    }
+    if (m_srcSummaryInFlight.contains(key)) return;
+    m_srcSummaryInFlight.insert(key);
+    AddonManager::instance().summarizeTorrents(title, 0);
 }
 
 void QmlSearchBridge::gwResolve()
