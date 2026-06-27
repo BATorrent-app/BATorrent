@@ -172,7 +172,10 @@ Rectangle {
     }
 
     onShowGameMgrChanged: if (showGameMgr) reloadGames()
-    onVisibleChanged: if (visible && api) api.refreshSources()
+    onVisibleChanged: if (visible) {
+        if (api) api.refreshSources()
+        Qt.callLater(function() { queryFld.field.forceActiveFocus() })   // land ready to type
+    }
 
     // ---- recent searches (persisted) ----
     property var recentList: []
@@ -229,6 +232,49 @@ Rectangle {
         commitSearch()
     }
 
+    // ---- seed-health bar + disk-fit awareness ----
+    function seedColor(n) {
+        return n >= 50 ? Theme.grn : (n >= 10 ? "#e0a533" : (n >= 1 ? "#d97640" : Theme.t4))
+    }
+    function seedFill(n) {   // log scale: a handful reads as a sliver, 500+ fills it
+        return n <= 0 ? 0 : Math.min(1, Math.log(n + 1) / Math.log(500))
+    }
+    function fmtSize(b) {
+        if (!b || b <= 0) return "0 B"
+        var u = ["B", "KB", "MB", "GB", "TB"]
+        var i = Math.min(u.length - 1, Math.floor(Math.log(b) / Math.log(1024)))
+        return (b / Math.pow(1024, i)).toFixed(i >= 3 ? 1 : 0) + " " + u[i]
+    }
+    // free bytes on the default save volume (first entry of the DISK indicator)
+    readonly property double saveFree: (typeof session !== "undefined" && session.diskVolumes
+        && session.diskVolumes.length > 0) ? (session.diskVolumes[0].free || 0) : -1
+    readonly property int wontFit: {
+        if (saveFree < 0 || !api) return 0
+        var n = 0, res = api.results
+        for (var i = 0; i < res.length; ++i)
+            if ((res[i].sizeBytes || 0) > saveFree) ++n
+        return n
+    }
+    function fmtCount(n) { return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n) }
+
+    // ---- best-match hero on the title-disambiguation grid ----
+    readonly property bool showBestMatch: isTitles && api && api.results.length > 0 && !api.searching
+    readonly property var bestItem: showBestMatch ? api.results[0] : null
+    property var bestSummary: null   // {count, bestSize, maxSeeds} for bestItem
+    onBestItemChanged: {
+        bestSummary = null
+        if (bestItem && typeof search !== "undefined" && (bestItem.name || "").length > 0)
+            search.summarizeSources(bestItem.name)
+    }
+    Connections {
+        target: page.api
+        ignoreUnknownSignals: true
+        function onSourceSummary(title, count, bestSize, maxSeeds) {
+            if (page.bestItem && page.bestItem.name === title)
+                page.bestSummary = { count: count, bestSize: bestSize, maxSeeds: maxSeeds }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -264,10 +310,15 @@ Rectangle {
                     icon: "qrc:/icons/search.svg"
                     clearable: true
                     placeholder: (i18n.language, i18n.t("search_input"))
-                    onEdited: page.commitSearch()              // Enter / focus-out
                     onTextChanged: {
                         if (text.trim().length >= 2) searchDebounce.restart()
                         else searchDebounce.stop()
+                    }
+                    // commit on Enter only — committing on focus-out re-ran the search
+                    // when you clicked a filter dropdown, eating the first click
+                    Connections {
+                        target: queryFld.field
+                        function onAccepted() { page.commitSearch() }
                     }
                 }
                 TSelect {
@@ -407,9 +458,10 @@ Rectangle {
                 }
                 BtnFlat {
                     // one-click "best" release for a picked title (quality + seeders + your language)
+                    // secondary styling so it doesn't fight the red "Search" stacked above it
                     visible: page.api && page.api.singleTitleView && page.api.results.length > 0
-                    primary: true
-                    text: (i18n.language, i18n.t("search_get_best"))
+                    primary: false
+                    text: "★  " + (i18n.language, i18n.t("search_get_best"))
                     onClicked: page.pickBest()
                 }
                 BtnFlat {
@@ -437,7 +489,7 @@ Rectangle {
                 Item { Layout.preferredWidth: 46; visible: page.showRowThumbs }   // thumb column
                 Text { text: (i18n.language, i18n.t("search_col_name2")); Layout.fillWidth: true; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Text { text: (i18n.language, i18n.t("search_col_size2")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_seeds2")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_seeds2")); Layout.preferredWidth: 100; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_leech")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Item { Layout.preferredWidth: 36 }
             }
@@ -573,7 +625,33 @@ Rectangle {
                         }
                     }
                     Text { text: row.modelData.sizeStr || ""; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
-                    Text { visible: (row.modelData.seeds || "").length > 0; text: row.modelData.seeds || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: row.modelData.hasSeeds ? Theme.grn : Theme.t4; font.pixelSize: 12; font.family: Theme.fontMono }
+                    Item {   // fixed-width seeds cell: small bar (fill = health) + number
+                        Layout.preferredWidth: 100
+                        Layout.alignment: Qt.AlignVCenter
+                        visible: (row.modelData.seeds || "").length > 0
+                        Row {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 9
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 50; height: 4; radius: 2; color: Theme.hairSoft
+                                Rectangle {
+                                    width: parent.width * page.seedFill(row.modelData.seedsN || 0)
+                                    height: parent.height; radius: 2
+                                    color: page.seedColor(row.modelData.seedsN || 0)
+                                    Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                                }
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: row.modelData.seeds || ""
+                                width: 28; horizontalAlignment: Text.AlignRight
+                                color: page.seedColor(row.modelData.seedsN || 0)
+                                font.pixelSize: 12; font.family: Theme.fontMono
+                            }
+                        }
+                    }
                     Text { visible: (row.modelData.leech || "").length > 0; text: row.modelData.leech || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
                     Item {
                         Layout.preferredWidth: 36
@@ -620,6 +698,82 @@ Rectangle {
             }
         }
 
+        // best-match hero — explicitly surfaces the top title (not just first in grid)
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 142
+            Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5; Layout.topMargin: Theme.sp4
+            visible: page.showBestMatch
+            radius: 14
+            color: Theme.elev
+            border.color: Theme.hair; border.width: 1
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 16
+                PosterThumb {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 82; implicitHeight: 110
+                    posterUrl: page.bestItem ? (page.bestItem.poster || "") : ""
+                    label: page.bestItem ? (page.bestItem.name || "") : ""
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 5
+                    Text {
+                        text: (i18n.language, i18n.t("search_best_match"))
+                        color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
+                        font.letterSpacing: 1.2; font.family: Theme.fontSans
+                    }
+                    Text {
+                        text: page.bestItem ? (page.bestItem.name || "") : ""
+                        color: Theme.t1; font.pixelSize: 22; font.weight: Font.Bold; font.family: Theme.fontSans
+                        Layout.fillWidth: true; elide: Text.ElideRight
+                    }
+                    Text {
+                        text: {
+                            if (!page.bestItem) return ""
+                            var parts = []
+                            var t = page.typeLabel(page.bestItem.type || "")
+                            if ((page.bestItem.year || "").length > 0) parts.push(page.bestItem.year)
+                            if (t.length > 0) parts.push(t)
+                            if ((page.bestItem.rating || 0) > 0) parts.push("★ " + page.bestItem.rating.toFixed(1))
+                            return parts.join("    ·    ")
+                        }
+                        color: Theme.t3; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    }
+                    Row {
+                        spacing: 7
+                        visible: page.bestSummary && page.bestSummary.count > 0
+                        Rectangle { width: 7; height: 7; radius: 4; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: {
+                                if (!page.bestSummary) return ""
+                                var s = page.bestSummary.count + " torrents"
+                                if (page.bestSummary.maxSeeds > 0) s += "    ·    best " + page.fmtCount(page.bestSummary.maxSeeds) + " seeds"
+                                return s
+                            }
+                            color: Theme.grn; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                        }
+                    }
+                }
+                BtnFlat {
+                    Layout.alignment: Qt.AlignVCenter
+                    primary: true
+                    text: (i18n.language, i18n.t("search_see_torrents"))
+                    onClicked: if (page.api) page.api.activateResult(0)
+                }
+            }
+        }
+        Text {
+            visible: page.showBestMatch && page.api && page.api.results.length > 1
+            text: (i18n.language, i18n.t("search_other_matches"))
+            Layout.leftMargin: Theme.sp5; Layout.topMargin: 8
+            color: Theme.t4; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 0.8; font.family: Theme.fontSans
+        }
+
         // titles grid (step 1: pick the actual movie/series/game, one cover each)
         GridView {
             id: titlesView
@@ -627,7 +781,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            model: page.isTitles ? (page.api ? page.api.results : []) : []
+            model: page.isTitles ? (page.showBestMatch ? page.api.results.slice(1) : (page.api ? page.api.results : [])) : []
             cellWidth: 174
             cellHeight: 286
             leftMargin: Theme.sp5; rightMargin: Theme.sp5; topMargin: Theme.sp4; bottomMargin: Theme.sp4
@@ -638,7 +792,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: Math.min(parent.width - 80, 360)
                 spacing: 10
-                visible: titlesView.count === 0
+                visible: titlesView.count === 0 && !page.showBestMatch
                 Spinner {
                     Layout.alignment: Qt.AlignHCenter
                     visible: page.api && page.api.searching
@@ -694,7 +848,7 @@ Rectangle {
                     onWatchlistToggle: if (typeof session !== "undefined") session.toggleWatchlist({
                         title: modelData.name || "", type: modelData.type || "",
                         poster: modelData.poster || "", year: modelData.year || "" })
-                    onActivated: if (page.api) page.api.activateResult(index)
+                    onActivated: if (page.api) page.api.activateResult(page.showBestMatch ? index + 1 : index)
                     onGetWatch: if (page.api) page.api.getAndWatch(modelData.name || "",
                                                                    modelData.year || "",
                                                                    modelData.type || "movie")
@@ -716,6 +870,16 @@ Rectangle {
                 BtnFlat { visible: page.api && page.api.canGoBack; text: (i18n.language, i18n.t("search_back2")); onClicked: if (page.api) page.api.back() }
                 Text { text: page.api ? page.api.statusText : ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
+                Row {
+                    spacing: 7
+                    visible: page.isFlatList && page.wontFit > 0 && page.saveFree >= 0
+                    Rectangle { width: 7; height: 7; radius: 4; color: "#e0a533"; anchors.verticalCenter: parent.verticalCenter }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: (i18n.language, i18n.t("search_disk_warn")).arg(page.fmtSize(page.saveFree)).arg(page.wontFit)
+                        color: "#e0a533"; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    }
+                }
                 BtnFlat {
                     visible: page.isTitles && page.api && !page.api.searching
                     text: (i18n.language, i18n.t("search_raw_results"))
