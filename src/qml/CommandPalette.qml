@@ -31,7 +31,7 @@ Item {
         opened = true
         input.text = ""
         sel = 0
-        Qt.callLater(function() { input.forceActiveFocus() })
+        Qt.callLater(function() { input.field.forceActiveFocus() })
     }
     function close() { opened = false }
     function toggle() { if (opened) close(); else open() }
@@ -103,9 +103,12 @@ Item {
             placeholder: (i18n.language, i18n.t("palette_placeholder"))
             Keys.onDownPressed: pal.sel = Math.min(pal.results.length - 1, pal.sel + 1)
             Keys.onUpPressed: pal.sel = Math.max(0, pal.sel - 1)
-            Keys.onReturnPressed: pal.activate(pal.sel)
-            Keys.onEnterPressed: pal.activate(pal.sel)
             Keys.onEscapePressed: pal.close()
+            // the inner TextField consumes Enter → activate via its accepted signal
+            Connections {
+                target: input.field
+                function onAccepted() { pal.activate(pal.sel) }
+            }
         }
 
         ListView {

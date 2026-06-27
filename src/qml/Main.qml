@@ -130,6 +130,12 @@ Window {
         detailsCollapsed = !detailsCollapsed
         if (typeof settings !== "undefined") settings.set("detailsCollapsed", detailsCollapsed)
     }
+    // lock pins the panel to its current open/closed state, overriding auto-collapse
+    property bool detailsLocked: typeof settings !== "undefined" && settings.get("detailsLocked") === true
+    function toggleDetailsLocked() {
+        detailsLocked = !detailsLocked
+        if (typeof settings !== "undefined") settings.set("detailsLocked", detailsLocked)
+    }
     // The Peers tab pulls every peer from libtorrent — only keep it live while open.
     readonly property bool peersTabOpen: win.hasSel && win.detailTab === 1
     onPeersTabOpenChanged: if (typeof session !== "undefined") session.setDetailPeersActive(peersTabOpen)
@@ -141,6 +147,8 @@ Window {
     // downSpeed, upSpeed, category, numPeers, downRate, upRate, size, infoHash.
     readonly property var model: typeof torrentModel !== "undefined" ? torrentModel : null
     readonly property bool hasSel: typeof session !== "undefined" && session.hasSelection
+    // auto-collapse when there's nothing to show, unless the user locked the panel's state
+    readonly property bool detailsShownCollapsed: win.detailsLocked ? win.detailsCollapsed : (win.detailsCollapsed || !win.hasSel)
 
     // ----- state→color helpers (keyed by real stateKey) -----
     function fillFor(k) {
@@ -200,6 +208,7 @@ Window {
         win.selectedRows = rows
         win.selected = proxyRow
         _commitSel()
+        if (searchInput.activeFocus) searchInput.focus = false   // release the search field so its accent border doesn't stick
     }
     function isRowSelected(proxyRow) { return win.selectedRows.indexOf(proxyRow) >= 0 }
     function selectAll() {
@@ -648,7 +657,7 @@ Window {
         id: cmdPalette
         actions: {
             var l = i18n.language   // re-evaluate labels on language switch
-            return [
+            var acts = [
                 { label: i18n.t("magnet_title"), run: function() { magnetDlg.open() } },
                 { label: i18n.t("menu_open_torrent"), run: function() { openFileDlg.open() } },
                 { label: i18n.t("menu_create_torrent"), run: function() { createDlg.open() } },
@@ -667,6 +676,20 @@ Window {
                 { label: i18n.t("menu_diagnostics"), run: function() { win.showWin(diagWinLoader) } },
                 { label: i18n.t("shortcuts_title2"), run: function() { win.showWin(shortcutsWinLoader) } }
             ]
+            // settings sections + a few high-value deep links — so "torrent search",
+            // "proxy", "network", etc. are reachable straight from the palette
+            var setNav = ["detail_general", "detail_kv_speed", "settings_network", "set_nav_vpn",
+                          "set_nav_proxy", "set_nav_webui", "set_nav_notif", "set_nav_addons", "settings_advanced"]
+            for (var si = 0; si < setNav.length; ++si) {
+                (function(idx) {
+                    acts.push({ label: i18n.t("tb_settings") + " · " + i18n.t(setNav[idx]),
+                                hint: i18n.t("palette_hint_page"),
+                                run: function() { win.showWin(settingsWinLoader); if (settingsWinLoader.item) settingsWinLoader.item.sec = idx } })
+                })(si)
+            }
+            acts.push({ label: i18n.t("set_grp_torrent_search"), hint: i18n.t("tb_settings"),
+                        run: function() { win.showWin(settingsWinLoader); if (settingsWinLoader.item) settingsWinLoader.item.sec = 7 } })
+            return acts
         }
         onTorrentPicked: function(src) {
             navRail.currentIndex = 0
@@ -1234,6 +1257,7 @@ Window {
                             // debounce: re-filtering the whole list on every
                             // keystroke stutters with a large library
                             onTextChanged: searchDebounce.restart()
+                            Keys.onEscapePressed: searchInput.focus = false
                             Timer {
                                 id: searchDebounce
                                 interval: 150
@@ -2152,7 +2176,7 @@ Window {
         Rectangle {
             id: detailPanel
             Layout.fillWidth: true
-            Layout.preferredHeight: win.detailsCollapsed ? 42 : 270
+            Layout.preferredHeight: win.detailsShownCollapsed ? 42 : 270
             Behavior on Layout.preferredHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
             color: Theme.panel
             clip: true
@@ -2169,24 +2193,55 @@ Window {
                     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
 
                     // collapse / expand the whole detail panel (state persists)
-                    Item {
+                    Rectangle {
+                        id: collapseBtn
                         anchors.right: parent.right; anchors.rightMargin: Theme.sp4
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 28; height: 28; z: 5
+                        width: 30; height: 26; radius: 7
+                        color: colMa.containsMouse ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : Theme.hover
+                        border.width: 1; border.color: colMa.containsMouse ? Theme.accent : Theme.hair
+                        Behavior on color { ColorAnimation { duration: 120 } }
                         Text {
                             anchors.centerIn: parent
                             text: "⌄"
-                            rotation: win.detailsCollapsed ? 180 : 0
+                            rotation: win.detailsShownCollapsed ? 180 : 0
                             Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            color: colMa.containsMouse ? Theme.t1 : Theme.t4
-                            font.pixelSize: 17; font.family: Theme.fontSans
+                            color: colMa.containsMouse ? Theme.t1 : Theme.t2
+                            font.pixelSize: 18; font.bold: true; font.family: Theme.fontSans
                         }
                         MouseArea {
                             id: colMa
-                            anchors.fill: parent; anchors.margins: -4
+                            anchors.fill: parent
                             hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                             onClicked: win.toggleDetailsCollapsed()
                         }
+                        ToolTip.visible: colMa.containsMouse
+                        ToolTip.text: win.detailsShownCollapsed ? i18n.t("Expand details") : i18n.t("Collapse details")
+                        ToolTip.delay: 400
+                    }
+
+                    // lock: pin the panel open/closed, ignoring auto-collapse on deselect
+                    Item {
+                        id: lockBtn
+                        anchors.right: collapseBtn.left; anchors.rightMargin: 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 28; height: 28; z: 5
+                        readonly property color tint: lockMa.containsMouse ? Theme.t1 : (win.detailsLocked ? Theme.accent : Theme.t4)
+                        IconImg {
+                            anchors.centerIn: parent
+                            s: 15
+                            src: win.detailsLocked ? "qrc:/icons/lock.svg" : "qrc:/icons/lock-open.svg"
+                            tint: lockBtn.tint
+                        }
+                        MouseArea {
+                            id: lockMa
+                            anchors.fill: parent; anchors.margins: -4
+                            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: win.toggleDetailsLocked()
+                        }
+                        ToolTip.visible: lockMa.containsMouse
+                        ToolTip.text: win.detailsLocked ? i18n.t("Panel pinned — click to auto-hide") : i18n.t("Pin panel open/closed")
+                        ToolTip.delay: 400
                     }
 
                     Row {
@@ -2841,7 +2896,10 @@ Window {
     RemoveDialog {
         id: removeDlg
         onAccepted: if (typeof session !== "undefined") {
-            if (deleteFiles) session.removeSelectedWithFiles(); else session.removeSelected()
+            if (deleteFiles) {
+                if (deletePermanently) session.removeSelectedWithFilesPermanent()
+                else session.removeSelectedWithFiles()
+            } else session.removeSelected()
         }
     }
     InputPromptDialog   { id: inputPrompt }

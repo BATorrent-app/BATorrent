@@ -16,6 +16,7 @@ Rectangle {
     property string icon: ""
     property alias text: input.text
     property alias placeholder: input.placeholderText
+    property alias field: input   // inner TextField, so callers can focus it directly
     property bool mono: false
     property bool readonly: false
     property bool password: false
