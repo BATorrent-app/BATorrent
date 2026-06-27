@@ -185,9 +185,55 @@ Rectangle {
             }
         }
 
-        Item { Layout.fillHeight: true }   // push donate + Settings + collapse to the bottom
+        Item { Layout.fillHeight: true }   // push disk + donate + Settings + collapse to the bottom
 
-        // ----- donate (solid red heart) -----
+        // ----- disk usage: one block per volume torrents save to (multi-HD) -----
+        Column {
+            Layout.fillWidth: true
+            Layout.leftMargin: 18; Layout.rightMargin: 18
+            spacing: 11
+            visible: !rail.collapsed && typeof session !== "undefined" && session.diskVolumes.length > 0
+            Repeater {
+                model: typeof session !== "undefined" ? session.diskVolumes : []
+                delegate: Item {
+                    required property var modelData
+                    width: parent.width
+                    height: 30
+                    Text {
+                        id: dvName
+                        anchors.left: parent.left; anchors.top: parent.top
+                        anchors.right: dvFree.left; anchors.rightMargin: 8
+                        text: modelData.name
+                        color: Theme.t4; elide: Text.ElideRight
+                        font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
+                        font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
+                    }
+                    Text {
+                        id: dvFree
+                        anchors.right: parent.right; anchors.top: parent.top
+                        text: modelData.free + " Free"
+                        color: Theme.amber; font.pixelSize: 11; font.family: Theme.fontMono
+                    }
+                    Rectangle {
+                        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                        height: 3; radius: 2; color: Theme.track
+                        Rectangle {
+                            height: parent.height; radius: 2
+                            width: parent.width * Math.max(0.02, Math.min(1, modelData.usedFraction))
+                            color: Theme.amber
+                        }
+                    }
+                }
+            }
+        }
+        Rectangle {
+            Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16
+            Layout.topMargin: 10; Layout.bottomMargin: 4
+            implicitHeight: 1; color: Theme.hairSoft
+            visible: !rail.collapsed
+        }
+
+        // ----- donate (heart: gray at rest, red on hover) -----
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 46
@@ -204,7 +250,7 @@ Rectangle {
                 anchors.leftMargin: rail.collapsed ? 13 : 17
                 anchors.rightMargin: 12
                 spacing: 13
-                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/heart.svg"; tint: Theme.accent; s: 18 }
+                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/heart.svg"; tint: donMa.containsMouse ? Theme.accent : Theme.t3; s: 18 }
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter

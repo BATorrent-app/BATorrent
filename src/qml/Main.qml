@@ -125,6 +125,11 @@ Window {
     }
     readonly property var presetCats: ["Apps", "Games", "Movies", "Series"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
+    property bool detailsCollapsed: typeof settings !== "undefined" && settings.get("detailsCollapsed") === true
+    function toggleDetailsCollapsed() {
+        detailsCollapsed = !detailsCollapsed
+        if (typeof settings !== "undefined") settings.set("detailsCollapsed", detailsCollapsed)
+    }
     // The Peers tab pulls every peer from libtorrent — only keep it live while open.
     readonly property bool peersTabOpen: win.hasSel && win.detailTab === 1
     onPeersTabOpenChanged: if (typeof session !== "undefined") session.setDetailPeersActive(peersTabOpen)
@@ -157,6 +162,13 @@ Window {
         if (k === "seeding") return Theme.amber                       // seeding = amber
         if (k === "paused" || k === "queued") return Theme.t4         // paused = gray
         return Theme.accent                                           // downloading = red
+    }
+    function fmtEta(sec) {
+        if (sec < 0) return ""
+        if (sec >= 86400) return Math.floor(sec / 86400) + "d left"
+        if (sec >= 3600)  return Math.floor(sec / 3600) + "h left"
+        if (sec >= 60)    return Math.floor(sec / 60) + "m left"
+        return sec + "s left"
     }
     function _commitSel() {
         if (typeof session === "undefined" || typeof torrentFilter === "undefined") return
@@ -1520,6 +1532,15 @@ Window {
                     required property string stateString
                     required property string category
                     required property string size
+                    required property string downSpeed
+                    required property string upSpeed
+                    required property real downRate
+                    required property var sizeBytes
+
+                    readonly property bool isDownloading: stateKey !== "seeding" && stateKey !== "finished"
+                        && stateKey !== "completed" && stateKey !== "paused" && stateKey !== "queued"
+                    readonly property int etaSec: (downRate > 0 && progress < 1.0 && sizeBytes > 0)
+                        ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
 
                     readonly property string posterUrl: win.fileUrl(posterPath)
 
@@ -1561,15 +1582,6 @@ Window {
                                 opacity: 0.06
                                 layer.enabled: Theme.isLight
                                 layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
-                            }
-                            Text {
-                                anchors.left: parent.left; anchors.top: parent.top
-                                anchors.leftMargin: 13; anchors.topMargin: 12
-                                text: tile.category
-                                color: Qt.rgba(1, 1, 1, 0.42)
-                                font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.3
-                                font.capitalization: Font.AllUppercase
-                                font.family: Theme.fontSans
                             }
                             Text {
                                 anchors.left: parent.left; anchors.right: parent.right
@@ -1671,6 +1683,37 @@ Window {
                             border.width: win.isRowSelected(tile.index) ? 2 : 1
                             Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         }
+
+                        // category chip (top-left) — dark pill so it reads on any cover
+                        Rectangle {
+                            visible: tile.category.length > 0
+                            anchors.left: parent.left; anchors.top: parent.top
+                            anchors.leftMargin: 8; anchors.topMargin: 8
+                            radius: 5; color: "#99000000"
+                            implicitWidth: catTxt.implicitWidth + 12; implicitHeight: 18
+                            Text {
+                                id: catTxt; anchors.centerIn: parent
+                                text: tile.category
+                                color: "#ffffff"; opacity: 0.88
+                                font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
+                                font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
+                            }
+                        }
+                        // download % (top-right) — hidden once complete; tint follows state
+                        Rectangle {
+                            visible: tile.progress < 0.999
+                            anchors.right: parent.right; anchors.top: parent.top
+                            anchors.rightMargin: 8; anchors.topMargin: 8
+                            radius: 9; color: "#cc000000"
+                            implicitWidth: pctTxt.implicitWidth + 14; implicitHeight: 18
+                            Text {
+                                id: pctTxt; anchors.centerIn: parent
+                                text: Math.round(tile.progress * 100) + "%"
+                                color: "#ffffff"
+                                font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
+                            }
+                        }
+
                         MouseArea {
                             id: tileMa
                             anchors.fill: parent
@@ -1693,37 +1736,50 @@ Window {
                         }
                     }
 
-                    // .tmeta (padding-top 12: .st dot+label · .sz)
-                    RowLayout {
+                    // meta — line 1: state dot + live info (speed·ETA when downloading,
+                    // else the status word); line 2: size. No redundant "Downloading":
+                    // the dot + the % pill + the bar already say it.
+                    Column {
+                        id: meta
                         anchors.top: posterWrap.bottom
-                        anchors.topMargin: 12
+                        anchors.topMargin: 10
                         anchors.left: posterWrap.left
                         anchors.right: posterWrap.right
-                        spacing: 0
+                        spacing: 2
 
-                        Row {
-                            spacing: 6
-                            Rectangle {
-                                width: 6
-                                height: 6
-                                radius: 3
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: win.dotFor(tile.stateKey)
+                        Item {
+                            width: meta.width; height: 16
+                            Row {
+                                anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
+                                spacing: 6
+                                Rectangle {
+                                    width: 6; height: 6; radius: 3
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: win.dotFor(tile.stateKey)
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: tile.isDownloading ? ("↓ " + tile.downSpeed)
+                                          : (tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed) : tile.stateString)
+                                    color: win.textFor(tile.stateKey)
+                                    font.pixelSize: 12; font.family: Theme.fontSans
+                                }
                             }
                             Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: tile.stateString
-                                color: win.textFor(tile.stateKey)
-                                font.pixelSize: 12
-                                font.family: Theme.fontSans
+                                // ETA while downloading; once there's nothing left to
+                                // fetch, the size takes this slot (line 2 collapses) so
+                                // it's never left orphaned under an empty ETA.
+                                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                                text: tile.etaSec >= 0 ? win.fmtEta(tile.etaSec) : tile.size
+                                color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontMono
                             }
                         }
-                        Item { Layout.fillWidth: true }
                         Text {
+                            width: meta.width
+                            horizontalAlignment: Text.AlignRight
+                            visible: tile.etaSec >= 0
                             text: tile.size
-                            color: Theme.t4
-                            font.pixelSize: 12
-                            font.family: Theme.fontMono
+                            color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono
                         }
                     }
                 }
@@ -2091,153 +2147,16 @@ Window {
             }
         }
 
-        // ================== GRAPH ==================
-        Rectangle {
-            id: graphPanel
-            Layout.fillWidth: true
-            Layout.preferredHeight: 64
-            color: Theme.bg
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair }
-
-            readonly property var dl: typeof session !== "undefined" ? session.downloadHistory : []
-            readonly property var ul: typeof session !== "undefined" ? session.uploadHistory : []
-            // auto-scale to the real peak of the visible window (like speedgraph.cpp:
-            // no fixed floor → the curve always uses ~87% of the height, whether
-            // traffic is a few B/s or several MB/s). A floor squished low traffic
-            // into a flat band at the bottom.
-            readonly property int scaledMax: {
-                var m = 1
-                for (var i = 0; i < dl.length; ++i) if (dl[i] > m) m = dl[i]
-                for (var j = 0; j < ul.length; ++j) if (ul[j] > m) m = ul[j]
-                return Math.round(m * 1.15)
-            }
-            readonly property int slots: 60
-
-            function scaleText(b) {
-                if (b >= 1024 * 1024) return (b / (1024 * 1024)).toFixed(1) + " MB/s"
-                return Math.round(b / 1024) + " KB/s"
-            }
-            // build a smooth filled area path from a byte-history array
-            function areaPath(arr, h) {
-                if (!arr || arr.length === 0) return ""
-                var n = arr.length
-                var step = graphShape.width / (slots - 1)
-                var off = (slots - n) * step
-                function yAt(v) { return h - (v / scaledMax) * (h - 2) }
-                var x0 = off
-                var s = "M " + x0.toFixed(1) + "," + h.toFixed(1)
-                s += " L " + x0.toFixed(1) + "," + yAt(arr[0]).toFixed(1)
-                for (var i = 1; i < n; ++i) {
-                    var px = off + (i - 1) * step, py = yAt(arr[i - 1])
-                    var x = off + i * step, y = yAt(arr[i])
-                    var cx = (px + x) / 2
-                    s += " C " + cx.toFixed(1) + "," + py.toFixed(1) + " " + cx.toFixed(1) + "," + y.toFixed(1) + " " + x.toFixed(1) + "," + y.toFixed(1)
-                }
-                s += " L " + (off + (n - 1) * step).toFixed(1) + "," + h.toFixed(1) + " Z"
-                return s
-            }
-            // open smooth curve (top line only — no bottom edge / no fill close)
-            function linePath(arr, h) {
-                if (!arr || arr.length === 0) return ""
-                var n = arr.length
-                var step = graphShape.width / (slots - 1)
-                var off = (slots - n) * step
-                function yAt(v) { return h - (v / scaledMax) * (h - 2) }
-                var s = "M " + off.toFixed(1) + "," + yAt(arr[0]).toFixed(1)
-                for (var i = 1; i < n; ++i) {
-                    var px = off + (i - 1) * step, py = yAt(arr[i - 1])
-                    var x = off + i * step, y = yAt(arr[i])
-                    var cx = (px + x) / 2
-                    s += " C " + cx.toFixed(1) + "," + py.toFixed(1) + " " + cx.toFixed(1) + "," + y.toFixed(1) + " " + x.toFixed(1) + "," + y.toFixed(1)
-                }
-                return s
-            }
-
-            Text {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.topMargin: 6
-                anchors.leftMargin: Theme.sp4
-                text: graphPanel.scaleText(graphPanel.scaledMax)
-                color: Theme.t4
-                font.pixelSize: 10
-                font.family: Theme.fontSans
-            }
-            Row {
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.topMargin: 6
-                anchors.rightMargin: Theme.sp4
-                spacing: Theme.sp4
-                Row {
-                    spacing: 6
-                    Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
-                }
-                Row {
-                    spacing: 6
-                    Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
-                }
-            }
-
-            // real curves from session history (download accent + upload amber)
-            Shape {
-                id: graphShape
-                anchors.fill: parent
-                anchors.topMargin: 24
-                anchors.bottomMargin: 4
-                preferredRendererType: Shape.CurveRenderer   // smooth lines on Windows (no MSAA)
-                antialiasing: true
-
-                // order matches speedgraph.cpp: upload under, download on top.
-                // fills carry no stroke (the bottom edge was the phantom floor line).
-                ShapePath {
-                    strokeColor: "transparent"
-                    strokeWidth: 0
-                    fillGradient: LinearGradient {
-                        x1: 0; y1: 0; x2: 0; y2: graphShape.height
-                        GradientStop { position: 0.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.09) }
-                        GradientStop { position: 1.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.0) }
-                    }
-                    PathSvg { path: graphPanel.areaPath(graphPanel.ul, graphShape.height) }
-                }
-                ShapePath {
-                    strokeColor: "transparent"
-                    strokeWidth: 0
-                    fillGradient: LinearGradient {
-                        x1: 0; y1: 0; x2: 0; y2: graphShape.height
-                        GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.09) }
-                        GradientStop { position: 1.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.0) }
-                    }
-                    PathSvg { path: graphPanel.areaPath(graphPanel.dl, graphShape.height) }
-                }
-                ShapePath {
-                    strokeColor: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5)
-                    strokeWidth: 1.25
-                    fillColor: "transparent"
-                    capStyle: ShapePath.RoundCap
-                    joinStyle: ShapePath.RoundJoin
-                    PathSvg { path: graphPanel.linePath(graphPanel.ul, graphShape.height) }
-                }
-                ShapePath {
-                    strokeColor: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.5)
-                    strokeWidth: 1.25
-                    fillColor: "transparent"
-                    capStyle: ShapePath.RoundCap
-                    joinStyle: ShapePath.RoundJoin
-                    PathSvg { path: graphPanel.linePath(graphPanel.dl, graphShape.height) }
-                }
-            }
-        }
 
         // ================== DETAIL ==================
         Rectangle {
+            id: detailPanel
             Layout.fillWidth: true
-            Layout.preferredHeight: 270
+            Layout.preferredHeight: win.detailsCollapsed ? 42 : 270
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
             color: Theme.panel
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair }
-
+            clip: true
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair; z: 3 }
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 0
@@ -2248,6 +2167,27 @@ Window {
                     Layout.preferredHeight: 42
                     color: "transparent"
                     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
+
+                    // collapse / expand the whole detail panel (state persists)
+                    Item {
+                        anchors.right: parent.right; anchors.rightMargin: Theme.sp4
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 28; height: 28; z: 5
+                        Text {
+                            anchors.centerIn: parent
+                            text: "⌄"
+                            rotation: win.detailsCollapsed ? 180 : 0
+                            Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                            color: colMa.containsMouse ? Theme.t1 : Theme.t4
+                            font.pixelSize: 17; font.family: Theme.fontSans
+                        }
+                        MouseArea {
+                            id: colMa
+                            anchors.fill: parent; anchors.margins: -4
+                            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: win.toggleDetailsCollapsed()
+                        }
+                    }
 
                     Row {
                         anchors.fill: parent
@@ -2402,18 +2342,144 @@ Window {
                             font.pixelSize: 12
                             font.family: Theme.fontSans
                         }
-                        Text {
-                            visible: win.hasSel && session.selectedDescription.length > 0
-                            Layout.topMargin: 6
+                        // progress bar — % (left) + downloaded / total (right)
+                        ColumnLayout {
+                            visible: win.hasSel
                             Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                            maximumLineCount: 4
-                            elide: Text.ElideRight
-                            color: Theme.t2
-                            font.pixelSize: 12
-                            font.family: Theme.fontSans
-                            lineHeight: 1.55
-                            text: win.hasSel ? session.selectedDescription : ""
+                            Layout.topMargin: 10
+                            spacing: 6
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: Math.round((win.hasSel ? session.selectedProgress : 0) * 100) + "%"
+                                    color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: win.hasSel ? (session.selectedDownloaded.split(" (")[0] + "  /  " + session.selectedSize) : ""
+                                    color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontMono
+                                }
+                            }
+                            Rectangle {
+                                Layout.fillWidth: true; height: 5; radius: 2; color: Theme.track
+                                Rectangle {
+                                    height: parent.height; radius: 2
+                                    width: parent.width * (win.hasSel ? session.selectedProgress : 0)
+                                    color: (win.hasSel && session.selectedCompleted) ? Theme.grn : Theme.accent
+                                    Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                                }
+                            }
+                        }
+
+                        // big live transfer: DOWN (accent) · UP (amber) · ETA
+                        RowLayout {
+                            visible: win.hasSel
+                            Layout.fillWidth: true
+                            Layout.topMargin: 10
+                            spacing: Theme.sp6
+                            Repeater {
+                                model: [
+                                    { lbl: "DOWN", arrow: "↓ ", v: win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent },
+                                    { lbl: "UP",   arrow: "↑ ", v: win.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber  },
+                                    { lbl: "ETA",  arrow: "",   v: win.hasSel ? session.selectedEta       : "—", c: Theme.t1     }
+                                ]
+                                delegate: Column {
+                                    spacing: 3
+                                    Text { text: modelData.lbl; color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 0.8; font.family: Theme.fontSans }
+                                    Text {
+                                        text: modelData.arrow + modelData.v
+                                        color: modelData.c
+                                        font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                                    }
+                                }
+                            }
+                        }
+
+                        // per-torrent speed history — readable, contained graph
+                        // (down = accent, up = amber). Fills in as samples accrue.
+                        Item {
+                            id: spBox
+                            visible: win.hasSel
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 72
+                            Layout.topMargin: 12
+
+                            readonly property var dl: typeof session !== "undefined" ? session.selectedDownHistory : []
+                            readonly property var ul: typeof session !== "undefined" ? session.selectedUpHistory : []
+                            readonly property int slots: 60
+                            readonly property int scaledMax: {
+                                var m = 1
+                                for (var i = 0; i < dl.length; ++i) if (dl[i] > m) m = dl[i]
+                                for (var j = 0; j < ul.length; ++j) if (ul[j] > m) m = ul[j]
+                                return Math.round(m * 1.15)
+                            }
+                            function scaleText(b) {
+                                if (b >= 1048576) return (b / 1048576).toFixed(1) + " MB/s"
+                                return Math.round(b / 1024) + " KB/s"
+                            }
+                            function _path(arr, close) {
+                                if (!arr || arr.length === 0) return ""
+                                var n = arr.length, step = spGraph.width / (slots - 1), off = (slots - n) * step, h = spGraph.height
+                                function yAt(v) { return h - (v / scaledMax) * (h - 2) }
+                                var s = close ? ("M " + off.toFixed(1) + "," + h.toFixed(1) + " L " + off.toFixed(1) + "," + yAt(arr[0]).toFixed(1))
+                                              : ("M " + off.toFixed(1) + "," + yAt(arr[0]).toFixed(1))
+                                for (var i = 1; i < n; ++i) {
+                                    var px = off + (i-1)*step, py = yAt(arr[i-1]), x = off + i*step, y = yAt(arr[i]), cx = (px+x)/2
+                                    s += " C " + cx.toFixed(1)+","+py.toFixed(1)+" "+cx.toFixed(1)+","+y.toFixed(1)+" "+x.toFixed(1)+","+y.toFixed(1)
+                                }
+                                if (close) s += " L " + (off + (n-1)*step).toFixed(1) + "," + h.toFixed(1) + " Z"
+                                return s
+                            }
+
+                            Text {
+                                anchors.left: parent.left; anchors.top: parent.top
+                                text: spBox.scaleText(spBox.scaledMax)
+                                color: Theme.t4; font.pixelSize: 9; font.family: Theme.fontSans
+                            }
+                            Row {
+                                anchors.right: parent.right; anchors.top: parent.top; spacing: 9
+                                Text { text: "↓"; color: Theme.accent; font.pixelSize: 11; font.bold: true; font.family: Theme.fontMono }
+                                Text { text: "↑"; color: Theme.amber;  font.pixelSize: 11; font.bold: true; font.family: Theme.fontMono }
+                            }
+                            Rectangle {
+                                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                                height: 1; color: Theme.hairSoft
+                            }
+                            Shape {
+                                id: spGraph
+                                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                                height: parent.height - 16
+                                preferredRendererType: Shape.CurveRenderer
+                                antialiasing: true
+                                ShapePath {
+                                    strokeColor: "transparent"; strokeWidth: 0
+                                    fillGradient: LinearGradient {
+                                        x1: 0; y1: 0; x2: 0; y2: spGraph.height
+                                        GradientStop { position: 0.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.13) }
+                                        GradientStop { position: 1.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.0) }
+                                    }
+                                    PathSvg { path: spBox._path(spBox.ul, true) }
+                                }
+                                ShapePath {
+                                    strokeColor: "transparent"; strokeWidth: 0
+                                    fillGradient: LinearGradient {
+                                        x1: 0; y1: 0; x2: 0; y2: spGraph.height
+                                        GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.13) }
+                                        GradientStop { position: 1.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.0) }
+                                    }
+                                    PathSvg { path: spBox._path(spBox.dl, true) }
+                                }
+                                ShapePath {
+                                    strokeColor: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.7); strokeWidth: 1.25
+                                    fillColor: "transparent"; capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin
+                                    PathSvg { path: spBox._path(spBox.ul, false) }
+                                }
+                                ShapePath {
+                                    strokeColor: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.85); strokeWidth: 1.25
+                                    fillColor: "transparent"; capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin
+                                    PathSvg { path: spBox._path(spBox.dl, false) }
+                                }
+                            }
                         }
                     }
 
@@ -2431,7 +2497,7 @@ Window {
                             spacing: 0
 
                             Text {
-                                text: (i18n.language, i18n.t("detail_section_info"))
+                                text: "STORAGE"
                                 color: Theme.t4
                                 font.pixelSize: 10
                                 font.weight: Font.Bold
@@ -2441,10 +2507,10 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { kk: "detail_kv_name",  v: win.hasSel ? session.selectedName : "—" },
                                     { kk: "detail_kv_size",  v: win.hasSel ? session.selectedSize : "—" },
                                     { kk: "detail_kv_hash",  v: win.hasSel ? session.selectedHash : "—" },
-                                    { kk: "detail_kv_state", v: win.hasSel ? session.selectedState : "—" }
+                                    { kk: "Added",           v: win.hasSel ? session.selectedAdded : "—" },
+                                    { kk: "Path",            v: win.hasSel ? session.selectedPath : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
@@ -2472,10 +2538,9 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { kk: "detail_kv_downloaded", v: win.hasSel ? session.selectedDownloaded : "—" },
-                                    { kk: "col_down",             v: win.hasSel ? session.selectedDownSpeed : "—" },
-                                    { kk: "col_up",               v: win.hasSel ? session.selectedUpSpeed : "—" },
-                                    { kk: "detail_kv_eta",        v: win.hasSel ? session.selectedEta : "—" }
+                                    { kk: "detail_kv_downloaded", v: win.hasSel ? session.selectedDownloaded.split(" (")[0] : "—" },
+                                    { kk: "Uploaded",             v: win.hasSel ? session.selectedUploaded : "—" },
+                                    { kk: "detail_kv_ratio",      v: win.hasSel ? session.selectedRatio : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true
@@ -2493,7 +2558,7 @@ Window {
                             spacing: 0
 
                             Text {
-                                text: (i18n.language, i18n.t("detail_section_peers"))
+                                text: "HEALTH"
                                 color: Theme.t4
                                 font.pixelSize: 10
                                 font.weight: Font.Bold
@@ -2503,9 +2568,9 @@ Window {
                             }
                             Repeater {
                                 model: [
-                                    { kk: "detail_kv_seeds", v: win.hasSel ? String(session.selectedSeeds) : "—" },
-                                    { kk: "detail_kv_peers", v: win.hasSel ? String(session.selectedPeers) : "—" },
-                                    { kk: "detail_kv_ratio", v: win.hasSel ? session.selectedRatio : "—" }
+                                    { kk: "detail_kv_seeds",  v: win.hasSel ? String(session.selectedSeeds) : "—" },
+                                    { kk: "detail_kv_peers",  v: win.hasSel ? String(session.selectedPeers) : "—" },
+                                    { kk: "Availability",     v: win.hasSel ? session.selectedAvailability : "—" }
                                 ]
                                 delegate: RowLayout {
                                     Layout.fillWidth: true

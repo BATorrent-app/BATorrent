@@ -165,7 +165,8 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {NumPeersRole,    "numPeers"},
         {DownRateRole,    "downRate"},
         {UpRateRole,      "upRate"},
-        {SizeRole,        "size"}
+        {SizeRole,        "size"},
+        {SizeBytesRole,   "sizeBytes"}
     };
 }
 

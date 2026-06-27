@@ -53,14 +53,21 @@ Window {
                 height: mActionId !== "" ? 104 : 86
                 radius: 10
                 color: Theme.panel
-                border.width: (mKind === "warning" || mKind === "error") ? 1 : 0
-                border.color: eyebrowColor
+                border.width: 0
                 opacity: 0
 
                 readonly property color eyebrowColor:
                     mKind === "success" ? Theme.up :
                     mKind === "warning" ? Theme.accent :
                     mKind === "error"   ? Theme.accentDark : Theme.t1
+
+                // severity = a soft accent strip on the left edge, not a hard
+                // full-card border (which read as a random red box).
+                Rectangle {
+                    visible: mKind === "success" || mKind === "warning" || mKind === "error"
+                    x: 1; y: 10; width: 3; height: card.height - 20; radius: 2
+                    color: card.eyebrowColor
+                }
 
                 layer.enabled: true
                 layer.effect: MultiEffect {
