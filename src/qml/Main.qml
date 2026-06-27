@@ -1789,9 +1789,9 @@ Window {
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    // surface WHY it's stuck inline (no seeds / no peers …) instead of "↓ 0 B/s"
-                                    text: tile.isDownloading
-                                          ? (tile.stateDetail.length > 0 ? tile.stateDetail : ("↓ " + tile.downSpeed))
+                                    // stalled reads amber (dot + text); the full reason is on hover —
+                                    // the grid card is too narrow to show it inline without clipping
+                                    text: tile.isDownloading ? ("↓ " + tile.downSpeed)
                                           : (tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed) : tile.stateString)
                                     color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.textFor(tile.stateKey)
                                     font.pixelSize: 12; font.family: Theme.fontSans
