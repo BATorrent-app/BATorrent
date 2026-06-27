@@ -23,6 +23,29 @@ Rectangle {
     property bool discoverVisible: true     // gated off in store builds (step ⑦)
     property bool collapsed: false
     signal settingsClicked()
+    signal selectTorrent(string infoHash)
+
+    // "now downloading" rotating card state (mirrors the Discover hero carousel)
+    readonly property var dlList: (typeof session !== "undefined") ? session.activeDownloads : []
+    property int dlIndex: 0
+    property int dlShown: 0
+    readonly property var dlItem: (dlList.length > dlShown && dlShown >= 0) ? dlList[dlShown]
+                                  : (dlList.length > 0 ? dlList[0] : null)
+    readonly property bool showDl: !collapsed && currentIndex !== 0 && dlList.length > 0
+    onDlListChanged: if (dlShown >= dlList.length) dlShown = Math.max(0, dlList.length - 1)
+    onDlIndexChanged: dlFade.restart()
+    SequentialAnimation {
+        id: dlFade
+        NumberAnimation { target: dlContent; property: "opacity"; to: 0; duration: 160; easing.type: Easing.InCubic }
+        ScriptAction { script: rail.dlShown = rail.dlIndex }
+        NumberAnimation { target: dlContent; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
+    }
+    Timer {
+        interval: 5000
+        running: rail.showDl && rail.dlList.length > 1
+        repeat: true
+        onTriggered: rail.dlIndex = (rail.dlIndex + 1) % rail.dlList.length
+    }
 
     Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
@@ -187,35 +210,6 @@ Rectangle {
 
         Item { Layout.fillHeight: true }   // push disk + donate + Settings + collapse to the bottom
 
-        // ----- global activity: what's downloading, visible from any screen -----
-        Rectangle {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.leftMargin: rail.collapsed ? 0 : 18; Layout.rightMargin: rail.collapsed ? 0 : 18
-            Layout.fillWidth: !rail.collapsed
-            Layout.preferredWidth: rail.collapsed ? 40 : -1
-            Layout.preferredHeight: 34
-            visible: typeof session !== "undefined" && session.downloadingCount > 0
-            radius: 9
-            color: apMa.containsMouse ? Theme.hover : Theme.panel
-            border.color: apMa.containsMouse ? Theme.accent : Theme.hair; border.width: 1
-            Behavior on color { ColorAnimation { duration: 120 } }
-            Row {
-                anchors.centerIn: parent; spacing: 7
-                visible: !rail.collapsed
-                IconImg { src: "qrc:/icons/download.svg"; tint: Theme.grn; s: 13; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: typeof session !== "undefined" ? session.totalDownSpeed : ""; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
-                Rectangle { width: 1; height: 11; color: Theme.hair; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: typeof session !== "undefined" ? session.downloadingCount : ""; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
-            }
-            Row {
-                anchors.centerIn: parent; spacing: 3
-                visible: rail.collapsed
-                Rectangle { width: 6; height: 6; radius: 3; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: typeof session !== "undefined" ? session.downloadingCount : ""; color: Theme.t2; font.pixelSize: 10; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
-            }
-            MouseArea { id: apMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: rail.currentIndex = 0 }
-        }
-
         // ----- disk usage: one block per volume torrents save to (multi-HD) -----
         Column {
             Layout.fillWidth: true
@@ -345,6 +339,84 @@ Rectangle {
             ToolTip.text: (i18n.language, i18n.t("tb_settings"))
             ToolTip.visible: rail.collapsed && setMa.containsMouse
             ToolTip.delay: 400
+        }
+
+        // ----- "now downloading" rotating mini card (hidden on the Downloads tab) -----
+        // height animates 0↔full so switching tabs slides instead of jumping, and a
+        // finished/empty list leaves no empty hole.
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: 18; Layout.rightMargin: 18
+            spacing: 9
+            clip: true
+            Layout.preferredHeight: rail.showDl ? implicitHeight : 0
+            opacity: rail.showDl ? 1 : 0
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 180 } }
+
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text { text: (i18n.language, i18n.t("nav_downloading")); color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
+                Item { Layout.fillWidth: true }
+                Text { visible: rail.dlList.length > 1; text: (rail.dlShown + 1) + "/" + rail.dlList.length; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontMono }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 62
+                radius: 11
+                color: dlMa.containsMouse ? Theme.hover : Theme.panel
+                border.color: dlMa.containsMouse ? Theme.accent : Theme.hair; border.width: 1
+                Behavior on color { ColorAnimation { duration: 120 } }
+                RowLayout {
+                    id: dlContent
+                    anchors.fill: parent; anchors.margins: 9
+                    spacing: 10
+                    PosterThumb {
+                        Layout.preferredWidth: 38; Layout.preferredHeight: 44; Layout.alignment: Qt.AlignVCenter
+                        posterUrl: rail.dlItem ? (rail.dlItem.poster || "") : ""
+                        label: rail.dlItem ? (rail.dlItem.name || "") : ""
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
+                        spacing: 4
+                        Text { Layout.fillWidth: true; text: rail.dlItem ? (rail.dlItem.name || "") : ""; color: Theme.t1; font.pixelSize: 12; font.weight: Font.Medium; font.family: Theme.fontSans; elide: Text.ElideRight }
+                        RowLayout {
+                            Layout.fillWidth: true; spacing: 6
+                            Text { text: rail.dlItem ? ("↓ " + (rail.dlItem.downSpeed || "")) : ""; color: Theme.accent; font.pixelSize: 11; font.family: Theme.fontMono }
+                            Item { Layout.fillWidth: true }
+                            Text { text: rail.dlItem ? (Math.round((rail.dlItem.progress || 0) * 100) + "%") : ""; color: Theme.t2; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontMono }
+                        }
+                        Rectangle {
+                            Layout.fillWidth: true; Layout.preferredHeight: 3; radius: 2; color: Theme.track
+                            Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: parent.width * Math.min(1, rail.dlItem ? (rail.dlItem.progress || 0) : 0); radius: 2; color: Theme.accent }
+                        }
+                    }
+                }
+                MouseArea {
+                    id: dlMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: { if (rail.dlItem) rail.selectTorrent(rail.dlItem.infoHash); rail.currentIndex = 0 }
+                }
+            }
+
+            Row {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 6
+                visible: rail.dlList.length > 1
+                Repeater {
+                    model: rail.dlList.length
+                    delegate: Rectangle {
+                        required property int index
+                        width: index === rail.dlShown ? 16 : 6; height: 6; radius: 3
+                        color: index === rail.dlShown ? Theme.accent : Qt.rgba(1, 1, 1, 0.3)
+                        Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: 200 } }
+                        MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: rail.dlIndex = index }
+                    }
+                }
+            }
         }
 
         // ----- collapse / expand toggle (bottom) -----

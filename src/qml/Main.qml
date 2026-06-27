@@ -1055,6 +1055,10 @@ Window {
                 id: navRail
                 Layout.fillHeight: true
                 onSettingsClicked: win.showWin(settingsWinLoader)
+                onSelectTorrent: function(infoHash) {
+                    if (typeof session === "undefined") return
+                    if (!session.selectByInfoHash(infoHash)) { win.setFilter("all"); session.selectByInfoHash(infoHash) }
+                }
             }
 
             StackLayout {
