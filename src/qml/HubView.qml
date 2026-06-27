@@ -24,6 +24,12 @@ Item {
         .sort(function (a, b) { return (b.resumeAt || 0) - (a.resumeAt || 0) }).slice(0, 3)
     readonly property var continuePlaying: gameItems.filter(function (i) { return (i.lastPlayed || 0) > 0 })
         .sort(function (a, b) { return (b.lastPlayed || 0) - (a.lastPlayed || 0) }).slice(0, 3)
+    // nothing played yet → suggest a ready-to-play game so the hero isn't a dead placeholder
+    readonly property var suggestedGame: {
+        for (var i = 0; i < gameItems.length; i++)
+            if (gameItems[i].installState === 4) return gameItems[i]
+        return null
+    }
     readonly property bool empty: library.length === 0 && gameItems.length === 0
 
     // continue rails are sized to hold exactly 3 cards each
@@ -260,9 +266,10 @@ Item {
                             height: parent.height; width: height * 0.7
                             Rectangle { id: cwPC; anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
                                 Image { anchors.fill: parent; source: cwHero.it ? (cwHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true } }
-                            Rectangle { id: cwPM; anchors.fill: parent; radius: 12; color: "white"; visible: false; layer.enabled: true }
+                            Rectangle { id: cwPM; anchors.fill: parent; radius: 14; color: "white"; visible: false; layer.enabled: true }
                             MultiEffect { source: cwPC; anchors.fill: parent; maskEnabled: true; maskSource: cwPM
                                           shadowEnabled: true; shadowBlur: 0.6; shadowColor: "#cc000000"; shadowVerticalOffset: 6 }
+                            Rectangle { anchors.fill: parent; radius: 14; color: "transparent"; border.color: "#33ffffff"; border.width: 1 }
                         }
 
                         ColumnLayout {
@@ -302,12 +309,13 @@ Item {
                 // ---------- CONTINUE PLAYING ----------
                 Rectangle {
                     id: cpHero
-                    Layout.preferredWidth: 384
+                    Layout.fillWidth: true
                     Layout.preferredHeight: 224
+                    readonly property bool sug: page.continuePlaying.length === 0 && it !== null
                     radius: 16; color: Theme.elev
                     border.color: Theme.hair; border.width: 1
                     clip: true
-                    readonly property var it: page.continuePlaying.length > 0 ? page.continuePlaying[0] : null
+                    readonly property var it: page.continuePlaying.length > 0 ? page.continuePlaying[0] : page.suggestedGame
 
                     Image { id: cpBg; anchors.fill: parent; visible: false; asynchronous: true; cache: true
                             source: cpHero.it ? (cpHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop }
@@ -320,7 +328,7 @@ Item {
                     }
                     Text {
                         anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 20
-                        text: (i18n.language, i18n.t("hub_continue_playing")).toUpperCase()
+                        text: (i18n.language, (cpHero.sug ? i18n.t("hub_ready_to_play") : i18n.t("hub_continue_playing"))).toUpperCase()
                         color: Theme.accent; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans
                         z: 2
                     }
@@ -335,9 +343,10 @@ Item {
                             Layout.preferredWidth: 78; Layout.preferredHeight: 104; Layout.alignment: Qt.AlignBottom
                             Rectangle { id: cpPC; anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
                                 Image { anchors.fill: parent; source: cpHero.it ? (cpHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true } }
-                            Rectangle { id: cpPM; anchors.fill: parent; radius: 10; color: "white"; visible: false; layer.enabled: true }
+                            Rectangle { id: cpPM; anchors.fill: parent; radius: 12; color: "white"; visible: false; layer.enabled: true }
                             MultiEffect { source: cpPC; anchors.fill: parent; maskEnabled: true; maskSource: cpPM
                                           shadowEnabled: true; shadowBlur: 0.6; shadowColor: "#cc000000"; shadowVerticalOffset: 5 }
+                            Rectangle { anchors.fill: parent; radius: 12; color: "transparent"; border.color: "#33ffffff"; border.width: 1 }
                         }
                         ColumnLayout {
                             Layout.fillWidth: true; Layout.alignment: Qt.AlignBottom
@@ -347,6 +356,7 @@ Item {
                                 Layout.fillWidth: true; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
                                 text: {
                                     if (!cpHero.it) return ""
+                                    if (cpHero.sug) return i18n.t("hub_ready_to_play")
                                     var parts = []
                                     if ((cpHero.it.playSeconds || 0) > 0) parts.push(page.fmtPlaytime(cpHero.it.playSeconds) + " " + i18n.t("hub_played"))
                                     var ago = page.fmtAgo(cpHero.it.lastPlayed)
@@ -354,7 +364,7 @@ Item {
                                     return parts.join("  ·  ")
                                 }
                             }
-                            BtnFlat { Layout.topMargin: 4; primary: true; icon: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("hub_resume")); onClicked: if (cpHero.it) page.gamePrimary(cpHero.it) }
+                            BtnFlat { Layout.topMargin: 4; primary: true; icon: "qrc:/icons/play.svg"; text: (i18n.language, cpHero.sug ? i18n.t("hub_gs_play") : i18n.t("hub_resume")); onClicked: if (cpHero.it) page.gamePrimary(cpHero.it) }
                         }
                     }
                 }
