@@ -914,6 +914,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
         m["size"]       = info.totalSize;
+        m["addedTime"]  = qint64(info.addedTime);
         m["resumeMs"]   = resumeMs;
         m["durMs"]      = durMs;
         m["resumeAt"]   = resumeAt;                       // last-watched timestamp (ms)
@@ -1135,6 +1136,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["progress"]   = double(info.progress);
         m["completed"]  = info.completed;
         m["size"]       = info.totalSize;
+        m["addedTime"]  = qint64(info.addedTime);
         m["hasExe"]     = !gameExe(hash).isEmpty();
         m["lastPlayed"] = QSettings().value(QStringLiteral("gamePlayed/") + hash, 0).toLongLong();
         m["description"] = description;
