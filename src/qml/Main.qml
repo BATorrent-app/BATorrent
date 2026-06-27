@@ -340,7 +340,7 @@ Window {
                     anchors.verticalCenter: parent.verticalCenter
                     text: (i18n.language, i18n.t("ctx_play"))
                     color: Theme.accent
-                    font.pixelSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
                 }
             }
             background: Rectangle {
