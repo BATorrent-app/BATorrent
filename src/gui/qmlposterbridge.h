@@ -174,6 +174,7 @@ public:
     QString totalDownSpeed() const;
     QString totalUpSpeed() const;
     QString freeDiskSpace() const;
+    Q_INVOKABLE qint64 freeSaveBytes() const;   // single source of truth: free bytes on the default save volume
     double diskUsedFraction() const;
     QVariantList diskVolumes() const;
     QString totalDownloaded() const;

@@ -1884,18 +1884,27 @@ QVariantList QmlSessionBridge::selectedPieces() const
 
 // Free space on the default save volume, polled at most every 10s — the
 // status bar binds to statsChanged which ticks every second.
-QString QmlSessionBridge::freeDiskSpace() const
+// Single source of truth for "free disk": one cached read of the default save
+// volume, shared by the status bar, search disk-fit, add-guard and auto-pause —
+// so every screen agrees instead of each polling at its own moment.
+qint64 QmlSessionBridge::freeSaveBytes() const
 {
     static qint64 cached = -1;
     static qint64 lastCheck = 0;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
-    if (cached < 0 || now - lastCheck >= 10) {
+    if (cached < 0 || now - lastCheck >= 5) {
         lastCheck = now;
         const QString path = defaultSavePath();
         QStorageInfo si(path.isEmpty() ? QDir::homePath() : path);
         cached = si.isValid() ? si.bytesAvailable() : -1;
     }
-    return cached >= 0 ? formatSize(cached) : QString();
+    return cached;
+}
+
+QString QmlSessionBridge::freeDiskSpace() const
+{
+    const qint64 b = freeSaveBytes();
+    return b >= 0 ? formatSize(b) : QString();
 }
 
 // Fraction of the save volume that's used (0..1) — drives the sidebar disk bar.
@@ -1944,6 +1953,7 @@ QVariantList QmlSessionBridge::diskVolumes() const
         if (name.isEmpty()) name = root;
         m["name"] = name;
         m["free"] = formatSize(si.bytesAvailable());
+        m["freeBytes"] = si.bytesAvailable();
         m["usedFraction"] = double(si.bytesTotal() - si.bytesAvailable()) / double(si.bytesTotal());
         out << m;
     }

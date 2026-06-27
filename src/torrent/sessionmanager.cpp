@@ -2270,21 +2270,36 @@ void SessionManager::updateStats()
     checkSeedingLimits();
     checkAutoComplete();
     checkAndBlockLeechers();
-    // Low disk space warning — check every tick (1s), but only warn once
-    // per 5 minutes to avoid notification spam.
+    // Disk pressure: warn under 1 GB, and *act* under 512 MB by pausing active
+    // downloads (with hysteresis) so we don't fill the disk or corrupt data.
     {
         static qint64 lastDiskWarn = 0;
         const qint64 now = QDateTime::currentSecsSinceEpoch();
-        if (now - lastDiskWarn >= 300) {
-            QSettings s("BATorrent", "BATorrent");
-            QString savePath = s.value("lastSavePath",
-                QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
-            QStorageInfo storage(savePath);
-            if (storage.isValid() && storage.bytesAvailable() < 1024LL * 1024 * 1024) {
-                qWarning() << "[session] LOW DISK SPACE:" << storage.bytesAvailable() / (1024*1024) << "MB remaining on" << savePath;
-                emit torrentError(tr_("warn_low_disk").arg(storage.bytesAvailable() / (1024*1024)));
-                lastDiskWarn = now;
+        QSettings s("BATorrent", "BATorrent");
+        const QString savePath = s.value("lastSavePath",
+            QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
+        QStorageInfo storage(savePath);
+        const qint64 freeB = storage.isValid() ? storage.bytesAvailable() : -1;
+
+        if (freeB >= 0 && freeB < 512LL * 1024 * 1024 && !m_diskAutoPaused) {
+            int paused = 0;
+            for (auto &h : m_torrents) {
+                if (!h.is_valid()) continue;
+                const lt::torrent_status st = cachedStatus(h);
+                const bool active = st.state == lt::torrent_status::downloading
+                                 || st.state == lt::torrent_status::downloading_metadata;
+                if (active && !(st.flags & lt::torrent_flags::paused)) { h.pause(); ++paused; }
             }
+            m_diskAutoPaused = true;   // runtime-only pause (not persisted) — recovers on disk free
+            qWarning() << "[session] CRITICAL DISK:" << freeB / (1024*1024) << "MB — paused" << paused << "downloads";
+            if (paused > 0) emit torrentError(tr_("warn_disk_autopause").arg(paused).arg(freeB / (1024*1024)));
+            lastDiskWarn = now;
+        } else if (freeB >= 2LL * 1024 * 1024 * 1024) {
+            m_diskAutoPaused = false;   // recovered → re-arm (user decides whether to resume)
+        } else if (freeB >= 0 && freeB < 1024LL * 1024 * 1024 && now - lastDiskWarn >= 300) {
+            qWarning() << "[session] LOW DISK SPACE:" << freeB / (1024*1024) << "MB remaining on" << savePath;
+            emit torrentError(tr_("warn_low_disk").arg(freeB / (1024*1024)));
+            lastDiskWarn = now;
         }
     }
     checkInterfaceStatus();

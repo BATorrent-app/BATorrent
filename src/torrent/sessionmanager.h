@@ -507,6 +507,7 @@ private:
     int m_encryptionMode = 0;
     bool m_utpEnabled = true;
     bool m_anonymousMode = false;
+    bool m_diskAutoPaused = false;   // hysteresis: active downloads paused due to critically low disk
     bool m_forceIpv4 = false;
     bool m_ptMode = false;
     bool m_blockLeechers = false;
