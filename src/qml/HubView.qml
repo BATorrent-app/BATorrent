@@ -31,6 +31,12 @@ Item {
         return null
     }
     readonly property bool empty: library.length === 0 && gameItems.length === 0
+    // newest in your library (movies + games), front and centre — Plex/Netflix style
+    readonly property var recentlyAdded: {
+        var all = library.concat(gameItems)
+        all.sort(function (a, b) { return (b.addedTime || 0) - (a.addedTime || 0) })
+        return all.slice(0, 12)
+    }
 
     // continue rails are sized to hold exactly 3 cards each
     readonly property int railCardW: 134
@@ -377,6 +383,36 @@ Item {
                             }
                             BtnFlat { Layout.topMargin: 4; primary: true; icon: "qrc:/icons/play.svg"; text: (i18n.language, cpHero.sug ? i18n.t("hub_gs_play") : i18n.t("hub_resume")); onClicked: if (cpHero.it) page.gamePrimary(cpHero.it) }
                         }
+                    }
+                }
+            }
+
+            // Recently added — the newest in your library, front and centre
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                spacing: 12
+                visible: page.recentlyAdded.length > 0
+                Text {
+                    text: (i18n.language, i18n.t("hub_recent"))
+                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                }
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 264
+                    orientation: ListView.Horizontal
+                    spacing: 18
+                    clip: true
+                    model: page.recentlyAdded
+                    boundsBehavior: Flickable.StopAtBounds
+                    delegate: HubCard {
+                        required property var modelData
+                        item: modelData
+                        isGame: modelData.installState !== undefined
+                        requireDoubleClick: isGame
+                        onPlay: isGame ? page.gamePrimary(modelData) : page.playMovie(modelData)
+                        onContext: isGame ? gameMenu.openFor(modelData.infoHash)
+                                          : continueMenu.openFor(modelData.infoHash, modelData.fileIndex)
                     }
                 }
             }
