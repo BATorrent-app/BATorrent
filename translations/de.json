@@ -848,6 +848,7 @@
   "view_grid": "Raster",
   "view_list": "Liste",
   "warn_low_disk": "Wenig Speicherplatz — nur noch %1 MB übrig. Downloads können fehlschlagen, wenn der Datenträger voll wird.",
+  "warn_disk_autopause": "Wenig Speicher — %1 Download(s) pausiert, %2 MB frei",
   "warn_torrent_faulted": "%1 pausiert — ständige Fehler. Prüfe Datei oder Datenträger und setze fort.",
   "warn_mem_guard": "Alle Torrents pausiert — Speichernutzung erreichte %1 MB (Limit %2 MB). Das könnte ein Fehler sein; bitte melde ihn.",
   "warn_suspicious_title": "Sicherheitswarnung",

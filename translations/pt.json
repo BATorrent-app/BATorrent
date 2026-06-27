@@ -848,6 +848,7 @@
   "view_grid": "Grade",
   "view_list": "Lista",
   "warn_low_disk": "Pouco espaço em disco — apenas %1 MB restantes. Downloads podem falhar se o disco encher.",
+  "warn_disk_autopause": "Disco crítico — %1 download(s) pausado(s), %2 MB livres",
   "warn_torrent_faulted": "Pausei %1 — estava dando erro sem parar. Verifique o arquivo ou disco e retome.",
   "warn_mem_guard": "Pausei todos os torrents — o uso de memória chegou a %1 MB (limite %2 MB). Pode ser um bug; por favor reporte.",
   "warn_suspicious_title": "Aviso de segurança",

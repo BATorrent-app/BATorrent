@@ -844,6 +844,7 @@
   "view_grid": "网格",
   "view_list": "列表",
   "warn_low_disk": "磁盘空间不足 — 仅剩 %1 MB。如果磁盘满了下载可能会失败。",
+  "warn_disk_autopause": "磁盘不足 — 已暂停 %1 个下载，剩余 %2 MB",
   "warn_torrent_faulted": "已暂停 %1 — 持续报错。请检查文件或磁盘后再继续。",
   "warn_mem_guard": "已暂停所有种子 — 内存占用达到 %1 MB（上限 %2 MB）。这可能是一个错误，请反馈。",
   "warn_suspicious_title": "安全警告",
