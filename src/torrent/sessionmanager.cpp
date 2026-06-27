@@ -516,7 +516,7 @@ void SessionManager::checkMagnetTimeouts()
     }
 }
 
-void SessionManager::removeTorrent(int index, bool deleteFiles)
+void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
 {
     qDebug() << "[session] removeTorrent index:" << index << "deleteFiles:" << deleteFiles;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
@@ -623,6 +623,9 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
                 trashTargets << QDir(savePath).filePath(base)
                              << QDir(savePath).filePath(base + QStringLiteral(".!bt"));
             }
+            // also the hidden partial-pieces sidecar (.{hash}.parts) — otherwise it
+            // lingers orphaned in the save folder after a remove-with-files
+            trashTargets << QDir(savePath).filePath(QStringLiteral(".") + hash + QStringLiteral(".parts"));
         }
 
         // An actively-downloading torrent still has its files open when we ask
@@ -632,8 +635,10 @@ void SessionManager::removeTorrent(int index, bool deleteFiles)
         // until the handles are gone instead of giving up after one attempt.
         if (deleteFiles) h.pause();
         m_session.remove_torrent(h, {});
-        if (!trashTargets.isEmpty())
-            scheduleTrash(trashTargets, 0);
+        if (!trashTargets.isEmpty()) {
+            if (permanent) scheduleDelete(trashTargets, 0);
+            else scheduleTrash(trashTargets, 0);
+        }
     } catch (const std::exception &e) {
         qWarning() << "[session] removeTorrent exception:" << e.what();
     }
@@ -647,6 +652,10 @@ void SessionManager::pauseTorrent(int index)
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
     m_torrents[index].pause();
+    // persist the pause now — periodic/shutdown saves can run before this and
+    // otherwise the torrent reloads un-paused (resumes downloading on its own)
+    if (m_torrents[index].is_valid())
+        m_torrents[index].save_resume_data(lt::torrent_handle::save_info_dict);
 }
 
 void SessionManager::resumeTorrent(int index)
@@ -658,20 +667,26 @@ void SessionManager::resumeTorrent(int index)
     // asking it to participate again, so the "frozen" flag has to clear.
     unmarkCompleted(index);
     m_torrents[index].resume();
+    if (m_torrents[index].is_valid())
+        m_torrents[index].save_resume_data(lt::torrent_handle::save_info_dict);
 }
 
 void SessionManager::pauseAll()
 {
     qDebug() << "[session] pauseAll";
-    for (auto &h : m_torrents)
+    for (auto &h : m_torrents) {
         h.pause();
+        if (h.is_valid()) h.save_resume_data(lt::torrent_handle::save_info_dict);
+    }
 }
 
 void SessionManager::resumeAll()
 {
     qDebug() << "[session] resumeAll";
-    for (auto &h : m_torrents)
+    for (auto &h : m_torrents) {
         h.resume();
+        if (h.is_valid()) h.save_resume_data(lt::torrent_handle::save_info_dict);
+    }
 }
 
 int SessionManager::torrentCount() const
@@ -3126,6 +3141,23 @@ void SessionManager::scheduleTrash(const QStringList &targets, int attempt)
         if (remaining.isEmpty()) return;
         if (attempt < 10) scheduleTrash(remaining, attempt + 1);
         else qWarning() << "[session] moveToTrash gave up (files still locked):" << remaining;
+    });
+}
+
+void SessionManager::scheduleDelete(const QStringList &targets, int attempt)
+{
+    const int delay = qMin(2000 + attempt * 800, 4000);
+    QTimer::singleShot(delay, this, [this, targets, attempt]() {
+        QStringList remaining;
+        for (const QString &p : targets) {
+            QFileInfo fi(p);
+            if (!fi.exists()) continue;
+            const bool ok = fi.isDir() ? QDir(p).removeRecursively() : QFile::remove(p);
+            if (!ok) remaining << p;
+        }
+        if (remaining.isEmpty()) return;
+        if (attempt < 10) scheduleDelete(remaining, attempt + 1);
+        else qWarning() << "[session] permanent delete gave up (files still locked):" << remaining;
     });
 }
 

@@ -45,7 +45,7 @@ public:
     // applies them.
     void addTorrentWithPriorities(const QString &filePath, const QString &savePath,
                                   const std::vector<int> &filePriorities);
-    void removeTorrent(int index, bool deleteFiles = false);
+    void removeTorrent(int index, bool deleteFiles = false, bool permanent = false);
     void pauseTorrent(int index);
     void resumeTorrent(int index);
     void pauseAll();
@@ -437,6 +437,7 @@ public:
     // Torrent count tracking
     void incrementTorrentCount();
     void scheduleTrash(const QStringList &targets, int attempt);
+    void scheduleDelete(const QStringList &targets, int attempt);   // permanent, skips Trash
     void checkMemoryGuard();   // circuit breaker: pause/bail if RSS runs away
     void scanTorrentForThreats(const lt::torrent_handle &h, const QString &name);
     void noteTorrentFault(const lt::torrent_handle &h, const QString &name);   // auto-pause a thrashing torrent

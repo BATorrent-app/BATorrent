@@ -197,7 +197,8 @@ public:
     Q_INVOKABLE void resumeSelected();
     Q_INVOKABLE void removeSelected();
     Q_INVOKABLE void removeSelectedWithFiles();
-    void removeSelectedRows(bool deleteFiles);
+    Q_INVOKABLE void removeSelectedWithFilesPermanent();   // hard delete, skips Trash
+    void removeSelectedRows(bool deleteFiles, bool permanent = false);
     Q_INVOKABLE void pauseAll();
     Q_INVOKABLE void resumeAll();
     Q_INVOKABLE void addTorrentFile(const QString &filePath);
@@ -273,6 +274,8 @@ public:
     Q_INVOKABLE void clearResume(const QString &infoHash, int fileIndex);
     // Player buffer bar + download badge: { totalBytes, downloadedBytes, progress, buffered }.
     Q_INVOKABLE QVariantMap streamFileStats(const QString &infoHash, int fileIndex) const;
+    // Raw video file name (has the quality/audio tags the player badges parse).
+    Q_INVOKABLE QString streamFileName(const QString &infoHash, int fileIndex) const;
     // Watchlist ("My List") — saved titles (not torrents), persisted in QSettings.
     QVariantList watchlist() const;
     Q_INVOKABLE bool inWatchlist(const QString &title, const QString &type) const;
@@ -666,6 +669,8 @@ public:
     // buffers. Movie/series only — games are handled separately.
     Q_INVOKABLE void getAndWatch(const QString &title, const QString &year, const QString &type);
     Q_INVOKABLE void cancelGetAndWatch();   // user cancelled before a release was added
+    // Discover hero: one cached source lookup per featured title → emits sourceSummary.
+    Q_INVOKABLE void summarizeSources(const QString &title);
 
 signals:
     void sourcesChanged();
@@ -679,6 +684,7 @@ signals:
     void watchSearching(const QString &title);    // Get&Watch: started looking for a release
     void watchNoRelease(const QString &title);    // Get&Watch: nothing usable found
     void prepareAndWatch(const QString &infoHash, const QString &title);   // added → buffer & open
+    void sourceSummary(const QString &title, int count, qint64 bestSize, int maxSeeds);
 
 private:
     void setSearching(bool on);
@@ -729,6 +735,8 @@ private:
     QList<CatalogItem> m_catalogCache;
     QList<StreamResult> m_streamCache;
     QList<TorrentSearchResult> m_torrentCache;
+    QHash<QString, QVariantList> m_srcSummaryCache;   // lc(title) → [count, bestSize, maxSeeds]
+    QSet<QString> m_srcSummaryInFlight;               // titles being summarized (dedup requests)
     QList<GameDownload> m_gameCache;
     QString m_pendingGameQuery;
     QString m_streamHintTitle;          // parent catalog title for a Stremio stream add

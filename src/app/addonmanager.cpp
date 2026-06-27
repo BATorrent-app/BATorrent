@@ -513,6 +513,70 @@ void AddonManager::searchTorrents(const QString &query, int category)
     });
 }
 
+void AddonManager::summarizeTorrents(const QString &query, int category)
+{
+    // Prefer the default search providers (apibay etc.) — enabled out of the box,
+    // so the hero summary works without flipping the legacy "torrent search" on.
+    // Falls back to the legacy single-URL endpoint. Stays off the search UI signals.
+    int provIdx = -1;
+    for (int i = 0; i < m_searchProviders.size(); ++i)
+        if (m_searchProviders[i].enabled && !m_searchProviders[i].urlTemplate.isEmpty()) { provIdx = i; break; }
+
+    QString url;
+    SearchProvider prov;
+    bool useProvider = false;
+    if (provIdx >= 0) {
+        prov = m_searchProviders[provIdx];
+        url = prov.urlTemplate;
+        url.replace("{query}", QUrl::toPercentEncoding(query));
+        url.replace("{category}", QString::number(category));
+        useProvider = true;
+    } else if (m_torrentSearchEnabled && !m_torrentSearchUrl.isEmpty()) {
+        QString baseUrl = m_torrentSearchUrl;
+        if (baseUrl.endsWith('/')) baseUrl.chop(1);
+        url = QString("%1/q.php?q=%2&cat=%3").arg(baseUrl, QUrl::toPercentEncoding(query), QString::number(category));
+    } else {
+        emit torrentSummaryReady(query, 0, 0, 0);
+        return;
+    }
+
+    QNetworkRequest req{QUrl(url)};
+    req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/2.0");
+    req.setTransferTimeout(12000);
+    auto *reply = m_net->get(req);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, query, prov, useProvider]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) { emit torrentSummaryReady(query, 0, 0, 0); return; }
+        const QByteArray data = reply->readAll();
+
+        QList<TorrentSearchResult> results;
+        if (useProvider) {
+            results = parseProviderResponse(prov, data);   // handles each provider's JSON shape
+        } else {
+            const QJsonDocument doc = QJsonDocument::fromJson(data);
+            if (doc.isArray())
+                for (const auto &val : doc.array()) {
+                    const QJsonObject obj = val.toObject();
+                    const QString ih = obj.value("info_hash").toString();
+                    if (ih.isEmpty() || ih == "0") continue;
+                    TorrentSearchResult r;
+                    r.size = obj.value("size").toVariant().toLongLong();
+                    r.seeders = obj.value("seeders").toVariant().toInt();
+                    results.append(r);
+                }
+        }
+
+        int count = 0, maxSeeds = -1;
+        qint64 bestSize = 0;   // size of the healthiest (most-seeded) release
+        for (const auto &r : results) {
+            ++count;
+            if (r.seeders > maxSeeds) { maxSeeds = r.seeders; bestSize = r.size; }
+        }
+        emit torrentSummaryReady(query, count, bestSize, qMax(0, maxSeeds));
+    });
+}
+
 // --- Search Providers ---
 
 void AddonManager::installDefaultProviders()
