@@ -33,6 +33,11 @@
 <file>icons/download.svg</file>
 <file>icons/volume.svg</file>
 <file>icons/volume-mute.svg</file>
+<file>icons/replay.svg</file>
+<file>icons/forward.svg</file>
+<file>icons/subtitles.svg</file>
+<file>icons/lock.svg</file>
+<file>icons/lock-open.svg</file>
 <file>icons/upload.svg</file>
 <file>icons/chevron.svg</file>
 <file>icons/heart.svg</file>
