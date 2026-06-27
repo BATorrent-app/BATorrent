@@ -1961,6 +1961,33 @@ QVariantList QmlSessionBridge::diskVolumes() const
     return out;
 }
 
+// Currently-downloading torrents for the nav-rail mini card: cover + name + % +
+// down speed. Stable order (torrentAt index) so the QML carousel stays consistent.
+QVariantList QmlSessionBridge::activeDownloads() const
+{
+    QVariantList out;
+    const int n = m_session->torrentCount();
+    for (int i = 0; i < n; ++i) {
+        const TorrentInfo info = m_session->torrentAt(i);
+        if (info.paused || info.completed || info.progress >= 1.0f) continue;
+        const QString hash = m_session->torrentHashAt(i);
+        QString poster;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const auto meta = m_resolver->cached(hash);
+            if (!meta.posterPath.isEmpty())
+                poster = QUrl::fromLocalFile(meta.posterPath).toString();
+        }
+        QVariantMap m;
+        m["infoHash"]  = hash;
+        m["name"]      = info.name;
+        m["progress"]  = double(info.progress);
+        m["downSpeed"] = formatSize(info.downloadRate) + QStringLiteral("/s");
+        m["poster"]    = poster;
+        out << m;
+    }
+    return out;
+}
+
 QString QmlSessionBridge::defaultSavePath() const
 {
     QSettings s;
