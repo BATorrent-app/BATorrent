@@ -961,6 +961,7 @@
   "nav_search": "Поиск",
   "nav_hub": "HUB",
   "nav_collapse": "Свернуть",
+  "nav_downloading": "Загрузка",
   "nav_expand": "Развернуть",
   "port_listening_on": "Прослушивается порт %1",
   "port_not_listening": "Не прослушивается",

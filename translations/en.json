@@ -559,6 +559,7 @@
   "nav_search": "Search",
   "nav_hub": "HUB",
   "nav_collapse": "Collapse",
+  "nav_downloading": "Downloading",
   "nav_expand": "Expand",
   "port_listening_on": "Listening on port %1",
   "port_not_listening": "Not listening",

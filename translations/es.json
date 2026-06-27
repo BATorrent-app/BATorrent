@@ -965,6 +965,7 @@
   "nav_search": "Buscar",
   "nav_hub": "HUB",
   "nav_collapse": "Contraer",
+  "nav_downloading": "Descargando",
   "nav_expand": "Expandir",
   "port_listening_on": "Escuchando en el puerto %1",
   "port_not_listening": "No está escuchando",

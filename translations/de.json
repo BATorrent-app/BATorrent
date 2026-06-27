@@ -965,6 +965,7 @@
   "nav_search": "Suche",
   "nav_hub": "HUB",
   "nav_collapse": "Einklappen",
+  "nav_downloading": "Lädt",
   "nav_expand": "Ausklappen",
   "port_listening_on": "Lauscht auf Port %1",
   "port_not_listening": "Lauscht nicht",
