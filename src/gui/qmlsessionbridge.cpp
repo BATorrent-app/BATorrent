@@ -997,6 +997,25 @@ void QmlSessionBridge::playByHash(const QString &infoHash)
     emit openPlayer(url, info.name, infoHash, fileIdx);
 }
 
+// Resume a *specific* file (the episode you were watching) — streamUrl() picks the
+// largest video, which is wrong for a series. The HUB hero passes the resume file.
+void QmlSessionBridge::playByHashFile(const QString &infoHash, int fileIndex)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0 || m_streamPort == 0) { playByHash(infoHash); return; }
+    auto files = m_session->filesAt(row);
+    if (fileIndex < 0 || fileIndex >= int(files.size())) { playByHash(infoHash); return; }
+    m_session->resumeTorrent(row);
+    m_session->setSequentialDownload(row, true);
+    for (int i = 0; i < int(files.size()); ++i)
+        m_session->setFilePriority(row, i, i == fileIndex ? 7 : 0);
+    m_session->prioritizeFilePieceBoundaries(row, fileIndex);
+    const QString hash = m_session->torrentHashAt(row);
+    const QString url = QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(fileIndex);
+    const TorrentInfo info = m_session->torrentAt(row);
+    emit openPlayer(url, info.name, infoHash, fileIndex);
+}
+
 int QmlSessionBridge::nextEpisode(const QString &infoHash, int fileIndex) const
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);
