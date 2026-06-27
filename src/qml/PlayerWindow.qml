@@ -15,23 +15,52 @@ import "widgets"
 
 Window {
     id: win
-    width: 960; height: 600
+    width: 1120; height: 720
     minimumWidth: 560; minimumHeight: 360
     color: "#000000"
-    title: win.mediaTitle.length > 0 ? ("BATorrent — " + win.mediaTitle) : "BATorrent"
+    title: Theme.unifiedChrome ? "" : (win.mediaTitle.length > 0 ? ("BATorrent — " + win.mediaTitle) : "BATorrent")
     // standalone, non-transient window — otherwise macOS treats it as an
     // auxiliary window and won't enter the native fullscreen space (menu bar +
-    // Dock stay on top).
-    flags: Qt.Window
+    // Dock stay on top). Expanded client area (macOS) lets the title band with
+    // the quality/audio badges share the strip with the traffic lights.
+    readonly property int baseFlags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
+    flags: baseFlags
     transientParent: null
 
     property string streamUrl: ""
     property string mediaTitle: ""
+    property string mediaFileName: ""
+    readonly property string mediaQuality: {
+        var n = mediaFileName.toLowerCase()
+        if (/2160p|\buhd\b|\b4k\b/.test(n)) return "4K"
+        if (/1080p/.test(n)) return "1080p"
+        if (/720p/.test(n))  return "720p"
+        if (/480p/.test(n))  return "480p"
+        return ""
+    }
+    readonly property string mediaAudio: {
+        var n = mediaFileName.toLowerCase()
+        if (/7\.1/.test(n)) return "7.1"
+        if (/5\.1/.test(n)) return "5.1"
+        if (/atmos/.test(n)) return "Atmos"
+        if (/\b2\.0\b|stereo|aac2/.test(n)) return "2.0"
+        return ""
+    }
     property string infoHash: ""
     property int fileIndex: 0
     readonly property string resumeKey: "resume_" + infoHash + "_" + fileIndex
     property bool resumed: false
     property int resumeAtMs: 0
+    property int pendingResumeMs: -1
+    function tryApplyResume() {
+        if (win.pendingResumeMs > 5000 && player.duration > 0 && player.seekable
+            && win.pendingResumeMs < player.duration - 15000) {
+            player.position = win.pendingResumeMs
+            win.resumeAtMs = win.pendingResumeMs
+            resumeCue.show()
+            win.pendingResumeMs = -1
+        }
+    }
     property bool muted: false
     property real volume: 0.9
     property bool controlsShown: true
@@ -86,9 +115,9 @@ Window {
             win.y = scr.virtualY + scr.height - 241
             win.pipMode = true
         } else {
-            win.flags = Qt.Window
-            win.width = win.savedGeom.width > 0 ? win.savedGeom.width : 960
-            win.height = win.savedGeom.height > 0 ? win.savedGeom.height : 600
+            win.flags = win.baseFlags
+            win.width = win.savedGeom.width > 0 ? win.savedGeom.width : 1120
+            win.height = win.savedGeom.height > 0 ? win.savedGeom.height : 720
             win.x = win.savedGeom.x; win.y = win.savedGeom.y
             win.pipMode = false
         }
@@ -154,12 +183,12 @@ Window {
         implicitHeight: 16
         background: Rectangle {
             x: sl.leftPadding; y: sl.topPadding + sl.availableHeight / 2 - height / 2
-            width: sl.availableWidth; height: 4; radius: 2
-            color: "#3a3a42"
+            width: sl.availableWidth; height: 6; radius: 3
+            color: "#1fffffff"
             // downloaded layer (what's safe to seek to)
-            Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: 2; color: "#59ffffff" }
+            Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: 3; color: "#80ffffff" }
             // playback layer (what you're watching)
-            Rectangle { width: sl.visualPosition * parent.width; height: parent.height; radius: 2; color: Theme.accent }
+            Rectangle { width: sl.visualPosition * parent.width; height: parent.height; radius: 3; color: Theme.accent }
         }
         handle: Rectangle {
             x: sl.leftPadding + sl.visualPosition * (sl.availableWidth - width)
@@ -187,11 +216,30 @@ Window {
 
     // download stats for the buffer bar + badge, polled while the player is open
     property var streamStats: ({})
+    property bool aheadShown: false
     Timer {
         interval: 1000; repeat: true
         running: win.visible && typeof session !== "undefined"
         triggeredOnStart: true
-        onTriggered: win.streamStats = session.streamFileStats(win.infoHash, win.fileIndex)
+        onTriggered: {
+            win.streamStats = session.streamFileStats(win.infoHash, win.fileIndex)
+            if (!win.aheadShown && win.stillDownloading && win.bufferedAheadMs > 1500) {
+                win.aheadShown = true
+                aheadPill.show()
+            }
+        }
+    }
+    // streaming runway: how far the contiguous download reaches, and how much
+    // playback time is buffered past the playhead.
+    readonly property bool stillDownloading: ((win.streamStats && win.streamStats.progress) || 0) < 0.999
+    readonly property real downloadedToMs: (win.streamStats && win.streamStats.buffered > 0 && player.duration > 0)
+                                           ? win.streamStats.buffered * player.duration : 0
+    readonly property real bufferedAheadMs: Math.max(0, downloadedToMs - player.position)
+    function fmtAhead(ms) {
+        var s = Math.floor(ms / 1000)
+        if (s >= 3600) return Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m buffered ahead"
+        if (s >= 60)   return Math.floor(s / 60) + " min buffered ahead"
+        return s + "s buffered ahead"
     }
     // entry point used by Main.qml when (re)opening the player with new media
     property int nextIdx: -1     // file index of the next episode, or -1
@@ -207,6 +255,9 @@ Window {
         win.mediaTitle = title
         win.infoHash = hash
         win.fileIndex = fileIdx
+        win.mediaFileName = (typeof session !== "undefined") ? session.streamFileName(hash, fileIdx) : ""
+        win.pendingResumeMs = (typeof settings !== "undefined") ? Number(settings.get(win.resumeKey) || 0) : 0
+        win.aheadShown = false
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
         win.tracksRestored = false
         win.loadSubStyle()
@@ -235,17 +286,8 @@ Window {
         videoOutput: videoOut
         audioOutput: AudioOutput { id: audio; volume: win.volume; muted: win.muted }
         onPositionChanged: win.updateCue(position)
-        onDurationChanged: {
-            if (!win.resumed && duration > 0 && typeof settings !== "undefined") {
-                win.resumed = true
-                var saved = Number(settings.get(win.resumeKey) || 0)
-                if (saved > 5000 && saved < duration - 15000) {
-                    position = saved
-                    win.resumeAtMs = saved
-                    resumeCue.show()
-                }
-            }
-        }
+        onDurationChanged: win.tryApplyResume()
+        onSeekableChanged: win.tryApplyResume()
         onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) { win.saveResume(); win.maybePlayNext() }
         onTracksChanged: win.restoreTracks()
     }
@@ -262,7 +304,8 @@ Window {
     VideoOutput {
         id: videoOut
         anchors.fill: parent
-        // overlay the bar in fullscreen; keep it below the video when windowed
+        // solid title bar above + control bar below frame the video when windowed; both overlay in fullscreen
+        anchors.topMargin: win.fullscreen ? 0 : (topBar.visible ? topBar.height : 0)
         anchors.bottomMargin: win.fullscreen ? 0 : (bar.visible ? bar.height : 0)
         fillMode: VideoOutput.PreserveAspectFit
     }
@@ -285,7 +328,7 @@ Window {
         function show() { opacity = 1; hideTimer.restart() }
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: 28
+        anchors.topMargin: (topBar.visible ? topBar.height : 0) + 16
         z: 50
         opacity: 0
         visible: opacity > 0
@@ -301,6 +344,32 @@ Window {
             color: "white"; font.pixelSize: 13; font.family: Theme.fontMono
         }
         Timer { id: hideTimer; interval: 3500; onTriggered: resumeCue.opacity = 0 }
+    }
+
+    // streaming runway pill — how much playback is buffered past the playhead
+    Rectangle {
+        id: aheadPill
+        anchors.top: parent.top; anchors.left: parent.left
+        anchors.topMargin: (topBar.visible ? topBar.height : 0) + 14; anchors.leftMargin: 18
+        z: 49
+        function show() { opacity = 1; apHide.restart() }
+        opacity: 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 600; easing.type: Easing.InOutQuad } }
+        Timer { id: apHide; interval: 6000; onTriggered: aheadPill.opacity = 0 }
+        radius: 8
+        color: "#cc0a0a0c"; border.width: 1
+        border.color: Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.35)
+        implicitWidth: apRow.implicitWidth + 22; implicitHeight: 30
+        Row {
+            id: apRow; anchors.centerIn: parent; spacing: 7
+            Rectangle { width: 7; height: 7; radius: 4; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: win.fmtAhead(win.bufferedAheadMs)
+                color: Theme.grn; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+            }
+        }
     }
 
     // buffering / error overlay
@@ -624,181 +693,283 @@ Window {
         }
     }
 
-    // ---- controls bar ----
+    // ---- title bar: solid panel · traffic-light space · centered title + chips · info ----
+    Rectangle {
+        id: topBar
+        anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+        height: 46
+        color: "#161618"
+        opacity: (!win.fullscreen || win.controlsShown) ? 1 : 0
+        visible: opacity > 0 && win.mediaTitle.length > 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#0fffffff" }
+
+        // drag the window by the title bar (windowed only)
+        MouseArea {
+            anchors.fill: parent
+            enabled: !win.fullscreen
+            onPressed: win.startSystemMove()
+            onDoubleClicked: win.toggleFullscreen()
+        }
+
+        Row {
+            anchors.centerIn: parent
+            spacing: 9
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: win.mediaTitle.replace(/\s*\(\d{4}\)\s*$/, "")
+                color: "#f3f3f4"; font.pixelSize: 15; font.weight: Font.DemiBold
+                font.letterSpacing: -0.2; font.family: Theme.fontSans
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: /\(\d{4}\)\s*$/.test(win.mediaTitle)
+                text: { var m = win.mediaTitle.match(/\((\d{4})\)\s*$/); return m ? ("(" + m[1] + ")") : "" }
+                color: "#6f7077"; font.pixelSize: 15; font.weight: Font.Medium; font.family: Theme.fontSans
+            }
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: win.mediaQuality.length > 0
+                radius: 5; color: "transparent"; border.color: "#24ffffff"; border.width: 1
+                implicitWidth: qB.implicitWidth + 12; implicitHeight: 18
+                Text { id: qB; anchors.centerIn: parent; text: win.mediaQuality; color: "#b4b5ba"; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            }
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: win.mediaAudio.length > 0
+                radius: 5; color: "transparent"; border.color: "#24ffffff"; border.width: 1
+                implicitWidth: aB.implicitWidth + 12; implicitHeight: 18
+                Text { id: aB; anchors.centerIn: parent; text: win.mediaAudio; color: "#b4b5ba"; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            }
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 15; height: 15; radius: 7.5; color: "transparent"
+                border.color: infoMa.containsMouse ? "#7affffff" : "#38ffffff"; border.width: 1
+                Text { anchors.centerIn: parent; text: "i"; color: infoMa.containsMouse ? "#b4b5ba" : "#818288"; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans }
+                MouseArea { id: infoMa; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true }
+                ToolTip.visible: infoMa.containsMouse && win.mediaFileName.length > 0
+                ToolTip.text: win.mediaFileName
+                ToolTip.delay: 250
+            }
+        }
+    }
+
+    // ---- controls bar (scrubber + legend + control row) ----
     Rectangle {
         id: bar
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        height: 56
-        // top→bottom scrim so controls read over bright video
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#00000000" }
-            GradientStop { position: 0.25; color: "#aa0a0a0c" }
-            GradientStop { position: 1.0; color: "#f00a0a0c" }
-        }
+        height: 112
+        color: "#0c0c0e"
         opacity: (!win.fullscreen || win.controlsShown) ? 1 : 0
         visible: opacity > 0
+        Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: "#0fffffff" }
         Behavior on opacity { NumberAnimation { duration: 200 } }
 
-        // behind the controls so it only catches movement over EMPTY bar space —
-        // the chips/icons on top keep their own hover (tooltips, volume reveal)
         MouseArea {
             id: barHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton
             onContainsMouseChanged: if (containsMouse) win.showControls()
             onPositionChanged: win.showControls()
         }
 
-        RowLayout {
+        ColumnLayout {
             anchors.fill: parent
-            anchors.leftMargin: 14; anchors.rightMargin: 14
-            spacing: 9
+            anchors.leftMargin: 20; anchors.rightMargin: 20
+            anchors.topMargin: 6; anchors.bottomMargin: 14
+            spacing: 4
 
-            PChip { Layout.alignment: Qt.AlignVCenter; label: "−" + "10"; onClicked: win.seekBy(-10000) }
-            IconImg {
-                Layout.alignment: Qt.AlignVCenter
-                src: player.playbackState === MediaPlayer.PlayingState ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
-                tint: Theme.t1; s: 22
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.togglePlay() }
-            }
-            PChip { Layout.alignment: Qt.AlignVCenter; label: "+10"; onClicked: win.seekBy(10000) }
-            PChip {
-                Layout.alignment: Qt.AlignVCenter
-                visible: win.nextIdx >= 0
-                label: "⏭"
-                onClicked: if (typeof session !== "undefined") session.playFile(win.infoHash, win.nextIdx)
-            }
-
-            Text { text: win.fmt(player.position); color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono }
-            PSlider {
-                id: seek
-                Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
-                from: 0; to: Math.max(1, player.duration)
-                value: player.position
-                buffered: (win.streamStats && win.streamStats.buffered) || 0
-                enabled: player.seekable
-                onMoved: player.position = value
-                // hover or drag → preview the target time above the cursor
-                MouseArea {
-                    id: seekHover
-                    anchors.fill: parent
-                    acceptedButtons: Qt.NoButton
-                    hoverEnabled: true
-                    readonly property real frac: Math.max(0, Math.min(1, mouseX / Math.max(1, seek.availableWidth)))
-                    Rectangle {
-                        visible: (seekHover.containsMouse || seek.pressed) && player.duration > 0
-                        height: 22; radius: 5; width: ttl.implicitWidth + 14
-                        color: "#e60a0a0c"; border.color: Theme.hair; border.width: 1
-                        y: -30
-                        x: Math.max(0, Math.min(seek.width - width,
-                            (seek.pressed ? seek.position * seek.width : seekHover.mouseX) - width / 2))
-                        Text {
-                            id: ttl; anchors.centerIn: parent
-                            text: win.fmt((seek.pressed ? seek.position : seekHover.frac) * player.duration)
-                            color: "#fff"; font.pixelSize: 11; font.family: Theme.fontMono
-                        }
-                    }
-                }
-            }
-            Text { text: win.fmt(player.duration); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
-
-            // download progress — the % informs at a glance; hover shows exact
-            // size. Hidden once the file is fully downloaded (nothing to report).
-            // download status as a distinct, dim metadata chip — set apart from
-            // the playback time (which is plain text) so they don't read as one.
-            Rectangle {
-                id: dlChip
-                Layout.alignment: Qt.AlignVCenter
-                readonly property real prog: (win.streamStats && win.streamStats.progress) || 0
-                readonly property real total: (win.streamStats && win.streamStats.totalBytes) || 0
-                visible: total > 0
-                implicitWidth: dlt.implicitWidth + 14
-                implicitHeight: 20
-                radius: 6
-                color: dlMa.containsMouse ? "#26ffffff" : "#14ffffff"
+            // --- scrubber row: time · bar · time ---
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
                 Text {
-                    id: dlt
-                    anchors.centerIn: parent
-                    // downloading → "↓ 73%"; complete → the file size
-                    text: dlChip.prog < 0.999 ? ("↓ " + Math.round(dlChip.prog * 100) + "%")
-                                              : win.fmtBytes(dlChip.total)
-                    color: dlMa.containsMouse ? Theme.t1 : Theme.t4
-                    font.pixelSize: 10; font.weight: Font.Medium; font.family: Theme.fontMono
+                    text: win.fmt(player.position); color: Theme.t1
+                    font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                    Layout.minimumWidth: 52; horizontalAlignment: Text.AlignRight
                 }
-                MouseArea { id: dlMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
-                ToolTip.visible: dlMa.containsMouse
-                ToolTip.delay: 250
-                ToolTip.text: win.fmtBytes((win.streamStats && win.streamStats.downloadedBytes) || 0)
-                              + " / " + win.fmtBytes(dlChip.total)
-            }
-
-            PChip {
-                // always visible: the menu carries search/load even when the
-                // file has no embedded tracks
-                Layout.alignment: Qt.AlignVCenter
-                active: player.activeSubtitleTrack >= 0 || win.extSubsActive
-                label: (i18n.language, i18n.t("player_subs"))
-                onClicked: subMenu.popup()
-            }
-
-            // volume: click the icon to mute/unmute; hover reveals a vertical slider
-            Item {
-                Layout.alignment: Qt.AlignVCenter
-                implicitWidth: 22; implicitHeight: 22
-                IconImg {
-                    anchors.centerIn: parent
-                    src: (win.muted || win.volume <= 0) ? "qrc:/icons/volume-mute.svg" : "qrc:/icons/volume.svg"
-                    tint: volMa.containsMouse ? Theme.t1 : Theme.t2
-                    s: 17
-                }
-                MouseArea {
-                    id: volMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: win.muted = !win.muted
-                }
-                Rectangle {
-                    visible: volMa.containsMouse || volPopMa.containsMouse || vsl.pressed
-                    width: 32; height: 116; radius: 9
-                    color: "#f50a0a0c"; border.color: Theme.hair; border.width: 1
-                    anchors.bottom: parent.top; anchors.bottomMargin: 4
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    MouseArea { id: volPopMa; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                    Slider {
-                        id: vsl
-                        orientation: Qt.Vertical
-                        anchors.centerIn: parent
-                        height: 96; from: 0; to: 1
-                        value: win.muted ? 0 : win.volume
-                        onMoved: { win.muted = false; win.volume = value }
-                        background: Rectangle {
-                            x: vsl.leftPadding + vsl.availableWidth / 2 - width / 2
-                            y: vsl.topPadding
-                            width: 4; height: vsl.availableHeight; radius: 2; color: "#3a3a42"
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                width: parent.width; height: vsl.position * parent.height
-                                radius: 2; color: Theme.accent
+                PSlider {
+                    id: seek
+                    Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
+                    from: 0; to: Math.max(1, player.duration)
+                    value: player.position
+                    buffered: (win.streamStats && win.streamStats.buffered) || 0
+                    enabled: player.seekable
+                    onMoved: player.position = value
+                    MouseArea {
+                        id: seekHover
+                        anchors.fill: parent
+                        acceptedButtons: Qt.NoButton
+                        hoverEnabled: true
+                        readonly property real frac: Math.max(0, Math.min(1, mouseX / Math.max(1, seek.availableWidth)))
+                        Rectangle {
+                            visible: (seekHover.containsMouse || seek.pressed) && player.duration > 0
+                            height: 22; radius: 5; width: ttl.implicitWidth + 14
+                            color: "#e60a0a0c"; border.color: Theme.hair; border.width: 1
+                            y: -30
+                            x: Math.max(0, Math.min(seek.width - width,
+                                (seek.pressed ? seek.position * seek.width : seekHover.mouseX) - width / 2))
+                            Text {
+                                id: ttl; anchors.centerIn: parent
+                                text: win.fmt((seek.pressed ? seek.position : seekHover.frac) * player.duration)
+                                color: "#fff"; font.pixelSize: 11; font.family: Theme.fontMono
                             }
                         }
-                        handle: Rectangle {
-                            x: vsl.leftPadding + vsl.availableWidth / 2 - width / 2
-                            y: vsl.topPadding + (1 - vsl.position) * (vsl.availableHeight - height)
-                            implicitWidth: 12; implicitHeight: 12; radius: 6; color: "#fff"
+                    }
+                    // marker where the contiguous download reaches (safe seek limit)
+                    Rectangle {
+                        visible: win.stillDownloading && seek.buffered > 0.005 && seek.buffered < 0.995
+                        width: 2; height: 12; radius: 1
+                        color: Theme.accent
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: seek.leftPadding + seek.buffered * seek.availableWidth - width / 2
+                    }
+                }
+                Text { text: win.fmt(player.duration); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontMono; Layout.minimumWidth: 52 }
+            }
+
+            // --- legend: watched · downloaded to X (only while streaming) ---
+            RowLayout {
+                Layout.fillWidth: true
+                visible: win.stillDownloading && win.downloadedToMs > 0
+                spacing: 12
+                Item { Layout.minimumWidth: 52 }
+                Row { spacing: 6
+                    Rectangle { width: 9; height: 3; radius: 2; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "watched"; color: "#9a9aa0"; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                }
+                Row { spacing: 6
+                    Rectangle { width: 9; height: 3; radius: 2; color: "#80ffffff"; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "downloaded to " + win.fmt(win.downloadedToMs); color: "#9a9aa0"; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                }
+                Item { Layout.fillWidth: true }
+            }
+
+            Item { Layout.fillHeight: true }
+
+            // --- control row: rewind · play · forward | … | right cluster ---
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                // rewind 10
+                Item {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 30; implicitHeight: 30
+                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/replay.svg"; tint: rwMa.containsMouse ? Theme.t1 : Theme.t2; s: 26 }
+                    Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: rwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 8; font.weight: Font.Bold; font.family: Theme.fontSans }
+                    MouseArea { id: rwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(-10000) }
+                }
+                // big play / pause
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 44; implicitHeight: 44; radius: 22
+                    color: playMa.containsMouse ? "#ffffff" : "#ededf0"
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                    IconImg {
+                        anchors.centerIn: parent
+                        anchors.horizontalCenterOffset: player.playbackState === MediaPlayer.PlayingState ? 0 : 2
+                        src: player.playbackState === MediaPlayer.PlayingState ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
+                        tint: "#0a0a0c"; s: 20
+                    }
+                    MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.togglePlay() }
+                }
+                // forward 10
+                Item {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 30; implicitHeight: 30
+                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/forward.svg"; tint: fwMa.containsMouse ? Theme.t1 : Theme.t2; s: 26 }
+                    Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: fwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 8; font.weight: Font.Bold; font.family: Theme.fontSans }
+                    MouseArea { id: fwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(10000) }
+                }
+                PChip {
+                    Layout.alignment: Qt.AlignVCenter
+                    visible: win.nextIdx >= 0
+                    label: "⏭"
+                    onClicked: if (typeof session !== "undefined") session.playFile(win.infoHash, win.nextIdx)
+                }
+
+                Item { Layout.fillWidth: true }
+
+                // "↓ to 1:19:49" — bordered pill (downloaded-to time); hover = size
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    readonly property real prog: (win.streamStats && win.streamStats.progress) || 0
+                    readonly property real total: (win.streamStats && win.streamStats.totalBytes) || 0
+                    visible: total > 0
+                    implicitWidth: dlRow.implicitWidth + 22; implicitHeight: 30
+                    radius: 8
+                    color: dlMa.containsMouse ? "#1affffff" : "transparent"
+                    border.color: Theme.hair; border.width: 1
+                    Row {
+                        id: dlRow; anchors.centerIn: parent; spacing: 6
+                        IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/download.svg"; tint: Theme.t3; s: 13 }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: parent.parent.prog < 0.999 ? ("to " + win.fmt(win.downloadedToMs)) : win.fmtBytes(parent.parent.total)
+                            color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono
+                        }
+                    }
+                    MouseArea { id: dlMa; anchors.fill: parent; hoverEnabled: true }
+                    ToolTip.visible: dlMa.containsMouse
+                    ToolTip.delay: 250
+                    ToolTip.text: win.fmtBytes((win.streamStats && win.streamStats.downloadedBytes) || 0)
+                                  + " / " + win.fmtBytes((win.streamStats && win.streamStats.totalBytes) || 0)
+                }
+                // speed
+                PChip { Layout.alignment: Qt.AlignVCenter; active: player.playbackRate !== 1.0; label: player.playbackRate + "×"; onClicked: speedMenu.popup() }
+                // subtitles
+                Item {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: subRow.implicitWidth; implicitHeight: 24
+                    Row {
+                        id: subRow; anchors.centerIn: parent; spacing: 6
+                        IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/subtitles.svg"; tint: (player.activeSubtitleTrack >= 0 || win.extSubsActive) ? Theme.accent : (subMa.containsMouse ? Theme.t1 : Theme.t2); s: 16 }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("player_subs")); color: subMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans }
+                    }
+                    MouseArea { id: subMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: subMenu.popup() }
+                }
+                // volume: click = mute; hover = vertical slider
+                Item {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 24; implicitHeight: 24
+                    IconImg {
+                        anchors.centerIn: parent
+                        src: (win.muted || win.volume <= 0) ? "qrc:/icons/volume-mute.svg" : "qrc:/icons/volume.svg"
+                        tint: volMa.containsMouse ? Theme.t1 : Theme.t2
+                        s: 18
+                    }
+                    MouseArea { id: volMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.muted = !win.muted }
+                    Rectangle {
+                        visible: volMa.containsMouse || volPopMa.containsMouse || vsl.pressed
+                        width: 32; height: 116; radius: 9
+                        color: "#f50a0a0c"; border.color: Theme.hair; border.width: 1
+                        anchors.bottom: parent.top; anchors.bottomMargin: 6
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        MouseArea { id: volPopMa; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                        Slider {
+                            id: vsl
+                            orientation: Qt.Vertical
+                            anchors.centerIn: parent
+                            height: 96; from: 0; to: 1
+                            value: win.muted ? 0 : win.volume
+                            onMoved: { win.muted = false; win.volume = value }
+                            background: Rectangle {
+                                x: vsl.leftPadding + vsl.availableWidth / 2 - width / 2
+                                y: vsl.topPadding
+                                width: 4; height: vsl.availableHeight; radius: 2; color: "#3a3a42"
+                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: vsl.position * parent.height; radius: 2; color: Theme.accent }
+                            }
+                            handle: Rectangle {
+                                x: vsl.leftPadding + vsl.availableWidth / 2 - width / 2
+                                y: vsl.topPadding + (1 - vsl.position) * (vsl.availableHeight - height)
+                                implicitWidth: 12; implicitHeight: 12; radius: 6; color: "#fff"
+                            }
                         }
                     }
                 }
+                PChip { Layout.alignment: Qt.AlignVCenter; label: "⋯"; onClicked: moreMenu.popup() }
+                PChip { Layout.alignment: Qt.AlignVCenter; active: win.pipMode; label: "⧉"; onClicked: win.togglePip() }
+                PChip { Layout.alignment: Qt.AlignVCenter; label: "⛶"; onClicked: win.toggleFullscreen() }
             }
-
-            // everything used occasionally lives behind one "more" menu — the
-            // bar keeps only the controls touched every session
-            PChip {
-                Layout.alignment: Qt.AlignVCenter
-                active: win.muted || player.playbackRate !== 1.0
-                label: "⋯"
-                onClicked: moreMenu.popup()
-            }
-            PChip { Layout.alignment: Qt.AlignVCenter; active: win.pipMode; label: "⧉"; onClicked: win.togglePip() }
-            PChip { Layout.alignment: Qt.AlignVCenter; label: "⛶"; onClicked: win.toggleFullscreen() }
         }
     }
 
