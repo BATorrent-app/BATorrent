@@ -88,6 +88,9 @@ endif()
 if(DEFINED ENV{BAT_IGDB_SECRET})
     target_compile_definitions(BATorrent PRIVATE BAT_IGDB_CLIENT_SECRET="$ENV{BAT_IGDB_SECRET}")
 endif()
+if(DEFINED ENV{BAT_OS_KEY})
+    target_compile_definitions(BATorrent PRIVATE BAT_OS_KEY="$ENV{BAT_OS_KEY}")
+endif()
 
 # Microsoft Store builds must not include their own auto-updater (Store
 # handles updates). Pass -DBAT_STORE_BUILD=ON in the store.yml workflow.

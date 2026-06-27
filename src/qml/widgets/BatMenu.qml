@@ -10,11 +10,13 @@ import "../theme"
 Menu {
     modal: true
     implicitWidth: 220
+    topPadding: 6
+    bottomPadding: 6
     background: Rectangle {
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
-        radius: 8
+        radius: 11
     }
     delegate: BatMenuItem {}
 }

@@ -33,6 +33,7 @@ Window {
     property bool resumed: false
     property int resumeAtMs: 0
     property bool muted: false
+    property real volume: 0.9
     property bool controlsShown: true
 
     // external subtitles (sidecar .srt/.vtt) — rendered as a synced overlay,
@@ -149,11 +150,15 @@ Window {
     // slim, themed slider (no default "ball" handle)
     component PSlider: Slider {
         id: sl
+        property real buffered: 0   // 0..1 downloaded-from-start, drawn dim behind the fill
         implicitHeight: 16
         background: Rectangle {
             x: sl.leftPadding; y: sl.topPadding + sl.availableHeight / 2 - height / 2
             width: sl.availableWidth; height: 4; radius: 2
             color: "#3a3a42"
+            // downloaded layer (what's safe to seek to)
+            Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: 2; color: "#59ffffff" }
+            // playback layer (what you're watching)
             Rectangle { width: sl.visualPosition * parent.width; height: parent.height; radius: 2; color: Theme.accent }
         }
         handle: Rectangle {
@@ -172,6 +177,21 @@ Window {
         var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60
         var p = function(n){ return (n < 10 ? "0" : "") + n }
         return (h > 0 ? h + ":" + p(m) : m) + ":" + p(ss)
+    }
+    function fmtBytes(b) {
+        if (!b || b <= 0) return "0 MB"
+        var u = ["KB", "MB", "GB", "TB"], i = -1
+        do { b /= 1024; i++ } while (b >= 1024 && i < u.length - 1)
+        return b.toFixed(b < 10 ? 1 : 0) + " " + u[i]
+    }
+
+    // download stats for the buffer bar + badge, polled while the player is open
+    property var streamStats: ({})
+    Timer {
+        interval: 1000; repeat: true
+        running: win.visible && typeof session !== "undefined"
+        triggeredOnStart: true
+        onTriggered: win.streamStats = session.streamFileStats(win.infoHash, win.fileIndex)
     }
     // entry point used by Main.qml when (re)opening the player with new media
     property int nextIdx: -1     // file index of the next episode, or -1
@@ -213,7 +233,7 @@ Window {
         id: player
         source: win.streamUrl
         videoOutput: videoOut
-        audioOutput: AudioOutput { id: audio; volume: volSlider.value; muted: win.muted }
+        audioOutput: AudioOutput { id: audio; volume: win.volume; muted: win.muted }
         onPositionChanged: win.updateCue(position)
         onDurationChanged: {
             if (!win.resumed && duration > 0 && typeof settings !== "undefined") {
@@ -354,7 +374,7 @@ Window {
     function seekBy(ms) {
         if (player.seekable) player.position = Math.max(0, Math.min(player.duration, player.position + ms))
     }
-    function bumpVolume(d) { volSlider.value = Math.max(0, Math.min(1, volSlider.value + d)) }
+    function bumpVolume(d) { win.muted = false; win.volume = Math.max(0, Math.min(1, win.volume + d)) }
     function showControls() { win.controlsShown = true; if (win.fullscreen) idle.restart() }
 
     // subtitle sync nudges (mpv-style)
@@ -379,6 +399,19 @@ Window {
                     player.activeAudioTrack = index
                     if (typeof settings !== "undefined") settings.set("audioTrack_" + win.infoHash, index)
                 }
+            }
+        }
+    }
+    BatMenu {
+        id: speedMenu
+        implicitWidth: 140
+        Repeater {
+            model: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+            BatMenuItem {
+                required property var modelData
+                text: modelData + "×"
+                checkable: true; checked: player.playbackRate === modelData
+                onTriggered: player.playbackRate = modelData
             }
         }
     }
@@ -424,22 +457,13 @@ Window {
         id: moreMenu
         implicitWidth: 210
         BatMenuItem {
-            readonly property var speeds: [0.5, 1.0, 1.25, 1.5, 2.0]
             text: (i18n.language, i18n.t("player_speed")) + ": " + player.playbackRate + "×"
-            onTriggered: {
-                var i = speeds.indexOf(player.playbackRate)
-                player.playbackRate = speeds[(i + 1) % speeds.length]
-            }
+            onTriggered: speedMenu.popup()
         }
         BatMenuItem {
             visible: player.audioTracks.length > 1
             text: (i18n.language, i18n.t("player_audio")) + "…"
             onTriggered: audioMenu.popup()
-        }
-        BatMenuItem {
-            text: (i18n.language, i18n.t("player_mute"))
-            checkable: true; checked: win.muted
-            onTriggered: win.muted = !win.muted
         }
         BatMenuSep {}
         BatMenuItem {
@@ -615,6 +639,14 @@ Window {
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 200 } }
 
+        // behind the controls so it only catches movement over EMPTY bar space —
+        // the chips/icons on top keep their own hover (tooltips, volume reveal)
+        MouseArea {
+            id: barHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton
+            onContainsMouseChanged: if (containsMouse) win.showControls()
+            onPositionChanged: win.showControls()
+        }
+
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 14; anchors.rightMargin: 14
@@ -641,10 +673,62 @@ Window {
                 Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
                 from: 0; to: Math.max(1, player.duration)
                 value: player.position
+                buffered: (win.streamStats && win.streamStats.buffered) || 0
                 enabled: player.seekable
                 onMoved: player.position = value
+                // hover or drag → preview the target time above the cursor
+                MouseArea {
+                    id: seekHover
+                    anchors.fill: parent
+                    acceptedButtons: Qt.NoButton
+                    hoverEnabled: true
+                    readonly property real frac: Math.max(0, Math.min(1, mouseX / Math.max(1, seek.availableWidth)))
+                    Rectangle {
+                        visible: (seekHover.containsMouse || seek.pressed) && player.duration > 0
+                        height: 22; radius: 5; width: ttl.implicitWidth + 14
+                        color: "#e60a0a0c"; border.color: Theme.hair; border.width: 1
+                        y: -30
+                        x: Math.max(0, Math.min(seek.width - width,
+                            (seek.pressed ? seek.position * seek.width : seekHover.mouseX) - width / 2))
+                        Text {
+                            id: ttl; anchors.centerIn: parent
+                            text: win.fmt((seek.pressed ? seek.position : seekHover.frac) * player.duration)
+                            color: "#fff"; font.pixelSize: 11; font.family: Theme.fontMono
+                        }
+                    }
+                }
             }
             Text { text: win.fmt(player.duration); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
+
+            // download progress — the % informs at a glance; hover shows exact
+            // size. Hidden once the file is fully downloaded (nothing to report).
+            // download status as a distinct, dim metadata chip — set apart from
+            // the playback time (which is plain text) so they don't read as one.
+            Rectangle {
+                id: dlChip
+                Layout.alignment: Qt.AlignVCenter
+                readonly property real prog: (win.streamStats && win.streamStats.progress) || 0
+                readonly property real total: (win.streamStats && win.streamStats.totalBytes) || 0
+                visible: total > 0
+                implicitWidth: dlt.implicitWidth + 14
+                implicitHeight: 20
+                radius: 6
+                color: dlMa.containsMouse ? "#26ffffff" : "#14ffffff"
+                Text {
+                    id: dlt
+                    anchors.centerIn: parent
+                    // downloading → "↓ 73%"; complete → the file size
+                    text: dlChip.prog < 0.999 ? ("↓ " + Math.round(dlChip.prog * 100) + "%")
+                                              : win.fmtBytes(dlChip.total)
+                    color: dlMa.containsMouse ? Theme.t1 : Theme.t4
+                    font.pixelSize: 10; font.weight: Font.Medium; font.family: Theme.fontMono
+                }
+                MouseArea { id: dlMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
+                ToolTip.visible: dlMa.containsMouse
+                ToolTip.delay: 250
+                ToolTip.text: win.fmtBytes((win.streamStats && win.streamStats.downloadedBytes) || 0)
+                              + " / " + win.fmtBytes(dlChip.total)
+            }
 
             PChip {
                 // always visible: the menu carries search/load even when the
@@ -654,7 +738,56 @@ Window {
                 label: (i18n.language, i18n.t("player_subs"))
                 onClicked: subMenu.popup()
             }
-            PSlider { id: volSlider; Layout.preferredWidth: 76; Layout.alignment: Qt.AlignVCenter; from: 0; to: 1; value: win.muted ? 0 : 0.9 }
+
+            // volume: click the icon to mute/unmute; hover reveals a vertical slider
+            Item {
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: 22; implicitHeight: 22
+                IconImg {
+                    anchors.centerIn: parent
+                    src: (win.muted || win.volume <= 0) ? "qrc:/icons/volume-mute.svg" : "qrc:/icons/volume.svg"
+                    tint: volMa.containsMouse ? Theme.t1 : Theme.t2
+                    s: 17
+                }
+                MouseArea {
+                    id: volMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: win.muted = !win.muted
+                }
+                Rectangle {
+                    visible: volMa.containsMouse || volPopMa.containsMouse || vsl.pressed
+                    width: 32; height: 116; radius: 9
+                    color: "#f50a0a0c"; border.color: Theme.hair; border.width: 1
+                    anchors.bottom: parent.top; anchors.bottomMargin: 4
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    MouseArea { id: volPopMa; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                    Slider {
+                        id: vsl
+                        orientation: Qt.Vertical
+                        anchors.centerIn: parent
+                        height: 96; from: 0; to: 1
+                        value: win.muted ? 0 : win.volume
+                        onMoved: { win.muted = false; win.volume = value }
+                        background: Rectangle {
+                            x: vsl.leftPadding + vsl.availableWidth / 2 - width / 2
+                            y: vsl.topPadding
+                            width: 4; height: vsl.availableHeight; radius: 2; color: "#3a3a42"
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                width: parent.width; height: vsl.position * parent.height
+                                radius: 2; color: Theme.accent
+                            }
+                        }
+                        handle: Rectangle {
+                            x: vsl.leftPadding + vsl.availableWidth / 2 - width / 2
+                            y: vsl.topPadding + (1 - vsl.position) * (vsl.availableHeight - height)
+                            implicitWidth: 12; implicitHeight: 12; radius: 6; color: "#fff"
+                        }
+                    }
+                }
+            }
 
             // everything used occasionally lives behind one "more" menu — the
             // bar keeps only the controls touched every session
@@ -666,11 +799,6 @@ Window {
             }
             PChip { Layout.alignment: Qt.AlignVCenter; active: win.pipMode; label: "⧉"; onClicked: win.togglePip() }
             PChip { Layout.alignment: Qt.AlignVCenter; label: "⛶"; onClicked: win.toggleFullscreen() }
-        }
-        MouseArea {
-            id: barHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton
-            onContainsMouseChanged: if (containsMouse) win.showControls()
-            onPositionChanged: win.showControls()
         }
     }
 
@@ -684,5 +812,6 @@ Window {
     Shortcut { sequence: "Down";   onActivated: win.bumpVolume(-0.05) }
     Shortcut { sequence: "F";      onActivated: win.toggleFullscreen() }
     Shortcut { sequence: "M";      onActivated: win.muted = !win.muted }
-    Shortcut { sequence: "Escape"; onActivated: win.visibility === Window.FullScreen ? (win.visibility = Window.Windowed) : win.close() }
+    Shortcut { sequence: "Escape"; onActivated: win.pipMode ? win.togglePip()
+                                              : (win.visibility === Window.FullScreen ? (win.visibility = Window.Windowed) : win.close()) }
 }
