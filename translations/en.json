@@ -583,6 +583,8 @@
   "hub_games": "Your games",
   "hub_recent": "Recently added",
   "hub_recommended": "Recommended for you",
+  "hub_empty_title": "Your library is empty",
+  "hub_empty_sub": "Download a game or movie to start your collection",
   "hub_playing_now": "Playing now",
   "hub_played": "played",
   "hub_resume": "Resume",

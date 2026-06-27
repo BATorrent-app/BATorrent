@@ -16,6 +16,7 @@ import "widgets"
 Item {
     id: page
     signal openSearch(string query)
+    signal goDiscover()
     property var api: typeof session !== "undefined" ? session : null
     property var library: []
     property var gameItems: []
@@ -270,6 +271,22 @@ Item {
                 color: Theme.t1; font.pixelSize: 25; font.weight: Font.Bold; font.family: Theme.fontSans
             }
 
+            // empty library → guide the user to get content (first-run onboarding)
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: 48
+                spacing: 14
+                visible: page.empty
+                IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/hub.svg"; tint: Theme.t4; s: 46; opacity: 0.7 }
+                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("hub_empty_title")); color: Theme.t1; font.pixelSize: 18; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("hub_empty_sub")); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans }
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 4; spacing: 12
+                    BtnFlat { primary: true; icon: "qrc:/icons/discover.svg"; text: (i18n.language, i18n.t("nav_discover")); onClicked: page.goDiscover() }
+                    BtnFlat { icon: "qrc:/icons/search.svg"; text: (i18n.language, i18n.t("nav_search")); onClicked: page.openSearch("") }
+                }
+            }
+
             // library search + sort
             RowLayout {
                 Layout.fillWidth: true
@@ -292,10 +309,11 @@ Item {
             }
 
             // Continue watching + Continue playing — the latest of each as a large
-            // hero with one-click Resume + rich metadata; prompt when empty.
+            // hero with one-click Resume + rich metadata.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                visible: !page.empty
                 spacing: 20
 
                 // ---------- CONTINUE WATCHING ----------

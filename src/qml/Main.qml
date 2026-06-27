@@ -2779,6 +2779,7 @@ Window {
                 HubView {
                     id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
                     onOpenSearch: function(q) { navRail.currentIndex = 2; searchPage.runQuery(q) }
+                    onGoDiscover: navRail.currentIndex = 1
                 }
             }
         }

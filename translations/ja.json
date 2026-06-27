@@ -301,6 +301,8 @@
   "hub_games": "あなたのゲーム",
   "hub_recent": "最近追加",
   "hub_recommended": "あなたへのおすすめ",
+  "hub_empty_title": "ライブラリは空です",
+  "hub_empty_sub": "ゲームや映画をダウンロードしてコレクションを始めましょう",
   "hub_playing_now": "プレイ中",
   "hub_played": "プレイ",
   "hub_resume": "再開",

@@ -301,6 +301,8 @@
   "hub_games": "Seus jogos",
   "hub_recent": "Adicionados recentemente",
   "hub_recommended": "Recomendados pra você",
+  "hub_empty_title": "Sua biblioteca está vazia",
+  "hub_empty_sub": "Baixe um jogo ou filme pra começar sua coleção",
   "hub_playing_now": "Jogando agora",
   "hub_played": "de jogo",
   "hub_resume": "Retomar",
