@@ -117,6 +117,8 @@ class QmlSessionBridge : public QObject
     // The distinct volumes torrents actually save to (default + per-category
     // paths) — each { name, free, usedFraction }. Multi-HD users see all of them.
     Q_PROPERTY(QVariantList diskVolumes READ diskVolumes NOTIFY statsChanged)
+    // currently-downloading torrents (cover/name/%/speed) for the nav-rail mini card
+    Q_PROPERTY(QVariantList activeDownloads READ activeDownloads NOTIFY statsChanged)
     Q_PROPERTY(QString totalDownloaded READ totalDownloaded NOTIFY statsChanged)
     Q_PROPERTY(QString totalUploaded READ totalUploaded NOTIFY statsChanged)
     Q_PROPERTY(QString globalRatio READ globalRatio NOTIFY statsChanged)
@@ -177,6 +179,7 @@ public:
     Q_INVOKABLE qint64 freeSaveBytes() const;   // single source of truth: free bytes on the default save volume
     double diskUsedFraction() const;
     QVariantList diskVolumes() const;
+    QVariantList activeDownloads() const;
     QString totalDownloaded() const;
     QString totalUploaded() const;
     QString globalRatio() const;
