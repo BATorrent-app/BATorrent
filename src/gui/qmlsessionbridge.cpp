@@ -1979,12 +1979,59 @@ QVariantList QmlSessionBridge::activeDownloads() const
         }
         QVariantMap m;
         m["infoHash"]  = hash;
-        m["name"]      = info.name;
+        m["title"]     = info.name;
         m["progress"]  = double(info.progress);
         m["downSpeed"] = formatSize(info.downloadRate) + QStringLiteral("/s");
         m["poster"]    = poster;
         out << m;
     }
+    return out;
+}
+
+// Continue watching / playing for the nav-rail slot when you're on the Downloads
+// tab (the downloads are already on screen there, so show what's resumable instead).
+QVariantList QmlSessionBridge::resumeItems() const
+{
+    static QVariantList cached; static qint64 last = 0;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    if (last != 0 && now - last < 8) return cached;
+    last = now;
+
+    auto fmtPlay = [](qint64 s) {
+        const qint64 h = s / 3600, m = (s % 3600) / 60;
+        return h > 0 ? QStringLiteral("%1h %2m").arg(h).arg(m) : QStringLiteral("%1m").arg(m);
+    };
+    QVector<QPair<qint64, QVariantMap>> rows;   // (recency ms, item)
+    for (const QVariant &v : movieLibrary()) {
+        const QVariantMap mv = v.toMap();
+        if (mv.value(QStringLiteral("resumeMs")).toLongLong() <= 0) continue;
+        const double pct = mv.value(QStringLiteral("watchedPct")).toDouble();
+        QVariantMap o;
+        o["kind"] = QStringLiteral("movie");
+        o["infoHash"]  = mv.value(QStringLiteral("infoHash"));
+        o["fileIndex"] = mv.value(QStringLiteral("fileIndex"));
+        o["title"]     = mv.value(QStringLiteral("title"));
+        o["poster"]    = mv.value(QStringLiteral("poster"));
+        o["progress"]  = pct;
+        o["metric"]    = QString::number(int(pct * 100)) + QStringLiteral("%");
+        rows.append({ mv.value(QStringLiteral("resumeAt")).toLongLong(), o });
+    }
+    for (const QVariant &v : gameLibrary()) {
+        const QVariantMap g = v.toMap();
+        if (g.value(QStringLiteral("lastPlayed")).toLongLong() <= 0) continue;
+        QVariantMap o;
+        o["kind"] = QStringLiteral("game");
+        o["infoHash"] = g.value(QStringLiteral("infoHash"));
+        o["title"]    = g.value(QStringLiteral("title"));
+        o["poster"]   = g.value(QStringLiteral("poster"));
+        o["progress"] = 0.0;
+        o["metric"]   = fmtPlay(g.value(QStringLiteral("playSeconds")).toLongLong());
+        rows.append({ g.value(QStringLiteral("lastPlayed")).toLongLong(), o });
+    }
+    std::sort(rows.begin(), rows.end(), [](const auto &a, const auto &b){ return a.first > b.first; });
+    QVariantList out;
+    for (int i = 0; i < rows.size() && i < 8; ++i) out << rows[i].second;
+    cached = out;
     return out;
 }
 
