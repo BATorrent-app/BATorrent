@@ -131,16 +131,57 @@ void QmlSessionBridge::setAltSpeedsActive(bool active) { m_session->setAltSpeeds
 void QmlSessionBridge::sampleSpeeds()
 {
     int dl = 0, ul = 0;
+    QSet<QString> live;
     for (int i = 0; i < m_session->torrentCount(); ++i) {
         auto info = m_session->torrentAt(i);
         dl += info.downloadRate;
         ul += info.uploadRate;
+
+        const QString h = m_session->torrentHashAt(i);
+        if (h.isEmpty()) continue;
+        live.insert(h);
+        QVector<int> &dh = m_torrentDownHist[h];
+        QVector<int> &uh = m_torrentUpHist[h];
+        dh.append(info.downloadRate);
+        uh.append(info.uploadRate);
+        while (dh.size() > HistoryMaxPoints) dh.removeFirst();
+        while (uh.size() > HistoryMaxPoints) uh.removeFirst();
     }
+    // forget history for torrents that are gone (no leak across a session)
+    for (auto it = m_torrentDownHist.begin(); it != m_torrentDownHist.end(); ) {
+        if (!live.contains(it.key())) { m_torrentUpHist.remove(it.key()); it = m_torrentDownHist.erase(it); }
+        else ++it;
+    }
+
     m_downloadHistory.append(dl);
     m_uploadHistory.append(ul);
     while (m_downloadHistory.size() > HistoryMaxPoints) m_downloadHistory.removeFirst();
     while (m_uploadHistory.size() > HistoryMaxPoints) m_uploadHistory.removeFirst();
     emit historyChanged();
+}
+
+static QVariantList intsToVariant(const QVector<int> &v)
+{
+    QVariantList out;
+    out.reserve(v.size());
+    for (int x : v) out << x;
+    return out;
+}
+
+QVariantList QmlSessionBridge::selectedDownHistory() const
+{
+    if (!hasSelection()) return {};
+    const QString h = m_session->torrentHashAt(m_selectedIndex);   // FULL hash (selectedHash() is abbreviated for display)
+    const auto it = m_torrentDownHist.constFind(h);
+    return it == m_torrentDownHist.constEnd() ? QVariantList() : intsToVariant(*it);
+}
+
+QVariantList QmlSessionBridge::selectedUpHistory() const
+{
+    if (!hasSelection()) return {};
+    const QString h = m_session->torrentHashAt(m_selectedIndex);
+    const auto it = m_torrentUpHist.constFind(h);
+    return it == m_torrentUpHist.constEnd() ? QVariantList() : intsToVariant(*it);
 }
 
 QVariantList QmlSessionBridge::downloadHistory() const
@@ -922,6 +963,13 @@ void QmlSessionBridge::clearResume(const QString &infoHash, int fileIndex)
     s.remove(rk + QStringLiteral("_at"));
 }
 
+QVariantMap QmlSessionBridge::streamFileStats(const QString &infoHash, int fileIndex) const
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return {};
+    return m_session->streamFileStats(row, fileIndex);
+}
+
 void QmlSessionBridge::playByHash(const QString &infoHash)
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);
@@ -1446,6 +1494,7 @@ void QmlSessionBridge::setSelectedCategory(const QString &category)
     for (int r : resolveRows(m_selectedRows, m_selectedIndex))
         m_session->setTorrentCategory(r, category);
     emit selectionChanged(); emit selectionListsChanged();
+    emit queueRefreshNeeded();   // category is a full-role edit → repaint the cards
 }
 
 void QmlSessionBridge::setSelectedTags(const QStringList &tags)
@@ -1832,6 +1881,59 @@ QString QmlSessionBridge::freeDiskSpace() const
     return cached >= 0 ? formatSize(cached) : QString();
 }
 
+// Fraction of the save volume that's used (0..1) — drives the sidebar disk bar.
+double QmlSessionBridge::diskUsedFraction() const
+{
+    static double cached = 0;
+    static qint64 lastCheck = 0;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    if (lastCheck == 0 || now - lastCheck >= 10) {
+        lastCheck = now;
+        const QString path = defaultSavePath();
+        QStorageInfo si(path.isEmpty() ? QDir::homePath() : path);
+        const qint64 total = si.isValid() ? si.bytesTotal() : 0;
+        cached = total > 0 ? double(total - si.bytesAvailable()) / double(total) : 0.0;
+    }
+    return cached;
+}
+
+// One entry per distinct volume torrents save to (default + per-category paths).
+QVariantList QmlSessionBridge::diskVolumes() const
+{
+    static QVariantList cached;
+    static qint64 lastCheck = 0;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    if (lastCheck != 0 && now - lastCheck < 10) return cached;
+    lastCheck = now;
+
+    QStringList paths;
+    paths << defaultSavePath();
+    const auto catPaths = m_session->allCategorySavePaths();
+    for (auto it = catPaths.constBegin(); it != catPaths.constEnd(); ++it)
+        if (!it.value().isEmpty()) paths << it.value();
+
+    QVariantList out;
+    QSet<QString> seenRoots;
+    for (QString p : paths) {
+        if (p.isEmpty()) p = QDir::homePath();
+        QStorageInfo si(p);
+        if (!si.isValid() || si.bytesTotal() <= 0) continue;
+        const QString root = QString::fromUtf8(si.rootPath().toUtf8());
+        if (seenRoots.contains(root)) continue;
+        seenRoots.insert(root);
+
+        QVariantMap m;
+        QString name = si.displayName();
+        if (name.isEmpty()) name = root;
+        m["name"] = name;
+        m["free"] = formatSize(si.bytesAvailable());
+        m["usedFraction"] = double(si.bytesTotal() - si.bytesAvailable()) / double(si.bytesTotal());
+        out << m;
+    }
+    cached = out;
+    return out;
+}
+
 QString QmlSessionBridge::defaultSavePath() const
 {
     QSettings s;
@@ -2054,6 +2156,41 @@ QString QmlSessionBridge::selectedRatio() const
 {
     if (!hasSelection()) return {};
     return QString::number(m_session->torrentAt(m_selectedIndex).ratio, 'f', 2);
+}
+
+double QmlSessionBridge::selectedProgress() const
+{
+    if (!hasSelection()) return 0.0;
+    return m_session->torrentAt(m_selectedIndex).progress;
+}
+
+QString QmlSessionBridge::selectedUploaded() const
+{
+    if (!hasSelection()) return {};
+    return formatSize(m_session->torrentAt(m_selectedIndex).totalUploaded);
+}
+
+QString QmlSessionBridge::selectedAvailability() const
+{
+    if (!hasSelection()) return {};
+    return QString::number(m_session->torrentAt(m_selectedIndex).availability, 'f', 2);
+}
+
+QString QmlSessionBridge::selectedAdded() const
+{
+    if (!hasSelection()) return {};
+    const qint64 t = m_session->torrentAt(m_selectedIndex).addedTime;
+    if (t <= 0) return QStringLiteral("—");
+    const QDateTime dt = QDateTime::fromSecsSinceEpoch(t);
+    if (dt.date() == QDate::currentDate())
+        return QStringLiteral("Today ") + dt.toString(QStringLiteral("HH:mm"));
+    return dt.toString(QStringLiteral("dd MMM HH:mm"));
+}
+
+QString QmlSessionBridge::selectedPath() const
+{
+    if (!hasSelection()) return {};
+    return m_session->torrentAt(m_selectedIndex).savePath;
 }
 
 QString QmlSessionBridge::selectedState() const

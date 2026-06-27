@@ -737,6 +737,9 @@ TorrentInfo SessionManager::torrentAt(int index) const
     qint64 uploaded = st.total_payload_upload;
     qint64 downloaded = st.total_payload_download;
     info.ratio = downloaded > 0 ? static_cast<float>(uploaded) / static_cast<float>(downloaded) : 0.0f;
+    info.totalUploaded = st.all_time_upload;
+    info.availability = st.distributed_copies < 0 ? 0.0f : st.distributed_copies;
+    info.addedTime = static_cast<qint64>(st.added_time);
 
     if (!hash.isEmpty()) {
         info.category = m_categories.value(hash);
@@ -931,6 +934,28 @@ void SessionManager::prioritizeFilePieceBoundaries(int torrentIndex, int fileInd
         if (p >= 0 && p < numPieces)
             h.set_piece_deadline(lt::piece_index_t(p), 2000);
     }
+}
+
+QVariantMap SessionManager::streamFileStats(int torrentIndex, int fileIndex) const
+{
+    QVariantMap out;
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size())) return out;
+    const auto &h = m_torrents[torrentIndex];
+    if (!h.is_valid()) return out;
+    auto ti = h.torrent_file();
+    if (!ti || fileIndex < 0 || fileIndex >= ti->num_files()) return out;
+
+    const qint64 fileSize = ti->files().file_size(lt::file_index_t(fileIndex));
+    std::vector<std::int64_t> fp;
+    h.file_progress(fp, lt::torrent_handle::piece_granularity);
+    const qint64 done = (fileIndex < static_cast<int>(fp.size())) ? fp[fileIndex] : 0;
+    const qint64 buffered = streamContiguousAvailableBytes(torrentIndex, fileIndex, 0, fileSize);
+
+    out[QStringLiteral("totalBytes")]      = fileSize;
+    out[QStringLiteral("downloadedBytes")] = done;
+    out[QStringLiteral("progress")]        = fileSize > 0 ? double(done) / double(fileSize) : 0.0;
+    out[QStringLiteral("buffered")]        = fileSize > 0 ? double(buffered) / double(fileSize) : 0.0;
+    return out;
 }
 
 // ---- streaming helpers (read by the local StreamServer) ----
