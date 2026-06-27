@@ -102,7 +102,8 @@ ParsedName NameParser::parse(const QString &rawName)
         QStringLiteral("TiNYiSO"), QStringLiteral("HOODLUM"), QStringLiteral("DARKSiDERS"),
         QStringLiteral("TENOKE"), QStringLiteral("SiMPLEX"), QStringLiteral("RAZOR1911"),
         QStringLiteral("CPY"), QStringLiteral("STEAMPUNKS"), QStringLiteral("3DM"),
-        QStringLiteral("ALI213"), QStringLiteral("PROPHET")
+        QStringLiteral("ALI213"), QStringLiteral("PROPHET"), QStringLiteral("Igruha"),
+        QStringLiteral("KaOsKrew"), QStringLiteral("Chovka"), QStringLiteral("Pioneer")
     };
 
     for (const QString &repacker : repackers) {
@@ -117,6 +118,17 @@ ParsedName NameParser::parse(const QString &rawName)
             work.remove(m.capturedStart(1), m.capturedLength(1));
             break;
         }
+    }
+
+    // Trailing uploader tag: "... By Igruha", "from SomeGroup", or a bare "By"
+    // left dangling once a known repacker above was removed. These pollute the
+    // metadata query ("The Witcher 3 Wild Hunt By Igruha" → 0 IGDB hits).
+    static const QRegularExpression byRe(
+        QStringLiteral("[.\\s\\-]+(?:by|from)(?:[.\\s\\-]+[\\w.\\-']+){0,3}\\s*$"),
+        QRegularExpression::CaseInsensitiveOption);
+    {
+        const QRegularExpressionMatch bm = byRe.match(work);
+        if (bm.hasMatch()) work.remove(bm.capturedStart(), bm.capturedLength());
     }
 
     // Game-specific tokens that aren't repacker group names. Unambiguous enough
