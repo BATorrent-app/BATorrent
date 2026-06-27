@@ -320,6 +320,37 @@ Window {
         component Sep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
         delegate: CtxItem {}
 
+        // Play leads the menu as a minimalist accent button (not a plain row) so
+        // the primary action for a video torrent stands out at a glance.
+        MenuItem {
+            id: playCtx
+            visible: session.selectedHasVideo
+            height: visible ? 36 : 0
+            implicitHeight: height
+            padding: 0
+            onTriggered: session.playSelected()
+            contentItem: Row {
+                leftPadding: 12
+                spacing: 9
+                IconImg {
+                    anchors.verticalCenter: parent.verticalCenter
+                    src: "qrc:/icons/play.svg"; tint: Theme.accent; s: 13
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, i18n.t("ctx_play"))
+                    color: Theme.accent
+                    font.pixelSize: 12.5; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                }
+            }
+            background: Rectangle {
+                radius: 6
+                color: playCtx.highlighted
+                       ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
+                       : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.07)
+            }
+        }
+
         // Common actions stay one click; the rest is grouped into submenus so
         // the menu doesn't run the whole height of the screen.
         CtxItem { text: (i18n.language, i18n.t("tb_pause")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
@@ -339,12 +370,6 @@ Window {
             onTriggered: inputPrompt.openWith(i18n.t("ctx_extract"), i18n.t("extract_password_label"),
                                               "", i18n.t("extract_password_ph"),
                                               function(pw){ session.extractSelected(pw) })
-        }
-        CtxItem {
-            visible: session.selectedHasVideo
-            height: visible ? implicitHeight : 0
-            text: (i18n.language, i18n.t("ctx_play"))
-            onTriggered: session.playSelected()
         }
         // Game rows get the same state-driven action as the Hub: Play when ready,
         // else Install. "Open folder" above stays the secondary action.
