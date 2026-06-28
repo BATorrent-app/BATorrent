@@ -348,6 +348,7 @@ public:
     // immediately via settings_pack and persists to QSettings.
     AdvancedSettings advancedSettings() const;
     void setAdvancedSettings(const AdvancedSettings &s);
+    bool applySetting(const QString &key, const QVariant &v);   // key→setter routing (shared w/ IPC)
 
     // Bandwidth scheduler
     void setAltSpeedLimits(int downKbps, int upKbps);

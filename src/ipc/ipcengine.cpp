@@ -353,6 +353,9 @@ AdvancedSettings IpcEngine::advancedSettings() const
 { QDataStream in(request(QStringLiteral("advancedSettings"))); in.setVersion(ipc::kStreamVersion); AdvancedSettings a; in >> a; return a; }
 void IpcEngine::setAdvancedSettings(const AdvancedSettings &a)
 { QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << a; call(QStringLiteral("setAdvancedSettings"), d); }
+bool IpcEngine::applySetting(const QString &key, const QVariant &v)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << key << v;
+  QDataStream in(request(QStringLiteral("applySetting"), d)); in.setVersion(ipc::kStreamVersion); bool b = false; in >> b; return b; }
 
 // ---- streaming hooks (embedded player) ----
 qint64 IpcEngine::streamFileSize(int ti, int fi) const

@@ -3420,6 +3420,90 @@ void SessionManager::setRunOnComplete(const QString &command)
 
 QString SessionManager::runOnComplete() const { return m_runOnComplete; }
 
+// Centralised key→setter routing for every session-affecting setting, shared by
+// the in-process path and the IPC engine (over the applySetting RPC) so settings
+// apply live in split mode too. Returns false for keys that aren't ours (UI-only
+// prefs the caller persists to QSettings). Mirrors QmlSettingsBridge::set().
+bool SessionManager::applySetting(const QString &key, const QVariant &v)
+{
+    if (key.startsWith(QLatin1String("adv"))) {
+        AdvancedSettings a = advancedSettings();
+        bool hit = true;
+        if (key == "advAioThreads")          a.aioThreads = v.toInt();
+        else if (key == "advHashingThreads") a.hashingThreads = v.toInt();
+        else if (key == "advFilePool")       a.filePoolSize = v.toInt();
+        else if (key == "advCheckingMem")    a.checkingMemUsage = v.toInt();
+        else if (key == "advSendBuffer")     a.sendBufferWatermark = v.toInt();
+        else if (key == "advConnLimit")      a.connectionsLimit = v.toInt();
+        else if (key == "advConnSpeed")      a.connectionSpeed = v.toInt();
+        else if (key == "advUnchokeSlots")   a.unchokeSlotsLimit = v.toInt();
+        else if (key == "advMaxUploadsTor")  a.maxUploadsPerTorrent = v.toInt();
+        else if (key == "advMaxConnsTor")    a.maxConnectionsPerTorrent = v.toInt();
+        else if (key == "advChokingAlgo")    a.chokingAlgorithm = v.toInt() == 1 ? 2 : 0;
+        else if (key == "advSeedChoking")    a.seedChokingAlgorithm = v.toInt();
+        else if (key == "advRateOverhead")   a.rateLimitIpOverhead = v.toBool();
+        else if (key == "advIgnoreLan")      a.ignoreLimitsOnLAN = v.toBool();
+        else hit = false;
+        if (hit) setAdvancedSettings(a);
+        return hit;
+    }
+    if (key == "downloadLimit")            setDownloadLimit(v.toInt());
+    else if (key == "uploadLimit")         setUploadLimit(v.toInt());
+    else if (key == "maxActiveDownloads")  setMaxActiveDownloads(v.toInt());
+    else if (key == "seedRatioLimit")      setSeedRatioLimit(v.toFloat());
+    else if (key == "stopAfterDownload")   setStopAfterDownload(v.toBool());
+    else if (key == "maxSeedDays")         setMaxSeedSeconds(qint64(v.toInt()) * 86400);
+    else if (key == "schedulerEnabled")    setSchedulerEnabled(v.toBool());
+    else if (key == "altDownloadLimit")    setAltSpeedLimits(v.toInt(), altUploadLimit());
+    else if (key == "altUploadLimit")      setAltSpeedLimits(altDownloadLimit(), v.toInt());
+    else if (key == "scheduleFromHour")    setScheduleFromHour(v.toInt());
+    else if (key == "scheduleToHour")      setScheduleToHour(v.toInt());
+    else if (key == "scheduleDays")        setScheduleDays(v.toInt());
+    else if (key == "listenPort")          setListenPort(v.toInt());
+    else if (key == "maxConnections")      setMaxConnections(v.toInt());
+    else if (key == "dhtEnabled")          setDhtEnabled(v.toBool());
+    else if (key == "utpEnabled")          setUtpEnabled(v.toBool());
+    else if (key == "encryptionMode")      setEncryptionMode(v.toInt());
+    else if (key == "anonymousMode")       setAnonymousMode(v.toBool());
+    else if (key == "forceIpv4")           setForceIpv4(v.toBool());
+    else if (key == "ptMode")              setPtMode(v.toBool());
+    else if (key == "blockLeechers")       setBlockLeecherClients(v.toBool());
+    else if (key == "outgoingInterface")   setOutgoingInterface(v.toString());
+    else if (key == "killSwitchEnabled")   setKillSwitchEnabled(v.toBool());
+    else if (key == "autoResumeOnReconnect") setAutoResumeOnReconnect(v.toBool());
+    else if (key == "proxyType")           setProxySettings(v.toInt(), proxyHost(), proxyPort(), proxyUser(), proxyPass());
+    else if (key == "proxyHost")           setProxySettings(proxyType(), v.toString(), proxyPort(), proxyUser(), proxyPass());
+    else if (key == "proxyPort")           setProxySettings(proxyType(), proxyHost(), v.toInt(), proxyUser(), proxyPass());
+    else if (key == "proxyUser")           setProxySettings(proxyType(), proxyHost(), proxyPort(), v.toString(), proxyPass());
+    else if (key == "proxyPass")           setProxySettings(proxyType(), proxyHost(), proxyPort(), proxyUser(), v.toString());
+    else if (key == "proxyLeakProof")      setProxyLeakProof(v.toBool());
+    else if (key == "ipFilterPath")        { QString p = v.toString(); if (p.isEmpty()) clearIpFilter(); else loadIpFilter(p); }
+    else if (key == "tempPath")            setTempPath(v.toString());
+    else if (key == "preallocate")         setPreallocate(v.toBool());
+    else if (key == "autoRecheck")         setAutoRecheck(v.toBool());
+    else if (key == "contentLayout")       setContentLayout(v.toInt());
+    else if (key == "torrentExportDir")    setTorrentExportDir(v.toString());
+    else if (key == "extractPasswords") {
+        QStringList pw;
+        const auto parts = v.toString().split(QRegularExpression(QStringLiteral("[;\\n]")), Qt::SkipEmptyParts);
+        for (const QString &p : parts) { QString t = p.trimmed(); if (!t.isEmpty()) pw << t; }
+        setExtractPasswords(pw);
+    }
+    else if (key == "autoExtract")         setAutoExtract(v.toBool());
+    else if (key == "autoExtractDelete")   setAutoExtractDelete(v.toBool());
+    else if (key == "runOnComplete")       setRunOnComplete(v.toString());
+    else if (key == "watchedFolder")       setWatchedFolder(v.toString());
+    else if (key == "autoMoveEnabled")     setAutoMove(v.toBool(), autoMovePath());
+    else if (key == "autoMovePath")        setAutoMove(autoMoveEnabled(), v.toString());
+    else if (key == "autoComplete") {
+        const qint64 days[] = {0, 1, 3, 7, 14, 30};
+        int i = v.toInt();
+        setAutoCompleteSeconds((i >= 0 && i < 6 ? days[i] : 0) * 86400);
+    }
+    else return false;
+    return true;
+}
+
 void SessionManager::executeOnComplete(const QString &name, const QString &savePath,
                                        const QString &hash, qint64 totalSize)
 {
