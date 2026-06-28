@@ -89,7 +89,8 @@ jobs:
             sudo apt-get install -y libcurl4-openssl-dev
             git clone --depth 1 --recurse-submodules --shallow-submodules --branch 0.15.2 https://github.com/getsentry/sentry-native.git /tmp/sn
             cmake -S /tmp/sn -B /tmp/sn/build -DCMAKE_BUILD_TYPE=Release \
-              -DSENTRY_BACKEND=crashpad -DCMAKE_INSTALL_PREFIX="$HOME/sn-prefix"
+              -DSENTRY_BACKEND=crashpad -DSENTRY_BUILD_SHARED_LIBS=OFF \
+              -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX="$HOME/sn-prefix"
             cmake --build /tmp/sn/build --parallel
             cmake --install /tmp/sn/build
             SNDIR=$(dirname "$(find "$HOME/sn-prefix" -name 'sentry-config.cmake' | head -1)")
