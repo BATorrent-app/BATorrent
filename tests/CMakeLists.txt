@@ -22,7 +22,9 @@ include(Catch)
 
 # --- Common sources (everything except main.cpp) ---
 set(COMMON_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/torrent/iengine.h        # header-only QObject — listed so AUTOMOC builds its metaobject
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
     ${CMAKE_SOURCE_DIR}/src/app/translator.cpp
     ${CMAKE_SOURCE_DIR}/src/app/statshistory.cpp
     ${CMAKE_SOURCE_DIR}/src/app/subtitleparser.cpp
