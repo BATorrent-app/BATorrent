@@ -60,6 +60,29 @@ inline QDataStream &operator>>(QDataStream &s, DetailedStats &d)
 { qint32 dht, peers, rq, wq; s >> dht >> peers >> d.totalWasted >> rq >> wq >> d.hasIncomingConnections;
   d.dhtNodes = dht; d.peersCount = peers; d.diskReadQueue = rq; d.diskWriteQueue = wq; return s; }
 
+inline QDataStream &operator<<(QDataStream &s, const AdvancedSettings &a)
+{
+    s << qint32(a.aioThreads) << qint32(a.hashingThreads) << qint32(a.filePoolSize)
+      << qint32(a.checkingMemUsage) << qint32(a.diskIOReadMode) << qint32(a.diskIOWriteMode)
+      << qint32(a.connectionsLimit) << qint32(a.connectionSpeed) << qint32(a.maxUploadsPerTorrent)
+      << qint32(a.maxConnectionsPerTorrent) << qint32(a.unchokeSlotsLimit) << qint32(a.chokingAlgorithm)
+      << qint32(a.seedChokingAlgorithm) << qint32(a.sendBufferWatermark) << qint32(a.outgoingPortMin)
+      << qint32(a.outgoingPortMax) << a.rateLimitIpOverhead << a.ignoreLimitsOnLAN;
+    return s;
+}
+inline QDataStream &operator>>(QDataStream &s, AdvancedSettings &a)
+{
+    qint32 v[16];
+    for (int i = 0; i < 16; ++i) s >> v[i];
+    s >> a.rateLimitIpOverhead >> a.ignoreLimitsOnLAN;
+    a.aioThreads = v[0]; a.hashingThreads = v[1]; a.filePoolSize = v[2]; a.checkingMemUsage = v[3];
+    a.diskIOReadMode = v[4]; a.diskIOWriteMode = v[5]; a.connectionsLimit = v[6]; a.connectionSpeed = v[7];
+    a.maxUploadsPerTorrent = v[8]; a.maxConnectionsPerTorrent = v[9]; a.unchokeSlotsLimit = v[10];
+    a.chokingAlgorithm = v[11]; a.seedChokingAlgorithm = v[12]; a.sendBufferWatermark = v[13];
+    a.outgoingPortMin = v[14]; a.outgoingPortMax = v[15];
+    return s;
+}
+
 // std::vector<T> helpers (QDataStream only ships QList/QVector operators).
 template <class T> inline void writeVec(QDataStream &s, const std::vector<T> &v)
 { s << qint32(v.size()); for (const T &e : v) s << e; }

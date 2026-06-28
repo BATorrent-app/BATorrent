@@ -82,6 +82,7 @@ void QmlSettingsBridge::applyWebUi()
     QSettings st;
     if (m_webServer) { m_webServer->stop(); m_webServer->deleteLater(); m_webServer = nullptr; }
     if (!st.value("webUiEnabled", false).toBool()) return;
+    if (!m_session) return;   // IPC engine mode: no in-process session to serve
     m_webServer = new WebServer(m_session, this);
     const QString user = st.value("webUiUser", "admin").toString();
     const QString passHash = st.value("webUiPasswordHash").toString();   // hash, not a secret → QSettings (no keychain prompt at boot)
@@ -146,6 +147,9 @@ QString QmlSettingsBridge::webUiPassword() const
 
 QVariant QmlSettingsBridge::get(const QString &key) const
 {
+    // IPC engine mode: no in-process session — read the persisted value from the
+    // shared QSettings store (which is what the engine child applies from).
+    if (!m_session) return QSettings().value(key);
     SessionManager *s = m_session;
     // speed
     if (key == "downloadLimit")       return s->downloadLimit();
@@ -310,6 +314,7 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
         emit changed(); return;
     }
     if (key.startsWith(QStringLiteral("adv"))) {
+        if (!m_session) { QSettings().setValue(key, v); emit changed(); return; }
         auto a = m_session->advancedSettings();
         bool hit = true;
         if (key == "advAioThreads")          a.aioThreads = v.toInt();
@@ -337,12 +342,15 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     if (key == "useTor") {   // one-toggle Tor preset: route through 127.0.0.1:9050 SOCKS5
         QSettings st; st.setValue("useTor", v.toBool());
         if (v.toBool()) {
-            m_session->setProxySettings(1, QStringLiteral("127.0.0.1"), 9050, QString(), QString());
+            if (m_session) m_session->setProxySettings(1, QStringLiteral("127.0.0.1"), 9050, QString(), QString());
             st.setValue("proxyType", 1); st.setValue("proxyHost", "127.0.0.1"); st.setValue("proxyPort", 9050);
         }
         emit changed(); return;
     }
 
+    // IPC engine mode: no in-process session to live-apply — persist to the
+    // shared QSettings store; the engine child applies it on its next start.
+    if (!m_session) { QSettings().setValue(key, v); emit changed(); return; }
     SessionManager *s = m_session;
     if (key == "downloadLimit")            s->setDownloadLimit(v.toInt());
     else if (key == "uploadLimit")         s->setUploadLimit(v.toInt());

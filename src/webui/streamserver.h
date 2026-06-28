@@ -7,7 +7,7 @@
 
 #include <QObject>
 
-class SessionManager;
+class IEngine;
 class QTcpServer;
 
 // Local HTTP server (127.0.0.1, ephemeral port) that streams a torrent file
@@ -18,7 +18,7 @@ class StreamServer : public QObject
 {
     Q_OBJECT
 public:
-    explicit StreamServer(SessionManager *session, QObject *parent = nullptr);
+    explicit StreamServer(IEngine *session, QObject *parent = nullptr);
     ~StreamServer();
 
     bool start();              // listen on 127.0.0.1 with an ephemeral port
@@ -29,7 +29,7 @@ public:
 private:
     void onNewConnection();
 
-    SessionManager *m_session;
+    IEngine *m_session;
     QTcpServer *m_server = nullptr;
     quint16 m_port = 0;
 };

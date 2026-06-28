@@ -102,6 +102,23 @@ public:
     virtual void addTorrentWithPriorities(const QString &filePath, const QString &savePath, const std::vector<int> &filePriorities) = 0;
     virtual void addMagnet(const QString &uri, const QString &savePath, const QString &coverHint = QString(), int coverType = -1) = 0;
 
+    // --- proxy (Settings) ---
+    virtual void setProxySettings(int type, const QString &host, int port, const QString &user, const QString &pass) = 0;
+    virtual int proxyType() const = 0;
+    virtual QString proxyHost() const = 0;
+    virtual int proxyPort() const = 0;
+    virtual QString proxyUser() const = 0;
+    virtual QString proxyPass() const = 0;
+
+    // --- advanced libtorrent tuning (Settings) ---
+    virtual AdvancedSettings advancedSettings() const = 0;
+    virtual void setAdvancedSettings(const AdvancedSettings &s) = 0;
+
+    // --- streaming server hooks (embedded player) ---
+    virtual qint64 streamFileSize(int torrentIndex, int fileIndex) const = 0;
+    virtual qint64 streamContiguousAvailableBytes(int torrentIndex, int fileIndex, qint64 fromByte, qint64 cap = 8 * 1024 * 1024) const = 0;
+    virtual void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte, int windowPieces = 24) = 0;
+
 signals:
     void torrentsUpdated();
     void torrentFinished(const QString &name, const QString &infoHash);

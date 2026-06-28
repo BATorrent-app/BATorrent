@@ -72,7 +72,7 @@
 #include <memory>
 #include <sstream>
 
-QmlSearchBridge::QmlSearchBridge(SessionManager *session, QObject *parent)
+QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
     : QObject(parent), m_session(session), m_mode("torrent")
 {
     auto &mgr = AddonManager::instance();

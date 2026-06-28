@@ -340,7 +340,7 @@ QStringList QmlPairingBridge::qrRowsForUrl(const QString &url) const
 
 // ===================== QmlSubtitleBridge =====================
 
-QmlSubtitleBridge::QmlSubtitleBridge(SessionManager *session, QObject *parent)
+QmlSubtitleBridge::QmlSubtitleBridge(IEngine *session, QObject *parent)
     : QObject(parent), m_session(session), m_search(new SubtitleSearch(this))
 {
     connect(m_search, &SubtitleSearch::resultsChanged, this, &QmlSubtitleBridge::resultsChanged);
@@ -563,7 +563,7 @@ void QmlNotificationBridge::onSuspiciousFilesDetected(const QString &name, const
 
 // --- DiscordRpcBridge ---
 
-DiscordRpcBridge::DiscordRpcBridge(SessionManager *session, QObject *parent)
+DiscordRpcBridge::DiscordRpcBridge(IEngine *session, QObject *parent)
     : QObject(parent), m_session(session)
 {
     m_rpc = new DiscordRPC(this);

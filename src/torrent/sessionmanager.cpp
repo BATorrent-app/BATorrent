@@ -3330,7 +3330,7 @@ int SessionManager::ipFilterCount() const { return m_ipFilterCount; }
 
 // --- Bandwidth Scheduler ---
 
-SessionManager::AdvancedSettings SessionManager::advancedSettings() const
+AdvancedSettings SessionManager::advancedSettings() const
 {
     QSettings s("BATorrent", "BATorrent");
     AdvancedSettings a;

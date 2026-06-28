@@ -19,6 +19,7 @@
 #include <QProcess>
 #include <QByteArray>
 #include <QHash>
+#include <QElapsedTimer>
 
 class QLocalSocket;
 
@@ -107,6 +108,17 @@ public:
     void addTracker(int index, const QString &url) override;
     void addTorrentWithPriorities(const QString &filePath, const QString &savePath, const std::vector<int> &filePriorities) override;
     void addMagnet(const QString &uri, const QString &savePath, const QString &coverHint = QString(), int coverType = -1) override;
+    void setProxySettings(int type, const QString &host, int port, const QString &user, const QString &pass) override;
+    int proxyType() const override;
+    QString proxyHost() const override;
+    int proxyPort() const override;
+    QString proxyUser() const override;
+    QString proxyPass() const override;
+    AdvancedSettings advancedSettings() const override;
+    void setAdvancedSettings(const AdvancedSettings &s) override;
+    qint64 streamFileSize(int torrentIndex, int fileIndex) const override;
+    qint64 streamContiguousAvailableBytes(int torrentIndex, int fileIndex, qint64 fromByte, qint64 cap = 8 * 1024 * 1024) const override;
+    void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte, int windowPieces = 24) override;
 
 signals:
     void engineStatusChanged(bool up);   // drives the UI "engine restarting" banner
@@ -135,6 +147,11 @@ private:
     mutable EngineSnapshot m_snap;                  // latest pushed state
     mutable bool m_gotSnapshot = false;
     bool m_shuttingDown = false;
+
+    // Crash-loop backoff (see onProcFinished).
+    static constexpr int kMaxRespawns = 5;
+    int m_respawnCount = 0;
+    QElapsedTimer m_respawnWindow;
 };
 
 #endif

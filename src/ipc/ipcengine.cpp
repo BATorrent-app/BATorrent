@@ -6,6 +6,7 @@
 #include <QLocalSocket>
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QTimer>
 #include <QDataStream>
 #include <QDebug>
 
@@ -18,7 +19,13 @@ IpcEngine::IpcEngine(const QString &exePath, QObject *parent)
 IpcEngine::~IpcEngine()
 {
     m_shuttingDown = true;
-    if (m_proc) { m_proc->terminate(); m_proc->waitForFinished(2000); }
+    // Flush resume data before tearing the child down, so a clean UI exit saves
+    // state just like the in-process path's SessionManager destructor does.
+    if (connected()) { call(QStringLiteral("saveResumeData")); m_sock->flush(); }
+    if (m_proc) {
+        m_proc->terminate();
+        if (!m_proc->waitForFinished(3000)) m_proc->kill();
+    }
 }
 
 void IpcEngine::spawnEngine()
@@ -66,12 +73,26 @@ bool IpcEngine::connected() const
 void IpcEngine::onProcFinished(int exitCode, QProcess::ExitStatus status)
 {
     if (m_shuttingDown) return;
-    qWarning() << "[ipc] engine exited code" << exitCode << "status" << status << "— respawning";
     emit engineStatusChanged(false);
     if (m_sock) m_sock->abort();
-    m_proc->deleteLater();
+    if (m_proc) { m_proc->deleteLater(); m_proc = nullptr; }
     m_gotSnapshot = false;
-    start();   // respawn + reconnect; torrents reload from resume data engine-side
+
+    // Crash-loop guard: if the engine keeps dying right after launch, stop
+    // respawning so we don't pin a core retrying a broken binary forever.
+    if (!m_respawnWindow.isValid() || m_respawnWindow.elapsed() > 30000) {
+        m_respawnWindow.restart();
+        m_respawnCount = 0;
+    }
+    if (++m_respawnCount > kMaxRespawns) {
+        qCritical() << "[ipc] engine exited code" << exitCode << "status" << status
+                    << "—" << m_respawnCount << "crashes in <30s, giving up (UI stays up)";
+        return;
+    }
+    qWarning() << "[ipc] engine exited code" << exitCode << "status" << status
+               << "— respawn" << m_respawnCount << "of" << kMaxRespawns;
+    // Brief backoff before respawn (torrents reload from resume data engine-side).
+    QTimer::singleShot(500, this, [this] { if (!m_shuttingDown) start(); });
 }
 
 void IpcEngine::onSocketReadyRead()
@@ -127,6 +148,9 @@ void IpcEngine::dispatchEvent(const QString &name, const QByteArray &args)
 QByteArray IpcEngine::request(const QString &method, const QByteArray &args) const
 {
     if (!connected()) return {};
+    // Prune orphaned replies (a reply that landed after its request timed out)
+    // so the map can't grow unbounded over a long session.
+    if (m_replies.size() > 64) m_replies.clear();
     const quint32 id = m_nextId++;
     QByteArray payload;
     QDataStream out(&payload, QIODevice::WriteOnly);
@@ -294,3 +318,33 @@ QStringList IpcEngine::categories() const
 { QDataStream in(request(QStringLiteral("categories"))); in.setVersion(ipc::kStreamVersion); QStringList t; in >> t; return t; }
 QMap<QString, QString> IpcEngine::allCategorySavePaths() const
 { QDataStream in(request(QStringLiteral("allCategorySavePaths"))); in.setVersion(ipc::kStreamVersion); QMap<QString, QString> m; in >> m; return m; }
+
+// ---- proxy / advanced (Settings) ----
+void IpcEngine::setProxySettings(int type, const QString &host, int port, const QString &user, const QString &pass)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+  o << qint32(type) << host << qint32(port) << user << pass; call(QStringLiteral("setProxySettings"), d); }
+int IpcEngine::proxyType() const
+{ QDataStream in(request(QStringLiteral("proxyType"))); in.setVersion(ipc::kStreamVersion); qint32 v = 0; in >> v; return v; }
+QString IpcEngine::proxyHost() const
+{ QDataStream in(request(QStringLiteral("proxyHost"))); in.setVersion(ipc::kStreamVersion); QString s; in >> s; return s; }
+int IpcEngine::proxyPort() const
+{ QDataStream in(request(QStringLiteral("proxyPort"))); in.setVersion(ipc::kStreamVersion); qint32 v = 0; in >> v; return v; }
+QString IpcEngine::proxyUser() const
+{ QDataStream in(request(QStringLiteral("proxyUser"))); in.setVersion(ipc::kStreamVersion); QString s; in >> s; return s; }
+QString IpcEngine::proxyPass() const
+{ QDataStream in(request(QStringLiteral("proxyPass"))); in.setVersion(ipc::kStreamVersion); QString s; in >> s; return s; }
+AdvancedSettings IpcEngine::advancedSettings() const
+{ QDataStream in(request(QStringLiteral("advancedSettings"))); in.setVersion(ipc::kStreamVersion); AdvancedSettings a; in >> a; return a; }
+void IpcEngine::setAdvancedSettings(const AdvancedSettings &a)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << a; call(QStringLiteral("setAdvancedSettings"), d); }
+
+// ---- streaming hooks (embedded player) ----
+qint64 IpcEngine::streamFileSize(int ti, int fi) const
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << qint32(ti) << qint32(fi);
+  QDataStream in(request(QStringLiteral("streamFileSize"), d)); in.setVersion(ipc::kStreamVersion); qint64 v = 0; in >> v; return v; }
+qint64 IpcEngine::streamContiguousAvailableBytes(int ti, int fi, qint64 fromByte, qint64 cap) const
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << qint32(ti) << qint32(fi) << fromByte << cap;
+  QDataStream in(request(QStringLiteral("streamContiguousAvailableBytes"), d)); in.setVersion(ipc::kStreamVersion); qint64 v = 0; in >> v; return v; }
+void IpcEngine::streamSetDeadlineWindow(int ti, int fi, qint64 startByte, int windowPieces)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << qint32(ti) << qint32(fi) << startByte << qint32(windowPieces);
+  call(QStringLiteral("streamSetDeadlineWindow"), d); }

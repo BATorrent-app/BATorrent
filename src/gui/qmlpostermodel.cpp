@@ -71,7 +71,7 @@
 #include <memory>
 #include <sstream>
 
-QmlPosterModel::QmlPosterModel(SessionManager *session, MetadataResolver *resolver,
+QmlPosterModel::QmlPosterModel(IEngine *session, MetadataResolver *resolver,
                                QObject *parent)
     : QAbstractListModel(parent), m_session(session), m_resolver(resolver)
 {

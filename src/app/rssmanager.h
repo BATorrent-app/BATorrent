@@ -11,7 +11,7 @@
 #include <QTimer>
 
 class QNetworkAccessManager;
-class SessionManager;
+class IEngine;
 
 struct RssFeed {
     QString url;
@@ -39,7 +39,7 @@ class RssManager : public QObject
 public:
     static RssManager &instance();
 
-    void setSession(SessionManager *session, const QString &savePath);
+    void setSession(IEngine *session, const QString &savePath);
 
     // Feed management
     void addFeed(const QString &url);
@@ -73,7 +73,7 @@ private:
     void setupTimers();
 
     QNetworkAccessManager *m_net;
-    SessionManager *m_session = nullptr;
+    IEngine *m_session = nullptr;
     QString m_defaultSavePath;
     QList<RssFeed> m_feeds;
     QMap<int, QList<RssItem>> m_items; // feedIndex -> items

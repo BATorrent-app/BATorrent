@@ -73,4 +73,27 @@ struct DetailedStats {
     bool hasIncomingConnections = false;
 };
 
+// Advanced libtorrent tuning — exposed in Settings → Advanced. Lives here (not
+// nested in SessionManager) so IEngine and the IPC layer can name it.
+struct AdvancedSettings {
+    int aioThreads = 10;
+    int hashingThreads = 2;
+    int filePoolSize = 100;
+    int checkingMemUsage = 512;   // × 16KB = 8MB default
+    int diskIOReadMode = 0;       // 0=EnableOSCache, 1=DisableOSCache
+    int diskIOWriteMode = 0;      // 0=EnableOSCache, 1=DisableOSCache, 2=WriteThrough
+    int connectionsLimit = 500;
+    int connectionSpeed = 30;
+    int maxUploadsPerTorrent = 4;
+    int maxConnectionsPerTorrent = 100;
+    int unchokeSlotsLimit = 20;
+    int chokingAlgorithm = 0;     // 0=FixedSlots, 1=RateBased
+    int seedChokingAlgorithm = 0; // 0=RoundRobin, 1=FastestUpload, 2=AntiLeech
+    int sendBufferWatermark = 500; // KB
+    int outgoingPortMin = 0;
+    int outgoingPortMax = 0;
+    bool rateLimitIpOverhead = false;
+    bool ignoreLimitsOnLAN = true;
+};
+
 #endif

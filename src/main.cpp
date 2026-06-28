@@ -284,25 +284,49 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle("Basic");
     {
 
-        SessionManager session;
+        // Engine selection (internal/ENGINE_SPLIT_PLAN.md). Opt-in: when
+        // engineMode == "ipc" the libtorrent session runs in a separate child
+        // process so an engine crash can't take the UI down; otherwise it runs
+        // in-process as before. The UI talks only to IEngine* either way.
+        SessionManager *localSession = nullptr;   // non-null only in in-process mode
+        IpcEngine *ipcEngine = nullptr;
+        {
+            const bool wantIpc = QSettings().value(QStringLiteral("engineMode")).toString()
+                                 == QLatin1String("ipc");
+            if (wantIpc) {
+                ipcEngine = new IpcEngine(QCoreApplication::applicationFilePath(), &app);
+                if (!ipcEngine->start()) {
+                    qWarning() << "[engine] IPC engine failed to start — falling back to in-process";
+                    ipcEngine->deleteLater();
+                    ipcEngine = nullptr;
+                } else {
+                    qInfo() << "[engine] running split (engine in child process)";
+                }
+            }
+            if (!ipcEngine) localSession = new SessionManager(&app);
+        }
+        IEngine *eng = localSession ? static_cast<IEngine *>(localSession)
+                                    : static_cast<IEngine *>(ipcEngine);
 
         auto *resolver = new MetadataResolver(&app);
-        auto *posterModel = new QmlPosterModel(&session, resolver, &app);
+        auto *posterModel = new QmlPosterModel(eng, resolver, &app);
         auto *themeBridge = new QmlThemeBridge(&app);
-        auto *sessionBridge = new QmlSessionBridge(&session, resolver, &app);
+        auto *sessionBridge = new QmlSessionBridge(eng, resolver, &app);
         // Local stream server for the embedded player (4.0 step ④).
-        auto *streamServer = new StreamServer(&session, &app);
+        auto *streamServer = new StreamServer(eng, &app);
         if (streamServer->start()) {
             sessionBridge->setStreamPort(streamServer->port());
             qInfo() << "[stream] listening on 127.0.0.1:" << streamServer->port();
         } else {
             qWarning() << "[stream] failed to start local stream server";
         }
-        RssManager::instance().setSession(&session, sessionBridge->defaultSavePath());
+        RssManager::instance().setSession(eng, sessionBridge->defaultSavePath());
         auto *rssBridge = new QmlRssBridge(&app);
-        auto *settingsBridge = new QmlSettingsBridge(&session, &app);
+        // Settings/WebUI stay on the in-process session (config control plane);
+        // null in IPC mode, where the bridge falls back to QSettings.
+        auto *settingsBridge = new QmlSettingsBridge(localSession, &app);
         auto *addonBridge = new QmlAddonBridge(&app);
-        auto *searchBridge = new QmlSearchBridge(&session, &app);
+        auto *searchBridge = new QmlSearchBridge(eng, &app);
         searchBridge->setResolver(resolver);
         auto *discoveryService = new DiscoveryService(&app);
         searchBridge->setDiscovery(discoveryService);
@@ -323,34 +347,47 @@ int main(int argc, char *argv[])
         }
 #endif
         auto *logBridge = new QmlLogBridge(&app);
-        auto *subtitleBridge = new QmlSubtitleBridge(&session, &app);
+        auto *subtitleBridge = new QmlSubtitleBridge(eng, &app);
         auto *pairingBridge = new QmlPairingBridge(&app);
         auto *notificationBridge = new QmlNotificationBridge(&app);
-        QObject::connect(&session, &IEngine::torrentFinished,
+        QObject::connect(eng, &IEngine::torrentFinished,
                          notificationBridge, &QmlNotificationBridge::onTorrentFinished);
-        QObject::connect(&session, &SessionManager::torrentError,
-                         notificationBridge, &QmlNotificationBridge::onTorrentError);
-        QObject::connect(&session, &SessionManager::killSwitchTriggered,
-                         notificationBridge, &QmlNotificationBridge::onKillSwitchTriggered);
-        QObject::connect(&session, &SessionManager::suspiciousFilesDetected,
-                         notificationBridge, &QmlNotificationBridge::onSuspiciousFilesDetected);
-        QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
-                         notificationBridge, &QmlNotificationBridge::onRssAutoDownloaded);
         // Telegram webhook notifications (same event surfaces as the toasts above).
         auto *telegram = new TelegramNotifier(&app);
-        QObject::connect(&session, &IEngine::torrentFinished,
+        QObject::connect(eng, &IEngine::torrentFinished,
                          telegram, &TelegramNotifier::onTorrentFinished);
-        QObject::connect(&session, &SessionManager::killSwitchTriggered,
-                         telegram, &TelegramNotifier::onKillSwitchTriggered);
-        QObject::connect(&session, &SessionManager::torrentError,
-                         telegram, &TelegramNotifier::onTorrentError);
+        // Engine-only alert signals (error/kill-switch/suspicious) live on
+        // SessionManager; in IPC mode they aren't proxied yet, so wire them only
+        // in-process. The IPC banner below covers the engine-down case instead.
+        if (localSession) {
+            QObject::connect(localSession, &SessionManager::torrentError,
+                             notificationBridge, &QmlNotificationBridge::onTorrentError);
+            QObject::connect(localSession, &SessionManager::killSwitchTriggered,
+                             notificationBridge, &QmlNotificationBridge::onKillSwitchTriggered);
+            QObject::connect(localSession, &SessionManager::suspiciousFilesDetected,
+                             notificationBridge, &QmlNotificationBridge::onSuspiciousFilesDetected);
+            QObject::connect(localSession, &SessionManager::killSwitchTriggered,
+                             telegram, &TelegramNotifier::onKillSwitchTriggered);
+            QObject::connect(localSession, &SessionManager::torrentError,
+                             telegram, &TelegramNotifier::onTorrentError);
+        }
+        // IPC supervision: surface engine respawns to the user as a toast.
+        if (ipcEngine) {
+            QObject::connect(ipcEngine, &IpcEngine::engineStatusChanged, notificationBridge,
+                             [notificationBridge](bool up) {
+                notificationBridge->onTorrentError(up ? QStringLiteral("Torrent engine reconnected")
+                                                      : QStringLiteral("Torrent engine restarting…"));
+            });
+        }
+        QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
+                         notificationBridge, &QmlNotificationBridge::onRssAutoDownloaded);
         QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
                          telegram, &TelegramNotifier::onRssAutoDownloaded);
         settingsBridge->setTelegramNotifier(telegram);
 
         // Media-server library refresh: ping Plex/Jellyfin when a download finishes.
         auto *mediaNam = new QNetworkAccessManager(&app);
-        QObject::connect(&session, &IEngine::torrentFinished, &app, [mediaNam](const QString &, const QString &) {
+        QObject::connect(eng, &IEngine::torrentFinished, &app, [mediaNam](const QString &, const QString &) {
             QSettings st;
             if (st.value("plexEnabled", false).toBool()) {
                 const QString url = st.value("plexUrl").toString();
@@ -374,26 +411,30 @@ int main(int argc, char *argv[])
             }
         });
 
-        auto *discordBridge = new DiscordRpcBridge(&session, &app);
-        QObject::connect(&session, &IEngine::torrentsUpdated,
+        auto *discordBridge = new DiscordRpcBridge(eng, &app);
+        QObject::connect(eng, &IEngine::torrentsUpdated,
                          discordBridge, &DiscordRpcBridge::refresh);
 #ifndef BAT_STORE_BUILD
         auto *updaterBridge = new QmlUpdaterBridge(&app);
 #endif
-        QObject::connect(&session, &IEngine::torrentsUpdated,
+        QObject::connect(eng, &IEngine::torrentsUpdated,
                          sessionBridge, &QmlSessionBridge::emitStats);
         QObject::connect(resolver, &MetadataResolver::metadataReady,
                          sessionBridge, &QmlSessionBridge::emitStats);
 
-        QObject::connect(&session, &IEngine::torrentsUpdated,
+        QObject::connect(eng, &IEngine::torrentsUpdated,
                          posterModel, &QmlPosterModel::refresh);
         // Index-aware removal — beginRemoveRows for the exact row instead of a
         // full model reset, so the grid doesn't flash and jump to the top.
-        QObject::connect(&session, &SessionManager::torrentRemoved,
-                         posterModel, &QmlPosterModel::removeRow);
-        // Keep the bridge's stored selection indices valid across a removal.
-        QObject::connect(&session, &SessionManager::torrentRemoved,
-                         sessionBridge, &QmlSessionBridge::onTorrentRemoved);
+        // torrentRemoved/torrentAdded are SessionManager-only signals; in IPC
+        // mode the snapshot's torrentsUpdated drives a full refresh instead.
+        if (localSession) {
+            QObject::connect(localSession, &SessionManager::torrentRemoved,
+                             posterModel, &QmlPosterModel::removeRow);
+            // Keep the bridge's stored selection indices valid across a removal.
+            QObject::connect(localSession, &SessionManager::torrentRemoved,
+                             sessionBridge, &QmlSessionBridge::onTorrentRemoved);
+        }
         // A resolved poster only touches one row's poster/title roles.
         QObject::connect(resolver, &MetadataResolver::metadataReady,
                          posterModel, &QmlPosterModel::posterResolved);
@@ -402,40 +443,46 @@ int main(int argc, char *argv[])
                          posterModel, &QmlPosterModel::refreshFull);
         QObject::connect(sessionBridge, &QmlSessionBridge::queueMoved,
                          posterModel, &QmlPosterModel::moveRow);
-        QObject::connect(&session, &SessionManager::torrentAdded,
-                         &app, [&session, resolver, notificationBridge](int index) {
-            const auto info = session.torrentAt(index);
-            QString hash = session.torrentHashAt(index);
-            if (!hash.isEmpty()) {
-                // A catalog add carries a clean title + known type (game catalog →
-                // Game, Stremio → Movie/Series). Query the API directly with it
-                // instead of guessing from the messy torrent/metadata name, which
-                // mismatched (e.g. GoW Ragnarök → wrong game).
-                const auto hint = session.takeCoverHint(hash);
-                if (!hint.title.isEmpty() && hint.type >= 0)
-                    resolver->resolveManual(hash, hint.title, static_cast<ContentType>(hint.type));
-                else
-                    resolver->resolve(hash, info.name, session.torrentFileNames(index));
-            }
-            // Toast on user-initiated adds. Resume-loaded torrents don't reach
-            // here: loadResumeData() runs in the SessionManager ctor, before
-            // this connection exists.
-            notificationBridge->onTorrentAdded(
-                info.totalSize > 0 ? info.name + " · " + formatSize(info.totalSize) : info.name);
-            // auto-add the public tracker list to each new torrent (if enabled)
-            if (AddonManager::instance().autoTrackersEnabled())
-                for (const QString &tr : AddonManager::instance().trackerList())
-                    session.addTracker(index, tr);
-        });
+        // The per-add cover-hint resolve + add-toast + auto-trackers hang off
+        // SessionManager's torrentAdded(int) and its takeCoverHint(); in IPC mode
+        // these don't fire (the startup batch-resolve below still covers existing
+        // torrents, and the snapshot drives the list). In-process only.
+        if (localSession) {
+            QObject::connect(localSession, &SessionManager::torrentAdded,
+                             &app, [localSession, resolver, notificationBridge](int index) {
+                const auto info = localSession->torrentAt(index);
+                QString hash = localSession->torrentHashAt(index);
+                if (!hash.isEmpty()) {
+                    // A catalog add carries a clean title + known type (game catalog →
+                    // Game, Stremio → Movie/Series). Query the API directly with it
+                    // instead of guessing from the messy torrent/metadata name, which
+                    // mismatched (e.g. GoW Ragnarök → wrong game).
+                    const auto hint = localSession->takeCoverHint(hash);
+                    if (!hint.title.isEmpty() && hint.type >= 0)
+                        resolver->resolveManual(hash, hint.title, static_cast<ContentType>(hint.type));
+                    else
+                        resolver->resolve(hash, info.name, localSession->torrentFileNames(index));
+                }
+                // Toast on user-initiated adds. Resume-loaded torrents don't reach
+                // here: loadResumeData() runs in the SessionManager ctor, before
+                // this connection exists.
+                notificationBridge->onTorrentAdded(
+                    info.totalSize > 0 ? info.name + " · " + formatSize(info.totalSize) : info.name);
+                // auto-add the public tracker list to each new torrent (if enabled)
+                if (AddonManager::instance().autoTrackersEnabled())
+                    for (const QString &tr : AddonManager::instance().trackerList())
+                        localSession->addTracker(index, tr);
+            });
+        }
         AddonManager::instance().fetchTrackerList();   // refresh the list on startup
 
         {
             QStringList hashes, names;
-            for (int i = 0; i < session.torrentCount(); ++i) {
-                QString h = session.torrentHashAt(i);
+            for (int i = 0; i < eng->torrentCount(); ++i) {
+                QString h = eng->torrentHashAt(i);
                 if (!h.isEmpty() && !resolver->hasCached(h)) {
                     hashes << h;
-                    names << session.torrentAt(i).name;
+                    names << eng->torrentAt(i).name;
                 }
             }
             if (!hashes.isEmpty())

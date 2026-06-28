@@ -54,7 +54,7 @@ public:
         SizeBytesRole
     };
 
-    explicit QmlPosterModel(SessionManager *session, MetadataResolver *resolver,
+    explicit QmlPosterModel(IEngine *session, MetadataResolver *resolver,
                             QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -71,7 +71,7 @@ public slots:
 private:
     void syncCount();                       // insert/remove rows to match session
     void emitRows(bool fullRoles);          // dataChanged over the whole list
-    SessionManager *m_session;
+    IEngine *m_session;
     MetadataResolver *m_resolver;
     int m_lastCount = 0;
 };
@@ -642,7 +642,7 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
 public:
-    explicit QmlSearchBridge(SessionManager *session, QObject *parent = nullptr);
+    explicit QmlSearchBridge(IEngine *session, QObject *parent = nullptr);
 
     QVariantList sources() const;
     QVariantList categories() const;
@@ -732,7 +732,7 @@ private:
     QString m_titleQuery;               // the free-text query behind the current titles
     QString m_activeQuery;              // effective query of the current flat list (for relevance)
 
-    SessionManager *m_session;
+    IEngine *m_session;
     QString m_mode;
     QString m_savePath;
     QString m_lastQuery;
@@ -833,7 +833,7 @@ class QmlSubtitleBridge : public QObject
     Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
     Q_PROPERTY(QVariantList results READ results NOTIFY resultsChanged)
 public:
-    explicit QmlSubtitleBridge(SessionManager *session, QObject *parent = nullptr);
+    explicit QmlSubtitleBridge(IEngine *session, QObject *parent = nullptr);
 
     bool searching() const { return m_searching; }
     QVariantList results() const;
@@ -848,7 +848,7 @@ signals:
     void searchError(const QString &message);
 
 private:
-    SessionManager *m_session;
+    IEngine *m_session;
     SubtitleSearch *m_search;
     QString m_targetDir;
     QString m_baseName;
@@ -900,6 +900,10 @@ class QmlSettingsBridge : public QObject
 {
     Q_OBJECT
 public:
+    // Settings/WebUI are the config control plane (settings_pack wrappers, not
+    // the crash-prone torrent engine) so they stay bound to SessionManager. In
+    // the IPC engine mode this is null; get/set then fall back to QSettings (the
+    // shared store the engine child reads) and the WebUI server is disabled.
     explicit QmlSettingsBridge(SessionManager *session, QObject *parent = nullptr);
     Q_INVOKABLE QVariant get(const QString &key) const;
     Q_INVOKABLE void set(const QString &key, const QVariant &v);
@@ -992,13 +996,13 @@ class DiscordRpcBridge : public QObject
 {
     Q_OBJECT
 public:
-    explicit DiscordRpcBridge(SessionManager *session, QObject *parent = nullptr);
+    explicit DiscordRpcBridge(IEngine *session, QObject *parent = nullptr);
 
 public slots:
     void refresh();
 
 private:
-    SessionManager *m_session;
+    IEngine *m_session;
     DiscordRPC *m_rpc = nullptr;
     QTimer m_timer;
     qint64 m_sessionStart = 0;

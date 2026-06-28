@@ -29,7 +29,7 @@ RssManager::RssManager()
     setupTimers();
 }
 
-void RssManager::setSession(SessionManager *session, const QString &savePath)
+void RssManager::setSession(IEngine *session, const QString &savePath)
 {
     m_session = session;
     m_defaultSavePath = savePath;

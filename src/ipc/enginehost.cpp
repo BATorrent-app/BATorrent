@@ -267,6 +267,36 @@ QByteArray EngineHost::dispatch(const QString &method, const QByteArray &args)
         out << m_session->categories();
     } else if (method == QLatin1String("allCategorySavePaths")) {
         out << m_session->allCategorySavePaths();
+
+    // ---- proxy / advanced ----
+    } else if (method == QLatin1String("setProxySettings")) {
+        qint32 type, port; QString host, user, pass;
+        in >> type >> host >> port >> user >> pass;
+        m_session->setProxySettings(type, host, port, user, pass);
+    } else if (method == QLatin1String("proxyType")) {
+        out << qint32(m_session->proxyType());
+    } else if (method == QLatin1String("proxyHost")) {
+        out << m_session->proxyHost();
+    } else if (method == QLatin1String("proxyPort")) {
+        out << qint32(m_session->proxyPort());
+    } else if (method == QLatin1String("proxyUser")) {
+        out << m_session->proxyUser();
+    } else if (method == QLatin1String("proxyPass")) {
+        out << m_session->proxyPass();
+    } else if (method == QLatin1String("advancedSettings")) {
+        out << m_session->advancedSettings();
+    } else if (method == QLatin1String("setAdvancedSettings")) {
+        AdvancedSettings a; in >> a; m_session->setAdvancedSettings(a);
+
+    // ---- streaming hooks ----
+    } else if (method == QLatin1String("streamFileSize")) {
+        qint32 ti, fi; in >> ti >> fi; out << qint64(m_session->streamFileSize(ti, fi));
+    } else if (method == QLatin1String("streamContiguousAvailableBytes")) {
+        qint32 ti, fi; qint64 from, cap; in >> ti >> fi >> from >> cap;
+        out << qint64(m_session->streamContiguousAvailableBytes(ti, fi, from, cap));
+    } else if (method == QLatin1String("streamSetDeadlineWindow")) {
+        qint32 ti, fi, win; qint64 start; in >> ti >> fi >> start >> win;
+        m_session->streamSetDeadlineWindow(ti, fi, start, win);
     } else {
         qWarning() << "[engine] unhandled method" << method;
     }

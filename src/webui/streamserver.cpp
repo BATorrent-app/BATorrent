@@ -42,7 +42,7 @@ QByteArray contentType(const QString &path)
 class StreamConnection : public QObject
 {
 public:
-    StreamConnection(QTcpSocket *sock, SessionManager *session)
+    StreamConnection(QTcpSocket *sock, IEngine *session)
         : QObject(sock), m_sock(sock), m_session(session)
     {
         connect(m_sock, &QTcpSocket::readyRead, this, &StreamConnection::onReadyRead);
@@ -204,7 +204,7 @@ private:
     }
 
     QTcpSocket *m_sock;
-    SessionManager *m_session;
+    IEngine *m_session;
     QByteArray m_req;
     bool m_started = false;
     QString m_hash;
@@ -217,7 +217,7 @@ private:
 
 } // namespace
 
-StreamServer::StreamServer(SessionManager *session, QObject *parent)
+StreamServer::StreamServer(IEngine *session, QObject *parent)
     : QObject(parent), m_session(session) {}
 
 StreamServer::~StreamServer() { stop(); }
