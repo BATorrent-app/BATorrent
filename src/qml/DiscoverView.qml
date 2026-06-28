@@ -210,6 +210,9 @@ Rectangle {
                                 : ""
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true; cache: true
+                            // decode small — it's blurred anyway, and blurring a full-res
+                            // backdrop every frame is what made scroll crawl on Windows/D3D
+                            sourceSize: Qt.size(640, 360)
                             visible: false
                         }
                         MultiEffect {
@@ -217,7 +220,7 @@ Rectangle {
                             source: heroBg
                             blurEnabled: true
                             blur: 1.0
-                            blurMax: 48
+                            blurMax: 32
                             brightness: -0.25
                             saturation: -0.1
                         }
@@ -248,6 +251,7 @@ Rectangle {
                                     source: page.heroItem ? (page.heroItem.poster || "") : ""
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true; cache: true
+                                    sourceSize: Qt.size(360, 540)
                                 }
                             }
                             Rectangle { id: hpMask; anchors.fill: parent; radius: 12; color: "white"; visible: false; layer.enabled: true }
