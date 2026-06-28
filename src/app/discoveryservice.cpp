@@ -379,6 +379,48 @@ void DiscoveryService::fetchTrailer(int tmdbId, const QString &type)
     });
 }
 
+void DiscoveryService::fetchRecommendations(int tmdbId, const QString &type)
+{
+    if (tmdbId <= 0 || tmdbApiKey().isEmpty()) { emit recommendationsReady(tmdbId, {}); return; }
+    const bool isTv = (type == QLatin1String("series"));
+    const QString kind = isTv ? QStringLiteral("tv") : QStringLiteral("movie");
+    QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2/recommendations").arg(kind).arg(tmdbId));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
+    q.addQueryItem(QStringLiteral("language"), tmdbLang());
+    url.setQuery(q);
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
+    req.setTransferTimeout(10000);
+    QNetworkReply *reply = m_nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId, isTv]() {
+        reply->deleteLater();
+        QVariantList items;
+        if (reply->error() == QNetworkReply::NoError) {
+            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
+                                       .object().value(QLatin1String("results")).toArray();
+            for (const QJsonValue &v : arr) {
+                const QJsonObject o = v.toObject();
+                const QString poster = o.value(QLatin1String("poster_path")).toString();
+                if (poster.isEmpty()) continue;
+                const QString date = o.value(isTv ? QLatin1String("first_air_date")
+                                                  : QLatin1String("release_date")).toString();
+                QVariantMap m;
+                m.insert(QStringLiteral("title"), o.value(isTv ? QLatin1String("name")
+                                                               : QLatin1String("title")).toString());
+                m.insert(QStringLiteral("poster"), TmdbPosterBase + poster);
+                m.insert(QStringLiteral("year"), date.length() >= 4 ? date.left(4) : QString());
+                m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
+                m.insert(QStringLiteral("overview"), o.value(QLatin1String("overview")).toString());
+                m.insert(QStringLiteral("type"), isTv ? QStringLiteral("series") : QStringLiteral("movie"));
+                items.append(m);
+                if (items.size() >= 16) break;
+            }
+        }
+        emit recommendationsReady(tmdbId, items);
+    });
+}
+
 void DiscoveryService::fetchEpisodes(int tmdbId, int season)
 {
     if (tmdbId <= 0 || season < 0 || tmdbApiKey().isEmpty()) { emit episodesReady(tmdbId, season, {}); return; }
