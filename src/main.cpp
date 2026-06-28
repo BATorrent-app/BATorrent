@@ -38,6 +38,11 @@
 #include "app/addonmanager.h"
 #include "app/notifier.h"
 #include "torrent/sessionmanager.h"
+#include "ipc/enginehost.h"
+#include "ipc/ipcengine.h"
+#include <QCoreApplication>
+#include <cstring>
+#include <QThread>
 #include "app/secretstore.h"
 #include "app/logger.h"
 #include "app/crashhandler.h"
@@ -109,6 +114,44 @@ static void qtMessageHandler(QtMsgType type, const QMessageLogContext &ctx,
 
 int main(int argc, char *argv[])
 {
+    // --- engine/UI split (internal/ENGINE_SPLIT_PLAN.md) ---
+    // These branch before QApplication so the engine child stays headless.
+    for (int i = 1; i < argc; ++i) {
+        // Engine child: headless host of the libtorrent session over a local socket.
+        if (std::strcmp(argv[i], "--engine") == 0 && i + 1 < argc) {
+            QCoreApplication eapp(argc, argv);
+            eapp.setOrganizationName("BATorrent");
+            eapp.setApplicationName("BATorrent");
+            eapp.setApplicationVersion(APP_VERSION);
+            Logger::instance().init();
+            SessionManager session;   // loadResumeData() runs in the ctor
+            EngineHost host(&session, QString::fromLocal8Bit(argv[i + 1]));
+            if (!host.listen()) return 1;
+            return eapp.exec();
+        }
+        // Proof-of-life: spawn our own binary as the engine, round-trip a few
+        // calls, exit. Validates the channel + process supervision end-to-end.
+        if (std::strcmp(argv[i], "--engine-selftest") == 0) {
+            QCoreApplication eapp(argc, argv);
+            eapp.setOrganizationName("BATorrent");
+            eapp.setApplicationName("BATorrent");
+            Logger::instance().init();
+            IpcEngine engine(QCoreApplication::applicationFilePath());
+            QObject::connect(&engine, &IpcEngine::engineStatusChanged, [](bool up) {
+                qInfo() << "[selftest] engine status:" << (up ? "UP" : "DOWN");
+            });
+            if (!engine.start()) { qWarning() << "[selftest] engine failed to start"; return 1; }
+            // One round-trip proves the framed request→reply across the process
+            // boundary. (The count may read 0 here: libtorrent adds resume torrents
+            // asynchronously; Phase 3 serves reads from a pushed snapshot instead of
+            // this blocking request, so that race + the sync-wait fragility both go.)
+            qInfo() << "[selftest] connected. torrentCount round-tripped =" << engine.torrentCount();
+            qInfo() << "[selftest] pauseAll()"; engine.pauseAll();
+            qInfo() << "[selftest] round-trip OK";
+            return 0;
+        }
+    }
+
     QApplication app(argc, argv);
     // Set the org name so default-constructed QSettings() resolves to the same
     // store as the explicit QSettings("BATorrent","BATorrent") used elsewhere —
