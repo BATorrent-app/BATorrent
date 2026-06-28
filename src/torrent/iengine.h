@@ -17,7 +17,7 @@
 #include <QMap>
 #include <QList>
 #include <vector>
-#include "types.h"
+#include "torrent/types.h"
 
 class IEngine : public QObject
 {

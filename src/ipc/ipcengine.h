@@ -13,9 +13,9 @@
 #ifndef BATORRENT_IPCENGINE_H
 #define BATORRENT_IPCENGINE_H
 
-#include "../torrent/iengine.h"
-#include "ipcprotocol.h"
-#include "ipcserialize.h"
+#include "torrent/iengine.h"
+#include "ipc/ipcprotocol.h"
+#include "ipc/ipcserialize.h"
 #include <QProcess>
 #include <QByteArray>
 #include <QHash>

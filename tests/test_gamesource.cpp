@@ -8,7 +8,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "app/gamesourcemanager.h"
+#include "services/discovery/gamesourcemanager.h"
 
 static QString clean(const char *s) { return GameSourceManager::cleanGameTitle(QString::fromUtf8(s)); }
 

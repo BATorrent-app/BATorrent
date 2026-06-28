@@ -33,15 +33,15 @@
 #ifdef BAT_HAVE_SENTRY
 #include <sentry.h>
 #endif
-#include "app/metadataresolver.h"
-#include "app/discoveryservice.h"
-#include "app/translator.h"
-#include "gui/qmlposterbridge.h"
+#include "services/metadata/metadataresolver.h"
+#include "services/discovery/discoveryservice.h"
+#include "services/platform/translator.h"
+#include "bridges/qmlposterbridge.h"
 #include "webui/streamserver.h"
-#include "app/gamesourcemanager.h"
-#include "app/rssmanager.h"
-#include "app/addonmanager.h"
-#include "app/notifier.h"
+#include "services/discovery/gamesourcemanager.h"
+#include "services/integrations/rssmanager.h"
+#include "services/discovery/addonmanager.h"
+#include "services/integrations/notifier.h"
 #include "torrent/sessionmanager.h"
 #include "ipc/enginehost.h"
 #include "ipc/ipcengine.h"
@@ -50,10 +50,11 @@
 #include <QEventLoop>
 #include <cstring>
 #include <QThread>
-#include "app/secretstore.h"
-#include "app/logger.h"
-#include "app/crashhandler.h"
-#include "app/utils.h"
+#include "services/security/secretstore.h"
+#include "services/integrations/realdebrid.h"
+#include "services/platform/logger.h"
+#include "services/security/crashhandler.h"
+#include "services/platform/utils.h"
 
 // Serves the app logo recolored for the OS scheme to QML (the system tray
 // icon.source wants a URL, not a QIcon). URL id is "light"/"dark"; the body
@@ -430,6 +431,7 @@ int main(int argc, char *argv[])
         auto *subtitleBridge = new QmlSubtitleBridge(eng, &app);
         subtitleBridge->setResolver(resolver);
         auto *pairingBridge = new QmlPairingBridge(&app);
+        auto *realDebrid = new RealDebridClient(&app);
         auto *notificationBridge = new QmlNotificationBridge(&app);
         notificationBridge->setSession(eng);
         QObject::connect(eng, &IEngine::torrentFinished,
@@ -636,6 +638,7 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("logs", logBridge);
         engine.rootContext()->setContextProperty("subsearch", subtitleBridge);
         engine.rootContext()->setContextProperty("pairing", pairingBridge);
+        engine.rootContext()->setContextProperty("realdebrid", realDebrid);
         engine.rootContext()->setContextProperty("notifications", notificationBridge);
         engine.rootContext()->setContextProperty("i18n", i18nBridge);
 #ifndef BAT_STORE_BUILD

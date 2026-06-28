@@ -18,8 +18,10 @@ compile_commands.json
 *.swp
 *~
 
-# Claude Code local settings
+# Claude Code local settings + dev tooling (local only, not for the public repo)
 .claude/settings.local.json
+.claude/skills/
+/CLAUDE.md
 
 # Compiled
 *.o

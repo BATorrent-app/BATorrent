@@ -2,12 +2,12 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "sessionmanager.h"
-#include "../app/logger.h"
-#include "../app/translator.h"
-#include "../app/suspiciousscan.h"
-#include "../app/defender.h"
-#include "../app/archivescan.h"
+#include "torrent/sessionmanager.h"
+#include "services/platform/logger.h"
+#include "services/platform/translator.h"
+#include "services/security/suspiciousscan.h"
+#include "services/security/defender.h"
+#include "services/security/archivescan.h"
 #include <QProcess>
 #include <QCoreApplication>
 #if defined(Q_OS_MACOS)

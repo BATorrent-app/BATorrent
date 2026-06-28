@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "ipcengine.h"
+#include "ipc/ipcengine.h"
 #include <QLocalSocket>
 #include <QCoreApplication>
 #include <QElapsedTimer>

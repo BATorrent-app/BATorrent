@@ -2,8 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "streamserver.h"
-#include "../torrent/sessionmanager.h"
+#include "webui/streamserver.h"
+#include "torrent/sessionmanager.h"
 
 #include <QTcpServer>
 #include <QTcpSocket>

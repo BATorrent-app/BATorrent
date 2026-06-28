@@ -1122,6 +1122,16 @@ Rectangle {
             text: (i18n.language, i18n.t("search_copy_magnet"))
             onTriggered: if (page.api && rowMenu.idx >= 0) page.api.copyMagnet(rowMenu.idx)
         }
+        BatMenuItem {
+            visible: !page.isCatalog && typeof realdebrid !== "undefined" && realdebrid.hasToken
+            height: visible ? implicitHeight : 0
+            text: (i18n.language, i18n.t("rd_stream"))
+            onTriggered: {
+                if (!page.api || rowMenu.idx < 0) return
+                var m = page.api.magnetAt(rowMenu.idx)
+                if (m) realdebrid.streamMagnet(m)
+            }
+        }
     }
 
     // Game-catalog manager overlay (neutral: the user adds their own source URLs)

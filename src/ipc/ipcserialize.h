@@ -11,7 +11,7 @@
 #include <QDataStream>
 #include <QList>
 #include <vector>
-#include "../torrent/types.h"
+#include "torrent/types.h"
 
 inline QDataStream &operator<<(QDataStream &s, const TorrentInfo &t)
 {

@@ -7,9 +7,9 @@
 //   ./fuzz_nameparser -max_total_time=30
 // Catches crashes and ReDoS-style runaways (pair with -timeout=...).
 
-#include "app/nameparser.h"
-#include "app/suspiciousscan.h"
-#include "app/archivescan.h"
+#include "services/metadata/nameparser.h"
+#include "services/security/suspiciousscan.h"
+#include "services/security/archivescan.h"
 #include <QString>
 #include <QStringList>
 #include <cstdint>

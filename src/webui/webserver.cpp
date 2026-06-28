@@ -2,8 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "webserver.h"
-#include "../torrent/iengine.h"
+#include "webui/webserver.h"
+#include "torrent/iengine.h"
 #include <QTcpSocket>
 #include <QFile>
 #include <QDir>
