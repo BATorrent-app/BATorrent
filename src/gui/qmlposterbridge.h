@@ -657,7 +657,7 @@ public:
 
     Q_INVOKABLE void refreshSources();
     Q_INVOKABLE void search(const QString &sourceKey, const QString &query, int categoryCode = 0);
-    Q_INVOKABLE void activateResult(int index);   // catalog→streams; else add magnet
+    Q_INVOKABLE void activateResult(int index, bool force = false);   // catalog→streams; else add magnet (force skips the disk-fit guard)
     Q_INVOKABLE void back();                       // streams → catalog
 
     // Hydra-format game catalogs the user adds (neutral infra — nothing bundled).
@@ -693,12 +693,14 @@ signals:
     void gameSourcesChanged();
     void coverReady(const QString &infoHash, const QString &posterPath);
     void addedTorrent(const QString &infoHash);   // a magnet was added from Search
+    void addWontFit(int index, const QString &name, qint64 needed, qint64 freeBytes);   // result too big for the save volume; QML confirms before force-add
     void watchSearching(const QString &title);    // Get&Watch: started looking for a release
     void watchNoRelease(const QString &title);    // Get&Watch: nothing usable found
     void prepareAndWatch(const QString &infoHash, const QString &title);   // added → buffer & open
     void sourceSummary(const QString &title, int count, qint64 bestSize, int maxSeeds);
 
 private:
+    bool fitsOnSaveVolume(qint64 needed) const;   // false ⇒ won't fit on the save disk
     void setSearching(bool on);
     void setStatus(const QString &s);
     void setMode(const QString &m);
