@@ -376,7 +376,8 @@ QVariantList QmlSubtitleBridge::results() const
     return out;
 }
 
-void QmlSubtitleBridge::searchFor(const QString &infoHash, int fileIndex, const QString &mediaTitle)
+void QmlSubtitleBridge::searchFor(const QString &infoHash, int fileIndex, const QString &mediaTitle,
+                                  const QStringList &langs)
 {
     QString video = m_session->streamFilePath(m_session->torrentIndexByInfoHash(infoHash), fileIndex);
     if (video.endsWith(QLatin1String(".!bt"))) video.chop(4);
@@ -391,9 +392,12 @@ void QmlSubtitleBridge::searchFor(const QString &infoHash, int fileIndex, const 
     // the filename carries S/E + release tags the parser feeds on; the resolved
     // display title doesn't
     const QString queryName = vi.fileName().isEmpty() ? mediaTitle : vi.fileName();
-    static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk"};
-    QStringList langs{QString::fromLatin1(codes[static_cast<int>(Translator::instance().language())])};
-    if (!langs.contains(QStringLiteral("en"))) langs << QStringLiteral("en");
+    QStringList useLangs = langs;
+    if (useLangs.isEmpty()) {   // default: the UI language + English
+        static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk"};
+        useLangs << QString::fromLatin1(codes[static_cast<int>(Translator::instance().language())]);
+        if (!useLangs.contains(QStringLiteral("en"))) useLangs << QStringLiteral("en");
+    }
     int tmdbId = 0;
     if (m_resolver && m_resolver->hasCached(infoHash)) {
         const auto meta = m_resolver->cached(infoHash);
@@ -401,7 +405,7 @@ void QmlSubtitleBridge::searchFor(const QString &infoHash, int fileIndex, const 
     }
     m_searching = true;
     emit searchingChanged();
-    m_search->search(queryName, langs, tmdbId);
+    m_search->search(queryName, useLangs, tmdbId);
 }
 
 void QmlSubtitleBridge::download(int index)

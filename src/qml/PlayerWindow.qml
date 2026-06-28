@@ -583,10 +583,33 @@ Window {
         color: "#f2101013"
         Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: "#22ffffff" }
 
+        // languages offered as toggle chips; selection persists and drives search
+        readonly property var langCodes: ["pt", "en", "es", "fr", "de", "it", "ru", "ja", "zh"]
+        property var subLangs: {
+            var s = (typeof settings !== "undefined") ? settings.get("subtitleLangs") : ""
+            if (s && s.length > 0) return ("" + s).split(",")
+            var ui = ["en", "pt", "zh", "ja", "ru", "es", "de", "uk"][i18n.language] || "en"
+            return ui === "en" ? ["en"] : [ui, "en"]
+        }
+        function langLabel(c) {
+            return ({ pt: "PT", en: "EN", es: "ES", fr: "FR", de: "DE",
+                      it: "IT", ru: "RU", ja: "JA", zh: "ZH" })[c] || c.toUpperCase()
+        }
+        function toggleLang(code) {
+            var a = subLangs.slice()
+            var i = a.indexOf(code)
+            if (i >= 0) a.splice(i, 1); else a.push(code)
+            if (a.length === 0) a = ["en"]
+            subLangs = a
+            if (typeof settings !== "undefined") settings.set("subtitleLangs", a.join(","))
+            if (typeof subsearch !== "undefined")
+                subsearch.searchFor(win.infoHash, win.fileIndex, win.mediaTitle, a)
+        }
+
         function openPanel() {
             visible = true
             if (typeof subsearch !== "undefined")
-                subsearch.searchFor(win.infoHash, win.fileIndex, win.mediaTitle)
+                subsearch.searchFor(win.infoHash, win.fileIndex, win.mediaTitle, subPanel.subLangs)
         }
 
         property string panelError: ""
@@ -620,6 +643,21 @@ Window {
                     color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
                 }
                 PChip { label: "✕"; onClicked: subPanel.visible = false }
+            }
+
+            // language picker — toggle which languages to search for
+            Flow {
+                Layout.fillWidth: true
+                spacing: 6
+                Repeater {
+                    model: subPanel.langCodes
+                    delegate: PChip {
+                        required property string modelData
+                        label: subPanel.langLabel(modelData)
+                        active: subPanel.subLangs.indexOf(modelData) >= 0
+                        onClicked: subPanel.toggleLang(modelData)
+                    }
+                }
             }
 
             // sync controls (visible once a subtitle is active)

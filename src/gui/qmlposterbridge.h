@@ -839,7 +839,8 @@ public:
 
     bool searching() const { return m_searching; }
     QVariantList results() const;
-    Q_INVOKABLE void searchFor(const QString &infoHash, int fileIndex, const QString &mediaTitle);
+    Q_INVOKABLE void searchFor(const QString &infoHash, int fileIndex, const QString &mediaTitle,
+                               const QStringList &langs = {});   // empty langs ⇒ UI language + English
     Q_INVOKABLE void download(int index);
     Q_INVOKABLE bool hasOpenSubtitlesKey() const;
     void setResolver(MetadataResolver *r) { m_resolver = r; }
