@@ -115,6 +115,7 @@ public:
     // --- advanced libtorrent tuning (Settings) ---
     virtual AdvancedSettings advancedSettings() const = 0;
     virtual void setAdvancedSettings(const AdvancedSettings &s) = 0;
+    virtual bool applySetting(const QString &key, const QVariant &v) = 0;   // live-apply one UI setting
 
     // --- streaming server hooks (embedded player) ---
     virtual qint64 streamFileSize(int torrentIndex, int fileIndex) const = 0;

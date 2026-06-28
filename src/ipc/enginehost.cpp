@@ -317,6 +317,9 @@ QByteArray EngineHost::dispatch(const QString &method, const QByteArray &args)
         out << m_session->advancedSettings();
     } else if (method == QLatin1String("setAdvancedSettings")) {
         AdvancedSettings a; in >> a; m_session->setAdvancedSettings(a);
+    } else if (method == QLatin1String("applySetting")) {
+        QString key; QVariant val; in >> key >> val;
+        out << m_session->applySetting(key, val);
 
     // ---- streaming hooks ----
     } else if (method == QLatin1String("streamFileSize")) {

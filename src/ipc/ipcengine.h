@@ -118,6 +118,7 @@ public:
     QString proxyPass() const override;
     AdvancedSettings advancedSettings() const override;
     void setAdvancedSettings(const AdvancedSettings &s) override;
+    bool applySetting(const QString &key, const QVariant &v) override;
     qint64 streamFileSize(int torrentIndex, int fileIndex) const override;
     qint64 streamContiguousAvailableBytes(int torrentIndex, int fileIndex, qint64 fromByte, qint64 cap = 8 * 1024 * 1024) const override;
     void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte, int windowPieces = 24) override;

@@ -322,28 +322,6 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
         applyWebUi();
         emit changed(); return;
     }
-    if (key.startsWith(QStringLiteral("adv"))) {
-        if (!m_session) { QSettings().setValue(key, v); emit changed(); return; }
-        auto a = m_session->advancedSettings();
-        bool hit = true;
-        if (key == "advAioThreads")          a.aioThreads = v.toInt();
-        else if (key == "advHashingThreads") a.hashingThreads = v.toInt();
-        else if (key == "advFilePool")       a.filePoolSize = v.toInt();
-        else if (key == "advCheckingMem")    a.checkingMemUsage = v.toInt();
-        else if (key == "advSendBuffer")     a.sendBufferWatermark = v.toInt();
-        else if (key == "advConnLimit")      a.connectionsLimit = v.toInt();
-        else if (key == "advConnSpeed")      a.connectionSpeed = v.toInt();
-        else if (key == "advUnchokeSlots")   a.unchokeSlotsLimit = v.toInt();
-        else if (key == "advMaxUploadsTor")  a.maxUploadsPerTorrent = v.toInt();
-        else if (key == "advMaxConnsTor")    a.maxConnectionsPerTorrent = v.toInt();
-        else if (key == "advChokingAlgo")    a.chokingAlgorithm = v.toInt() == 1 ? 2 : 0;  // UI idx 1 → lt rate_based=2
-        else if (key == "advSeedChoking")    a.seedChokingAlgorithm = v.toInt();
-        else if (key == "advRateOverhead")   a.rateLimitIpOverhead = v.toBool();
-        else if (key == "advIgnoreLan")      a.ignoreLimitsOnLAN = v.toBool();
-        else hit = false;
-        if (hit) { m_session->setAdvancedSettings(a); emit changed(); return; }
-    }
-
     if (key == "plexToken" || key == "jellyfinApiKey") {   // → keychain (empty clears)
         SecretStore::instance().set(key, v.toString());
         emit changed(); return;
@@ -351,70 +329,17 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     if (key == "useTor") {   // one-toggle Tor preset: route through 127.0.0.1:9050 SOCKS5
         QSettings st; st.setValue("useTor", v.toBool());
         if (v.toBool()) {
-            if (m_session) m_session->setProxySettings(1, QStringLiteral("127.0.0.1"), 9050, QString(), QString());
+            if (m_engine) m_engine->setProxySettings(1, QStringLiteral("127.0.0.1"), 9050, QString(), QString());
             st.setValue("proxyType", 1); st.setValue("proxyHost", "127.0.0.1"); st.setValue("proxyPort", 9050);
         }
         emit changed(); return;
     }
 
-    // IPC engine mode: no in-process session to live-apply — persist to the
-    // shared QSettings store; the engine child applies it on its next start.
-    if (!m_session) { QSettings().setValue(key, v); emit changed(); return; }
-    SessionManager *s = m_session;
-    if (key == "downloadLimit")            s->setDownloadLimit(v.toInt());
-    else if (key == "uploadLimit")         s->setUploadLimit(v.toInt());
-    else if (key == "maxActiveDownloads")  s->setMaxActiveDownloads(v.toInt());
-    else if (key == "seedRatioLimit")      s->setSeedRatioLimit(v.toFloat());
-    else if (key == "stopAfterDownload")   s->setStopAfterDownload(v.toBool());
-    else if (key == "maxSeedDays")         s->setMaxSeedSeconds(qint64(v.toInt()) * 86400);
-    else if (key == "schedulerEnabled")    s->setSchedulerEnabled(v.toBool());
-    else if (key == "altDownloadLimit")    s->setAltSpeedLimits(v.toInt(), s->altUploadLimit());
-    else if (key == "altUploadLimit")      s->setAltSpeedLimits(s->altDownloadLimit(), v.toInt());
-    else if (key == "scheduleFromHour")    s->setScheduleFromHour(v.toInt());
-    else if (key == "scheduleToHour")      s->setScheduleToHour(v.toInt());
-    else if (key == "scheduleDays")        s->setScheduleDays(v.toInt());
-    else if (key == "listenPort")          s->setListenPort(v.toInt());
-    else if (key == "maxConnections")      s->setMaxConnections(v.toInt());
-    else if (key == "dhtEnabled")          s->setDhtEnabled(v.toBool());
-    else if (key == "utpEnabled")          s->setUtpEnabled(v.toBool());
-    else if (key == "encryptionMode")      s->setEncryptionMode(v.toInt());
-    else if (key == "anonymousMode")       s->setAnonymousMode(v.toBool());
-    else if (key == "forceIpv4")           s->setForceIpv4(v.toBool());
-    else if (key == "ptMode")              s->setPtMode(v.toBool());
-    else if (key == "blockLeechers")       s->setBlockLeecherClients(v.toBool());
-    else if (key == "outgoingInterface")   s->setOutgoingInterface(v.toString());
-    else if (key == "killSwitchEnabled")   s->setKillSwitchEnabled(v.toBool());
-    else if (key == "autoResumeOnReconnect") s->setAutoResumeOnReconnect(v.toBool());
-    else if (key == "proxyType")           s->setProxySettings(v.toInt(), s->proxyHost(), s->proxyPort(), s->proxyUser(), s->proxyPass());
-    else if (key == "proxyHost")           s->setProxySettings(s->proxyType(), v.toString(), s->proxyPort(), s->proxyUser(), s->proxyPass());
-    else if (key == "proxyPort")           s->setProxySettings(s->proxyType(), s->proxyHost(), v.toInt(), s->proxyUser(), s->proxyPass());
-    else if (key == "proxyUser")           s->setProxySettings(s->proxyType(), s->proxyHost(), s->proxyPort(), v.toString(), s->proxyPass());
-    else if (key == "proxyPass")           s->setProxySettings(s->proxyType(), s->proxyHost(), s->proxyPort(), s->proxyUser(), v.toString());
-    else if (key == "proxyLeakProof")      s->setProxyLeakProof(v.toBool());
-    else if (key == "ipFilterPath")        { QString p = v.toString(); if (p.isEmpty()) s->clearIpFilter(); else s->loadIpFilter(p); }
-    else if (key == "tempPath")            s->setTempPath(v.toString());
-    else if (key == "preallocate")         s->setPreallocate(v.toBool());
-    else if (key == "autoRecheck")         s->setAutoRecheck(v.toBool());
-    else if (key == "contentLayout")       s->setContentLayout(v.toInt());
-    else if (key == "torrentExportDir")    s->setTorrentExportDir(v.toString());
-    else if (key == "extractPasswords") {
-        QStringList pw;
-        const auto parts = v.toString().split(QRegularExpression(QStringLiteral("[;\\n]")), Qt::SkipEmptyParts);
-        for (const QString &p : parts) { QString t = p.trimmed(); if (!t.isEmpty()) pw << t; }
-        s->setExtractPasswords(pw);
-    }
-    else if (key == "autoExtract")         s->setAutoExtract(v.toBool());
-    else if (key == "autoExtractDelete")   s->setAutoExtractDelete(v.toBool());
-    else if (key == "runOnComplete")       s->setRunOnComplete(v.toString());
-    else if (key == "watchedFolder")       s->setWatchedFolder(v.toString());
-    else if (key == "autoMoveEnabled")     s->setAutoMove(v.toBool(), s->autoMovePath());
-    else if (key == "autoMovePath")        s->setAutoMove(s->autoMoveEnabled(), v.toString());
-    else if (key == "autoComplete") {
-        const qint64 days[] = {0, 1, 3, 7, 14, 30};
-        int i = v.toInt();
-        s->setAutoCompleteSeconds((i >= 0 && i < 6 ? days[i] : 0) * 86400);
-    }
-    else { QSettings st; st.setValue(key, v); }
+    // Session-affecting settings live-apply through the engine — in-process AND
+    // in split mode, where the engine child applies + persists via the applySetting
+    // RPC. Unknown keys are UI-only prefs → the shared QSettings store.
+    if (m_engine && m_engine->applySetting(key, v)) { emit changed(); return; }
+    QSettings().setValue(key, v);
     emit changed();
 }
 
