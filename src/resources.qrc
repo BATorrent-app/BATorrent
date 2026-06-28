@@ -78,7 +78,7 @@
 <file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/CommandPalette.qml</file>
 <file>../src/qml/RssWindow.qml</file>
-<file>../src/qml/SettingsWindow.qml</file>
+<file>../src/qml/SettingsView.qml</file>
 <file>../src/qml/ShortcutsWindow.qml</file>
 <file>../src/qml/StatisticsWindow.qml</file>
 <file>../src/qml/RemovedHistoryWindow.qml</file>

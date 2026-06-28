@@ -10,17 +10,13 @@ import QtQuick.Dialogs
 import "theme"
 import "widgets"
 
-Window {
+Rectangle {
     id: win
-    width: 884
-    height: 624
-    minimumWidth: 740
-    minimumHeight: 480
     color: Theme.bg
-    flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
-    title: Theme.unifiedChrome ? "" : (i18n.language, i18n.t("settings_heading"))
 
     property int sec: 0
+    property bool isCurrent: false   // true when this is the active nav page (gates the Esc/⌘W shortcuts)
+    signal closed()                  // wired by Main to jump back to Downloads
 
     // a stored bool pref, falling back to the field's `on` default when unset —
     // so a default-on toggle reads ON on a fresh profile (matches runtime behavior).
@@ -34,9 +30,9 @@ Window {
     readonly property var ap: (typeof themeBridge !== "undefined" && themeBridge.customProfiles.length > 0)
                               ? themeBridge.customProfiles[themeBridge.activeProfile] : ({})
 
-    // Instant-apply settings: Esc / ⌘W just close (nothing to confirm).
-    Shortcut { sequences: [StandardKey.Cancel]; onActivated: win.close() }
-    Shortcut { sequences: [StandardKey.Close];  onActivated: win.close() }
+    // Instant-apply settings: Esc / ⌘W just leave the page (nothing to confirm).
+    Shortcut { enabled: win.isCurrent; sequences: [StandardKey.Cancel]; onActivated: win.closed() }
+    Shortcut { enabled: win.isCurrent; sequences: [StandardKey.Close];  onActivated: win.closed() }
 
     // ---- nav metadata ----
     readonly property var navs: [
@@ -481,7 +477,7 @@ Window {
                 anchors.rightMargin: 20
                 Text { text: (i18n.language, i18n.t("set_changes_instant")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
-                BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_close")); onClicked: win.close() }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_close")); onClicked: win.closed() }
             }
         }
     }
