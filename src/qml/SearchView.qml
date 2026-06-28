@@ -1220,4 +1220,34 @@ Rectangle {
             }
         }
     }
+
+    // disk add-guard: the bridge blocks a too-big add and asks here first
+    property int pendingFitIdx: -1
+    property string pendingFitMsg: ""
+    Connections {
+        target: page.api
+        ignoreUnknownSignals: true
+        function onAddWontFit(index, name, needed, freeBytes) {
+            page.pendingFitIdx = index
+            page.pendingFitMsg = i18n.t("search_wontfit_body")
+                .replace("%1", name)
+                .replace("%2", page.fmtSize(needed))
+                .replace("%3", page.fmtSize(freeBytes))
+            fitDlg.open()
+        }
+    }
+    BatDialog {
+        id: fitDlg
+        title: (i18n.language, i18n.t("search_wontfit_title"))
+        cardW: 470; cardH: 240
+        okText: (i18n.language, i18n.t("search_wontfit_ok"))
+        cancelText: (i18n.language, i18n.t("btn_cancel"))
+        onAccepted: if (page.api && page.pendingFitIdx >= 0) page.api.activateResult(page.pendingFitIdx, true)
+        Text {
+            Layout.fillWidth: true
+            text: page.pendingFitMsg
+            wrapMode: Text.WordWrap
+            color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans; lineHeight: 1.35
+        }
+    }
 }

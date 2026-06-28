@@ -21,6 +21,7 @@
 #include "../app/secretstore.h"
 #include "../webui/webserver.h"
 #include <QCryptographicHash>
+#include <QStorageInfo>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -791,7 +792,14 @@ void QmlSearchBridge::refreshGames()
     GameSourceManager::instance().refresh(true);   // manual refresh → bypass cache
 }
 
-void QmlSearchBridge::activateResult(int index)
+bool QmlSearchBridge::fitsOnSaveVolume(qint64 needed) const
+{
+    if (needed <= 0) return true;   // unknown size — don't block
+    const QStorageInfo si(m_savePath);
+    return !si.isValid() || needed <= si.bytesAvailable();
+}
+
+void QmlSearchBridge::activateResult(int index, bool force)
 {
     auto &mgr = AddonManager::instance();
     if (m_mode == "titles") {
@@ -831,11 +839,17 @@ void QmlSearchBridge::activateResult(int index)
         if (index < 0 || index >= m_resultMagnets.size()) return;
         const QString magnet = m_resultMagnets[index];
         if (magnet.isEmpty()) return;
+        const QVariantMap rm = index < m_results.size() ? m_results[index].toMap() : QVariantMap();
+        const QString name = rm.value(QStringLiteral("name")).toString();
+        const qint64 needed = rm.value(QStringLiteral("sizeBytes")).toLongLong();
+        if (!force && !fitsOnSaveVolume(needed)) {
+            const QStorageInfo si(m_savePath);
+            emit addWontFit(index, name, needed, si.isValid() ? si.bytesAvailable() : 0);
+            return;   // QML asks the user, then re-calls with force = true
+        }
         const QString hint = index < m_resultTitles.size() ? m_resultTitles[index] : QString();
         const int type = hint.isEmpty() ? -1 : static_cast<int>(ContentType::Game);
         m_session->addMagnet(magnet, m_savePath, hint, type);   // hint = clean game title, "" for torrents
-        const QVariantMap rm = index < m_results.size() ? m_results[index].toMap() : QVariantMap();
-        const QString name = rm.value(QStringLiteral("name")).toString();
         setStatus(name.isEmpty() ? tr_("search_added") : tr_("search_added_name").arg(name));
         QString hash = rm.value(QStringLiteral("coverHash")).toString();   // torrent rows carry the hash
         if (hash.isEmpty()) hash = btihFromMagnet(magnet);
