@@ -70,6 +70,13 @@ TEST_CASE("audio channel layouts don't leak into the title", "[nameparser]")
     CHECK(P("Shogun.2024.S01E01.MULTi.1080p.WEB.H264-FW").cleanTitle == "Shogun");
 }
 
+TEST_CASE("Portuguese (BR) release tags are stripped from the title", "[nameparser]")
+{
+    CHECK(P("007 - Cassino Royale Dublado").cleanTitle == "007 - Cassino Royale");
+    CHECK(P("Duna.Parte.2.2024.1080p.Legendado").cleanTitle == "Duna Parte 2");
+    CHECK(P("Oppenheimer 2023 Dual.Áudio 1080p").cleanTitle == "Oppenheimer");
+}
+
 TEST_CASE("anime fansub naming: [Group] Title - NN is an episode", "[nameparser]")
 {
     auto f = P("[SubsPlease] Sousou no Frieren - 28 (1080p) [9C4F2E3A].mkv");
