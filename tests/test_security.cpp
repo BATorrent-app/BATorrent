@@ -15,7 +15,7 @@
 
 #include "webui/webserver.h"
 #include "torrent/sessionmanager.h"
-#include "app/suspiciousscan.h"
+#include "services/security/suspiciousscan.h"
 
 #ifdef BAT_CRT_DEBUG_HEAP
 #  include <crtdbg.h>

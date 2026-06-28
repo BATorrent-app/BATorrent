@@ -45,35 +45,36 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/sessionmanager.cpp
     src/ipc/enginehost.cpp
     src/ipc/ipcengine.cpp
-    src/app/translator.cpp
-    src/app/statshistory.cpp
-    src/app/subtitleparser.cpp
-    src/app/subtitlesearch.cpp
-    src/app/suspiciousscan.cpp
-    src/app/archivescan.cpp
-    src/app/releasepick.cpp
-    src/app/installerprofile.cpp
-    src/app/defender.cpp
-    src/app/logger.cpp
-    src/app/crashhandler.cpp
-    src/app/notifier.cpp
-    src/app/qrcodegen.cpp
-    src/app/discordrpc.cpp
-    src/app/secretstore.cpp
-    src/app/updater.cpp
-    src/app/addonmanager.cpp
-    src/app/rssmanager.cpp
-    src/app/geoip.cpp
-    src/app/nameparser.cpp
-    src/app/metadataresolver.cpp
-    src/app/discoveryservice.cpp
-    src/app/gamesourcemanager.cpp
-    src/gui/qmlposterbridge.cpp
-    src/gui/qmlpostermodel.cpp
-    src/gui/qmlsessionbridge.cpp
-    src/gui/qmlthemebridge.cpp
-    src/gui/qmlsearchbridge.cpp
-    src/gui/qmlsettingsbridge.cpp
+    src/services/platform/translator.cpp
+    src/services/platform/statshistory.cpp
+    src/services/subtitles/subtitleparser.cpp
+    src/services/subtitles/subtitlesearch.cpp
+    src/services/integrations/realdebrid.cpp
+    src/services/security/suspiciousscan.cpp
+    src/services/security/archivescan.cpp
+    src/services/metadata/releasepick.cpp
+    src/services/integrations/installerprofile.cpp
+    src/services/security/defender.cpp
+    src/services/platform/logger.cpp
+    src/services/security/crashhandler.cpp
+    src/services/integrations/notifier.cpp
+    src/services/platform/qrcodegen.cpp
+    src/services/integrations/discordrpc.cpp
+    src/services/security/secretstore.cpp
+    src/services/integrations/updater.cpp
+    src/services/discovery/addonmanager.cpp
+    src/services/integrations/rssmanager.cpp
+    src/services/integrations/geoip.cpp
+    src/services/metadata/nameparser.cpp
+    src/services/metadata/metadataresolver.cpp
+    src/services/discovery/discoveryservice.cpp
+    src/services/discovery/gamesourcemanager.cpp
+    src/bridges/qmlposterbridge.cpp
+    src/bridges/qmlpostermodel.cpp
+    src/bridges/qmlsessionbridge.cpp
+    src/bridges/qmlthemebridge.cpp
+    src/bridges/qmlsearchbridge.cpp
+    src/bridges/qmlsettingsbridge.cpp
     src/webui/webserver.cpp
     src/webui/streamserver.cpp
     ${RESOURCES}
@@ -81,6 +82,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     ${MACOSX_APP_ICON}
 )
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
+target_include_directories(BATorrent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(DEFINED ENV{BAT_TMDB_KEY})
     target_compile_definitions(BATorrent PRIVATE BAT_TMDB_KEY="$ENV{BAT_TMDB_KEY}")

@@ -24,9 +24,9 @@
 #include <libtorrent/bencode.hpp>
 
 #include "torrent/sessionmanager.h"
-#include "app/metadataresolver.h"
-#include "app/gamesourcemanager.h"
-#include "gui/qmlposterbridge.h"
+#include "services/metadata/metadataresolver.h"
+#include "services/discovery/gamesourcemanager.h"
+#include "bridges/qmlposterbridge.h"
 
 namespace lt = libtorrent;
 

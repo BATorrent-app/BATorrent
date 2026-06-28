@@ -24,43 +24,45 @@ include(Catch)
 set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/iengine.h        # header-only QObject — listed so AUTOMOC builds its metaobject
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
-    ${CMAKE_SOURCE_DIR}/src/app/translator.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/statshistory.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/subtitleparser.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/subtitlesearch.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/suspiciousscan.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/archivescan.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/releasepick.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/installerprofile.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/defender.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
+    ${CMAKE_SOURCE_DIR}/src/services/platform/translator.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/statshistory.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitleparser.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitlesearch.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/releasepick.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/rssmanager.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/addonmanager.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/updater.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/logger.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/nameparser.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/gamesourcemanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/rssmanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/addonmanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/updater.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
-    ${CMAKE_SOURCE_DIR}/src/gui/qmlposterbridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/gui/qmlpostermodel.cpp
-    ${CMAKE_SOURCE_DIR}/src/gui/qmlsessionbridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/gui/qmlthemebridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/gui/qmlsearchbridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/gui/qmlsettingsbridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/metadataresolver.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/discoveryservice.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/qrcodegen.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/geoip.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/discordrpc.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/notifier.cpp
-    ${CMAKE_SOURCE_DIR}/src/app/secretstore.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlposterbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlthemebridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsettingsbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/metadataresolver.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/qrcodegen.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/geoip.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/discordrpc.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/notifier.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/secretstore.cpp
 )
 
+find_package(ZLIB REQUIRED)
 set(COMMON_LIBS
     Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Test
     LibtorrentRasterbar::torrent-rasterbar
     Catch2::Catch2WithMain
+    ZLIB::ZLIB
 )
 if(WIN32)
     list(APPEND COMMON_LIBS shell32 ole32)   # shell ops pulled in via the bridge deps
@@ -171,9 +173,9 @@ option(BAT_FUZZ "Build libFuzzer harnesses" OFF)
 if(BAT_FUZZ)
     add_executable(fuzz_nameparser
         ${CMAKE_CURRENT_SOURCE_DIR}/fuzz_nameparser.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/nameparser.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/suspiciousscan.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/archivescan.cpp)
+        ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
+        ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
+        ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp)
     target_compile_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined -g)
     target_link_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined)
     target_link_libraries(fuzz_nameparser PRIVATE Qt6::Core)

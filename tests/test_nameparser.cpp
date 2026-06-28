@@ -7,7 +7,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "app/nameparser.h"
+#include "services/metadata/nameparser.h"
 
 static ParsedName P(const char *s) { return NameParser::parse(QString::fromUtf8(s)); }
 

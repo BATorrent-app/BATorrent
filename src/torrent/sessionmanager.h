@@ -5,9 +5,9 @@
 #ifndef SESSIONMANAGER_H
 #define SESSIONMANAGER_H
 
-#include "types.h"
-#include "iengine.h"
-#include "../app/statshistory.h"
+#include "torrent/types.h"
+#include "torrent/iengine.h"
+#include "services/platform/statshistory.h"
 #include <QObject>
 #include <QTimer>
 #include <QString>

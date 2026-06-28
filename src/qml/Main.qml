@@ -711,7 +711,8 @@ Window {
     GetWatchOverlay {
         id: gwOverlay
         onCanceled: {
-            if (phase === "searching") { if (typeof search !== "undefined") search.cancelGetAndWatch() }
+            if (typeof realdebrid !== "undefined" && realdebrid.busy) realdebrid.cancelStream()
+            else if (phase === "searching") { if (typeof search !== "undefined") search.cancelGetAndWatch() }
             else if (hash !== "" && typeof session !== "undefined") session.cancelWatch(hash)
         }
     }
@@ -3068,6 +3069,31 @@ Window {
             if (gwOverlay.phase === "buffering" && hash === gwOverlay.hash) gwOverlay.percent = percent
         }
         function onWatchFailed(title) { gwOverlay.fail(i18n.t("gw_failed").arg(title)) }
+    }
+
+    // Real-Debrid: magnet → RD cache → unrestricted direct link → built-in player.
+    Connections {
+        target: typeof realdebrid !== "undefined" ? realdebrid : null
+        ignoreUnknownSignals: true
+        function onStreamReady(url, name) {
+            gwOverlay.hide()
+            playerWinLoader.active = true
+            var w = playerWinLoader.item
+            if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, name, "rd", 0) }
+        }
+        function onErrorOccurred(msg) {
+            gwOverlay.hide()
+            win.notifyUser("Real-Debrid", msg, 2)
+        }
+        function onBusyChanged() {
+            if (realdebrid.busy) gwOverlay.show("buffering", "Real-Debrid")
+            else if (gwOverlay.phase === "buffering") gwOverlay.hide()
+        }
+        function onStatusChanged() {
+            if (!realdebrid.busy) return
+            if (realdebrid.status !== "") gwOverlay.title = realdebrid.status
+            gwOverlay.percent = realdebrid.progress / 100
+        }
     }
 
     // Adding a torrent from Search jumps to Downloads and selects it once it lands

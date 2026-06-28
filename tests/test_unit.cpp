@@ -19,12 +19,12 @@
 #include <QElapsedTimer>
 #include <QTest>
 
-#include "app/utils.h"
+#include "services/platform/utils.h"
 #include "torrent/types.h"
 #include "torrent/sessionmanager.h"
 #include "webui/webserver.h"
-#include "app/translator.h"
-#include "app/updater.h"
+#include "services/platform/translator.h"
+#include "services/integrations/updater.h"
 
 using Catch::Approx;
 using Catch::Matchers::ContainsSubstring;
@@ -952,7 +952,7 @@ TEST_CASE("SessionManager: torrentsUpdated signal fires", "[integration][signals
 //  STATS HISTORY (daily usage collector — Wrapped seed)
 // ============================================================================
 
-#include "app/statshistory.h"
+#include "services/platform/statshistory.h"
 #include <QTemporaryDir>
 #include <QDate>
 
@@ -1018,7 +1018,7 @@ TEST_CASE("StatsHistory: negative deltas are clamped", "[stats]")
 //  SUBTITLE PARSER (external .srt/.vtt for the built-in player)
 // ============================================================================
 
-#include "app/subtitleparser.h"
+#include "services/subtitles/subtitleparser.h"
 
 TEST_CASE("SubtitleParser: basic SRT with CRLF, index lines and italics", "[subs]")
 {
@@ -1081,7 +1081,7 @@ TEST_CASE("SubtitleParser: Latin-1 fallback for unlabeled Windows files", "[subs
 //  SUBTITLE SEARCH (network integration — Gestdown, keyless)
 // ============================================================================
 
-#include "app/subtitlesearch.h"
+#include "services/subtitles/subtitlesearch.h"
 
 TEST_CASE("SubtitleSearch: Gestdown end-to-end for a known series episode", "[integration][subs-net]")
 {
@@ -1201,7 +1201,7 @@ TEST_CASE("QFile::moveToTrash works in this environment", "[trash-env]")
 // ============================================================================
 //  ArchiveScan — auto-extract archive discovery (formats + multi-part)
 // ============================================================================
-#include "app/archivescan.h"
+#include "services/security/archivescan.h"
 
 TEST_CASE("ArchiveScan: plain single archives of every format", "[archive]") {
     for (const QString &n : {"movie.rar","data.zip","stuff.7z","pack.tar.gz",
@@ -1261,7 +1261,7 @@ TEST_CASE("ArchiveScan: a media file that looks like a part is not an archive", 
 // ============================================================================
 //  ReleasePick — one-click "best release" auto-pick
 // ============================================================================
-#include "app/releasepick.h"
+#include "services/metadata/releasepick.h"
 using ReleasePick::Candidate;
 static const qint64 GB_ = 1024LL * 1024 * 1024;
 
@@ -1337,7 +1337,7 @@ TEST_CASE("ReleasePick: empty list returns -1", "[release]") {
 }
 
 // ---- InstallerProfile: engine detection + silent recipes -------------------
-#include "app/installerprofile.h"
+#include "services/integrations/installerprofile.h"
 using IP = InstallerProfile::Engine;
 
 TEST_CASE("InstallerProfile: detects Inno Setup by magic at 0x30", "[installer]") {

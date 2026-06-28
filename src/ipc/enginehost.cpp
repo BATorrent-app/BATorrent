@@ -2,10 +2,10 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "enginehost.h"
-#include "ipcprotocol.h"
-#include "ipcserialize.h"
-#include "../torrent/sessionmanager.h"
+#include "ipc/enginehost.h"
+#include "ipc/ipcprotocol.h"
+#include "ipc/ipcserialize.h"
+#include "torrent/sessionmanager.h"
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QDataStream>
