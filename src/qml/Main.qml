@@ -598,36 +598,30 @@ Window {
                      ? "image://applogo/dark?v=l" : "image://applogo/light?v=d"
         icon.mask: false
         tooltip: "BATorrent"
-        // Windows: a native context menu. The frameless painted popup never
-        // reliably activated from the Win tray (it could open off-screen or
-        // fail to dismiss — issue #20), so Windows gets the OS-native menu and
-        // macOS/Linux keep the rich popup via the Context reason below.
-        menu: Qt.platform.os === "windows" ? trayMenu : null
+        // Native context menu on right-click. Declared INLINE as the `menu`
+        // property value — the documented form (SystemTrayIcon inherits QtObject,
+        // so a Menu declared as a sibling and referenced by id never reliably
+        // popped on the Windows tray). Native on every platform; routes through
+        // the trayPopup signals so the actions stay identical.
+        menu: Platform.Menu {
+            id: trayMenu
+            Platform.MenuItem { text: i18n.t("tray_show");          onTriggered: trayPopup.showApp() }
+            Platform.MenuItem { text: i18n.t("tray_open_torrent");  onTriggered: trayPopup.openTorrent() }
+            Platform.MenuItem { text: i18n.t("tray_open_magnet");   onTriggered: trayPopup.openMagnet() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: i18n.t("tray_pause_all");     onTriggered: trayPopup.pauseAll() }
+            Platform.MenuItem { text: i18n.t("tray_resume_all");    onTriggered: trayPopup.resumeAll() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: i18n.t("tray_preferences");   onTriggered: trayPopup.openSettings() }
+            Platform.MenuItem { text: i18n.t("tray_quit");          onTriggered: trayPopup.quitApp() }
+        }
         // Left click / double click restores the window (Windows convention).
         onActivated: function(reason) {
             if (reason === Platform.SystemTrayIcon.Trigger
                 || reason === Platform.SystemTrayIcon.DoubleClick) {
                 win.show(); win.raise(); win.requestActivate()
-            } else if (reason === Platform.SystemTrayIcon.Context
-                       && Qt.platform.os !== "windows") {
-                trayPopup.popUpAt(trayIcon.geometry)
             }
         }
-    }
-
-    // Native tray menu (Windows only — attached above). Routes through the same
-    // trayPopup signals the painted popup uses, so behaviour stays identical.
-    Platform.Menu {
-        id: trayMenu
-        Platform.MenuItem { text: i18n.t("tray_show");          onTriggered: trayPopup.showApp() }
-        Platform.MenuItem { text: i18n.t("tray_open_torrent");  onTriggered: trayPopup.openTorrent() }
-        Platform.MenuItem { text: i18n.t("tray_open_magnet");   onTriggered: trayPopup.openMagnet() }
-        Platform.MenuSeparator {}
-        Platform.MenuItem { text: i18n.t("tray_pause_all");     onTriggered: trayPopup.pauseAll() }
-        Platform.MenuItem { text: i18n.t("tray_resume_all");    onTriggered: trayPopup.resumeAll() }
-        Platform.MenuSeparator {}
-        Platform.MenuItem { text: i18n.t("tray_preferences");   onTriggered: trayPopup.openSettings() }
-        Platform.MenuItem { text: i18n.t("tray_quit");          onTriggered: trayPopup.quitApp() }
     }
 
     // Background events → in-app toast (when the window is up) AND the native
