@@ -86,6 +86,33 @@ Item {
         return out
     }
 
+    // "Because you watched {X}" — TMDB per-title recommendations for your latest watch
+    readonly property var recSeed: {
+        for (var i = 0; i < continueItems.length; i++)
+            if ((continueItems[i].tmdbId || 0) > 0) return continueItems[i]
+        return null
+    }
+    property var perTitleRecs: []
+    onRecSeedChanged: {
+        perTitleRecs = []
+        if (recSeed && disco) disco.fetchRecommendations(recSeed.tmdbId, recSeed.isSeries ? "series" : "movie")
+    }
+    Connections {
+        target: page.disco
+        ignoreUnknownSignals: true
+        function onRecommendationsReady(tmdbId, items) {
+            if (!page.recSeed || page.recSeed.tmdbId !== tmdbId) return
+            var have = ({})
+            for (var i = 0; i < page.library.length; i++) have[(page.library[i].title || "").toLowerCase()] = true
+            var out = []
+            for (var k = 0; k < items.length && out.length < 12; k++) {
+                if (have[(items[k].title || "").toLowerCase()]) continue
+                out.push(items[k])
+            }
+            page.perTitleRecs = out
+        }
+    }
+
     // continue rails are sized to hold exactly 3 cards each
     readonly property int railCardW: 134
     readonly property int railSpacing: 16
@@ -502,6 +529,46 @@ Item {
                     spacing: 16
                     clip: true
                     model: page.recommendations
+                    boundsBehavior: Flickable.StopAtBounds
+                    delegate: PosterCard {
+                        required property var modelData
+                        posterW: 150
+                        title: modelData.title || ""
+                        poster: modelData.poster || ""
+                        year: modelData.year || ""
+                        rating: modelData.rating || 0
+                        type: modelData.type || ""
+                        synopsis: modelData.overview || ""
+                        watchlistEnabled: typeof session !== "undefined"
+                        saved: typeof session !== "undefined"
+                               && (session.watchlist, session.inWatchlist(modelData.title, modelData.type))
+                        onWatchlistToggle: if (typeof session !== "undefined") session.toggleWatchlist({
+                            title: modelData.title, type: modelData.type, poster: modelData.poster, year: modelData.year })
+                        onActivated: page.openSearch(modelData.title || "")
+                        onGetWatch: if (typeof search !== "undefined")
+                                        search.getAndWatch(modelData.title || "", modelData.year || "", modelData.type || "movie")
+                    }
+                }
+            }
+
+            // Because you watched {X} — per-title TMDB recommendations
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                spacing: 12
+                visible: page.perTitleRecs.length > 0 && page.recSeed !== null
+                Text {
+                    Layout.fillWidth: true
+                    text: (i18n.language, i18n.t("hub_because_watched")).arg(page.recSeed ? (page.recSeed.title || "") : "")
+                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans; elide: Text.ElideRight
+                }
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 268
+                    orientation: ListView.Horizontal
+                    spacing: 16
+                    clip: true
+                    model: page.perTitleRecs
                     boundsBehavior: Flickable.StopAtBounds
                     delegate: PosterCard {
                         required property var modelData
