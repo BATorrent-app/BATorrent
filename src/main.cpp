@@ -26,6 +26,7 @@
 #include <QDesktopServices>
 #include <QProcess>
 #include <QDir>
+#include <QFileInfo>
 #include <QStandardPaths>
 #include <QUrl>
 #include <cstdlib>
@@ -122,9 +123,20 @@ static void initSentry(const QString &role)
 #ifdef BAT_SENTRY_DSN
     sentry_options_set_dsn(o, BAT_SENTRY_DSN);
 #endif
-#ifdef BAT_SENTRY_HANDLER
-    sentry_options_set_handler_path(o, BAT_SENTRY_HANDLER);
+    // Prefer the crashpad_handler shipped next to the executable (the packaged
+    // case); fall back to the build-time path (local dev against brew).
+    {
+        QString handler = QCoreApplication::applicationDirPath()
+                          + QStringLiteral("/crashpad_handler");
+#ifdef Q_OS_WIN
+        handler += QStringLiteral(".exe");
 #endif
+#ifdef BAT_SENTRY_HANDLER
+        if (!QFileInfo::exists(handler)) handler = QStringLiteral(BAT_SENTRY_HANDLER);
+#endif
+        if (QFileInfo::exists(handler))
+            sentry_options_set_handler_path(o, handler.toUtf8().constData());
+    }
     const QString db = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
                        + QStringLiteral("/sentry-") + role;
     sentry_options_set_database_path(o, db.toUtf8().constData());
@@ -185,6 +197,9 @@ int main(int argc, char *argv[])
             eapp.setApplicationName("BATorrent");
             eapp.setApplicationVersion(APP_VERSION);
             Logger::instance().init();
+#ifdef BAT_HAVE_SENTRY
+            initSentry(QStringLiteral("engine"));   // the split's whole point: report engine crashes
+#endif
             SessionManager session;   // loadResumeData() runs in the ctor
             EngineHost host(&session, QString::fromLocal8Bit(argv[i + 1]));
             if (!host.listen()) return 1;

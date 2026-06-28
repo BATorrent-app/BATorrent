@@ -109,6 +109,14 @@ if(BAT_SENTRY)
     endif()
     if(DEFINED ENV{BAT_SENTRY_HANDLER})
         target_compile_definitions(BATorrent PRIVATE BAT_SENTRY_HANDLER="$ENV{BAT_SENTRY_HANDLER}")
+        # Ship the Crashpad handler next to the executable so the packaged app
+        # finds it at runtime (initSentry prefers applicationDirPath/crashpad_handler).
+        if(EXISTS "$ENV{BAT_SENTRY_HANDLER}")
+            add_custom_command(TARGET BATorrent POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "$ENV{BAT_SENTRY_HANDLER}" "$<TARGET_FILE_DIR:BATorrent>/"
+                VERBATIM)
+        endif()
     endif()
 endif()
 
