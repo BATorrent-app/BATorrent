@@ -132,6 +132,18 @@ if(WIN32)
     # shell32/ole32: SHOpenFolderAndSelectItems for "reveal in Explorer"
     # psapi: GetProcessMemoryInfo for the memory guard
     target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp)
+
+    # Emit a PDB even in Release so Store / Partner Center crash dumps symbolicate.
+    # Without symbols every Store crash is reported as "unknown" (we had 314/322
+    # like that). /OPT:REF,ICF restore the size optimisations that /DEBUG disables,
+    # so the shipped binary is unchanged in behaviour/size — only a .pdb is added.
+    if(MSVC)
+        target_compile_options(BATorrent PRIVATE $<$<NOT:$<CONFIG:Debug>>:/Zi>)
+        target_link_options(BATorrent PRIVATE
+            $<$<NOT:$<CONFIG:Debug>>:/DEBUG>
+            $<$<NOT:$<CONFIG:Debug>>:/OPT:REF>
+            $<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>)
+    endif()
 endif()
 
 # Linux: install rules for icon and .desktop file
