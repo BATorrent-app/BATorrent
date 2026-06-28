@@ -213,6 +213,8 @@ Rectangle {
         ],
         // 8 Avançado
         [
+            { type: "group", label: (i18n.language, i18n.t("set_grp_engine")) },
+            { type: "toggle", key: "engineSplit", label: (i18n.language, i18n.t("set_engine_split")), note: (i18n.language, i18n.t("set_engine_split_note")) },
             { type: "group", label: (i18n.language, i18n.t("adv_disk_io")) },
             { type: "number", key: "advAioThreads", label: (i18n.language, i18n.t("adv_aio_threads")), value: "4" },
             { type: "number", key: "advHashingThreads", label: (i18n.language, i18n.t("adv_hashing_threads")), value: "2" },

@@ -147,6 +147,10 @@ QString QmlSettingsBridge::webUiPassword() const
 
 QVariant QmlSettingsBridge::get(const QString &key) const
 {
+    // Engine mode is a meta-setting (which engine to run), not a session value;
+    // exposed to the UI as a bool toggle. Applies on next app start.
+    if (key == QLatin1String("engineSplit"))
+        return QSettings().value(QStringLiteral("engineMode")).toString() == QLatin1String("ipc");
     // IPC engine mode: no in-process session — read the persisted value from the
     // shared QSettings store (which is what the engine child applies from).
     if (!m_session) return QSettings().value(key);
@@ -280,6 +284,11 @@ int QmlSettingsBridge::telegramEventBit(const QString &key)
 
 void QmlSettingsBridge::set(const QString &key, const QVariant &v)
 {
+    if (key == QLatin1String("engineSplit")) {
+        QSettings().setValue(QStringLiteral("engineMode"),
+                             v.toBool() ? QStringLiteral("ipc") : QStringLiteral("inprocess"));
+        emit changed(); return;   // takes effect on next app start
+    }
     // telegram: token → keychain, events → bitmask, chatId → settings; reload after.
     if (key == "telegramToken") {
         SecretStore::instance().set("telegramBotToken", v.toString());
