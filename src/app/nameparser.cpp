@@ -177,7 +177,12 @@ ParsedName NameParser::parse(const QString &rawName)
         QStringLiteral("EXTENDED"), QStringLiteral("UNRATED"), QStringLiteral("DIRECTOR"),
         QStringLiteral("IMAX"), QStringLiteral("3D"), QStringLiteral("HDR"),
         QStringLiteral("HDR10"), QStringLiteral("DV"), QStringLiteral("DoVi"),
-        QStringLiteral("Dual.Audio"), QStringLiteral("MULTI")
+        QStringLiteral("Dual.Audio"), QStringLiteral("MULTI"),
+        // Portuguese (BR) release tags — otherwise left in the title, which broke
+        // TMDB matches ("007 - Cassino Royale Dublado"). Kept to the unambiguous
+        // ones: "Nacional"/"Dub"/"Leg" can be real title words, so we don't strip them.
+        QStringLiteral("Dublado"), QStringLiteral("Legendado"),
+        QStringLiteral("Dual.Áudio"), QStringLiteral("Leg.Dub")
     };
 
     bool mediaTagFound = false;
