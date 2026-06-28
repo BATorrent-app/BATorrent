@@ -87,7 +87,7 @@ jobs:
         run: |
           if [ -n "${{ vars.BAT_SENTRY_DSN }}" ]; then
             sudo apt-get install -y libcurl4-openssl-dev
-            git clone --depth 1 --branch 0.15.2 https://github.com/getsentry/sentry-native.git /tmp/sn
+            git clone --depth 1 --recurse-submodules --shallow-submodules --branch 0.15.2 https://github.com/getsentry/sentry-native.git /tmp/sn
             cmake -S /tmp/sn -B /tmp/sn/build -DCMAKE_BUILD_TYPE=Release \
               -DSENTRY_BACKEND=crashpad -DCMAKE_INSTALL_PREFIX="$HOME/sn-prefix"
             cmake --build /tmp/sn/build --parallel
