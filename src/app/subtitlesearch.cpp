@@ -17,9 +17,72 @@
 #include <QUrl>
 #include <QUrlQuery>
 
+#include <zlib.h>
+
 namespace {
 
 constexpr int kTimeoutMs = 12000;
+
+// Raw DEFLATE inflate (no zlib header — that's how ZIP stores method-8 data).
+QByteArray inflateRaw(const char *src, int n, int hint)
+{
+    z_stream s{};
+    if (inflateInit2(&s, -MAX_WBITS) != Z_OK) return {};
+    s.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(src));
+    s.avail_in = static_cast<uInt>(n);
+    QByteArray out;
+    out.resize(hint > 0 ? hint : qMax(n * 4, 16384));
+    int ret;
+    do {
+        if (s.total_out >= static_cast<uLong>(out.size())) out.resize(out.size() * 2);
+        s.next_out = reinterpret_cast<Bytef *>(out.data() + s.total_out);
+        s.avail_out = static_cast<uInt>(out.size() - s.total_out);
+        ret = inflate(&s, Z_NO_FLUSH);
+    } while (ret == Z_OK);
+    const uLong total = s.total_out;
+    inflateEnd(&s);
+    if (ret != Z_STREAM_END) return {};
+    out.resize(static_cast<int>(total));
+    return out;
+}
+
+// Pull the first .srt out of a (small, non-zip64) ZIP via its central directory.
+QByteArray unzipFirstSrt(const QByteArray &zip)
+{
+    const char *d = zip.constData();
+    const int n = zip.size();
+    if (n < 22) return {};
+    auto u16 = [&](int o) { return quint16(quint8(d[o]) | (quint8(d[o + 1]) << 8)); };
+    auto u32 = [&](int o) {
+        return quint32(quint8(d[o]) | (quint8(d[o + 1]) << 8)
+                       | (quint8(d[o + 2]) << 16) | (quint32(quint8(d[o + 3])) << 24));
+    };
+    int eocd = -1;
+    for (int i = n - 22; i >= 0 && i >= n - 22 - 65536; --i)
+        if (u32(i) == 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) return {};
+    const int count = u16(eocd + 10);
+    int p = static_cast<int>(u32(eocd + 16));
+    for (int e = 0; e < count && p + 46 <= n && u32(p) == 0x02014b50; ++e) {
+        const quint16 method = u16(p + 10);
+        const quint32 compSize = u32(p + 20);
+        const quint32 uncompSize = u32(p + 24);
+        const quint16 fnLen = u16(p + 28);
+        const quint16 efLen = u16(p + 30);
+        const quint16 cmLen = u16(p + 32);
+        const quint32 lho = u32(p + 42);
+        const QString name = QString::fromUtf8(d + p + 46, fnLen);
+        p += 46 + fnLen + efLen + cmLen;
+        if (!name.endsWith(QLatin1String(".srt"), Qt::CaseInsensitive)) continue;
+        if (lho + 30 > quint32(n)) return {};
+        const int dataOff = int(lho) + 30 + u16(lho + 26) + u16(lho + 28);
+        if (dataOff + int(compSize) > n) return {};
+        if (method == 0) return QByteArray(d + dataOff, int(compSize));   // stored
+        if (method == 8) return inflateRaw(d + dataOff, int(compSize), int(uncompSize));
+        return {};
+    }
+    return {};
+}
 
 // OpenSubtitles wants lowercase ISO codes; Gestdown (Addic7ed) wants names.
 QString osLang(const QString &code)
@@ -79,7 +142,7 @@ QString SubtitleSearch::openSubtitlesKey()
     return key;
 }
 
-void SubtitleSearch::search(const QString &videoName, const QStringList &languages)
+void SubtitleSearch::search(const QString &videoName, const QStringList &languages, int tmdbId)
 {
     m_results.clear();
     emit resultsChanged();
@@ -90,7 +153,7 @@ void SubtitleSearch::search(const QString &videoName, const QStringList &languag
     m_pending = 0;
     if (!subdlKey().isEmpty()) {
         ++m_pending;
-        searchSubDL(title, pn.season, pn.episode, languages);
+        searchSubDL(title, tmdbId, pn.season, pn.episode, languages);
     }
     if (!openSubtitlesKey().isEmpty()) {
         ++m_pending;
@@ -115,7 +178,7 @@ void SubtitleSearch::providerDone()
     }
 }
 
-void SubtitleSearch::searchSubDL(const QString &title, int season, int episode,
+void SubtitleSearch::searchSubDL(const QString &title, int tmdbId, int season, int episode,
                                  const QStringList &langs)
 {
     QStringList codes;
@@ -124,14 +187,16 @@ void SubtitleSearch::searchSubDL(const QString &title, int season, int episode,
     QUrl url(QStringLiteral("https://api.subdl.com/api/v1/subtitles"));
     QUrlQuery q;
     q.addQueryItem(QStringLiteral("api_key"), subdlKey());
-    q.addQueryItem(QStringLiteral("film_name"), title);
+    // tmdb_id pins the exact title — "Michael" otherwise matches a dozen films.
+    if (tmdbId > 0) q.addQueryItem(QStringLiteral("tmdb_id"), QString::number(tmdbId));
+    else q.addQueryItem(QStringLiteral("film_name"), title);
     q.addQueryItem(QStringLiteral("languages"), codes.join(QLatin1Char(',')));
     q.addQueryItem(QStringLiteral("type"), (season >= 0 && episode >= 0)
                        ? QStringLiteral("tv") : QStringLiteral("movie"));
     if (season >= 0) q.addQueryItem(QStringLiteral("season_number"), QString::number(season));
     if (episode >= 0) q.addQueryItem(QStringLiteral("episode_number"), QString::number(episode));
     q.addQueryItem(QStringLiteral("subs_per_page"), QStringLiteral("30"));
-    q.addQueryItem(QStringLiteral("unpack"), QStringLiteral("1"));   // direct .srt URLs, no zip
+    q.addQueryItem(QStringLiteral("unpack"), QStringLiteral("1"));
     url.setQuery(q);
 
     QNetworkRequest req(url);
@@ -143,10 +208,12 @@ void SubtitleSearch::searchSubDL(const QString &title, int season, int episode,
             const auto doc = QJsonDocument::fromJson(reply->readAll());
             const QJsonArray subs = doc.object().value(QStringLiteral("subtitles")).toArray();
             for (const auto &sv : subs) {
-                // unpack=1 splits each pack into per-file entries whose url serves
-                // the raw .srt directly (api_key already embedded). The parent url
-                // is a .zip we can't extract, so only the unpacked files are usable.
-                const QJsonArray files = sv.toObject().value(QStringLiteral("unpack_files")).toArray();
+                const QJsonObject so = sv.toObject();
+                // unpack=1 *sometimes* splits a pack into per-file entries whose
+                // url serves the raw .srt directly. When it doesn't (common), the
+                // only handle is the parent .zip, which downloadSubDL unzips.
+                const QJsonArray files = so.value(QStringLiteral("unpack_files")).toArray();
+                bool added = false;
                 for (const auto &fv : files) {
                     const QJsonObject o = fv.toObject();
                     if (o.value(QStringLiteral("format")).toString().compare(
@@ -162,7 +229,19 @@ void SubtitleSearch::searchSubDL(const QString &title, int season, int episode,
                     if (o.value(QStringLiteral("hi")).toBool(false)) r.name += QStringLiteral(" [HI]");
                     r.downloadRef = ref;
                     m_results << r;
+                    added = true;
                 }
+                if (added) continue;
+                const QString zipRef = so.value(QStringLiteral("url")).toString();
+                if (zipRef.isEmpty()) continue;
+                SubtitleResult r;
+                r.provider = QStringLiteral("SubDL");
+                r.language = so.value(QStringLiteral("language")).toString().toLower();
+                r.name = so.value(QStringLiteral("release_name")).toString();
+                if (r.name.isEmpty()) r.name = so.value(QStringLiteral("name")).toString();
+                if (so.value(QStringLiteral("hi")).toBool(false)) r.name += QStringLiteral(" [HI]");
+                r.downloadRef = zipRef;
+                m_results << r;
             }
             emit resultsChanged();
         }
@@ -289,18 +368,24 @@ void SubtitleSearch::downloadSubDL(const SubtitleResult &r, const QString &saveP
     const QUrl url = r.downloadRef.startsWith(QLatin1String("http"))
                          ? QUrl(r.downloadRef)
                          : QUrl(QStringLiteral("https://dl.subdl.com") + r.downloadRef);
+    const bool isZip = url.path().endsWith(QLatin1String(".zip"), Qt::CaseInsensitive);
     QNetworkRequest req(url);
     prepare(req);
     QNetworkReply *reply = m_nam.get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, savePath]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, savePath, isZip]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
             emit errorOccurred(reply->errorString());
             return;
         }
+        QByteArray data = reply->readAll();
+        if (isZip) {
+            data = unzipFirstSrt(data);
+            if (data.isEmpty()) { emit errorOccurred(QStringLiteral("unzip_failed")); return; }
+        }
         QFile f(savePath);
         if (!f.open(QIODevice::WriteOnly)) { emit errorOccurred(savePath); return; }
-        f.write(reply->readAll());
+        f.write(data);
         f.close();
         emit downloadFinished(savePath);
     });

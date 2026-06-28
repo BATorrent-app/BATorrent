@@ -428,6 +428,7 @@ int main(int argc, char *argv[])
 #endif
         auto *logBridge = new QmlLogBridge(&app);
         auto *subtitleBridge = new QmlSubtitleBridge(eng, &app);
+        subtitleBridge->setResolver(resolver);
         auto *pairingBridge = new QmlPairingBridge(&app);
         auto *notificationBridge = new QmlNotificationBridge(&app);
         QObject::connect(eng, &IEngine::torrentFinished,
