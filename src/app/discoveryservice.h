@@ -44,6 +44,8 @@ public:
     Q_INVOKABLE void fetchTrailer(int tmdbId, const QString &type);
     // "Because you watched X" — TMDB recommendations for a seed title. Emits recommendationsReady.
     Q_INVOKABLE void fetchRecommendations(int tmdbId, const QString &type);
+    // "Because you played X" — IGDB similar games for a seed game (by name).
+    Q_INVOKABLE void fetchGameRecommendations(const QString &gameName);
     // Episode list (number, name, air date) for a TV season. Emits episodesReady.
     Q_INVOKABLE void fetchEpisodes(int tmdbId, int season);
 
@@ -56,6 +58,7 @@ signals:
     void titleResults(const QString &query, const QVariantList &works);
     void trailerReady(int tmdbId, const QString &youtubeKey);   // "" if none
     void recommendationsReady(int tmdbId, const QVariantList &items);
+    void gameRecommendationsReady(const QString &gameName, const QVariantList &items);
     void episodesReady(int tmdbId, int season, const QVariantList &episodes);   // [{episode,name,air_date}]
 
 private:
