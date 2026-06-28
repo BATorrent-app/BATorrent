@@ -341,6 +341,38 @@ Window {
         component Sep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
         delegate: CtxItem {}
 
+        // Games lead the menu with an accent button (state-driven, Steam model):
+        // Play when ready, else Install. A torrent is a game XOR a video, so only
+        // one of gameCtx/playCtx is ever visible — both sit at the very top.
+        MenuItem {
+            id: gameCtx
+            readonly property bool gReady: (win.selected, session.selectedGameState() === 4)
+            visible: (win.selected, session.selectedIsGame() && session.selectedGameState() !== 5)
+            height: visible ? 36 : 0
+            implicitHeight: height
+            padding: 0
+            onTriggered: gameCtx.gReady ? session.playSelectedGame() : session.installSelectedGame()
+            contentItem: Row {
+                leftPadding: 12
+                spacing: 9
+                IconImg {
+                    anchors.verticalCenter: parent.verticalCenter
+                    src: gameCtx.gReady ? "qrc:/icons/play.svg" : "qrc:/icons/download.svg"; tint: Theme.accent; s: 13
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, gameCtx.gReady ? i18n.t("hub_gs_play") : i18n.t("hub_gs_install"))
+                    color: Theme.accent
+                    font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                }
+            }
+            background: Rectangle {
+                radius: 6
+                color: gameCtx.highlighted
+                       ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
+                       : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.07)
+            }
+        }
         // Play leads the menu as a minimalist accent button (not a plain row) so
         // the primary action for a video torrent stands out at a glance.
         MenuItem {
@@ -391,37 +423,6 @@ Window {
             onTriggered: inputPrompt.openWith(i18n.t("ctx_extract"), i18n.t("extract_password_label"),
                                               "", i18n.t("extract_password_ph"),
                                               function(pw){ session.extractSelected(pw) })
-        }
-        // Games lead with the same accent button as Play (state-driven, Steam model):
-        // Play when ready, else Install. "Open folder" above stays secondary.
-        MenuItem {
-            id: gameCtx
-            readonly property bool gReady: (win.selected, session.selectedGameState() === 4)
-            visible: (win.selected, session.selectedIsGame() && session.selectedGameState() !== 5)
-            height: visible ? 36 : 0
-            implicitHeight: height
-            padding: 0
-            onTriggered: gameCtx.gReady ? session.playSelectedGame() : session.installSelectedGame()
-            contentItem: Row {
-                leftPadding: 12
-                spacing: 9
-                IconImg {
-                    anchors.verticalCenter: parent.verticalCenter
-                    src: gameCtx.gReady ? "qrc:/icons/play.svg" : "qrc:/icons/download.svg"; tint: Theme.accent; s: 13
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: (i18n.language, gameCtx.gReady ? i18n.t("hub_gs_play") : i18n.t("hub_gs_install"))
-                    color: Theme.accent
-                    font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                }
-            }
-            background: Rectangle {
-                radius: 6
-                color: gameCtx.highlighted
-                       ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
-                       : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.07)
-            }
         }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
         Sep {}
