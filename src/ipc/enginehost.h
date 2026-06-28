@@ -4,12 +4,15 @@
 
 // Engine-side IPC host: runs in the `--engine` child process, owns the real
 // SessionManager, and serves the IEngine surface over a QLocalServer. The UI's
-// IpcEngine is the client. See internal/ENGINE_SPLIT_PLAN.md.
+// IpcEngine is the client. It pushes a state snapshot every tick (so the UI's
+// hot-path reads never block) and forwards the engine signals as events; the
+// remaining methods are request→reply. See internal/ENGINE_SPLIT_PLAN.md.
 #ifndef BATORRENT_ENGINEHOST_H
 #define BATORRENT_ENGINEHOST_H
 
 #include <QObject>
 #include <QByteArray>
+#include <QString>
 
 class SessionManager;
 class QLocalServer;
@@ -28,6 +31,8 @@ private slots:
 
 private:
     QByteArray dispatch(const QString &method, const QByteArray &args);   // → resultBlob
+    void sendEvent(const QString &name, const QByteArray &args);
+    void pushSnapshot();
 
     SessionManager *m_session;
     QString m_serverName;

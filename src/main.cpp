@@ -41,6 +41,8 @@
 #include "ipc/enginehost.h"
 #include "ipc/ipcengine.h"
 #include <QCoreApplication>
+#include <QElapsedTimer>
+#include <QEventLoop>
 #include <cstring>
 #include <QThread>
 #include "app/secretstore.h"
@@ -141,11 +143,17 @@ int main(int argc, char *argv[])
                 qInfo() << "[selftest] engine status:" << (up ? "UP" : "DOWN");
             });
             if (!engine.start()) { qWarning() << "[selftest] engine failed to start"; return 1; }
-            // One round-trip proves the framed request→reply across the process
-            // boundary. (The count may read 0 here: libtorrent adds resume torrents
-            // asynchronously; Phase 3 serves reads from a pushed snapshot instead of
-            // this blocking request, so that race + the sync-wait fragility both go.)
-            qInfo() << "[selftest] connected. torrentCount round-tripped =" << engine.torrentCount();
+            // Pump events ~3s so the engine finishes loading resume data and
+            // pushes a full snapshot; reads are served from it (no blocking).
+            QElapsedTimer pump; pump.start();
+            while (pump.elapsed() < 3000) eapp.processEvents(QEventLoop::AllEvents, 100);
+            qInfo() << "[selftest] connected. snapshot torrentCount =" << engine.torrentCount();
+            if (engine.torrentCount() > 0) {
+                const TorrentInfo t = engine.torrentAt(0);
+                qInfo() << "[selftest] torrentAt(0):" << t.name << "progress" << t.progress
+                        << "hash" << engine.torrentHashAt(0);
+                qInfo() << "[selftest] filesAt(0) count =" << int(engine.filesAt(0).size());
+            }
             qInfo() << "[selftest] pauseAll()"; engine.pauseAll();
             qInfo() << "[selftest] round-trip OK";
             return 0;

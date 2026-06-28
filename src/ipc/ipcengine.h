@@ -6,16 +6,19 @@
 // supervising it (respawn on crash). The UI never knows whether it's talking to
 // an in-process SessionManager or this. See internal/ENGINE_SPLIT_PLAN.md.
 //
-// NOTE (Phase 2 scaffolding): the channel, process supervision and a few
-// representative methods are wired; the remaining methods are stubs returning
-// defaults, filled in next. engineMode defaults to in-process, so this is not
-// yet on the shipping path.
+// Hot-path reads (torrentAt, counts, globals) are served from a snapshot the
+// engine pushes every tick — no blocking. Per-selection detail (files, peers,
+// pieces, trackers) and mutations go over request→reply. engineMode still
+// defaults to in-process, so this is not yet on the shipping path.
 #ifndef BATORRENT_IPCENGINE_H
 #define BATORRENT_IPCENGINE_H
 
 #include "../torrent/iengine.h"
+#include "ipcprotocol.h"
+#include "ipcserialize.h"
 #include <QProcess>
 #include <QByteArray>
+#include <QHash>
 
 class QLocalSocket;
 
@@ -29,7 +32,7 @@ public:
     bool start();             // spawn the engine child + connect
     bool connected() const;
 
-    // ---- IEngine surface (generated overrides) ----
+    // ---- IEngine surface ----
     TorrentInfo torrentAt(int index) const override;
     QString torrentHashAt(int index) const override;
     int torrentIndexByInfoHash(const QString &infoHash) const override;
@@ -114,8 +117,13 @@ private slots:
 
 private:
     void spawnEngine();
+    void handleFrame(ipc::Kind kind, const QByteArray &payload);
+    void dispatchEvent(const QString &name, const QByteArray &args);
     QByteArray request(const QString &method, const QByteArray &args = {}) const;   // blocking req→reply
     void call(const QString &method, const QByteArray &args = {}) const { request(method, args); }
+
+    // helpers for the marshalled mutations: encode args then fire-and-forget.
+    static QByteArray packIndex(int i);
 
     QString m_exePath;
     QString m_serverName;
@@ -123,6 +131,9 @@ private:
     QLocalSocket *m_sock = nullptr;
     mutable QByteArray m_buf;
     mutable quint32 m_nextId = 1;
+    mutable QHash<quint32, QByteArray> m_replies;   // id → resultBlob, drained by request()
+    mutable EngineSnapshot m_snap;                  // latest pushed state
+    mutable bool m_gotSnapshot = false;
     bool m_shuttingDown = false;
 };
 
