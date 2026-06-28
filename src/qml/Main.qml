@@ -555,7 +555,7 @@ Window {
         }
         Platform.Menu {
             title: (i18n.language, i18n.t("menu_settings_title"))
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: win.showWin(settingsWinLoader) }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: navRail.currentIndex = 4 }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
@@ -684,7 +684,7 @@ Window {
                 { label: i18n.t("nav_discover"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 1 } },
                 { label: i18n.t("nav_search"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 2 } },
                 { label: i18n.t("nav_hub"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 3 } },
-                { label: i18n.t("tb_settings"), run: function() { win.showWin(settingsWinLoader) } },
+                { label: i18n.t("tb_settings"), run: function() { navRail.currentIndex = 4 } },
                 { label: i18n.t("menu_rss"), run: function() { win.showWin(rssWinLoader) } },
                 { label: i18n.t("menu_statistics"), run: function() { win.showWin(statsWinLoader) } },
                 { label: i18n.t("wrapped_title"), run: function() { win.showWrapped() } },
@@ -700,11 +700,11 @@ Window {
                 (function(idx) {
                     acts.push({ label: i18n.t("tb_settings") + " · " + i18n.t(setNav[idx]),
                                 hint: i18n.t("palette_hint_page"),
-                                run: function() { win.showWin(settingsWinLoader); if (settingsWinLoader.item) settingsWinLoader.item.sec = idx } })
+                                run: function() { settingsPage.sec = idx; navRail.currentIndex = 4 } })
                 })(si)
             }
             acts.push({ label: i18n.t("set_grp_torrent_search"), hint: i18n.t("tb_settings"),
-                        run: function() { win.showWin(settingsWinLoader); if (settingsWinLoader.item) settingsWinLoader.item.sec = 7 } })
+                        run: function() { settingsPage.sec = 7; navRail.currentIndex = 4 } })
             return acts
         }
         onTorrentPicked: function(src) {
@@ -781,7 +781,7 @@ Window {
         onOpenMagnet:   { win.show(); win.raise(); win.requestActivate(); magnetDlg.open() }
         onPauseAll:     if (typeof session !== "undefined") session.pauseAll()
         onResumeAll:    if (typeof session !== "undefined") session.resumeAll()
-        onOpenSettings: { win.showWin(settingsWinLoader) }
+        onOpenSettings: { win.show(); win.raise(); win.requestActivate(); navRail.currentIndex = 4 }
         onQuitApp:      Qt.quit()
     }
 
@@ -1032,7 +1032,7 @@ Window {
             }
             BarMenu {
                 title: (i18n.language, i18n.t("menu_settings_title"))
-                BarItem { text: (i18n.language, i18n.t("menu_preferences")); onTriggered: win.showWin(settingsWinLoader) }
+                BarItem { text: (i18n.language, i18n.t("menu_preferences")); onTriggered: navRail.currentIndex = 4 }
                 BarItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
                 BarItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
@@ -1070,7 +1070,7 @@ Window {
             NavRail {
                 id: navRail
                 Layout.fillHeight: true
-                onSettingsClicked: win.showWin(settingsWinLoader)
+                onSettingsClicked: navRail.currentIndex = 4
                 onSelectTorrent: function(infoHash) {
                     if (typeof session === "undefined") return
                     if (!session.selectByInfoHash(infoHash)) { win.setFilter("all"); session.selectByInfoHash(infoHash) }
@@ -1131,7 +1131,7 @@ Window {
                 TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: win.showWin(rssWinLoader) }
                 TGrpDiv {}
                 // G5: Config.
-                TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: win.showWin(settingsWinLoader) }
+                TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: navRail.currentIndex = 4 }
 
 
                 // .tb-spacer
@@ -2797,6 +2797,12 @@ Window {
                     onOpenSearch: function(q) { navRail.currentIndex = 2; searchPage.runQuery(q) }
                     onGoDiscover: navRail.currentIndex = 1
                 }
+                // ----- page 4: Settings (fullscreen tab, was a top-level window) -----
+                SettingsView {
+                    id: settingsPage; Layout.fillWidth: true; Layout.fillHeight: true
+                    isCurrent: navRail.currentIndex === 4
+                    onClosed: navRail.currentIndex = 0
+                }
             }
         }
     }
@@ -3015,7 +3021,7 @@ Window {
 
     // ================== TOP-LEVEL WINDOWS (lazy) ==================
     // Built on first open via Loader, not at startup — instantiating all of
-    // them eagerly (SettingsWindow alone is huge) stalled the UI thread for
+    // them eagerly stalled the UI thread for
     // seconds on launch and inflated memory. showWin() creates then shows.
     function showWin(loader) {
         loader.active = true
@@ -3029,7 +3035,6 @@ Window {
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
     Loader { id: rssWinLoader;       active: false; sourceComponent: RssWindow {} }
-    Loader { id: settingsWinLoader;  active: false; sourceComponent: SettingsWindow {} }
     Loader { id: shortcutsWinLoader; active: false; sourceComponent: ShortcutsWindow {} }
     Loader { id: statsWinLoader;     active: false; sourceComponent: StatisticsWindow { onOpenWrapped: win.showWrapped() } }
     Loader { id: wrappedWinLoader;   active: false; sourceComponent: WrappedWindow {} }

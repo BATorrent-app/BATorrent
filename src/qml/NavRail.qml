@@ -304,9 +304,10 @@ Rectangle {
             ToolTip.delay: 400
         }
 
-        // ----- settings -----
+        // ----- settings (page 4 — fullscreen tab, not a separate window) -----
         Item {
             id: settingsItem
+            readonly property bool active: rail.currentIndex === 4
             Layout.fillWidth: true
             Layout.preferredHeight: 46
             Layout.leftMargin: 10
@@ -314,24 +315,35 @@ Rectangle {
             Rectangle {
                 anchors.fill: parent
                 radius: 10
-                color: setMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
+                color: settingsItem.active ? Theme.hover
+                     : (setMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
                 Behavior on color { ColorAnimation { duration: 140 } }
+                Rectangle {
+                    anchors.left: parent.left; anchors.leftMargin: 3
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 3
+                    height: settingsItem.active ? 22 : 0
+                    radius: 2
+                    color: Theme.accent
+                    Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                }
             }
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: rail.collapsed ? 13 : 17
                 anchors.rightMargin: 12
                 spacing: 13
-                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/settings.svg"; tint: Theme.t3; s: 18 }
+                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/settings.svg"; tint: settingsItem.active ? Theme.t1 : Theme.t3; s: 18; Behavior on tint { ColorAnimation { duration: 140 } } }
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
                     text: (i18n.language, i18n.t("tb_settings"))
-                    color: Theme.t2
+                    color: settingsItem.active ? Theme.t1 : Theme.t2
                     font.pixelSize: 14
-                    font.weight: Font.Medium
+                    font.weight: settingsItem.active ? Font.DemiBold : Font.Medium
                     font.family: Theme.fontSans
                     opacity: rail.collapsed ? 0 : 1
+                    Behavior on color { ColorAnimation { duration: 140 } }
                     Behavior on opacity { NumberAnimation { duration: 140 } }
                 }
             }
