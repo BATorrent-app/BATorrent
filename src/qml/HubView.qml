@@ -111,6 +111,24 @@ Item {
             }
             page.perTitleRecs = out
         }
+        function onGameRecommendationsReady(gameName, items) {
+            if (!page.gameSeed || (page.gameSeed.title || "") !== gameName) return
+            var have = ({})
+            for (var i = 0; i < page.gameItems.length; i++) have[(page.gameItems[i].title || "").toLowerCase()] = true
+            var out = []
+            for (var k = 0; k < items.length && out.length < 12; k++) {
+                if (have[(items[k].title || "").toLowerCase()]) continue
+                out.push(items[k])
+            }
+            page.gameRecs = out
+        }
+    }
+    // "Because you played {X}" — IGDB similar games for your latest played game
+    readonly property var gameSeed: continuePlaying.length > 0 ? continuePlaying[0] : null
+    property var gameRecs: []
+    onGameSeedChanged: {
+        gameRecs = []
+        if (gameSeed && disco) disco.fetchGameRecommendations(gameSeed.title || "")
     }
 
     // continue rails are sized to hold exactly 3 cards each
@@ -587,6 +605,44 @@ Item {
                         onActivated: page.openSearch(modelData.title || "")
                         onGetWatch: if (typeof search !== "undefined")
                                         search.getAndWatch(modelData.title || "", modelData.year || "", modelData.type || "movie")
+                    }
+                }
+            }
+
+            // Because you played {X} — IGDB similar games
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5
+                spacing: 12
+                visible: page.gameRecs.length > 0 && page.gameSeed !== null
+                Text {
+                    Layout.fillWidth: true
+                    text: (i18n.language, i18n.t("hub_because_played")).arg(page.gameSeed ? (page.gameSeed.title || "") : "")
+                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans; elide: Text.ElideRight
+                }
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 268
+                    orientation: ListView.Horizontal
+                    spacing: 16
+                    clip: true
+                    model: page.gameRecs
+                    boundsBehavior: Flickable.StopAtBounds
+                    delegate: PosterCard {
+                        required property var modelData
+                        posterW: 150
+                        title: modelData.title || ""
+                        poster: modelData.poster || ""
+                        year: modelData.year || ""
+                        rating: modelData.rating || 0
+                        type: modelData.type || "game"
+                        synopsis: modelData.overview || ""
+                        watchlistEnabled: typeof session !== "undefined"
+                        saved: typeof session !== "undefined"
+                               && (session.watchlist, session.inWatchlist(modelData.title, "game"))
+                        onWatchlistToggle: if (typeof session !== "undefined") session.toggleWatchlist({
+                            title: modelData.title, type: "game", poster: modelData.poster, year: modelData.year })
+                        onActivated: page.openSearch(modelData.title || "")
                     }
                 }
             }

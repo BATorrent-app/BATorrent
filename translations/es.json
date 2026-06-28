@@ -302,6 +302,7 @@
   "hub_recent": "Añadidos recientemente",
   "hub_recommended": "Recomendado para ti",
   "hub_because_watched": "Porque viste %1",
+  "hub_because_played": "Porque jugaste %1",
   "hub_empty_title": "Tu biblioteca está vacía",
   "hub_empty_sub": "Descarga un juego o película para empezar tu colección",
   "hub_playing_now": "Jugando ahora",
