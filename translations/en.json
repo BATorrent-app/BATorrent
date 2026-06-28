@@ -183,6 +183,7 @@
   "detail_kv_uploaded": "Uploaded",
   "detail_peers": "Peers",
   "detail_pieces": "Pieces",
+  "detail_graph": "Graph",
   "detail_section_info": "Info",
   "detail_section_peers": "Peers",
   "detail_section_transfer": "Transfer",

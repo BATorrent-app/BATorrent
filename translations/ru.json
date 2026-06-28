@@ -182,6 +182,7 @@
   "detail_kv_uploaded": "Раздано",
   "detail_peers": "Пиры",
   "detail_pieces": "Части",
+  "detail_graph": "График",
   "detail_section_info": "Информация",
   "detail_section_peers": "Пиры",
   "detail_section_transfer": "Передача",

@@ -182,6 +182,7 @@
   "detail_kv_uploaded": "アップロード済",
   "detail_peers": "ピア",
   "detail_pieces": "ピース",
+  "detail_graph": "グラフ",
   "detail_section_info": "情報",
   "detail_section_peers": "ピア",
   "detail_section_transfer": "転送",

@@ -2281,7 +2281,8 @@ Window {
                                 { label: (i18n.language, i18n.t("detail_peers")),    ct: win.hasSel ? String(session.selectedPeers) : "" },
                                 { label: (i18n.language, i18n.t("detail_files")), ct: win.hasSel ? String(session.selectedFiles.length) : "" },
                                 { label: (i18n.language, i18n.t("detail_trackers")), ct: win.hasSel ? String(session.selectedTrackers.length) : "" },
-                                { label: (i18n.language, i18n.t("detail_pieces")),  ct: "" }
+                                { label: (i18n.language, i18n.t("detail_pieces")),  ct: "" },
+                                { label: (i18n.language, i18n.t("detail_graph")),  ct: "" }
                             ]
                             delegate: Item {
                                 height: 42
@@ -2476,92 +2477,6 @@ Window {
                             }
                         }
 
-                        // per-torrent speed history — readable, contained graph
-                        // (down = accent, up = amber). Fills in as samples accrue.
-                        Item {
-                            id: spBox
-                            visible: win.hasSel
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 72
-                            Layout.topMargin: 12
-
-                            readonly property var dl: typeof session !== "undefined" ? session.selectedDownHistory : []
-                            readonly property var ul: typeof session !== "undefined" ? session.selectedUpHistory : []
-                            readonly property int slots: 60
-                            readonly property int scaledMax: {
-                                var m = 1
-                                for (var i = 0; i < dl.length; ++i) if (dl[i] > m) m = dl[i]
-                                for (var j = 0; j < ul.length; ++j) if (ul[j] > m) m = ul[j]
-                                return Math.round(m * 1.15)
-                            }
-                            function scaleText(b) {
-                                if (b >= 1048576) return (b / 1048576).toFixed(1) + " MB/s"
-                                return Math.round(b / 1024) + " KB/s"
-                            }
-                            function _path(arr, close) {
-                                if (!arr || arr.length === 0) return ""
-                                var n = arr.length, step = spGraph.width / (slots - 1), off = (slots - n) * step, h = spGraph.height
-                                function yAt(v) { return h - (v / scaledMax) * (h - 2) }
-                                var s = close ? ("M " + off.toFixed(1) + "," + h.toFixed(1) + " L " + off.toFixed(1) + "," + yAt(arr[0]).toFixed(1))
-                                              : ("M " + off.toFixed(1) + "," + yAt(arr[0]).toFixed(1))
-                                for (var i = 1; i < n; ++i) {
-                                    var px = off + (i-1)*step, py = yAt(arr[i-1]), x = off + i*step, y = yAt(arr[i]), cx = (px+x)/2
-                                    s += " C " + cx.toFixed(1)+","+py.toFixed(1)+" "+cx.toFixed(1)+","+y.toFixed(1)+" "+x.toFixed(1)+","+y.toFixed(1)
-                                }
-                                if (close) s += " L " + (off + (n-1)*step).toFixed(1) + "," + h.toFixed(1) + " Z"
-                                return s
-                            }
-
-                            Text {
-                                anchors.left: parent.left; anchors.top: parent.top
-                                text: spBox.scaleText(spBox.scaledMax)
-                                color: Theme.t4; font.pixelSize: 9; font.family: Theme.fontSans
-                            }
-                            Row {
-                                anchors.right: parent.right; anchors.top: parent.top; spacing: 9
-                                Text { text: "↓"; color: Theme.accent; font.pixelSize: 11; font.bold: true; font.family: Theme.fontMono }
-                                Text { text: "↑"; color: Theme.amber;  font.pixelSize: 11; font.bold: true; font.family: Theme.fontMono }
-                            }
-                            Rectangle {
-                                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-                                height: 1; color: Theme.hairSoft
-                            }
-                            Shape {
-                                id: spGraph
-                                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-                                height: parent.height - 16
-                                preferredRendererType: Shape.CurveRenderer
-                                antialiasing: true
-                                ShapePath {
-                                    strokeColor: "transparent"; strokeWidth: 0
-                                    fillGradient: LinearGradient {
-                                        x1: 0; y1: 0; x2: 0; y2: spGraph.height
-                                        GradientStop { position: 0.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.13) }
-                                        GradientStop { position: 1.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.0) }
-                                    }
-                                    PathSvg { path: spBox._path(spBox.ul, true) }
-                                }
-                                ShapePath {
-                                    strokeColor: "transparent"; strokeWidth: 0
-                                    fillGradient: LinearGradient {
-                                        x1: 0; y1: 0; x2: 0; y2: spGraph.height
-                                        GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.13) }
-                                        GradientStop { position: 1.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.0) }
-                                    }
-                                    PathSvg { path: spBox._path(spBox.dl, true) }
-                                }
-                                ShapePath {
-                                    strokeColor: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.7); strokeWidth: 1.25
-                                    fillColor: "transparent"; capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin
-                                    PathSvg { path: spBox._path(spBox.ul, false) }
-                                }
-                                ShapePath {
-                                    strokeColor: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.85); strokeWidth: 1.25
-                                    fillColor: "transparent"; capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin
-                                    PathSvg { path: spBox._path(spBox.dl, false) }
-                                }
-                            }
-                        }
                     }
 
                     Item { Layout.fillWidth: true }
@@ -2682,6 +2597,100 @@ Window {
                   }
                   DetailTrackers { trackers: (win.hasSel && win.detailTab === 3) ? session.selectedTrackers : [] }
                   DetailPieces   { pieces:   (win.hasSel && win.detailTab === 4) ? session.selectedPieces   : [] }
+
+                  // --- 5: Graph (moved out of General into its own tab) ---
+                  Item {
+                            // per-torrent speed history — readable, contained graph
+                            // (down = accent, up = amber). Fills in as samples accrue.
+                            Item {
+                                id: spBox
+                                visible: win.hasSel
+                                anchors.fill: parent
+                                anchors.margins: Theme.sp5
+    
+                                readonly property var dl: typeof session !== "undefined" ? session.selectedDownHistory : []
+                                readonly property var ul: typeof session !== "undefined" ? session.selectedUpHistory : []
+                                readonly property int slots: 60
+                                readonly property int scaledMax: {
+                                    var m = 1
+                                    for (var i = 0; i < dl.length; ++i) if (dl[i] > m) m = dl[i]
+                                    for (var j = 0; j < ul.length; ++j) if (ul[j] > m) m = ul[j]
+                                    return Math.round(m * 1.15)
+                                }
+                                function scaleText(b) {
+                                    if (b >= 1048576) return (b / 1048576).toFixed(1) + " MB/s"
+                                    return Math.round(b / 1024) + " KB/s"
+                                }
+                                function _path(arr, close) {
+                                    if (!arr || arr.length === 0) return ""
+                                    var n = arr.length, step = spGraph.width / (slots - 1), off = (slots - n) * step, h = spGraph.height
+                                    function yAt(v) { return h - (v / scaledMax) * (h - 2) }
+                                    var s = close ? ("M " + off.toFixed(1) + "," + h.toFixed(1) + " L " + off.toFixed(1) + "," + yAt(arr[0]).toFixed(1))
+                                                  : ("M " + off.toFixed(1) + "," + yAt(arr[0]).toFixed(1))
+                                    for (var i = 1; i < n; ++i) {
+                                        var px = off + (i-1)*step, py = yAt(arr[i-1]), x = off + i*step, y = yAt(arr[i]), cx = (px+x)/2
+                                        s += " C " + cx.toFixed(1)+","+py.toFixed(1)+" "+cx.toFixed(1)+","+y.toFixed(1)+" "+x.toFixed(1)+","+y.toFixed(1)
+                                    }
+                                    if (close) s += " L " + (off + (n-1)*step).toFixed(1) + "," + h.toFixed(1) + " Z"
+                                    return s
+                                }
+    
+                                Text {
+                                    anchors.left: parent.left; anchors.top: parent.top
+                                    text: spBox.scaleText(spBox.scaledMax)
+                                    color: Theme.t4; font.pixelSize: 9; font.family: Theme.fontSans
+                                }
+                                Row {
+                                    anchors.right: parent.right; anchors.top: parent.top; spacing: 9
+                                    Text { text: "↓"; color: Theme.accent; font.pixelSize: 11; font.bold: true; font.family: Theme.fontMono }
+                                    Text { text: "↑"; color: Theme.amber;  font.pixelSize: 11; font.bold: true; font.family: Theme.fontMono }
+                                }
+                                Rectangle {
+                                    anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                                    height: 1; color: Theme.hairSoft
+                                }
+                                Shape {
+                                    id: spGraph
+                                    anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                                    height: parent.height - 16
+                                    preferredRendererType: Shape.CurveRenderer
+                                    antialiasing: true
+                                    ShapePath {
+                                        strokeColor: "transparent"; strokeWidth: 0
+                                        fillGradient: LinearGradient {
+                                            x1: 0; y1: 0; x2: 0; y2: spGraph.height
+                                            GradientStop { position: 0.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.13) }
+                                            GradientStop { position: 1.0; color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.0) }
+                                        }
+                                        PathSvg { path: spBox._path(spBox.ul, true) }
+                                    }
+                                    ShapePath {
+                                        strokeColor: "transparent"; strokeWidth: 0
+                                        fillGradient: LinearGradient {
+                                            x1: 0; y1: 0; x2: 0; y2: spGraph.height
+                                            GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.13) }
+                                            GradientStop { position: 1.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.0) }
+                                        }
+                                        PathSvg { path: spBox._path(spBox.dl, true) }
+                                    }
+                                    ShapePath {
+                                        strokeColor: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.7); strokeWidth: 1.25
+                                        fillColor: "transparent"; capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin
+                                        PathSvg { path: spBox._path(spBox.ul, false) }
+                                    }
+                                    ShapePath {
+                                        strokeColor: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.85); strokeWidth: 1.25
+                                        fillColor: "transparent"; capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin
+                                        PathSvg { path: spBox._path(spBox.dl, false) }
+                                    }
+                                }
+                            }
+                      Text {
+                          anchors.centerIn: parent; visible: !win.hasSel
+                          text: (i18n.language, i18n.t("empty_no_selection"))
+                          color: Theme.t4; font.pixelSize: 13; font.family: Theme.fontSans
+                      }
+                  }
                 }
             }
         }

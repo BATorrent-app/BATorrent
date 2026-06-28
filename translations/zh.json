@@ -182,6 +182,7 @@
   "detail_kv_uploaded": "已上传",
   "detail_peers": "节点",
   "detail_pieces": "片段",
+  "detail_graph": "图表",
   "detail_section_info": "信息",
   "detail_section_peers": "用户",
   "detail_section_transfer": "传输",
