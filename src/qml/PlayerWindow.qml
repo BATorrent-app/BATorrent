@@ -52,13 +52,30 @@ Window {
     property bool resumed: false
     property int resumeAtMs: 0
     property int pendingResumeMs: -1
+    property int resumeTries: 0
     function tryApplyResume() {
         if (win.pendingResumeMs > 5000 && player.duration > 0 && player.seekable
             && win.pendingResumeMs < player.duration - 15000) {
-            player.position = win.pendingResumeMs
             win.resumeAtMs = win.pendingResumeMs
-            resumeCue.show()
             win.pendingResumeMs = -1
+            win.resumeTries = 0
+            player.position = win.resumeAtMs
+            resumeCue.show()
+            resumeRetry.restart()
+        }
+    }
+    // Windows' FFmpeg backend often discards a seek issued during initial buffering,
+    // snapping the position back to 0 once playback actually starts. Re-issue the
+    // seek until it lands (bounded), so resume isn't silently lost on Windows.
+    Timer {
+        id: resumeRetry
+        interval: 300; repeat: true
+        onTriggered: {
+            if (win.resumeAtMs <= 5000) { stop(); return }
+            if (Math.abs(player.position - win.resumeAtMs) <= 4000) { stop(); return }   // landed
+            if (win.resumeTries >= 8) { stop(); return }                                  // give up after ~2.4s
+            win.resumeTries++
+            if (player.seekable) player.position = win.resumeAtMs
         }
     }
     property bool muted: false
@@ -257,6 +274,9 @@ Window {
         win.fileIndex = fileIdx
         win.mediaFileName = (typeof session !== "undefined") ? session.streamFileName(hash, fileIdx) : ""
         win.pendingResumeMs = (typeof settings !== "undefined") ? Number(settings.get(win.resumeKey) || 0) : 0
+        win.resumeAtMs = 0
+        win.resumeTries = 0
+        resumeRetry.stop()
         win.aheadShown = false
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
         win.tracksRestored = false
@@ -288,7 +308,11 @@ Window {
         onPositionChanged: win.updateCue(position)
         onDurationChanged: win.tryApplyResume()
         onSeekableChanged: win.tryApplyResume()
-        onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) { win.saveResume(); win.maybePlayNext() }
+        onPlaybackStateChanged: if (playbackState === MediaPlayer.PlayingState) win.tryApplyResume()
+        onMediaStatusChanged: {
+            if (mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) win.tryApplyResume()
+            else if (mediaStatus === MediaPlayer.EndOfMedia) { win.saveResume(); win.maybePlayNext() }
+        }
         onTracksChanged: win.restoreTracks()
     }
 
