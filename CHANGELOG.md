@@ -7,7 +7,9 @@ Pick up where you left off — and see what's actually worth downloading. The li
 ### Highlights
 - **Continue watching / playing heros** — the HUB opens on your last movie and last game as large cards: progress, time left, hours played, last played, and a one-click **Resume**.
 - **Player rebuilt** — a solid title bar showing the file's quality/audio, a two-row control deck, a buffer-ahead HUD, and resume that actually sticks (it no longer restarts streamed torrents from zero).
-- **Automatic subtitles** — the built-in player now finds and downloads subtitles for **movies and series on its own**, no account needed. Still has manual load and ±0.5 s sync nudges; power users can plug their own OpenSubtitles account for a bigger quota.
+- **Automatic subtitles** — the built-in player now finds and downloads subtitles for **movies and series on its own**, no account needed, with a **language picker** to pull subs in any language. Still has manual load and ±0.5 s sync nudges; power users can plug their own OpenSubtitles account for a bigger quota.
+- **Search by language** — a language filter on movie/series results (with a per-result language badge and a `DUB` marker) so you can go straight to a dubbed or your-language release.
+- **Finished a movie? Play now** — when a download completes, a one-click *Play now* opens it in the player.
 - **Real source health in Discover & Search** — the featured title shows a live **"N sources · best X GB · seeds"** line (one cached lookup), and the torrent list gets a green/amber/red **seed-health bar**.
 - **Discover type filter** — All / Games / Movies / Series, with a hybrid hero (ambient art + crisp poster) that always has a banner, even for games with no backdrop.
 - **Best match, explicitly** — search surfaces the top title as its own hero instead of just first in the grid.
@@ -21,9 +23,10 @@ Pick up where you left off — and see what's actually worth downloading. The li
 - **Games with the `.exe` buried in subfolders** are detected as games again — and **Play** opens the game instead of a stray 30-second intro clip it found first.
 - **Mouse-wheel scrolling** moves a sensible amount per notch on Discover, the HUB, Search and Settings (it used to crawl one line at a time).
 - **(Windows) the tray right-click menu** anchors to the tray icon again instead of drifting.
+- **The nav-rail activity card no longer vanishes** when downloads are paused (e.g. disk-low auto-pause) — it keeps showing your downloads or seeding.
 
 ### Polish
-- A disk-aware search footer warns when results won't fit your free space.
+- A disk-aware search footer warns when results won't fit your free space, and **adding a too-big torrent now asks first** ("needs X, Y free — add anyway?") instead of silently piling up.
 - "Get best" stepped back from red so it stops competing with the Search button.
 - The Discover hero rotates with clickable dots; the command palette can jump straight to any Settings section.
 - **Fewer crashes, fixed faster** — opt-in crash reporting now captures the rare crash with a symbolicated stack so it can actually be diagnosed.
