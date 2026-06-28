@@ -49,7 +49,10 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/platform/statshistory.cpp
     src/services/subtitles/subtitleparser.cpp
     src/services/subtitles/subtitlesearch.cpp
+    src/services/integrations/idebridprovider.cpp
     src/services/integrations/realdebrid.cpp
+    src/services/integrations/torbox.cpp
+    src/services/integrations/debridmanager.cpp
     src/services/security/suspiciousscan.cpp
     src/services/security/archivescan.cpp
     src/services/security/archiveextractor.cpp

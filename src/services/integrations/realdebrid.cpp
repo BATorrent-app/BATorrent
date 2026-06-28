@@ -21,7 +21,7 @@ constexpr int kMaxPolls = 400;   // ~16 min ceiling for an uncached download
 }
 
 RealDebridClient::RealDebridClient(QObject *parent)
-    : QObject(parent)
+    : IDebridProvider(parent)
 {
     m_pollTimer.setSingleShot(true);
     m_pollTimer.setInterval(kPollMs);
@@ -257,44 +257,6 @@ void RealDebridClient::failJob(const QString &msg)
     setStatus(QString(), 0);
     setBusy(false);
     emit errorOccurred(msg);
-}
-
-// --- Cloud library ---------------------------------------------------------
-
-void RealDebridClient::refreshTorrents()
-{
-    if (m_token.isEmpty()) return;
-    QNetworkReply *r = get(QStringLiteral("torrents?limit=100"));
-    connect(r, &QNetworkReply::finished, this, [this, r] {
-        r->deleteLater();
-        if (r->error() != QNetworkReply::NoError) return;
-        const QJsonArray arr = QJsonDocument::fromJson(r->readAll()).array();
-        QVariantList out;
-        for (const QJsonValue &v : arr) {
-            const QJsonObject o = v.toObject();
-            out << QVariantMap{
-                {QStringLiteral("id"), o.value(QStringLiteral("id")).toString()},
-                {QStringLiteral("name"), o.value(QStringLiteral("filename")).toString()},
-                {QStringLiteral("hash"), o.value(QStringLiteral("hash")).toString()},
-                {QStringLiteral("bytes"), o.value(QStringLiteral("bytes")).toDouble()},
-                {QStringLiteral("status"), o.value(QStringLiteral("status")).toString()},
-                {QStringLiteral("progress"), o.value(QStringLiteral("progress")).toDouble()},
-            };
-        }
-        m_torrents = out;
-        emit torrentsChanged();
-    });
-}
-
-void RealDebridClient::deleteRemote(const QString &id)
-{
-    if (m_token.isEmpty() || id.isEmpty()) return;
-    QNetworkReply *r = m_nam.deleteResource(
-        authedRequest(QStringLiteral("torrents/delete/") + id));
-    connect(r, &QNetworkReply::finished, this, [this, r] {
-        r->deleteLater();
-        refreshTorrents();
-    });
 }
 
 // --- small helpers ---------------------------------------------------------

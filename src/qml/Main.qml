@@ -711,7 +711,7 @@ Window {
     GetWatchOverlay {
         id: gwOverlay
         onCanceled: {
-            if (typeof realdebrid !== "undefined" && realdebrid.busy) realdebrid.cancelStream()
+            if (typeof debrid !== "undefined" && debrid.busy) debrid.cancelStream()
             else if (phase === "searching") { if (typeof search !== "undefined") search.cancelGetAndWatch() }
             else if (hash !== "" && typeof session !== "undefined") session.cancelWatch(hash)
         }
@@ -3071,28 +3071,28 @@ Window {
         function onWatchFailed(title) { gwOverlay.fail(i18n.t("gw_failed").arg(title)) }
     }
 
-    // Real-Debrid: magnet → RD cache → unrestricted direct link → built-in player.
+    // Debrid: magnet → provider cache → direct link → built-in player.
     Connections {
-        target: typeof realdebrid !== "undefined" ? realdebrid : null
+        target: typeof debrid !== "undefined" ? debrid : null
         ignoreUnknownSignals: true
         function onStreamReady(url, name) {
             gwOverlay.hide()
             playerWinLoader.active = true
             var w = playerWinLoader.item
-            if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, name, "rd", 0) }
+            if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, name, "debrid", 0) }
         }
         function onErrorOccurred(msg) {
             gwOverlay.hide()
-            win.notifyUser("Real-Debrid", msg, 2)
+            win.notifyUser(debrid.providerName, msg, 2)
         }
         function onBusyChanged() {
-            if (realdebrid.busy) gwOverlay.show("buffering", "Real-Debrid")
+            if (debrid.busy) gwOverlay.show("buffering", debrid.providerName)
             else if (gwOverlay.phase === "buffering") gwOverlay.hide()
         }
         function onStatusChanged() {
-            if (!realdebrid.busy) return
-            if (realdebrid.status !== "") gwOverlay.title = realdebrid.status
-            gwOverlay.percent = realdebrid.progress / 100
+            if (!debrid.busy) return
+            if (debrid.status !== "") gwOverlay.title = debrid.status
+            gwOverlay.percent = debrid.progress / 100
         }
     }
 
