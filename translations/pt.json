@@ -558,6 +558,8 @@
   "search_wontfit_title": "Espaço insuficiente",
   "search_wontfit_body": "%1 precisa de %2, mas só há %3 livres no disco. Adicionar mesmo assim? Vai pausar sozinho se o disco ficar criticamente baixo.",
   "search_wontfit_ok": "Adicionar mesmo assim",
+  "toast_movie_ready": "Pronto pra assistir",
+  "toast_play_now": "Assistir agora",
   "search_searching": "Buscando…",
   "search_searching2": "Buscando…",
   "search_seeds_any": "Qualquer nº de seeders",

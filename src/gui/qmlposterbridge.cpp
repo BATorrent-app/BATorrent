@@ -539,10 +539,16 @@ void QmlNotificationBridge::onTorrentAdded(const QString &name)
     emit notify(tr_("notif_torrent_added"), name, 0);   // 0 = info
 }
 
-void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &)
+void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &infoHash)
 {
-    emit notify(tr_("dlg_download_complete"), name, 3);   // 3 = success (green)
     maybeBeep();
+    // movies are surfaced by QmlSessionBridge::movieReady as an actionable
+    // "Play now" toast — don't double up with the generic one.
+    if (m_session) {
+        const int row = m_session->torrentIndexByInfoHash(infoHash);
+        if (row >= 0 && m_session->torrentHasVideo(row)) return;
+    }
+    emit notify(tr_("dlg_download_complete"), name, 3);   // 3 = success (green)
 }
 
 void QmlNotificationBridge::onTorrentError(const QString &message)

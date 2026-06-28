@@ -418,6 +418,7 @@ signals:
     void watchProgress(const QString &infoHash, double percent);   // 0..1, each tick while pending
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
     void gamesChanged();   // a game started/stopped → refresh the game library
+    void movieReady(const QString &infoHash, const QString &name);   // a movie/series finished → offer Play now
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
     // the user always picks save path / files — never a silent auto-download.
@@ -982,6 +983,7 @@ class QmlNotificationBridge : public QObject
     Q_OBJECT
 public:
     explicit QmlNotificationBridge(QObject *parent = nullptr) : QObject(parent) {}
+    void setSession(IEngine *s) { m_session = s; }   // to skip the generic toast for movies (Play-now handles them)
 
 public slots:
     void onTorrentAdded(const QString &name);
@@ -994,6 +996,9 @@ public slots:
 signals:
     // level: 0 = information, 1 = warning, 2 = critical
     void notify(const QString &title, const QString &body, int level);
+
+private:
+    IEngine *m_session = nullptr;
 };
 
 // Owns a DiscordRPC instance and refreshes the user's Discord activity with

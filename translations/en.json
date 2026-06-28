@@ -524,6 +524,8 @@
   "search_wontfit_title": "Not enough space",
   "search_wontfit_body": "%1 needs %2, but only %3 is free on the save disk. Add anyway? It'll auto-pause if the disk runs critically low.",
   "search_wontfit_ok": "Add anyway",
+  "toast_movie_ready": "Ready to watch",
+  "toast_play_now": "Play now",
   "search_seeds_any": "Any seeders",
   "search_sort_relevance": "Relevance",
   "search_sort_seeders": "Most seeders",

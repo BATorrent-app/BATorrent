@@ -431,6 +431,7 @@ int main(int argc, char *argv[])
         subtitleBridge->setResolver(resolver);
         auto *pairingBridge = new QmlPairingBridge(&app);
         auto *notificationBridge = new QmlNotificationBridge(&app);
+        notificationBridge->setSession(eng);
         QObject::connect(eng, &IEngine::torrentFinished,
                          notificationBridge, &QmlNotificationBridge::onTorrentFinished);
         // Telegram webhook notifications (same event surfaces as the toasts above).

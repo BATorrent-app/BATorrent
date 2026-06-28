@@ -1524,10 +1524,16 @@ bool QmlSessionBridge::isGameTorrent(int row) const
 
 void QmlSessionBridge::onGameTorrentFinished(const QString &name, const QString &infoHash)
 {
-    Q_UNUSED(name);
-    if (!QSettings().value(QStringLiteral("gameAutoInstall"), false).toBool()) return;
     const int row = m_session->torrentIndexByInfoHash(infoHash);
-    if (isGameTorrent(row)) installGame(infoHash);
+    if (row < 0) return;
+    if (isGameTorrent(row)) {
+        if (QSettings().value(QStringLiteral("gameAutoInstall"), false).toBool())
+            installGame(infoHash);
+        return;
+    }
+    // a finished movie/series → offer one-click playback (the "completion loop")
+    if (m_session->torrentHasVideo(row))
+        emit movieReady(infoHash, name);
 }
 
 bool QmlSessionBridge::selectedIsGame() const

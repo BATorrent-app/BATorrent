@@ -649,6 +649,13 @@ Window {
         target: typeof session !== "undefined" ? session : null
         ignoreUnknownSignals: true
         function onToast(title, body) { win.notifyUser(title, body, 0) }
+        // a movie/series finished downloading → actionable "Play now" toast
+        function onMovieReady(infoHash, name) {
+            if (win.visible && win.visibility !== Window.Minimized && win.visibility !== Window.Hidden)
+                toastHost.show(i18n.t("toast_movie_ready"), name, 3, "play:" + infoHash, i18n.t("toast_play_now"))
+            else
+                win.notifyUser(i18n.t("toast_movie_ready"), name, 3)
+        }
     }
 
     // Ctrl/⌘+K command palette — actions + torrent jump
@@ -718,6 +725,8 @@ Window {
                 Qt.openUrlExternally(logs.crashReportUrl())
             else if (actionId === "star")
                 Qt.openUrlExternally("https://github.com/BATorrent-app/BATorrent")
+            else if (actionId.indexOf("play:") === 0 && typeof session !== "undefined")
+                session.playByHash(actionId.substring(5))
         }
     }
 
