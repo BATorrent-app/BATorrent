@@ -95,6 +95,23 @@ if(DEFINED ENV{BAT_OS_KEY})
     target_compile_definitions(BATorrent PRIVATE BAT_OS_KEY="$ENV{BAT_OS_KEY}")
 endif()
 
+# Sentry crash reporting (opt-in). Links sentry-native (Crashpad); the DSN comes
+# from .env (BAT_SENTRY_DSN) like the metadata keys, the Crashpad handler path
+# from BAT_SENTRY_HANDLER. Default OFF so the normal build has no extra dep; the
+# release build passes -DBAT_SENTRY=ON. See internal/DEBUGGING.md.
+option(BAT_SENTRY "Enable Sentry crash reporting (needs sentry-native)" OFF)
+if(BAT_SENTRY)
+    find_package(sentry CONFIG REQUIRED)
+    target_link_libraries(BATorrent PRIVATE sentry::sentry)
+    target_compile_definitions(BATorrent PRIVATE BAT_HAVE_SENTRY)
+    if(DEFINED ENV{BAT_SENTRY_DSN})
+        target_compile_definitions(BATorrent PRIVATE BAT_SENTRY_DSN="$ENV{BAT_SENTRY_DSN}")
+    endif()
+    if(DEFINED ENV{BAT_SENTRY_HANDLER})
+        target_compile_definitions(BATorrent PRIVATE BAT_SENTRY_HANDLER="$ENV{BAT_SENTRY_HANDLER}")
+    endif()
+endif()
+
 # Microsoft Store builds must not include their own auto-updater (Store
 # handles updates). Pass -DBAT_STORE_BUILD=ON in the store.yml workflow.
 option(BAT_STORE_BUILD "Disable auto-updater for Microsoft Store submission" OFF)

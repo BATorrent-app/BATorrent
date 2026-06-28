@@ -29,6 +29,9 @@
 #include <QStandardPaths>
 #include <QUrl>
 #include <cstdlib>
+#ifdef BAT_HAVE_SENTRY
+#include <sentry.h>
+#endif
 #include "app/metadataresolver.h"
 #include "app/discoveryservice.h"
 #include "app/translator.h"
@@ -109,6 +112,34 @@ static bool isQmlError(const QString &m)
         if (m.contains(QLatin1String(mk))) return true;
     return false;
 }
+
+#ifdef BAT_HAVE_SENTRY
+// Bring up Crashpad before anything heavy runs, so a crash from the very first
+// torrent/QML interaction is captured. No-op without a compiled-in DSN.
+static void initSentry(const QString &role)
+{
+    sentry_options_t *o = sentry_options_new();
+#ifdef BAT_SENTRY_DSN
+    sentry_options_set_dsn(o, BAT_SENTRY_DSN);
+#endif
+#ifdef BAT_SENTRY_HANDLER
+    sentry_options_set_handler_path(o, BAT_SENTRY_HANDLER);
+#endif
+    const QString db = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                       + QStringLiteral("/sentry-") + role;
+    sentry_options_set_database_path(o, db.toUtf8().constData());
+    sentry_options_set_release(o, "batorrent@" APP_VERSION);
+#ifdef QT_DEBUG
+    sentry_options_set_environment(o, "development");
+#else
+    sentry_options_set_environment(o, "production");
+#endif
+    if (qEnvironmentVariableIsSet("BAT_SENTRY_TEST"))
+        sentry_options_set_debug(o, 1);   // verbose transport logs for local validation
+    sentry_init(o);
+    qAddPostRoutine([]{ sentry_close(); });
+}
+#endif
 
 // Maps Qt's runtime log categories (QtDebugMsg / QtInfoMsg / etc) to our
 // internal Logger levels so every existing qDebug() / qWarning() in the
@@ -212,6 +243,12 @@ int main(int argc, char *argv[])
     CrashHandler::install(
         QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/crashes",
         APP_VERSION);
+#ifdef BAT_HAVE_SENTRY
+    initSentry(QStringLiteral("ui"));   // field crash reporting (release builds)
+    if (qEnvironmentVariableIsSet("BAT_SENTRY_TEST"))
+        sentry_capture_event(sentry_value_new_message_event(
+            SENTRY_LEVEL_INFO, "custom", "BATorrent sentry test event"));
+#endif
     if (debugFlag) {
         Logger::instance().setLevel(Logger::Trace);
         // Make Qt dump the scene-graph/RHI init (which GPU backend it picked and

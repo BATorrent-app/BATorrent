@@ -26,9 +26,19 @@ for arg in "$@"; do
     --asan)
       BUILD_DIR=build-fork-asan
       SAN_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" ;;
-    *) echo "unknown arg: $arg (use --bench and/or --asan)" >&2; exit 2 ;;
+    --sentry) SENTRY=1 ;;
+    *) echo "unknown arg: $arg (use --bench, --asan and/or --sentry)" >&2; exit 2 ;;
   esac
 done
+
+# Sentry crash reporting (opt-in for local validation). The DSN is read from
+# .env (BAT_SENTRY_DSN); the Crashpad handler ships with the brew sentry-native.
+SENTRY_ARGS=(-DBAT_SENTRY=OFF)   # explicit OFF so a cached ON can't leak into a plain build
+if [[ "${SENTRY:-0}" == 1 ]]; then
+  export BAT_SENTRY_HANDLER="$(brew --prefix sentry-native)/bin/crashpad_handler"
+  SENTRY_ARGS=(-DBAT_SENTRY=ON -Dsentry_DIR="$(brew --prefix sentry-native)/lib/cmake/sentry")
+  echo "Sentry:    ON (handler $BAT_SENTRY_HANDLER)"
+fi
 
 if [[ -f .env ]]; then
   set -a; source .env; set +a
@@ -57,7 +67,7 @@ if [[ -n "$SAN_FLAGS" ]]; then
   )
 fi
 
-cmake -B "$BUILD_DIR" "${CMAKE_ARGS[@]}"
+cmake -B "$BUILD_DIR" "${CMAKE_ARGS[@]}" "${SENTRY_ARGS[@]}"
 cmake --build "$BUILD_DIR" --target BATorrent
 [[ "$BENCH" == 1 ]] && cmake --build "$BUILD_DIR" --target bat_bench
 
