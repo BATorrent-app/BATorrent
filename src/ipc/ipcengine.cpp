@@ -140,6 +140,14 @@ void IpcEngine::dispatchEvent(const QString &name, const QByteArray &args)
         bool a; in >> a; m_snap.altSpeedsActive = a; emit altSpeedsActiveChanged(a);
     } else if (name == QLatin1String("portStatusChanged")) {
         qint32 st; in >> st; m_snap.portStatus = st; emit portStatusChanged(st);
+    } else if (name == QLatin1String("torrentRemoved")) {
+        qint32 idx; in >> idx; emit torrentRemoved(idx);
+    } else if (name == QLatin1String("torrentError")) {
+        QString msg; in >> msg; emit torrentError(msg);
+    } else if (name == QLatin1String("suspicious")) {
+        QString n; QStringList files; in >> n >> files; emit suspiciousFilesDetected(n, files);
+    } else if (name == QLatin1String("killSwitch")) {
+        emit killSwitchTriggered();
     }
 }
 

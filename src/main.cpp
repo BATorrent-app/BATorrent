@@ -387,18 +387,18 @@ int main(int argc, char *argv[])
         // Engine-only alert signals (error/kill-switch/suspicious) live on
         // SessionManager; in IPC mode they aren't proxied yet, so wire them only
         // in-process. The IPC banner below covers the engine-down case instead.
-        if (localSession) {
-            QObject::connect(localSession, &SessionManager::torrentError,
-                             notificationBridge, &QmlNotificationBridge::onTorrentError);
-            QObject::connect(localSession, &SessionManager::killSwitchTriggered,
-                             notificationBridge, &QmlNotificationBridge::onKillSwitchTriggered);
-            QObject::connect(localSession, &SessionManager::suspiciousFilesDetected,
-                             notificationBridge, &QmlNotificationBridge::onSuspiciousFilesDetected);
-            QObject::connect(localSession, &SessionManager::killSwitchTriggered,
-                             telegram, &TelegramNotifier::onKillSwitchTriggered);
-            QObject::connect(localSession, &SessionManager::torrentError,
-                             telegram, &TelegramNotifier::onTorrentError);
-        }
+        // Forwarded over IPC in split mode (events re-emitted by IpcEngine), so
+        // connect on the IEngine interface — works in-process and split alike.
+        QObject::connect(eng, &IEngine::torrentError,
+                         notificationBridge, &QmlNotificationBridge::onTorrentError);
+        QObject::connect(eng, &IEngine::killSwitchTriggered,
+                         notificationBridge, &QmlNotificationBridge::onKillSwitchTriggered);
+        QObject::connect(eng, &IEngine::suspiciousFilesDetected,
+                         notificationBridge, &QmlNotificationBridge::onSuspiciousFilesDetected);
+        QObject::connect(eng, &IEngine::killSwitchTriggered,
+                         telegram, &TelegramNotifier::onKillSwitchTriggered);
+        QObject::connect(eng, &IEngine::torrentError,
+                         telegram, &TelegramNotifier::onTorrentError);
         // IPC supervision: surface engine respawns to the user as a toast.
         if (ipcEngine) {
             QObject::connect(ipcEngine, &IpcEngine::engineStatusChanged, notificationBridge,
@@ -454,15 +454,13 @@ int main(int argc, char *argv[])
                          posterModel, &QmlPosterModel::refresh);
         // Index-aware removal — beginRemoveRows for the exact row instead of a
         // full model reset, so the grid doesn't flash and jump to the top.
-        // torrentRemoved/torrentAdded are SessionManager-only signals; in IPC
-        // mode the snapshot's torrentsUpdated drives a full refresh instead.
-        if (localSession) {
-            QObject::connect(localSession, &SessionManager::torrentRemoved,
-                             posterModel, &QmlPosterModel::removeRow);
-            // Keep the bridge's stored selection indices valid across a removal.
-            QObject::connect(localSession, &SessionManager::torrentRemoved,
-                             sessionBridge, &QmlSessionBridge::onTorrentRemoved);
-        }
+        // torrentRemoved is forwarded over IPC (the snapshot refresh is the
+        // safety net if the index races), so connect on the IEngine interface.
+        QObject::connect(eng, &IEngine::torrentRemoved,
+                         posterModel, &QmlPosterModel::removeRow);
+        // Keep the bridge's stored selection indices valid across a removal.
+        QObject::connect(eng, &IEngine::torrentRemoved,
+                         sessionBridge, &QmlSessionBridge::onTorrentRemoved);
         // A resolved poster only touches one row's poster/title roles.
         QObject::connect(resolver, &MetadataResolver::metadataReady,
                          posterModel, &QmlPosterModel::posterResolved);

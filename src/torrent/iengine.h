@@ -125,6 +125,12 @@ signals:
     void extractionCompleted(const QString &infoHash, bool success);
     void altSpeedsActiveChanged(bool active);
     void portStatusChanged(int status);
+    // Reactive surface forwarded over IPC in split mode (hoisted from
+    // SessionManager so the UI connects to the same signals in both modes).
+    void torrentRemoved(int index);
+    void torrentError(const QString &message);
+    void suspiciousFilesDetected(const QString &name, const QStringList &files);
+    void killSwitchTriggered();
 };
 
 #endif
