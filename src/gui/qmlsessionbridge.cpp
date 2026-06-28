@@ -2014,6 +2014,34 @@ QVariantList QmlSessionBridge::activeDownloads() const
     return out;
 }
 
+QVariantList QmlSessionBridge::seedingTransfers() const
+{
+    QVariantList out;
+    const int n = m_session->torrentCount();
+    for (int i = 0; i < n; ++i) {
+        const TorrentInfo info = m_session->torrentAt(i);
+        if (info.paused || !info.completed) continue;   // only finished torrents still in the session
+        const QString hash = m_session->torrentHashAt(i);
+        QString poster;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const auto meta = m_resolver->cached(hash);
+            if (!meta.posterPath.isEmpty())
+                poster = QUrl::fromLocalFile(meta.posterPath).toString();
+        }
+        QVariantMap m;
+        m["infoHash"] = hash;
+        m["title"]    = info.name;
+        m["progress"] = 1.0;
+        m["seeding"]  = true;
+        m["upSpeed"]  = formatSize(info.uploadRate) + QStringLiteral("/s");
+        m["ratio"]    = QString::number(double(info.ratio), 'f', 2);
+        m["poster"]   = poster;
+        // actively-uploading torrents first so the card leads with live sharing
+        if (info.uploadRate > 0) out.prepend(m); else out << m;
+    }
+    return out;
+}
+
 // Continue watching / playing for the nav-rail slot when you're on the Downloads
 // tab (the downloads are already on screen there, so show what's resumable instead).
 QVariantList QmlSessionBridge::resumeItems() const

@@ -973,6 +973,7 @@
   "nav_hub": "HUB",
   "nav_collapse": "Recolher",
   "nav_downloading": "Baixando",
+  "nav_seeding": "Semeando",
   "nav_continue": "Continuar",
   "nav_expand": "Expandir",
   "port_listening_on": "Escutando na porta %1",

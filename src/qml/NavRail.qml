@@ -29,9 +29,13 @@ Rectangle {
     // off the Downloads tab → what's downloading; ON Downloads → continue/resume
     // (the downloads are already on screen there, so show the other useful thing).
     readonly property var downloadList: (typeof session !== "undefined") ? session.activeDownloads : []
+    readonly property var seedingList: (typeof session !== "undefined") ? session.seedingTransfers : []
     readonly property var resumeList: (typeof session !== "undefined") ? session.resumeItems : []
     readonly property bool slotResume: currentIndex === 0
-    readonly property var dlList: slotResume ? resumeList : downloadList
+    // off Downloads: live downloads, else fall back to seeding so the card isn't empty
+    readonly property bool slotSeed: !slotResume && downloadList.length === 0 && seedingList.length > 0
+    readonly property var dlList: slotResume ? resumeList
+                                : (downloadList.length > 0 ? downloadList : seedingList)
     property int dlIndex: 0
     property int dlShown: 0
     readonly property var dlItem: (dlList.length > dlShown && dlShown >= 0) ? dlList[dlShown]
@@ -426,7 +430,7 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-                Text { text: (i18n.language, i18n.t(rail.slotResume ? "nav_continue" : "nav_downloading")); color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t(rail.slotResume ? "nav_continue" : (rail.slotSeed ? "nav_seeding" : "nav_downloading"))); color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
                 Text { visible: rail.dlList.length > 1; text: (rail.dlShown + 1) + "/" + rail.dlList.length; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontMono }
             }
@@ -452,14 +456,18 @@ Rectangle {
                         RowLayout {
                             Layout.fillWidth: true; spacing: 6
                             Text {
-                                text: rail.slotResume ? ("▶ " + i18n.t("hub_resume"))
-                                      : (rail.dlItem ? ("↓ " + (rail.dlItem.downSpeed || "")) : "")
+                                text: !rail.dlItem ? ""
+                                      : rail.slotResume ? ("▶ " + i18n.t("hub_resume"))
+                                      : rail.slotSeed ? ("↑ " + (rail.dlItem.upSpeed || ""))
+                                      : ("↓ " + (rail.dlItem.downSpeed || ""))
                                 color: Theme.accent; font.pixelSize: 13; font.family: Theme.fontMono
                             }
                             Item { Layout.fillWidth: true }
                             Text {
-                                text: rail.slotResume ? (rail.dlItem ? (rail.dlItem.metric || "") : "")
-                                      : (rail.dlItem ? (Math.round((rail.dlItem.progress || 0) * 100) + "%") : "")
+                                text: !rail.dlItem ? ""
+                                      : rail.slotResume ? (rail.dlItem.metric || "")
+                                      : rail.slotSeed ? ("⇅ " + (rail.dlItem.ratio || "0.00"))
+                                      : (Math.round((rail.dlItem.progress || 0) * 100) + "%")
                                 color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
                             }
                         }

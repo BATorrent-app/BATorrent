@@ -560,6 +560,7 @@
   "nav_hub": "HUB",
   "nav_collapse": "Collapse",
   "nav_downloading": "Downloading",
+  "nav_seeding": "Seeding",
   "nav_continue": "Continue",
   "nav_expand": "Expand",
   "port_listening_on": "Listening on port %1",

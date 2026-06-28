@@ -119,6 +119,8 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QVariantList diskVolumes READ diskVolumes NOTIFY statsChanged)
     // currently-downloading torrents (cover/name/%/speed) for the nav-rail mini card
     Q_PROPERTY(QVariantList activeDownloads READ activeDownloads NOTIFY statsChanged)
+    // seeding torrents (cover/name/↑speed/ratio) — nav-rail card fallback when nothing's downloading
+    Q_PROPERTY(QVariantList seedingTransfers READ seedingTransfers NOTIFY statsChanged)
     // continue watching/playing (resume) — the nav-rail slot's content on the Downloads tab
     Q_PROPERTY(QVariantList resumeItems READ resumeItems NOTIFY statsChanged)
     Q_PROPERTY(QString totalDownloaded READ totalDownloaded NOTIFY statsChanged)
@@ -182,6 +184,7 @@ public:
     double diskUsedFraction() const;
     QVariantList diskVolumes() const;
     QVariantList activeDownloads() const;
+    QVariantList seedingTransfers() const;
     QVariantList resumeItems() const;
     QString totalDownloaded() const;
     QString totalUploaded() const;
