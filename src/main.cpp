@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
         auto *rssBridge = new QmlRssBridge(&app);
         // Settings/WebUI stay on the in-process session (config control plane);
         // null in IPC mode, where the bridge falls back to QSettings.
-        auto *settingsBridge = new QmlSettingsBridge(localSession, &app);
+        auto *settingsBridge = new QmlSettingsBridge(localSession, eng, &app);
         auto *addonBridge = new QmlAddonBridge(&app);
         auto *searchBridge = new QmlSearchBridge(eng, &app);
         searchBridge->setResolver(resolver);
@@ -469,37 +469,49 @@ int main(int argc, char *argv[])
                          posterModel, &QmlPosterModel::refreshFull);
         QObject::connect(sessionBridge, &QmlSessionBridge::queueMoved,
                          posterModel, &QmlPosterModel::moveRow);
-        // The per-add cover-hint resolve + add-toast + auto-trackers hang off
-        // SessionManager's torrentAdded(int) and its takeCoverHint(); in IPC mode
-        // these don't fire (the startup batch-resolve below still covers existing
-        // torrents, and the snapshot drives the list). In-process only.
+        // The per-add cover-hint resolve + add-toast + auto-trackers. Both modes
+        // funnel into one handler: in-process off SessionManager::torrentAdded(int)
+        // (gathering the data + consuming the hint by index), and in split mode off
+        // IEngine::torrentAddedInfo, whose event carries the same data resolved
+        // engine-side (no racing index query). Resume-loaded torrents don't reach
+        // here — loadResumeData() runs in the SessionManager ctor, before this.
+        auto handleAdded = [resolver, notificationBridge, eng](
+                int index, const QString &hash, const QString &name, qint64 totalSize,
+                const QStringList &fileNames, const QString &hintTitle, int hintType) {
+            if (!hash.isEmpty()) {
+                // A catalog add carries a clean title + known type (game catalog →
+                // Game, Stremio → Movie/Series). Query the API directly with it
+                // instead of guessing from the messy torrent/metadata name, which
+                // mismatched (e.g. GoW Ragnarök → wrong game).
+                if (!hintTitle.isEmpty() && hintType >= 0)
+                    resolver->resolveManual(hash, hintTitle, static_cast<ContentType>(hintType));
+                else
+                    resolver->resolve(hash, name, fileNames);
+            }
+            notificationBridge->onTorrentAdded(
+                totalSize > 0 ? name + " · " + formatSize(totalSize) : name);
+            if (AddonManager::instance().autoTrackersEnabled())
+                for (const QString &tr : AddonManager::instance().trackerList())
+                    eng->addTracker(index, tr);
+        };
         if (localSession) {
             QObject::connect(localSession, &SessionManager::torrentAdded,
-                             &app, [localSession, resolver, notificationBridge](int index) {
+                             &app, [localSession, handleAdded](int index) {
                 const auto info = localSession->torrentAt(index);
-                QString hash = localSession->torrentHashAt(index);
-                if (!hash.isEmpty()) {
-                    // A catalog add carries a clean title + known type (game catalog →
-                    // Game, Stremio → Movie/Series). Query the API directly with it
-                    // instead of guessing from the messy torrent/metadata name, which
-                    // mismatched (e.g. GoW Ragnarök → wrong game).
-                    const auto hint = localSession->takeCoverHint(hash);
-                    if (!hint.title.isEmpty() && hint.type >= 0)
-                        resolver->resolveManual(hash, hint.title, static_cast<ContentType>(hint.type));
-                    else
-                        resolver->resolve(hash, info.name, localSession->torrentFileNames(index));
-                }
-                // Toast on user-initiated adds. Resume-loaded torrents don't reach
-                // here: loadResumeData() runs in the SessionManager ctor, before
-                // this connection exists.
-                notificationBridge->onTorrentAdded(
-                    info.totalSize > 0 ? info.name + " · " + formatSize(info.totalSize) : info.name);
-                // auto-add the public tracker list to each new torrent (if enabled)
-                if (AddonManager::instance().autoTrackersEnabled())
-                    for (const QString &tr : AddonManager::instance().trackerList())
-                        localSession->addTracker(index, tr);
+                const QString hash = localSession->torrentHashAt(index);
+                const auto hint = localSession->takeCoverHint(hash);
+                handleAdded(index, hash, info.name, info.totalSize,
+                            localSession->torrentFileNames(index), hint.title, hint.type);
             });
         }
+        // Split mode: IpcEngine re-emits this from the forwarded event (never fires
+        // in-process, so it can connect unconditionally).
+        QObject::connect(eng, &IEngine::torrentAddedInfo, &app,
+                         [handleAdded](int index, const QString &hash, const QString &name,
+                                       qint64 totalSize, const QStringList &fileNames,
+                                       const QString &hintTitle, int hintType) {
+            handleAdded(index, hash, name, totalSize, fileNames, hintTitle, hintType);
+        });
         AddonManager::instance().fetchTrackerList();   // refresh the list on startup
 
         {

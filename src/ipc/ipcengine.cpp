@@ -148,6 +148,10 @@ void IpcEngine::dispatchEvent(const QString &name, const QByteArray &args)
         QString n; QStringList files; in >> n >> files; emit suspiciousFilesDetected(n, files);
     } else if (name == QLatin1String("killSwitch")) {
         emit killSwitchTriggered();
+    } else if (name == QLatin1String("torrentAdded")) {
+        qint32 idx; QString hash, n, hintTitle; qint64 size; QStringList files; qint32 hintType;
+        in >> idx >> hash >> n >> size >> files >> hintTitle >> hintType;
+        emit torrentAddedInfo(idx, hash, n, size, files, hintTitle, hintType);
     }
 }
 
@@ -200,6 +204,10 @@ qint64 IpcEngine::sessionDownloaded() const { return m_snap.sessionDownloaded; }
 int IpcEngine::totalTorrentsAdded() const { return m_snap.totalTorrentsAdded; }
 int IpcEngine::portStatus() const { return m_snap.portStatus; }
 int IpcEngine::listenPort() const { return m_snap.listenPort; }
+int IpcEngine::downloadLimit() const
+{ QDataStream in(request(QStringLiteral("downloadLimit"))); in.setVersion(ipc::kStreamVersion); qint32 v = 0; in >> v; return v; }
+int IpcEngine::uploadLimit() const
+{ QDataStream in(request(QStringLiteral("uploadLimit"))); in.setVersion(ipc::kStreamVersion); qint32 v = 0; in >> v; return v; }
 bool IpcEngine::dhtEnabled() const { return m_snap.dhtEnabled; }
 bool IpcEngine::altSpeedsActive() const { return m_snap.altSpeedsActive; }
 DetailedStats IpcEngine::detailedStats() const { return m_snap.detailed; }

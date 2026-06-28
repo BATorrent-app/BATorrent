@@ -74,16 +74,16 @@
 #include <memory>
 #include <sstream>
 
-QmlSettingsBridge::QmlSettingsBridge(SessionManager *session, QObject *parent)
-    : QObject(parent), m_session(session) { applyWebUi(); }
+QmlSettingsBridge::QmlSettingsBridge(SessionManager *session, IEngine *engine, QObject *parent)
+    : QObject(parent), m_session(session), m_engine(engine) { applyWebUi(); }
 
 void QmlSettingsBridge::applyWebUi()
 {
     QSettings st;
     if (m_webServer) { m_webServer->stop(); m_webServer->deleteLater(); m_webServer = nullptr; }
     if (!st.value("webUiEnabled", false).toBool()) return;
-    if (!m_session) return;   // IPC engine mode: no in-process session to serve
-    m_webServer = new WebServer(m_session, this);
+    if (!m_engine) return;
+    m_webServer = new WebServer(m_engine, this);
     const QString user = st.value("webUiUser", "admin").toString();
     const QString passHash = st.value("webUiPasswordHash").toString();   // hash, not a secret → QSettings (no keychain prompt at boot)
     const bool hasAuth = !user.isEmpty() && !passHash.isEmpty();

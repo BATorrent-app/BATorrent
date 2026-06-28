@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 #include "webserver.h"
-#include "../torrent/sessionmanager.h"
+#include "../torrent/iengine.h"
 #include <QTcpSocket>
 #include <QFile>
 #include <QDir>
@@ -15,7 +15,7 @@
 #include <QTemporaryFile>
 #include <QRandomGenerator>
 
-WebServer::WebServer(SessionManager *session, QObject *parent)
+WebServer::WebServer(IEngine *session, QObject *parent)
     : QObject(parent), m_session(session)
 {
 }

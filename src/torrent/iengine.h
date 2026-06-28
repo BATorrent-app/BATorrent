@@ -85,6 +85,8 @@ public:
     virtual void moveStorage(int torrentIndex, const QString &newSavePath) = 0;
     virtual void markCompleted(int index) = 0;
     virtual int listenPort() const = 0;
+    virtual int downloadLimit() const = 0;   // global rate caps (WebUI reads these)
+    virtual int uploadLimit() const = 0;
     virtual bool isSuperSeeding(int index) const = 0;
     virtual bool isSequentialDownload(int index) const = 0;
     virtual bool isForceStart(int index) const = 0;
@@ -131,6 +133,12 @@ signals:
     void torrentError(const QString &message);
     void suspiciousFilesDetected(const QString &name, const QStringList &files);
     void killSwitchTriggered();
+    // Self-contained add notification for the cover-resolve / toast / auto-tracker
+    // flow. Emitted only by IpcEngine (split mode) from the forwarded event; the
+    // in-process path drives the same flow off SessionManager::torrentAdded(int).
+    void torrentAddedInfo(int index, const QString &hash, const QString &name,
+                          qint64 totalSize, const QStringList &fileNames,
+                          const QString &hintTitle, int hintType);
 };
 
 #endif

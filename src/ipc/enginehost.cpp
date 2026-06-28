@@ -49,6 +49,17 @@ EngineHost::EngineHost(SessionManager *session, const QString &serverName, QObje
     connect(m_session, &SessionManager::killSwitchTriggered, this, [this]() {
         sendEvent(QStringLiteral("killSwitch"), {});
     });
+    // Self-contained add event: pack everything the UI's cover-resolve / toast /
+    // auto-tracker flow needs, so it never has to query back by a racing index.
+    connect(m_session, &SessionManager::torrentAdded, this, [this](int index) {
+        const QString hash = m_session->torrentHashAt(index);
+        const auto info = m_session->torrentAt(index);
+        const auto hint = m_session->takeCoverHint(hash);   // consumed engine-side
+        QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+        o << qint32(index) << hash << info.name << qint64(info.totalSize)
+          << m_session->torrentFileNames(index) << hint.title << qint32(hint.type);
+        sendEvent(QStringLiteral("torrentAdded"), a);
+    });
 }
 
 bool EngineHost::listen()
@@ -288,6 +299,10 @@ QByteArray EngineHost::dispatch(const QString &method, const QByteArray &args)
         qint32 type, port; QString host, user, pass;
         in >> type >> host >> port >> user >> pass;
         m_session->setProxySettings(type, host, port, user, pass);
+    } else if (method == QLatin1String("downloadLimit")) {
+        out << qint32(m_session->downloadLimit());
+    } else if (method == QLatin1String("uploadLimit")) {
+        out << qint32(m_session->uploadLimit());
     } else if (method == QLatin1String("proxyType")) {
         out << qint32(m_session->proxyType());
     } else if (method == QLatin1String("proxyHost")) {

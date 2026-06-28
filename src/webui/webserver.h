@@ -13,14 +13,14 @@
 #include <QSet>
 #include <QString>
 
-class SessionManager;
+class IEngine;
 class QTcpSocket;
 
 class WebServer : public QObject
 {
     Q_OBJECT
 public:
-    explicit WebServer(SessionManager *session, QObject *parent = nullptr);
+    explicit WebServer(IEngine *session, QObject *parent = nullptr);
     ~WebServer();
 
     bool start(quint16 port, bool remoteAccess);
@@ -78,7 +78,7 @@ private:
     QString torrentHash(int index);
 
     QTcpServer *m_server = nullptr;
-    SessionManager *m_session;
+    IEngine *m_session;
     QString m_user;
     QString m_passwordHash;
 

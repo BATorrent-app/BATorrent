@@ -900,11 +900,12 @@ class QmlSettingsBridge : public QObject
 {
     Q_OBJECT
 public:
-    // Settings/WebUI are the config control plane (settings_pack wrappers, not
-    // the crash-prone torrent engine) so they stay bound to SessionManager. In
-    // the IPC engine mode this is null; get/set then fall back to QSettings (the
-    // shared store the engine child reads) and the WebUI server is disabled.
-    explicit QmlSettingsBridge(SessionManager *session, QObject *parent = nullptr);
+    // The ~80-method settings surface stays bound to SessionManager (config
+    // control plane, settings_pack wrappers). In IPC mode `session` is null and
+    // get/set fall back to QSettings (the shared store the engine child reads at
+    // startup). `engine` is the always-valid IEngine, used only to drive the
+    // WebUI server so it works in split mode too.
+    explicit QmlSettingsBridge(SessionManager *session, IEngine *engine, QObject *parent = nullptr);
     Q_INVOKABLE QVariant get(const QString &key) const;
     Q_INVOKABLE void set(const QString &key, const QVariant &v);
     // Register BATorrent as the default .torrent / magnet handler. Returns success.
@@ -944,6 +945,7 @@ private:
     static int telegramEventBit(const QString &key);   // toggle key → Events bit (0 if none)
     void applyWebUi();                                  // (re)start the WebUI server from settings
     SessionManager *m_session;
+    IEngine *m_engine;                                  // always valid; drives the WebUI in split mode
     TelegramNotifier *m_telegram = nullptr;
     WebServer *m_webServer = nullptr;
 };

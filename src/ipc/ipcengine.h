@@ -92,6 +92,8 @@ public:
     void moveStorage(int torrentIndex, const QString &newSavePath) override;
     void markCompleted(int index) override;
     int listenPort() const override;
+    int downloadLimit() const override;
+    int uploadLimit() const override;
     bool isSuperSeeding(int index) const override;
     bool isSequentialDownload(int index) const override;
     bool isForceStart(int index) const override;
