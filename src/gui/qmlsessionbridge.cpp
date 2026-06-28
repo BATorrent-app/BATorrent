@@ -1485,13 +1485,11 @@ void QmlSessionBridge::pollInstallWatch()
 bool QmlSessionBridge::isGameTorrent(int row) const
 {
     if (row < 0) return false;
-    const QString hash = m_session->torrentHashAt(row);
-    if (!hash.isEmpty() && m_resolver && m_resolver->hasCached(hash)) {
-        const auto meta = m_resolver->cached(hash);
-        if (meta.valid && meta.contentType == ContentType::Game) return true;
-    }
-    if (NameParser::parse(m_session->torrentAt(row).name).contentType == ContentType::Game)
-        return true;
+
+    // File evidence first, as a veto: a real game ships an executable; a torrent
+    // that's purely a video with no exe is a movie/series even when its NAME
+    // matches a game ("Super Mario Galaxy the movie"). Without this veto such a
+    // title got both an Install (game) and a Watch (movie) action.
     bool hasExe = false, hasVideo = false;
     for (const auto &f : m_session->filesAt(row)) {
         const QString p = f.path.toLower();
@@ -1499,6 +1497,15 @@ bool QmlSessionBridge::isGameTorrent(int row) const
         else if (p.endsWith(QStringLiteral(".mkv")) || p.endsWith(QStringLiteral(".mp4"))
                  || p.endsWith(QStringLiteral(".avi"))) hasVideo = true;
     }
+    if (hasVideo && !hasExe) return false;
+
+    const QString hash = m_session->torrentHashAt(row);
+    if (!hash.isEmpty() && m_resolver && m_resolver->hasCached(hash)) {
+        const auto meta = m_resolver->cached(hash);
+        if (meta.valid && meta.contentType == ContentType::Game) return true;
+    }
+    if (NameParser::parse(m_session->torrentAt(row).name).contentType == ContentType::Game)
+        return true;
     return hasExe && !hasVideo;
 }
 
