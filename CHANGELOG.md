@@ -7,6 +7,7 @@ Pick up where you left off — and see what's actually worth downloading. The li
 ### Highlights
 - **Continue watching / playing heros** — the HUB opens on your last movie and last game as large cards: progress, time left, hours played, last played, and a one-click **Resume**.
 - **Player rebuilt** — a solid title bar showing the file's quality/audio, a two-row control deck, a buffer-ahead HUD, and resume that actually sticks (it no longer restarts streamed torrents from zero).
+- **Automatic subtitles** — the built-in player now finds and downloads subtitles for **movies and series on its own**, no account needed. Still has manual load and ±0.5 s sync nudges; power users can plug their own OpenSubtitles account for a bigger quota.
 - **Real source health in Discover & Search** — the featured title shows a live **"N sources · best X GB · seeds"** line (one cached lookup), and the torrent list gets a green/amber/red **seed-health bar**.
 - **Discover type filter** — All / Games / Movies / Series, with a hybrid hero (ambient art + crisp poster) that always has a banner, even for games with no backdrop.
 - **Best match, explicitly** — search surfaces the top title as its own hero instead of just first in the grid.
@@ -16,11 +17,16 @@ Pick up where you left off — and see what's actually worth downloading. The li
 - **Removed files no longer linger** — the hidden `.parts` sidecar is cleaned up, and a new **"Delete permanently"** option skips the Trash when you're low on disk.
 - **The Downloads search box** no longer stays stuck red after one click, and **Ctrl/⌘+K opens ready to type**.
 - The **repack filter** opens on the first click again.
+- **Movies no longer offer "Install"** — a film still downloading (its files end in `.!bt`) could be mistaken for a game; the Install/Play vs Watch choice now reads the actual file evidence.
+- **Games with the `.exe` buried in subfolders** are detected as games again — and **Play** opens the game instead of a stray 30-second intro clip it found first.
+- **Mouse-wheel scrolling** moves a sensible amount per notch on Discover, the HUB, Search and Settings (it used to crawl one line at a time).
+- **(Windows) the tray right-click menu** anchors to the tray icon again instead of drifting.
 
 ### Polish
 - A disk-aware search footer warns when results won't fit your free space.
 - "Get best" stepped back from red so it stops competing with the Search button.
 - The Discover hero rotates with clickable dots; the command palette can jump straight to any Settings section.
+- **Fewer crashes, fixed faster** — opt-in crash reporting now captures the rare crash with a symbolicated stack so it can actually be diagnosed.
 
 ## v4.2.0 — "Polish"
 
