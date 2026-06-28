@@ -233,6 +233,14 @@ jobs:
           name: windows-installer
           path: output/BATorrent-setup-x86_64.exe
 
+      # Symbols, matched to this exact build — keep them so Store/Partner Center
+      # crash dumps (and our own CaptureStackBackTrace logs) can be symbolicated.
+      - name: Upload symbols (PDB)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-symbols
+          path: build/Release/BATorrent.pdb
+
   build-macos:
     # macos-15 (Sequoia) dropped the legacy AGL framework that Qt 6.7 still links
     # against → "ld: framework 'AGL' not found". Pin to macos-14 (Sonoma) which has it.

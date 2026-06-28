@@ -127,8 +127,22 @@ jobs:
           & $sdkPath.FullName pack /d msix-layout /p BATorrent-store.msix /nv
           Write-Host "Created BATorrent-store.msix"
 
+      - name: Create symbol package (.appxsym)
+        shell: pwsh
+        run: |
+          # An .appxsym is just a zip of the PDBs. Upload this to Partner Center
+          # (submission → Packages, or Analytics → Health → symbols) so Store crash
+          # dumps symbolicate instead of showing up as "unknown".
+          Compress-Archive -Path build/Release/BATorrent.pdb -DestinationPath BATorrent.appxsym -Force
+
       - name: Upload MSIX
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: msix-store
           path: BATorrent-store.msix
+
+      - name: Upload symbols (.appxsym)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: msix-symbols
+          path: BATorrent.appxsym
