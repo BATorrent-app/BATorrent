@@ -271,6 +271,21 @@ jobs:
           brew install libtorrent-rasterbar boost openssl
           brew link --overwrite libtorrent-rasterbar boost openssl
 
+      # Crash reporting is opt-in: only activates when the BAT_SENTRY_DSN repo
+      # variable is set. Without it, the build below is byte-identical to before.
+      - name: Configure Sentry
+        run: |
+          if [ -n "${{ vars.BAT_SENTRY_DSN }}" ]; then
+            brew install sentry-native
+            PREFIX=$(brew --prefix sentry-native)
+            echo "BAT_SENTRY_DSN=${{ vars.BAT_SENTRY_DSN }}" >> "$GITHUB_ENV"
+            echo "BAT_SENTRY_HANDLER=$PREFIX/bin/crashpad_handler" >> "$GITHUB_ENV"
+            echo "SENTRY_CMAKE_ARGS=-DBAT_SENTRY=ON -Dsentry_DIR=$PREFIX/lib/cmake/sentry" >> "$GITHUB_ENV"
+            echo "SENTRY_ENABLED=1" >> "$GITHUB_ENV"
+          else
+            echo "SENTRY_ENABLED=0" >> "$GITHUB_ENV"
+          fi
+
       - name: Build
         env:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
@@ -278,7 +293,8 @@ jobs:
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)"
+            -DCMAKE_PREFIX_PATH="$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)" \
+            ${SENTRY_CMAKE_ARGS:-}
           cmake --build build
 
       - name: Create app bundle
@@ -291,6 +307,8 @@ jobs:
           mkdir -p dmg/BATorrent.app/Contents/MacOS
           mkdir -p dmg/BATorrent.app/Contents/Resources
           cp build/BATorrent.app/Contents/MacOS/BATorrent dmg/BATorrent.app/Contents/MacOS/
+          # Ship the Crashpad handler next to the binary so Sentry finds it.
+          [ "$SENTRY_ENABLED" = "1" ] && cp "$BAT_SENTRY_HANDLER" dmg/BATorrent.app/Contents/MacOS/crashpad_handler || true
           printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
             '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
             '<plist version="1.0">' '<dict>' \
@@ -346,6 +364,20 @@ jobs:
             sleep 5
           done
           test -f BATorrent-macos-arm64.dmg
+
+      # Symbolicates field crashes. Needs SENTRY_AUTH_TOKEN (secret) + SENTRY_ORG
+      # and SENTRY_PROJECT (repo variables); skipped (non-fatal) if any is absent.
+      - name: Upload debug symbols to Sentry
+        if: env.SENTRY_ENABLED == '1' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          dsymutil build/BATorrent.app/Contents/MacOS/BATorrent -o BATorrent.dSYM || true
+          sentry-cli debug-files upload --include-sources \
+            BATorrent.dSYM build/BATorrent.app/Contents/MacOS/BATorrent || true
 
       - name: Upload DMG
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
