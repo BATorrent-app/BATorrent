@@ -394,9 +394,14 @@ void QmlSubtitleBridge::searchFor(const QString &infoHash, int fileIndex, const 
     static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk"};
     QStringList langs{QString::fromLatin1(codes[static_cast<int>(Translator::instance().language())])};
     if (!langs.contains(QStringLiteral("en"))) langs << QStringLiteral("en");
+    int tmdbId = 0;
+    if (m_resolver && m_resolver->hasCached(infoHash)) {
+        const auto meta = m_resolver->cached(infoHash);
+        if (meta.valid) tmdbId = meta.tmdbId;
+    }
     m_searching = true;
     emit searchingChanged();
-    m_search->search(queryName, langs);
+    m_search->search(queryName, langs, tmdbId);
 }
 
 void QmlSubtitleBridge::download(int index)

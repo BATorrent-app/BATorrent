@@ -840,6 +840,7 @@ public:
     Q_INVOKABLE void searchFor(const QString &infoHash, int fileIndex, const QString &mediaTitle);
     Q_INVOKABLE void download(int index);
     Q_INVOKABLE bool hasOpenSubtitlesKey() const;
+    void setResolver(MetadataResolver *r) { m_resolver = r; }
 
 signals:
     void searchingChanged();
@@ -850,6 +851,7 @@ signals:
 private:
     IEngine *m_session;
     SubtitleSearch *m_search;
+    MetadataResolver *m_resolver = nullptr;
     QString m_targetDir;
     QString m_baseName;
     bool m_searching = false;

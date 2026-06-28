@@ -35,7 +35,7 @@ class SubtitleSearch : public QObject
 public:
     explicit SubtitleSearch(QObject *parent = nullptr);
 
-    void search(const QString &videoName, const QStringList &languages);
+    void search(const QString &videoName, const QStringList &languages, int tmdbId = 0);
     void download(int index, const QString &targetDir, const QString &videoBaseName);
     QList<SubtitleResult> results() const { return m_results; }
     bool busy() const { return m_pending > 0; }
@@ -47,7 +47,7 @@ signals:
     void errorOccurred(const QString &message);
 
 private:
-    void searchSubDL(const QString &title, int season, int episode, const QStringList &langs);
+    void searchSubDL(const QString &title, int tmdbId, int season, int episode, const QStringList &langs);
     void searchOpenSubtitles(const QString &title, int season, int episode, const QStringList &langs);
     void searchGestdown(const QString &title, int season, int episode, const QStringList &langs);
     void downloadSubDL(const SubtitleResult &r, const QString &savePath);

@@ -129,7 +129,8 @@ option(BAT_STORE_BUILD "Disable auto-updater for Microsoft Store submission" OFF
 if(BAT_STORE_BUILD)
     target_compile_definitions(BATorrent PRIVATE BAT_STORE_BUILD)
 endif()
-target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 ${BAT_TORRENT_LIB})
+find_package(ZLIB REQUIRED)   # subtitle .zip extraction (SubDL)
+target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 ZLIB::ZLIB ${BAT_TORRENT_LIB})
 
 # macOS: bundle metadata. Without these keys, NSStatusItem (the tray icon)
 # can fail to allocate a menu-bar slot — Qt reports the item as visible but
