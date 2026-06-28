@@ -28,6 +28,12 @@ QString osLang(const QString &code)
     if (code == QLatin1String("zh")) return QStringLiteral("zh-cn");
     return code;
 }
+// SubDL wants uppercase codes; Brazilian Portuguese is PT-BR.
+QString subdlLang(const QString &code)
+{
+    if (code == QLatin1String("pt")) return QStringLiteral("PT-BR");
+    return code.toUpper();
+}
 QString gestdownLang(const QString &code)
 {
     if (code == QLatin1String("pt")) return QStringLiteral("Portuguese (Brazilian)");
@@ -55,6 +61,15 @@ SubtitleSearch::SubtitleSearch(QObject *parent)
 {
 }
 
+QString SubtitleSearch::subdlKey()
+{
+    QString key = QSettings("BATorrent", "BATorrent").value("subdlApiKey").toString().trimmed();
+#ifdef BAT_SUBDL_KEY
+    if (key.isEmpty()) key = QStringLiteral(BAT_SUBDL_KEY);
+#endif
+    return key;
+}
+
 QString SubtitleSearch::openSubtitlesKey()
 {
     QString key = QSettings("BATorrent", "BATorrent").value("osApiKey").toString().trimmed();
@@ -73,6 +88,10 @@ void SubtitleSearch::search(const QString &videoName, const QStringList &languag
     const QString title = pn.cleanTitle.isEmpty() ? videoName : pn.cleanTitle;
 
     m_pending = 0;
+    if (!subdlKey().isEmpty()) {
+        ++m_pending;
+        searchSubDL(title, pn.season, pn.episode, languages);
+    }
     if (!openSubtitlesKey().isEmpty()) {
         ++m_pending;
         searchOpenSubtitles(title, pn.season, pn.episode, languages);
@@ -82,7 +101,7 @@ void SubtitleSearch::search(const QString &videoName, const QStringList &languag
         searchGestdown(title, pn.season, pn.episode, languages);
     }
     if (m_pending == 0) {
-        // movie + no OpenSubtitles key: nothing can answer
+        // movie + no keyed provider: nothing can answer
         emit errorOccurred(QStringLiteral("no_sources"));
         emit searchFinished();
     }
@@ -94,6 +113,61 @@ void SubtitleSearch::providerDone()
         m_pending = 0;
         emit searchFinished();
     }
+}
+
+void SubtitleSearch::searchSubDL(const QString &title, int season, int episode,
+                                 const QStringList &langs)
+{
+    QStringList codes;
+    for (const QString &l : langs) codes << subdlLang(l);
+
+    QUrl url(QStringLiteral("https://api.subdl.com/api/v1/subtitles"));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("api_key"), subdlKey());
+    q.addQueryItem(QStringLiteral("film_name"), title);
+    q.addQueryItem(QStringLiteral("languages"), codes.join(QLatin1Char(',')));
+    q.addQueryItem(QStringLiteral("type"), (season >= 0 && episode >= 0)
+                       ? QStringLiteral("tv") : QStringLiteral("movie"));
+    if (season >= 0) q.addQueryItem(QStringLiteral("season_number"), QString::number(season));
+    if (episode >= 0) q.addQueryItem(QStringLiteral("episode_number"), QString::number(episode));
+    q.addQueryItem(QStringLiteral("subs_per_page"), QStringLiteral("30"));
+    q.addQueryItem(QStringLiteral("unpack"), QStringLiteral("1"));   // direct .srt URLs, no zip
+    url.setQuery(q);
+
+    QNetworkRequest req(url);
+    prepare(req);
+    QNetworkReply *reply = m_nam.get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        if (reply->error() == QNetworkReply::NoError) {
+            const auto doc = QJsonDocument::fromJson(reply->readAll());
+            const QJsonArray subs = doc.object().value(QStringLiteral("subtitles")).toArray();
+            for (const auto &sv : subs) {
+                // unpack=1 splits each pack into per-file entries whose url serves
+                // the raw .srt directly (api_key already embedded). The parent url
+                // is a .zip we can't extract, so only the unpacked files are usable.
+                const QJsonArray files = sv.toObject().value(QStringLiteral("unpack_files")).toArray();
+                for (const auto &fv : files) {
+                    const QJsonObject o = fv.toObject();
+                    if (o.value(QStringLiteral("format")).toString().compare(
+                            QLatin1String("srt"), Qt::CaseInsensitive) != 0)
+                        continue;
+                    const QString ref = o.value(QStringLiteral("url")).toString();
+                    if (ref.isEmpty()) continue;
+                    SubtitleResult r;
+                    r.provider = QStringLiteral("SubDL");
+                    r.language = o.value(QStringLiteral("language")).toString().toLower();
+                    r.name = o.value(QStringLiteral("release_name")).toString();
+                    if (r.name.isEmpty()) r.name = o.value(QStringLiteral("name")).toString();
+                    if (o.value(QStringLiteral("hi")).toBool(false)) r.name += QStringLiteral(" [HI]");
+                    r.downloadRef = ref;
+                    m_results << r;
+                }
+            }
+            emit resultsChanged();
+        }
+        providerDone();
+    });
 }
 
 void SubtitleSearch::searchOpenSubtitles(const QString &title, int season, int episode,
@@ -202,10 +276,34 @@ void SubtitleSearch::download(int index, const QString &targetDir, const QString
     const SubtitleResult r = m_results[index];
     const QString savePath = QDir(targetDir).filePath(
         videoBaseName + QLatin1Char('.') + r.language + QStringLiteral(".srt"));
-    if (r.provider == QLatin1String("Gestdown"))
+    if (r.provider == QLatin1String("SubDL"))
+        downloadSubDL(r, savePath);
+    else if (r.provider == QLatin1String("Gestdown"))
         downloadGestdown(r, savePath);
     else
         downloadOpenSubtitles(r, savePath);
+}
+
+void SubtitleSearch::downloadSubDL(const SubtitleResult &r, const QString &savePath)
+{
+    const QUrl url = r.downloadRef.startsWith(QLatin1String("http"))
+                         ? QUrl(r.downloadRef)
+                         : QUrl(QStringLiteral("https://dl.subdl.com") + r.downloadRef);
+    QNetworkRequest req(url);
+    prepare(req);
+    QNetworkReply *reply = m_nam.get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, savePath]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+            return;
+        }
+        QFile f(savePath);
+        if (!f.open(QIODevice::WriteOnly)) { emit errorOccurred(savePath); return; }
+        f.write(reply->readAll());
+        f.close();
+        emit downloadFinished(savePath);
+    });
 }
 
 void SubtitleSearch::downloadGestdown(const SubtitleResult &r, const QString &savePath)

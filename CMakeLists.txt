@@ -94,6 +94,9 @@ endif()
 if(DEFINED ENV{BAT_OS_KEY})
     target_compile_definitions(BATorrent PRIVATE BAT_OS_KEY="$ENV{BAT_OS_KEY}")
 endif()
+if(DEFINED ENV{BAT_SUBDL_KEY})
+    target_compile_definitions(BATorrent PRIVATE BAT_SUBDL_KEY="$ENV{BAT_SUBDL_KEY}")
+endif()
 
 # Sentry crash reporting (opt-in). Links sentry-native (Crashpad); the DSN comes
 # from .env (BAT_SENTRY_DSN) like the metadata keys, the Crashpad handler path

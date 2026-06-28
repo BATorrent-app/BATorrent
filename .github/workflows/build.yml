@@ -107,6 +107,7 @@ jobs:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+          BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ${SENTRY_CMAKE_ARGS:-}
           cmake --build build
@@ -228,6 +229,7 @@ jobs:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+          BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
           $sentryArgs = @()
           if ($env:SENTRY_CMAKE_ARGS) { $sentryArgs = $env:SENTRY_CMAKE_ARGS -split ' ' }
@@ -357,6 +359,7 @@ jobs:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+          BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)" \
