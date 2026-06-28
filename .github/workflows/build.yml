@@ -234,7 +234,9 @@ jobs:
           path: output/BATorrent-setup-x86_64.exe
 
   build-macos:
-    runs-on: macos-latest
+    # macos-15 (Sequoia) dropped the legacy AGL framework that Qt 6.7 still links
+    # against → "ld: framework 'AGL' not found". Pin to macos-14 (Sonoma) which has it.
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
