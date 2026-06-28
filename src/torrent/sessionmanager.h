@@ -415,14 +415,11 @@ public:
 
 signals:
     void torrentAdded(int index);
-    void torrentRemoved(int index);
-    // torrentsUpdated / torrentFinished / extractionCompleted /
-    // altSpeedsActiveChanged / portStatusChanged are inherited from IEngine.
-    void torrentError(const QString &message);
     void extractionStarted(const QString &infoHash);
-    void suspiciousFilesDetected(const QString &name, const QStringList &files);
-    void killSwitchTriggered();
     void interfaceRestored();
+    // torrentsUpdated / torrentFinished / extractionCompleted /
+    // altSpeedsActiveChanged / portStatusChanged / torrentRemoved / torrentError /
+    // suspiciousFilesDetected / killSwitchTriggered are inherited from IEngine.
 
 private slots:
     void updateStats();

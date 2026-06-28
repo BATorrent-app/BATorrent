@@ -34,6 +34,21 @@ EngineHost::EngineHost(SessionManager *session, const QString &serverName, QObje
         QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
         o << qint32(status); sendEvent(QStringLiteral("portStatusChanged"), a);
     });
+    connect(m_session, &SessionManager::torrentRemoved, this, [this](int index) {
+        QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+        o << qint32(index); sendEvent(QStringLiteral("torrentRemoved"), a);
+    });
+    connect(m_session, &SessionManager::torrentError, this, [this](const QString &msg) {
+        QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+        o << msg; sendEvent(QStringLiteral("torrentError"), a);
+    });
+    connect(m_session, &SessionManager::suspiciousFilesDetected, this, [this](const QString &name, const QStringList &files) {
+        QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+        o << name << files; sendEvent(QStringLiteral("suspicious"), a);
+    });
+    connect(m_session, &SessionManager::killSwitchTriggered, this, [this]() {
+        sendEvent(QStringLiteral("killSwitch"), {});
+    });
 }
 
 bool EngineHost::listen()
