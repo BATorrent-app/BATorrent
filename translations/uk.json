@@ -301,6 +301,7 @@
   "hub_games": "Ваші ігри",
   "hub_recent": "Нещодавно додані",
   "hub_recommended": "Рекомендовано вам",
+  "hub_because_watched": "Тому що ви дивилися %1",
   "hub_empty_title": "Ваша бібліотека порожня",
   "hub_empty_sub": "Завантажте гру або фільм, щоб почати колекцію",
   "hub_playing_now": "Граю зараз",
