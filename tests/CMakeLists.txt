@@ -49,6 +49,15 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlthemebridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsettingsbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlrssbridge.h          # AUTOMOC: classes implemented in qmlposterbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmladdonbridge.h
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlpairingbridge.h
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsubtitlebridge.h
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmllogbridge.h
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmli18nbridge.h
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlnotificationbridge.h
+    ${CMAKE_SOURCE_DIR}/src/bridges/discordrpcbridge.h
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlupdaterbridge.h
     ${CMAKE_SOURCE_DIR}/src/services/metadata/metadataresolver.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/qrcodegen.cpp
