@@ -23,6 +23,8 @@
 #include <vector>
 #include <set>
 
+class ArchiveExtractor;
+
 class SessionManager : public IEngine
 {
     Q_OBJECT
@@ -590,6 +592,7 @@ private:
     QSet<QString> m_securityWarned;          // info-hashes already warned about (warn once)
     QSet<QString> m_defenderExcludedRoots;   // save roots already sent to Defender
     QStringList m_extractPasswords;
+    ArchiveExtractor *m_extractor = nullptr;   // owns the QProcess extraction orchestration
     void extractArchives(const QString &savePath, const QString &torrentName,
                          const QString &priorityPassword = QString(),
                          const QString &infoHash = QString());

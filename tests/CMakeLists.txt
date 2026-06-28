@@ -31,6 +31,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitlesearch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/archiveextractor.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasepick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp

@@ -52,6 +52,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/realdebrid.cpp
     src/services/security/suspiciousscan.cpp
     src/services/security/archivescan.cpp
+    src/services/security/archiveextractor.cpp
     src/services/metadata/releasepick.cpp
     src/services/integrations/installerprofile.cpp
     src/services/security/defender.cpp
