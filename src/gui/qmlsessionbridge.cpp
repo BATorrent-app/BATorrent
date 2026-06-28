@@ -332,7 +332,9 @@ bool QmlSessionBridge::selectedHasArchives() const
 
 bool QmlSessionBridge::selectedHasVideo() const
 {
-    return hasSelection() && m_session->torrentHasVideo(m_selectedIndex);
+    // A game that bundles cutscene/intro videos must not offer Play — Install wins.
+    return hasSelection() && m_session->torrentHasVideo(m_selectedIndex)
+           && !isGameTorrent(m_selectedIndex);
 }
 
 void QmlSessionBridge::extractSelected(const QString &password)
@@ -838,6 +840,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
     QVariantList out;
     const int n = m_session->torrentCount();
     for (int row = 0; row < n; ++row) {
+        if (isGameTorrent(row)) continue;                // a game's bundled .mp4 isn't a movie
         auto files = m_session->filesAt(row);
         int bestIdx = -1; qint64 bestSize = 0;
         struct Vid { int idx; QString name; int season; int episode; };
@@ -1487,28 +1490,36 @@ bool QmlSessionBridge::isGameTorrent(int row) const
 {
     if (row < 0) return false;
 
-    // File evidence first, as a veto: a real game ships an executable; a torrent
-    // that's purely a video with no exe is a movie/series even when its NAME
-    // matches a game ("Super Mario Galaxy the movie"). Without this veto such a
-    // title got both an Install (game) and a Watch (movie) action.
+    // File evidence is authoritative once metadata is present, and it overrides
+    // the name/resolver guess (which can't tell "The Matrix" the movie from the
+    // game). Two rules:
+    //   * an executable anywhere ⇒ game. Movies never ship a .exe, and games
+    //     routinely bundle cutscene videos with the exe buried in subfolders —
+    //     so a stray .mp4 must NOT veto a real game.
+    //   * videos but no executable ⇒ movie/series, even when the NAME matches a
+    //     game ("Super Mario Galaxy the movie"). Without this a movie like
+    //     "The Matrix" wrongly got an Install action.
     bool hasExe = false, hasVideo = false;
     for (const auto &f : m_session->filesAt(row)) {
         QString p = f.path.toLower();
         if (p.endsWith(QStringLiteral(".!bt"))) p.chop(4);   // in-progress: "movie.mkv.!bt"
         if (p.endsWith(QStringLiteral(".exe"))) hasExe = true;
         else if (p.endsWith(QStringLiteral(".mkv")) || p.endsWith(QStringLiteral(".mp4"))
-                 || p.endsWith(QStringLiteral(".avi"))) hasVideo = true;
+                 || p.endsWith(QStringLiteral(".avi")) || p.endsWith(QStringLiteral(".mov"))
+                 || p.endsWith(QStringLiteral(".m4v")) || p.endsWith(QStringLiteral(".webm")))
+            hasVideo = true;
     }
-    if (hasVideo && !hasExe) return false;
+    if (hasExe) return true;
+    if (hasVideo) return false;
 
+    // No decisive files yet (magnet still resolving metadata): fall back to the
+    // name / cached metadata guess.
     const QString hash = m_session->torrentHashAt(row);
     if (!hash.isEmpty() && m_resolver && m_resolver->hasCached(hash)) {
         const auto meta = m_resolver->cached(hash);
         if (meta.valid && meta.contentType == ContentType::Game) return true;
     }
-    if (NameParser::parse(m_session->torrentAt(row).name).contentType == ContentType::Game)
-        return true;
-    return hasExe && !hasVideo;
+    return NameParser::parse(m_session->torrentAt(row).name).contentType == ContentType::Game;
 }
 
 void QmlSessionBridge::onGameTorrentFinished(const QString &name, const QString &infoHash)
