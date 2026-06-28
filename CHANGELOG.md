@@ -24,6 +24,7 @@ Pick up where you left off — and see what's actually worth downloading. The li
 - **Mouse-wheel scrolling** moves a sensible amount per notch on Discover, the HUB, Search and Settings (it used to crawl one line at a time).
 - **(Windows) the tray right-click menu** anchors to the tray icon again instead of drifting.
 - **The nav-rail activity card no longer vanishes** when downloads are paused (e.g. disk-low auto-pause) — it keeps showing your downloads or seeding.
+- **Fully translated, everywhere** — the new subtitle, search-by-language and disk-guard strings are now localized across all eight languages instead of falling back to English, the HUB empty-state shows its intended text again (it was stuck on a stale duplicate), and a diagnostics line that leaked a raw `detail_seeds` label now reads "Seeds".
 
 ### Polish
 - A disk-aware search footer warns when results won't fit your free space, and **adding a too-big torrent now asks first** ("needs X, Y free — add anyway?") instead of silently piling up.
