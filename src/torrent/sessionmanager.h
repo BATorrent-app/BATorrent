@@ -6,6 +6,7 @@
 #define SESSIONMANAGER_H
 
 #include "types.h"
+#include "iengine.h"
 #include "../app/statshistory.h"
 #include <QObject>
 #include <QTimer>
@@ -21,7 +22,7 @@
 #include <vector>
 #include <set>
 
-class SessionManager : public QObject
+class SessionManager : public IEngine
 {
     Q_OBJECT
 public:
@@ -261,14 +262,7 @@ public:
     // Recently-removed history — persistent ring buffer of the last N removed
     // torrents' resume snapshots, so the user can re-add even after closing
     // the undo toast. Stored as files under <AppData>/removed/{hash}.resume.
-    struct RemovedEntry {
-        QString hash;
-        QString name;
-        qint64 totalSize;
-        qint64 removedAt; // unix seconds
-        QString resumePath; // absolute path to the snapshot file
-    };
-    QList<RemovedEntry> recentlyRemoved() const;
+    QList<RemovedEntry> recentlyRemoved() const;   // RemovedEntry now in types.h (shared with IEngine)
     bool restoreRemoved(const QString &hash);
     void clearRemovedHistory();
 
@@ -424,15 +418,7 @@ public:
     qint64 sessionUploaded() const;
 
     // Detailed session metrics (from libtorrent session_stats)
-    struct DetailedStats {
-        int dhtNodes = 0;
-        int peersCount = 0;
-        qint64 totalWasted = 0;       // redundant + failed bytes
-        int diskReadQueue = 0;
-        int diskWriteQueue = 0;
-        bool hasIncomingConnections = false;
-    };
-    DetailedStats detailedStats() const;
+    DetailedStats detailedStats() const;   // DetailedStats now in types.h (shared with IEngine)
 
     // Torrent count tracking
     void incrementTorrentCount();
@@ -450,16 +436,13 @@ public:
 signals:
     void torrentAdded(int index);
     void torrentRemoved(int index);
-    void torrentsUpdated();
-    void torrentFinished(const QString &name, const QString &infoHash);
+    // torrentsUpdated / torrentFinished / extractionCompleted /
+    // altSpeedsActiveChanged / portStatusChanged are inherited from IEngine.
     void torrentError(const QString &message);
     void extractionStarted(const QString &infoHash);
-    void extractionCompleted(const QString &infoHash, bool success);
     void suspiciousFilesDetected(const QString &name, const QStringList &files);
     void killSwitchTriggered();
     void interfaceRestored();
-    void altSpeedsActiveChanged(bool active);
-    void portStatusChanged(int status);
 
 private slots:
     void updateStats();

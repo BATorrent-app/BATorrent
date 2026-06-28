@@ -22,6 +22,7 @@
 #include "../app/translator.h"
 
 class SessionManager;
+class IEngine;
 class MetadataResolver;
 class DiscoveryService;
 class GeoIpResolver;
@@ -169,7 +170,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(int portStatus READ portStatus NOTIFY portStatusChanged)
 
 public:
-    explicit QmlSessionBridge(SessionManager *session, MetadataResolver *resolver, QObject *parent = nullptr);
+    explicit QmlSessionBridge(IEngine *session, MetadataResolver *resolver, QObject *parent = nullptr);
 
     int torrentCount() const;
     int activeCount() const;
@@ -450,7 +451,7 @@ private:
     void runInstaller(const QString &infoHash, const QString &installerExe, const QString &folder);
     void pollInstallWatch();   // guided installs: watch the folder for a produced exe
 
-    SessionManager *m_session;
+    IEngine *m_session;   // the session API — SessionManager in-process today, IpcEngine after the split
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game
     QHash<QString, qint64> m_gameStartMs;    // infoHash → launch timestamp (ms)

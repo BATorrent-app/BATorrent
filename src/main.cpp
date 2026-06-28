@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
         auto *subtitleBridge = new QmlSubtitleBridge(&session, &app);
         auto *pairingBridge = new QmlPairingBridge(&app);
         auto *notificationBridge = new QmlNotificationBridge(&app);
-        QObject::connect(&session, &SessionManager::torrentFinished,
+        QObject::connect(&session, &IEngine::torrentFinished,
                          notificationBridge, &QmlNotificationBridge::onTorrentFinished);
         QObject::connect(&session, &SessionManager::torrentError,
                          notificationBridge, &QmlNotificationBridge::onTorrentError);
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
                          notificationBridge, &QmlNotificationBridge::onRssAutoDownloaded);
         // Telegram webhook notifications (same event surfaces as the toasts above).
         auto *telegram = new TelegramNotifier(&app);
-        QObject::connect(&session, &SessionManager::torrentFinished,
+        QObject::connect(&session, &IEngine::torrentFinished,
                          telegram, &TelegramNotifier::onTorrentFinished);
         QObject::connect(&session, &SessionManager::killSwitchTriggered,
                          telegram, &TelegramNotifier::onKillSwitchTriggered);
@@ -299,7 +299,7 @@ int main(int argc, char *argv[])
 
         // Media-server library refresh: ping Plex/Jellyfin when a download finishes.
         auto *mediaNam = new QNetworkAccessManager(&app);
-        QObject::connect(&session, &SessionManager::torrentFinished, &app, [mediaNam](const QString &, const QString &) {
+        QObject::connect(&session, &IEngine::torrentFinished, &app, [mediaNam](const QString &, const QString &) {
             QSettings st;
             if (st.value("plexEnabled", false).toBool()) {
                 const QString url = st.value("plexUrl").toString();
@@ -324,17 +324,17 @@ int main(int argc, char *argv[])
         });
 
         auto *discordBridge = new DiscordRpcBridge(&session, &app);
-        QObject::connect(&session, &SessionManager::torrentsUpdated,
+        QObject::connect(&session, &IEngine::torrentsUpdated,
                          discordBridge, &DiscordRpcBridge::refresh);
 #ifndef BAT_STORE_BUILD
         auto *updaterBridge = new QmlUpdaterBridge(&app);
 #endif
-        QObject::connect(&session, &SessionManager::torrentsUpdated,
+        QObject::connect(&session, &IEngine::torrentsUpdated,
                          sessionBridge, &QmlSessionBridge::emitStats);
         QObject::connect(resolver, &MetadataResolver::metadataReady,
                          sessionBridge, &QmlSessionBridge::emitStats);
 
-        QObject::connect(&session, &SessionManager::torrentsUpdated,
+        QObject::connect(&session, &IEngine::torrentsUpdated,
                          posterModel, &QmlPosterModel::refresh);
         // Index-aware removal — beginRemoveRows for the exact row instead of a
         // full model reset, so the grid doesn't flash and jump to the top.

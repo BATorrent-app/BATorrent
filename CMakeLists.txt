@@ -41,6 +41,7 @@ endif()
 
 add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/main.cpp
+    src/torrent/iengine.h        # header-only QObject — listed so AUTOMOC builds its metaobject
     src/torrent/sessionmanager.cpp
     src/app/translator.cpp
     src/app/statshistory.cpp

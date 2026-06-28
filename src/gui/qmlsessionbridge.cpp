@@ -81,7 +81,7 @@
 #include <memory>
 #include <sstream>
 
-QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *resolver, QObject *parent)
+QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver, QObject *parent)
     : QObject(parent), m_session(session), m_resolver(resolver)
 {
     m_sampleTimer.setInterval(1000);
@@ -112,15 +112,15 @@ QmlSessionBridge::QmlSessionBridge(SessionManager *session, MetadataResolver *re
         });
     }
 
-    connect(m_session, &SessionManager::altSpeedsActiveChanged,
+    connect(m_session, &IEngine::altSpeedsActiveChanged,
             this, &QmlSessionBridge::altSpeedsActiveChanged);
-    connect(m_session, &SessionManager::portStatusChanged,
+    connect(m_session, &IEngine::portStatusChanged,
             this, &QmlSessionBridge::portStatusChanged);
-    connect(m_session, &SessionManager::torrentsUpdated,
+    connect(m_session, &IEngine::torrentsUpdated,
             this, &QmlSessionBridge::onWatchTick);
-    connect(m_session, &SessionManager::extractionCompleted,
+    connect(m_session, &IEngine::extractionCompleted,
             this, &QmlSessionBridge::onExtractionCompleted);
-    connect(m_session, &SessionManager::torrentFinished,
+    connect(m_session, &IEngine::torrentFinished,
             this, &QmlSessionBridge::onGameTorrentFinished);
 }
 

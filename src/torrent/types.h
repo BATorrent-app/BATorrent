@@ -54,4 +54,23 @@ struct TrackerInfo {
     QString status;
 };
 
+// Shared so the IEngine interface (and the IPC layer) can name them — moved out
+// of SessionManager's body for the engine/UI split.
+struct RemovedEntry {
+    QString hash;
+    QString name;
+    qint64 totalSize;
+    qint64 removedAt;     // unix seconds
+    QString resumePath;   // absolute path to the snapshot file
+};
+
+struct DetailedStats {
+    int dhtNodes = 0;
+    int peersCount = 0;
+    qint64 totalWasted = 0;       // redundant + failed bytes
+    int diskReadQueue = 0;
+    int diskWriteQueue = 0;
+    bool hasIncomingConnections = false;
+};
+
 #endif

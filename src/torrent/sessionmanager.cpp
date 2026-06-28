@@ -46,7 +46,7 @@
 #include <boost/asio/ip/address.hpp>
 
 SessionManager::SessionManager(QObject *parent)
-    : QObject(parent)
+    : IEngine(parent)
 {
     lt::settings_pack pack;
     pack.set_int(lt::settings_pack::alert_mask,
@@ -1855,7 +1855,7 @@ bool SessionManager::restoreFromResumeData(const QByteArray &data)
     return true;
 }
 
-QList<SessionManager::RemovedEntry> SessionManager::recentlyRemoved() const
+QList<RemovedEntry> SessionManager::recentlyRemoved() const
 {
     QList<RemovedEntry> out;
     QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
@@ -2982,7 +2982,7 @@ qint64 SessionManager::sessionUploaded() const
     return sessionUp;
 }
 
-SessionManager::DetailedStats SessionManager::detailedStats() const
+DetailedStats SessionManager::detailedStats() const
 {
     DetailedStats ds;
     for (const auto &h : m_torrents) {
