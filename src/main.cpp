@@ -28,6 +28,7 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QUrl>
+#include <cstdlib>
 #include "app/metadataresolver.h"
 #include "app/discoveryservice.h"
 #include "app/translator.h"
@@ -92,6 +93,23 @@ static bool sendToRunningInstance(const QString &message)
     return true;
 }
 
+// A QML/JS runtime diagnostic (vs a generic Qt warning): carries a .qml/qrc
+// source location AND an error phrase. These are the silent broken-binding /
+// TypeError messages that keep running until they cascade into a crash.
+static bool isQmlError(const QString &m)
+{
+    if (!m.contains(QLatin1String(".qml:")) && !m.contains(QLatin1String("qrc:")))
+        return false;
+    static const char *markers[] = {
+        "TypeError", "ReferenceError", "is not a function", "is not defined",
+        "Cannot read property", "Unable to assign", "Cannot assign",
+        "Binding loop detected", "Error:"
+    };
+    for (const char *mk : markers)
+        if (m.contains(QLatin1String(mk))) return true;
+    return false;
+}
+
 // Maps Qt's runtime log categories (QtDebugMsg / QtInfoMsg / etc) to our
 // internal Logger levels so every existing qDebug() / qWarning() in the
 // codebase ends up in the same file the user can export.
@@ -112,6 +130,16 @@ static void qtMessageHandler(QtMsgType type, const QMessageLogContext &ctx,
     Logger::instance().log(lvl, prefix + msg);
     // Keep stderr live for `--debug` console use.
     fprintf(stderr, "%s\n", qPrintable(prefix + msg));
+
+    // Dev-only: stop QML runtime errors from hiding in the log until they
+    // cascade into a crash. BAT_QML_STRICT=warn prints a loud banner; =fatal
+    // aborts at the broken binding so a debugger / the crash handler catches it.
+    // Unset in production → zero effect.
+    static const QByteArray qmlStrict = qgetenv("BAT_QML_STRICT");
+    if (!qmlStrict.isEmpty() && type == QtWarningMsg && isQmlError(msg)) {
+        fprintf(stderr, "\n‼️  [QML ERROR] %s\n\n", qPrintable(msg));
+        if (qmlStrict == "fatal") { fflush(stderr); abort(); }
+    }
 }
 
 int main(int argc, char *argv[])
