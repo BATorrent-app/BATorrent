@@ -863,7 +863,7 @@
   "set_grp_security": "Seguridad",
   "set_warn_suspicious": "Avisar sobre archivos sospechosos",
   "set_warn_suspicious_note": "Muestra una advertencia cuando un torrent de medios oculta un ejecutable (p. ej. pelicula.mp4.exe). Comprobación local — no se sube ni se borra nada.",
-  "ctx_defender_exclude": "Excluir carpeta de Windows Defender",
+  "ctx_defender_exclude": "Excluir de Defender",
   "set_auto_defender": "Excluir descargas de Defender automáticamente",
   "set_auto_defender_note": "Añade la carpeta de cada nueva descarga a las exclusiones de Windows Defender (un aviso de UAC). Útil para falsos positivos en juegos crackeados, pero también impide que Defender analice esas carpetas — déjalo desactivado salvo que lo necesites.",
   "defender_excluded_ok": "Carpeta excluida de Windows Defender",

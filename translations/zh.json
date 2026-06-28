@@ -859,7 +859,7 @@
   "set_grp_security": "安全",
   "set_warn_suspicious": "警告可疑文件",
   "set_warn_suspicious_note": "当媒体种子隐藏可执行文件（如 movie.mp4.exe）时显示警告。仅本地检查——不上传、不删除任何文件。",
-  "ctx_defender_exclude": "将文件夹从 Windows Defender 中排除",
+  "ctx_defender_exclude": "从 Defender 排除",
   "set_auto_defender": "自动将下载从 Defender 中排除",
   "set_auto_defender_note": "将每个新下载的文件夹加入 Windows Defender 排除列表（一次 UAC 提示）。对破解游戏的误报有用，但也会让 Defender 不再扫描这些文件夹——除非确需，否则保持关闭。",
   "defender_excluded_ok": "已将文件夹从 Windows Defender 中排除",

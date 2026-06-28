@@ -863,7 +863,7 @@
   "set_grp_security": "Sicherheit",
   "set_warn_suspicious": "Vor verdächtigen Dateien warnen",
   "set_warn_suspicious_note": "Warnt, wenn ein Medien-Torrent eine ausführbare Datei versteckt (z. B. film.mp4.exe). Nur lokale Prüfung — nichts wird hochgeladen oder gelöscht.",
-  "ctx_defender_exclude": "Ordner von Windows Defender ausschließen",
+  "ctx_defender_exclude": "Aus Defender ausschließen",
   "set_auto_defender": "Downloads automatisch von Defender ausschließen",
   "set_auto_defender_note": "Fügt den Ordner jedes neuen Downloads zu den Defender-Ausnahmen hinzu (eine UAC-Abfrage). Nützlich bei Fehlalarmen bei gecrackten Spielen, verhindert aber auch das Scannen dieser Ordner — aus lassen, sofern nicht benötigt.",
   "defender_excluded_ok": "Ordner von Windows Defender ausgeschlossen",

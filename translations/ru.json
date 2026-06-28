@@ -859,7 +859,7 @@
   "set_grp_security": "Безопасность",
   "set_warn_suspicious": "Предупреждать о подозрительных файлах",
   "set_warn_suspicious_note": "Показывает предупреждение, когда медиа-торрент скрывает исполняемый файл (напр. movie.mp4.exe). Только локальная проверка — ничего не загружается и не удаляется.",
-  "ctx_defender_exclude": "Исключить папку из Windows Defender",
+  "ctx_defender_exclude": "Исключить из Defender",
   "set_auto_defender": "Авто-исключение загрузок из Defender",
   "set_auto_defender_note": "Добавляет папку каждой новой загрузки в исключения Windows Defender (один запрос UAC). Полезно при ложных срабатываниях на взломанных играх, но Defender перестаёт проверять эти папки — оставьте выключенным, если не уверены.",
   "defender_excluded_ok": "Папка исключена из Windows Defender",

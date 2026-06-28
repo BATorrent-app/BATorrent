@@ -859,7 +859,7 @@
   "set_grp_security": "セキュリティ",
   "set_warn_suspicious": "不審なファイルを警告する",
   "set_warn_suspicious_note": "メディアのトレントが実行ファイルを隠している場合に警告します（例: movie.mp4.exe）。ローカル確認のみ — アップロードも削除も行いません。",
-  "ctx_defender_exclude": "フォルダーを Windows Defender の除外に追加",
+  "ctx_defender_exclude": "Defender から除外",
   "set_auto_defender": "ダウンロードを Defender から自動除外",
   "set_auto_defender_note": "新しいダウンロードのフォルダーを Windows Defender の除外に追加します（UAC 確認が一度）。クラックゲームの誤検知に便利ですが、そのフォルダーはスキャンされなくなります。必要でなければオフのままに。",
   "defender_excluded_ok": "フォルダーを Windows Defender の除外に追加しました",

@@ -920,7 +920,7 @@
   "set_grp_security": "Security",
   "set_warn_suspicious": "Warn about suspicious files",
   "set_warn_suspicious_note": "Shows a warning when a downloaded media torrent hides an executable (e.g. movie.mp4.exe). Local check only — no files are uploaded, and nothing is ever deleted.",
-  "ctx_defender_exclude": "Exclude folder from Windows Defender",
+  "ctx_defender_exclude": "Exclude from Defender",
   "set_auto_defender": "Auto-exclude downloads from Defender",
   "set_auto_defender_note": "Adds each new download's folder to Windows Defender's exclusions (one UAC prompt). Useful for false positives on cracked games, but it also stops Defender scanning those folders — leave off unless you know you need it.",
   "defender_excluded_ok": "Folder excluded from Windows Defender",
