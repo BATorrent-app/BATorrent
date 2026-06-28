@@ -31,7 +31,9 @@ QByteArray inflateRaw(const char *src, int n, int hint)
     s.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(src));
     s.avail_in = static_cast<uInt>(n);
     QByteArray out;
-    out.resize(hint > 0 ? hint : qMax(n * 4, 16384));
+    // a garbage central-directory size mustn't drive a huge allocation
+    const int start = (hint > 0 && hint < 64 * 1024 * 1024) ? hint : qMax(n * 4, 16384);
+    out.resize(start);
     int ret;
     do {
         if (s.total_out >= static_cast<uLong>(out.size())) out.resize(out.size() * 2);
@@ -61,24 +63,28 @@ QByteArray unzipFirstSrt(const QByteArray &zip)
     for (int i = n - 22; i >= 0 && i >= n - 22 - 65536; --i)
         if (u32(i) == 0x06054b50) { eocd = i; break; }
     if (eocd < 0) return {};
-    const int count = u16(eocd + 10);
-    int p = static_cast<int>(u32(eocd + 16));
-    for (int e = 0; e < count && p + 46 <= n && u32(p) == 0x02014b50; ++e) {
+    const int count = int(u16(eocd + 10));
+    // 64-bit offsets so a corrupt header (e.g. an HTML error body served as a
+    // .zip) can't overflow to a negative index and read out of bounds.
+    qint64 p = u32(eocd + 16);
+    for (int e = 0; e < count; ++e) {
+        if (p < 0 || p + 46 > n || u32(int(p)) != 0x02014b50) break;
         const quint16 method = u16(p + 10);
         const quint32 compSize = u32(p + 20);
         const quint32 uncompSize = u32(p + 24);
-        const quint16 fnLen = u16(p + 28);
-        const quint16 efLen = u16(p + 30);
-        const quint16 cmLen = u16(p + 32);
-        const quint32 lho = u32(p + 42);
-        const QString name = QString::fromUtf8(d + p + 46, fnLen);
+        const int fnLen = int(u16(p + 28));
+        const int efLen = int(u16(p + 30));
+        const int cmLen = int(u16(p + 32));
+        const qint64 lho = u32(p + 42);
+        if (p + 46 + fnLen > n) break;
+        const QString name = QString::fromUtf8(d + int(p) + 46, fnLen);
         p += 46 + fnLen + efLen + cmLen;
         if (!name.endsWith(QLatin1String(".srt"), Qt::CaseInsensitive)) continue;
-        if (lho + 30 > quint32(n)) return {};
-        const int dataOff = int(lho) + 30 + u16(lho + 26) + u16(lho + 28);
-        if (dataOff + int(compSize) > n) return {};
+        if (lho < 0 || lho + 30 > n) return {};
+        const qint64 dataOff = lho + 30 + u16(int(lho) + 26) + u16(int(lho) + 28);
+        if (dataOff < 0 || dataOff + qint64(compSize) > n) return {};
         if (method == 0) return QByteArray(d + dataOff, int(compSize));   // stored
-        if (method == 8) return inflateRaw(d + dataOff, int(compSize), int(uncompSize));
+        if (method == 8) return inflateRaw(d + int(dataOff), int(compSize), int(uncompSize));
         return {};
     }
     return {};
