@@ -293,6 +293,12 @@ Item {
         exePicker.open()
     }
 
+    // ---- detail drawer state ----
+    property var detailItem: null
+    property bool detailIsGame: false
+    property bool detailOpen: false
+    function openDetail(item, isGame) { detailItem = item; detailIsGame = isGame === true; detailOpen = true }
+
     Rectangle { anchors.fill: parent; color: Theme.bg }
 
     // The hub always shows its structure (greeting + the two continue rails) so
@@ -523,6 +529,7 @@ Item {
                         item: modelData
                         isGame: modelData.installState !== undefined
                         requireDoubleClick: isGame
+                        onShowDetail: page.openDetail(modelData, isGame)
                         onPlay: isGame ? page.gamePrimary(modelData) : page.playMovie(modelData)
                         onContext: isGame ? gameMenu.openFor(modelData.infoHash)
                                           : continueMenu.openFor(modelData.infoHash, modelData.fileIndex)
@@ -705,6 +712,7 @@ Item {
                             item: modelData
                             isGame: true
                             requireDoubleClick: true
+                            onShowDetail: page.openDetail(modelData, true)
                             onPlay: page.gamePrimary(modelData)
                             onContext: gameMenu.openFor(modelData.infoHash)
                         }
@@ -730,7 +738,7 @@ Item {
                     columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
                     Repeater {
                         model: page.applyView(page.library)
-                        delegate: HubCard { item: modelData; onPlay: page.playMovie(modelData) }
+                        delegate: HubCard { item: modelData; onShowDetail: page.openDetail(modelData, false); onPlay: page.playMovie(modelData); onContext: continueMenu.openFor(modelData.infoHash, modelData.fileIndex) }
                     }
                 }
             }
@@ -765,6 +773,7 @@ Item {
         readonly property int cardH: Math.round(cardW * 1.5)
         signal play()
         signal context()
+        signal showDetail()
         implicitWidth: cardW
         implicitHeight: cardH + 38
 
@@ -929,11 +938,12 @@ Item {
             id: ma; anchors.fill: parent
             hoverEnabled: true; cursorShape: Qt.PointingHandCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
+            // single click → detail drawer; double click → quick-play
             onClicked: function (mouse) {
                 if (mouse.button === Qt.RightButton) { card.context(); return }
-                if (!card.requireDoubleClick) card.play()
+                card.showDetail()
             }
-            onDoubleClicked: if (card.requireDoubleClick) card.play()
+            onDoubleClicked: card.play()
         }
 
         // rich hover card: genres + description (games carry IGDB metadata)
@@ -1065,6 +1075,141 @@ Item {
                 }
                 elideMode: Text.ElideMiddle
                 onTriggered: if (page.api) page.api.playFile(episodeMenu.hash, epItem.modelData.idx)
+            }
+        }
+    }
+
+    // ===== detail drawer (click a library card) =====
+    Rectangle {
+        anchors.fill: parent
+        visible: page.detailOpen || detailDrawer.x < page.width
+        color: "#88000000"
+        opacity: page.detailOpen ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+        MouseArea { anchors.fill: parent; onClicked: page.detailOpen = false }
+    }
+    Rectangle {
+        id: detailDrawer
+        width: Math.min(420, page.width)
+        height: parent.height
+        x: page.detailOpen ? parent.width - width : parent.width
+        color: Theme.elev
+        Behavior on x { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.hair }
+        MouseArea { anchors.fill: parent }   // swallow clicks so the scrim doesn't close it
+
+        readonly property var it: page.detailItem
+        readonly property bool isGame: page.detailIsGame
+
+        Flickable {
+            anchors.fill: parent
+            anchors.margins: 24
+            contentHeight: dcol.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+            ColumnLayout {
+                id: dcol
+                width: parent.width
+                spacing: 16
+                visible: detailDrawer.it !== null
+
+                // close
+                Item {
+                    Layout.fillWidth: true; Layout.preferredHeight: 28
+                    Rectangle {
+                        anchors.right: parent.right; width: 28; height: 28; radius: 14
+                        color: dClose.containsMouse ? Theme.hover : "transparent"
+                        Text { anchors.centerIn: parent; text: "✕"; color: Theme.t2; font.pixelSize: 14 }
+                        MouseArea { id: dClose; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: page.detailOpen = false }
+                    }
+                }
+
+                // cover (rounded mask, no shadow)
+                Item {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 168; Layout.preferredHeight: 224
+                    Rectangle { id: dPC; anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
+                        Image { anchors.fill: parent; source: detailDrawer.it ? (detailDrawer.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true } }
+                    Rectangle { id: dPM; anchors.fill: parent; radius: 14; color: "white"; visible: false; layer.enabled: true }
+                    MultiEffect { source: dPC; anchors.fill: parent; maskEnabled: true; maskSource: dPM }
+                    Rectangle { anchors.fill: parent; radius: 14; color: "transparent"; border.color: "#33ffffff"; border.width: 1 }
+                }
+
+                Text {
+                    Layout.fillWidth: true; Layout.alignment: Qt.AlignHCenter
+                    text: detailDrawer.it ? (detailDrawer.it.title || "") : ""
+                    color: Theme.t1; font.pixelSize: 20; font.weight: Font.Bold; font.family: Theme.fontSans
+                    horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight
+                }
+                Text {
+                    Layout.fillWidth: true; Layout.alignment: Qt.AlignHCenter
+                    visible: text.length > 0
+                    color: Theme.t3; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+                    text: {
+                        var it = detailDrawer.it; if (!it) return ""
+                        var parts = []
+                        if ((it.year || "").length > 0) parts.push(it.year)
+                        if (it.genres && it.genres.length > 0) parts.push(it.genres.slice(0, 2).join(" · "))
+                        if ((it.rating || 0) > 0) parts.push("★ " + Number(it.rating).toFixed(1))
+                        return parts.join("   ·   ")
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true; Layout.alignment: Qt.AlignHCenter
+                    visible: text.length > 0
+                    color: detailDrawer.it && detailDrawer.it.playing ? Theme.accent : Theme.t4
+                    font.pixelSize: 12; font.family: Theme.fontMono; horizontalAlignment: Text.AlignHCenter
+                    text: {
+                        var it = detailDrawer.it; if (!it) return ""
+                        if (detailDrawer.isGame) return page.cardStatus(it, true)
+                        var p = []
+                        if ((it.watchedPct || 0) > 0) p.push(Math.round(it.watchedPct * 100) + "% " + i18n.t("hub_watched"))
+                        if ((it.durMs || 0) > 0) p.push(page.fmtTime(it.durMs))
+                        if ((it.size || 0) > 0) p.push(page.fmtSize(it.size))
+                        return p.join("   ·   ")
+                    }
+                }
+
+                // actions
+                BtnFlat {
+                    Layout.fillWidth: true; Layout.topMargin: 4
+                    primary: true; icon: "qrc:/icons/play.svg"
+                    text: detailDrawer.isGame ? (page.gameStateActionable(detailDrawer.it) ? page.gameStateLabel(detailDrawer.it) : i18n.t("hub_gs_play"))
+                          : ((detailDrawer.it && (detailDrawer.it.watchedPct || 0) > 0) ? i18n.t("hub_resume") : i18n.t("hub_gs_play"))
+                    onClicked: {
+                        if (!detailDrawer.it) return
+                        if (detailDrawer.isGame) page.gamePrimary(detailDrawer.it)
+                        else if (api) api.playByHashFile(detailDrawer.it.infoHash, detailDrawer.it.fileIndex)
+                        page.detailOpen = false
+                    }
+                }
+                BtnFlat {
+                    Layout.fillWidth: true
+                    icon: "qrc:/icons/open.svg"
+                    text: (i18n.language, i18n.t("hub_open_folder"))
+                    onClicked: if (api && detailDrawer.it) {
+                        var f = api.gameFolder(detailDrawer.it.infoHash)
+                        if (f && f.length > 0) Qt.openUrlExternally(page.fileUrl(f))
+                    }
+                }
+                BtnFlat {
+                    Layout.fillWidth: true
+                    visible: detailDrawer.isGame
+                    icon: "qrc:/icons/settings.svg"
+                    text: (i18n.language, i18n.t("hub_set_exe"))
+                    onClicked: if (detailDrawer.it) { page.openExePicker(detailDrawer.it.infoHash, false); page.detailOpen = false }
+                }
+
+                Text {
+                    Layout.fillWidth: true; Layout.topMargin: 4
+                    visible: detailDrawer.it && (detailDrawer.it.description || detailDrawer.it.overview || "").length > 0
+                    text: detailDrawer.it ? (detailDrawer.it.description || detailDrawer.it.overview || "") : ""
+                    color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
+                    wrapMode: Text.WordWrap; lineHeight: 1.35
+                }
             }
         }
     }

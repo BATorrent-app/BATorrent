@@ -885,7 +885,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
             if (v.season >= 0 && v.episode >= 0) isSeries = true;
         }
 
-        QString poster, title = info.name;
+        QString poster, title = info.name, description;
         int year = 0, tmdbId = 0;
         QStringList genres;
         if (m_resolver && m_resolver->hasCached(hash)) {
@@ -896,6 +896,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
                 year = meta.year;
                 tmdbId = meta.tmdbId;
                 genres = meta.genres;
+                description = meta.description;
             }
         }
 
@@ -914,6 +915,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["isSeries"]   = isSeries;                       // has SxxExx markers → group by season
         m["tmdbId"]     = tmdbId;                          // for TMDB episode-title lookup
         m["genres"]     = genres;                          // taste signal for HUB recommendations
+        m["description"] = description;                    // synopsis for the HUB detail drawer
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
         m["size"]       = info.totalSize;
