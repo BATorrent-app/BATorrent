@@ -81,18 +81,40 @@ jobs:
           packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
           version: 3.0
 
+      # Crash reporting (opt-in, same gate as macOS). No apt package for
+      # sentry-native, so build it from source when BAT_SENTRY_DSN is set.
+      - name: Configure Sentry
+        run: |
+          if [ -n "${{ vars.BAT_SENTRY_DSN }}" ]; then
+            sudo apt-get install -y libcurl4-openssl-dev
+            git clone --depth 1 --branch 0.15.2 https://github.com/getsentry/sentry-native.git /tmp/sn
+            cmake -S /tmp/sn -B /tmp/sn/build -DCMAKE_BUILD_TYPE=Release \
+              -DSENTRY_BACKEND=crashpad -DCMAKE_INSTALL_PREFIX="$HOME/sn-prefix"
+            cmake --build /tmp/sn/build --parallel
+            cmake --install /tmp/sn/build
+            SNDIR=$(dirname "$(find "$HOME/sn-prefix" -name 'sentry-config.cmake' | head -1)")
+            echo "BAT_SENTRY_DSN=${{ vars.BAT_SENTRY_DSN }}" >> "$GITHUB_ENV"
+            echo "BAT_SENTRY_HANDLER=$(find "$HOME/sn-prefix" -name crashpad_handler | head -1)" >> "$GITHUB_ENV"
+            echo "SENTRY_CMAKE_ARGS=-DBAT_SENTRY=ON -Dsentry_DIR=$SNDIR" >> "$GITHUB_ENV"
+            echo "SENTRY_ENABLED=1" >> "$GITHUB_ENV"
+          else
+            echo "SENTRY_ENABLED=0" >> "$GITHUB_ENV"
+          fi
+
       - name: Build
         env:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ${SENTRY_CMAKE_ARGS:-}
           cmake --build build
 
       - name: Install to AppDir
         run: |
           DESTDIR=$PWD/AppDir cmake --install build
+          # Ship the Crashpad handler next to the binary inside the AppImage.
+          [ "$SENTRY_ENABLED" = "1" ] && cp "$BAT_SENTRY_HANDLER" AppDir/usr/bin/crashpad_handler || true
 
       - name: Resize icon to 256x256
         run: |
@@ -113,6 +135,17 @@ jobs:
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png \
             --output appimage
           mv BATorrent-*.AppImage BATorrent-linux-x86_64.AppImage
+
+      - name: Upload debug symbols to Sentry
+        if: env.SENTRY_ENABLED == '1' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != ''
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          sentry-cli debug-files upload build/BATorrent
 
       - name: Upload AppImage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -173,14 +206,33 @@ jobs:
       - name: Convert PNG to multi-resolution ICO
         run: magick src/images/logo1.png -define icon:auto-resize=256,64,48,32,16 src/images/logo1.ico
 
+      # Crash reporting (opt-in, same gate as macOS). sentry-native via vcpkg;
+      # find_package(sentry) resolves through the vcpkg toolchain automatically.
+      - name: Configure Sentry
+        shell: pwsh
+        run: |
+          if ("${{ vars.BAT_SENTRY_DSN }}") {
+            & "$env:VCPKG_ROOT\vcpkg" install sentry-native:x64-windows
+            $handler = (Get-ChildItem -Recurse "$env:VCPKG_ROOT\installed\x64-windows" -Filter crashpad_handler.exe | Select-Object -First 1).FullName
+            "BAT_SENTRY_DSN=${{ vars.BAT_SENTRY_DSN }}" | Out-File $env:GITHUB_ENV -Append
+            "BAT_SENTRY_HANDLER=$handler" | Out-File $env:GITHUB_ENV -Append
+            "SENTRY_CMAKE_ARGS=-DBAT_SENTRY=ON" | Out-File $env:GITHUB_ENV -Append
+            "SENTRY_ENABLED=1" | Out-File $env:GITHUB_ENV -Append
+          } else {
+            "SENTRY_ENABLED=0" | Out-File $env:GITHUB_ENV -Append
+          }
+
       - name: Build
         env:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: |
+          $sentryArgs = @()
+          if ($env:SENTRY_CMAKE_ARGS) { $sentryArgs = $env:SENTRY_CMAKE_ARGS -split ' ' }
           cmake -B build -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            @sentryArgs
           cmake --build build --config Release
 
       - name: Package
@@ -191,6 +243,7 @@ jobs:
           windeployqt --qmldir src/qml --compiler-runtime release/BATorrent.exe
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
+          if ($env:SENTRY_ENABLED -eq "1" -and $env:BAT_SENTRY_HANDLER) { Copy-Item "$env:BAT_SENTRY_HANDLER" release/ }
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
       - name: Generate installer wizard images
@@ -240,6 +293,18 @@ jobs:
         with:
           name: windows-symbols
           path: build/Release/BATorrent.pdb
+
+      - name: Upload debug symbols to Sentry
+        if: env.SENTRY_ENABLED == '1' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != ''
+        continue-on-error: true
+        shell: pwsh
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+        run: |
+          npm install -g @sentry/cli
+          sentry-cli debug-files upload build/Release/BATorrent.pdb build/Release/BATorrent.exe
 
   build-macos:
     # macos-15 (Sequoia) dropped the legacy AGL framework that Qt 6.7 still links
