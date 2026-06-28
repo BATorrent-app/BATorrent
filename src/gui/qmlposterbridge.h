@@ -163,7 +163,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(bool peersLoading READ peersLoading NOTIFY selectionListsChanged)  // true while the first peer build is pending
     Q_PROPERTY(QVariantList selectedFiles READ selectedFiles NOTIFY selectionListsChanged)
     Q_PROPERTY(QVariantList selectedTrackers READ selectedTrackers NOTIFY selectionListsChanged)
-    Q_PROPERTY(QVariantList selectedPieces READ selectedPieces NOTIFY selectionListsChanged)
+    Q_PROPERTY(QVariantMap selectedPieces READ selectedPieces NOTIFY selectionListsChanged)
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
     Q_PROPERTY(bool altSpeedsActive READ altSpeedsActive NOTIFY altSpeedsActiveChanged)
     Q_PROPERTY(int portStatus READ portStatus NOTIFY portStatusChanged)
@@ -380,7 +380,7 @@ public:
     bool peersLoading() const { return m_peersLoading; }
     QVariantList selectedFiles() const;
     QVariantList selectedTrackers() const;
-    QVariantList selectedPieces() const;
+    QVariantMap selectedPieces() const;
     bool hasSelection() const;
 
     // The Peers detail tab is expensive (pulls every peer from libtorrent), so the

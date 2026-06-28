@@ -1898,14 +1898,38 @@ QVariantList QmlSessionBridge::selectedTrackers() const
     return out;
 }
 
-QVariantList QmlSessionBridge::selectedPieces() const
+QVariantMap QmlSessionBridge::selectedPieces() const
 {
-    QVariantList out;
-    if (!hasSelection()) return out;
-    auto pieces = m_session->piecesAt(m_selectedIndex);
-    out.reserve(pieces.size());
-    for (bool b : pieces) out << b;
-    return out;
+    // Bounded + downsampled at the source: a large torrent has tens of thousands of
+    // pieces; returning one QVariant each (re-marshalled on every stats tick) spiked
+    // memory and crashed the Pieces tab on Windows. Cap to MAXCELLS buckets, each
+    // holding the fraction of its piece-span that's done; real total/done stay exact.
+    QVariantMap m;
+    QVariantList cells;
+    if (!hasSelection()) { m["total"] = 0; m["done"] = 0; m["cells"] = cells; return m; }
+    const auto pieces = m_session->piecesAt(m_selectedIndex);
+    const int total = int(pieces.size());
+    int done = 0;
+    for (bool b : pieces) if (b) ++done;
+
+    constexpr int MAXCELLS = 2000;
+    if (total <= MAXCELLS) {
+        cells.reserve(total);
+        for (bool b : pieces) cells << (b ? 1.0 : 0.0);
+    } else {
+        cells.reserve(MAXCELLS);
+        for (int c = 0; c < MAXCELLS; ++c) {
+            const qint64 lo = qint64(c) * total / MAXCELLS;
+            const qint64 hi = qint64(c + 1) * total / MAXCELLS;
+            int d = 0, cnt = 0;
+            for (qint64 i = lo; i < hi; ++i) { ++cnt; if (pieces[i]) ++d; }
+            cells << (cnt > 0 ? double(d) / double(cnt) : 0.0);
+        }
+    }
+    m["total"] = total;
+    m["done"]  = done;
+    m["cells"] = cells;
+    return m;
 }
 
 // Free space on the default save volume, polled at most every 10s — the

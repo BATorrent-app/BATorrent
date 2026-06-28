@@ -2596,7 +2596,7 @@ Window {
                       }
                   }
                   DetailTrackers { trackers: (win.hasSel && win.detailTab === 3) ? session.selectedTrackers : [] }
-                  DetailPieces   { pieces:   (win.hasSel && win.detailTab === 4) ? session.selectedPieces   : [] }
+                  DetailPieces   { pieces:   (win.hasSel && win.detailTab === 4) ? session.selectedPieces   : ({}) }
 
                   // --- 5: Graph (moved out of General into its own tab) ---
                   Item {

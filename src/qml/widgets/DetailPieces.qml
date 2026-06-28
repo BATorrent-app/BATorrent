@@ -9,15 +9,14 @@ import "../theme"
 
 ColumnLayout {
     id: pane
-    property var pieces: []
+    // { total, done, cells: [0..1] } — bounded/downsampled by the bridge so a
+    // huge torrent doesn't ship tens of thousands of entries (crashed on Windows)
+    property var pieces: ({})
     spacing: Theme.sp3
 
-    readonly property int total: pieces.length
-    readonly property int doneCount: {
-        var n = 0
-        for (var i = 0; i < pieces.length; ++i) if (pieces[i]) n++
-        return n
-    }
+    readonly property int total: (pieces && pieces.total) ? pieces.total : 0
+    readonly property int doneCount: (pieces && pieces.done) ? pieces.done : 0
+    readonly property var cells: (pieces && pieces.cells) ? pieces.cells : []
 
     Text {
         Layout.topMargin: Theme.sp4
@@ -46,12 +45,15 @@ ColumnLayout {
             columns: Math.max(20, Math.floor(width / 11))
             spacing: 2
             Repeater {
-                model: Math.min(pane.total, 2000)
+                model: pane.cells.length
                 delegate: Rectangle {
                     width: (pieceGrid.width - (pieceGrid.columns - 1) * 2) / pieceGrid.columns
                     height: width
                     radius: 2
-                    color: pane.pieces[index] ? Theme.accent : Theme.field
+                    readonly property real f: pane.cells[index] || 0
+                    color: f >= 0.999 ? Theme.accent
+                         : f > 0 ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.3 + 0.65 * f)
+                         : Theme.field
                 }
             }
         }
