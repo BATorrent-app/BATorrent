@@ -2039,7 +2039,9 @@ QVariantList QmlSessionBridge::activeDownloads() const
     const int n = m_session->torrentCount();
     for (int i = 0; i < n; ++i) {   // navigate via hover arrows, so no cap
         const TorrentInfo info = m_session->torrentAt(i);
-        if (info.paused || info.completed || info.progress >= 1.0f) continue;
+        // incomplete = a download in flight; paused/queued ones still count so the
+        // card never empties when disk-low auto-pause or the user paused everything.
+        if (info.completed || info.progress >= 1.0f) continue;
         const QString hash = m_session->torrentHashAt(i);
         QString poster;
         if (m_resolver && m_resolver->hasCached(hash)) {
@@ -2052,8 +2054,10 @@ QVariantList QmlSessionBridge::activeDownloads() const
         m["title"]     = info.name;
         m["progress"]  = double(info.progress);
         m["downSpeed"] = formatSize(info.downloadRate) + QStringLiteral("/s");
+        m["paused"]    = info.paused;
         m["poster"]    = poster;
-        out << m;
+        // active (moving) downloads lead; paused/stalled fall to the back
+        if (!info.paused && info.downloadRate > 0) out.prepend(m); else out << m;
     }
     return out;
 }
@@ -2064,7 +2068,7 @@ QVariantList QmlSessionBridge::seedingTransfers() const
     const int n = m_session->torrentCount();
     for (int i = 0; i < n; ++i) {
         const TorrentInfo info = m_session->torrentAt(i);
-        if (info.paused || !info.completed) continue;   // only finished torrents still in the session
+        if (!info.completed) continue;   // any finished torrent (paused or seeding) — the card's fallback
         const QString hash = m_session->torrentHashAt(i);
         QString poster;
         if (m_resolver && m_resolver->hasCached(hash)) {
@@ -2077,6 +2081,7 @@ QVariantList QmlSessionBridge::seedingTransfers() const
         m["title"]    = info.name;
         m["progress"] = 1.0;
         m["seeding"]  = true;
+        m["paused"]   = info.paused;
         m["upSpeed"]  = formatSize(info.uploadRate) + QStringLiteral("/s");
         m["ratio"]    = QString::number(double(info.ratio), 'f', 2);
         m["poster"]   = poster;

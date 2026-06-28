@@ -458,6 +458,7 @@ Rectangle {
                             Text {
                                 text: !rail.dlItem ? ""
                                       : rail.slotResume ? ("▶ " + i18n.t("hub_resume"))
+                                      : (rail.dlItem.paused === true) ? ("⏸ " + i18n.t("state_paused"))
                                       : rail.slotSeed ? ("↑ " + (rail.dlItem.upSpeed || ""))
                                       : ("↓ " + (rail.dlItem.downSpeed || ""))
                                 color: Theme.accent; font.pixelSize: 13; font.family: Theme.fontMono
