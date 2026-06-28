@@ -1124,7 +1124,8 @@ QVariantList QmlSessionBridge::gameLibrary() const
                 bool hasExe = false, hasVideo = false;
                 const auto files = m_session->filesAt(row);
                 for (const auto &f : files) {
-                    const QString p = f.path.toLower();
+                    QString p = f.path.toLower();
+                    if (p.endsWith(QStringLiteral(".!bt"))) p.chop(4);   // in-progress: "movie.mkv.!bt"
                     if (p.endsWith(QStringLiteral(".exe"))) hasExe = true;
                     else if (p.endsWith(QStringLiteral(".mkv")) || p.endsWith(QStringLiteral(".mp4"))
                              || p.endsWith(QStringLiteral(".avi"))) hasVideo = true;
@@ -1492,7 +1493,8 @@ bool QmlSessionBridge::isGameTorrent(int row) const
     // title got both an Install (game) and a Watch (movie) action.
     bool hasExe = false, hasVideo = false;
     for (const auto &f : m_session->filesAt(row)) {
-        const QString p = f.path.toLower();
+        QString p = f.path.toLower();
+        if (p.endsWith(QStringLiteral(".!bt"))) p.chop(4);   // in-progress: "movie.mkv.!bt"
         if (p.endsWith(QStringLiteral(".exe"))) hasExe = true;
         else if (p.endsWith(QStringLiteral(".mkv")) || p.endsWith(QStringLiteral(".mp4"))
                  || p.endsWith(QStringLiteral(".avi"))) hasVideo = true;
