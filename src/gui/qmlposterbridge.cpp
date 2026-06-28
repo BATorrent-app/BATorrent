@@ -12,6 +12,7 @@
 #include "../app/rssmanager.h"
 #include "../app/addonmanager.h"
 #include "../app/logger.h"
+#include "../app/crashhandler.h"
 #include "../app/qrcodegen.h"
 #include "../app/utils.h"
 #include "../app/translator.h"
@@ -487,12 +488,18 @@ bool QmlLogBridge::previousSessionCrashed() const
 QString QmlLogBridge::crashReportUrl() const
 {
     const QString version = QCoreApplication::applicationVersion();
+    const QString crashDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                             + QStringLiteral("/crashes");
+    QString backtrace = CrashHandler::lastReport(crashDir);
+    if (backtrace.isEmpty()) backtrace = QStringLiteral("(no backtrace captured)");
     const QString body = QStringLiteral(
         "**Version:** %1\n**OS:** %2\n\n"
         "**What were you doing when it happened?**\n\n(describe here)\n\n"
+        "<details><summary>Crash backtrace (auto-captured)</summary>\n\n"
+        "```\n%3\n```\n</details>\n\n"
         "<details><summary>Log tail (auto-captured from the previous run)</summary>\n\n"
-        "```\n%3\n```\n</details>\n")
-        .arg(version, QSysInfo::prettyProductName(), Logger::instance().crashTail());
+        "```\n%4\n```\n</details>\n")
+        .arg(version, QSysInfo::prettyProductName(), backtrace, Logger::instance().crashTail());
     QUrl url(QStringLiteral("https://github.com/BATorrent-app/BATorrent/issues/new"));
     QUrlQuery q;
     q.addQueryItem(QStringLiteral("title"),
