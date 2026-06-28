@@ -304,10 +304,12 @@ Item {
     // The hub always shows its structure (greeting + the two continue rails) so
     // a fresh, empty library reads as onboarding rather than a dead screen.
     Flickable {
+        id: hubFlick
         anchors.fill: parent
         contentHeight: col.implicitHeight + 32
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+        WheelScroller { flick: hubFlick }
 
         ColumnLayout {
             id: col
@@ -1102,12 +1104,14 @@ Item {
         readonly property bool isGame: page.detailIsGame
 
         Flickable {
+            id: detailFlick
             anchors.fill: parent
             anchors.margins: 24
             contentHeight: dcol.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            WheelScroller { flick: detailFlick }
 
             ColumnLayout {
                 id: dcol
