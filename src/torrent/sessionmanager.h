@@ -15,6 +15,7 @@
 #include <libtorrent/session.hpp>
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/torrent_status.hpp>
+#include <libtorrent/alert_types.hpp>
 #include <QMap>
 #include <QSet>
 #include <map>
@@ -427,7 +428,25 @@ private slots:
 
 private:
     static QString stateToString(lt::torrent_status::state_t state);
-    void processAlerts();
+    void processAlerts();   // pumps the libtorrent alert queue, dispatches one per type
+    void onStateUpdate(const lt::state_update_alert *su);
+    void onTorrentFinished(const lt::torrent_finished_alert *fa);
+    void onTorrentError(const lt::torrent_error_alert *ea);
+    void onFileError(const lt::file_error_alert *fe);
+    void onStorageMovedFailed(const lt::storage_moved_failed_alert *sm);
+    void onListenFailed(const lt::listen_failed_alert *lf);
+    void onListenSucceeded();
+    void onPortmapSucceeded();
+    void onPortmapFailed();
+    void onMetadataFailed(const lt::metadata_failed_alert *mf);
+    void onResumeDataReady(const lt::save_resume_data_alert *rd);
+    void onResumeDataFailed();
+    void onPieceFinished(const lt::piece_finished_alert *pf);
+    void onAlertsDropped(const lt::alerts_dropped_alert *ad);
+    void onFastresumeRejected(const lt::fastresume_rejected_alert *fr);
+    void onTorrentChecked(const lt::torrent_checked_alert *tc);
+    void onMetadataReceived(const lt::metadata_received_alert *mr);
+    void onFileCompleted(const lt::file_completed_alert *fc);
     void checkSeedRatios();
     void checkSeedingLimits();
     void checkInterfaceStatus();
