@@ -375,6 +375,7 @@ Rectangle {
                 contentWidth: width
                 contentHeight: contentCol.implicitHeight + 2 * Theme.sp5
                 boundsBehavior: Flickable.StopAtBounds
+                WheelScroller { flick: contentScroll }
 
                 ColumnLayout {
                     id: contentCol

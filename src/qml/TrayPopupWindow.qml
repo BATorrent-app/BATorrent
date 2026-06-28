@@ -35,10 +35,14 @@ Window {
     // menu bar is at the top → drop below the icon; Windows/Linux tray is at the
     // bottom → rise above it. Falls back to a screen corner if geometry is empty.
     function popUpAt(iconRect) {
-        var scr = Qt.application.screens[0]
+        var scr = pop.screen || Qt.application.screens[0]
         var g = scr ? Qt.rect(scr.virtualX, scr.virtualY, scr.width, scr.height) : Qt.rect(0,0,1920,1080)
         var margin = 6
-        if (iconRect && iconRect.width > 0) {
+        // SystemTrayIcon.geometry is unreliable on Windows (often empty or a bogus
+        // rect that lands the popup off-screen — issue #20). Anchor to the tray
+        // corner of the screen there; only trust the icon rect on macOS/Linux.
+        var useIcon = iconRect && iconRect.width > 0 && Qt.platform.os !== "windows"
+        if (useIcon) {
             // center under/over the icon
             pop.x = Math.round(iconRect.x + iconRect.width / 2 - pop.width / 2)
             if (Qt.platform.os === "osx")

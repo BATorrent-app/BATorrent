@@ -101,7 +101,8 @@ Rectangle {
         interval: 7000
         running: page.visible && page.heroFiltered.length > 1
         repeat: true
-        onTriggered: page.heroIndex = (page.heroIndex + 1) % page.heroFiltered.length
+        onTriggered: if (page.heroFiltered.length > 0)
+                         page.heroIndex = (page.heroIndex + 1) % page.heroFiltered.length
     }
 
     // segmented filter button
@@ -137,6 +138,7 @@ Rectangle {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        WheelScroller { flick: flick }
 
         ColumnLayout {
             id: col

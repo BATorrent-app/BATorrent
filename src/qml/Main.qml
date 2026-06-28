@@ -598,28 +598,16 @@ Window {
                      ? "image://applogo/dark?v=l" : "image://applogo/light?v=d"
         icon.mask: false
         tooltip: "BATorrent"
-        // Native context menu on right-click. Declared INLINE as the `menu`
-        // property value — the documented form (SystemTrayIcon inherits QtObject,
-        // so a Menu declared as a sibling and referenced by id never reliably
-        // popped on the Windows tray). Native on every platform; routes through
-        // the trayPopup signals so the actions stay identical.
-        menu: Platform.Menu {
-            id: trayMenu
-            Platform.MenuItem { text: i18n.t("tray_show");          onTriggered: trayPopup.showApp() }
-            Platform.MenuItem { text: i18n.t("tray_open_torrent");  onTriggered: trayPopup.openTorrent() }
-            Platform.MenuItem { text: i18n.t("tray_open_magnet");   onTriggered: trayPopup.openMagnet() }
-            Platform.MenuSeparator {}
-            Platform.MenuItem { text: i18n.t("tray_pause_all");     onTriggered: trayPopup.pauseAll() }
-            Platform.MenuItem { text: i18n.t("tray_resume_all");    onTriggered: trayPopup.resumeAll() }
-            Platform.MenuSeparator {}
-            Platform.MenuItem { text: i18n.t("tray_preferences");   onTriggered: trayPopup.openSettings() }
-            Platform.MenuItem { text: i18n.t("tray_quit");          onTriggered: trayPopup.quitApp() }
-        }
-        // Left click / double click restores the window (Windows convention).
+        // Right-click shows our custom painted popup (TrayPopupWindow) on EVERY
+        // platform. The native Qt.labs `menu` is intentionally not used: it never
+        // popped on the Windows tray here, and the painted popup is the design we
+        // want anyway. Left/double click restores the window.
         onActivated: function(reason) {
             if (reason === Platform.SystemTrayIcon.Trigger
                 || reason === Platform.SystemTrayIcon.DoubleClick) {
                 win.show(); win.raise(); win.requestActivate()
+            } else if (reason === Platform.SystemTrayIcon.Context) {
+                trayPopup.popUpAt(trayIcon.geometry)
             }
         }
     }
@@ -1530,6 +1518,7 @@ Window {
                 rightMargin: Theme.sp4
                 cellWidth: 178 + Theme.sp4
                 cellHeight: 286
+                WheelScroller { flick: grid }
                 // No `populate` transition: it re-runs (fading every tile from 0)
                 // when the filter proxy reports a reorder as a re-layout, which read
                 // as the whole grid flashing. The container's opacity Behavior already
@@ -1868,6 +1857,7 @@ Window {
                 model: win.model
                 interactive: true
                 z: 1
+                WheelScroller { flick: list }
                 add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 160; easing.type: Easing.OutCubic } }
                 remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: 120; easing.type: Easing.OutCubic } }
                 displaced: Transition { NumberAnimation { properties: "x,y"; duration: 180; easing.type: Easing.OutCubic } }

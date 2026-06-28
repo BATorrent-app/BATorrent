@@ -910,11 +910,13 @@ Rectangle {
         MouseArea { anchors.fill: parent }   // swallow clicks so the scrim doesn't close it
 
         Flickable {
+            id: searchDetailFlick
             anchors.fill: parent
             anchors.margins: 20
             contentHeight: detailCol.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+            WheelScroller { flick: searchDetailFlick }
 
             ColumnLayout {
                 id: detailCol
