@@ -1123,13 +1123,13 @@ Rectangle {
             onTriggered: if (page.api && rowMenu.idx >= 0) page.api.copyMagnet(rowMenu.idx)
         }
         BatMenuItem {
-            visible: !page.isCatalog && typeof realdebrid !== "undefined" && realdebrid.hasToken
+            visible: !page.isCatalog && typeof debrid !== "undefined" && debrid.hasToken
             height: visible ? implicitHeight : 0
-            text: (i18n.language, i18n.t("rd_stream"))
+            text: (i18n.language, i18n.t("debrid_stream")).arg(debrid.providerName)
             onTriggered: {
                 if (!page.api || rowMenu.idx < 0) return
                 var m = page.api.magnetAt(rowMenu.idx)
-                if (m) realdebrid.streamMagnet(m)
+                if (m) debrid.streamMagnet(m)
             }
         }
     }

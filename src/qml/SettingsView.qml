@@ -243,8 +243,9 @@ Rectangle {
             { type: "text", key: "igdbClientSecret", label: (i18n.language, i18n.t("set_igdb_secret2")), mono: true, w: "w-md" },
             { type: "text", key: "subdlApiKey", label: (i18n.language, i18n.t("set_subdl_key")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_subdl_key_note")) },
             { type: "text", key: "osApiKey", label: (i18n.language, i18n.t("set_os_key")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_os_key_note")) },
-            { type: "group", label: (i18n.language, i18n.t("set_grp_realdebrid")) },
-            { type: "realdebrid", label: (i18n.language, i18n.t("set_rd_account")), note: (i18n.language, i18n.t("set_rd_note")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_debrid")) },
+            { type: "debrid", label: (i18n.language, i18n.t("set_debrid_provider")) },
+            { type: "debridtoken", label: (i18n.language, i18n.t("set_rd_account")), note: (i18n.language, i18n.t("set_debrid_note")) },
             { type: "group", label: (i18n.language, i18n.t("diag_title")) },
             { type: "button", action: "defender", winOnly: true, label: (i18n.language, i18n.t("settings_defender_exclude")), btn: (i18n.language, i18n.t("settings_defender_exclude")), note: (i18n.language, i18n.t("tip_defender_exclude")) },
             { type: "toggle", key: "verboseLogging", label: (i18n.language, i18n.t("settings_verbose_log")), note: (i18n.language, i18n.t("set_verbose_note")) },
@@ -576,7 +577,8 @@ Rectangle {
                     case "segmented": return cSegmented
                     case "theme": return cTheme
                     case "appicon": return cAppIcon
-                    case "realdebrid": return cRealDebrid
+                    case "debrid": return cDebridPicker
+                    case "debridtoken": return cDebridToken
                     case "button": return cButton
                     case "iface": return cIface
                     case "profiles": return cProfiles
@@ -889,33 +891,50 @@ Rectangle {
         Component { id: cButton; BtnFlat { text: field.btn || ""; sm: false; onClicked: win.runButtonAction(field.action) } }
 
         Component {
-            id: cRealDebrid
+            id: cDebridPicker
             RowLayout {
                 spacing: Theme.sp2
-                readonly property bool connected: typeof realdebrid !== "undefined" && realdebrid.authed
+                Repeater {
+                    model: typeof debrid !== "undefined" ? debrid.providers : []
+                    BtnFlat {
+                        text: (debrid.providerId === modelData.id ? "● " : "")
+                              + modelData.name
+                              + (modelData.hasToken ? " ✓" : "")
+                        sm: true
+                        onClicked: debrid.providerId = modelData.id
+                    }
+                }
+            }
+        }
+        Component {
+            id: cDebridToken
+            RowLayout {
+                spacing: Theme.sp2
+                readonly property bool connected: typeof debrid !== "undefined" && debrid.authed
                 Text {
                     visible: parent.connected
                     text: parent.connected
-                        ? "✓ " + realdebrid.username + " · " + (i18n.language, i18n.t("rd_premium_until")).arg(realdebrid.expiry)
+                        ? "✓ " + debrid.accountName + " · " + debrid.accountPlan
+                          + (debrid.expiry ? " · " + debrid.expiry : "")
                         : ""
                     color: Theme.green; font.pixelSize: 12; font.family: Theme.fontSans
-                    elide: Text.ElideRight; Layout.maximumWidth: 240
+                    elide: Text.ElideRight; Layout.maximumWidth: 280
                 }
                 TFld {
-                    id: rdTok
+                    id: debTok
                     visible: !parent.connected
                     implicitWidth: 220; implicitHeight: 30; mono: true; password: true
                     placeholder: (i18n.language, i18n.t("set_rd_token_ph"))
-                    onEdited: function(t) { if (typeof realdebrid !== "undefined") realdebrid.setToken(t) }
+                    onEdited: function(t) { if (typeof debrid !== "undefined") debrid.setToken(t) }
                 }
                 BtnFlat {
                     text: parent.connected ? (i18n.language, i18n.t("set_rd_disconnect"))
                                            : (i18n.language, i18n.t("set_rd_connect"))
                     sm: true
                     onClicked: {
-                        if (typeof realdebrid === "undefined") return
-                        if (parent.connected) realdebrid.clearToken()
-                        else realdebrid.setToken(rdTok.text)
+                        if (typeof debrid === "undefined") return
+                        if (parent.connected) debrid.clearToken()
+                        else debrid.setToken(debTok.text)
                     }
                 }
             }

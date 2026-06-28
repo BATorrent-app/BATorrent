@@ -51,7 +51,7 @@
 #include <cstring>
 #include <QThread>
 #include "services/security/secretstore.h"
-#include "services/integrations/realdebrid.h"
+#include "services/integrations/debridmanager.h"
 #include "services/platform/logger.h"
 #include "services/security/crashhandler.h"
 #include "services/platform/utils.h"
@@ -431,7 +431,7 @@ int main(int argc, char *argv[])
         auto *subtitleBridge = new QmlSubtitleBridge(eng, &app);
         subtitleBridge->setResolver(resolver);
         auto *pairingBridge = new QmlPairingBridge(&app);
-        auto *realDebrid = new RealDebridClient(&app);
+        auto *debrid = new DebridManager(&app);
         auto *notificationBridge = new QmlNotificationBridge(&app);
         notificationBridge->setSession(eng);
         QObject::connect(eng, &IEngine::torrentFinished,
@@ -638,7 +638,7 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("logs", logBridge);
         engine.rootContext()->setContextProperty("subsearch", subtitleBridge);
         engine.rootContext()->setContextProperty("pairing", pairingBridge);
-        engine.rootContext()->setContextProperty("realdebrid", realDebrid);
+        engine.rootContext()->setContextProperty("debrid", debrid);
         engine.rootContext()->setContextProperty("notifications", notificationBridge);
         engine.rootContext()->setContextProperty("i18n", i18nBridge);
 #ifndef BAT_STORE_BUILD
