@@ -37,6 +37,7 @@ Rectangle {
     property string sourceFilter: ""
     property string repackerFilter: ""
     property string providerFilter: ""
+    property string langFilter: ""
     property int minSeeds: 0
     property string sortKey: ""        // "" = provider order (relevance)
 
@@ -87,6 +88,25 @@ Rectangle {
     readonly property var repackerOptions: distinctTokens("repacker", [])
     readonly property var providerOptions: distinctTokens("provider", [])
 
+    // languages present across results (each result's `langs` is a list)
+    readonly property var langOptions: {
+        var seen = {}, out = []
+        var rs = api ? api.results : []
+        for (var i = 0; i < rs.length; i++) {
+            var ls = rs[i].langs || []
+            for (var j = 0; j < ls.length; j++)
+                if (ls[j] && !seen[ls[j]]) { seen[ls[j]] = true; out.push(ls[j]) }
+        }
+        out.sort()
+        return out
+    }
+    readonly property var langNames: ({
+        "PT": "Português", "EN": "English", "ES": "Español", "DE": "Deutsch",
+        "IT": "Italiano", "FR": "Français", "RU": "Русский", "JA": "日本語",
+        "UK": "Українська", "ZH": "中文", "KO": "한국어", "HI": "हिन्दी", "MULTI": "Multi"
+    })
+    function langName(c) { return langNames[c] || c }
+
     // significant query words (drop articles/prepositions that match everything)
     function sigWords(q) {
         var stop = { "the": 1, "of": 1, "a": 1, "an": 1, "and": 1, "or": 1, "to": 1, "in": 1, "on": 1 }
@@ -117,6 +137,7 @@ Rectangle {
         if (sourceFilter !== "") arr = arr.filter(function (r) { return r.source === sourceFilter })
         if (repackerFilter !== "") arr = arr.filter(function (r) { return r.repacker === repackerFilter })
         if (providerFilter !== "") arr = arr.filter(function (r) { return r.provider === providerFilter })
+        if (langFilter !== "") arr = arr.filter(function (r) { return (r.langs || []).indexOf(langFilter) !== -1 })
         if (minSeeds > 0) arr = arr.filter(function (r) { return (r.seedsN || 0) >= minSeeds })
         if (sortKey === "seeders") arr.sort(function (a, b) { return (b.seedsN || 0) - (a.seedsN || 0) })
         else if (sortKey === "size") arr.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) })
@@ -155,9 +176,9 @@ Rectangle {
     }
 
     function clearFilters() {
-        qualityFilter = ""; sourceFilter = ""; repackerFilter = ""; providerFilter = ""; minSeeds = 0; sortKey = ""
+        qualityFilter = ""; sourceFilter = ""; repackerFilter = ""; providerFilter = ""; langFilter = ""; minSeeds = 0; sortKey = ""
         qualSel.currentIndex = 0; srcFiltSel.currentIndex = 0; provSel.currentIndex = 0
-        repSel.currentIndex = 0; seedSel.currentIndex = 0; sortSel.currentIndex = 0
+        repSel.currentIndex = 0; langSel.currentIndex = 0; seedSel.currentIndex = 0; sortSel.currentIndex = 0
     }
 
     Connections {
@@ -429,6 +450,15 @@ Rectangle {
                     model: [i18n.t("search_repacker_all")].concat(page.repackerOptions)
                     onActivated: page.repackerFilter = currentIndex <= 0 ? "" : currentText
                 }
+                // audio language (video modes that have tagged releases)
+                TSelect {
+                    id: langSel
+                    visible: !page.isGames && page.langOptions.length > 0
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 130
+                    model: [i18n.t("search_lang_all")].concat(page.langOptions.map(page.langName))
+                    onActivated: page.langFilter = currentIndex <= 0 ? "" : page.langOptions[currentIndex - 1]
+                }
                 // min seeders (video modes)
                 TSelect {
                     id: seedSel
@@ -616,7 +646,17 @@ Rectangle {
                             Layout.fillWidth: true
                             spacing: 6
                             SourceTag { text: row.modelData.sub || row.modelData.provider || "" }
-                            MetaTag { text: row.modelData.lang || ""; accent: row.modelData.native === true }
+                            MetaTag {
+                                text: {
+                                    var ls = row.modelData.langs || []
+                                    if (ls.length === 0) return ""
+                                    var s = ls.slice(0, 3).join("/")
+                                    if (ls.length > 3) s += "+" + (ls.length - 3)
+                                    if (row.modelData.dubbed === true) s += " DUB"
+                                    return s
+                                }
+                                accent: row.modelData.native === true
+                            }
                             MetaTag { text: row.modelData.quality || ""; accent: true }
                             MetaTag { text: row.modelData.source || "" }
                             MetaTag { text: row.modelData.codec || "" }

@@ -226,26 +226,35 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
     m["codec"] = codec;
     m["hdr"] = has("\\bhdr\\b|hdr10|dolby ?vision");
 
-    // Spoken language, parsed from the release name's audio tags. Used to float
-    // the user's own language to the top and to label each result.
-    QString lang;
-    if (has("\\bmulti\\b|dual[ ._-]?(a|á)udio|dual[ ._-]?lat")) lang = QStringLiteral("MULTI");
-    else if (has("dublado|dual[ ._-]?(a|á)udio|nacional|\\bpt[ ._-]?br\\b|\\bptbr\\b|portugu[eê]s|\\btuga\\b|leg(endado)?[ ._-]?pt")) lang = QStringLiteral("PT");
-    else if (has("\\bcastellano\\b|espa[nñ]ol|\\blatino\\b|\\bspanish\\b")) lang = QStringLiteral("ES");
-    else if (has("\\bgerman\\b|deutsch|\\bger\\b")) lang = QStringLiteral("DE");
-    else if (has("\\bitalian\\b|\\bita\\b")) lang = QStringLiteral("IT");
-    else if (has("\\bfrench\\b|\\bfra\\b|\\btruefrench\\b|\\bvostfr\\b")) lang = QStringLiteral("FR");
-    else if (has("\\brus(sian)?\\b|дубляж|русск")
-             || name.contains(QRegularExpression(QStringLiteral("[\\x{0400}-\\x{04FF}]")))) lang = QStringLiteral("RU");
-    else if (has("\\bjapanese\\b|\\bjpn\\b")) lang = QStringLiteral("JA");
-    else if (has("ukrain|\\bukr\\b")) lang = QStringLiteral("UK");
-    else if (has("\\bchinese\\b|\\bchs\\b|\\bcht\\b|\\bmandarin\\b")) lang = QStringLiteral("ZH");
-    else if (has("\\benglish\\b|\\beng\\b")) lang = QStringLiteral("EN");
-    m["lang"] = lang;
+    // Spoken languages, parsed from the release name's audio tags. A release can
+    // carry several (DUAL/MULTI), so we collect a list and let the search filter
+    // match on membership — Torrentio-style. `lang` keeps the primary for the badge.
+    QStringList langs;
+    auto add = [&](const QString &c) { if (!langs.contains(c)) langs << c; };
+    const bool dubbed = has("\\bdublado\\b|\\bdubbed\\b|\\bdual[ ._-]?(a|á)udio\\b|\\bnacional\\b|\\bdub\\b");
+    if (has("dublado|nacional|\\bpt[ ._-]?br\\b|\\bptbr\\b|portugu[eê]s|\\btuga\\b|leg(endado)?[ ._-]?pt")) add(QStringLiteral("PT"));
+    if (has("\\bcastellano\\b|espa[nñ]ol|\\blatino\\b|\\bspanish\\b|\\besp\\b")) add(QStringLiteral("ES"));
+    if (has("\\bgerman\\b|deutsch|\\bger\\b")) add(QStringLiteral("DE"));
+    if (has("\\bitalian\\b|\\bita\\b")) add(QStringLiteral("IT"));
+    if (has("\\bfrench\\b|\\bfra\\b|\\btruefrench\\b|\\bvostfr\\b|\\bvff\\b")) add(QStringLiteral("FR"));
+    if (has("\\brus(sian)?\\b|дубляж|русск")
+        || name.contains(QRegularExpression(QStringLiteral("[\\x{0400}-\\x{04FF}]")))) add(QStringLiteral("RU"));
+    if (has("\\bjapanese\\b|\\bjpn\\b|\\bjap\\b")) add(QStringLiteral("JA"));
+    if (has("ukrain|\\bukr\\b")) add(QStringLiteral("UK"));
+    if (has("\\bchinese\\b|\\bchs\\b|\\bcht\\b|\\bmandarin\\b")) add(QStringLiteral("ZH"));
+    if (has("\\bkorean\\b|\\bkor\\b")) add(QStringLiteral("KO"));
+    if (has("\\bhindi\\b|\\bhin\\b")) add(QStringLiteral("HI"));
+    if (has("\\benglish\\b|\\beng\\b")) add(QStringLiteral("EN"));
+    const bool multi = has("\\bmulti\\b|dual[ ._-]?(a|á)udio|dual[ ._-]?lat");
+    if (multi && langs.isEmpty()) add(QStringLiteral("MULTI"));
+
+    m["langs"] = langs;
+    m["lang"] = langs.isEmpty() ? QString() : langs.first();
+    m["dubbed"] = dubbed || multi;
 
     const QString appLang = appLangCode();
-    m["native"] = !lang.isEmpty()
-                  && (lang == appLang || (appLang != QLatin1String("EN") && lang == QLatin1String("MULTI")));
+    m["native"] = langs.contains(appLang)
+                  || (appLang != QLatin1String("EN") && (multi || langs.contains(QLatin1String("MULTI"))));
 }
 
 QString QmlSearchBridge::appLangCode()
