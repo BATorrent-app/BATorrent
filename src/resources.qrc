@@ -120,6 +120,8 @@
 <file>../src/qml/widgets/SpeedGraph.qml</file>
 <file>../src/qml/widgets/WheelScroller.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
+<file>../src/qml/widgets/PosterTile.qml</file>
+<file>../src/qml/widgets/TorrentRow.qml</file>
 <file>../src/qml/widgets/PosterCard.qml</file>
 <file>../src/qml/widgets/DetailPeers.qml</file>
 <file>../src/qml/widgets/DetailFiles.qml</file>
