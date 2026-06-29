@@ -1032,5 +1032,13 @@
   "star_ask_title": "Gefällt dir BATorrent?",
   "star_ask_body": "Ein GitHub-Stern hilft anderen, die App zu finden — ein Klick, große Wirkung.",
   "star_ask_action": "Auf GitHub sternen",
-  "about_star": "Stern auf GitHub"
+  "about_star": "Stern auf GitHub",
+  "set_grp_debrid": "Debrid-Streaming",
+  "set_debrid_provider": "Dienst",
+  "set_debrid_note": "Wähle einen Debrid-Dienst und füge seinen API-Schlüssel ein. Magnets werden an dein Konto gesendet, auf den Servern des Dienstes zwischengespeichert und direkt an den Player gestreamt — kein lokaler Download, kein Seeding. Real-Debrid: real-debrid.com/apitoken · TorBox: torbox.app/settings.",
+  "debrid_stream": "Streamen über %1",
+  "set_rd_account": "Konto",
+  "set_rd_token_ph": "API-Schlüssel einfügen",
+  "set_rd_connect": "Verbinden",
+  "set_rd_disconnect": "Trennen"
 }
