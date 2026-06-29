@@ -91,7 +91,6 @@
 <file>../src/qml/DetailPanel.qml</file>
 <file>../src/qml/FilterBar.qml</file>
 <file>../src/qml/Toolbar.qml</file>
-<file>../src/qml/ContextMenu.qml</file>
 <file>../src/qml/DiscoverView.qml</file>
 <file>../src/qml/SearchView.qml</file>
 <file>../src/qml/GetWatchOverlay.qml</file>
