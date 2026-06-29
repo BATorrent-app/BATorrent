@@ -1032,5 +1032,13 @@
   "star_ask_title": "BATorrentを楽しんでいますか？",
   "star_ask_body": "GitHubのスターでより多くの人に届きます — ワンクリックで大きな違い。",
   "star_ask_action": "GitHubでスター",
-  "about_star": "GitHubでスター"
+  "about_star": "GitHubでスター",
+  "set_grp_debrid": "Debrid ストリーミング",
+  "set_debrid_provider": "サービス",
+  "set_debrid_note": "Debrid サービスを選び、API キーを貼り付けてください。マグネットはアカウントに送られ、サービスのサーバーにキャッシュされ、プレーヤーへ直接ストリーミングされます — ローカルダウンロードもシードもなし。Real-Debrid: real-debrid.com/apitoken · TorBox: torbox.app/settings。",
+  "debrid_stream": "%1 でストリーミング",
+  "set_rd_account": "アカウント",
+  "set_rd_token_ph": "API キーを貼り付け",
+  "set_rd_connect": "接続",
+  "set_rd_disconnect": "切断"
 }

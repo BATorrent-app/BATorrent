@@ -1032,5 +1032,13 @@
   "star_ask_title": "喜欢 BATorrent 吗？",
   "star_ask_body": "在 GitHub 上点个星标能让更多人发现它 — 一次点击，意义重大。",
   "star_ask_action": "在 GitHub 加星",
-  "about_star": "在 GitHub 加星"
+  "about_star": "在 GitHub 加星",
+  "set_grp_debrid": "Debrid 串流",
+  "set_debrid_provider": "服务",
+  "set_debrid_note": "选择一个 debrid 服务并粘贴其 API 密钥。磁力链接会发送到你的账户，缓存在服务的服务器上，并直接串流到播放器——无需本地下载，无需做种。Real-Debrid：real-debrid.com/apitoken · TorBox：torbox.app/settings。",
+  "debrid_stream": "通过 %1 串流",
+  "set_rd_account": "账户",
+  "set_rd_token_ph": "粘贴 API 密钥",
+  "set_rd_connect": "连接",
+  "set_rd_disconnect": "断开连接"
 }
