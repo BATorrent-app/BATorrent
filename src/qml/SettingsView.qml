@@ -790,7 +790,7 @@ Rectangle {
                     color: Theme.field; border.color: Theme.hair; border.width: 1
                     TextInput {
                         anchors.fill: parent; anchors.rightMargin: 10
-                        text: (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : (field.value || "")
+                        text: { var v = (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : field.value; return (v === undefined || v === null) ? "" : String(v) }
                         color: Theme.t1
                         font.pixelSize: 12; font.family: Theme.fontMono
                         horizontalAlignment: TextInput.AlignRight
