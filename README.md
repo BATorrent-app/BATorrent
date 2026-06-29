@@ -67,11 +67,11 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 
 | | |
 |---|---|
-| 🔒 **Privacy first** | VPN interface binding + **kill switch** (drops all traffic if the tunnel dies), PT mode for private trackers, Tor preset, anonymous handshake, anti-leecher blocking |
-| 🔎 **Find & add** | Built-in search (incl. open CIS/RuTor sources, no login), Smart Paste (magnet / `.torrent` / `thunder://` / hash on Ctrl+V), RSS auto-download with regex filters, drag-and-drop |
-| 📱 **Control it anywhere** | Browser WebUI with **QR pairing** — scan from your phone, no typing IPs. The QR is generated locally; your address never leaves the machine |
-| 📺 **Watch & organise** | Stream while downloading, auto-extract archives, categories + tags, Plex/Jellyfin/Emby library refresh on completion |
-| 🔔 **Stay in the loop** | Native desktop notifications, Telegram alerts, Discord Rich Presence ("Downloading X · 67%") |
+|  **Privacy first** | VPN interface binding + **kill switch** (drops all traffic if the tunnel dies), PT mode for private trackers, Tor preset, anonymous handshake, anti-leecher blocking |
+|  **Find & add** | Built-in search (incl. open CIS/RuTor sources, no login), Smart Paste (magnet / `.torrent` / `thunder://` / hash on Ctrl+V), RSS auto-download with regex filters, drag-and-drop |
+|  **Control it anywhere** | Browser WebUI with **QR pairing** — scan from your phone, no typing IPs. The QR is generated locally; your address never leaves the machine |
+|  **Watch & organise** | Stream while downloading, auto-extract archives, categories + tags, Plex/Jellyfin/Emby library refresh on completion |
+|  **Stay in the loop** | Native desktop notifications, Telegram alerts, Discord Rich Presence ("Downloading X · 67%") |
 
 <details>
 <summary><b>…and the long tail</b> (click to expand)</summary>
