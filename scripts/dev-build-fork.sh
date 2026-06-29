@@ -49,7 +49,16 @@ fi
 [[ -n "${BAT_TMDB_KEY:-}" ]] && echo "TMDB key:  present" || echo "TMDB key:  (empty — posters will fail)"
 [[ -n "${BAT_IGDB_ID:-}" ]]  && echo "IGDB id:   present" || echo "IGDB id:   (empty — game art disabled)"
 
-QT_PREFIX="$(brew --prefix qt@6 2>/dev/null || brew --prefix qt)"
+# Prefer official Qt 6.7 (ships the FFmpeg media backend → built-in player decodes
+# MKV/AVI/WebM, matching the release). Homebrew Qt only builds the AVFoundation
+# backend, which can't decode those. BAT_QT_PREFIX overrides; else first ~/Qt/6.7.*
+# desktop kit; else fall back to Homebrew.
+QT_PREFIX="${BAT_QT_PREFIX:-}"
+if [[ -z "$QT_PREFIX" ]]; then
+  QT_PREFIX="$(ls -d "$HOME"/Qt/6.7.*/macos 2>/dev/null | sort -V | tail -1)"
+fi
+[[ -n "$QT_PREFIX" && -d "$QT_PREFIX" ]] || QT_PREFIX="$(brew --prefix qt@6 2>/dev/null || brew --prefix qt)"
+echo "Qt prefix: $QT_PREFIX"
 SSL_PREFIX="$(brew --prefix openssl@3)"
 
 # libtorrent is built from source (the fork), so no LT prefix here.
