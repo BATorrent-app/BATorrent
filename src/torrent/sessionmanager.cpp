@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "torrent/sessionmanager.h"
+#include "torrent/memguard.h"
 #include "services/platform/logger.h"
 #include "services/platform/translator.h"
 #include "services/security/suspiciousscan.h"
@@ -3058,21 +3059,36 @@ DetailedStats SessionManager::detailedStats() const
 }
 
 // Resident set size of this process, in bytes; -1 if it can't be read.
+// The app's PRIVATE memory footprint — deliberately NOT the working/resident set.
+// libtorrent 2.x maps the download files (mmap storage), so the working set grows
+// ~1:1 with what's being downloaded as file-cache pages go resident. Those pages
+// are reclaimable by the OS on demand, not a leak — but the old WorkingSetSize /
+// resident_size readings counted them, so the memory guard false-paused real
+// downloads "every ~1 GB" (Windows user report). Private memory excludes the
+// file-backed mmap cache, so the guard only sees genuine allocation growth.
 static qint64 currentRssBytes()
 {
 #if defined(Q_OS_MACOS)
-    mach_task_basic_info info;
-    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
-    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO,
+    // phys_footprint == Activity Monitor's "Memory": excludes clean file-backed
+    // (mmap) pages, unlike resident_size.
+    task_vm_info_data_t info;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO,
                   reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
-        return static_cast<qint64>(info.resident_size);
+        return static_cast<qint64>(info.phys_footprint);
     return -1;
 #elif defined(Q_OS_WIN)
-    PROCESS_MEMORY_COUNTERS pmc;
-    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
-        return static_cast<qint64>(pmc.WorkingSetSize);
+    // PrivateUsage == private commit (pagefile-backed). File-mapped pages are
+    // file-backed, so the libtorrent mmap cache is excluded.
+    PROCESS_MEMORY_COUNTERS_EX pmc;
+    pmc.cb = sizeof(pmc);
+    if (GetProcessMemoryInfo(GetCurrentProcess(),
+                             reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&pmc), sizeof(pmc)))
+        return static_cast<qint64>(pmc.PrivateUsage);
     return -1;
 #elif defined(Q_OS_LINUX)
+    // statm "resident" still counts file-backed pages; acceptable for the guard's
+    // coarse purpose, and the Linux mmap path is less prone to the Windows blow-up.
     qint64 rss = -1;
     if (FILE *f = std::fopen("/proc/self/statm", "r")) {
         long total = 0, resident = 0;
@@ -3093,31 +3109,34 @@ static qint64 currentRssBytes()
 // state and quit gracefully before the OS starts swapping/OOM-killing.
 void SessionManager::checkMemoryGuard()
 {
-    const int capMB = QSettings("BATorrent", "BATorrent").value("memGuardMB", 4096).toInt();
+    const int capMB = QSettings("BATorrent", "BATorrent").value("memGuardMB", 8192).toInt();
     if (capMB <= 0) return;   // 0 = disabled
 
     const qint64 rss = currentRssBytes();
     if (rss < 0) return;
     const qint64 rssMB = rss / (1024 * 1024);
 
-    if (rssMB >= static_cast<qint64>(capMB) * 2) {
-        qCritical() << "[session] MEMORY GUARD PANIC: RSS" << rssMB
+    switch (bat::memGuardEvaluate(rssMB, capMB)) {
+    case bat::MemGuardAction::Panic:
+        qCritical() << "[session] MEMORY GUARD PANIC: private" << rssMB
                     << "MB >= 2x cap" << capMB << "MB — saving state and quitting";
         saveResumeData();
         QCoreApplication::quit();
         return;
-    }
-
-    if (rssMB >= capMB) {
+    case bat::MemGuardAction::Pause: {
         static qint64 lastWarn = 0;
         const qint64 now = QDateTime::currentSecsSinceEpoch();
         if (now - lastWarn >= 300) {
             lastWarn = now;
-            qWarning() << "[session] MEMORY GUARD: RSS" << rssMB
+            qWarning() << "[session] MEMORY GUARD: private" << rssMB
                        << "MB >= cap" << capMB << "MB — pausing all torrents";
             pauseAll();
             emit torrentError(tr_("warn_mem_guard").arg(rssMB).arg(capMB));
         }
+        return;
+    }
+    case bat::MemGuardAction::None:
+        return;
     }
 }
 

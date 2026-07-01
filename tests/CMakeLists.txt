@@ -199,6 +199,7 @@ bat_add_test(test_unit       test_unit.cpp)
 bat_add_test(test_nameparser test_nameparser.cpp)
 bat_add_test(test_bridge     test_bridge.cpp)
 bat_add_test(test_gamesource test_gamesource.cpp)
+bat_add_test(test_memguard   test_memguard.cpp)
 
 # =============================================================================
 #  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).
