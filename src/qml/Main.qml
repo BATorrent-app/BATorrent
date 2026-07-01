@@ -643,6 +643,10 @@ Window {
         }
     }
 
+    // Own schema instance so the palette can index individual options — it's
+    // available before SettingsView is built, avoiding a binding-order race.
+    SettingsSchema { id: paletteSchema }
+
     // Ctrl/⌘+K command palette — actions + torrent jump
     CommandPalette {
         id: cmdPalette
@@ -680,6 +684,21 @@ Window {
             }
             acts.push({ label: i18n.t("set_grp_torrent_search"), hint: i18n.t("tb_settings"),
                         run: function() { settingsPage.sec = 7; navRail.currentIndex = 4 } })
+            // individual settings options — so Ctrl+K finds "Memory guard",
+            // "Preallocate", etc., not just the section. Jumps to the option via
+            // the Settings search box.
+            var secs = paletteSchema.sections
+            for (var ps = 0; ps < secs.length; ++ps) {
+                for (var pf = 0; pf < secs[ps].length; ++pf) {
+                    var fld = secs[ps][pf]
+                    if (!fld.label || fld.type === "group" || fld.type === "warning") continue
+                    (function(sectionIdx, field) {
+                        acts.push({ label: i18n.t("tb_settings") + " · " + field.label,
+                                    hint: i18n.t("palette_hint_page"),
+                                    run: function() { navRail.currentIndex = 4; settingsPage.sec = sectionIdx; settingsPage.searchFor(field.label) } })
+                    })(ps, fld)
+                }
+            }
             return acts
         }
         onTorrentPicked: function(src) {

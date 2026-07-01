@@ -37,6 +37,29 @@ Rectangle {
     SettingsSchema { id: schema }
 
     // group consecutive fields into { label, rows[] } blocks (a "group" field starts a new card).
+    property string query: ""
+
+    // Called from the command palette to jump straight to an option (fills the
+    // search box, which drives the global filter below).
+    function searchFor(text) { searchFld.text = text }
+
+    function fieldMatches(f, q) {
+        if (!f || f.type === "group" || f.type === "warning") return false
+        var hay = (String(f.label || "") + " " + String(f.note || "") + " " + String(f.key || "")).toLowerCase()
+        return hay.indexOf(q) >= 0
+    }
+    // Global search: when the box has text, gather matching fields from EVERY
+    // section (not just the open one) — otherwise a search finds nothing useful.
+    function searchBlocks(q) {
+        var matched = []
+        for (var s = 0; s < schema.sections.length; s++) {
+            var fields = schema.sections[s]
+            for (var i = 0; i < fields.length; i++)
+                if (fieldMatches(fields[i], q)) matched.push(fields[i])
+        }
+        return buildBlocks(matched)
+    }
+
     // Hidden rows are dropped, and a group with no remaining rows is omitted entirely
     // (so we never render an orphan header over an empty card).
     function buildBlocks(fields) {
@@ -92,11 +115,14 @@ Rectangle {
 
                     // .ssearch
                     TFld {
+                        id: searchFld
                         Layout.fillWidth: true
                         Layout.preferredHeight: 32
                         Layout.bottomMargin: Theme.sp3
                         icon: "qrc:/icons/search.svg"
+                        clearable: true
                         placeholder: (i18n.language, i18n.t("set_search_config_ph"))
+                        onTextChanged: win.query = text.trim().toLowerCase()
                     }
 
                     // .snav
@@ -195,7 +221,7 @@ Rectangle {
 
                     // blocks (glabel + card)
                     Repeater {
-                        model: win.buildBlocks(schema.sections[win.sec])
+                        model: win.query.length > 0 ? win.searchBlocks(win.query) : win.buildBlocks(schema.sections[win.sec])
                         delegate: ColumnLayout {
                             required property var modelData
                             required property int index
