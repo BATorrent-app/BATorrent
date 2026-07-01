@@ -55,7 +55,7 @@ fi
 # desktop kit; else fall back to Homebrew.
 QT_PREFIX="${BAT_QT_PREFIX:-}"
 if [[ -z "$QT_PREFIX" ]]; then
-  QT_PREFIX="$(ls -d "$HOME"/Qt/6.7.*/macos 2>/dev/null | sort -V | tail -1)"
+  QT_PREFIX="$(ls -d "$HOME"/Qt/6.7.*/macos 2>/dev/null | sort -V | tail -1 || true)"
 fi
 [[ -n "$QT_PREFIX" && -d "$QT_PREFIX" ]] || QT_PREFIX="$(brew --prefix qt@6 2>/dev/null || brew --prefix qt)"
 echo "Qt prefix: $QT_PREFIX"

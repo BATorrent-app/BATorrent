@@ -40,7 +40,7 @@ fi
 # ~/Qt/6.7.*/gcc_64 kit.
 QT_PREFIX="${BAT_QT_PREFIX:-}"
 if [[ -z "$QT_PREFIX" ]]; then
-  QT_PREFIX="$(ls -d "$HOME"/Qt/6.7.*/gcc_64 2>/dev/null | sort -V | tail -1)"
+  QT_PREFIX="$(ls -d "$HOME"/Qt/6.7.*/gcc_64 2>/dev/null | sort -V | tail -1 || true)"
 fi
 if [[ -z "$QT_PREFIX" || ! -d "$QT_PREFIX" ]]; then
   echo "error: no Qt 6.7 (gcc_64) found. Install it with:" >&2
