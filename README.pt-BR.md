@@ -24,7 +24,7 @@
   <img src="src/images/with_startup.gif" alt="BATorrent — abra e use, as capas aparecem sozinhas" width="860">
 </p>
 
-O BATorrent é um cliente de torrent para desktop feito sobre o motor [libtorrent](https://www.libtorrent.org/). A diferença está na interface: ele lê o nome de cada torrent, busca o pôster correspondente (filmes e séries no TMDB, jogos no IGDB) e organiza seus downloads numa grade de capas, em vez de uma lista de nomes de arquivo. O motor é o mesmo que o qBittorrent e o Deluge usam, então as capas ficam em cima de um cliente que aguenta o tranco.
+O BATorrent é um cliente de torrent para desktop feito sobre o motor [libtorrent](https://www.libtorrent.org/), o mesmo que o qBittorrent e o Deluge usam. A interface lê o nome de cada torrent, busca o pôster correspondente (filmes e séries no TMDB, jogos no IGDB) e organiza seus downloads numa grade de capas, em vez de uma lista de nomes de arquivo. As capas ficam em cima de um cliente que aguenta o tranco, e sobre um motor que foi [ajustado, não apenas usado de fábrica](#o-motor).
 
 É gratuito e de código aberto. Sem anúncios, sem telemetria, sem versão "Pro", sem conta. A única requisição que ele faz por conta própria é a verificação de atualização no GitHub, e existe uma opção para desligar isso. Se quiser conferir, o código está em [`updater.cpp`](src/services/integrations/updater.cpp).
 
@@ -61,13 +61,21 @@ Sou um desenvolvedor sozinho, no Brasil. Eu queria um cliente de torrent que lev
 
 ## O que ele faz
 
-**Privacidade.** Vincule a uma interface de VPN específica, com um kill switch que corta todo o tráfego se o túnel cair. Modo para trackers privados, preset para Tor, handshake anônimo e bloqueio de clientes sanguessuga (leechers).
+**Assista dentro do app.** Tem um player de vídeo embutido (com FFmpeg, então toca MKV, AVI e WebM direto) e você pode começar a assistir enquanto o arquivo ainda baixa, ele só busca o começo primeiro. Ele procura e baixa legendas para você (pelo SubDL), carrega automaticamente arquivos `.srt`/`.vtt` ao lado do vídeo e deixa você ajustar a sincronia ao vivo. Ao concluir, pode atualizar uma biblioteca do Plex, Jellyfin ou Emby.
 
-**Buscar e adicionar.** Busca embutida (incluindo fontes abertas da CIS/RuTor, sem login), Smart Paste que reconhece um magnet, um `.torrent`, um link `thunder://` ou um info hash no Ctrl+V, download automático por RSS com filtros regex, e arrastar e soltar.
+**Reprodução instantânea com debrid.** Conecte uma conta [Real-Debrid](https://real-debrid.com) ou [TorBox](https://torbox.app) e, quando um magnet já está em cache no lado deles, o BATorrent libera o link e transmite direto no player embutido, sem baixar nem semear localmente.
+
+**Jogos, não só vídeo.** Torrents de jogos também ganham capa (pelo IGDB). Busque em catálogos de jogos, baixe e depois instale e abra de dentro do app, para que sua biblioteca pirata se comporte um pouco como uma lista da Steam, em vez de uma pasta cheia de instaladores.
+
+**Descobrir.** Uma página inicial navegável no estilo Netflix (pôsteres em alta, um destaque rotativo) para achar algo para baixar sem sair do app.
+
+**Privacidade.** Vincule a uma interface de VPN específica, com um kill switch que corta todo o tráfego se o túnel cair. Modo para trackers privados, preset para Tor, handshake anônimo e bloqueio de clientes sanguessuga (leechers). Há um teste de vazamento de IP embutido para confirmar que está funcionando.
+
+**Buscar e adicionar.** Busca embutida (incluindo fontes abertas da CIS/RuTor, sem login), Smart Paste que reconhece um magnet, um `.torrent`, um link `thunder://` ou um info hash no Ctrl+V, download automático por RSS com filtros regex, uma pasta monitorada, e arrastar e soltar.
 
 **Controle remoto.** Uma WebUI no navegador com pareamento por QR: escaneie o código pelo celular em vez de digitar endereços de IP. O QR é gerado na sua máquina e o endereço nunca sai dela.
 
-**Assistir e organizar.** Assista a um arquivo enquanto ele ainda baixa, extraia arquivos compactados automaticamente ao concluir, organize com categorias e tags, e atualize uma biblioteca do Plex, Jellyfin ou Emby quando um download termina.
+**Organizar.** Extraia arquivos compactados automaticamente ao concluir, organize com categorias e tags, defina limites de proporção e tempo por torrent e globais, e agende a banda por hora e dia.
 
 **Notificações.** Alertas nativos do sistema, mensagens no Telegram e Rich Presence no Discord.
 
@@ -77,6 +85,15 @@ Sou um desenvolvedor sozinho, no Brasil. Eu queria um cliente de torrent que lev
 Prioridade por arquivo, download sequencial, injeção automática de trackers, controle de layout de conteúdo, regex para excluir arquivos, pasta temporária de download separada, um estado "concluído" com janelas de seed, pausa automática em erros de arquivo, limites globais e por torrent de proporção e tempo, agendador de banda por hora e dia, importação do qBittorrent, criação de arquivos `.torrent`, um inspetor de torrent, listas de bloqueio de IP, criptografia de protocolo, espelho de atualização no Gitee, desligar o computador ao terminar, um ajudante de exclusão no Windows Defender, backup e restauração completos, histórico de itens removidos recentemente, início forçado, um visualizador de log embutido com diagnósticos e teste de vazamento de IP, formatação de acordo com o idioma, e atalhos de teclado.
 
 </details>
+
+## O motor
+
+A maioria dos apps de torrent usa o libtorrent de fábrica. O BATorrent traz um pequeno fork com patches dele, o que permite mudar comportamentos do motor que a API pública não alcança:
+
+- **Ramp de pipeline mais rápido.** Num link de banda larga e latência alta, o pipeline de requisições padrão cresce de um em um; o fork cresce de forma geométrica, então enche um "cano gordo" numa fração das idas e voltas. Medido em cerca de +27% num link rápido no benchmark A/B do próprio projeto, sem os travamentos de execução para execução do padrão, e nunca piora.
+- **Preferência por peers do mesmo país.** Um banco GeoIP offline (db-ip Lite) marca cada peer por país, e o ranqueamento de peers do fork prefere peers do seu próprio país quando pode escolher, o que costuma significar menor latência e menos rotas transfronteiriças estranguladas.
+
+Os dois são recursos de tempo de compilação do fork, desligados num build padrão, e aplicados como patches versionados em [`third_party/patches/`](third_party/patches), em vez de uma cópia vendorizada.
 
 ## Instalação
 

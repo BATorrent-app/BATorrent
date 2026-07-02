@@ -24,7 +24,7 @@
   <img src="src/images/with_startup.gif" alt="BATorrent — open and go, covers resolve automatically" width="860">
 </p>
 
-BATorrent is a desktop torrent client built on the [libtorrent](https://www.libtorrent.org/) engine. The difference is the front end: it reads each torrent's name, looks up the matching poster (movies and shows from TMDB, games from IGDB), and lays your downloads out as a grid of covers instead of a list of filenames. The engine is the same one qBittorrent and Deluge use, so the covers sit on top of a client that actually holds up.
+BATorrent is a desktop torrent client built on the [libtorrent](https://www.libtorrent.org/) engine, the same one qBittorrent and Deluge use. The front end reads each torrent's name, looks up the matching poster (movies and shows from TMDB, games from IGDB), and lays your downloads out as a grid of covers instead of a list of filenames. The covers sit on top of a client that actually holds up, and on an engine that's been [tuned, not just shipped stock](#the-engine).
 
 It's free and open source. No ads, no telemetry, no "Pro" tier, no account. The only network request it makes on its own is the update check against GitHub, and there's a switch to turn that off. If you want to confirm that, the code is [`updater.cpp`](src/services/integrations/updater.cpp).
 
@@ -61,13 +61,21 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 
 ## What it does
 
-**Privacy.** Bind to a specific VPN interface with a kill switch that drops all traffic if the tunnel goes down. Private-tracker mode, a Tor preset, anonymous handshake, and anti-leecher client blocking.
+**Watch it in the app.** There's a built-in video player (FFmpeg-backed, so it plays MKV, AVI and WebM directly) and you can start watching while the file is still downloading, it just fetches the beginning first. It searches and downloads subtitles for you (via SubDL), auto-loads sidecar `.srt`/`.vtt` files, and lets you nudge the sync live. On completion it can refresh a Plex, Jellyfin or Emby library.
 
-**Finding and adding.** Built-in search (including open CIS/RuTor sources that need no login), Smart Paste that recognises a magnet, `.torrent`, `thunder://` link or info hash on Ctrl+V, RSS auto-download with regex filters, and drag-and-drop.
+**Instant playback with debrid.** Connect a [Real-Debrid](https://real-debrid.com) or [TorBox](https://torbox.app) account and, when a magnet is already cached on their side, BATorrent unrestricts the link and streams it straight into the built-in player, no local download or seeding needed.
+
+**Games, not just video.** Game torrents get their cover art too (via IGDB). Search game catalogs, download, and then install and launch from inside the app, so your pirated library behaves a bit like a Steam list instead of a folder of setup files.
+
+**Discover.** A browsable Netflix-style front page (trending posters, a rotating hero) so you can find something to grab without leaving the app.
+
+**Privacy.** Bind to a specific VPN interface with a kill switch that drops all traffic if the tunnel goes down. Private-tracker mode, a Tor preset, anonymous handshake, and anti-leecher client blocking. There's a built-in IP-leak test to confirm it's working.
+
+**Finding and adding.** Built-in search (including open CIS/RuTor sources that need no login), Smart Paste that recognises a magnet, `.torrent`, `thunder://` link or info hash on Ctrl+V, RSS auto-download with regex filters, a watch folder, and drag-and-drop.
 
 **Remote control.** A browser WebUI with QR pairing: scan the code from your phone instead of typing IP addresses. The QR is generated on your machine and the address never leaves it.
 
-**Watching and organising.** Stream a file while it's still downloading, auto-extract archives on completion, sort with categories and tags, and refresh a Plex, Jellyfin or Emby library when a download finishes.
+**Organising.** Auto-extract archives on completion, sort with categories and tags, set per-torrent and global ratio and time limits, and schedule bandwidth by hour and day.
 
 **Notifications.** Native desktop alerts, Telegram messages, and Discord Rich Presence.
 
@@ -77,6 +85,15 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 Per-file priority, sequential download, automatic tracker injection, content-layout control, excluded-file regex, separate temp download path, a completed state with seeding windows, auto-pause on file errors, global and per-torrent ratio and time limits, a bandwidth scheduler by hour and day, import from qBittorrent, `.torrent` creation, a torrent inspector, IP blocklists, protocol encryption, a Gitee update mirror, auto-shutdown when downloads finish, a Windows Defender exclusion helper, full backup and restore, recently-removed history, force start, a built-in log viewer with diagnostics and an IP-leak test, locale-aware formatting, and keyboard shortcuts.
 
 </details>
+
+## The engine
+
+Most torrent apps link stock libtorrent. BATorrent ships a small patched fork of it, so it can change engine behaviour the public API can't reach:
+
+- **Faster pipeline ramp.** On a high-bandwidth, high-latency link the stock request pipeline grows one step at a time; the fork grows it geometrically, so it fills a fat pipe in a fraction of the round-trips. Measured at roughly +27% on a fast link in the project's own A/B benchmark, with none of stock's run-to-run stalls, and it never regresses.
+- **Same-country peer bias.** An offline GeoIP database (db-ip Lite) tags each peer by country, and the fork's peer ranking prefers peers in your own country when it has a choice, which tends to mean lower latency and fewer throttled cross-border routes.
+
+Both are compile-time features of the fork, off in a stock build, and are applied as versioned patches under [`third_party/patches/`](third_party/patches) rather than a vendored copy.
 
 ## Install
 
