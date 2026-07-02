@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <img src="src/images/with_startup.gif" alt="BATorrent — abra e use, as capas aparecem sozinhas" width="860">
+  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — seus downloads como uma parede de capas" width="860">
 </p>
 
 O BATorrent é um cliente de torrent para desktop feito sobre o motor [libtorrent](https://www.libtorrent.org/), o mesmo que o qBittorrent e o Deluge usam. A interface lê o nome de cada torrent, busca o pôster correspondente (filmes e séries no TMDB, jogos no IGDB) e organiza seus downloads numa grade de capas, em vez de uma lista de nomes de arquivo. As capas ficam em cima de um cliente que aguenta o tranco, e sobre um motor que foi [ajustado, não apenas usado de fábrica](#o-motor).
@@ -35,23 +35,15 @@ Sou um desenvolvedor sozinho, no Brasil. Eu queria um cliente de torrent que lev
 ## A interface
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="Alternando entre os temas embutidos" width="860">
+  <img src="src/images/shot-list.jpg" alt="Modo lista denso, para quando você quer detalhe em vez de decoração" width="860">
 </p>
 
 <p align="center">
-  <img src="src/images/shot-grid.jpg" alt="Grade de capas" width="860">
+  <img src="src/images/shot-palette-v43.jpg" alt="Paleta de comandos (Ctrl/⌘+K): encontre qualquer torrent ou ação" width="860">
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.jpg" alt="Modo lista" width="860">
-</p>
-
-<p align="center">
-  <img src="src/images/shot-theme.jpg" alt="Tema Sakura" width="860">
-</p>
-
-<p align="center">
-  <img src="src/images/palette-demo.gif" alt="Paleta de comandos (Ctrl/⌘+K): encontre qualquer torrent ou ação" width="860">
+  <img src="src/images/shot-theme.jpg" alt="Sakura, um dos temas embutidos" width="860">
 </p>
 
 - **Capas automáticas.** Ele identifica o pôster a partir do nome do torrent e o exibe numa grade. Um clique alterna para uma lista densa quando você quer detalhe em vez de decoração.
@@ -69,9 +61,17 @@ Sou um desenvolvedor sozinho, no Brasil. Eu queria um cliente de torrent que lev
 
 **Descobrir.** Uma página inicial navegável no estilo Netflix (pôsteres em alta, um destaque rotativo) para achar algo para baixar sem sair do app.
 
+<p align="center">
+  <img src="src/images/shot-discover.jpg" alt="Descobrir — uma página inicial navegável de pôsteres em alta" width="860">
+</p>
+
 **Privacidade.** Vincule a uma interface de VPN específica, com um kill switch que corta todo o tráfego se o túnel cair. Modo para trackers privados, preset para Tor, handshake anônimo e bloqueio de clientes sanguessuga (leechers). Há um teste de vazamento de IP embutido para confirmar que está funcionando.
 
 **Buscar e adicionar.** Busca embutida (incluindo fontes abertas da CIS/RuTor, sem login), Smart Paste que reconhece um magnet, um `.torrent`, um link `thunder://` ou um info hash no Ctrl+V, download automático por RSS com filtros regex, uma pasta monitorada, e arrastar e soltar.
+
+<p align="center">
+  <img src="src/images/shot-search.jpg" alt="Busca embutida — capas, notas e o melhor resultado na hora" width="860">
+</p>
 
 **Controle remoto.** Uma WebUI no navegador com pareamento por QR: escaneie o código pelo celular em vez de digitar endereços de IP. O QR é gerado na sua máquina e o endereço nunca sai dela.
 

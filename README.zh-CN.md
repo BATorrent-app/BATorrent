@@ -22,7 +22,7 @@
 
 
 <p align="center">
-  <img src="src/images/with_startup.gif" alt="BATorrent — 打开即用，封面自动加载" width="860">
+  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — 打开即用，封面自动加载" width="860">
 </p>
 
 大多数 BT 客户端长得像报税表。这一个把你的下载呈现为 **一墙电影、剧集和游戏封面** — 就像你在 Netflix 或 Steam 上看到的那样 — 还能用六款主题（或你自己的壁纸）来装扮它。底层是久经考验的 **libtorrent** 引擎，所以它不是中看不中用的玩具：而是一个恰好还有点品味的真正客户端。

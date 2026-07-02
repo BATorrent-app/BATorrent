@@ -22,7 +22,7 @@
 
 
 <p align="center">
-  <img src="src/images/with_startup.gif" alt="BATorrent — öffnen und loslegen, Cover werden automatisch geladen" width="860">
+  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — öffnen und loslegen, Cover werden automatisch geladen" width="860">
 </p>
 
 Die meisten Torrent-Clients sehen aus wie ein Steuerformular. Dieser zeigt deine Downloads als **Wand aus Film-, Serien- und Spielcovern** — dasselbe, was du von Netflix oder Steam kennst — und lässt sich in sechs Themes (oder dein eigenes Hintergrundbild) kleiden. Unter der Haube steckt die bewährte **libtorrent**-Engine, also kein hübsches Spielzeug: ein echter Client, der zufällig auch Geschmack hat.

@@ -22,7 +22,7 @@
 
 
 <p align="center">
-  <img src="src/images/with_startup.gif" alt="BATorrent — 開いてすぐ使える、カバーは自動で表示" width="860">
+  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — 開いてすぐ使える、カバーは自動で表示" width="860">
 </p>
 
 たいていのトレントクライアントは納税申告書みたいな見た目です。これはダウンロードを **映画・ドラマ・ゲームのカバーの壁** として見せます — Netflix や Steam で見慣れたあの感じ — そして6つのテーマ（あるいは自分の壁紙）で着せ替えできます。中身は実績ある **libtorrent** エンジンなので、見た目だけのおもちゃではありません。たまたまセンスも持ち合わせた、本物のクライアントです。

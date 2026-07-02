@@ -22,7 +22,7 @@
 
 
 <p align="center">
-  <img src="src/images/with_startup.gif" alt="BATorrent — ábrelo y listo, las carátulas se resuelven solas" width="860">
+  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — ábrelo y listo, las carátulas se resuelven solas" width="860">
 </p>
 
 La mayoría de los clientes de torrent parecen un formulario de Hacienda. Este muestra tus descargas como un **muro de carátulas de películas, series y juegos** — lo mismo que reconoces en Netflix o Steam — y te deja vestirlo con seis temas (o tu propio fondo de pantalla). Por dentro lleva el probado motor **libtorrent**, así que no es un juguete bonito: es un cliente de verdad que da la casualidad de que tiene buen gusto.

@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <img src="src/images/with_startup.gif" alt="BATorrent — open and go, covers resolve automatically" width="860">
+  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — your downloads as a wall of cover art" width="860">
 </p>
 
 BATorrent is a desktop torrent client built on the [libtorrent](https://www.libtorrent.org/) engine, the same one qBittorrent and Deluge use. The front end reads each torrent's name, looks up the matching poster (movies and shows from TMDB, games from IGDB), and lays your downloads out as a grid of covers instead of a list of filenames. The covers sit on top of a client that actually holds up, and on an engine that's been [tuned, not just shipped stock](#the-engine).
@@ -35,23 +35,15 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 ## The interface
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="Switching between built-in themes" width="860">
+  <img src="src/images/shot-list.jpg" alt="Dense list view for when you want detail over decoration" width="860">
 </p>
 
 <p align="center">
-  <img src="src/images/shot-grid.jpg" alt="Cover-art grid" width="860">
+  <img src="src/images/shot-palette-v43.jpg" alt="Command palette (Ctrl/⌘+K): fuzzy-find any torrent or action" width="860">
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.jpg" alt="List view" width="860">
-</p>
-
-<p align="center">
-  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="860">
-</p>
-
-<p align="center">
-  <img src="src/images/palette-demo.gif" alt="Command palette (Ctrl/⌘+K): fuzzy-find any torrent or action" width="860">
+  <img src="src/images/shot-theme.jpg" alt="Sakura, one of the built-in themes" width="860">
 </p>
 
 - **Cover art.** It resolves posters from the torrent name and shows them in a grid. One click switches to a dense list when you want detail over decoration.
@@ -69,9 +61,17 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 
 **Discover.** A browsable Netflix-style front page (trending posters, a rotating hero) so you can find something to grab without leaving the app.
 
+<p align="center">
+  <img src="src/images/shot-discover.jpg" alt="Discover — a browsable front page of trending posters" width="860">
+</p>
+
 **Privacy.** Bind to a specific VPN interface with a kill switch that drops all traffic if the tunnel goes down. Private-tracker mode, a Tor preset, anonymous handshake, and anti-leecher client blocking. There's a built-in IP-leak test to confirm it's working.
 
 **Finding and adding.** Built-in search (including open CIS/RuTor sources that need no login), Smart Paste that recognises a magnet, `.torrent`, `thunder://` link or info hash on Ctrl+V, RSS auto-download with regex filters, a watch folder, and drag-and-drop.
+
+<p align="center">
+  <img src="src/images/shot-search.jpg" alt="Built-in search — cover art, ratings, and an instant best match" width="860">
+</p>
 
 **Remote control.** A browser WebUI with QR pairing: scan the code from your phone instead of typing IP addresses. The QR is generated on your machine and the address never leaves it.
 
