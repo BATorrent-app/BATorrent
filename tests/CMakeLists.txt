@@ -55,6 +55,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_games.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_library.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_playback.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_selection.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlthemebridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsettingsbridge.cpp
