@@ -25,7 +25,7 @@ Translator::Translator()
 void Translator::setLanguage(Language lang)
 {
     m_lang = lang;
-    static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk"};
+    static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk", "tr"};
     m_strings.clear();
     loadLanguage(codes[static_cast<int>(lang)], m_strings);
 
@@ -39,6 +39,7 @@ void Translator::setLanguage(Language lang)
     static const QMap<Language, QString> qtLocales = {
         {Portuguese, "pt_BR"}, {Chinese, "zh_CN"}, {Japanese, "ja"},
         {Russian, "ru"}, {Spanish, "es"}, {German, "de"}, {Ukrainian, "uk"},
+        {Turkish, "tr"},
     };
     const QString locale = qtLocales.value(lang, "en");
     if (qtTr->load("qt_" + locale,

@@ -179,6 +179,24 @@ BatDialog {
             onLinkActivated: function(link) { Qt.openUrlExternally(link) }
         }
     }
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.bottomMargin: 8
+        Image {
+            source: "qrc:/icons/flags/tr.svg"
+            Layout.preferredWidth: 20; Layout.preferredHeight: 14
+            sourceSize.height: 28; fillMode: Image.PreserveAspectFit; smooth: true
+        }
+        Text { text: "Türkçe"; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
+        Item { Layout.fillWidth: true }
+        Text {
+            text: "<a href=\"https://github.com/azizaktas\">azizaktas</a>"
+            textFormat: Text.RichText
+            linkColor: Theme.accentText
+            color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono
+            onLinkActivated: function(link) { Qt.openUrlExternally(link) }
+        }
+    }
 
     // .license
     RowLayout {

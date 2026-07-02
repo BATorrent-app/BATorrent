@@ -38,7 +38,7 @@ QtObject {
         // 0 Geral
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
-            { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch", "Українська"], icons: ["qrc:/icons/flags/en.svg", "qrc:/icons/flags/pt.svg", "qrc:/icons/flags/zh.svg", "qrc:/icons/flags/ja.svg", "qrc:/icons/flags/ru.svg", "qrc:/icons/flags/es.svg", "qrc:/icons/flags/de.svg", "qrc:/icons/flags/uk.svg"], value: 0 },
+            { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch", "Українська", "Türkçe"], icons: ["qrc:/icons/flags/en.svg", "qrc:/icons/flags/pt.svg", "qrc:/icons/flags/zh.svg", "qrc:/icons/flags/ja.svg", "qrc:/icons/flags/ru.svg", "qrc:/icons/flags/es.svg", "qrc:/icons/flags/de.svg", "qrc:/icons/flags/uk.svg", "qrc:/icons/flags/tr.svg"], value: 0 },
             { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", "Matrix", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
             { type: "toggle", key: "followSystem", label: (i18n.language, i18n.t("set_follow_system")), note: (i18n.language, i18n.t("set_follow_system_note")) },
             { type: "appicon", label: (i18n.language, i18n.t("set_app_icon")), note: (i18n.language, i18n.t("set_app_icon_note")) },

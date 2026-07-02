@@ -50,6 +50,7 @@
 <file>icons/flags/es.svg</file>
 <file>icons/flags/de.svg</file>
 <file>icons/flags/uk.svg</file>
+<file>icons/flags/tr.svg</file>
 <file>icons/set-general.svg</file>
 <file>icons/set-speed.svg</file>
 <file>icons/set-network.svg</file>
@@ -141,5 +142,6 @@
 <file>../translations/es.json</file>
 <file>../translations/de.json</file>
 <file>../translations/uk.json</file>
+<file>../translations/tr.json</file>
 </qresource>
 </RCC>

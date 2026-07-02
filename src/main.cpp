@@ -600,6 +600,7 @@ int main(int argc, char *argv[])
                 else if (sys.startsWith("es")) lang = 5;
                 else if (sys.startsWith("de")) lang = 6;
                 else if (sys.startsWith("uk")) lang = 7;
+                else if (sys.startsWith("tr")) lang = 8;
                 else                           lang = 0;
             }
             Translator::instance().setLanguage(static_cast<Translator::Language>(lang));
