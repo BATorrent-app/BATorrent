@@ -817,6 +817,8 @@
   "settings_defender_exclude": "İndirme klasörünü Windows Defender dışlamalarına ekle",
   "settings_enable_dht": "DHT'yi etkinleştir (izleyicisiz eş keşfi)",
   "settings_enable_utp": "µTP'yi etkinleştir (UDP tabanlı eş taşıma)",
+  "set_prefer_tcp": "µTP yerine TCP tercih et",
+  "set_prefer_tcp_note": "µTP'nin TCP bağlantılarınızı kısıtlamasını önler — özel bağlantıda daha hızlı, ancak paylaşımlı bağlantıda gecikme ekleyebilir. Yeniden başlatınca etkinleşir.",
   "settings_enc_disabled": "Devre dışı",
   "settings_force_ipv4": "Yalnızca IPv4'ü zorla",
   "settings_heading": "Tercihler",

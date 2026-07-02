@@ -760,6 +760,8 @@
   "settings_defender_exclude": "Добавить папку загрузок в исключения Windows Defender",
   "settings_enable_dht": "Включить DHT (поиск пиров без трекера)",
   "settings_enable_utp": "Включить uTP (UDP-транспорт)",
+  "set_prefer_tcp": "Предпочитать TCP вместо µTP",
+  "set_prefer_tcp_note": "Не даёт µTP ограничивать ваши TCP-соединения — быстрее на выделенном канале, но может добавить задержку на общем. Действует после перезапуска.",
   "settings_enc_disabled": "Отключено",
   "settings_force_ipv4": "Принудительно только IPv4",
   "settings_heading": "Настройки",

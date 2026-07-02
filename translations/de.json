@@ -760,6 +760,8 @@
   "settings_defender_exclude": "Download-Ordner zu Windows Defender-Ausnahmen hinzufügen",
   "settings_enable_dht": "DHT aktivieren (Peer-Erkennung ohne Tracker)",
   "settings_enable_utp": "uTP aktivieren (UDP-Transport)",
+  "set_prefer_tcp": "TCP statt µTP bevorzugen",
+  "set_prefer_tcp_note": "Verhindert, dass µTP deine TCP-Peers drosselt — schneller bei dedizierter Leitung, kann aber bei geteilter Leitung Latenz erhöhen. Wirkt nach Neustart.",
   "settings_enc_disabled": "Deaktiviert",
   "settings_force_ipv4": "Nur IPv4 erzwingen",
   "settings_heading": "Einstellungen",

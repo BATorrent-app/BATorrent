@@ -760,6 +760,8 @@
   "settings_defender_exclude": "ダウンロードフォルダを Windows Defender の除外に追加",
   "settings_enable_dht": "DHT を有効にする（トラッカーなしでピア発見）",
   "settings_enable_utp": "uTP を有効化 (UDP トランスポート)",
+  "set_prefer_tcp": "µTP より TCP を優先",
+  "set_prefer_tcp_note": "µTP による TCP ピアの抑制を停止します — 専用回線では高速ですが、共有回線では遅延が増える場合があります。再起動後に有効。",
   "settings_enc_disabled": "無効",
   "settings_force_ipv4": "IPv4 のみを強制",
   "settings_heading": "環境設定",

@@ -111,6 +111,7 @@ QtObject {
             { type: "group", label: (i18n.language, i18n.t("set_grp_protocol")) },
             { type: "toggle", key: "dhtEnabled", label: (i18n.language, i18n.t("settings_enable_dht")), on: true, note: (i18n.language, i18n.t("set_dht_note")) },
             { type: "toggle", key: "utpEnabled", label: (i18n.language, i18n.t("settings_enable_utp")), on: true },
+            { type: "toggle", key: "preferTcp", label: (i18n.language, i18n.t("set_prefer_tcp")), note: (i18n.language, i18n.t("set_prefer_tcp_note")) },
             { type: "segmented", key: "encryptionMode", label: (i18n.language, i18n.t("set_encryption2")), options: [(i18n.language, i18n.t("set_enc_enabled_opt")), (i18n.language, i18n.t("set_enc_forced_opt")), (i18n.language, i18n.t("settings_enc_disabled"))], value: 0, note: (i18n.language, i18n.t("set_encryption_note")) },
             { type: "segmented", key: "speedUnit", label: (i18n.language, i18n.t("settings_speed_unit")), options: [(i18n.language, i18n.t("set_speed_bytes_opt")), (i18n.language, i18n.t("set_speed_bits_opt"))], value: 0 },
             { type: "group", label: (i18n.language, i18n.t("set_grp_privacy")) },

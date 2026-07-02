@@ -817,6 +817,8 @@
   "settings_defender_exclude": "Add download folder to Windows Defender exclusions",
   "settings_enable_dht": "Enable DHT (trackerless peer discovery)",
   "settings_enable_utp": "Enable µTP (UDP-based peer transport)",
+  "set_prefer_tcp": "Prefer TCP over µTP",
+  "set_prefer_tcp_note": "Stops µTP from throttling your TCP peers — faster on a dedicated line, but can add latency (bufferbloat) on a shared one. Takes effect on restart.",
   "settings_enc_disabled": "Disabled",
   "settings_force_ipv4": "Force IPv4 only",
   "settings_heading": "Preferences",

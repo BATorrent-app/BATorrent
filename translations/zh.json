@@ -760,6 +760,8 @@
   "settings_defender_exclude": "将下载文件夹添加到 Windows Defender 排除列表",
   "settings_enable_dht": "启用 DHT（无 Tracker 节点发现）",
   "settings_enable_utp": "启用 uTP(UDP 传输)",
+  "set_prefer_tcp": "优先使用 TCP 而非 µTP",
+  "set_prefer_tcp_note": "阻止 µTP 限制您的 TCP 连接 — 在专用线路上更快，但在共享线路上可能增加延迟。重启后生效。",
   "settings_enc_disabled": "禁用",
   "settings_force_ipv4": "强制仅使用 IPv4",
   "settings_heading": "偏好设置",

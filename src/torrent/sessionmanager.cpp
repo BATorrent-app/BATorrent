@@ -29,6 +29,7 @@
 #include <libtorrent/bencode.hpp>
 #include <libtorrent/write_resume_data.hpp>
 #include <libtorrent/read_resume_data.hpp>
+#include <libtorrent/session_params.hpp>
 #include <libtorrent/alert_types.hpp>
 #include <sstream>
 #include <libtorrent/peer_info.hpp>
@@ -47,8 +48,33 @@
 #include <libtorrent/ip_filter.hpp>
 #include <boost/asio/ip/address.hpp>
 
+// DHT routing table persisted across runs — a warm table means peer discovery
+// (and the download ramp) starts fast instead of re-bootstrapping the DHT from
+// scratch every launch (~30-60s cold). Path sits next to the resume data.
+static QString dhtStatePath()
+{
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+           .filePath(QStringLiteral("resume/session_state.dat"));
+}
+
+static lt::session_params loadStartupParams()
+{
+    QFile f(dhtStatePath());
+    if (f.open(QIODevice::ReadOnly)) {
+        const QByteArray data = f.readAll();
+        if (!data.isEmpty()) {
+            try {
+                return lt::read_session_params(
+                    lt::span<const char>(data.constData(), data.size()),
+                    lt::session_handle::save_dht_state);
+            } catch (...) { /* corrupt/incompatible state — start fresh */ }
+        }
+    }
+    return lt::session_params();
+}
+
 SessionManager::SessionManager(QObject *parent)
-    : IEngine(parent)
+    : IEngine(parent), m_session(loadStartupParams())
 {
     m_extractor = new ArchiveExtractor(this);
     connect(m_extractor, &ArchiveExtractor::extractionStarted,
@@ -134,6 +160,12 @@ SessionManager::SessionManager(QObject *parent)
     // by peers actually available, so it's harmless on small swarms.
     pack.set_int(lt::settings_pack::torrent_connect_boost, 100);
     pack.set_int(lt::settings_pack::unchoke_slots_limit, 20);
+    // Opt-in (default off): stop uTP from throttling our own TCP peers. Faster on
+    // a dedicated fat link; can add bufferbloat on a shared line, so it's gated.
+    pack.set_int(lt::settings_pack::mixed_mode_algorithm,
+                 QSettings("BATorrent", "BATorrent").value("preferTcp", false).toBool()
+                     ? lt::settings_pack::prefer_tcp
+                     : lt::settings_pack::peer_proportional);
     // Prefer RC4 encryption (like qBittorrent) — some private trackers
     // penalize clients that accept plaintext.
     pack.set_int(lt::settings_pack::allowed_enc_level,
@@ -311,6 +343,15 @@ SessionManager::~SessionManager()
     // before Qt tears the app down. The periodic 5-min timer and the
     // piece_finished_alert path both call saveResumeData() (non-blocking).
     flushResumeDataBlocking(5000);
+    // Persist the DHT routing table for a warm start next launch (faster ramp).
+    try {
+        const lt::session_params p = m_session.session_state(lt::session_handle::save_dht_state);
+        const std::vector<char> buf = lt::write_session_params_buf(p, lt::session_handle::save_dht_state);
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).mkpath(QStringLiteral("resume"));
+        QFile f(dhtStatePath());
+        if (f.open(QIODevice::WriteOnly))
+            f.write(buf.data(), static_cast<qint64>(buf.size()));
+    } catch (...) {}
     Logger::instance().log(Logger::Info, QStringLiteral("--- log closed ---"));
 }
 

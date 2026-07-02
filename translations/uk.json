@@ -760,6 +760,8 @@
   "settings_defender_exclude": "Додати папку завантажень до виключень Windows Defender",
   "settings_enable_dht": "Увімкнути DHT (виявлення пірів без трекера)",
   "settings_enable_utp": "Увімкнути µTP (UDP-транспорт для пірів)",
+  "set_prefer_tcp": "Надавати перевагу TCP замість µTP",
+  "set_prefer_tcp_note": "Не дає µTP обмежувати ваші TCP-з'єднання — швидше на виділеному каналі, але може додати затримку на спільному. Діє після перезапуску.",
   "settings_enc_disabled": "Вимкнено",
   "settings_force_ipv4": "Примусово використовувати лише IPv4",
   "settings_heading": "Налаштування",
