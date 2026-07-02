@@ -7,16 +7,15 @@
 // out of sessionmanager.cpp verbatim; no behaviour change.
 
 #include "torrent/sessionmanager.h"
+#include "torrent/ipblocklist.h"
 
 #include <libtorrent/settings_pack.hpp>
 #include <libtorrent/ip_filter.hpp>
 #include <libtorrent/torrent_flags.hpp>
-#include <boost/asio/ip/address.hpp>
 #include <QSettings>
 #include <QNetworkInterface>
 #include <QAbstractSocket>
 #include <QFile>
-#include <QTextStream>
 #include <QString>
 #include <QDebug>
 
@@ -242,39 +241,8 @@ void SessionManager::loadIpFilter(const QString &filePath)
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return;
 
-    lt::ip_filter filter;
-    QTextStream in(&file);
     int count = 0;
-
-    while (!in.atEnd()) {
-        QString line = in.readLine().trimmed();
-        if (line.isEmpty() || line.startsWith('#'))
-            continue;
-
-        // P2P format: "description:startIP-endIP"
-        int colonIdx = line.lastIndexOf(':');
-        QString range;
-        if (colonIdx >= 0 && line.indexOf('.', colonIdx) > 0)
-            range = line.mid(colonIdx + 1).trimmed();
-        else
-            range = line;
-
-        int dashIdx = range.indexOf('-');
-        if (dashIdx < 0) continue;
-
-        QString startIp = range.left(dashIdx).trimmed();
-        QString endIp = range.mid(dashIdx + 1).trimmed();
-
-        try {
-            boost::system::error_code ec1, ec2;
-            auto addr1 = boost::asio::ip::make_address(startIp.toStdString(), ec1);
-            auto addr2 = boost::asio::ip::make_address(endIp.toStdString(), ec2);
-            if (ec1 || ec2) continue;
-            filter.add_rule(addr1, addr2, lt::ip_filter::blocked);
-            ++count;
-        } catch (...) { /* skip an unparseable blocklist range */ }
-    }
-
+    const lt::ip_filter filter = bat::parseP2pBlocklist(QString::fromUtf8(file.readAll()), &count);
     m_session.set_ip_filter(filter);
     m_ipFilterCount = count;
 }
