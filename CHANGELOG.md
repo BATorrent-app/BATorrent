@@ -15,6 +15,8 @@ Pick up where you left off — and see what's actually worth downloading. The li
 - **Best match, explicitly** — search surfaces the top title as its own hero instead of just first in the grid.
 
 ### Fixed
+- **The window remembers its size** — it reopens at the size you left it instead of snapping back to the default on every launch.
+- **The listen port stops resetting** — after you change the port, the Settings field no longer flips back to the old value (it was reading the socket before libtorrent finished re-binding).
 - **Paused torrents stay paused** across restarts (they were quietly resuming on launch).
 - **Removed files no longer linger** — the hidden `.parts` sidecar is cleaned up, and a new **"Delete permanently"** option skips the Trash when you're low on disk.
 - **The Downloads search box** no longer stays stuck red after one click, and **Ctrl/⌘+K opens ready to type**.
