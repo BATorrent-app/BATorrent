@@ -20,8 +20,8 @@ Rectangle {
         id: pi
         property string label
         property string count
-        property string state: "all"
-        property bool on: win.activeFilter === state
+        property string filterKey: "all"   // NOT `state` — that shadows Item.state
+        property bool on: win.activeFilter === filterKey
         signal clicked()
         radius: 8
         height: 30
@@ -212,12 +212,12 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.minimumWidth: implicitWidth      // pills never clip
             spacing: Theme.sp1
-            Pill { label: (i18n.language, i18n.t("filter_all"));     state: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: win.setFilter("all") }
-            Pill { label: (i18n.language, i18n.t("filter_all_active"));    state: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: win.setFilter("active") }
-            Pill { label: (i18n.language, i18n.t("filter_downloading"));  state: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: win.setFilter("downloading") }
-            Pill { label: (i18n.language, i18n.t("filter_seeding"));  state: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: win.setFilter("seeding") }
-            Pill { label: (i18n.language, i18n.t("filter_paused"));   state: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: win.setFilter("paused") }
-            Pill { label: (i18n.language, i18n.t("filter_completed")); state: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: win.setFilter("completed") }
+            Pill { label: (i18n.language, i18n.t("filter_all"));     filterKey: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: win.setFilter("all") }
+            Pill { label: (i18n.language, i18n.t("filter_all_active"));    filterKey: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: win.setFilter("active") }
+            Pill { label: (i18n.language, i18n.t("filter_downloading"));  filterKey: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: win.setFilter("downloading") }
+            Pill { label: (i18n.language, i18n.t("filter_seeding"));  filterKey: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: win.setFilter("seeding") }
+            Pill { label: (i18n.language, i18n.t("filter_paused"));   filterKey: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: win.setFilter("paused") }
+            Pill { label: (i18n.language, i18n.t("filter_completed")); filterKey: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: win.setFilter("completed") }
         }
 
         Item { Layout.fillWidth: true }

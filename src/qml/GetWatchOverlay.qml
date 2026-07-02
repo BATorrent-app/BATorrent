@@ -56,7 +56,7 @@ Item {
             // spinner (searching) or progress ring text (buffering)
             Item {
                 Layout.alignment: Qt.AlignHCenter
-                width: 54; height: 54
+                Layout.preferredWidth: 54; Layout.preferredHeight: 54
                 visible: ov.phase !== "failed"
                 Rectangle {
                     anchors.fill: parent

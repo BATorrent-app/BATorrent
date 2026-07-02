@@ -281,8 +281,10 @@ Item {
         }
         function updateStateTip(mx, my) {
             var row = rowAt(my, mx)
+            // itemAtIndex can return null (row not instantiated) or a pooled
+            // delegate mid-teardown — guard stateCell too before mapToItem.
             var d = row >= 0 ? list.itemAtIndex(row) : null
-            if (d && d.stateDetail !== undefined && d.stateDetail.length > 0 && !dragging) {
+            if (d && d.stateCell && d.stateDetail !== undefined && d.stateDetail.length > 0 && !dragging) {
                 var p = d.stateCell.mapToItem(listArea, 0, 0)
                 if (mx >= p.x - 6 && mx <= p.x + d.stateCell.width + 6) {
                     tipText = d.stateDetail

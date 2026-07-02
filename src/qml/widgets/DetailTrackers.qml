@@ -36,7 +36,7 @@ ColumnLayout {
         boundsBehavior: Flickable.StopAtBounds
         delegate: Rectangle {
             width: ListView.view.width; height: 32
-            color: rowMa.containsMouse ? Theme.hover : "transparent"
+            color: rowMa.hovered ? Theme.hover : "transparent"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
             HoverHandler { id: rowMa }
             RowLayout {

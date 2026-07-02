@@ -725,7 +725,7 @@ Rectangle {
                         ? "✓ " + debrid.accountName + " · " + debrid.accountPlan
                           + (debrid.expiry ? " · " + debrid.expiry : "")
                         : ""
-                    color: Theme.green; font.pixelSize: 12; font.family: Theme.fontSans
+                    color: Theme.grn; font.pixelSize: 12; font.family: Theme.fontSans
                     elide: Text.ElideRight; Layout.maximumWidth: 280
                 }
                 TFld {

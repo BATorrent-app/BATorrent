@@ -218,7 +218,7 @@ Item {
             }
             Text {
                 text: card.item.description || ""
-                width: 276; Layout.maximumWidth: 276
+                Layout.maximumWidth: 276
                 wrapMode: Text.WordWrap; maximumLineCount: 8; elide: Text.ElideRight
                 color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; lineHeight: 1.35
             }

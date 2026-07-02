@@ -962,7 +962,7 @@ Rectangle {
                 // cover
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
-                    width: 190; height: 285
+                    Layout.preferredWidth: 190; Layout.preferredHeight: 285
                     radius: 10
                     color: "#161618"
                     border.color: Theme.hair; border.width: 1
