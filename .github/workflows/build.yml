@@ -273,17 +273,17 @@ jobs:
           Get-ChildItem "$vcpkgBin/*.dll" |
             Where-Object { $_.Name -ne 'torrent-rasterbar.dll' } |
             Copy-Item -Destination release/
-          # Ship the fork's own libtorrent DLL. Built via add_subdirectory, it
-          # lands under the libtorrent subtree of build/ — NOT build/Release, which
-          # is why the old glob silently missed it and vcpkg's DLL shipped instead.
-          # Search the whole build tree; fail loudly rather than ship a broken zip.
-          $forkDll = Get-ChildItem -Path build -Recurse -Filter torrent-rasterbar.dll -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($forkDll) {
-            Copy-Item $forkDll.FullName -Destination release/
-            Write-Host "Shipped fork libtorrent: $($forkDll.FullName)"
-          } else {
-            throw "fork torrent-rasterbar.dll not found under build/ — BATorrent.exe would crash on launch. Check the libtorrent build output."
+          # Ship the fork's own libtorrent DLL, from its exact add_subdirectory
+          # output path. A recursive "first match" is WRONG: vcpkg's applocal step
+          # copies its 2.0.11 DLL into build/Release, so the first hit is vcpkg's,
+          # not the fork's 2.0.12 — the exact mismatch that shipped in v4.3.0.
+          # -Force so it wins over any vcpkg copy already in release/.
+          $forkDll = "build/third_party/libtorrent/Release/torrent-rasterbar.dll"
+          if (!(Test-Path $forkDll)) {
+            throw "fork libtorrent DLL missing at $forkDll — BATorrent.exe would crash on launch. Check the libtorrent build output path."
           }
+          Copy-Item $forkDll -Destination release/ -Force
+          Write-Host "Shipped fork libtorrent: $forkDll"
           if ($env:SENTRY_ENABLED -eq "1" -and $env:BAT_SENTRY_HANDLER) { Copy-Item "$env:BAT_SENTRY_HANDLER" release/ }
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
