@@ -155,76 +155,24 @@ void SessionManager::checkInterfaceStatus()
 void SessionManager::setProxySettings(int type, const QString &host, int port,
                                        const QString &user, const QString &pass)
 {
-    m_proxyType = type;
-    m_proxyHost = host;
-    m_proxyPort = port;
-    m_proxyUser = user;
-    m_proxyPass = pass;
-
-    QSettings st("BATorrent", "BATorrent");
-    st.setValue("proxyType", type);
-    st.setValue("proxyHost", host);
-    st.setValue("proxyPort", port);
-    st.setValue("proxyUser", user);
-    st.setValue("proxyPass", pass);
-
-    lt::settings_pack pack;
-    if (type == 0) {
-        pack.set_int(lt::settings_pack::proxy_type, lt::settings_pack::none);
-        pack.set_bool(lt::settings_pack::proxy_peer_connections, false);
-        pack.set_bool(lt::settings_pack::proxy_tracker_connections, false);
-        pack.set_bool(lt::settings_pack::proxy_hostnames, false);
-        // Restore the leak vectors leak-proof mode had disabled.
-        pack.set_bool(lt::settings_pack::enable_upnp, true);
-        pack.set_bool(lt::settings_pack::enable_natpmp, true);
-        pack.set_bool(lt::settings_pack::enable_lsd, true);
-        pack.set_bool(lt::settings_pack::anonymous_mode, m_anonymousMode);
-    } else {
-        int ltType = (type == 1) ? lt::settings_pack::socks5_pw : lt::settings_pack::http_pw;
-        if (user.isEmpty())
-            ltType = (type == 1) ? lt::settings_pack::socks5 : lt::settings_pack::http;
-        pack.set_int(lt::settings_pack::proxy_type, ltType);
-        pack.set_str(lt::settings_pack::proxy_hostname, host.toStdString());
-        pack.set_int(lt::settings_pack::proxy_port, port);
-        if (!user.isEmpty()) {
-            pack.set_str(lt::settings_pack::proxy_username, user.toStdString());
-            pack.set_str(lt::settings_pack::proxy_password, pass.toStdString());
-        }
-        // Route EVERYTHING through the tunnel — peers, trackers, and DNS — so
-        // neither the real IP nor lookups leak. For SOCKS5, libtorrent carries
-        // uTP/DHT over UDP ASSOCIATE automatically (a TCP-only proxy will drop
-        // those — the leak-proof toggle disables the rest of the leak vectors).
-        pack.set_bool(lt::settings_pack::proxy_peer_connections, true);
-        pack.set_bool(lt::settings_pack::proxy_tracker_connections, true);
-        pack.set_bool(lt::settings_pack::proxy_hostnames, true);
-        if (m_proxyLeakProof) {
-            // UPnP/NAT-PMP punch a port map advertising the real WAN IP; LSD
-            // broadcasts it on the LAN — both bypass the proxy. Kill them, and
-            // scrub the client fingerprint while tunneled.
-            pack.set_bool(lt::settings_pack::enable_upnp, false);
-            pack.set_bool(lt::settings_pack::enable_natpmp, false);
-            pack.set_bool(lt::settings_pack::enable_lsd, false);
-            pack.set_bool(lt::settings_pack::anonymous_mode, true);
-        }
-    }
-    m_session.apply_settings(pack);
+    m_proxy.set(type, host, port, user, pass);
+    m_session.apply_settings(m_proxy.settings(m_anonymousMode));
 }
 
 void SessionManager::setProxyLeakProof(bool enabled)
 {
-    m_proxyLeakProof = enabled;
-    QSettings("BATorrent", "BATorrent").setValue("proxyLeakProof", enabled);
+    m_proxy.setLeakProof(enabled);
     // Re-apply the active proxy so the change takes effect immediately.
-    setProxySettings(m_proxyType, m_proxyHost, m_proxyPort, m_proxyUser, m_proxyPass);
+    m_session.apply_settings(m_proxy.settings(m_anonymousMode));
 }
 
-bool SessionManager::proxyLeakProof() const { return m_proxyLeakProof; }
+bool SessionManager::proxyLeakProof() const { return m_proxy.leakProof(); }
 
-int SessionManager::proxyType() const { return m_proxyType; }
-QString SessionManager::proxyHost() const { return m_proxyHost; }
-int SessionManager::proxyPort() const { return m_proxyPort; }
-QString SessionManager::proxyUser() const { return m_proxyUser; }
-QString SessionManager::proxyPass() const { return m_proxyPass; }
+int SessionManager::proxyType() const { return m_proxy.type(); }
+QString SessionManager::proxyHost() const { return m_proxy.host(); }
+int SessionManager::proxyPort() const { return m_proxy.port(); }
+QString SessionManager::proxyUser() const { return m_proxy.user(); }
+QString SessionManager::proxyPass() const { return m_proxy.pass(); }
 
 // --- IP Filter ---
 

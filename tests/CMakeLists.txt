@@ -34,6 +34,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_network.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_security.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/ipblocklist.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/proxycontroller.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
     ${CMAKE_SOURCE_DIR}/src/services/platform/translator.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/statshistory.cpp
@@ -221,6 +222,7 @@ bat_add_test(test_geoipdb    test_geoipdb.cpp)
 bat_add_test(test_searchranker test_searchranker.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
+bat_add_test(test_proxycontroller test_proxycontroller.cpp)
 
 # =============================================================================
 #  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).
