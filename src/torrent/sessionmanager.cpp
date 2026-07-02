@@ -125,10 +125,14 @@ SessionManager::SessionManager(QObject *parent)
     // (fat link or high-RTT head) and neutral on bandwidth-capped swarms.
     pack.set_bool(lt::settings_pack::piece_request_fast_ramp, true);
 #endif
-    // Connection tuning: qBT defaults, with a slightly faster connect ramp so a
-    // fresh torrent reaches a healthy peer set sooner.
+    // Connection tuning: qBT defaults, with a much faster connect ramp so a fresh
+    // torrent reaches a healthy peer set in seconds instead of slowly climbing.
     pack.set_int(lt::settings_pack::connections_limit, 500);
-    pack.set_int(lt::settings_pack::connection_speed, 50);
+    pack.set_int(lt::settings_pack::connection_speed, 150);
+    // Burst of outgoing connections fired the instant a torrent is added — this is
+    // the biggest lever on the slow first-30s ramp (default 30 trickles in). Capped
+    // by peers actually available, so it's harmless on small swarms.
+    pack.set_int(lt::settings_pack::torrent_connect_boost, 100);
     pack.set_int(lt::settings_pack::unchoke_slots_limit, 20);
     // Prefer RC4 encryption (like qBittorrent) — some private trackers
     // penalize clients that accept plaintext.
