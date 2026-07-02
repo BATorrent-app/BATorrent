@@ -20,7 +20,6 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <p align="center">
   <img src="src/images/with_startup.gif" alt="BATorrent — 開いてすぐ使える、カバーは自動で表示" width="860">
@@ -28,9 +27,8 @@
 
 たいていのトレントクライアントは納税申告書みたいな見た目です。これはダウンロードを **映画・ドラマ・ゲームのカバーの壁** として見せます — Netflix や Steam で見慣れたあの感じ — そして6つのテーマ（あるいは自分の壁紙）で着せ替えできます。中身は実績ある **libtorrent** エンジンなので、見た目だけのおもちゃではありません。たまたまセンスも持ち合わせた、本物のクライアントです。
 
-> **広告なし。テレメトリなし。「Pro」版なし。アカウント不要。** 自分から行う唯一の通信は GitHub の更新確認だけで、それもオフにできます。ソースはここにあります — [`updater.cpp`](src/app/updater.cpp) を読んで自分で確かめてください。
+> **広告なし。テレメトリなし。「Pro」版なし。アカウント不要。** 自分から行う唯一の通信は GitHub の更新確認だけで、それもオフにできます。ソースはここにあります — [`updater.cpp`](src/services/integrations/updater.cpp) を読んで自分で確かめてください。
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## なぜ作ったのか
 
@@ -75,7 +73,6 @@
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## 入手
 
@@ -89,7 +86,6 @@
 
 <sub>**macOS:** まだ公証（notarization）されていません（Apple の開発者プログラムは有料のため）。Homebrew が最もスムーズです — `brew` が隔離フラグを外すので、Gatekeeper のダイアログなしで開きます。`.dmg` の場合は初回のみ右クリック → **開く**。</sub>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <details>
 <summary><b>ソースからのビルドと技術メモ</b></summary>

@@ -20,7 +20,6 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <p align="center">
   <img src="src/images/with_startup.gif" alt="BATorrent — öffnen und loslegen, Cover werden automatisch geladen" width="860">
@@ -28,9 +27,8 @@
 
 Die meisten Torrent-Clients sehen aus wie ein Steuerformular. Dieser zeigt deine Downloads als **Wand aus Film-, Serien- und Spielcovern** — dasselbe, was du von Netflix oder Steam kennst — und lässt sich in sechs Themes (oder dein eigenes Hintergrundbild) kleiden. Unter der Haube steckt die bewährte **libtorrent**-Engine, also kein hübsches Spielzeug: ein echter Client, der zufällig auch Geschmack hat.
 
-> **Keine Werbung. Keine Telemetrie. Keine „Pro"-Stufe. Kein Konto.** Die einzige Anfrage, die er von sich aus stellt, ist die GitHub-Update-Prüfung, und die kannst du abschalten. Der Quellcode ist direkt hier — lies [`updater.cpp`](src/app/updater.cpp) und überzeug dich selbst.
+> **Keine Werbung. Keine Telemetrie. Keine „Pro"-Stufe. Kein Konto.** Die einzige Anfrage, die er von sich aus stellt, ist die GitHub-Update-Prüfung, und die kannst du abschalten. Der Quellcode ist direkt hier — lies [`updater.cpp`](src/services/integrations/updater.cpp) und überzeug dich selbst.
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Warum es das gibt
 
@@ -75,7 +73,6 @@ Priorität pro Datei · sequenzieller Download · automatisches Tracker-Einspiel
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Holen
 
@@ -89,7 +86,6 @@ Dann einfach eine `.torrent`-Datei oder einen Magnet auf das Fenster ziehen. Das
 
 <sub>**macOS:** noch nicht notarisiert (Apples Entwicklerprogramm ist kostenpflichtig). Homebrew ist der reibungsloseste Weg — `brew` entfernt das Quarantäne-Flag, sodass die App ohne Gatekeeper-Dialog öffnet. Bei der `.dmg` beim ersten Mal Rechtsklick → **Öffnen**.</sub>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <details>
 <summary><b>Aus dem Quellcode bauen & technische Notizen</b></summary>
