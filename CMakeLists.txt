@@ -88,6 +88,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmlsessionbridge_library.cpp
     src/bridges/qmlsessionbridge_playback.cpp
     src/bridges/qmlsessionbridge_selection.cpp
+    src/bridges/qmlsessionbridge_disk.cpp
     src/bridges/qmlthemebridge.cpp
     src/bridges/qmlsearchbridge.cpp
     src/bridges/qmlsettingsbridge.cpp
