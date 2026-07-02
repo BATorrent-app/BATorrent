@@ -62,6 +62,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/qrcodegen.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoip.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/geoipdb.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/discordrpc.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/notifier.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/secretstore.cpp
@@ -200,6 +201,7 @@ bat_add_test(test_nameparser test_nameparser.cpp)
 bat_add_test(test_bridge     test_bridge.cpp)
 bat_add_test(test_gamesource test_gamesource.cpp)
 bat_add_test(test_memguard   test_memguard.cpp)
+bat_add_test(test_geoipdb    test_geoipdb.cpp)
 
 # =============================================================================
 #  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).
