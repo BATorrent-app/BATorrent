@@ -42,6 +42,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archiveextractor.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasepick.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/searchranker.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
@@ -216,6 +217,7 @@ bat_add_test(test_bridge     test_bridge.cpp)
 bat_add_test(test_gamesource test_gamesource.cpp)
 bat_add_test(test_memguard   test_memguard.cpp)
 bat_add_test(test_geoipdb    test_geoipdb.cpp)
+bat_add_test(test_searchranker test_searchranker.cpp)
 
 # =============================================================================
 #  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).

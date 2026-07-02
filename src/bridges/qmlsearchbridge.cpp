@@ -8,6 +8,7 @@
 #include "services/discovery/discoveryservice.h"
 #include "services/metadata/nameparser.h"
 #include "services/metadata/releasepick.h"
+#include "services/metadata/searchranker.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
 #include "services/platform/logger.h"
@@ -388,6 +389,16 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
 }
 
 static QString btihFromMagnet(const QString &magnet);   // defined below
+
+QStringList QmlSearchBridge::queryWords() const
+{
+    return SearchRanker::significantWords(m_activeQuery);
+}
+
+int QmlSearchBridge::relevance(const QString &name, const QStringList &words) const
+{
+    return SearchRanker::relevanceScore(name, words);
+}
 
 int QmlSearchBridge::pickBestResult() const
 {

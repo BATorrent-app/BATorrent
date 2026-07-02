@@ -39,6 +39,12 @@ public:
     Q_INVOKABLE void activateResult(int index, bool force = false);   // catalog→streams; else add magnet (force skips the disk-fit guard)
     Q_INVOKABLE void back();                       // streams → catalog
 
+    // Relevance ranking (backed by the tested SearchRanker service) so the view
+    // sorts by relevance without reimplementing the scoring in QML/JS.
+    Q_INVOKABLE QStringList queryWords() const;                       // significant words of the active query
+    Q_INVOKABLE int relevance(const QString &name, const QStringList &words) const;
+    Q_INVOKABLE int bestResultIndex() const { return pickBestResult(); }   // best release in the current list, or -1
+
     // Hydra-format game catalogs the user adds (neutral infra — nothing bundled).
     Q_INVOKABLE QVariantList gameSources() const;          // [{name, url}]
     Q_INVOKABLE void addGameSource(const QString &name, const QString &url);

@@ -107,30 +107,16 @@ Rectangle {
     })
     function langName(c) { return langNames[c] || c }
 
-    // significant query words (drop articles/prepositions that match everything)
-    function sigWords(q) {
-        var stop = { "the": 1, "of": 1, "a": 1, "an": 1, "and": 1, "or": 1, "to": 1, "in": 1, "on": 1 }
-        return (q || "").toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length > 0 && !stop[w] })
-    }
-    // whole-word match count: "blast" must NOT match "last"
-    function relScore(name, qwords) {
-        if (qwords.length === 0) return 0
-        var set = {}
-        var nw = (name || "").toLowerCase().split(/[^a-z0-9]+/)
-        for (var i = 0; i < nw.length; i++) if (nw[i].length > 0) set[nw[i]] = true
-        var s = 0
-        for (var j = 0; j < qwords.length; j++) if (set[qwords[j]]) s++
-        return s
-    }
-
     function computeView() {
         if (!api) return []
         var arr = []
         var res = api.results
-        var qwords = sigWords(api.activeQuery)
+        // Relevance scoring lives in the tested C++ SearchRanker (via the bridge),
+        // not here — the view only reads the scores to sort by.
+        var qwords = api.queryWords()
         for (var i = 0; i < res.length; i++) {
             var o = res[i]; o._idx = i
-            o._rel = relScore(o.name, qwords)
+            o._rel = api.relevance(o.name, qwords)
             arr.push(o)
         }
         if (qualityFilter !== "") arr = arr.filter(function (r) { return r.quality === qualityFilter })
@@ -230,19 +216,14 @@ Rectangle {
         onTriggered: page.runSearch()
     }
 
-    // Auto-pick the "best" release of a picked title and add it: prefer the user's
-    // language, then resolution (1080p sweet spot), then most seeders.
+    // Auto-pick the "best" release of a picked title and add it. Delegates to the
+    // bridge's ReleasePick-backed ranking (same logic as one-click Get & Watch, so
+    // it honors the user's quality/size/language preferences) instead of a second
+    // scoring formula here.
     function pickBest() {
         if (!api) return
-        var res = api.results
-        var qrank = { "1080p": 4, "4K": 3, "720p": 2, "480p": 1 }
-        var bestIdx = -1, bestScore = -1
-        for (var i = 0; i < res.length; i++) {
-            var r = res[i]
-            var score = (r.native ? 1e9 : 0) + (qrank[r.quality] || 0) * 1e6 + (r.seedsN || 0)
-            if (score > bestScore) { bestScore = score; bestIdx = i }
-        }
-        if (bestIdx >= 0) api.activateResult(bestIdx)
+        var i = api.bestResultIndex()
+        if (i >= 0) api.activateResult(i)
     }
 
     // External entry (e.g. clicking a Discover poster): reflect the query in the
