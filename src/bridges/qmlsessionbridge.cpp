@@ -2,26 +2,18 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "bridges/qmlposterbridge.h"
-#include "services/subtitles/subtitleparser.h"
+#include "bridges/qmlsessionbridge.h"
+#include "torrent/iengine.h"
 #include <QStorageInfo>
-#include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/discoveryservice.h"
 #include "services/security/defender.h"
 #include "services/metadata/nameparser.h"
-#include "services/integrations/installerprofile.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
-#include "services/platform/logger.h"
-#include "services/platform/qrcodegen.h"
 #include "services/platform/utils.h"
 #include "services/platform/translator.h"
 #include "services/integrations/geoip.h"
-#include "services/integrations/discordrpc.h"
-#include "services/integrations/updater.h"
-#include "services/integrations/notifier.h"
-#include "services/security/secretstore.h"
 #include "webui/webserver.h"
 #include <QCryptographicHash>
 #include <QNetworkAccessManager>

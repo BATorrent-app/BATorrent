@@ -27,6 +27,11 @@ enum class Kind : quint8 {
     Event   = 6,   // engine → UI: name, argsBlob (signals/snapshots)
 };
 
+// A frame beyond this is protocol corruption or a hostile peer — a bogus
+// length must not pin memory (the buffer would accumulate forever waiting for
+// bytes that never come) or desync the stream via int overflow in the size check.
+constexpr qsizetype kMaxFrameBytes = 64 * 1024 * 1024;
+
 // One length-prefixed frame: [quint32 byteCount][Kind][payload].
 inline void writeFrame(QIODevice *dev, Kind kind, const QByteArray &payload)
 {
@@ -45,17 +50,19 @@ inline void writeFrame(QIODevice *dev, Kind kind, const QByteArray &payload)
 // for each. Leaves a partial trailing frame in `buf` for the next read.
 inline void drainFrames(QByteArray &buf, const std::function<void(Kind, const QByteArray &)> &sink)
 {
+    constexpr qsizetype kHeader = qsizetype(sizeof(quint32));
     for (;;) {
-        if (buf.size() < int(sizeof(quint32))) return;
+        if (buf.size() < kHeader) return;
         quint32 len = 0;
         {
-            QDataStream ds(buf.left(sizeof(quint32)));
+            QDataStream ds(buf.left(kHeader));
             ds.setVersion(kStreamVersion);
             ds >> len;
         }
-        if (buf.size() < int(sizeof(quint32) + len)) return;   // incomplete — wait for more
-        const QByteArray body = buf.mid(sizeof(quint32), len);
-        buf.remove(0, sizeof(quint32) + len);
+        if (qsizetype(len) > kMaxFrameBytes) { buf.clear(); return; }
+        if (buf.size() - kHeader < qsizetype(len)) return;   // incomplete — wait for more
+        const QByteArray body = buf.mid(kHeader, len);
+        buf.remove(0, kHeader + qsizetype(len));
         if (body.isEmpty()) continue;
         const Kind kind = Kind(quint8(body.at(0)));
         sink(kind, body.mid(1));

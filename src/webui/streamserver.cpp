@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 #include "webui/streamserver.h"
-#include "torrent/sessionmanager.h"
+#include "torrent/iengine.h"
 
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -74,7 +74,7 @@ private:
         if (method != "GET" && !head) { fail(405); return; }
 
         // /stream/<hash>/<fileIndex>
-        const QRegularExpression re(QStringLiteral("^/stream/([0-9a-fA-F]+)/(\\d+)"));
+        static const QRegularExpression re(QStringLiteral("^/stream/([0-9a-fA-F]+)/(\\d+)"));
         const auto m = re.match(path);
         if (!m.hasMatch()) { fail(404); return; }
         m_hash = m.captured(1);
@@ -90,7 +90,7 @@ private:
         for (const QByteArray &ln : lines) {
             const QByteArray l = ln.trimmed();
             if (l.toLower().startsWith("range:")) {
-                const QRegularExpression rr(QStringLiteral("bytes=(\\d*)-(\\d*)"));
+                static const QRegularExpression rr(QStringLiteral("bytes=(\\d*)-(\\d*)"));
                 const auto rm = rr.match(QString::fromUtf8(l));
                 if (rm.hasMatch()) {
                     ranged = true;

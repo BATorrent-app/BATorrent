@@ -132,6 +132,7 @@ private slots:
 
 private:
     void spawnEngine();
+    void pumpSocket() const;   // drain socket → handleFrame; the one const_cast lives here
     void handleFrame(ipc::Kind kind, const QByteArray &payload);
     void dispatchEvent(const QString &name, const QByteArray &args);
     QByteArray request(const QString &method, const QByteArray &args = {}) const;   // blocking req→reply

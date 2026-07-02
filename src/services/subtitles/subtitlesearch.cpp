@@ -16,6 +16,7 @@
 #include <QSettings>
 #include <QUrl>
 #include <QUrlQuery>
+#include <memory>
 
 #include <zlib.h>
 
@@ -319,7 +320,7 @@ void SubtitleSearch::searchGestdown(const QString &title, int season, int episod
         }
         if (showId.isEmpty() || langs.isEmpty()) { providerDone(); return; }
 
-        auto *remaining = new int(langs.size());
+        auto remaining = std::make_shared<int>(langs.size());
         for (const QString &l : langs) {
             const QUrl url(QStringLiteral("https://api.gestdown.info/subtitles/get/%1/%2/%3/%4")
                                .arg(showId)
@@ -349,7 +350,7 @@ void SubtitleSearch::searchGestdown(const QString &title, int season, int episod
                     }
                     emit resultsChanged();
                 }
-                if (--(*remaining) <= 0) { delete remaining; providerDone(); }
+                if (--(*remaining) <= 0) providerDone();
             });
         }
     });

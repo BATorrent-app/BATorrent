@@ -14,6 +14,7 @@ GeoIpResolver::GeoIpResolver(QObject *parent)
     : QObject(parent)
     , m_nam(new QNetworkAccessManager(this))
 {
+    m_nam->setTransferTimeout(15000);
     m_rateLimiter.setSingleShot(true);
     m_rateLimiter.setInterval(200); // max 1 request per 200ms (API limit ~45/min)
     connect(&m_rateLimiter, &QTimer::timeout, this, &GeoIpResolver::processQueue);

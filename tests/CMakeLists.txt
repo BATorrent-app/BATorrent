@@ -6,7 +6,11 @@
 enable_testing()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Test)
-find_package(LibtorrentRasterbar REQUIRED)
+# In fork mode the tests must exercise the SAME vendored engine the app ships
+# (BAT_TORRENT_LIB set by the root CMakeLists), not the system libtorrent.
+if(NOT BAT_LIBTORRENT_SOURCE)
+    find_package(LibtorrentRasterbar REQUIRED)
+endif()
 
 # --- Fetch Catch2 v3 ---
 include(FetchContent)
@@ -80,6 +84,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/platform/qrcodegen.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoip.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoipdb.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/geoipprovider.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/discordrpc.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/notifier.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/secretstore.cpp
@@ -88,7 +93,7 @@ set(COMMON_SOURCES
 find_package(ZLIB REQUIRED)
 set(COMMON_LIBS
     Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Test
-    LibtorrentRasterbar::torrent-rasterbar
+    ${BAT_TORRENT_LIB}
     Catch2::Catch2WithMain
     ZLIB::ZLIB
 )
@@ -223,6 +228,7 @@ bat_add_test(test_searchranker test_searchranker.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_proxycontroller test_proxycontroller.cpp)
+bat_add_test(test_ipcprotocol test_ipcprotocol.cpp)
 
 # =============================================================================
 #  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).

@@ -34,7 +34,7 @@ bool WebServer::start(quint16 port, bool remoteAccess)
 
     QHostAddress addr = remoteAccess ? QHostAddress::Any : QHostAddress::LocalHost;
     if (!m_server->listen(addr, port)) {
-        delete m_server;
+        m_server->deleteLater();
         m_server = nullptr;
         return false;
     }
@@ -45,7 +45,7 @@ void WebServer::stop()
 {
     if (m_server) {
         m_server->close();
-        delete m_server;
+        m_server->deleteLater();
         m_server = nullptr;
     }
     m_pending.clear();
@@ -130,6 +130,75 @@ void WebServer::readMore(QTcpSocket *socket)
     dispatch(socket, complete);
 }
 
+namespace {
+// "/api/torrents/<hash><suffix>" → "<hash>" (empty if the path isn't that shape)
+QString torrentPathSegment(const QByteArray &path, const QByteArray &suffix)
+{
+    const QByteArray prefix = QByteArrayLiteral("/api/torrents/");
+    if (!path.startsWith(prefix) || !path.endsWith(suffix)) return {};
+    QByteArray seg = path.mid(prefix.size());
+    seg.chop(suffix.size());
+    return QString::fromUtf8(seg);
+}
+}
+
+// Pairing, login and the session/Basic-Auth gate. Returns true if it already
+// answered the request — dispatch() must not route further.
+bool WebServer::handleAuthGates(QTcpSocket *socket, const QByteArray &method,
+                                const QByteArray &path, const QByteArray &query,
+                                const QByteArray &headers, const QString &clientIp)
+{
+    if (m_user.isEmpty()) return false;   // auth disabled
+
+    // QR pairing: a scanned URL of the form  /?pair=base64(user:pass)  signs the
+    // device in once (issues a session cookie) and 302-redirects to a clean "/",
+    // so the phone never types the password and it isn't left in the address bar.
+    if (method == "GET" && query.contains("pair=")) {
+        QByteArray pairVal;
+        for (const QByteArray &kv : query.split('&'))
+            if (kv.startsWith("pair=")) { pairVal = kv.mid(5); break; }
+        const QByteArray decoded = QByteArray::fromBase64(QByteArray::fromPercentEncoding(pairVal));
+        const int colon = decoded.indexOf(':');
+        if (colon > 0) {
+            const QByteArray u = decoded.left(colon);
+            const QByteArray pHash = QCryptographicHash::hash(decoded.mid(colon + 1),
+                                        QCryptographicHash::Sha256).toHex();
+            if (constantTimeEquals(u, m_user.toUtf8())
+                && constantTimeEquals(pHash, m_passwordHash.toUtf8())) {
+                const QByteArray token = issueSessionCookie();
+                const QByteArray extra = "Location: /\r\nSet-Cookie: BATSID=" + token
+                    + "; HttpOnly; SameSite=Strict; Path=/\r\n";
+                sendResponse(socket, 302, "Found", QByteArray(), "text/plain", extra);
+                return true;
+            }
+        }
+        // invalid/forged pair token → fall through to the normal auth gate
+    }
+
+    // Login endpoint sits before the auth gate so unauthenticated clients
+    // can post their credentials.
+    if (method == "POST" && path == "/api/login") {
+        if (!checkAuth(headers, clientIp)) {
+            sendError(socket, 401, "Invalid credentials");
+            return true;
+        }
+        QByteArray token = issueSessionCookie();
+        QByteArray cookie = "Set-Cookie: BATSID=" + token
+            + "; HttpOnly; SameSite=Strict; Path=/\r\n";
+        sendJson(socket, 200, R"({"status":"ok"})", cookie);
+        return true;
+    }
+
+    if (!checkSession(headers) && !checkAuth(headers, clientIp)) {
+        // No session cookie and no valid Basic Auth → require login.
+        QByteArray body401 = "Unauthorized";
+        sendResponse(socket, 401, "Unauthorized", body401, "text/plain",
+            "WWW-Authenticate: Basic realm=\"BATorrent WebUI\"\r\n");
+        return true;
+    }
+    return false;
+}
+
 void WebServer::dispatch(QTcpSocket *socket, const QByteArray &requestData)
 {
     int firstNewline = requestData.indexOf('\n');
@@ -161,52 +230,8 @@ void WebServer::dispatch(QTcpSocket *socket, const QByteArray &requestData)
 
     const QString clientIp = socket->peerAddress().toString();
 
-    // QR pairing: a scanned URL of the form  /?pair=base64(user:pass)  signs the
-    // device in once (issues a session cookie) and 302-redirects to a clean "/",
-    // so the phone never types the password and it isn't left in the address bar.
-    if (!m_user.isEmpty() && method == "GET" && query.contains("pair=")) {
-        QByteArray pairVal;
-        for (const QByteArray &kv : query.split('&'))
-            if (kv.startsWith("pair=")) { pairVal = kv.mid(5); break; }
-        const QByteArray decoded = QByteArray::fromBase64(QByteArray::fromPercentEncoding(pairVal));
-        const int colon = decoded.indexOf(':');
-        if (colon > 0) {
-            const QByteArray u = decoded.left(colon);
-            const QByteArray pHash = QCryptographicHash::hash(decoded.mid(colon + 1),
-                                        QCryptographicHash::Sha256).toHex();
-            if (constantTimeEquals(u, m_user.toUtf8())
-                && constantTimeEquals(pHash, m_passwordHash.toUtf8())) {
-                const QByteArray token = issueSessionCookie();
-                const QByteArray extra = "Location: /\r\nSet-Cookie: BATSID=" + token
-                    + "; HttpOnly; SameSite=Strict; Path=/\r\n";
-                sendResponse(socket, 302, "Found", QByteArray(), "text/plain", extra);
-                return;
-            }
-        }
-        // invalid/forged pair token → fall through to the normal auth gate
-    }
-
-    // Login endpoint sits before the auth gate so unauthenticated clients
-    // can post their credentials.
-    if (m_user.isEmpty() == false && method == "POST" && path == "/api/login") {
-        if (!checkAuth(headers, clientIp)) {
-            sendError(socket, 401, "Invalid credentials");
-            return;
-        }
-        QByteArray token = issueSessionCookie();
-        QByteArray cookie = "Set-Cookie: BATSID=" + token
-            + "; HttpOnly; SameSite=Strict; Path=/\r\n";
-        sendJson(socket, 200, R"({"status":"ok"})", cookie);
+    if (handleAuthGates(socket, method, path, query, headers, clientIp))
         return;
-    }
-
-    if (!m_user.isEmpty() && !checkSession(headers) && !checkAuth(headers, clientIp)) {
-        // No session cookie and no valid Basic Auth → require login.
-        QByteArray body401 = "Unauthorized";
-        sendResponse(socket, 401, "Unauthorized", body401, "text/plain",
-            "WWW-Authenticate: Basic realm=\"BATorrent WebUI\"\r\n");
-        return;
-    }
 
     if (method == "GET" && path == "/") {
         QFile file(":/webui/index.html");
@@ -257,30 +282,22 @@ void WebServer::dispatch(QTcpSocket *socket, const QByteArray &requestData)
             sendError(socket, 404, "Torrent not found");
     }
     else if (method == "POST" && path.endsWith("/pause")) {
-        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
-        segment.chop(QByteArray("/pause").length());
-        if (handlePauseTorrent(QString::fromUtf8(segment)))
+        if (handlePauseTorrent(torrentPathSegment(path, "/pause")))
             sendJson(socket, 200, R"({"status":"ok"})");
         else
             sendError(socket, 404, "Torrent not found");
     }
     else if (method == "POST" && path.endsWith("/resume")) {
-        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
-        segment.chop(QByteArray("/resume").length());
-        if (handleResumeTorrent(QString::fromUtf8(segment)))
+        if (handleResumeTorrent(torrentPathSegment(path, "/resume")))
             sendJson(socket, 200, R"({"status":"ok"})");
         else
             sendError(socket, 404, "Torrent not found");
     }
-    else if (method == "GET" && path.contains("/peers")) {
-        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
-        segment.chop(QByteArray("/peers").length());
-        sendJson(socket, 200, handleGetTorrentPeers(QString::fromUtf8(segment)));
+    else if (method == "GET" && path.endsWith("/peers")) {
+        sendJson(socket, 200, handleGetTorrentPeers(torrentPathSegment(path, "/peers")));
     }
-    else if (method == "GET" && path.contains("/files")) {
-        QByteArray segment = path.mid(QByteArray("/api/torrents/").length());
-        segment.chop(QByteArray("/files").length());
-        sendJson(socket, 200, handleGetTorrentFiles(QString::fromUtf8(segment)));
+    else if (method == "GET" && path.endsWith("/files")) {
+        sendJson(socket, 200, handleGetTorrentFiles(torrentPathSegment(path, "/files")));
     }
     else {
         sendError(socket, 404, "Not Found");
@@ -368,9 +385,10 @@ bool WebServer::checkAuth(const QByteArray &headersOnly, const QString &clientIp
     evictExpiredFailedAuth();
     // Throttle: after 5 failed attempts from the same IP, lock that IP out
     // for an exponential window (max 5 min).
+    // UTC so a DST jump can't stretch or void a lockout window.
     auto &state = m_failedAuth[clientIp];
     if (state.lockedUntil.isValid()
-        && QDateTime::currentDateTime() < state.lockedUntil)
+        && QDateTime::currentDateTimeUtc() < state.lockedUntil)
         return false;
 
     QByteArray authValue = headerValue(headersOnly, "Authorization");
@@ -406,7 +424,7 @@ bool WebServer::checkAuth(const QByteArray &headersOnly, const QString &clientIp
     if (state.attempts >= 5) {
         // 5,6,7,8,9 → 5s, 10s, 20s, 40s, 80s, ... cap at 5 min.
         int penaltySec = qMin(5 * (1 << (state.attempts - 5)), 300);
-        state.lockedUntil = QDateTime::currentDateTime().addSecs(penaltySec);
+        state.lockedUntil = QDateTime::currentDateTimeUtc().addSecs(penaltySec);
     }
     return false;
 }
@@ -445,7 +463,7 @@ QByteArray WebServer::issueSessionCookie()
 
 void WebServer::evictExpiredFailedAuth()
 {
-    const QDateTime now = QDateTime::currentDateTime();
+    const QDateTime now = QDateTime::currentDateTimeUtc();
     for (auto it = m_failedAuth.begin(); it != m_failedAuth.end(); ) {
         // Entries past their lockout with no recent activity are safe to drop.
         if (it->lockedUntil.isValid() && it->lockedUntil < now)
@@ -459,21 +477,17 @@ void WebServer::evictExpiredFailedAuth()
         m_failedAuth.clear();
 }
 
-QString WebServer::torrentHash(int index)
+QString WebServer::torrentHash(int index) const
 {
     if (index < 0 || index >= m_session->torrentCount())
         return {};
     return m_session->torrentHashAt(index);
 }
 
-int WebServer::findTorrentByHash(const QString &hash)
+int WebServer::findTorrentByHash(const QString &hash) const
 {
     if (hash.isEmpty()) return -1;
-    for (int i = 0; i < m_session->torrentCount(); ++i) {
-        if (torrentHash(i) == hash)
-            return i;
-    }
-    return -1;
+    return m_session->torrentIndexByInfoHash(hash);
 }
 
 QByteArray WebServer::handleGetTorrents()

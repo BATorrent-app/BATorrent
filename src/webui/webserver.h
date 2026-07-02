@@ -74,8 +74,12 @@ private:
     bool handlePauseTorrent(const QString &hash);
     bool handleResumeTorrent(const QString &hash);
 
-    int findTorrentByHash(const QString &hash);
-    QString torrentHash(int index);
+    bool handleAuthGates(QTcpSocket *socket, const QByteArray &method,
+                         const QByteArray &path, const QByteArray &query,
+                         const QByteArray &headers, const QString &clientIp);
+
+    int findTorrentByHash(const QString &hash) const;
+    QString torrentHash(int index) const;
 
     QTcpServer *m_server = nullptr;
     IEngine *m_session;

@@ -113,6 +113,7 @@ void GeoIpProvider::downloadMonth(int monthsBack)
     QNetworkRequest req{QUrl(url)};
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                      QNetworkRequest::NoLessSafeRedirectPolicy);
+    req.setTransferTimeout(300000);   // whole-transfer cap: the db is ~MBs, allow slow links
     QNetworkReply *reply = m_nam.get(req);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply, monthsBack]() {

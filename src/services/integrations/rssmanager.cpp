@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 #include "services/integrations/rssmanager.h"
-#include "torrent/sessionmanager.h"
+#include "torrent/iengine.h"
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -24,6 +24,7 @@ RssManager::RssManager()
     : m_net(new QNetworkAccessManager(this))
     , m_checkTimer(new QTimer(this))
 {
+    m_net->setTransferTimeout(30000);
     loadFeeds();
     connect(m_checkTimer, &QTimer::timeout, this, &RssManager::checkAllFeeds);
     setupTimers();

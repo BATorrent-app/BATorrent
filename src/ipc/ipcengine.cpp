@@ -57,12 +57,18 @@ bool IpcEngine::start()
     QElapsedTimer s; s.start();
     while (!m_gotSnapshot && connected() && s.elapsed() < 2000) {
         if (!m_sock->waitForReadyRead(100)) continue;
-        m_buf.append(m_sock->readAll());
-        ipc::drainFrames(m_buf, [this](ipc::Kind k, const QByteArray &p) {
-            const_cast<IpcEngine *>(this)->handleFrame(k, p);
-        });
+        pumpSocket();
     }
     return true;
+}
+
+// Signals can't be emitted from const methods, but the IEngine read API is
+// const and must pump the socket while blocking — hence the one const_cast.
+void IpcEngine::pumpSocket() const
+{
+    auto *self = const_cast<IpcEngine *>(this);
+    m_buf.append(m_sock->readAll());
+    ipc::drainFrames(m_buf, [self](ipc::Kind k, const QByteArray &p) { self->handleFrame(k, p); });
 }
 
 bool IpcEngine::connected() const
@@ -98,8 +104,7 @@ void IpcEngine::onProcFinished(int exitCode, QProcess::ExitStatus status)
 void IpcEngine::onSocketReadyRead()
 {
     if (!m_sock) return;
-    m_buf.append(m_sock->readAll());
-    ipc::drainFrames(m_buf, [this](ipc::Kind k, const QByteArray &p) { handleFrame(k, p); });
+    pumpSocket();
 }
 
 void IpcEngine::handleFrame(ipc::Kind kind, const QByteArray &payload)
@@ -120,7 +125,9 @@ void IpcEngine::handleFrame(ipc::Kind kind, const QByteArray &payload)
         m_replies.insert(rid, res);
         break;
     }
-    default:
+    case ipc::Kind::Ping:      // UI side never receives these
+    case ipc::Kind::Pong:
+    case ipc::Kind::Request:   // UI → engine only
         break;
     }
 }
@@ -175,10 +182,7 @@ QByteArray IpcEngine::request(const QString &method, const QByteArray &args) con
     while (connected() && t.elapsed() < 5000) {
         if (m_replies.contains(id)) break;
         if (!m_sock->waitForReadyRead(200)) continue;
-        m_buf.append(m_sock->readAll());
-        ipc::drainFrames(m_buf, [this](ipc::Kind k, const QByteArray &p) {
-            const_cast<IpcEngine *>(this)->handleFrame(k, p);
-        });
+        pumpSocket();
     }
     return m_replies.take(id);   // empty if timed out
 }

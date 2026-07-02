@@ -3,10 +3,28 @@
 // See LICENSE file for details
 
 #include "services/metadata/nameparser.h"
+#include <QHash>
 #include <QSet>
 #include <algorithm>
 
 #include <QRegularExpression>
+
+namespace {
+// "token surrounded by separators" matcher, compiled once per token ever
+// (parse() runs per search row — rebuilding ~70 regexes each call is real cost).
+// Main-thread only, like the rest of the parser.
+const QRegularExpression &tokenRe(const QString &token)
+{
+    static QHash<QString, QRegularExpression> cache;
+    auto it = cache.find(token);
+    if (it == cache.end())
+        it = cache.insert(token, QRegularExpression(
+            QStringLiteral("(?:^|[.\\s\\-\\[\\]()])(%1)(?:$|[.\\s\\-\\[\\]()])")
+                .arg(QRegularExpression::escape(token)),
+            QRegularExpression::CaseInsensitiveOption));
+    return *it;
+}
+}
 
 ParsedName NameParser::parse(const QString &rawName)
 {
@@ -107,11 +125,7 @@ ParsedName NameParser::parse(const QString &rawName)
     };
 
     for (const QString &repacker : repackers) {
-        QString escaped = QRegularExpression::escape(repacker);
-        QRegularExpression repackRe(
-            QStringLiteral("(?:^|[.\\s\\-\\[\\]()])(%1)(?:$|[.\\s\\-\\[\\]()])").arg(escaped),
-            QRegularExpression::CaseInsensitiveOption);
-        m = repackRe.match(work);
+        m = tokenRe(repacker).match(work);
         if (m.hasMatch()) {
             gameScore += 10;                 // a known repacker is a strong game signal
             result.repackerTag = repacker;
@@ -141,11 +155,7 @@ ParsedName NameParser::parse(const QString &rawName)
         QStringLiteral("JTAG"), QStringLiteral("PS3"), QStringLiteral("PSVita")
     };
     for (const QString &tok : gameTokens) {
-        QString escaped = QRegularExpression::escape(tok);
-        QRegularExpression tokRe(
-            QStringLiteral("(?:^|[.\\s\\-\\[\\]()])(%1)(?:$|[.\\s\\-\\[\\]()])").arg(escaped),
-            QRegularExpression::CaseInsensitiveOption);
-        m = tokRe.match(work);
+        m = tokenRe(tok).match(work);
         if (m.hasMatch()) {
             gameScore += 3;
             work.remove(m.capturedStart(1), m.capturedLength(1));
@@ -187,11 +197,7 @@ ParsedName NameParser::parse(const QString &rawName)
 
     bool mediaTagFound = false;
     for (const QString &tag : mediaTags) {
-        QString escaped = QRegularExpression::escape(tag);
-        QRegularExpression tagRe(
-            QStringLiteral("(?:^|[.\\s\\-\\[\\]()])(%1)(?:$|[.\\s\\-\\[\\]()])").arg(escaped),
-            QRegularExpression::CaseInsensitiveOption);
-        m = tagRe.match(work);
+        m = tokenRe(tag).match(work);
         if (m.hasMatch()) {
             mediaTagFound = true;
             videoScore += 1;            // resolution/codec/source/audio → video lean

@@ -23,6 +23,7 @@ constexpr int kMaxPolls = 400;   // ~16 min ceiling for an uncached download
 RealDebridClient::RealDebridClient(QObject *parent)
     : IDebridProvider(parent)
 {
+    m_nam.setTransferTimeout(30000);
     m_pollTimer.setSingleShot(true);
     m_pollTimer.setInterval(kPollMs);
     connect(&m_pollTimer, &QTimer::timeout, this, &RealDebridClient::pollJob);
@@ -182,8 +183,13 @@ void RealDebridClient::onJobInfo(QNetworkReply *r)
             failJob(tr("No playable file in this Real-Debrid transfer."));
             return;
         }
+        const QString link = links.at(idx).toString();   // non-string element → empty
+        if (link.isEmpty()) {
+            failJob(tr("No playable file in this Real-Debrid transfer."));
+            return;
+        }
         setStatus(tr("Unlocking stream…"), 100);
-        unrestrict(links.at(idx).toString());
+        unrestrict(link);
         return;
     }
     if (status == QLatin1String("downloading")) {

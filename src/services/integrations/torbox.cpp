@@ -24,6 +24,7 @@ constexpr int kMaxPolls = 400;   // ~16 min ceiling for an uncached download
 TorBoxClient::TorBoxClient(QObject *parent)
     : IDebridProvider(parent)
 {
+    m_nam.setTransferTimeout(30000);
     m_pollTimer.setSingleShot(true);
     m_pollTimer.setInterval(kPollMs);
     connect(&m_pollTimer, &QTimer::timeout, this, &TorBoxClient::pollJob);

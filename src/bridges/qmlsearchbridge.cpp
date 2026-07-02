@@ -2,8 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "bridges/qmlposterbridge.h"
-#include "torrent/sessionmanager.h"
+#include "bridges/qmlsearchbridge.h"
+#include "torrent/iengine.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/discoveryservice.h"
 #include "services/metadata/nameparser.h"
@@ -11,15 +11,8 @@
 #include "services/metadata/searchranker.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
-#include "services/platform/logger.h"
-#include "services/platform/qrcodegen.h"
 #include "services/platform/utils.h"
 #include "services/platform/translator.h"
-#include "services/integrations/geoip.h"
-#include "services/integrations/discordrpc.h"
-#include "services/integrations/updater.h"
-#include "services/integrations/notifier.h"
-#include "services/security/secretstore.h"
 #include "webui/webserver.h"
 #include <QCryptographicHash>
 #include <QStorageInfo>
@@ -71,8 +64,6 @@
 #include <libtorrent/version.hpp>
 #include <openssl/opensslv.h>
 #include <boost/version.hpp>
-#include <memory>
-#include <sstream>
 
 QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
     : QObject(parent), m_session(session), m_mode("torrent")
@@ -201,9 +192,15 @@ QString QmlSearchBridge::detectRepacker(const QString &name)
 
 void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
 {
+    // ~30 patterns × every result row — cache compiled regexes (keyed by the
+    // literal's pointer; main-thread only).
     auto has = [&](const char *pat) {
-        return name.contains(QRegularExpression(QLatin1String(pat),
-                                                QRegularExpression::CaseInsensitiveOption));
+        static QHash<const char *, QRegularExpression> cache;
+        auto it = cache.find(pat);
+        if (it == cache.end())
+            it = cache.insert(pat, QRegularExpression(QLatin1String(pat),
+                                                      QRegularExpression::CaseInsensitiveOption));
+        return name.contains(*it);
     };
     if (m.value(QStringLiteral("quality")).toString().isEmpty()) {
         QString q;
@@ -239,8 +236,8 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
     if (has("\\bgerman\\b|deutsch|\\bger\\b")) add(QStringLiteral("DE"));
     if (has("\\bitalian\\b|\\bita\\b")) add(QStringLiteral("IT"));
     if (has("\\bfrench\\b|\\bfra\\b|\\btruefrench\\b|\\bvostfr\\b|\\bvff\\b")) add(QStringLiteral("FR"));
-    if (has("\\brus(sian)?\\b|дубляж|русск")
-        || name.contains(QRegularExpression(QStringLiteral("[\\x{0400}-\\x{04FF}]")))) add(QStringLiteral("RU"));
+    static const QRegularExpression cyrillicRe(QStringLiteral("[\\x{0400}-\\x{04FF}]"));
+    if (has("\\brus(sian)?\\b|дубляж|русск") || name.contains(cyrillicRe)) add(QStringLiteral("RU"));
     if (has("\\bjapanese\\b|\\bjpn\\b|\\bjap\\b")) add(QStringLiteral("JA"));
     if (has("ukrain|\\bukr\\b")) add(QStringLiteral("UK"));
     if (has("\\bchinese\\b|\\bchs\\b|\\bcht\\b|\\bmandarin\\b")) add(QStringLiteral("ZH"));
@@ -277,6 +274,9 @@ void QmlSearchBridge::setResolver(MetadataResolver *r)
 {
     m_resolver = r;
     if (!m_resolver) return;
+    // Poster fills mutate m_results WITHOUT resultsChanged() on purpose: QML
+    // treats that signal as "new result set" (closes the detail panel, resets
+    // the view); delegates repaint targeted via coverReady instead.
     connect(m_resolver, &MetadataResolver::metadataReady, this,
             [this](const QString &infoHash, const MetadataResult &meta) {
         if (!meta.valid || meta.posterPath.isEmpty()) return;
@@ -905,6 +905,4 @@ void QmlSearchBridge::back()
     emit resultsChanged();
     setStatus(tr_("search_results_n").arg(m_catalogCache.size()));
 }
-
-// ===================== QmlAddonBridge =====================
 
