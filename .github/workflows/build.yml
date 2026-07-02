@@ -65,9 +65,15 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive   # the vendored libtorrent fork
+
+      # Apply our engine patches (fast_ramp + geo-locality) onto the submodule.
+      - name: Apply fork patches
+        run: ./scripts/apply-fork-patches.sh
 
       # Qt from aqt (6.7) — Ubuntu's apt Qt (6.2) is too old for the QML
-      # (MultiEffect / QtQuick.Effects needs 6.5+). libtorrent/boost/ssl stay apt.
+      # (MultiEffect / QtQuick.Effects needs 6.5+). boost/ssl for the fork stay apt.
       - name: Install Qt
         uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
         with:
@@ -109,7 +115,7 @@ jobs:
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
           BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ${SENTRY_CMAKE_ARGS:-}
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBAT_LIBTORRENT_SOURCE=ON ${SENTRY_CMAKE_ARGS:-}
           cmake --build build
 
       - name: Install to AppDir
