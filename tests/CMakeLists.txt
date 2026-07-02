@@ -220,6 +220,7 @@ bat_add_test(test_memguard   test_memguard.cpp)
 bat_add_test(test_geoipdb    test_geoipdb.cpp)
 bat_add_test(test_searchranker test_searchranker.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
+bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 
 # =============================================================================
 #  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).

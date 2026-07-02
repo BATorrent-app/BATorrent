@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "torrent/sessionmanager.h"
+#include "torrent/bandwidthschedule.h"
 #include "services/platform/logger.h"
 #include "services/platform/translator.h"
 #include "services/security/archivescan.h"
@@ -1728,20 +1729,11 @@ void SessionManager::checkBandwidthSchedule()
     if (!m_schedulerEnabled || (m_altDownLimit == 0 && m_altUpLimit == 0))
         return;
 
-    QDateTime now = QDateTime::currentDateTime();
-    int currentHour = now.time().hour();
-    int dayOfWeek = now.date().dayOfWeek() - 1; // Qt: Mon=1, we want Mon=0
-    bool dayMatches = (m_scheduleDays & (1 << dayOfWeek)) != 0;
-
-    bool inSchedule = false;
-    if (dayMatches) {
-        if (m_scheduleFromHour <= m_scheduleToHour) {
-            inSchedule = (currentHour >= m_scheduleFromHour && currentHour < m_scheduleToHour);
-        } else {
-            // Wraps midnight: e.g. 22:00 to 06:00
-            inSchedule = (currentHour >= m_scheduleFromHour || currentHour < m_scheduleToHour);
-        }
-    }
+    const QDateTime now = QDateTime::currentDateTime();
+    const int currentHour = now.time().hour();
+    const int dayOfWeek = now.date().dayOfWeek() - 1; // Qt: Mon=1, we want Mon=0
+    const bool inSchedule = bat::inBandwidthSchedule(
+        dayOfWeek, currentHour, m_scheduleDays, m_scheduleFromHour, m_scheduleToHour);
 
     // Push values straight to libtorrent — must not go through
     // setDownloadLimit/setUploadLimit because those are "the user wants X as
