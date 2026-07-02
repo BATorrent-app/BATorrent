@@ -136,4 +136,4 @@ The **code** is [MIT](LICENSE) © 2024–2026 Mateus Cruz — fork it, build on 
 
 The **name "BATorrent" and the logo** are the project's identity, not part of the code license — please give redistributed forks their own name so users always know which build is official and malware-free. Details: [TRADEMARK.md](TRADEMARK.md). Good-faith forks and contributions are very welcome.
 
-Made in Brazil 🦇
+Made in Brazil
