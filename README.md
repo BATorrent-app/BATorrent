@@ -9,7 +9,7 @@
 <h1 align="center">BATorrent</h1>
 
 <p align="center">
-  <i>The BitTorrent client with a face — movie covers, six themes, zero ads.</i>
+  <i>A BitTorrent client that shows your downloads as cover art instead of spreadsheet rows.</i>
 </p>
 
 <p align="center">
@@ -20,23 +20,19 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
-
 <p align="center">
   <img src="src/images/with_startup.gif" alt="BATorrent — open and go, covers resolve automatically" width="860">
 </p>
 
-Most torrent clients look like a tax form. This one shows your downloads as a **wall of movie, show, and game covers** — the same thing you'd recognise on Netflix or Steam — and lets you dress it in six themes (or your own wallpaper). Under the hood it's the battle-tested **libtorrent** engine, so it's not a pretty toy: it's a real client that just happens to have taste.
+BATorrent is a desktop torrent client built on the [libtorrent](https://www.libtorrent.org/) engine. The difference is the front end: it reads each torrent's name, looks up the matching poster (movies and shows from TMDB, games from IGDB), and lays your downloads out as a grid of covers instead of a list of filenames. The engine is the same one qBittorrent and Deluge use, so the covers sit on top of a client that actually holds up.
 
-> **No ads. No telemetry. No "Pro" tier. No account.** The only request it makes on its own is the GitHub update check, and you can turn that off. The source is right here — read [`updater.cpp`](src/app/updater.cpp) and see for yourself.
+It's free and open source. No ads, no telemetry, no "Pro" tier, no account. The only network request it makes on its own is the update check against GitHub, and there's a switch to turn that off. If you want to confirm that, the code is [`updater.cpp`](src/services/integrations/updater.cpp).
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+## Why I built it
 
-## Why this exists
+I'm one developer in Brazil. I wanted a torrent client that took privacy seriously, ran natively on Windows, macOS and Linux, and didn't look like it was designed in 2009. I couldn't find one I liked, so I wrote it. It's MIT-licensed, which means no telemetry can be slipped in later and nobody can buy the project and bolt ads onto it. The interface ships in nine languages, because "useful" shouldn't mean "English only."
 
-I'm one developer in Brazil. I wanted a torrent client that took privacy seriously, ran natively on every desktop, and didn't look like it was built in 2009 — and I couldn't find one, so I built it. It's free and **MIT-licensed**: no strings, no telemetry sneaking in later, and it can't be quietly sold to a company that bolts on ads. Eight languages, because "useful" shouldn't mean "English only."
-
-## The look
+## The interface
 
 <p align="center">
   <img src="src/images/themes.gif" alt="Switching between built-in themes" width="860">
@@ -58,49 +54,46 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
   <img src="src/images/palette-demo.gif" alt="Command palette (Ctrl/⌘+K): fuzzy-find any torrent or action" width="860">
 </p>
 
-- **Automatic cover art** — it reads the torrent name and pulls the real poster (movies & shows via TMDB, games via IGDB) into a grid view. One click flips to a tight list.
-- **Six themes** — Dark, Light, Midnight, Sakura, Dark Star, and a fully **Custom** one (your own background + accent colours), each with optional anime accent art.
-- **Command palette** — Ctrl/⌘+K jumps to any torrent or action: pause all, toggle alt speed, open any page, no mouse needed.
-- Real-time speed graph, state-coloured progress, a rich tray popup with live speeds and ETA — the details that make it *feel* finished.
+- **Cover art.** It resolves posters from the torrent name and shows them in a grid. One click switches to a dense list when you want detail over decoration.
+- **Six themes.** Dark, Light, Midnight, Sakura, Dark Star, and a Custom theme where you pick your own background and accent colour. Each supports optional anime accent art.
+- **Command palette.** Ctrl/⌘+K opens a fuzzy finder for any torrent or action: pause all, toggle alternate speed, jump to any page, no mouse required.
+- **Live status.** A real-time speed graph, state-coloured progress bars, and a tray popup with current speeds and ETA.
 
-## What it actually does
+## What it does
 
-| | |
-|---|---|
-|  **Privacy first** | VPN interface binding + **kill switch** (drops all traffic if the tunnel dies), PT mode for private trackers, Tor preset, anonymous handshake, anti-leecher blocking |
-|  **Find & add** | Built-in search (incl. open CIS/RuTor sources, no login), Smart Paste (magnet / `.torrent` / `thunder://` / hash on Ctrl+V), RSS auto-download with regex filters, drag-and-drop |
-|  **Control it anywhere** | Browser WebUI with **QR pairing** — scan from your phone, no typing IPs. The QR is generated locally; your address never leaves the machine |
-|  **Watch & organise** | Stream while downloading, auto-extract archives, categories + tags, Plex/Jellyfin/Emby library refresh on completion |
-|  **Stay in the loop** | Native desktop notifications, Telegram alerts, Discord Rich Presence ("Downloading X · 67%") |
+**Privacy.** Bind to a specific VPN interface with a kill switch that drops all traffic if the tunnel goes down. Private-tracker mode, a Tor preset, anonymous handshake, and anti-leecher client blocking.
+
+**Finding and adding.** Built-in search (including open CIS/RuTor sources that need no login), Smart Paste that recognises a magnet, `.torrent`, `thunder://` link or info hash on Ctrl+V, RSS auto-download with regex filters, and drag-and-drop.
+
+**Remote control.** A browser WebUI with QR pairing: scan the code from your phone instead of typing IP addresses. The QR is generated on your machine and the address never leaves it.
+
+**Watching and organising.** Stream a file while it's still downloading, auto-extract archives on completion, sort with categories and tags, and refresh a Plex, Jellyfin or Emby library when a download finishes.
+
+**Notifications.** Native desktop alerts, Telegram messages, and Discord Rich Presence.
 
 <details>
-<summary><b>…and the long tail</b> (click to expand)</summary>
+<summary><b>Full feature list</b></summary>
 
-Per-file priority · sequential download · auto-tracker injection · content-layout control · excluded-file regex · temp download path · completed-state with seeding windows · auto-pause on file errors · global + per-torrent ratio/time limits · bandwidth scheduler (hour + day) · import from qBittorrent · create `.torrent` files · torrent inspector · IP blocklists · protocol encryption · Gitee update mirror · auto-shutdown when done · Windows Defender exclusion · full backup/restore · recently-removed history · force start · built-in log viewer + diagnostics + IP-leak test · locale-aware formatting · keyboard shortcuts.
+Per-file priority, sequential download, automatic tracker injection, content-layout control, excluded-file regex, separate temp download path, a completed state with seeding windows, auto-pause on file errors, global and per-torrent ratio and time limits, a bandwidth scheduler by hour and day, import from qBittorrent, `.torrent` creation, a torrent inspector, IP blocklists, protocol encryption, a Gitee update mirror, auto-shutdown when downloads finish, a Windows Defender exclusion helper, full backup and restore, recently-removed history, force start, a built-in log viewer with diagnostics and an IP-leak test, locale-aware formatting, and keyboard shortcuts.
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+## Install
 
-## Get it
-
-| Platform | | |
+| Platform | Download | Requirements |
 |---|---|---|
-| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [Installer](https://batorrent.com/win) · [Portable](https://batorrent.com/portable) | Windows 10+ |
-| **macOS** | **`brew install --cask Mateuscruz19/batorrent/batorrent`** · [`.dmg`](https://batorrent.com/mac) | macOS 12+ · Apple Silicon |
+| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6), [Installer](https://batorrent.com/win), or [Portable](https://batorrent.com/portable) | Windows 10 or later |
+| **macOS** | `brew install --cask Mateuscruz19/batorrent/batorrent` or the [`.dmg`](https://batorrent.com/mac) | macOS 12+, Apple Silicon |
 | **Linux** | [AppImage](https://batorrent.com/linux) | glibc 2.35+ |
 
-Then just drop a `.torrent` or magnet onto the window. That's it.
+Once it's running, drop a `.torrent` file or a magnet link onto the window.
 
-<sub>**macOS:** not notarised yet (Apple's dev program is paid). Homebrew is the smoothest path — `brew` strips the quarantine flag, so it opens with no Gatekeeper prompt. With the `.dmg`, right-click → **Open** the first time.</sub>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
+<sub><b>macOS note:</b> the app isn't notarised yet (Apple's developer program is a paid subscription). Homebrew is the smoothest route because <code>brew</code> removes the quarantine flag, so it opens without a Gatekeeper prompt. If you use the <code>.dmg</code> instead, right-click the app and choose <b>Open</b> the first time.</sub>
 
 <details>
-<summary><b>Build from source & engineering notes</b></summary>
+<summary><b>Build from source</b></summary>
 
-### Requirements
-C++17 · CMake 3.16+ · Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`) · libtorrent-rasterbar 2.0+ · Boost · optional Qt6Keychain.
+**Requirements:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`), libtorrent-rasterbar 2.0+, Boost, and optionally Qt6Keychain.
 
 ```bash
 # Debian / Ubuntu
@@ -108,9 +101,14 @@ sudo apt install build-essential cmake qt6-base-dev qt6-svg-dev qt6-multimedia-d
     libtorrent-rasterbar-dev libboost-dev libssl-dev
 cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && ./build/BATorrent
 ```
-(macOS: `brew install qt libtorrent-rasterbar boost openssl`. Windows: Qt installer + `vcpkg install libtorrent:x64-windows`.)
 
-### Quality & security
+On macOS: `brew install qt libtorrent-rasterbar boost openssl`.
+On Windows: the Qt installer plus `vcpkg install libtorrent:x64-windows`.
+
+</details>
+
+<details>
+<summary><b>Quality and security</b></summary>
 
 <p>
   <a href="https://github.com/BATorrent-app/BATorrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/BATorrent-app/BATorrent/actions/workflows/codeql.yml/badge.svg"></a>
@@ -120,20 +118,20 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && ./build/B
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
-- **Tests** — Catch2 suite (unit, security, memory) on every CI build; new backend behaviour gets a test.
-- **Sanitizers** — passes clean under AddressSanitizer + UndefinedBehaviorSanitizer (0 leaks / UAF / UB).
-- **Reviewed** before each release for memory/thread safety, WebUI auth, injection, path traversal, input validation, and secret handling. Secrets live in the OS keychain, never plaintext; the WebUI only binds to the network once you set a password.
+- A Catch2 test suite (unit, security, memory) runs on every CI build; new backend behaviour ships with a test.
+- The build passes clean under AddressSanitizer and UndefinedBehaviorSanitizer.
+- Before each release the code is reviewed for memory and thread safety, WebUI authentication, injection, path traversal, input validation, and secret handling. Secrets go in the OS keychain rather than plaintext, and the WebUI only opens to the network after you set a password.
 
 </details>
 
 ## Contributing
 
-Issues and PRs welcome — for anything non-trivial, open an issue first. Bug reports: include your platform + version (`Help → About`) and steps to reproduce. Translations especially appreciated.
+Issues and pull requests are welcome. For anything non-trivial, open an issue first so we can agree on the approach. Bug reports are most useful with your platform and version (from `Help → About`) and the steps to reproduce. Translations are especially appreciated.
 
-## License & trademark
+## License and trademark
 
-The **code** is [MIT](LICENSE) © 2024–2026 Mateus Cruz — fork it, build on it, ship it.
+The **code** is [MIT](LICENSE), © 2024–2026 Mateus Cruz. Fork it, build on it, ship it.
 
-The **name "BATorrent" and the logo** are the project's identity, not part of the code license — please give redistributed forks their own name so users always know which build is official and malware-free. Details: [TRADEMARK.md](TRADEMARK.md). Good-faith forks and contributions are very welcome.
+The **name "BATorrent" and the logo** are the project's identity and are not covered by the code license. If you redistribute a fork, please give it its own name so users can tell which build is the official one. The details are in [TRADEMARK.md](TRADEMARK.md). Good-faith forks and contributions are welcome.
 
-Made in Brazil
+Made in Brazil.
