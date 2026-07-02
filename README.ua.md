@@ -20,7 +20,6 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <p align="center">
   <img src="src/images/with_startup.gif" alt="BATorrent — відкрив і користуйся, обкладинки підтягуються самі" width="860">
@@ -28,9 +27,8 @@
 
 Більшість торент-клієнтів виглядають як податкова декларація. Цей показує ваші завантаження як **стіну обкладинок фільмів, серіалів та ігор** — те саме, що ви впізнаєте в Netflix чи Steam — і дозволяє вдягнути його в шість тем (або власні шпалери). Під капотом — перевірений рушій **libtorrent**, тож це не гарненька іграшка: це справжній клієнт, який просто має смак.
 
-> **Без реклами. Без телеметрії. Без «Pro»-версії. Без акаунта.** Єдиний запит, який він робить сам, — це перевірка оновлень на GitHub, і її можна вимкнути. Вихідний код прямо тут — прочитайте [`updater.cpp`](src/app/updater.cpp) і переконайтеся самі.
+> **Без реклами. Без телеметрії. Без «Pro»-версії. Без акаунта.** Єдиний запит, який він робить сам, — це перевірка оновлень на GitHub, і її можна вимкнути. Вихідний код прямо тут — прочитайте [`updater.cpp`](src/services/integrations/updater.cpp) і переконайтеся самі.
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Навіщо це існує
 
@@ -75,7 +73,6 @@
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Завантажити
 
@@ -89,7 +86,6 @@
 
 <sub>**macOS:** поки без нотаризації (програма розробника Apple платна). Homebrew — найгладший шлях: `brew` знімає прапорець карантину, тож застосунок відкривається без діалогу Gatekeeper. Із `.dmg` уперше — правий клік → **Відкрити**.</sub>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <details>
 <summary><b>Збірка з джерел та інженерні нотатки</b></summary>

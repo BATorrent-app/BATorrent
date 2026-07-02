@@ -20,7 +20,6 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <p align="center">
   <img src="src/images/with_startup.gif" alt="BATorrent — ábrelo y listo, las carátulas se resuelven solas" width="860">
@@ -28,9 +27,8 @@
 
 La mayoría de los clientes de torrent parecen un formulario de Hacienda. Este muestra tus descargas como un **muro de carátulas de películas, series y juegos** — lo mismo que reconoces en Netflix o Steam — y te deja vestirlo con seis temas (o tu propio fondo de pantalla). Por dentro lleva el probado motor **libtorrent**, así que no es un juguete bonito: es un cliente de verdad que da la casualidad de que tiene buen gusto.
 
-> **Sin anuncios. Sin telemetría. Sin versión "Pro". Sin cuenta.** La única petición que hace por su cuenta es la comprobación de actualizaciones en GitHub, y puedes desactivarla. El código está aquí mismo — lee [`updater.cpp`](src/app/updater.cpp) y compruébalo tú mismo.
+> **Sin anuncios. Sin telemetría. Sin versión "Pro". Sin cuenta.** La única petición que hace por su cuenta es la comprobación de actualizaciones en GitHub, y puedes desactivarla. El código está aquí mismo — lee [`updater.cpp`](src/services/integrations/updater.cpp) y compruébalo tú mismo.
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Por qué existe
 
@@ -75,7 +73,6 @@ Prioridad por archivo · descarga secuencial · inyección automática de tracke
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Conseguirlo
 
@@ -89,7 +86,6 @@ Después solo arrastra un `.torrent` o un magnet a la ventana. Eso es todo.
 
 <sub>**macOS:** todavía sin notarizar (el programa de desarrollador de Apple es de pago). Homebrew es la vía más suave — `brew` quita la marca de cuarentena, así que abre sin el aviso de Gatekeeper. Con el `.dmg`, clic derecho → **Abrir** la primera vez.</sub>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <details>
 <summary><b>Compilar desde el código fuente y notas de ingeniería</b></summary>

@@ -20,7 +20,6 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <p align="center">
   <img src="src/images/with_startup.gif" alt="BATorrent — открыл и пользуйся, обложки подтягиваются сами" width="860">
@@ -28,9 +27,8 @@
 
 Большинство торрент-клиентов выглядят как налоговая декларация. Этот показывает ваши загрузки **стеной обложек фильмов, сериалов и игр** — как на Netflix или в Steam — и позволяет нарядить его в шесть тем (или ваши собственные обои). Под капотом — проверенный движок **libtorrent**, так что это не красивая игрушка: это настоящий клиент, у которого просто оказался вкус.
 
-> **Без рекламы. Без телеметрии. Без «Pro»-версии. Без аккаунта.** Единственный запрос, который он делает сам — проверка обновлений на GitHub, и её можно отключить. Исходный код прямо здесь — откройте [`updater.cpp`](src/app/updater.cpp) и убедитесь сами.
+> **Без рекламы. Без телеметрии. Без «Pro»-версии. Без аккаунта.** Единственный запрос, который он делает сам — проверка обновлений на GitHub, и её можно отключить. Исходный код прямо здесь — откройте [`updater.cpp`](src/services/integrations/updater.cpp) и убедитесь сами.
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Зачем это нужно
 
@@ -75,7 +73,6 @@
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 ## Скачать
 
@@ -89,7 +86,6 @@
 
 <sub>**macOS:** пока без нотаризации (программа разработчика Apple платная). Homebrew — самый гладкий путь: `brew` снимает флаг карантина, и приложение открывается без диалога Gatekeeper. С `.dmg` в первый раз — правый клик → **Открыть**.</sub>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=dc2626&height=3&width=100%25" width="100%"/>
 
 <details>
 <summary><b>Сборка из исходников и инженерные заметки</b></summary>
