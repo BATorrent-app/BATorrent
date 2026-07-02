@@ -1,5 +1,22 @@
 # Changelog
 
+## v4.3.1
+
+A hotfix for v4.3.0, which failed to launch on Windows.
+
+### Fixed
+- **Windows: the app launches again.** v4.3.0 shipped the wrong libtorrent DLL next
+  to the executable — a build that didn't match the one the app was compiled
+  against — so Windows refused to start with a "procedure entry point not found"
+  error. The correct engine library is now packaged. (#20)
+
+### Under the hood
+- Code-review pass over the engine's IPC layer, networking services, the web UI,
+  and the QML views: hardened the IPC frame parser against malformed input, added
+  request timeouts to every network client, sped up release-name parsing, and
+  fixed a handful of latent QML property bugs. No behaviour changes you'll notice —
+  the app is just steadier.
+
 ## v4.3.0 — "Continue"
 
 The first release since v4.1.0, and a big one. Pick up where you left off, see what's actually worth downloading, and feel the hundreds of small decisions that finally make the whole app *fit*: bigger heros and real swarm health, automatic subtitles, a command palette, and a long list of long-standing bugs put to rest.
