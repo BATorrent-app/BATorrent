@@ -74,6 +74,15 @@ Prioridad por archivo · descarga secuencial · inyección automática de tracke
 </details>
 
 
+## El motor
+
+La mayoría de las apps de torrent enlazan libtorrent estándar. BATorrent lleva un pequeño **fork parcheado** que le permite cambiar comportamientos del motor que la API pública no alcanza:
+
+- **Arranque más rápido de la tubería.** En un enlace de gran ancho de banda y alta latencia, la tubería de peticiones estándar crece de a un paso; el fork la hace crecer geométricamente, llenando una tubería ancha en una fracción de las idas y vueltas. Medido en ~+27 % en un enlace rápido en el propio benchmark A/B del proyecto, sin los baches del estándar entre ejecuciones, y nunca empeora.
+- **Preferencia por peers del mismo país.** Una base de datos GeoIP sin conexión (db-ip Lite) etiqueta cada peer por país, y el ranking de peers del fork prefiere los de tu propio país cuando puede elegir — lo que suele significar menor latencia y menos rutas transfronterizas con throttling.
+
+Ambas son funciones del fork en tiempo de compilación (desactivadas en un build estándar) y se aplican como parches versionados en [`third_party/patches/`](third_party/patches), no como una copia incrustada.
+
 ## Conseguirlo
 
 | Plataforma | | |

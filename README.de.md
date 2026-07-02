@@ -74,6 +74,15 @@ Priorität pro Datei · sequenzieller Download · automatisches Tracker-Einspiel
 </details>
 
 
+## Der Motor
+
+Die meisten Torrent-Apps binden das Standard-libtorrent ein. BATorrent liefert einen kleinen **gepatchten Fork** mit und kann so Engine-Verhalten ändern, an das die öffentliche API nicht herankommt:
+
+- **Schnellerer Pipeline-Aufbau.** Auf einer Verbindung mit hoher Bandbreite und hoher Latenz wächst die Standard-Anfrage-Pipeline Schritt für Schritt; der Fork lässt sie geometrisch wachsen und füllt so eine dicke Leitung in einem Bruchteil der Roundtrips. Im projekteigenen A/B-Benchmark rund +27 % auf einer schnellen Verbindung gemessen, ohne die Aussetzer des Standards zwischen den Läufen — und nie langsamer.
+- **Bevorzugung von Peers im eigenen Land.** Eine Offline-GeoIP-Datenbank (db-ip Lite) markiert jeden Peer nach Land, und das Peer-Ranking des Forks bevorzugt bei freier Wahl Peers im eigenen Land — das bedeutet meist geringere Latenz und weniger gedrosselte grenzüberschreitende Routen.
+
+Beides sind Compile-Time-Funktionen des Forks (in einem Standard-Build aus) und werden als versionierte Patches unter [`third_party/patches/`](third_party/patches) angewendet, nicht als eingebettete Kopie.
+
 ## Holen
 
 | Plattform | | |
