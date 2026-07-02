@@ -1,0 +1,71 @@
+diff --git a/include/libtorrent/aux_/ip_helpers.hpp b/include/libtorrent/aux_/ip_helpers.hpp
+index 82eef958b..3ae336943 100644
+--- a/include/libtorrent/aux_/ip_helpers.hpp
++++ b/include/libtorrent/aux_/ip_helpers.hpp
+@@ -39,6 +39,8 @@ POSSIBILITY OF SUCH DAMAGE.
+ #include "libtorrent/address.hpp"
+ #include "libtorrent/aux_/export.hpp"
+ 
++#include <functional>
++
+ namespace libtorrent {
+ namespace aux {
+ 
+@@ -48,6 +50,13 @@ namespace aux {
+ 	TORRENT_EXTRA_EXPORT bool is_teredo(address const& addr);
+ 	TORRENT_EXTRA_EXPORT bool is_ip_address(std::string const& host);
+ 
++	// BATorrent fork: optional geo-locality hook. is_geo_local() returns true when
++	// the app-supplied classifier considers this address "near" (same country, via
++	// our local GeoIP DB). compare_peer() uses it to try same-country peers right
++	// after LAN-local ones. A null classifier = feature off (false for everyone).
++	TORRENT_EXTRA_EXPORT bool is_geo_local(address const& a);
++	TORRENT_EXTRA_EXPORT void set_geo_local_fn(std::function<bool(address const&)> fn);
++
+ 	// internal
+ 	template <typename Endpoint>
+ 	bool is_v4(Endpoint const& ep)
+diff --git a/src/ip_helpers.cpp b/src/ip_helpers.cpp
+index 29dc2ce04..5c7b2d2ae 100644
+--- a/src/ip_helpers.cpp
++++ b/src/ip_helpers.cpp
+@@ -125,6 +125,22 @@ namespace aux {
+ 		return a == address_v4() ? address_v6() : a;
+ 	}
+ 
++	// BATorrent fork: geo-locality hook (see ip_helpers.hpp). Single global
++	// classifier — the app has one session, so no per-session dispatch needed.
++	namespace {
++		std::function<bool(address const&)> g_geo_local_fn;
++	}
++
++	bool is_geo_local(address const& a)
++	{
++		return g_geo_local_fn ? g_geo_local_fn(a) : false;
++	}
++
++	void set_geo_local_fn(std::function<bool(address const&)> fn)
++	{
++		g_geo_local_fn = std::move(fn);
++	}
++
+ }
+ }
+ 
+diff --git a/src/peer_list.cpp b/src/peer_list.cpp
+index 1786a2b53..9c39574c5 100644
+--- a/src/peer_list.cpp
++++ b/src/peer_list.cpp
+@@ -120,6 +120,12 @@ namespace {
+ 		bool const rhs_local = aux::is_local(rhs->address());
+ 		if (lhs_local != rhs_local) return int(lhs_local) > int(rhs_local);
+ 
++		// BATorrent fork: after LAN-local, prefer same-country peers (GeoIP
++		// locality — classifier set by the app). Null classifier = no-op.
++		bool const lhs_geo = aux::is_geo_local(lhs->address());
++		bool const rhs_geo = aux::is_geo_local(rhs->address());
++		if (lhs_geo != rhs_geo) return int(lhs_geo) > int(rhs_geo);
++
+ 		if (lhs->last_connected != rhs->last_connected)
+ 			return lhs->last_connected < rhs->last_connected;
+ 
