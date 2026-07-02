@@ -205,7 +205,7 @@ TEST_CASE("Settings bridge: pairingActive reflects settings, not the keychain", 
     QSettings st;
     st.setValue("webUiEnabled", false);              // keep the ctor from starting a server
     SessionManager session;
-    QmlSettingsBridge bridge(&session);
+    QmlSettingsBridge bridge(&session, nullptr);     // no engine — applyWebUi() early-returns
 
     REQUIRE(bridge.webUiUser() == QStringLiteral("admin"));
     REQUIRE_FALSE(bridge.pairingActive());
@@ -348,7 +348,7 @@ TEST_CASE("Settings bridge: UI bool toggles read back as real bool", "[bridge][s
 {
     app();
     SessionManager s;
-    QmlSettingsBridge sb(&s);
+    QmlSettingsBridge sb(&s, nullptr);
 
     // Mimic the Windows DWORD readback: store the toggle as an int, not a bool.
     QSettings().setValue(QStringLiteral("showSplash"), 0);
