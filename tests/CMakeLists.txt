@@ -52,6 +52,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlposterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_games.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlthemebridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsettingsbridge.cpp
