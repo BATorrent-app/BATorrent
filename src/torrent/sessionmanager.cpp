@@ -47,6 +47,9 @@
 #include <QRegularExpression>
 #include <libtorrent/ip_filter.hpp>
 #include <boost/asio/ip/address.hpp>
+#ifdef BAT_LIBTORRENT_FORK
+#include <libtorrent/aux_/ip_helpers.hpp>   // fork-only geo-locality hook
+#endif
 
 // DHT routing table persisted across runs — a warm table means peer discovery
 // (and the download ramp) starts fast instead of re-bootstrapping the DHT from
@@ -333,12 +336,25 @@ SessionManager::SessionManager(QObject *parent)
         QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
             .filePath(QStringLiteral("stats-history.json")));
 
+#ifdef BAT_LIBTORRENT_FORK
+    // Same-country peer biasing (fork engine hook). The DB loads async; our own
+    // country comes from external_ip_alert. Whichever lands last installs it.
+    connect(&m_geoIp, &GeoIpProvider::loaded, this, &SessionManager::tryInstallGeoClassifier);
+    m_geoIp.start(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+                      .filePath(QStringLiteral("geoip")));
+#endif
+
     connect(&m_updateTimer, &QTimer::timeout, this, &SessionManager::updateStats);
     m_updateTimer.start(1000);
 }
 
 SessionManager::~SessionManager()
 {
+#ifdef BAT_LIBTORRENT_FORK
+    // Drop the geo classifier before the session tears down so no ranking call
+    // reaches into half-destroyed state. The lambda owns its own DB ref anyway.
+    lt::aux::set_geo_local_fn(nullptr);
+#endif
     // On shutdown we want a synchronous flush so resume files are durable
     // before Qt tears the app down. The periodic 5-min timer and the
     // piece_finished_alert path both call saveResumeData() (non-blocking).
@@ -2407,6 +2423,9 @@ void SessionManager::processAlerts()
         if (auto *tc = lt::alert_cast<lt::torrent_checked_alert>(a)) onTorrentChecked(tc);
         if (auto *mr = lt::alert_cast<lt::metadata_received_alert>(a)) onMetadataReceived(mr);
         if (auto *fc = lt::alert_cast<lt::file_completed_alert>(a)) onFileCompleted(fc);
+#ifdef BAT_LIBTORRENT_FORK
+        if (auto *xi = lt::alert_cast<lt::external_ip_alert>(a)) onExternalIp(xi);
+#endif
       } catch (const std::exception &e) {
         qWarning() << "[session] alert processing exception:" << e.what();
       } catch (...) {
@@ -2735,6 +2754,39 @@ void SessionManager::onFileCompleted(const lt::file_completed_alert *fc)
         }
     }
 }
+
+#ifdef BAT_LIBTORRENT_FORK
+void SessionManager::onExternalIp(const lt::external_ip_alert *ea)
+{
+    // libtorrent learns our public IP from peers/trackers. IPv4 only — the
+    // GeoIP DB is IPv4, and a v6 self-address can't seed the v4 classifier.
+    const lt::address &a = ea->external_address;
+    if (!a.is_v4()) return;
+    m_externalIp = a.to_v4().to_uint();
+    tryInstallGeoClassifier();
+}
+
+void SessionManager::tryInstallGeoClassifier()
+{
+    if (m_geoInstalled || m_externalIp == 0 || !m_geoIp.ready()) return;
+
+    char cc[2];
+    if (!m_geoIp.db()->lookup(m_externalIp, cc)) return;   // our IP not in the DB
+
+    // Capture the DB by shared_ptr so it outlives this provider if need be, and
+    // the country as two chars (no per-call allocation). The classifier runs on
+    // libtorrent's thread inside compare_peer; the DB is immutable post-load.
+    auto db = m_geoIp.db();
+    const char c0 = cc[0], c1 = cc[1];
+    lt::aux::set_geo_local_fn([db, c0, c1](lt::address const &a) -> bool {
+        return a.is_v4() && db->inCountry(a.to_v4().to_uint(), c0, c1);
+    });
+    m_geoInstalled = true;
+    Logger::instance().log(Logger::Info,
+        QStringLiteral("GeoIP: same-country peer biasing active (%1)")
+            .arg(QString::fromLatin1(cc, 2)));
+}
+#endif
 
 
 void SessionManager::checkSeedRatios()

@@ -1,5 +1,5 @@
 diff --git a/include/libtorrent/aux_/ip_helpers.hpp b/include/libtorrent/aux_/ip_helpers.hpp
-index 82eef958b..3ae336943 100644
+index 82eef958b..4d5b03707 100644
 --- a/include/libtorrent/aux_/ip_helpers.hpp
 +++ b/include/libtorrent/aux_/ip_helpers.hpp
 @@ -39,6 +39,8 @@ POSSIBILITY OF SUCH DAMAGE.
@@ -11,7 +11,7 @@ index 82eef958b..3ae336943 100644
  namespace libtorrent {
  namespace aux {
  
-@@ -48,6 +50,13 @@ namespace aux {
+@@ -48,6 +50,16 @@ namespace aux {
  	TORRENT_EXTRA_EXPORT bool is_teredo(address const& addr);
  	TORRENT_EXTRA_EXPORT bool is_ip_address(std::string const& host);
  
@@ -19,8 +19,11 @@ index 82eef958b..3ae336943 100644
 +	// the app-supplied classifier considers this address "near" (same country, via
 +	// our local GeoIP DB). compare_peer() uses it to try same-country peers right
 +	// after LAN-local ones. A null classifier = feature off (false for everyone).
-+	TORRENT_EXTRA_EXPORT bool is_geo_local(address const& a);
-+	TORRENT_EXTRA_EXPORT void set_geo_local_fn(std::function<bool(address const&)> fn);
++	// TORRENT_EXPORT (not EXTRA): set_geo_local_fn is called from the app, which
++	// links libtorrent as a shared lib on some platforms — EXTRA symbols resolve
++	// to BOOST_SYMBOL_IMPORT there and never leave the dylib (undefined at link).
++	TORRENT_EXPORT bool is_geo_local(address const& a);
++	TORRENT_EXPORT void set_geo_local_fn(std::function<bool(address const&)> fn);
 +
  	// internal
  	template <typename Endpoint>

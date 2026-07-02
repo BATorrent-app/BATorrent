@@ -29,6 +29,15 @@ public:
     // input is malformed or falls outside every known range.
     QString country(const QString &ipv4) const;
 
+    // Allocation-free lookup for a host-order IPv4 int. Writes the 2-char
+    // country code into out[2] and returns true, or returns false if the IP is
+    // outside every range. The peer-ranking hot path (compare_peer) uses these.
+    bool lookup(uint32_t ipv4, char out[2]) const;
+
+    // True iff the host-order IPv4 resolves to country code c0c1. No allocation
+    // — called once per peer per connect-candidate ranking.
+    bool inCountry(uint32_t ipv4, char c0, char c1) const;
+
     // Parse "1.2.3.4" → host-order uint32. Returns false on malformed input
     // (wrong octet count, non-numeric, or an octet > 255).
     static bool parseIpv4(const QString &s, uint32_t &out);
@@ -39,6 +48,8 @@ private:
         uint32_t end;
         char cc[2];
     };
+    // Range covering ip (start <= ip <= end), or nullptr if none.
+    const Range *find(uint32_t ip) const;
     std::vector<Range> m_ranges;   // sorted by start, non-overlapping after load
 };
 

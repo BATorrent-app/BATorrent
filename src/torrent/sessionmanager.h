@@ -8,6 +8,9 @@
 #include "torrent/types.h"
 #include "torrent/iengine.h"
 #include "services/platform/statshistory.h"
+#ifdef BAT_LIBTORRENT_FORK
+#include "services/integrations/geoipprovider.h"
+#endif
 #include <QObject>
 #include <QTimer>
 #include <QString>
@@ -449,6 +452,12 @@ private:
     void onTorrentChecked(const lt::torrent_checked_alert *tc);
     void onMetadataReceived(const lt::metadata_received_alert *mr);
     void onFileCompleted(const lt::file_completed_alert *fc);
+#ifdef BAT_LIBTORRENT_FORK
+    void onExternalIp(const lt::external_ip_alert *ea);
+    // Installs the same-country peer-ranking classifier once both our external
+    // IP and the GeoIP DB are known (either can arrive first). One-shot.
+    void tryInstallGeoClassifier();
+#endif
     void checkSeedRatios();
     void checkSeedingLimits();
     void checkInterfaceStatus();
@@ -485,6 +494,11 @@ private:
     mutable std::map<lt::torrent_handle, lt::torrent_status> m_statusCache;
     QTimer m_updateTimer;
     std::unique_ptr<StatsHistory> m_statsHistory;
+#ifdef BAT_LIBTORRENT_FORK
+    GeoIpProvider m_geoIp;
+    uint32_t m_externalIp = 0;      // our public IPv4 (host order), 0 = unknown
+    bool m_geoInstalled = false;    // classifier installed (one-shot)
+#endif
     bool m_dhtEnabled = true;
     int m_encryptionMode = 0;
     bool m_utpEnabled = true;

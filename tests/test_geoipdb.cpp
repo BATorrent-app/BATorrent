@@ -59,3 +59,27 @@ TEST_CASE("empty db never matches") {
     REQUIRE_FALSE(db.ready());
     REQUIRE(db.country("8.8.8.8").isEmpty());
 }
+
+TEST_CASE("lookup() and inCountry() mirror country() without allocating") {
+    GeoIpDb db;
+    db.loadCsv(QString::fromLatin1(kCsv));
+
+    auto ip = [](const char *s) { uint32_t v = 0; GeoIpDb::parseIpv4(s, v); return v; };
+
+    char cc[2] = {0, 0};
+    REQUIRE(db.lookup(ip("1.0.0.5"), cc));
+    REQUIRE((cc[0] == 'U' && cc[1] == 'S'));
+    REQUIRE(db.lookup(ip("2.100.5.9"), cc));
+    REQUIRE((cc[0] == 'B' && cc[1] == 'R'));
+
+    REQUIRE_FALSE(db.lookup(ip("1.0.4.0"), cc));   // gap
+    REQUIRE_FALSE(db.lookup(ip("200.1.1.1"), cc)); // above every range
+
+    REQUIRE(db.inCountry(ip("1.0.2.10"), 'C', 'N'));
+    REQUIRE_FALSE(db.inCountry(ip("1.0.2.10"), 'U', 'S')); // right IP, wrong CC
+    REQUIRE_FALSE(db.inCountry(ip("9.9.9.9"), 'D', 'E'));  // outside every range
+
+    GeoIpDb empty;
+    REQUIRE_FALSE(empty.lookup(ip("8.8.8.8"), cc));
+    REQUIRE_FALSE(empty.inCountry(ip("8.8.8.8"), 'U', 'S'));
+}

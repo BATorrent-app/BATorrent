@@ -74,17 +74,36 @@ int GeoIpDb::loadCsv(const QString &csv)
     return static_cast<int>(m_ranges.size());
 }
 
-QString GeoIpDb::country(const QString &ipv4) const
+const GeoIpDb::Range *GeoIpDb::find(uint32_t ip) const
 {
-    uint32_t ip = 0;
-    if (m_ranges.empty() || !parseIpv4(ipv4, ip)) return {};
-
+    if (m_ranges.empty()) return nullptr;
     // Largest range whose start <= ip, then confirm ip is within its end.
     auto it = std::upper_bound(m_ranges.begin(), m_ranges.end(), ip,
                                [](uint32_t v, const Range &r) { return v < r.start; });
-    if (it == m_ranges.begin()) return {};
+    if (it == m_ranges.begin()) return nullptr;
     --it;
-    if (ip <= it->end)
-        return QString::fromLatin1(it->cc, 2);
-    return {};
+    return ip <= it->end ? &*it : nullptr;
+}
+
+bool GeoIpDb::lookup(uint32_t ipv4, char out[2]) const
+{
+    const Range *r = find(ipv4);
+    if (!r) return false;
+    out[0] = r->cc[0];
+    out[1] = r->cc[1];
+    return true;
+}
+
+bool GeoIpDb::inCountry(uint32_t ipv4, char c0, char c1) const
+{
+    const Range *r = find(ipv4);
+    return r && r->cc[0] == c0 && r->cc[1] == c1;
+}
+
+QString GeoIpDb::country(const QString &ipv4) const
+{
+    uint32_t ip = 0;
+    if (!parseIpv4(ipv4, ip)) return {};
+    const Range *r = find(ip);
+    return r ? QString::fromLatin1(r->cc, 2) : QString{};
 }
