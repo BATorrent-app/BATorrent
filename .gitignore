@@ -18,10 +18,12 @@ compile_commands.json
 *.swp
 *~
 
-# Claude Code local settings + dev tooling (local only, not for the public repo)
-.claude/settings.local.json
-.claude/skills/
+# Claude Code — everything local only, never in the public repo (settings,
+# skills, and the operational PR-review workflows).
+.claude/
 /CLAUDE.md
+.github/workflows/claude.yml
+.github/workflows/claude-code-review.yml
 
 # Compiled
 *.o
