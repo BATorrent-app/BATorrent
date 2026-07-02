@@ -97,6 +97,7 @@
 <file>../src/qml/GetWatchOverlay.qml</file>
 <file>../src/qml/WrappedWindow.qml</file>
 <file>../src/qml/HubView.qml</file>
+<file>../src/qml/HubCard.qml</file>
 <file>../src/qml/LibraryView.qml</file>
 <file>../src/qml/theme/Theme.qml</file>
 <file>../src/qml/theme/qmldir</file>
