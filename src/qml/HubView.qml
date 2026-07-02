@@ -528,6 +528,7 @@ Item {
                     boundsBehavior: Flickable.StopAtBounds
                     delegate: HubCard {
                         required property var modelData
+                        host: page
                         item: modelData
                         isGame: modelData.installState !== undefined
                         requireDoubleClick: isGame
@@ -711,6 +712,7 @@ Item {
                     Repeater {
                         model: page.applyView(page.gameItems)
                         delegate: HubCard {
+                            host: page
                             item: modelData
                             isGame: true
                             requireDoubleClick: true
@@ -740,7 +742,7 @@ Item {
                     columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
                     Repeater {
                         model: page.applyView(page.library)
-                        delegate: HubCard { item: modelData; onShowDetail: page.openDetail(modelData, false); onPlay: page.playMovie(modelData); onContext: continueMenu.openFor(modelData.infoHash, modelData.fileIndex) }
+                        delegate: HubCard { host: page; item: modelData; onShowDetail: page.openDetail(modelData, false); onPlay: page.playMovie(modelData); onContext: continueMenu.openFor(modelData.infoHash, modelData.fileIndex) }
                     }
                 }
             }
@@ -761,220 +763,6 @@ Item {
             width: parent.width - 32
             color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
             horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
-        }
-    }
-
-    // 2:3 poster card with hover play, a download badge (while incomplete) and a
-    // watched-% bar along the bottom. Emits play().
-    component HubCard: Item {
-        id: card
-        property var item
-        property int cardW: 150
-        property bool requireDoubleClick: false
-        property bool isGame: false
-        readonly property int cardH: Math.round(cardW * 1.5)
-        signal play()
-        signal context()
-        signal showDetail()
-        implicitWidth: cardW
-        implicitHeight: cardH + 38
-
-        Item {
-            id: art
-            width: card.cardW; height: card.cardH
-            scale: ma.containsMouse ? 1.04 : 1.0
-            Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-
-            Rectangle {
-                anchors.fill: parent; radius: 10; color: "#161618"; clip: true
-                border.color: ma.containsMouse ? Theme.accent : Theme.hair; border.width: 1
-                opacity: img.status === Image.Ready ? 0 : 1
-                Behavior on opacity { NumberAnimation { duration: 250 } }
-                Behavior on border.color { ColorAnimation { duration: 140 } }
-                Image {
-                    anchors.centerIn: parent; width: parent.width * 0.4; height: width
-                    source: "qrc:/images/logo.svg"; sourceSize: Qt.size(width * 2, width * 2)
-                    fillMode: Image.PreserveAspectFit; opacity: 0.3
-                }
-            }
-            Image {
-                id: img; anchors.fill: parent
-                source: card.item.poster || ""
-                fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true
-                visible: false; sourceSize: Qt.size(card.cardW * 2, card.cardH * 2)
-            }
-            Rectangle { id: mask; anchors.fill: parent; radius: 10; visible: false; layer.enabled: true }
-            MultiEffect {
-                anchors.fill: parent; source: img; maskEnabled: true; maskSource: mask
-                opacity: img.status === Image.Ready ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-            }
-
-            // hover play overlay (movies: a play glyph; games use the state button below)
-            Rectangle {
-                anchors.fill: parent; radius: 10; color: "#66000000"
-                opacity: ma.containsMouse ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 140 } }
-                IconImg {
-                    anchors.centerIn: parent; src: "qrc:/icons/play.svg"; tint: "white"; s: 40
-                    visible: !card.isGame
-                }
-            }
-
-            // games: state-driven primary action (Install / Extracting / Play / …).
-            // The label IS the differentiation — never a blind double-click.
-            Rectangle {
-                id: stateBtn
-                visible: card.isGame && card.item.installState !== 0 && card.item.installState !== 5
-                anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right
-                anchors.margins: 6
-                height: 26; radius: 7
-                readonly property bool actionable: page.gameStateActionable(card.item)
-                color: actionable ? (sbma.containsMouse ? Qt.lighter(Theme.accent, 1.12) : Theme.accent)
-                                  : "#cc1b1b1f"
-                border.color: actionable ? "transparent" : Theme.hair
-                border.width: actionable ? 0 : 1
-                opacity: (ma.containsMouse || actionable) ? 1 : 0.92
-                Behavior on opacity { NumberAnimation { duration: 140 } }
-                Row {
-                    anchors.centerIn: parent; spacing: 5
-                    Spinner {
-                        visible: card.item.installState === 2 || card.item.installState === 3
-                        s: 13; tint: Theme.t2
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    Text {
-                        text: page.gameStateLabel(card.item)
-                        color: stateBtn.actionable ? Theme.accentText : Theme.t2
-                        font.pixelSize: 11; font.weight: Font.Bold; font.family: Theme.fontSans
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-                MouseArea {
-                    id: sbma; anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: stateBtn.actionable ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: page.gamePrimary(card.item)
-                }
-            }
-
-            // "playing now" badge
-            Rectangle {
-                visible: card.item.playing === true
-                anchors.top: parent.top; anchors.right: parent.right; anchors.margins: 6
-                radius: 6; color: Theme.accent
-                implicitWidth: pnl.width + 12; implicitHeight: 18
-                Text {
-                    id: pnl; anchors.centerIn: parent
-                    text: (i18n.language, i18n.t("hub_playing_now"))
-                    color: Theme.accentText; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans
-                }
-            }
-
-            // status pill: Installed (green) / ↓X% (downloading)
-            Rectangle {
-                anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 6
-                radius: 6; color: "#cc000000"
-                implicitWidth: dlRow.width + 12; implicitHeight: 18
-                Row {
-                    id: dlRow; anchors.centerIn: parent; spacing: 5
-                    Rectangle { visible: card.item.completed; width: 6; height: 6; radius: 3; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: card.item.completed ? i18n.t("hub_installed") : ("↓ " + Math.round((card.item.progress || 0) * 100) + "%")
-                        color: card.item.completed ? Theme.grn : Theme.accent
-                        font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                    }
-                }
-            }
-
-            // elapsed / total time (resume)
-            Rectangle {
-                visible: (card.item.watchedPct || 0) > 0 && (card.item.durMs || 0) > 0
-                anchors.bottom: parent.bottom; anchors.right: parent.right
-                anchors.bottomMargin: 12; anchors.rightMargin: 6
-                radius: 5; color: "#cc000000"
-                implicitWidth: tlabel.width + 12; implicitHeight: 17
-                Text {
-                    id: tlabel; anchors.centerIn: parent
-                    text: page.fmtTime(card.item.resumeMs) + " / " + page.fmtTime(card.item.durMs)
-                    color: "#e8e8ec"; font.pixelSize: 9; font.weight: Font.DemiBold; font.family: Theme.fontMono
-                }
-            }
-
-            // watched-% bar
-            Rectangle {
-                visible: (card.item.watchedPct || 0) > 0
-                anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right
-                anchors.margins: 5
-                height: 4; radius: 2; color: "#99000000"
-                Rectangle {
-                    anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
-                    width: parent.width * Math.min(1, card.item.watchedPct)
-                    radius: 2; color: Theme.accent
-                }
-            }
-        }
-
-        Text {
-            id: titleLabel
-            anchors.top: art.bottom; anchors.topMargin: 8
-            width: card.cardW
-            text: card.item.title || ""
-            color: ma.containsMouse ? Theme.t1 : Theme.t2
-            font.pixelSize: 12; font.weight: Font.Medium; font.family: Theme.fontSans
-            elide: Text.ElideRight; maximumLineCount: 1
-            Behavior on color { ColorAnimation { duration: 140 } }
-        }
-        Text {
-            anchors.top: titleLabel.bottom; anchors.topMargin: 2
-            width: card.cardW
-            visible: text.length > 0
-            text: (i18n.language, page.cardStatus(card.item, card.isGame))
-            color: card.item.playing === true ? Theme.accent : Theme.t4
-            font.pixelSize: 10; font.family: Theme.fontSans
-            elide: Text.ElideRight
-        }
-
-        MouseArea {
-            id: ma; anchors.fill: parent
-            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            // single click → detail drawer; double click → quick-play
-            onClicked: function (mouse) {
-                if (mouse.button === Qt.RightButton) { card.context(); return }
-                card.showDetail()
-            }
-            onDoubleClicked: card.play()
-        }
-
-        // rich hover card: genres + description (games carry IGDB metadata)
-        ToolTip {
-            id: richTip
-            parent: card
-            visible: ma.containsMouse && (card.item.description || "").length > 0
-            delay: 600
-            width: 300
-            padding: 12
-            x: card.cardW + 10
-            y: (card.cardH - height) / 2
-            contentItem: ColumnLayout {
-                spacing: 6
-                Text {
-                    visible: text.length > 0
-                    text: ((card.item.genres && card.item.genres.length > 0) ? card.item.genres.join("  ·  ") : "")
-                          + (((card.item.rating || 0) > 0) ? ((card.item.genres && card.item.genres.length > 0 ? "   " : "") + "★ " + Number(card.item.rating).toFixed(1)) : "")
-                    color: Theme.t4; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                    Layout.maximumWidth: 276; wrapMode: Text.WordWrap
-                }
-                Text {
-                    text: card.item.description || ""
-                    width: 276; Layout.maximumWidth: 276
-                    wrapMode: Text.WordWrap; maximumLineCount: 8; elide: Text.ElideRight
-                    color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; lineHeight: 1.35
-                }
-            }
-            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 9 }
         }
     }
 
