@@ -27,6 +27,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_streaming.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_config.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_persistence.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_categories.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_pertorrent.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
     ${CMAKE_SOURCE_DIR}/src/services/platform/translator.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/statshistory.cpp
