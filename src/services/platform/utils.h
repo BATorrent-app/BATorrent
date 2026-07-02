@@ -13,6 +13,7 @@
 #include <QFileInfo>
 #include <QLocale>
 #include <QProcess>
+#include <QFile>
 #include <QUrl>
 
 #if defined(Q_OS_WIN)
@@ -127,6 +128,35 @@ inline void revealTorrentRoot(const QString &savePath, const QString &name)
         revealInFileManager(base + ".!bt");
     else
         revealInFileManager(savePath);
+}
+
+// Prefer a content-sniffing player (VLC/mpv/IINA) — they play a still-downloading
+// or ".!bt"-suffixed file that the OS default handler would refuse — then fall back.
+inline bool launchMediaPlayer(const QString &path)
+{
+#if defined(Q_OS_MACOS)
+    for (const QString &app : {QStringLiteral("VLC"), QStringLiteral("IINA"),
+                               QStringLiteral("mpv"), QStringLiteral("QuickTime Player")})
+        if (QProcess::startDetached(QStringLiteral("open"), {QStringLiteral("-a"), app, path}))
+            return true;
+    return QProcess::startDetached(QStringLiteral("open"), {path});
+#elif defined(Q_OS_WIN)
+    static const QStringList exes = {
+        QStringLiteral("C:/Program Files/VideoLAN/VLC/vlc.exe"),
+        QStringLiteral("C:/Program Files (x86)/VideoLAN/VLC/vlc.exe"),
+        QStringLiteral("C:/Program Files/mpv/mpv.exe")};
+    for (const QString &exe : exes)
+        if (QFile::exists(exe) && QProcess::startDetached(exe, {path}))
+            return true;
+    for (const QString &cmd : {QStringLiteral("vlc"), QStringLiteral("mpv")})
+        if (QProcess::startDetached(cmd, {path})) return true;
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+#else
+    for (const QString &cmd : {QStringLiteral("vlc"), QStringLiteral("mpv"),
+                               QStringLiteral("celluloid")})
+        if (QProcess::startDetached(cmd, {path})) return true;
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+#endif
 }
 
 // Torrent site APIs ship titles with raw HTML entities ("1966&ndash;1968",
