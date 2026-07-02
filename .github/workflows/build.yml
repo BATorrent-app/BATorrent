@@ -165,6 +165,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive   # the vendored libtorrent fork
+
+      # Apply our engine patches (fast_ramp + geo-locality) onto the submodule.
+      # git-bash ships on windows-latest, so the same shell script works here.
+      - name: Apply fork patches
+        shell: bash
+        run: ./scripts/apply-fork-patches.sh
 
       - name: Install Qt
         uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
@@ -185,7 +193,11 @@ jobs:
           path: C:\vcpkg\installed
           key: vcpkg-libtorrent-x64-windows-v1
 
-      - name: Install libtorrent via vcpkg
+      # We build libtorrent from our vendored fork source (BAT_LIBTORRENT_SOURCE),
+      # but the vcpkg libtorrent port is still the cleanest way to pull the full
+      # Boost + OpenSSL dependency set into the vcpkg toolchain — our source build
+      # links those. The vcpkg-built libtorrent binary itself goes unused.
+      - name: Install libtorrent deps via vcpkg
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: C:\vcpkg\vcpkg install libtorrent:x64-windows
 
@@ -240,6 +252,7 @@ jobs:
           $sentryArgs = @()
           if ($env:SENTRY_CMAKE_ARGS) { $sentryArgs = $env:SENTRY_CMAKE_ARGS -split ' ' }
           cmake -B build -DCMAKE_BUILD_TYPE=Release `
+            -DBAT_LIBTORRENT_SOURCE=ON `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             @sentryArgs
           cmake --build build --config Release
@@ -252,6 +265,9 @@ jobs:
           windeployqt --qmldir src/qml --compiler-runtime release/BATorrent.exe
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
+          # If the fork built libtorrent as a shared lib (torrent-rasterbar.dll),
+          # it lands in build/Release, not vcpkg — ship it too. No-op when static.
+          Get-ChildItem "build/Release/*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination release/
           if ($env:SENTRY_ENABLED -eq "1" -and $env:BAT_SENTRY_HANDLER) { Copy-Item "$env:BAT_SENTRY_HANDLER" release/ }
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
@@ -321,6 +337,12 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive   # the vendored libtorrent fork
+
+      # Apply our engine patches (fast_ramp + geo-locality) onto the submodule.
+      - name: Apply fork patches
+        run: ./scripts/apply-fork-patches.sh
 
       - name: Install Qt
         uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
@@ -368,7 +390,8 @@ jobs:
           BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix libtorrent-rasterbar);$(brew --prefix openssl)" \
+            -DBAT_LIBTORRENT_SOURCE=ON \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix boost);$(brew --prefix openssl)" \
             ${SENTRY_CMAKE_ARGS:-}
           cmake --build build
 
