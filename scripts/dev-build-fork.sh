@@ -61,6 +61,14 @@ fi
 echo "Qt prefix: $QT_PREFIX"
 SSL_PREFIX="$(brew --prefix openssl@3)"
 
+# Apply our engine patches onto the vendored libtorrent (idempotent) — they live
+# as versioned diffs in third_party/patches/, not as working-tree edits.
+if [[ -e third_party/libtorrent/.git ]]; then
+  ./scripts/apply-fork-patches.sh
+else
+  echo "warning: third_party/libtorrent not initialized — run: git submodule update --init --recursive"
+fi
+
 # libtorrent is built from source (the fork), so no LT prefix here.
 CMAKE_ARGS=(
   -DBAT_LIBTORRENT_SOURCE=ON
