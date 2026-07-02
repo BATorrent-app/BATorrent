@@ -53,6 +53,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/sessionmanager_network.cpp
     src/torrent/sessionmanager_security.cpp
     src/torrent/ipblocklist.cpp
+    src/torrent/proxycontroller.cpp
     src/ipc/enginehost.cpp
     src/ipc/ipcengine.cpp
     src/services/platform/translator.cpp

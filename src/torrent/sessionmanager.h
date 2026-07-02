@@ -19,6 +19,7 @@
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/torrent_status.hpp>
 #include <libtorrent/alert_types.hpp>
+#include "torrent/proxycontroller.h"
 #include <QMap>
 #include <QSet>
 #include <map>
@@ -638,13 +639,8 @@ private:
     bool m_killSwitchActive = false;
     std::set<lt::torrent_handle> m_killSwitchPaused;
 
-    // Proxy
-    int m_proxyType = 0; // 0=none, 1=SOCKS5, 2=HTTP
-    QString m_proxyHost;
-    int m_proxyPort = 0;
-    QString m_proxyUser;
-    QString m_proxyPass;
-    bool m_proxyLeakProof = true;   // kill leak vectors while a proxy is active
+    // Proxy (SOCKS5/HTTP + leak-proof mode) — config + settings-building live here.
+    bat::ProxyController m_proxy;
 
     // IP filter
     QString m_ipFilterPath;

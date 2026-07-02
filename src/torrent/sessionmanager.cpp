@@ -287,11 +287,9 @@ SessionManager::SessionManager(QObject *parent)
     if (settings.value("listenPort", 0).toInt() > 0) setListenPort(settings.value("listenPort").toInt());
     setKillSwitchEnabled(settings.value("killSwitchEnabled", false).toBool());
     setAutoResumeOnReconnect(settings.value("autoResumeOnReconnect", false).toBool());
-    m_proxyLeakProof = settings.value("proxyLeakProof", true).toBool();
-    if (settings.value("proxyType", 0).toInt() != 0)
-        setProxySettings(settings.value("proxyType").toInt(), settings.value("proxyHost").toString(),
-                         settings.value("proxyPort").toInt(), settings.value("proxyUser").toString(),
-                         settings.value("proxyPass").toString());
+    m_proxy.loadFromSettings();
+    if (m_proxy.type() != 0)
+        m_session.apply_settings(m_proxy.settings(m_anonymousMode));
     setAutoMove(settings.value("autoMoveEnabled", false).toBool(),
                 settings.value("autoMovePath").toString());
     m_preallocate = settings.value("preallocate", false).toBool();
