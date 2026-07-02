@@ -264,10 +264,26 @@ jobs:
           Copy-Item build/Release/BATorrent.exe release/
           windeployqt --qmldir src/qml --compiler-runtime release/BATorrent.exe
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
-          Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination release/
-          # If the fork built libtorrent as a shared lib (torrent-rasterbar.dll),
-          # it lands in build/Release, not vcpkg — ship it too. No-op when static.
-          Get-ChildItem "build/Release/*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination release/
+          # vcpkg's libtorrent is only a vehicle to pull Boost/OpenSSL into the
+          # toolchain — its torrent-rasterbar.dll is a DIFFERENT build from our
+          # vendored fork and must NEVER ship. BATorrent.exe is compiled against
+          # the fork's headers (libtorrent::session_params, …); shipping vcpkg's
+          # DLL makes the loader look for an entry point that build doesn't export
+          # → "entry point not found" crash on launch (issue #20, all of v4.3.0).
+          Get-ChildItem "$vcpkgBin/*.dll" |
+            Where-Object { $_.Name -ne 'torrent-rasterbar.dll' } |
+            Copy-Item -Destination release/
+          # Ship the fork's own libtorrent DLL. Built via add_subdirectory, it
+          # lands under the libtorrent subtree of build/ — NOT build/Release, which
+          # is why the old glob silently missed it and vcpkg's DLL shipped instead.
+          # Search the whole build tree; fail loudly rather than ship a broken zip.
+          $forkDll = Get-ChildItem -Path build -Recurse -Filter torrent-rasterbar.dll -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($forkDll) {
+            Copy-Item $forkDll.FullName -Destination release/
+            Write-Host "Shipped fork libtorrent: $($forkDll.FullName)"
+          } else {
+            throw "fork torrent-rasterbar.dll not found under build/ — BATorrent.exe would crash on launch. Check the libtorrent build output."
+          }
           if ($env:SENTRY_ENABLED -eq "1" -and $env:BAT_SENTRY_HANDLER) { Copy-Item "$env:BAT_SENTRY_HANDLER" release/ }
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
