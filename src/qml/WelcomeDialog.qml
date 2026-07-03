@@ -31,10 +31,11 @@ BatDialog {
     readonly property string appVer: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? themeBridge.appVersion : ""
 
     // ---- per-release dev note + highlights (SINGLE LANGUAGE; edit per release) ----
-    // Key by the exact app version. Rename/add the entry when you bump the version.
+    // Key by "major.minor" so hotfix bumps (4.3.0 → 4.3.1) keep the release's
+    // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
-        "4.3.0": {
-            note: "Over 3,000 of you have downloaded BATorrent — thank you, genuinely. I build this solo in my spare time, and I'm now looking for contributors to help it grow: if you write C++/QML (or want to translate it), come say hi on GitHub. New here? Press Ctrl/⌘+K anywhere — it's the fastest way around the whole app.\n\n— Mateus"
+        "4.3": {
+            note: "First, the elephant: 4.3.0 refused to start on Windows — a packaging mistake on my side, fixed in 4.3.1. Everything below is what 4.3 was meant to bring you.\n\nOver 3,000 of you have downloaded BATorrent — thank you, genuinely. I build this solo in my spare time, and I'm now looking for contributors to help it grow: if you write C++/QML (or want to translate it), come say hi on GitHub. New here? Press Ctrl/⌘+K anywhere — it's the fastest way around the whole app.\n\n— Mateus"
             , highlights: [
                 "Resume your last movie or game right from the HUB",
                 "Rebuilt player with resume that finally sticks",
@@ -43,7 +44,7 @@ BatDialog {
                 "\"Delete permanently\" for when you're low on disk"
             ]
         },
-        "4.2.0": {
+        "4.2": {
             note: "This one is about feel. No new pages \u2014 hundreds of small fixes instead: every dialog answers Esc, stalled torrents finally explain WHY, and deleting sends files to the trash, not the void. Press Ctrl/\u2318+K \u2014 that one's my favorite.\n\n\u2014 Mateus"
             , highlights: [
                 "Command palette (Ctrl/\u2318+K) \u2014 fuzzy-find any torrent or action",
@@ -52,7 +53,7 @@ BatDialog {
                 "Unified window look on macOS + keyboard focus everywhere"
             ]
         },
-        "4.0.0": {
+        "4.0": {
             note: "Over 2,000 of you have downloaded BATorrent — thank you, it means a lot. I build this in my spare time; your support keeps it going.\n\n— Mateus"
             , highlights: [
                 "Guided first-run tour of the whole app",
@@ -61,7 +62,9 @@ BatDialog {
             ]
         }
     })
-    readonly property var content: releaseContent[appVer] || ({ note: "", highlights: [] })
+    readonly property var content: releaseContent[appVer]
+        || releaseContent[appVer.split(".").slice(0, 2).join(".")]
+        || ({ note: "", highlights: [] })
     readonly property string noteText: content.note.length > 0
         ? content.note : (i18n.language, i18n.t("whatsnew_generic_note"))
 
