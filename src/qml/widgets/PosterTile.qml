@@ -198,7 +198,7 @@ Item {
             implicitWidth: pctTxt.implicitWidth + 14; implicitHeight: 18
             Text {
                 id: pctTxt; anchors.centerIn: parent
-                text: Math.round(tile.progress * 100) + "%"
+                text: Math.floor(tile.progress * 100) + "%"
                 color: "#ffffff"
                 font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
             }

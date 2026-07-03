@@ -14,6 +14,7 @@
 
 #include <QDateTime>
 #include <QFileInfo>
+#include <cmath>
 
 QString QmlSessionBridge::selectedName() const
 {
@@ -39,8 +40,9 @@ QString QmlSessionBridge::selectedDownloaded() const
 {
     if (!hasSelection()) return {};
     auto info = m_session->torrentAt(m_selectedIndex);
+    // floor, never round: 99.95% must read 99.9 — "100%" is a promise
     return QString("%1 (%2%)").arg(formatSize(info.totalDone))
-                              .arg(info.progress * 100.0, 0, 'f', 1);
+                              .arg(std::floor(info.progress * 1000.0) / 10.0, 0, 'f', 1);
 }
 
 QString QmlSessionBridge::selectedDownSpeed() const

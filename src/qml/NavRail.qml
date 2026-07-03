@@ -468,7 +468,7 @@ Rectangle {
                                 text: !rail.dlItem ? ""
                                       : rail.slotResume ? (rail.dlItem.metric || "")
                                       : rail.slotSeed ? ("⇅ " + (rail.dlItem.ratio || "0.00"))
-                                      : (Math.round((rail.dlItem.progress || 0) * 100) + "%")
+                                      : (Math.floor((rail.dlItem.progress || 0) * 100) + "%")
                                 color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
                             }
                         }
