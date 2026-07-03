@@ -21,6 +21,10 @@ Rectangle {
     property bool readonly: false
     property bool password: false
     property bool clearable: false   // shows an ✕ to empty the field when it has text
+    // optional appearance overrides — let a hero/landing field scale up without a
+    // second component (defaults preserve every existing call site)
+    property real fontSize: mono ? 12 : 13
+    property real iconSize: 14
     signal edited(string text)
 
     implicitWidth: 240
@@ -41,7 +45,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             src: fld.icon
             tint: Theme.t4
-            s: 14
+            s: fld.iconSize
         }
         TextField {
             id: input
@@ -49,7 +53,7 @@ Rectangle {
             Layout.fillHeight: true
             color: Theme.t1
             placeholderTextColor: Theme.t4
-            font.pixelSize: fld.mono ? 12 : 13
+            font.pixelSize: fld.fontSize
             font.family: fld.mono ? Theme.fontMono : Theme.fontSans
             readOnly: fld.readonly
             echoMode: fld.password ? TextInput.Password : TextInput.Normal

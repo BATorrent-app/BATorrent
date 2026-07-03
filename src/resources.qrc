@@ -96,6 +96,7 @@
 <file>../src/qml/Toolbar.qml</file>
 <file>../src/qml/DiscoverView.qml</file>
 <file>../src/qml/SearchView.qml</file>
+<file>../src/qml/SearchEmptyState.qml</file>
 <file>../src/qml/SearchDetailDrawer.qml</file>
 <file>../src/qml/SearchGameMgr.qml</file>
 <file>../src/qml/GetWatchOverlay.qml</file>

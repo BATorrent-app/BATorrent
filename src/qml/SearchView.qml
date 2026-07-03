@@ -8,6 +8,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
+import QtQuick.Effects
 import "theme"
 import "widgets"
 
@@ -45,6 +46,12 @@ Rectangle {
     // the dub/sub axis only exists for non-English UIs (English content has no
     // "dubbed in my language" question) — hide the segmented control otherwise
     readonly property bool showAudioModes: typeof i18n !== "undefined" && i18n.language !== 0
+
+    // "landing": the Google-style cold start — nothing typed, nothing found yet.
+    // The search bar sits large and centered; on the first query it docks to the
+    // top and the normal results/filter chrome takes over.
+    readonly property bool landing: queryFld.text.length === 0
+                                    && (!api || (api.results.length === 0 && !api.searching))
 
     // ---- detail drawer state ----
     property var selected: null
@@ -287,50 +294,104 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        // header
+        // header — hidden on the landing screen, where branding takes over
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
+            visible: !page.landing
             color: Theme.elev
             Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("search_heading")); color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
-        // search bar
-        Rectangle {
+        // top spacer — pushes the hero to the vertical centre on the landing screen
+        Item { Layout.fillHeight: true; visible: page.landing }
+
+        // branding hero (landing only)
+        ColumnLayout {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.bottomMargin: 20
+            visible: page.landing
+            spacing: 8
+            Image {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: 58; Layout.preferredHeight: 58
+                source: "qrc:/images/logo.svg"
+                sourceSize: Qt.size(116, 116)
+                fillMode: Image.PreserveAspectFit
+            }
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: "BATorrent"
+                color: Theme.t1; font.pixelSize: 26; font.weight: Font.Bold
+                font.letterSpacing: -0.5; font.family: Theme.fontSans
+            }
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: (i18n.language, i18n.t("search_prompt_sub"))
+                color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
+            }
+        }
+
+        // search bar — a large, shadowed hero centred on the landing screen; on
+        // the first query it docks into a thin top strip. Same input, two skins.
+        Item {
             Layout.fillWidth: true
-            implicitHeight: 36 + 2 * Theme.sp4
-            color: "transparent"
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
+            Layout.preferredHeight: page.landing ? 74 : (36 + 2 * Theme.sp4)
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+            // bottom hairline only in the docked state
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair; visible: !page.landing }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: Theme.sp5
-                anchors.rightMargin: Theme.sp5
-                anchors.topMargin: Theme.sp4
-                anchors.bottomMargin: Theme.sp4
+                anchors.leftMargin: page.landing ? Math.max(Theme.sp5, (parent.width - 680) / 2) : Theme.sp5
+                anchors.rightMargin: page.landing ? Math.max(Theme.sp5, (parent.width - 680) / 2) : Theme.sp5
+                anchors.topMargin: page.landing ? 0 : Theme.sp4
+                anchors.bottomMargin: page.landing ? 0 : Theme.sp4
+                Behavior on anchors.leftMargin { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+                Behavior on anchors.rightMargin { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
                 spacing: Theme.sp3
 
-                TFld {
-                    id: queryFld
+                // field (+ its hero shadow) — grows tall and round on landing
+                Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 36
-                    icon: "qrc:/icons/search.svg"
-                    clearable: true
-                    placeholder: (i18n.language, i18n.t("search_input"))
-                    onTextChanged: {
-                        if (text.trim().length >= 2) searchDebounce.restart()
-                        else searchDebounce.stop()
+                    Layout.preferredHeight: page.landing ? 54 : 36
+                    Behavior on Layout.preferredHeight { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+                    RectangularShadow {
+                        anchors.fill: queryFld
+                        radius: queryFld.radius
+                        blur: 36
+                        color: "#73000000"
+                        opacity: page.landing ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 220 } }
                     }
-                    // commit on Enter only — committing on focus-out re-ran the search
-                    // when you clicked a filter dropdown, eating the first click
-                    Connections {
-                        target: queryFld.field
-                        function onAccepted() { page.commitSearch() }
+                    TFld {
+                        id: queryFld
+                        anchors.fill: parent
+                        icon: "qrc:/icons/search.svg"
+                        clearable: true
+                        radius: page.landing ? 14 : 8
+                        fontSize: page.landing ? 17 : 13
+                        iconSize: page.landing ? 20 : 14
+                        placeholder: (i18n.language, i18n.t("search_input"))
+                        Behavior on radius { NumberAnimation { duration: 240 } }
+                        onTextChanged: {
+                            if (text.trim().length >= 2) searchDebounce.restart()
+                            else searchDebounce.stop()
+                        }
+                        // commit on Enter only — committing on focus-out re-ran the search
+                        // when you clicked a filter dropdown, eating the first click
+                        Connections {
+                            target: queryFld.field
+                            function onAccepted() { page.commitSearch() }
+                        }
                     }
                 }
                 TSelect {
                     id: srcSel
+                    visible: !page.landing
                     Layout.preferredHeight: 36
                     Layout.preferredWidth: 180
                     model: page.api ? page.api.sources : []
@@ -338,7 +399,7 @@ Rectangle {
                 }
                 TSelect {
                     id: catSel
-                    visible: page.isLegacy
+                    visible: page.isLegacy && !page.landing
                     Layout.preferredHeight: 36
                     Layout.preferredWidth: 130
                     model: page.api ? page.api.categories : []
@@ -347,17 +408,18 @@ Rectangle {
                 // catalog manager belongs next to the source it configures, not
                 // floating in the footer
                 BtnFlat {
-                    visible: page.isGames
+                    visible: page.isGames && !page.landing
                     text: (i18n.language, i18n.t("game_sources_btn"))
                     onClicked: page.showGameMgr = true
                 }
-                BtnFlat { primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: page.commitSearch() }
+                BtnFlat { visible: !page.landing; primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: page.commitSearch() }
             }
         }
 
-        // recent searches — chips shown while the box is empty
+        // recent searches — chips shown while the box is empty (centred on landing)
         Flow {
-            Layout.fillWidth: true
+            Layout.fillWidth: !page.landing
+            Layout.alignment: page.landing ? Qt.AlignHCenter : Qt.AlignLeft
             Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5; Layout.topMargin: 2
             spacing: 8
             visible: queryFld.text.length === 0 && page.recentList.length > 0
@@ -386,6 +448,9 @@ Rectangle {
                 }
             }
         }
+
+        // bottom spacer — balances the top spacer so the hero stays centred
+        Item { Layout.fillHeight: true; visible: page.landing }
 
         // filter bar — only for flat result lists with content
         Rectangle {
@@ -496,7 +561,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 44
-            visible: !page.isTitles && !page.isGames && page.showAudioModes
+            visible: !page.isTitles && !page.isGames && page.showAudioModes && !page.landing
             color: "transparent"
             RowLayout {
                 anchors.fill: parent
@@ -557,7 +622,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 30
-            visible: !page.isTitles
+            visible: !page.isTitles && !page.landing
             color: "transparent"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
             RowLayout {
@@ -578,59 +643,19 @@ Rectangle {
         // results
         ListView {
             id: resultsView
-            visible: !page.isTitles
+            visible: !page.isTitles && !page.landing
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.fillHeight: !page.landing
             clip: true
             model: page.isTitles ? [] : page.viewModel
             boundsBehavior: Flickable.StopAtBounds
             cacheBuffer: 240
 
-            // empty / loading state
-            ColumnLayout {
-                anchors.centerIn: parent
-                width: Math.min(parent.width - 80, 360)
-                spacing: 10
+            // empty / loading / welcome state
+            SearchEmptyState {
+                anchors.fill: parent
+                sv: page
                 visible: resultsView.count === 0
-                Spinner {
-                    Layout.alignment: Qt.AlignHCenter
-                    visible: page.api && page.api.searching
-                    s: 30
-                }
-                IconImg {
-                    Layout.alignment: Qt.AlignHCenter
-                    visible: !(page.api && page.api.searching)
-                    src: "qrc:/icons/search.svg"
-                    tint: Theme.t4
-                    s: 38
-                    opacity: 0.7
-                }
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: page.api && page.api.searching ? (i18n.language, i18n.t("search_searching2"))
-                         : (page.api && page.api.statusText.length > 0 && page.api.results.length === 0 ? page.api.statusText
-                            : (i18n.language, i18n.t("search_prompt")))
-                    color: Theme.t2
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    font.family: Theme.fontSans
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.fillWidth: true
-                    visible: !(page.api && page.api.searching)
-                    text: page.api && page.api.statusText.length > 0 && page.api.results.length === 0
-                          ? (i18n.language, i18n.t("search_empty_hint"))
-                          : (i18n.language, i18n.t("search_prompt_sub"))
-                    color: Theme.t4
-                    font.pixelSize: 12
-                    font.family: Theme.fontSans
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                }
             }
 
             delegate: SearchResultRow {
@@ -718,9 +743,9 @@ Rectangle {
         // titles grid (step 1: pick the actual movie/series/game, one cover each)
         GridView {
             id: titlesView
-            visible: page.isTitles
+            visible: page.isTitles && !page.landing
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.fillHeight: !page.landing
             clip: true
             model: page.isTitles ? (page.showBestMatch ? page.api.results.slice(1) : (page.api ? page.api.results : [])) : []
             cellWidth: 174
@@ -729,39 +754,10 @@ Rectangle {
             boundsBehavior: Flickable.StopAtBounds
             cacheBuffer: 600
 
-            ColumnLayout {
-                anchors.centerIn: parent
-                width: Math.min(parent.width - 80, 360)
-                spacing: 10
+            SearchEmptyState {
+                anchors.fill: parent
+                sv: page
                 visible: titlesView.count === 0 && !page.showBestMatch
-                Spinner {
-                    Layout.alignment: Qt.AlignHCenter
-                    visible: page.api && page.api.searching
-                    s: 30
-                }
-                IconImg {
-                    Layout.alignment: Qt.AlignHCenter
-                    visible: !(page.api && page.api.searching)
-                    src: "qrc:/icons/search.svg"; tint: Theme.t4; s: 38
-                    opacity: 0.7
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: page.api && page.api.searching ? (i18n.language, i18n.t("search_searching2"))
-                         : (page.api && page.api.statusText.length > 0 ? page.api.statusText
-                            : (i18n.language, i18n.t("search_prompt")))
-                    color: Theme.t2; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                    horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
-                }
-                Text {
-                    Layout.fillWidth: true
-                    visible: !(page.api && page.api.searching)
-                    text: page.api && page.api.statusText.length > 0 && page.api.results.length === 0
-                          ? (i18n.language, i18n.t("search_empty_hint"))
-                          : (i18n.language, i18n.t("search_prompt_sub"))
-                    color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
-                    horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
-                }
             }
 
             delegate: Item {
