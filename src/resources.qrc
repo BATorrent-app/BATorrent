@@ -81,6 +81,7 @@
 <file>../src/qml/CommandPalette.qml</file>
 <file>../src/qml/RssWindow.qml</file>
 <file>../src/qml/SettingsView.qml</file>
+<file>../src/qml/SettingsRow.qml</file>
 <file>../src/qml/SettingsSchema.qml</file>
 <file>../src/qml/ShortcutsWindow.qml</file>
 <file>../src/qml/StatisticsWindow.qml</file>
