@@ -183,6 +183,16 @@ if(APPLE)
         MACOSX_BUNDLE_ICON_FILE "appicon"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cmake/Info.plist.in"
     )
+    # Dev-only: homebrew Qt ships multimedia without the ffmpeg backend, so MKV/
+    # AC3 won't play in dev builds. If the locally built plugin exists (recipe:
+    # internal/build-qt-ffmpeg-plugin.sh), bundle it — Qt searches the bundle's
+    # Contents/PlugIns on macOS, so any launch method picks it up. Absent on CI.
+    if(EXISTS ${CMAKE_SOURCE_DIR}/dev-qt-plugins/multimedia/libffmpegmediaplugin.dylib)
+        add_custom_command(TARGET BATorrent POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_SOURCE_DIR}/dev-qt-plugins/multimedia/libffmpegmediaplugin.dylib
+                $<TARGET_BUNDLE_DIR:BATorrent>/Contents/PlugIns/multimedia/libffmpegmediaplugin.dylib)
+    endif()
 endif()
 
 if(Qt6Keychain_FOUND)
