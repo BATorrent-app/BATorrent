@@ -207,6 +207,9 @@ void MetadataResolver::processQueue()
     }
 }
 
+// defined with the other title-matching helpers further down (they share foldTitle)
+static bool confidentTitle(const QString &query, const QString &title);
+
 void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName &parsed)
 {
     qDebug() << "[metadata] queryTmdbMovie:" << parsed.cleanTitle;
@@ -252,6 +255,15 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
         }
 
         const QJsonObject item = results[0].toObject();
+
+        // A generic/unknown torrent must not adopt a fuzzy movie match ("debian"
+        // → some film called "Debian"). Only a confident title match sticks; else
+        // try TV, and failing that stay coverless.
+        if (parsed.contentType == ContentType::Unknown
+            && !confidentTitle(parsed.cleanTitle, item.value(QLatin1String("title")).toString())) {
+            queryTmdbTv(infoHash, parsed);
+            return;
+        }
 
         MetadataResult result;
         result.valid = true;
@@ -331,6 +343,14 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
         }
 
         const QJsonObject item = results[0].toObject();
+
+        // last stop in the Unknown chain (IGDB → movie → here) — without a
+        // confident title match, leave it coverless rather than guess a show.
+        if (parsed.contentType == ContentType::Unknown
+            && !confidentTitle(parsed.cleanTitle, item.value(QLatin1String("name")).toString())) {
+            m_rateLimiter.start();
+            return;
+        }
 
         MetadataResult result;
         result.valid = true;
@@ -501,6 +521,15 @@ static double titleSimilarity(const QString &a, const QString &b)
     for (const auto &t : ta) if (tb.contains(t)) ++inter;
     const int uni = ta.size() + tb.size() - inter;
     return uni ? double(inter) / double(uni) : 0.0;
+}
+
+// Trustworthy metadata match: folded titles equal, or token overlap clears the
+// same 0.34 bar the IGDB picker uses. Gates fuzzy matches for Unknown torrents
+// so a generic "debian" file can't adopt a random film/show called "Debian".
+static bool confidentTitle(const QString &query, const QString &title)
+{
+    return titleSimilarity(query, title) >= 0.34
+        || foldTitle(title) == foldTitle(query);
 }
 
 void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &parsed)
