@@ -49,6 +49,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/security/archiveextractor.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasepick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/searchranker.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/debridpick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
@@ -230,6 +231,7 @@ bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_proxycontroller test_proxycontroller.cpp)
 bat_add_test(test_ipcprotocol test_ipcprotocol.cpp)
+bat_add_test(test_debrid     test_debrid.cpp)
 
 # =============================================================================
 #  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).

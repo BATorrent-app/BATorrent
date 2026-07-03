@@ -54,11 +54,6 @@ private:
     void setStatus(const QString &s, int progress = -1);
     void failJob(const QString &msg);
 
-    // Pure: { file id, display name } of the best video file in a TorBox torrent
-    // (largest video, else largest file), or id -1. Exposed for unit tests.
-    static QPair<int, QString> pickBestFile(const QJsonArray &files);
-    static bool looksLikeVideo(const QString &path);
-
     QNetworkAccessManager m_nam;
     QString m_token;
 

@@ -56,11 +56,6 @@ private:
     void setStatus(const QString &s, int progress = -1);
     void failJob(const QString &msg);
 
-    // Pure: index into the SELECTED-files (== links) order of the best video
-    // to stream, or -1. Exposed for unit tests.
-    static int pickBestLinkIndex(const QJsonArray &files);
-    static bool looksLikeVideo(const QString &path);
-
     QNetworkAccessManager m_nam;
     QString m_token;
 
