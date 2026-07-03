@@ -94,6 +94,8 @@
 <file>../src/qml/Toolbar.qml</file>
 <file>../src/qml/DiscoverView.qml</file>
 <file>../src/qml/SearchView.qml</file>
+<file>../src/qml/SearchDetailDrawer.qml</file>
+<file>../src/qml/SearchGameMgr.qml</file>
 <file>../src/qml/GetWatchOverlay.qml</file>
 <file>../src/qml/WrappedWindow.qml</file>
 <file>../src/qml/HubView.qml</file>
@@ -123,6 +125,7 @@
 <file>../src/qml/widgets/WheelScroller.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
 <file>../src/qml/widgets/PosterTile.qml</file>
+<file>../src/qml/widgets/SearchResultRow.qml</file>
 <file>../src/qml/widgets/TorrentRow.qml</file>
 <file>../src/qml/widgets/PosterCard.qml</file>
 <file>../src/qml/widgets/DetailPeers.qml</file>
