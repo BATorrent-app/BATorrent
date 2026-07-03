@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Releases in your language, finally.** With "Prefer my language" on (the default),
+  the bundled stream source is asked for your-language releases — dubbed included —
+  so they lead the list instead of drowning at the bottom. App in Portuguese?
+  Dual-audio releases now show up first, not at position 19.
+- **Jackett preset** in search providers (off by default): point it at your local
+  Jackett and every language-specific indexer you run there — whatever the country —
+  becomes searchable inside BATorrent.
+
+### Fixed
+- **Progress never claims "100%" early anymore.** A torrent at 99.95% now shows
+  99.9% until it actually finishes — every progress display floors instead of
+  rounding, so "100%" is back to being a promise.
+- **The what's-new screen no longer loses the dev note when a hotfix replaces a
+  release** (as 4.3.1 replaced 4.3.0): notes now belong to the release line.
+
+### Security
+- **Web UI password hardened**: stored as salted PBKDF2 (100k iterations) instead
+  of unsalted SHA-256. Existing setups upgrade automatically on the next login.
+
 ## v4.3.1
 
 A hotfix for v4.3.0, which failed to launch on Windows.

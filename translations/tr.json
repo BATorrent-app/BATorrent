@@ -690,7 +690,7 @@
   "set_autoplay_next": "Sonraki bölümü otomatik oynat",
   "set_autoplay_next_note": "Bir dizi bölümü bittiğinde, sonraki bölümü otomatik oynat.",
   "set_prefer_native": "Kendi dilimi tercih et",
-  "set_prefer_native_note": "Al ve İzle ve arama için, daha yüksek kaliteden bile olsa önce kendi dilinizdeki sürümleri göster. Kapalı = dil ne olursa olsun en iyi kalite.",
+  "set_prefer_native_note": "Al ve İzle ve arama için, daha yüksek kaliteden bile olsa önce kendi dilinizdeki sürümleri göster; yayın kaynakları (Torrentio) da dilinizdeki ve dublajlı sürümleri öne çıkarır. Kapalı = dil ne olursa olsun en iyi kalite.",
   "set_sub_size": "Altyazı boyutu",
   "set_sub_color": "Altyazı rengi",
   "set_sub_bg": "Altyazı arka planı",
