@@ -8,6 +8,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Effects
 import QtMultimedia
 import QtQuick.Dialogs
 import "theme"
@@ -179,24 +180,39 @@ Window {
     component PSlider: Slider {
         id: sl
         property real buffered: 0   // 0..1 downloaded-from-start, drawn dim behind the fill
-        implicitHeight: 16
+        readonly property bool active: sl.pressed || sl.hovered
+        implicitHeight: 18
         background: Rectangle {
             x: sl.leftPadding; y: sl.topPadding + sl.availableHeight / 2 - height / 2
-            width: sl.availableWidth; height: 6; radius: 3
-            color: "#1fffffff"
+            width: sl.availableWidth
+            height: sl.active ? 7 : 5; radius: height / 2
+            color: "#26ffffff"
+            Behavior on height { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
             // downloaded layer (what's safe to seek to)
-            Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: 3; color: "#80ffffff" }
-            // playback layer (what you're watching)
-            Rectangle { width: sl.visualPosition * parent.width; height: parent.height; radius: 3; color: Theme.accent }
+            Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: parent.radius; color: "#4dffffff" }
+            // playback layer (what you're watching) — accent with a soft glow
+            Rectangle {
+                width: sl.visualPosition * parent.width; height: parent.height; radius: parent.radius
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: Theme.accent }
+                    GradientStop { position: 1.0; color: "#ff2e3d" }
+                }
+                layer.enabled: sl.active
+                layer.effect: MultiEffect { blurEnabled: true; blur: 0.6; blurMax: 8 }
+            }
         }
-        handle: Rectangle {
+        handle: Item {
+            implicitWidth: sl.active ? 15 : 0
+            implicitHeight: implicitWidth
             x: sl.leftPadding + sl.visualPosition * (sl.availableWidth - width)
             y: sl.topPadding + sl.availableHeight / 2 - height / 2
-            implicitWidth: (sl.pressed || sl.hovered) ? 14 : 11
-            implicitHeight: implicitWidth
-            radius: implicitWidth / 2
-            color: "#ffffff"
-            Behavior on implicitWidth { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
+            Behavior on implicitWidth { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
+            RectangularShadow {
+                anchors.fill: disc; radius: disc.radius
+                blur: 10; color: "#80000000"; visible: parent.width > 0
+            }
+            Rectangle { id: disc; anchors.fill: parent; radius: width / 2; color: "#ffffff" }
         }
     }
 
@@ -554,27 +570,32 @@ Window {
         onAccepted: win.loadExternalSubs(selectedFile.toString())
     }
 
-    // ---- online-subtitles panel (results list + sync controls) ----
+    // ---- online-subtitles panel (slide-in drawer + scrim) ----
     PlayerSubPanel {
         id: subPanel
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.bottom: bar.top
-        width: Math.min(370, parent.width * 0.46)
+        anchors.fill: parent
         pw: win
         mediaPlayer: player
     }
 
-    // ---- title bar: solid panel · traffic-light space · centered title + chips · info ----
-    Rectangle {
+    // ---- title bar: gradient scrim · centered title + chips · info ----
+    Item {
         id: topBar
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-        height: 46
-        color: "#161618"
+        height: 52
         opacity: (!win.fullscreen || win.controlsShown) ? 1 : 0
         visible: opacity > 0 && win.mediaTitle.length > 0
-        Behavior on opacity { NumberAnimation { duration: 200 } }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#0fffffff" }
+        Behavior on opacity { NumberAnimation { duration: 220 } }
+
+        // scrim fading downward — mirrors the bottom bar so the chrome frames the
+        // video without hard edges.
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#e6070708" }
+                GradientStop { position: 1.0; color: "#00000000" }
+            }
+        }
 
         // drag the window by the title bar (windowed only)
         MouseArea {
@@ -627,15 +648,25 @@ Window {
     }
 
     // ---- controls bar (scrubber + legend + control row) ----
-    Rectangle {
+    Item {
         id: bar
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        height: 112
-        color: "#0c0c0e"
+        height: 124
         opacity: (!win.fullscreen || win.controlsShown) ? 1 : 0
         visible: opacity > 0
-        Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: "#0fffffff" }
-        Behavior on opacity { NumberAnimation { duration: 200 } }
+        Behavior on opacity { NumberAnimation { duration: 220 } }
+
+        // gradient scrim: the video bleeds into the controls (Stremio/YouTube),
+        // instead of a hard slab with a hairline. In windowed mode it sits on the
+        // black frame below the video, so it just reads as a soft dark deck.
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0;  color: "#00000000" }
+                GradientStop { position: 0.42; color: "#c4090909" }
+                GradientStop { position: 1.0;  color: "#f6070708" }
+            }
+        }
 
         MouseArea {
             id: barHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton
@@ -730,17 +761,29 @@ Window {
                     Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: rwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 8; font.weight: Font.Bold; font.family: Theme.fontSans }
                     MouseArea { id: rwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(-10000) }
                 }
-                // big play / pause
-                Rectangle {
+                // big play / pause — a lifted white disc that floats over the video
+                Item {
                     Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: 44; implicitHeight: 44; radius: 22
-                    color: playMa.containsMouse ? "#ffffff" : "#ededf0"
-                    Behavior on color { ColorAnimation { duration: 120 } }
-                    IconImg {
-                        anchors.centerIn: parent
-                        anchors.horizontalCenterOffset: player.playbackState === MediaPlayer.PlayingState ? 0 : 2
-                        src: player.playbackState === MediaPlayer.PlayingState ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
-                        tint: "#0a0a0c"; s: 20
+                    implicitWidth: 48; implicitHeight: 48
+                    RectangularShadow {
+                        anchors.fill: disc; radius: disc.radius
+                        blur: playMa.containsMouse ? 30 : 20
+                        color: "#b3000000"
+                        Behavior on blur { NumberAnimation { duration: 140 } }
+                    }
+                    Rectangle {
+                        id: disc
+                        anchors.fill: parent; radius: width / 2
+                        scale: playMa.containsMouse ? 1.06 : 1.0
+                        color: playMa.containsMouse ? "#ffffff" : "#f2f2f5"
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
+                        IconImg {
+                            anchors.centerIn: parent
+                            anchors.horizontalCenterOffset: player.playbackState === MediaPlayer.PlayingState ? 0 : 2
+                            src: player.playbackState === MediaPlayer.PlayingState ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
+                            tint: "#0a0a0c"; s: 21
+                        }
                     }
                     MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.togglePlay() }
                 }
@@ -855,6 +898,7 @@ Window {
     Shortcut { sequence: "Down";   onActivated: win.bumpVolume(-0.05) }
     Shortcut { sequence: "F";      onActivated: win.toggleFullscreen() }
     Shortcut { sequence: "M";      onActivated: win.muted = !win.muted }
-    Shortcut { sequence: "Escape"; onActivated: win.pipMode ? win.togglePip()
-                                              : (win.visibility === Window.FullScreen ? (win.visibility = Window.Windowed) : win.close()) }
+    Shortcut { sequence: "Escape"; onActivated: subPanel.open ? subPanel.closePanel()
+                                              : (win.pipMode ? win.togglePip()
+                                              : (win.visibility === Window.FullScreen ? (win.visibility = Window.Windowed) : win.close())) }
 }
