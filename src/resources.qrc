@@ -76,6 +76,7 @@
 <file>../src/qml/TourOverlay.qml</file>
 <file>../src/qml/AboutDialog.qml</file>
 <file>../src/qml/PlayerWindow.qml</file>
+<file>../src/qml/PlayerSubPanel.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/CommandPalette.qml</file>
 <file>../src/qml/RssWindow.qml</file>
@@ -126,6 +127,7 @@
 <file>../src/qml/widgets/WheelScroller.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
 <file>../src/qml/widgets/PosterTile.qml</file>
+<file>../src/qml/widgets/PChip.qml</file>
 <file>../src/qml/widgets/SearchResultRow.qml</file>
 <file>../src/qml/widgets/TorrentRow.qml</file>
 <file>../src/qml/widgets/PosterCard.qml</file>
