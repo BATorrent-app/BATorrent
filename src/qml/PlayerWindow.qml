@@ -105,6 +105,19 @@ Window {
         subBgOpacity = Math.max(0, Math.min(1, Number(settings.get("subBgOpacity") || 0) / 100))
     }
 
+    // human label for an embedded audio/subtitle track: prefer the stream's
+    // language (localized, e.g. "English"), then its title, else "Subtitles N".
+    // QtMultimedia exposes these only as metadata on the track list.
+    function trackName(meta, fallback) {
+        if (!meta) return fallback
+        var lang = meta.stringValue(MediaMetaData.Language)
+        var title = meta.stringValue(MediaMetaData.Title)
+        if (lang.length > 0 && title.length > 0) return lang + " · " + title
+        if (lang.length > 0) return lang
+        if (title.length > 0) return title
+        return fallback
+    }
+
     // remember the chosen audio/subtitle track per torrent
     property bool tracksRestored: false
     function restoreTracks() {
@@ -303,10 +316,13 @@ Window {
         source: win.streamUrl
         videoOutput: videoOut
         audioOutput: AudioOutput { id: audio; volume: win.volume; muted: win.muted }
-        onPositionChanged: win.updateCue(position)
+        onPositionChanged: win.updateCue(player.position)
         onDurationChanged: win.tryApplyResume()
         onSeekableChanged: win.tryApplyResume()
-        onPlaybackStateChanged: if (playbackState === MediaPlayer.PlayingState) win.tryApplyResume()
+        onPlaybackStateChanged: {
+            if (playbackState === MediaPlayer.PlayingState) win.tryApplyResume()
+            else win.showControls()   // pausing always brings the chrome back
+        }
         onMediaStatusChanged: {
             if (mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) win.tryApplyResume()
             else if (mediaStatus === MediaPlayer.EndOfMedia) { win.saveResume(); win.maybePlayNext() }
@@ -326,9 +342,8 @@ Window {
     VideoOutput {
         id: videoOut
         anchors.fill: parent
-        // solid title bar above + control bar below frame the video when windowed; both overlay in fullscreen
-        anchors.topMargin: win.fullscreen ? 0 : (topBar.visible ? topBar.height : 0)
-        anchors.bottomMargin: win.fullscreen ? 0 : (bar.visible ? bar.height : 0)
+        // video fills the window; the chrome floats over it (Stremio-style) so
+        // the gradient scrims read as depth, not a flat deck on a black frame
         fillMode: VideoOutput.PreserveAspectFit
     }
 
@@ -426,7 +441,8 @@ Window {
         height: subText.implicitHeight
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: videoOut.bottom
-        anchors.bottomMargin: (win.fullscreen && bar.visible ? bar.height : 0) + 26
+        anchors.bottomMargin: (bar.visible ? bar.height : 0) + 26
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
         Rectangle {
             visible: win.subBgOpacity > 0
             anchors.centerIn: subText
@@ -466,15 +482,23 @@ Window {
         if (player.seekable) player.position = Math.max(0, Math.min(player.duration, player.position + ms))
     }
     function bumpVolume(d) { win.muted = false; win.volume = Math.max(0, Math.min(1, win.volume + d)) }
-    function showControls() { win.controlsShown = true; if (win.fullscreen) idle.restart() }
+    function showControls() { win.controlsShown = true; idle.restart() }
 
     // subtitle sync nudges (mpv-style)
     Shortcut { sequence: "["; enabled: win.extSubsActive; onActivated: win.bumpSubOffset(-500) }
     Shortcut { sequence: "]"; enabled: win.extSubsActive; onActivated: win.bumpSubOffset(500) }
 
-    // auto-hide the bar after inactivity while in fullscreen
-    Timer { id: idle; interval: 3000; onTriggered: if (win.fullscreen) win.controlsShown = false }
-    onFullscreenChanged: { win.controlsShown = true; if (win.fullscreen) idle.restart() }
+    // auto-hide the chrome after inactivity (both windowed and fullscreen, like
+    // Stremio) — but never while paused, hovering the bar, or with a panel open.
+    Timer {
+        id: idle; interval: 3000
+        onTriggered: {
+            if (subPanel.open || barHover.containsMouse) return
+            if (player.playbackState !== MediaPlayer.PlayingState) return
+            win.controlsShown = false
+        }
+    }
+    onFullscreenChanged: { win.controlsShown = true; idle.restart() }
 
     // track pickers (embedded audio / subtitle streams)
     BatMenu {
@@ -484,7 +508,7 @@ Window {
             model: player.audioTracks.length
             BatMenuItem {
                 required property int index
-                text: (i18n.language, i18n.t("player_audio")) + " " + (index + 1)
+                text: win.trackName(player.audioTracks[index], (i18n.language, i18n.t("player_audio")) + " " + (index + 1))
                 checkable: true; checked: player.activeAudioTrack === index
                 onTriggered: {
                     player.activeAudioTrack = index
@@ -518,7 +542,7 @@ Window {
             model: player.subtitleTracks.length
             BatMenuItem {
                 required property int index
-                text: (i18n.language, i18n.t("player_subs")) + " " + (index + 1)
+                text: win.trackName(player.subtitleTracks[index], (i18n.language, i18n.t("player_subs")) + " " + (index + 1))
                 checkable: true; checked: player.activeSubtitleTrack === index
                 onTriggered: {
                     win.clearExternalSubs(); player.activeSubtitleTrack = index
@@ -571,9 +595,12 @@ Window {
     }
 
     // ---- online-subtitles panel (slide-in drawer + scrim) ----
+    // above the title/control bars so its close button and header aren't trapped
+    // underneath the top chrome (they overlap the drawer's top edge).
     PlayerSubPanel {
         id: subPanel
         anchors.fill: parent
+        z: 60
         pw: win
         mediaPlayer: player
     }
@@ -583,7 +610,7 @@ Window {
         id: topBar
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
         height: 52
-        opacity: (!win.fullscreen || win.controlsShown) ? 1 : 0
+        opacity: win.controlsShown ? 1 : 0
         visible: opacity > 0 && win.mediaTitle.length > 0
         Behavior on opacity { NumberAnimation { duration: 220 } }
 
@@ -652,7 +679,7 @@ Window {
         id: bar
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
         height: 124
-        opacity: (!win.fullscreen || win.controlsShown) ? 1 : 0
+        opacity: win.controlsShown ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 220 } }
 
