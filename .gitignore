@@ -39,3 +39,6 @@ build-asan/
 
 # fork-from-source build dir
 build-fork/
+
+# dev-only Qt ffmpeg media plugin (built locally, see internal/REVIEW.md W5)
+/dev-qt-plugins/

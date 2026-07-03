@@ -238,7 +238,7 @@ Item {
     function gameStateLabel(item) {
         if (!item) return ""
         switch (item.installState) {
-        case 0: return "↓ " + Math.round((item.progress || 0) * 100) + "%"
+        case 0: return "↓ " + Math.floor((item.progress || 0) * 100) + "%"
         case 1: return i18n.t("hub_gs_install")
         case 2: return i18n.t("hub_gs_extracting")
         case 3: return i18n.t("hub_gs_finish_setup")
@@ -263,14 +263,14 @@ Item {
         var dot = sz ? ("  ·  " + sz) : ""
         if (isGame) {
             switch (item.installState) {
-            case 0: return "↓ " + Math.round((item.progress || 0) * 100) + "%" + dot
+            case 0: return "↓ " + Math.floor((item.progress || 0) * 100) + "%" + dot
             case 4: return i18n.t("hub_ready_to_play") + dot
             case 1: return i18n.t("hub_installed") + dot
             default: return page.gameStateLabel(item) + dot
             }
         }
         return item.completed ? (i18n.t("hub_installed") + dot)
-                              : ("↓ " + Math.round((item.progress || 0) * 100) + "%" + dot)
+                              : ("↓ " + Math.floor((item.progress || 0) * 100) + "%" + dot)
     }
     function gameMenuOpenFolder(hash) {
         if (!api) return

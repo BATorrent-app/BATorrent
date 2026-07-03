@@ -101,7 +101,7 @@ Rectangle {
                 Text {
                     id: pbarPct
                     anchors.centerIn: parent
-                    text: (lrow.progress * 100).toFixed(1) + "%"
+                    text: (Math.floor(lrow.progress * 1000) / 10).toFixed(1) + "%"
                     color: (parent.width / 2) < (parent.width * lrow.progress - 4) ? "#ffffff" : Theme.t1
                     font.pixelSize: 9
                     font.weight: Font.DemiBold

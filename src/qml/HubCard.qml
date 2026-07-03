@@ -130,7 +130,7 @@ Item {
                 Rectangle { visible: card.item.completed; width: 6; height: 6; radius: 3; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: card.item.completed ? i18n.t("hub_installed") : ("↓ " + Math.round((card.item.progress || 0) * 100) + "%")
+                    text: card.item.completed ? i18n.t("hub_installed") : ("↓ " + Math.floor((card.item.progress || 0) * 100) + "%")
                     color: card.item.completed ? Theme.grn : Theme.accent
                     font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans
                 }
