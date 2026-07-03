@@ -927,6 +927,7 @@
   "update_uptodate": "Zaten en son sürümdesiniz.",
   "view_grid": "Izgara",
   "view_list": "Liste",
+  "view_classic": "Klasik",
   "warn_low_disk": "Düşük disk alanı — yalnızca %1 MB kaldı. Disk dolarsa indirmeler başarısız olabilir.",
   "warn_disk_autopause": "Düşük disk — %1 indirme duraklatıldı, %2 MB kaldı",
   "warn_torrent_faulted": "%1 duraklatıldı — sürekli hata alıyor. Dosyayı veya diski kontrol edin, ardından devam ettirin.",

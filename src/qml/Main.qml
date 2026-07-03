@@ -52,6 +52,10 @@ Window {
     property var selectedRows: []      // multi-selection (proxy rows)
     property int anchorRow: -1         // shift-range anchor
     property bool gridView: true
+    // classic mode: a clean, cover-less, raw-name list for users the media-hub
+    // styling puts off (qBittorrent-like). Persisted; implies the list layout.
+    property bool classicMode: false
+    onClassicModeChanged: if (typeof settings !== "undefined") settings.set("classicMode", classicMode)
     property string activeFilter: "all"
     property string catFilter: ""
     // startup splash — shown on every launch unless disabled in Settings
@@ -64,6 +68,8 @@ Window {
             if (sw >= win.minimumWidth && sw <= Screen.desktopAvailableWidth) win.width = sw
             if (sh >= win.minimumHeight && sh <= Screen.desktopAvailableHeight) win.height = sh
         }
+        if (typeof settings !== "undefined") win.classicMode = settings.get("classicMode") === true
+        if (win.classicMode) win.gridView = false   // classic is a list layout
         showSplash = (typeof settings === "undefined") || settings.get("showSplash") !== false
         // start hidden in the tray if the user asked for it (and a tray exists)
         if (typeof settings !== "undefined" && settings.get("startTray") === true && trayIcon.available)
@@ -499,7 +505,7 @@ Window {
     // Smart Paste: Ctrl+V adds a magnet / 40-char hash / .torrent URL straight from
     // the clipboard — unless a text field has focus (then let it paste text).
     Shortcut {
-        sequence: StandardKey.Paste
+        sequences: [ StandardKey.Paste ]
         onActivated: {
             var f = win.activeFocusItem
             if (f && f.cursorPosition !== undefined) return
