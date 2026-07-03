@@ -1428,3 +1428,25 @@ TEST_CASE("InstallerProfile: scene crack folder detection", "[installer]") {
     REQUIRE(InstallerProfile::crackDir({ "bin", "PLAZA", "redist" }) == QString("PLAZA"));
     REQUIRE(InstallerProfile::crackDir({ "bin", "data", "assets" }).isEmpty());
 }
+
+// ============================================================================
+//  ADDON MANAGER — Torrentio language configuration
+// ============================================================================
+
+#include "services/discovery/addonmanager.h"
+
+TEST_CASE("AddonManager: Torrentio language injection", "[addons]") {
+    // unconfigured Torrentio + a language → config segment injected
+    REQUIRE(AddonManager::streamBaseUrl("https://torrentio.strem.fun", "portuguese")
+            == QString("https://torrentio.strem.fun/language=portuguese"));
+    // no language priority → untouched
+    REQUIRE(AddonManager::streamBaseUrl("https://torrentio.strem.fun", QString())
+            == QString("https://torrentio.strem.fun"));
+    // user already configured the addon by hand → never double-configure
+    REQUIRE(AddonManager::streamBaseUrl(
+                "https://torrentio.strem.fun/providers=yts%7Clanguage=spanish", "portuguese")
+            == QString("https://torrentio.strem.fun/providers=yts%7Clanguage=spanish"));
+    // non-Torrentio stream addons are never rewritten
+    REQUIRE(AddonManager::streamBaseUrl("https://my.custom.addon/sub", "portuguese")
+            == QString("https://my.custom.addon/sub"));
+}

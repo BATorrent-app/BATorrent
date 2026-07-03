@@ -92,6 +92,11 @@ public:
     // Stremio protocol: get streams for a specific item
     void getStreams(const QString &type, const QString &id);
 
+    // Pure: base URL for a stream request. For an unconfigured Torrentio addon,
+    // injects "/language=<lang>" so releases in the user's language (dubbed
+    // included) rank first — the same knob Torrentio users set by hand.
+    static QString streamBaseUrl(const QString &addonUrl, const QString &torrentioLang);
+
     // Auto tracker list (ngosang/trackerslist)
     void fetchTrackerList();
     QStringList trackerList() const;

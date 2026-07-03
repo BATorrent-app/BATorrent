@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "services/discovery/addonmanager.h"
+#include "services/platform/translator.h"
 #include "services/platform/utils.h"
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -299,6 +300,35 @@ void AddonManager::searchCatalog(const QString &query)
         emit catalogFinished();
 }
 
+QString AddonManager::streamBaseUrl(const QString &addonUrl, const QString &torrentioLang)
+{
+    if (torrentioLang.isEmpty()) return addonUrl;
+    if (!QUrl(addonUrl).host().contains(QLatin1String("torrentio"))) return addonUrl;
+    if (addonUrl.contains(QLatin1Char('='))) return addonUrl;   // user already configured it
+    return addonUrl + QLatin1String("/language=") + torrentioLang;
+}
+
+namespace {
+// Torrentio's `language=` values for the app UI languages. English stays
+// unconfigured — the global default already is English-first.
+QString torrentioLanguageForApp()
+{
+    if (!QSettings().value("preferNativeLang", true).toBool()) return {};
+    switch (Translator::instance().language()) {
+    case Translator::Portuguese: return QStringLiteral("portuguese");
+    case Translator::Spanish:    return QStringLiteral("spanish");
+    case Translator::Russian:    return QStringLiteral("russian");
+    case Translator::Japanese:   return QStringLiteral("japanese");
+    case Translator::Chinese:    return QStringLiteral("chinese");
+    case Translator::German:     return QStringLiteral("german");
+    case Translator::Ukrainian:  return QStringLiteral("ukrainian");
+    case Translator::Turkish:    return QStringLiteral("turkish");
+    case Translator::English:    break;
+    }
+    return {};
+}
+}
+
 // Stremio stream: GET {url}/stream/{type}/{id}.json
 void AddonManager::getStreams(const QString &type, const QString &id)
 {
@@ -314,7 +344,7 @@ void AddonManager::getStreams(const QString &type, const QString &id)
 
         m_pendingStreams++;
         QString streamUrl = QString("%1/stream/%2/%3.json")
-            .arg(addon.url, type, id);
+            .arg(streamBaseUrl(addon.url, torrentioLanguageForApp()), type, id);
 
         QNetworkRequest req{QUrl(streamUrl)};
         req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
