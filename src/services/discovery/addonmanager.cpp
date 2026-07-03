@@ -639,6 +639,12 @@ void AddonManager::installDefaultProviders()
         {"rutracker_torapi", "RuTracker (TorAPI — self-host login)",
          "https://torapi.vercel.app/api/search/title/rutracker?query={query}",
          "", "Name", "Hash", "Size", "Seeds", "Peers", false},
+        // Jackett bridge: one preset covers every language-specific indexer the
+        // user's own Jackett has configured (BluDV/Comando for PT-BR, etc.).
+        // Off by default — needs a local Jackett; replace API_KEY, then enable.
+        {"jackett_local", "Jackett (local — all your indexers)",
+         "http://127.0.0.1:9117/api/v2.0/indexers/all/results?apikey=API_KEY&Query={query}",
+         "Results", "Title", "InfoHash", "Size", "Seeders", "Peers", false},
     };
 
     // Seed each built-in once (tracked by id) so a new provider reaches existing
