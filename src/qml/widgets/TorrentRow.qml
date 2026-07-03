@@ -57,18 +57,21 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.sp3
+            // classic mode = no cover art, raw torrent name — a clean qBittorrent-
+            // style row for users the media-hub styling puts off
             PosterThumb {
                 Layout.alignment: Qt.AlignVCenter
+                visible: !lrow.win.classicMode
                 posterUrl: lrow.posterUrl
                 label: lrow.metaTitle || lrow.torrentName || ""
             }
             Text {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                text: lrow.metaTitle || lrow.torrentName
+                text: lrow.win.classicMode ? lrow.torrentName : (lrow.metaTitle || lrow.torrentName)
                 color: Theme.t1
                 font.pixelSize: 13
-                font.family: Theme.fontSans
+                font.family: lrow.win.classicMode ? Theme.fontMono : Theme.fontSans
                 elide: Text.ElideRight
             }
         }

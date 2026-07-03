@@ -153,10 +153,11 @@ Rectangle {
                 spacing: 2
 
                 Rectangle {
+                    readonly property bool on: win.gridView && !win.classicMode
                     implicitWidth: segGr.implicitWidth + 22
                     height: 28
                     radius: 6
-                    color: win.gridView ? Qt.rgba(1,1,1,0.08) : "transparent"
+                    color: on ? Qt.rgba(1,1,1,0.08) : "transparent"
                     Row {
                         id: segGr
                         anchors.centerIn: parent
@@ -164,25 +165,26 @@ Rectangle {
                         IconImg {
                             anchors.verticalCenter: parent.verticalCenter
                             src: "qrc:/icons/grid.svg"
-                            tint: win.gridView ? Theme.t1 : Theme.t3
+                            tint: parent.parent.on ? Theme.t1 : Theme.t3
                             s: 14
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: (i18n.language, i18n.t("view_grid"))
-                            color: win.gridView ? Theme.t1 : Theme.t3
+                            color: parent.parent.on ? Theme.t1 : Theme.t3
                             font.pixelSize: 12
                             font.weight: Font.Medium
                             font.family: Theme.fontSans
                         }
                     }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.gridView = true }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.classicMode = false; win.gridView = true } }
                 }
                 Rectangle {
+                    readonly property bool on: !win.gridView && !win.classicMode
                     implicitWidth: segLi.implicitWidth + 22
                     height: 28
                     radius: 6
-                    color: !win.gridView ? Qt.rgba(1,1,1,0.08) : "transparent"
+                    color: on ? Qt.rgba(1,1,1,0.08) : "transparent"
                     Row {
                         id: segLi
                         anchors.centerIn: parent
@@ -190,19 +192,46 @@ Rectangle {
                         IconImg {
                             anchors.verticalCenter: parent.verticalCenter
                             src: "qrc:/icons/list.svg"
-                            tint: !win.gridView ? Theme.t1 : Theme.t3
+                            tint: parent.parent.on ? Theme.t1 : Theme.t3
                             s: 14
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: (i18n.language, i18n.t("view_list"))
-                            color: !win.gridView ? Theme.t1 : Theme.t3
+                            color: parent.parent.on ? Theme.t1 : Theme.t3
                             font.pixelSize: 12
                             font.weight: Font.Medium
                             font.family: Theme.fontSans
                         }
                     }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.gridView = false }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.classicMode = false; win.gridView = false } }
+                }
+                Rectangle {
+                    readonly property bool on: win.classicMode
+                    implicitWidth: segCl.implicitWidth + 22
+                    height: 28
+                    radius: 6
+                    color: on ? Qt.rgba(1,1,1,0.08) : "transparent"
+                    Row {
+                        id: segCl
+                        anchors.centerIn: parent
+                        spacing: 6
+                        IconImg {
+                            anchors.verticalCenter: parent.verticalCenter
+                            src: "qrc:/icons/list.svg"
+                            tint: parent.parent.on ? Theme.t1 : Theme.t3
+                            s: 14
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: (i18n.language, i18n.t("view_classic"))
+                            color: parent.parent.on ? Theme.t1 : Theme.t3
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            font.family: Theme.fontSans
+                        }
+                    }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.classicMode = true; win.gridView = false } }
                 }
             }
         }
