@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v4.4.0 — "Dublado"
 
 ### Added
 - **Releases in your language, finally.** With "Prefer my language" on (the default),
