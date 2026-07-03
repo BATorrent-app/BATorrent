@@ -57,6 +57,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addonmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/updater.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/audiomode.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)

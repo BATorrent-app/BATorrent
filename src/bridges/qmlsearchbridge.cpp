@@ -4,6 +4,7 @@
 
 #include "bridges/qmlsearchbridge.h"
 #include "torrent/iengine.h"
+#include "services/metadata/audiomode.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/discoveryservice.h"
 #include "services/metadata/nameparser.h"
@@ -254,6 +255,9 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
     const QString appLang = appLangCode();
     m["native"] = langs.contains(appLang)
                   || (appLang != QLatin1String("EN") && (multi || langs.contains(QLatin1String("MULTI"))));
+    // Dub/sub/original relative to the user's language — the axis the segmented
+    // filter acts on (a dubbed-hater and a dub-lover want opposite results).
+    m["audioMode"] = AudioMode::key(AudioMode::classify(name, appLang));
 }
 
 QString QmlSearchBridge::appLangCode()

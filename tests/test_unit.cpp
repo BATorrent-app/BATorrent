@@ -1450,3 +1450,53 @@ TEST_CASE("AddonManager: Torrentio language injection", "[addons]") {
     REQUIRE(AddonManager::streamBaseUrl("https://my.custom.addon/sub", "portuguese")
             == QString("https://my.custom.addon/sub"));
 }
+
+// ============================================================================
+//  AUDIO MODE — dub / sub / original relative to the user's language
+// ============================================================================
+
+#include "services/metadata/audiomode.h"
+
+TEST_CASE("AudioMode: Portuguese dub vs sub vs original", "[audiomode]") {
+    using namespace AudioMode;
+    // dubbed audio
+    REQUIRE(classify("Filme.2024.1080p.Dublado.WEB-DL.mp4", "PT") == Dubbed);
+    REQUIRE(classify("Serie 2024 Nacional 720p", "PT") == Dubbed);
+    REQUIRE(classify("Interstelar 2014 Dual Audio 5.1 BLUDV", "PT") == Dubbed);
+    // subtitled only (original audio)
+    REQUIRE(classify("Movie.2024.1080p.WEB-DL.Legendado.mkv", "PT") == Subbed);
+    REQUIRE(classify("Movie 2024 LEG PT 1080p", "PT") == Subbed);
+    // neither → original
+    REQUIRE(classify("Movie.2024.1080p.BluRay.x265-GROUP", "PT") == Original);
+}
+
+TEST_CASE("AudioMode: dub wins when both dub and sub markers present", "[audiomode]") {
+    using namespace AudioMode;
+    // a dual-audio release that also lists subs still gives you the dub
+    REQUIRE(classify("Filme 2024 Dual Audio Legendado 1080p", "PT") == Dubbed);
+}
+
+TEST_CASE("AudioMode: classification is relative to the user's language", "[audiomode]") {
+    using namespace AudioMode;
+    // "Dublado PT-BR" is a dub for a PT user, but nothing to a FR user
+    REQUIRE(classify("Filme.2024.Dublado.PT-BR.1080p", "PT") == Dubbed);
+    REQUIRE(classify("Filme.2024.Dublado.PT-BR.1080p", "FR") == Original);
+    // VOSTFR = original audio + French subs: sub for FR, original for PT
+    REQUIRE(classify("Film.2024.VOSTFR.1080p.WEB", "FR") == Subbed);
+    REQUIRE(classify("Film.2024.VOSTFR.1080p.WEB", "PT") == Original);
+    // TRUEFRENCH = French dub
+    REQUIRE(classify("Film.2024.TRUEFRENCH.1080p.BluRay", "FR") == Dubbed);
+}
+
+TEST_CASE("AudioMode: English and unknown languages have no dub/sub axis", "[audiomode]") {
+    using namespace AudioMode;
+    REQUIRE(classify("Movie.2024.Dublado.1080p", "EN") == Original);
+    REQUIRE(classify("Movie.2024.Dublado.1080p", "") == Original);
+    REQUIRE(classify("Movie.2024.Dublado.1080p", "KO") == Original);   // no table
+}
+
+TEST_CASE("AudioMode: key strings are stable", "[audiomode]") {
+    REQUIRE(AudioMode::key(AudioMode::Dubbed) == "dub");
+    REQUIRE(AudioMode::key(AudioMode::Subbed) == "sub");
+    REQUIRE(AudioMode::key(AudioMode::Original) == "original");
+}

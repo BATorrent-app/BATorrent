@@ -38,8 +38,13 @@ Rectangle {
     property string repackerFilter: ""
     property string providerFilter: ""
     property string langFilter: ""
+    property string audioModeFilter: ""   // "" = all | "dub" | "sub" | "original"
     property int minSeeds: 0
     property string sortKey: ""        // "" = provider order (relevance)
+
+    // the dub/sub axis only exists for non-English UIs (English content has no
+    // "dubbed in my language" question) — hide the segmented control otherwise
+    readonly property bool showAudioModes: typeof i18n !== "undefined" && i18n.language !== 0
 
     // ---- detail drawer state ----
     property var selected: null
@@ -124,6 +129,7 @@ Rectangle {
         if (repackerFilter !== "") arr = arr.filter(function (r) { return r.repacker === repackerFilter })
         if (providerFilter !== "") arr = arr.filter(function (r) { return r.provider === providerFilter })
         if (langFilter !== "") arr = arr.filter(function (r) { return (r.langs || []).indexOf(langFilter) !== -1 })
+        if (audioModeFilter !== "") arr = arr.filter(function (r) { return (r.audioMode || "original") === audioModeFilter })
         if (minSeeds > 0) arr = arr.filter(function (r) { return (r.seedsN || 0) >= minSeeds })
         if (sortKey === "seeders") arr.sort(function (a, b) { return (b.seedsN || 0) - (a.seedsN || 0) })
         else if (sortKey === "size") arr.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) })
@@ -162,7 +168,7 @@ Rectangle {
     }
 
     function clearFilters() {
-        qualityFilter = ""; sourceFilter = ""; repackerFilter = ""; providerFilter = ""; langFilter = ""; minSeeds = 0; sortKey = ""
+        qualityFilter = ""; sourceFilter = ""; repackerFilter = ""; providerFilter = ""; langFilter = ""; audioModeFilter = ""; minSeeds = 0; sortKey = ""
         qualSel.currentIndex = 0; srcFiltSel.currentIndex = 0; provSel.currentIndex = 0
         repSel.currentIndex = 0; langSel.currentIndex = 0; seedSel.currentIndex = 0; sortSel.currentIndex = 0
     }
@@ -480,6 +486,69 @@ Rectangle {
                              || page.providerFilter !== "" || page.minSeeds > 0 || page.sortKey !== ""
                     text: (i18n.language, i18n.t("search_filter_clear"))
                     onClicked: page.clearFilters()
+                }
+            }
+        }
+
+        // audio-mode segmented control — the thing a viewer actually chooses on:
+        // dubbed / subtitled / original, in their own language. Prominent, not a
+        // dropdown; hidden for games, title-picking, and English UIs.
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 44
+            visible: !page.isTitles && !page.isGames && page.showAudioModes
+            color: "transparent"
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.sp5
+                anchors.rightMargin: Theme.sp5
+                spacing: Theme.sp3
+
+                Row {
+                    id: audioSeg
+                    spacing: 3
+                    Layout.alignment: Qt.AlignVCenter
+                    Repeater {
+                        model: [
+                            { k: "",         t: i18n.t("search_audio_all") },
+                            { k: "dub",      t: "🎙  " + i18n.t("search_audio_dub") },
+                            { k: "sub",      t: "💬  " + i18n.t("search_audio_sub") },
+                            { k: "original", t: "🌐  " + i18n.t("search_audio_original") }
+                        ]
+                        delegate: Rectangle {
+                            required property var modelData
+                            readonly property bool on: page.audioModeFilter === modelData.k
+                            implicitWidth: segTxt.implicitWidth + 26
+                            implicitHeight: 30
+                            radius: 8
+                            color: on ? Theme.accent : (segMa.containsMouse ? Theme.hover : Theme.field)
+                            border.color: on ? Theme.accent : Theme.hair
+                            border.width: 1
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Text {
+                                id: segTxt
+                                anchors.centerIn: parent
+                                text: (i18n.language, modelData.t)
+                                color: parent.on ? Theme.accentText : Theme.t2
+                                font.pixelSize: 12
+                                font.weight: parent.on ? Font.DemiBold : Font.Medium
+                                font.family: Theme.fontSans
+                            }
+                            MouseArea {
+                                id: segMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: page.audioModeFilter = modelData.k
+                            }
+                        }
+                    }
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    visible: page.audioModeFilter !== ""
+                    text: page.viewModel.length + " " + i18n.t("search_audio_matches")
+                    color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono
                 }
             }
         }
