@@ -4,13 +4,13 @@
 
 #include "webui/webserver.h"
 #include "torrent/iengine.h"
+#include "services/security/passwordhash.h"
 #include <QTcpSocket>
 #include <QFile>
 #include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QCryptographicHash>
 #include <QStandardPaths>
 #include <QTemporaryFile>
 #include <QRandomGenerator>
@@ -161,10 +161,10 @@ bool WebServer::handleAuthGates(QTcpSocket *socket, const QByteArray &method,
         const int colon = decoded.indexOf(':');
         if (colon > 0) {
             const QByteArray u = decoded.left(colon);
-            const QByteArray pHash = QCryptographicHash::hash(decoded.mid(colon + 1),
-                                        QCryptographicHash::Sha256).toHex();
-            if (constantTimeEquals(u, m_user.toUtf8())
-                && constantTimeEquals(pHash, m_passwordHash.toUtf8())) {
+            const QString pass = QString::fromUtf8(decoded.mid(colon + 1));
+            if (PasswordHash::constantTimeEquals(u, m_user.toUtf8())
+                && PasswordHash::verify(pass, m_passwordHash)) {
+                upgradeLegacyHash(pass);
                 const QByteArray token = issueSessionCookie();
                 const QByteArray extra = "Location: /\r\nSet-Cookie: BATSID=" + token
                     + "; HttpOnly; SameSite=Strict; Path=/\r\n";
@@ -367,17 +367,11 @@ QByteArray WebServer::headerValue(const QByteArray &headersOnly, const QByteArra
     return headersOnly.mid(start, end - start).trimmed();
 }
 
-bool WebServer::constantTimeEquals(const QByteArray &a, const QByteArray &b)
+void WebServer::upgradeLegacyHash(const QString &password)
 {
-    // Length mismatch is information we can leak (the attacker can guess
-    // it), but the bytewise comparison must not short-circuit. Pad the
-    // shorter input and XOR everything together so the loop count is
-    // independent of where the first difference lies.
-    if (a.size() != b.size()) return false;
-    int diff = 0;
-    for (int i = 0; i < a.size(); ++i)
-        diff |= static_cast<unsigned char>(a[i]) ^ static_cast<unsigned char>(b[i]);
-    return diff == 0;
+    if (!PasswordHash::isLegacy(m_passwordHash)) return;
+    m_passwordHash = PasswordHash::hash(password);
+    emit passwordHashUpgraded(m_passwordHash);
 }
 
 bool WebServer::checkAuth(const QByteArray &headersOnly, const QString &clientIp)
@@ -405,18 +399,14 @@ bool WebServer::checkAuth(const QByteArray &headersOnly, const QString &clientIp
 
     QString user = QString::fromUtf8(decoded.left(colon));
     QString pass = QString::fromUtf8(decoded.mid(colon + 1));
-    QByteArray passHash = QCryptographicHash::hash(pass.toUtf8(),
-                                                    QCryptographicHash::Sha256).toHex();
-    QByteArray storedHash = m_passwordHash.toUtf8();
 
-    // Compare both fields in constant time so timing analysis can't recover
-    // the hash byte-by-byte.
-    bool userOk = constantTimeEquals(user.toUtf8(), m_user.toUtf8());
-    bool passOk = constantTimeEquals(passHash, storedHash);
+    bool userOk = PasswordHash::constantTimeEquals(user.toUtf8(), m_user.toUtf8());
+    bool passOk = PasswordHash::verify(pass, m_passwordHash);
 
     if (userOk && passOk) {
         state.attempts = 0;
         state.lockedUntil = QDateTime();
+        upgradeLegacyHash(pass);
         return true;
     }
 

@@ -76,6 +76,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/notifier.cpp
     src/services/platform/qrcodegen.cpp
     src/services/integrations/discordrpc.cpp
+    src/services/security/passwordhash.cpp
     src/services/security/secretstore.cpp
     src/services/integrations/updater.cpp
     src/services/discovery/addonmanager.cpp

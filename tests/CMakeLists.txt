@@ -87,6 +87,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoipprovider.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/discordrpc.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/notifier.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/passwordhash.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/secretstore.cpp
 )
 

@@ -15,6 +15,7 @@
 
 #include "webui/webserver.h"
 #include "torrent/sessionmanager.h"
+#include "services/security/passwordhash.h"
 #include "services/security/suspiciousscan.h"
 
 #ifdef BAT_CRT_DEBUG_HEAP
@@ -84,9 +85,7 @@ struct ServerFixture {
         }
         REQUIRE(port > 0);
         if (withAuth) {
-            passHash = QString::fromUtf8(
-                QCryptographicHash::hash("s3cureP@ss",
-                    QCryptographicHash::Sha256).toHex());
+            passHash = PasswordHash::hash("s3cureP@ss");
             server.setCredentials("admin", passHash);
         }
     }
@@ -603,4 +602,63 @@ TEST_CASE("Suspicious: empty / no-media torrent only triggers on double-ext", "[
         { "App/manual.pdf.exe", 1 * MB },
     });
     REQUIRE(hasReason(lure, "App/manual.pdf.exe", "double_ext"));
+}
+
+// ============================================================================
+//  PASSWORD HASHING (PBKDF2 + legacy migration)
+// ============================================================================
+
+TEST_CASE("PasswordHash: PBKDF2 round trip", "[security][password]") {
+    const QString stored = PasswordHash::hash("s3cureP@ss");
+    REQUIRE(stored.startsWith("pbkdf2$"));
+    REQUIRE_FALSE(PasswordHash::isLegacy(stored));
+    REQUIRE(PasswordHash::verify("s3cureP@ss", stored));
+    REQUIRE_FALSE(PasswordHash::verify("s3cureP@sS", stored));
+    REQUIRE_FALSE(PasswordHash::verify("", stored));
+}
+
+TEST_CASE("PasswordHash: salts are unique per hash", "[security][password]") {
+    REQUIRE(PasswordHash::hash("same") != PasswordHash::hash("same"));
+}
+
+TEST_CASE("PasswordHash: legacy bare SHA-256 still verifies", "[security][password]") {
+    const QString legacy = QString::fromLatin1(
+        QCryptographicHash::hash("oldpass", QCryptographicHash::Sha256).toHex());
+    REQUIRE(PasswordHash::isLegacy(legacy));
+    REQUIRE(PasswordHash::verify("oldpass", legacy));
+    REQUIRE_FALSE(PasswordHash::verify("wrong", legacy));
+}
+
+TEST_CASE("PasswordHash: malformed stored values never verify", "[security][password]") {
+    REQUIRE_FALSE(PasswordHash::verify("x", ""));
+    REQUIRE_FALSE(PasswordHash::verify("x", "pbkdf2$"));
+    REQUIRE_FALSE(PasswordHash::verify("x", "pbkdf2$0$aa$bb"));
+    REQUIRE_FALSE(PasswordHash::verify("x", "pbkdf2$-5$aa$bb"));
+    REQUIRE_FALSE(PasswordHash::verify("x", "pbkdf2$100000$$"));
+    REQUIRE_FALSE(PasswordHash::verify("x", "pbkdf2$100000$zz$zz$extra"));
+}
+
+TEST_CASE("Security: legacy hash upgrades to PBKDF2 on successful login",
+          "[security][password]") {
+    ServerFixture f(false);
+    const QString legacy = QString::fromLatin1(
+        QCryptographicHash::hash("s3cureP@ss", QCryptographicHash::Sha256).toHex());
+    f.server.setCredentials("admin", legacy);
+
+    QString upgraded;
+    QObject::connect(&f.server, &WebServer::passwordHashUpgraded,
+                     [&upgraded](const QString &h) { upgraded = h; });
+
+    const QByteArray resp = sendRaw(f.port,
+        "GET /api/torrents HTTP/1.1\r\nHost: x\r\n"
+        + basicAuth("admin", "s3cureP@ss") + "\r\n");
+    REQUIRE(resp.startsWith("HTTP/1.1 200"));
+    REQUIRE(upgraded.startsWith("pbkdf2$"));
+    REQUIRE(PasswordHash::verify("s3cureP@ss", upgraded));
+
+    // and the server now authenticates against the upgraded hash
+    const QByteArray again = sendRaw(f.port,
+        "GET /api/torrents HTTP/1.1\r\nHost: x\r\n"
+        + basicAuth("admin", "s3cureP@ss") + "\r\n");
+    REQUIRE(again.startsWith("HTTP/1.1 200"));
 }

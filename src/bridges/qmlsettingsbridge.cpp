@@ -18,9 +18,9 @@
 #include "services/integrations/discordrpc.h"
 #include "services/integrations/updater.h"
 #include "services/integrations/notifier.h"
+#include "services/security/passwordhash.h"
 #include "services/security/secretstore.h"
 #include "webui/webserver.h"
-#include <QCryptographicHash>
 #include <QNetworkAccessManager>
 #include <QNetworkProxy>
 #include <QNetworkRequest>
@@ -84,6 +84,8 @@ void QmlSettingsBridge::applyWebUi()
     if (!st.value("webUiEnabled", false).toBool()) return;
     if (!m_engine) return;
     m_webServer = new WebServer(m_engine, this);
+    connect(m_webServer, &WebServer::passwordHashUpgraded, this,
+            [](const QString &h) { QSettings().setValue("webUiPasswordHash", h); });
     const QString user = st.value("webUiUser", "admin").toString();
     const QString passHash = st.value("webUiPasswordHash").toString();   // hash, not a secret → QSettings (no keychain prompt at boot)
     const bool hasAuth = !user.isEmpty() && !passHash.isEmpty();
@@ -113,8 +115,7 @@ QString QmlSettingsBridge::enablePairing()
     // (the server only ever needs the hash; keeping it out of the keychain avoids
     // a login-keychain prompt on every cold start of the unsigned macOS build).
     SecretStore::instance().set("webUiPassword", pw);
-    st.setValue("webUiPasswordHash",
-        QString::fromLatin1(QCryptographicHash::hash(pw.toUtf8(), QCryptographicHash::Sha256).toHex()));
+    st.setValue("webUiPasswordHash", PasswordHash::hash(pw));
     applyWebUi();
     emit changed();
     return pw;
@@ -313,8 +314,7 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
             const QString p = v.toString();
             // hash lives in QSettings (no keychain prompt at boot); empty clears it
             if (p.isEmpty()) QSettings().remove("webUiPasswordHash");
-            else QSettings().setValue("webUiPasswordHash",
-                QString::fromLatin1(QCryptographicHash::hash(p.toUtf8(), QCryptographicHash::Sha256).toHex()));
+            else QSettings().setValue("webUiPasswordHash", PasswordHash::hash(p));
         } else if (key == "webUiEnabled")      { QSettings().setValue("webUiEnabled", v.toBool()); }
         else if (key == "webUiPort")           { QSettings().setValue("webUiPort", v.toInt()); }
         else if (key == "webUiRemoteAccess")   { QSettings().setValue("webUiRemoteAccess", v.toBool()); }

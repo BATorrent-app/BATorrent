@@ -29,6 +29,11 @@ public:
 
     void setCredentials(const QString &user, const QString &passwordHash);
 
+signals:
+    // Emitted when a legacy (bare SHA-256) credential authenticates, carrying
+    // its PBKDF2 replacement — the owner persists it so the weak hash dies.
+    void passwordHashUpgraded(const QString &newHash);
+
 private slots:
     void onNewConnection();
 
@@ -51,6 +56,7 @@ private:
 
     void readMore(QTcpSocket *socket);
     void dispatch(QTcpSocket *socket, const QByteArray &requestData);
+    void upgradeLegacyHash(const QString &password);
 
     void sendResponse(QTcpSocket *socket, int status, const QString &statusText,
                       const QByteArray &body, const QByteArray &contentType,
@@ -62,7 +68,6 @@ private:
     bool checkSession(const QByteArray &headersOnly);
     QByteArray issueSessionCookie();
     static QByteArray headerValue(const QByteArray &headersOnly, const QByteArray &name);
-    static bool constantTimeEquals(const QByteArray &a, const QByteArray &b);
 
     QByteArray handleGetTorrents();
     QByteArray handleGetTorrentPeers(const QString &hash);
