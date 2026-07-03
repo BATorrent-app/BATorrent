@@ -10,6 +10,9 @@
 - **Jackett preset** in search providers (off by default): point it at your local
   Jackett and every language-specific indexer you run there — whatever the country —
   becomes searchable inside BATorrent.
+- **Dubbed / Subtitled / Original filter.** One tap at the top of search results —
+  see only dubbed releases, only subtitled, or only original audio, in your own
+  language. It knows the difference a viewer actually cares about; ordering can't.
 
 ### Fixed
 - **Progress never claims "100%" early anymore.** A torrent at 99.95% now shows
