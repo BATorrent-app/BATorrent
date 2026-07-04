@@ -86,6 +86,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/geoipdb.cpp
     src/services/integrations/geoipprovider.cpp
     src/services/metadata/audiomode.cpp
+    src/services/metadata/episodegroup.cpp
     src/services/metadata/nameparser.cpp
     src/services/metadata/metadataresolver.cpp
     src/services/discovery/discoveryservice.cpp

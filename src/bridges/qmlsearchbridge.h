@@ -20,6 +20,13 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(bool singleTitleView READ singleTitleView NOTIFY modeChanged) // list is one picked title → drop per-row covers
     Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
+    // The picked title behind the current drill-down ("movie"|"series"|"game", ""
+    // when the list isn't a single work) and its identity + backdrops/screenshots.
+    Q_PROPERTY(QString workType READ workType NOTIFY workChanged)
+    Q_PROPERTY(QString workTitle READ workTitle NOTIFY workChanged)
+    Q_PROPERTY(QString workPoster READ workPoster NOTIFY workChanged)
+    Q_PROPERTY(QString workYear READ workYear NOTIFY workChanged)
+    Q_PROPERTY(QStringList workStills READ workStills NOTIFY workStillsChanged)
 public:
     explicit QmlSearchBridge(IEngine *session, QObject *parent = nullptr);
 
@@ -33,6 +40,12 @@ public:
     bool singleTitleView() const;
     bool searching() const;
     QString statusText() const;
+    QString workType() const { return m_workType; }
+    QString workTitle() const { return m_workTitle; }
+    QString workPoster() const { return m_workPoster; }
+    QString workYear() const { return m_workYear; }
+    QStringList workStills() const { return m_workStills; }
+    Q_INVOKABLE void fetchWorkStills();   // lazy TMDB backdrops for the picked title
 
     Q_INVOKABLE void refreshSources();
     Q_INVOKABLE void search(const QString &sourceKey, const QString &query, int categoryCode = 0);
@@ -76,6 +89,8 @@ signals:
     void modeChanged();
     void searchingChanged();
     void statusChanged();
+    void workChanged();
+    void workStillsChanged();
     void gameSourcesChanged();
     void coverReady(const QString &infoHash, const QString &posterPath);
     void addedTorrent(const QString &infoHash);   // a magnet was added from Search
@@ -106,6 +121,20 @@ private:
     void searchSourcesForWork(const QString &title, const QString &year, const QString &type);
     int pickBestResult() const;       // index of the best release in m_results, or -1
     void gwResolve();                 // Get&Watch: pick + add once the search settles
+    void setWorkContext(const QVariantMap &work);   // a titles-grid row (title/type/year/poster/tmdbId/stills)
+    void clearWorkContext();
+    void showEpisodeRows();           // m_episodeCache → m_results (mode "episodes")
+    void rebuildCatalogRows();        // m_catalogCache → m_results (mode "catalog")
+
+    QString m_workType;               // picked title's type; "" outside a drill-down
+    QString m_workTitle, m_workPoster, m_workYear;
+    int m_workTmdbId = 0;
+    QStringList m_workStills;
+    bool m_workStillsRequested = false;
+
+    QVariantList m_episodeCache;      // series episode rows (videoId per row) for mode "episodes"
+    QString m_epType, m_epId;         // the catalog item behind the episode list
+    bool m_fromEpisodes = false;      // current streams view was entered from an episode row
 
     bool m_gwActive = false;          // a Get&Watch search is in flight
     bool m_gwCancelled = false;       // user cancelled mid-search → don't add

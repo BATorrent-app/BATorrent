@@ -14,6 +14,7 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QUrl>
+#include <algorithm>
 
 namespace {
 // Public trackers appended to magnets built from a bare info_hash so freshly
@@ -149,6 +150,64 @@ bool AddonManager::hasStreamAddon() const
     for (const auto &a : m_addons)
         if (a.enabled && a.resources.contains("stream")) return true;
     return false;
+}
+
+bool AddonManager::hasMetaAddon() const
+{
+    for (const auto &a : m_addons)
+        if (a.enabled && a.resources.contains("meta")) return true;
+    return false;
+}
+
+// Stremio meta: GET {url}/meta/{type}/{id}.json → meta.videos = the episode list
+void AddonManager::fetchMeta(const QString &type, const QString &id)
+{
+    const quint32 gen = ++m_metaGen;
+    const AddonManifest *chosen = nullptr;
+    for (const auto &addon : m_addons) {
+        if (!addon.enabled || !addon.resources.contains("meta")) continue;
+        if (!addon.types.contains(type)) continue;
+        chosen = &addon;
+        break;
+    }
+    if (!chosen) { emit metaVideos(id, {}); return; }
+
+    QNetworkRequest req{QUrl(QString("%1/meta/%2/%3.json").arg(chosen->url, type, id))};
+    req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
+    req.setTransferTimeout(12000);
+    auto *reply = m_net->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, gen, id]() {
+        reply->deleteLater();
+        if (gen != m_metaGen) return; // stale reply, ignore
+
+        QVariantList videos;
+        if (reply->error() == QNetworkReply::NoError) {
+            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
+                                       .object().value("meta").toObject()
+                                       .value("videos").toArray();
+            for (const auto &val : arr) {
+                const QJsonObject v = val.toObject();
+                const QString videoId = v.value("id").toString();
+                if (videoId.isEmpty()) continue;
+                QVariantMap ep;
+                ep["videoId"] = videoId;
+                ep["season"] = v.value("season").toInt();
+                // Cinemeta uses "episode"; some addons use "number"
+                ep["episode"] = v.contains("episode") ? v.value("episode").toInt()
+                                                      : v.value("number").toInt();
+                ep["name"] = decodeHtmlEntities(v.value("name").toString(v.value("title").toString()));
+                ep["released"] = v.value("released").toString().left(10);
+                videos << ep;
+            }
+            std::sort(videos.begin(), videos.end(), [](const QVariant &a, const QVariant &b) {
+                const QVariantMap ma = a.toMap(), mb = b.toMap();
+                const int sa = ma.value("season").toInt(), sb = mb.value("season").toInt();
+                if (sa != sb) return sa < sb;
+                return ma.value("episode").toInt() < mb.value("episode").toInt();
+            });
+        }
+        emit metaVideos(id, videos);
+    });
 }
 
 void AddonManager::addAddon(const QString &url)
@@ -613,38 +672,27 @@ void AddonManager::installDefaultProviders()
 {
     QSettings s("BATorrent", "BATorrent");
 
-    struct Def { QString id, name, url, arr, nm, hash, sz, seed, leech; bool enabled; };
+    // Only the safe public-JSON, global sources ship enabled by default. Every
+    // localized source lives in providerCatalog() so the user opts in per region.
+    struct Def { QString id, name, url, arr, nm, hash, sz, seed, leech, region; bool enabled; };
     const QList<Def> defaults = {
         {"apibay", "The Pirate Bay (apibay)",
          "https://apibay.org/q.php?q={query}&cat={category}",
-         "", "name", "info_hash", "size", "seeders", "leechers", true},
+         "", "name", "info_hash", "size", "seeders", "leechers", "global", true},
         {"nyaa_api", "Nyaa.si",
          "https://nyaa.si/api/v2?q={query}&limit=50",
-         "torrents", "title", "info_hash", "total_size", "seeders", "leechers", true},
+         "torrents", "title", "info_hash", "total_size", "seeders", "leechers", "anime", true},
         // Open torrent database (no login), returns raw-byte sizes + real swarm
         // counts. Global content; safe to enable like apibay/nyaa.
         {"torrents_csv", "Torrents-CSV",
          "https://torrents-csv.com/service/search?q={query}&size=50",
-         "torrents", "name", "infohash", "size_bytes", "seeders", "leechers", true},
-        // RuTor via TorAPI scrapes the (registration-walled) Russian/CIS trackers
-        // server-side and returns the info_hash, so the magnet downloads over DHT
-        // without the user ever logging in. Off by default — it routes the query
-        // through a third-party instance; the URL is editable to self-host TorAPI.
-        {"rutor_torapi", "RuTor (TorAPI · CIS)",
-         "https://torapi.vercel.app/api/search/title/rutor?query={query}",
-         "", "Name", "Hash", "Size", "Seeds", "Peers", false},
-        // RuTracker needs a login, so the public TorAPI can't search it. Off by
-        // default and only useful pointed at a self-hosted TorAPI that holds your
-        // RuTracker account — edit the URL to your instance, then enable.
-        {"rutracker_torapi", "RuTracker (TorAPI — self-host login)",
-         "https://torapi.vercel.app/api/search/title/rutracker?query={query}",
-         "", "Name", "Hash", "Size", "Seeds", "Peers", false},
-        // Jackett bridge: one preset covers every language-specific indexer the
-        // user's own Jackett has configured (BluDV/Comando for PT-BR, etc.).
-        // Off by default — needs a local Jackett; replace API_KEY, then enable.
-        {"jackett_local", "Jackett (local — all your indexers)",
-         "http://127.0.0.1:9117/api/v2.0/indexers/all/results?apikey=API_KEY&Query={query}",
-         "Results", "Title", "InfoHash", "Size", "Seeders", "Peers", false},
+         "torrents", "name", "infohash", "size_bytes", "seeders", "leechers", "global", true},
+        // BitSearch: login-free multi-tracker aggregator (TPB/1337x/YTS/nyaa across
+        // languages). results[] with infohash → magnet built like apibay. ~200
+        // req/day per IP anon; that's per-search, generous for normal use.
+        {"bitsearch", "BitSearch (multi-idioma)",
+         "https://bitsearch.eu/api/v1/search?q={query}&limit=50",
+         "results", "title", "infohash", "size", "seeders", "leechers", "global", true},
     };
 
     // Seed each built-in once (tracked by id) so a new provider reaches existing
@@ -652,6 +700,11 @@ void AddonManager::installDefaultProviders()
     QStringList seeded = s.value("seededProviderIds").toStringList();
     if (seeded.isEmpty() && s.value("searchProvidersInitialized", false).toBool())
         seeded << QStringLiteral("apibay") << QStringLiteral("nyaa_api");  // pre-seed-flag users
+    // Migration: the CIS/Jackett presets used to seed here (off). They now live in
+    // the catalog only — mark them seeded so they don't resurrect as dead rows,
+    // but keep any the user actually enabled.
+    for (const char *legacy : { "rutor_torapi", "rutracker_torapi", "jackett_local" })
+        if (!seeded.contains(QLatin1String(legacy))) seeded << QLatin1String(legacy);
     bool changed = false;
     for (const auto &d : defaults) {
         if (seeded.contains(d.id)) continue;
@@ -665,13 +718,102 @@ void AddonManager::installDefaultProviders()
             p.id = d.id; p.name = d.name; p.urlTemplate = d.url;
             p.arrayPath = d.arr; p.namePath = d.nm; p.hashPath = d.hash;
             p.sizePath = d.sz; p.seedersPath = d.seed; p.leechersPath = d.leech;
-            p.enabled = d.enabled; p.builtIn = true;
+            p.enabled = d.enabled; p.builtIn = true; p.region = d.region;
             m_searchProviders.append(p);
         }
     }
     s.setValue("searchProvidersInitialized", true);
     s.setValue("seededProviderIds", seeded);
     if (changed) saveSearchProviders();
+}
+
+QList<ProviderPreset> AddonManager::providerCatalog()
+{
+    auto torApi = [](const QString &id, const QString &name, const QString &tracker,
+                     const QString &region, const QString &note, bool selfHost = false) {
+        ProviderPreset ps;
+        SearchProvider &p = ps.provider;
+        p.id = id;
+        p.name = name;
+        // Lifailon/TorAPI exposes each tracker under /api/search/title/<tracker>;
+        // it scrapes server-side and returns the info_hash, so no login is needed
+        // for the public trackers. The default instance is editable to self-host.
+        p.urlTemplate = QStringLiteral("https://torapi.vercel.app/api/search/title/%1?query={query}").arg(tracker);
+        p.arrayPath = QString();
+        p.namePath = QStringLiteral("Name");
+        p.hashPath = QStringLiteral("Hash");
+        p.sizePath = QStringLiteral("Size");
+        p.seedersPath = QStringLiteral("Seeds");
+        p.leechersPath = QStringLiteral("Peers");
+        p.builtIn = true;
+        p.region = region;
+        ps.note = note;
+        ps.needsConfig = selfHost;
+        return ps;
+    };
+    auto json = [](const QString &id, const QString &name, const QString &url,
+                   const QString &arr, const QString &nm, const QString &hash,
+                   const QString &sz, const QString &seed, const QString &leech,
+                   const QString &region, const QString &note, bool needsConfig = false) {
+        ProviderPreset ps;
+        SearchProvider &p = ps.provider;
+        p.id = id; p.name = name; p.urlTemplate = url;
+        p.arrayPath = arr; p.namePath = nm; p.hashPath = hash;
+        p.sizePath = sz; p.seedersPath = seed; p.leechersPath = leech;
+        p.builtIn = true; p.region = region;
+        ps.note = note; ps.needsConfig = needsConfig;
+        return ps;
+    };
+
+    QList<ProviderPreset> cat;
+
+    // Only GET endpoints with a {query} template fit searchWithProvider — POST-body
+    // aggregators (Knaben v1) can't be presets here; Jackett covers that ground.
+
+    // ── PT-BR (filmes/séries — via torrent-indexer self-host) ────────────────
+    // felipemarinho97/torrent-indexer scrapes Comando/BluDV/Torrent dos Filmes/etc.
+    // and returns info_hash + magnet as JSON. No public instance → self-host (Docker).
+    {
+        ProviderPreset ps;
+        SearchProvider &p = ps.provider;
+        p.id = QStringLiteral("torrentindexer_ptbr");
+        p.name = QStringLiteral("Comando/BluDV… (torrent-indexer)");
+        p.urlTemplate = QStringLiteral("http://127.0.0.1:7006/search?q={query}");
+        p.arrayPath = QStringLiteral("results");
+        p.namePath = QStringLiteral("title");
+        p.hashPath = QStringLiteral("info_hash");
+        p.sizePath = QStringLiteral("size");
+        p.seedersPath = QStringLiteral("seed_count");
+        p.leechersPath = QStringLiteral("leech_count");
+        p.builtIn = true;
+        p.region = QStringLiteral("ptbr");
+        ps.note = QStringLiteral("Filmes/séries PT-BR. Exige rodar o torrent-indexer localmente (Docker) — edite a URL.");
+        ps.needsConfig = true;
+        cat << ps;
+    }
+
+    // ── CIS / Russo (via TorAPI) ─────────────────────────────────────────────
+    // Only RuTor returns the info_hash in *title* search (verified); Kinozal/
+    // NNM-Club expose it only in per-ID detail lookups, which searchWithProvider
+    // doesn't do — so they'd yield magnet-less rows and are deliberately omitted.
+    cat << torApi(QStringLiteral("rutor_torapi"), QStringLiteral("RuTor"), QStringLiteral("rutor"),
+                  QStringLiteral("cis"),
+                  QStringLiteral("Tracker russo público. Consulta via instância TorAPI de terceiros (editável)."));
+    cat << torApi(QStringLiteral("rutracker_torapi"), QStringLiteral("RuTracker (self-host)"),
+                  QStringLiteral("rutracker"), QStringLiteral("cis"),
+                  QStringLiteral("Exige login → só funciona apontando para uma TorAPI própria com sua conta."),
+                  /*selfHost*/ true);
+
+    // ── Localizado via Jackett (cobre BluDV/Comando PT-BR, ES, etc.) ─────────
+    cat << json(QStringLiteral("jackett_local"), QStringLiteral("Jackett (todos os seus indexers)"),
+                QStringLiteral("http://127.0.0.1:9117/api/v2.0/indexers/all/results?apikey=API_KEY&Query={query}"),
+                QStringLiteral("Results"), QStringLiteral("Title"), QStringLiteral("InfoHash"),
+                QStringLiteral("Size"), QStringLiteral("Seeders"), QStringLiteral("Peers"),
+                QStringLiteral("self"),
+                QStringLiteral("Uma fonte cobre TODOS os indexers localizados do seu Jackett (PT-BR, ES…). Troque API_KEY."),
+                /*needsConfig*/ true);
+
+    return cat;
 }
 
 void AddonManager::loadSearchProviders()
@@ -693,6 +835,8 @@ void AddonManager::loadSearchProviders()
         p.leechersPath = s.value("leechersPath", "leechers").toString();
         p.enabled = s.value("enabled", true).toBool();
         p.builtIn = s.value("builtIn", false).toBool();
+        p.region = s.value("region", "global").toString();
+        p.note = s.value("note").toString();
         m_searchProviders.append(p);
     }
     s.endArray();
@@ -716,6 +860,8 @@ void AddonManager::saveSearchProviders()
         s.setValue("leechersPath", p.leechersPath);
         s.setValue("enabled", p.enabled);
         s.setValue("builtIn", p.builtIn);
+        s.setValue("region", p.region);
+        s.setValue("note", p.note);
     }
     s.endArray();
 }
@@ -742,6 +888,13 @@ void AddonManager::setSearchProviderEnabled(int index, bool enabled)
 {
     if (index < 0 || index >= m_searchProviders.size()) return;
     m_searchProviders[index].enabled = enabled;
+    saveSearchProviders();
+}
+
+void AddonManager::setSearchProviderUrl(int index, const QString &urlTemplate)
+{
+    if (index < 0 || index >= m_searchProviders.size() || urlTemplate.trimmed().isEmpty()) return;
+    m_searchProviders[index].urlTemplate = urlTemplate.trimmed();
     saveSearchProviders();
 }
 

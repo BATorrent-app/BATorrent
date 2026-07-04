@@ -99,6 +99,7 @@
 <file>../src/qml/SearchEmptyState.qml</file>
 <file>../src/qml/SearchDetailDrawer.qml</file>
 <file>../src/qml/SearchGameMgr.qml</file>
+<file>../src/qml/SourcesManager.qml</file>
 <file>../src/qml/GetWatchOverlay.qml</file>
 <file>../src/qml/WrappedWindow.qml</file>
 <file>../src/qml/HubView.qml</file>

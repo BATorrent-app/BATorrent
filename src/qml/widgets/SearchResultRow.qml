@@ -17,6 +17,8 @@ Rectangle {
     required property int index
     readonly property int srcIndex: modelData._idx
     readonly property string coverHash: modelData.coverHash || ""
+    // catalog items and episode-picker rows drill in on click instead of opening the drawer
+    readonly property bool activates: sv.isCatalog || sv.isEpisodes
     property string posterSrc: sv.fileUrl(modelData.poster || "")
     width: ListView.view.width
     height: 60
@@ -86,7 +88,13 @@ Rectangle {
                 spacing: 8
                 Text {
                     Layout.fillWidth: true
-                    text: row.modelData.name
+                    text: {
+                        if (!row.sv.isEpisodes) return row.modelData.name
+                        var tag = (i18n.language, i18n.t("search_season_abbr")).arg(row.modelData.season)
+                                  + " " + i18n.t("search_episode_abbr").arg(row.modelData.episode)
+                        var n = row.modelData.name || ""
+                        return n.length > 0 ? tag + "  ·  " + n : tag
+                    }
                     color: Theme.t1
                     font.pixelSize: 13
                     font.family: Theme.fontSans
@@ -120,6 +128,21 @@ Rectangle {
                 MetaTag { text: row.modelData.source || "" }
                 MetaTag { text: row.modelData.codec || "" }
                 MetaTag { text: row.modelData.hdr ? "HDR" : ""; accent: true }
+                // parsed episode/pack tag inside a picked series' releases
+                MetaTag {
+                    accent: row.modelData.pack === true
+                    text: {
+                        if (row.sv.isEpisodes) return ""
+                        if (row.modelData.pack === true)
+                            return (row.modelData.season || 0) > 0
+                                   ? (i18n.language, i18n.t("search_season_abbr")).arg(row.modelData.season)
+                                   : (i18n.language, i18n.t("search_pack_complete"))
+                        if ((row.modelData.episode || 0) > 0)
+                            return (i18n.language, i18n.t("search_season_abbr")).arg(row.modelData.season)
+                                   + " " + i18n.t("search_episode_abbr").arg(row.modelData.episode)
+                        return ""
+                    }
+                }
                 Item { Layout.fillWidth: true }
             }
         }
@@ -163,7 +186,7 @@ Rectangle {
                 border.width: 1
                 Text {
                     anchors.centerIn: parent
-                    text: row.sv.isCatalog ? "›" : "+"
+                    text: row.activates ? "›" : "+"
                     color: addMa.containsMouse ? Theme.accentText : Theme.t3
                     font.pixelSize: 15
                 }
@@ -186,10 +209,10 @@ Rectangle {
         onClicked: function (mouse) {
             if (!row.sv.api) return
             if (mouse.button === Qt.RightButton) {
-                if (!row.sv.isCatalog) row.menuRequested(row.srcIndex)
+                if (!row.activates) row.menuRequested(row.srcIndex)
                 return
             }
-            if (row.sv.isCatalog) row.sv.api.activateResult(row.srcIndex)
+            if (row.activates) row.sv.api.activateResult(row.srcIndex)
             else row.sv.openDetail(row.modelData)
         }
         onDoubleClicked: if (row.sv.api) row.sv.api.activateResult(row.srcIndex)

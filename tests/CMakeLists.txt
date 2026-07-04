@@ -58,6 +58,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/integrations/updater.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/logger.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/audiomode.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/episodegroup.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
@@ -223,6 +224,7 @@ bat_add_test(test_security   test_security.cpp)
 bat_add_test(test_memory     test_memory.cpp)
 bat_add_test(test_unit       test_unit.cpp)
 bat_add_test(test_nameparser test_nameparser.cpp)
+bat_add_test(test_episodegroup test_episodegroup.cpp)
 bat_add_test(test_bridge     test_bridge.cpp)
 bat_add_test(test_gamesource test_gamesource.cpp)
 bat_add_test(test_memguard   test_memguard.cpp)
