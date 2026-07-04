@@ -131,6 +131,42 @@ Item {
                     }
                 }
 
+                // stills / screenshots of the picked work (backdrops for movies
+                // and series, IGDB screenshots for games)
+                Text {
+                    visible: stillsStrip.count > 0
+                    text: (i18n.language, i18n.t("search_stills"))
+                    color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold
+                    font.letterSpacing: 0.5; font.family: Theme.fontSans
+                }
+                ListView {
+                    id: stillsStrip
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: visible ? 90 : 0
+                    visible: count > 0
+                    orientation: ListView.Horizontal
+                    spacing: 8
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    model: root.sv.api ? root.sv.api.workStills : []
+                    delegate: Rectangle {
+                        required property var modelData
+                        width: 160; height: 90
+                        radius: 8
+                        color: "#161618"
+                        border.color: Theme.hair; border.width: 1
+                        clip: true
+                        Image {
+                            anchors.fill: parent
+                            source: modelData
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            cache: true
+                            sourceSize: Qt.size(320, 180)
+                        }
+                    }
+                }
+
                 // stats grid
                 GridLayout {
                     Layout.fillWidth: true

@@ -236,6 +236,7 @@ void DiscoveryService::searchTmdbTitles(const QString &query)
                 QVariantMap m;
                 m.insert(QStringLiteral("title"), o.value(isTv ? QLatin1String("name")
                                                                : QLatin1String("title")).toString());
+                m.insert(QStringLiteral("tmdbId"), o.value(QLatin1String("id")).toInt());
                 m.insert(QStringLiteral("poster"), TmdbPosterBase + poster);
                 m.insert(QStringLiteral("year"), date.length() >= 4 ? date.left(4) : QString());
                 m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
@@ -261,8 +262,8 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
         // No category filter here: it's unreliable across IGDB game records and
         // was hiding legitimate matches. Relevance from `search` is enough.
         const QByteArray body = QStringLiteral(
-            "search \"%1\"; fields name,cover.image_id,first_release_date,total_rating,summary;"
-            " where cover != null; limit 20;").arg(safe).toUtf8();
+            "search \"%1\"; fields name,cover.image_id,first_release_date,total_rating,summary,"
+            "screenshots.image_id; where cover != null; limit 20;").arg(safe).toUtf8();
 
         QNetworkReply *reply = m_nam->post(req, body);
         connect(reply, &QNetworkReply::finished, this, [this, reply]() {
@@ -286,6 +287,15 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
                     m.insert(QStringLiteral("rating"), o.value(QLatin1String("total_rating")).toDouble() / 10.0);
                     m.insert(QStringLiteral("overview"), o.value(QLatin1String("summary")).toString());
                     m.insert(QStringLiteral("type"), QStringLiteral("game"));
+                    QStringList stills;
+                    const QJsonArray shots = o.value(QLatin1String("screenshots")).toArray();
+                    for (const QJsonValue &sv : shots) {
+                        const QString sid = sv.toObject().value(QLatin1String("image_id")).toString();
+                        if (!sid.isEmpty())
+                            stills << QStringLiteral("https://images.igdb.com/igdb/image/upload/t_screenshot_huge/%1.jpg").arg(sid);
+                        if (stills.size() >= 10) break;
+                    }
+                    m.insert(QStringLiteral("stills"), stills);
                     m_searchWorks.append(m);
                 }
             } else {
@@ -320,10 +330,20 @@ void DiscoveryService::maybeFinishSearch()
     std::stable_sort(vids.begin(), vids.end(), byScore);
     std::stable_sort(games.begin(), games.end(), byScore);
 
+    // Merge by (name-match score, rating): when the game and the series share the
+    // exact name ("Game of Thrones", "The Witcher") the better-rated work leads
+    // the grid and the hero — a blind game-first tiebreak sent GoT to the game.
+    auto rating = [](const QVariant &v) { return v.toMap().value(QStringLiteral("rating")).toDouble(); };
     QVariantList merged;
-    for (int i = 0; i < vids.size() || i < games.size(); ++i) {
-        if (i < games.size()) merged.append(games[i]);   // game first: queries are usually game-led
-        if (i < vids.size())  merged.append(vids[i]);
+    int gi = 0, vi = 0;
+    while (gi < games.size() || vi < vids.size()) {
+        if (vi >= vids.size()) { merged.append(games[gi++]); continue; }
+        if (gi >= games.size()) { merged.append(vids[vi++]); continue; }
+        const int sg = score(games[gi]), sv = score(vids[vi]);
+        if (sg < sv || (sg == sv && rating(games[gi]) >= rating(vids[vi])))
+            merged.append(games[gi++]);
+        else
+            merged.append(vids[vi++]);
     }
 
     QVariantList out;
@@ -485,6 +505,43 @@ void DiscoveryService::fetchEpisodes(int tmdbId, int season)
             }
         }
         emit episodesReady(tmdbId, season, eps);
+    });
+}
+
+void DiscoveryService::fetchBackdrops(int tmdbId, const QString &type)
+{
+    if (tmdbId <= 0 || tmdbApiKey().isEmpty()) { emit backdropsReady(tmdbId, {}); return; }
+    const QString kind = (type == QLatin1String("series")) ? QStringLiteral("tv") : QStringLiteral("movie");
+    QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2/images").arg(kind).arg(tmdbId));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());   // no language: backdrops are mostly untagged
+    url.setQuery(q);
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
+    req.setTransferTimeout(10000);
+    QNetworkReply *reply = m_nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
+        reply->deleteLater();
+        QStringList urls;
+        if (reply->error() == QNetworkReply::NoError) {
+            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
+                                       .object().value(QLatin1String("backdrops")).toArray();
+            // language-tagged backdrops carry burned-in title text — prefer clean ones
+            auto collect = [&urls, &arr](bool untaggedOnly) {
+                for (const QJsonValue &v : arr) {
+                    if (urls.size() >= 10) return;
+                    const QJsonObject o = v.toObject();
+                    const bool untagged = o.value(QLatin1String("iso_639_1")).isNull();
+                    if (untaggedOnly != untagged) continue;
+                    const QString path = o.value(QLatin1String("file_path")).toString();
+                    if (!path.isEmpty() && !urls.contains(TmdbBackdrop + path))
+                        urls << TmdbBackdrop + path;
+                }
+            };
+            collect(true);
+            collect(false);
+        }
+        emit backdropsReady(tmdbId, urls);
     });
 }
 

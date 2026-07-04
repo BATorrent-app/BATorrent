@@ -5,6 +5,7 @@
 #include "bridges/qmlsearchbridge.h"
 #include "torrent/iengine.h"
 #include "services/metadata/audiomode.h"
+#include "services/metadata/episodegroup.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/discoveryservice.h"
 #include "services/metadata/nameparser.h"
@@ -73,19 +74,7 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
     connect(&mgr, &AddonManager::catalogResults, this, [this](const QList<CatalogItem> &items) {
         m_catalogCache = items;
         if (m_mode != "catalog") return;
-        m_results.clear();
-        for (const auto &it : items) {
-            QVariantMap m;
-            m["name"] = it.name;
-            m["sub"] = it.type;
-            m["sizeStr"] = it.year > 0 ? QString::number(it.year) : QString();
-            m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
-            m["poster"] = it.poster; m["coverHash"] = "";
-            m["seedsN"] = 0; m["sizeBytes"] = 0;
-            fillMediaAttrs(m, it.name);
-            m_results << m;
-        }
-        emit resultsChanged();
+        rebuildCatalogRows();
     });
     connect(&mgr, &AddonManager::catalogFinished, this, [this]() {
         setSearching(false);
@@ -113,6 +102,21 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
     connect(&mgr, &AddonManager::streamFinished, this, [this]() {
         setSearching(false);
         setStatus(tr_("search_streams_n").arg(m_streamCache.size()));
+    });
+    connect(&mgr, &AddonManager::metaVideos, this, [this](const QString &id, const QVariantList &videos) {
+        if (m_mode != "episodes" || id != m_epId) return;   // stale or user moved on
+        setSearching(false);
+        if (videos.isEmpty()) {   // no episode meta → old bare-id lookup is better than nothing
+            setMode("streams");
+            auto &am = AddonManager::instance();
+            if (!am.hasStreamAddon()) { setStatus(tr_("search_no_stream_addon")); return; }
+            setSearching(true);
+            setStatus(tr_("search_loading_streams_from").arg(m_streamHintTitle));
+            am.getStreams(m_epType, m_epId);
+            return;
+        }
+        m_episodeCache = videos;
+        showEpisodeRows();
     });
     connect(&mgr, &AddonManager::torrentSearchResults, this,
             [this](const QList<TorrentSearchResult> &results) {
@@ -316,10 +320,52 @@ void QmlSearchBridge::resolveCover(int index)
     m_resolver->resolve(hash, m.value(QStringLiteral("name")).toString());
 }
 
+void QmlSearchBridge::setWorkContext(const QVariantMap &work)
+{
+    m_workType = work.value(QStringLiteral("type")).toString();
+    m_workTitle = work.value(QStringLiteral("title")).toString();
+    if (m_workTitle.isEmpty()) m_workTitle = work.value(QStringLiteral("name")).toString();
+    m_workPoster = work.value(QStringLiteral("poster")).toString();
+    m_workYear = work.value(QStringLiteral("year")).toString();
+    m_workTmdbId = work.value(QStringLiteral("tmdbId")).toInt();
+    m_workStills = work.value(QStringLiteral("stills")).toStringList();
+    m_workStillsRequested = false;
+    emit workChanged();
+    emit workStillsChanged();
+}
+
+void QmlSearchBridge::clearWorkContext()
+{
+    if (m_workType.isEmpty() && m_workTitle.isEmpty() && m_workTmdbId == 0 && m_workStills.isEmpty()) return;
+    m_workType.clear();
+    m_workTitle.clear();
+    m_workPoster.clear();
+    m_workYear.clear();
+    m_workTmdbId = 0;
+    m_workStills.clear();
+    m_workStillsRequested = false;
+    emit workChanged();
+    emit workStillsChanged();
+}
+
+void QmlSearchBridge::fetchWorkStills()
+{
+    if (m_workStillsRequested || !m_workStills.isEmpty()) return;   // inline (games) or already asked
+    if (m_workTmdbId <= 0 || !m_discovery) return;
+    m_workStillsRequested = true;
+    m_discovery->fetchBackdrops(m_workTmdbId, m_workType);
+}
+
 void QmlSearchBridge::setDiscovery(DiscoveryService *d)
 {
     m_discovery = d;
     if (!m_discovery) return;
+    connect(m_discovery, &DiscoveryService::backdropsReady, this,
+            [this](int tmdbId, const QStringList &urls) {
+        if (tmdbId != m_workTmdbId || urls.isEmpty()) return;   // stale reply for a former title
+        m_workStills = urls;
+        emit workStillsChanged();
+    });
     connect(m_discovery, &DiscoveryService::titleResults, this,
             [this](const QString &query, const QVariantList &works) {
         if (query != m_titleQuery || m_mode != QLatin1String("titles")) return;   // stale
@@ -338,6 +384,8 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
             row["poster"]  = w.value(QStringLiteral("poster"));
             row["rating"]  = w.value(QStringLiteral("rating"));
             row["overview"] = w.value(QStringLiteral("overview"));
+            row["tmdbId"]  = w.value(QStringLiteral("tmdbId"));
+            row["stills"]  = w.value(QStringLiteral("stills"));
             row["coverHash"] = QString();
             row["isTitle"] = true;
             m_results << row;
@@ -433,6 +481,9 @@ void QmlSearchBridge::getAndWatch(const QString &title, const QString &year, con
     m_gwTitle = title;
     m_gwType = type;
     emit watchSearching(title);
+    setWorkContext({ { QStringLiteral("title"), title },
+                     { QStringLiteral("type"), type },
+                     { QStringLiteral("year"), year } });
     searchSourcesForWork(title, year, type);      // gwResolve() runs when this settles
     // If the search had nothing to wait on (no providers), it finished inline.
     if (m_gwActive && !m_searching) gwResolve();
@@ -521,6 +572,7 @@ void QmlSearchBridge::rawAggregateSearch(const QString &q, int categoryCode)
     emit resultsChanged();
 
     m_activeQuery = q;
+    clearWorkContext();
     auto &mgr = AddonManager::instance();
     m_aggregate = true;
     m_titleSources = false;         // raw mixed list → keep per-row covers
@@ -599,8 +651,8 @@ QVariantList QmlSearchBridge::results() const
 QString QmlSearchBridge::activeQuery() const { return m_activeQuery; }
 QString QmlSearchBridge::mode() const { return m_mode; }
 bool QmlSearchBridge::inStreams() const { return m_mode == "streams"; }
-bool QmlSearchBridge::canGoBack() const { return m_mode == "streams" || m_fromTitles; }
-bool QmlSearchBridge::singleTitleView() const { return m_titleSources || m_mode == "streams"; }
+bool QmlSearchBridge::canGoBack() const { return m_mode == "streams" || m_mode == "episodes" || m_fromTitles; }
+bool QmlSearchBridge::singleTitleView() const { return m_titleSources || m_mode == "streams" || m_mode == "episodes"; }
 bool QmlSearchBridge::searching() const { return m_searching; }
 QString QmlSearchBridge::statusText() const { return m_status; }
 
@@ -618,6 +670,8 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     m_activeQuery = q;
     m_aggregate = false;
     m_titleSources = false;
+    m_fromEpisodes = false;
+    clearWorkContext();
     m_pendingGameQuery.clear();
     m_results.clear();
     m_resultMagnets.clear();
@@ -738,6 +792,8 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
     auto sorted = results;
     std::sort(sorted.begin(), sorted.end(),
               [](const TorrentSearchResult &a, const TorrentSearchResult &b) { return a.seeders > b.seeders; });
+    // Season/episode grouping only makes sense inside one picked series' releases.
+    const bool groupEpisodes = m_titleSources && m_workType == QLatin1String("series");
     QSet<QString> seen = currentResultKeys();
     for (const auto &r : sorted) {
         const QString key = resultDedupeKey(r.magnet, r.name, static_cast<qlonglong>(r.size));
@@ -745,6 +801,12 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         seen.insert(key);
         QVariantMap m;
         m["name"] = r.name;
+        if (groupEpisodes) {
+            const EpisodeTag tag = EpisodeGroup::classify(r.name);
+            m["season"] = tag.season;
+            m["episode"] = tag.episode;
+            m["pack"] = tag.pack;
+        }
         m["sub"] = r.provider;
         m["provider"] = r.provider;
         m["sizeStr"] = r.size > 0 ? formatSize(r.size) : QString();
@@ -827,6 +889,7 @@ void QmlSearchBridge::activateResult(int index, bool force)
         if (index < 0 || index >= m_results.size()) return;
         const QVariantMap w = m_results[index].toMap();
         m_fromTitles = true;
+        setWorkContext(w);
         searchSourcesForWork(w.value(QStringLiteral("name")).toString(),
                              w.value(QStringLiteral("year")).toString(),
                              w.value(QStringLiteral("type")).toString());
@@ -841,6 +904,22 @@ void QmlSearchBridge::activateResult(int index, bool force)
         m_streamHintType = it.type == QLatin1String("series") ? static_cast<int>(ContentType::Series)
                          : it.type == QLatin1String("movie")  ? static_cast<int>(ContentType::Movie) : -1;
         m_streamHintPoster = it.poster;
+        // Series streams need an "id:season:episode" — a bare series id returns
+        // nothing from most addons. Route through the episode picker when the
+        // addon exposes meta; otherwise keep the old direct lookup.
+        if (it.type == QLatin1String("series") && mgr.hasMetaAddon()) {
+            m_epType = it.type;
+            m_epId = it.id;
+            m_fromEpisodes = false;
+            setMode("episodes");
+            m_results.clear();
+            m_episodeCache.clear();
+            emit resultsChanged();
+            setSearching(true);
+            setStatus(tr_("search_loading_episodes"));
+            mgr.fetchMeta(it.type, it.id);
+            return;
+        }
         setMode("streams");
         m_results.clear();
         emit resultsChanged();
@@ -848,6 +927,19 @@ void QmlSearchBridge::activateResult(int index, bool force)
         setSearching(true);
         setStatus(tr_("search_loading_streams_from").arg(it.name));
         mgr.getStreams(it.type, it.id);
+    } else if (m_mode == "episodes") {
+        if (index < 0 || index >= m_episodeCache.size()) return;
+        const QVariantMap ep = m_episodeCache[index].toMap();
+        const QString videoId = ep.value(QStringLiteral("videoId")).toString();
+        if (videoId.isEmpty()) return;
+        m_fromEpisodes = true;
+        setMode("streams");
+        m_results.clear();
+        emit resultsChanged();
+        if (!mgr.hasStreamAddon()) { setStatus(tr_("search_no_stream_addon")); return; }
+        setSearching(true);
+        setStatus(tr_("search_loading_streams_from").arg(ep.value(QStringLiteral("name")).toString()));
+        mgr.getStreams(m_epType, videoId);
     } else if (m_mode == "streams") {
         if (index < 0 || index >= m_streamCache.size()) return;
         const auto &s = m_streamCache[index];
@@ -880,9 +972,10 @@ void QmlSearchBridge::activateResult(int index, bool force)
 
 void QmlSearchBridge::back()
 {
-    if (m_fromTitles && m_mode != "streams") {   // sources view → back to the titles grid
+    if (m_fromTitles && m_mode != "streams" && m_mode != "episodes") {   // sources view → back to the titles grid
         m_fromTitles = false;
         m_aggregate = false;
+        clearWorkContext();
         m_results = m_titleCache;
         m_resultMagnets.clear();
         m_resultTitles.clear();
@@ -892,10 +985,22 @@ void QmlSearchBridge::back()
         emit resultsChanged();
         return;
     }
-    if (m_mode != "streams") return;
+    if (m_mode == "streams" && m_fromEpisodes) {   // streams → episode picker
+        m_fromEpisodes = false;
+        showEpisodeRows();
+        return;
+    }
+    if (m_mode != "streams" && m_mode != "episodes") return;
+    m_fromEpisodes = false;
     setMode("catalog");
+    rebuildCatalogRows();
+    setStatus(tr_("search_results_n").arg(m_catalogCache.size()));
+}
+
+void QmlSearchBridge::rebuildCatalogRows()
+{
     m_results.clear();
-    for (const auto &it : m_catalogCache) {
+    for (const auto &it : std::as_const(m_catalogCache)) {
         QVariantMap m;
         m["name"] = it.name;
         m["sub"] = it.type;
@@ -907,6 +1012,28 @@ void QmlSearchBridge::back()
         m_results << m;
     }
     emit resultsChanged();
-    setStatus(tr_("search_results_n").arg(m_catalogCache.size()));
+}
+
+void QmlSearchBridge::showEpisodeRows()
+{
+    setMode("episodes");
+    m_results.clear();
+    m_resultMagnets.clear();
+    m_resultTitles.clear();
+    for (const QVariant &v : std::as_const(m_episodeCache)) {
+        const QVariantMap ep = v.toMap();
+        QVariantMap m;
+        m["name"] = ep.value(QStringLiteral("name"));
+        m["sub"] = ""; m["provider"] = "";
+        m["sizeStr"] = ep.value(QStringLiteral("released")).toString();
+        m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+        m["poster"] = m_streamHintPoster; m["coverHash"] = "";
+        m["seedsN"] = 0; m["sizeBytes"] = 0;
+        m["season"] = ep.value(QStringLiteral("season"));
+        m["episode"] = ep.value(QStringLiteral("episode"));
+        m_results << m;
+    }
+    setStatus(tr_("search_episodes_n").arg(m_results.size()));
+    emit resultsChanged();
 }
 

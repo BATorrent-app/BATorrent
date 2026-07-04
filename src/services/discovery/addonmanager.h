@@ -8,6 +8,7 @@
 #include <QObject>
 #include <QStringList>
 #include <QJsonArray>
+#include <QVariantList>
 
 class QNetworkAccessManager;
 
@@ -66,6 +67,17 @@ struct SearchProvider {
     QString leechersPath = "leechers";
     bool enabled = true;
     bool builtIn = false;
+    // ISO-ish region/language tag for grouping in the Sources manager:
+    // "global" | "ptbr" | "cis" | "es" | "anime" | "self". Empty = global.
+    QString region = "global";
+    QString note;   // one-line caveat shown under the preset (e.g. "needs self-hosted TorAPI")
+};
+
+// A localized search source the user can add with one tap, grouped by region.
+struct ProviderPreset {
+    SearchProvider provider;   // the template that gets installed
+    QString note;              // caveat / description
+    bool needsConfig = false;  // URL has an API_KEY / host placeholder to edit first
 };
 
 class AddonManager : public QObject
@@ -85,12 +97,17 @@ public:
     // Check addon capabilities
     bool hasCatalogAddon() const;
     bool hasStreamAddon() const;
+    bool hasMetaAddon() const;
 
     // Stremio protocol: search catalogs
     void searchCatalog(const QString &query);
 
     // Stremio protocol: get streams for a specific item
     void getStreams(const QString &type, const QString &id);
+
+    // Stremio protocol: item meta — the episode list (meta.videos) of a series.
+    // Emits metaVideos(id, [{videoId,season,episode,name,released}]).
+    void fetchMeta(const QString &type, const QString &id);
 
     // Pure: base URL for a stream request. For an unconfigured Torrentio addon,
     // injects "/language=<lang>" so releases in the user's language (dubbed
@@ -108,7 +125,12 @@ public:
     void addSearchProvider(const SearchProvider &p);
     void removeSearchProvider(int index);
     void setSearchProviderEnabled(int index, bool enabled);
+    void setSearchProviderUrl(int index, const QString &urlTemplate);
     void searchWithProvider(int providerIndex, const QString &query, int category = 0);
+
+    // Curated localized sources the user can one-tap add, grouped by region.
+    // Presets already installed (matched by id) are filtered out by the bridge.
+    static QList<ProviderPreset> providerCatalog();
 
     // Legacy single-URL search (kept for backward compat)
     bool torrentSearchEnabled() const;
@@ -127,6 +149,7 @@ signals:
     void catalogFinished();
     void streamResults(const QList<StreamResult> &streams);
     void streamFinished();
+    void metaVideos(const QString &id, const QVariantList &videos);
     void trackerListUpdated();
     void torrentSearchResults(const QList<TorrentSearchResult> &results);
     void torrentSearchFinished();
@@ -158,6 +181,7 @@ private:
     // "inception" list.
     quint32 m_catalogGen = 0;
     quint32 m_streamGen = 0;
+    quint32 m_metaGen = 0;
     QList<CatalogItem> m_catalogResults;
     QList<StreamResult> m_streamResults;
 };

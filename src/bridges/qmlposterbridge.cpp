@@ -255,6 +255,81 @@ bool QmlAddonBridge::isInstalled(const QString &url) const
     return false;
 }
 
+QVariantList QmlAddonBridge::searchProviders() const
+{
+    QVariantList out;
+    const auto list = AddonManager::instance().searchProviders();
+    for (int i = 0; i < list.size(); ++i) {
+        const auto &p = list[i];
+        QVariantMap m;
+        m["index"] = i;
+        m["name"] = p.name;
+        m["region"] = p.region.isEmpty() ? QStringLiteral("global") : p.region;
+        m["enabled"] = p.enabled;
+        m["builtIn"] = p.builtIn;
+        m["note"] = p.note;
+        m["url"] = p.urlTemplate;
+        // self-host / API-key presets expose their URL for editing
+        m["editable"] = p.urlTemplate.contains(QLatin1String("API_KEY"))
+                        || p.urlTemplate.contains(QLatin1String("127.0.0.1"))
+                        || p.region == QLatin1String("self");
+        out << m;
+    }
+    return out;
+}
+
+QVariantList QmlAddonBridge::sourceCatalog() const
+{
+    // Presets already installed (by id) drop out of the catalog.
+    QSet<QString> have;
+    for (const auto &p : AddonManager::instance().searchProviders()) have.insert(p.id);
+
+    QVariantList out;
+    for (const auto &preset : AddonManager::providerCatalog()) {
+        if (have.contains(preset.provider.id)) continue;
+        QVariantMap m;
+        m["id"] = preset.provider.id;
+        m["name"] = preset.provider.name;
+        m["region"] = preset.provider.region;
+        m["note"] = preset.note;
+        m["needsConfig"] = preset.needsConfig;
+        out << m;
+    }
+    return out;
+}
+
+void QmlAddonBridge::setSearchProviderEnabled(int index, bool on)
+{
+    AddonManager::instance().setSearchProviderEnabled(index, on);
+    emit changed();
+}
+
+void QmlAddonBridge::removeSearchProvider(int index)
+{
+    AddonManager::instance().removeSearchProvider(index);
+    emit changed();
+}
+
+void QmlAddonBridge::addCatalogSource(const QString &id)
+{
+    for (const auto &preset : AddonManager::providerCatalog()) {
+        if (preset.provider.id != id) continue;
+        SearchProvider p = preset.provider;
+        p.note = preset.note;
+        // config-required presets install disabled so a bad URL never silently runs
+        p.enabled = !preset.needsConfig;
+        AddonManager::instance().addSearchProvider(p);
+        emit changed();
+        return;
+    }
+}
+
+void QmlAddonBridge::updateSearchProviderUrl(int index, const QString &url)
+{
+    AddonManager::instance().setSearchProviderUrl(index, url);
+    emit changed();
+}
+
 // ===================== QmlPairingBridge =====================
 
 QString QmlPairingBridge::detectLanIp()

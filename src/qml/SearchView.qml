@@ -26,11 +26,13 @@ Rectangle {
     readonly property bool isGames: sourceKey === "games" || sourceKey === "all"
     readonly property bool isCatalog: api && api.mode === "catalog"
     readonly property bool isTitles: api && api.mode === "titles"
+    readonly property bool isEpisodes: api && api.mode === "episodes"
     // a single picked title's torrents (or Stremio streams) don't need per-row covers
     readonly property bool showRowThumbs: !(api && api.singleTitleView)
     readonly property bool isFlatList: api && (api.mode === "torrent" || api.mode === "games"
                                               || api.mode === "all" || api.mode === "streams")
     property bool showGameMgr: false
+    property bool showSourcesMgr: false
     property var gameList: []
 
     // ---- client-side filter/sort state ----
@@ -42,6 +44,44 @@ Rectangle {
     property string audioModeFilter: ""   // "" = all | "dub" | "sub" | "original"
     property int minSeeds: 0
     property string sortKey: ""        // "" = provider order (relevance)
+
+    // ---- series grouping (a picked series' releases, or the episode picker) ----
+    property int seasonFilter: -2      // -2 = all, -1 = packs only, >0 = that season
+    property int episodeFilter: -1     // -1 = all episodes of the season
+    // releases of one picked series → group the flat list by parsed season/episode
+    readonly property bool isSeriesDrill: api && api.singleTitleView && !isEpisodes
+                                          && api.workType === "series"
+    readonly property var seasonTabs: {
+        if (!api || !(isSeriesDrill || isEpisodes)) return []
+        var seen = {}, out = []
+        var res = api.results
+        for (var i = 0; i < res.length; i++) {
+            var s = res[i].season
+            if (s > 0 && !seen[s]) { seen[s] = true; out.push(s) }
+        }
+        out.sort(function (a, b) { return a - b })
+        return out
+    }
+    readonly property int packCount: {
+        if (!api || !isSeriesDrill) return 0
+        var n = 0, res = api.results
+        for (var i = 0; i < res.length; i++)
+            if (res[i].pack === true) n++
+        return n
+    }
+    readonly property var episodeTabs: {
+        if (!api || !isSeriesDrill || seasonFilter <= 0) return []
+        var seen = {}, out = []
+        var res = api.results
+        for (var i = 0; i < res.length; i++) {
+            var r = res[i]
+            if (r.season === seasonFilter && (r.episode || 0) > 0 && !seen[r.episode]) {
+                seen[r.episode] = true; out.push(r.episode)
+            }
+        }
+        out.sort(function (a, b) { return a - b })
+        return out
+    }
 
     // the dub/sub axis only exists for non-English UIs (English content has no
     // "dubbed in my language" question) — hide the segmented control otherwise
@@ -66,6 +106,36 @@ Rectangle {
         if (t === "series") return i18n.t("search_type_series")
         if (t === "game") return i18n.t("search_type_game")
         return ""
+    }
+
+    // segmented-control chip (audio mode, season and episode bars)
+    component SegChip: Rectangle {
+        id: chip
+        property bool on: false
+        property alias label: chipTxt.text
+        signal tapped()
+        implicitWidth: chipTxt.implicitWidth + 26
+        implicitHeight: 30
+        radius: 8
+        color: on ? Theme.accent : (chipMa.containsMouse ? Theme.hover : Theme.field)
+        border.color: on ? Theme.accent : Theme.hair
+        border.width: 1
+        Behavior on color { ColorAnimation { duration: 120 } }
+        Text {
+            id: chipTxt
+            anchors.centerIn: parent
+            color: chip.on ? Theme.accentText : Theme.t2
+            font.pixelSize: 12
+            font.weight: chip.on ? Font.DemiBold : Font.Medium
+            font.family: Theme.fontSans
+        }
+        MouseArea {
+            id: chipMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: chip.tapped()
+        }
     }
 
     // Local paths (resolver covers) need a file: URL; http/qrc pass through.
@@ -131,6 +201,22 @@ Rectangle {
             o._rel = api.relevance(o.name, qwords)
             arr.push(o)
         }
+        // episode picker: air order, season tab only — release filters don't apply
+        if (isEpisodes) {
+            if (seasonFilter > 0) arr = arr.filter(function (r) { return r.season === seasonFilter })
+            arr.sort(function (a, b) { return a._idx - b._idx })
+            return arr
+        }
+        // series drill-down: a season tab keeps its episodes AND the packs that
+        // contain them (season packs of that season + whole-series packs)
+        if (isSeriesDrill) {
+            if (seasonFilter === -1) arr = arr.filter(function (r) { return r.pack === true })
+            else if (seasonFilter > 0) arr = arr.filter(function (r) {
+                if (r.pack === true) return r.season === seasonFilter || (r.season || -1) < 0
+                if (episodeFilter > 0) return r.season === seasonFilter && r.episode === episodeFilter
+                return r.season === seasonFilter
+            })
+        }
         if (qualityFilter !== "") arr = arr.filter(function (r) { return r.quality === qualityFilter })
         if (sourceFilter !== "") arr = arr.filter(function (r) { return r.source === sourceFilter })
         if (repackerFilter !== "") arr = arr.filter(function (r) { return r.repacker === repackerFilter })
@@ -154,6 +240,8 @@ Rectangle {
                 }
                 var rd = (b._rel || 0) - (a._rel || 0); if (rd) return rd
                 var nd = (b.native ? 1 : 0) - (a.native ? 1 : 0); if (nd) return nd
+                // equal relevance (one title's releases all match) → healthiest first
+                var sd = (b.seedsN || 0) - (a.seedsN || 0); if (sd) return sd
                 return a._idx - b._idx
             })
         }
@@ -172,10 +260,12 @@ Rectangle {
         detailOpen = true
         if ((!item.poster || item.poster === "") && item.coverHash && api)
             api.resolveCover(item._idx)
+        if (api) api.fetchWorkStills()   // lazy backdrops for the drawer strip
     }
 
     function clearFilters() {
         qualityFilter = ""; sourceFilter = ""; repackerFilter = ""; providerFilter = ""; langFilter = ""; audioModeFilter = ""; minSeeds = 0; sortKey = ""
+        seasonFilter = -2; episodeFilter = -1
         qualSel.currentIndex = 0; srcFiltSel.currentIndex = 0; provSel.currentIndex = 0
         repSel.currentIndex = 0; langSel.currentIndex = 0; seedSel.currentIndex = 0; sortSel.currentIndex = 0
     }
@@ -184,11 +274,29 @@ Rectangle {
         target: page.api
         ignoreUnknownSignals: true
         function onGameSourcesChanged() { page.reloadGames() }
-        function onResultsChanged() { page.detailOpen = false }
+        function onResultsChanged() {
+            page.detailOpen = false
+            // episode picker: land on the first season, not a 300-row flat list
+            if (page.isEpisodes && page.seasonFilter === -2 && page.seasonTabs.length > 0)
+                page.seasonFilter = page.seasonTabs[0]
+        }
+        function onWorkChanged() { page.seasonFilter = -2; page.episodeFilter = -1 }
+        function onModeChanged() {
+            if (page.api.mode === "catalog" || page.api.mode === "titles") {
+                page.seasonFilter = -2; page.episodeFilter = -1
+            }
+        }
         function onCoverReady(infoHash, path) {
             if (page.selected && infoHash !== "" && infoHash === (page.selected.coverHash || ""))
                 page.detailPoster = page.fileUrl(path)
         }
+    }
+
+    // provider toggles/adds change which sources the dropdown offers
+    Connections {
+        target: typeof addons !== "undefined" ? addons : null
+        ignoreUnknownSignals: true
+        function onChanged() { if (page.api) page.api.refreshSources() }
     }
 
     onShowGameMgrChanged: if (showGameMgr) reloadGames()
@@ -412,6 +520,12 @@ Rectangle {
                     text: (i18n.language, i18n.t("game_sources_btn"))
                     onClicked: page.showGameMgr = true
                 }
+                // manage the torrent sources (toggle + add localized ones)
+                BtnFlat {
+                    visible: !page.landing
+                    text: (i18n.language, i18n.t("src_manage_btn"))
+                    onClicked: page.showSourcesMgr = true
+                }
                 BtnFlat { visible: !page.landing; primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: page.commitSearch() }
             }
         }
@@ -451,6 +565,50 @@ Rectangle {
 
         // bottom spacer — balances the top spacer so the hero stays centred
         Item { Layout.fillHeight: true; visible: page.landing }
+
+        // picked-work header — says WHICH title (and type) these releases belong
+        // to; without it a game and a series with the same name are indistinguishable
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 62
+            visible: !page.landing && page.api && page.api.singleTitleView && !page.isEpisodes
+                     && (page.api.workTitle || "").length > 0
+            color: "transparent"
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.sp5
+                anchors.rightMargin: Theme.sp5
+                spacing: Theme.sp4
+                PosterThumb {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 34; implicitHeight: 46
+                    posterUrl: page.fileUrl(page.api.workPoster || "")
+                    label: page.api.workTitle
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 2
+                    Text {
+                        Layout.fillWidth: true
+                        text: page.api.workTitle
+                        color: Theme.t1; font.pixelSize: 15; font.weight: Font.Bold; font.family: Theme.fontSans
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        text: {
+                            var parts = []
+                            if ((page.api.workYear || "").length > 0) parts.push(page.api.workYear)
+                            var t = page.typeLabel(page.api.workType || "")
+                            if (t.length > 0) parts.push(t)
+                            return parts.join("  ·  ")
+                        }
+                        color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    }
+                }
+            }
+        }
 
         // filter bar — only for flat result lists with content
         Rectangle {
@@ -561,7 +719,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 44
-            visible: !page.isTitles && !page.isGames && page.showAudioModes && !page.landing
+            visible: !page.isTitles && !page.isGames && !page.isEpisodes && page.showAudioModes && !page.landing
             color: "transparent"
             RowLayout {
                 anchors.fill: parent
@@ -580,32 +738,11 @@ Rectangle {
                             { k: "sub",      t: "💬  " + i18n.t("search_audio_sub") },
                             { k: "original", t: "🌐  " + i18n.t("search_audio_original") }
                         ]
-                        delegate: Rectangle {
+                        delegate: SegChip {
                             required property var modelData
-                            readonly property bool on: page.audioModeFilter === modelData.k
-                            implicitWidth: segTxt.implicitWidth + 26
-                            implicitHeight: 30
-                            radius: 8
-                            color: on ? Theme.accent : (segMa.containsMouse ? Theme.hover : Theme.field)
-                            border.color: on ? Theme.accent : Theme.hair
-                            border.width: 1
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                            Text {
-                                id: segTxt
-                                anchors.centerIn: parent
-                                text: (i18n.language, modelData.t)
-                                color: parent.on ? Theme.accentText : Theme.t2
-                                font.pixelSize: 12
-                                font.weight: parent.on ? Font.DemiBold : Font.Medium
-                                font.family: Theme.fontSans
-                            }
-                            MouseArea {
-                                id: segMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: page.audioModeFilter = modelData.k
-                            }
+                            on: page.audioModeFilter === modelData.k
+                            label: (i18n.language, modelData.t)
+                            onTapped: page.audioModeFilter = modelData.k
                         }
                     }
                 }
@@ -614,6 +751,91 @@ Rectangle {
                     visible: page.audioModeFilter !== ""
                     text: page.viewModel.length + " " + i18n.t("search_audio_matches")
                     color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono
+                }
+            }
+        }
+
+        // season bar — a picked series' releases grouped by parsed season, or the
+        // Stremio episode picker's season tabs
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 42
+            visible: !page.landing && (page.isSeriesDrill || page.isEpisodes)
+                     && (page.seasonTabs.length > 0 || page.packCount > 0)
+            color: "transparent"
+            Flickable {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.sp5
+                anchors.rightMargin: Theme.sp5
+                contentWidth: seasonRow.width
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                Row {
+                    id: seasonRow
+                    height: parent.height
+                    spacing: 3
+                    SegChip {
+                        anchors.verticalCenter: parent.verticalCenter
+                        on: page.seasonFilter === -2
+                        label: (i18n.language, i18n.t("search_filter_all"))
+                        onTapped: { page.seasonFilter = -2; page.episodeFilter = -1 }
+                    }
+                    SegChip {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: page.isSeriesDrill && page.packCount > 0
+                        on: page.seasonFilter === -1
+                        label: (i18n.language, i18n.t("search_packs")) + " (" + page.packCount + ")"
+                        onTapped: { page.seasonFilter = -1; page.episodeFilter = -1 }
+                    }
+                    Repeater {
+                        model: page.seasonTabs
+                        delegate: SegChip {
+                            required property var modelData
+                            anchors.verticalCenter: parent.verticalCenter
+                            on: page.seasonFilter === modelData
+                            label: (i18n.language, i18n.t("search_season_abbr")).arg(modelData)
+                            onTapped: { page.seasonFilter = modelData; page.episodeFilter = -1 }
+                        }
+                    }
+                }
+            }
+        }
+
+        // episode bar — appears once a season is picked in the series drill-down
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 38
+            visible: !page.landing && page.isSeriesDrill && page.seasonFilter > 0
+                     && page.episodeTabs.length > 0
+            color: "transparent"
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
+            Flickable {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.sp5
+                anchors.rightMargin: Theme.sp5
+                contentWidth: episodeRow.width
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                Row {
+                    id: episodeRow
+                    height: parent.height
+                    spacing: 3
+                    SegChip {
+                        anchors.verticalCenter: parent.verticalCenter
+                        on: page.episodeFilter === -1
+                        label: (i18n.language, i18n.t("search_filter_all"))
+                        onTapped: page.episodeFilter = -1
+                    }
+                    Repeater {
+                        model: page.episodeTabs
+                        delegate: SegChip {
+                            required property var modelData
+                            anchors.verticalCenter: parent.verticalCenter
+                            on: page.episodeFilter === modelData
+                            label: (i18n.language, i18n.t("search_episode_abbr")).arg(modelData)
+                            onTapped: page.episodeFilter = modelData
+                        }
+                    }
                 }
             }
         }
@@ -633,7 +855,7 @@ Rectangle {
                 property bool torrentish: page.api && (page.api.mode === "torrent" || page.api.mode === "games" || page.api.mode === "all")
                 Item { Layout.preferredWidth: 46; visible: page.showRowThumbs }   // thumb column
                 Text { text: (i18n.language, i18n.t("search_col_name2")); Layout.fillWidth: true; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
-                Text { text: (i18n.language, i18n.t("search_col_size2")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t(page.isEpisodes ? "search_col_aired" : "search_col_size2")); Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_seeds2")); Layout.preferredWidth: 100; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Text { visible: parent.torrentish; text: (i18n.language, i18n.t("search_col_leech")); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
                 Item { Layout.preferredWidth: 36 }
@@ -856,6 +1078,7 @@ Rectangle {
     }
 
     SearchGameMgr { sv: page }
+    SourcesManager { sv: page }
 
     // disk add-guard: the bridge blocks a too-big add and asks here first
     property int pendingFitIdx: -1

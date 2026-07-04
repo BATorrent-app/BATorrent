@@ -48,6 +48,8 @@ public:
     Q_INVOKABLE void fetchGameRecommendations(const QString &gameName);
     // Episode list (number, name, air date) for a TV season. Emits episodesReady.
     Q_INVOKABLE void fetchEpisodes(int tmdbId, int season);
+    // Backdrop/still URLs for a title (text-free ones first). Emits backdropsReady.
+    Q_INVOKABLE void fetchBackdrops(int tmdbId, const QString &type);
 
 signals:
     void rowsChanged();
@@ -60,6 +62,7 @@ signals:
     void recommendationsReady(int tmdbId, const QVariantList &items);
     void gameRecommendationsReady(const QString &gameName, const QVariantList &items);
     void episodesReady(int tmdbId, int season, const QVariantList &episodes);   // [{episode,name,air_date}]
+    void backdropsReady(int tmdbId, const QStringList &urls);
 
 private:
     void searchTmdbTitles(const QString &query);
