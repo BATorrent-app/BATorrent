@@ -7,12 +7,27 @@
   the bundled stream source is asked for your-language releases — dubbed included —
   so they lead the list instead of drowning at the bottom. App in Portuguese?
   Dual-audio releases now show up first, not at position 19.
-- **Jackett preset** in search providers (off by default): point it at your local
-  Jackett and every language-specific indexer you run there — whatever the country —
-  becomes searchable inside BATorrent.
+- **Source manager with a localized catalog.** A new "Sources" button in search
+  lists every torrent source with a switch, plus a one-tap catalog grouped by
+  region — Russian/CIS trackers (RuTor, Kinozal, NNM-Club via TorAPI), a
+  Brazilian preset (Comando/BluDV… via torrent-indexer), and Jackett for
+  everything else. Turn on what fits where you live.
+- **BitSearch** ships on by default — a multi-language aggregator (TPB/1337x/
+  YTS/nyaa across languages), so non-English releases surface out of the box.
+- **Series → season → episode.** Picking a series now groups its releases by
+  season, with an episode picker (and complete/season-pack tabs), instead of one
+  flat 400-row list. Stremio series resolve per episode instead of a dead bare id.
+- **Screenshots in the detail drawer** — a strip of backdrops (movies/series) or
+  in-game stills (games) when you open a result.
 - **Dubbed / Subtitled / Original filter.** One tap at the top of search results —
   see only dubbed releases, only subtitled, or only original audio, in your own
   language. It knows the difference a viewer actually cares about; ordering can't.
+
+### Changed
+- **Two view modes, not three: Grid × Classic.** Plain "List" is gone — Classic
+  supersedes it. Classic is now a real power-user table: seeds, peers, ratio (red
+  under 1.0, green above), live ETA, and sortable columns, cover-less with raw
+  release names in monospace. Every column header sorts.
 
 ### Fixed
 - **Progress never claims "100%" early anymore.** A torrent at 99.95% now shows
