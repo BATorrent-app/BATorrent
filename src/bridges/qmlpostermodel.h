@@ -27,7 +27,11 @@ public:
         NumPeersRole,
         DownRateRole,
         UpRateRole,
-        SizeBytesRole
+        SizeBytesRole,
+        NumSeedsRole,       // classic-view power columns
+        RatioRole,
+        AvailabilityRole,
+        EtaRole
     };
 
     explicit QmlPosterModel(IEngine *session, MetadataResolver *resolver,

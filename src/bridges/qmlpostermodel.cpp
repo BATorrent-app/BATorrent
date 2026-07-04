@@ -55,6 +55,7 @@
 #include <QJsonValue>
 #include <cstring>
 #include <algorithm>
+#include <limits>
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSettings>
@@ -81,6 +82,25 @@ QmlPosterModel::QmlPosterModel(IEngine *session, MetadataResolver *resolver,
 int QmlPosterModel::rowCount(const QModelIndex &) const
 {
     return m_session->torrentCount();
+}
+
+// Time-to-complete for the classic view. "" when done, "∞" when stalled (no rate
+// but bytes remaining). Compact d/h/m/s like qBittorrent.
+static QString formatEta(const TorrentInfo &info)
+{
+    if (info.completed || info.progress >= 1.0f) return {};
+    const qint64 remaining = info.totalSize - info.totalDone;
+    if (remaining <= 0) return {};
+    if (info.downloadRate <= 0) return QStringLiteral("∞");
+    qint64 secs = remaining / info.downloadRate;
+    if (secs >= 100 * 24 * 3600) return QStringLiteral("∞");   // cap absurd ETAs
+    const qint64 d = secs / 86400; secs %= 86400;
+    const qint64 h = secs / 3600;  secs %= 3600;
+    const qint64 m = secs / 60;    secs %= 60;
+    if (d > 0) return QStringLiteral("%1d %2h").arg(d).arg(h);
+    if (h > 0) return QStringLiteral("%1h %2m").arg(h).arg(m);
+    if (m > 0) return QStringLiteral("%1m %2s").arg(m).arg(secs);
+    return QStringLiteral("%1s").arg(secs);
 }
 
 QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
@@ -144,6 +164,10 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case DownRateRole:    return info.downloadRate;
     case UpRateRole:      return info.uploadRate;
     case SizeBytesRole:   return static_cast<qint64>(info.totalSize);
+    case NumSeedsRole:    return info.numSeeds;
+    case RatioRole:       return info.ratio;
+    case AvailabilityRole: return info.availability;
+    case EtaRole:         return formatEta(info);
     }
     return {};
 }
@@ -166,7 +190,11 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {DownRateRole,    "downRate"},
         {UpRateRole,      "upRate"},
         {SizeRole,        "size"},
-        {SizeBytesRole,   "sizeBytes"}
+        {SizeBytesRole,   "sizeBytes"},
+        {NumSeedsRole,    "numSeeds"},
+        {RatioRole,       "ratio"},
+        {AvailabilityRole, "availability"},
+        {EtaRole,         "eta"}
     };
 }
 
@@ -315,6 +343,30 @@ bool QmlTorrentFilterProxy::lessThan(const QModelIndex &l, const QModelIndex &r)
     if (m_sortColumn == QStringLiteral("peers")) {
         auto [a, b] = raw(QmlPosterModel::NumPeersRole);
         return a.toInt() < b.toInt();
+    }
+    if (m_sortColumn == QStringLiteral("seeds")) {
+        auto [a, b] = raw(QmlPosterModel::NumSeedsRole);
+        return a.toInt() < b.toInt();
+    }
+    if (m_sortColumn == QStringLiteral("ratio")) {
+        auto [a, b] = raw(QmlPosterModel::RatioRole);
+        return a.toReal() < b.toReal();
+    }
+    if (m_sortColumn == QStringLiteral("avail")) {
+        auto [a, b] = raw(QmlPosterModel::AvailabilityRole);
+        return a.toReal() < b.toReal();
+    }
+    if (m_sortColumn == QStringLiteral("eta")) {
+        // sort by real time-to-finish: remaining/rate. Stalled (no rate) sorts last.
+        auto secs = [&](const QModelIndex &i) -> qint64 {
+            const qint64 rate = src->data(i, QmlPosterModel::DownRateRole).toInt();
+            const qint64 rem = src->data(i, QmlPosterModel::SizeBytesRole).toLongLong()
+                               * (1.0 - src->data(i, QmlPosterModel::ProgressRole).toReal());
+            if (rem <= 0) return -1;                 // done → top when ascending
+            if (rate <= 0) return std::numeric_limits<qint64>::max();   // stalled → bottom
+            return rem / rate;
+        };
+        return secs(l) < secs(r);
     }
     return false;
 }

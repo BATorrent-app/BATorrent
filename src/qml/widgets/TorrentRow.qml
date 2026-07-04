@@ -26,6 +26,10 @@ Rectangle {
     required property int upRate
     required property string category
     required property int numPeers
+    required property int numSeeds
+    required property real ratio
+    required property real availability
+    required property string eta
     required property string posterPath
 
     readonly property string posterUrl: win.fileUrl(posterPath)
@@ -53,31 +57,20 @@ Rectangle {
         anchors.rightMargin: Theme.sp4
         spacing: Theme.sp4
 
-        // .name: poster thumb + nome
-        RowLayout {
+        // classic = cover-less, raw torrent name in mono — a dense qBittorrent-
+        // style row (this ListView is only ever shown in classic mode now)
+        Text {
             Layout.fillWidth: true
-            spacing: Theme.sp3
-            // classic mode = no cover art, raw torrent name — a clean qBittorrent-
-            // style row for users the media-hub styling puts off
-            PosterThumb {
-                Layout.alignment: Qt.AlignVCenter
-                visible: !lrow.win.classicMode
-                posterUrl: lrow.posterUrl
-                label: lrow.metaTitle || lrow.torrentName || ""
-            }
-            Text {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                text: lrow.win.classicMode ? lrow.torrentName : (lrow.metaTitle || lrow.torrentName)
-                color: Theme.t1
-                font.pixelSize: 13
-                font.family: lrow.win.classicMode ? Theme.fontMono : Theme.fontSans
-                elide: Text.ElideRight
-            }
+            Layout.alignment: Qt.AlignVCenter
+            text: lrow.torrentName
+            color: Theme.t1
+            font.pixelSize: 13
+            font.family: Theme.fontMono
+            elide: Text.ElideRight
         }
         Text {
             text: lrow.size
-            Layout.preferredWidth: 78
+            Layout.preferredWidth: 72
             horizontalAlignment: Text.AlignRight
             color: Theme.t2
             font.pixelSize: 12
@@ -85,7 +78,7 @@ Rectangle {
         }
         // progress: surfaceAlt track, state-colored fill, centered % (white over fill, t1 over track)
         Item {
-            Layout.preferredWidth: 104
+            Layout.preferredWidth: 96
             Layout.preferredHeight: 18
             Rectangle {
                 id: pbarTrack
@@ -113,8 +106,34 @@ Rectangle {
             }
         }
         Text {
+            id: lrowStateText
+            text: lrow.stateString
+            Layout.preferredWidth: 104
+            color: win.textFor(lrow.stateKey)
+            font.pixelSize: 12
+            font.weight: Theme.hasAnime ? Font.DemiBold : Font.Medium
+            font.family: Theme.fontSans
+            elide: Text.ElideRight
+        }
+        Text {
+            text: lrow.numSeeds
+            Layout.preferredWidth: 44
+            horizontalAlignment: Text.AlignRight
+            color: lrow.numSeeds === 0 ? Theme.t4 : Theme.grn
+            font.pixelSize: 12
+            font.family: Theme.fontMono
+        }
+        Text {
+            text: lrow.numPeers
+            Layout.preferredWidth: 44
+            horizontalAlignment: Text.AlignRight
+            color: lrow.numPeers === 0 ? Theme.t4 : Theme.t2
+            font.pixelSize: 12
+            font.family: Theme.fontMono
+        }
+        Text {
             text: lrow.downRate > 0 ? lrow.downSpeed : "—"
-            Layout.preferredWidth: 78
+            Layout.preferredWidth: 74
             horizontalAlignment: Text.AlignRight
             color: lrow.downRate > 0 ? Theme.accentText : Theme.t4
             font.pixelSize: 12
@@ -122,24 +141,32 @@ Rectangle {
         }
         Text {
             text: lrow.upRate > 0 ? lrow.upSpeed : "—"
-            Layout.preferredWidth: 78
+            Layout.preferredWidth: 74
             horizontalAlignment: Text.AlignRight
             color: lrow.upRate > 0 ? Theme.up : Theme.t4
             font.pixelSize: 12
             font.family: Theme.fontMono
         }
         Text {
-            id: lrowStateText
-            text: lrow.stateString
-            Layout.preferredWidth: 110
-            color: win.textFor(lrow.stateKey)
+            // ratio: red under 1.0, green at/above — the seed-health at a glance
+            text: lrow.ratio < 0 ? "∞" : lrow.ratio.toFixed(2)
+            Layout.preferredWidth: 50
+            horizontalAlignment: Text.AlignRight
+            color: lrow.ratio >= 1.0 ? Theme.grn : Theme.t3
             font.pixelSize: 12
-            font.weight: Theme.hasAnime ? Font.DemiBold : Font.Medium
-            font.family: Theme.fontSans
+            font.family: Theme.fontMono
+        }
+        Text {
+            text: lrow.eta.length > 0 ? lrow.eta : "—"
+            Layout.preferredWidth: 66
+            horizontalAlignment: Text.AlignRight
+            color: Theme.t3
+            font.pixelSize: 12
+            font.family: Theme.fontMono
         }
         Text {
             text: win.catLabel(lrow.category)
-            Layout.preferredWidth: 90
+            Layout.preferredWidth: 84
             color: Theme.hasAnime ? Theme.t1 : Theme.t3
             style: Theme.hasAnime ? Text.Outline : Text.Normal
             styleColor: Theme.isLight ? "#ffffff" : "#000000"
@@ -147,17 +174,6 @@ Rectangle {
             font.weight: Theme.hasAnime ? Font.Medium : Font.Normal
             font.family: Theme.fontSans
             elide: Text.ElideRight
-        }
-        Text {
-            text: lrow.numPeers
-            Layout.preferredWidth: 56
-            horizontalAlignment: Text.AlignRight
-            color: lrow.numPeers === 0 ? (Theme.hasAnime ? Theme.t2 : Theme.t4) : (Theme.hasAnime ? Theme.t1 : Theme.t2)
-            style: Theme.hasAnime ? Text.Outline : Text.Normal
-            styleColor: Theme.isLight ? "#ffffff" : "#000000"
-            font.pixelSize: 12
-            font.weight: Theme.hasAnime ? Font.Medium : Font.Normal
-            font.family: Theme.fontMono
         }
     }
 }

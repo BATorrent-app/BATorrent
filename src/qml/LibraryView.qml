@@ -239,13 +239,16 @@ Item {
                 spacing: Theme.sp4
 
                 HCol { label: (i18n.language, i18n.t("col_name")); col: "name"; fill: true }
-                HCol { label: (i18n.language, i18n.t("col_size")); col: "size"; w: 78; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_progress")); col: "progress"; w: 104 }
-                HCol { label: (i18n.language, i18n.t("col_down")); col: "down"; w: 78; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_up")); col: "up"; w: 78; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_state")); col: "state"; w: 110 }
-                HCol { label: (i18n.language, i18n.t("col_category")); col: "category"; w: 90 }
-                HCol { label: (i18n.language, i18n.t("col_peers")); col: "peers"; w: 56; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_size")); col: "size"; w: 72; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_progress")); col: "progress"; w: 96 }
+                HCol { label: (i18n.language, i18n.t("col_state")); col: "state"; w: 104 }
+                HCol { label: (i18n.language, i18n.t("col_seeds")); col: "seeds"; w: 44; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_peers")); col: "peers"; w: 44; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_down")); col: "down"; w: 74; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_up")); col: "up"; w: 74; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_ratio")); col: "ratio"; w: 50; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_eta")); col: "eta"; w: 66; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_category")); col: "category"; w: 84 }
             }
         }
 

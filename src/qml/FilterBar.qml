@@ -180,33 +180,6 @@ Rectangle {
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.classicMode = false; win.gridView = true } }
                 }
                 Rectangle {
-                    readonly property bool on: !win.gridView && !win.classicMode
-                    implicitWidth: segLi.implicitWidth + 22
-                    height: 28
-                    radius: 6
-                    color: on ? Qt.rgba(1,1,1,0.08) : "transparent"
-                    Row {
-                        id: segLi
-                        anchors.centerIn: parent
-                        spacing: 6
-                        IconImg {
-                            anchors.verticalCenter: parent.verticalCenter
-                            src: "qrc:/icons/list.svg"
-                            tint: parent.parent.on ? Theme.t1 : Theme.t3
-                            s: 14
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: (i18n.language, i18n.t("view_list"))
-                            color: parent.parent.on ? Theme.t1 : Theme.t3
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
-                            font.family: Theme.fontSans
-                        }
-                    }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.classicMode = false; win.gridView = false } }
-                }
-                Rectangle {
                     readonly property bool on: win.classicMode
                     implicitWidth: segCl.implicitWidth + 22
                     height: 28
