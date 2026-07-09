@@ -24,6 +24,7 @@ Rectangle {
     property bool collapsed: false
     signal settingsClicked()
     signal selectTorrent(string infoHash)
+    signal makeRoomRequested()
 
     // Contextual rail slot (rotating carousel, mirrors the Discover hero):
     // off the Downloads tab → what's downloading; ON Downloads → continue/resume
@@ -229,6 +230,7 @@ Rectangle {
             Repeater {
                 model: typeof session !== "undefined" ? session.diskVolumes : []
                 delegate: Item {
+                    id: dvItem
                     required property var modelData
                     width: parent.width
                     height: 30
@@ -237,7 +239,7 @@ Rectangle {
                         anchors.left: parent.left; anchors.top: parent.top
                         anchors.right: dvFree.left; anchors.rightMargin: 8
                         text: modelData.name
-                        color: Theme.t4; elide: Text.ElideRight
+                        color: dvMa.containsMouse ? Theme.t2 : Theme.t4; elide: Text.ElideRight
                         font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
                         font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
                     }
@@ -255,6 +257,17 @@ Rectangle {
                             width: parent.width * Math.max(0.02, Math.min(1, modelData.usedFraction))
                             color: Theme.amber
                         }
+                    }
+                    // the bar was purely decorative — make it the entry point to
+                    // free up space, since disk pressure is the one signal the
+                    // app never let the user act on
+                    MouseArea {
+                        id: dvMa
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: rail.makeRoomRequested()
                     }
                 }
             }

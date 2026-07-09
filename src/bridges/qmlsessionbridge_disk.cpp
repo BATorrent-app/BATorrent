@@ -11,6 +11,7 @@
 #include "torrent/sessionmanager.h"   // full IEngine + TorrentInfo
 #include "services/metadata/metadataresolver.h"
 #include "services/platform/utils.h"  // formatSize
+#include "services/platform/translator.h"  // tr_
 
 #include <QStorageInfo>
 #include <QDir>
@@ -96,6 +97,43 @@ QVariantList QmlSessionBridge::diskVolumes() const
     }
     cached = out;
     return out;
+}
+
+// Every torrent, for the Make Room panel — the QML view sorts by size or age
+// and sums a running "would reclaim" total as the user picks rows to delete.
+QVariantList QmlSessionBridge::makeRoomList() const
+{
+    QVariantList out;
+    const int n = m_session->torrentCount();
+    out.reserve(n);
+    for (int i = 0; i < n; ++i) {
+        const TorrentInfo info = m_session->torrentAt(i);
+        QVariantMap m;
+        m["infoHash"]   = m_session->torrentHashAt(i);
+        m["name"]       = info.name;
+        m["sizeBytes"]  = static_cast<qint64>(info.totalSize);
+        m["size"]       = formatSize(info.totalSize);
+        m["addedTime"]  = info.addedTime;
+        m["category"]   = info.category;
+        m["paused"]     = info.paused;
+        m["completed"]  = info.completed || info.progress >= 1.0f;
+        m["seeding"]    = info.completed && !info.paused && info.uploadRate > 0;
+        out << m;
+    }
+    return out;
+}
+
+void QmlSessionBridge::removeTorrentByHash(const QString &hash, bool deleteFiles, bool permanent)
+{
+    if (hash.isEmpty()) return;
+    const int n = m_session->torrentCount();
+    for (int i = 0; i < n; ++i) {
+        if (m_session->torrentHashAt(i) != hash) continue;
+        m_session->removeTorrent(i, deleteFiles, permanent);
+        if (m_selectedIndex == i) { m_selectedIndex = -1; emit selectionChanged(); emit selectionListsChanged(); }
+        emit toast(permanent ? tr_("remove_deleted") : tr_("remove_trashed"), QString());
+        return;
+    }
 }
 
 // Currently-downloading torrents for the nav-rail mini card: cover + name + % +
