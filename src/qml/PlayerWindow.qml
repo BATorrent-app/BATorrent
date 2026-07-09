@@ -263,6 +263,19 @@ Window {
     readonly property real downloadedToMs: (win.streamStats && win.streamStats.buffered > 0 && player.duration > 0)
                                            ? win.streamStats.buffered * player.duration : 0
     readonly property real bufferedAheadMs: Math.max(0, downloadedToMs - player.position)
+    // Reading from a growing torrent file, FFmpeg's backend freezes on an
+    // underrun without ever reporting MediaPlayer.StalledMedia — position just
+    // stops advancing while playbackState stays Playing, with no visual sign.
+    // Detect it ourselves from the same runway math the "ahead" pill already
+    // uses, debounced so a normal neck-and-neck moment doesn't flicker the spinner.
+    readonly property bool starvedNow: player.playbackState === MediaPlayer.PlayingState
+                                       && win.stillDownloading && win.bufferedAheadMs < 400
+    property bool starved: false
+    onStarvedNowChanged: {
+        if (starvedNow) starveDebounce.restart()
+        else { starveDebounce.stop(); starved = false }   // recovery is instant
+    }
+    Timer { id: starveDebounce; interval: 350; onTriggered: if (win.starvedNow) win.starved = true }
     function fmtAhead(ms) {
         var s = Math.floor(ms / 1000)
         if (s >= 3600) return Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m buffered ahead"
@@ -414,6 +427,7 @@ Window {
         anchors.centerIn: parent
         visible: player.mediaStatus === MediaPlayer.LoadingMedia
                  || player.mediaStatus === MediaPlayer.StalledMedia
+                 || win.starved
                  || player.error !== MediaPlayer.NoError
         spacing: 12
         BusyIndicator { Layout.alignment: Qt.AlignHCenter; running: player.error === MediaPlayer.NoError }
