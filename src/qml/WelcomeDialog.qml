@@ -35,10 +35,12 @@ BatDialog {
     // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
         "4.4": {
-            note: "This release started with my own frustration: finding anything dubbed or subtitled in my language was a fight. Not anymore — with \"Prefer my language\" on, releases in YOUR language (dubbed included) now lead the list, whatever language the app speaks. And if you run Jackett, your own indexers now plug straight into search.\n\n— Mateus"
+            note: "This release started with my own frustration: finding anything dubbed or subtitled in my language was a fight. Not anymore — with \"Prefer my language\" on, releases in YOUR language (dubbed included) now lead the list, whatever language the app speaks. And if you run Jackett, your own indexers now plug straight into search.<br><br>Also fixed a couple of crashes people ran into. Got a bug or an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">tell me here</a>.<br><br>— Mateus"
             , highlights: [
                 "Dubbed / your-language releases first in streams and search",
                 "Jackett preset — your local indexers inside BATorrent search",
+                "Free up space without leaving the app — one click from the sidebar",
+                "Fixed a couple of real crashes found via crash reporting",
                 "Progress shows 99.9% until it's truly done — 100% is a promise again",
                 "Web UI password now stored hardened (PBKDF2)"
             ]
@@ -155,8 +157,14 @@ BatDialog {
             Text {
                 Layout.fillWidth: true
                 text: dlg.noteText
+                // AutoText (the default): plain notes stay plain (their \n\n
+                // survives as real line breaks); a note with a link like 4.4's
+                // gets auto-detected as rich text — which is why THAT entry
+                // uses <br> instead of \n\n for its paragraph breaks.
+                linkColor: Theme.accentText
                 color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans
                 wrapMode: Text.WordWrap; lineHeight: 1.45
+                onLinkActivated: function(link) { Qt.openUrlExternally(link) }
             }
         }
     }

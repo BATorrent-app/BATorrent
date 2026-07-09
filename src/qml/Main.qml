@@ -570,6 +570,7 @@ Window {
                 enabled: typeof updater !== "undefined" && updater !== null
                 onTriggered: if (typeof updater !== "undefined" && updater) updater.check(false)
             }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_feedback")); onTriggered: Qt.openUrlExternally("https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform") }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_donate")); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_about")); role: Platform.MenuItem.AboutRole; onTriggered: aboutDlg.open() }
@@ -897,6 +898,7 @@ Window {
                     enabled: typeof updater !== "undefined" && updater !== null
                     onTriggered: if (typeof updater !== "undefined" && updater) updater.check(false)
                 }
+                BarItem { text: (i18n.language, i18n.t("menu_feedback")); onTriggered: Qt.openUrlExternally("https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform") }
                 BarSep {}
                 BarItem { text: (i18n.language, i18n.t("menu_donate")); onTriggered: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19") }
                 BarItem { text: (i18n.language, i18n.t("menu_about")); onTriggered: aboutDlg.open() }
