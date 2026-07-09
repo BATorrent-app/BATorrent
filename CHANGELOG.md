@@ -22,6 +22,12 @@
 - **Dubbed / Subtitled / Original filter.** One tap at the top of search results —
   see only dubbed releases, only subtitled, or only original audio, in your own
   language. It knows the difference a viewer actually cares about; ordering can't.
+- **Free up space, without leaving the app.** Click the disk bar in the sidebar
+  to open a panel of every torrent, sortable by size or age, with a one-click
+  delete. When a download won't fit, the "won't fit" dialogs (Search and the
+  add-torrent dialog) now offer a direct "Free up space…" link sized to exactly
+  how much you're short. Adding a `.torrent` with a known size that won't fit no
+  longer bypasses the warning even with "always use default path" on.
 
 ### Changed
 - **Two view modes, not three: Grid × Classic.** Plain "List" is gone — Classic
@@ -35,6 +41,14 @@
   rounding, so "100%" is back to being a promise.
 - **The what's-new screen no longer loses the dev note when a hotfix replaces a
   release** (as 4.3.1 replaced 4.3.0): notes now belong to the release line.
+- **The player now shows a spinner when it actually runs out of buffer**, not just
+  when Qt's own stall detection fires (which a growing torrent file never
+  reliably triggers) — playback freezing with no feedback is now a spinner
+  instead of a silent stop.
+- **Fixed two crashes** found via crash reporting: one when a torrent's
+  selection state went stale (e.g. removed while still selected), one at
+  app shutdown when a very-late log message could still reach the log file
+  after it had already closed.
 
 ### Security
 - **Web UI password hardened**: stored as salted PBKDF2 (100k iterations) instead
