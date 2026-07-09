@@ -646,13 +646,11 @@ private:
     QString m_ipFilterPath;
     int m_ipFilterCount = 0;
 
-    // Magnets that haven't resolved metadata within this window get aborted
-    // and emit a torrentError. 0 = no timeout.
-    int m_magnetTimeoutSeconds = 300; // 5 min default
-    // Tracks when each magnet was added, by info_hash, so we can age them
-    // out after m_magnetTimeoutSeconds without metadata.
+    // Tracks when each magnet was added so a still-fetching-metadata torrent
+    // can show "looking for peers (Xm)" via stateDetail instead of the app
+    // silently giving up and deleting it.
     std::map<lt::torrent_handle, qint64> m_magnetAddedAt;
-    void checkMagnetTimeouts();
+    void checkMagnetTimeouts();   // prunes m_magnetAddedAt once metadata arrives (or the handle dies)
 
     // Bandwidth scheduler
     int m_altDownLimit = 0;

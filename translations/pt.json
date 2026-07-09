@@ -442,6 +442,7 @@
   "src_region_ptbr": "Português (BR)",
   "src_region_self": "Auto-hospedado",
   "src_title": "Fontes de torrent",
+  "state_fetching_metadata": "Procurando um peer com a lista de arquivos (%1min) — torrents raros podem demorar",
   "wrapped_title": "Retrospectiva Torrent",
   "wrapped_downloaded": "Baixado",
   "wrapped_added": "Adicionados",

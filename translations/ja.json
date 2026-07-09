@@ -442,6 +442,7 @@
   "src_region_ptbr": "ポルトガル語（BR）",
   "src_region_self": "セルフホスト",
   "src_title": "トレントソース",
+  "state_fetching_metadata": "ファイルリストを持つピアを探しています（%1分）— まれなトレントは時間がかかることがあります",
   "wrapped_title": "トレント・イヤー",
   "wrapped_downloaded": "ダウンロード",
   "wrapped_added": "追加",

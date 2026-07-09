@@ -442,6 +442,7 @@
   "src_region_ptbr": "Portugués (BR)",
   "src_region_self": "Autoalojado",
   "src_title": "Fuentes de torrent",
+  "state_fetching_metadata": "Buscando un peer con la lista de archivos (%1min) — los torrents raros pueden tardar",
   "wrapped_title": "Tu año en torrents",
   "wrapped_downloaded": "Descargado",
   "wrapped_added": "Añadidos",

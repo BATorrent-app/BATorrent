@@ -442,6 +442,7 @@
   "src_region_ptbr": "葡萄牙语（巴西）",
   "src_region_self": "自建",
   "src_title": "种子来源",
+  "state_fetching_metadata": "正在寻找拥有文件列表的节点（%1分钟）— 冷门种子可能需要更长时间",
   "wrapped_title": "年度种子回顾",
   "wrapped_downloaded": "已下载",
   "wrapped_added": "已添加",

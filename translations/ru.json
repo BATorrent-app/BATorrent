@@ -442,6 +442,7 @@
   "src_region_ptbr": "Португальский (BR)",
   "src_region_self": "Свой сервер",
   "src_title": "Источники торрентов",
+  "state_fetching_metadata": "Ищем пира со списком файлов (%1 мин) — редкие торренты могут искать дольше",
   "wrapped_title": "Год в торрентах",
   "wrapped_downloaded": "Загружено",
   "wrapped_added": "Добавлено",

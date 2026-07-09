@@ -442,6 +442,7 @@
   "src_region_ptbr": "Portugiesisch (BR)",
   "src_region_self": "Selbst gehostet",
   "src_title": "Torrent-Quellen",
+  "state_fetching_metadata": "Suche nach einem Peer mit der Dateiliste (%1 Min.) — seltene Torrents können dauern",
   "wrapped_title": "Jahr in Torrents",
   "wrapped_downloaded": "Heruntergeladen",
   "wrapped_added": "Hinzugefügt",

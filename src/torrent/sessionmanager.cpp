@@ -544,33 +544,19 @@ QStringList SessionManager::torrentFileNames(int index) const
 
 void SessionManager::checkMagnetTimeouts()
 {
-    if (m_magnetTimeoutSeconds <= 0 || m_magnetAddedAt.empty())
+    // No longer times anything out — a magnet used to be silently deleted
+    // after 5 minutes without metadata, which hit rare-seeder torrents hardest
+    // (exactly the ones that legitimately take longer to find a peer). The
+    // wait is now explained via stateDetail (torrentAt) instead; this pass
+    // just prunes the bookkeeping map so it can't grow unbounded.
+    if (m_magnetAddedAt.empty())
         return;
-    const qint64 now = QDateTime::currentSecsSinceEpoch();
     for (auto it = m_magnetAddedAt.begin(); it != m_magnetAddedAt.end(); ) {
         const lt::torrent_handle &h = it->first;
-        if (!h.is_valid()) { it = m_magnetAddedAt.erase(it); continue; }
-        const lt::torrent_status st = cachedStatus(h);
-        if (st.has_metadata) {
-            // Done — metadata arrived, stop watching this magnet.
+        if (!h.is_valid() || cachedStatus(h).has_metadata)
             it = m_magnetAddedAt.erase(it);
-            continue;
-        }
-        if (now - it->second >= m_magnetTimeoutSeconds) {
-            QString name = QString::fromStdString(st.name);
-            if (name.isEmpty()) name = "magnet";
-            emit torrentError(QString("Metadata timeout: %1").arg(name));
-            // Remove the dead magnet so it doesn't sit forever consuming a
-            // queue slot.
-            int idx = -1;
-            for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i) {
-                if (m_torrents[i] == h) { idx = i; break; }
-            }
-            it = m_magnetAddedAt.erase(it);
-            if (idx >= 0) removeTorrent(idx, false);
-            continue;
-        }
-        ++it;
+        else
+            ++it;
     }
 }
 
@@ -805,6 +791,16 @@ TorrentInfo SessionManager::torrentAt(int index) const
             info.stateDetail = tr_("state_no_seeds");
         else
             info.stateDetail = tr_("state_choked");
+    } else if (!info.paused && st.state == lt::torrent_status::downloading_metadata) {
+        // A rare-seeder magnet can take a long time to find a peer that'll
+        // hand over metadata — we used to give up and silently delete it
+        // after 5 minutes (issue reported by a user: "deleted without
+        // warning"). Explain the wait instead; the user decides when to quit.
+        auto it = m_magnetAddedAt.find(m_torrents[index]);
+        if (it != m_magnetAddedAt.end()) {
+            const qint64 mins = (QDateTime::currentSecsSinceEpoch() - it->second) / 60;
+            info.stateDetail = tr_("state_fetching_metadata").arg(mins);
+        }
     }
 
     qint64 uploaded = st.total_payload_upload;

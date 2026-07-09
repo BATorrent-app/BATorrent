@@ -442,6 +442,7 @@
   "src_region_ptbr": "Португальська (BR)",
   "src_region_self": "Власний сервер",
   "src_title": "Джерела торентів",
+  "state_fetching_metadata": "Шукаємо піра зі списком файлів (%1 хв) — рідкісні торенти можуть шукати довше",
   "wrapped_title": "Рік у торентах",
   "wrapped_downloaded": "Завантажено",
   "wrapped_added": "Додано",

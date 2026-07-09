@@ -396,6 +396,7 @@
   "src_region_ptbr": "Portuguese (BR)",
   "src_region_self": "Self-hosted",
   "src_title": "Torrent sources",
+  "state_fetching_metadata": "Looking for a peer with this torrent's file list (%1m) — rare torrents can take a while",
   "wrapped_title": "Year in Torrents",
   "wrapped_downloaded": "Downloaded",
   "wrapped_added": "Added",

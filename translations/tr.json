@@ -396,6 +396,7 @@
   "src_region_ptbr": "Portekizce (BR)",
   "src_region_self": "Kendi sunucun",
   "src_title": "Torrent kaynakları",
+  "state_fetching_metadata": "Dosya listesine sahip bir eş aranıyor (%1dk) — nadir torrentler zaman alabilir",
   "wrapped_title": "Torrent'te Yıl",
   "wrapped_downloaded": "İndirilen",
   "wrapped_added": "Eklenen",
