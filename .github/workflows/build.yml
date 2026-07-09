@@ -333,7 +333,11 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-symbols
-          path: build/Release/BATorrent.pdb
+          # Also keep the fork libtorrent's own PDB — a stack that passes through
+          # torrent-rasterbar.dll is unsymbolicated without it (Sentry NATIVE-QT-4/5/B).
+          path: |
+            build/Release/BATorrent.pdb
+            build/third_party/libtorrent/Release/torrent-rasterbar.pdb
 
       - name: Upload debug symbols to Sentry
         if: env.SENTRY_ENABLED == '1' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != ''
@@ -345,7 +349,10 @@ jobs:
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: |
           npm install -g @sentry/cli
-          sentry-cli debug-files upload build/Release/BATorrent.pdb build/Release/BATorrent.exe
+          sentry-cli debug-files upload `
+            build/Release/BATorrent.pdb build/Release/BATorrent.exe `
+            build/third_party/libtorrent/Release/torrent-rasterbar.pdb `
+            build/third_party/libtorrent/Release/torrent-rasterbar.dll
 
   build-macos:
     # macos-15 (Sequoia) dropped the legacy AGL framework that Qt 6.7 still links

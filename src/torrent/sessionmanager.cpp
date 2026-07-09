@@ -1803,6 +1803,7 @@ void SessionManager::extractArchives(const QString &savePath, const QString &tor
 bool SessionManager::torrentHasArchives(int index) const
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size())) return false;
+    if (!m_torrents[index].is_valid()) return false;   // torrent_file() throws on an invalid handle
     auto ti = m_torrents[index].torrent_file();
     if (!ti) return false;
     const auto &fs = ti->files();
@@ -1818,6 +1819,7 @@ bool SessionManager::torrentHasArchives(int index) const
 bool SessionManager::torrentHasVideo(int index) const
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size())) return false;
+    if (!m_torrents[index].is_valid()) return false;   // torrent_file() throws on an invalid handle
     auto ti = m_torrents[index].torrent_file();
     if (!ti) return false;
     static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts",".mpg",".mpeg",".m2ts"};

@@ -704,6 +704,12 @@ int main(int argc, char *argv[])
             else if (arg.startsWith("magnet:")) sessionBridge->addMagnetUri(arg);
         }
 
-        return app.exec();
+        const int rc = app.exec();
+        // `app`'s dtor (Qt/plugin DLL teardown) runs after this, during which a
+        // late Qt log message used to crash inside our handler (Logger touched
+        // mid-DllMain/FreeLibrary at exit — Sentry NATIVE-QT-9); revert to Qt's
+        // default handler first so nothing that late reaches our machinery.
+        qInstallMessageHandler(nullptr);
+        return rc;
     }
 }
