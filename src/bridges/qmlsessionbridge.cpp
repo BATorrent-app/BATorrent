@@ -1121,6 +1121,7 @@ QVariantMap QmlSessionBridge::previewTorrent(const QString &filePath) const
     out["ok"] = true;
     out["name"] = QString::fromStdString(ti->name());
     out["totalSize"] = formatSize(ti->total_size());
+    out["totalSizeBytes"] = static_cast<qint64>(ti->total_size());
     out["fileCount"] = ti->num_files();
 
     // info hash (same convention as SessionManager: info_hashes().get_best())

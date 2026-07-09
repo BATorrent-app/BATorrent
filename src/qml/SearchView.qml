@@ -1083,6 +1083,8 @@ Rectangle {
     // disk add-guard: the bridge blocks a too-big add and asks here first
     property int pendingFitIdx: -1
     property string pendingFitMsg: ""
+    property double pendingFitShortfall: 0   // needed - free, for the "free up space" handoff
+    signal freeSpaceRequested(double targetBytes)
     Connections {
         target: page.api
         ignoreUnknownSignals: true
@@ -1092,13 +1094,14 @@ Rectangle {
                 .replace("%1", name)
                 .replace("%2", page.fmtSize(needed))
                 .replace("%3", page.fmtSize(freeBytes))
+            page.pendingFitShortfall = Math.max(0, needed - freeBytes)
             fitDlg.open()
         }
     }
     BatDialog {
         id: fitDlg
         title: (i18n.language, i18n.t("search_wontfit_title"))
-        cardW: 470; cardH: 240
+        cardW: 470; cardH: 280
         okText: (i18n.language, i18n.t("search_wontfit_ok"))
         cancelText: (i18n.language, i18n.t("btn_cancel"))
         onAccepted: if (page.api && page.pendingFitIdx >= 0) page.api.activateResult(page.pendingFitIdx, true)
@@ -1107,6 +1110,15 @@ Rectangle {
             text: page.pendingFitMsg
             wrapMode: Text.WordWrap
             color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans; lineHeight: 1.35
+        }
+        BtnFlat {
+            Layout.alignment: Qt.AlignLeft
+            Layout.topMargin: 4
+            text: (i18n.language, i18n.t("search_wontfit_freeup"))
+            onClicked: {
+                fitDlg.close()
+                page.freeSpaceRequested(page.pendingFitShortfall)
+            }
         }
     }
 }

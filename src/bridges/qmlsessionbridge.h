@@ -90,6 +90,13 @@ public:
     Q_INVOKABLE qint64 freeSaveBytes() const;   // single source of truth: free bytes on the default save volume
     double diskUsedFraction() const;
     QVariantList diskVolumes() const;
+    // Every torrent (hash/name/sizeBytes/size/addedTime/category/paused/seeding),
+    // unsorted — the Make Room panel sorts client-side (by size or by age),
+    // same pattern as Search's result list.
+    Q_INVOKABLE QVariantList makeRoomList() const;
+    // Delete-by-hash so Make Room doesn't have to fight over m_selectedRows —
+    // resolves the hash to its current engine index, then removeTorrent().
+    Q_INVOKABLE void removeTorrentByHash(const QString &hash, bool deleteFiles, bool permanent);
     QVariantList activeDownloads() const;
     QVariantList seedingTransfers() const;
     QVariantList resumeItems() const;

@@ -21,19 +21,27 @@ BatDialog {
     property string torrentPath: ""
     property string torrentName: ""
     property string totalSize: ""
+    property double totalSizeBytes: 0
     property int fileCount: 0
     property int selectedCount: 0
     property string infoHash: ""
     property string posterPath: ""
     property alias savePath: pathFld.text
+    signal freeSpaceRequested(double targetBytes)
 
     readonly property string posterUrl: posterPath && posterPath.length > 0
         ? (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(posterPath) : ""
+
+    // disk-fit check — same freeSaveBytes() single source of truth as the
+    // sidebar/auto-pause/Search guard, so every screen agrees
+    readonly property double freeBytes: typeof session !== "undefined" ? session.freeSaveBytes() : -1
+    readonly property bool wontFit: dlg.freeBytes >= 0 && dlg.totalSizeBytes > dlg.freeBytes
 
     function loadPreview(p, path) {
         dlg.torrentPath = path
         dlg.torrentName = p.name || ""
         dlg.totalSize = p.totalSize || ""
+        dlg.totalSizeBytes = p.totalSizeBytes || 0
         dlg.fileCount = p.fileCount || 0
         dlg.infoHash = p.infoHash || ""
         dlg.posterPath = p.posterPath || ""
@@ -118,6 +126,37 @@ BatDialog {
             Text {
                 text: dlg.totalSize + " · " + dlg.fileCount + " itens"
                 color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono
+            }
+        }
+    }
+
+    // ----- disk-fit warning -----
+    Rectangle {
+        Layout.fillWidth: true
+        visible: dlg.wontFit
+        implicitHeight: fitRow.implicitHeight + 16
+        radius: 8
+        color: Qt.rgba(224/255, 165/255, 51/255, 0.12)
+        border.color: Qt.rgba(224/255, 165/255, 51/255, 0.32)
+        border.width: 1
+        RowLayout {
+            id: fitRow
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 10
+            Text { text: "⚠"; color: "#e0a533"; font.pixelSize: 15 }
+            Text {
+                Layout.fillWidth: true
+                text: (i18n.language, i18n.t("addt_wontfit")).arg(dlg.totalSize)
+                color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
+                wrapMode: Text.WordWrap
+            }
+            BtnFlat {
+                text: (i18n.language, i18n.t("search_wontfit_freeup"))
+                onClicked: {
+                    dlg.freeSpaceRequested(Math.max(0, dlg.totalSizeBytes - dlg.freeBytes))
+                    dlg.close()
+                }
             }
         }
     }

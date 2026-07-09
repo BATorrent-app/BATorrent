@@ -917,6 +917,7 @@ Window {
                     if (typeof session === "undefined") return
                     if (!session.selectByInfoHash(infoHash)) { win.setFilter("all"); session.selectByInfoHash(infoHash) }
                 }
+                onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
             }
 
             StackLayout {
@@ -1079,7 +1080,11 @@ Window {
                     }
                 }
                 // ----- page 2: Search -----
-                SearchView { id: searchPage; Layout.fillWidth: true; Layout.fillHeight: true }
+                SearchView {
+                    id: searchPage
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
+                }
                 // ----- page 3: HUB -----
                 HubView {
                     id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
@@ -1195,8 +1200,14 @@ Window {
         var useDefault = settings.get("useDefaultPath") === true
         while (win.torrentQueue.length > 0) {
             var u = win.torrentQueue.shift()
-            if (useDefault) { session.addTorrentFile(u); continue }   // skip the dialog
             var p = session.previewTorrent(u)
+            // "skip the dialog" is a convenience for the common case — it stops
+            // being convenient the moment the download can't actually fit, so a
+            // known size that won't fit still surfaces the dialog (with its
+            // disk-fit warning) instead of silently failing mid-download.
+            var known = p && p.ok && (p.totalSizeBytes || 0) > 0
+            var fits = !known || session.freeSaveBytes() < 0 || p.totalSizeBytes <= session.freeSaveBytes()
+            if (useDefault && fits) { session.addTorrentFile(u); continue }
             if (p && p.ok) {
                 addTorrentDlg.savePath = session.defaultSavePath()
                 addTorrentDlg.loadPreview(p, u)
@@ -1213,6 +1224,7 @@ Window {
             queueTimer.restart()                // open the next once this one has closed
         }
         onRejected: queueTimer.restart()
+        onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
     }
     RemoveDialog {
         id: removeDlg
@@ -1221,6 +1233,20 @@ Window {
                 if (deletePermanently) session.removeSelectedWithFilesPermanent()
                 else session.removeSelectedWithFiles()
             } else session.removeSelected()
+        }
+    }
+    MakeRoomPanel {
+        id: makeRoomPanel
+        onDeleteRequested: function (infoHash) {
+            if (typeof session === "undefined") return
+            if (session.selectByInfoHash(infoHash)) removeDlg.open()
+        }
+        // the row list is a snapshot (Q_INVOKABLE, not a bound property) — refresh
+        // it after a delete goes through so the panel doesn't show a stale entry
+        Connections {
+            target: typeof session !== "undefined" ? session : null
+            ignoreUnknownSignals: true
+            function onStatsChanged() { if (makeRoomPanel.open) makeRoomPanel.reload() }
         }
     }
     InputPromptDialog   { id: inputPrompt }
