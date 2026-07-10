@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.4.1
+
+A hotfix for v4.4.0, which failed to launch on Windows.
+
+### Fixed
+- **Windows: the app launches again.** v4.4.0 shipped a QML shadow effect
+  (`RectangularShadow`) that failed to resolve on Windows, silently failing
+  the whole UI to load — no crash, no error, the app just quit. Replaced
+  with the same shadow technique already used everywhere else in the app.
+
 ## v4.4.0 — "Dublado"
 
 ### Added

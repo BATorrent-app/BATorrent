@@ -34,6 +34,17 @@ BatDialog {
     // Key by "major.minor" so hotfix bumps (4.3.0 → 4.3.1) keep the release's
     // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
+        "4.4.1": {
+            note: "Quick one: 4.4.0 wasn't opening on Windows for anyone. Sorry about that — fixed now in 4.4.1.<br><br>Everything below is what 4.4 was actually about.<br><br>This release came from my own annoyance: finding stuff dubbed or subtitled in my language was always a fight. Not anymore — turn on \"Prefer my language\" and releases in YOUR language (dubbed included) show up first. Running Jackett? Your indexers now plug straight into search too.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
+            , highlights: [
+                "The app opens again on Windows (4.4.0 didn't, for anyone)",
+                "Dubbed / your-language releases first in streams and search",
+                "Jackett preset — your local indexers inside BATorrent search",
+                "Free up space without leaving the app — one click from the sidebar",
+                "Progress shows 99.9% until it's truly done — 100% is a promise again",
+                "Web UI password now stored hardened (PBKDF2)"
+            ]
+        },
         "4.4": {
             note: "This release started with my own frustration: finding anything dubbed or subtitled in my language was a fight. Not anymore — with \"Prefer my language\" on, releases in YOUR language (dubbed included) now lead the list, whatever language the app speaks. And if you run Jackett, your own indexers now plug straight into search.<br><br>Also fixed a couple of crashes people ran into. Got a bug or an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">tell me here</a>.<br><br>— Mateus"
             , highlights: [
