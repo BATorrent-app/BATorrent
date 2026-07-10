@@ -467,11 +467,13 @@ Rectangle {
                     Layout.preferredHeight: page.landing ? 54 : 36
                     Behavior on Layout.preferredHeight { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
 
-                    RectangularShadow {
+                    MultiEffect {
+                        source: queryFld
                         anchors.fill: queryFld
-                        radius: queryFld.radius
-                        blur: 36
-                        color: "#73000000"
+                        shadowEnabled: true
+                        shadowBlur: 1.0
+                        blurMax: 36
+                        shadowColor: "#73000000"
                         opacity: page.landing ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: 220 } }
                     }
