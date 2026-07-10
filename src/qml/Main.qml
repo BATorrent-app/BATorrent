@@ -96,6 +96,15 @@ Window {
         interval: 3500; running: true; repeat: false
         onTriggered: if (typeof themeBridge !== "undefined") themeBridge.markBootHealthy()
     }
+    // Regaining focus with a fresh magnet link on the clipboard pops the Add
+    // dialog pre-filled — copy a link in the browser, alt-tab back, confirm.
+    onActiveChanged: if (active) win.checkClipboardMagnet()
+    function checkClipboardMagnet() {
+        if (typeof session === "undefined") return
+        if (magnetDlg.opened || addTorrentDlg.opened) return
+        var m = session.clipboardMagnetIfNew()
+        if (m.length > 0) magnetDlg.openWithMagnet(m)
+    }
     // first launch → the interactive tour (opens with a welcome step); an update
     // (version changed) → the what's-new screen. Once each, never both, never on
     // a plain relaunch.
@@ -1077,6 +1086,7 @@ Window {
                 DiscoverView {
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onOpenSearch: function(q) {
+                        searchPage.cameFromDiscover = true
                         navRail.currentIndex = 2
                         searchPage.runQuery(q)   // fills the bar + runs (no ghost search)
                     }
@@ -1086,6 +1096,7 @@ Window {
                     id: searchPage
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
+                    onBackToDiscover: navRail.currentIndex = 1
                 }
                 // ----- page 3: HUB -----
                 HubView {

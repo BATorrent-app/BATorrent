@@ -158,6 +158,10 @@ public:
     Q_INVOKABLE void queueBottomSelected();
     Q_INVOKABLE void stopSeedingSelected();
     Q_INVOKABLE void smartPaste();
+    // Called when the main window regains focus: if the clipboard holds a magnet
+    // link we haven't already surfaced, return it so QML can pop the Add-Magnet
+    // dialog pre-filled. Empty string if there's nothing new.
+    Q_INVOKABLE QString clipboardMagnetIfNew();
 
     // Convert a FileDialog url ("file:///C:/x" / "file:///x") to a native local
     // path. QML's naive `replace(/^file:\/\//,"")` left a leading slash before
@@ -377,6 +381,8 @@ private:
     quint16 m_streamPort = 0;
     int m_selectedIndex = -1;
     QList<int> m_selectedRows;
+    QString m_lastClipboardMagnet;   // dedupe: don't re-prompt for the same clipboard content
+    static QString normalizeClipboardMagnet(const QString &clip);
     GeoIpResolver *m_geoIp = nullptr;
     QTimer m_peerListThrottle;      // coalesce geo-lookup results into ≤1 peer-list rebuild/sec
     bool m_detailPeersActive = false;   // true only while the Peers detail tab is open

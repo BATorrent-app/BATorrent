@@ -409,6 +409,31 @@ Rectangle {
             visible: !page.landing
             color: Theme.elev
             Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("search_heading")); color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            // shown only when this search was triggered from a Discover poster,
+            // so browsing there isn't a one-way trip (reported by a user)
+            Item {
+                visible: page.cameFromDiscover
+                anchors.left: parent.left; anchors.leftMargin: Theme.sp3
+                anchors.verticalCenter: parent.verticalCenter
+                width: backRow.width; height: parent.height
+                Row {
+                    id: backRow
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 5
+                    Text { text: "←"; color: backMa.containsMouse ? Theme.t1 : Theme.t3; font.pixelSize: 13 }
+                    Text {
+                        text: (i18n.language, i18n.t("search_back_to_discover"))
+                        color: backMa.containsMouse ? Theme.t1 : Theme.t3
+                        font.pixelSize: 12; font.family: Theme.fontSans
+                    }
+                }
+                MouseArea {
+                    id: backMa
+                    anchors.fill: parent
+                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: { page.cameFromDiscover = false; page.backToDiscover() }
+                }
+            }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
         }
 
@@ -495,7 +520,7 @@ Rectangle {
                         // when you clicked a filter dropdown, eating the first click
                         Connections {
                             target: queryFld.field
-                            function onAccepted() { page.commitSearch() }
+                            function onAccepted() { page.cameFromDiscover = false; page.commitSearch() }
                         }
                     }
                 }
@@ -528,7 +553,7 @@ Rectangle {
                     text: (i18n.language, i18n.t("src_manage_btn"))
                     onClicked: page.showSourcesMgr = true
                 }
-                BtnFlat { visible: !page.landing; primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: page.commitSearch() }
+                BtnFlat { visible: !page.landing; primary: true; text: (i18n.language, i18n.t("empty_search_btn")); onClicked: { page.cameFromDiscover = false; page.commitSearch() } }
             }
         }
 
@@ -1087,6 +1112,11 @@ Rectangle {
     property string pendingFitMsg: ""
     property double pendingFitShortfall: 0   // needed - free, for the "free up space" handoff
     signal freeSpaceRequested(double targetBytes)
+    // set true by Main.qml when runQuery() was triggered from a Discover poster,
+    // so the header can offer a way back instead of stranding the user here
+    // (reported by a user: no way back to where they were browsing)
+    property bool cameFromDiscover: false
+    signal backToDiscover()
     Connections {
         target: page.api
         ignoreUnknownSignals: true

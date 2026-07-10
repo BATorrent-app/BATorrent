@@ -356,35 +356,50 @@ bool QmlSessionBridge::selectedPaused() const
     return hasSelection() && m_session->torrentAt(m_selectedIndex).paused;
 }
 
+// Xunlei thunder:// links: base64 of "AA" + the real URL + "ZZ". Decode, then
+// fall through to the normal handling (it usually wraps a magnet). Returns a
+// normalized "magnet:..." uri, or an empty string if clip isn't magnet-like.
+QString QmlSessionBridge::normalizeClipboardMagnet(const QString &clip)
+{
+    QString s = clip;
+    if (s.startsWith(QStringLiteral("thunder://"), Qt::CaseInsensitive)) {
+        QString dec = QString::fromUtf8(
+            QByteArray::fromBase64(s.mid(10).toLatin1())).trimmed();
+        if (dec.startsWith(QStringLiteral("AA"), Qt::CaseInsensitive)
+            && dec.endsWith(QStringLiteral("ZZ"), Qt::CaseInsensitive))
+            dec = dec.mid(2, dec.size() - 4);
+        s = dec.trimmed();
+        if (s.isEmpty()) return QString();
+    }
+    if (s.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive))
+        return s;
+    static const QRegularExpression hashRe(QStringLiteral("^[0-9a-fA-F]{40}$"));
+    if (hashRe.match(s).hasMatch())
+        return QStringLiteral("magnet:?xt=urn:btih:") + s;
+    return QString();
+}
+
 void QmlSessionBridge::smartPaste()
 {
     QString clip = QGuiApplication::clipboard()->text().trimmed();
     if (clip.isEmpty()) return;
-    // Xunlei thunder:// links: base64 of "AA" + the real URL + "ZZ". Decode, then
-    // fall through to the normal handling (it usually wraps a magnet or .torrent).
-    if (clip.startsWith(QStringLiteral("thunder://"), Qt::CaseInsensitive)) {
-        QString dec = QString::fromUtf8(
-            QByteArray::fromBase64(clip.mid(10).toLatin1())).trimmed();
-        if (dec.startsWith(QStringLiteral("AA"), Qt::CaseInsensitive)
-            && dec.endsWith(QStringLiteral("ZZ"), Qt::CaseInsensitive))
-            dec = dec.mid(2, dec.size() - 4);
-        clip = dec.trimmed();
-        if (clip.isEmpty()) return;
-    }
-    if (clip.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)) {
-        addMagnetUri(clip);
-        return;
-    }
-    static const QRegularExpression hashRe(QStringLiteral("^[0-9a-fA-F]{40}$"));
-    if (hashRe.match(clip).hasMatch()) {
-        addMagnetUri(QStringLiteral("magnet:?xt=urn:btih:") + clip);
-        return;
-    }
+    QString magnet = normalizeClipboardMagnet(clip);
+    if (!magnet.isEmpty()) { addMagnetUri(magnet); return; }
     if (clip.endsWith(QStringLiteral(".torrent"), Qt::CaseInsensitive)
         && (clip.startsWith(QStringLiteral("http"), Qt::CaseInsensitive)
             || clip.startsWith(QStringLiteral("file:"), Qt::CaseInsensitive))) {
         addTorrentFile(clip);
     }
+}
+
+QString QmlSessionBridge::clipboardMagnetIfNew()
+{
+    QString clip = QGuiApplication::clipboard()->text().trimmed();
+    if (clip.isEmpty()) return QString();
+    QString magnet = normalizeClipboardMagnet(clip);
+    if (magnet.isEmpty() || magnet == m_lastClipboardMagnet) return QString();
+    m_lastClipboardMagnet = magnet;
+    return magnet;
 }
 
 void QmlSessionBridge::setSelectedForceStart(bool on)
