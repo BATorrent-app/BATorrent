@@ -1110,8 +1110,10 @@ Window {
         z: 150
         function accepts(drag) {
             if (drag.hasUrls) {
-                for (var i = 0; i < drag.urls.length; ++i)
-                    if (drag.urls[i].toString().toLowerCase().endsWith(".torrent")) return true
+                for (var i = 0; i < drag.urls.length; ++i) {
+                    var u = drag.urls[i].toString().toLowerCase()
+                    if (u.endsWith(".torrent") || u.indexOf("magnet:") === 0) return true
+                }
             }
             if (drag.hasText && drag.text.indexOf("magnet:") === 0) return true
             return false
@@ -1119,17 +1121,21 @@ Window {
         onEntered: function(drag) { drag.accepted = accepts(drag) }
         onDropped: function(drop) {
             if (typeof session === "undefined") return
+            // Browsers hand a dragged magnet link over as a url, not just text —
+            // sort those out before treating the rest of drop.urls as .torrent files.
+            var torrentUrls = []
             if (drop.hasUrls) {
-                // Queue every dropped .torrent so each gets the preview/choose-folder
-                // dialog in turn, instead of only the first.
-                var urls = []
-                for (var i = 0; i < drop.urls.length; ++i)
-                    urls.push(drop.urls[i].toString())
-                win.enqueueTorrentUrls(urls)
-                drop.accept()
-            } else if (drop.hasText && drop.text.indexOf("magnet:") === 0) {
-                session.addMagnetUri(drop.text); drop.accept()
+                for (var i = 0; i < drop.urls.length; ++i) {
+                    var u = drop.urls[i].toString()
+                    if (u.toLowerCase().indexOf("magnet:") === 0) session.addMagnetUri(u)
+                    else torrentUrls.push(u)
+                }
             }
+            // Queue every dropped .torrent so each gets the preview/choose-folder
+            // dialog in turn, instead of only the first.
+            if (torrentUrls.length > 0) win.enqueueTorrentUrls(torrentUrls)
+            if (drop.hasText && drop.text.indexOf("magnet:") === 0) session.addMagnetUri(drop.text)
+            drop.accept()
         }
     }
     Rectangle {
