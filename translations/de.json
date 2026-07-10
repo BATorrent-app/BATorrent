@@ -1060,6 +1060,7 @@
   "state_no_peers": "Keine Peers — warte auf Tracker-Antworten",
   "state_no_seeds": "Peers verbunden, aber keine Seeds — fehlende Teile sind nicht verfügbar",
   "state_choked": "Peers verbunden, aber keiner lädt gerade zu uns hoch",
+  "state_missing_pieces": "Lädt herunter, aber manche Teile haben nirgendwo einen Seed — könnte vor dem Abschluss stecken bleiben",
   "palette_placeholder": "Befehl oder Torrent-Namen eingeben…",
   "palette_hint_toggle": "Umschalten",
   "palette_hint_page": "Zur Seite",

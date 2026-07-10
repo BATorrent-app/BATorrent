@@ -552,6 +552,7 @@
   "state_no_peers": "No peers — waiting for tracker responses",
   "state_no_seeds": "Peers connected, but no seeds — the missing pieces aren't available",
   "state_choked": "Peers connected, but none are uploading to us right now",
+  "state_missing_pieces": "Downloading, but some pieces have no seeder anywhere — it may stall before finishing",
   "palette_placeholder": "Type a command or torrent name…",
   "palette_hint_toggle": "Toggle",
   "palette_hint_page": "Go to page",
