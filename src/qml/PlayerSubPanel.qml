@@ -91,12 +91,14 @@ Item {
         Behavior on x { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
 
         // soft shadow cast onto the video to the left of the drawer
-        RectangularShadow {
+        MultiEffect {
+            source: card
             anchors.fill: card
-            radius: card.radius
-            blur: 46
-            color: "#cc000000"
-            offset.x: -10
+            shadowEnabled: true
+            shadowBlur: 1.0
+            blurMax: 46
+            shadowColor: "#cc000000"
+            shadowHorizontalOffset: -10
         }
 
         Rectangle {

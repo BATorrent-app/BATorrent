@@ -221,9 +221,14 @@ Window {
             x: sl.leftPadding + sl.visualPosition * (sl.availableWidth - width)
             y: sl.topPadding + sl.availableHeight / 2 - height / 2
             Behavior on implicitWidth { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
-            RectangularShadow {
-                anchors.fill: disc; radius: disc.radius
-                blur: 10; color: "#80000000"; visible: parent.width > 0
+            MultiEffect {
+                source: disc
+                anchors.fill: disc
+                shadowEnabled: true
+                shadowBlur: 1.0
+                blurMax: 10
+                shadowColor: "#80000000"
+                visible: parent.width > 0
             }
             Rectangle { id: disc; anchors.fill: parent; radius: width / 2; color: "#ffffff" }
         }
@@ -806,11 +811,14 @@ Window {
                 Item {
                     Layout.alignment: Qt.AlignVCenter
                     implicitWidth: 48; implicitHeight: 48
-                    RectangularShadow {
-                        anchors.fill: disc; radius: disc.radius
-                        blur: playMa.containsMouse ? 30 : 20
-                        color: "#b3000000"
-                        Behavior on blur { NumberAnimation { duration: 140 } }
+                    MultiEffect {
+                        source: disc
+                        anchors.fill: disc
+                        shadowEnabled: true
+                        blurMax: 30
+                        shadowBlur: playMa.containsMouse ? 1.0 : 0.667
+                        shadowColor: "#b3000000"
+                        Behavior on shadowBlur { NumberAnimation { duration: 140 } }
                     }
                     Rectangle {
                         id: disc
