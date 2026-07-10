@@ -864,6 +864,7 @@
   "state_finished": "已完成",
   "state_metadata": "获取元数据",
   "state_paused": "已暂停",
+  "state_paused_done": "下载完成 — 做种已暂停",
   "state_seeding": "做种中",
   "state_unknown": "未知",
   "stats_alltime": "所有时间",

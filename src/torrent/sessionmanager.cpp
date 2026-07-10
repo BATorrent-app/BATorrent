@@ -770,7 +770,11 @@ TorrentInfo SessionManager::torrentAt(int index) const
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else if (info.paused) {
-        info.stateString = tr_("state_paused");
+        // "Stop seeding after download" pauses the handle directly (see
+        // onTorrentFinished) without going through markCompleted(), so a
+        // finished torrent otherwise reads as bare "Paused" — ambiguous
+        // about whether the download itself is done (reported by a user).
+        info.stateString = (info.progress >= 1.0f) ? tr_("state_paused_done") : tr_("state_paused");
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else {

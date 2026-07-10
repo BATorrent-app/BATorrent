@@ -864,6 +864,7 @@
   "state_finished": "Fertig",
   "state_metadata": "Metadaten",
   "state_paused": "Pausiert",
+  "state_paused_done": "Abgeschlossen — Seeding pausiert",
   "state_seeding": "Seeden",
   "state_unknown": "Unbekannt",
   "stats_alltime": "Gesamtzeitraum",

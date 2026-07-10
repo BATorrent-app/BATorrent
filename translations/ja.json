@@ -864,6 +864,7 @@
   "state_finished": "完了",
   "state_metadata": "メタデータ取得中",
   "state_paused": "一時停止中",
+  "state_paused_done": "ダウンロード完了 — シードは一時停止中",
   "state_seeding": "シード中",
   "state_unknown": "不明",
   "stats_alltime": "全期間",

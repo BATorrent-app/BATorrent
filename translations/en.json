@@ -922,6 +922,7 @@
   "state_finished": "Finished",
   "state_metadata": "Metadata",
   "state_paused": "Paused",
+  "state_paused_done": "Download complete — seeding paused",
   "state_seeding": "Seeding",
   "state_unknown": "Unknown",
   "stats_alltime": "All-Time",

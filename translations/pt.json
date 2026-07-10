@@ -864,6 +864,7 @@
   "state_finished": "Finalizado",
   "state_metadata": "Metadados",
   "state_paused": "Pausado",
+  "state_paused_done": "Download concluído — semeadura pausada",
   "state_seeding": "Semeando",
   "state_unknown": "Desconhecido",
   "stats_alltime": "Todo o Período",

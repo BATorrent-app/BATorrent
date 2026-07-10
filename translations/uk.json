@@ -864,6 +864,7 @@
   "state_finished": "Готово",
   "state_metadata": "Метадані",
   "state_paused": "Пауза",
+  "state_paused_done": "Завантаження завершено — роздача на паузі",
   "state_seeding": "Роздача",
   "state_unknown": "Невідомо",
   "stats_alltime": "За весь час",

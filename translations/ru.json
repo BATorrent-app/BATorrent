@@ -864,6 +864,7 @@
   "state_finished": "Готов",
   "state_metadata": "Метаданные",
   "state_paused": "На паузе",
+  "state_paused_done": "Загрузка завершена — раздача на паузе",
   "state_seeding": "Раздача",
   "state_unknown": "Неизвестно",
   "stats_alltime": "За всё время",

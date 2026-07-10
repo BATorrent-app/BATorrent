@@ -922,6 +922,7 @@
   "state_finished": "Bitti",
   "state_metadata": "Meta veri",
   "state_paused": "Duraklatıldı",
+  "state_paused_done": "İndirme tamamlandı — tohumlama duraklatıldı",
   "state_seeding": "Tohumlanıyor",
   "state_unknown": "Bilinmiyor",
   "stats_alltime": "Tüm Zamanlar",
