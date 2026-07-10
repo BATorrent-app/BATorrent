@@ -39,14 +39,15 @@ Rectangle {
 
     color: win.isRowSelected(index) ? Theme.sel : (listArea.hoveredRow === index ? Theme.hover : "transparent")
 
-    // .sel inset 2px barra esquerda
+    // .sel inset 2px barra esquerda — t1 (not accent), so it doesn't blend
+    // into a red downloading progress bar in the same row
     Rectangle {
         visible: win.isRowSelected(lrow.index)
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: 2
-        color: Theme.accent
+        color: Theme.t1
     }
     // border-bottom hairSoft
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }

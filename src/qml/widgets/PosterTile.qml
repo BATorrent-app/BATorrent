@@ -164,12 +164,13 @@ Item {
                 Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
             }
         }
-        // border overlay (radius 10, hair / accent when sel)
+        // border overlay (radius 10, hair / t1 when sel — not accent, so the
+        // selection ring doesn't blend into a red downloading progress bar)
         Rectangle {
             anchors.fill: parent
             radius: 10
             color: "transparent"
-            border.color: win.isRowSelected(tile.index) ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
+            border.color: win.isRowSelected(tile.index) ? Theme.t1 : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
             border.width: win.isRowSelected(tile.index) ? 2 : 1
             Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
