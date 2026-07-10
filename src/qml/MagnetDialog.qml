@@ -20,9 +20,18 @@ BatDialog {
 
     property alias magnetText: magnetArea.text
     property alias savePath: pathFld.text
+    property bool skipNextClear: false
     onOpenedChanged: if (opened) {
-        magnetArea.text = ""
+        if (!skipNextClear) magnetArea.text = ""
+        skipNextClear = false
         if (typeof session !== "undefined") pathFld.text = session.defaultSavePath()
+    }
+    // clipboard-detected magnet (window regained focus): prefill instead of
+    // the usual blank-on-open, so the user only has to confirm or cancel
+    function openWithMagnet(uri) {
+        magnetText = uri
+        skipNextClear = true
+        open()
     }
 
     FolderDialog {
