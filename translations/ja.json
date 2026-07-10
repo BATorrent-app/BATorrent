@@ -1060,6 +1060,7 @@
   "state_no_peers": "ピアなし — トラッカーの応答待ち",
   "state_no_seeds": "ピアは接続中ですがシードなし — 不足ピースが入手できません",
   "state_choked": "ピアは接続中ですが、現在誰もアップロードしていません",
+  "state_missing_pieces": "ダウンロード中ですが、一部のピースはどこにもシードがありません — 完了前に止まる可能性があります",
   "palette_placeholder": "コマンドまたはトレント名を入力…",
   "palette_hint_toggle": "切替",
   "palette_hint_page": "ページへ移動",

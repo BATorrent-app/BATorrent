@@ -552,6 +552,7 @@
   "state_no_peers": "Eş yok — izleyici yanıtları bekleniyor",
   "state_no_seeds": "Eşler bağlı, ancak tohum yok — eksik parçalar mevcut değil",
   "state_choked": "Eşler bağlı, ancak hiçbiri şu anda bize yükleme yapmıyor",
+  "state_missing_pieces": "İndiriliyor, ancak bazı parçaların hiçbir yerde tohumu yok — bitmeden önce takılabilir",
   "palette_placeholder": "Bir komut veya torrent adı yazın…",
   "palette_hint_toggle": "Değiştir",
   "palette_hint_page": "Sayfaya git",

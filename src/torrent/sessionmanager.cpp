@@ -801,6 +801,15 @@ TorrentInfo SessionManager::torrentAt(int index) const
             const qint64 mins = (QDateTime::currentSecsSinceEpoch() - it->second) / 60;
             info.stateDetail = tr_("state_fetching_metadata").arg(mins);
         }
+    } else if (!info.completed && !info.paused && info.progress < 1.0f
+               && st.state == lt::torrent_status::downloading
+               && info.downloadRate >= 1024 && info.numPeers > 0
+               && st.distributed_copies >= 0.0f && st.distributed_copies < 1.0f) {
+        // distributed_copies < 1 means some piece of this torrent isn't held by
+        // anyone currently in the swarm — the transfer can look healthy (decent
+        // rate, progress moving) right up until it needs that missing piece and
+        // stalls for good. Surface it early instead of only once it's stuck.
+        info.stateDetail = tr_("state_missing_pieces");
     }
 
     qint64 uploaded = st.total_payload_upload;

@@ -1060,6 +1060,7 @@
   "state_no_peers": "Sem peers — aguardando resposta dos trackers",
   "state_no_seeds": "Peers conectados, mas sem seeds — as partes faltantes não estão disponíveis",
   "state_choked": "Peers conectados, mas nenhum está enviando para nós agora",
+  "state_missing_pieces": "Baixando, mas algumas partes não têm seed em lugar nenhum — pode travar antes de terminar",
   "palette_placeholder": "Digite um comando ou nome de torrent…",
   "palette_hint_toggle": "Alternar",
   "palette_hint_page": "Ir para página",

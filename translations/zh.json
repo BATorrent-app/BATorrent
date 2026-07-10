@@ -1060,6 +1060,7 @@
   "state_no_peers": "无用户 — 等待 Tracker 响应",
   "state_no_seeds": "已连接用户但无种子 — 缺失的分块不可用",
   "state_choked": "已连接用户，但目前没有人向我们上传",
+  "state_missing_pieces": "正在下载，但部分分块在任何地方都没有做种 — 可能在完成前卡住",
   "palette_placeholder": "输入命令或种子名称…",
   "palette_hint_toggle": "切换",
   "palette_hint_page": "前往页面",
