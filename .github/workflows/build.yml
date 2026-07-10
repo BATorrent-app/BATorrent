@@ -287,6 +287,39 @@ jobs:
           if ($env:SENTRY_ENABLED -eq "1" -and $env:BAT_SENTRY_HANDLER) { Copy-Item "$env:BAT_SENTRY_HANDLER" release/ }
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
+      # Nothing before this point ever actually LAUNCHES the built app — a
+      # silent "doesn't open, no error" failure (QML load failure, a DLL
+      # mismatch, ...) has shipped to users twice now (v4.3.0's DLL mismatch;
+      # this build) with every unit test green. Launch the real packaged exe
+      # and fail the build if it doesn't survive — that's the only check that
+      # actually matches "did the app open".
+      - name: Smoke test — the packaged app must actually launch
+        shell: pwsh
+        run: |
+          # Pre-seed lastSeenVersion to an old release so the update-only code
+          # path (What's New / dev-note dialog) gets exercised too — a
+          # fresh-install-only smoke test would miss a bug that only fires on
+          # the upgrade path, which is exactly what real users hit first.
+          New-Item -Path "HKCU:\Software\BATorrent\BATorrent" -Force | Out-Null
+          New-ItemProperty -Path "HKCU:\Software\BATorrent\BATorrent" -Name "lastSeenVersion" -Value "1.0.0" -PropertyType String -Force | Out-Null
+
+          $env:BAT_QML_STRICT = "warn"
+          $outLog = "smoketest_stdout.log"
+          $proc = Start-Process -FilePath "release\BATorrent.exe" -PassThru `
+            -RedirectStandardOutput $outLog -RedirectStandardError "smoketest_stderr.log"
+          Start-Sleep -Seconds 12
+          $stillRunning = -not $proc.HasExited
+          if ($stillRunning) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
+
+          Write-Host "----- stdout/stderr -----"
+          Get-Content $outLog, "smoketest_stderr.log" -ErrorAction SilentlyContinue | Write-Host
+
+          if (-not $stillRunning) {
+            Write-Host "::error::BATorrent.exe exited within 12s of launch (exit code $($proc.ExitCode)) — this build would not open for users."
+            exit 1
+          }
+          Write-Host "Smoke test passed: the app was still running after 12s."
+
       - name: Generate installer wizard images
         shell: pwsh
         run: |

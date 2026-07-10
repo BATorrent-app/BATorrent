@@ -143,7 +143,7 @@ Item {
 
                 Text {
                     Layout.fillWidth: true; Layout.topMargin: 4
-                    visible: detailDrawer.it && (detailDrawer.it.description || detailDrawer.it.overview || "").length > 0
+                    visible: !!detailDrawer.it && (detailDrawer.it.description || detailDrawer.it.overview || "").length > 0
                     text: detailDrawer.it ? (detailDrawer.it.description || detailDrawer.it.overview || "") : ""
                     color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
                     wrapMode: Text.WordWrap; lineHeight: 1.35
