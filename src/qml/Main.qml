@@ -266,7 +266,10 @@ Window {
         }
     }
     function openContext(proxyRow) {
-        win.selectRow(proxyRow)
+        // right-clicking inside an existing multi-selection must not collapse
+        // it to just this row — that silently turned "remove 3 selected" into
+        // "remove 1" (reported by a user)
+        if (!win.isRowSelected(proxyRow)) win.selectRow(proxyRow)
         ctxMenu.popup()
     }
     // keep the visual selection glued to the item when the queue reorders

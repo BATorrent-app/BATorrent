@@ -42,27 +42,31 @@ static bool pumpUntil(Pred pred, int timeoutMs = 8000)
 }
 
 // Build a real, private (offline — no DHT/LSD/PEX) multi-file .torrent under `dir`
-// and return its path. Mirrors the create flow in qmlposterbridge.cpp.
-static QString makeFixtureTorrent(const QString &dir)
+// and return its path. Mirrors the create flow in qmlposterbridge.cpp. `tag`
+// varies the file content (and thus the info hash) so a test can create several
+// distinct fixture torrents without them colliding as duplicates.
+static QString makeFixtureTorrent(const QString &dir, const QString &tag = QString())
 {
-    const QString content = dir + "/bat_fixture";
+    const QString name = tag.isEmpty() ? QStringLiteral("bat_fixture") : QStringLiteral("bat_fixture_") + tag;
+    const QString content = dir + "/" + name;
     QDir().mkpath(content + "/sub");
-    auto writeN = [](const QString &p, int n) {
-        QFile f(p); f.open(QIODevice::WriteOnly); f.write(QByteArray(n, 'x')); f.close();
+    auto writeN = [](const QString &p, int n, char c) {
+        QFile f(p); f.open(QIODevice::WriteOnly); f.write(QByteArray(n, c)); f.close();
     };
-    writeN(content + "/a.txt", 100);
-    writeN(content + "/sub/b.txt", 200);
+    const char filler = tag.isEmpty() ? 'x' : tag.at(0).toLatin1();
+    writeN(content + "/a.txt", 100, filler);
+    writeN(content + "/sub/b.txt", 200, filler);
 
     lt::file_storage fs;
     lt::add_files(fs, content.toStdString());
     lt::create_torrent ct(fs, 16384, lt::create_torrent::v1_only);   // classic v1 → no v2 pad files
     ct.add_tracker("udp://tracker.test:6969/announce", 0);
     ct.set_priv(true);                                  // private → fully offline
-    lt::set_piece_hashes(ct, dir.toStdString());        // parent of "bat_fixture"
+    lt::set_piece_hashes(ct, dir.toStdString());        // parent of `name`
 
     std::vector<char> buf;
     lt::bencode(std::back_inserter(buf), ct.generate());
-    const QString out = dir + "/sample.torrent";
+    const QString out = dir + "/" + name + ".torrent";
     QFile f(out); f.open(QIODevice::WriteOnly);
     f.write(buf.data(), static_cast<qsizetype>(buf.size()));
     f.close();
@@ -293,6 +297,40 @@ TEST_CASE("Session bridge: a loaded torrent exposes and mutates files/trackers",
                 return true;
         return false;
     }));
+}
+
+// ============================================================================
+//  Session bridge: removing a multi-row selection removes every row, not just
+//  one (reported by a user: "deleting several selected items only removes one
+//  at a time").
+// ============================================================================
+TEST_CASE("Session bridge: removeSelected removes every row in a multi-selection", "[bridge][session][remove]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    // other test cases in this binary share the same sandboxed resume-data dir
+    // and may leave torrents behind, so compare against a baseline instead of
+    // an absolute count.
+    const int base = session.torrentCount();
+
+    for (const QString &tag : {QStringLiteral("a"), QStringLiteral("b"), QStringLiteral("c")})
+        session.addTorrent(makeFixtureTorrent(tmp.path(), tag), tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == base + 3; }));
+
+    QList<int> rows;
+    for (int i = base; i < base + 3; ++i) rows << i;
+    bridge.setSelectedRows(rows);
+    REQUIRE(bridge.hasSelection());
+    bridge.removeSelected();
+
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == base; }));
 }
 
 // ============================================================================
