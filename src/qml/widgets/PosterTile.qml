@@ -180,7 +180,7 @@ Item {
             visible: tile.category.length > 0
             anchors.left: parent.left; anchors.top: parent.top
             anchors.leftMargin: 8; anchors.topMargin: 8
-            radius: 5; color: "#99000000"
+            radius: 9; color: "#99000000"
             implicitWidth: catTxt.implicitWidth + 12; implicitHeight: 18
             Text {
                 id: catTxt; anchors.centerIn: parent
@@ -266,7 +266,7 @@ Item {
                 // it's never left orphaned under an empty ETA.
                 anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
                 text: tile.etaSec >= 0 ? win.fmtEta(tile.etaSec) : tile.size
-                color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontMono
+                color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
             }
         }
         Text {
@@ -274,7 +274,7 @@ Item {
             horizontalAlignment: Text.AlignRight
             visible: tile.etaSec >= 0
             text: tile.size
-            color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono
+            color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
         }
     }
 }

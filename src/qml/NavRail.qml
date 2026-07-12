@@ -246,8 +246,8 @@ Rectangle {
                     Text {
                         id: dvFree
                         anchors.right: parent.right; anchors.top: parent.top
-                        text: modelData.free + " Free"
-                        color: Theme.amber; font.pixelSize: 11; font.family: Theme.fontMono
+                        text: (i18n.language, i18n.t("status_free_space")).arg(modelData.free)
+                        color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
                     }
                     Rectangle {
                         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
@@ -255,7 +255,9 @@ Rectangle {
                         Rectangle {
                             height: parent.height; radius: 2
                             width: parent.width * Math.max(0.02, Math.min(1, modelData.usedFraction))
-                            color: Theme.amber
+                            // neutral gauge; color only signals real disk pressure
+                            color: modelData.usedFraction > 0.95 ? Theme.accent
+                                 : modelData.usedFraction > 0.85 ? Theme.amber : Theme.t4
                         }
                     }
                     // the bar was purely decorative — make it the entry point to
@@ -445,7 +447,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Text { text: (i18n.language, i18n.t(rail.slotResume ? "nav_continue" : (rail.slotSeed ? "nav_seeding" : "nav_downloading"))); color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
-                Text { visible: rail.dlList.length > 1; text: (rail.dlShown + 1) + "/" + rail.dlList.length; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontMono }
+                Text { visible: rail.dlList.length > 1; text: (rail.dlShown + 1) + "/" + rail.dlList.length; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum }
             }
 
             // loose content (no box) — uses the full rail width
@@ -474,7 +476,7 @@ Rectangle {
                                       : (rail.dlItem.paused === true) ? ("⏸ " + i18n.t("state_paused"))
                                       : rail.slotSeed ? ("↑ " + (rail.dlItem.upSpeed || ""))
                                       : ("↓ " + (rail.dlItem.downSpeed || ""))
-                                color: Theme.accent; font.pixelSize: 13; font.family: Theme.fontMono
+                                color: Theme.accent; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
                             }
                             Item { Layout.fillWidth: true }
                             Text {
@@ -482,7 +484,7 @@ Rectangle {
                                       : rail.slotResume ? (rail.dlItem.metric || "")
                                       : rail.slotSeed ? ("⇅ " + (rail.dlItem.ratio || "0.00"))
                                       : (Math.floor((rail.dlItem.progress || 0) * 100) + "%")
-                                color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                                color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
                             }
                         }
                         Rectangle {
@@ -541,7 +543,7 @@ Rectangle {
             text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : ""
             color: Theme.t4
             font.pixelSize: 10; font.weight: Font.Medium; font.letterSpacing: 0.4
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans; font.features: Theme.tnum
             opacity: rail.collapsed ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: 140 } }
         }

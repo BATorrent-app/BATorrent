@@ -58,15 +58,15 @@ Rectangle {
         anchors.rightMargin: Theme.sp4
         spacing: Theme.sp4
 
-        // classic = cover-less, raw torrent name in mono — a dense qBittorrent-
-        // style row (this ListView is only ever shown in classic mode now)
+        // classic = cover-less, dense qBittorrent-style row (this ListView is
+        // only ever shown in classic mode now)
         Text {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
             text: lrow.torrentName
             color: Theme.t1
             font.pixelSize: 13
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans
             elide: Text.ElideRight
         }
         Text {
@@ -75,34 +75,38 @@ Rectangle {
             horizontalAlignment: Text.AlignRight
             color: Theme.t2
             font.pixelSize: 12
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
         }
-        // progress: surfaceAlt track, state-colored fill, centered % (white over fill, t1 over track)
+        // progress: field track, state-tinted fill (a solid block screamed
+        // over 16 rows), state-colored integer %
         Item {
             Layout.preferredWidth: 96
             Layout.preferredHeight: 18
             Rectangle {
                 id: pbarTrack
                 anchors.fill: parent
-                radius: 4
+                radius: 9
                 color: Theme.field
                 clip: true
                 Rectangle {
+                    readonly property color fc: win.fillFor(lrow.stateKey)
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
                     width: Math.max(lrow.progress > 0.001 ? 2 : 0, parent.width * lrow.progress)
-                    radius: 4
-                    color: win.fillFor(lrow.stateKey)
+                    radius: 9
+                    color: Qt.rgba(fc.r, fc.g, fc.b, 0.30)
                 }
                 Text {
                     id: pbarPct
                     anchors.centerIn: parent
-                    text: (Math.floor(lrow.progress * 1000) / 10).toFixed(1) + "%"
-                    color: (parent.width / 2) < (parent.width * lrow.progress - 4) ? "#ffffff" : Theme.t1
+                    text: Math.floor(lrow.progress * 100) + "%"
+                    color: win.textFor(lrow.stateKey)
                     font.pixelSize: 9
                     font.weight: Font.DemiBold
                     font.family: Theme.fontSans
+                    font.features: Theme.tnum
                 }
             }
         }
@@ -120,9 +124,10 @@ Rectangle {
             text: lrow.numSeeds
             Layout.preferredWidth: 44
             horizontalAlignment: Text.AlignRight
-            color: lrow.numSeeds === 0 ? Theme.t4 : Theme.grn
+            color: lrow.numSeeds === 0 ? Theme.t4 : Theme.t2
             font.pixelSize: 12
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
         }
         Text {
             text: lrow.numPeers
@@ -130,32 +135,38 @@ Rectangle {
             horizontalAlignment: Text.AlignRight
             color: lrow.numPeers === 0 ? Theme.t4 : Theme.t2
             font.pixelSize: 12
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
         }
+        // speeds stay neutral — the state column is the one colored cell per
+        // row; a red/amber column per direction read as 16 rows of alarm
         Text {
             text: lrow.downRate > 0 ? lrow.downSpeed : "—"
             Layout.preferredWidth: 74
             horizontalAlignment: Text.AlignRight
-            color: lrow.downRate > 0 ? Theme.accentText : Theme.t4
+            color: lrow.downRate > 0 ? Theme.t2 : Theme.t4
             font.pixelSize: 12
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
         }
         Text {
             text: lrow.upRate > 0 ? lrow.upSpeed : "—"
             Layout.preferredWidth: 74
             horizontalAlignment: Text.AlignRight
-            color: lrow.upRate > 0 ? Theme.up : Theme.t4
+            color: lrow.upRate > 0 ? Theme.t2 : Theme.t4
             font.pixelSize: 12
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
         }
         Text {
-            // ratio: red under 1.0, green at/above — the seed-health at a glance
+            // ratio: green at/above 1.0 (or ∞) — the seed-health at a glance
             text: lrow.ratio < 0 ? "∞" : lrow.ratio.toFixed(2)
             Layout.preferredWidth: 50
             horizontalAlignment: Text.AlignRight
-            color: lrow.ratio >= 1.0 ? Theme.grn : Theme.t3
+            color: (lrow.ratio < 0 || lrow.ratio >= 1.0) ? Theme.grn : (lrow.ratio === 0 ? Theme.t4 : Theme.t3)
             font.pixelSize: 12
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
         }
         Text {
             text: lrow.eta.length > 0 ? lrow.eta : "—"
@@ -163,7 +174,8 @@ Rectangle {
             horizontalAlignment: Text.AlignRight
             color: Theme.t3
             font.pixelSize: 12
-            font.family: Theme.fontMono
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
         }
         Text {
             text: win.catLabel(lrow.category)

@@ -58,7 +58,7 @@ Rectangle {
                     onClicked: win.toggleDetailsCollapsed()
                 }
                 ToolTip.visible: colMa.containsMouse
-                ToolTip.text: win.detailsShownCollapsed ? i18n.t("Expand details") : i18n.t("Collapse details")
+                ToolTip.text: win.detailsShownCollapsed ? i18n.t("detail_expand") : i18n.t("detail_collapse")
                 ToolTip.delay: 400
             }
 
@@ -82,7 +82,7 @@ Rectangle {
                     onClicked: win.toggleDetailsLocked()
                 }
                 ToolTip.visible: lockMa.containsMouse
-                ToolTip.text: win.detailsLocked ? i18n.t("Panel pinned — click to auto-hide") : i18n.t("Pin panel open/closed")
+                ToolTip.text: win.detailsLocked ? i18n.t("detail_pinned") : i18n.t("detail_pin")
                 ToolTip.delay: 400
             }
 
@@ -123,7 +123,8 @@ Rectangle {
                                 text: modelData.ct
                                 color: Theme.t4
                                 font.pixelSize: 11
-                                font.family: Theme.fontMono
+                                font.family: Theme.fontSans
+                                font.features: Theme.tnum
                             }
                         }
                         Rectangle {
@@ -250,12 +251,12 @@ Rectangle {
                         Layout.fillWidth: true
                         Text {
                             text: Math.round((win.hasSel ? session.selectedProgress : 0) * 100) + "%"
-                            color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                            color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
                         }
                         Item { Layout.fillWidth: true }
                         Text {
                             text: win.hasSel ? (session.selectedDownloaded.split(" (")[0] + "  /  " + session.selectedSize) : ""
-                            color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontMono
+                            color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
                         }
                     }
                     Rectangle {
@@ -269,7 +270,8 @@ Rectangle {
                     }
                 }
 
-                // big live transfer: DOWN (accent) · UP (amber) · ETA
+                // big live transfer: DOWN (accent) · UP (amber) · ETA — the one
+                // place per-direction color earns its keep (single instance)
                 RowLayout {
                     visible: win.hasSel
                     Layout.fillWidth: true
@@ -277,17 +279,17 @@ Rectangle {
                     spacing: Theme.sp6
                     Repeater {
                         model: [
-                            { lbl: "DOWN", arrow: "↓ ", v: win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent },
-                            { lbl: "UP",   arrow: "↑ ", v: win.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber  },
-                            { lbl: "ETA",  arrow: "",   v: win.hasSel ? session.selectedEta       : "—", c: Theme.t1     }
+                            { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent },
+                            { lbl: (i18n.language, i18n.t("graph_upload")),   arrow: "↑ ", v: win.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber  },
+                            { lbl: (i18n.language, i18n.t("col_eta")),        arrow: "",   v: win.hasSel ? session.selectedEta       : "—", c: Theme.t1     }
                         ]
                         delegate: Column {
                             spacing: 3
-                            Text { text: modelData.lbl; color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 0.8; font.family: Theme.fontSans }
+                            Text { text: modelData.lbl; color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
                             Text {
                                 text: modelData.arrow + modelData.v
                                 color: modelData.c
-                                font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                                font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
                             }
                         }
                     }
@@ -302,42 +304,43 @@ Rectangle {
                 Layout.alignment: Qt.AlignTop
                 spacing: Theme.sp6
 
-                // INFO
+                // STORAGE
                 ColumnLayout {
                     Layout.preferredWidth: 168
                     Layout.alignment: Qt.AlignTop
-                    spacing: 0
+                    spacing: 5
 
                     Text {
-                        text: "STORAGE"
+                        text: (i18n.language, i18n.t("detail_section_storage"))
                         color: Theme.t4
                         font.pixelSize: 10
                         font.weight: Font.Bold
                         font.letterSpacing: 0.8
+                        font.capitalization: Font.AllUppercase
                         font.family: Theme.fontSans
-                        Layout.bottomMargin: Theme.sp3
+                        Layout.bottomMargin: Theme.sp2
                     }
                     Repeater {
                         model: [
                             { kk: "detail_kv_size",  v: win.hasSel ? session.selectedSize : "—" },
                             { kk: "detail_kv_hash",  v: win.hasSel ? session.selectedHash : "—" },
-                            { kk: "Added",           v: win.hasSel ? session.selectedAdded : "—" },
-                            { kk: "Path",            v: win.hasSel ? session.selectedPath : "—" }
+                            { kk: "detail_kv_added", v: win.hasSel ? session.selectedAdded : "—" },
+                            { kk: "detail_kv_path",  v: win.hasSel ? session.selectedPath : "—" }
                         ]
                         delegate: RowLayout {
                             Layout.fillWidth: true
                             Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                             Item { Layout.fillWidth: true }
-                            Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideMiddle; Layout.maximumWidth: 110; horizontalAlignment: Text.AlignRight }
+                            Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum; elide: Text.ElideMiddle; Layout.maximumWidth: 110; horizontalAlignment: Text.AlignRight }
                         }
                     }
                 }
 
-                // TRANSFERÊNCIA
+                // TRANSFER
                 ColumnLayout {
                     Layout.preferredWidth: 168
                     Layout.alignment: Qt.AlignTop
-                    spacing: 0
+                    spacing: 5
 
                     Text {
                         text: (i18n.language, i18n.t("detail_section_transfer"))
@@ -345,50 +348,52 @@ Rectangle {
                         font.pixelSize: 10
                         font.weight: Font.Bold
                         font.letterSpacing: 0.8
+                        font.capitalization: Font.AllUppercase
                         font.family: Theme.fontSans
-                        Layout.bottomMargin: Theme.sp3
+                        Layout.bottomMargin: Theme.sp2
                     }
                     Repeater {
                         model: [
                             { kk: "detail_kv_downloaded", v: win.hasSel ? session.selectedDownloaded.split(" (")[0] : "—" },
-                            { kk: "Uploaded",             v: win.hasSel ? session.selectedUploaded : "—" },
+                            { kk: "detail_kv_uploaded",   v: win.hasSel ? session.selectedUploaded : "—" },
                             { kk: "detail_kv_ratio",      v: win.hasSel ? session.selectedRatio : "—" }
                         ]
                         delegate: RowLayout {
                             Layout.fillWidth: true
                             Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                             Item { Layout.fillWidth: true }
-                            Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
+                            Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
                         }
                     }
                 }
 
-                // PEERS
+                // HEALTH
                 ColumnLayout {
                     Layout.preferredWidth: 168
                     Layout.alignment: Qt.AlignTop
-                    spacing: 0
+                    spacing: 5
 
                     Text {
-                        text: "HEALTH"
+                        text: (i18n.language, i18n.t("detail_section_health"))
                         color: Theme.t4
                         font.pixelSize: 10
                         font.weight: Font.Bold
                         font.letterSpacing: 0.8
+                        font.capitalization: Font.AllUppercase
                         font.family: Theme.fontSans
-                        Layout.bottomMargin: Theme.sp3
+                        Layout.bottomMargin: Theme.sp2
                     }
                     Repeater {
                         model: [
-                            { kk: "detail_kv_seeds",  v: win.hasSel ? String(session.selectedSeeds) : "—" },
-                            { kk: "detail_kv_peers",  v: win.hasSel ? String(session.selectedPeers) : "—" },
-                            { kk: "Availability",     v: win.hasSel ? session.selectedAvailability : "—" }
+                            { kk: "detail_kv_seeds",        v: win.hasSel ? String(session.selectedSeeds) : "—" },
+                            { kk: "detail_kv_peers",        v: win.hasSel ? String(session.selectedPeers) : "—" },
+                            { kk: "detail_kv_availability", v: win.hasSel ? session.selectedAvailability : "—" }
                         ]
                         delegate: RowLayout {
                             Layout.fillWidth: true
                             Text { text: (i18n.language, i18n.t(modelData.kk)); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
                             Item { Layout.fillWidth: true }
-                            Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
+                            Text { text: modelData.v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
                         }
                     }
                 }

@@ -50,6 +50,10 @@ QtObject {
     // system fonts (SF / Segoe UI) diverge in family and metrics otherwise.
     readonly property string fontSans: "Inter"
     readonly property string fontMono: Qt.platform.os === "windows" ? "Consolas" : (Qt.platform.os === "osx" ? "Menlo" : "monospace")
+    // tabular figures for numeric readouts (font.features: Theme.tnum) — Inter
+    // aligns digits like a mono font without the terminal texture; mono stays
+    // only for raw data (hashes, logs)
+    readonly property var tnum: ({ "tnum": true })
 
     // ---------- surfaces ----------
     readonly property color bg:

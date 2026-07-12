@@ -60,7 +60,8 @@ Rectangle {
                 text: pi.count
                 color: pi.on ? Theme.accentText : Theme.t4
                 font.pixelSize: 11
-                font.family: Theme.fontMono
+                font.family: Theme.fontSans
+                font.features: Theme.tnum
             }
         }
         MouseArea {

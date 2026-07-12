@@ -121,90 +121,68 @@ Rectangle {
         // .tb-spacer
         Item { Layout.fillWidth: true }
 
-        // .spd-mod (border hair, radius 9, 2 cols)
-        Rectangle {
-            Layout.preferredHeight: 44
+        // global speed readout — boxless, neutral values; the tinted arrow
+        // icons carry the down/up semantic without shouting
+        Row {
             Layout.alignment: Qt.AlignVCenter
-            implicitWidth: spdRow.width + 0
-            color: "transparent"
-            border.color: Theme.hair
-            border.width: 1
-            radius: 9
+            Layout.rightMargin: Theme.sp2
+            spacing: Theme.sp5
 
-            Row {
-                id: spdRow
-                anchors.centerIn: parent
-                spacing: 0
-
-                // .c Download
-                Item {
-                    width: dlCol.implicitWidth + 28
-                    height: 44
-                    Column {
-                        id: dlCol
-                        anchors.centerIn: parent
-                        spacing: 3
-                        Text {
-                            text: (i18n.language, i18n.t("graph_download"))
-                            color: Theme.t4
-                            font.pixelSize: 9
-                            font.weight: Font.Bold
-                            font.letterSpacing: 1
-                            font.family: Theme.fontSans
-                        }
-                        Row {
-                            spacing: 5
-                            IconImg {
-                                anchors.verticalCenter: parent.verticalCenter
-                                src: "qrc:/icons/download.svg"
-                                tint: Theme.accentText
-                                s: 12
-                            }
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"
-                                color: Theme.accentText
-                                font.pixelSize: 13
-                                font.weight: Font.Bold
-                                font.family: Theme.fontMono
-                            }
-                        }
+            Column {
+                spacing: 3
+                Text {
+                    text: (i18n.language, i18n.t("graph_download"))
+                    color: Theme.t4
+                    font.pixelSize: 9
+                    font.weight: Font.Bold
+                    font.letterSpacing: 1
+                    font.family: Theme.fontSans
+                }
+                Row {
+                    spacing: 5
+                    IconImg {
+                        anchors.verticalCenter: parent.verticalCenter
+                        src: "qrc:/icons/download.svg"
+                        tint: Theme.accentText
+                        s: 12
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"
+                        color: Theme.t1
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        font.family: Theme.fontSans
+                        font.features: Theme.tnum
                     }
                 }
-                // divider .c + .c
-                Rectangle { width: 1; height: 44; color: Theme.hair }
-                // .c Upload
-                Item {
-                    width: upCol.implicitWidth + 28
-                    height: 44
-                    Column {
-                        id: upCol
-                        anchors.centerIn: parent
-                        spacing: 3
-                        Text {
-                            text: (i18n.language, i18n.t("graph_upload"))
-                            color: Theme.t4
-                            font.pixelSize: 9
-                            font.weight: Font.Bold
-                            font.letterSpacing: 1
-                            font.family: Theme.fontSans
-                        }
-                        Row {
-                            spacing: 5
-                            IconImg {
-                                anchors.verticalCenter: parent.verticalCenter
-                                src: "qrc:/icons/upload.svg"
-                                tint: Theme.up
-                                s: 12
-                            }
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"
-                                color: Theme.up
-                                font.pixelSize: 13
-                                font.family: Theme.fontMono
-                            }
-                        }
+            }
+            Column {
+                spacing: 3
+                Text {
+                    text: (i18n.language, i18n.t("graph_upload"))
+                    color: Theme.t4
+                    font.pixelSize: 9
+                    font.weight: Font.Bold
+                    font.letterSpacing: 1
+                    font.family: Theme.fontSans
+                }
+                Row {
+                    spacing: 5
+                    IconImg {
+                        anchors.verticalCenter: parent.verticalCenter
+                        src: "qrc:/icons/upload.svg"
+                        tint: Theme.up
+                        s: 12
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"
+                        color: Theme.t1
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        font.family: Theme.fontSans
+                        font.features: Theme.tnum
                     }
                 }
             }
