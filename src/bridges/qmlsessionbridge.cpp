@@ -376,7 +376,8 @@ QString QmlSessionBridge::normalizeClipboardMagnet(const QString &clip)
         s = dec.trimmed();
         if (s.isEmpty()) return QString();
     }
-    if (s.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive))
+    if (s.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)
+        || s.startsWith(QStringLiteral("bittorrent:"), Qt::CaseInsensitive))
         return s;
     static const QRegularExpression hashRe(QStringLiteral("^[0-9a-fA-F]{40}$"));
     if (hashRe.match(s).hasMatch())

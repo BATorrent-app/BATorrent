@@ -504,6 +504,10 @@ bool QmlSettingsBridge::setAsDefaultApp()
     reg.setValue("magnet/URL Protocol", "");
     reg.setValue("magnet/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
     reg.setValue("magnet/DefaultIcon/.", nativeExe + ",0");
+    reg.setValue("bittorrent/.", "URL:BitTorrent Protocol");
+    reg.setValue("bittorrent/URL Protocol", "");
+    reg.setValue("bittorrent/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
+    reg.setValue("bittorrent/DefaultIcon/.", nativeExe + ",0");
     reg.sync();
     ok = (reg.status() == QSettings::NoError);
     if (ok)

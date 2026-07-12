@@ -70,6 +70,7 @@ Name: "{autodesktop}\BATorrent"; Filename: "{app}\BATorrent.exe"; Tasks: desktop
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
 Name: "fileassoc"; Description: "Associate .torrent files with BATorrent"; GroupDescription: "File associations:"; Flags: checkedonce
 Name: "magnetassoc"; Description: "Associate magnet links with BATorrent"; GroupDescription: "File associations:"; Flags: checkedonce
+Name: "bittorrentassoc"; Description: "Associate bittorrent: links with BATorrent"; GroupDescription: "File associations:"; Flags: checkedonce
 
 [Registry]
 ; .torrent file association
@@ -83,6 +84,12 @@ Root: HKCU; Subkey: "Software\Classes\magnet"; ValueType: string; ValueName: "";
 Root: HKCU; Subkey: "Software\Classes\magnet"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: magnetassoc
 Root: HKCU; Subkey: "Software\Classes\magnet\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\BATorrent.exe,0"; Tasks: magnetassoc
 Root: HKCU; Subkey: "Software\Classes\magnet\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\BATorrent.exe"" ""%1"""; Tasks: magnetassoc
+
+; bittorrent: link association
+Root: HKCU; Subkey: "Software\Classes\bittorrent"; ValueType: string; ValueName: ""; ValueData: "URL:BitTorrent Protocol"; Flags: uninsdeletekey; Tasks: bittorrentassoc
+Root: HKCU; Subkey: "Software\Classes\bittorrent"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: bittorrentassoc
+Root: HKCU; Subkey: "Software\Classes\bittorrent\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\BATorrent.exe,0"; Tasks: bittorrentassoc
+Root: HKCU; Subkey: "Software\Classes\bittorrent\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\BATorrent.exe"" ""%1"""; Tasks: bittorrentassoc
 
 [Run]
 Filename: "{app}\BATorrent.exe"; Description: "Launch BATorrent"; Flags: nowait postinstall skipifsilent

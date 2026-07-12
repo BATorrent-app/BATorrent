@@ -80,7 +80,7 @@ static QString collectArgs(const QStringList &args)
     QStringList relevant;
     for (int i = 1; i < args.size(); ++i) {
         const QString &a = args[i];
-        if (a.endsWith(".torrent") || a.startsWith("magnet:"))
+        if (a.endsWith(".torrent") || a.startsWith("magnet:") || a.startsWith("bittorrent:"))
             relevant << a;
     }
     return relevant.join('\n');
@@ -691,7 +691,7 @@ int main(int argc, char *argv[])
                 const QStringList lines = QString::fromUtf8(client->readAll()).split('\n', Qt::SkipEmptyParts);
                 for (const QString &line : lines) {
                     if (line.endsWith(".torrent")) sessionBridge->requestAddTorrentFile(line);
-                    else if (line.startsWith("magnet:")) sessionBridge->addMagnetUri(line);
+                    else if (line.startsWith("magnet:") || line.startsWith("bittorrent:")) sessionBridge->addMagnetUri(line);
                 }
                 client->deleteLater();
             });
@@ -701,7 +701,7 @@ int main(int argc, char *argv[])
         for (int i = 1; i < app.arguments().size(); ++i) {
             const QString &arg = app.arguments().at(i);
             if (arg.endsWith(".torrent")) sessionBridge->requestAddTorrentFile(arg);
-            else if (arg.startsWith("magnet:")) sessionBridge->addMagnetUri(arg);
+            else if (arg.startsWith("magnet:") || arg.startsWith("bittorrent:")) sessionBridge->addMagnetUri(arg);
         }
 
         const int rc = app.exec();

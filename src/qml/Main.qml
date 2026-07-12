@@ -1122,14 +1122,18 @@ Window {
         id: dropZone
         anchors.fill: parent
         z: 150
+        function isMagnetLike(s) {
+            var u = s.toLowerCase()
+            return u.indexOf("magnet:") === 0 || u.indexOf("bittorrent:") === 0
+        }
         function accepts(drag) {
             if (drag.hasUrls) {
                 for (var i = 0; i < drag.urls.length; ++i) {
                     var u = drag.urls[i].toString().toLowerCase()
-                    if (u.endsWith(".torrent") || u.indexOf("magnet:") === 0) return true
+                    if (u.endsWith(".torrent") || dropZone.isMagnetLike(u)) return true
                 }
             }
-            if (drag.hasText && drag.text.indexOf("magnet:") === 0) return true
+            if (drag.hasText && dropZone.isMagnetLike(drag.text)) return true
             return false
         }
         onEntered: function(drag) { drag.accepted = accepts(drag) }
@@ -1141,14 +1145,14 @@ Window {
             if (drop.hasUrls) {
                 for (var i = 0; i < drop.urls.length; ++i) {
                     var u = drop.urls[i].toString()
-                    if (u.toLowerCase().indexOf("magnet:") === 0) session.addMagnetUri(u)
+                    if (dropZone.isMagnetLike(u)) session.addMagnetUri(u)
                     else torrentUrls.push(u)
                 }
             }
             // Queue every dropped .torrent so each gets the preview/choose-folder
             // dialog in turn, instead of only the first.
             if (torrentUrls.length > 0) win.enqueueTorrentUrls(torrentUrls)
-            if (drop.hasText && drop.text.indexOf("magnet:") === 0) session.addMagnetUri(drop.text)
+            if (drop.hasText && dropZone.isMagnetLike(drop.text)) session.addMagnetUri(drop.text)
             drop.accept()
         }
     }
