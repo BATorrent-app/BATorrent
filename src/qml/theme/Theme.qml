@@ -81,6 +81,16 @@ QtObject {
         name === "darkstar" ? "#130b22" :
         name === "matrix"   ? "#0b160d" : "#18181b"
 
+    // top navigation surface — the darkest band of the chrome ladder
+    // (nav < bg < panel), so the global bar reads one level below the page
+    readonly property color nav:
+        name === "custom"   ? Qt.darker(customPanelColor, 1.45) :
+        name === "light"    ? "#e7e9ec" :
+        name === "midnight" ? "#030509" :
+        name === "sakura"   ? "#f8d3e3" :
+        name === "darkstar" ? "#080410" :
+        name === "matrix"   ? "#020503" : "#0c0c0e"
+
     // input/recessed field (--c-field nos diálogos; home não usa, mas mantém coerência)
     readonly property color field:
         name === "custom"   ? Qt.darker(customBgColor, 1.18) :

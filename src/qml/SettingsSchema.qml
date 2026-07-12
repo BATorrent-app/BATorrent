@@ -43,6 +43,7 @@ QtObject {
             { type: "toggle", key: "followSystem", label: (i18n.language, i18n.t("set_follow_system")), note: (i18n.language, i18n.t("set_follow_system_note")) },
             { type: "appicon", label: (i18n.language, i18n.t("set_app_icon")), note: (i18n.language, i18n.t("set_app_icon_note")) },
             { type: "anime", label: (i18n.language, i18n.t("set_anime2")) },
+            { type: "toggle", key: "layoutClassic", label: (i18n.language, i18n.t("set_layout_classic")), note: (i18n.language, i18n.t("set_layout_classic_note")) },
             { type: "profiles", label: (i18n.language, i18n.t("set_custom_profile")),   customOnly: true },
             { type: "color",  role: "bg",        label: (i18n.language, i18n.t("set_custom_bg")),        customOnly: true },
             { type: "color",  role: "panel",     label: (i18n.language, i18n.t("set_custom_panel")),     customOnly: true },

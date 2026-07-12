@@ -16,46 +16,35 @@ import "widgets"
 Rectangle {
     id: rail
     implicitWidth: collapsed ? 64 : 188
-    color: Theme.elev
+    color: Theme.panel
     clip: true
 
-    property int currentIndex: 0
+    property int currentIndex: 0            // bound down from the window; never self-assigned
     property bool discoverVisible: true     // gated off in store builds (step ⑦)
     property bool collapsed: false
+    signal pageRequested(int page)
     signal settingsClicked()
     signal selectTorrent(string infoHash)
     signal makeRoomRequested()
 
-    // Contextual rail slot (rotating carousel, mirrors the Discover hero):
-    // off the Downloads tab → what's downloading; ON Downloads → continue/resume
-    // (the downloads are already on screen there, so show the other useful thing).
-    readonly property var downloadList: (typeof session !== "undefined") ? session.activeDownloads : []
-    readonly property var seedingList: (typeof session !== "undefined") ? session.seedingTransfers : []
-    readonly property var resumeList: (typeof session !== "undefined") ? session.resumeItems : []
-    readonly property bool slotResume: currentIndex === 0
-    // off Downloads: live downloads, else fall back to seeding so the card isn't empty
-    readonly property bool slotSeed: !slotResume && downloadList.length === 0 && seedingList.length > 0
-    readonly property var dlList: slotResume ? resumeList
-                                : (downloadList.length > 0 ? downloadList : seedingList)
-    property int dlIndex: 0
-    property int dlShown: 0
-    readonly property var dlItem: (dlList.length > dlShown && dlShown >= 0) ? dlList[dlShown]
-                                  : (dlList.length > 0 ? dlList[0] : null)
-    readonly property bool showDl: !collapsed && dlList.length > 0
-    onSlotResumeChanged: { dlIndex = 0; dlShown = 0 }
-    onDlListChanged: if (dlShown >= dlList.length) dlShown = Math.max(0, dlList.length - 1)
-    onDlIndexChanged: dlFade.restart()
+    // Contextual rail slot (rotating carousel): the state lives in the shared
+    // DownloadCarousel so the top-bar chip drives the exact same logic.
+    readonly property DownloadCarousel carousel: DownloadCarousel {
+        id: car
+        currentPage: rail.currentIndex
+        hovered: dlHov.hovered
+        active: rail.showDl
+    }
+    readonly property bool showDl: !collapsed && car.dlList.length > 0
+    Connections {
+        target: car
+        function onDlIndexChanged() { dlFade.restart() }
+    }
     SequentialAnimation {
         id: dlFade
         NumberAnimation { target: dlContent; property: "opacity"; to: 0; duration: 160; easing.type: Easing.InCubic }
-        ScriptAction { script: rail.dlShown = rail.dlIndex }
+        ScriptAction { script: car.dlShown = car.dlIndex }
         NumberAnimation { target: dlContent; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
-    }
-    Timer {
-        interval: 5000
-        running: rail.showDl && rail.dlList.length > 1 && !dlHov.hovered
-        repeat: true
-        onTriggered: rail.dlIndex = (rail.dlIndex + 1) % rail.dlList.length
     }
 
     Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
@@ -211,7 +200,7 @@ Rectangle {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: rail.currentIndex = navItem.modelData.page
+                    onClicked: rail.pageRequested(navItem.modelData.page)
                 }
                 ToolTip.text: navItem.modelData.label
                 ToolTip.visible: rail.collapsed && itemMa.containsMouse
@@ -445,9 +434,9 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-                Text { text: (i18n.language, i18n.t(rail.slotResume ? "nav_continue" : (rail.slotSeed ? "nav_seeding" : "nav_downloading"))); color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
+                Text { text: (i18n.language, i18n.t(car.slotResume ? "nav_continue" : (car.slotSeed ? "nav_seeding" : "nav_downloading"))); color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
                 Item { Layout.fillWidth: true }
-                Text { visible: rail.dlList.length > 1; text: (rail.dlShown + 1) + "/" + rail.dlList.length; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum }
+                Text { visible: car.dlList.length > 1; text: (car.dlShown + 1) + "/" + car.dlList.length; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum }
             }
 
             // loose content (no box) — uses the full rail width
@@ -461,47 +450,47 @@ Rectangle {
                     spacing: 12
                     PosterThumb {
                         Layout.preferredWidth: 50; Layout.preferredHeight: 60; Layout.alignment: Qt.AlignVCenter
-                        posterUrl: rail.dlItem ? (rail.dlItem.poster || "") : ""
-                        label: rail.dlItem ? (rail.dlItem.title || "") : ""
+                        posterUrl: car.dlItem ? (car.dlItem.poster || "") : ""
+                        label: car.dlItem ? (car.dlItem.title || "") : ""
                     }
                     ColumnLayout {
                         Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
                         spacing: 6
-                        Text { Layout.fillWidth: true; text: rail.dlItem ? (rail.dlItem.title || "") : ""; color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: car.dlItem ? (car.dlItem.title || "") : ""; color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; elide: Text.ElideRight }
                         RowLayout {
                             Layout.fillWidth: true; spacing: 6
                             Text {
-                                text: !rail.dlItem ? ""
-                                      : rail.slotResume ? ("▶ " + i18n.t("hub_resume"))
-                                      : (rail.dlItem.paused === true) ? ("⏸ " + i18n.t("state_paused"))
-                                      : rail.slotSeed ? ("↑ " + (rail.dlItem.upSpeed || ""))
-                                      : ("↓ " + (rail.dlItem.downSpeed || ""))
+                                text: !car.dlItem ? ""
+                                      : car.slotResume ? ("▶ " + i18n.t("hub_resume"))
+                                      : (car.dlItem.paused === true) ? ("⏸ " + i18n.t("state_paused"))
+                                      : car.slotSeed ? ("↑ " + (car.dlItem.upSpeed || ""))
+                                      : ("↓ " + (car.dlItem.downSpeed || ""))
                                 color: Theme.accent; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
                             }
                             Item { Layout.fillWidth: true }
                             Text {
-                                text: !rail.dlItem ? ""
-                                      : rail.slotResume ? (rail.dlItem.metric || "")
-                                      : rail.slotSeed ? ("⇅ " + (rail.dlItem.ratio || "0.00"))
-                                      : (Math.floor((rail.dlItem.progress || 0) * 100) + "%")
+                                text: !car.dlItem ? ""
+                                      : car.slotResume ? (car.dlItem.metric || "")
+                                      : car.slotSeed ? ("⇅ " + (car.dlItem.ratio || "0.00"))
+                                      : (Math.floor((car.dlItem.progress || 0) * 100) + "%")
                                 color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
                             }
                         }
                         Rectangle {
                             Layout.fillWidth: true; Layout.preferredHeight: 4; radius: 2; color: Theme.track
-                            Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: parent.width * Math.min(1, rail.dlItem ? (rail.dlItem.progress || 0) : 0); radius: 2; color: Theme.accent }
+                            Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: parent.width * Math.min(1, car.dlItem ? (car.dlItem.progress || 0) : 0); radius: 2; color: Theme.accent }
                         }
                     }
                 }
                 MouseArea {
                     id: dlMa; anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (!rail.dlItem) return
-                        if (rail.slotResume) {
-                            if (rail.dlItem.kind === "game") session.launchGame(rail.dlItem.infoHash)
-                            else session.playByHash(rail.dlItem.infoHash)
+                        if (!car.dlItem) return
+                        if (car.slotResume) {
+                            if (car.dlItem.kind === "game") session.launchGame(car.dlItem.infoHash)
+                            else session.playByHash(car.dlItem.infoHash)
                         } else {
-                            rail.selectTorrent(rail.dlItem.infoHash); rail.currentIndex = 0
+                            rail.selectTorrent(car.dlItem.infoHash); rail.pageRequested(0)
                         }
                     }
                 }
@@ -511,41 +500,31 @@ Rectangle {
                     anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
                     width: 24; height: 24; radius: 12
                     color: "#ee15151a"; border.color: Theme.hair; border.width: 1
-                    visible: rail.dlList.length > 1
+                    visible: car.dlList.length > 1
                     opacity: dlHov.hovered ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 130 } }
                     Text { anchors.centerIn: parent; text: "‹"; color: Theme.t1; font.pixelSize: 16; font.family: Theme.fontSans }
                     MouseArea { anchors.fill: parent; enabled: dlHov.hovered; cursorShape: Qt.PointingHandCursor
-                        onClicked: rail.dlIndex = (rail.dlIndex - 1 + rail.dlList.length) % rail.dlList.length }
+                        onClicked: car.prev() }
                 }
                 Rectangle {
                     anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
                     width: 24; height: 24; radius: 12
                     color: "#ee15151a"; border.color: Theme.hair; border.width: 1
-                    visible: rail.dlList.length > 1
+                    visible: car.dlList.length > 1
                     opacity: dlHov.hovered ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 130 } }
                     Text { anchors.centerIn: parent; text: "›"; color: Theme.t1; font.pixelSize: 16; font.family: Theme.fontSans }
                     MouseArea { anchors.fill: parent; enabled: dlHov.hovered; cursorShape: Qt.PointingHandCursor
-                        onClicked: rail.dlIndex = (rail.dlIndex + 1) % rail.dlList.length }
+                        onClicked: car.next() }
                 }
             }
 
-            // separator between the card and the version line
+            // separator under the card
             Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
         }
 
-        // ----- version (bottom) -----
-        Text {
-            Layout.fillWidth: true
-            Layout.leftMargin: 18
-            Layout.bottomMargin: 12
-            text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : ""
-            color: Theme.t4
-            font.pixelSize: 10; font.weight: Font.Medium; font.letterSpacing: 0.4
-            font.family: Theme.fontSans; font.features: Theme.tnum
-            opacity: rail.collapsed ? 0 : 1
-            Behavior on opacity { NumberAnimation { duration: 140 } }
-        }
+        // (version moved to the status bar)
+        Item { Layout.preferredHeight: 8 }
     }
 }

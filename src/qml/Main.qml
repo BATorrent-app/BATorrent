@@ -21,11 +21,14 @@ Window {
     // floor wide enough that the full toolbar (labels + speed module) always
     // fits — below this the RowLayout would have to clip, which is what made
     // the old icon-only "compact" hack feel broken.
-    minimumWidth: 1288   // +188 for the nav rail (content area stays >=1100 so the toolbar never clips)
+    // classic keeps the old +188 rail budget; the top bar frees that width
+    minimumWidth: layoutClassic ? 1288 : 1200
     minimumHeight: 640
     color: Theme.bg
-    flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
-    title: Theme.unifiedChrome ? "" : "BATorrent"
+    // classic rail merges the macOS titlebar into its brand zone; the top-bar
+    // layout keeps the native titlebar so the traffic lights live outside the bar
+    flags: (Theme.unifiedChrome && layoutClassic) ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
+    title: (Theme.unifiedChrome && layoutClassic) ? "" : "BATorrent"
 
     // Close button hides to the tray instead of quitting (quitOnLastWindowClosed
     // is false). If no tray is available, really quit so the app can't get stuck
@@ -48,6 +51,31 @@ Window {
         }
     }
 
+    // current page of the content stack (0 Downloads · 1 Discover · 2 Search ·
+    // 3 HUB · 4 Settings). Owned by the window so navigation works whichever
+    // nav component (rail or top bar) is loaded.
+    property int currentPage: 0
+    // classic layout = the pre-4.5 left nav rail; default is the top bar.
+    // Only one nav component is ever loaded — a hidden rail would keep its
+    // carousel timer and ~30 session bindings alive for nothing.
+    property bool layoutClassic: false
+    readonly property Item navHost: layoutClassic ? navRailLoader.item : navBarLoader.item
+    function selectTorrentByHash(infoHash) {
+        if (typeof session === "undefined") return
+        if (!session.selectByInfoHash(infoHash)) { win.setFilter("all"); session.selectByInfoHash(infoHash) }
+    }
+    function promptRenameFile(idx, current) {
+        inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), current, "",
+            function(t){ if (t.length > 0) session.renameSelectedFile(idx, t) })
+    }
+    Connections {
+        target: typeof settings !== "undefined" ? settings : null
+        function onChanged() {
+            var v = settings.get("layoutClassic")
+            win.layoutClassic = (v === true || v === 1 || v === "1" || v === "true")
+        }
+    }
+
     property int selected: -1          // focus row (drives the detail panel)
     property var selectedRows: []      // multi-selection (proxy rows)
     property int anchorRow: -1         // shift-range anchor
@@ -58,7 +86,9 @@ Window {
     onClassicModeChanged: if (typeof settings !== "undefined") settings.set("classicMode", classicMode)
     property string activeFilter: "all"
     property string catFilter: ""
-    // startup splash — shown on every launch unless disabled in Settings
+    // startup splash — ceremony only when something happened: first run or the
+    // first launch after an update. A routine (often magnet-click) launch goes
+    // straight to the UI. The Settings toggle still kills it entirely.
     property bool showSplash: false
     Component.onCompleted: {
         // restore the last window size (only if it's still sane vs the minimums)
@@ -70,7 +100,19 @@ Window {
         }
         if (typeof settings !== "undefined") win.classicMode = settings.get("classicMode") === true
         if (win.classicMode) win.gridView = false   // classic is a list layout
-        showSplash = (typeof settings === "undefined") || settings.get("showSplash") !== false
+        if (typeof settings !== "undefined") {
+            var lc = settings.get("layoutClassic")
+            win.layoutClassic = (lc === true || lc === 1 || lc === "1" || lc === "true")
+        }
+        if (typeof settings === "undefined") {
+            showSplash = true
+        } else {
+            // read welcomeShown/lastSeenVersion BEFORE maybeShowWelcome mutates them
+            var curVer = (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? themeBridge.appVersion : ""
+            var isFirstRun = settings.get("welcomeShown") !== true
+            var isUpdate = curVer.length > 0 && settings.get("lastSeenVersion") !== curVer
+            showSplash = settings.get("showSplash") !== false && (isFirstRun || isUpdate)
+        }
         // start hidden in the tray if the user asked for it (and a tray exists)
         if (typeof settings !== "undefined" && settings.get("startTray") === true && trayIcon.available)
             win.visible = false
@@ -560,12 +602,12 @@ Window {
         }
         Platform.Menu {
             title: (i18n.language, i18n.t("menu_settings_title"))
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: navRail.currentIndex = 4 }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: win.currentPage = 4 }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: navRail.currentIndex = 2 }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.currentPage = 2 }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
@@ -679,11 +721,11 @@ Window {
                 { label: i18n.t("menu_pause_all"), run: function() { if (typeof session !== "undefined") session.pauseAll() } },
                 { label: i18n.t("menu_resume_all"), run: function() { if (typeof session !== "undefined") session.resumeAll() } },
                 { label: i18n.t("tb_alt_speed"), hint: i18n.t("palette_hint_toggle"), run: function() { if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive) } },
-                { label: i18n.t("nav_downloads"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 0 } },
-                { label: i18n.t("nav_discover"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 1 } },
-                { label: i18n.t("nav_search"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 2 } },
-                { label: i18n.t("nav_hub"), hint: i18n.t("palette_hint_page"), run: function() { navRail.currentIndex = 3 } },
-                { label: i18n.t("tb_settings"), run: function() { navRail.currentIndex = 4 } },
+                { label: i18n.t("nav_downloads"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 0 } },
+                { label: i18n.t("nav_discover"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 1 } },
+                { label: i18n.t("nav_search"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 2 } },
+                { label: i18n.t("nav_hub"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 3 } },
+                { label: i18n.t("tb_settings"), run: function() { win.currentPage = 4 } },
                 { label: i18n.t("menu_rss"), run: function() { win.showWin(rssWinLoader) } },
                 { label: i18n.t("menu_statistics"), run: function() { win.showWin(statsWinLoader) } },
                 { label: i18n.t("wrapped_title"), run: function() { win.showWrapped() } },
@@ -699,11 +741,11 @@ Window {
                 (function(idx) {
                     acts.push({ label: i18n.t("tb_settings") + " · " + i18n.t(setNav[idx]),
                                 hint: i18n.t("palette_hint_page"),
-                                run: function() { settingsPage.sec = idx; navRail.currentIndex = 4 } })
+                                run: function() { settingsPage.sec = idx; win.currentPage = 4 } })
                 })(si)
             }
             acts.push({ label: i18n.t("set_grp_torrent_search"), hint: i18n.t("tb_settings"),
-                        run: function() { settingsPage.sec = 7; navRail.currentIndex = 4 } })
+                        run: function() { settingsPage.sec = 7; win.currentPage = 4 } })
             // individual settings options — so Ctrl+K finds "Memory guard",
             // "Preallocate", etc., not just the section. Jumps to the option via
             // the Settings search box.
@@ -715,14 +757,14 @@ Window {
                     (function(sectionIdx, field) {
                         acts.push({ label: i18n.t("tb_settings") + " · " + field.label,
                                     hint: i18n.t("palette_hint_page"),
-                                    run: function() { navRail.currentIndex = 4; settingsPage.sec = sectionIdx; settingsPage.searchFor(field.label) } })
+                                    run: function() { win.currentPage = 4; settingsPage.sec = sectionIdx; settingsPage.searchFor(field.label) } })
                     })(ps, fld)
                 }
             }
             return acts
         }
         onTorrentPicked: function(src) {
-            navRail.currentIndex = 0
+            win.currentPage = 0
             if (typeof torrentFilter === "undefined") return
             var p = torrentFilter.mapFromSource(src)
             if (p < 0) { win.setFilter("all"); p = torrentFilter.mapFromSource(src) }
@@ -798,7 +840,7 @@ Window {
         onOpenMagnet:   { win.show(); win.raise(); win.requestActivate(); magnetDlg.open() }
         onPauseAll:     if (typeof session !== "undefined") session.pauseAll()
         onResumeAll:    if (typeof session !== "undefined") session.resumeAll()
-        onOpenSettings: { win.show(); win.raise(); win.requestActivate(); navRail.currentIndex = 4 }
+        onOpenSettings: { win.show(); win.raise(); win.requestActivate(); win.currentPage = 4 }
         onQuitApp:      Qt.quit()
     }
 
@@ -821,7 +863,7 @@ Window {
             Layout.preferredHeight: visible ? implicitHeight : 0
 
             background: Rectangle {
-                color: Theme.elev
+                color: Theme.panel
                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
             }
             delegate: MenuBarItem {
@@ -888,12 +930,12 @@ Window {
             }
             BarMenu {
                 title: (i18n.language, i18n.t("menu_settings_title"))
-                BarItem { text: (i18n.language, i18n.t("menu_preferences")); onTriggered: navRail.currentIndex = 4 }
+                BarItem { text: (i18n.language, i18n.t("menu_preferences")); onTriggered: win.currentPage = 4 }
                 BarItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
                 BarItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
                 BarSep {}
-                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: navRail.currentIndex = 2 }
+                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.currentPage = 2 }
                 BarSep {}
                 BarItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
@@ -918,28 +960,46 @@ Window {
             }
         }
 
-        // ===== nav rail + content stack (4.0 hub shell) =====
+        // ===== top nav bar (default layout) =====
+        Loader {
+            id: navBarLoader
+            Layout.fillWidth: true
+            active: !win.layoutClassic
+            visible: active
+            sourceComponent: NavBar {
+                currentIndex: win.currentPage
+                onPageRequested: function(page) { win.currentPage = page }
+                onSettingsClicked: win.currentPage = 4
+                onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
+                onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
+            }
+        }
+
+        // ===== nav rail (classic layout) + content stack (4.0 hub shell) =====
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
 
-            NavRail {
-                id: navRail
+            Loader {
+                id: navRailLoader
                 Layout.fillHeight: true
-                onSettingsClicked: navRail.currentIndex = 4
-                onSelectTorrent: function(infoHash) {
-                    if (typeof session === "undefined") return
-                    if (!session.selectByInfoHash(infoHash)) { win.setFilter("all"); session.selectByInfoHash(infoHash) }
+                active: win.layoutClassic
+                visible: active
+                sourceComponent: NavRail {
+                    currentIndex: win.currentPage
+                    onPageRequested: function(page) { win.currentPage = page }
+                    onSettingsClicked: win.currentPage = 4
+                    onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
+                    onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
                 }
-                onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
             }
 
             StackLayout {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: navRail.currentIndex
+                currentIndex: win.currentPage
 
                 // premium page switch: the new page fades + rises in
                 transform: Translate { id: pageShift }
@@ -966,7 +1026,7 @@ Window {
             onAddMagnet: magnetDlg.open()
             onRemoveSelected: removeDlg.open()
             onOpenRss: win.showWin(rssWinLoader)
-            onNavigate: function(index) { navRail.currentIndex = index }
+            onNavigate: function(index) { win.currentPage = index }
         }
 
         // ================== SUBBAR ==================
@@ -975,124 +1035,37 @@ Window {
             win: win
         }
 
-        // ================== CONTENT (grid OR list) ==================
-        LibraryView {
-            id: libraryView
-            win: win
-            onAddMagnetRequested: magnetDlg.open()
+        // ================== CONTENT (grid OR list) + grid inspector ==================
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+            LibraryView {
+                id: libraryView
+                win: win
+                onAddMagnetRequested: magnetDlg.open()
+            }
+            DetailSidebar {
+                win: win
+                onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
+            }
         }
 
-
-        // ================== DETAIL ==================
+        // ================== DETAIL (list mode; the grid uses the inspector) ==================
         DetailPanel {
             win: win
-            onRenameFileRequested: function(idx, current) {
-                inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), current, "",
-                    function(t){ if (t.length > 0) session.renameSelectedFile(idx, t) })
-            }
+            visible: !win.gridView
+            onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
         }
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 30
-            color: Theme.elev
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair }
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Theme.sp4
-                anchors.rightMargin: Theme.sp4
-                spacing: Theme.sp2
-
-                Text {
-                    text: typeof session !== "undefined"
-                          ? (i18n.language, i18n.t("status_torrents_active")).arg(session.torrentCount).arg(session.activeCount)
-                          : "0 torrents"
-                    color: Theme.t4
-                    font.pixelSize: 12
-                    font.family: Theme.fontSans
-                }
-                // alt-speed (turtle): a mode toggle lives with the other status
-                // signals, not among the toolbar actions
-                Rectangle {
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: Theme.sp2
-                    width: 26; height: 22; radius: 6
-                    readonly property bool on: typeof session !== "undefined" && session.altSpeedsActive
-                    color: on ? Theme.accentTint : (turtleMa.containsMouse ? Theme.hover : "transparent")
-                    IconImg {
-                        anchors.centerIn: parent
-                        src: "qrc:/icons/turtle.svg"
-                        tint: parent.on ? Theme.accentText : Theme.t4
-                        s: 15
-                    }
-                    MouseArea {
-                        id: turtleMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive)
-                    }
-                    ToolTip.text: (i18n.language, i18n.t("tb_alt_speed"))
-                    ToolTip.visible: turtleMa.containsMouse
-                    ToolTip.delay: 400
-                }
-
-                // port reachability (UPnP/NAT-PMP + listen heuristic)
-                Row {
-                    id: portInd
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: Theme.sp2
-                    spacing: 6
-                    property int ps: typeof session !== "undefined" ? session.portStatus : 0
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 8; height: 8; radius: 4
-                        color: portInd.ps === 1 ? Theme.grn
-                             : portInd.ps === 2 ? Theme.amber
-                             : portInd.ps === 3 ? Theme.accent : Theme.t4
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: (i18n.language, i18n.t("tb_port") + ": " + (portInd.ps === 1 ? i18n.t("port_open")
-                             : portInd.ps === 2 ? i18n.t("port_firewalled")
-                             : portInd.ps === 3 ? i18n.t("port_closed") : i18n.t("port_checking")))
-                        color: Theme.t4
-                        font.pixelSize: 12
-                        font.family: Theme.fontSans
-                    }
-                }
-                Item { Layout.fillWidth: true }
-                Text { text: "↓"; color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans }
-                Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
-                Text { text: "↑"; color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; Layout.leftMargin: Theme.sp1 }
-                Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
-                Text {
-                    text: typeof session !== "undefined"
-                          ? "·  " + (i18n.language, i18n.t("status_totals")).arg(session.totalDownloaded).arg(session.totalUploaded).arg(session.globalRatio)
-                          : ""
-                    color: Theme.t4
-                    font.pixelSize: 12
-                    font.family: Theme.fontSans
-                    font.features: Theme.tnum
-                }
-                Text {
-                    visible: typeof session !== "undefined" && session.freeDiskSpace.length > 0
-                    text: typeof session !== "undefined"
-                          ? "·  " + (i18n.language, i18n.t("status_free_space")).arg(session.freeDiskSpace)
-                          : ""
-                    color: Theme.t4
-                    font.pixelSize: 12
-                    font.family: Theme.fontSans
-                }
-            }
-        }
+        // ================== STATUS BAR ==================
+        StatusBar {}
                 }
                 // ----- page 1: Discover -----
                 DiscoverView {
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onOpenSearch: function(q) {
                         searchPage.cameFromDiscover = true
-                        navRail.currentIndex = 2
+                        win.currentPage = 2
                         searchPage.runQuery(q)   // fills the bar + runs (no ghost search)
                     }
                 }
@@ -1101,19 +1074,19 @@ Window {
                     id: searchPage
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
-                    onBackToDiscover: navRail.currentIndex = 1
+                    onBackToDiscover: win.currentPage = 1
                 }
                 // ----- page 3: HUB -----
                 HubView {
                     id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
-                    onOpenSearch: function(q) { navRail.currentIndex = 2; searchPage.runQuery(q) }
-                    onGoDiscover: navRail.currentIndex = 1
+                    onOpenSearch: function(q) { win.currentPage = 2; searchPage.runQuery(q) }
+                    onGoDiscover: win.currentPage = 1
                 }
                 // ----- page 4: Settings (fullscreen tab, was a top-level window) -----
                 SettingsView {
                     id: settingsPage; Layout.fillWidth: true; Layout.fillHeight: true
-                    isCurrent: navRail.currentIndex === 4
-                    onClosed: navRail.currentIndex = 0
+                    isCurrent: win.currentPage === 4
+                    onClosed: win.currentPage = 0
                 }
             }
         }
@@ -1354,23 +1327,23 @@ Window {
 
     TourOverlay {
         id: tourOverlay
-        onPageRequested: function(page) { navRail.currentIndex = page }
+        onPageRequested: function(page) { win.currentPage = page }
         // step 0 is the welcome (centered, no spotlight); the rest spotlight the UI
         // bat/pose vary per step so all 3 candidate SVGs (noto/twemoji/openmoji)
         // and poses (perch/hang, left/right) show in one run — for picking one.
         steps: (i18n.language, [
-            { page: 0, title: i18n.t("tour_s1_t"), text: i18n.t("tour_s1_d"),
-              rectFn: function() { return navRail.itemRect("rail", tourOverlay) } },
+            { page: 0, title: i18n.t("tour_s1_t"), text: i18n.t(win.layoutClassic ? "tour_s1_d" : "tour_s1_d_top"),
+              rectFn: function() { return win.navHost ? win.navHost.itemRect("rail", tourOverlay) : Qt.rect(0,0,0,0) } },
             { page: 0, title: i18n.t("tour_s2_t"), text: i18n.t("tour_s2_d"),
               rectFn: function() { return win.rectIn(toolbar.tbOpen, tourOverlay) } },
             { page: 1, title: i18n.t("tour_s3_t"), text: i18n.t("tour_s3_d"),
-              rectFn: function() { return navRail.itemRect(1, tourOverlay) } },
+              rectFn: function() { return win.navHost ? win.navHost.itemRect(1, tourOverlay) : Qt.rect(0,0,0,0) } },
             { page: 2, title: i18n.t("tour_s4_t"), text: i18n.t("tour_s4_d"),
-              rectFn: function() { return navRail.itemRect(2, tourOverlay) } },
+              rectFn: function() { return win.navHost ? win.navHost.itemRect(2, tourOverlay) : Qt.rect(0,0,0,0) } },
             { page: 3, title: i18n.t("tour_s5_t"), text: i18n.t("tour_s5_d"),
-              rectFn: function() { return navRail.itemRect(3, tourOverlay) } },
+              rectFn: function() { return win.navHost ? win.navHost.itemRect(3, tourOverlay) : Qt.rect(0,0,0,0) } },
             { page: 0, title: i18n.t("tour_s6_t"), text: i18n.t("tour_s6_d"),
-              rectFn: function() { return navRail.itemRect("settings", tourOverlay) } }
+              rectFn: function() { return win.navHost ? win.navHost.itemRect("settings", tourOverlay) : Qt.rect(0,0,0,0) } }
         ])
     }
 
@@ -1453,7 +1426,7 @@ Window {
         target: typeof search !== "undefined" ? search : null
         ignoreUnknownSignals: true
         function onAddedTorrent(infoHash) {
-            navRail.currentIndex = 0
+            win.currentPage = 0
             selectAddedTimer.hash = infoHash || ""
             selectAddedTimer.tries = 0
             selectAddedTimer.restart()

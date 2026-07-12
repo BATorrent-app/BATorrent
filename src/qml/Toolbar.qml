@@ -88,7 +88,7 @@ Rectangle {
 
     Layout.fillWidth: true
     Layout.preferredHeight: 66
-    color: Theme.elev
+    color: Theme.panel
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
 
     RowLayout {

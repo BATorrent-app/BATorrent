@@ -41,6 +41,8 @@
 <file>icons/upload.svg</file>
 <file>icons/chevron.svg</file>
 <file>icons/heart.svg</file>
+<file>icons/heart-line.svg</file>
+<file>icons/sliders.svg</file>
 <file>icons/close.svg</file>
 <file>icons/flags/en.svg</file>
 <file>icons/flags/pt.svg</file>
@@ -94,6 +96,8 @@
 <file>../src/qml/DetailPanel.qml</file>
 <file>../src/qml/FilterBar.qml</file>
 <file>../src/qml/Toolbar.qml</file>
+<file>../src/qml/StatusBar.qml</file>
+<file>../src/qml/NavBar.qml</file>
 <file>../src/qml/DiscoverView.qml</file>
 <file>../src/qml/SearchView.qml</file>
 <file>../src/qml/SearchEmptyState.qml</file>
@@ -136,6 +140,12 @@
 <file>../src/qml/widgets/TorrentRow.qml</file>
 <file>../src/qml/widgets/PosterCard.qml</file>
 <file>../src/qml/widgets/DetailPeers.qml</file>
+<file>../src/qml/widgets/DetailKVSection.qml</file>
+<file>../src/qml/widgets/DetailGeneral.qml</file>
+<file>../src/qml/widgets/DetailGraph.qml</file>
+<file>../src/qml/widgets/DetailTabs.qml</file>
+<file>../src/qml/widgets/DownloadCarousel.qml</file>
+<file>../src/qml/widgets/DetailSidebar.qml</file>
 <file>../src/qml/widgets/DetailFiles.qml</file>
 <file>../src/qml/widgets/DetailTrackers.qml</file>
 <file>../src/qml/widgets/DetailPieces.qml</file>

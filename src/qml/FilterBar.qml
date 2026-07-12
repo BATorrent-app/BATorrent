@@ -75,7 +75,7 @@ Rectangle {
 
     Layout.fillWidth: true
     Layout.preferredHeight: 54
-    color: "transparent"
+    color: Theme.panel
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
 
     RowLayout {
@@ -92,7 +92,7 @@ Rectangle {
             Layout.minimumWidth: 150
             Layout.preferredHeight: 34
             Layout.alignment: Qt.AlignVCenter
-            color: Theme.panel
+            color: Theme.field
             border.color: searchInput.activeFocus ? Theme.accent : Theme.hair
             border.width: 1
             radius: 8
