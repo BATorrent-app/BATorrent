@@ -261,7 +261,14 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
     }
     {
         QTextStream out(&script);
-        out << "Start-Sleep -Seconds 3\r\n";
+        // Same wait-then-force-kill as the installer path above — a blind sleep
+        // left a straggler process alive long enough to fail the Copy-Item (file
+        // still locked) on a slow shutdown (reported by a user: had to fully
+        // kill the background process by hand before a paste/DnD fix "took").
+        out << "$deadline = (Get-Date).AddSeconds(10)\r\n";
+        out << "while ((Get-Process -Name BATorrent -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 300 }\r\n";
+        out << "Get-Process -Name BATorrent -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue\r\n";
+        out << "Start-Sleep -Milliseconds 700\r\n";
         out << "try {\r\n";
         out << "  Copy-Item -LiteralPath '"
             << QDir::toNativeSeparators(newFilePath)
