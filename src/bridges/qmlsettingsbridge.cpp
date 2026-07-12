@@ -500,16 +500,43 @@ bool QmlSettingsBridge::setAsDefaultApp()
     reg.setValue("BATorrent.torrent/.", "BATorrent Torrent File");
     reg.setValue("BATorrent.torrent/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
     reg.setValue("BATorrent.torrent/DefaultIcon/.", nativeExe + ",0");
+    reg.setValue("BATorrent.Url.Magnet/.", "BATorrent Magnet Link");
+    reg.setValue("BATorrent.Url.Magnet/URL Protocol", "");
+    reg.setValue("BATorrent.Url.Magnet/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
+    reg.setValue("BATorrent.Url.Magnet/DefaultIcon/.", nativeExe + ",0");
     reg.setValue("magnet/.", "URL:Magnet Protocol");
     reg.setValue("magnet/URL Protocol", "");
     reg.setValue("magnet/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
     reg.setValue("magnet/DefaultIcon/.", nativeExe + ",0");
+    reg.setValue("BATorrent.Url.BitTorrent/.", "BATorrent BitTorrent Link");
+    reg.setValue("BATorrent.Url.BitTorrent/URL Protocol", "");
+    reg.setValue("BATorrent.Url.BitTorrent/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
+    reg.setValue("BATorrent.Url.BitTorrent/DefaultIcon/.", nativeExe + ",0");
     reg.setValue("bittorrent/.", "URL:BitTorrent Protocol");
     reg.setValue("bittorrent/URL Protocol", "");
     reg.setValue("bittorrent/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
     reg.setValue("bittorrent/DefaultIcon/.", nativeExe + ",0");
     reg.sync();
     ok = (reg.status() == QSettings::NoError);
+
+    // "Default Programs" scheme — needed for Windows' per-protocol picker and
+    // for some browsers to offer BATorrent as a magnet:/bittorrent: handler at
+    // all (a user confirmed the flat Classes\<x> keys above weren't enough by
+    // themselves, even though .torrent worked fine).
+    if (ok) {
+        QSettings caps("HKEY_CURRENT_USER\\Software\\BATorrent\\Capabilities", QSettings::NativeFormat);
+        caps.setValue("ApplicationName", "BATorrent");
+        caps.setValue("ApplicationDescription", "Lightweight, open-source BitTorrent client");
+        caps.setValue("ApplicationIcon", nativeExe + ",0");
+        caps.setValue("UrlAssociations/magnet", "BATorrent.Url.Magnet");
+        caps.setValue("UrlAssociations/bittorrent", "BATorrent.Url.BitTorrent");
+        caps.setValue("FileAssociations/.torrent", "BATorrent.torrent");
+        caps.sync();
+        QSettings registered("HKEY_CURRENT_USER\\Software\\RegisteredApplications", QSettings::NativeFormat);
+        registered.setValue("BATorrent", "Software\\BATorrent\\Capabilities");
+        registered.sync();
+        ok = ok && caps.status() == QSettings::NoError && registered.status() == QSettings::NoError;
+    }
     if (ok)
         QProcess::startDetached("cmd", {"/c", "assoc", ".torrent=BATorrent.torrent"});
 #elif defined(Q_OS_LINUX) || defined(Q_OS_MACOS)

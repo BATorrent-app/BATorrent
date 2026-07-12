@@ -79,17 +79,39 @@ Root: HKCU; Subkey: "Software\Classes\BATorrent.Torrent"; ValueType: string; Val
 Root: HKCU; Subkey: "Software\Classes\BATorrent.Torrent\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\BATorrent.exe,0"; Tasks: fileassoc
 Root: HKCU; Subkey: "Software\Classes\BATorrent.Torrent\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\BATorrent.exe"" ""%1"""; Tasks: fileassoc
 
-; magnet link association
+; magnet link association — a dedicated ProgID (matches the .torrent pattern
+; above) plus the flat Classes\magnet key some flows check directly.
+Root: HKCU; Subkey: "Software\Classes\BATorrent.Url.Magnet"; ValueType: string; ValueName: ""; ValueData: "BATorrent Magnet Link"; Flags: uninsdeletekey; Tasks: magnetassoc
+Root: HKCU; Subkey: "Software\Classes\BATorrent.Url.Magnet"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: magnetassoc
+Root: HKCU; Subkey: "Software\Classes\BATorrent.Url.Magnet\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\BATorrent.exe,0"; Tasks: magnetassoc
+Root: HKCU; Subkey: "Software\Classes\BATorrent.Url.Magnet\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\BATorrent.exe"" ""%1"""; Tasks: magnetassoc
 Root: HKCU; Subkey: "Software\Classes\magnet"; ValueType: string; ValueName: ""; ValueData: "URL:Magnet Protocol"; Flags: uninsdeletekey; Tasks: magnetassoc
 Root: HKCU; Subkey: "Software\Classes\magnet"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: magnetassoc
 Root: HKCU; Subkey: "Software\Classes\magnet\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\BATorrent.exe,0"; Tasks: magnetassoc
 Root: HKCU; Subkey: "Software\Classes\magnet\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\BATorrent.exe"" ""%1"""; Tasks: magnetassoc
 
-; bittorrent: link association
+; bittorrent: link association — same pattern
+Root: HKCU; Subkey: "Software\Classes\BATorrent.Url.BitTorrent"; ValueType: string; ValueName: ""; ValueData: "BATorrent BitTorrent Link"; Flags: uninsdeletekey; Tasks: bittorrentassoc
+Root: HKCU; Subkey: "Software\Classes\BATorrent.Url.BitTorrent"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: bittorrentassoc
+Root: HKCU; Subkey: "Software\Classes\BATorrent.Url.BitTorrent\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\BATorrent.exe,0"; Tasks: bittorrentassoc
+Root: HKCU; Subkey: "Software\Classes\BATorrent.Url.BitTorrent\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\BATorrent.exe"" ""%1"""; Tasks: bittorrentassoc
 Root: HKCU; Subkey: "Software\Classes\bittorrent"; ValueType: string; ValueName: ""; ValueData: "URL:BitTorrent Protocol"; Flags: uninsdeletekey; Tasks: bittorrentassoc
 Root: HKCU; Subkey: "Software\Classes\bittorrent"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: bittorrentassoc
 Root: HKCU; Subkey: "Software\Classes\bittorrent\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\BATorrent.exe,0"; Tasks: bittorrentassoc
 Root: HKCU; Subkey: "Software\Classes\bittorrent\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\BATorrent.exe"" ""%1"""; Tasks: bittorrentassoc
+
+; RegisteredApplications + Capabilities — the "Default Programs" scheme.
+; Windows' per-protocol picker (Settings > Default apps > choose by link
+; type) and some browsers query this specifically; the flat Classes\<x>
+; keys above alone weren't enough to be offered as a magnet:/bittorrent:
+; handler for at least one user, even though .torrent worked fine.
+Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "BATorrent"; ValueData: "Software\BATorrent\Capabilities"; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\BATorrent\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "BATorrent"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\BATorrent\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "Lightweight, open-source BitTorrent client"
+Root: HKCU; Subkey: "Software\BATorrent\Capabilities"; ValueType: string; ValueName: "ApplicationIcon"; ValueData: "{app}\BATorrent.exe,0"
+Root: HKCU; Subkey: "Software\BATorrent\Capabilities\UrlAssociations"; ValueType: string; ValueName: "magnet"; ValueData: "BATorrent.Url.Magnet"; Tasks: magnetassoc
+Root: HKCU; Subkey: "Software\BATorrent\Capabilities\UrlAssociations"; ValueType: string; ValueName: "bittorrent"; ValueData: "BATorrent.Url.BitTorrent"; Tasks: bittorrentassoc
+Root: HKCU; Subkey: "Software\BATorrent\Capabilities\FileAssociations"; ValueType: string; ValueName: ".torrent"; ValueData: "BATorrent.Torrent"; Tasks: fileassoc
 
 [Run]
 Filename: "{app}\BATorrent.exe"; Description: "Launch BATorrent"; Flags: nowait postinstall skipifsilent
