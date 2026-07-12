@@ -58,6 +58,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/ipc/ipcengine.cpp
     src/services/platform/translator.cpp
     src/services/platform/statshistory.cpp
+    src/services/platform/soundplayer.cpp
     src/services/subtitles/subtitleparser.cpp
     src/services/subtitles/subtitlesearch.cpp
     src/services/integrations/idebridprovider.cpp

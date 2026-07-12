@@ -5,7 +5,7 @@
 # =============================================================================
 enable_testing()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Test)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Test Multimedia)
 # In fork mode the tests must exercise the SAME vendored engine the app ships
 # (BAT_TORRENT_LIB set by the root CMakeLists), not the system libtorrent.
 if(NOT BAT_LIBTORRENT_SOURCE)
@@ -42,6 +42,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/security/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
     ${CMAKE_SOURCE_DIR}/src/services/platform/translator.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/statshistory.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/soundplayer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitleparser.cpp
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitlesearch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
@@ -96,7 +97,7 @@ set(COMMON_SOURCES
 
 find_package(ZLIB REQUIRED)
 set(COMMON_LIBS
-    Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Test
+    Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Test Qt6::Multimedia
     ${BAT_TORRENT_LIB}
     Catch2::Catch2WithMain
     ZLIB::ZLIB

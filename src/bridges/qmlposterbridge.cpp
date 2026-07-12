@@ -16,6 +16,7 @@
 #include "services/platform/qrcodegen.h"
 #include "services/platform/utils.h"
 #include "services/platform/translator.h"
+#include "services/platform/soundplayer.h"
 #include "services/subtitles/subtitlesearch.h"
 #include "services/integrations/geoip.h"
 #include "services/integrations/discordrpc.h"
@@ -609,6 +610,16 @@ static void maybeBeep()
         QApplication::beep();
 }
 
+// QApplication::beep() on Windows plays the system's generic alert sound —
+// a user reported it's indistinguishable from an error/warning beep, which
+// reads as "download failed" right after a successful one. Kill-switch and
+// suspicious-file warnings stay on maybeBeep() (an alert IS what those are).
+static void maybeChime()
+{
+    if (QSettings().value(QStringLiteral("notifSound"), true).toBool())
+        SoundPlayer::playCompletionChime();
+}
+
 void QmlNotificationBridge::onTorrentAdded(const QString &name)
 {
     emit notify(tr_("notif_torrent_added"), name, 0);   // 0 = info
@@ -616,7 +627,7 @@ void QmlNotificationBridge::onTorrentAdded(const QString &name)
 
 void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &infoHash)
 {
-    maybeBeep();
+    maybeChime();
     // movies are surfaced by QmlSessionBridge::movieReady as an actionable
     // "Play now" toast — don't double up with the generic one.
     if (m_session) {
