@@ -128,7 +128,17 @@ QtObject {
             { type: "toggle", key: "autoResumeOnReconnect", label: (i18n.language, i18n.t("settings_auto_resume")), on: true, note: (i18n.language, i18n.t("set_autoresume_note")) },
             { type: "toggle", key: "useTor", label: (i18n.language, i18n.t("settings_use_tor")), note: (i18n.language, i18n.t("set_use_tor_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_power")) },
-            { type: "toggle", key: "autoShutdown", label: (i18n.language, i18n.t("settings_auto_shutdown")), note: (i18n.language, i18n.t("set_auto_shutdown_note")) }
+            { type: "select", key: "postDownloadAction", label: (i18n.language, i18n.t("settings_post_download_action")),
+              options: [
+                  (i18n.language, i18n.t("post_action_none")),
+                  (i18n.language, i18n.t("post_action_close")),
+                  (i18n.language, i18n.t("post_action_lock")),
+                  (i18n.language, i18n.t("post_action_sleep")),
+                  (i18n.language, i18n.t("post_action_hibernate")),
+                  (i18n.language, i18n.t("post_action_signout")),
+                  (i18n.language, i18n.t("post_action_shutdown")),
+                  (i18n.language, i18n.t("post_action_restart"))
+              ], value: 0, note: (i18n.language, i18n.t("set_post_download_action_note")) }
         ],
         // 4 Proxy
         [

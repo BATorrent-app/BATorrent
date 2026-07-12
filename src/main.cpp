@@ -284,6 +284,15 @@ int main(int argc, char *argv[])
         "proxyPass", "plexToken", "jellyfinApiKey"
     });
 
+    // One-time migration: "autoShutdown" (bool) -> "postDownloadAction" (index,
+    // 6 = shut down). A user who had it on keeps getting a shutdown, not
+    // silently nothing, once the setting becomes a multi-action picker.
+    {
+        QSettings st;
+        if (!st.contains("postDownloadAction") && st.value("autoShutdown", false).toBool())
+            st.setValue("postDownloadAction", 6);
+    }
+
     // webUiPasswordHash used to live in the keychain, but on unsigned macOS
     // builds reading it at every cold start pops a login-keychain prompt. It's
     // only a SHA-256 hash (not a usable credential), so it now lives in
