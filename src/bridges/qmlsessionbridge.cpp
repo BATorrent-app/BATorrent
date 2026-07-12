@@ -1236,10 +1236,11 @@ void QmlSessionBridge::emitStats()
     // tab is actually open — gated so it costs nothing the rest of the time.
     if (m_detailPeersActive) rebuildPeerCache();
 
-    // Auto-shutdown arming: when enabled and at least one torrent exists, fire
-    // once the moment nothing is downloading anymore. Re-arms when a new
-    // download starts, so each "drain" triggers at most one countdown.
-    if (QSettings().value(QStringLiteral("autoShutdown"), false).toBool()) {
+    // Post-download-action arming: when a non-"do nothing" action is chosen and
+    // at least one torrent exists, fire once the moment nothing is downloading
+    // anymore. Re-arms when a new download starts, so each "drain" triggers at
+    // most one countdown.
+    if (QSettings().value(QStringLiteral("postDownloadAction"), 0).toInt() != 0) {
         if (m_anyDownloading) m_shutdownArmed = true;
         else if (m_shutdownArmed && m_session->torrentCount() > 0) { m_shutdownArmed = false; emit allDownloadsComplete(); }
     } else {
@@ -1247,17 +1248,82 @@ void QmlSessionBridge::emitStats()
     }
 }
 
-void QmlSessionBridge::performShutdown()
+// postDownloadAction indices — keep in sync with SettingsSchema.qml's
+// "postDownloadAction" options list.
+namespace {
+enum PostDownloadAction {
+    ActionNone = 0, ActionCloseApp, ActionLock, ActionSleep,
+    ActionHibernate, ActionSignOut, ActionShutdown, ActionRestart
+};
+}
+
+void QmlSessionBridge::performPostDownloadAction()
 {
+    const int action = QSettings().value(QStringLiteral("postDownloadAction"), ActionNone).toInt();
+    if (action == ActionNone) return;
     m_session->saveResumeData();
+    switch (action) {
+    case ActionCloseApp:
+        QCoreApplication::quit();
+        return;
+    case ActionLock:
 #ifdef Q_OS_WIN
-    QProcess::startDetached("shutdown", {"/s", "/t", "0"});
+        QProcess::startDetached("rundll32.exe", {"user32.dll,LockWorkStation"});
 #elif defined(Q_OS_MACOS)
-    QProcess::startDetached("osascript", {"-e", "tell app \"System Events\" to shut down"});
+        QProcess::startDetached("/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession", {"-suspend"});
 #else
-    QProcess::startDetached("shutdown", {"-h", "now"});
+        QProcess::startDetached("loginctl", {"lock-session"});
 #endif
-    QCoreApplication::quit();
+        return;
+    case ActionSleep:
+#ifdef Q_OS_WIN
+        QProcess::startDetached("rundll32.exe", {"powrprof.dll,SetSuspendState", "0,1,0"});
+#elif defined(Q_OS_MACOS)
+        QProcess::startDetached("pmset", {"sleepnow"});
+#else
+        QProcess::startDetached("systemctl", {"suspend"});
+#endif
+        return;
+    case ActionHibernate:
+#ifdef Q_OS_WIN
+        QProcess::startDetached("shutdown", {"/h"});
+#elif defined(Q_OS_MACOS)
+        QProcess::startDetached("pmset", {"sleepnow"});   // macOS has no separate user-triggered hibernate
+#else
+        QProcess::startDetached("systemctl", {"hibernate"});
+#endif
+        return;
+    case ActionSignOut:
+#ifdef Q_OS_WIN
+        QProcess::startDetached("shutdown", {"/l"});
+#elif defined(Q_OS_MACOS)
+        QProcess::startDetached("osascript", {"-e", "tell application \"System Events\" to log out"});
+#else
+        QProcess::startDetached("loginctl", {"terminate-user", qgetenv("USER")});
+#endif
+        return;
+    case ActionRestart:
+#ifdef Q_OS_WIN
+        QProcess::startDetached("shutdown", {"/r", "/t", "0"});
+#elif defined(Q_OS_MACOS)
+        QProcess::startDetached("osascript", {"-e", "tell app \"System Events\" to restart"});
+#else
+        QProcess::startDetached("shutdown", {"-r", "now"});
+#endif
+        QCoreApplication::quit();
+        return;
+    case ActionShutdown:
+    default:
+#ifdef Q_OS_WIN
+        QProcess::startDetached("shutdown", {"/s", "/t", "0"});
+#elif defined(Q_OS_MACOS)
+        QProcess::startDetached("osascript", {"-e", "tell app \"System Events\" to shut down"});
+#else
+        QProcess::startDetached("shutdown", {"-h", "now"});
+#endif
+        QCoreApplication::quit();
+        return;
+    }
 }
 
 // Theme bridge

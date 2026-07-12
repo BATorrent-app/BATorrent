@@ -313,9 +313,11 @@ public:
 
     void emitStats();
 
-    // Auto-shutdown: power off the machine after all downloads complete (the QML
-    // side shows a cancelable countdown, then calls performShutdown()).
-    Q_INVOKABLE void performShutdown();
+    // Post-download action: run the user's chosen action (close app / lock /
+    // sleep / hibernate / sign out / shut down / restart — see the
+    // "postDownloadAction" setting) after all downloads complete. The QML side
+    // shows a cancelable countdown, then calls this.
+    Q_INVOKABLE void performPostDownloadAction();
 
     // Get & Watch: after a release is added, watch its hash and auto-open the
     // player once it's buffered enough. cancelWatch drops a pending request.

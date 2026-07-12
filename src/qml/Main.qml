@@ -188,10 +188,11 @@ Window {
     }
     function fmtEta(sec) {
         if (sec < 0) return ""
-        if (sec >= 86400) return Math.floor(sec / 86400) + "d left"
-        if (sec >= 3600)  return Math.floor(sec / 3600) + "h left"
-        if (sec >= 60)    return Math.floor(sec / 60) + "m left"
-        return sec + "s left"
+        var u = sec >= 86400 ? Math.floor(sec / 86400) + "d"
+              : sec >= 3600  ? Math.floor(sec / 3600) + "h"
+              : sec >= 60    ? Math.floor(sec / 60) + "m"
+              : sec + "s"
+        return i18n.t("eta_left").arg(u)
     }
     function _commitSel() {
         if (typeof session === "undefined" || typeof torrentFilter === "undefined") return
@@ -1061,17 +1062,18 @@ Window {
                     }
                 }
                 Item { Layout.fillWidth: true }
-                Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent }
-                Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
-                Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.amber }
-                Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
+                Text { text: "↓"; color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans }
+                Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
+                Text { text: "↑"; color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; Layout.leftMargin: Theme.sp1 }
+                Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
                 Text {
                     text: typeof session !== "undefined"
-                          ? "·  Total " + session.totalDownloaded + " ↓ · " + session.totalUploaded + " ↑ · Ratio " + session.globalRatio
+                          ? "·  " + (i18n.language, i18n.t("status_totals")).arg(session.totalDownloaded).arg(session.totalUploaded).arg(session.globalRatio)
                           : ""
                     color: Theme.t4
                     font.pixelSize: 12
                     font.family: Theme.fontSans
+                    font.features: Theme.tnum
                 }
                 Text {
                     visible: typeof session !== "undefined" && session.freeDiskSpace.length > 0
@@ -1293,19 +1295,31 @@ Window {
         }
     }
 
-    // auto-shutdown: cancelable countdown after all downloads finish
+    // post-download action: cancelable countdown after all downloads finish
     property int shutdownLeft: 0
+    property string shutdownActionLabel: ""
+    readonly property var postDownloadActionKeys: ["post_action_none", "post_action_close",
+        "post_action_lock", "post_action_sleep", "post_action_hibernate",
+        "post_action_signout", "post_action_shutdown", "post_action_restart"]
+    function postDownloadActionLabel(idx) {
+        var key = win.postDownloadActionKeys[idx] || "post_action_shutdown"
+        return i18n.t(key)
+    }
     Timer {
         id: shutdownTimer; interval: 1000; repeat: true
         onTriggered: {
             win.shutdownLeft--
-            if (win.shutdownLeft <= 0) { stop(); shutdownDlg.close(); if (typeof session !== "undefined") session.performShutdown() }
+            if (win.shutdownLeft <= 0) { stop(); shutdownDlg.close(); if (typeof session !== "undefined") session.performPostDownloadAction() }
         }
     }
     Connections {
         target: typeof session !== "undefined" ? session : null
         ignoreUnknownSignals: true
-        function onAllDownloadsComplete() { win.shutdownLeft = 60; shutdownTimer.restart(); shutdownDlg.open() }
+        function onAllDownloadsComplete() {
+            win.shutdownActionLabel = win.postDownloadActionLabel(
+                typeof settings !== "undefined" ? settings.get("postDownloadAction") : 6)
+            win.shutdownLeft = 60; shutdownTimer.restart(); shutdownDlg.open()
+        }
     }
     BatDialog {
         id: shutdownDlg
@@ -1316,7 +1330,7 @@ Window {
         onRejected: shutdownTimer.stop()
         Text {
             Layout.fillWidth: true
-            text: i18n.t("shutdown_msg").arg(win.shutdownLeft)
+            text: (i18n.language, i18n.t("shutdown_msg2")).arg(win.shutdownActionLabel).arg(win.shutdownLeft)
             color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans
             wrapMode: Text.WordWrap
         }
