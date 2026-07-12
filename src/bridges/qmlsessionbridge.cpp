@@ -265,7 +265,12 @@ void QmlSessionBridge::removeSelectedRows(bool deleteFiles, bool permanent)
     if (rows.isEmpty()) return;
     const int n = rows.size();
     std::sort(rows.begin(), rows.end(), std::greater<int>());
+    // A batch fires beginRemoveRows/endRemoveRows back-to-back with no time for
+    // the grid/list's remove+displaced Transition to settle between them —
+    // flagged so the view can skip animating a batch (see LibraryView.qml).
+    if (n > 1) { m_bulkRemoveInProgress = true; emit bulkRemoveInProgressChanged(); }
     for (int r : rows) m_session->removeTorrent(r, deleteFiles, permanent);
+    if (n > 1) { m_bulkRemoveInProgress = false; emit bulkRemoveInProgressChanged(); }
     m_selectedRows.clear();
     m_selectedIndex = -1;
     emit selectionChanged(); emit selectionListsChanged();

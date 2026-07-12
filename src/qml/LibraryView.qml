@@ -160,13 +160,18 @@ Item {
             NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic }
             NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: 180; easing.type: Easing.OutCubic }
         }
+        // deleting several selected torrents at once fires these back-to-back
+        // with no time to settle between them — a known Qt Quick view-recycling
+        // risk — so a batch removal (bulkRemoveInProgress) skips the animation
+        // instead of stacking transitions; a single remove keeps it.
+        readonly property bool bulkRemove: typeof session !== "undefined" && session.bulkRemoveInProgress
         remove: Transition {
-            NumberAnimation { properties: "opacity"; to: 0; duration: 160; easing.type: Easing.OutCubic }
-            NumberAnimation { properties: "scale"; to: 0.85; duration: 160; easing.type: Easing.OutCubic }
+            NumberAnimation { properties: "opacity"; to: 0; duration: grid.bulkRemove ? 0 : 160; easing.type: Easing.OutCubic }
+            NumberAnimation { properties: "scale"; to: 0.85; duration: grid.bulkRemove ? 0 : 160; easing.type: Easing.OutCubic }
         }
         displaced: Transition {
-            NumberAnimation { properties: "x,y"; duration: 280; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
-            NumberAnimation { properties: "scale"; to: 1; duration: 280; easing.type: Easing.OutCubic }
+            NumberAnimation { properties: "x,y"; duration: grid.bulkRemove ? 0 : 280; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
+            NumberAnimation { properties: "scale"; to: 1; duration: grid.bulkRemove ? 0 : 280; easing.type: Easing.OutCubic }
         }
         move: Transition {
             NumberAnimation { properties: "x,y"; duration: 300; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
@@ -222,9 +227,10 @@ Item {
         interactive: true
         z: 1
         WheelScroller { flick: list }
+        readonly property bool bulkRemove: typeof session !== "undefined" && session.bulkRemoveInProgress
         add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 160; easing.type: Easing.OutCubic } }
-        remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: 120; easing.type: Easing.OutCubic } }
-        displaced: Transition { NumberAnimation { properties: "x,y"; duration: 180; easing.type: Easing.OutCubic } }
+        remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: list.bulkRemove ? 0 : 120; easing.type: Easing.OutCubic } }
+        displaced: Transition { NumberAnimation { properties: "x,y"; duration: list.bulkRemove ? 0 : 180; easing.type: Easing.OutCubic } }
 
         header: Rectangle {
             width: ListView.view.width

@@ -72,6 +72,11 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QVariantList selectedTrackers READ selectedTrackers NOTIFY selectionListsChanged)
     Q_PROPERTY(QVariantMap selectedPieces READ selectedPieces NOTIFY selectionListsChanged)
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
+    // true while removeSelectedRows() is removing more than one row at once —
+    // the grid/list transitions check this to skip animating a batch removal
+    // (rapid-fire remove/displaced transitions with no time to settle between
+    // them is a known Qt Quick view-recycling risk).
+    Q_PROPERTY(bool bulkRemoveInProgress READ bulkRemoveInProgress NOTIFY bulkRemoveInProgressChanged)
     Q_PROPERTY(bool altSpeedsActive READ altSpeedsActive NOTIFY altSpeedsActiveChanged)
     Q_PROPERTY(int portStatus READ portStatus NOTIFY portStatusChanged)
 
@@ -300,6 +305,7 @@ public:
     QVariantList selectedTrackers() const;
     QVariantMap selectedPieces() const;
     bool hasSelection() const;
+    bool bulkRemoveInProgress() const { return m_bulkRemoveInProgress; }
 
     // The Peers detail tab is expensive (pulls every peer from libtorrent), so the
     // peer list only refreshes per tick while that tab is actually open.
@@ -320,6 +326,7 @@ signals:
     void statsChanged();
     void watchlistChanged();
     void selectionChanged();
+    void bulkRemoveInProgressChanged();
     // Heavy per-selection lists (peers/files/trackers/pieces) notify on this
     // instead of selectionChanged, which fires every ~1s from emitStats() and
     // would otherwise rebuild those big lists every second.
@@ -382,6 +389,7 @@ private:
     int m_selectedIndex = -1;
     QList<int> m_selectedRows;
     QString m_lastClipboardMagnet;   // dedupe: don't re-prompt for the same clipboard content
+    bool m_bulkRemoveInProgress = false;
     static QString normalizeClipboardMagnet(const QString &clip);
     GeoIpResolver *m_geoIp = nullptr;
     QTimer m_peerListThrottle;      // coalesce geo-lookup results into ≤1 peer-list rebuild/sec
