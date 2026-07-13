@@ -51,6 +51,12 @@ static QString dhtStatePath()
 
 static lt::session_params loadStartupParams()
 {
+    // Top Sentry crasher (NATIVE-QT-4) is an AV inside libtorrent during
+    // session construction — a try/catch can't stop an access violation, so
+    // after a crashed boot the retry starts with fresh params instead of
+    // re-feeding whatever state killed the last run.
+    if (QSettings().value(QStringLiteral("bootCrashes"), 0).toInt() >= 1)
+        return lt::session_params();
     QFile f(dhtStatePath());
     if (f.open(QIODevice::ReadOnly)) {
         const QByteArray data = f.readAll();
