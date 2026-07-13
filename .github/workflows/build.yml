@@ -263,6 +263,18 @@ jobs:
           mkdir release
           Copy-Item build/Release/BATorrent.exe release/
           windeployqt --qmldir src/qml --compiler-runtime release/BATorrent.exe
+          # windeployqt copies the ffmpeg media *plugin* but NOT the ffmpeg DLLs
+          # it links against (av*/sw* live in Qt's bin). Without them the plugin
+          # fails to load and Qt Multimedia silently falls back to Windows Media
+          # Foundation, which can't play MKV/HEVC — the "format isn't supported
+          # by the built-in player" the users hit on the most common movie files.
+          $qtBin = Split-Path (Get-Command windeployqt).Source
+          $ff = Get-ChildItem "$qtBin" -Filter "*.dll" | Where-Object {
+            $_.Name -match '^(avcodec|avformat|avutil|swscale|swresample|avdevice|avfilter)-'
+          }
+          if ($ff.Count -eq 0) { throw "no ffmpeg DLLs in $qtBin — built-in player would fail on MKV/HEVC" }
+          $ff | Copy-Item -Destination release/ -Force
+          Write-Host "Bundled ffmpeg runtime: $($ff.Name -join ', ')"
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           # vcpkg's libtorrent is only a vehicle to pull Boost/OpenSSL into the
           # toolchain — its torrent-rasterbar.dll is a DIFFERENT build from our
