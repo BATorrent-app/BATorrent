@@ -56,6 +56,8 @@
 #include "services/security/crashhandler.h"
 #include "services/platform/utils.h"
 
+#include <libtorrent/version.hpp>
+
 // Serves the app logo recolored for the OS scheme to QML (the system tray
 // icon.source wants a URL, not a QIcon). URL id is "light"/"dark"; the body
 // is swapped to dark text for the "dark"-id (light-background) request.
@@ -354,6 +356,26 @@ int main(int argc, char *argv[])
             }
             safeMode = true;   // continue, but skip the auto update-check this run
         }
+    }
+
+    // --- engine ABI guard: a portable update can swap the exe while a stale
+    // process still holds the old torrent-rasterbar DLL, leaving a version-skewed
+    // install that dies as an access violation inside session construction
+    // (the Sentry NATIVE-QT-4 / GetProcAddress signature). lt::version() comes
+    // from the DLL, LIBTORRENT_VERSION from our headers — skew → clear dialog.
+    if (!QString::fromLatin1(lt::version()).startsWith(QStringLiteral(LIBTORRENT_VERSION))) {
+        QMessageBox box;
+        box.setIcon(QMessageBox::Critical);
+        box.setWindowTitle("BATorrent — Recovery");
+        box.setText("This installation is broken: the torrent engine on disk is from a different version.");
+        box.setInformativeText("This usually happens when an update is interrupted. Please download the latest version again.");
+        QPushButton *dlBtn = box.addButton("Download latest", QMessageBox::AcceptRole);
+        box.addButton("Quit", QMessageBox::RejectRole);
+        box.setDefaultButton(dlBtn);
+        box.exec();
+        if (box.clickedButton() == dlBtn)
+            QDesktopServices::openUrl(QUrl("https://github.com/BATorrent-app/BATorrent/releases/latest"));
+        return 1;
     }
 
     // Load Inter font family
