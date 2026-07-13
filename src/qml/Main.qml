@@ -392,8 +392,11 @@ Window {
         // one of gameCtx/playCtx is ever visible — both sit at the very top.
         MenuItem {
             id: gameCtx
-            readonly property bool gReady: (win.selected, session.selectedGameState() === 4)
-            visible: (win.selected, session.selectedIsGame() && session.selectedGameState() !== 5)
+            // depend on selectedHash (NOTIFY selectionChanged), not win.selected:
+            // the QML row changes BEFORE the C++ selection commits, so binding to
+            // it showed the PREVIOUS torrent's game state (movies got "Install")
+            readonly property bool gReady: (session.selectedHash, session.selectedGameState() === 4)
+            visible: (session.selectedHash, session.selectedIsGame() && session.selectedGameState() !== 5)
             height: visible ? 36 : 0
             implicitHeight: height
             padding: 0
