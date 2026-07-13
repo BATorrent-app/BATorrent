@@ -1114,17 +1114,20 @@ Window {
             // Browsers hand a dragged magnet link over as a url, not just text —
             // sort those out before treating the rest of drop.urls as .torrent files.
             var torrentUrls = []
+            var addedMagnet = false
             if (drop.hasUrls) {
                 for (var i = 0; i < drop.urls.length; ++i) {
                     var u = drop.urls[i].toString()
-                    if (dropZone.isMagnetLike(u)) session.addMagnetUri(u)
+                    if (dropZone.isMagnetLike(u)) { session.addMagnetUri(u); addedMagnet = true }
                     else torrentUrls.push(u)
                 }
             }
             // Queue every dropped .torrent so each gets the preview/choose-folder
             // dialog in turn, instead of only the first.
             if (torrentUrls.length > 0) win.enqueueTorrentUrls(torrentUrls)
-            if (drop.hasText && dropZone.isMagnetLike(drop.text)) session.addMagnetUri(drop.text)
+            // browsers hand the SAME magnet as url AND text — the text path is
+            // only a fallback, or a drop creates two identical torrents
+            if (!addedMagnet && drop.hasText && dropZone.isMagnetLike(drop.text)) session.addMagnetUri(drop.text)
             drop.accept()
         }
     }
