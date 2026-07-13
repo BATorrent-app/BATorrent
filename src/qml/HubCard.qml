@@ -89,12 +89,14 @@ Item {
                 anchors.centerIn: parent; spacing: 5
                 Spinner {
                     visible: card.item.installState === 2 || card.item.installState === 3
-                    s: 13; tint: Theme.t2
+                    s: 13; tint: "#c7c7cc"
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Text {
                     text: card.host.gameStateLabel(card.item)
-                    color: stateBtn.actionable ? Theme.accentText : Theme.t2
+                    // fixed light colors: the button sits on the poster/dark chip in
+                    // BOTH themes, and accentText is accent-ON-dark, not text-on-accent
+                    color: stateBtn.actionable ? "#ffffff" : "#c7c7cc"
                     font.pixelSize: 11; font.weight: Font.Bold; font.family: Theme.fontSans
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -116,7 +118,7 @@ Item {
             Text {
                 id: pnl; anchors.centerIn: parent
                 text: (i18n.language, i18n.t("hub_playing_now"))
-                color: Theme.accentText; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans
+                color: "#ffffff"; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans
             }
         }
 

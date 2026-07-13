@@ -381,8 +381,11 @@ Item {
                             source: cwHero.it ? (cwHero.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop }
                     MultiEffect { anchors.fill: parent; source: cwBg; blurEnabled: true; blur: 1.0; blurMax: 40
                                   brightness: -0.35; saturation: -0.1; opacity: cwHero.it ? 0.5 : 0 }
+                    // cinematic dark scrim — only over artwork; the empty rail
+                    // stays a clean theme panel (was a black slab in light mode)
                     Rectangle {
                         anchors.fill: parent
+                        opacity: cwHero.it ? 1 : 0
                         gradient: Gradient { orientation: Gradient.Horizontal
                             GradientStop { position: 0.0; color: "#f00e0e10" }
                             GradientStop { position: 0.62; color: "#cc0e0e10" }
@@ -413,7 +416,9 @@ Item {
                             Text { text: (i18n.language, i18n.t("hub_continue")).toUpperCase(); color: Theme.accent; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans }
                             Text { Layout.fillWidth: true; text: cwHero.it ? (cwHero.it.title || "") : ""; color: "#fff"; font.pixelSize: 27; font.weight: Font.Bold; font.family: Theme.fontSans; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap }
                             Text {
-                                color: Theme.t3; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                                // fixed light grays inside the rail: it's a committed
+                                // dark cinematic surface in both themes once art shows
+                                color: "#a8a8b0"; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
                                 text: {
                                     if (!cwHero.it) return ""
                                     var parts = []
@@ -431,13 +436,13 @@ Item {
                                     radius: 2; color: "#40ffffff"
                                     Rectangle { width: parent.width * Math.min(1, cwHero.it ? (cwHero.it.watchedPct || 0) : 0); height: parent.height; radius: 2; color: Theme.accent }
                                 }
-                                Text { text: cwHero.it ? (page.fmtTime(cwHero.it.resumeMs) + " / " + page.fmtTime(cwHero.it.durMs)) : ""; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
+                                Text { text: cwHero.it ? (page.fmtTime(cwHero.it.resumeMs) + " / " + page.fmtTime(cwHero.it.durMs)) : ""; color: "#c7c7cc"; font.pixelSize: 12; font.family: Theme.fontMono }
                             }
                             RowLayout {
                                 Layout.topMargin: 6; spacing: 14
                                 BtnFlat { primary: true; icon: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("hub_resume"));
                                           onClicked: if (cwHero.it && api) api.playByHashFile(cwHero.it.infoHash, cwHero.it.fileIndex) }
-                                Text { text: cwHero.it ? page.fmtLeft((cwHero.it.durMs || 0) - (cwHero.it.resumeMs || 0)) : ""; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
+                                Text { text: cwHero.it ? page.fmtLeft((cwHero.it.durMs || 0) - (cwHero.it.resumeMs || 0)) : ""; color: "#a8a8b0"; font.pixelSize: 12; font.family: Theme.fontSans }
                             }
                         }
                     }
@@ -460,6 +465,7 @@ Item {
                                   brightness: -0.4; saturation: -0.1; opacity: cpHero.it ? 0.5 : 0 }
                     Rectangle {
                         anchors.fill: parent
+                        opacity: cpHero.it ? 1 : 0
                         gradient: Gradient
                             { GradientStop { position: 0.0; color: "#e00e0e10" } GradientStop { position: 1.0; color: "#aa0e0e10" } }
                     }
@@ -489,7 +495,7 @@ Item {
                             spacing: 6
                             Text { Layout.fillWidth: true; text: cpHero.it ? (cpHero.it.title || "") : ""; color: "#fff"; font.pixelSize: 19; font.weight: Font.Bold; font.family: Theme.fontSans; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap }
                             Text {
-                                Layout.fillWidth: true; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
+                                Layout.fillWidth: true; color: "#a8a8b0"; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
                                 text: {
                                     if (!cpHero.it) return ""
                                     if (cpHero.sug) return i18n.t("hub_ready_to_play")

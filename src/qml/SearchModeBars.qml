@@ -31,7 +31,7 @@ ColumnLayout {
         Text {
             id: chipTxt
             anchors.centerIn: parent
-            color: chip.on ? Theme.accentText : Theme.t2
+            color: chip.on ? "#ffffff" : Theme.t2
             font.pixelSize: 12
             font.weight: chip.on ? Font.DemiBold : Font.Medium
             font.family: Theme.fontSans

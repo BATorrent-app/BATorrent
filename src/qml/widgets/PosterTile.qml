@@ -43,7 +43,7 @@ Item {
         height: 22
         radius: 11
         color: "#000000"
-        opacity: tileMa.containsMouse ? 0.5 : 0
+        opacity: tileMa.containsMouse ? (Theme.isLight ? 0.22 : 0.5) : 0
         Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
         layer.enabled: true
         layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 28 }
