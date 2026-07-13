@@ -33,7 +33,8 @@ ColumnLayout {
     }
     Text {
         visible: pane.peers.length === 0 && !pane.loading
-        Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 18
+        Layout.fillWidth: true; Layout.topMargin: 18
+        horizontalAlignment: Text.AlignHCenter
         text: (i18n.language, i18n.t("detailpeers_empty")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans
     }
     // loading placeholder — skeleton rows while the peer list is being built
@@ -52,7 +53,7 @@ ColumnLayout {
         }
     }
     ListView {
-        Layout.fillWidth: true; Layout.fillHeight: true; clip: true; model: pane.peers
+        Layout.fillWidth: true; Layout.fillHeight: true; Layout.topMargin: 8; clip: true; model: pane.peers
         visible: pane.peers.length > 0
         boundsBehavior: Flickable.StopAtBounds
         delegate: pane.compact ? compactRow : wideRow

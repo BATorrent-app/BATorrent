@@ -638,8 +638,8 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("addons", addonBridge);
         engine.rootContext()->setContextProperty("search", searchBridge);
         engine.rootContext()->setContextProperty("discovery", discoveryService);
-        // Store builds stay neutral: hide Discover (the curated browse surface).
-        // Everything else (Search/HUB) is identical.
+        // Store builds stay neutral: the Find page drops the curated catalog
+        // (browse surface) and falls back to plain search. Everything else is identical.
 #ifdef BAT_STORE_BUILD
         engine.rootContext()->setContextProperty("isStoreBuild", true);
 #else

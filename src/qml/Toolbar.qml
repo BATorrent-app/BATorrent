@@ -111,11 +111,11 @@ Rectangle {
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
         TGrpDiv {}
         // G4: Buscar, RSS
-        TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: toolbar.navigate(2) }
+        TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: toolbar.navigate(1) }
         TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: toolbar.openRss() }
         TGrpDiv {}
         // G5: Config.
-        TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: toolbar.navigate(4) }
+        TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: toolbar.navigate(3) }
 
 
         // .tb-spacer

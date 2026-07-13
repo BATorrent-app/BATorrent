@@ -16,7 +16,6 @@ import "widgets"
 Item {
     id: page
     signal openSearch(string query)
-    signal goDiscover()
     property var api: typeof session !== "undefined" ? session : null
     property var library: []
     property var gameItems: []
@@ -335,8 +334,7 @@ Item {
                 Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("hub_empty_sub")); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans }
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 4; spacing: 12
-                    BtnFlat { primary: true; icon: "qrc:/icons/discover.svg"; text: (i18n.language, i18n.t("nav_discover")); onClicked: page.goDiscover() }
-                    BtnFlat { icon: "qrc:/icons/search.svg"; text: (i18n.language, i18n.t("nav_search")); onClicked: page.openSearch("") }
+                    BtnFlat { primary: true; icon: "qrc:/icons/search.svg"; text: (i18n.language, i18n.t("nav_find")); onClicked: page.openSearch("") }
                 }
             }
 

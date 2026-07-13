@@ -29,7 +29,8 @@ ColumnLayout {
     }
     Text {
         visible: pane.trackers.length === 0
-        Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 18
+        Layout.fillWidth: true; Layout.topMargin: 18
+        horizontalAlignment: Text.AlignHCenter
         text: (i18n.language, i18n.t("inspector_no_trackers2")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans
     }
     ListView {

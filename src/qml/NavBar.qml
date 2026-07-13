@@ -19,7 +19,6 @@ Rectangle {
     color: Theme.nav
 
     property int currentIndex: 0            // bound down from the window; never self-assigned
-    property bool discoverVisible: true     // gated off in store builds (step ⑦)
     signal pageRequested(int page)
     signal settingsClicked()
     signal selectTorrent(string infoHash)
@@ -62,13 +61,9 @@ Rectangle {
     function buildItems() {
         var all = [
             { icon: "qrc:/icons/download.svg", label: i18n.t("nav_downloads"), page: 0 },
-            { icon: "qrc:/icons/discover.svg", label: i18n.t("nav_discover"),  page: 1 },
-            { icon: "qrc:/icons/search.svg",   label: i18n.t("nav_search"),    page: 2 },
-            { icon: "qrc:/icons/hub.svg",      label: i18n.t("nav_hub"),       page: 3 }
+            { icon: "qrc:/icons/search.svg",   label: i18n.t("nav_find"),      page: 1 },
+            { icon: "qrc:/icons/hub.svg",      label: i18n.t("nav_hub"),       page: 2 }
         ]
-        // Store builds hide Discover (page 1); other pages keep their indices.
-        if (typeof isStoreBuild !== "undefined" && isStoreBuild)
-            return all.filter(function (x) { return x.page !== 1 })
         return all
     }
 
@@ -97,26 +92,18 @@ Rectangle {
         anchors.rightMargin: Theme.sp3
         spacing: 2
 
-        // ----- brand (logo + New Rocker wordmark, as on the rail/splash) -----
-        Row {
+        // ----- brand — glyph only; the wordmark lives where the brand
+        // introduces itself (splash, About, expanded rail) -----
+        Image {
             Layout.alignment: Qt.AlignVCenter
-            Layout.rightMargin: Theme.sp4
-            spacing: 8
-            Image {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 26; height: 26
-                source: "qrc:/images/logo.svg"
-                sourceSize: Qt.size(52, 52)
-                fillMode: Image.PreserveAspectFit
-                layer.enabled: Theme.isLight
-                layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
-            }
-            Row {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 0
-                Text { text: "BAT"; color: Theme.accent; font.family: "New Rocker"; font.pixelSize: 19 }
-                Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 19 }
-            }
+            Layout.rightMargin: 2
+            Layout.preferredWidth: 32
+            Layout.preferredHeight: 32
+            source: "qrc:/images/logo.svg"
+            sourceSize: Qt.size(64, 64)
+            fillMode: Image.PreserveAspectFit
+            layer.enabled: Theme.isLight
+            layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
         }
 
         // ----- page tabs -----
@@ -127,7 +114,6 @@ Rectangle {
                 id: navTab
                 required property var modelData
                 readonly property bool active: bar.currentIndex === modelData.page
-                visible: !(modelData.page === 1 && !bar.discoverVisible)
                 Layout.fillHeight: true
                 Layout.preferredWidth: visible ? tabRow.implicitWidth + 30 : 0
 
@@ -352,7 +338,7 @@ Rectangle {
         // ----- settings (page 4) -----
         Item {
             id: settingsBtn
-            readonly property bool active: bar.currentIndex === 4
+            readonly property bool active: bar.currentIndex === 3
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: 34; Layout.preferredHeight: 34
             Rectangle {

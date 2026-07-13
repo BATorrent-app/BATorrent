@@ -602,12 +602,12 @@ Window {
         }
         Platform.Menu {
             title: (i18n.language, i18n.t("menu_settings_title"))
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: win.currentPage = 4 }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_preferences")); shortcut: StandardKey.Preferences; onTriggered: win.currentPage = 3 }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
             Platform.MenuSeparator {}
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.currentPage = 2 }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.currentPage = 1 }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
@@ -722,10 +722,9 @@ Window {
                 { label: i18n.t("menu_resume_all"), run: function() { if (typeof session !== "undefined") session.resumeAll() } },
                 { label: i18n.t("tb_alt_speed"), hint: i18n.t("palette_hint_toggle"), run: function() { if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive) } },
                 { label: i18n.t("nav_downloads"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 0 } },
-                { label: i18n.t("nav_discover"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 1 } },
-                { label: i18n.t("nav_search"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 2 } },
-                { label: i18n.t("nav_hub"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 3 } },
-                { label: i18n.t("tb_settings"), run: function() { win.currentPage = 4 } },
+                { label: i18n.t("nav_find"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 1 } },
+                { label: i18n.t("nav_hub"), hint: i18n.t("palette_hint_page"), run: function() { win.currentPage = 2 } },
+                { label: i18n.t("tb_settings"), run: function() { win.currentPage = 3 } },
                 { label: i18n.t("menu_rss"), run: function() { win.showWin(rssWinLoader) } },
                 { label: i18n.t("menu_statistics"), run: function() { win.showWin(statsWinLoader) } },
                 { label: i18n.t("wrapped_title"), run: function() { win.showWrapped() } },
@@ -741,11 +740,11 @@ Window {
                 (function(idx) {
                     acts.push({ label: i18n.t("tb_settings") + " · " + i18n.t(setNav[idx]),
                                 hint: i18n.t("palette_hint_page"),
-                                run: function() { settingsPage.sec = idx; win.currentPage = 4 } })
+                                run: function() { settingsPage.sec = idx; win.currentPage = 3 } })
                 })(si)
             }
             acts.push({ label: i18n.t("set_grp_torrent_search"), hint: i18n.t("tb_settings"),
-                        run: function() { settingsPage.sec = 7; win.currentPage = 4 } })
+                        run: function() { settingsPage.sec = 7; win.currentPage = 3 } })
             // individual settings options — so Ctrl+K finds "Memory guard",
             // "Preallocate", etc., not just the section. Jumps to the option via
             // the Settings search box.
@@ -757,7 +756,7 @@ Window {
                     (function(sectionIdx, field) {
                         acts.push({ label: i18n.t("tb_settings") + " · " + field.label,
                                     hint: i18n.t("palette_hint_page"),
-                                    run: function() { win.currentPage = 4; settingsPage.sec = sectionIdx; settingsPage.searchFor(field.label) } })
+                                    run: function() { win.currentPage = 3; settingsPage.sec = sectionIdx; settingsPage.searchFor(field.label) } })
                     })(ps, fld)
                 }
             }
@@ -840,7 +839,7 @@ Window {
         onOpenMagnet:   { win.show(); win.raise(); win.requestActivate(); magnetDlg.open() }
         onPauseAll:     if (typeof session !== "undefined") session.pauseAll()
         onResumeAll:    if (typeof session !== "undefined") session.resumeAll()
-        onOpenSettings: { win.show(); win.raise(); win.requestActivate(); win.currentPage = 4 }
+        onOpenSettings: { win.show(); win.raise(); win.requestActivate(); win.currentPage = 3 }
         onQuitApp:      Qt.quit()
     }
 
@@ -930,12 +929,12 @@ Window {
             }
             BarMenu {
                 title: (i18n.language, i18n.t("menu_settings_title"))
-                BarItem { text: (i18n.language, i18n.t("menu_preferences")); onTriggered: win.currentPage = 4 }
+                BarItem { text: (i18n.language, i18n.t("menu_preferences")); onTriggered: win.currentPage = 3 }
                 BarItem { text: (i18n.language, i18n.t("menu_addons")); onTriggered: addAddonDlg.open() }
                 BarItem { text: (i18n.language, i18n.t("menu_rss")); onTriggered: win.showWin(rssWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_pair")); onTriggered: { pairingDlg.reload(); pairingDlg.open() } }
                 BarSep {}
-                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.currentPage = 2 }
+                BarItem { text: (i18n.language, i18n.t("menu_search_torrents")); onTriggered: win.currentPage = 1 }
                 BarSep {}
                 BarItem { text: (i18n.language, i18n.t("menu_statistics")); onTriggered: win.showWin(statsWinLoader) }
                 BarItem { text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
@@ -969,7 +968,7 @@ Window {
             sourceComponent: NavBar {
                 currentIndex: win.currentPage
                 onPageRequested: function(page) { win.currentPage = page }
-                onSettingsClicked: win.currentPage = 4
+                onSettingsClicked: win.currentPage = 3
                 onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
                 onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
             }
@@ -989,7 +988,7 @@ Window {
                 sourceComponent: NavRail {
                     currentIndex: win.currentPage
                     onPageRequested: function(page) { win.currentPage = page }
-                    onSettingsClicked: win.currentPage = 4
+                    onSettingsClicked: win.currentPage = 3
                     onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
                     onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
                 }
@@ -1060,32 +1059,21 @@ Window {
         // ================== STATUS BAR ==================
         StatusBar {}
                 }
-                // ----- page 1: Discover -----
-                DiscoverView {
-                    Layout.fillWidth: true; Layout.fillHeight: true
-                    onOpenSearch: function(q) {
-                        searchPage.cameFromDiscover = true
-                        win.currentPage = 2
-                        searchPage.runQuery(q)   // fills the bar + runs (no ghost search)
-                    }
-                }
-                // ----- page 2: Search -----
+                // ----- page 1: Encontrar (Find) — browse + search -----
                 SearchView {
                     id: searchPage
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
-                    onBackToDiscover: win.currentPage = 1
                 }
-                // ----- page 3: HUB -----
+                // ----- page 2: HUB -----
                 HubView {
                     id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
-                    onOpenSearch: function(q) { win.currentPage = 2; searchPage.runQuery(q) }
-                    onGoDiscover: win.currentPage = 1
+                    onOpenSearch: function(q) { win.currentPage = 1; searchPage.runQuery(q) }
                 }
-                // ----- page 4: Settings (fullscreen tab, was a top-level window) -----
+                // ----- page 3: Settings (fullscreen tab, was a top-level window) -----
                 SettingsView {
                     id: settingsPage; Layout.fillWidth: true; Layout.fillHeight: true
-                    isCurrent: win.currentPage === 4
+                    isCurrent: win.currentPage === 3
                     onClosed: win.currentPage = 0
                 }
             }
@@ -1338,10 +1326,8 @@ Window {
               rectFn: function() { return win.rectIn(toolbar.tbOpen, tourOverlay) } },
             { page: 1, title: i18n.t("tour_s3_t"), text: i18n.t("tour_s3_d"),
               rectFn: function() { return win.navHost ? win.navHost.itemRect(1, tourOverlay) : Qt.rect(0,0,0,0) } },
-            { page: 2, title: i18n.t("tour_s4_t"), text: i18n.t("tour_s4_d"),
+            { page: 2, title: i18n.t("tour_s5_t"), text: i18n.t("tour_s5_d"),
               rectFn: function() { return win.navHost ? win.navHost.itemRect(2, tourOverlay) : Qt.rect(0,0,0,0) } },
-            { page: 3, title: i18n.t("tour_s5_t"), text: i18n.t("tour_s5_d"),
-              rectFn: function() { return win.navHost ? win.navHost.itemRect(3, tourOverlay) : Qt.rect(0,0,0,0) } },
             { page: 0, title: i18n.t("tour_s6_t"), text: i18n.t("tour_s6_d"),
               rectFn: function() { return win.navHost ? win.navHost.itemRect("settings", tourOverlay) : Qt.rect(0,0,0,0) } }
         ])
