@@ -1,8 +1,12 @@
 # Changelog
 
-## v4.5.0 "Find"
+## v4.5.1 "Find"
 
 ### Added
+- The navigation moved to a bar at the top: Downloads, Find and HUB as tabs,
+  with the disk gauge and the active-download chip beside them. Prefer the old
+  left sidebar? Settings > Appearance > "Classic side navigation" brings it
+  back, nothing else changes.
 - New Find page: Search and Discover merged into one. Browse the featured
   billboard and the poster shelves (movies, series, games, your list), or just
   start typing to search. Clearing the search puts you back where you were
