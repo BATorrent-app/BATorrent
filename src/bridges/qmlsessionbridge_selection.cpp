@@ -119,6 +119,11 @@ QString QmlSessionBridge::selectedPath() const
     return m_session->torrentAt(m_selectedIndex).savePath;
 }
 
+bool QmlSessionBridge::selectedDataDone() const
+{
+    return hasSelection() && m_session->torrentAt(m_selectedIndex).progress >= 1.0f;
+}
+
 QString QmlSessionBridge::selectedState() const
 {
     if (!hasSelection()) return {};

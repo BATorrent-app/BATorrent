@@ -63,6 +63,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(bool selectedForceStart READ selectedForceStart NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedSuperSeeding READ selectedSuperSeeding NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedCompleted READ selectedCompleted NOTIFY selectionChanged)
+    Q_PROPERTY(bool selectedDataDone READ selectedDataDone NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedPaused READ selectedPaused NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedHasArchives READ selectedHasArchives NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedHasVideo READ selectedHasVideo NOTIFY selectionChanged)
@@ -296,6 +297,7 @@ public:
     bool selectedForceStart() const;
     bool selectedSuperSeeding() const;
     bool selectedCompleted() const;
+    bool selectedDataDone() const;
     bool selectedPaused() const;
     bool selectedHasArchives() const;
     bool selectedHasVideo() const;

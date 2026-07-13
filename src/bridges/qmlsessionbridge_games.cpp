@@ -29,10 +29,19 @@
 #include <QUrl>
 #if defined(Q_OS_WIN)
 #include <windows.h>
+#include <shellapi.h>
 #else
 #include <csignal>
 #include <cerrno>
 #endif
+
+// "completed" is the MANUAL marked-as-done flag (user action that stops
+// seeding) — a game whose data finished downloading but still seeds must
+// count as playable, or Play dies silently until "mark as completed".
+static bool dataComplete(const TorrentInfo &info)
+{
+    return info.completed || info.progress >= 1.0f;
+}
 
 QVariantList QmlSessionBridge::gameLibrary() const
 {
@@ -96,7 +105,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["playSeconds"] = QSettings().value(QStringLiteral("gameSeconds/") + hash, 0).toLongLong();
         m["launches"]   = QSettings().value(QStringLiteral("gameLaunches/") + hash, 0).toLongLong();
         m["playing"]    = m_runningGames.contains(hash);
-        m["installState"] = gameInstallState(hash, info.completed);
+        m["installState"] = gameInstallState(hash, dataComplete(info));
         out << m;
     }
     return out;
@@ -115,6 +124,7 @@ void QmlSessionBridge::setGameExe(const QString &infoHash, const QString &fileUr
     // a manual exe supersedes any stalled install flow — the card flips to Play
     m_gameInstallState.remove(infoHash);
     emit gamesChanged();
+    emit toast(tr_("hub_exe_set"), QFileInfo(path).fileName());
 }
 
 QString QmlSessionBridge::gameFolder(const QString &infoHash) const
@@ -203,7 +213,21 @@ static bool startGameProcess(const QString &exe, qint64 *pid)
         return QProcess::startDetached(QStringLiteral("open"), {QStringLiteral("-W"), exe},
                                        QFileInfo(exe).absolutePath(), pid);
 #endif
-    return QProcess::startDetached(exe, {}, QFileInfo(exe).absolutePath(), pid);
+    if (QProcess::startDetached(exe, {}, QFileInfo(exe).absolutePath(), pid))
+        return true;
+#if defined(Q_OS_WIN)
+    // cracked/installer exes commonly require elevation — CreateProcess fails
+    // with ERROR_ELEVATION_REQUIRED, ShellExecute shows the UAC prompt instead
+    // (no pid → no playtime tracking for this launch; better than a dead button)
+    const QString wd = QFileInfo(exe).absolutePath();
+    const auto r = reinterpret_cast<INT_PTR>(
+        ShellExecuteW(nullptr, L"open",
+                      reinterpret_cast<const wchar_t *>(exe.utf16()), nullptr,
+                      reinterpret_cast<const wchar_t *>(wd.utf16()), SW_SHOWNORMAL));
+    return r > 32;
+#else
+    return false;
+#endif
 }
 
 void QmlSessionBridge::launchGame(const QString &infoHash)
@@ -268,8 +292,12 @@ int QmlSessionBridge::gameInstallState(const QString &infoHash, bool completed) 
 {
     if (m_runningGames.contains(infoHash)) return GIS_Playing;
     if (m_gameInstallState.contains(infoHash)) return m_gameInstallState.value(infoHash);
+    // a manually-set exe outranks download progress: the user pointed at a
+    // runnable binary, so Play must work even while the torrent still checks
+    const QString exe = gameExe(infoHash);
+    if (!exe.isEmpty() && QFile::exists(exe)) return GIS_Ready;
     if (!completed) return GIS_Downloading;
-    if (!gameExe(infoHash).isEmpty()) return GIS_Ready;
+    if (!exe.isEmpty()) return GIS_Ready;
     return GIS_ReadyToInstall;
 }
 
@@ -277,7 +305,7 @@ void QmlSessionBridge::installGame(const QString &infoHash)
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return;
-    if (!m_session->torrentAt(row).completed) return;   // nothing to install yet
+    if (!dataComplete(m_session->torrentAt(row))) return;   // nothing to install yet
 
     const int st = m_gameInstallState.value(infoHash, -1);
     if (st == GIS_Extracting || st == GIS_Installing) return;   // already in flight
@@ -515,7 +543,7 @@ int QmlSessionBridge::selectedGameState() const
 {
     if (!hasSelection() || !isGameTorrent(m_selectedIndex)) return -1;
     const QString hash = m_session->torrentHashAt(m_selectedIndex);
-    return gameInstallState(hash, m_session->torrentAt(m_selectedIndex).completed);
+    return gameInstallState(hash, dataComplete(m_session->torrentAt(m_selectedIndex)));
 }
 
 void QmlSessionBridge::installSelectedGame()

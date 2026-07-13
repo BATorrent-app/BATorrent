@@ -114,8 +114,13 @@ Item {
                 // actions
                 BtnFlat {
                     Layout.fillWidth: true; Layout.topMargin: 4
-                    primary: true; icon: "qrc:/icons/play.svg"
-                    text: detailDrawer.isGame ? (root.hub.gameStateActionable(detailDrawer.it) ? root.hub.gameStateLabel(detailDrawer.it) : i18n.t("hub_gs_play"))
+                    // busy game states (downloading/extracting/playing) show the
+                    // live state and don't pretend to be clickable
+                    readonly property bool busy: detailDrawer.isGame && !root.hub.gameStateActionable(detailDrawer.it)
+                    enabled: !busy
+                    primary: !busy
+                    icon: "qrc:/icons/play.svg"
+                    text: detailDrawer.isGame ? root.hub.gameStateLabel(detailDrawer.it)
                           : ((detailDrawer.it && (detailDrawer.it.watchedPct || 0) > 0) ? i18n.t("hub_resume") : i18n.t("hub_gs_play"))
                     onClicked: {
                         if (!detailDrawer.it) return

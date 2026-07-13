@@ -1124,7 +1124,8 @@ void SessionManager::checkSeedRatios()
 {
     if (m_seedRatioLimit <= 0.0f) return;
 
-    for (auto &h : m_torrents) {
+    for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i) {
+        auto &h = m_torrents[i];
         lt::torrent_status st = cachedStatus(h);
         if (st.state != lt::torrent_status::seeding) continue;
         if (st.flags & lt::torrent_flags::paused) continue;
@@ -1136,14 +1137,17 @@ void SessionManager::checkSeedRatios()
               / static_cast<float>(st.total_payload_download)
             : 0.0f;
 
+        // reaching the limit is the natural end of the torrent's life —
+        // mark it completed (freeze + persist), not merely paused
         if (ratio >= m_seedRatioLimit)
-            h.pause();
+            markCompleted(i);
     }
 }
 
 void SessionManager::checkSeedingLimits()
 {
-    for (auto &h : m_torrents) {
+    for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i) {
+        auto &h = m_torrents[i];
         if (!h.is_valid()) continue;
         lt::torrent_status st = cachedStatus(h);
         if (st.state != lt::torrent_status::seeding) continue;
@@ -1159,7 +1163,7 @@ void SessionManager::checkSeedingLimits()
         qint64 seeded = std::chrono::duration_cast<std::chrono::seconds>(
                             st.seeding_duration).count();
         if (seeded >= maxSec)
-            h.pause();
+            markCompleted(i);
     }
 }
 

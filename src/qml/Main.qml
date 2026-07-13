@@ -471,6 +471,13 @@ Window {
                                               function(pw){ session.extractSelected(pw) })
         }
         CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
+        CtxItem {
+            // only once the data is done — marking mid-download freezes the torrent
+            visible: session.selectedDataDone || session.selectedCompleted
+            height: visible ? implicitHeight : 0
+            text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain"))
+            onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted()
+        }
         Sep {}
 
         Menu {
@@ -540,7 +547,6 @@ Window {
             CtxItem { text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
             CtxItem { text: (i18n.language, i18n.t("ctx_export_torrent")); onTriggered: exportTorrentDlg.open() }
             CtxItem { text: (i18n.language, i18n.t("ctx_why_slow")); onTriggered: { diagnoseDlg.body = session.diagnoseSelectedSlow(); diagnoseDlg.open() } }
-            CtxItem { text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain")); onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted() }
             CtxItem { text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
             Menu {
                 title: (i18n.language, i18n.t("ctx_seed_rules"))
