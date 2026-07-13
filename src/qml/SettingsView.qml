@@ -417,16 +417,19 @@ Rectangle {
 
     PairingDialog { id: pairDlg }
 
-    Dialog {
+    // BatDialog, not QtQuick Dialog: the native dialog ignored the app theme
+    // (white card in dark mode) and localized its OK button to the OS language
+    // (Arabic for some users) instead of the app's language.
+    BatDialog {
         id: infoDlg
         property string message: ""
-        anchors.centerIn: parent
-        modal: true
-        standardButtons: Dialog.Ok
-        contentItem: Text {
+        cardW: 440; cardH: 260
+        showCancel: false
+        Text {
+            Layout.fillWidth: true
             text: infoDlg.message
-            color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
-            wrapMode: Text.WordWrap
+            color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans
+            wrapMode: Text.WordWrap; lineHeight: 1.4
         }
     }
 

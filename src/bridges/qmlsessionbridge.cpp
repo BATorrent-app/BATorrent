@@ -388,14 +388,22 @@ QString QmlSessionBridge::normalizeClipboardMagnet(const QString &clip)
 void QmlSessionBridge::smartPaste()
 {
     QString clip = QGuiApplication::clipboard()->text().trimmed();
-    if (clip.isEmpty()) return;
+    if (clip.isEmpty()) { emit toast(tr_("toast_paste_none"), QString()); return; }
     QString magnet = normalizeClipboardMagnet(clip);
-    if (!magnet.isEmpty()) { addMagnetUri(magnet); return; }
+    if (!magnet.isEmpty()) {
+        addMagnetUri(magnet);
+        // confirm always: past the active-download limit the torrent is queued
+        // (not visibly at the top), so without this the paste looks ignored
+        emit toast(tr_("toast_magnet_added"), QString());
+        return;
+    }
     if (clip.endsWith(QStringLiteral(".torrent"), Qt::CaseInsensitive)
         && (clip.startsWith(QStringLiteral("http"), Qt::CaseInsensitive)
             || clip.startsWith(QStringLiteral("file:"), Qt::CaseInsensitive))) {
         addTorrentFile(clip);
+        return;
     }
+    emit toast(tr_("toast_paste_none"), QString());
 }
 
 QString QmlSessionBridge::clipboardMagnetIfNew()
