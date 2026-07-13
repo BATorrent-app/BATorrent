@@ -1,5 +1,46 @@
 # Changelog
 
+## v4.5.0 — "Find"
+
+### Added
+- **One place to find everything.** Search and Discover merged into a single
+  **Find** page: browse the featured billboard and poster shelves (movies,
+  series, games, your list), or just start typing — the big search bar shrinks
+  and docks as results take over, and clearing it puts you right back where you
+  were browsing. Navigation slims down to three tabs: Downloads · Find · HUB.
+- **"Mark as completed" grew up.** It now lives in the main right-click menu
+  (shown once a download finishes), and the seeding limits you set (ratio or
+  time) mark the torrent completed automatically instead of leaving it paused
+  forever.
+- **Setting a game executable now confirms it** with a toast, and the game is
+  playable immediately — even if the torrent is still finishing other files.
+
+### Fixed
+- **Games: Play always answers.** A finished game that was still seeding
+  counted as "downloading", so Play silently did nothing until you found
+  "mark as completed" buried in a submenu. Fixed at the root — plus: launch
+  failures now say so (toast + folder), executables that need admin rights get
+  a proper UAC prompt on Windows, and .app bundles launch correctly on macOS.
+- **Windows: mouse-wheel scrolling is fast now** — spinning the wheel used to
+  crawl while dragging flew; wheel notches now build up speed properly.
+- **Windows: the tray menu opens at your click**, not in a corner it guessed.
+- **Two boot-crash protections.** A broken update that leaves a mismatched
+  engine DLL on disk (our top crash in the wild) is now detected with a clear
+  "re-download" dialog instead of a crash loop; and after any crashed start,
+  the next boot begins with a fresh engine state instead of re-feeding
+  whatever killed the last one.
+- **Light theme contrast pass:** the game card's red button no longer hides
+  its own label, the HUB's continue rails stop rendering as black slabs, and
+  the grid's hover shadow no longer smudges on light backgrounds.
+- Grid cards: a long status ("Download finished — seeding paused") elides
+  instead of overlapping the size; peers/files/trackers empty states centered;
+  peers table breathes at the top.
+
+### Changed
+- The top bar leads with the bat: glyph-only logo (the wordmark still fronts
+  the splash, About and classic layout), and the grid's selection ring is
+  accent red.
+
 ## v4.4.1
 
 A hotfix for v4.4.0, which failed to launch on Windows.

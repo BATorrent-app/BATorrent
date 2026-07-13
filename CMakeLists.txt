@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BATorrent VERSION 4.4.1)
+project(BATorrent VERSION 4.5.0)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Svg Multimedia Quick QuickWidgets QuickControls2)
 
 # libtorrent: link the system package by default, or build our vendored fork from

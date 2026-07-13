@@ -901,7 +901,13 @@ Window {
                         tint: volMa.containsMouse ? Theme.t1 : Theme.t2
                         s: 18
                     }
-                    MouseArea { id: volMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.muted = !win.muted }
+                    MouseArea {
+                        id: volMa
+                        anchors.fill: parent
+                        anchors.topMargin: -6   // bridge the gap up to the slider popup so hover doesn't drop crossing it
+                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: win.muted = !win.muted
+                    }
                     Rectangle {
                         visible: volMa.containsMouse || volPopMa.containsMouse || vsl.pressed
                         width: 32; height: 116; radius: 9

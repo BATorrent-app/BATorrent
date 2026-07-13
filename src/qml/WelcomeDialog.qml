@@ -34,6 +34,17 @@ BatDialog {
     // Key by "major.minor" so hotfix bumps (4.3.0 → 4.3.1) keep the release's
     // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
+        "4.5": {
+            note: "This one changes how the app feels the moment you open it: Search and Discover are now ONE page — <b>Find</b>. Browse the catalog, or just start typing; the app gets out of your way either way.<br><br>And if you use BATorrent for games: Play finally behaves. A downloaded game is playable immediately — no more hunting for hidden menu items to convince the app it's done. If a launch fails, it tells you and opens the folder.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
+            , highlights: [
+                "Find: Discover + Search merged into one page — browse or type, same place",
+                "Games: Play always answers — finished-but-seeding games are playable now",
+                "Windows: fast wheel scrolling and a tray menu that opens at your click",
+                "Seeding limits mark torrents completed automatically",
+                "Boot-crash protection: broken updates get a clear dialog, not a crash loop",
+                "Light theme contrast fixes across the HUB and grid"
+            ]
+        },
         "4.4.1": {
             note: "Quick one: 4.4.0 wasn't opening on Windows for anyone. Sorry about that — fixed now in 4.4.1.<br><br>Everything below is what 4.4 was actually about.<br><br>This release came from my own annoyance: finding stuff dubbed or subtitled in my language was always a fight. Not anymore — turn on \"Prefer my language\" and releases in YOUR language (dubbed included) show up first. Running Jackett? Your indexers now plug straight into search too.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
             , highlights: [
