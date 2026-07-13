@@ -1,0 +1,47 @@
+name: QML Smoke
+
+# The one class of bug the other 11 checks can't see: QML/UI runtime errors.
+# QML type errors, broken bindings and "Column will not function" only surface
+# when the engine actually loads Main.qml — so boot the real binary offscreen
+# and fail on any QML error. The whole page tree (Downloads/Find/HUB/Settings)
+# instantiates eagerly at boot, so load errors anywhere in it are caught here.
+
+on:
+  push:
+    branches: ['**']
+    paths: ['src/**', 'translations/**', '.github/workflows/qml-smoke.yml']
+  pull_request:
+    paths: ['src/**', 'translations/**']
+
+jobs:
+  boot-offscreen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
+        with:
+          version: '6.7.*'
+          modules: qtmultimedia
+          cache: true
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@2c09a5e66da6c8016428a2172bd76e5e4f14bb17 # latest
+        with:
+          packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev libglx-dev libegl-dev
+          version: 3.0
+      - name: Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j$(nproc) --target BATorrent
+      - name: Boot offscreen and scan for QML errors
+        run: |
+          QT_QPA_PLATFORM=offscreen BAT_QML_STRICT=warn timeout 30 ./build/BATorrent > boot.log 2>&1 || true
+          echo "=== boot log (tail) ==="; tail -40 boot.log
+          # Engine-level load failures are always fatal; QML runtime errors are
+          # matched by pattern. Extend the list when a new class escapes.
+          if grep -Eq "failed to load component|is not a type|TypeError:|ReferenceError:|Unable to assign|Invalid property assignment|Cannot specify .* anchors for items inside|is instantiated recursively" boot.log; then
+            echo "::error::QML errors at boot"; grep -En "failed to load component|is not a type|TypeError:|ReferenceError:|Unable to assign|Invalid property assignment|Cannot specify|instantiated recursively" boot.log | head -20
+            exit 1
+          fi
+          echo "boot clean"
