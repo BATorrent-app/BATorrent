@@ -50,12 +50,32 @@ Window {
             else
                 pop.y = Math.round(iconRect.y - pop.height - margin)
         } else {
-            pop.x = g.x + g.width - pop.width - 8
-            pop.y = (Qt.platform.os === "osx") ? g.y + 30 : g.y + g.height - pop.height - 48
+            // anchor at the click itself — centered above the cursor (the
+            // Windows taskbar sits at the bottom); beats any corner guess
+            var c = typeof themeBridge !== "undefined" ? themeBridge.cursorPos() : null
+            if (c) {
+                // clamp against the monitor under the cursor, not pop.screen
+                var scrs = Qt.application.screens
+                for (var i = 0; i < scrs.length; ++i) {
+                    var sc = scrs[i]
+                    if (c.x >= sc.virtualX && c.x < sc.virtualX + sc.width
+                            && c.y >= sc.virtualY && c.y < sc.virtualY + sc.height) {
+                        g = Qt.rect(sc.virtualX, sc.virtualY, sc.width, sc.height)
+                        break
+                    }
+                }
+                pop.x = Math.round(c.x - pop.width / 2)
+                pop.y = Math.round(c.y - pop.height - margin)
+            } else {
+                pop.x = g.x + g.width - pop.width - 8
+                pop.y = (Qt.platform.os === "osx") ? g.y + 30 : g.y + g.height - pop.height - 48
+            }
         }
-        // clamp horizontally to the screen
+        // clamp to the screen
         if (pop.x + pop.width > g.x + g.width - 4) pop.x = g.x + g.width - pop.width - 4
         if (pop.x < g.x + 4) pop.x = g.x + 4
+        if (pop.y + pop.height > g.y + g.height - 4) pop.y = g.y + g.height - pop.height - 4
+        if (pop.y < g.y + 4) pop.y = g.y + 4
         pop.show()
         pop.raise()
         pop.requestActivate()

@@ -18,6 +18,7 @@ DetailGraph 1.0 DetailGraph.qml
 DetailTabs 1.0 DetailTabs.qml
 DownloadCarousel 1.0 DownloadCarousel.qml
 DetailSidebar 1.0 DetailSidebar.qml
+PosterShelf 1.0 PosterShelf.qml
 DetailFiles 1.0 DetailFiles.qml
 DetailTrackers 1.0 DetailTrackers.qml
 DetailPieces 1.0 DetailPieces.qml

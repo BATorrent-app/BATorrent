@@ -330,6 +330,11 @@ bool QmlThemeBridge::osLight() const { return m_osLight; }
 
 QString QmlThemeBridge::appVersion() const { return QCoreApplication::applicationVersion(); }
 
+QPointF QmlThemeBridge::cursorPos() const
+{
+    return QCursor::pos();
+}
+
 void QmlThemeBridge::markBootHealthy() const
 {
     QSettings st;

@@ -71,6 +71,7 @@ public:
     Q_INVOKABLE QString releaseNotes() const;     // changelog HTML (shared with legacy dialog)
     Q_INVOKABLE QVariantList libraries() const;   // [{nm,v}] real linked-library versions
     Q_INVOKABLE void markBootHealthy() const;     // UI is up → clear the boot-crash sentinel
+    Q_INVOKABLE QPointF cursorPos() const;        // global cursor — anchors the tray popup at the click
     QIcon trayIcon() const;   // logo recolored for the current OS scheme
 
     // ---- app-icon picker ----

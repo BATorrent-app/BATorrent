@@ -164,13 +164,12 @@ Item {
                 Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
             }
         }
-        // border overlay (radius 10, hair / t1 when sel — not accent, so the
-        // selection ring doesn't blend into a red downloading progress bar)
+        // border overlay (radius 10, hair / accent ring when selected)
         Rectangle {
             anchors.fill: parent
             radius: 10
             color: "transparent"
-            border.color: win.isRowSelected(tile.index) ? Theme.t1 : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
+            border.color: win.isRowSelected(tile.index) ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
             border.width: win.isRowSelected(tile.index) ? 2 : 1
             Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
@@ -257,10 +256,14 @@ Item {
                           : (tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed) : tile.stateString)
                     color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.textFor(tile.stateKey)
                     font.pixelSize: 12; font.family: Theme.fontSans
+                    // elide needs an explicit width — without it a long state
+                    // ("Download finished — seeding paused") overlapped the size
+                    width: Math.min(implicitWidth, meta.width - 12 - rightTxt.width - 10)
                     elide: Text.ElideRight
                 }
             }
             Text {
+                id: rightTxt
                 // ETA while downloading; once there's nothing left to
                 // fetch, the size takes this slot (line 2 collapses) so
                 // it's never left orphaned under an empty ETA.

@@ -98,8 +98,15 @@
 <file>../src/qml/Toolbar.qml</file>
 <file>../src/qml/StatusBar.qml</file>
 <file>../src/qml/NavBar.qml</file>
-<file>../src/qml/DiscoverView.qml</file>
 <file>../src/qml/SearchView.qml</file>
+<file>../src/qml/FindBar.qml</file>
+<file>../src/qml/SearchLanding.qml</file>
+<file>../src/qml/SearchFiltersRow.qml</file>
+<file>../src/qml/SearchModeBars.qml</file>
+<file>../src/qml/SearchListPane.qml</file>
+<file>../src/qml/SearchTitlesPane.qml</file>
+<file>../src/qml/FindBillboard.qml</file>
+<file>../src/qml/FindBrowse.qml</file>
 <file>../src/qml/SearchEmptyState.qml</file>
 <file>../src/qml/SearchDetailDrawer.qml</file>
 <file>../src/qml/SearchGameMgr.qml</file>
@@ -146,6 +153,7 @@
 <file>../src/qml/widgets/DetailTabs.qml</file>
 <file>../src/qml/widgets/DownloadCarousel.qml</file>
 <file>../src/qml/widgets/DetailSidebar.qml</file>
+<file>../src/qml/widgets/PosterShelf.qml</file>
 <file>../src/qml/widgets/DetailFiles.qml</file>
 <file>../src/qml/widgets/DetailTrackers.qml</file>
 <file>../src/qml/widgets/DetailPieces.qml</file>

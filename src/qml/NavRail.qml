@@ -20,7 +20,6 @@ Rectangle {
     clip: true
 
     property int currentIndex: 0            // bound down from the window; never self-assigned
-    property bool discoverVisible: true     // gated off in store builds (step ⑦)
     property bool collapsed: false
     signal pageRequested(int page)
     signal settingsClicked()
@@ -68,13 +67,9 @@ Rectangle {
     function buildItems() {
         var all = [
             { icon: "qrc:/icons/download.svg", label: i18n.t("nav_downloads"), page: 0 },
-            { icon: "qrc:/icons/discover.svg", label: i18n.t("nav_discover"),  page: 1 },
-            { icon: "qrc:/icons/search.svg",   label: i18n.t("nav_search"),    page: 2 },
-            { icon: "qrc:/icons/hub.svg",      label: i18n.t("nav_hub"),       page: 3 }
+            { icon: "qrc:/icons/search.svg",   label: i18n.t("nav_find"),      page: 1 },
+            { icon: "qrc:/icons/hub.svg",      label: i18n.t("nav_hub"),       page: 2 }
         ]
-        // Store builds hide Discover (page 1); other pages keep their indices.
-        if (typeof isStoreBuild !== "undefined" && isStoreBuild)
-            return all.filter(function (x) { return x.page !== 1 })
         return all
     }
 
@@ -145,7 +140,6 @@ Rectangle {
                 id: navItem
                 required property var modelData
                 readonly property bool active: rail.currentIndex === modelData.page
-                visible: !(modelData.page === 1 && !rail.discoverVisible)
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? 46 : 0
                 Layout.leftMargin: 10
@@ -315,7 +309,7 @@ Rectangle {
         // ----- settings (page 4 — fullscreen tab, not a separate window) -----
         Item {
             id: settingsItem
-            readonly property bool active: rail.currentIndex === 4
+            readonly property bool active: rail.currentIndex === 3
             Layout.fillWidth: true
             Layout.preferredHeight: 46
             Layout.leftMargin: 10

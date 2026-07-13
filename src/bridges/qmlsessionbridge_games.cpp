@@ -19,6 +19,7 @@
 #include <QProcess>
 #include <QDir>
 #include <QDirIterator>
+#include <climits>
 #include <QFileInfo>
 #include <QFile>
 #include <QSettings>
@@ -111,6 +112,9 @@ void QmlSessionBridge::setGameExe(const QString &infoHash, const QString &fileUr
     const QString path = fileUrl.startsWith(QStringLiteral("file:")) ? QUrl(fileUrl).toLocalFile() : fileUrl;
     if (path.isEmpty()) return;
     QSettings().setValue(QStringLiteral("gameExe/") + infoHash, path);
+    // a manual exe supersedes any stalled install flow — the card flips to Play
+    m_gameInstallState.remove(infoHash);
+    emit gamesChanged();
 }
 
 QString QmlSessionBridge::gameFolder(const QString &infoHash) const
@@ -159,6 +163,18 @@ static QString autodetectGameExe(const QString &folder, bool *isInstaller)
         if (score > bestScore) { bestScore = score; bestGame = path; }
     }
     if (!bestGame.isEmpty()) return bestGame;
+#if defined(Q_OS_MACOS)
+    // mac releases ship .app bundles, not .exe — prefer the shallowest one
+    QString bestApp;
+    int bestDepth = INT_MAX;
+    QDirIterator ait(folder, {QStringLiteral("*.app")}, QDir::Dirs, QDirIterator::Subdirectories);
+    while (ait.hasNext()) {
+        const QString path = ait.next();
+        const int depth = path.mid(folder.size()).count(QLatin1Char('/'));
+        if (depth < bestDepth) { bestDepth = depth; bestApp = path; }
+    }
+    if (!bestApp.isEmpty()) return bestApp;
+#endif
     if (!installer.isEmpty()) { if (isInstaller) *isInstaller = true; return installer; }
     return {};
 }
@@ -177,6 +193,19 @@ static bool pidAlive(qint64 pid)
 #endif
 }
 
+// mac games are .app bundles (directories) — QProcess can't exec those, but
+// `open -W` can, and it stays alive until the game quits so playtime tracking
+// via the pid still works.
+static bool startGameProcess(const QString &exe, qint64 *pid)
+{
+#if defined(Q_OS_MACOS)
+    if (exe.endsWith(QStringLiteral(".app"), Qt::CaseInsensitive) && QFileInfo(exe).isDir())
+        return QProcess::startDetached(QStringLiteral("open"), {QStringLiteral("-W"), exe},
+                                       QFileInfo(exe).absolutePath(), pid);
+#endif
+    return QProcess::startDetached(exe, {}, QFileInfo(exe).absolutePath(), pid);
+}
+
 void QmlSessionBridge::launchGame(const QString &infoHash)
 {
     QString exe = gameExe(infoHash);              // a manual override always wins
@@ -185,11 +214,10 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
         exe = autodetectGameExe(gameFolder(infoHash), &isInstaller);
 
     if (!exe.isEmpty() && QFile::exists(exe)) {
-        const QString wd = QFileInfo(exe).absolutePath();
         qint64 pid = 0;
         // Detached so the game survives BATorrent closing; the returned pid lets
         // us poll for exit and credit playtime.
-        if (QProcess::startDetached(exe, {}, wd, &pid)) {
+        if (startGameProcess(exe, &pid)) {
             const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
             QSettings s;
             s.setValue(QStringLiteral("gamePlayed/") + infoHash, nowMs);
@@ -204,8 +232,10 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
                        QFileInfo(exe).completeBaseName());
             return;
         }
+        emit toast(tr_("hub_launch_failed"), QFileInfo(exe).fileName());
     }
-    // nothing runnable found → open the folder so the user can run/set it
+    // nothing runnable (or the exe wouldn't start) → open the folder so the
+    // user can run it by hand or set the right executable
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return;
     const TorrentInfo info = m_session->torrentAt(row);
