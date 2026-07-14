@@ -340,6 +340,7 @@
   "hub_install_need_exe": "Spiel nicht gefunden — manuell wählen",
   "hub_game_launch": "Wird gestartet",
   "hub_launch_failed": "Spiel konnte nicht gestartet werden — Ordner wird geöffnet",
+  "state_done_badge": "Fertig",
   "toast_magnet_added": "Magnet hinzugefügt",
   "toast_paste_none": "Kopiere zuerst einen Magnet-Link oder eine .torrent-URL",
   "hub_exe_set": "Ausführbare Datei festgelegt",

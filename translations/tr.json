@@ -675,6 +675,7 @@
   "hub_open_folder": "Klasörü aç",
   "hub_game_launch": "Başlatılıyor",
   "hub_launch_failed": "Oyun başlatılamadı — klasör açılıyor",
+  "state_done_badge": "Bitti",
   "toast_magnet_added": "Magnet eklendi",
   "toast_paste_none": "Önce bir magnet bağlantısı veya .torrent URL’si kopyalayın",
   "hub_exe_set": "Çalıştırılabilir dosya ayarlandı",

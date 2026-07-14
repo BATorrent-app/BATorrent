@@ -675,6 +675,7 @@
   "hub_open_folder": "Open folder",
   "hub_game_launch": "Launching",
   "hub_launch_failed": "Couldn’t start the game — opening its folder",
+  "state_done_badge": "Done",
   "toast_magnet_added": "Magnet added",
   "toast_paste_none": "Copy a magnet link or .torrent URL first",
   "hub_exe_set": "Executable set",

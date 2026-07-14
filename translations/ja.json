@@ -340,6 +340,7 @@
   "hub_install_need_exe": "ゲームが見つかりません — 手動で選択してください",
   "hub_game_launch": "起動中",
   "hub_launch_failed": "ゲームを起動できませんでした — フォルダーを開きます",
+  "state_done_badge": "完了",
   "toast_magnet_added": "マグネットを追加しました",
   "toast_paste_none": "先にマグネットリンクか .torrent URL をコピーしてください",
   "hub_exe_set": "実行ファイルを設定しました",

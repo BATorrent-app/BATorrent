@@ -150,19 +150,34 @@ Item {
             maximumLineCount: 2
             wrapMode: Text.WordWrap
         }
-        // .pbar progress (bottom, over everything)
+        // progress — an inset rounded pill, not a full-width bar fused to the
+        // bottom edge. The old bar sat directly under the selection ring (both
+        // touching the border), so a red download bar and the red ring read as
+        // one element; the inset gap keeps status and selection visually apart.
         Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
+            visible: tile.progress < 0.999
+            anchors.left: parent.left; anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: 3
-            color: Qt.rgba(0, 0, 0, 0.5)
+            anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.bottomMargin: 8
+            height: 4; radius: 2
+            color: Qt.rgba(0, 0, 0, 0.55)
             Rectangle {
-                height: parent.height
+                height: parent.height; radius: 2
                 width: parent.width * tile.progress
                 color: win.fillFor(tile.stateKey)
                 Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
             }
+        }
+        // selection glow — a soft accent halo so "selected" reads as selection,
+        // never mistaken for a status color sitting on the border
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -2
+            radius: 12
+            color: "transparent"
+            visible: win.isRowSelected(tile.index)
+            border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.28)
+            border.width: 4
         }
         // border overlay (radius 10, hair / accent ring when selected)
         Rectangle {
@@ -201,6 +216,25 @@ Item {
                 text: Math.floor(tile.progress * 100) + "%"
                 color: "#ffffff"
                 font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
+            }
+        }
+        // done badge (top-right) — a downloaded card reads as done at a glance,
+        // green so it's never confused with the red selection ring
+        Rectangle {
+            visible: tile.progress >= 0.999
+            anchors.right: parent.right; anchors.top: parent.top
+            anchors.rightMargin: 8; anchors.topMargin: 8
+            radius: 9; color: Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.92)
+            implicitWidth: doneRow.implicitWidth + 14; implicitHeight: 18
+            Row {
+                id: doneRow; anchors.centerIn: parent; spacing: 3
+                Text { text: "✓"; color: "#0a1f12"; font.pixelSize: 10; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                Text {
+                    text: (i18n.language, i18n.t("state_done_badge"))
+                    color: "#0a1f12"; font.pixelSize: 9; font.weight: Font.Bold
+                    font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
         }
 

@@ -340,6 +340,7 @@
   "hub_install_need_exe": "未找到游戏 — 请手动选择",
   "hub_game_launch": "正在启动",
   "hub_launch_failed": "无法启动游戏 — 正在打开文件夹",
+  "state_done_badge": "完成",
   "toast_magnet_added": "已添加磁力链接",
   "toast_paste_none": "请先复制磁力链接或 .torrent 网址",
   "hub_exe_set": "已设置可执行文件",

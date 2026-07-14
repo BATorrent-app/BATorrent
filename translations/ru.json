@@ -340,6 +340,7 @@
   "hub_install_need_exe": "Игра не найдена — выберите вручную",
   "hub_game_launch": "Запуск",
   "hub_launch_failed": "Не удалось запустить игру — открываю папку",
+  "state_done_badge": "Готово",
   "toast_magnet_added": "Magnet добавлен",
   "toast_paste_none": "Сначала скопируйте magnet-ссылку или URL .torrent",
   "hub_exe_set": "Исполняемый файл задан",
