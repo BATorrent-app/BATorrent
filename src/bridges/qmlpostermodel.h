@@ -31,7 +31,8 @@ public:
         NumSeedsRole,       // classic-view power columns
         RatioRole,
         AvailabilityRole,
-        EtaRole
+        EtaRole,
+        PlayableRole        // a video torrent with no .exe → offer in-tile Play
     };
 
     explicit QmlPosterModel(IEngine *session, MetadataResolver *resolver,
