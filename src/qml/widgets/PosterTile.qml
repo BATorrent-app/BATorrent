@@ -26,6 +26,8 @@ Item {
     required property string upSpeed
     required property real downRate
     required property var sizeBytes
+    required property string infoHash
+    required property bool playable
 
     readonly property bool isDownloading: stateKey !== "seeding" && stateKey !== "finished"
         && stateKey !== "completed" && stateKey !== "paused" && stateKey !== "queued"
@@ -168,6 +170,34 @@ Item {
                 Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
             }
         }
+        // ▶ hover play — a downloaded movie is playable straight from the grid,
+        // matching the Find/HUB cards (playback still lives in the context menu
+        // too). Only for video torrents (never games), and only once there's
+        // something to stream. On top of tileMa so its own click wins.
+        Rectangle {
+            visible: tile.playable && tile.progress > 0.02 && (tileMa.containsMouse || ptMa.containsMouse)
+            x: (parent.width - width) / 2
+            y: (parent.height - height) / 2
+            width: 46; height: 46; radius: 23
+            z: 5
+            color: ptMa.containsMouse ? Theme.accent : "#cc101014"
+            border.color: "#ffffff"; border.width: 1
+            scale: ptMa.containsMouse ? 1.08 : 1.0
+            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+            IconImg {
+                anchors.centerIn: parent; anchors.horizontalCenterOffset: 1
+                src: "qrc:/icons/play.svg"; tint: "#ffffff"; s: 18
+            }
+            MouseArea {
+                id: ptMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: if (typeof session !== "undefined") session.playByHash(tile.infoHash)
+            }
+        }
+
         // selection glow — a soft accent halo so "selected" reads as selection,
         // never mistaken for a status color sitting on the border
         Rectangle {

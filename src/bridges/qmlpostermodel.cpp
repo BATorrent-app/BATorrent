@@ -168,6 +168,19 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case RatioRole:       return info.ratio;
     case AvailabilityRole: return info.availability;
     case EtaRole:         return formatEta(info);
+    case PlayableRole: {
+        // authoritative movie test, same file rule as the game classifier:
+        // any .exe ⇒ game (not playable here); a video with no .exe ⇒ movie.
+        bool hasVideo = false, hasExe = false;
+        static const QStringList vExt = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts",".mpg",".mpeg",".m2ts"};
+        for (const auto &f : m_session->filesAt(index.row())) {
+            QString fp = f.path.toLower();
+            if (fp.endsWith(QLatin1String(".!bt"))) fp.chop(4);
+            if (fp.endsWith(QLatin1String(".exe"))) { hasExe = true; break; }
+            for (const auto &e : vExt) if (fp.endsWith(e)) { hasVideo = true; break; }
+        }
+        return hasVideo && !hasExe;
+    }
     }
     return {};
 }
@@ -194,7 +207,8 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {NumSeedsRole,    "numSeeds"},
         {RatioRole,       "ratio"},
         {AvailabilityRole, "availability"},
-        {EtaRole,         "eta"}
+        {EtaRole,         "eta"},
+        {PlayableRole,    "playable"}
     };
 }
 
