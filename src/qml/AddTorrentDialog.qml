@@ -5,6 +5,7 @@
 // Source: BATorrent Add Torrent.html + bat-dialog.css
 // Data-driven: populated from session.previewTorrent(path). OK → addTorrentWithPrefs.
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Effects
 import QtQuick.Layouts
 import "theme"
@@ -79,6 +80,12 @@ BatDialog {
     }
 
     ListModel { id: fileModel }
+
+    FolderDialog {
+        id: saveFolderDlg
+        onAccepted: if (typeof session !== "undefined")
+            pathFld.text = session.urlToLocalPath(saveFolderDlg.selectedFolder.toString())
+    }
 
     // ----- header -----
     RowLayout {
@@ -212,7 +219,7 @@ BatDialog {
         Layout.fillWidth: true
         spacing: 7
         Text { text: (i18n.language, i18n.t("detail_kv_save_to")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-        PathFld { id: pathFld; Layout.fillWidth: true }
+        PathFld { id: pathFld; Layout.fillWidth: true; onBrowseClicked: saveFolderDlg.open() }
     }
 
     // ----- start now -----
