@@ -15,6 +15,9 @@
 #include <libtorrent/torrent_info.hpp>
 #include <QString>
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <algorithm>
 #include <sstream>
 #ifdef BAT_LIBTORRENT_FORK
 #include <libtorrent/aux_/ip_helpers.hpp>   // fork-only geo-locality hook
@@ -353,6 +356,30 @@ void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
                 continue;
             mr->handle.rename_file(i, original + ".!bt");
         }
+        // Magnet turned out to be private (BEP-27): apply the same discovery
+        // blackout addTorrent gives private .torrent files, and take back the
+        // public trackers addMagnet injected.
+        if (ti->priv()) {
+            mr->handle.set_flags(lt::torrent_flags::disable_dht
+                                 | lt::torrent_flags::disable_lsd
+                                 | lt::torrent_flags::disable_pex);
+            std::vector<lt::announce_entry> trackers = mr->handle.trackers();
+            const auto &pub = publicTrackers();
+            trackers.erase(std::remove_if(trackers.begin(), trackers.end(),
+                [&pub](const lt::announce_entry &ae) {
+                    return std::find(pub.begin(), pub.end(), ae.url) != pub.end();
+                }), trackers.end());
+            mr->handle.replace_trackers(trackers);
+        }
+    }
+    // Hybrid magnet: the add-time .resume is keyed by the URI's v1 hash, but
+    // from here on resume data persists under get_best() (v2) — drop the
+    // stale file so the next launch doesn't double-load the torrent.
+    if (auto mit = m_magnetHashes.find(mr->handle); mit != m_magnetHashes.end()) {
+        const QString best = QString::fromStdString(
+            (std::ostringstream() << mr->handle.status().info_hashes.get_best()).str());
+        if (best != mit->second)
+            QFile::remove(QDir(resumeDataDir()).filePath(mit->second + ".resume"));
     }
     stageResumeSave(mr->handle);   // persist the magnet now it has metadata
     scanTorrentForThreats(mr->handle, QString::fromStdString(mr->handle.status().name));

@@ -72,7 +72,11 @@ void SessionManager::setListenPort(int port)
             }
         }
     }
-    QString iface = QString("%1:%2").arg(listenAddr).arg(port);
+    // Dual-stack unless bound to a specific interface IP or force-v4 is on —
+    // a v4-only listen silently halves reachability on v6-capable swarms.
+    QString iface = (listenAddr != "0.0.0.0" || m_forceIpv4)
+        ? QString("%1:%2").arg(listenAddr).arg(port)
+        : QString("0.0.0.0:%1,[::]:%1").arg(port);
     pack.set_str(lt::settings_pack::listen_interfaces, iface.toStdString());
     m_session.apply_settings(pack);
     QSettings("BATorrent", "BATorrent").setValue("listenPort", port);
@@ -175,7 +179,9 @@ void SessionManager::setPtMode(bool enabled)
     // PEX has no global on/off in libtorrent 2.x; it's disabled per-torrent
     // via the disable_pex flag at add time. Existing torrents stay as-is.
     pack.set_bool(lt::settings_pack::announce_to_all_trackers, enabled);
-    pack.set_bool(lt::settings_pack::announce_to_all_tiers, enabled);
+    // tiers stays on either way — it's the session default (qBittorrent parity);
+    // toggling PT mode off must not drop it below that baseline.
+    pack.set_bool(lt::settings_pack::announce_to_all_tiers, true);
     pack.set_bool(lt::settings_pack::anonymous_mode, enabled || m_anonymousMode);
     m_session.apply_settings(pack);
     QSettings("BATorrent", "BATorrent").setValue("ptMode", enabled);
