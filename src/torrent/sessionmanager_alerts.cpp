@@ -9,6 +9,7 @@
 // verbatim; no behaviour change. cachedStatus() stays in core (general helper).
 
 #include "torrent/sessionmanager.h"
+#include "torrent/magnettrackers.h"
 #include "services/platform/logger.h"
 #include "services/platform/translator.h"
 
@@ -364,7 +365,7 @@ void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
                                  | lt::torrent_flags::disable_lsd
                                  | lt::torrent_flags::disable_pex);
             std::vector<lt::announce_entry> trackers = mr->handle.trackers();
-            const auto &pub = publicTrackers();
+            const auto &pub = bat::publicTrackers();
             trackers.erase(std::remove_if(trackers.begin(), trackers.end(),
                 [&pub](const lt::announce_entry &ae) {
                     return std::find(pub.begin(), pub.end(), ae.url) != pub.end();

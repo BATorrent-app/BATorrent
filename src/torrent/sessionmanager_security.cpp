@@ -200,10 +200,35 @@ void SessionManager::scanTorrentForThreats(const lt::torrent_handle &h, const QS
     emit suspiciousFilesDetected(name, files);
 }
 
+// The schedule*() retry timers die if the app quits inside the backoff window,
+// which used to silently leave the data on disk ("delete doesn't always
+// delete"). The pending targets are persisted and retried on the next launch
+// (ctor), when the old session's file locks are guaranteed gone.
+static void addPendingTargets(const char *key, const QStringList &targets)
+{
+    QSettings s("BATorrent", "BATorrent");
+    QStringList pending = s.value(QLatin1String(key)).toStringList();
+    for (const QString &t : targets)
+        if (!pending.contains(t)) pending << t;
+    s.setValue(QLatin1String(key), pending);
+}
+
+static void clearDoneTargets(const char *key, const QStringList &attempted,
+                             const QStringList &remaining)
+{
+    QSettings s("BATorrent", "BATorrent");
+    QStringList pending = s.value(QLatin1String(key)).toStringList();
+    for (const QString &p : attempted)
+        if (!remaining.contains(p)) pending.removeAll(p);
+    if (pending.isEmpty()) s.remove(QLatin1String(key));
+    else s.setValue(QLatin1String(key), pending);
+}
+
 void SessionManager::scheduleTrash(const QStringList &targets, int attempt)
 {
     // back off a little more each round; ~30s budget before we give up and leave
     // the files on disk (never force-delete).
+    if (attempt == 0) addPendingTargets("pendingTrashTargets", targets);
     const int delay = qMin(2000 + attempt * 800, 4000);
     QTimer::singleShot(delay, this, [this, targets, attempt]() {
         QStringList remaining;
@@ -211,6 +236,7 @@ void SessionManager::scheduleTrash(const QStringList &targets, int attempt)
             if (!QFileInfo::exists(p)) continue;          // gone (trashed, or never there)
             if (!QFile::moveToTrash(p)) remaining << p;   // still locked — try again
         }
+        clearDoneTargets("pendingTrashTargets", targets, remaining);
         if (remaining.isEmpty()) return;
         if (attempt < 10) scheduleTrash(remaining, attempt + 1);
         else qWarning() << "[session] moveToTrash gave up (files still locked):" << remaining;
@@ -219,6 +245,7 @@ void SessionManager::scheduleTrash(const QStringList &targets, int attempt)
 
 void SessionManager::scheduleDelete(const QStringList &targets, int attempt)
 {
+    if (attempt == 0) addPendingTargets("pendingDeleteTargets", targets);
     const int delay = qMin(2000 + attempt * 800, 4000);
     QTimer::singleShot(delay, this, [this, targets, attempt]() {
         QStringList remaining;
@@ -228,6 +255,7 @@ void SessionManager::scheduleDelete(const QStringList &targets, int attempt)
             const bool ok = fi.isDir() ? QDir(p).removeRecursively() : QFile::remove(p);
             if (!ok) remaining << p;
         }
+        clearDoneTargets("pendingDeleteTargets", targets, remaining);
         if (remaining.isEmpty()) return;
         if (attempt < 10) scheduleDelete(remaining, attempt + 1);
         else qWarning() << "[session] permanent delete gave up (files still locked):" << remaining;
