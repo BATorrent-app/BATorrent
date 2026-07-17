@@ -21,6 +21,11 @@
 <file>icons/check.svg</file>
 <file>icons/file.svg</file>
 <file>icons/triangle-alert.svg</file>
+<file>icons/ellipsis.svg</file>
+<file>icons/maximize.svg</file>
+<file>icons/pip.svg</file>
+<file>icons/skip-forward.svg</file>
+<file>../src/qml/widgets/PIconBtn.qml</file>
 <file>icons/magnet.svg</file>
 <file>icons/pause.svg</file>
 <file>icons/turtle.svg</file>
@@ -84,6 +89,7 @@
 <file>../src/qml/AboutDialog.qml</file>
 <file>../src/qml/PlayerWindow.qml</file>
 <file>../src/qml/PlayerSubPanel.qml</file>
+<file>../src/qml/PlayerOptionsPanel.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/CommandPalette.qml</file>
 <file>../src/qml/RssWindow.qml</file>
