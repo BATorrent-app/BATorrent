@@ -117,16 +117,31 @@ Item {
             }
         }
 
-        // "playing now" badge
+        // "playing now" badge — dark-glass pill with a pulsing red dot: the
+        // pulse says "live", the surface stays dark (color as signal)
         Rectangle {
             visible: card.item.playing === true
             anchors.top: parent.top; anchors.right: parent.right; anchors.margins: 6
-            radius: 6; color: Theme.accent
-            implicitWidth: pnl.width + 12; implicitHeight: 18
-            Text {
-                id: pnl; anchors.centerIn: parent
-                text: (i18n.language, i18n.t("hub_playing_now"))
-                color: "#ffffff"; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans
+            radius: 9; color: "#cc000000"
+            implicitWidth: pnRow.implicitWidth + 14; implicitHeight: 18
+            Row {
+                id: pnRow; anchors.centerIn: parent; spacing: 5
+                Rectangle {
+                    width: 6; height: 6; radius: 3; color: Theme.accent
+                    anchors.verticalCenter: parent.verticalCenter
+                    SequentialAnimation on opacity {
+                        running: card.item.playing === true
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 1.0; to: 0.35; duration: 700; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 0.35; to: 1.0; duration: 700; easing.type: Easing.InOutSine }
+                    }
+                }
+                Text {
+                    id: pnl; anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, i18n.t("hub_playing_now"))
+                    color: "#ffffff"; opacity: 0.92
+                    font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans
+                }
             }
         }
 
