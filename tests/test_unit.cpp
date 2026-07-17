@@ -691,6 +691,11 @@ TEST_CASE("WebServer: POST magnet without savePath uses default", "[integration]
     REQUIRE((r.contains("200") || r.contains("400")));
 
     server.stop();
+
+    // addMagnet persists the magnet's .resume at add time (crash-safety) —
+    // wipe it so later fresh-session tests really start empty.
+    QDir(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+             .filePath("resume")).removeRecursively();
 }
 
 // ============================================================================
@@ -874,6 +879,9 @@ TEST_CASE("WebServer: /api/status JSON schema", "[integration][webserver]")
 TEST_CASE("WebServer: /api/torrents JSON schema (empty)", "[integration][webserver]")
 {
     app();
+    // belt and braces: this schema test's whole premise is an empty session
+    QDir(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+             .filePath("resume")).removeRecursively();
     SessionManager session;
     WebServer server(&session);
     REQUIRE(server.start(18411, false));
