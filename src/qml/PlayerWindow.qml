@@ -29,6 +29,7 @@ Window {
     transientParent: null
 
     property string streamUrl: ""
+    property string localFile: ""   // on-disk path of the playing file (seek previews decode this, not the HTTP stream)
     property string mediaTitle: ""
     property string mediaFileName: ""
     readonly property string mediaQuality: {
@@ -302,6 +303,7 @@ Window {
         win.infoHash = hash
         win.fileIndex = fileIdx
         win.mediaFileName = (typeof session !== "undefined") ? session.streamFileName(hash, fileIdx) : ""
+        win.localFile = (typeof session !== "undefined") ? session.streamLocalPath(hash, fileIdx) : ""
         win.pendingResumeMs = (typeof settings !== "undefined") ? Number(settings.get(win.resumeKey) || 0) : 0
         win.resumeAtMs = 0
         win.resumeTries = 0
@@ -512,94 +514,18 @@ Window {
     Timer {
         id: idle; interval: 3000
         onTriggered: {
-            if (subPanel.open || barHover.containsMouse) return
+            if (subPanel.open || optsPanel.open || barHover.containsMouse) return
             if (player.playbackState !== MediaPlayer.PlayingState) return
             win.controlsShown = false
         }
     }
     onFullscreenChanged: { win.controlsShown = true; idle.restart() }
 
-    // track pickers (embedded audio / subtitle streams)
-    BatMenu {
-        id: audioMenu
-        implicitWidth: 180
-        Repeater {
-            model: player.audioTracks.length
-            BatMenuItem {
-                required property int index
-                text: win.trackName(player.audioTracks[index], (i18n.language, i18n.t("player_audio")) + " " + (index + 1))
-                checkable: true; checked: player.activeAudioTrack === index
-                onTriggered: {
-                    player.activeAudioTrack = index
-                    if (typeof settings !== "undefined") settings.set("audioTrack_" + win.infoHash, index)
-                }
-            }
-        }
-    }
-    BatMenu {
-        id: speedMenu
-        implicitWidth: 140
-        Repeater {
-            model: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-            BatMenuItem {
-                required property var modelData
-                text: modelData + "×"
-                checkable: true; checked: player.playbackRate === modelData
-                onTriggered: player.playbackRate = modelData
-            }
-        }
-    }
-    BatMenu {
-        id: subMenu
-        implicitWidth: 220
-        BatMenuItem {
-            text: (i18n.language, i18n.t("player_subs_off"))
-            checkable: true; checked: player.activeSubtitleTrack < 0 && !win.extSubsActive
-            onTriggered: { win.clearExternalSubs(); player.activeSubtitleTrack = -1 }
-        }
-        Repeater {
-            model: player.subtitleTracks.length
-            BatMenuItem {
-                required property int index
-                text: win.trackName(player.subtitleTracks[index], (i18n.language, i18n.t("player_subs")) + " " + (index + 1))
-                checkable: true; checked: player.activeSubtitleTrack === index
-                onTriggered: {
-                    win.clearExternalSubs(); player.activeSubtitleTrack = index
-                    if (typeof settings !== "undefined") settings.set("subTrack_" + win.infoHash, index)
-                }
-            }
-        }
-        BatMenuItem {
-            visible: win.extSubsActive
-            text: (i18n.language, i18n.t("player_subs_external")) + ": " + win.extSubName
-            elideMode: Text.ElideMiddle
-            checkable: true; checked: win.extSubsActive
-            onTriggered: win.clearExternalSubs()
-        }
-        BatMenuSep {}
-        BatMenuItem {
-            text: (i18n.language, i18n.t("subsearch_menu"))
-            onTriggered: subPanel.openPanel()
-        }
-        BatMenuItem {
-            text: (i18n.language, i18n.t("player_load_subtitle"))
-            onTriggered: subFileDlg.open()
-        }
-    }
-
+    // audio · subtitles · speed live in one options panel (see below); the
+    // "…" menu keeps only what doesn't fit a picker
     BatMenu {
         id: moreMenu
         implicitWidth: 210
-        BatMenuItem {
-            text: (i18n.language, i18n.t("player_speed")) + ": " + player.playbackRate + "×"
-            onTriggered: speedMenu.popup()
-        }
-        BatMenuItem {
-            visible: player.audioTracks.length > 1
-            text: (i18n.language, i18n.t("player_audio")) + "…"
-            onTriggered: audioMenu.popup()
-        }
-        BatMenuSep {}
         BatMenuItem {
             text: (i18n.language, i18n.t("player_external"))
             onTriggered: { win.saveResume(); win.openExternal() }
@@ -622,6 +548,17 @@ Window {
         z: 60
         pw: win
         mediaPlayer: player
+    }
+
+    // unified audio/subtitles/speed popover (replaces the old context menus)
+    PlayerOptionsPanel {
+        id: optsPanel
+        anchors.fill: parent
+        z: 55
+        pw: win
+        mediaPlayer: player
+        onSearchOnline: subPanel.openPanel()
+        onLoadFile: subFileDlg.open()
     }
 
     // ---- title bar: gradient scrim · centered title + chips · info ----
@@ -749,16 +686,64 @@ Window {
                         acceptedButtons: Qt.NoButton
                         hoverEnabled: true
                         readonly property real frac: Math.max(0, Math.min(1, mouseX / Math.max(1, seek.availableWidth)))
+                        readonly property real targetMs: (seek.pressed ? seek.position : frac) * player.duration
+                        // frame previews only where there's data to decode
+                        readonly property bool canThumb: player.duration > 0
+                            && (!win.stillDownloading || targetMs <= win.downloadedToMs)
+
+                        // silent second decoder — paused at the hovered instant, its
+                        // output IS the preview. Reads the on-disk file directly (a
+                        // second client on the local HTTP stream made ffmpeg spew
+                        // resync noise). Warmed up whenever the controls are visible:
+                        // loading only on bar-hover cost ~half a second per entry.
+                        MediaPlayer {
+                            id: thumbPlayer
+                            source: win.controlsShown && win.localFile.length > 0
+                                    ? ((Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(win.localFile))
+                                    : ""
+                            videoOutput: thumbOut
+                            onMediaStatusChanged: if (mediaStatus === MediaPlayer.LoadedMedia) {
+                                play(); pause()   // stopped players don't render frames
+                                thumbSeek.restart()
+                            }
+                        }
+                        Timer {
+                            id: thumbSeek
+                            interval: 60   // debounce: seek once the cursor settles
+                            onTriggered: if (thumbPlayer.seekable && (seekHover.containsMouse || seek.pressed))
+                                thumbPlayer.position = seekHover.targetMs
+                        }
+                        onMouseXChanged: if (containsMouse || seek.pressed) thumbSeek.restart()
+                        // the file can be renamed when it finishes (.!bt stripped) —
+                        // re-resolve the on-disk path at each hover start
+                        onContainsMouseChanged: if (containsMouse && typeof session !== "undefined")
+                            win.localFile = session.streamLocalPath(win.infoHash, win.fileIndex)
+
                         Rectangle {
+                            readonly property bool showThumb: seekHover.canThumb
                             visible: (seekHover.containsMouse || seek.pressed) && player.duration > 0
-                            height: 22; radius: 5; width: ttl.implicitWidth + 14
+                            width: showThumb ? 172 : ttl.implicitWidth + 14
+                            height: showThumb ? 122 : 22
+                            radius: showThumb ? 9 : 5
                             color: "#e60a0a0c"; border.color: Theme.hair; border.width: 1
-                            y: -30
+                            y: -(height + 8)
                             x: Math.max(0, Math.min(seek.width - width,
                                 (seek.pressed ? seek.position * seek.width : seekHover.mouseX) - width / 2))
+                            VideoOutput {
+                                id: thumbOut
+                                visible: parent.showThumb
+                                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+                                anchors.margins: 3
+                                height: 94
+                                fillMode: VideoOutput.PreserveAspectCrop
+                            }
                             Text {
-                                id: ttl; anchors.centerIn: parent
-                                text: win.fmt((seek.pressed ? seek.position : seekHover.frac) * player.duration)
+                                id: ttl
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.bottom: parent.showThumb ? parent.bottom : undefined
+                                anchors.bottomMargin: 5
+                                anchors.verticalCenter: parent.showThumb ? undefined : parent.verticalCenter
+                                text: win.fmt(seekHover.targetMs)
                                 color: "#fff"; font.pixelSize: 11; font.family: Theme.fontMono
                             }
                         }
@@ -844,10 +829,11 @@ Window {
                     Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: fwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 8; font.weight: Font.Bold; font.family: Theme.fontSans }
                     MouseArea { id: fwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(10000) }
                 }
-                PChip {
+                PIconBtn {
                     Layout.alignment: Qt.AlignVCenter
                     visible: win.nextIdx >= 0
-                    label: "⏭"
+                    src: "qrc:/icons/skip-forward.svg"
+                    tip: (i18n.language, i18n.t("player_next"))
                     onClicked: if (typeof session !== "undefined") session.playFile(win.infoHash, win.nextIdx)
                 }
 
@@ -879,17 +865,14 @@ Window {
                                   + " / " + win.fmtBytes((win.streamStats && win.streamStats.totalBytes) || 0)
                 }
                 // speed
-                PChip { Layout.alignment: Qt.AlignVCenter; active: player.playbackRate !== 1.0; label: player.playbackRate + "×"; onClicked: speedMenu.popup() }
-                // subtitles
-                Item {
+                PChip { Layout.alignment: Qt.AlignVCenter; active: player.playbackRate !== 1.0; label: player.playbackRate + "×"; onClicked: optsPanel.open ? optsPanel.closePanel() : optsPanel.openPanel() }
+                // subtitles / audio / speed — one icon, one panel
+                PIconBtn {
                     Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: subRow.implicitWidth; implicitHeight: 24
-                    Row {
-                        id: subRow; anchors.centerIn: parent; spacing: 6
-                        IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/subtitles.svg"; tint: (player.activeSubtitleTrack >= 0 || win.extSubsActive) ? Theme.accent : (subMa.containsMouse ? Theme.t1 : Theme.t2); s: 16 }
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("player_subs")); color: subMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans }
-                    }
-                    MouseArea { id: subMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: subMenu.popup() }
+                    src: "qrc:/icons/subtitles.svg"; s: 19
+                    active: player.activeSubtitleTrack >= 0 || win.extSubsActive
+                    tip: (i18n.language, i18n.t("player_subs"))
+                    onClicked: optsPanel.open ? optsPanel.closePanel() : optsPanel.openPanel()
                 }
                 // volume: click = mute; hover = vertical slider
                 Item {
@@ -909,7 +892,10 @@ Window {
                         onClicked: win.muted = !win.muted
                     }
                     Rectangle {
-                        visible: volMa.containsMouse || volPopMa.containsMouse || vsl.pressed
+                        // vsl.hovered is load-bearing: the Slider takes hover from the
+                        // popup MouseArea, which used to close the popup the moment
+                        // the cursor actually reached the volume bar
+                        visible: volMa.containsMouse || volPopMa.containsMouse || vsl.hovered || vsl.pressed
                         width: 32; height: 116; radius: 9
                         color: "#f50a0a0c"; border.color: Theme.hair; border.width: 1
                         anchors.bottom: parent.top; anchors.bottomMargin: 6
@@ -936,9 +922,9 @@ Window {
                         }
                     }
                 }
-                PChip { Layout.alignment: Qt.AlignVCenter; label: "⋯"; onClicked: moreMenu.popup() }
-                PChip { Layout.alignment: Qt.AlignVCenter; active: win.pipMode; label: "⧉"; onClicked: win.togglePip() }
-                PChip { Layout.alignment: Qt.AlignVCenter; label: "⛶"; onClicked: win.toggleFullscreen() }
+                PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/ellipsis.svg"; tip: (i18n.language, i18n.t("ctx_grp_more")); onClicked: moreMenu.popup() }
+                PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/pip.svg"; active: win.pipMode; tip: (i18n.language, i18n.t("player_pip")); onClicked: win.togglePip() }
+                PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/maximize.svg"; tip: (i18n.language, i18n.t("player_fullscreen")); onClicked: win.toggleFullscreen() }
             }
         }
     }
@@ -953,7 +939,8 @@ Window {
     Shortcut { sequence: "Down";   onActivated: win.bumpVolume(-0.05) }
     Shortcut { sequence: "F";      onActivated: win.toggleFullscreen() }
     Shortcut { sequence: "M";      onActivated: win.muted = !win.muted }
-    Shortcut { sequence: "Escape"; onActivated: subPanel.open ? subPanel.closePanel()
+    Shortcut { sequence: "Escape"; onActivated: optsPanel.open ? optsPanel.closePanel()
+                                              : subPanel.open ? subPanel.closePanel()
                                               : (win.pipMode ? win.togglePip()
                                               : (win.visibility === Window.FullScreen ? (win.visibility = Window.Windowed) : win.close())) }
 }

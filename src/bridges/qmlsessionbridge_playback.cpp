@@ -212,6 +212,15 @@ QVariantMap QmlSessionBridge::streamFileStats(const QString &infoHash, int fileI
     return m_session->streamFileStats(row, fileIndex);
 }
 
+QString QmlSessionBridge::streamLocalPath(const QString &infoHash, int fileIndex) const
+{
+    // Absolute on-disk path (possibly still ".!bt") — the seek-preview decoder
+    // reads the file directly instead of opening a second HTTP stream session.
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return {};
+    return m_session->streamFilePath(row, fileIndex);
+}
+
 QString QmlSessionBridge::streamFileName(const QString &infoHash, int fileIndex) const
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);

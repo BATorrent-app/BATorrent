@@ -214,6 +214,7 @@ public:
     Q_INVOKABLE QVariantMap streamFileStats(const QString &infoHash, int fileIndex) const;
     // Raw video file name (has the quality/audio tags the player badges parse).
     Q_INVOKABLE QString streamFileName(const QString &infoHash, int fileIndex) const;
+    Q_INVOKABLE QString streamLocalPath(const QString &infoHash, int fileIndex) const;
     // Watchlist ("My List") — saved titles (not torrents), persisted in QSettings.
     QVariantList watchlist() const;
     Q_INVOKABLE bool inWatchlist(const QString &title, const QString &type) const;
