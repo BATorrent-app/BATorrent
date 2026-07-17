@@ -63,6 +63,17 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="4.6.0" date="2026-07-17">
+      <description>
+        <ul>
+          <li>Faster peer discovery: multi-router DHT bootstrap, announce to every tracker tier, open trackers added to magnets (removed for private torrents)</li>
+          <li>Magnets survive a crash before their metadata arrives; removals no longer resurrect or leave data behind</li>
+          <li>Download cards show downloaded-of-total, queue position and a clearer pre-download status</li>
+          <li>Refreshed context menu with icons; refined badges, seeding indicator and detail panel</li>
+          <li>Random high listen port on first run; IPv6 listening restored when a port is configured</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.0.3" date="2026-06-05">
       <description>
         <ul>
