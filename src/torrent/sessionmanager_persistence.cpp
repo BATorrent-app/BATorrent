@@ -72,6 +72,25 @@ bool SessionManager::restoreFromResumeData(const QByteArray &data)
     emit torrentsUpdated();
     return true;
 }
+void SessionManager::persistMagnetParams(lt::add_torrent_params atp,
+                                         const QString &hash,
+                                         const QString &finalSavePath)
+{
+    // Written with the *final* save path: if this file is ever loaded the
+    // temp-path bookkeeping (m_torrentIntendedPath) is gone with the crash,
+    // so downloading straight to the destination is the correct fallback.
+    atp.save_path = finalSavePath.toStdString();
+    QDir dir(resumeDataDir());
+    if (!dir.exists())
+        dir.mkpath(".");
+    const std::vector<char> buf = lt::write_resume_data_buf(atp);
+    QSaveFile file(dir.filePath(hash + ".resume"));
+    if (!file.open(QIODevice::WriteOnly))
+        return;
+    file.write(buf.data(), static_cast<qint64>(buf.size()));
+    file.commit();
+}
+
 void SessionManager::stageResumeSave(const lt::torrent_handle &h)
 {
     if (!h.is_valid()) return;
@@ -282,6 +301,15 @@ void SessionManager::loadResumeData()
         }
         if (!h.is_valid()) continue;
         m_torrents.push_back(h);
+        // A magnet persisted before its metadata arrived: rebuild the URI-hash
+        // maps so the UI keys (cover/name) and the "fetching metadata"
+        // stateDetail work the same as on a fresh add.
+        if (!atp.ti) {
+            const QString hash = QString::fromStdString(
+                (std::ostringstream() << atp.info_hashes.get_best()).str());
+            m_magnetHashes[h] = hash;
+            m_magnetAddedAt[h] = QDateTime::currentSecsSinceEpoch();
+        }
         if (recoveredFromCorrupt) {
             h.force_recheck();
         }

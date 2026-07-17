@@ -36,6 +36,8 @@
 #include <QRegularExpression>
 #include <libtorrent/ip_filter.hpp>
 #include <boost/asio/ip/address.hpp>
+#include <QRandomGenerator>
+#include <algorithm>
 #ifdef BAT_LIBTORRENT_FORK
 #include <libtorrent/aux_/ip_helpers.hpp>   // fork-only geo-locality hook
 #endif
@@ -43,6 +45,18 @@
 // DHT routing table persisted across runs — a warm table means peer discovery
 // (and the download ramp) starts fast instead of re-bootstrapping the DHT from
 // scratch every launch (~30-60s cold). Path sits next to the resume data.
+const std::vector<std::string> &SessionManager::publicTrackers()
+{
+    static const std::vector<std::string> list = {
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://open.demonii.com:1337/announce",
+        "udp://open.stealth.si:80/announce",
+        "udp://tracker.torrent.eu.org:451/announce",
+        "udp://exodus.desync.com:6969/announce",
+    };
+    return list;
+}
+
 static QString dhtStatePath()
 {
     return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
@@ -101,6 +115,13 @@ SessionManager::SessionManager(QObject *parent)
 
     // Enable DHT for trackerless torrents / magnet links
     pack.set_bool(lt::settings_pack::enable_dht, true);
+    // libtorrent's default bootstrap is a single host (dht.libtorrent.org) —
+    // if it's down or ISP-blocked, a fresh install never joins the DHT and
+    // trackerless magnets can't fetch metadata. Same router list as qBittorrent.
+    pack.set_str(lt::settings_pack::dht_bootstrap_nodes,
+                 "dht.libtorrent.org:25401,router.bittorrent.com:6881,"
+                 "router.utorrent.com:6881,dht.transmissionbt.com:6881,"
+                 "dht.aelitis.com:6881");
 
     // PEX (Peer Exchange) is enabled by default in libtorrent 2.x
 
@@ -158,6 +179,10 @@ SessionManager::SessionManager(QObject *parent)
     // by peers actually available, so it's harmless on small swarms.
     pack.set_int(lt::settings_pack::torrent_connect_boost, 100);
     pack.set_int(lt::settings_pack::unchoke_slots_limit, 20);
+    // Announce to every tracker tier at once (qBittorrent default). Magnet
+    // trackers each land in their own tier, so without this only the first
+    // responsive tracker is announced — a real peer-discovery deficit.
+    pack.set_bool(lt::settings_pack::announce_to_all_tiers, true);
     // Opt-in (default off): stop uTP from throttling our own TCP peers. Faster on
     // a dedicated fat link; can add bufferbloat on a shared line, so it's gated.
     pack.set_int(lt::settings_pack::mixed_mode_algorithm,
@@ -290,7 +315,19 @@ SessionManager::SessionManager(QObject *parent)
     if (settings.contains("encryptionMode")) setEncryptionMode(settings.value("encryptionMode").toInt());
     const QString persistedIface = settings.value("outgoingInterface").toString();
     if (!persistedIface.isEmpty()) setOutgoingInterface(persistedIface);
-    if (settings.value("listenPort", 0).toInt() > 0) setListenPort(settings.value("listenPort").toInt());
+    {
+        int port = settings.value("listenPort", 0).toInt();
+        if (port <= 0) {
+            // First run: stable random high port instead of libtorrent's 6881
+            // default — the 688x range is a classic ISP-throttle target and
+            // collides with other clients on the same machine (with
+            // listen_system_port_fallback off, a busy port = no listen socket
+            // at all). Persisted so the user's port forward stays valid.
+            port = static_cast<int>(QRandomGenerator::global()->bounded(49152, 65536));
+            settings.setValue("listenPort", port);
+        }
+        setListenPort(port);
+    }
     setKillSwitchEnabled(settings.value("killSwitchEnabled", false).toBool());
     setAutoResumeOnReconnect(settings.value("autoResumeOnReconnect", false).toBool());
     m_proxy.loadFromSettings();
@@ -500,6 +537,23 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath,
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
 
+        // Magnets often carry few or dead trackers and then depend entirely on
+        // DHT for the metadata fetch. Append well-known open trackers (lowest
+        // tier, dedup'd); onMetadataReceived strips them again if the torrent
+        // turns out to be private.
+        if (QSettings("BATorrent", "BATorrent").value("addPublicTrackers", true).toBool()) {
+            if (atp.tracker_tiers.size() != atp.trackers.size())
+                atp.tracker_tiers.resize(atp.trackers.size(), 0);
+            int tier = static_cast<int>(atp.trackers.size());
+            for (const std::string &t : publicTrackers()) {
+                if (std::find(atp.trackers.begin(), atp.trackers.end(), t)
+                        != atp.trackers.end())
+                    continue;
+                atp.trackers.push_back(t);
+                atp.tracker_tiers.push_back(tier++);
+            }
+        }
+
         // Real hash from the URI (known even before metadata, unlike a magnet's
         // torrent_status which reports all-zeros until then).
         const QString realHash = QString::fromStdString(
@@ -520,6 +574,7 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath,
         m_torrents.push_back(h);
         m_magnetAddedAt[h] = QDateTime::currentSecsSinceEpoch();
         m_magnetHashes[h] = realHash;
+        persistMagnetParams(atp, realHash, savePath);
         incrementTorrentCount();
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
@@ -583,6 +638,12 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         lt::torrent_status st = h.status();
         QString hash = QString::fromStdString(
             (std::ostringstream() << st.info_hashes.get_best()).str());
+        // Pre-metadata magnet: status reports an all-zeros hash, but its
+        // .resume file and per-torrent maps are keyed by the URI hash.
+        if (!st.has_metadata) {
+            auto mit = m_magnetHashes.find(h);
+            if (mit != m_magnetHashes.end()) hash = mit->second;
+        }
         QDir dir(resumeDataDir());
         QDir removedDir(QFileInfo(dir, "../removed").absoluteFilePath());
         if (!removedDir.exists()) removedDir.mkpath(".");
@@ -639,6 +700,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         m_lastFastAt.erase(h);
         m_pendingResumeStripCheck.erase(h);
         m_magnetAddedAt.erase(h);
+        m_magnetHashes.erase(h);
 
         // "delete files" sends the data to the OS trash instead of erasing it —
         // recoverable removal is a safety net users expect from a desktop app.
@@ -701,11 +763,14 @@ void SessionManager::pauseTorrent(int index)
     qDebug() << "[session] pauseTorrent index:" << index;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
+    // is_valid first — pause() on an expired handle throws (std::terminate
+    // from the Qt event loop = the whole app closes)
+    if (!m_torrents[index].is_valid())
+        return;
     m_torrents[index].pause();
     // persist the pause now — periodic/shutdown saves can run before this and
     // otherwise the torrent reloads un-paused (resumes downloading on its own)
-    if (m_torrents[index].is_valid())
-        m_torrents[index].save_resume_data(lt::torrent_handle::save_info_dict);
+    m_torrents[index].save_resume_data(lt::torrent_handle::save_info_dict);
 }
 
 void SessionManager::resumeTorrent(int index)
@@ -713,20 +778,22 @@ void SessionManager::resumeTorrent(int index)
     qDebug() << "[session] resumeTorrent index:" << index;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
+    if (!m_torrents[index].is_valid())
+        return;
     // Resume on a completed torrent un-marks it — the user is explicitly
     // asking it to participate again, so the "frozen" flag has to clear.
     unmarkCompleted(index);
     m_torrents[index].resume();
-    if (m_torrents[index].is_valid())
-        m_torrents[index].save_resume_data(lt::torrent_handle::save_info_dict);
+    m_torrents[index].save_resume_data(lt::torrent_handle::save_info_dict);
 }
 
 void SessionManager::pauseAll()
 {
     qDebug() << "[session] pauseAll";
     for (auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
         h.pause();
-        if (h.is_valid()) h.save_resume_data(lt::torrent_handle::save_info_dict);
+        h.save_resume_data(lt::torrent_handle::save_info_dict);
     }
 }
 
@@ -734,8 +801,9 @@ void SessionManager::resumeAll()
 {
     qDebug() << "[session] resumeAll";
     for (auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
         h.resume();
-        if (h.is_valid()) h.save_resume_data(lt::torrent_handle::save_info_dict);
+        h.save_resume_data(lt::torrent_handle::save_info_dict);
     }
 }
 
