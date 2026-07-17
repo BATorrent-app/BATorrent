@@ -22,7 +22,11 @@ Window {
     // fits — below this the RowLayout would have to clip, which is what made
     // the old icon-only "compact" hack feel broken.
     // classic keeps the old +188 rail budget; the top bar frees that width
-    minimumWidth: layoutClassic ? 1288 : 1200
+    // Capped to the screen: on DPI-scaled laptops (150% on 1920 = 1280 logical)
+    // an uncapped floor forces the window wider than the desktop and the right
+    // column (grid detail sidebar) renders past the screen edge.
+    minimumWidth: Math.min(layoutClassic ? 1288 : 1200,
+                           Screen.desktopAvailableWidth > 0 ? Screen.desktopAvailableWidth : 1288)
     minimumHeight: 640
     color: Theme.bg
     // classic rail merges the macOS titlebar into its brand zone; the top-bar
@@ -350,6 +354,11 @@ Window {
         id: ctxMenu
         modal: true
         implicitWidth: 220
+        // flush rows (the accent header reads as a band, not a floating pill);
+        // just a breath of space under the last row so Remove isn't glued to
+        // the card's bottom edge
+        padding: 0
+        bottomPadding: 6
         background: Rectangle {
             color: Theme.panel
             border.color: Theme.hair
@@ -358,21 +367,42 @@ Window {
         }
         component CtxItem: MenuItem {
             id: ci
+            property string iconSrc: ""
+            // gutter aligns iconless rows (submenu titles) to the icon column
+            property bool gutter: false
+            // destructive: red icon + red text on hover (Remove)
+            property bool destructive: false
             implicitHeight: enabled ? 30 : 1
             visible: enabled
             padding: 0
-            contentItem: Text {
-                leftPadding: 14
-                rightPadding: 14
-                text: ci.text
-                color: ci.highlighted ? Theme.t1 : Theme.t2
-                font.pixelSize: 12
-                font.family: Theme.fontSans
-                verticalAlignment: Text.AlignVCenter
+            contentItem: Item {
+                IconImg {
+                    visible: ci.iconSrc !== ""
+                    src: ci.iconSrc; s: 14
+                    tint: ci.destructive ? Theme.accent
+                                         : (ci.highlighted ? Theme.t1 : Theme.t3)
+                    x: 14
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    anchors.fill: parent
+                    leftPadding: (ci.iconSrc !== "" || ci.gutter) ? 38 : 14
+                    rightPadding: 14
+                    text: ci.text
+                    color: ci.destructive && ci.highlighted ? Theme.accent
+                          : ci.highlighted ? Theme.t1 : Theme.t2
+                    font.pixelSize: 12
+                    font.family: Theme.fontSans
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
             }
             background: Rectangle {
-                color: ci.highlighted ? Theme.hover : "transparent"
+                color: ci.highlighted
+                       ? (ci.destructive ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12) : Theme.hover)
+                       : "transparent"
                 radius: 5
+                Behavior on color { ColorAnimation { duration: 80 } }
             }
             arrow: Text {
                 visible: ci.subMenu
@@ -385,7 +415,21 @@ Window {
             }
         }
         component Sep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-        delegate: CtxItem {}
+        // submenu title rows are spawned from this delegate — the gutter keeps
+        // their text on the same column as the icon rows above
+        delegate: CtxItem { gutter: true }
+
+        // gentle pop: fade + 4px rise, matching the app's page transitions
+        enter: Transition {
+            ParallelAnimation {
+                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 120; easing.type: Easing.OutCubic }
+                NumberAnimation { property: "y"; duration: 140; easing.type: Easing.OutCubic
+                                  from: ctxMenu.y + 4; to: ctxMenu.y }
+            }
+        }
+        exit: Transition {
+            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 80; easing.type: Easing.InCubic }
+        }
 
         // Games lead the menu with an accent button (state-driven, Steam model):
         // Play when ready, else Install. A torrent is a game XOR a video, so only
@@ -401,25 +445,32 @@ Window {
             implicitHeight: height
             padding: 0
             onTriggered: gameCtx.gReady ? session.playSelectedGame() : session.installSelectedGame()
-            contentItem: Row {
-                leftPadding: 12
-                spacing: 9
+            // same column geometry as CtxItem (icon x:14, text 38) so the
+            // accent header lines up with the rows below it
+            contentItem: Item {
                 IconImg {
+                    x: 14
                     anchors.verticalCenter: parent.verticalCenter
-                    src: gameCtx.gReady ? "qrc:/icons/play.svg" : "qrc:/icons/download.svg"; tint: Theme.accent; s: 13
+                    src: gameCtx.gReady ? "qrc:/icons/play.svg" : "qrc:/icons/download.svg"; tint: Theme.accent; s: 14
                 }
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.fill: parent
+                    leftPadding: 38
                     text: (i18n.language, gameCtx.gReady ? i18n.t("hub_gs_play") : i18n.t("hub_gs_install"))
                     color: Theme.accent
                     font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
                 }
             }
             background: Rectangle {
-                radius: 6
+                // full-width band: top corners follow the card's radius
+                radius: 0
+                topLeftRadius: 8; topRightRadius: 8
                 color: gameCtx.highlighted
                        ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
                        : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.07)
+                Behavior on color { ColorAnimation { duration: 80 } }
             }
         }
         // Play leads the menu as a minimalist accent button (not a plain row) so
@@ -431,53 +482,60 @@ Window {
             implicitHeight: height
             padding: 0
             onTriggered: session.playSelected()
-            contentItem: Row {
-                leftPadding: 12
-                spacing: 9
+            contentItem: Item {
                 IconImg {
+                    x: 14
                     anchors.verticalCenter: parent.verticalCenter
-                    src: "qrc:/icons/play.svg"; tint: Theme.accent; s: 13
+                    src: "qrc:/icons/play.svg"; tint: Theme.accent; s: 14
                 }
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.fill: parent
+                    leftPadding: 38
                     text: (i18n.language, i18n.t("ctx_play"))
                     color: Theme.accent
                     font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
                 }
             }
             background: Rectangle {
-                radius: 6
+                radius: 0
+                topLeftRadius: 8; topRightRadius: 8
                 color: playCtx.highlighted
                        ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
                        : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.07)
+                Behavior on color { ColorAnimation { duration: 80 } }
             }
         }
 
         // Common actions stay one click; the rest is grouped into submenus so
         // the menu doesn't run the whole height of the screen.
-        CtxItem { text: (i18n.language, i18n.t("tb_pause")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
-        CtxItem { text: (i18n.language, i18n.t("tb_resume")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
+        CtxItem { iconSrc: "qrc:/icons/pause.svg"; text: (i18n.language, i18n.t("ctx_pause_download")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
+        CtxItem { iconSrc: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("ctx_resume_download")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
+        CtxItem { iconSrc: "qrc:/icons/open.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
+        CtxItem { iconSrc: "qrc:/icons/copy.svg"; text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
         CtxItem {
             visible: Qt.platform.os === "windows"
             height: visible ? implicitHeight : 0
+            iconSrc: "qrc:/icons/lock.svg"
             text: (i18n.language, i18n.t("ctx_defender_exclude"))
             onTriggered: session.excludeTorrentFromDefender(torrentFilter.mapToSource(win.selected))
         }
         CtxItem {
             visible: session.selectedHasArchives
             height: visible ? implicitHeight : 0
+            iconSrc: "qrc:/icons/download.svg"
             text: (i18n.language, i18n.t("ctx_extract"))
             onTriggered: inputPrompt.openWith(i18n.t("ctx_extract"), i18n.t("extract_password_label"),
                                               "", i18n.t("extract_password_ph"),
                                               function(pw){ session.extractSelected(pw) })
         }
-        CtxItem { text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
+        CtxItem { iconSrc: "qrc:/icons/pencil.svg"; text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
         CtxItem {
             // only once the data is done — marking mid-download freezes the torrent
             visible: session.selectedDataDone || session.selectedCompleted
             height: visible ? implicitHeight : 0
+            iconSrc: "qrc:/icons/check.svg"
             text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain"))
             onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted()
         }
@@ -562,7 +620,7 @@ Window {
             }
         }
         Sep {}
-        CtxItem { text: (i18n.language, i18n.t("ctx_remove")); onTriggered: removeDlg.open() }
+        CtxItem { iconSrc: "qrc:/icons/trash.svg"; destructive: true; implicitHeight: enabled ? 34 : 1; text: (i18n.language, i18n.t("ctx_remove")); onTriggered: removeDlg.open() }
     }
 
     Shortcut { sequence: StandardKey.SelectAll; onActivated: win.selectAll() }

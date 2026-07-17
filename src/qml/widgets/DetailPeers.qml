@@ -66,7 +66,15 @@ ColumnLayout {
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
-                Text { text: modelData.flag || ""; Layout.preferredWidth: 56; font.pixelSize: 13; font.family: Theme.fontSans }
+                Text {
+                    // Windows can't render emoji flags — show the country code instead
+                    text: Qt.platform.os === "windows" ? (modelData.cc || "") : (modelData.flag || "")
+                    Layout.preferredWidth: 56
+                    color: Qt.platform.os === "windows" ? Theme.t3 : Theme.t1
+                    font.pixelSize: Qt.platform.os === "windows" ? 10 : 13
+                    font.weight: Qt.platform.os === "windows" ? Font.DemiBold : Font.Normal
+                    font.family: Theme.fontSans
+                }
                 Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
                 Text { text: modelData.client; Layout.preferredWidth: 150; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
                 Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
@@ -89,7 +97,13 @@ ColumnLayout {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 7
-                    Text { text: modelData.flag || ""; font.pixelSize: 12; font.family: Theme.fontSans }
+                    Text {
+                        text: Qt.platform.os === "windows" ? (modelData.cc || "") : (modelData.flag || "")
+                        color: Qt.platform.os === "windows" ? Theme.t3 : Theme.t1
+                        font.pixelSize: Qt.platform.os === "windows" ? 10 : 12
+                        font.weight: Qt.platform.os === "windows" ? Font.DemiBold : Font.Normal
+                        font.family: Theme.fontSans
+                    }
                     Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
                     Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono }
                 }

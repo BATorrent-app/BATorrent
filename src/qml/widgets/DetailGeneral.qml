@@ -132,12 +132,20 @@ Flickable {
                     }
                 }
                 Rectangle {
-                    Layout.fillWidth: true; height: 5; radius: 2; color: Theme.track
+                    Layout.fillWidth: true; height: 4; radius: 2; color: Theme.track
                     Rectangle {
                         height: parent.height; radius: 2
                         width: parent.width * (gen.win.hasSel ? session.selectedProgress : 0)
-                        color: (gen.win.hasSel && session.selectedCompleted) ? Theme.grn : Theme.accent
+                        // red exists at exactly one intensity: while the
+                        // download is moving. A finished bar goes neutral —
+                        // translucent accent over a dark panel reads as a
+                        // third, muddy red, not a quieter one; "done" already
+                        // lives in the ✓ badge.
+                        color: (gen.win.hasSel && session.selectedProgress >= 0.999)
+                               ? Qt.rgba(1, 1, 1, 0.16)
+                               : Theme.accent
                         Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: 200 } }
                     }
                 }
             }
@@ -150,18 +158,24 @@ Flickable {
                 Layout.topMargin: 10
                 spacing: Theme.sp6
                 Repeater {
+                    // per-direction colour only while that direction is actually
+                    // moving (>1 KB/s) — an idle 2 KB/s trickle in bold red is
+                    // inverted hierarchy; at rest the numbers read neutral
                     model: [
-                        { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: gen.win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent },
-                        { lbl: (i18n.language, i18n.t("graph_upload")),   arrow: "↑ ", v: gen.win.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber  },
-                        { lbl: (i18n.language, i18n.t("col_eta")),        arrow: "",   v: gen.win.hasSel ? session.selectedEta       : "—", c: Theme.t1     }
+                        { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: gen.win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent,
+                          on: gen.win.hasSel && session.selectedDownRate > 1024 },
+                        { lbl: (i18n.language, i18n.t("graph_upload")),   arrow: "↑ ", v: gen.win.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber,
+                          on: gen.win.hasSel && session.selectedUpRate > 1024 },
+                        { lbl: (i18n.language, i18n.t("col_eta")),        arrow: "",   v: gen.win.hasSel ? session.selectedEta       : "—", c: Theme.t1, on: true }
                     ]
                     delegate: Column {
                         spacing: 3
                         Text { text: modelData.lbl; color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
                         Text {
                             text: modelData.arrow + modelData.v
-                            color: modelData.c
-                            font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
+                            color: modelData.on ? modelData.c : Theme.t3
+                            font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
+                            Behavior on color { ColorAnimation { duration: 200 } }
                         }
                     }
                 }

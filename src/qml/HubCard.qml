@@ -59,14 +59,22 @@ Item {
             Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
         }
 
-        // hover play overlay (movies: a play glyph; games use the state button below)
+        // hover play overlay (movies: glass disc, same language as the grid
+        // tiles / Find cards; games use the state button below)
         Rectangle {
             anchors.fill: parent; radius: 10; color: "#66000000"
             opacity: ma.containsMouse ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 140 } }
-            IconImg {
-                anchors.centerIn: parent; src: "qrc:/icons/play.svg"; tint: "white"; s: 40
+            Rectangle {
                 visible: !card.isGame
+                anchors.centerIn: parent
+                width: 46; height: 46; radius: 23
+                color: "#cc101014"
+                border.color: Qt.rgba(1, 1, 1, 0.25); border.width: 1
+                IconImg {
+                    anchors.centerIn: parent; anchors.horizontalCenterOffset: 1
+                    src: "qrc:/icons/play.svg"; tint: "#ffffff"; s: 18
+                }
             }
         }
 

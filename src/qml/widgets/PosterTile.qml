@@ -25,9 +25,11 @@ Item {
     required property string downSpeed
     required property string upSpeed
     required property real downRate
+    required property real upRate
     required property var sizeBytes
     required property string infoHash
     required property bool playable
+    required property string downloaded
 
     readonly property bool isDownloading: stateKey !== "seeding" && stateKey !== "finished"
         && stateKey !== "completed" && stateKey !== "paused" && stateKey !== "queued"
@@ -180,14 +182,17 @@ Item {
             y: (parent.height - height) / 2
             width: 46; height: 46; radius: 23
             z: 5
-            color: ptMa.containsMouse ? Theme.accent : "#cc101014"
-            border.color: "#ffffff"; border.width: 1
+            // dark glass disc, always — red shows up only as the hover accent
+            // (ring + glyph), never as a filled surface
+            color: "#cc101014"
+            border.color: ptMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
+            border.width: 1
             scale: ptMa.containsMouse ? 1.08 : 1.0
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on border.color { ColorAnimation { duration: 120 } }
             Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
             IconImg {
                 anchors.centerIn: parent; anchors.horizontalCenterOffset: 1
-                src: "qrc:/icons/play.svg"; tint: "#ffffff"; s: 18
+                src: "qrc:/icons/play.svg"; tint: ptMa.containsMouse ? Theme.accent : "#ffffff"; s: 18
             }
             MouseArea {
                 id: ptMa
@@ -234,6 +239,33 @@ Item {
                 font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
             }
         }
+        // seeding pulse — a faint amber glow sweeping along the poster's bottom
+        // edge while actively uploading; disappears when seeding stops. Amber =
+        // the app's seeding colour (dot + text below say the same thing); a
+        // whisper you catch in the corner of the eye, not a bar competing with
+        // the poster. Green stays reserved for the DONE checkmark.
+        Rectangle {
+            id: seedTrack
+            visible: tile.stateKey === "seeding" && tile.upRate > 0
+            anchors.left: parent.left; anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.bottomMargin: 8
+            height: 2; radius: 1
+            color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.10)
+            clip: true
+            Rectangle {
+                id: seedSheen
+                width: 44; height: parent.height; radius: parent.radius
+                color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5)
+                SequentialAnimation on x {
+                    running: seedTrack.visible
+                    loops: Animation.Infinite
+                    NumberAnimation { from: -seedSheen.width; to: seedTrack.width; duration: 2600; easing.type: Easing.InOutSine }
+                    PauseAnimation { duration: 900 }
+                }
+            }
+        }
+
         // download % (top-right) — hidden once complete; tint follows state
         Rectangle {
             visible: tile.progress < 0.999
@@ -248,20 +280,20 @@ Item {
                 font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
             }
         }
-        // done badge (top-right) — a downloaded card reads as done at a glance,
-        // green so it's never confused with the red selection ring
+        // done badge (top-right) — same dark-glass pill as the % badge, with
+        // green confined to the checkmark glyph: color as signal, not surface
         Rectangle {
             visible: tile.progress >= 0.999
             anchors.right: parent.right; anchors.top: parent.top
             anchors.rightMargin: 8; anchors.topMargin: 8
-            radius: 9; color: Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.92)
+            radius: 9; color: "#cc000000"
             implicitWidth: doneRow.implicitWidth + 14; implicitHeight: 18
             Row {
                 id: doneRow; anchors.centerIn: parent; spacing: 3
-                Text { text: "✓"; color: "#0a1f12"; font.pixelSize: 10; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: "✓"; color: Theme.grn; font.pixelSize: 10; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
                 Text {
                     text: (i18n.language, i18n.t("state_done_badge"))
-                    color: "#0a1f12"; font.pixelSize: 9; font.weight: Font.Bold
+                    color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
                     font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -317,7 +349,9 @@ Item {
                     // stalled reads amber (dot + text); the full reason is on hover —
                     // the grid card is too narrow to show it inline without clipping
                     text: tile.isDownloading ? ("↓ " + tile.downSpeed)
-                          : (tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed) : tile.stateString)
+                          : (tile.stateKey === "seeding"
+                             ? ((i18n.language, i18n.t("state_seeding")) + " · ↑ " + tile.upSpeed)
+                             : tile.stateString)
                     color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.textFor(tile.stateKey)
                     font.pixelSize: 12; font.family: Theme.fontSans
                     // elide needs an explicit width — without it a long state
@@ -328,19 +362,19 @@ Item {
             }
             Text {
                 id: rightTxt
-                // ETA while downloading; once there's nothing left to
-                // fetch, the size takes this slot (line 2 collapses) so
-                // it's never left orphaned under an empty ETA.
+                // ETA while downloading; otherwise the size takes this slot
+                // (line 2 carries downloaded-of-total during a download).
                 anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
-                text: tile.etaSec >= 0 ? win.fmtEta(tile.etaSec) : tile.size
+                text: tile.isDownloading ? (tile.etaSec >= 0 ? win.fmtEta(tile.etaSec) : "") : tile.size
                 color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
             }
         }
         Text {
             width: meta.width
             horizontalAlignment: Text.AlignRight
-            visible: tile.etaSec >= 0
-            text: tile.size
+            visible: tile.isDownloading
+            // "107 MB of 6.4 GB" — progress in real bytes, not just the %
+            text: tile.downloaded + " " + (i18n.language, i18n.t("word_of")) + " " + tile.size
             color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
         }
     }

@@ -178,16 +178,19 @@ Item {
         x: (card.posterW - width) / 2
         y: (card.posterH - height) / 2
         width: 46; height: 46; radius: 23
-        color: pbMa.containsMouse ? Theme.accent : "#cc101014"
-        border.color: "#ffffff"; border.width: 1
+        // dark glass disc; red only as the hover accent (ring + glyph),
+        // never a filled surface — same language as the grid tiles
+        color: "#cc101014"
+        border.color: pbMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
+        border.width: 1
         scale: pbMa.containsMouse ? 1.08 : 1.0
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on border.color { ColorAnimation { duration: 120 } }
         Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
         IconImg {
             anchors.centerIn: parent
             anchors.horizontalCenterOffset: 1
             src: "qrc:/icons/play.svg"
-            tint: "#ffffff"
+            tint: pbMa.containsMouse ? Theme.accent : "#ffffff"
             s: 18
         }
         MouseArea {
