@@ -1,5 +1,51 @@
 # Changelog
 
+## v4.6.0 "Signal"
+
+### Added
+- Magnets get a set of well-known open trackers automatically, so fetching
+  metadata no longer depends on DHT alone (Settings > Network > Protocol to
+  turn it off). They're removed — along with DHT/PEX/local discovery — the
+  moment a torrent turns out to be private.
+- Download cards show how much is actually downloaded ("107 MB of 6.4 GB"),
+  live, next to the percentage.
+- With a download limit set, waiting torrents now read "In queue (#3)"
+  instead of a bare "Paused", and start automatically when a slot frees up.
+- A new "Peers found — connecting…" status between searching and downloading,
+  so a fresh torrent explains what it's doing before bytes move.
+- A calm amber pulse along the poster's bottom edge while a torrent is
+  actively seeding.
+- The right-click menu got icons on every action, clearer "Pause download" /
+  "Resume download" labels, and a gentle open animation.
+
+### Fixed
+- Magnets that never fetched or downloaded slowly: BATorrent now bootstraps
+  the DHT from several routers (one blocked host used to mean no DHT at all)
+  and announces to every tracker tier at once, matching other clients.
+- A magnet added moments before a crash no longer vanishes from the list —
+  it's saved the instant you add it.
+- "Remove with files" finally sticks: quitting the app right after removing
+  used to silently leave the data on disk. Pending deletions now finish on
+  the next launch.
+- Torrents you removed could come back on their own if a same-named .torrent
+  was ever processed from the watched folder. Fixed.
+- Pausing a torrent whose engine handle had expired could close the app.
+- The Browse button in the add-torrent dialog did nothing.
+- Windows: peer countries show again (as country codes — Windows has no
+  emoji flags), and the window no longer opens wider than a scaled screen,
+  which pushed the grid's detail column off the edge.
+- Game covers resolve for long subtitled titles ("Garfield Kart 2 All You
+  Can Drift") by retrying with a shorter search.
+- Listening on IPv6 works again when a custom port is configured.
+
+### Changed
+- First run picks a random high listen port instead of 6881 — the classic
+  throttled range, and it collided with other torrent clients on the same
+  machine. Existing installs that never chose a port migrate once.
+- Quieter, more deliberate color: the DONE badge and hover play buttons
+  moved to dark glass, a finished download's progress bar goes neutral, and
+  transfer numbers only wear red/amber while data is actually moving.
+
 ## v4.5.1 "Find"
 
 ### Added
