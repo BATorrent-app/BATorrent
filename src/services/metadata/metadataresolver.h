@@ -53,7 +53,11 @@ private:
     void processQueue();
     void queryTmdbMovie(const QString &infoHash, const ParsedName &parsed);
     void queryTmdbTv(const QString &infoHash, const ParsedName &parsed);
-    void queryIgdb(const QString &infoHash, const ParsedName &parsed);
+    // searchOverride: shortened re-query when the full title finds nothing
+    // ("Garfield Kart 2 All You Can Drift" → "Garfield Kart 2"); scoring still
+    // runs against the full parsed title.
+    void queryIgdb(const QString &infoHash, const ParsedName &parsed,
+                   const QString &searchOverride = QString());
     void ensureIgdbToken();
     // Re-fetch the English overview when the localized TMDB result had none,
     // then continue via `done`. kind = "movie" | "tv".

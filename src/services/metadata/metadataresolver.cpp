@@ -532,8 +532,11 @@ static bool confidentTitle(const QString &query, const QString &title)
         || foldTitle(title) == foldTitle(query);
 }
 
-void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &parsed)
+void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &parsed,
+                                 const QString &searchOverride)
 {
+    const QString queryTitle = searchOverride.isEmpty() ? parsed.cleanTitle
+                                                        : searchOverride;
     QString clientId = igdbClientId();
     if (clientId.isEmpty() || igdbClientSecret().isEmpty()) {
         if (parsed.contentType == ContentType::Unknown)
@@ -550,7 +553,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
         return;
     }
 
-    qDebug() << "[metadata] queryIgdb:" << parsed.cleanTitle;
+    qDebug() << "[metadata] queryIgdb:" << queryTitle;
 
     QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
     req.setRawHeader("Client-ID", clientId.toUtf8());
@@ -560,7 +563,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
 
     // escape the quoted search term — cleanTitle comes from the torrent name,
     // so a stray " or \ would break out of the Apicalypse string literal.
-    QString safeTitle = parsed.cleanTitle;
+    QString safeTitle = queryTitle;
     safeTitle.replace('\\', QStringLiteral("\\\\")).replace('"', QStringLiteral("\\\""));
     QString body = QStringLiteral("search \"%1\"; fields name,summary,rating,first_release_date,genres.name,platforms.name,cover.image_id; limit 5;")
         .arg(safeTitle);
@@ -568,7 +571,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
     m_requestInFlight = true;
     auto *reply = m_nam->post(req, body.toUtf8());
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, infoHash, parsed]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, infoHash, parsed, queryTitle]() {
         reply->deleteLater();
         m_requestInFlight = false;
 
@@ -582,7 +585,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
         }
 
         QJsonArray results = QJsonDocument::fromJson(reply->readAll()).array();
-        qDebug() << "[metadata] IGDB results:" << results.size() << "for" << parsed.cleanTitle;
+        qDebug() << "[metadata] IGDB results:" << results.size() << "for" << queryTitle;
 
         // Pick the result whose title is most similar to the query (folded token
         // overlap), with a small bonus when the release year matches. This beats
@@ -607,6 +610,19 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
             || foldTitle(item.value(QLatin1String("name")).toString()) == foldTitle(parsed.cleanTitle);
 
         if (!found) {
+            // IGDB's search chokes on long subtitled names ("Garfield Kart 2
+            // All You Can Drift" finds nothing; "Garfield Kart 2" does). Retry
+            // with the front half of the tokens, down to 3 — scoring above
+            // still compares against the full title, so a wrong-franchise hit
+            // can't sneak in just because the query got shorter.
+            const QStringList toks = queryTitle.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+            if (toks.size() > 3) {
+                const int keep = qMax(3, int((toks.size() + 1) / 2));
+                const QString shorter = QStringList(toks.mid(0, keep)).join(QLatin1Char(' '));
+                qDebug() << "[metadata] IGDB: retrying with shortened title" << shorter;
+                queryIgdb(infoHash, parsed, shorter);
+                return;
+            }
             qDebug() << "[metadata] IGDB: no confident match for" << parsed.cleanTitle;
             if (parsed.contentType == ContentType::Unknown)
                 queryTmdbMovie(infoHash, parsed);
