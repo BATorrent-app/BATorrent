@@ -46,6 +46,9 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString selectedDownloaded READ selectedDownloaded NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDownSpeed READ selectedDownSpeed NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedUpSpeed READ selectedUpSpeed NOTIFY selectionChanged)
+    // raw rates (bytes/s) — the UI colors transfer numbers only when moving
+    Q_PROPERTY(int selectedDownRate READ selectedDownRate NOTIFY selectionChanged)
+    Q_PROPERTY(int selectedUpRate READ selectedUpRate NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedEta READ selectedEta NOTIFY selectionChanged)
     Q_PROPERTY(int selectedSeeds READ selectedSeeds NOTIFY selectionChanged)
     Q_PROPERTY(int selectedPeers READ selectedPeers NOTIFY selectionChanged)
@@ -280,6 +283,8 @@ public:
     QString selectedDownloaded() const;
     QString selectedDownSpeed() const;
     QString selectedUpSpeed() const;
+    int selectedDownRate() const;
+    int selectedUpRate() const;
     QString selectedEta() const;
     int selectedSeeds() const;
     int selectedPeers() const;

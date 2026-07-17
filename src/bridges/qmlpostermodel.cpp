@@ -115,6 +115,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case NameRole:       return info.name;
     case StateKeyRole: {
         if (info.completed) return QStringLiteral("completed");
+        if (info.queued) return QStringLiteral("queued");
         if (info.paused) return QStringLiteral("paused");
         if (info.progress >= 1.0f) return QStringLiteral("seeding");
         return QStringLiteral("downloading");
@@ -168,6 +169,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case RatioRole:       return info.ratio;
     case AvailabilityRole: return info.availability;
     case EtaRole:         return formatEta(info);
+    case DownloadedRole:  return formatSize(info.totalDone);
     case PlayableRole: {
         // authoritative movie test, same file rule as the game classifier:
         // any .exe ⇒ game (not playable here); a video with no .exe ⇒ movie.
@@ -208,6 +210,7 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {RatioRole,       "ratio"},
         {AvailabilityRole, "availability"},
         {EtaRole,         "eta"},
+        {DownloadedRole,  "downloaded"},
         {PlayableRole,    "playable"}
     };
 }
@@ -247,11 +250,11 @@ void QmlPosterModel::emitRows(bool fullRoles)
     // pipeline and made the proxy re-sort live. Send only the volatile roles on
     // the tick; full edits (rename/category/restore) use fullRoles.
     static const QList<int> volatileRoles = {
-        ProgressRole, StateKeyRole, StateStringRole, DownSpeedRole,
-        UpSpeedRole, NumPeersRole, DownRateRole, UpRateRole,
+        ProgressRole, StateKeyRole, StateStringRole, StateDetailRole,
+        DownSpeedRole, UpSpeedRole, NumPeersRole, DownRateRole, UpRateRole,
         // size resolves once a magnet's metadata arrives — without it the grid
         // (and list) stay stuck at "0 B" until some full refresh happens.
-        SizeRole, SizeBytesRole };
+        SizeRole, SizeBytesRole, DownloadedRole };
     if (fullRoles)
         emit dataChanged(index(0), index(m_lastCount - 1));
     else

@@ -57,6 +57,18 @@ QString QmlSessionBridge::selectedUpSpeed() const
     return formatSpeed(m_session->torrentAt(m_selectedIndex).uploadRate);
 }
 
+int QmlSessionBridge::selectedDownRate() const
+{
+    if (!hasSelection()) return 0;
+    return m_session->torrentAt(m_selectedIndex).downloadRate;
+}
+
+int QmlSessionBridge::selectedUpRate() const
+{
+    if (!hasSelection()) return 0;
+    return m_session->torrentAt(m_selectedIndex).uploadRate;
+}
+
 QString QmlSessionBridge::selectedEta() const
 {
     if (!hasSelection()) return QStringLiteral("—");

@@ -257,7 +257,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     static const QSet<QString> uiBoolKeys = {
         QStringLiteral("closeToTray"), QStringLiteral("showSplash"), QStringLiteral("startTray"),
         QStringLiteral("notifSound"), QStringLiteral("randomPort"), QStringLiteral("autoShutdown"),
-        QStringLiteral("autoTrackers"), QStringLiteral("torrentSearchEnabled"),
+        QStringLiteral("autoTrackers"), QStringLiteral("addPublicTrackers"),
+        QStringLiteral("torrentSearchEnabled"),
         QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
         QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
         QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude"),

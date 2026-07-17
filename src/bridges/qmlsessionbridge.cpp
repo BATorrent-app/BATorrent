@@ -984,6 +984,9 @@ void QmlSessionBridge::rebuildPeerCache()
         const QString cc = m_geoIp->cachedCountry(p.ip);
         if (cc.isEmpty())
             m_geoIp->resolve(p.ip);
+        // Windows has no color-emoji flag glyphs (regional indicators render as
+        // letter pairs/boxes) — the QML side falls back to this bare code there.
+        m["cc"]   = cc.toUpper();
         m["flag"] = cc.isEmpty() ? QString() : countryCodeToFlag(cc);
         out << m;
     }

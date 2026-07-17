@@ -32,6 +32,7 @@ public:
         RatioRole,
         AvailabilityRole,
         EtaRole,
+        DownloadedRole,     // formatted total_wanted_done ("107 MB of 6.4 GB" cards)
         PlayableRole        // a video torrent with no .exe → offer in-tile Play
     };
 
