@@ -4,6 +4,7 @@
 
 #include "torrent/sessionmanager.h"
 #include "torrent/bandwidthschedule.h"
+#include "torrent/magnettrackers.h"
 #include "services/platform/logger.h"
 #include "services/platform/translator.h"
 #include "services/security/archivescan.h"
@@ -45,18 +46,6 @@
 // DHT routing table persisted across runs — a warm table means peer discovery
 // (and the download ramp) starts fast instead of re-bootstrapping the DHT from
 // scratch every launch (~30-60s cold). Path sits next to the resume data.
-const std::vector<std::string> &SessionManager::publicTrackers()
-{
-    static const std::vector<std::string> list = {
-        "udp://tracker.opentrackr.org:1337/announce",
-        "udp://open.demonii.com:1337/announce",
-        "udp://open.stealth.si:80/announce",
-        "udp://tracker.torrent.eu.org:451/announce",
-        "udp://exodus.desync.com:6969/announce",
-    };
-    return list;
-}
-
 static QString dhtStatePath()
 {
     return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
@@ -317,12 +306,13 @@ SessionManager::SessionManager(QObject *parent)
     if (!persistedIface.isEmpty()) setOutgoingInterface(persistedIface);
     {
         int port = settings.value("listenPort", 0).toInt();
-        if (port <= 0) {
-            // First run: stable random high port instead of libtorrent's 6881
-            // default — the 688x range is a classic ISP-throttle target and
-            // collides with other clients on the same machine (with
-            // listen_system_port_fallback off, a busy port = no listen socket
-            // at all). Persisted so the user's port forward stays valid.
+        // First run: stable random high port instead of libtorrent's 6881
+        // default — the 688x range is a classic ISP-throttle target and
+        // collides with other clients on the same machine (with
+        // listen_system_port_fallback off, a busy port = no listen socket
+        // at all). Persisted so the user's port forward stays valid.
+        // The "randomPort" toggle re-rolls it on every launch instead.
+        if (port <= 0 || settings.value("randomPort", false).toBool()) {
             port = static_cast<int>(QRandomGenerator::global()->bounded(49152, 65536));
             settings.setValue("listenPort", port);
         }
@@ -346,6 +336,18 @@ SessionManager::SessionManager(QObject *parent)
     // an earlier version only cleared the flag after 15s of uptime, so quitting
     // before then looked like a crash and made every torrent vanish for a launch.
     migrateLegacyResumeData();   // pull torrents from the pre-3.0 data dir if needed
+
+    // Remove-with-files whose retry window was cut short by an app quit: the
+    // schedule*() timers die with the process, silently leaving data on disk.
+    // The old session's file locks died with it too, so retry those now.
+    {
+        const QStringList t = settings.value("pendingTrashTargets").toStringList();
+        const QStringList d = settings.value("pendingDeleteTargets").toStringList();
+        settings.remove("pendingTrashTargets");
+        settings.remove("pendingDeleteTargets");
+        if (!t.isEmpty()) scheduleTrash(t, 0);
+        if (!d.isEmpty()) scheduleDelete(d, 0);
+    }
 
     const bool prevCrash = settings.value("startupInProgress", false).toBool();
     if (prevCrash) {
@@ -538,21 +540,10 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath,
                        | lt::torrent_flags::paused);
 
         // Magnets often carry few or dead trackers and then depend entirely on
-        // DHT for the metadata fetch. Append well-known open trackers (lowest
-        // tier, dedup'd); onMetadataReceived strips them again if the torrent
-        // turns out to be private.
-        if (QSettings("BATorrent", "BATorrent").value("addPublicTrackers", true).toBool()) {
-            if (atp.tracker_tiers.size() != atp.trackers.size())
-                atp.tracker_tiers.resize(atp.trackers.size(), 0);
-            int tier = static_cast<int>(atp.trackers.size());
-            for (const std::string &t : publicTrackers()) {
-                if (std::find(atp.trackers.begin(), atp.trackers.end(), t)
-                        != atp.trackers.end())
-                    continue;
-                atp.trackers.push_back(t);
-                atp.tracker_tiers.push_back(tier++);
-            }
-        }
+        // DHT for the metadata fetch. Append well-known open trackers;
+        // onMetadataReceived strips them again if the torrent turns out private.
+        if (QSettings("BATorrent", "BATorrent").value("addPublicTrackers", true).toBool())
+            bat::appendPublicTrackers(atp.trackers, atp.tracker_tiers);
 
         // Real hash from the URI (known even before metadata, unlike a magnet's
         // torrent_status which reports all-zeros until then).
@@ -831,6 +822,12 @@ TorrentInfo SessionManager::torrentAt(int index) const
     info.numSeeds = st.num_seeds;
     info.stateString = stateToString(st.state);
     info.paused = (st.flags & lt::torrent_flags::paused) != lt::torrent_flags_t{};
+    if (info.paused && m_queuePaused.count(m_torrents[index])) {
+        info.queued = true;
+        info.queuePos = 1;
+        for (int i = 0; i < index; ++i)
+            if (m_queuePaused.count(m_torrents[i])) ++info.queuePos;
+    }
     QString hash;
     if (st.has_metadata)
         hash = QString::fromStdString(
@@ -848,7 +845,9 @@ TorrentInfo SessionManager::torrentAt(int index) const
         // onTorrentFinished) without going through markCompleted(), so a
         // finished torrent otherwise reads as bare "Paused" — ambiguous
         // about whether the download itself is done (reported by a user).
-        info.stateString = (info.progress >= 1.0f) ? tr_("state_paused_done") : tr_("state_paused");
+        info.stateString = info.queued
+            ? tr_("state_queued").arg(info.queuePos)
+            : (info.progress >= 1.0f) ? tr_("state_paused_done") : tr_("state_paused");
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else {
@@ -864,7 +863,11 @@ TorrentInfo SessionManager::torrentAt(int index) const
         if (st.errc)
             info.stateDetail = QString::fromStdString(st.errc.message());
         else if (info.numPeers == 0)
-            info.stateDetail = m_dhtEnabled ? tr_("state_no_peers_dht") : tr_("state_no_peers");
+            // candidates known but none connected yet = the "connecting" phase;
+            // nothing found at all = still searching the swarm
+            info.stateDetail = st.connect_candidates > 0
+                ? tr_("state_connecting")
+                : (m_dhtEnabled ? tr_("state_no_peers_dht") : tr_("state_no_peers"));
         else if (info.numSeeds == 0)
             info.stateDetail = tr_("state_no_seeds");
         else
@@ -1692,10 +1695,15 @@ void SessionManager::scanWatchedFolder()
         QString savePath = s.value("lastSavePath",
             QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
         addTorrent(path, savePath);
-        // Move the .torrent to a "processed" subfolder to avoid re-adding
+        // Move the .torrent to a "processed" subfolder to avoid re-adding.
+        // rename() fails silently if a same-named file was archived before —
+        // the leftover then re-adds the torrent on every scan (reported as
+        // removed torrents "coming back"). Clear the slot first.
         QDir processed(dir.filePath(".processed"));
         if (!processed.exists()) processed.mkpath(".");
-        QFile::rename(path, processed.filePath(f));
+        QFile::remove(processed.filePath(f));
+        if (!QFile::rename(path, processed.filePath(f)))
+            qWarning() << "[session] watched folder: couldn't archive" << f;
     }
 }
 

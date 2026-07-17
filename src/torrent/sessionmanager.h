@@ -474,10 +474,6 @@ private:
     // Request an immediate resume-data write for a handle (so a freshly-added,
     // never-downloaded torrent survives a restart). Mirrors the piece_finished path.
     void stageResumeSave(const lt::torrent_handle &h);
-    // Long-lived open trackers appended to magnets (addMagnet) so metadata
-    // fetch doesn't hinge on DHT alone; stripped again in onMetadataReceived
-    // if the torrent turns out to be private.
-    static const std::vector<std::string> &publicTrackers();
     // Persist a metadata-less magnet's add params as its .resume file —
     // saveResumeData() skips torrents without metadata, so without this a
     // crash mid-fetch silently drops the torrent from the list.

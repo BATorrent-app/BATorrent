@@ -24,6 +24,8 @@ struct TorrentInfo {
     QString stateDetail;   // why a downloading torrent isn't moving ("" when fine)
     bool paused;
     bool completed = false;
+    bool queued = false;   // paused by the download-queue cap, not the user
+    int queuePos = 0;      // 1-based position among queued torrents
     float ratio;
     float availability = 0;     // distributed copies (swarm health)
     qint64 totalUploaded = 0;
