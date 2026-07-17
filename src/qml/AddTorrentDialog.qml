@@ -143,15 +143,15 @@ BatDialog {
         visible: dlg.wontFit
         implicitHeight: fitRow.implicitHeight + 16
         radius: 8
-        color: Qt.rgba(224/255, 165/255, 51/255, 0.12)
-        border.color: Qt.rgba(224/255, 165/255, 51/255, 0.32)
+        color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.12)
+        border.color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.32)
         border.width: 1
         RowLayout {
             id: fitRow
             anchors.fill: parent
             anchors.margins: 10
             spacing: 10
-            Text { text: "⚠"; color: "#e0a533"; font.pixelSize: 15 }
+            IconImg { src: "qrc:/icons/triangle-alert.svg"; tint: Theme.amber; s: 15; Layout.alignment: Qt.AlignVCenter }
             Text {
                 Layout.fillWidth: true
                 text: (i18n.language, i18n.t("addt_wontfit")).arg(dlg.totalSize)
@@ -201,7 +201,11 @@ BatDialog {
                     anchors.rightMargin: 14
                     spacing: 10
                     TChk { Layout.alignment: Qt.AlignVCenter; on: model.on; onToggled: function(v) { fileModel.setProperty(index, "on", v); dlg.recount() } }
-                    Text { text: model.dir ? "📁" : "📄"; color: model.dir ? Theme.amber : Theme.t3; font.pixelSize: 13 }
+                    IconImg {
+                        src: model.dir ? "qrc:/icons/open.svg" : "qrc:/icons/file.svg"
+                        tint: model.dir ? Theme.amber : Theme.t3; s: 13
+                        Layout.alignment: Qt.AlignVCenter
+                    }
                     Text {
                         Layout.fillWidth: true
                         text: model.path; color: Theme.t1

@@ -453,10 +453,18 @@ Rectangle {
                         Text { Layout.fillWidth: true; text: car.dlItem ? (car.dlItem.title || "") : ""; color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; elide: Text.ElideRight }
                         RowLayout {
                             Layout.fillWidth: true; spacing: 6
+                            // svg play/pause glyphs — ▶/⏸ text renders as
+                            // colored system emoji on Windows
+                            IconImg {
+                                visible: car.dlItem && (car.slotResume || car.dlItem.paused === true)
+                                src: car.slotResume ? "qrc:/icons/play.svg" : "qrc:/icons/pause.svg"
+                                tint: Theme.accent; s: 11
+                                Layout.alignment: Qt.AlignVCenter
+                            }
                             Text {
                                 text: !car.dlItem ? ""
-                                      : car.slotResume ? ("▶ " + i18n.t("hub_resume"))
-                                      : (car.dlItem.paused === true) ? ("⏸ " + i18n.t("state_paused"))
+                                      : car.slotResume ? i18n.t("hub_resume")
+                                      : (car.dlItem.paused === true) ? i18n.t("state_paused")
                                       : car.slotSeed ? ("↑ " + (car.dlItem.upSpeed || ""))
                                       : ("↓ " + (car.dlItem.downSpeed || ""))
                                 color: Theme.accent; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum

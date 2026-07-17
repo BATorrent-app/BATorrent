@@ -125,7 +125,7 @@ ColumnLayout {
         Layout.topMargin: 12
         Layout.bottomMargin: 12
         spacing: Theme.sp3
-        Text { text: "⚠"; color: Theme.amber; font.pixelSize: 13; Layout.alignment: Qt.AlignTop }
+        IconImg { src: "qrc:/icons/triangle-alert.svg"; tint: Theme.amber; s: 13; Layout.alignment: Qt.AlignTop }
         Text {
             Layout.fillWidth: true
             visible: field.type === "warning"

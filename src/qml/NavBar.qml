@@ -195,10 +195,18 @@ Rectangle {
                     }
                     RowLayout {
                         spacing: 6
+                        // svg play/pause glyphs — ▶/⏸ text renders as colored
+                        // system emoji on Windows
+                        IconImg {
+                            visible: car.dlItem && (car.slotResume || car.dlItem.paused === true)
+                            src: car.slotResume ? "qrc:/icons/play.svg" : "qrc:/icons/pause.svg"
+                            tint: Theme.accent; s: 9
+                            Layout.alignment: Qt.AlignVCenter
+                        }
                         Text {
                             text: !car.dlItem ? ""
-                                  : car.slotResume ? ("▶ " + i18n.t("hub_resume"))
-                                  : (car.dlItem.paused === true) ? ("⏸ " + i18n.t("state_paused"))
+                                  : car.slotResume ? i18n.t("hub_resume")
+                                  : (car.dlItem.paused === true) ? i18n.t("state_paused")
                                   : car.slotSeed ? ("↑ " + (car.dlItem.upSpeed || ""))
                                   : ("↓ " + (car.dlItem.downSpeed || ""))
                             color: Theme.accent

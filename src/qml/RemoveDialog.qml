@@ -38,11 +38,10 @@ BatDialog {
             color: Qt.rgba(229/255, 51/255, 43/255, 0.12)
             border.color: Qt.rgba(229/255, 51/255, 43/255, 0.32)
             border.width: 1
-            Text {
+            IconImg {
                 anchors.centerIn: parent
-                text: "⚠"
-                color: Theme.accentText
-                font.pixelSize: 20
+                src: "qrc:/icons/triangle-alert.svg"
+                tint: Theme.accentText; s: 18
             }
         }
 
