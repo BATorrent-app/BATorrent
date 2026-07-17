@@ -15,6 +15,16 @@ ColumnLayout {
     property bool compact: false   // 2-line rows for the 340px side inspector
     spacing: 0
 
+    // country codes we ship a crisp SVG flag for; the long tail falls back to
+    // the emoji flag (mac) or the bare code (Windows has no emoji flags)
+    readonly property var flagCodes: ["at","be","ch","de","dk","fi","fr","id",
+        "ie","it","jp","nl","no","pl","pt","ro","ru","se","ua"]
+    function flagSrc(cc) {
+        if (!cc) return ""
+        var c = cc.toLowerCase()
+        return flagCodes.indexOf(c) >= 0 ? ("qrc:/icons/countryflags/" + c + ".svg") : ""
+    }
+
     Rectangle {
         visible: !pane.compact
         Layout.fillWidth: true
@@ -66,14 +76,25 @@ ColumnLayout {
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5
-                Text {
-                    // Windows can't render emoji flags — show the country code instead
-                    text: Qt.platform.os === "windows" ? (modelData.cc || "") : (modelData.flag || "")
-                    Layout.preferredWidth: 56
-                    color: Qt.platform.os === "windows" ? Theme.t3 : Theme.t1
-                    font.pixelSize: Qt.platform.os === "windows" ? 10 : 13
-                    font.weight: Qt.platform.os === "windows" ? Font.DemiBold : Font.Normal
-                    font.family: Theme.fontSans
+                Item {
+                    Layout.preferredWidth: 56; Layout.fillHeight: true
+                    property string fsrc: pane.flagSrc(modelData.cc)
+                    // crisp SVG flag when we ship it; else emoji (mac) / code (Windows)
+                    Image {
+                        visible: parent.fsrc !== ""
+                        source: parent.fsrc
+                        width: 20; height: 14; anchors.verticalCenter: parent.verticalCenter
+                        sourceSize: Qt.size(30, 20); smooth: true; asynchronous: true
+                    }
+                    Text {
+                        visible: parent.fsrc === ""
+                        text: Qt.platform.os === "windows" ? (modelData.cc || "") : (modelData.flag || "")
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Qt.platform.os === "windows" ? Theme.t3 : Theme.t1
+                        font.pixelSize: Qt.platform.os === "windows" ? 10 : 13
+                        font.weight: Qt.platform.os === "windows" ? Font.DemiBold : Font.Normal
+                        font.family: Theme.fontSans
+                    }
                 }
                 Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
                 Text { text: modelData.client; Layout.preferredWidth: 150; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
@@ -97,12 +118,24 @@ ColumnLayout {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 7
-                    Text {
-                        text: Qt.platform.os === "windows" ? (modelData.cc || "") : (modelData.flag || "")
-                        color: Qt.platform.os === "windows" ? Theme.t3 : Theme.t1
-                        font.pixelSize: Qt.platform.os === "windows" ? 10 : 12
-                        font.weight: Qt.platform.os === "windows" ? Font.DemiBold : Font.Normal
-                        font.family: Theme.fontSans
+                    Item {
+                        property string fsrc: pane.flagSrc(modelData.cc)
+                        Layout.preferredWidth: fsrc !== "" ? 18 : cmpCode.implicitWidth
+                        Layout.preferredHeight: 13; Layout.alignment: Qt.AlignVCenter
+                        Image {
+                            visible: parent.fsrc !== ""; source: parent.fsrc
+                            width: 18; height: 12; anchors.verticalCenter: parent.verticalCenter
+                            sourceSize: Qt.size(30, 20); smooth: true; asynchronous: true
+                        }
+                        Text {
+                            id: cmpCode; visible: parent.fsrc === ""
+                            text: Qt.platform.os === "windows" ? (modelData.cc || "") : (modelData.flag || "")
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Qt.platform.os === "windows" ? Theme.t3 : Theme.t1
+                            font.pixelSize: Qt.platform.os === "windows" ? 10 : 12
+                            font.weight: Qt.platform.os === "windows" ? Font.DemiBold : Font.Normal
+                            font.family: Theme.fontSans
+                        }
                     }
                     Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
                     Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono }

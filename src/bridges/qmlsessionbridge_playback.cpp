@@ -12,6 +12,7 @@
 #include "services/subtitles/subtitleparser.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/metadata/nameparser.h"
+#include "services/metadata/mkvchapters.h"
 #include "services/platform/translator.h"
 #include "services/platform/utils.h"
 
@@ -286,6 +287,75 @@ int QmlSessionBridge::nextEpisode(const QString &infoHash, int fileIndex) const
     for (size_t i = 0; i + 1 < vids.size(); ++i)
         if (vids[i].idx == fileIndex) return vids[i + 1].idx;
     return -1;
+}
+
+QVariantMap QmlSessionBridge::playerTitle(const QString &infoHash, int fileIndex) const
+{
+    QVariantMap out;
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return out;
+
+    // Raw leaf name of the playing file — the honest source, kept for the
+    // info tooltip so nothing is hidden, just de-emphasised.
+    const QStringList names = m_session->torrentFileNames(row);
+    QString raw = (fileIndex >= 0 && fileIndex < names.size())
+        ? names.at(fileIndex).section('/', -1)
+        : QString::fromStdString(m_session->torrentAt(row).name.toStdString());
+    if (raw.endsWith(QLatin1String(".!bt"))) raw.chop(4);
+    out["raw"] = raw;
+
+    const ParsedName pn = NameParser::parse(raw);
+
+    // Prefer the resolver's clean title (TMDB/IGDB) when we have it; fall back
+    // to the parsed title, then the raw name.
+    QString title;
+    if (m_resolver && m_resolver->hasCached(infoHash)) {
+        const MetadataResult meta = m_resolver->cached(infoHash);
+        if (meta.valid && !meta.title.isEmpty()) title = meta.title;
+    }
+    if (title.isEmpty()) title = pn.cleanTitle.trimmed();
+    if (title.isEmpty()) title = raw;
+
+    // Subtitle: series → "S4 · E10"; movie → the year. Season/episode come
+    // from the per-file parse (a season pack shares one resolved title).
+    QString subtitle;
+    if (pn.season >= 0 && pn.episode >= 0)
+        subtitle = QStringLiteral("S%1 · E%2").arg(pn.season).arg(pn.episode);
+    else if (pn.year > 0)
+        subtitle = QString::number(pn.year);
+
+    out["title"] = title;
+    out["subtitle"] = subtitle;
+    return out;
+}
+
+QVariantList QmlSessionBridge::mkvChapters(const QString &infoHash, int fileIndex) const
+{
+    QVariantList out;
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return out;
+    QString path = m_session->streamFilePath(row, fileIndex);
+    if (path.isEmpty() || !path.endsWith(QLatin1String(".mkv"), Qt::CaseInsensitive)) {
+        // may still be mid-download under the .!bt suffix
+        if (!path.endsWith(QLatin1String(".mkv.!bt"), Qt::CaseInsensitive)) return out;
+    }
+    for (const MkvChapter &c : readMkvChapters(path)) {
+        QVariantMap m;
+        m["startMs"] = c.startMs;
+        m["endMs"] = c.endMs;
+        m["name"] = c.name;
+        m["kind"] = c.kind;
+        out << m;
+    }
+    return out;
+}
+
+QString QmlSessionBridge::posterForHash(const QString &infoHash) const
+{
+    if (!m_resolver || !m_resolver->hasCached(infoHash)) return {};
+    const MetadataResult meta = m_resolver->cached(infoHash);
+    if (!meta.valid || meta.posterPath.isEmpty()) return {};
+    return meta.posterPath;
 }
 
 void QmlSessionBridge::watchWhenReady(const QString &infoHash, const QString &title)

@@ -30,8 +30,14 @@ Window {
 
     property string streamUrl: ""
     property string localFile: ""   // on-disk path of the playing file (seek previews decode this, not the HTTP stream)
+    readonly property bool ambientGlow: (typeof settings === "undefined") || settings.get("ambientGlow") !== false
     property string mediaTitle: ""
     property string mediaFileName: ""
+    // resolved display title (metadata) + "S4 · E10"/year; raw name lives in
+    // mediaFileName (info tooltip). Falls back to mediaTitle if unresolved.
+    property string resolvedTitle: ""
+    property string resolvedSubtitle: ""
+    readonly property string headerTitle: resolvedTitle.length > 0 ? resolvedTitle : mediaTitle
     readonly property string mediaQuality: {
         var n = mediaFileName.toLowerCase()
         if (/2160p|\buhd\b|\b4k\b/.test(n)) return "4K"
@@ -288,12 +294,57 @@ Window {
         if (s >= 60)   return Math.floor(s / 60) + " min buffered ahead"
         return s + "s buffered ahead"
     }
+    function fileUrl(p) {
+        if (!p || p.length === 0) return ""
+        if (/^(file|qrc|https?|image):/.test(p)) return p
+        return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
+    }
+    // compact runway for the control-bar pill ("+38 min", "+45s")
+    function fmtRunway(ms) {
+        var s = Math.floor(ms / 1000)
+        if (s >= 3600) return Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m"
+        if (s >= 60)   return Math.floor(s / 60) + " min"
+        return s + "s"
+    }
     // entry point used by Main.qml when (re)opening the player with new media
     property int nextIdx: -1     // file index of the next episode, or -1
+    property bool autoplayNext: (typeof settings === "undefined") || settings.get("autoplayNext") !== false
+    // MKV chapters → skip intro/credits chip
+    property var chapters: []
+    readonly property var activeSkip: {
+        for (var i = 0; i < chapters.length; ++i) {
+            var c = chapters[i]
+            if (c.kind && c.endMs > 0 && player.position >= c.startMs && player.position < c.endMs - 1000)
+                return c
+        }
+        return null
+    }
+    // next-episode end card
+    property string nextPoster: ""
+    property string nextTitle: ""
+    property string nextSubtitle: ""
+    property bool endCardDismissed: false
+    property int countdownSec: 0            // >0 while auto-advancing
+    readonly property real endCardLeadMs: 28000   // card appears this close to the end
+    readonly property bool inLeadWindow: player.duration > 0 && player.position > 0
+        && (player.duration - player.position) <= endCardLeadMs
+    readonly property bool showEndCard: win.nextIdx >= 0 && !win.endCardDismissed
+        && win.autoplayNext && (win.inLeadWindow || win.countdownSec > 0)
+    function playNextNow() {
+        countdown.stop(); win.countdownSec = 0
+        if (typeof session !== "undefined" && win.nextIdx >= 0)
+            session.playFile(win.infoHash, win.nextIdx)
+    }
     function maybePlayNext() {
         if (typeof session === "undefined" || win.nextIdx < 0) return
-        if (typeof settings !== "undefined" && settings.get("autoplayNext") === false) return  // default on
-        session.playFile(win.infoHash, win.nextIdx)
+        if (!win.autoplayNext || win.endCardDismissed) return
+        // hand off to the visible countdown instead of a silent cut
+        win.countdownSec = 8
+        countdown.restart()
+    }
+    Timer {
+        id: countdown; interval: 1000; repeat: true
+        onTriggered: { win.countdownSec -= 1; if (win.countdownSec <= 0) win.playNextNow() }
     }
     function openMedia(url, title, hash, fileIdx) {
         win.saveResume()
@@ -304,12 +355,26 @@ Window {
         win.fileIndex = fileIdx
         win.mediaFileName = (typeof session !== "undefined") ? session.streamFileName(hash, fileIdx) : ""
         win.localFile = (typeof session !== "undefined") ? session.streamLocalPath(hash, fileIdx) : ""
+        var pt = (typeof session !== "undefined") ? session.playerTitle(hash, fileIdx) : ({})
+        win.resolvedTitle = pt.title || ""
+        win.resolvedSubtitle = pt.subtitle || ""
         win.pendingResumeMs = (typeof settings !== "undefined") ? Number(settings.get(win.resumeKey) || 0) : 0
         win.resumeAtMs = 0
         win.resumeTries = 0
         resumeRetry.stop()
         win.aheadShown = false
+        win.chapters = (typeof session !== "undefined") ? session.mkvChapters(hash, fileIdx) : []
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
+        // pre-resolve the next episode's card data (same show → same poster)
+        win.endCardDismissed = false
+        win.countdownSec = 0
+        countdown.stop()
+        if (win.nextIdx >= 0 && typeof session !== "undefined") {
+            var np = session.playerTitle(hash, win.nextIdx)
+            win.nextTitle = np.title || ""
+            win.nextSubtitle = np.subtitle || ""
+            win.nextPoster = session.posterForHash(hash)
+        } else { win.nextTitle = ""; win.nextSubtitle = ""; win.nextPoster = "" }
         win.tracksRestored = false
         win.loadSubStyle()
         win.clearExternalSubs()
@@ -358,6 +423,24 @@ Window {
     onClosing: { win.saveResume(); player.stop(); win.closed() }
 
     Rectangle { anchors.fill: parent; color: "#000000" }
+
+    // ambient glow — a blurred, upscaled copy of the frame bleeding into the
+    // letterbox bars (Apple TV). One decoder: MultiEffect samples the same
+    // VideoOutput, so there's no second stream. Gated behind a setting for
+    // weaker GPUs (default on).
+    MultiEffect {
+        anchors.fill: parent
+        source: videoOut
+        z: -1
+        visible: win.ambientGlow && player.hasVideo
+        blurEnabled: true
+        blur: 1.0
+        blurMax: 64
+        scale: 1.18
+        opacity: 0.45
+        brightness: -0.05
+        saturation: 0.35
+    }
 
     VideoOutput {
         id: videoOut
@@ -561,6 +644,147 @@ Window {
         onLoadFile: subFileDlg.open()
     }
 
+    // ---- skip intro / credits chip (bottom-right, above the control bar) ----
+    // Netflix-style: appears while the playhead sits inside a chapter the MKV
+    // labelled intro/opening/credits, seeks to its end. Visible even when the
+    // chrome is hidden, but yields to the end card.
+    Rectangle {
+        id: skipChip
+        z: 57
+        readonly property var sk: win.activeSkip
+        visible: opacity > 0
+        opacity: (sk && !win.showEndCard) ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        anchors.right: parent.right; anchors.bottom: parent.bottom
+        anchors.rightMargin: 24
+        anchors.bottomMargin: win.controlsShown ? 134 : 40
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        width: skipRow.width + 30; height: 40
+        radius: 8
+        color: skMa.containsMouse ? "#ffffff" : "#e6101014"
+        border.color: skMa.containsMouse ? "#ffffff" : Theme.hair; border.width: 1
+        Behavior on color { ColorAnimation { duration: 120 } }
+        Row {
+            id: skipRow; anchors.centerIn: parent; spacing: 8
+            IconImg {
+                anchors.verticalCenter: parent.verticalCenter
+                src: "qrc:/icons/skip-forward.svg"; s: 15
+                tint: skMa.containsMouse ? "#0a0a0c" : Theme.t1
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: skipChip.sk ? (skipChip.sk.kind === "credits"
+                        ? (i18n.language, i18n.t("player_skip_credits"))
+                        : (i18n.language, i18n.t("player_skip_intro"))) : ""
+                color: skMa.containsMouse ? "#0a0a0c" : Theme.t1
+                font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+            }
+        }
+        MouseArea {
+            id: skMa; anchors.fill: parent
+            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onClicked: if (skipChip.sk) { player.position = skipChip.sk.endMs; win.showControls() }
+        }
+    }
+
+    // ---- next-episode end card (bottom-right, above the control bar) ----
+    Rectangle {
+        id: endCard
+        z: 58
+        visible: opacity > 0
+        opacity: win.showEndCard ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        anchors.right: parent.right; anchors.bottom: parent.bottom
+        anchors.rightMargin: 24; anchors.bottomMargin: 134
+        width: 348; height: 116
+        radius: 12
+        color: "#f2101014"
+        border.color: Theme.hair; border.width: 1
+        transform: Translate { y: win.showEndCard ? 0 : 10; Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } } }
+
+        Row {
+            anchors.fill: parent; anchors.margins: 12; spacing: 12
+
+            // poster with a countdown ring overlay
+            Item {
+                width: 62; height: 92; anchors.verticalCenter: parent.verticalCenter
+                Rectangle {
+                    anchors.fill: parent; radius: 7; clip: true
+                    color: "#1c1c20"; border.color: Theme.hairSoft; border.width: 1
+                    Image {
+                        anchors.fill: parent
+                        source: win.nextPoster.length > 0 ? win.fileUrl(win.nextPoster) : ""
+                        fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true
+                    }
+                }
+                // ring that fills as the countdown runs down
+                Canvas {
+                    id: ring
+                    anchors.centerIn: parent; width: 40; height: 40
+                    visible: win.countdownSec > 0
+                    property real frac: win.countdownSec / 8
+                    onFracChanged: requestPaint()
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.reset()
+                        var cx = width/2, cy = height/2, r = 17
+                        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2)
+                        ctx.lineWidth = 3; ctx.strokeStyle = "#40000000"; ctx.stroke()
+                        ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI/2, -Math.PI/2 + Math.PI*2*frac)
+                        ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.strokeStyle = "#e5332b"; ctx.stroke()
+                    }
+                    Text {
+                        anchors.centerIn: parent; text: win.countdownSec
+                        color: "#fff"; font.pixelSize: 15; font.weight: Font.Bold; font.family: Theme.fontSans
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width - 62 - 12
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 3
+                Text {
+                    text: (win.countdownSec > 0)
+                          ? ((i18n.language, i18n.t("player_next_ep")) + " · " + win.countdownSec + "s")
+                          : (i18n.language, i18n.t("player_up_next"))
+                    color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
+                    font.letterSpacing: 0.6; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
+                }
+                Text {
+                    width: parent.width; text: win.nextTitle
+                    color: "#f3f3f4"; font.pixelSize: 14; font.weight: Font.DemiBold
+                    font.family: Theme.fontSans; elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width; visible: win.nextSubtitle.length > 0
+                    text: win.nextSubtitle
+                    color: "#8a8b90"; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
+                }
+                Row {
+                    spacing: 8; topPadding: 4
+                    Rectangle {
+                        width: playNowRow.width + 22; height: 28; radius: 7; color: pnMa.containsMouse ? "#ff2e37" : Theme.accent
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Row {
+                            id: playNowRow; anchors.centerIn: parent; spacing: 6
+                            IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/play.svg"; tint: "#fff"; s: 13 }
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("player_watch_now")); color: "#fff"; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                        }
+                        MouseArea { id: pnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.playNextNow() }
+                    }
+                    Rectangle {
+                        width: cancelTxt.width + 22; height: 28; radius: 7
+                        color: cnMa.containsMouse ? "#1affffff" : "transparent"
+                        border.color: Theme.hair; border.width: 1
+                        Text { id: cancelTxt; anchors.centerIn: parent; text: (i18n.language, i18n.t("btn_cancel")); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans }
+                        MouseArea { id: cnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: { countdown.stop(); win.countdownSec = 0; win.endCardDismissed = true } }
+                    }
+                }
+            }
+        }
+    }
+
     // ---- title bar: gradient scrim · centered title + chips · info ----
     Item {
         id: topBar
@@ -593,14 +817,16 @@ Window {
             spacing: 9
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: win.mediaTitle.replace(/\s*\(\d{4}\)\s*$/, "")
+                text: win.headerTitle.replace(/\s*\(\d{4}\)\s*$/, "")
                 color: "#f3f3f4"; font.pixelSize: 15; font.weight: Font.DemiBold
                 font.letterSpacing: -0.2; font.family: Theme.fontSans
             }
+            // resolved subtitle ("S4 · E10" / year) — a soft separator + muted text,
+            // so the header reads like a show, not a filename
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: /\(\d{4}\)\s*$/.test(win.mediaTitle)
-                text: { var m = win.mediaTitle.match(/\((\d{4})\)\s*$/); return m ? ("(" + m[1] + ")") : "" }
+                visible: win.resolvedSubtitle.length > 0
+                text: win.resolvedSubtitle
                 color: "#6f7077"; font.pixelSize: 15; font.weight: Font.Medium; font.family: Theme.fontSans
             }
             Rectangle {
@@ -840,28 +1066,35 @@ Window {
                 Item { Layout.fillWidth: true }
 
                 // "↓ to 1:19:49" — bordered pill (downloaded-to time); hover = size
+                // "runway" pill — how much is ready to watch ahead of the
+                // playhead, the number a viewer actually cares about (not raw
+                // GB). Amber when the runway runs short; gone once fully local.
                 Rectangle {
                     Layout.alignment: Qt.AlignVCenter
-                    readonly property real prog: (win.streamStats && win.streamStats.progress) || 0
                     readonly property real total: (win.streamStats && win.streamStats.totalBytes) || 0
-                    visible: total > 0
+                    readonly property bool low: win.bufferedAheadMs < 30000
+                    visible: total > 0 && win.stillDownloading
                     implicitWidth: dlRow.implicitWidth + 22; implicitHeight: 30
                     radius: 8
                     color: dlMa.containsMouse ? "#1affffff" : "transparent"
-                    border.color: Theme.hair; border.width: 1
+                    border.color: low ? Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5) : Theme.hair
+                    border.width: 1
+                    Behavior on border.color { ColorAnimation { duration: 200 } }
                     Row {
                         id: dlRow; anchors.centerIn: parent; spacing: 6
-                        IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/download.svg"; tint: Theme.t3; s: 13 }
+                        IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/clock.svg"; tint: parent.parent.low ? Theme.amber : Theme.t3; s: 13 }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: parent.parent.prog < 0.999 ? ("to " + win.fmt(win.downloadedToMs)) : win.fmtBytes(parent.parent.total)
-                            color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono
+                            text: "+" + win.fmtRunway(win.bufferedAheadMs)
+                            color: parent.parent.low ? Theme.amber : Theme.t2
+                            font.pixelSize: 12; font.family: Theme.fontMono
                         }
                     }
                     MouseArea { id: dlMa; anchors.fill: parent; hoverEnabled: true }
                     ToolTip.visible: dlMa.containsMouse
                     ToolTip.delay: 250
-                    ToolTip.text: win.fmtBytes((win.streamStats && win.streamStats.downloadedBytes) || 0)
+                    ToolTip.text: win.fmtAhead(win.bufferedAheadMs) + "  ·  "
+                                  + win.fmtBytes((win.streamStats && win.streamStats.downloadedBytes) || 0)
                                   + " / " + win.fmtBytes((win.streamStats && win.streamStats.totalBytes) || 0)
                 }
                 // speed

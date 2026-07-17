@@ -206,6 +206,18 @@ public:
     Q_INVOKABLE void playByHashFile(const QString &infoHash, int fileIndex);   // resume a specific episode
     // Next episode's file index after fileIndex (season/episode order), or -1.
     Q_INVOKABLE int nextEpisode(const QString &infoHash, int fileIndex) const;
+    // Resolved display title for the player header — {title, subtitle, raw}.
+    // title/subtitle come from the metadata cache + name parse; raw is the
+    // original filename (shown in the info tooltip). fileIndex disambiguates
+    // episodes within a season pack.
+    Q_INVOKABLE QVariantMap playerTitle(const QString &infoHash, int fileIndex) const;
+    // Resolved cover path for a torrent (the show's poster), used by the
+    // player's next-episode end card.
+    Q_INVOKABLE QString posterForHash(const QString &infoHash) const;
+    // MKV chapters of the playing file → [{startMs, endMs, name, kind}] where
+    // kind is "intro"/"credits"/"" — drives the player's skip chip. Empty for
+    // non-mkv or when the chapters element isn't downloaded yet.
+    Q_INVOKABLE QVariantList mkvChapters(const QString &infoHash, int fileIndex) const;
     // Play a specific video file (episode) of a torrent in the embedded player.
     Q_INVOKABLE void playFile(const QString &infoHash, int fileIndex);
     // Forget a movie's resume position (drops it from HUB "Continue watching").
