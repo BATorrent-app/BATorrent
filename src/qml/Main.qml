@@ -144,7 +144,11 @@ Window {
     }
     // Regaining focus with a fresh magnet link on the clipboard pops the Add
     // dialog pre-filled — copy a link in the browser, alt-tab back, confirm.
-    onActiveChanged: if (active) win.checkClipboardMagnet()
+    // Deferred: when activation comes from a CLICK, the press that focused the
+    // window used to land on the fresh dialog's backdrop and close it instantly
+    // (reported as "the dialog disappears before I can press Download").
+    onActiveChanged: if (active) clipMagnetDelay.restart()
+    Timer { id: clipMagnetDelay; interval: 250; onTriggered: win.checkClipboardMagnet() }
     function checkClipboardMagnet() {
         if (typeof session === "undefined") return
         if (magnetDlg.opened || addTorrentDlg.opened) return
@@ -511,7 +515,15 @@ Window {
         // Common actions stay one click; the rest is grouped into submenus so
         // the menu doesn't run the whole height of the screen.
         CtxItem { iconSrc: "qrc:/icons/pause.svg"; text: (i18n.language, i18n.t("ctx_pause_download")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
-        CtxItem { iconSrc: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("ctx_resume_download")); enabled: session.selectedPaused; onTriggered: session.resumeSelected() }
+        CtxItem {
+            // a completed torrent has no download to resume — what this action
+            // actually does there is put it back to seeding; say so
+            readonly property bool seedAgain: session.selectedDataDone || session.selectedCompleted
+            iconSrc: seedAgain ? "qrc:/icons/upload.svg" : "qrc:/icons/play.svg"
+            text: (i18n.language, seedAgain ? i18n.t("ctx_seed_again") : i18n.t("ctx_resume_download"))
+            enabled: session.selectedPaused
+            onTriggered: session.resumeSelected()
+        }
         CtxItem { iconSrc: "qrc:/icons/open.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
         CtxItem { iconSrc: "qrc:/icons/copy.svg"; text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
         CtxItem {

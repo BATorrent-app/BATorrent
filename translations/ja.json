@@ -168,6 +168,7 @@
   "ctx_move_storage_title": "新しい場所を設定",
   "ctx_no_cover": "カバーなし",
   "ctx_open_folder": "フォルダーを開く",
+  "ctx_seed_again": "再シードする",
   "ctx_resume_download": "ダウンロードを再開",
   "ctx_pause_download": "ダウンロードを一時停止",
   "ctx_play": "プレーヤーで再生",

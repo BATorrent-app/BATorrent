@@ -28,9 +28,12 @@ Item {
         id: detailDrawer
         width: Math.min(420, root.hub.width)
         height: parent.height
-        x: root.hub.detailOpen ? parent.width - width : parent.width
+        // animate a 0..1 slide, never x: an animated x turns a window resize
+        // (maximize/fullscreen) into the parked drawer sliding across the view
+        property real slide: root.hub.detailOpen ? 1 : 0
+        Behavior on slide { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        x: parent.width - width * slide
         color: Theme.elev
-        Behavior on x { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
         Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.hair }
         MouseArea { anchors.fill: parent }   // swallow clicks so the scrim doesn't close it
 

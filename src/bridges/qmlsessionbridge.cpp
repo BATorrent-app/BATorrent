@@ -413,6 +413,12 @@ QString QmlSessionBridge::clipboardMagnetIfNew()
     QString magnet = normalizeClipboardMagnet(clip);
     if (magnet.isEmpty() || magnet == m_lastClipboardMagnet) return QString();
     m_lastClipboardMagnet = magnet;
+    // never offer a magnet that's already in the session (added moments ago
+    // via drop/click while its link still sits on the clipboard)
+    static const QRegularExpression btih(QStringLiteral("btih:([0-9A-Fa-f]{40})"));
+    const auto m = btih.match(magnet);
+    if (m.hasMatch() && m_session->torrentIndexByInfoHash(m.captured(1).toLower()) >= 0)
+        return QString();
     return magnet;
 }
 
@@ -1083,6 +1089,11 @@ void QmlSessionBridge::requestAddTorrentFile(const QString &filePath)
 void QmlSessionBridge::addMagnetUri(const QString &uri, const QString &savePath)
 {
     if (uri.isEmpty()) return;
+    // Any direct add (drag-drop, browser handoff, smart paste) marks the link
+    // as seen — regaining focus right after must not re-offer the same magnet
+    // in the Add dialog (reported: duplicate dialog after drag & drop).
+    const QString normalized = normalizeClipboardMagnet(uri);
+    if (!normalized.isEmpty()) m_lastClipboardMagnet = normalized;
     m_session->addMagnet(uri, savePath.isEmpty() ? defaultSavePath() : savePath);
 }
 

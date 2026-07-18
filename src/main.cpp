@@ -716,7 +716,13 @@ int main(int argc, char *argv[])
                          [instanceServer, rootObj, sessionBridge]() {
             QLocalSocket *client = instanceServer->nextPendingConnection();
             if (auto *w = qobject_cast<QWindow *>(rootObj)) {
-                w->show(); w->raise(); w->requestActivate();
+                // show() demotes a maximized window to normal (reported: a
+                // browser magnet click un-maximized the app). Only touch
+                // visibility when actually hidden/minimized.
+                if (w->visibility() == QWindow::Hidden) w->show();
+                else if (w->windowStates() & Qt::WindowMinimized)
+                    w->setWindowStates(w->windowStates() & ~Qt::WindowMinimized);
+                w->raise(); w->requestActivate();
             }
             QObject::connect(client, &QLocalSocket::readyRead, client, [client, sessionBridge]() {
                 const QStringList lines = QString::fromUtf8(client->readAll()).split('\n', Qt::SkipEmptyParts);

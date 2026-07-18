@@ -1107,49 +1107,59 @@ Window {
                     tip: (i18n.language, i18n.t("player_subs"))
                     onClicked: optsPanel.open ? optsPanel.closePanel() : optsPanel.openPanel()
                 }
-                // volume: click = mute; hover = vertical slider
+                // volume: icon + an inline horizontal slider that expands on
+                // hover (YouTube-style). One container, one HoverHandler —
+                // handlers receive hover cooperatively, so there's no popup
+                // layer, no icon→slider crossing, no dead zone. Three floating-
+                // popup attempts all ghosted; inline is structurally immune.
                 Item {
+                    id: volCtl
                     Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: 24; implicitHeight: 24
-                    IconImg {
-                        anchors.centerIn: parent
-                        src: (win.muted || win.volume <= 0) ? "qrc:/icons/volume-mute.svg" : "qrc:/icons/volume.svg"
-                        tint: volMa.containsMouse ? Theme.t1 : Theme.t2
-                        s: 18
-                    }
-                    MouseArea {
-                        id: volMa
-                        anchors.fill: parent
-                        anchors.topMargin: -6   // bridge the gap up to the slider popup so hover doesn't drop crossing it
-                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                        onClicked: win.muted = !win.muted
-                    }
-                    Rectangle {
-                        // vsl.hovered is load-bearing: the Slider takes hover from the
-                        // popup MouseArea, which used to close the popup the moment
-                        // the cursor actually reached the volume bar
-                        visible: volMa.containsMouse || volPopMa.containsMouse || vsl.hovered || vsl.pressed
-                        width: 32; height: 116; radius: 9
-                        color: "#f50a0a0c"; border.color: Theme.hair; border.width: 1
-                        anchors.bottom: parent.top; anchors.bottomMargin: 6
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        MouseArea { id: volPopMa; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                    readonly property bool expanded: volHov.hovered || hsl.pressed
+                    implicitHeight: 32
+                    implicitWidth: 32 + (expanded ? 78 : 0)
+                    Behavior on implicitWidth { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    clip: true
+                    HoverHandler { id: volHov }
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
+                        Item {
+                            width: 32; height: 32
+                            Rectangle {
+                                anchors.fill: parent; radius: width / 2
+                                color: volMa.containsMouse ? "#1effffff" : "transparent"
+                                Behavior on color { ColorAnimation { duration: 100 } }
+                            }
+                            IconImg {
+                                anchors.centerIn: parent
+                                src: (win.muted || win.volume <= 0) ? "qrc:/icons/volume-mute.svg" : "qrc:/icons/volume.svg"
+                                tint: volCtl.expanded ? Theme.t1 : Theme.t2
+                                s: 18
+                            }
+                            MouseArea {
+                                id: volMa; anchors.fill: parent
+                                hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: win.muted = !win.muted
+                            }
+                        }
                         Slider {
-                            id: vsl
-                            orientation: Qt.Vertical
-                            anchors.centerIn: parent
-                            height: 96; from: 0; to: 1
+                            id: hsl
+                            width: 72; height: 32
+                            anchors.verticalCenter: parent.verticalCenter
+                            opacity: volCtl.expanded ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: 120 } }
+                            from: 0; to: 1
                             value: win.muted ? 0 : win.volume
                             onMoved: { win.muted = false; win.volume = value }
                             background: Rectangle {
-                                x: vsl.leftPadding + vsl.availableWidth / 2 - width / 2
-                                y: vsl.topPadding
-                                width: 4; height: vsl.availableHeight; radius: 2; color: "#3a3a42"
-                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: vsl.position * parent.height; radius: 2; color: Theme.accent }
+                                x: hsl.leftPadding; y: hsl.topPadding + hsl.availableHeight / 2 - height / 2
+                                width: hsl.availableWidth; height: 4; radius: 2; color: "#3a3a42"
+                                Rectangle { width: hsl.visualPosition * parent.width; height: parent.height; radius: 2; color: "#ffffff" }
                             }
                             handle: Rectangle {
-                                x: vsl.leftPadding + vsl.availableWidth / 2 - width / 2
-                                y: vsl.topPadding + (1 - vsl.position) * (vsl.availableHeight - height)
+                                x: hsl.leftPadding + hsl.visualPosition * (hsl.availableWidth - width)
+                                y: hsl.topPadding + hsl.availableHeight / 2 - height / 2
                                 implicitWidth: 12; implicitHeight: 12; radius: 6; color: "#fff"
                             }
                         }

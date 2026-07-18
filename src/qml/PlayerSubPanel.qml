@@ -87,8 +87,12 @@ Item {
         width: Math.min(384, root.width * 0.5)
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        x: root.open ? root.width - width : root.width
-        Behavior on x { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+        // animate a 0..1 slide, never x itself: with x animated, a window
+        // resize (fullscreen) dragged the parked drawer visibly across the
+        // new, wider window before re-parking it
+        property real slide: root.open ? 1 : 0
+        Behavior on slide { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+        x: root.width - width * slide
 
         // soft shadow cast onto the video to the left of the drawer
         MultiEffect {

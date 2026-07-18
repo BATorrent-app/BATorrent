@@ -37,10 +37,12 @@ Item {
         id: drawer
         width: 360
         height: parent.height
-        x: root.sv.detailOpen ? parent.width - width : parent.width
+        // animate a 0..1 slide, never x (see HubDetailDrawer — resize ghosting)
+        property real slide: root.sv.detailOpen ? 1 : 0
+        Behavior on slide { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        x: parent.width - width * slide
         color: Theme.elev
         Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.hair }
-        Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
         MouseArea { anchors.fill: parent }   // swallow clicks so the scrim doesn't close it
 
         Flickable {
