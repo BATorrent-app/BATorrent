@@ -199,6 +199,7 @@ int QmlSessionBridge::downloadingCount() const { return m_downloadingCount; }
 int QmlSessionBridge::seedingCount() const     { return m_seedingCount; }
 int QmlSessionBridge::pausedCount() const      { return m_pausedCount; }
 int QmlSessionBridge::completedCount() const   { return m_completedCount; }
+int QmlSessionBridge::queuedCount() const      { return m_queuedCount; }
 QString QmlSessionBridge::totalDownSpeed() const { return formatSpeed(m_totalDownRate); }
 QString QmlSessionBridge::totalUpSpeed() const   { return formatSpeed(m_totalUpRate); }
 
@@ -1232,7 +1233,7 @@ bool QmlSessionBridge::hasSelection() const
 void QmlSessionBridge::recomputeAggregates()
 {
     m_activeCount = m_downloadingCount = m_seedingCount = 0;
-    m_pausedCount = m_completedCount = 0;
+    m_pausedCount = m_completedCount = m_queuedCount = 0;
     m_totalDownRate = m_totalUpRate = 0;
     m_anyDownloading = false;
     const int n = m_session->torrentCount();
@@ -1241,7 +1242,10 @@ void QmlSessionBridge::recomputeAggregates()
         m_totalDownRate += info.downloadRate;
         m_totalUpRate   += info.uploadRate;
         if (info.downloadRate > 0 || info.uploadRate > 0) ++m_activeCount;
-        if (info.paused) ++m_pausedCount;
+        // queued (paused by the download-queue cap) is its own bucket, so the
+        // Paused pill/count and the Queued pill don't double-count each other
+        if (info.queued) ++m_queuedCount;
+        else if (info.paused) ++m_pausedCount;
         if (!info.paused && info.progress < 1.0f) { ++m_downloadingCount; m_anyDownloading = true; }
         if (!info.paused && info.progress >= 1.0f && !info.completed) ++m_seedingCount;
         if (info.completed) ++m_completedCount;
