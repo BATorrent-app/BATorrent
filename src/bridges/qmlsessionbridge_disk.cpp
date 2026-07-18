@@ -15,6 +15,7 @@
 
 #include <QStorageInfo>
 #include <QDir>
+#include <QUrl>
 #include <QFileInfo>
 #include <QSettings>
 #include <QStandardPaths>
@@ -61,7 +62,27 @@ double QmlSessionBridge::diskUsedFraction() const
     return cached;
 }
 
-// One entry per distinct volume torrents save to (default + per-category paths).
+// True when a mounted volume is somewhere a user would actually save to —
+// filters out the OS's plumbing mounts (snap/tmpfs/system snapshots).
+static bool isUserVolume(const QStorageInfo &si)
+{
+    if (!si.isValid() || !si.isReady() || si.isReadOnly() || si.bytesTotal() <= 0)
+        return false;
+    const QString root = si.rootPath();
+    static const char *junkPrefixes[] = {"/System/", "/private/", "/dev", "/boot",
+                                         "/snap", "/run", "/proc", "/sys", "/efi"};
+    for (const char *p : junkPrefixes)
+        if (root.startsWith(QLatin1String(p))) return false;
+    const QByteArray fs = si.fileSystemType().toLower();
+    if (fs.contains("tmpfs") || fs.contains("squash") || fs.contains("overlay")
+        || fs.contains("devfs") || fs.contains("autofs"))
+        return false;
+    return true;
+}
+
+// Every disk a download could land on: all user-facing mounted volumes,
+// plus whatever the default/category save paths sit on (the gauge in the
+// nav rotates through these; the rail lists them).
 QVariantList QmlSessionBridge::diskVolumes() const
 {
     static QVariantList cached;
@@ -70,19 +91,22 @@ QVariantList QmlSessionBridge::diskVolumes() const
     if (lastCheck != 0 && now - lastCheck < 10) return cached;
     lastCheck = now;
 
+    QList<QStorageInfo> vols = QStorageInfo::mountedVolumes();
     QStringList paths;
     paths << defaultSavePath();
     const auto catPaths = m_session->allCategorySavePaths();
     for (auto it = catPaths.constBegin(); it != catPaths.constEnd(); ++it)
         if (!it.value().isEmpty()) paths << it.value();
+    for (QString p : paths)
+        vols << QStorageInfo(p.isEmpty() ? QDir::homePath() : p);
 
+    const QString defaultRoot = QStorageInfo(defaultSavePath().isEmpty()
+                                    ? QDir::homePath() : defaultSavePath()).rootPath();
     QVariantList out;
     QSet<QString> seenRoots;
-    for (QString p : paths) {
-        if (p.isEmpty()) p = QDir::homePath();
-        QStorageInfo si(p);
-        if (!si.isValid() || si.bytesTotal() <= 0) continue;
-        const QString root = QString::fromUtf8(si.rootPath().toUtf8());
+    for (const QStorageInfo &si : vols) {
+        if (!isUserVolume(si)) continue;
+        const QString root = si.rootPath();
         if (seenRoots.contains(root)) continue;
         seenRoots.insert(root);
 
@@ -93,9 +117,59 @@ QVariantList QmlSessionBridge::diskVolumes() const
         m["free"] = formatSize(si.bytesAvailable());
         m["freeBytes"] = si.bytesAvailable();
         m["usedFraction"] = double(si.bytesTotal() - si.bytesAvailable()) / double(si.bytesTotal());
-        out << m;
+        // default-save volume leads; the nav gauge starts its rotation there
+        if (root == defaultRoot) out.prepend(m); else out << m;
     }
     cached = out;
+    return out;
+}
+
+// Free bytes on whatever volume holds `path` (walks up to the nearest
+// existing ancestor, so a not-yet-created subfolder still answers). -1 unknown.
+double QmlSessionBridge::freeBytesAt(const QString &path) const
+{
+    QString p = path.trimmed();
+    if (p.startsWith(QLatin1String("file://"))) p = QUrl(p).toLocalFile();
+    if (p.isEmpty()) p = defaultSavePath();
+    if (p.isEmpty()) p = QDir::homePath();
+    QDir dir(p);
+    while (!dir.exists() && !dir.isRoot())
+        if (!dir.cdUp()) break;
+    QStorageInfo si(dir.absolutePath());
+    if (!si.isValid() || !si.isReady()) return -1;
+    return double(si.bytesAvailable());
+}
+
+// MRU list of distinct save locations, offered as one-click chips in the add
+// dialogs ("favorite folders": Videos on C, Games on D...).
+void QmlSessionBridge::rememberSavePath(const QString &path)
+{
+    QString p = QDir::cleanPath(path.trimmed());
+    if (p.startsWith(QLatin1String("file://"))) p = QDir::cleanPath(QUrl(p).toLocalFile());
+    if (p.isEmpty() || !QDir(p).exists()) return;
+    QSettings s;
+    QStringList favs = s.value("favSavePaths").toStringList();
+    favs.removeAll(p);
+    favs.prepend(p);
+    while (favs.size() > 5) favs.removeLast();
+    s.setValue("favSavePaths", favs);
+}
+
+QVariantList QmlSessionBridge::favoriteSavePaths() const
+{
+    QVariantList out;
+    const QStringList favs = QSettings().value("favSavePaths").toStringList();
+    for (const QString &p : favs) {
+        QDir d(p);
+        if (!d.exists()) continue;
+        QVariantMap m;
+        m["path"] = p;
+        m["label"] = d.isRoot() ? p : d.dirName();
+        const double freeB = freeBytesAt(p);
+        m["free"] = freeB >= 0 ? formatSize(qint64(freeB)) : QString();
+        m["freeBytes"] = freeB;
+        out << m;
+    }
     return out;
 }
 

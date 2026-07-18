@@ -97,6 +97,9 @@ public:
     QString totalUpSpeed() const;
     QString freeDiskSpace() const;
     Q_INVOKABLE qint64 freeSaveBytes() const;   // single source of truth: free bytes on the default save volume
+    Q_INVOKABLE double freeBytesAt(const QString &path) const;   // free bytes on the volume holding `path` (-1 unknown)
+    Q_INVOKABLE void rememberSavePath(const QString &path);      // MRU "favorite folders" for the add dialogs
+    Q_INVOKABLE QVariantList favoriteSavePaths() const;          // [{path,label,free,freeBytes}]
     double diskUsedFraction() const;
     QVariantList diskVolumes() const;
     // Every torrent (hash/name/sizeBytes/size/addedTime/category/paused/seeding),

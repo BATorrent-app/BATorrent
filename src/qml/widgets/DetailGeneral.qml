@@ -29,9 +29,14 @@ Flickable {
         columnSpacing: Theme.sp6
         rowSpacing: Theme.sp4
 
-        // .dcover (radius 8 — mask via MultiEffect)
+        // .dcover — only when there's a resolved poster. A generic torrent
+        // (Ubuntu ISO, a code archive) has no cover; showing a placeholder
+        // logo made it look like something failed, so the cover collapses to
+        // zero width and the text column takes the whole row instead.
+        readonly property bool hasCover: gen.win.hasSel && session.selectedPoster.length > 0
         Item {
-            Layout.preferredWidth: 104
+            visible: body.hasCover
+            Layout.preferredWidth: body.hasCover ? 104 : 0
             Layout.preferredHeight: 146
             Layout.alignment: Qt.AlignTop
 
@@ -63,19 +68,6 @@ Flickable {
                 anchors.fill: parent
                 maskEnabled: true
                 maskSource: coverMask
-                visible: gen.win.hasSel && session.selectedPoster.length > 0
-            }
-            // placeholder logo (no poster / no selection)
-            Image {
-                anchors.centerIn: parent
-                visible: !(gen.win.hasSel && session.selectedPoster.length > 0)
-                width: 52; height: 52
-                source: "qrc:/images/logo.svg"
-                sourceSize: Qt.size(104, 104)
-                fillMode: Image.PreserveAspectFit
-                opacity: 0.4
-                layer.enabled: Theme.isLight
-                layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
             }
             Rectangle {
                 anchors.fill: parent

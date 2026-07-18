@@ -46,8 +46,17 @@ Rectangle {
         NumberAnimation { target: chipContent; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
     }
 
-    // most-pressured save volume drives the gauge; the tooltip lists them all
     readonly property var diskVolumes: (typeof session !== "undefined") ? session.diskVolumes : []
+    // gauge rotates through every disk (like the game card), pausing on each;
+    // default-save volume leads the list
+    property int diskIdx: 0
+    readonly property var diskShown: diskVolumes.length > 0
+        ? diskVolumes[Math.min(diskIdx, diskVolumes.length - 1)] : null
+    Timer {
+        interval: 5000; repeat: true
+        running: bar.diskVolumes.length > 1
+        onTriggered: bar.diskIdx = (bar.diskIdx + 1) % bar.diskVolumes.length
+    }
     readonly property var diskWorst: {
         var w = null
         for (var i = 0; i < diskVolumes.length; ++i)
@@ -253,7 +262,7 @@ Rectangle {
         // ----- disk gauge (worst save volume; click → free up space) -----
         Item {
             id: diskGauge
-            visible: bar.diskWorst !== null
+            visible: bar.diskShown !== null
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 40
             Layout.preferredWidth: bar.tightDisk ? 76 : diskCol.implicitWidth + 24
@@ -267,18 +276,29 @@ Rectangle {
                 id: diskCol
                 anchors.centerIn: parent
                 spacing: 5
+                opacity: 1
+                // soft dip when the rotation advances to the next disk
+                Connections {
+                    target: bar
+                    function onDiskIdxChanged() { diskFade.restart() }
+                }
+                SequentialAnimation {
+                    id: diskFade
+                    NumberAnimation { target: diskCol; property: "opacity"; to: 0.25; duration: 110; easing.type: Easing.InCubic }
+                    NumberAnimation { target: diskCol; property: "opacity"; to: 1.0; duration: 160; easing.type: Easing.OutCubic }
+                }
                 RowLayout {
                     visible: !bar.tightDisk
                     spacing: 8
                     Text {
                         Layout.maximumWidth: 110
-                        text: bar.diskWorst ? bar.diskWorst.name : ""
+                        text: bar.diskShown ? bar.diskShown.name : ""
                         color: Theme.t4; elide: Text.ElideRight
                         font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
                         font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
                     }
                     Text {
-                        text: bar.diskWorst ? (i18n.language, i18n.t("status_free_space")).arg(bar.diskWorst.free) : ""
+                        text: bar.diskShown ? (i18n.language, i18n.t("status_free_space")).arg(bar.diskShown.free) : ""
                         color: Theme.t3
                         font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
                     }
@@ -289,7 +309,7 @@ Rectangle {
                     Layout.preferredHeight: 3
                     radius: 2; color: Theme.track
                     Rectangle {
-                        readonly property real used: bar.diskWorst ? Math.max(0.02, Math.min(1, bar.diskWorst.usedFraction)) : 0
+                        readonly property real used: bar.diskShown ? Math.max(0.02, Math.min(1, bar.diskShown.usedFraction)) : 0
                         anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
                         width: parent.width * used
                         radius: 2

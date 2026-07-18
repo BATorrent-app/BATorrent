@@ -25,6 +25,7 @@ BatDialog {
         if (!skipNextClear) magnetArea.text = ""
         skipNextClear = false
         if (typeof session !== "undefined") pathFld.text = session.defaultSavePath()
+        magFavRow.reload()
     }
     // clipboard-detected magnet (window regained focus): prefill instead of
     // the usual blank-on-open, so the user only has to confirm or cancel
@@ -135,6 +136,12 @@ BatDialog {
             id: pathFld
             Layout.fillWidth: true
             onBrowseClicked: magFolderDlg.open()
+        }
+        FavFolders {
+            id: magFavRow
+            Layout.fillWidth: true
+            current: pathFld.text
+            onPicked: function(p) { pathFld.text = p }
         }
     }
 

@@ -1094,6 +1094,7 @@ void QmlSessionBridge::addMagnetUri(const QString &uri, const QString &savePath)
     // in the Add dialog (reported: duplicate dialog after drag & drop).
     const QString normalized = normalizeClipboardMagnet(uri);
     if (!normalized.isEmpty()) m_lastClipboardMagnet = normalized;
+    if (!savePath.isEmpty()) rememberSavePath(savePath);
     m_session->addMagnet(uri, savePath.isEmpty() ? defaultSavePath() : savePath);
 }
 
@@ -1210,6 +1211,7 @@ void QmlSessionBridge::addTorrentWithPrefs(const QString &filePath, const QStrin
     if (dest.startsWith(QStringLiteral("file://")))
         dest = QUrl(dest).toLocalFile();
     if (dest.isEmpty()) dest = defaultSavePath();
+    rememberSavePath(dest);
 
     if (priorities.isEmpty()) {
         m_session->addTorrent(local, dest);

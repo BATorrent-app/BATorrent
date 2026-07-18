@@ -33,10 +33,18 @@ BatDialog {
     readonly property string posterUrl: posterPath && posterPath.length > 0
         ? (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(posterPath) : ""
 
-    // disk-fit check — same freeSaveBytes() single source of truth as the
-    // sidebar/auto-pause/Search guard, so every screen agrees
-    readonly property double freeBytes: typeof session !== "undefined" ? session.freeSaveBytes() : -1
+    // disk-fit check against the CURRENT destination — re-run when the path
+    // changes and every 2s while open, so switching drives or freeing space
+    // updates the warning live (it used to freeze on the first reading)
+    property double freeBytes: -1
     readonly property bool wontFit: dlg.freeBytes >= 0 && dlg.totalSizeBytes > dlg.freeBytes
+    function refreshFit() {
+        if (typeof session === "undefined") return
+        freeBytes = session.freeBytesAt(pathFld.text.length > 0 ? pathFld.text : "")
+    }
+    onSavePathChanged: refreshFit()
+    onOpenedChanged: if (opened) { refreshFit(); favRow.reload() }
+    Timer { interval: 2000; running: dlg.opened; repeat: true; onTriggered: dlg.refreshFit() }
 
     function loadPreview(p, path) {
         dlg.torrentPath = path
@@ -218,12 +226,18 @@ BatDialog {
         }
     }
 
-    // ----- save path -----
+    // ----- save path + favorite folders -----
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
         Text { text: (i18n.language, i18n.t("detail_kv_save_to")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         PathFld { id: pathFld; Layout.fillWidth: true; onBrowseClicked: saveFolderDlg.open() }
+        FavFolders {
+            id: favRow
+            Layout.fillWidth: true
+            current: pathFld.text
+            onPicked: function(p) { pathFld.text = p }
+        }
     }
 
     // ----- start now -----
