@@ -69,18 +69,21 @@ double QmlSessionBridge::diskUsedFraction() const
 // gauge vanished — that path must stay.
 static bool isUserVolume(const QStorageInfo &si)
 {
-    if (!si.isValid() || !si.isReady() || si.isReadOnly() || si.bytesTotal() <= 0)
+    if (!si.isValid() || !si.isReady() || si.bytesTotal() <= 0)
         return false;
     const QByteArray fs = si.fileSystemType().toLower();
     if (fs.contains("tmpfs") || fs.contains("squash") || fs.contains("overlay")
         || fs.contains("devfs") || fs.contains("autofs"))
         return false;
     const QString root = si.rootPath();
-    // macOS APFS synthetic volumes live under /System/Volumes/* — keep only
-    // Data (the writable user volume); the RO system volume "/" is already out
-    // via isReadOnly above.
-    if (root.startsWith(QLatin1String("/System/Volumes/"))
-        && root != QLatin1String("/System/Volumes/Data"))
+    // macOS: "/" IS the disk (reported read-only, but it's the real store the
+    // user saves to). The firmlinked /System/Volumes/* mounts — Data and the
+    // synthetic ones — all duplicate it, so drop them and let "/" represent it.
+    if (root.startsWith(QLatin1String("/System/Volumes/")))
+        return false;
+    // read-only mounts are noise (optical media, snaps) EXCEPT the macOS
+    // system root, which is sealed-RO yet is the actual disk.
+    if (si.isReadOnly() && root != QLatin1String("/"))
         return false;
     // Linux plumbing mounts.
     static const char *linuxJunk[] = {"/proc", "/sys", "/dev", "/run",
