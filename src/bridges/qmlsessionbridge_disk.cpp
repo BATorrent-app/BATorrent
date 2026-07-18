@@ -63,20 +63,30 @@ double QmlSessionBridge::diskUsedFraction() const
 }
 
 // True when a mounted volume is somewhere a user would actually save to —
-// filters out the OS's plumbing mounts (snap/tmpfs/system snapshots).
+// filters out the OS's plumbing mounts (tmpfs, snapshots, synthetic volumes)
+// WITHOUT rejecting the real data volume. macOS keeps user data under
+// /System/Volumes/Data, so a blanket "/System/" block hid every disk and the
+// gauge vanished — that path must stay.
 static bool isUserVolume(const QStorageInfo &si)
 {
     if (!si.isValid() || !si.isReady() || si.isReadOnly() || si.bytesTotal() <= 0)
         return false;
-    const QString root = si.rootPath();
-    static const char *junkPrefixes[] = {"/System/", "/private/", "/dev", "/boot",
-                                         "/snap", "/run", "/proc", "/sys", "/efi"};
-    for (const char *p : junkPrefixes)
-        if (root.startsWith(QLatin1String(p))) return false;
     const QByteArray fs = si.fileSystemType().toLower();
     if (fs.contains("tmpfs") || fs.contains("squash") || fs.contains("overlay")
         || fs.contains("devfs") || fs.contains("autofs"))
         return false;
+    const QString root = si.rootPath();
+    // macOS APFS synthetic volumes live under /System/Volumes/* — keep only
+    // Data (the writable user volume); the RO system volume "/" is already out
+    // via isReadOnly above.
+    if (root.startsWith(QLatin1String("/System/Volumes/"))
+        && root != QLatin1String("/System/Volumes/Data"))
+        return false;
+    // Linux plumbing mounts.
+    static const char *linuxJunk[] = {"/proc", "/sys", "/dev", "/run",
+                                      "/boot", "/snap", "/var/lib"};
+    for (const char *p : linuxJunk)
+        if (root.startsWith(QLatin1String(p))) return false;
     return true;
 }
 
