@@ -81,6 +81,9 @@ QtObject {
             { type: "toggle", key: "showSplash", label: (i18n.language, i18n.t("settings_show_splash")), on: true },
             { type: "number", key: "memGuardMB", label: (i18n.language, i18n.t("set_mem_guard")), value: "8192", suffix: "MB", note: (i18n.language, i18n.t("set_mem_guard_hint")) },
             { type: "button", action: "default", label: (i18n.language, i18n.t("set_default_app")), btn: (i18n.language, i18n.t("settings_set_default")) },
+            { type: "toggle", key: "assocTorrent", label: (i18n.language, i18n.t("set_assoc_torrent")), hidden: Qt.platform.os !== "windows" },
+            { type: "toggle", key: "assocMagnet", label: (i18n.language, i18n.t("set_assoc_magnet")), hidden: Qt.platform.os !== "windows" },
+            { type: "toggle", key: "assocBittorrent", label: (i18n.language, i18n.t("set_assoc_bittorrent")), hidden: Qt.platform.os !== "windows", note: (i18n.language, i18n.t("set_assoc_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_security")) },
             { type: "toggle", key: "warnSuspiciousFiles", on: true, label: (i18n.language, i18n.t("set_warn_suspicious")), note: (i18n.language, i18n.t("set_warn_suspicious_note")) },
             { type: "toggle", key: "autoDefenderExclude", winOnly: true, label: (i18n.language, i18n.t("set_auto_defender")), note: (i18n.language, i18n.t("set_auto_defender_note")) }

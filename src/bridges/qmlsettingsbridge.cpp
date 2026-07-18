@@ -258,6 +258,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         QStringLiteral("closeToTray"), QStringLiteral("showSplash"), QStringLiteral("startTray"),
         QStringLiteral("notifSound"), QStringLiteral("randomPort"), QStringLiteral("autoShutdown"),
         QStringLiteral("autoTrackers"), QStringLiteral("addPublicTrackers"),
+        QStringLiteral("assocTorrent"), QStringLiteral("assocMagnet"), QStringLiteral("assocBittorrent"),
         QStringLiteral("torrentSearchEnabled"),
         QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
         QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
@@ -286,6 +287,19 @@ int QmlSettingsBridge::telegramEventBit(const QString &key)
 
 void QmlSettingsBridge::set(const QString &key, const QVariant &v)
 {
+    // per-type file/protocol association toggles (Windows registry; a no-op
+    // persist elsewhere — the rows are hidden off-Windows anyway)
+    if (key == QLatin1String("assocTorrent") || key == QLatin1String("assocMagnet")
+        || key == QLatin1String("assocBittorrent")) {
+        QSettings().setValue(key, v.toBool());
+#ifdef Q_OS_WIN
+        const QString kind = key == QLatin1String("assocTorrent") ? QStringLiteral("torrent")
+                           : key == QLatin1String("assocMagnet")  ? QStringLiteral("magnet")
+                                                                  : QStringLiteral("bittorrent");
+        applyWinAssociation(kind, v.toBool());
+#endif
+        emit changed(); return;
+    }
     if (key == QLatin1String("engineSplit")) {
         QSettings().setValue(QStringLiteral("engineMode"),
                              v.toBool() ? QStringLiteral("ipc") : QStringLiteral("inprocess"));
@@ -490,56 +504,90 @@ QStringList QmlSettingsBridge::networkInterfaces() const
     return out;
 }
 
+#ifdef Q_OS_WIN
+// One association slice — .torrent, magnet: or bittorrent: — written or
+// removed independently (tester ask: per-type toggles). The key layout is the
+// exact set the one-shot "set as default" button proved out in the wild; the
+// "Default Programs" Capabilities plumbing is shared and needed for Windows'
+// per-protocol picker and for browsers to offer us as a handler at all.
+static bool applyWinAssociation(const QString &kind, bool on)
+{
+    const QString nativeExe = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
+    const QString cmd = "\"" + nativeExe + "\" \"%1\"";
+    QSettings reg("HKEY_CURRENT_USER\\Software\\Classes", QSettings::NativeFormat);
+    QSettings caps("HKEY_CURRENT_USER\\Software\\BATorrent\\Capabilities", QSettings::NativeFormat);
+
+    auto proto = [&](const QString &progId, const QString &friendly,
+                     const QString &scheme, const QString &schemeFriendly) {
+        if (on) {
+            reg.setValue(progId + "/.", friendly);
+            reg.setValue(progId + "/URL Protocol", "");
+            reg.setValue(progId + "/shell/open/command/.", cmd);
+            reg.setValue(progId + "/DefaultIcon/.", nativeExe + ",0");
+            reg.setValue(scheme + "/.", schemeFriendly);
+            reg.setValue(scheme + "/URL Protocol", "");
+            reg.setValue(scheme + "/shell/open/command/.", cmd);
+            reg.setValue(scheme + "/DefaultIcon/.", nativeExe + ",0");
+            caps.setValue("UrlAssociations/" + scheme, progId);
+        } else {
+            reg.remove(progId);
+            // only strip the bare scheme key while it still points at us
+            if (reg.value(scheme + "/shell/open/command/.").toString().contains(nativeExe))
+                reg.remove(scheme);
+            caps.remove("UrlAssociations/" + scheme);
+        }
+    };
+
+    if (kind == QLatin1String("torrent")) {
+        if (on) {
+            reg.setValue(".torrent/.", "BATorrent.torrent");
+            reg.setValue("BATorrent.torrent/.", "BATorrent Torrent File");
+            reg.setValue("BATorrent.torrent/shell/open/command/.", cmd);
+            reg.setValue("BATorrent.torrent/DefaultIcon/.", nativeExe + ",0");
+            caps.setValue("FileAssociations/.torrent", "BATorrent.torrent");
+        } else {
+            if (reg.value(".torrent/.").toString() == QLatin1String("BATorrent.torrent"))
+                reg.remove(".torrent");
+            reg.remove("BATorrent.torrent");
+            caps.remove("FileAssociations/.torrent");
+        }
+    } else if (kind == QLatin1String("magnet")) {
+        proto("BATorrent.Url.Magnet", "BATorrent Magnet Link", "magnet", "URL:Magnet Protocol");
+    } else if (kind == QLatin1String("bittorrent")) {
+        proto("BATorrent.Url.BitTorrent", "BATorrent BitTorrent Link", "bittorrent", "URL:BitTorrent Protocol");
+    } else {
+        return false;
+    }
+
+    caps.setValue("ApplicationName", "BATorrent");
+    caps.setValue("ApplicationDescription", "Lightweight, open-source BitTorrent client");
+    caps.setValue("ApplicationIcon", nativeExe + ",0");
+    reg.sync(); caps.sync();
+    QSettings registered("HKEY_CURRENT_USER\\Software\\RegisteredApplications", QSettings::NativeFormat);
+    registered.setValue("BATorrent", "Software\\BATorrent\\Capabilities");
+    registered.sync();
+    return reg.status() == QSettings::NoError && caps.status() == QSettings::NoError
+        && registered.status() == QSettings::NoError;
+}
+#endif
+
 bool QmlSettingsBridge::setAsDefaultApp()
 {
     const QString exe = QCoreApplication::applicationFilePath();
     bool ok = false;
 #ifdef Q_OS_WIN
-    const QString nativeExe = QDir::toNativeSeparators(exe);
-    QSettings reg("HKEY_CURRENT_USER\\Software\\Classes", QSettings::NativeFormat);
-    reg.setValue(".torrent/.", "BATorrent.torrent");
-    reg.setValue("BATorrent.torrent/.", "BATorrent Torrent File");
-    reg.setValue("BATorrent.torrent/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
-    reg.setValue("BATorrent.torrent/DefaultIcon/.", nativeExe + ",0");
-    reg.setValue("BATorrent.Url.Magnet/.", "BATorrent Magnet Link");
-    reg.setValue("BATorrent.Url.Magnet/URL Protocol", "");
-    reg.setValue("BATorrent.Url.Magnet/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
-    reg.setValue("BATorrent.Url.Magnet/DefaultIcon/.", nativeExe + ",0");
-    reg.setValue("magnet/.", "URL:Magnet Protocol");
-    reg.setValue("magnet/URL Protocol", "");
-    reg.setValue("magnet/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
-    reg.setValue("magnet/DefaultIcon/.", nativeExe + ",0");
-    reg.setValue("BATorrent.Url.BitTorrent/.", "BATorrent BitTorrent Link");
-    reg.setValue("BATorrent.Url.BitTorrent/URL Protocol", "");
-    reg.setValue("BATorrent.Url.BitTorrent/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
-    reg.setValue("BATorrent.Url.BitTorrent/DefaultIcon/.", nativeExe + ",0");
-    reg.setValue("bittorrent/.", "URL:BitTorrent Protocol");
-    reg.setValue("bittorrent/URL Protocol", "");
-    reg.setValue("bittorrent/shell/open/command/.", "\"" + nativeExe + "\" \"%1\"");
-    reg.setValue("bittorrent/DefaultIcon/.", nativeExe + ",0");
-    reg.sync();
-    ok = (reg.status() == QSettings::NoError);
-
-    // "Default Programs" scheme — needed for Windows' per-protocol picker and
-    // for some browsers to offer BATorrent as a magnet:/bittorrent: handler at
-    // all (a user confirmed the flat Classes\<x> keys above weren't enough by
-    // themselves, even though .torrent worked fine).
+    Q_UNUSED(exe)
+    // (the old `cmd /c assoc` follow-up is gone: it does nothing on Win10+
+    // and flashed a console window)
+    ok = applyWinAssociation(QStringLiteral("torrent"), true)
+      && applyWinAssociation(QStringLiteral("magnet"), true)
+      && applyWinAssociation(QStringLiteral("bittorrent"), true);
     if (ok) {
-        QSettings caps("HKEY_CURRENT_USER\\Software\\BATorrent\\Capabilities", QSettings::NativeFormat);
-        caps.setValue("ApplicationName", "BATorrent");
-        caps.setValue("ApplicationDescription", "Lightweight, open-source BitTorrent client");
-        caps.setValue("ApplicationIcon", nativeExe + ",0");
-        caps.setValue("UrlAssociations/magnet", "BATorrent.Url.Magnet");
-        caps.setValue("UrlAssociations/bittorrent", "BATorrent.Url.BitTorrent");
-        caps.setValue("FileAssociations/.torrent", "BATorrent.torrent");
-        caps.sync();
-        QSettings registered("HKEY_CURRENT_USER\\Software\\RegisteredApplications", QSettings::NativeFormat);
-        registered.setValue("BATorrent", "Software\\BATorrent\\Capabilities");
-        registered.sync();
-        ok = ok && caps.status() == QSettings::NoError && registered.status() == QSettings::NoError;
+        QSettings s;
+        s.setValue("assocTorrent", true);
+        s.setValue("assocMagnet", true);
+        s.setValue("assocBittorrent", true);
     }
-    if (ok)
-        QProcess::startDetached("cmd", {"/c", "assoc", ".torrent=BATorrent.torrent"});
 #elif defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
     // A missing helper (xdg-mime / duti) leaves exitCode() at its default 0,
     // which would look like success — gate on the process actually finishing.

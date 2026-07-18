@@ -351,6 +351,11 @@ Item {
                     text: tile.isDownloading ? ("↓ " + tile.downSpeed)
                           : (tile.stateKey === "seeding"
                              ? ((i18n.language, i18n.t("state_seeding")) + " · ↑ " + tile.upSpeed)
+                             // the DONE badge already says the download finished —
+                             // the long "Download complete — seeding paused" only
+                             // truncated here (list rows keep it: no badge there)
+                             : (tile.progress >= 0.999 && tile.stateKey === "paused")
+                             ? (i18n.language, i18n.t("state_paused"))
                              : tile.stateString)
                     color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.textFor(tile.stateKey)
                     font.pixelSize: 12; font.family: Theme.fontSans
