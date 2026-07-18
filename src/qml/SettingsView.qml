@@ -294,9 +294,31 @@ Rectangle {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
-                Text { text: (i18n.language, i18n.t("set_changes_instant")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
+                spacing: 8
+                // a change auto-saves; flash "Saved" the moment it does so the
+                // user never wonders whether Close discards their edits
+                IconImg {
+                    src: "qrc:/icons/check.svg"; s: 13
+                    tint: Theme.grn
+                    opacity: savedFlash.running ? 1 : 0.55
+                }
+                Text {
+                    id: savedText
+                    text: savedFlash.running ? (i18n.language, i18n.t("set_saved_now"))
+                                             : (i18n.language, i18n.t("set_changes_instant"))
+                    color: savedFlash.running ? Theme.grn : Theme.t4
+                    font.pixelSize: 11; font.family: Theme.fontSans
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                }
+                Timer { id: savedFlash; interval: 1400 }
+                Connections {
+                    target: typeof settings !== "undefined" ? settings : null
+                    function onChanged() { savedFlash.restart() }
+                }
                 Item { Layout.fillWidth: true }
-                BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_close")); onClicked: win.closed() }
+                // "Done" (not "Close"): nothing is discarded — every edit is
+                // already saved, so the button just dismisses the window
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_done")); onClicked: win.closed() }
             }
         }
     }

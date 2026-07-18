@@ -17,6 +17,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(int seedingCount READ seedingCount NOTIFY statsChanged)
     Q_PROPERTY(int pausedCount READ pausedCount NOTIFY statsChanged)
     Q_PROPERTY(int completedCount READ completedCount NOTIFY statsChanged)
+    Q_PROPERTY(int queuedCount READ queuedCount NOTIFY statsChanged)
     Q_PROPERTY(QString totalDownSpeed READ totalDownSpeed NOTIFY statsChanged)
     Q_PROPERTY(QString totalUpSpeed READ totalUpSpeed NOTIFY statsChanged)
     Q_PROPERTY(QString freeDiskSpace READ freeDiskSpace NOTIFY statsChanged)
@@ -93,6 +94,7 @@ public:
     int seedingCount() const;
     int pausedCount() const;
     int completedCount() const;
+    int queuedCount() const;
     QString totalDownSpeed() const;
     QString totalUpSpeed() const;
     QString freeDiskSpace() const;
@@ -440,7 +442,7 @@ private:
     // every QML read (~10 O(torrents) passes/sec → 1).
     void recomputeAggregates();
     int m_activeCount = 0, m_downloadingCount = 0, m_seedingCount = 0,
-        m_pausedCount = 0, m_completedCount = 0;
+        m_pausedCount = 0, m_completedCount = 0, m_queuedCount = 0;
     int m_totalDownRate = 0, m_totalUpRate = 0;
     bool m_anyDownloading = false;
     static constexpr int HistoryMaxPoints = 60;
