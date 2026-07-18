@@ -63,6 +63,13 @@ Window {
     // Only one nav component is ever loaded — a hidden rail would keep its
     // carousel timer and ~30 session bindings alive for nothing.
     property bool layoutClassic: false
+    // grid-mode detail panel: side inspector (default) or the bottom deck. Both
+    // components already exist; this just picks which one the grid uses — a
+    // side panel suits wide screens, a bottom deck suits narrow ones.
+    property bool detailBottom: false
+    // the contextual continue/download chip in the top bar (some users find it
+    // redundant on the Downloads page)
+    property bool showDownloadChip: true
     readonly property Item navHost: layoutClassic ? navRailLoader.item : navBarLoader.item
     function selectTorrentByHash(infoHash) {
         if (typeof session === "undefined") return
@@ -77,6 +84,8 @@ Window {
         function onChanged() {
             var v = settings.get("layoutClassic")
             win.layoutClassic = (v === true || v === 1 || v === "1" || v === "true")
+            win.detailBottom = settings.get("detailBottom") === true
+            win.showDownloadChip = settings.get("showDownloadChip") !== false
         }
     }
 
@@ -107,6 +116,8 @@ Window {
         if (typeof settings !== "undefined") {
             var lc = settings.get("layoutClassic")
             win.layoutClassic = (lc === true || lc === 1 || lc === "1" || lc === "true")
+            win.detailBottom = settings.get("detailBottom") === true
+            win.showDownloadChip = settings.get("showDownloadChip") !== false
         }
         if (typeof settings === "undefined") {
             showSplash = true
@@ -1046,6 +1057,7 @@ Window {
             visible: active
             sourceComponent: NavBar {
                 currentIndex: win.currentPage
+                showDownloadChip: win.showDownloadChip
                 onPageRequested: function(page) { win.currentPage = page }
                 onSettingsClicked: win.currentPage = 3
                 onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
@@ -1066,6 +1078,7 @@ Window {
                 visible: active
                 sourceComponent: NavRail {
                     currentIndex: win.currentPage
+                    showDownloadChip: win.showDownloadChip
                     onPageRequested: function(page) { win.currentPage = page }
                     onSettingsClicked: win.currentPage = 3
                     onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
@@ -1125,14 +1138,18 @@ Window {
             }
             DetailSidebar {
                 win: win
+                // side inspector only in grid mode when the user hasn't chosen
+                // the bottom deck
+                showInspector: win.gridView && !win.detailBottom
                 onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
             }
         }
 
-        // ================== DETAIL (list mode; the grid uses the inspector) ==================
+        // ================== DETAIL (bottom deck: list mode always; grid mode
+        // when the user prefers the panel at the bottom) ==================
         DetailPanel {
             win: win
-            visible: !win.gridView
+            visible: !win.gridView || win.detailBottom
             onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
         }
         // ================== STATUS BAR ==================

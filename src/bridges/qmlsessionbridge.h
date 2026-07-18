@@ -166,6 +166,7 @@ public:
     Q_INVOKABLE void forceRecheckSelected();
     Q_INVOKABLE bool exportSelectedTorrent(const QString &destPath);
     Q_INVOKABLE void forceReannounceSelected();
+    Q_INVOKABLE void refreshAll();   // re-announce every torrent + recompute stats
     Q_INVOKABLE void queueUpSelected();
     Q_INVOKABLE void queueDownSelected();
     Q_INVOKABLE void queueTopSelected();

@@ -259,6 +259,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         QStringLiteral("notifSound"), QStringLiteral("randomPort"), QStringLiteral("autoShutdown"),
         QStringLiteral("autoTrackers"), QStringLiteral("addPublicTrackers"),
         QStringLiteral("assocTorrent"), QStringLiteral("assocMagnet"), QStringLiteral("assocBittorrent"),
+        QStringLiteral("detailBottom"), QStringLiteral("showDownloadChip"),
         QStringLiteral("torrentSearchEnabled"),
         QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
         QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),

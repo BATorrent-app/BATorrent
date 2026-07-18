@@ -34,7 +34,8 @@ Rectangle {
         hovered: dlHov.hovered
         active: rail.showDl
     }
-    readonly property bool showDl: !collapsed && car.dlList.length > 0
+    property bool showDownloadChip: true    // host setting gate
+    readonly property bool showDl: !collapsed && car.dlList.length > 0 && showDownloadChip
     Connections {
         target: car
         function onDlIndexChanged() { dlFade.restart() }

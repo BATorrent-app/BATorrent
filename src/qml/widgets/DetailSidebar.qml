@@ -21,7 +21,10 @@ Rectangle {
     readonly property string selHash: (typeof session !== "undefined" && win.hasSel) ? session.selectedHash : ""
     onSelHashChanged: dismissed = false
 
-    readonly property bool shown: win.gridView && win.hasSel && !dismissed
+    // host decides whether the side inspector is allowed (off when the user
+    // moved the detail panel to the bottom)
+    property bool showInspector: true
+    readonly property bool shown: showInspector && win.gridView && win.hasSel && !dismissed
 
     Layout.fillHeight: true
     Layout.preferredWidth: shown ? 340 : 0

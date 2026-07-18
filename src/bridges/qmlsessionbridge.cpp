@@ -462,6 +462,18 @@ void QmlSessionBridge::forceReannounceSelected()
     if (hasSelection()) m_session->forceReannounce(m_selectedIndex);
 }
 
+void QmlSessionBridge::refreshAll()
+{
+    // Manual "Refresh": re-announce every torrent to its trackers (fetch a
+    // fresh peer set) and push a stats recompute now. The list already updates
+    // live per tick — this is the on-demand kick some users want.
+    const int n = m_session->torrentCount();
+    for (int i = 0; i < n; ++i)
+        m_session->forceReannounce(i);
+    emitStats();
+    emit toast(tr_("toast_refreshed"), QString());
+}
+
 void QmlSessionBridge::queueUpSelected()
 {
     QList<int> rows = m_selectedRows.isEmpty()

@@ -19,6 +19,7 @@ Rectangle {
     color: Theme.nav
 
     property int currentIndex: 0            // bound down from the window; never self-assigned
+    property bool showDownloadChip: true    // host setting gate
     signal pageRequested(int page)
     signal settingsClicked()
     signal selectTorrent(string infoHash)
@@ -172,7 +173,7 @@ Rectangle {
         // ----- download chip (the rail carousel, condensed) -----
         Rectangle {
             id: dlChip
-            visible: car.dlList.length > 0
+            visible: car.dlList.length > 0 && bar.showDownloadChip
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 40
             Layout.preferredWidth: chipContent.implicitWidth + 20

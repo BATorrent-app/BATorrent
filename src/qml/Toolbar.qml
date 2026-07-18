@@ -112,6 +112,7 @@ Rectangle {
         TGrpDiv {}
         // G4: Buscar, RSS
         TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: toolbar.navigate(1) }
+        TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; onClicked: if (typeof session !== "undefined") session.refreshAll() }
         TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: toolbar.openRss() }
         TGrpDiv {}
         // G5: Config.
