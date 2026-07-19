@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.6.1
+
+### Fixed
+- Linux: the AppImage bundled the system libtorrent instead of the forked
+  build, so it crashed on launch with `undefined symbol: set_geo_local_fn` on
+  every machine. It now ships and loads the fork's own library (#32).
+
 ## v4.6.0 "Signal"
 
 ### Added
