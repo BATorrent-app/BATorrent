@@ -11,6 +11,7 @@ ColumnLayout {
     id: empty
     signal openClicked()
     signal magnetClicked()
+    signal linkClicked()
 
     spacing: 0
 
@@ -91,6 +92,22 @@ ColumnLayout {
                 Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("empty_paste_btn")); color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
             }
             MouseArea { id: magMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.magnetClicked() }
+        }
+        Rectangle {
+            implicitWidth: linkRow.implicitWidth + 32
+            implicitHeight: 36
+            radius: 8
+            color: Theme.panel
+            border.color: linkMa.containsMouse ? (Theme.isDark ? Qt.rgba(1,1,1,0.2) : Qt.rgba(0,0,0,0.22)) : Theme.hair
+            border.width: 1
+            Row {
+                id: linkRow
+                anchors.centerIn: parent
+                spacing: 8
+                IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/download.svg"; tint: Theme.t1; s: 16 }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("empty_link_btn")); color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            }
+            MouseArea { id: linkMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.linkClicked() }
         }
     }
 

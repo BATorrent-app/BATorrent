@@ -17,6 +17,7 @@ Rectangle {
     property alias tbOpen: tbOpen
     signal openFile()
     signal addMagnet()
+    signal addLink()
     signal removeSelected()
     signal openRss()
     signal navigate(int index)
@@ -98,9 +99,10 @@ Rectangle {
         spacing: Theme.sp2
 
         // brand moved to the nav rail; toolbar starts at the actions
-        // G1: Abrir, Magnet
+        // G1: Abrir, Magnet, Link
         TBtn { id: tbOpen; label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/open.svg";  onClicked: toolbar.openFile() }
         TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: toolbar.addMagnet() }
+        TBtn { label: (i18n.language, i18n.t("tb_link"));    icon: "qrc:/icons/download.svg"; onClicked: toolbar.addLink() }
         TGrpDiv {}
         // G2: Pausar, Retomar, Parar
         TBtn { label: (i18n.language, i18n.t("tb_pause"));  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }

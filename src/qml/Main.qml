@@ -79,6 +79,11 @@ Window {
         inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), current, "",
             function(t){ if (t.length > 0) session.renameSelectedFile(idx, t) })
     }
+    // Shared by the File menu, the toolbar "Link" button and the empty state.
+    function promptHttpDownload() {
+        inputPrompt.openWith(i18n.t("menu_add_http"), i18n.t("prompt_http_url"), "", "https://…/file.zip",
+            function(t){ if (t.length > 0) session.addHttpUrl(t) })
+    }
     Connections {
         target: typeof settings !== "undefined" ? settings : null
         function onChanged() {
@@ -672,7 +677,7 @@ Window {
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_open_torrent")); shortcut: StandardKey.Open; onTriggered: openFileDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_magnet")); shortcut: "Ctrl+M"; onTriggered: magnetDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_url")); shortcut: "Ctrl+U"; onTriggered: inputPrompt.openWith(i18n.t("menu_add_url"), i18n.t("prompt_torrent_url"), "", "https://…/file.torrent", function(t){ if (t.length > 0) session.addTorrentUrl(t) }) }
-            Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_http")); shortcut: "Ctrl+D"; onTriggered: inputPrompt.openWith(i18n.t("menu_add_http"), i18n.t("prompt_http_url"), "", "https://…/file.zip", function(t){ if (t.length > 0) session.addHttpUrl(t) }) }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_http")); shortcut: "Ctrl+D"; onTriggered: promptHttpDownload() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_create_torrent")); onTriggered: createDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: inspectFileDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_import_qbt")); onTriggered: importQbtDlg.open() }
@@ -1000,6 +1005,7 @@ Window {
                 title: (i18n.language, i18n.t("menu_file_title"))
                 BarItem { text: (i18n.language, i18n.t("menu_open_torrent")); onTriggered: openFileDlg.open() }
                 BarItem { text: (i18n.language, i18n.t("menu_add_magnet")); onTriggered: magnetDlg.open() }
+                BarItem { text: (i18n.language, i18n.t("menu_add_http")); onTriggered: promptHttpDownload() }
                 BarItem { text: (i18n.language, i18n.t("menu_create_torrent")); onTriggered: createDlg.open() }
                 BarItem { text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: inspectFileDlg.open() }
                 BarItem { text: (i18n.language, i18n.t("menu_import_qbt")); onTriggered: importQbtDlg.open() }
@@ -1116,6 +1122,7 @@ Window {
             win: win
             onOpenFile: openFileDlg.open()
             onAddMagnet: magnetDlg.open()
+            onAddLink: promptHttpDownload()
             onRemoveSelected: removeDlg.open()
             onOpenRss: win.showWin(rssWinLoader)
             onNavigate: function(index) { win.currentPage = index }
@@ -1136,6 +1143,7 @@ Window {
                 id: libraryView
                 win: win
                 onAddMagnetRequested: magnetDlg.open()
+                onAddLinkRequested: promptHttpDownload()
             }
             DetailSidebar {
                 win: win

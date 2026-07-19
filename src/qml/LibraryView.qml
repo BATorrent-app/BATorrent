@@ -18,6 +18,7 @@ Item {
     property alias grid: grid
     property alias list: list
     signal addMagnetRequested()
+    signal addLinkRequested()
 
     component HCol: Item {
         id: hc
@@ -90,6 +91,7 @@ Item {
         visible: parent.empty
         onOpenClicked: openFileDlg.open()
         onMagnetClicked: libraryView.addMagnetRequested()
+        onLinkClicked: libraryView.addLinkRequested()
     }
 
 
