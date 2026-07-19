@@ -977,7 +977,11 @@ void QmlSearchBridge::activateResult(int index, bool force)
         // shows up in the Downloads list via the engine decorator.
         if (magnet.isEmpty()) {
             if (!m_httpDownloads) { setStatus(tr_("add_url_failed")); return; }
-            m_httpDownloads->add(bat::directDownloadUrl(QUrl(httpUrl)), m_savePath);
+            const QString id = m_httpDownloads->add(bat::directDownloadUrl(QUrl(httpUrl)), m_savePath);
+            // Resolve an IGDB cover keyed by the row's pseudo-hash, same as a
+            // magnet game gets one via addMagnet's cover hint.
+            if (!hint.isEmpty() && m_resolver)
+                m_resolver->resolveManual(bat::httpRowHash(id), hint, ContentType::Game);
             setStatus(name.isEmpty() ? tr_("search_added") : tr_("search_added_name").arg(name));
             return;
         }
