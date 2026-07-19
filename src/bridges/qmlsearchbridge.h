@@ -7,6 +7,8 @@
 
 #include "bridges/bridgecommon.h"
 
+class HttpDownloadManager;
+
 class QmlSearchBridge : public QObject
 {
     Q_OBJECT
@@ -67,6 +69,7 @@ public:
     // Lazily resolve a TMDB cover for a torrent row (by its info hash) as it
     // scrolls into view — mirrors the Downloads grid's on-demand resolution.
     void setResolver(MetadataResolver *r);
+    void setHttpDownloads(HttpDownloadManager *mgr) { m_httpDownloads = mgr; }
     Q_INVOKABLE void resolveCover(int index);
 
     // Title-first search (default "Tudo"): resolve the query to real works via
@@ -150,6 +153,7 @@ private:
     QString m_activeQuery;              // effective query of the current flat list (for relevance)
 
     IEngine *m_session;
+    HttpDownloadManager *m_httpDownloads = nullptr;   // set in main.cpp; direct-HTTP add target
     QString m_mode;
     QString m_savePath;
     QString m_lastQuery;
@@ -160,6 +164,7 @@ private:
     QString m_status;
     QVariantList m_results;
     QStringList m_resultMagnets;        // magnet per flat result row (add target)
+    QStringList m_resultHttp;           // direct/file-host http URL per row, "" when it's a magnet row
     QStringList m_resultTitles;         // clean game title per row (cover hint), "" for torrents
     QList<CatalogItem> m_catalogCache;
     QList<StreamResult> m_streamCache;

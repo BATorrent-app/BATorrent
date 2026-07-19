@@ -20,7 +20,8 @@
 struct GameDownload {
     QString title;        // raw catalog title (with repacker/version tags)
     QString cleanTitle;   // stripped for IGDB cover matching
-    QString magnet;       // first magnet: URI
+    QString magnet;       // first magnet: URI ("" if the entry is http-only)
+    QString httpUrl;      // first direct/file-host http(s) URI (fallback when no magnet)
     QString fileSize;     // e.g. "14.97 GB"
     QString uploadDate;   // ISO-8601
     QString source;       // catalog the entry came from

@@ -8,6 +8,8 @@
 #include "services/metadata/episodegroup.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/discoveryservice.h"
+#include "services/downloads/httpdownloadmanager.h"
+#include "services/downloads/filehostresolver.h"
 #include "services/metadata/nameparser.h"
 #include "services/metadata/releasepick.h"
 #include "services/metadata/searchranker.h"
@@ -122,7 +124,7 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
             [this](const QList<TorrentSearchResult> &results) {
         if (m_mode != "torrent" && m_mode != "games" && m_mode != "all") return;
         if (!m_aggregate) {   // single source replaces; aggregate appends each batch
-            m_results.clear(); m_resultMagnets.clear(); m_torrentCache.clear();
+            m_results.clear(); m_resultMagnets.clear(); m_resultHttp.clear(); m_torrentCache.clear();
         }
         appendTorrentRows(results);
     });
@@ -372,6 +374,7 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         m_results.clear();
         m_resultMagnets.clear();
         m_resultTitles.clear();
+    m_resultHttp.clear();
         for (const QVariant &v : works) {
             const QVariantMap w = v.toMap();
             QVariantMap row;
@@ -405,6 +408,7 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     m_results.clear();
     m_resultMagnets.clear();
     m_resultTitles.clear();
+    m_resultHttp.clear();
     m_torrentCache.clear();
     m_gameCache.clear();
     m_pendingGameQuery.clear();
@@ -566,6 +570,7 @@ void QmlSearchBridge::rawAggregateSearch(const QString &q, int categoryCode)
     m_results.clear();
     m_resultMagnets.clear();
     m_resultTitles.clear();
+    m_resultHttp.clear();
     m_torrentCache.clear();
     m_gameCache.clear();
     m_pendingGameQuery.clear();
@@ -676,6 +681,7 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     m_results.clear();
     m_resultMagnets.clear();
     m_resultTitles.clear();
+    m_resultHttp.clear();
     m_torrentCache.clear();
     m_gameCache.clear();
     emit resultsChanged();
@@ -782,6 +788,7 @@ void QmlSearchBridge::appendGameRows(const QList<GameDownload> &games)
         fillMediaAttrs(m, g.title);
         m_results << m;
         m_resultMagnets << g.magnet;
+        m_resultHttp << g.httpUrl;
         m_resultTitles << (g.cleanTitle.isEmpty() ? g.title : g.cleanTitle);
     }
     emit resultsChanged();
@@ -819,6 +826,7 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         fillMediaAttrs(m, r.name);
         m_results << m;
         m_resultMagnets << r.magnet;
+        m_resultHttp << QString();          // torrent rows download via magnet
         m_resultTitles << QString();        // torrent rows have no game cover hint
     }
     emit resultsChanged();
@@ -837,6 +845,7 @@ void QmlSearchBridge::runGameSearch(const QString &query)
     m_results.clear();
     m_resultMagnets.clear();
     m_resultTitles.clear();
+    m_resultHttp.clear();
     m_gameCache = GameSourceManager::instance().search(query);
     appendGameRows(m_gameCache);
     setSearching(false);
@@ -948,10 +957,11 @@ void QmlSearchBridge::activateResult(int index, bool force)
             setStatus(tr_("search_added_name").arg(s.title));
             emit addedTorrent(btihFromMagnet(s.magnet));
         }
-    } else {   // torrent / games / all → every flat row carries its own magnet
+    } else {   // torrent / games / all → each flat row carries a magnet OR an http url
         if (index < 0 || index >= m_resultMagnets.size()) return;
         const QString magnet = m_resultMagnets[index];
-        if (magnet.isEmpty()) return;
+        const QString httpUrl = index < m_resultHttp.size() ? m_resultHttp[index] : QString();
+        if (magnet.isEmpty() && httpUrl.isEmpty()) return;
         const QVariantMap rm = index < m_results.size() ? m_results[index].toMap() : QVariantMap();
         const QString name = rm.value(QStringLiteral("name")).toString();
         const qint64 needed = rm.value(QStringLiteral("sizeBytes")).toLongLong();
@@ -962,6 +972,15 @@ void QmlSearchBridge::activateResult(int index, bool force)
         }
         const QString hint = index < m_resultTitles.size() ? m_resultTitles[index] : QString();
         const int type = hint.isEmpty() ? -1 : static_cast<int>(ContentType::Game);
+
+        // A file-host-only source (no magnet) downloads directly over HTTP and
+        // shows up in the Downloads list via the engine decorator.
+        if (magnet.isEmpty()) {
+            if (!m_httpDownloads) { setStatus(tr_("add_url_failed")); return; }
+            m_httpDownloads->add(bat::directDownloadUrl(QUrl(httpUrl)), m_savePath);
+            setStatus(name.isEmpty() ? tr_("search_added") : tr_("search_added_name").arg(name));
+            return;
+        }
         m_session->addMagnet(magnet, m_savePath, hint, type);   // hint = clean game title, "" for torrents
         setStatus(name.isEmpty() ? tr_("search_added") : tr_("search_added_name").arg(name));
         QString hash = rm.value(QStringLiteral("coverHash")).toString();   // torrent rows carry the hash
@@ -979,6 +998,7 @@ void QmlSearchBridge::back()
         m_results = m_titleCache;
         m_resultMagnets.clear();
         m_resultTitles.clear();
+    m_resultHttp.clear();
         setMode("titles");
         setSearching(false);
         setStatus(tr_("search_titles_n").arg(m_results.size()));
@@ -1020,6 +1040,7 @@ void QmlSearchBridge::showEpisodeRows()
     m_results.clear();
     m_resultMagnets.clear();
     m_resultTitles.clear();
+    m_resultHttp.clear();
     for (const QVariant &v : std::as_const(m_episodeCache)) {
         const QVariantMap ep = v.toMap();
         QVariantMap m;

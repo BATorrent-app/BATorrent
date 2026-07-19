@@ -449,6 +449,7 @@ int main(int argc, char *argv[])
         auto *addonBridge = new QmlAddonBridge(&app);
         auto *searchBridge = new QmlSearchBridge(eng, &app);
         searchBridge->setResolver(resolver);
+        searchBridge->setHttpDownloads(httpDownloads);
         auto *discoveryService = new DiscoveryService(&app);
         searchBridge->setDiscovery(discoveryService);
 

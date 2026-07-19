@@ -104,16 +104,23 @@ int GameSourceManager::indexCatalog(const QString &sourceName, const QByteArray 
         const QJsonObject o = v.toObject();
         const QString title = o.value(QStringLiteral("title")).toString();
         if (title.isEmpty()) continue;
-        QString magnet;
+        // Prefer a magnet (a swarm beats a single host); keep the first http(s)
+        // link as a fallback so file-host-only entries are downloadable too.
+        QString magnet, httpUrl;
         for (const QJsonValue &u : o.value(QStringLiteral("uris")).toArray()) {
             const QString s = u.toString();
             if (s.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)) { magnet = s; break; }
+            if (httpUrl.isEmpty()
+                && (s.startsWith(QStringLiteral("http://"), Qt::CaseInsensitive)
+                    || s.startsWith(QStringLiteral("https://"), Qt::CaseInsensitive)))
+                httpUrl = s;
         }
-        if (magnet.isEmpty()) continue;   // no magnet → not downloadable, skip
+        if (magnet.isEmpty() && httpUrl.isEmpty()) continue;   // nothing fetchable
         GameDownload g;
         g.title      = title;
         g.cleanTitle = cleanGameTitle(title);
         g.magnet     = magnet;
+        g.httpUrl    = httpUrl;
         g.fileSize   = o.value(QStringLiteral("fileSize")).toString();
         g.uploadDate = o.value(QStringLiteral("uploadDate")).toString();
         g.source     = sourceName;
