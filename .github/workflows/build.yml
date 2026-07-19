@@ -84,8 +84,13 @@ jobs:
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@2c09a5e66da6c8016428a2172bd76e5e4f14bb17 # latest
         with:
-          packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
-          version: 3.0
+          # NO system libtorrent-rasterbar-dev: we build the vendored fork from
+          # source (BAT_LIBTORRENT_SOURCE) and must bundle THAT .so. A system
+          # libtorrent present here made linuxdeploy resolve the soname to the
+          # stock lib, which lacks the fork's set_geo_local_fn export → the
+          # AppImage crashed at launch with "undefined symbol" (issue #32).
+          packages: cmake g++ libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
+          version: 4
 
       # Crash reporting (opt-in, same gate as macOS). No apt package for
       # sentry-native, so build it from source when BAT_SENTRY_DSN is set.
@@ -124,6 +129,18 @@ jobs:
           # Ship the Crashpad handler next to the binary inside the AppImage.
           [ "$SENTRY_ENABLED" = "1" ] && cp "$BAT_SENTRY_HANDLER" AppDir/usr/bin/crashpad_handler || true
 
+          # Bundle the FORK's libtorrent (the one the binary was linked against,
+          # with set_geo_local_fn) into the AppDir so linuxdeploy ships it —
+          # NOT some stray system lib. Mirrors the Windows job's fork-DLL guard.
+          mkdir -p AppDir/usr/lib
+          forkso=$(find build/third_party/libtorrent -maxdepth 1 -name 'libtorrent-rasterbar.so*' | sort | tail -1)
+          if [ -z "$forkso" ]; then
+            echo "::error::fork libtorrent .so missing under build/third_party/libtorrent — the AppImage would crash at launch."
+            exit 1
+          fi
+          cp -a build/third_party/libtorrent/libtorrent-rasterbar.so* AppDir/usr/lib/
+          echo "Bundled fork libtorrent: $(basename "$forkso")"
+
       - name: Resize icon to 256x256
         run: |
           convert AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png \
@@ -137,12 +154,32 @@ jobs:
           chmod +x linuxdeploy*.AppImage
           export QMAKE=$(which qmake6 2>/dev/null || which qmake)
           export QML_SOURCES_PATHS=$PWD/src/qml
+          # linuxdeploy resolves the binary's libtorrent-rasterbar.so.2.0 soname
+          # via this path — point it at the fork lib (in AppDir + the build dir)
+          # so it never falls back to a stock system libtorrent.
+          export LD_LIBRARY_PATH="$PWD/AppDir/usr/lib:$PWD/build/third_party/libtorrent:$LD_LIBRARY_PATH"
           ./linuxdeploy-x86_64.AppImage --appdir AppDir \
+            --library AppDir/usr/lib/libtorrent-rasterbar.so.2.0 \
             --plugin qt \
             --desktop-file AppDir/usr/share/applications/batorrent.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png \
             --output appimage
           mv BATorrent-*.AppImage BATorrent-linux-x86_64.AppImage
+
+      # Guard: this exact class of bug (issue #32) must never ship again — the
+      # bundled libtorrent has to export the fork's set_geo_local_fn.
+      - name: Verify fork libtorrent is bundled
+        run: |
+          ./BATorrent-linux-x86_64.AppImage --appimage-extract >/dev/null
+          lib=$(find squashfs-root -name 'libtorrent-rasterbar.so*' | head -1)
+          if [ -z "$lib" ]; then echo "::error::no libtorrent in the AppImage"; exit 1; fi
+          echo "Checking $lib for the fork symbol..."
+          if ! nm -D --defined-only "$lib" 2>/dev/null | grep -q set_geo_local_fn; then
+            echo "::error::bundled libtorrent lacks set_geo_local_fn — stock lib shipped, launch would crash (issue #32)."
+            exit 1
+          fi
+          echo "OK: fork libtorrent bundled (set_geo_local_fn present)."
+          rm -rf squashfs-root
 
       - name: Upload debug symbols to Sentry
         if: env.SENTRY_ENABLED == '1' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != ''
