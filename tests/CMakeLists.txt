@@ -63,6 +63,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/mkvchapters.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownload.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlposterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
@@ -236,6 +237,8 @@ bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_magnettrackers test_magnettrackers.cpp)
 bat_add_test(test_mkvchapters test_mkvchapters.cpp)
+bat_add_test(test_rangeplan test_rangeplan.cpp)
+bat_add_test(test_httpdownload test_httpdownload.cpp)
 bat_add_test(test_proxycontroller test_proxycontroller.cpp)
 bat_add_test(test_ipcprotocol test_ipcprotocol.cpp)
 bat_add_test(test_debrid     test_debrid.cpp)
