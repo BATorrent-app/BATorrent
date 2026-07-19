@@ -17,15 +17,21 @@ Item {
 
     implicitWidth: 32; implicitHeight: 32
 
+    // press feedback — the whole control dips slightly so a click feels heard
+    scale: bma.pressed ? 0.94 : 1.0
+    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
     Rectangle {
         anchors.fill: parent; radius: width / 2
         color: bma.containsMouse ? "#1effffff" : "transparent"
-        Behavior on color { ColorAnimation { duration: 100 } }
+        Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
     }
     IconImg {
         anchors.centerIn: parent
         src: btn.src; s: btn.s
         tint: btn.active ? Theme.accent : (bma.containsMouse ? Theme.t1 : Theme.t2)
+        // fade the tint in step with the hover glow (it used to snap)
+        Behavior on tint { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
     }
     // state dot — "on" reads at a glance without filling the control
     Rectangle {

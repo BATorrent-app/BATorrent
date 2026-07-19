@@ -792,7 +792,7 @@ Window {
         height: 52
         opacity: win.controlsShown ? 1 : 0
         visible: opacity > 0 && win.mediaTitle.length > 0
-        Behavior on opacity { NumberAnimation { duration: 220 } }
+        Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
         // scrim fading downward — mirrors the bottom bar so the chrome frames the
         // video without hard edges.
@@ -863,7 +863,7 @@ Window {
         height: 124
         opacity: win.controlsShown ? 1 : 0
         visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 220 } }
+        Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
         // gradient scrim: the video bleeds into the controls (Stremio/YouTube),
         // instead of a hard slab with a hairline. In windowed mode it sits on the
@@ -1055,37 +1055,47 @@ Window {
                     Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: 34; implicitHeight: 34
+                        scale: rwMa.pressed ? 0.9 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         Rectangle {
                             anchors.fill: parent; radius: width / 2
                             color: rwMa.containsMouse ? "#1effffff" : "transparent"
-                            Behavior on color { ColorAnimation { duration: 100 } }
+                            Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         }
-                        IconImg { anchors.centerIn: parent; src: "qrc:/icons/replay.svg"; tint: rwMa.containsMouse ? Theme.t1 : Theme.t2; s: 22 }
-                        Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: rwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 7; font.weight: Font.Bold; font.family: Theme.fontSans }
+                        IconImg {
+                            anchors.centerIn: parent; src: "qrc:/icons/replay.svg"; s: 22
+                            tint: rwMa.containsMouse ? Theme.t1 : Theme.t2
+                            Behavior on tint { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                        }
+                        Text {
+                            anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"
+                            color: rwMa.containsMouse ? Theme.t1 : Theme.t2
+                            font.pixelSize: 7; font.weight: Font.Bold; font.family: Theme.fontSans
+                            Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                        }
                         MouseArea { id: rwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(-10000) }
                     }
-                // play / pause — the hero: same minimalist language, a touch larger,
-                // red as the hover detail (signal, not a white-disc surface)
                     // play / pause — the hero: same minimalist language, a touch
                     // larger, red as the hover detail (signal, not a white disc)
                     Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: 44; implicitHeight: 44
+                        scale: playMa.pressed ? 0.94 : (playMa.containsMouse ? 1.04 : 1.0)
+                        Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
                         Rectangle {
                             anchors.fill: parent; radius: width / 2
                             color: playMa.containsMouse ? "#1effffff" : "transparent"
                             border.color: playMa.containsMouse ? Theme.accent : "transparent"
                             border.width: 1
-                            scale: playMa.containsMouse ? 1.04 : 1.0
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                            Behavior on border.color { ColorAnimation { duration: 120 } }
-                            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                            Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         }
                         IconImg {
                             anchors.centerIn: parent
                             anchors.horizontalCenterOffset: player.playbackState === MediaPlayer.PlayingState ? 0 : 2
                             src: player.playbackState === MediaPlayer.PlayingState ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
                             tint: playMa.containsMouse ? Theme.accent : Theme.t1; s: 26
+                            Behavior on tint { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
                         }
                         MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.togglePlay() }
                     }
@@ -1093,13 +1103,24 @@ Window {
                     Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: 34; implicitHeight: 34
+                        scale: fwMa.pressed ? 0.9 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         Rectangle {
                             anchors.fill: parent; radius: width / 2
                             color: fwMa.containsMouse ? "#1effffff" : "transparent"
-                            Behavior on color { ColorAnimation { duration: 100 } }
+                            Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         }
-                        IconImg { anchors.centerIn: parent; src: "qrc:/icons/forward.svg"; tint: fwMa.containsMouse ? Theme.t1 : Theme.t2; s: 22 }
-                        Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: fwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 7; font.weight: Font.Bold; font.family: Theme.fontSans }
+                        IconImg {
+                            anchors.centerIn: parent; src: "qrc:/icons/forward.svg"; s: 22
+                            tint: fwMa.containsMouse ? Theme.t1 : Theme.t2
+                            Behavior on tint { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                        }
+                        Text {
+                            anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"
+                            color: fwMa.containsMouse ? Theme.t1 : Theme.t2
+                            font.pixelSize: 7; font.weight: Font.Bold; font.family: Theme.fontSans
+                            Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                        }
                         MouseArea { id: fwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(10000) }
                     }
                     PIconBtn {
@@ -1149,7 +1170,7 @@ Window {
                                 Rectangle {
                                     anchors.fill: parent; radius: width / 2
                                     color: volMa.containsMouse ? "#1effffff" : "transparent"
-                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                    Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                                 }
                                 IconImg {
                                     anchors.centerIn: parent
