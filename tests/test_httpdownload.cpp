@@ -12,132 +12,23 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "services/downloads/httpdownload.h"
+#include "httptestserver.h"
 
-#include <QCoreApplication>
-#include <QTcpServer>
-#include <QTcpSocket>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QFile>
 #include <QByteArray>
 #include <QUrl>
 
+using httptest::makePayload;
+using httptest::RangeServer;
+
 namespace {
-
-// Catch2WithMain gives us no QCoreApplication; QNAM/QTcpServer need one event
-// loop for the whole run. Lazily create a single instance (house pattern).
-static int   s_argc = 1;
-static char  s_arg0[] = "test_httpdownload";
-static char *s_argv[] = { s_arg0, nullptr };
-
-QCoreApplication &app()
-{
-    static QCoreApplication *a = new QCoreApplication(s_argc, s_argv);
-    return *a;
-}
-
-QByteArray makePayload(int n)
-{
-    QByteArray p(n, Qt::Uninitialized);
-    for (int i = 0; i < n; ++i)
-        p[i] = char((i * 31 + 7) & 0xFF);
-    return p;
-}
-
-// Minimal one-request-per-connection HTTP/1.1 server. Honours Range for 206
-// responses; in `ignoreRanges` mode it always answers 200 with the full body
-// and no Accept-Ranges (drives the single-stream fallback). In `truncate` mode
-// it advertises the real size but serves one byte short (drives the integrity
-// gate). Optionally sets Content-Disposition to test filename extraction.
-class RangeServer : public QTcpServer
-{
-public:
-    QByteArray payload;
-    bool ignoreRanges = false;
-    bool truncate = false;
-    QByteArray contentDisposition;   // e.g. "attachment; filename=\"real.bin\""
-
-    explicit RangeServer(QByteArray body, QObject *parent = nullptr)
-        : QTcpServer((app(), parent)), payload(std::move(body)) {}
-
-    QUrl url() const
-    {
-        return QUrl(QStringLiteral("http://127.0.0.1:%1/file.bin").arg(serverPort()));
-    }
-
-protected:
-    void incomingConnection(qintptr handle) override
-    {
-        auto *sock = new QTcpSocket(this);
-        sock->setSocketDescriptor(handle);
-        connect(sock, &QTcpSocket::readyRead, this, [this, sock]() {
-            sock->setProperty("buf", sock->property("buf").toByteArray() + sock->readAll());
-            const QByteArray buf = sock->property("buf").toByteArray();
-            const int hdrEnd = buf.indexOf("\r\n\r\n");
-            if (hdrEnd < 0) return;   // headers not complete yet
-            respond(sock, buf.left(hdrEnd));
-        });
-        connect(sock, &QTcpSocket::disconnected, sock, &QObject::deleteLater);
-    }
-
-private:
-    void respond(QTcpSocket *sock, const QByteArray &headers)
-    {
-        long long from = 0, to = payload.size() - 1;
-        bool ranged = false;
-        for (const QByteArray &line : headers.split('\n')) {
-            const QByteArray l = line.trimmed();
-            if (l.toLower().startsWith("range:")) {
-                const QByteArray spec = l.mid(l.indexOf('=') + 1).trimmed();
-                const int dash = spec.indexOf('-');
-                if (dash >= 0) {
-                    from = spec.left(dash).toLongLong();
-                    const QByteArray tail = spec.mid(dash + 1).trimmed();
-                    if (!tail.isEmpty()) to = tail.toLongLong();
-                    ranged = true;
-                }
-            }
-        }
-
-        // The probe is a bytes=0-0 request; never truncate it, so probing
-        // succeeds and the failure surfaces on a real segment instead.
-        const bool isProbe = ranged && from == 0 && to == 0;
-
-        QByteArray body, head;
-        qint64 contentLen;
-        if (ranged && !ignoreRanges) {
-            if (to >= payload.size()) to = payload.size() - 1;
-            body = payload.mid(int(from), int(to - from + 1));
-            contentLen = body.size();
-            head = "HTTP/1.1 206 Partial Content\r\n";
-            head += "Accept-Ranges: bytes\r\n";
-            head += QByteArray("Content-Range: bytes ") + QByteArray::number(from)
-                    + '-' + QByteArray::number(to) + '/'
-                    + QByteArray::number(payload.size()) + "\r\n";
-        } else {
-            body = payload;
-            contentLen = body.size();
-            head = "HTTP/1.1 200 OK\r\n";
-        }
-        // Advertise the honest length but hang up one byte short: the client
-        // sees a premature close and must fail, never finalize (integrity gate).
-        if (truncate && !isProbe && body.size() > 0) body.chop(1);
-        head += QByteArray("Content-Length: ") + QByteArray::number(contentLen) + "\r\n";
-        if (!contentDisposition.isEmpty())
-            head += "Content-Disposition: " + contentDisposition + "\r\n";
-        head += "Connection: close\r\n\r\n";
-
-        sock->write(head);
-        sock->write(body);
-        sock->flush();
-        sock->disconnectFromHost();
-    }
-};
 
 // Spin the event loop until finished() fires (or time out). Returns the ok flag.
 bool runToFinish(HttpDownload &dl, int timeoutMs = 15000)
 {
-    app();   // ensure the event loop exists
+    httptest::ensureApp();   // event loop for QNAM
     QSignalSpy spy(&dl, &HttpDownload::finished);
     dl.start();
     if (spy.isEmpty() && !spy.wait(timeoutMs)) return false;

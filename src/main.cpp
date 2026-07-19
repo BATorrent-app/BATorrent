@@ -43,6 +43,8 @@
 #include "services/discovery/addonmanager.h"
 #include "services/integrations/notifier.h"
 #include "torrent/sessionmanager.h"
+#include "services/downloads/httpdownloadmanager.h"
+#include "services/downloads/httpmergeengine.h"
 #include "ipc/enginehost.h"
 #include "ipc/ipcengine.h"
 #include <QCoreApplication>
@@ -417,13 +419,20 @@ int main(int argc, char *argv[])
             }
             if (!ipcEngine) localSession = new SessionManager(&app);
         }
-        IEngine *eng = localSession ? static_cast<IEngine *>(localSession)
-                                    : static_cast<IEngine *>(ipcEngine);
+        IEngine *baseEng = localSession ? static_cast<IEngine *>(localSession)
+                                        : static_cast<IEngine *>(ipcEngine);
+        // Direct-HTTP downloads (file-host links, "Download from link") ride the
+        // same Downloads UI by presenting as extra IEngine rows — the merge
+        // decorator wraps the real engine so nothing downstream changes.
+        auto *httpDownloads = new HttpDownloadManager(&app);
+        IEngine *eng = new HttpMergeEngine(baseEng, httpDownloads, &app);
 
         auto *resolver = new MetadataResolver(&app);
         auto *posterModel = new QmlPosterModel(eng, resolver, &app);
         auto *themeBridge = new QmlThemeBridge(&app);
         auto *sessionBridge = new QmlSessionBridge(eng, resolver, &app);
+        sessionBridge->setHttpDownloads(httpDownloads);
+        httpDownloads->setDefaultDir(sessionBridge->defaultSavePath());
         // Local stream server for the embedded player (4.0 step ④).
         auto *streamServer = new StreamServer(eng, &app);
         if (streamServer->start()) {

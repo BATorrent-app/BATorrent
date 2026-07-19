@@ -4,6 +4,7 @@
 
 #include "bridges/qmlsessionbridge.h"
 #include "torrent/iengine.h"
+#include "services/downloads/httpdownloadmanager.h"
 #include <QStorageInfo>
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/discoveryservice.h"
@@ -1109,6 +1110,24 @@ void QmlSessionBridge::addMagnetUri(const QString &uri, const QString &savePath)
     if (!normalized.isEmpty()) m_lastClipboardMagnet = normalized;
     if (!savePath.isEmpty()) rememberSavePath(savePath);
     m_session->addMagnet(uri, savePath.isEmpty() ? defaultSavePath() : savePath);
+}
+
+void QmlSessionBridge::addHttpUrl(const QString &url, const QString &savePath)
+{
+    const QString u = url.trimmed();
+    if (u.isEmpty()) return;
+    if (u.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)) { addMagnetUri(u, savePath); return; }
+
+    const QUrl qurl(u);
+    if (!m_httpDownloads || !qurl.isValid()
+        || !(qurl.scheme() == QLatin1String("http") || qurl.scheme() == QLatin1String("https"))) {
+        emit toast(tr_("add_url_failed"), u);
+        return;
+    }
+    if (!savePath.isEmpty()) rememberSavePath(savePath);
+    // The new row landing in the Downloads list is the confirmation (like a
+    // torrent add) — no success toast needed.
+    m_httpDownloads->add(qurl, savePath.isEmpty() ? defaultSavePath() : savePath);
 }
 
 void QmlSessionBridge::addTorrentUrl(const QString &url)

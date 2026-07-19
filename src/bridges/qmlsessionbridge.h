@@ -7,6 +7,8 @@
 
 #include "bridges/bridgecommon.h"
 
+class HttpDownloadManager;
+
 class QmlSessionBridge : public QObject
 {
     Q_OBJECT
@@ -146,6 +148,10 @@ public:
     Q_INVOKABLE void addMagnetUri(const QString &uri, const QString &savePath = QString());
     // Fetch a .torrent from an http(s) URL, then route it through the add flow.
     Q_INVOKABLE void addTorrentUrl(const QString &url);
+    // Download a direct http(s) file link (not a .torrent) — it appears in the
+    // Downloads list like any other download via the HTTP engine decorator.
+    Q_INVOKABLE void addHttpUrl(const QString &url, const QString &savePath = QString());
+    void setHttpDownloads(HttpDownloadManager *mgr) { m_httpDownloads = mgr; }
     bool altSpeedsActive() const;
     int portStatus() const;
     Q_INVOKABLE void setAltSpeedsActive(bool active);
@@ -405,6 +411,7 @@ private:
     void pollInstallWatch();   // guided installs: watch the folder for a produced exe
 
     IEngine *m_session;   // the session API — SessionManager in-process today, IpcEngine after the split
+    HttpDownloadManager *m_httpDownloads = nullptr;   // direct-HTTP downloads (set in main.cpp)
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game
     QHash<QString, qint64> m_gameStartMs;    // infoHash → launch timestamp (ms)

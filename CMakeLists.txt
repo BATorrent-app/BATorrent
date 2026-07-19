@@ -92,6 +92,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/metadata/metadataresolver.cpp
     src/services/metadata/mkvchapters.cpp
     src/services/downloads/httpdownload.cpp
+    src/services/downloads/httpdownloadmanager.cpp
+    src/services/downloads/httpmergeengine.cpp
     src/services/discovery/discoveryservice.cpp
     src/services/discovery/gamesourcemanager.cpp
     src/bridges/qmlposterbridge.cpp

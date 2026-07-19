@@ -672,6 +672,7 @@ Window {
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_open_torrent")); shortcut: StandardKey.Open; onTriggered: openFileDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_magnet")); shortcut: "Ctrl+M"; onTriggered: magnetDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_url")); shortcut: "Ctrl+U"; onTriggered: inputPrompt.openWith(i18n.t("menu_add_url"), i18n.t("prompt_torrent_url"), "", "https://…/file.torrent", function(t){ if (t.length > 0) session.addTorrentUrl(t) }) }
+            Platform.MenuItem { text: (i18n.language, i18n.t("menu_add_http")); shortcut: "Ctrl+D"; onTriggered: inputPrompt.openWith(i18n.t("menu_add_http"), i18n.t("prompt_http_url"), "", "https://…/file.zip", function(t){ if (t.length > 0) session.addHttpUrl(t) }) }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_create_torrent")); onTriggered: createDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: inspectFileDlg.open() }
             Platform.MenuItem { text: (i18n.language, i18n.t("menu_import_qbt")); onTriggered: importQbtDlg.open() }
