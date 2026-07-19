@@ -63,6 +63,17 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="4.7.0" date="2026-07-19">
+      <description>
+        <ul>
+          <li>Reworked built-in player: unified audio/subtitle/speed panel, seek-bar frame previews, next-episode countdown, chapter skip, ambient glow, centered minimalist controls</li>
+          <li>Queue filter and status for downloads waiting on a slot; favorite save folders with free space in the add dialogs; disk gauge rotates through every drive</li>
+          <li>Windows: per-type file/protocol association toggles and a Refresh button</li>
+          <li>Fixed a Linux AppImage launch crash (shipped the wrong libtorrent), several magnet-dialog bugs, and remove-with-files not finishing on quit</li>
+          <li>Settings show a "Saved" confirmation; quieter completed cards; cover-less detail layout</li>
+        </ul>
+      </description>
+    </release>
     <release version="4.6.0" date="2026-07-17">
       <description>
         <ul>

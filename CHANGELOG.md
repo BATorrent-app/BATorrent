@@ -1,5 +1,44 @@
 # Changelog
 
+## v4.7.0 "Cinema"
+
+### Added
+- The built-in player got a full rework. Audio, subtitles and speed now live in
+  one panel instead of three menus; hover the seek bar for a frame preview;
+  a next-episode card with a countdown appears near the end; intro/credits get a
+  skip button when the file has chapters; and the video's colors bleed softly
+  into the black bars (ambient glow, can be turned off in Settings).
+- The player controls are centered and minimalist now, and the volume is an
+  inline slider that slides out on hover.
+- Downloads that are waiting on a queue slot show a "Queued" filter and status.
+- Favorite folders: the add dialogs offer your recent save locations, each with
+  its free space, so a full default disk is one click away from the right one.
+- The disk gauge in the top bar rotates through every drive, not just the main one.
+- Windows: separate settings toggles for .torrent, magnet: and bittorrent:
+  associations; a Refresh button in the toolbar.
+
+### Fixed
+- Linux: the AppImage crashed at launch with an "undefined symbol" error on
+  every machine — it shipped the system libtorrent instead of BATorrent's own.
+  Fixed, with a build check so it can't happen again (#32).
+- Magnets: the Add dialog no longer opens twice after a drag-and-drop, the paste
+  dialog no longer closes before you can start the download, and a magnet from
+  the browser no longer shrinks a maximized window.
+- "Remove with files" now finishes deleting even if you quit right after, and a
+  removed torrent no longer comes back from the watched folder.
+- Detail panel values no longer spill past the edge; the panel can be moved to
+  the bottom in grid view (Settings > Appearance).
+- Windows: peer countries show again; the window no longer opens wider than a
+  scaled screen.
+
+### Changed
+- Settings save as you go, and now say so — a change flashes "Saved" and the
+  button reads "Done".
+- A finished download's card is quieter: the DONE badge carries it, the long
+  status text is gone.
+- Generic torrents (an Ubuntu ISO, a code archive) no longer show a placeholder
+  cover in the details — the layout adapts when there's no artwork.
+
 ## v4.6.0 "Signal"
 
 ### Added
