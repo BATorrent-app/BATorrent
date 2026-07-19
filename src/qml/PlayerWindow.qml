@@ -1006,168 +1006,189 @@ Window {
             Item { Layout.fillHeight: true }
 
             // --- control row: rewind · play · forward | … | right cluster ---
-            RowLayout {
+            Item {
                 Layout.fillWidth: true
-                spacing: 8
+                Layout.preferredHeight: 48
 
-                // rewind 10
-                Item {
-                    Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: 30; implicitHeight: 30
-                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/replay.svg"; tint: rwMa.containsMouse ? Theme.t1 : Theme.t2; s: 26 }
-                    Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: rwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 8; font.weight: Font.Bold; font.family: Theme.fontSans }
-                    MouseArea { id: rwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(-10000) }
-                }
-                // big play / pause — a lifted white disc that floats over the video
-                Item {
-                    Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: 48; implicitHeight: 48
-                    MultiEffect {
-                        source: disc
-                        anchors.fill: disc
-                        shadowEnabled: true
-                        blurMax: 30
-                        shadowBlur: playMa.containsMouse ? 1.0 : 0.667
-                        shadowColor: "#b3000000"
-                        Behavior on shadowBlur { NumberAnimation { duration: 140 } }
-                    }
+                // LEFT zone: "+X min" ready-to-watch runway (only while streaming)
+                RowLayout {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
                     Rectangle {
-                        id: disc
-                        anchors.fill: parent; radius: width / 2
-                        scale: playMa.containsMouse ? 1.06 : 1.0
-                        color: playMa.containsMouse ? "#ffffff" : "#f2f2f5"
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                        Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
+                        Layout.alignment: Qt.AlignVCenter
+                        readonly property real total: (win.streamStats && win.streamStats.totalBytes) || 0
+                        readonly property bool low: win.bufferedAheadMs < 30000
+                        visible: total > 0 && win.stillDownloading
+                        implicitWidth: dlRow.implicitWidth + 22; implicitHeight: 30
+                        radius: 8
+                        color: dlMa.containsMouse ? "#1affffff" : "transparent"
+                        border.color: low ? Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5) : Theme.hair
+                        border.width: 1
+                        Behavior on border.color { ColorAnimation { duration: 200 } }
+                        Row {
+                            id: dlRow; anchors.centerIn: parent; spacing: 6
+                            IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/clock.svg"; tint: parent.parent.low ? Theme.amber : Theme.t3; s: 13 }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "+" + win.fmtRunway(win.bufferedAheadMs)
+                                color: parent.parent.low ? Theme.amber : Theme.t2
+                                font.pixelSize: 12; font.family: Theme.fontMono
+                            }
+                        }
+                        MouseArea { id: dlMa; anchors.fill: parent; hoverEnabled: true }
+                        ToolTip.visible: dlMa.containsMouse
+                        ToolTip.delay: 250
+                        ToolTip.text: win.fmtAhead(win.bufferedAheadMs) + "  ·  "
+                                      + win.fmtBytes((win.streamStats && win.streamStats.downloadedBytes) || 0)
+                                      + " / " + win.fmtBytes((win.streamStats && win.streamStats.totalBytes) || 0)
+                    }
+                }
+
+                // CENTER zone: transport — anchored to the bar's true center
+                RowLayout {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
+
+                    // rewind 10 — icon-only, circular hover, matching the right cluster
+                    Item {
+                        Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: 34; implicitHeight: 34
+                        Rectangle {
+                            anchors.fill: parent; radius: width / 2
+                            color: rwMa.containsMouse ? "#1effffff" : "transparent"
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                        }
+                        IconImg { anchors.centerIn: parent; src: "qrc:/icons/replay.svg"; tint: rwMa.containsMouse ? Theme.t1 : Theme.t2; s: 22 }
+                        Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: rwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 7; font.weight: Font.Bold; font.family: Theme.fontSans }
+                        MouseArea { id: rwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(-10000) }
+                    }
+                // play / pause — the hero: same minimalist language, a touch larger,
+                // red as the hover detail (signal, not a white-disc surface)
+                    // play / pause — the hero: same minimalist language, a touch
+                    // larger, red as the hover detail (signal, not a white disc)
+                    Item {
+                        Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: 44; implicitHeight: 44
+                        Rectangle {
+                            anchors.fill: parent; radius: width / 2
+                            color: playMa.containsMouse ? "#1effffff" : "transparent"
+                            border.color: playMa.containsMouse ? Theme.accent : "transparent"
+                            border.width: 1
+                            scale: playMa.containsMouse ? 1.04 : 1.0
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on border.color { ColorAnimation { duration: 120 } }
+                            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                        }
                         IconImg {
                             anchors.centerIn: parent
                             anchors.horizontalCenterOffset: player.playbackState === MediaPlayer.PlayingState ? 0 : 2
                             src: player.playbackState === MediaPlayer.PlayingState ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
-                            tint: "#0a0a0c"; s: 21
+                            tint: playMa.containsMouse ? Theme.accent : Theme.t1; s: 26
                         }
+                        MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.togglePlay() }
                     }
-                    MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.togglePlay() }
-                }
-                // forward 10
-                Item {
-                    Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: 30; implicitHeight: 30
-                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/forward.svg"; tint: fwMa.containsMouse ? Theme.t1 : Theme.t2; s: 26 }
-                    Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: fwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 8; font.weight: Font.Bold; font.family: Theme.fontSans }
-                    MouseArea { id: fwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(10000) }
-                }
-                PIconBtn {
-                    Layout.alignment: Qt.AlignVCenter
-                    visible: win.nextIdx >= 0
-                    src: "qrc:/icons/skip-forward.svg"
-                    tip: (i18n.language, i18n.t("player_next"))
-                    onClicked: if (typeof session !== "undefined") session.playFile(win.infoHash, win.nextIdx)
+                    // forward 10
+                    Item {
+                        Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: 34; implicitHeight: 34
+                        Rectangle {
+                            anchors.fill: parent; radius: width / 2
+                            color: fwMa.containsMouse ? "#1effffff" : "transparent"
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                        }
+                        IconImg { anchors.centerIn: parent; src: "qrc:/icons/forward.svg"; tint: fwMa.containsMouse ? Theme.t1 : Theme.t2; s: 22 }
+                        Text { anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"; color: fwMa.containsMouse ? Theme.t1 : Theme.t2; font.pixelSize: 7; font.weight: Font.Bold; font.family: Theme.fontSans }
+                        MouseArea { id: fwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(10000) }
+                    }
+                    PIconBtn {
+                        Layout.alignment: Qt.AlignVCenter
+                        visible: win.nextIdx >= 0
+                        src: "qrc:/icons/skip-forward.svg"
+                        tip: (i18n.language, i18n.t("player_next"))
+                        onClicked: if (typeof session !== "undefined") session.playFile(win.infoHash, win.nextIdx)
+                    }
                 }
 
-                Item { Layout.fillWidth: true }
+                // RIGHT zone: options — speed · subtitles · volume · more · pip · fullscreen
+                RowLayout {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
 
-                // "↓ to 1:19:49" — bordered pill (downloaded-to time); hover = size
-                // "runway" pill — how much is ready to watch ahead of the
-                // playhead, the number a viewer actually cares about (not raw
-                // GB). Amber when the runway runs short; gone once fully local.
-                Rectangle {
-                    Layout.alignment: Qt.AlignVCenter
-                    readonly property real total: (win.streamStats && win.streamStats.totalBytes) || 0
-                    readonly property bool low: win.bufferedAheadMs < 30000
-                    visible: total > 0 && win.stillDownloading
-                    implicitWidth: dlRow.implicitWidth + 22; implicitHeight: 30
-                    radius: 8
-                    color: dlMa.containsMouse ? "#1affffff" : "transparent"
-                    border.color: low ? Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5) : Theme.hair
-                    border.width: 1
-                    Behavior on border.color { ColorAnimation { duration: 200 } }
-                    Row {
-                        id: dlRow; anchors.centerIn: parent; spacing: 6
-                        IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/clock.svg"; tint: parent.parent.low ? Theme.amber : Theme.t3; s: 13 }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "+" + win.fmtRunway(win.bufferedAheadMs)
-                            color: parent.parent.low ? Theme.amber : Theme.t2
-                            font.pixelSize: 12; font.family: Theme.fontMono
-                        }
+                    // speed
+                    PChip { Layout.alignment: Qt.AlignVCenter; active: player.playbackRate !== 1.0; label: player.playbackRate + "×"; onClicked: optsPanel.open ? optsPanel.closePanel() : optsPanel.openPanel() }
+                    // subtitles / audio / speed — one icon, one panel
+                    PIconBtn {
+                        Layout.alignment: Qt.AlignVCenter
+                        src: "qrc:/icons/subtitles.svg"; s: 19
+                        active: player.activeSubtitleTrack >= 0 || win.extSubsActive
+                        tip: (i18n.language, i18n.t("player_subs"))
+                        onClicked: optsPanel.open ? optsPanel.closePanel() : optsPanel.openPanel()
                     }
-                    MouseArea { id: dlMa; anchors.fill: parent; hoverEnabled: true }
-                    ToolTip.visible: dlMa.containsMouse
-                    ToolTip.delay: 250
-                    ToolTip.text: win.fmtAhead(win.bufferedAheadMs) + "  ·  "
-                                  + win.fmtBytes((win.streamStats && win.streamStats.downloadedBytes) || 0)
-                                  + " / " + win.fmtBytes((win.streamStats && win.streamStats.totalBytes) || 0)
-                }
-                // speed
-                PChip { Layout.alignment: Qt.AlignVCenter; active: player.playbackRate !== 1.0; label: player.playbackRate + "×"; onClicked: optsPanel.open ? optsPanel.closePanel() : optsPanel.openPanel() }
-                // subtitles / audio / speed — one icon, one panel
-                PIconBtn {
-                    Layout.alignment: Qt.AlignVCenter
-                    src: "qrc:/icons/subtitles.svg"; s: 19
-                    active: player.activeSubtitleTrack >= 0 || win.extSubsActive
-                    tip: (i18n.language, i18n.t("player_subs"))
-                    onClicked: optsPanel.open ? optsPanel.closePanel() : optsPanel.openPanel()
-                }
-                // volume: icon + an inline horizontal slider that expands on
-                // hover (YouTube-style). One container, one HoverHandler —
-                // handlers receive hover cooperatively, so there's no popup
-                // layer, no icon→slider crossing, no dead zone. Three floating-
-                // popup attempts all ghosted; inline is structurally immune.
-                Item {
-                    id: volCtl
-                    Layout.alignment: Qt.AlignVCenter
-                    readonly property bool expanded: volHov.hovered || hsl.pressed
-                    implicitHeight: 32
-                    implicitWidth: 32 + (expanded ? 78 : 0)
-                    Behavior on implicitWidth { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                    clip: true
-                    HoverHandler { id: volHov }
-                    Row {
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2
-                        Item {
-                            width: 32; height: 32
-                            Rectangle {
-                                anchors.fill: parent; radius: width / 2
-                                color: volMa.containsMouse ? "#1effffff" : "transparent"
-                                Behavior on color { ColorAnimation { duration: 100 } }
-                            }
-                            IconImg {
-                                anchors.centerIn: parent
-                                src: (win.muted || win.volume <= 0) ? "qrc:/icons/volume-mute.svg" : "qrc:/icons/volume.svg"
-                                tint: volCtl.expanded ? Theme.t1 : Theme.t2
-                                s: 18
-                            }
-                            MouseArea {
-                                id: volMa; anchors.fill: parent
-                                hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                onClicked: win.muted = !win.muted
-                            }
-                        }
-                        Slider {
-                            id: hsl
-                            width: 72; height: 32
+                    // volume: icon + an inline horizontal slider that expands on
+                    // hover (YouTube-style). One container, one HoverHandler —
+                    // handlers receive hover cooperatively, so there's no popup
+                    // layer, no icon→slider crossing, no dead zone. Three floating-
+                    // popup attempts all ghosted; inline is structurally immune.
+                    Item {
+                        id: volCtl
+                        Layout.alignment: Qt.AlignVCenter
+                        readonly property bool expanded: volHov.hovered || hsl.pressed
+                        implicitHeight: 32
+                        implicitWidth: 32 + (expanded ? 78 : 0)
+                        Behavior on implicitWidth { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                        clip: true
+                        HoverHandler { id: volHov }
+                        Row {
                             anchors.verticalCenter: parent.verticalCenter
-                            opacity: volCtl.expanded ? 1 : 0
-                            Behavior on opacity { NumberAnimation { duration: 120 } }
-                            from: 0; to: 1
-                            value: win.muted ? 0 : win.volume
-                            onMoved: { win.muted = false; win.volume = value }
-                            background: Rectangle {
-                                x: hsl.leftPadding; y: hsl.topPadding + hsl.availableHeight / 2 - height / 2
-                                width: hsl.availableWidth; height: 4; radius: 2; color: "#3a3a42"
-                                Rectangle { width: hsl.visualPosition * parent.width; height: parent.height; radius: 2; color: "#ffffff" }
+                            spacing: 2
+                            Item {
+                                width: 32; height: 32
+                                Rectangle {
+                                    anchors.fill: parent; radius: width / 2
+                                    color: volMa.containsMouse ? "#1effffff" : "transparent"
+                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                }
+                                IconImg {
+                                    anchors.centerIn: parent
+                                    src: (win.muted || win.volume <= 0) ? "qrc:/icons/volume-mute.svg" : "qrc:/icons/volume.svg"
+                                    tint: volCtl.expanded ? Theme.t1 : Theme.t2
+                                    s: 18
+                                }
+                                MouseArea {
+                                    id: volMa; anchors.fill: parent
+                                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: win.muted = !win.muted
+                                }
                             }
-                            handle: Rectangle {
-                                x: hsl.leftPadding + hsl.visualPosition * (hsl.availableWidth - width)
-                                y: hsl.topPadding + hsl.availableHeight / 2 - height / 2
-                                implicitWidth: 12; implicitHeight: 12; radius: 6; color: "#fff"
+                            Slider {
+                                id: hsl
+                                width: 72; height: 32
+                                anchors.verticalCenter: parent.verticalCenter
+                                opacity: volCtl.expanded ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: 120 } }
+                                from: 0; to: 1
+                                value: win.muted ? 0 : win.volume
+                                onMoved: { win.muted = false; win.volume = value }
+                                background: Rectangle {
+                                    x: hsl.leftPadding; y: hsl.topPadding + hsl.availableHeight / 2 - height / 2
+                                    width: hsl.availableWidth; height: 4; radius: 2; color: "#3a3a42"
+                                    Rectangle { width: hsl.visualPosition * parent.width; height: parent.height; radius: 2; color: "#ffffff" }
+                                }
+                                handle: Rectangle {
+                                    x: hsl.leftPadding + hsl.visualPosition * (hsl.availableWidth - width)
+                                    y: hsl.topPadding + hsl.availableHeight / 2 - height / 2
+                                    implicitWidth: 12; implicitHeight: 12; radius: 6; color: "#fff"
+                                }
                             }
                         }
                     }
+                    PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/ellipsis.svg"; tip: (i18n.language, i18n.t("ctx_grp_more")); onClicked: moreMenu.popup() }
+                    PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/pip.svg"; active: win.pipMode; tip: (i18n.language, i18n.t("player_pip")); onClicked: win.togglePip() }
+                    PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/maximize.svg"; tip: (i18n.language, i18n.t("player_fullscreen")); onClicked: win.toggleFullscreen() }
                 }
-                PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/ellipsis.svg"; tip: (i18n.language, i18n.t("ctx_grp_more")); onClicked: moreMenu.popup() }
-                PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/pip.svg"; active: win.pipMode; tip: (i18n.language, i18n.t("player_pip")); onClicked: win.togglePip() }
-                PIconBtn { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/maximize.svg"; tip: (i18n.language, i18n.t("player_fullscreen")); onClicked: win.toggleFullscreen() }
             }
         }
     }
