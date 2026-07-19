@@ -286,6 +286,11 @@ int QmlSettingsBridge::telegramEventBit(const QString &key)
     return 0;
 }
 
+#ifdef Q_OS_WIN
+// defined below (near setAsDefaultApp); forward-declared so set() can call it
+static bool applyWinAssociation(const QString &kind, bool on);
+#endif
+
 void QmlSettingsBridge::set(const QString &key, const QVariant &v)
 {
     // per-type file/protocol association toggles (Windows registry; a no-op
