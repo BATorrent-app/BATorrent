@@ -11,8 +11,6 @@
 
 namespace {
 
-const QString kHttpHashPrefix = QStringLiteral("http:");
-
 bool hasExt(const QString &name, const QStringList &exts)
 {
     QString n = name.toLower();
@@ -45,7 +43,7 @@ HttpMergeEngine::HttpMergeEngine(IEngine *inner, HttpDownloadManager *http, QObj
     connect(m_http, &HttpDownloadManager::changed, this, &IEngine::torrentsUpdated);
     connect(m_http, &HttpDownloadManager::downloadFinished, this,
             [this](const QString &id, const QString &name, bool ok) {
-                if (ok) emit torrentFinished(name, kHttpHashPrefix + id);
+                if (ok) emit torrentFinished(name, bat::httpRowHash(id));
             });
 }
 
@@ -103,13 +101,13 @@ QString HttpMergeEngine::torrentHashAt(int index) const
 {
     if (!isHttp(index)) return m_inner->torrentHashAt(index);
     HttpDownload *d = httpAt(index);
-    return d ? kHttpHashPrefix + d->id() : QString();
+    return d ? bat::httpRowHash(d->id()) : QString();
 }
 
 int HttpMergeEngine::torrentIndexByInfoHash(const QString &infoHash) const
 {
-    if (infoHash.startsWith(kHttpHashPrefix)) {
-        const QString id = infoHash.mid(kHttpHashPrefix.size());
+    if (bat::isHttpRowHash(infoHash)) {
+        const QString id = bat::httpRowId(infoHash);
         for (int i = 0; i < m_http->count(); ++i)
             if (m_http->at(i)->id() == id) return base() + i;
         return -1;

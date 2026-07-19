@@ -20,6 +20,16 @@
 
 class QTimer;
 
+namespace bat {
+// Pseudo-info-hash the engine decorator uses for an HTTP download row. It MUST
+// be a valid filename: the metadata cache keys poster/json files by hash, so a
+// ':' (illegal on Windows) can't appear. The id is QUuid Id128 hex, so the
+// "httpdl-" prefix keeps the whole thing filesystem-safe.
+inline QString httpRowHash(const QString &id) { return QStringLiteral("httpdl-") + id; }
+inline bool isHttpRowHash(const QString &h)   { return h.startsWith(QStringLiteral("httpdl-")); }
+inline QString httpRowId(const QString &h)    { return h.mid(7); }   // strlen("httpdl-")
+}
+
 class HttpDownloadManager : public QObject
 {
     Q_OBJECT
