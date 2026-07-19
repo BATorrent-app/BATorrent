@@ -632,6 +632,11 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
+          # a hyphenated tag (v4.7.0-rc1) is a pre-release: it does NOT become
+          # "latest", so the in-app updater (which reads /releases/latest) never
+          # offers it to normal users — only manual beta testers grab it.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ !contains(github.ref_name, '-') }}
           files: |
             linux-build/BATorrent-linux-x86_64.AppImage
             linux-build/BATorrent-linux-x86_64.AppImage.torrent
@@ -650,6 +655,7 @@ jobs:
       # publishes. The MSIX artifact still needs manual upload to Partner
       # Center, but at least the build is ready without a separate dispatch.
       - name: Trigger Store MSIX build
+        if: ${{ !contains(github.ref_name, '-') }}   # never publish a pre-release to the Store
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -658,6 +664,7 @@ jobs:
           gh workflow run store.yml -f version="${VERSION}.0"
 
       - name: Update Homebrew tap
+        if: ${{ !contains(github.ref_name, '-') }}   # never point the tap at a pre-release
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
