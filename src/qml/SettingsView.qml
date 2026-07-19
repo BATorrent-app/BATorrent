@@ -15,6 +15,7 @@ Rectangle {
     color: Theme.bg
 
     property int sec: 0
+    property int reloadTick: 0       // bumped by a reset to force the rows to re-read their values
     property bool isCurrent: false   // true when this is the active nav page (gates the Esc/⌘W shortcuts)
     signal closed()                  // wired by Main to jump back to Downloads
 
@@ -58,6 +59,29 @@ Rectangle {
                 if (fieldMatches(fields[i], q)) matched.push(fields[i])
         }
         return buildBlocks(matched)
+    }
+
+    // ---- reset to defaults ----
+    // The schema is the single source of truth for a field's default: a toggle's
+    // `on`, a select/segmented/number's `value`, else empty. set() applies live,
+    // exactly like a user edit — so a reset needs no separate defaults table.
+    function defaultForField(f) {
+        if (!f || f.key === undefined) return undefined      // no key ⇒ not resettable here
+        if (f.type === "toggle") return f.on === true
+        if (f.value !== undefined) return f.value
+        return ""                                            // text / password / path
+    }
+    function resetFields(fields) {
+        if (typeof settings === "undefined") return
+        for (var i = 0; i < fields.length; i++) {
+            var d = win.defaultForField(fields[i])
+            if (d !== undefined) settings.set(fields[i].key, d)
+        }
+        win.reloadTick++                                     // rebuild the rows so they show the defaults
+    }
+    function resetSection() { win.resetFields(schema.sections[win.sec]) }
+    function resetAll() {
+        for (var s = 0; s < schema.sections.length; s++) win.resetFields(schema.sections[s])
     }
 
     // Hidden rows are dropped, and a group with no remaining rows is omitted entirely
@@ -187,6 +211,11 @@ Rectangle {
                 contentWidth: width
                 contentHeight: contentCol.implicitHeight + 2 * Theme.sp5
                 boundsBehavior: Flickable.StopAtBounds
+                // Tester feedback: the default glide over-ran the target setting.
+                // Decelerate harder and cap the top speed so a wheel notch lands
+                // precisely, while staying smooth (no per-notch jump).
+                flickDeceleration: 6500
+                maximumFlickVelocity: 2500
                 WheelScroller { flick: contentScroll }
 
                 ColumnLayout {
@@ -198,14 +227,28 @@ Rectangle {
 
                     // .shead
                     Eyebrow { text: schema.heads[win.sec].eyebrow }
-                    Text {
+                    RowLayout {
+                        Layout.fillWidth: true
                         Layout.topMargin: 6
-                        text: schema.heads[win.sec].h
-                        color: Theme.t1
-                        font.pixelSize: 19
-                        font.weight: Font.DemiBold
-                        font.letterSpacing: -0.3
-                        font.family: Theme.fontSans
+                        spacing: Theme.sp3
+                        Text {
+                            Layout.fillWidth: true
+                            text: schema.heads[win.sec].h
+                            color: Theme.t1
+                            font.pixelSize: 19
+                            font.weight: Font.DemiBold
+                            font.letterSpacing: -0.3
+                            font.family: Theme.fontSans
+                        }
+                        // reset just this section; hidden while searching (the
+                        // filtered view spans sections, so it'd be ambiguous)
+                        BtnFlat {
+                            sm: true
+                            visible: win.query.length === 0
+                            icon: "qrc:/icons/replay.svg"
+                            text: (i18n.language, i18n.t("set_reset_section"))
+                            onClicked: { confirmReset.scope = "section"; confirmReset.open() }
+                        }
                     }
                     Text {
                         Layout.topMargin: 8
@@ -221,7 +264,7 @@ Rectangle {
 
                     // blocks (glabel + card)
                     Repeater {
-                        model: win.query.length > 0 ? win.searchBlocks(win.query) : win.buildBlocks(schema.sections[win.sec])
+                        model: win.query.length > 0 ? win.searchBlocks(win.query) : (win.reloadTick, win.buildBlocks(schema.sections[win.sec]))
                         delegate: ColumnLayout {
                             required property var modelData
                             required property int index
@@ -316,6 +359,11 @@ Rectangle {
                     function onChanged() { savedFlash.restart() }
                 }
                 Item { Layout.fillWidth: true }
+                BtnFlat {
+                    text: (i18n.language, i18n.t("set_reset_all"))
+                    icon: "qrc:/icons/replay.svg"
+                    onClicked: { confirmReset.scope = "all"; confirmReset.open() }
+                }
                 // "Done" (not "Close"): nothing is discarded — every edit is
                 // already saved, so the button just dismisses the window
                 BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_done")); onClicked: win.closed() }
@@ -450,6 +498,25 @@ Rectangle {
         Text {
             Layout.fillWidth: true
             text: infoDlg.message
+            color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans
+            wrapMode: Text.WordWrap; lineHeight: 1.4
+        }
+    }
+
+    // confirm a reset-to-defaults (section or all) before it wipes the user's edits
+    BatDialog {
+        id: confirmReset
+        property string scope: "section"
+        cardW: 440; cardH: 240
+        showCancel: true
+        title: (i18n.language, i18n.t("set_reset_confirm_title"))
+        okText: (i18n.language, i18n.t("set_reset_all"))
+        onAccepted: scope === "all" ? win.resetAll() : win.resetSection()
+        Text {
+            Layout.fillWidth: true
+            text: confirmReset.scope === "all"
+                  ? (i18n.language, i18n.t("set_reset_confirm_all"))
+                  : (i18n.language, i18n.t("set_reset_confirm_section"))
             color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans
             wrapMode: Text.WordWrap; lineHeight: 1.4
         }
