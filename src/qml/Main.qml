@@ -651,11 +651,23 @@ Window {
         CtxItem { iconSrc: "qrc:/icons/trash.svg"; destructive: true; implicitHeight: enabled ? 34 : 1; text: (i18n.language, i18n.t("ctx_remove")); onTriggered: removeDlg.open() }
     }
 
-    Shortcut { sequence: StandardKey.SelectAll; onActivated: win.selectAll() }
+    // ApplicationShortcut context: with the default WindowShortcut these didn't
+    // fire on Windows (QQuickWidget focus quirk, reported by a tester). The
+    // text-field guard keeps Ctrl+A / Ctrl+V working normally inside inputs.
+    Shortcut {
+        sequence: StandardKey.SelectAll
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var f = win.activeFocusItem
+            if (f && f.cursorPosition !== undefined) return   // let an input select its own text
+            win.selectAll()
+        }
+    }
     // Smart Paste: Ctrl+V adds a magnet / 40-char hash / .torrent URL straight from
     // the clipboard — unless a text field has focus (then let it paste text).
     Shortcut {
         sequences: [ StandardKey.Paste ]
+        context: Qt.ApplicationShortcut
         onActivated: {
             var f = win.activeFocusItem
             if (f && f.cursorPosition !== undefined) return

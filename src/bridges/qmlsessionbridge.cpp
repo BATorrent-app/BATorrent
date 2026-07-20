@@ -5,6 +5,7 @@
 #include "bridges/qmlsessionbridge.h"
 #include "torrent/iengine.h"
 #include "services/downloads/httpdownloadmanager.h"
+#include <QThread>
 #include <QStorageInfo>
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/discoveryservice.h"
@@ -289,18 +290,30 @@ void QmlSessionBridge::removeSelectedWithFiles() { removeSelectedRows(true); }
 void QmlSessionBridge::pauseAll() { m_session->pauseAll(); }
 void QmlSessionBridge::resumeAll() { m_session->resumeAll(); }
 
+// On Windows another process (a clipboard manager, the OS) can briefly hold the
+// clipboard, and QClipboard::setText then fails silently — reported as "copy
+// almost never works". Retry a few times and verify it actually stuck.
+static void setClipboardRobust(const QString &text)
+{
+    if (text.isEmpty()) return;
+    QClipboard *cb = QGuiApplication::clipboard();
+    for (int i = 0; i < 6; ++i) {
+        cb->setText(text);
+        if (cb->text() == text) return;
+        QThread::msleep(15);
+    }
+}
+
 void QmlSessionBridge::copyMagnetLink()
 {
     if (!hasSelection()) return;
-    QString uri = m_session->torrentMagnetUri(m_selectedIndex);
-    if (!uri.isEmpty()) QGuiApplication::clipboard()->setText(uri);
+    setClipboardRobust(m_session->torrentMagnetUri(m_selectedIndex));
 }
 
 void QmlSessionBridge::copyInfoHash()
 {
     if (!hasSelection()) return;
-    QString hash = m_session->torrentHashAt(m_selectedIndex);
-    if (!hash.isEmpty()) QGuiApplication::clipboard()->setText(hash);
+    setClipboardRobust(m_session->torrentHashAt(m_selectedIndex));
 }
 
 void QmlSessionBridge::openSaveFolder()

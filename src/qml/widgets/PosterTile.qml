@@ -289,8 +289,15 @@ Item {
             radius: 9; color: "#cc000000"
             implicitWidth: doneRow.implicitWidth + 14; implicitHeight: 18
             Row {
-                id: doneRow; anchors.centerIn: parent; spacing: 3
-                Text { text: "✓"; color: Theme.grn; font.pixelSize: 10; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                id: doneRow; anchors.centerIn: parent; spacing: 4
+                // green ring + check: more legible than a bare glyph, but the green
+                // stays an outline (a signal), never a filled surface (tester #2, option C)
+                Rectangle {
+                    width: 13; height: 13; radius: 6.5
+                    color: "transparent"; border.color: Theme.grn; border.width: 1.5
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text { anchors.centerIn: parent; text: "✓"; color: Theme.grn; font.pixelSize: 8; font.weight: Font.Bold; font.family: Theme.fontSans }
+                }
                 Text {
                     text: (i18n.language, i18n.t("state_done_badge"))
                     color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
