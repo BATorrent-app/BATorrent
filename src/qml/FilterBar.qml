@@ -220,11 +220,12 @@ Rectangle {
             Pill { label: (i18n.language, i18n.t("filter_downloading"));  filterKey: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: win.setFilter("downloading") }
             Pill { label: (i18n.language, i18n.t("filter_seeding"));  filterKey: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: win.setFilter("seeding") }
             Pill { label: (i18n.language, i18n.t("filter_paused"));   filterKey: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: win.setFilter("paused") }
-            // only shown when a queue limit is actually holding torrents back
+            // always visible, like the other pills (tester asked for it to stay
+            // put next to Paused/Completed instead of appearing only when a queue
+            // limit is holding torrents back)
             Pill {
                 label: (i18n.language, i18n.t("filter_queued")); filterKey: "queued"
                 count: typeof session !== "undefined" ? session.queuedCount : 0
-                visible: count > 0 || win.activeFilter === "queued"
                 onClicked: win.setFilter("queued")
             }
             Pill { label: (i18n.language, i18n.t("filter_completed")); filterKey: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: win.setFilter("completed") }
