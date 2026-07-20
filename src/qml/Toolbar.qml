@@ -104,17 +104,17 @@ Rectangle {
         TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: toolbar.addMagnet() }
         TBtn { label: (i18n.language, i18n.t("tb_link"));    icon: "qrc:/icons/download.svg"; onClicked: toolbar.addLink() }
         TGrpDiv {}
-        // G2: Pausar, Retomar, Parar
+        // G2: Pausar, Retomar, Parar, Atualizar (tester: keep transport controls together)
         TBtn { label: (i18n.language, i18n.t("tb_pause"));  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_resume")); icon: "qrc:/icons/play.svg";  disabled: !win.hasSel; onClicked: session.resumeSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_stop"));   icon: "qrc:/icons/stop.svg";  disabled: !win.hasSel; onClicked: session.pauseSelected() }
+        TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; onClicked: if (typeof session !== "undefined") session.refreshAll() }
         TGrpDiv {}
         // G3: Remover
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
         TGrpDiv {}
         // G4: Buscar, RSS
         TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: toolbar.navigate(1) }
-        TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; onClicked: if (typeof session !== "undefined") session.refreshAll() }
         TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: toolbar.openRss() }
         TGrpDiv {}
         // G5: Config.

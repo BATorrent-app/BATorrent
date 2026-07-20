@@ -11,7 +11,7 @@ import "widgets"
 
 BatDialog {
     id: dlg
-    cardW: 460
+    cardW: 600   // three action buttons must fit one row (Win native text is wider) — tester: the primary was clipped
     cardH: 240
     showOk: false
     cancelText: (i18n.language, i18n.t("release_notes_close"))
@@ -92,12 +92,14 @@ BatDialog {
             // always-available fallback: opens the download in the browser, so a
             // broken/blocked auto-update never leaves the user stuck.
             BtnFlat {
+                sm: true
                 visible: !dlg.downloading
                 text: (i18n.language, i18n.t("update_manual"))
                 onClicked: Qt.openUrlExternally(dlg.url.length > 0 ? dlg.url
                            : "https://github.com/BATorrent-app/BATorrent/releases/latest")
             }
             BtnFlat {
+                sm: true
                 visible: dlg.version.length > 0 && !dlg.downloading
                 text: (i18n.language, i18n.t("update_skip"))
                 onClicked: { if (typeof updater !== "undefined" && updater) updater.skipVersion(dlg.version); dlg.close() }
