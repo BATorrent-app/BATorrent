@@ -71,9 +71,14 @@ Rectangle {
         if (f.value !== undefined) return f.value
         return ""                                            // text / password / path
     }
+    // Keys a reset must NOT slam back to a fixed schema value: the listen port is
+    // machine-specific and its schema "6881" is the throttled/colliding port the
+    // app deliberately migrated away from — resetting it there can cripple speed.
+    readonly property var resetSkip: ["listenPort"]
     function resetFields(fields) {
         if (typeof settings === "undefined") return
         for (var i = 0; i < fields.length; i++) {
+            if (win.resetSkip.indexOf(fields[i].key) >= 0) continue
             var d = win.defaultForField(fields[i])
             if (d !== undefined) settings.set(fields[i].key, d)
         }
