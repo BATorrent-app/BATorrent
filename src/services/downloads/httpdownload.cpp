@@ -338,7 +338,10 @@ QVariantMap HttpDownload::toState() const
     QVariantList segs;
     for (const Segment &s : m_segments) {
         QVariantMap sm;
-        sm["start"] = s.range.start; sm["end"] = s.range.end; sm["received"] = s.received;
+        // ByteRange keeps std int64_t (a pure, Qt-free header). On GCC/Linux
+        // int64_t is `long`, which has no exact QVariant ctor (→ ambiguous), so
+        // convert to qint64 (`long long`) at this Qt boundary.
+        sm["start"] = qint64(s.range.start); sm["end"] = qint64(s.range.end); sm["received"] = s.received;
         segs << sm;
     }
     m["segments"] = segs;
