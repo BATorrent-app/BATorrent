@@ -281,9 +281,10 @@ Item {
             }
         }
         // done badge (top-right) — same dark-glass pill as the % badge, with
-        // green confined to the checkmark glyph: color as signal, not surface
+        // green confined to the checkmark glyph: color as signal, not surface.
+        // Hidden while actively seeding — the seeding badge below owns that state.
         Rectangle {
-            visible: tile.progress >= 0.999
+            visible: tile.progress >= 0.999 && tile.stateKey !== "seeding"
             anchors.right: parent.right; anchors.top: parent.top
             anchors.rightMargin: 8; anchors.topMargin: 8
             radius: 9; color: "#cc000000"
@@ -300,6 +301,31 @@ Item {
                 }
                 Text {
                     text: (i18n.language, i18n.t("state_done_badge"))
+                    color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
+                    font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+        }
+        // seeding badge (top-right) — same pill, a green up-arrow ring: marks the
+        // torrents that are actively uploading, distinct from a finished-idle DONE
+        // (tester request). Green stays an outline glyph, not a surface.
+        Rectangle {
+            visible: tile.stateKey === "seeding"
+            anchors.right: parent.right; anchors.top: parent.top
+            anchors.rightMargin: 8; anchors.topMargin: 8
+            radius: 9; color: "#cc000000"
+            implicitWidth: seedRow.implicitWidth + 14; implicitHeight: 18
+            Row {
+                id: seedRow; anchors.centerIn: parent; spacing: 4
+                Rectangle {
+                    width: 13; height: 13; radius: 6.5
+                    color: "transparent"; border.color: Theme.grn; border.width: 1.5
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text { anchors.centerIn: parent; text: "↑"; color: Theme.grn; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans }
+                }
+                Text {
+                    text: (i18n.language, i18n.t("state_seeding"))
                     color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
                     font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
                     anchors.verticalCenter: parent.verticalCenter
