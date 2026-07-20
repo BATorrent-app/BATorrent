@@ -742,8 +742,7 @@ void QmlSessionBridge::setSelectedFilePriority(int fileIndex, int priority)
 void QmlSessionBridge::copySelectedName()
 {
     if (!hasSelection()) return;
-    const QString n = m_session->torrentAt(m_selectedIndex).name;
-    if (!n.isEmpty()) QGuiApplication::clipboard()->setText(n);
+    setClipboardRobust(m_session->torrentAt(m_selectedIndex).name);
 }
 
 void QmlSessionBridge::openSelectedFile()
@@ -773,7 +772,7 @@ void QmlSessionBridge::copySelectedContentPath()
     if (!hasSelection()) return;
     const QString path = m_session->torrentRootPath(m_selectedIndex);
     if (path.isEmpty()) return;
-    QGuiApplication::clipboard()->setText(QDir::toNativeSeparators(path));
+    setClipboardRobust(QDir::toNativeSeparators(path));
     emit toast(tr_("ctx_path_copied"), QDir::toNativeSeparators(path));
 }
 
@@ -803,7 +802,7 @@ void QmlSessionBridge::importQbittorrent(const QString &savePath)
 
 void QmlSessionBridge::copyToClipboard(const QString &text)
 {
-    if (!text.isEmpty()) QGuiApplication::clipboard()->setText(text);
+    setClipboardRobust(text);
 }
 
 QVariantMap QmlSessionBridge::wrapped(int year) const
