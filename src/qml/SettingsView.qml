@@ -343,25 +343,36 @@ Rectangle {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
                 spacing: 8
-                // a change auto-saves; flash "Saved" the moment it does so the
-                // user never wonders whether Close discards their edits
+                // a change auto-saves; a clearer "Saved" pulse the moment it does,
+                // so the user never wonders whether their edit stuck (tester: the
+                // old flash was too subtle to notice).
                 IconImg {
+                    id: savedCheck
                     src: "qrc:/icons/check.svg"; s: 13
                     tint: Theme.grn
+                    transformOrigin: Item.Center
                     opacity: savedFlash.running ? 1 : 0.55
+                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                    SequentialAnimation {
+                        id: savedPop
+                        NumberAnimation { target: savedCheck; property: "scale"; from: 0.6; to: 1.4; duration: 150; easing.type: Easing.OutBack }
+                        NumberAnimation { target: savedCheck; property: "scale"; to: 1.0; duration: 180; easing.type: Easing.OutCubic }
+                    }
                 }
                 Text {
                     id: savedText
                     text: savedFlash.running ? (i18n.language, i18n.t("set_saved_now"))
                                              : (i18n.language, i18n.t("set_changes_instant"))
                     color: savedFlash.running ? Theme.grn : Theme.t4
-                    font.pixelSize: 11; font.family: Theme.fontSans
+                    font.pixelSize: savedFlash.running ? 12 : 11
+                    font.weight: savedFlash.running ? Font.DemiBold : Font.Normal
+                    font.family: Theme.fontSans
                     Behavior on color { ColorAnimation { duration: 200 } }
                 }
-                Timer { id: savedFlash; interval: 1400 }
+                Timer { id: savedFlash; interval: 1800 }
                 Connections {
                     target: typeof settings !== "undefined" ? settings : null
-                    function onChanged() { savedFlash.restart() }
+                    function onChanged() { savedFlash.restart(); savedPop.restart() }
                 }
                 Item { Layout.fillWidth: true }
                 BtnFlat {
