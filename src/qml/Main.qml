@@ -541,6 +541,8 @@ Window {
             onTriggered: session.resumeSelected()
         }
         CtxItem { iconSrc: "qrc:/icons/open.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
+        // promoted out of the Copy submenu — the two most-reached actions (tester, MotrixNext ref)
+        CtxItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
         CtxItem { iconSrc: "qrc:/icons/copy.svg"; text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
         CtxItem {
             visible: Qt.platform.os === "windows"
@@ -612,7 +614,6 @@ Window {
             delegate: CtxItem {}
             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
             CtxItem { text: (i18n.language, i18n.t("ctx_copy_name")); onTriggered: session.copySelectedName() }
-            CtxItem { text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
             CtxItem { text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
         }
         Menu {

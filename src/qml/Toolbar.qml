@@ -28,6 +28,7 @@ Rectangle {
         property string icon
         property bool disabled: false
         property bool active: false       // toggled-on state (e.g. alt-speed turtle)
+        property bool spinOnClick: false  // spin the icon on click — visible "it happened" feedback (Refresh)
         signal clicked()
         Layout.preferredWidth: 52
         Layout.minimumWidth: 52          // never let the RowLayout squeeze/clip the button
@@ -36,9 +37,10 @@ Rectangle {
         radius: 8
         opacity: disabled ? 0.35 : 1.0
 
+        function trigger() { if (tb.spinOnClick) tbSpin.restart(); tb.clicked() }
         activeFocusOnTab: !disabled
-        Keys.onReturnPressed: if (!disabled) tb.clicked()
-        Keys.onSpacePressed: if (!disabled) tb.clicked()
+        Keys.onReturnPressed: if (!disabled) tb.trigger()
+        Keys.onSpacePressed: if (!disabled) tb.trigger()
         scale: tbMa.pressed && !tb.disabled ? Theme.pressScale : 1
         Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
         Rectangle {
@@ -55,10 +57,12 @@ Rectangle {
             anchors.centerIn: parent
             spacing: 3
             IconImg {
+                id: tbIcon
                 anchors.horizontalCenter: parent.horizontalCenter
                 src: tb.icon
                 tint: tb.active ? Theme.accent : (!tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3)
                 s: 18
+                NumberAnimation { id: tbSpin; target: tbIcon; property: "rotation"; from: 0; to: 360; duration: 620; easing.type: Easing.OutCubic }
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -74,7 +78,7 @@ Rectangle {
             anchors.fill: parent
             hoverEnabled: !tb.disabled
             cursorShape: tb.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
-            onClicked: if (!tb.disabled) tb.clicked()
+            onClicked: if (!tb.disabled) tb.trigger()
         }
     }
 
@@ -108,7 +112,7 @@ Rectangle {
         TBtn { label: (i18n.language, i18n.t("tb_pause"));  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_resume")); icon: "qrc:/icons/play.svg";  disabled: !win.hasSel; onClicked: session.resumeSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_stop"));   icon: "qrc:/icons/stop.svg";  disabled: !win.hasSel; onClicked: session.pauseSelected() }
-        TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; onClicked: if (typeof session !== "undefined") session.refreshAll() }
+        TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; spinOnClick: true; onClicked: if (typeof session !== "undefined") session.refreshAll() }
         TGrpDiv {}
         // G3: Remover
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
