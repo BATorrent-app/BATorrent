@@ -77,6 +77,8 @@ BatDialog {
             ALink { text: (i18n.language, i18n.t("about_link_releases")); url: "https://github.com/BATorrent-app/BATorrent/releases" }
             Text { text: "·"; color: Theme.t4; font.pixelSize: 11 }
             ALink { text: (i18n.language, i18n.t("about_link_privacy")); url: "https://github.com/BATorrent-app/BATorrent/blob/main/PRIVACY.md" }
+            Text { text: "·"; color: Theme.t4; font.pixelSize: 11 }
+            ALink { text: "Ko-fi"; url: "https://ko-fi.com/batorrent" }
         }
         BtnFlat {
             Layout.alignment: Qt.AlignHCenter
