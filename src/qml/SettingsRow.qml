@@ -323,6 +323,11 @@ ColumnLayout {
                     horizontalAlignment: TextInput.AlignRight
                     verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, text)
+                    // Safety net: switching section / closing destroys a focused
+                    // field before editingFinished fires (Windows focus quirk —
+                    // tester's "I have to type it several times"). Flush on teardown.
+                    Component.onDestruction: if (typeof settings !== "undefined" && field.key !== undefined
+                        && String(settings.get(field.key)) !== text) settings.set(field.key, text)
                 }
             }
             Text { visible: field.suffix !== undefined; text: field.suffix || ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
@@ -341,6 +346,13 @@ ColumnLayout {
             onEdited: function(t) {
                 if (field.key === "torrentSearchUrl" && typeof addons !== "undefined") addons.torrentSearchUrl = t
                 else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, t)
+            }
+            // Flush a pending edit if the field is torn down before it loses focus
+            // (section switch / close). torrentSearchUrl is addons-backed above.
+            Component.onDestruction: {
+                if (field.key === undefined || field.key === "torrentSearchUrl") return
+                if (typeof settings !== "undefined" && String(settings.get(field.key)) !== text)
+                    settings.set(field.key, text)
             }
         }
     }
