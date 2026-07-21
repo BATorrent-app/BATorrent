@@ -185,6 +185,17 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
                         (*self)(idx + 1);
                     }
                 });
+                // No finished() fires when the tool isn't installed (unrar/7z
+                // absent on a GUI app's PATH) — without this the whole extract
+                // state machine stalls forever and extractionCompleted never
+                // emits. Treat a failure-to-start as "this attempt failed".
+                connect(proc, &QProcess::errorOccurred, this,
+                        [proc, idx, self](QProcess::ProcessError e) {
+                    if (e != QProcess::FailedToStart) return;   // finished() handles the rest
+                    qWarning() << "[extract] tool failed to start — is it installed?";
+                    proc->deleteLater();
+                    (*self)(idx + 1);
+                });
                 proc->start(program, args);
             };
             (*self)(attemptIdx);

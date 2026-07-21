@@ -187,7 +187,10 @@ void GameSourceManager::fetchSource(const QString &name, const QString &url)
                      QNetworkRequest::NoLessSafeRedirectPolicy);
     req.setTransferTimeout(30000);
     QNetworkReply *reply = m_net.get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, name, url]() {
+    const int gen = m_generation;
+    connect(reply, &QNetworkReply::finished, this, [this, reply, name, url, gen]() {
+        reply->deleteLater();
+        if (gen != m_generation) return;   // a newer refresh() superseded this one
         if (reply->error() == QNetworkReply::NoError) {
             const QByteArray body = reply->readAll();
             if (indexCatalog(name, body) > 0) writeCache(url, body);
@@ -196,13 +199,13 @@ void GameSourceManager::fetchSource(const QString &name, const QString &url)
             if (!stale.isEmpty()) indexCatalog(name, stale);
             else emit sourceError(name, reply->errorString());
         }
-        reply->deleteLater();
         if (--m_pending == 0) emit refreshed(m_games.size());
     });
 }
 
 void GameSourceManager::refresh(bool forceNetwork)
 {
+    ++m_generation;   // invalidate any replies still in flight from a prior refresh
     m_games.clear();
     QList<QPair<QString, QString>> toFetch;
     for (const auto &src : m_sources) {

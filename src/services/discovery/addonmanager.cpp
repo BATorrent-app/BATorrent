@@ -32,6 +32,17 @@ QString magnetTrackerParams()
         params += "&tr=" + QUrl::toPercentEncoding(t);
     return params;
 }
+
+// A btih from a search provider is concatenated raw into the magnet URI; a
+// hostile provider (user-added, or a MITM on an http: preset) can smuggle
+// extra magnet params (&ws=, &tr=…) through it. Accept only a real info-hash:
+// 40 hex (v1) or 64 hex (v2 hex form). Base32 v1 (32 chars) is also valid.
+bool isValidInfoHash(const QString &h)
+{
+    static const QRegularExpression re(
+        QStringLiteral("^([0-9A-Fa-f]{40}|[0-9A-Fa-f]{64}|[A-Za-z2-7]{32})$"));
+    return re.match(h).hasMatch();
+}
 }
 
 AddonManager &AddonManager::instance()
@@ -426,7 +437,7 @@ void AddonManager::getStreams(const QString &type, const QString &id)
 
                     // Stremio streams can have infoHash+fileIdx or direct magnet
                     QString infoHash = s.value("infoHash").toString();
-                    if (!infoHash.isEmpty()) {
+                    if (isValidInfoHash(infoHash)) {
                         r.magnet = QString("magnet:?xt=urn:btih:%1").arg(infoHash);
                         // Add trackers from behaviorHints or sources
                         QJsonArray sources = s.value("sources").toArray();
@@ -580,7 +591,7 @@ void AddonManager::searchTorrents(const QString &query, int category)
             QJsonObject obj = val.toObject();
             QString name = decodeHtmlEntities(obj.value("name").toString());
             QString infoHash = obj.value("info_hash").toString();
-            if (infoHash.isEmpty() || infoHash == "0")
+            if (!isValidInfoHash(infoHash))   // reject junk + magnet-param injection
                 continue;
 
             TorrentSearchResult r;
