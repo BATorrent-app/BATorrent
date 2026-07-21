@@ -1,5 +1,40 @@
 # Changelog
 
+## v4.8.0-beta1
+
+First 4.8 test build. The theme is the privacy layer (integrated VPN) plus the
+tester-round polish. Not a public release — beta for testing.
+
+### Added
+- Integrated WireGuard VPN. Import your provider's `.conf` (IVPN, Mullvad,
+  Proton…) and connect from inside BATorrent: a status pill at the top bar and
+  a full cockpit in Settings (grey = off, amber = connecting, green = connected).
+  The connected server's endpoint is shown next to the profile name.
+- Split tunnel: route only BATorrent's traffic through the VPN, leaving the rest
+  of the system on its normal connection.
+- Connect on launch: reconnect the last-used profile automatically at startup.
+- HTTP / file-host downloads, and a manual "Download from a link" (Ctrl+D).
+  Link downloads carry a file-type label (PDF, EXE, ZIP, JPG…).
+- "Block known bad peers" (Settings > IP filtering): keeps a reputable IP
+  blocklist updated and drops flagged addresses before the handshake — aimed at
+  the antivirus warnings some downloads trigger.
+- Missing files are detected: a manually deleted download shows a clear red
+  "Files missing" state with a guided recovery banner instead of sitting idle.
+- The status filters (All, Active, … Queued, Completed) now scroll with a hover
+  arrow when the window is too narrow to show them all, instead of clipping.
+
+### Fixed
+- The seeding badge is gold (matching the up-arrow); green now means only DONE.
+- A queued item gets its own QUEUE badge; no more badge AND duplicate text
+  under the poster — the space now shows the release year and genres from TMDB.
+- Refresh repaints speed/ETA/status immediately, so you can tell it did something.
+- Several crash and robustness fixes: guarded torrent-handle operations that
+  could close the app, a subtitle-download memory cap, and a fix so a completed
+  download with a temp folder actually moves to its final location.
+
+### Changed
+- "Watch in player" is now just "Watch".
+
 ## v4.7.0 "Cinema"
 
 ### Added
