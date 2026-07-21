@@ -402,6 +402,26 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle("Basic");
     {
 
+#ifdef BAT_LIBTORRENT_FORK
+        // Fork builds ship their exact torrent-rasterbar; a different library on
+        // disk (in-place update gone wrong, loader picking a stray DLL) is ABI
+        // poison that crashes as heap corruption deep inside session startup —
+        // the shape of the top Sentry crasher (mtx_do_lock AV). Catch the
+        // mismatch while it is still explainable.
+        if (qstrcmp(lt::version(), LIBTORRENT_VERSION) != 0) {
+#ifdef BAT_HAVE_SENTRY
+            sentry_set_tag("lt.runtime", lt::version());
+#endif
+            QMessageBox::critical(nullptr, QStringLiteral("BATorrent"),
+                QStringLiteral("The torrent engine on this install (%1) does not match "
+                               "this version of BATorrent (%2).\n\nThe installation is "
+                               "likely corrupted — please reinstall BATorrent.")
+                    .arg(QString::fromLatin1(lt::version()),
+                         QStringLiteral(LIBTORRENT_VERSION)));
+            return 1;
+        }
+#endif
+
         // Engine selection (internal/ENGINE_SPLIT_PLAN.md). Opt-in: when
         // engineMode == "ipc" the libtorrent session runs in a separate child
         // process so an engine crash can't take the UI down; otherwise it runs
