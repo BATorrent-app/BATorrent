@@ -155,31 +155,87 @@ ColumnLayout {
     Component {
         id: cVpn
         ColumnLayout {
+            id: vpnCol
             width: rowRoot.width
             spacing: 10
+            function activeProfileName() {
+                if (typeof vpn === "undefined") return ""
+                for (var i = 0; i < vpn.profiles.length; ++i)
+                    if (vpn.profiles[i].id === vpn.activeProfileId) return vpn.profiles[i].name
+                return ""
+            }
 
-            // header — title + live state chip
-            RowLayout {
+            // status hero — the cockpit's centrepiece: big shield, protected/exposed
+            // headline, active profile, and one large connect/disconnect action.
+            Rectangle {
+                id: hero
                 Layout.fillWidth: true
-                spacing: Theme.sp3
-                IconImg { src: "qrc:/icons/set-vpn.svg"; s: 16
-                    tint: (typeof vpn !== "undefined" && vpn.connState === 2) ? Theme.grn : Theme.t3 }
-                Text { text: "WireGuard"; color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold
-                    font.family: Theme.fontSans; Layout.fillWidth: true }
-                Rectangle {
-                    readonly property int st: (typeof vpn !== "undefined") ? vpn.connState : 0
-                    implicitWidth: stRow.implicitWidth + 18; implicitHeight: 20; radius: 999
-                    color: st === 2 ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.14) : Theme.field
-                    border.color: st === 2 ? Theme.grn : Theme.hair; border.width: 1
-                    Row {
-                        id: stRow; anchors.centerIn: parent; spacing: 5
-                        Rectangle { width: 6; height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter
-                            color: parent.parent.st === 2 ? Theme.grn : parent.parent.st === 1 ? Theme.amber
-                                 : parent.parent.st === 3 ? "#e0574b" : Theme.t4 }
-                        Text { anchors.verticalCenter: parent.verticalCenter; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontSans
-                            text: (i18n.language, parent.parent.st === 2 ? i18n.t("vpn_state_on")
-                                 : parent.parent.st === 1 ? i18n.t("vpn_state_connecting")
-                                 : parent.parent.st === 3 ? i18n.t("vpn_state_failed") : i18n.t("vpn_state_off")) }
+                radius: 14
+                readonly property int st: (typeof vpn !== "undefined") ? vpn.connState : 0
+                readonly property bool on: st === 2
+                color: on ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.08) : Theme.field
+                border.color: on ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.30) : Theme.hair
+                border.width: 1
+                implicitHeight: heroCol.implicitHeight + 32
+                Behavior on color { ColorAnimation { duration: 200 } }
+                ColumnLayout {
+                    id: heroCol
+                    anchors.left: parent.left; anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: 16; anchors.rightMargin: 16
+                    spacing: 12
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 14
+                        Rectangle {
+                            Layout.preferredWidth: 52; Layout.preferredHeight: 52; radius: 26
+                            color: hero.on ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.15)
+                                            : Qt.rgba(Theme.t4.r, Theme.t4.g, Theme.t4.b, 0.12)
+                            IconImg {
+                                anchors.centerIn: parent; src: "qrc:/icons/set-vpn.svg"; s: 26
+                                tint: hero.on ? Theme.grn : (hero.st === 1 ? Theme.amber : Theme.t3)
+                            }
+                            Rectangle {   // pulse ring while connecting
+                                anchors.centerIn: parent; width: 52; height: 52; radius: 26
+                                color: "transparent"; border.color: Theme.amber; border.width: 2
+                                visible: hero.st === 1
+                                SequentialAnimation on opacity {
+                                    running: hero.st === 1; loops: Animation.Infinite
+                                    NumberAnimation { from: 0.7; to: 0.0; duration: 1100 }
+                                }
+                            }
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true; spacing: 3
+                            Text {
+                                text: (i18n.language, hero.st === 2 ? i18n.t("vpn_hero_protected")
+                                      : hero.st === 1 ? i18n.t("vpn_state_connecting")
+                                      : hero.st === 3 ? i18n.t("vpn_state_failed") : i18n.t("vpn_hero_exposed"))
+                                color: hero.on ? Theme.grn : (hero.st === 3 ? "#e0574b" : Theme.t1)
+                                font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: hero.on ? (vpn.activeProfileId, vpnCol.activeProfileName())
+                                              : (i18n.language, i18n.t("vpn_hero_sub"))
+                                color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans
+                                wrapMode: Text.WordWrap; elide: Text.ElideRight
+                            }
+                        }
+                    }
+                    BtnFlat {
+                        Layout.fillWidth: true
+                        primary: !hero.on
+                        enabled: hero.st === 1 || hero.st === 2
+                                 || (typeof vpn !== "undefined" && vpn.profiles.length > 0)
+                        text: (i18n.language, hero.on ? i18n.t("vpn_disconnect")
+                              : hero.st === 1 ? i18n.t("vpn_state_connecting") : i18n.t("vpn_connect"))
+                        onClicked: {
+                            if (typeof vpn === "undefined") return
+                            if (hero.on || hero.st === 1) { vpn.disconnectVpn(); return }
+                            if (vpn.profiles.length === 0) return
+                            vpn.connectProfile(vpn.activeProfileId !== "" ? vpn.activeProfileId
+                                                                          : vpn.profiles[0].id)
+                        }
                     }
                 }
             }

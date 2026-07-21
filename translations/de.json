@@ -1171,5 +1171,8 @@
   "set_block_bad_peers": "Bekannte schädliche Peers blockieren",
   "set_block_bad_peers_note": "Lädt eine seriöse IP-Sperrliste und hält sie aktuell; Verbindungen zu markierten Adressen werden vor dem Handshake verworfen — reduziert die von Antivirenprogrammen gemeldeten Verbindungen.",
   "state_files_missing": "Dateien fehlen",
-  "missing_recover_msg": "Die Dateien dieses Downloads sind nicht mehr auf der Festplatte. Gib an, wo sie liegen, oder lade sie erneut."
+  "missing_recover_msg": "Die Dateien dieses Downloads sind nicht mehr auf der Festplatte. Gib an, wo sie liegen, oder lade sie erneut.",
+  "vpn_hero_protected": "Geschützt",
+  "vpn_hero_exposed": "Nicht geschützt",
+  "vpn_hero_sub": "Importiere die Konfiguration deines VPN-Anbieters und verbinde dich, um den Torrent-Verkehr durch den Tunnel zu leiten."
 }

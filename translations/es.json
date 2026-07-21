@@ -1171,5 +1171,8 @@
   "set_block_bad_peers": "Bloquear pares maliciosos conocidos",
   "set_block_bad_peers_note": "Descarga y mantiene actualizada una lista de IP fiable, descartando conexiones a direcciones marcadas antes del handshake — reduce las conexiones que activan avisos del antivirus.",
   "state_files_missing": "Archivos ausentes",
-  "missing_recover_msg": "Los archivos de esta descarga ya no están en el disco. Indica dónde están o vuelve a descargar."
+  "missing_recover_msg": "Los archivos de esta descarga ya no están en el disco. Indica dónde están o vuelve a descargar.",
+  "vpn_hero_protected": "Protegido",
+  "vpn_hero_exposed": "Sin protección",
+  "vpn_hero_sub": "Importa la configuración de tu proveedor de VPN y conéctate para enrutar el tráfico por el túnel."
 }

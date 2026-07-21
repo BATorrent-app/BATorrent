@@ -1171,5 +1171,8 @@
   "set_block_bad_peers": "Bilinen kötü amaçlı eşleri engelle",
   "set_block_bad_peers_note": "Saygın bir IP engelleme listesini indirip güncel tutar; işaretli adreslere bağlantıları el sıkışmadan önce keser — antivirüs uyarılarını tetikleyen bağlantıları azaltır.",
   "state_files_missing": "Dosyalar eksik",
-  "missing_recover_msg": "Bu indirmenin dosyaları artık diskte yok. Nerede olduklarını gösterin ya da yeniden indirin."
+  "missing_recover_msg": "Bu indirmenin dosyaları artık diskte yok. Nerede olduklarını gösterin ya da yeniden indirin.",
+  "vpn_hero_protected": "Korunuyor",
+  "vpn_hero_exposed": "Korunmuyor",
+  "vpn_hero_sub": "VPN sağlayıcınızın yapılandırmasını içe aktarın ve torrent trafiğini tünelden geçirmek için bağlanın."
 }
