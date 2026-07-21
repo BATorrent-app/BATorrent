@@ -65,6 +65,9 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownload.cpp
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownloadmanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/vpn/wgtunnel.h
+    ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.h
+    ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlposterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
@@ -243,6 +246,7 @@ bat_add_test(test_httpdownload test_httpdownload.cpp)
 bat_add_test(test_httpdownloadmanager test_httpdownloadmanager.cpp)
 bat_add_test(test_filehostresolver test_filehostresolver.cpp)
 bat_add_test(test_wireguardconfig test_wireguardconfig.cpp)
+bat_add_test(test_vpnmanager test_vpnmanager.cpp)
 bat_add_test(test_proxycontroller test_proxycontroller.cpp)
 bat_add_test(test_ipcprotocol test_ipcprotocol.cpp)
 bat_add_test(test_debrid     test_debrid.cpp)

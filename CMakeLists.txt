@@ -94,6 +94,9 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/downloads/httpdownload.cpp
     src/services/downloads/httpdownloadmanager.cpp
     src/services/downloads/httpmergeengine.cpp
+    src/services/vpn/wgtunnel.h            # header-only QObjects — listed so AUTOMOC builds their metaobjects
+    src/services/vpn/vpnmanager.h
+    src/services/vpn/vpnmanager.cpp
     src/services/discovery/discoveryservice.cpp
     src/services/discovery/gamesourcemanager.cpp
     src/bridges/qmlposterbridge.cpp
