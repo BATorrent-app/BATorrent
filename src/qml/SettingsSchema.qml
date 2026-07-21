@@ -131,6 +131,8 @@ QtObject {
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_wireguard")) },
             { type: "vpn", label: "" },
+            { type: "toggle", key: "vpnSplitTunnel", label: (i18n.language, i18n.t("set_vpn_split")), note: (i18n.language, i18n.t("set_vpn_split_note")) },
+            { type: "toggle", key: "vpnAutoConnect", label: (i18n.language, i18n.t("set_vpn_autoconnect")), note: (i18n.language, i18n.t("set_vpn_autoconnect_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_iface_bind")) },
             { type: "iface", label: (i18n.language, i18n.t("set_iface2")) },
             { type: "toggle", key: "killSwitchEnabled", label: (i18n.language, i18n.t("settings_kill_switch")), on: true, note: (i18n.language, i18n.t("set_killswitch_note")) },

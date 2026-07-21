@@ -11,6 +11,7 @@
 #include <QLocalSocket>
 #include <QWindow>
 #include <QSettings>
+#include <QTimer>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -430,14 +431,47 @@ int main(int argc, char *argv[])
         auto *httpDownloads = new HttpDownloadManager(&app);
         IEngine *eng = new HttpMergeEngine(baseEng, httpDownloads, &app);
 
-        // Integrated VPN (import a WireGuard config, connect through it). Stub
-        // tunnel for now — the real wireguard-go bring-up plugs in later. Split-
-        // tunnel: once a REAL tunnel is up, bind the torrent session to its
-        // interface (the stub never binds, so it can't break connectivity).
+        // Integrated VPN (import a WireGuard config, connect through it). Once a
+        // REAL tunnel is up, bind the torrent session to its interface (the stub
+        // never binds, so it can't break connectivity). The pre-VPN binding is
+        // remembered in "preVpnInterface" so a deliberate disconnect restores it;
+        // a tunnel DROP with the kill switch on keeps the dead binding instead —
+        // fail closed, the kill switch pauses everything until the VPN is back.
         auto *vpnManager = new VpnManager(makeWgTunnel(&app), &app);
         QObject::connect(vpnManager, &VpnManager::interfaceUp, &app, [vpnManager, eng](const QString &iface) {
-            if (vpnManager->tunnelIsReal()) eng->applySetting(QStringLiteral("outgoingInterface"), iface);
+            if (!vpnManager->tunnelIsReal()) return;
+            QSettings s;
+            if (!s.contains(QStringLiteral("preVpnInterface")))   // keep the original across reconnects
+                s.setValue(QStringLiteral("preVpnInterface"), s.value(QStringLiteral("outgoingInterface")).toString());
+            eng->applySetting(QStringLiteral("outgoingInterface"), iface);
         });
+        QObject::connect(vpnManager, &VpnManager::interfaceDown, &app, [vpnManager, eng](bool deliberate) {
+            if (!vpnManager->tunnelIsReal()) return;
+            QSettings s;
+            if (!s.contains(QStringLiteral("preVpnInterface"))) return;   // never got bound
+            if (!deliberate && s.value(QStringLiteral("killSwitchEnabled"), false).toBool()) return;
+            eng->applySetting(QStringLiteral("outgoingInterface"),
+                              s.value(QStringLiteral("preVpnInterface")).toString());
+            s.remove(QStringLiteral("preVpnInterface"));
+        });
+        {
+            // App quit (or crashed) while the VPN was connected: the persisted
+            // binding points at a tunnel interface that no longer exists. With
+            // the kill switch off, restore the pre-VPN binding so torrents
+            // aren't silently dead; with it on, stay bound = stay failed-closed.
+            QSettings s;
+            if (s.contains(QStringLiteral("preVpnInterface"))
+                && !s.value(QStringLiteral("killSwitchEnabled"), false).toBool()) {
+                eng->applySetting(QStringLiteral("outgoingInterface"),
+                                  s.value(QStringLiteral("preVpnInterface")).toString());
+                s.remove(QStringLiteral("preVpnInterface"));
+            }
+        }
+        if (vpnManager->tunnelIsReal()
+            && QSettings().value(QStringLiteral("vpnAutoConnect"), false).toBool()) {
+            // Delayed so the elevation prompt appears over a visible window.
+            QTimer::singleShot(1500, vpnManager, &VpnManager::connectLastUsed);
+        }
 
         auto *resolver = new MetadataResolver(&app);
         auto *posterModel = new QmlPosterModel(eng, resolver, &app);

@@ -141,6 +141,14 @@ jobs:
           cp -a build/third_party/libtorrent/libtorrent-rasterbar.so* AppDir/usr/lib/
           echo "Bundled fork libtorrent: $(basename "$forkso")"
 
+          # Integrated VPN: bundle wg + wg-quick (kernel WireGuard does the rest).
+          # WgTunnelLinux stages these out of the AppImage's FUSE mount at runtime
+          # and runs them via pkexec — it looks for <app>/wireguard/wg-quick.
+          sudo apt-get install -y wireguard-tools
+          mkdir -p AppDir/usr/bin/wireguard
+          install -m 755 /usr/bin/wg /usr/bin/wg-quick AppDir/usr/bin/wireguard/
+          echo "Bundled wireguard-tools: $(/usr/bin/wg --version)"
+
       - name: Resize icon to 256x256
         run: |
           convert AppDir/usr/share/icons/hicolor/256x256/apps/batorrent.png \

@@ -77,6 +77,62 @@ TEST_CASE("parseWireguardConfig: PresharedKey and multiple peers", "[wireguard]"
     CHECK(cfg.peers[1].endpoint == "b:51820");
 }
 
+TEST_CASE("splitTunnelConf: adds Table=off and strips Interface DNS", "[wireguard]")
+{
+    const QString conf = QStringLiteral(
+        "[Interface]\n"
+        "PrivateKey = %1\n"
+        "Address = 10.64.0.2/32\n"
+        "DNS = 10.64.0.1, 10.64.0.2\n"
+        "MTU = 1420\n"
+        "[Peer]\n"
+        "PublicKey = %2\n"
+        "AllowedIPs = 0.0.0.0/0, ::/0\n"
+        "Endpoint = 193.32.127.1:51820\n").arg(KEY_A, KEY_B);
+
+    const QString split = bat::splitTunnelConf(conf);
+
+    CHECK(split.count(QStringLiteral("Table = off")) == 1);
+    CHECK(!split.contains(QStringLiteral("DNS"), Qt::CaseInsensitive));
+    // the split config must still parse, with everything else intact
+    const auto cfg = parseWireguardConfig(split);
+    REQUIRE(cfg.valid);
+    CHECK(cfg.privateKey == KEY_A);
+    CHECK(cfg.mtu == 1420);
+    CHECK(cfg.dns.isEmpty());
+    REQUIRE(cfg.peers.size() == 1);
+    CHECK(cfg.peers[0].allowedIps == QStringList{"0.0.0.0/0", "::/0"});
+    CHECK(cfg.peers[0].endpoint == "193.32.127.1:51820");
+}
+
+TEST_CASE("splitTunnelConf: replaces an existing Table and is idempotent", "[wireguard]")
+{
+    const QString conf = QStringLiteral(
+        "[Interface]\nPrivateKey = %1\nAddress = 10.0.0.2/32\ntable = 1234\ndns=1.1.1.1 # keep private\n"
+        "[Peer]\nPublicKey = %2\nAllowedIPs = 0.0.0.0/0\nEndpoint = a:51820\n").arg(KEY_A, KEY_B);
+
+    const QString once = bat::splitTunnelConf(conf);
+    CHECK(once.count(QStringLiteral("Table = off")) == 1);
+    CHECK(!once.contains(QStringLiteral("1234")));
+    CHECK(!once.contains(QStringLiteral("1.1.1.1")));
+
+    const QString twice = bat::splitTunnelConf(once);
+    CHECK(twice.count(QStringLiteral("Table = off")) == 1);
+    CHECK(parseWireguardConfig(twice).valid);
+}
+
+TEST_CASE("splitTunnelConf: leaves Peer lines alone even if named like DNS", "[wireguard]")
+{
+    // a hostname endpoint containing "dns" must survive — only Interface keys are filtered
+    const QString conf = QStringLiteral(
+        "[Interface]\nPrivateKey = %1\nAddress = 10.0.0.2/32\n"
+        "[Peer]\nPublicKey = %2\nAllowedIPs = 0.0.0.0/0\nEndpoint = dns.example.com:51820\n").arg(KEY_A, KEY_B);
+
+    const auto cfg = parseWireguardConfig(bat::splitTunnelConf(conf));
+    REQUIRE(cfg.valid);
+    CHECK(cfg.peers[0].endpoint == "dns.example.com:51820");
+}
+
 TEST_CASE("parseWireguardConfig: rejects incomplete or malformed configs", "[wireguard]")
 {
     SECTION("no Interface section") {

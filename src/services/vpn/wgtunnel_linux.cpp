@@ -27,14 +27,55 @@ QString firstExisting(const QStringList &paths)
 }
 }
 
-QString WgTunnelLinux::wgQuickPath()
+QString WgTunnelLinux::systemWgQuick()
 {
-    const QString bundled = QCoreApplication::applicationDirPath()
-                          + QStringLiteral("/wireguard/wg-quick");
-    return firstExisting({bundled,
-                          QStringLiteral("/usr/bin/wg-quick"),
+    return firstExisting({QStringLiteral("/usr/bin/wg-quick"),
                           QStringLiteral("/usr/local/bin/wg-quick"),
                           QStringLiteral("/bin/wg-quick")});
+}
+
+// The AppImage payload sits on a user-only FUSE mount that root cannot read
+// (FUSE denies other users even root, unlike normal DAC), so the bundled
+// wg/wg-quick must be staged into a real directory before pkexec runs them.
+QString WgTunnelLinux::stagedBundledTools()
+{
+    const QString src = QCoreApplication::applicationDirPath() + QStringLiteral("/wireguard");
+    if (!QFile::exists(src + QStringLiteral("/wg-quick"))) return QString();
+
+    QString base = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
+    if (base.isEmpty()) base = QDir::tempPath();
+    const QString dst = base + QStringLiteral("/batorrent-wgtools");
+    QDir().mkpath(dst);
+    for (const char *tool : {"wg", "wg-quick"}) {
+        const QString from = src + QLatin1Char('/') + QLatin1String(tool);
+        const QString to = dst + QLatin1Char('/') + QLatin1String(tool);
+        QFile::remove(to);
+        if (!QFile::copy(from, to)) return QString();
+        QFile::setPermissions(to, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner
+                                  | QFile::ReadGroup | QFile::ExeGroup
+                                  | QFile::ReadOther | QFile::ExeOther);
+    }
+    return dst;
+}
+
+bool WgTunnelLinux::haveWgQuick()
+{
+    return QFile::exists(QCoreApplication::applicationDirPath() + QStringLiteral("/wireguard/wg-quick"))
+           || !systemWgQuick().isEmpty();
+}
+
+// pkexec strips the environment, so the bundled wg-quick would not find its
+// sibling `wg` — run it through `env` with a PATH that leads with the staged dir.
+QStringList WgTunnelLinux::wgQuickArgv(const QString &verb, const QString &target)
+{
+    const QString staged = stagedBundledTools();
+    if (!staged.isEmpty())
+        return {QStringLiteral("env"),
+                QStringLiteral("PATH=%1:/usr/sbin:/usr/bin:/sbin:/bin").arg(staged),
+                staged + QStringLiteral("/wg-quick"), verb, target};
+    const QString sys = systemWgQuick();
+    if (sys.isEmpty()) return {};
+    return {sys, verb, target};
 }
 
 void WgTunnelLinux::runElevated(const QStringList &argv, std::function<void(bool, QString)> done)
@@ -57,9 +98,6 @@ void WgTunnelLinux::runElevated(const QStringList &argv, std::function<void(bool
 
 void WgTunnelLinux::up(const QString &confPath, const bat::WgConfig &)
 {
-    const QString wgQuick = wgQuickPath();
-    if (wgQuick.isEmpty()) { emit failed(QStringLiteral("wg-quick not found")); return; }
-
     // wg-quick derives the iface from the basename, so stage a short-named copy in
     // a user-private dir (0600 — it holds the private key).
     QString dir = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
@@ -72,10 +110,13 @@ void WgTunnelLinux::up(const QString &confPath, const bat::WgConfig &)
         return;
     }
     QFile::setPermissions(shortConf, QFile::ReadOwner | QFile::WriteOwner);
+
+    const QStringList argv = wgQuickArgv(QStringLiteral("up"), shortConf);
+    if (argv.isEmpty()) { emit failed(QStringLiteral("wg-quick not found")); return; }
     m_activeConf = shortConf;
     m_iface = QLatin1String(kIface);
 
-    runElevated({wgQuick, QStringLiteral("up"), shortConf}, [this](bool ok, QString out) {
+    runElevated(argv, [this](bool ok, QString out) {
         if (ok) emit connected(m_iface);
         else {
             QFile::remove(m_activeConf);
@@ -88,11 +129,11 @@ void WgTunnelLinux::up(const QString &confPath, const bat::WgConfig &)
 
 void WgTunnelLinux::down()
 {
-    const QString wgQuick = wgQuickPath();
-    if (m_iface.isEmpty() || wgQuick.isEmpty()) { m_iface.clear(); emit disconnected(); return; }
-
     const QString target = m_activeConf.isEmpty() ? m_iface : m_activeConf;
-    runElevated({wgQuick, QStringLiteral("down"), target}, [this](bool, QString) {
+    const QStringList argv = m_iface.isEmpty() ? QStringList()
+                                               : wgQuickArgv(QStringLiteral("down"), target);
+    if (argv.isEmpty()) { m_iface.clear(); emit disconnected(); return; }
+    runElevated(argv, [this](bool, QString) {
         if (!m_activeConf.isEmpty()) { QFile::remove(m_activeConf); m_activeConf.clear(); }
         m_iface.clear();
         emit disconnected();

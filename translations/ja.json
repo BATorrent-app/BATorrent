@@ -1174,5 +1174,9 @@
   "missing_recover_msg": "このダウンロードのファイルがディスク上にありません。場所を指定するか、再ダウンロードしてください。",
   "vpn_hero_protected": "保護中",
   "vpn_hero_exposed": "未保護",
-  "vpn_hero_sub": "VPNプロバイダーの設定をインポートして接続すると、トレント通信がトンネル経由になります。"
+  "vpn_hero_sub": "VPNプロバイダーの設定をインポートして接続すると、トレント通信がトンネル経由になります。",
+  "set_vpn_split": "スプリットトンネル",
+  "set_vpn_split_note": "BATorrent の通信だけが VPN を使い、それ以外は通常の接続のままです。トラッカーの名前解決はシステム DNS を使用します。次回の接続から適用されます。",
+  "set_vpn_autoconnect": "起動時に接続",
+  "set_vpn_autoconnect_note": "BATorrent の起動時に最後に使用したプロファイルへ再接続します（管理者権限を求めます）。"
 }

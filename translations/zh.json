@@ -1174,5 +1174,9 @@
   "missing_recover_msg": "此下载的文件已不在磁盘上。请指定它们的位置，或重新下载。",
   "vpn_hero_protected": "已保护",
   "vpn_hero_exposed": "未保护",
-  "vpn_hero_sub": "导入你的 VPN 提供商配置并连接，即可让种子流量通过隧道。"
+  "vpn_hero_sub": "导入你的 VPN 提供商配置并连接，即可让种子流量通过隧道。",
+  "set_vpn_split": "分流隧道",
+  "set_vpn_split_note": "只有 BATorrent 的流量走 VPN，系统其余流量保持普通连接。Tracker 域名解析使用系统 DNS。下次连接时生效。",
+  "set_vpn_autoconnect": "启动时连接",
+  "set_vpn_autoconnect_note": "BATorrent 启动时自动重连上次使用的配置文件（会请求管理员权限）。"
 }
