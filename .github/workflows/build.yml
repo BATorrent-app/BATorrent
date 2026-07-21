@@ -334,6 +334,21 @@ jobs:
           Copy-Item $forkDll -Destination release/ -Force
           Write-Host "Shipped fork libtorrent: $forkDll"
           if ($env:SENTRY_ENABLED -eq "1" -and $env:BAT_SENTRY_HANDLER) { Copy-Item "$env:BAT_SENTRY_HANDLER" release/ }
+          # Integrated VPN: bundle the official WireGuard CLI. wireguard.exe embeds
+          # the signed WireGuardNT driver and installs it on demand via
+          # /installtunnelservice, so no separate WireGuard install is needed.
+          # WinWgTunnel looks for it at <app>/wireguard/wireguard.exe.
+          $wgVer = "0.5.3"
+          $wgMsi = "wireguard-amd64-$wgVer.msi"
+          Invoke-WebRequest -Uri "https://download.wireguard.com/windows-client/$wgMsi" -OutFile $wgMsi
+          New-Item -ItemType Directory -Force -Path wg_extract | Out-Null
+          $p = Start-Process msiexec.exe -ArgumentList "/a","`"$PWD\$wgMsi`"","/qn","TARGETDIR=`"$PWD\wg_extract`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "msiexec extract of WireGuard failed (exit $($p.ExitCode))" }
+          $wgExe = Get-ChildItem wg_extract -Recurse -Filter wireguard.exe | Select-Object -First 1
+          if (-not $wgExe) { throw "wireguard.exe not found in the WireGuard MSI payload" }
+          New-Item -ItemType Directory -Force -Path release/wireguard | Out-Null
+          Copy-Item $wgExe.FullName -Destination release/wireguard/wireguard.exe -Force
+          Write-Host "Bundled WireGuard $wgVer for the integrated VPN"
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
       # Nothing before this point ever actually LAUNCHES the built app — a
@@ -471,6 +486,9 @@ jobs:
         run: |
           brew install libtorrent-rasterbar boost openssl
           brew link --overwrite libtorrent-rasterbar boost openssl
+          # WireGuard CLI for the integrated VPN — the CMake POST_BUILD stages
+          # these into the bundle so the user installs nothing.
+          brew install wireguard-tools wireguard-go
 
       # Crash reporting is opt-in: only activates when the BAT_SENTRY_DSN repo
       # variable is set. Without it, the build below is byte-identical to before.
@@ -512,6 +530,12 @@ jobs:
           cp build/BATorrent.app/Contents/MacOS/BATorrent dmg/BATorrent.app/Contents/MacOS/
           # Ship the Crashpad handler next to the binary so Sentry finds it.
           [ "$SENTRY_ENABLED" = "1" ] && cp "$BAT_SENTRY_HANDLER" dmg/BATorrent.app/Contents/MacOS/crashpad_handler || true
+          # Carry the WireGuard tools the CMake POST_BUILD staged into the fresh
+          # bundle (integrated VPN is self-contained). codesign --deep re-signs them.
+          if [ -d build/BATorrent.app/Contents/Resources/wireguard ]; then
+            mkdir -p dmg/BATorrent.app/Contents/Resources/wireguard
+            cp build/BATorrent.app/Contents/Resources/wireguard/* dmg/BATorrent.app/Contents/Resources/wireguard/
+          fi
           printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
             '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
             '<plist version="1.0">' '<dict>' \
