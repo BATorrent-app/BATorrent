@@ -1170,5 +1170,6 @@
   "set_rd_disconnect": "切断",
   "set_block_bad_peers": "既知の危険なピアをブロック",
   "set_block_bad_peers_note": "信頼できるIPブロックリストをダウンロードして更新し、ハンドシェイク前に該当アドレスへの接続を遮断します。ウイルス対策の警告を引き起こす接続を減らします。",
-  "state_files_missing": "ファイルがありません"
+  "state_files_missing": "ファイルがありません",
+  "missing_recover_msg": "このダウンロードのファイルがディスク上にありません。場所を指定するか、再ダウンロードしてください。"
 }

@@ -142,6 +142,12 @@ QString QmlSessionBridge::selectedState() const
     return m_session->torrentAt(m_selectedIndex).stateString;
 }
 
+bool QmlSessionBridge::selectedFilesMissing() const
+{
+    if (!hasSelection()) return false;
+    return m_session->torrentAt(m_selectedIndex).filesMissing;
+}
+
 QString QmlSessionBridge::selectedPoster() const
 {
     if (!hasSelection() || !m_resolver) return {};

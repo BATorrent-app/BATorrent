@@ -211,6 +211,10 @@ Window {
         detailsCollapsed = !detailsCollapsed
         if (typeof settings !== "undefined") settings.set("detailsCollapsed", detailsCollapsed)
     }
+    // Missing-files recovery: pick where the files actually live (or a fresh folder
+    // to re-download into) — libtorrent moves storage there, then a recheck picks
+    // up whatever's present. Shared by the context menu and the recovery banner.
+    function promptSetLocation() { setLocationDlg.open() }
     // lock pins the panel to its current open/closed state, overriding auto-collapse
     property bool detailsLocked: typeof settings !== "undefined" && settings.get("detailsLocked") === true
     function toggleDetailsLocked() {
