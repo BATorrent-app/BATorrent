@@ -62,6 +62,9 @@ TorrentInfo HttpMergeEngine::torrentAt(int index) const
     if (!d) return info;
 
     info.name = d->fileName();
+    // A plain file has no movie poster to identify it by, so tag the row with its
+    // format (the category chip renders it uppercased: "pdf" → PDF) — tester idea.
+    info.category = QFileInfo(info.name).suffix().toLower();
     info.savePath = QFileInfo(d->finalPath()).absolutePath();
     info.totalSize = d->totalBytes() > 0 ? d->totalBytes() : 0;
     info.totalDone = d->receivedBytes();
