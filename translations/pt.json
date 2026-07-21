@@ -1170,5 +1170,6 @@
   "about_star": "Dar estrela no GitHub",
   "set_block_bad_peers": "Bloquear peers maliciosos conhecidos",
   "set_block_bad_peers_note": "Baixa e mantém atualizada uma lista de IPs reputável, descartando conexões com endereços sinalizados antes do handshake — reduz as conexões que disparam avisos de antivírus.",
-  "state_files_missing": "Arquivos ausentes"
+  "state_files_missing": "Arquivos ausentes",
+  "missing_recover_msg": "Os arquivos deste download não estão mais no disco. Aponte onde eles estão, ou baixe de novo."
 }

@@ -1170,5 +1170,6 @@
   "about_star": "Star on GitHub",
   "set_block_bad_peers": "Block known bad peers",
   "set_block_bad_peers_note": "Downloads and keeps a reputable IP blocklist updated, dropping connections to flagged addresses before the handshake — cuts the peer connections that trip antivirus warnings.",
-  "state_files_missing": "Files missing"
+  "state_files_missing": "Files missing",
+  "missing_recover_msg": "This download's files are no longer on disk. Point it to where they are, or re-download."
 }

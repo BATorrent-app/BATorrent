@@ -1170,5 +1170,6 @@
   "set_rd_disconnect": "Trennen",
   "set_block_bad_peers": "Bekannte schädliche Peers blockieren",
   "set_block_bad_peers_note": "Lädt eine seriöse IP-Sperrliste und hält sie aktuell; Verbindungen zu markierten Adressen werden vor dem Handshake verworfen — reduziert die von Antivirenprogrammen gemeldeten Verbindungen.",
-  "state_files_missing": "Dateien fehlen"
+  "state_files_missing": "Dateien fehlen",
+  "missing_recover_msg": "Die Dateien dieses Downloads sind nicht mehr auf der Festplatte. Gib an, wo sie liegen, oder lade sie erneut."
 }
