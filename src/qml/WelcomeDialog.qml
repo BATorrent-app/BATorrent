@@ -34,6 +34,18 @@ BatDialog {
     // Key by "major.minor" so hotfix bumps (4.3.0 → 4.3.1) keep the release's
     // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
+        "4.7": {
+            note: "This one's called Cinema, and it's mostly about the player. Audio, subtitles and playback speed used to be spread across three menus — now they're one panel. Hover the seek bar for a frame preview, get a next-episode countdown as a movie ends, skip intros and credits when the file has chapters, and the picture's colors spill softly into the black bars. Less \"torrent client playing a file\", more just watching something.<br><br>Also: Linux stopped crashing at launch (a packaging slip on my end — sorry), waiting downloads finally say they're queued, and the save dialogs remember your favorite folders.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
+            , highlights: [
+                "Reworked player: audio, subtitles and speed in one panel",
+                "Frame preview on the seek bar, next-episode countdown, skip intro/credits",
+                "Ambient glow — the video's colors bleed into the black bars (optional)",
+                "Waiting downloads show a Queued filter and status",
+                "Favorite folders in the save dialogs, each with its free space",
+                "Linux: fixed the launch crash (shipped the wrong libtorrent)",
+                "Windows: per-type file associations + a toolbar Refresh button"
+            ]
+        },
         "4.5": {
             note: "First thing you'll notice: navigation moved to a bar at the top. If you prefer the old sidebar, Settings > Appearance brings it back.<br><br>Search and Discover are now one page. Browse the catalog or just start typing, it all lives in the same place.<br><br>Games in the HUB got better too: Play works like you expect, and if a launch fails the app tells you instead of staying quiet. A bunch of smaller bugs are gone as well.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br><br>Mateus"
             , highlights: [
