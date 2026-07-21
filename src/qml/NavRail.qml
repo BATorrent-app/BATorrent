@@ -23,6 +23,7 @@ Rectangle {
     property bool collapsed: false
     signal pageRequested(int page)
     signal settingsClicked()
+    signal vpnClicked()          // open the VPN cockpit (Settings → VPN section)
     signal selectTorrent(string infoHash)
     signal makeRoomRequested()
 
@@ -263,6 +264,69 @@ Rectangle {
             Layout.topMargin: 10; Layout.bottomMargin: 4
             implicitHeight: 1; color: Theme.hairSoft
             visible: !rail.collapsed
+        }
+
+        // ----- VPN (status + door to the cockpit: Settings → VPN) -----
+        Item {
+            id: vpnItem
+            visible: typeof vpn !== "undefined"
+            readonly property int st: (typeof vpn !== "undefined") ? vpn.connState : 0
+            readonly property color stColor: st === 2 ? Theme.grn : st === 1 ? Theme.amber
+                                           : st === 3 ? Theme.accent : Theme.t4
+            Layout.fillWidth: true
+            Layout.preferredHeight: visible ? 46 : 0
+            Layout.leftMargin: 10
+            Layout.rightMargin: 10
+            Rectangle {
+                anchors.fill: parent
+                radius: 10
+                color: vpnMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
+                Behavior on color { ColorAnimation { duration: 140 } }
+            }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: rail.collapsed ? 13 : 17
+                anchors.rightMargin: 12
+                spacing: 13
+                Item {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: 18; Layout.preferredHeight: 18
+                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/set-vpn.svg"; tint: vpnItem.stColor; s: 18 }
+                    Rectangle {
+                        width: 7; height: 7; radius: 3.5
+                        anchors.right: parent.right; anchors.bottom: parent.bottom
+                        anchors.rightMargin: -2; anchors.bottomMargin: -1
+                        color: vpnItem.stColor
+                        border.color: Theme.panel; border.width: 1.5
+                        SequentialAnimation on opacity {
+                            running: vpnItem.st === 1; loops: Animation.Infinite
+                            NumberAnimation { from: 1; to: 0.3; duration: 600 }
+                            NumberAnimation { from: 0.3; to: 1; duration: 600 }
+                        }
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "VPN"
+                    color: vpnItem.st === 2 ? Theme.t1 : Theme.t2
+                    font.pixelSize: 14; font.weight: Font.Medium; font.family: Theme.fontSans
+                    opacity: rail.collapsed ? 0 : 1
+                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                }
+            }
+            MouseArea {
+                id: vpnMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: rail.vpnClicked()
+            }
+            ToolTip.text: (i18n.language, "VPN — " +
+                (vpnItem.st === 2 ? i18n.t("vpn_state_on") : vpnItem.st === 1 ? i18n.t("vpn_state_connecting")
+                 : vpnItem.st === 3 ? i18n.t("vpn_state_failed") : i18n.t("vpn_state_off")))
+            ToolTip.visible: rail.collapsed && vpnMa.containsMouse
+            ToolTip.delay: 400
         }
 
         // ----- donate (heart: gray at rest, red on hover) -----
