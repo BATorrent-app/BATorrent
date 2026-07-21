@@ -341,6 +341,12 @@ jobs:
           }
           Copy-Item $forkDll -Destination release/ -Force
           Write-Host "Shipped fork libtorrent: $forkDll"
+          # Without this PDB the top Sentry crasher (engine-DLL frames) is
+          # unsymbolicated — rc6 uploaded only 2 debug files because Release
+          # produced no fork PDB. The CMake fork block now adds /Zi; guard it.
+          if (!(Test-Path "build/third_party/libtorrent/Release/torrent-rasterbar.pdb")) {
+            throw "fork libtorrent PDB missing — engine crashes would be unsymbolicated in Sentry."
+          }
           if ($env:SENTRY_ENABLED -eq "1" -and $env:BAT_SENTRY_HANDLER) { Copy-Item "$env:BAT_SENTRY_HANDLER" release/ }
           # Integrated VPN: bundle the official WireGuard CLI. wireguard.exe embeds
           # the signed WireGuardNT driver and installs it on demand via

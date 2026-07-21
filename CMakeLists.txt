@@ -13,6 +13,14 @@ if(BAT_LIBTORRENT_SOURCE)
     add_subdirectory(third_party/libtorrent EXCLUDE_FROM_ALL)
     set(BAT_TORRENT_LIB torrent-rasterbar)
     add_compile_definitions(BAT_LIBTORRENT_FORK)
+    if(MSVC)
+        # MSVC Release has no /Zi → no torrent-rasterbar.pdb → every Sentry
+        # crash inside the engine DLL (the top crasher lives there) shows
+        # <unknown> frames. Debug info costs nothing at runtime.
+        target_compile_options(torrent-rasterbar PRIVATE $<$<CONFIG:Release>:/Zi>)
+        target_link_options(torrent-rasterbar PRIVATE
+            $<$<CONFIG:Release>:/DEBUG /OPT:REF /OPT:ICF>)
+    endif()
     message(STATUS "[BAT] libtorrent: building vendored fork from source")
 else()
     find_package(LibtorrentRasterbar REQUIRED)
