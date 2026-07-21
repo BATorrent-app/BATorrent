@@ -1171,5 +1171,8 @@
   "set_block_bad_peers": "屏蔽已知的恶意节点",
   "set_block_bad_peers_note": "下载并保持更新一个可靠的 IP 屏蔽列表，在握手前丢弃与被标记地址的连接——减少触发杀毒软件警告的连接。",
   "state_files_missing": "文件缺失",
-  "missing_recover_msg": "此下载的文件已不在磁盘上。请指定它们的位置，或重新下载。"
+  "missing_recover_msg": "此下载的文件已不在磁盘上。请指定它们的位置，或重新下载。",
+  "vpn_hero_protected": "已保护",
+  "vpn_hero_exposed": "未保护",
+  "vpn_hero_sub": "导入你的 VPN 提供商配置并连接，即可让种子流量通过隧道。"
 }

@@ -215,6 +215,8 @@ Window {
     // to re-download into) — libtorrent moves storage there, then a recheck picks
     // up whatever's present. Shared by the context menu and the recovery banner.
     function promptSetLocation() { setLocationDlg.open() }
+    // Full-screen visual acknowledgement for a manual Refresh.
+    function flashRefresh() { refreshFlashIcon.rotation = 0; refreshFlashSpin.restart(); refreshFlashAnim.restart() }
     // lock pins the panel to its current open/closed state, overriding auto-collapse
     property bool detailsLocked: typeof settings !== "undefined" && settings.get("detailsLocked") === true
     function toggleDetailsLocked() {
@@ -1084,6 +1086,7 @@ Window {
                 showDownloadChip: win.showDownloadChip
                 onPageRequested: function(page) { win.currentPage = page }
                 onSettingsClicked: win.currentPage = 3
+                onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }
                 onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
                 onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
             }
@@ -1349,6 +1352,33 @@ Window {
             } else session.removeSelected()
         }
     }
+    // Refresh flash — a brief full-screen dim + a spinning red refresh glyph, so a
+    // manual Refresh is unmistakable on screen (the tester couldn't tell the toolbar
+    // icon spin meant anything happened).
+    Rectangle {
+        id: refreshFlash
+        anchors.fill: parent
+        z: 9999
+        color: "#000000"
+        opacity: 0
+        visible: opacity > 0.01
+        IconImg {
+            id: refreshFlashIcon
+            anchors.centerIn: parent
+            src: "qrc:/icons/refresh.svg"
+            tint: Theme.accent
+            s: 68
+            RotationAnimation on rotation { id: refreshFlashSpin; running: false; from: 0; to: 360; duration: 620; loops: 1 }
+        }
+        SequentialAnimation {
+            id: refreshFlashAnim
+            NumberAnimation { target: refreshFlash; property: "opacity"; to: 0.55; duration: 120; easing.type: Easing.OutCubic }
+            PauseAnimation { duration: 300 }
+            NumberAnimation { target: refreshFlash; property: "opacity"; to: 0.0; duration: 280; easing.type: Easing.InCubic }
+        }
+        MouseArea { anchors.fill: parent; enabled: refreshFlash.opacity > 0.01 }   // swallow clicks mid-flash
+    }
+
     MakeRoomPanel {
         id: makeRoomPanel
         onDeleteRequested: function (infoHash) {

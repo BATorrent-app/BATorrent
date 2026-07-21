@@ -22,6 +22,7 @@ Rectangle {
     property bool showDownloadChip: true    // host setting gate
     signal pageRequested(int page)
     signal settingsClicked()
+    signal vpnClicked()          // open the VPN cockpit (Settings → VPN section)
     signal selectTorrent(string infoHash)
     signal makeRoomRequested()
 
@@ -387,13 +388,9 @@ Rectangle {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (typeof vpn === "undefined") return
-                    if (vpn.connState === 2 || vpn.connState === 1) { vpn.disconnectVpn(); return }
-                    if (vpn.profiles.length === 0) { bar.settingsClicked(); return }
-                    vpn.connectProfile(vpn.activeProfileId !== "" ? vpn.activeProfileId
-                                                                  : vpn.profiles[0].id)
-                }
+                // The pill is the always-visible status + the door to the cockpit;
+                // connect/disconnect lives on the big toggle inside it.
+                onClicked: bar.vpnClicked()
             }
             ToolTip.visible: vpnMa.containsMouse
             ToolTip.delay: 400

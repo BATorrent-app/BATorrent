@@ -1171,5 +1171,8 @@
   "set_block_bad_peers": "Block known bad peers",
   "set_block_bad_peers_note": "Downloads and keeps a reputable IP blocklist updated, dropping connections to flagged addresses before the handshake — cuts the peer connections that trip antivirus warnings.",
   "state_files_missing": "Files missing",
-  "missing_recover_msg": "This download's files are no longer on disk. Point it to where they are, or re-download."
+  "missing_recover_msg": "This download's files are no longer on disk. Point it to where they are, or re-download.",
+  "vpn_hero_protected": "Protected",
+  "vpn_hero_exposed": "Not protected",
+  "vpn_hero_sub": "Import your VPN provider's config and connect to route torrent traffic through the tunnel."
 }

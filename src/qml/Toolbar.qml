@@ -112,7 +112,7 @@ Rectangle {
         TBtn { label: (i18n.language, i18n.t("tb_pause"));  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_resume")); icon: "qrc:/icons/play.svg";  disabled: !win.hasSel; onClicked: session.resumeSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_stop"));   icon: "qrc:/icons/stop.svg";  disabled: !win.hasSel; onClicked: session.pauseSelected() }
-        TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; spinOnClick: true; onClicked: if (typeof session !== "undefined") session.refreshAll() }
+        TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; spinOnClick: true; onClicked: { if (toolbar.win) toolbar.win.flashRefresh(); if (typeof session !== "undefined") session.refreshAll() } }
         TGrpDiv {}
         // G3: Remover
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
