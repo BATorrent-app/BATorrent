@@ -131,6 +131,27 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
 target_include_directories(BATorrent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+# macOS: ship wireguard-go + wg + wg-quick inside the bundle so the integrated
+# VPN needs no `brew install`. They're self-contained (only link libSystem), so
+# a plain copy into Contents/Resources/wireguard is enough. Release/CI signs the
+# bundle (which now includes these) in the codesign step.
+if(APPLE)
+    find_program(WG_QUICK_BIN wg-quick PATHS /opt/homebrew/bin /usr/local/bin)
+    find_program(WG_BIN wg PATHS /opt/homebrew/bin /usr/local/bin)
+    find_program(WIREGUARD_GO_BIN wireguard-go PATHS /opt/homebrew/bin /usr/local/bin)
+    if(WG_QUICK_BIN AND WG_BIN AND WIREGUARD_GO_BIN)
+        add_custom_command(TARGET BATorrent POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                    "$<TARGET_BUNDLE_CONTENT_DIR:BATorrent>/Resources/wireguard"
+            COMMAND ${CMAKE_COMMAND} -E copy "${WIREGUARD_GO_BIN}" "${WG_BIN}" "${WG_QUICK_BIN}"
+                    "$<TARGET_BUNDLE_CONTENT_DIR:BATorrent>/Resources/wireguard/"
+            COMMENT "Bundling wireguard-go/wg/wg-quick into the app"
+            VERBATIM)
+    else()
+        message(STATUS "[BAT] wireguard-tools/wireguard-go not found — integrated VPN will need a system install (install: brew install wireguard-tools wireguard-go)")
+    endif()
+endif()
+
 if(DEFINED ENV{BAT_TMDB_KEY})
     target_compile_definitions(BATorrent PRIVATE BAT_TMDB_KEY="$ENV{BAT_TMDB_KEY}")
 endif()

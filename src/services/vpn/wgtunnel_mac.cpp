@@ -10,11 +10,15 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
+#include <QCoreApplication>
 
 QString MacWgTunnel::toolsBinDir()
 {
-    // wg-quick + wireguard-go live here on a Homebrew install (arm64 / x86) or
-    // a manual /usr/local. Return the first dir that actually has wg-quick.
+    // Prefer the wireguard-go/wg/wg-quick we ship inside the app bundle (so the
+    // user installs nothing); fall back to a Homebrew/system wireguard-tools.
+    const QString bundled = QDir(QCoreApplication::applicationDirPath()
+                                 + QStringLiteral("/../Resources/wireguard")).absolutePath();
+    if (QFile::exists(bundled + QStringLiteral("/wg-quick"))) return bundled;
     for (const QString &d : {QStringLiteral("/opt/homebrew/bin"),
                              QStringLiteral("/usr/local/bin"),
                              QStringLiteral("/usr/bin")}) {
