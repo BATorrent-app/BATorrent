@@ -1167,5 +1167,7 @@
   "set_rd_account": "账户",
   "set_rd_token_ph": "粘贴 API 密钥",
   "set_rd_connect": "连接",
-  "set_rd_disconnect": "断开连接"
+  "set_rd_disconnect": "断开连接",
+  "set_block_bad_peers": "屏蔽已知的恶意节点",
+  "set_block_bad_peers_note": "下载并保持更新一个可靠的 IP 屏蔽列表，在握手前丢弃与被标记地址的连接——减少触发杀毒软件警告的连接。"
 }

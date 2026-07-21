@@ -346,6 +346,7 @@ public:
 
     // IP filter
     void loadIpFilter(const QString &filePath);
+    void loadAutoBlocklist(const QString &filePath);   // auto-updated bad-peer list
     void clearIpFilter();
     QString ipFilterPath() const;
     int ipFilterCount() const;
@@ -649,7 +650,9 @@ private:
 
     // IP filter
     QString m_ipFilterPath;
+    QString m_autoBlocklistPath;   // cached auto-updated bad-peer list (merged with the manual one)
     int m_ipFilterCount = 0;
+    void rebuildIpFilter();        // merge manual + auto lists into one ip_filter
 
     // Tracks when each magnet was added so a still-fetching-metadata torrent
     // can show "looking for peers (Xm)" via stateDetail instead of the app

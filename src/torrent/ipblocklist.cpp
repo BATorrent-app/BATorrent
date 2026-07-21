@@ -11,8 +11,17 @@ namespace bat {
 
 libtorrent::ip_filter parseP2pBlocklist(const QString &text, int *rulesAdded)
 {
+    libtorrent::ip_filter filter;
+    int count = 0;
+    parseP2pBlocklistInto(text, filter, &count);
+    if (rulesAdded)
+        *rulesAdded = count;
+    return filter;
+}
+
+void parseP2pBlocklistInto(const QString &text, libtorrent::ip_filter &filter, int *rulesAdded)
+{
     namespace lt = libtorrent;
-    lt::ip_filter filter;
     int count = 0;
 
     const QStringList lines = text.split(QChar('\n'));
@@ -54,8 +63,7 @@ libtorrent::ip_filter parseP2pBlocklist(const QString &text, int *rulesAdded)
     }
 
     if (rulesAdded)
-        *rulesAdded = count;
-    return filter;
+        *rulesAdded += count;
 }
 
 }

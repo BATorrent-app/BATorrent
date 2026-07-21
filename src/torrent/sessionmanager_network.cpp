@@ -179,18 +179,27 @@ QString SessionManager::proxyPass() const { return m_proxy.pass(); }
 void SessionManager::loadIpFilter(const QString &filePath)
 {
     m_ipFilterPath = filePath;
-    m_ipFilterCount = 0;
+    rebuildIpFilter();
+}
 
-    if (filePath.isEmpty()) {
-        clearIpFilter();
-        return;
-    }
+void SessionManager::loadAutoBlocklist(const QString &filePath)
+{
+    m_autoBlocklistPath = filePath;
+    rebuildIpFilter();
+}
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return;
-
+// Merge whichever lists are set (manual file + auto-updated bad-peer list) into a
+// single ip_filter — libtorrent has one filter slot, so both sources accumulate.
+void SessionManager::rebuildIpFilter()
+{
+    lt::ip_filter filter;
     int count = 0;
-    const lt::ip_filter filter = bat::parseP2pBlocklist(QString::fromUtf8(file.readAll()), &count);
+    for (const QString &path : {m_ipFilterPath, m_autoBlocklistPath}) {
+        if (path.isEmpty()) continue;
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
+        bat::parseP2pBlocklistInto(QString::fromUtf8(file.readAll()), filter, &count);
+    }
     m_session.set_ip_filter(filter);
     m_ipFilterCount = count;
 }
@@ -198,6 +207,7 @@ void SessionManager::loadIpFilter(const QString &filePath)
 void SessionManager::clearIpFilter()
 {
     m_ipFilterPath.clear();
+    m_autoBlocklistPath.clear();
     m_ipFilterCount = 0;
     m_session.set_ip_filter(lt::ip_filter());
 }

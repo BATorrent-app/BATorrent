@@ -20,6 +20,12 @@ namespace bat {
 // non-null it receives the number of accepted ranges.
 libtorrent::ip_filter parseP2pBlocklist(const QString &text, int *rulesAdded = nullptr);
 
+// Same parser, accumulating into an existing filter so several lists (e.g. a
+// manual file + the auto-updated one) merge into one ip_filter. *rulesAdded is
+// incremented (not reset) by the number of accepted ranges — init it yourself.
+void parseP2pBlocklistInto(const QString &text, libtorrent::ip_filter &filter,
+                           int *rulesAdded = nullptr);
+
 }
 
 #endif // IPBLOCKLIST_H

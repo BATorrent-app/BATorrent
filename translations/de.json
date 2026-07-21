@@ -1167,5 +1167,7 @@
   "set_rd_account": "Konto",
   "set_rd_token_ph": "API-Schlüssel einfügen",
   "set_rd_connect": "Verbinden",
-  "set_rd_disconnect": "Trennen"
+  "set_rd_disconnect": "Trennen",
+  "set_block_bad_peers": "Bekannte schädliche Peers blockieren",
+  "set_block_bad_peers_note": "Lädt eine seriöse IP-Sperrliste und hält sie aktuell; Verbindungen zu markierten Adressen werden vor dem Handshake verworfen — reduziert die von Antivirenprogrammen gemeldeten Verbindungen."
 }

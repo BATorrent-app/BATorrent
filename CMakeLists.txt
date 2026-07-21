@@ -80,6 +80,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/discordrpc.cpp
     src/services/security/passwordhash.cpp
     src/services/security/secretstore.cpp
+    src/services/security/blocklistupdater.cpp
     src/services/integrations/updater.cpp
     src/services/discovery/addonmanager.cpp
     src/services/integrations/rssmanager.cpp

@@ -55,6 +55,7 @@
 #include <cstring>
 #include <QThread>
 #include "services/security/secretstore.h"
+#include "services/security/blocklistupdater.h"
 #include "services/integrations/debridmanager.h"
 #include "services/platform/logger.h"
 #include "services/security/crashhandler.h"
@@ -457,6 +458,24 @@ int main(int argc, char *argv[])
         // Settings/WebUI stay on the in-process session (config control plane);
         // null in IPC mode, where the bridge falls back to QSettings.
         auto *settingsBridge = new QmlSettingsBridge(localSession, eng, &app);
+        // "Block known bad peers": download/refresh a reputable IP blocklist and
+        // feed it to the engine's ip_filter (dropped before the handshake), cutting
+        // connections to flagged IPs that trip antivirus warnings. Opt-in.
+        auto *blocklist = new BlocklistUpdater(&app);
+        QObject::connect(blocklist, &BlocklistUpdater::ready, &app,
+                         [eng](const QString &path, int) { eng->applySetting("autoBlocklistFile", path); });
+        QObject::connect(settingsBridge, &QmlSettingsBridge::blockBadPeersToggled, &app,
+                         [eng, blocklist](bool on) {
+            if (on) blocklist->update();
+            else    eng->applySetting("autoBlocklistFile", QString());
+        });
+        if (QSettings().value("blockBadPeers", false).toBool()) {
+            if (QFileInfo::exists(BlocklistUpdater::cachePath()))
+                eng->applySetting("autoBlocklistFile", BlocklistUpdater::cachePath());
+            if (BlocklistUpdater::cacheStale())
+                blocklist->update();
+        }
+
         auto *addonBridge = new QmlAddonBridge(&app);
         auto *searchBridge = new QmlSearchBridge(eng, &app);
         searchBridge->setResolver(resolver);
