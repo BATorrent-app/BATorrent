@@ -1174,5 +1174,9 @@
   "missing_recover_msg": "This download's files are no longer on disk. Point it to where they are, or re-download.",
   "vpn_hero_protected": "Protected",
   "vpn_hero_exposed": "Not protected",
-  "vpn_hero_sub": "Import your VPN provider's config and connect to route torrent traffic through the tunnel."
+  "vpn_hero_sub": "Import your VPN provider's config and connect to route torrent traffic through the tunnel.",
+  "set_vpn_split": "Split tunnel",
+  "set_vpn_split_note": "Only BATorrent's traffic uses the VPN — everything else stays on your normal connection. Tracker name lookups use system DNS. Applies on the next connect.",
+  "set_vpn_autoconnect": "Connect on launch",
+  "set_vpn_autoconnect_note": "Reconnects the last used profile when BATorrent starts (asks for admin rights)."
 }

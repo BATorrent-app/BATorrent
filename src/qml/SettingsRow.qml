@@ -158,10 +158,13 @@ ColumnLayout {
             id: vpnCol
             width: rowRoot.width
             spacing: 10
-            function activeProfileName() {
+            function activeProfileLabel() {
                 if (typeof vpn === "undefined") return ""
                 for (var i = 0; i < vpn.profiles.length; ++i)
-                    if (vpn.profiles[i].id === vpn.activeProfileId) return vpn.profiles[i].name
+                    if (vpn.profiles[i].id === vpn.activeProfileId) {
+                        var p = vpn.profiles[i]
+                        return p.endpoint && p.endpoint.length ? p.name + "  ·  " + p.endpoint : p.name
+                    }
                 return ""
             }
 
@@ -215,7 +218,7 @@ ColumnLayout {
                             }
                             Text {
                                 Layout.fillWidth: true
-                                text: hero.on ? (vpn.activeProfileId, vpnCol.activeProfileName())
+                                text: hero.on ? (vpn.activeProfileId, vpnCol.activeProfileLabel())
                                               : (i18n.language, i18n.t("vpn_hero_sub"))
                                 color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans
                                 wrapMode: Text.WordWrap; elide: Text.ElideRight
@@ -265,8 +268,14 @@ ColumnLayout {
                     implicitHeight: 42; radius: 8; color: Theme.field; border.color: Theme.hair; border.width: 1
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 10; spacing: 8
-                        Text { text: modelData.name; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
-                            Layout.fillWidth: true; elide: Text.ElideRight }
+                        ColumnLayout {
+                            Layout.fillWidth: true; spacing: 1
+                            Text { text: modelData.name; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
+                                Layout.fillWidth: true; elide: Text.ElideRight }
+                            Text { visible: !!modelData.endpoint; text: modelData.endpoint || ""
+                                color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans
+                                Layout.fillWidth: true; elide: Text.ElideRight }
+                        }
                         BtnFlat {
                             sm: true
                             readonly property bool active: typeof vpn !== "undefined" && vpn.activeProfileId === modelData.id

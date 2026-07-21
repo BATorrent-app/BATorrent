@@ -1174,5 +1174,9 @@
   "missing_recover_msg": "Los archivos de esta descarga ya no están en el disco. Indica dónde están o vuelve a descargar.",
   "vpn_hero_protected": "Protegido",
   "vpn_hero_exposed": "Sin protección",
-  "vpn_hero_sub": "Importa la configuración de tu proveedor de VPN y conéctate para enrutar el tráfico por el túnel."
+  "vpn_hero_sub": "Importa la configuración de tu proveedor de VPN y conéctate para enrutar el tráfico por el túnel.",
+  "set_vpn_split": "Túnel dividido",
+  "set_vpn_split_note": "Solo el tráfico de BATorrent usa la VPN — el resto del sistema sigue en tu conexión normal. La resolución de nombres de los trackers usa el DNS del sistema. Se aplica en la próxima conexión.",
+  "set_vpn_autoconnect": "Conectar al iniciar",
+  "set_vpn_autoconnect_note": "Reconecta el último perfil usado cuando BATorrent arranca (pide permisos de administrador)."
 }

@@ -265,7 +265,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
         QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude"),
         QStringLiteral("autoplayNext"), QStringLiteral("preferNativeLang"),
-        QStringLiteral("gameAutoInstall"), QStringLiteral("blockBadPeers")
+        QStringLiteral("gameAutoInstall"), QStringLiteral("blockBadPeers"),
+        QStringLiteral("vpnSplitTunnel"), QStringLiteral("vpnAutoConnect")
     };
     if (uiBoolKeys.contains(key)) {
         QSettings st;

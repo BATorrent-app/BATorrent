@@ -1174,5 +1174,9 @@
   "missing_recover_msg": "Bu indirmenin dosyaları artık diskte yok. Nerede olduklarını gösterin ya da yeniden indirin.",
   "vpn_hero_protected": "Korunuyor",
   "vpn_hero_exposed": "Korunmuyor",
-  "vpn_hero_sub": "VPN sağlayıcınızın yapılandırmasını içe aktarın ve torrent trafiğini tünelden geçirmek için bağlanın."
+  "vpn_hero_sub": "VPN sağlayıcınızın yapılandırmasını içe aktarın ve torrent trafiğini tünelden geçirmek için bağlanın.",
+  "set_vpn_split": "Bölünmüş tünel",
+  "set_vpn_split_note": "Yalnızca BATorrent trafiği VPN'i kullanır — sistemin geri kalanı normal bağlantıda kalır. Tracker ad çözümlemesi sistem DNS'ini kullanır. Bir sonraki bağlantıda geçerli olur.",
+  "set_vpn_autoconnect": "Başlangıçta bağlan",
+  "set_vpn_autoconnect_note": "BATorrent açıldığında son kullanılan profile yeniden bağlanır (yönetici izni ister)."
 }

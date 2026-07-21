@@ -47,6 +47,8 @@ public:
 
     Q_INVOKABLE void connectProfile(const QString &id);
     Q_INVOKABLE void disconnectVpn();
+    // Reconnect the last-used profile (the "connect on launch" toggle).
+    Q_INVOKABLE void connectLastUsed();
 
     State state() const { return m_state; }
     int stateInt() const { return int(m_state); }
@@ -59,16 +61,19 @@ signals:
     void stateChanged();
     void profilesChanged();
     void interfaceUp(const QString &iface);    // connected → bind torrent traffic here
-    void interfaceDown();
+    // deliberate = the user disconnected; false = the tunnel failed/dropped.
+    // main() uses this to fail closed on drops when the kill switch is on.
+    void interfaceDown(bool deliberate);
 
 private:
-    struct Profile { QString id; QString name; };
+    struct Profile { QString id; QString name; QString endpoint; };
 
     void setState(State s);
     void load();
     void saveIndex() const;
     QString vpnDir() const;
     QString confPath(const QString &id) const;
+    QString splitConfPath(const QString &id) const;
     int indexOf(const QString &id) const;
 
     QVector<Profile> m_profiles;
@@ -77,6 +82,7 @@ private:
     QString m_activeId;
     QString m_iface;
     QString m_error;
+    bool m_userDown = false;
 };
 
 #endif

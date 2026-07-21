@@ -139,6 +139,40 @@ inline WgConfig parseWireguardConfig(const QString &text)
     return cfg;
 }
 
+// Split-tunnel variant of a config. `Table = off` stops wg-quick / the Windows
+// client from installing the default route, so only sockets explicitly bound to
+// the tunnel interface (the torrent session) go through the VPN. DNS lines are
+// dropped too — the provider's resolver sits inside the tunnel and is
+// unreachable without that route, and a half-set system DNS would break name
+// resolution for everything else.
+inline QString splitTunnelConf(const QString &text)
+{
+    QStringList out;
+    bool inInterface = false;
+    for (const QString &raw : text.split(QLatin1Char('\n'))) {
+        QString line = raw;
+        const int hash = line.indexOf(QLatin1Char('#'));
+        if (hash >= 0) line = line.left(hash);
+        line = line.trimmed();
+
+        if (line.startsWith(QLatin1Char('[')) && line.endsWith(QLatin1Char(']'))) {
+            inInterface = line.mid(1, line.size() - 2).trimmed().toLower()
+                          == QLatin1String("interface");
+            out << raw;
+            if (inInterface) out << QStringLiteral("Table = off");
+            continue;
+        }
+        if (inInterface) {
+            const int eq = line.indexOf(QLatin1Char('='));
+            const QString key = eq >= 0 ? line.left(eq).trimmed().toLower() : QString();
+            if (key == QLatin1String("dns") || key == QLatin1String("table"))
+                continue;
+        }
+        out << raw;
+    }
+    return out.join(QLatin1Char('\n'));
+}
+
 } // namespace bat
 
 #endif
