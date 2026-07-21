@@ -183,6 +183,21 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         }
         return hasVideo && !hasExe;
     }
+    case YearRole: {
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            auto meta = m_resolver->cached(hash);
+            if (meta.valid) return meta.year;
+        }
+        return 0;
+    }
+    case GenresRole: {
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            auto meta = m_resolver->cached(hash);
+            if (meta.valid && !meta.genres.isEmpty())
+                return QStringList(meta.genres.mid(0, 2)).join(QStringLiteral(", "));
+        }
+        return QString();
+    }
     }
     return {};
 }
@@ -211,7 +226,9 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {AvailabilityRole, "availability"},
         {EtaRole,         "eta"},
         {DownloadedRole,  "downloaded"},
-        {PlayableRole,    "playable"}
+        {PlayableRole,    "playable"},
+        {YearRole,        "year"},
+        {GenresRole,      "genres"}
     };
 }
 
@@ -276,7 +293,8 @@ void QmlPosterModel::posterResolved(const QString &hash)
 {
     for (int row = 0; row < m_lastCount; ++row) {
         if (m_session->torrentHashAt(row) == hash) {
-            emit dataChanged(index(row), index(row), {PosterPathRole, MetaTitleRole});
+            emit dataChanged(index(row), index(row),
+                             {PosterPathRole, MetaTitleRole, YearRole, GenresRole});
             return;
         }
     }

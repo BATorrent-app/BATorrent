@@ -485,6 +485,9 @@ void QmlSessionBridge::refreshAll()
     for (int i = 0; i < n; ++i)
         m_session->forceReannounce(i);
     emitStats();
+    // Re-emit every role now so speed/ETA/status visibly repaint on the spot,
+    // instead of the user waiting for the next periodic tick to see any change.
+    emit queueRefreshNeeded();
     emit toast(tr_("toast_refreshed"), QString());
 }
 

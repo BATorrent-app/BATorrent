@@ -30,11 +30,22 @@ Item {
     required property string infoHash
     required property bool playable
     required property string downloaded
+    required property int year
+    required property string genres
 
     readonly property bool isDownloading: stateKey !== "seeding" && stateKey !== "finished"
         && stateKey !== "completed" && stateKey !== "paused" && stateKey !== "queued"
     readonly property int etaSec: (downRate > 0 && progress < 1.0 && sizeBytes > 0)
         ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
+
+    // states that carry a top-right badge (DONE/SEEDING/QUEUE) — for those the
+    // status word below the poster is redundant, so we show movie info instead.
+    readonly property bool hasBadge: stateKey === "seeding" || stateKey === "queued"
+        || progress >= 0.999
+    // "2021 · Action, Horror" — release year + genres from TMDB, whichever exist
+    readonly property string metaLine: (year > 0 && genres.length > 0)
+        ? (year + " · " + genres)
+        : (year > 0 ? String(year) : genres)
 
     readonly property string posterUrl: win.fileUrl(posterPath)
 
@@ -266,9 +277,10 @@ Item {
             }
         }
 
-        // download % (top-right) — hidden once complete; tint follows state
+        // download % (top-right) — hidden once complete or while queued (the
+        // QUEUE badge owns that corner then); tint follows state
         Rectangle {
-            visible: tile.progress < 0.999
+            visible: tile.progress < 0.999 && tile.stateKey !== "queued"
             anchors.right: parent.right; anchors.top: parent.top
             anchors.rightMargin: 8; anchors.topMargin: 8
             radius: 9; color: "#cc000000"
@@ -307,9 +319,10 @@ Item {
                 }
             }
         }
-        // seeding badge (top-right) — same pill, a green up-arrow ring: marks the
+        // seeding badge (top-right) — same pill, a gold up-arrow ring: marks the
         // torrents that are actively uploading, distinct from a finished-idle DONE
-        // (tester request). Green stays an outline glyph, not a surface.
+        // (tester request). Gold matches the seeding pulse + the ↑ arrow; it stays
+        // an outline glyph, not a surface. Green is reserved for DONE.
         Rectangle {
             visible: tile.stateKey === "seeding"
             anchors.right: parent.right; anchors.top: parent.top
@@ -320,12 +333,36 @@ Item {
                 id: seedRow; anchors.centerIn: parent; spacing: 4
                 Rectangle {
                     width: 13; height: 13; radius: 6.5
-                    color: "transparent"; border.color: Theme.grn; border.width: 1.5
+                    color: "transparent"; border.color: Theme.amber; border.width: 1.5
                     anchors.verticalCenter: parent.verticalCenter
-                    Text { anchors.centerIn: parent; text: "↑"; color: Theme.grn; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans }
+                    Text { anchors.centerIn: parent; text: "↑"; color: Theme.amber; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans }
                 }
                 Text {
                     text: (i18n.language, i18n.t("state_seeding"))
+                    color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
+                    font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+        }
+        // queue badge (top-right) — a muted hollow ring: this torrent is waiting
+        // its turn (queued), distinct from an active download's % pill.
+        Rectangle {
+            visible: tile.stateKey === "queued"
+            anchors.right: parent.right; anchors.top: parent.top
+            anchors.rightMargin: 8; anchors.topMargin: 8
+            radius: 9; color: "#cc000000"
+            implicitWidth: queueRow.implicitWidth + 14; implicitHeight: 18
+            Row {
+                id: queueRow; anchors.centerIn: parent; spacing: 4
+                Rectangle {
+                    width: 13; height: 13; radius: 6.5
+                    color: "transparent"; border.color: Theme.t4; border.width: 1.5
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text { anchors.centerIn: parent; text: "⋯"; color: Theme.t4; font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans }
+                }
+                Text {
+                    text: (i18n.language, i18n.t("state_queued"))
                     color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
                     font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
                     anchors.verticalCenter: parent.verticalCenter
@@ -380,8 +417,11 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     // stalled reads amber (dot + text); the full reason is on hover —
-                    // the grid card is too narrow to show it inline without clipping
+                    // the grid card is too narrow to show it inline without clipping.
+                    // When a badge already carries the status (done/seeding/queued),
+                    // this slot shows movie info (year · genres) instead of repeating it.
                     text: tile.isDownloading ? ("↓ " + tile.downSpeed)
+                          : (tile.hasBadge && tile.metaLine.length > 0) ? tile.metaLine
                           : (tile.stateKey === "seeding"
                              ? ((i18n.language, i18n.t("state_seeding")) + " · ↑ " + tile.upSpeed)
                              // the DONE badge already says the download finished —
@@ -390,7 +430,9 @@ Item {
                              : (tile.progress >= 0.999 && tile.stateKey === "paused")
                              ? (i18n.language, i18n.t("state_paused"))
                              : tile.stateString)
-                    color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.textFor(tile.stateKey)
+                    color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber
+                           : (tile.hasBadge && tile.metaLine.length > 0) ? Theme.t4
+                           : win.textFor(tile.stateKey)
                     font.pixelSize: 12; font.family: Theme.fontSans
                     // elide needs an explicit width — without it a long state
                     // ("Download finished — seeding paused") overlapped the size
