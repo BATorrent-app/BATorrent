@@ -33,7 +33,9 @@ public:
         AvailabilityRole,
         EtaRole,
         DownloadedRole,     // formatted total_wanted_done ("107 MB of 6.4 GB" cards)
-        PlayableRole        // a video torrent with no .exe → offer in-tile Play
+        PlayableRole,       // a video torrent with no .exe → offer in-tile Play
+        YearRole,           // TMDB release year (0 if unknown) — poster subtitle
+        GenresRole          // top genres, ", "-joined (empty if unknown)
     };
 
     explicit QmlPosterModel(IEngine *session, MetadataResolver *resolver,
