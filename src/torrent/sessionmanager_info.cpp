@@ -144,6 +144,7 @@ void SessionManager::setSequentialDownload(int index, bool sequential)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
+    if (!m_torrents[index].is_valid()) return;   // set_flags throws on an invalid handle
     if (sequential)
         m_torrents[index].set_flags(lt::torrent_flags::sequential_download);
     else

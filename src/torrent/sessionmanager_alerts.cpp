@@ -379,8 +379,24 @@ void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
     if (auto mit = m_magnetHashes.find(mr->handle); mit != m_magnetHashes.end()) {
         const QString best = QString::fromStdString(
             (std::ostringstream() << mr->handle.status().info_hashes.get_best()).str());
-        if (best != mit->second)
-            QFile::remove(QDir(resumeDataDir()).filePath(mit->second + ".resume"));
+        if (best != mit->second) {
+            const QString oldHash = mit->second;
+            QFile::remove(QDir(resumeDataDir()).filePath(oldHash + ".resume"));
+            // Every add-time map is keyed by the URI's v1 hash; from here the
+            // torrent is known by get_best() (v2). Rekey them or the completion
+            // path looks up the v2 hash, misses, and (e.g.) never moves the
+            // finished data out of the temp dir to the chosen save path.
+            auto rekey = [&](auto &map) {
+                if (auto v = map.find(oldHash); v != map.end()) {
+                    map[best] = v.value();
+                    map.erase(v);
+                }
+            };
+            rekey(m_torrentIntendedPath);
+            rekey(m_coverHints);
+            rekey(m_perTorrentStopAfter);
+            mit->second = best;
+        }
     }
     stageResumeSave(mr->handle);   // persist the magnet now it has metadata
     scanTorrentForThreats(mr->handle, QString::fromStdString(mr->handle.status().name));

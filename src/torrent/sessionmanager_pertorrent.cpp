@@ -56,6 +56,7 @@ void SessionManager::stopSeedingTorrent(int index)
 {
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
+    if (!m_torrents[index].is_valid()) return;   // pause() throws on an expired handle
     m_torrents[index].pause();
 }
 

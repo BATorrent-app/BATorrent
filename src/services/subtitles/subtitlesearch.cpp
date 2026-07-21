@@ -32,12 +32,19 @@ QByteArray inflateRaw(const char *src, int n, int hint)
     s.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(src));
     s.avail_in = static_cast<uInt>(n);
     QByteArray out;
-    // a garbage central-directory size mustn't drive a huge allocation
-    const int start = (hint > 0 && hint < 64 * 1024 * 1024) ? hint : qMax(n * 4, 16384);
+    // a garbage central-directory size mustn't drive a huge allocation, and the
+    // stream itself mustn't inflate past any sane subtitle size (deflate bombs
+    // reach ~1032:1 — mirror blocklistupdater's cap; an .srt is a few MB at most)
+    constexpr qsizetype kMaxOut = 16 * 1024 * 1024;
+    int start = (hint > 0 && hint < 64 * 1024 * 1024) ? hint : qMax(n * 4, 16384);
+    if (start > kMaxOut) start = kMaxOut;   // don't front-load a bogus huge size
     out.resize(start);
     int ret;
     do {
-        if (s.total_out >= static_cast<uLong>(out.size())) out.resize(out.size() * 2);
+        if (s.total_out >= static_cast<uLong>(out.size())) {
+            if (out.size() >= kMaxOut) { inflateEnd(&s); return {}; }
+            out.resize(out.size() * 2);
+        }
         s.next_out = reinterpret_cast<Bytef *>(out.data() + s.total_out);
         s.avail_out = static_cast<uInt>(out.size() - s.total_out);
         ret = inflate(&s, Z_NO_FLUSH);

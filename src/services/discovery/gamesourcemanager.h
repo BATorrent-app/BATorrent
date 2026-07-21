@@ -65,6 +65,9 @@ private:
     QList<QPair<QString, QString>> m_sources;
     QNetworkAccessManager m_net;
     int m_pending = 0;
+    // bumped on every refresh() so replies from a superseded refresh are dropped
+    // instead of indexing into the fresh list + double-decrementing m_pending
+    int m_generation = 0;
 };
 
 #endif // GAMESOURCEMANAGER_H
