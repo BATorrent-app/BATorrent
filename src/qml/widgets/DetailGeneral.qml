@@ -70,7 +70,7 @@ Flickable {
                     Layout.preferredHeight: 28
                     Layout.preferredWidth: locTxt.implicitWidth + 22
                     radius: 7
-                    color: locMa.containsMouse ? Theme.hover : Theme.card
+                    color: locMa.containsMouse ? Theme.hover : Theme.elev
                     border.color: Theme.hair; border.width: 1
                     Text { id: locTxt; anchors.centerIn: parent; text: (i18n.language, i18n.t("ctx_move_storage")); color: Theme.t1; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                     MouseArea { id: locMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: gen.win.promptSetLocation() }
