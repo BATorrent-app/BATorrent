@@ -35,6 +35,7 @@ Item {
 
     readonly property bool isDownloading: stateKey !== "seeding" && stateKey !== "finished"
         && stateKey !== "completed" && stateKey !== "paused" && stateKey !== "queued"
+        && stateKey !== "missing"
     readonly property int etaSec: (downRate > 0 && progress < 1.0 && sizeBytes > 0)
         ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
 

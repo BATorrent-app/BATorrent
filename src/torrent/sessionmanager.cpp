@@ -15,6 +15,7 @@
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
 #include <libtorrent/magnet_uri.hpp>
+#include <boost/system/error_code.hpp>   // errc for the files-missing check
 #include <libtorrent/create_torrent.hpp>
 #include <libtorrent/bencode.hpp>
 #include <libtorrent/write_resume_data.hpp>
@@ -853,6 +854,19 @@ TorrentInfo SessionManager::torrentAt(int index) const
     } else {
         info.downloadRate = st.download_rate;
         info.uploadRate = st.upload_rate;
+    }
+
+    // Data deleted/moved out from under a live torrent: libtorrent errors on the
+    // missing path (ENOENT). Surface it as a distinct, actionable state instead of
+    // a torrent that silently reads as complete/seeding while the files are gone
+    // (tester: a movie sat inactive with no explanation after a manual delete). The
+    // errc == enum compare is category-aware, so it matches on every platform.
+    if (st.errc == boost::system::errc::no_such_file_or_directory) {
+        info.filesMissing = true;
+        info.stateString = tr_("state_files_missing");
+        info.stateDetail = tr_("state_files_missing");
+        info.downloadRate = 0;
+        info.uploadRate = 0;
     }
 
     // qBittorrent's most-repeated complaint is a silent "stalled" — name the

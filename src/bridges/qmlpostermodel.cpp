@@ -114,6 +114,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     switch (role) {
     case NameRole:       return info.name;
     case StateKeyRole: {
+        if (info.filesMissing) return QStringLiteral("missing");
         if (info.completed) return QStringLiteral("completed");
         if (info.queued) return QStringLiteral("queued");
         if (info.paused) return QStringLiteral("paused");

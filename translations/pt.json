@@ -1169,5 +1169,6 @@
   "star_ask_action": "Dar estrela no GitHub",
   "about_star": "Dar estrela no GitHub",
   "set_block_bad_peers": "Bloquear peers maliciosos conhecidos",
-  "set_block_bad_peers_note": "Baixa e mantém atualizada uma lista de IPs reputável, descartando conexões com endereços sinalizados antes do handshake — reduz as conexões que disparam avisos de antivírus."
+  "set_block_bad_peers_note": "Baixa e mantém atualizada uma lista de IPs reputável, descartando conexões com endereços sinalizados antes do handshake — reduz as conexões que disparam avisos de antivírus.",
+  "state_files_missing": "Arquivos ausentes"
 }
