@@ -161,6 +161,7 @@ QtObject {
             { type: "button", action: "proxyMullvad", label: (i18n.language, i18n.t("set_proxy_presets")), btn: "Mullvad SOCKS5", note: (i18n.language, i18n.t("set_proxy_presets_note")) },
             { type: "button", action: "proxyLeakTest", label: (i18n.language, i18n.t("set_proxy_leaktest")), btn: (i18n.language, i18n.t("set_proxy_leaktest_btn")), note: (i18n.language, i18n.t("set_proxy_leaktest_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_ip_filter")) },
+            { type: "toggle", key: "blockBadPeers", on: false, label: (i18n.language, i18n.t("set_block_bad_peers")), note: (i18n.language, i18n.t("set_block_bad_peers_note")) },
             { type: "path", key: "ipFilterPath", file: true, label: (i18n.language, i18n.t("set_blocklist_file")), placeholder: (i18n.language, i18n.t("settings_ip_filter_hint")), note: (i18n.language, i18n.t("set_blocklist_note")) }
         ],
         // 5 WebUI

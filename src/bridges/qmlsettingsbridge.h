@@ -50,6 +50,7 @@ public:
     void setTelegramNotifier(TelegramNotifier *n) { m_telegram = n; }
 signals:
     void changed();
+    void blockBadPeersToggled(bool on);   // main.cpp drives the blocklist fetch/apply
     void telegramTestResult(bool ok, const QString &message);
     void proxyLeakTestResult(bool ok, const QString &message);
 private:

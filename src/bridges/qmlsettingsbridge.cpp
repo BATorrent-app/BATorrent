@@ -265,7 +265,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
         QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude"),
         QStringLiteral("autoplayNext"), QStringLiteral("preferNativeLang"),
-        QStringLiteral("gameAutoInstall")
+        QStringLiteral("gameAutoInstall"), QStringLiteral("blockBadPeers")
     };
     if (uiBoolKeys.contains(key)) {
         QSettings st;
@@ -345,6 +345,13 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     }
     if (key == "plexToken" || key == "jellyfinApiKey") {   // → keychain (empty clears)
         SecretStore::instance().set(key, v.toString());
+        emit changed(); return;
+    }
+    // "Block known bad peers": download/refresh + apply the auto blocklist, or clear
+    // it. The actual fetch is owned by main.cpp (needs QNAM + the engine).
+    if (key == "blockBadPeers") {
+        QSettings().setValue(key, v.toBool());
+        emit blockBadPeersToggled(v.toBool());
         emit changed(); return;
     }
     if (key == "useTor") {   // one-toggle Tor preset: route through 127.0.0.1:9050 SOCKS5

@@ -1616,7 +1616,8 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
     else if (key == "proxyUser")           setProxySettings(proxyType(), proxyHost(), proxyPort(), v.toString(), proxyPass());
     else if (key == "proxyPass")           setProxySettings(proxyType(), proxyHost(), proxyPort(), proxyUser(), v.toString());
     else if (key == "proxyLeakProof")      setProxyLeakProof(v.toBool());
-    else if (key == "ipFilterPath")        { QString p = v.toString(); if (p.isEmpty()) clearIpFilter(); else loadIpFilter(p); }
+    else if (key == "ipFilterPath")        loadIpFilter(v.toString());
+    else if (key == "autoBlocklistFile")   loadAutoBlocklist(v.toString());
     else if (key == "tempPath")            setTempPath(v.toString());
     else if (key == "preallocate")         setPreallocate(v.toBool());
     else if (key == "autoRecheck")         setAutoRecheck(v.toBool());

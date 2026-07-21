@@ -1167,5 +1167,7 @@
   "set_rd_account": "アカウント",
   "set_rd_token_ph": "API キーを貼り付け",
   "set_rd_connect": "接続",
-  "set_rd_disconnect": "切断"
+  "set_rd_disconnect": "切断",
+  "set_block_bad_peers": "既知の危険なピアをブロック",
+  "set_block_bad_peers_note": "信頼できるIPブロックリストをダウンロードして更新し、ハンドシェイク前に該当アドレスへの接続を遮断します。ウイルス対策の警告を引き起こす接続を減らします。"
 }
