@@ -1108,6 +1108,7 @@ Window {
                     showDownloadChip: win.showDownloadChip
                     onPageRequested: function(page) { win.currentPage = page }
                     onSettingsClicked: win.currentPage = 3
+                    onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }
                     onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
                     onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
                 }
