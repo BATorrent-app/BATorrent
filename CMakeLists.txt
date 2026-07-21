@@ -99,6 +99,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/vpn/wgtunnel_mac.cpp
     src/services/vpn/wgtunnel_win.h        # Windows tunnel (compiles empty off Windows)
     src/services/vpn/wgtunnel_win.cpp
+    src/services/vpn/wgtunnel_linux.h      # Linux tunnel (compiles empty off Linux)
+    src/services/vpn/wgtunnel_linux.cpp
     src/services/vpn/vpnmanager.h
     src/services/vpn/vpnmanager.cpp
     src/services/discovery/discoveryservice.cpp
