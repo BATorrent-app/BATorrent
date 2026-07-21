@@ -45,6 +45,7 @@
 #include "torrent/sessionmanager.h"
 #include "services/downloads/httpdownloadmanager.h"
 #include "services/downloads/httpmergeengine.h"
+#include "services/vpn/vpnmanager.h"
 #include "ipc/enginehost.h"
 #include "ipc/ipcengine.h"
 #include <QCoreApplication>
@@ -427,6 +428,15 @@ int main(int argc, char *argv[])
         auto *httpDownloads = new HttpDownloadManager(&app);
         IEngine *eng = new HttpMergeEngine(baseEng, httpDownloads, &app);
 
+        // Integrated VPN (import a WireGuard config, connect through it). Stub
+        // tunnel for now — the real wireguard-go bring-up plugs in later. Split-
+        // tunnel: once a REAL tunnel is up, bind the torrent session to its
+        // interface (the stub never binds, so it can't break connectivity).
+        auto *vpnManager = new VpnManager(nullptr, &app);
+        QObject::connect(vpnManager, &VpnManager::interfaceUp, &app, [vpnManager, eng](const QString &iface) {
+            if (vpnManager->tunnelIsReal()) eng->applySetting(QStringLiteral("outgoingInterface"), iface);
+        });
+
         auto *resolver = new MetadataResolver(&app);
         auto *posterModel = new QmlPosterModel(eng, resolver, &app);
         auto *themeBridge = new QmlThemeBridge(&app);
@@ -685,6 +695,7 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("i18n", i18nBridge);
 #ifndef BAT_STORE_BUILD
         engine.rootContext()->setContextProperty("updater", updaterBridge);
+        engine.rootContext()->setContextProperty("vpn", vpnManager);
 #else
         engine.rootContext()->setContextProperty("updater", nullptr);
 #endif

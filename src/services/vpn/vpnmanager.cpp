@@ -6,6 +6,8 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
+#include <QUrl>
 #include <QSaveFile>
 #include <QFileDevice>
 #include <QStandardPaths>
@@ -86,6 +88,18 @@ QString VpnManager::importConfig(const QString &name, const QString &confText)
     saveIndex();
     emit profilesChanged();
     return id;
+}
+
+QString VpnManager::importFromFile(const QString &fileUrlOrPath, const QString &name)
+{
+    QString path = fileUrlOrPath;
+    if (path.startsWith(QStringLiteral("file:")))
+        path = QUrl(path).toLocalFile();
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) { m_error = QStringLiteral("cannot read ") + path; return QString(); }
+    const QString providedName = name.trimmed().isEmpty()
+        ? QFileInfo(path).completeBaseName() : name;
+    return importConfig(providedName, QString::fromUtf8(f.readAll()));
 }
 
 void VpnManager::removeProfile(const QString &id)

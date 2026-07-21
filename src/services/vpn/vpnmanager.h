@@ -21,6 +21,13 @@
 class VpnManager : public QObject
 {
     Q_OBJECT
+    // --- QML surface (exposed as the `vpn` context property) ---
+    Q_PROPERTY(QVariantList profiles READ profiles NOTIFY profilesChanged)
+    Q_PROPERTY(int connState READ stateInt NOTIFY stateChanged)          // State as int
+    Q_PROPERTY(QString activeProfileId READ activeProfileId NOTIFY stateChanged)
+    Q_PROPERTY(QString connectedInterface READ connectedInterface NOTIFY stateChanged)
+    Q_PROPERTY(QString lastError READ lastError NOTIFY stateChanged)
+    Q_PROPERTY(bool tunnelReal READ tunnelIsReal CONSTANT)
 public:
     enum class State { Disconnected, Connecting, Connected, Failed };
     Q_ENUM(State)
@@ -31,15 +38,18 @@ public:
 
     // Validate + store a config. Returns the new profile id, or "" on a bad
     // config (reason in lastError()).
-    QString importConfig(const QString &name, const QString &confText);
-    void removeProfile(const QString &id);
+    Q_INVOKABLE QString importConfig(const QString &name, const QString &confText);
+    // Read a .conf from a path or file: URL, then importConfig it.
+    Q_INVOKABLE QString importFromFile(const QString &fileUrlOrPath, const QString &name);
+    Q_INVOKABLE void removeProfile(const QString &id);
     QVariantList profiles() const;             // [{ id, name }] for QML
     int profileCount() const { return int(m_profiles.size()); }
 
-    void connectProfile(const QString &id);
-    void disconnectVpn();
+    Q_INVOKABLE void connectProfile(const QString &id);
+    Q_INVOKABLE void disconnectVpn();
 
     State state() const { return m_state; }
+    int stateInt() const { return int(m_state); }
     QString activeProfileId() const { return m_activeId; }
     QString connectedInterface() const { return m_iface; }
     QString lastError() const { return m_error; }
