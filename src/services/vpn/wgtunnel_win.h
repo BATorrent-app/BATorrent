@@ -30,6 +30,7 @@ public:
     QString interfaceName() const override { return m_iface; }
     // Real only when wireguard.exe is actually present (bundled or installed).
     bool isReal() const override { return !wireguardExe().isEmpty(); }
+    bool adopt(const QString &confPath, const QString &iface) override;
 
 private:
     // wireguard.exe: bundled beside the app, else a system WireGuard install.

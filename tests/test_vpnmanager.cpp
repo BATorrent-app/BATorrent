@@ -15,6 +15,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
+#include <QNetworkInterface>
 #include <QSettings>
 #include <QTimer>
 
@@ -36,6 +37,10 @@ void freshStore()
 {
     httptest::ensureApp();
     QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/vpn").removeRecursively();
+    QSettings s;
+    for (const char *k : {"vpnSplitTunnel", "vpnLastProfileId",
+                          "vpnActiveIface", "vpnActiveConf", "vpnActiveProfile"})
+        s.remove(QLatin1String(k));
 }
 
 // Captures the conf path the manager hands to the tunnel — the seam for
@@ -47,7 +52,7 @@ public:
     void up(const QString &confPath, const bat::WgConfig &) override
     {
         lastConf = confPath;
-        m_iface = QStringLiteral("wg-test");
+        m_iface = ifaceToReport;
         QTimer::singleShot(0, this, [this]() { emit connected(m_iface); });
     }
     void down() override
@@ -59,10 +64,35 @@ public:
     bool isReal() const override { return false; }
 
     QString lastConf;
+    QString ifaceToReport = QStringLiteral("wg-test");
 
 private:
     QString m_iface;
 };
+
+// isReal → the manager persists the active-tunnel record, enabling adoption.
+class AdoptableTunnel : public RecordingTunnel
+{
+public:
+    using RecordingTunnel::RecordingTunnel;
+    bool isReal() const override { return true; }
+    bool adopt(const QString &confPath, const QString &) override
+    {
+        lastConf = confPath;
+        adopted = true;
+        return true;
+    }
+    bool adopted = false;
+};
+
+// A real, up interface on this machine (loopback usually) — adoption verifies
+// the recorded iface still exists, so the fake tunnel must report a real one.
+QString anUpInterface()
+{
+    for (const QNetworkInterface &ni : QNetworkInterface::allInterfaces())
+        if (ni.flags() & QNetworkInterface::IsUp) return ni.name();
+    return QString();
+}
 
 } // namespace
 
@@ -167,6 +197,59 @@ TEST_CASE("VpnManager: full tunnel hands the original config to the tunnel", "[v
     mgr.connectProfile(id);
     REQUIRE((upSpy.count() > 0 || upSpy.wait(3000)));
     CHECK(tunnel->lastConf.endsWith(id + ".conf"));
+}
+
+TEST_CASE("VpnManager: adopts a tunnel that outlived the previous run", "[vpn]")
+{
+    freshStore();
+    const QString realIface = anUpInterface();
+    REQUIRE(!realIface.isEmpty());
+
+    QString id;
+    {
+        auto *tunnel = new AdoptableTunnel;
+        tunnel->ifaceToReport = realIface;
+        VpnManager mgr(tunnel);
+        id = mgr.importConfig("IVPN", validConf());
+        REQUIRE(!id.isEmpty());
+        QSignalSpy upSpy(&mgr, &VpnManager::interfaceUp);
+        mgr.connectProfile(id);
+        REQUIRE((upSpy.count() > 0 || upSpy.wait(3000)));
+        // real tunnel connected → the adoptable record is persisted
+        CHECK(QSettings().value("vpnActiveIface").toString() == realIface);
+    }   // "app quits" — tunnel record stays behind
+
+    auto *tunnel = new AdoptableTunnel;
+    VpnManager restored(tunnel);
+    QSignalSpy upSpy(&restored, &VpnManager::interfaceUp);
+    restored.adoptRunningTunnel();
+    CHECK(restored.state() == VpnManager::State::Connected);
+    CHECK(restored.connectedInterface() == realIface);
+    CHECK(restored.activeProfileId() == id);
+    CHECK(tunnel->adopted);
+    CHECK(upSpy.count() == 1);
+
+    // and a disconnect after adoption clears the record
+    QSignalSpy downSpy(&restored, &VpnManager::interfaceDown);
+    restored.disconnectVpn();
+    REQUIRE((downSpy.count() > 0 || downSpy.wait(3000)));
+    CHECK(QSettings().value("vpnActiveIface").toString().isEmpty());
+}
+
+TEST_CASE("VpnManager: a dead recorded tunnel is not adopted and the record is dropped", "[vpn]")
+{
+    freshStore();
+    QSettings s;
+    s.setValue("vpnActiveIface", "wg-gone0");
+    s.setValue("vpnActiveConf", "/nonexistent/conf");
+    s.setValue("vpnActiveProfile", "nope");
+
+    auto *tunnel = new AdoptableTunnel;
+    VpnManager mgr(tunnel);
+    mgr.adoptRunningTunnel();
+    CHECK(mgr.state() == VpnManager::State::Disconnected);
+    CHECK_FALSE(tunnel->adopted);
+    CHECK(QSettings().value("vpnActiveIface").toString().isEmpty());
 }
 
 TEST_CASE("VpnManager: interfaceDown reports whether the user asked for it", "[vpn]")

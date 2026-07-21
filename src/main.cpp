@@ -454,9 +454,12 @@ int main(int argc, char *argv[])
                               s.value(QStringLiteral("preVpnInterface")).toString());
             s.remove(QStringLiteral("preVpnInterface"));
         });
-        {
-            // App quit (or crashed) while the VPN was connected: the persisted
-            // binding points at a tunnel interface that no longer exists. With
+        // The tunnel outlives the process on every OS — re-attach to one a
+        // previous run left up (re-emits interfaceUp → rebinds the engine).
+        vpnManager->adoptRunningTunnel();
+        if (vpnManager->state() != VpnManager::State::Connected) {
+            // App quit (or crashed) while the VPN was connected and the tunnel
+            // is gone: the persisted binding points at a dead interface. With
             // the kill switch off, restore the pre-VPN binding so torrents
             // aren't silently dead; with it on, stay bound = stay failed-closed.
             QSettings s;

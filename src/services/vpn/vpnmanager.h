@@ -49,6 +49,10 @@ public:
     Q_INVOKABLE void disconnectVpn();
     // Reconnect the last-used profile (the "connect on launch" toggle).
     Q_INVOKABLE void connectLastUsed();
+    // Tunnels outlive the process; if the one we brought up last run is still
+    // alive, re-attach to it (state → Connected, interfaceUp re-emitted). Call
+    // AFTER wiring the signals — it emits through them.
+    void adoptRunningTunnel();
 
     State state() const { return m_state; }
     int stateInt() const { return int(m_state); }
@@ -71,6 +75,8 @@ private:
     void setState(State s);
     void load();
     void saveIndex() const;
+    void saveActiveTunnel(const QString &iface) const;
+    void clearActiveTunnel() const;
     QString vpnDir() const;
     QString confPath(const QString &id) const;
     QString splitConfPath(const QString &id) const;
@@ -82,6 +88,7 @@ private:
     QString m_activeId;
     QString m_iface;
     QString m_error;
+    QString m_lastTunnelConf;   // the conf handed to the tunnel (split copy or original)
     bool m_userDown = false;
 };
 

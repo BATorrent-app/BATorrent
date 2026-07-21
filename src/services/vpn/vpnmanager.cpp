@@ -14,6 +14,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QNetworkInterface>
 #include <QSettings>
 #include <QUuid>
 
@@ -23,14 +24,21 @@ VpnManager::VpnManager(WgTunnel *tunnel, QObject *parent)
     if (m_tunnel->parent() != this) m_tunnel->setParent(this);
 
     connect(m_tunnel, &WgTunnel::connected, this, [this](const QString &iface) {
-        if (m_state != State::Connecting) return;   // stale (disconnected mid-connect)
+        if (m_state != State::Connecting) {
+            // Stale: the user cancelled mid-connect but the bring-up finished
+            // anyway — tear it down or it lingers invisibly rerouting traffic.
+            m_tunnel->down();
+            return;
+        }
         m_iface = iface;
         setState(State::Connected);
+        saveActiveTunnel(iface);
         emit interfaceUp(iface);
     });
     connect(m_tunnel, &WgTunnel::disconnected, this, [this]() {
         m_iface.clear();
         setState(State::Disconnected);
+        clearActiveTunnel();
         const bool deliberate = m_userDown;
         m_userDown = false;
         emit interfaceDown(deliberate);
@@ -39,6 +47,7 @@ VpnManager::VpnManager(WgTunnel *tunnel, QObject *parent)
         m_error = why;
         m_iface.clear();
         setState(State::Failed);
+        clearActiveTunnel();
         m_userDown = false;
         emit interfaceDown(false);
     });
@@ -167,6 +176,7 @@ void VpnManager::connectProfile(const QString &id)
 
     m_activeId = id;
     m_error.clear();
+    m_lastTunnelConf = tunnelConf;
     QSettings().setValue(QStringLiteral("vpnLastProfileId"), id);
     setState(State::Connecting);
     m_tunnel->up(tunnelConf, cfg);
@@ -176,6 +186,57 @@ void VpnManager::connectLastUsed()
 {
     const QString id = QSettings().value(QStringLiteral("vpnLastProfileId")).toString();
     if (!id.isEmpty() && indexOf(id) >= 0) connectProfile(id);
+}
+
+// The active-tunnel record (iface + conf + profile) is what makes a tunnel
+// that outlived a previous app run adoptable. Real tunnels only — the stub
+// dies with the process.
+void VpnManager::saveActiveTunnel(const QString &iface) const
+{
+    if (!m_tunnel->isReal()) return;
+    QSettings s;
+    s.setValue(QStringLiteral("vpnActiveIface"), iface);
+    s.setValue(QStringLiteral("vpnActiveConf"), m_lastTunnelConf);
+    s.setValue(QStringLiteral("vpnActiveProfile"), m_activeId);
+}
+
+void VpnManager::clearActiveTunnel() const
+{
+    if (!m_tunnel->isReal()) return;
+    QSettings s;
+    s.remove(QStringLiteral("vpnActiveIface"));
+    s.remove(QStringLiteral("vpnActiveConf"));
+    s.remove(QStringLiteral("vpnActiveProfile"));
+}
+
+void VpnManager::adoptRunningTunnel()
+{
+    QSettings s;
+    const QString iface = s.value(QStringLiteral("vpnActiveIface")).toString();
+    if (iface.isEmpty()) return;
+    const QString conf = s.value(QStringLiteral("vpnActiveConf")).toString();
+    const QString profile = s.value(QStringLiteral("vpnActiveProfile")).toString();
+
+    const bool stillUp = [&iface]() {
+        // interfaceFromName misses Windows adapters (friendly vs internal name),
+        // so scan both namings.
+        for (const QNetworkInterface &ni : QNetworkInterface::allInterfaces())
+            if ((ni.name() == iface || ni.humanReadableName() == iface)
+                && (ni.flags() & QNetworkInterface::IsUp))
+                return true;
+        return false;
+    }();
+
+    if (!stillUp || conf.isEmpty() || !QFile::exists(conf)
+        || !m_tunnel->adopt(conf, iface)) {
+        clearActiveTunnel();
+        return;
+    }
+    m_activeId = indexOf(profile) >= 0 ? profile : QString();
+    m_lastTunnelConf = conf;
+    m_iface = iface;
+    setState(State::Connected);
+    emit interfaceUp(iface);
 }
 
 void VpnManager::disconnectVpn()

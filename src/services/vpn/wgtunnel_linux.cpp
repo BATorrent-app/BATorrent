@@ -96,20 +96,38 @@ void WgTunnelLinux::runElevated(const QStringList &argv, std::function<void(bool
     proc->start(QStringLiteral("pkexec"), argv);
 }
 
-void WgTunnelLinux::up(const QString &confPath, const bat::WgConfig &)
+// wg-quick derives the iface from the basename, so stage a short-named copy in
+// a user-private dir (0600 — it holds the private key). Empty on failure.
+static QString stageShortConf(const QString &confPath)
 {
-    // wg-quick derives the iface from the basename, so stage a short-named copy in
-    // a user-private dir (0600 — it holds the private key).
     QString dir = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
     if (dir.isEmpty()) dir = QDir::tempPath();
     const QString shortConf = dir + QLatin1Char('/') + QLatin1String(kIface) + QStringLiteral(".conf");
-
     QFile::remove(shortConf);
-    if (!QFile::copy(confPath, shortConf)) {
+    if (!QFile::copy(confPath, shortConf)) return QString();
+    QFile::setPermissions(shortConf, QFile::ReadOwner | QFile::WriteOwner);
+    return shortConf;
+}
+
+bool WgTunnelLinux::adopt(const QString &confPath, const QString &iface)
+{
+    // Ours only if it's our fixed iface name and the kernel still has it up.
+    if (iface != QLatin1String(kIface) || !haveWgQuick()) return false;
+    if (!QFile::exists(QStringLiteral("/sys/class/net/") + iface)) return false;
+    const QString shortConf = stageShortConf(confPath);   // down() needs the file back
+    if (shortConf.isEmpty()) return false;
+    m_activeConf = shortConf;
+    m_iface = QLatin1String(kIface);
+    return true;
+}
+
+void WgTunnelLinux::up(const QString &confPath, const bat::WgConfig &)
+{
+    const QString shortConf = stageShortConf(confPath);
+    if (shortConf.isEmpty()) {
         emit failed(QStringLiteral("could not stage the tunnel config"));
         return;
     }
-    QFile::setPermissions(shortConf, QFile::ReadOwner | QFile::WriteOwner);
 
     const QStringList argv = wgQuickArgv(QStringLiteral("up"), shortConf);
     if (argv.isEmpty()) { emit failed(QStringLiteral("wg-quick not found")); return; }
