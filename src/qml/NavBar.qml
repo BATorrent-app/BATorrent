@@ -336,6 +336,74 @@ Rectangle {
             ToolTip.delay: 400
         }
 
+        // ----- VPN status pill (live state + one-click connect/disconnect) -----
+        Rectangle {
+            id: vpnChip
+            visible: typeof vpn !== "undefined"
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredHeight: 34
+            Layout.preferredWidth: vpnRow.implicitWidth + 22
+            radius: 9
+            readonly property int st: (typeof vpn !== "undefined") ? vpn.connState : 0
+            readonly property color stColor: st === 2 ? Theme.grn
+                                           : st === 1 ? Theme.amber
+                                           : st === 3 ? Theme.accent : Theme.t4
+            color: vpnMa.containsMouse ? Theme.hover : "transparent"
+            Behavior on color { ColorAnimation { duration: 130 } }
+            RowLayout {
+                id: vpnRow
+                anchors.centerIn: parent
+                spacing: 8
+                Item {
+                    Layout.preferredWidth: 16; Layout.preferredHeight: 16
+                    IconImg {
+                        anchors.centerIn: parent
+                        src: "qrc:/icons/set-vpn.svg"
+                        tint: vpnChip.stColor; s: 15
+                    }
+                    // status dot over the icon corner; pulses while connecting
+                    Rectangle {
+                        width: 7; height: 7; radius: 3.5
+                        anchors.right: parent.right; anchors.bottom: parent.bottom
+                        anchors.rightMargin: -1; anchors.bottomMargin: -1
+                        color: vpnChip.stColor
+                        SequentialAnimation on opacity {
+                            running: vpnChip.st === 1
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 1; to: 0.3; duration: 600 }
+                            NumberAnimation { from: 0.3; to: 1; duration: 600 }
+                        }
+                    }
+                }
+                Text {
+                    visible: !bar.tightChip
+                    text: "VPN"
+                    color: vpnChip.st === 2 ? Theme.t2 : Theme.t3
+                    font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                }
+            }
+            MouseArea {
+                id: vpnMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (typeof vpn === "undefined") return
+                    if (vpn.connState === 2 || vpn.connState === 1) { vpn.disconnectVpn(); return }
+                    if (vpn.profiles.length === 0) { bar.settingsClicked(); return }
+                    vpn.connectProfile(vpn.activeProfileId !== "" ? vpn.activeProfileId
+                                                                  : vpn.profiles[0].id)
+                }
+            }
+            ToolTip.visible: vpnMa.containsMouse
+            ToolTip.delay: 400
+            ToolTip.text: (i18n.language, "VPN — " +
+                (vpnChip.st === 2 ? i18n.t("vpn_state_on")
+                 : vpnChip.st === 1 ? i18n.t("vpn_state_connecting")
+                 : vpnChip.st === 3 ? i18n.t("vpn_state_failed")
+                 : i18n.t("vpn_state_off")))
+        }
+
         // ----- donate (heart: gray at rest, red on hover) -----
         Item {
             Layout.alignment: Qt.AlignVCenter
