@@ -1,6 +1,12 @@
 # Contributors
 
-Thanks to everyone who's helped make BATorrent better.
+Thanks to everyone who's helped make BATorrent better. Non-code contributions —
+testing, bug reports, and ideas — count just as much as code.
+
+## Testing & ideas
+
+- **[@TeoVeo](https://github.com/TeoVeo)** — extensive testing, bug reports, and
+  feature ideas across the 4.x releases.
 
 ## Translations
 
