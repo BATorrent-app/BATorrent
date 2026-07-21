@@ -46,6 +46,7 @@
 #include "services/downloads/httpdownloadmanager.h"
 #include "services/downloads/httpmergeengine.h"
 #include "services/vpn/vpnmanager.h"
+#include "services/vpn/wgtunnelfactory.h"
 #include "ipc/enginehost.h"
 #include "ipc/ipcengine.h"
 #include <QCoreApplication>
@@ -432,7 +433,7 @@ int main(int argc, char *argv[])
         // tunnel for now — the real wireguard-go bring-up plugs in later. Split-
         // tunnel: once a REAL tunnel is up, bind the torrent session to its
         // interface (the stub never binds, so it can't break connectivity).
-        auto *vpnManager = new VpnManager(nullptr, &app);
+        auto *vpnManager = new VpnManager(makeWgTunnel(&app), &app);
         QObject::connect(vpnManager, &VpnManager::interfaceUp, &app, [vpnManager, eng](const QString &iface) {
             if (vpnManager->tunnelIsReal()) eng->applySetting(QStringLiteral("outgoingInterface"), iface);
         });
