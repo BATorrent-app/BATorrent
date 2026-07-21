@@ -1169,5 +1169,6 @@
   "star_ask_action": "Star on GitHub",
   "about_star": "Star on GitHub",
   "set_block_bad_peers": "Block known bad peers",
-  "set_block_bad_peers_note": "Downloads and keeps a reputable IP blocklist updated, dropping connections to flagged addresses before the handshake — cuts the peer connections that trip antivirus warnings."
+  "set_block_bad_peers_note": "Downloads and keeps a reputable IP blocklist updated, dropping connections to flagged addresses before the handshake — cuts the peer connections that trip antivirus warnings.",
+  "state_files_missing": "Files missing"
 }

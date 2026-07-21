@@ -20,7 +20,7 @@ inline QDataStream &operator<<(QDataStream &s, const TorrentInfo &t)
       << qint32(t.numPeers) << qint32(t.numSeeds) << t.stateString << t.stateDetail
       << t.paused << t.completed << t.ratio << t.availability
       << qint64(t.totalUploaded) << qint64(t.addedTime) << t.category << t.tags
-      << t.queued << qint32(t.queuePos);
+      << t.queued << qint32(t.queuePos) << t.filesMissing;
     return s;
 }
 inline QDataStream &operator>>(QDataStream &s, TorrentInfo &t)
@@ -30,7 +30,7 @@ inline QDataStream &operator>>(QDataStream &s, TorrentInfo &t)
       >> t.progress >> dr >> ur >> np >> ns >> t.stateString >> t.stateDetail
       >> t.paused >> t.completed >> t.ratio >> t.availability
       >> t.totalUploaded >> t.addedTime >> t.category >> t.tags
-      >> t.queued >> qp;
+      >> t.queued >> qp >> t.filesMissing;
     t.downloadRate = dr; t.uploadRate = ur; t.numPeers = np; t.numSeeds = ns;
     t.queuePos = qp;
     return s;

@@ -1169,5 +1169,6 @@
   "star_ask_action": "GitHub'ta Yıldız Ver",
   "about_star": "GitHub'ta Yıldız Ver",
   "set_block_bad_peers": "Bilinen kötü amaçlı eşleri engelle",
-  "set_block_bad_peers_note": "Saygın bir IP engelleme listesini indirip güncel tutar; işaretli adreslere bağlantıları el sıkışmadan önce keser — antivirüs uyarılarını tetikleyen bağlantıları azaltır."
+  "set_block_bad_peers_note": "Saygın bir IP engelleme listesini indirip güncel tutar; işaretli adreslere bağlantıları el sıkışmadan önce keser — antivirüs uyarılarını tetikleyen bağlantıları azaltır.",
+  "state_files_missing": "Dosyalar eksik"
 }

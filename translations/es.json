@@ -1169,5 +1169,6 @@
   "set_rd_connect": "Conectar",
   "set_rd_disconnect": "Desconectar",
   "set_block_bad_peers": "Bloquear pares maliciosos conocidos",
-  "set_block_bad_peers_note": "Descarga y mantiene actualizada una lista de IP fiable, descartando conexiones a direcciones marcadas antes del handshake — reduce las conexiones que activan avisos del antivirus."
+  "set_block_bad_peers_note": "Descarga y mantiene actualizada una lista de IP fiable, descartando conexiones a direcciones marcadas antes del handshake — reduce las conexiones que activan avisos del antivirus.",
+  "state_files_missing": "Archivos ausentes"
 }
