@@ -201,7 +201,7 @@ jobs:
           sentry-cli debug-files upload build/BATorrent
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: linux-build
           path: BATorrent-linux-x86_64.AppImage
@@ -432,13 +432,13 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" installer\batorrent.iss
 
       - name: Upload zip
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-zip
           path: BATorrent-windows-x86_64-portable.zip
 
       - name: Upload installer
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-installer
           path: output/BATorrent-setup-x86_64.exe
@@ -446,7 +446,7 @@ jobs:
       # Symbols, matched to this exact build — keep them so Store/Partner Center
       # crash dumps (and our own CaptureStackBackTrace logs) can be symbolicated.
       - name: Upload symbols (PDB)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-symbols
           if-no-files-found: warn
@@ -627,7 +627,7 @@ jobs:
             BATorrent.dSYM build/BATorrent.app/Contents/MacOS/BATorrent || true
 
       - name: Upload DMG
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-build
           path: BATorrent-macos-arm64.dmg
