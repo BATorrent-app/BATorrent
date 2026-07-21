@@ -65,8 +65,9 @@ void MacWgTunnel::up(const QString &confPath, const bat::WgConfig &)
     }
     m_confPath = confPath;
     // wg-quick shells out to wg + wireguard-go, so give it their bin dir on PATH
-    // (the elevated osascript shell doesn't inherit Homebrew's PATH).
-    const QString cmd = QStringLiteral("export PATH=%1:$PATH; '%2' up '%3'")
+    // (the elevated osascript shell doesn't inherit Homebrew's PATH). Quoted —
+    // the bundle path can contain spaces.
+    const QString cmd = QStringLiteral("export PATH=\"%1:$PATH\"; '%2' up '%3'")
                             .arg(toolsBinDir(), wgQuick, confPath);
 
     runElevated(cmd, [this, confPath](bool ok, const QString &out) {
@@ -80,10 +81,24 @@ void MacWgTunnel::up(const QString &confPath, const bat::WgConfig &)
     });
 }
 
+bool MacWgTunnel::adopt(const QString &confPath, const QString &iface)
+{
+    if (iface.isEmpty() || wgQuickPath().isEmpty()) return false;
+    // wg-quick keeps /var/run/wireguard/<name>.name while wireguard-go runs —
+    // if it still maps this config's name to this utun, the tunnel is ours.
+    QFile f(QStringLiteral("/var/run/wireguard/%1.name")
+                .arg(QFileInfo(confPath).completeBaseName()));
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    if (QString::fromUtf8(f.readAll()).trimmed() != iface) return false;
+    m_confPath = confPath;
+    m_iface = iface;
+    return true;
+}
+
 void MacWgTunnel::down()
 {
     if (m_confPath.isEmpty() || wgQuickPath().isEmpty()) { m_iface.clear(); emit disconnected(); return; }
-    const QString cmd = QStringLiteral("export PATH=%1:$PATH; '%2' down '%3'")
+    const QString cmd = QStringLiteral("export PATH=\"%1:$PATH\"; '%2' down '%3'")
                             .arg(toolsBinDir(), wgQuickPath(), m_confPath);
     runElevated(cmd, [this](bool, const QString &) {   // treat any outcome as down
         m_iface.clear();

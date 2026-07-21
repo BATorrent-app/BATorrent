@@ -29,6 +29,7 @@ public:
     void down() override;
     QString interfaceName() const override { return m_iface; }
     bool isReal() const override { return haveWgQuick(); }
+    bool adopt(const QString &confPath, const QString &iface) override;
 
 private:
     static bool haveWgQuick();

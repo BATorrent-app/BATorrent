@@ -79,6 +79,15 @@ void WinWgTunnel::up(const QString &confPath, const bat::WgConfig &)
     });
 }
 
+bool WinWgTunnel::adopt(const QString &confPath, const QString &iface)
+{
+    Q_UNUSED(iface);   // the service is named after the conf file, not the adapter
+    if (wireguardExe().isEmpty() || !QFile::exists(confPath)) return false;
+    m_confPath = confPath;
+    m_iface = QFileInfo(confPath).completeBaseName();
+    return true;
+}
+
 void WinWgTunnel::down()
 {
     if (m_iface.isEmpty() || wireguardExe().isEmpty()) { m_iface.clear(); emit disconnected(); return; }

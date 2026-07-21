@@ -5,11 +5,10 @@
 #ifndef SERVICES_VPN_WGTUNNEL_MAC_H
 #define SERVICES_VPN_WGTUNNEL_MAC_H
 
-// macOS WireGuard tunnel: drives the system `wg-quick` (from Homebrew's
-// wireguard-tools) up/down under an administrator prompt (osascript). Full-tunnel
-// for now — split-tunnel binding needs route/fwmark plumbing and comes later.
-// Bundling wireguard-go so the user needn't install anything is a follow-up; if
-// the tools are absent we fail with a clear message rather than pretending.
+// macOS WireGuard tunnel: drives `wg-quick` (bundled in the app, else Homebrew)
+// up/down under an administrator prompt (osascript). Split-tunnel is handled a
+// level up: VpnManager hands us a Table=off config and the engine binds to the
+// utun. If the tools are absent we fail with a clear message, not pretend.
 
 #include "services/vpn/wgtunnel.h"
 
@@ -31,6 +30,7 @@ public:
     // Only a real tunnel when the system wg-quick is actually present — otherwise
     // the UI should keep showing the "not protecting" banner (honest).
     bool isReal() const override { return !wgQuickPath().isEmpty(); }
+    bool adopt(const QString &confPath, const QString &iface) override;
 
 private:
     // wg-quick + wireguard-go locations (Homebrew arm64/x86 + system).

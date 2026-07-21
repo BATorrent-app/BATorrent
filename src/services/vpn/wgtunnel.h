@@ -33,6 +33,12 @@ public:
     virtual QString interfaceName() const = 0;
     // Whether this backend actually protects traffic (false for the stub).
     virtual bool isReal() const = 0;
+    // Re-attach to a tunnel a previous run of the app brought up — tunnels
+    // outlive the process on every OS (wireguard-go daemon / wg iface / Windows
+    // service). Validates what it can, restores whatever down() needs, and
+    // returns whether the tunnel is really still this one. Default: no.
+    virtual bool adopt(const QString &confPath, const QString &iface)
+    { Q_UNUSED(confPath); Q_UNUSED(iface); return false; }
 
 signals:
     void connected(const QString &ifaceName);
