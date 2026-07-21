@@ -129,6 +129,8 @@ QtObject {
         ],
         // 3 VPN
         [
+            { type: "group", label: (i18n.language, i18n.t("set_grp_wireguard")) },
+            { type: "vpn", label: "" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_iface_bind")) },
             { type: "iface", label: (i18n.language, i18n.t("set_iface2")) },
             { type: "toggle", key: "killSwitchEnabled", label: (i18n.language, i18n.t("settings_kill_switch")), on: true, note: (i18n.language, i18n.t("set_killswitch_note")) },

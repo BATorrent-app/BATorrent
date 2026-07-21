@@ -9,6 +9,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
+import QtQuick.Dialogs
 import "theme"
 import "widgets"
 
@@ -35,7 +36,7 @@ ColumnLayout {
     // to a second line instead of running into the control.
     RowLayout {
         id: srow
-        visible: field.type !== "warning"
+        visible: field.type !== "warning" && field.type !== "vpn"
         Layout.fillWidth: true
         Layout.topMargin: 13
         Layout.bottomMargin: 13
@@ -138,9 +139,120 @@ ColumnLayout {
         }
     }
 
+    // vpn: full-width WireGuard card (the .srow above is hidden for it)
+    Loader {
+        visible: field.type === "vpn"
+        active: field.type === "vpn"
+        Layout.fillWidth: true
+        Layout.topMargin: 12
+        Layout.bottomMargin: 12
+        sourceComponent: field.type === "vpn" ? cVpn : null
+    }
+
     Rectangle { visible: showDivider; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
 
     // ---- control components ----
+    Component {
+        id: cVpn
+        ColumnLayout {
+            width: rowRoot.width
+            spacing: 10
+
+            // header — title + live state chip
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.sp3
+                IconImg { src: "qrc:/icons/set-vpn.svg"; s: 16
+                    tint: (typeof vpn !== "undefined" && vpn.connState === 2) ? Theme.grn : Theme.t3 }
+                Text { text: "WireGuard"; color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold
+                    font.family: Theme.fontSans; Layout.fillWidth: true }
+                Rectangle {
+                    readonly property int st: (typeof vpn !== "undefined") ? vpn.connState : 0
+                    implicitWidth: stRow.implicitWidth + 18; implicitHeight: 20; radius: 999
+                    color: st === 2 ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.14) : Theme.field
+                    border.color: st === 2 ? Theme.grn : Theme.hair; border.width: 1
+                    Row {
+                        id: stRow; anchors.centerIn: parent; spacing: 5
+                        Rectangle { width: 6; height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter
+                            color: parent.parent.st === 2 ? Theme.grn : parent.parent.st === 1 ? Theme.amber
+                                 : parent.parent.st === 3 ? "#e0574b" : Theme.t4 }
+                        Text { anchors.verticalCenter: parent.verticalCenter; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontSans
+                            text: (i18n.language, parent.parent.st === 2 ? i18n.t("vpn_state_on")
+                                 : parent.parent.st === 1 ? i18n.t("vpn_state_connecting")
+                                 : parent.parent.st === 3 ? i18n.t("vpn_state_failed") : i18n.t("vpn_state_off")) }
+                    }
+                }
+            }
+
+            // preview/stub warning — clear that it doesn't protect traffic yet
+            Rectangle {
+                visible: typeof vpn !== "undefined" && !vpn.tunnelReal
+                Layout.fillWidth: true; radius: 8
+                color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.10)
+                border.color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.35); border.width: 1
+                implicitHeight: wgWarn.implicitHeight + 16
+                Row {
+                    anchors.fill: parent; anchors.margins: 8; spacing: 8
+                    IconImg { src: "qrc:/icons/triangle-alert.svg"; tint: Theme.amber; s: 13 }
+                    Text { id: wgWarn; width: parent.width - 24; color: Theme.t3; font.pixelSize: 11
+                        font.family: Theme.fontSans; wrapMode: Text.WordWrap; lineHeight: 1.4
+                        text: (i18n.language, i18n.t("vpn_stub_warning")) }
+                }
+            }
+
+            // profiles
+            Repeater {
+                model: (typeof vpn !== "undefined") ? vpn.profiles : []
+                delegate: Rectangle {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    implicitHeight: 42; radius: 8; color: Theme.field; border.color: Theme.hair; border.width: 1
+                    RowLayout {
+                        anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 10; spacing: 8
+                        Text { text: modelData.name; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
+                            Layout.fillWidth: true; elide: Text.ElideRight }
+                        BtnFlat {
+                            sm: true
+                            readonly property bool active: typeof vpn !== "undefined" && vpn.activeProfileId === modelData.id
+                                && (vpn.connState === 1 || vpn.connState === 2)
+                            primary: !active
+                            text: (i18n.language, active ? i18n.t("vpn_disconnect") : i18n.t("vpn_connect"))
+                            onClicked: active ? vpn.disconnectVpn() : vpn.connectProfile(modelData.id)
+                        }
+                        IconImg {
+                            src: "qrc:/icons/trash.svg"; s: 15; tint: rmMa.containsMouse ? "#e0574b" : Theme.t4
+                            MouseArea { id: rmMa; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor; onClicked: if (typeof vpn !== "undefined") vpn.removeProfile(modelData.id) }
+                        }
+                    }
+                }
+            }
+
+            Text {
+                visible: typeof vpn !== "undefined" && vpn.profiles.length === 0
+                Layout.fillWidth: true; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans
+                wrapMode: Text.WordWrap; lineHeight: 1.4; text: (i18n.language, i18n.t("vpn_empty"))
+            }
+            RowLayout {
+                Layout.fillWidth: true; spacing: 8
+                BtnFlat { icon: "qrc:/icons/download.svg"; text: (i18n.language, i18n.t("vpn_import"))
+                    onClicked: vpnFileDlg.open() }
+                Item { Layout.fillWidth: true }
+            }
+            Text {
+                visible: typeof vpn !== "undefined" && vpn.connState === 3 && vpn.lastError.length > 0
+                Layout.fillWidth: true; color: "#e0574b"; font.pixelSize: 11; font.family: Theme.fontSans
+                wrapMode: Text.WordWrap; text: (typeof vpn !== "undefined") ? vpn.lastError : ""
+            }
+
+            FileDialog {
+                id: vpnFileDlg
+                nameFilters: ["WireGuard config (*.conf)", "All files (*)"]
+                onAccepted: if (typeof vpn !== "undefined") vpn.importFromFile(selectedFile.toString(), "")
+            }
+        }
+    }
+
     Component { id: cToggle; TToggle {
         on: (field.key === "torrentSearchEnabled" && typeof addons !== "undefined") ? addons.torrentSearchEnabled
             : (field.key === "autoTrackers" && typeof addons !== "undefined") ? addons.autoTrackers
