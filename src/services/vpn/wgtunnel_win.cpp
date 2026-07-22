@@ -12,6 +12,11 @@
 #include <QFile>
 #include <QCoreApplication>
 
+// winsock2 must precede windows.h, and its socket-address types must be in scope
+// before iphlpapi.h — otherwise netioapi.h's GetIfTable2 / MIB_IF_ROW2 (which
+// reference SOCKADDR_INET) compile out with "undeclared identifier".
+#include <winsock2.h>
+#include <ws2ipdef.h>
 #include <windows.h>
 #include <shellapi.h>
 #include <iphlpapi.h>
