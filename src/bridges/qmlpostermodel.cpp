@@ -118,7 +118,10 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         if (info.completed) return QStringLiteral("completed");
         if (info.queued) return QStringLiteral("queued");
         if (info.paused) return QStringLiteral("paused");
-        if (info.progress >= 1.0f) return QStringLiteral("seeding");
+        // progress==1.0 alone isn't seeding: a torrent with every file
+        // deselected (total_wanted==0, e.g. YTS stream-while-watch mid-apply)
+        // reads progress 1.0 with zero bytes on disk and flashed "SEEDING" at 0%.
+        if (info.progress >= 1.0f && info.totalDone > 0) return QStringLiteral("seeding");
         return QStringLiteral("downloading");
     }
     case InfoHashRole:   return hash;

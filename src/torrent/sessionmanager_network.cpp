@@ -45,8 +45,16 @@ void SessionManager::setOutgoingInterface(const QString &interfaceName)
     } else {
         pack.set_str(lt::settings_pack::outgoing_interfaces, interfaceName.toStdString());
 
-        // Resolve the interface IP for listen_interfaces
+        // Resolve the interface IP for listen_interfaces. interfaceFromName matches
+        // the adapter's internal name; a WireGuard tunnel is reported by its
+        // friendly/service name (its .conf basename), which only matches
+        // humanReadableName — so fall back to a scan or the bind silently no-ops.
         QNetworkInterface ni = QNetworkInterface::interfaceFromName(interfaceName);
+        if (!ni.isValid()) {
+            for (const QNetworkInterface &cand : QNetworkInterface::allInterfaces()) {
+                if (cand.humanReadableName() == interfaceName) { ni = cand; break; }
+            }
+        }
         QString listenAddr = "0.0.0.0";
         for (const auto &entry : ni.addressEntries()) {
             if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {

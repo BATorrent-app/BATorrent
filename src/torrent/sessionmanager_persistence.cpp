@@ -280,11 +280,19 @@ void SessionManager::loadResumeData()
                 if (chosen != eff) atp.renamed_files[i] = chosen;
             }
             // All wanted files present at full size → complete for what the user
-            // kept. Load in seed_mode so libtorrent trusts it instead of
-            // re-checking/re-downloading on launch, and remember it as
-            // already-complete so the inevitable finish alert doesn't re-notify.
+            // kept. Remember it as already-complete so the finish alert (fired
+            // after the verify pass below) doesn't re-notify.
+            //
+            // We deliberately do NOT set seed_mode here. A size-only match is not
+            // proof of integrity: seed_mode makes libtorrent trust the bytes
+            // unverified, and if a file is the right size but not hash-complete
+            // (interrupted download, corruption), the first peer piece request
+            // fails its hash, libtorrent silently drops seed_mode and re-downloads
+            // that piece → the torrent oscillates seeding↔downloading forever
+            // (tester: "The Condemned" flapping). Letting libtorrent verify on add
+            // costs a startup hash-check for these (fastresume-less) torrents but
+            // lands them in the correct terminal state.
             if (allWantedFullSize) {
-                atp.flags |= lt::torrent_flags::seed_mode;
                 const QString hash = QString::fromStdString(
                     (std::ostringstream() << atp.ti->info_hashes().get_best()).str());
                 m_completedAtStartup.insert(hash);
