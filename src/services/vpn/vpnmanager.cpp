@@ -124,6 +124,18 @@ QString VpnManager::importFromFile(const QString &fileUrlOrPath, const QString &
     return importConfig(providedName, QString::fromUtf8(f.readAll()));
 }
 
+void VpnManager::renameProfile(const QString &id, const QString &name)
+{
+    const int i = indexOf(id);
+    if (i < 0) return;
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty()) return;
+    if (m_profiles[i].name == trimmed) return;
+    m_profiles[i].name = trimmed;
+    saveIndex();
+    emit profilesChanged();
+}
+
 void VpnManager::removeProfile(const QString &id)
 {
     const int i = indexOf(id);

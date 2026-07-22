@@ -263,18 +263,42 @@ ColumnLayout {
             Repeater {
                 model: (typeof vpn !== "undefined") ? vpn.profiles : []
                 delegate: Rectangle {
+                    id: profRow
                     required property var modelData
+                    property bool editing: false
                     Layout.fillWidth: true
                     implicitHeight: 42; radius: 8; color: Theme.field; border.color: Theme.hair; border.width: 1
+                    function commitRename() {
+                        if (typeof vpn !== "undefined") vpn.renameProfile(modelData.id, nameEdit.text)
+                        profRow.editing = false
+                    }
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 10; spacing: 8
                         ColumnLayout {
                             Layout.fillWidth: true; spacing: 1
-                            Text { text: modelData.name; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
+                            Text { visible: !profRow.editing; text: modelData.name; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
                                 Layout.fillWidth: true; elide: Text.ElideRight }
-                            Text { visible: !!modelData.endpoint; text: modelData.endpoint || ""
+                            TextField {
+                                id: nameEdit
+                                visible: profRow.editing
+                                Layout.fillWidth: true
+                                text: modelData.name
+                                color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
+                                padding: 2; selectByMouse: true
+                                background: Rectangle { color: "transparent"; border.color: Theme.accent; border.width: 1; radius: 4 }
+                                onAccepted: profRow.commitRename()
+                                onActiveFocusChanged: if (!activeFocus && profRow.editing) profRow.commitRename()
+                                Keys.onEscapePressed: { text = modelData.name; profRow.editing = false }
+                            }
+                            Text { visible: !!modelData.endpoint && !profRow.editing; text: modelData.endpoint || ""
                                 color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans
                                 Layout.fillWidth: true; elide: Text.ElideRight }
+                        }
+                        IconImg {
+                            src: "qrc:/icons/pencil.svg"; s: 14; tint: renMa.containsMouse ? Theme.t1 : Theme.t4
+                            MouseArea { id: renMa; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: { profRow.editing = true; nameEdit.forceActiveFocus(); nameEdit.selectAll() } }
                         }
                         BtnFlat {
                             sm: true

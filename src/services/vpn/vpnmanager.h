@@ -42,6 +42,8 @@ public:
     // Read a .conf from a path or file: URL, then importConfig it.
     Q_INVOKABLE QString importFromFile(const QString &fileUrlOrPath, const QString &name);
     Q_INVOKABLE void removeProfile(const QString &id);
+    // Rename an imported profile (display only; the .conf is untouched).
+    Q_INVOKABLE void renameProfile(const QString &id, const QString &name);
     QVariantList profiles() const;             // [{ id, name }] for QML
     int profileCount() const { return int(m_profiles.size()); }
 

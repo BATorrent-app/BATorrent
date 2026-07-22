@@ -8,6 +8,7 @@
 #include "services/platform/translator.h"
 
 #include <QFileInfo>
+#include <QSet>
 
 namespace {
 
@@ -64,7 +65,19 @@ TorrentInfo HttpMergeEngine::torrentAt(int index) const
     info.name = d->fileName();
     // A plain file has no movie poster to identify it by, so tag the row with its
     // format (the category chip renders it uppercased: "pdf" → PDF) — tester idea.
-    info.category = QFileInfo(info.name).suffix().toLower();
+    // Skip media/disc-image types: those resolve a TMDB poster from the filename,
+    // and a raw "ISO"/"MKV" chip sitting on a movie cover reads as a bug (it did).
+    {
+        static const QSet<QString> kPosteredExts = {
+            QStringLiteral("mkv"), QStringLiteral("mp4"), QStringLiteral("avi"),
+            QStringLiteral("mov"), QStringLiteral("m4v"), QStringLiteral("wmv"),
+            QStringLiteral("webm"), QStringLiteral("flv"), QStringLiteral("mpg"),
+            QStringLiteral("mpeg"), QStringLiteral("ts"), QStringLiteral("m2ts"),
+            QStringLiteral("iso"), QStringLiteral("img")
+        };
+        const QString ext = QFileInfo(info.name).suffix().toLower();
+        info.category = kPosteredExts.contains(ext) ? QString() : ext;
+    }
     info.savePath = QFileInfo(d->finalPath()).absolutePath();
     info.totalSize = d->totalBytes() > 0 ? d->totalBytes() : 0;
     info.totalDone = d->receivedBytes();

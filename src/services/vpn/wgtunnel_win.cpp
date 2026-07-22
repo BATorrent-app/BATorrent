@@ -91,7 +91,12 @@ bool WinWgTunnel::adopt(const QString &confPath, const QString &iface)
 void WinWgTunnel::down()
 {
     if (m_iface.isEmpty() || wireguardExe().isEmpty()) { m_iface.clear(); emit disconnected(); return; }
-    runElevated({QStringLiteral("/uninstalltunnelservice"), m_iface}, [this](bool) {
+    runElevated({QStringLiteral("/uninstalltunnelservice"), m_iface}, [this](bool ok) {
+        // Only consider the tunnel gone if the service actually uninstalled. A
+        // lingering service keeps its full-tunnel default route installed, which
+        // would black-hole the next connect — report failure so the UI doesn't
+        // claim "disconnected" while traffic is still being rerouted.
+        if (!ok) { emit failed(QStringLiteral("could not stop the WireGuard tunnel")); return; }
         m_iface.clear();
         emit disconnected();
     });
