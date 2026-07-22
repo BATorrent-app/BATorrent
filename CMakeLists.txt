@@ -256,7 +256,8 @@ if(WIN32)
     target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601 NOMINMAX)
     # shell32/ole32: SHOpenFolderAndSelectItems for "reveal in Explorer"
     # psapi: GetProcessMemoryInfo for the memory guard
-    target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp)
+    # iphlpapi: GetIfTable2 — verify a WireGuard tunnel actually passes traffic
+    target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp iphlpapi)
 
     # Emit a PDB even in Release so Store / Partner Center crash dumps symbolicate.
     # Without symbols every Store crash is reported as "unknown" (we had 314/322
