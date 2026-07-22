@@ -27,6 +27,7 @@
 #include <QDesktopServices>
 #include <QProcess>
 #include <QDir>
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QUrl>
@@ -776,9 +777,53 @@ int main(int argc, char *argv[])
 #else
         engine.rootContext()->setContextProperty("updater", nullptr);
 #endif
-        engine.load(QUrl("qrc:/src/qml/Main.qml"));
+        // Dev QML loop: `BAT_QML_DIR=$PWD/src/qml` loads the UI straight from the
+        // source tree (not the compiled qrc), and hot-reloads the window whenever
+        // a .qml is saved — so a colour/badge tweak shows in ~1s with no rebuild.
+        // Empty in every shipped build → the normal qrc load below.
+        const QString devQmlDir = qEnvironmentVariable("BAT_QML_DIR");
+        const QUrl rootUrl = devQmlDir.isEmpty()
+            ? QUrl(QStringLiteral("qrc:/src/qml/Main.qml"))
+            : QUrl::fromLocalFile(QDir(devQmlDir).filePath(QStringLiteral("Main.qml")));
+        engine.load(rootUrl);
         if (engine.rootObjects().isEmpty())
             return -1;
+
+        if (!devQmlDir.isEmpty()) {
+            // Poll .qml mtimes rather than QFileSystemWatcher: editors save by
+            // atomic replace (write temp + rename), which swaps the inode and
+            // makes the watcher miss the change on macOS. A 500 ms mtime scan is
+            // dead-simple and catches every save however the editor writes it.
+            auto snapshot = []( const QString &dir) {
+                QHash<QString, qint64> m;
+                QDirIterator it(dir, {QStringLiteral("*.qml"), QStringLiteral("qmldir")},
+                                QDir::Files, QDirIterator::Subdirectories);
+                while (it.hasNext()) {
+                    const QString p = it.next();
+                    m.insert(p, QFileInfo(p).lastModified().toMSecsSinceEpoch());
+                }
+                return m;
+            };
+            auto lastSeen = std::make_shared<QHash<QString, qint64>>(snapshot(devQmlDir));
+            auto *poll = new QTimer(&app);
+            poll->setInterval(500);
+            QObject::connect(poll, &QTimer::timeout, &app,
+                             [&engine, rootUrl, devQmlDir, snapshot, lastSeen]() {
+                const QHash<QString, qint64> now = snapshot(devQmlDir);
+                if (now == *lastSeen) return;   // nothing changed
+                *lastSeen = now;
+                const QList<QObject *> old = engine.rootObjects();
+                engine.clearComponentCache();
+                engine.load(rootUrl);
+                for (QObject *o : old) {
+                    if (auto *w = qobject_cast<QQuickWindow *>(o)) w->close();
+                    o->deleteLater();
+                }
+                qInfo() << "[dev] QML hot-reloaded";
+            });
+            poll->start();
+            qInfo() << "[dev] QML hot-reload watching" << devQmlDir;
+        }
 
         // Record which scene-graph backend is actually in use. If a machine
         // falls back to the Software renderer (no GPU), the whole UI stutters
