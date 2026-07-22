@@ -37,6 +37,12 @@ private:
     static QString wireguardExe();
     // Run wireguard.exe with args elevated (UAC); poll for exit → done(ok).
     void runElevated(const QStringList &args, std::function<void(bool)> done);
+    // After the service installs, poll the tunnel adapter for real inbound
+    // traffic (a completed handshake). On success emit connected(); on timeout
+    // uninstall the tunnel (removing its black-holing full-tunnel route) and
+    // emit failed() — so a dead tunnel never leaves the machine offline while
+    // the UI claims "protected".
+    void verifyHandshakeThenConnect();
 
     QString m_iface;       // tunnel service name = config basename
     QString m_confPath;
