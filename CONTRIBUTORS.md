@@ -6,7 +6,7 @@ testing, bug reports, and ideas — count just as much as code.
 ## Testing & ideas
 
 - **[@TeoVeo](https://github.com/TeoVeo)** — extensive testing, bug reports, and
-  feature ideas across the 4.x releases.
+  feature ideas across the 4.x releases, including the 4.8 beta.
 
 ## Translations
 
