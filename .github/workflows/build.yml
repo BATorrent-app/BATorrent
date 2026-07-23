@@ -113,6 +113,15 @@ jobs:
             echo "SENTRY_ENABLED=0" >> "$GITHUB_ENV"
           fi
 
+      # Compiler cache: the vendored libtorrent fork is the biggest compile and
+      # rarely changes, so ccache turns it into a near-instant cache hit on every
+      # run after the first (only edited app sources recompile).
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: build-linux
+          max-size: 800M
+
       - name: Build
         env:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
@@ -120,7 +129,8 @@ jobs:
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
           BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBAT_LIBTORRENT_SOURCE=ON ${SENTRY_CMAKE_ARGS:-}
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBAT_LIBTORRENT_SOURCE=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ${SENTRY_CMAKE_ARGS:-}
           cmake --build build
 
       - name: Install to AppDir
@@ -525,6 +535,12 @@ jobs:
             echo "SENTRY_ENABLED=0" >> "$GITHUB_ENV"
           fi
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: build-macos
+          max-size: 800M
+
       - name: Build
         env:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
@@ -534,6 +550,7 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
             -DBAT_LIBTORRENT_SOURCE=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_PREFIX_PATH="$(brew --prefix boost);$(brew --prefix openssl)" \
             ${SENTRY_CMAKE_ARGS:-}
           cmake --build build
