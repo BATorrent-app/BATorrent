@@ -37,6 +37,10 @@ private:
     static QString wireguardExe();
     // Run wireguard.exe with args elevated (UAC); poll for exit → done(ok).
     void runElevated(const QStringList &args, std::function<void(bool)> done);
+    // Run an arbitrary elevated program with a raw parameter string (lets up()
+    // chain uninstall+install through cmd.exe in a single UAC prompt).
+    void runElevatedRaw(const QString &program, const QString &params,
+                        std::function<void(bool)> done);
     // After the service installs, poll the tunnel adapter for real inbound
     // traffic (a completed handshake). On success emit connected(); on timeout
     // uninstall the tunnel (removing its black-holing full-tunnel route) and

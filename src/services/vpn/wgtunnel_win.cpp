@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 QString WinWgTunnel::wireguardExe()
 {
@@ -38,9 +39,16 @@ void WinWgTunnel::runElevated(const QStringList &args, std::function<void(bool)>
 {
     const QString exe = wireguardExe();
     if (exe.isEmpty()) { done(false); return; }
+    runElevatedRaw(exe, args.join(QLatin1Char(' ')), std::move(done));
+}
 
-    const std::wstring wexe = QDir::toNativeSeparators(exe).toStdWString();
-    const std::wstring wparams = args.join(QLatin1Char(' ')).toStdWString();
+void WinWgTunnel::runElevatedRaw(const QString &program, const QString &params,
+                                 std::function<void(bool)> done)
+{
+    if (program.isEmpty()) { done(false); return; }
+
+    const std::wstring wexe = QDir::toNativeSeparators(program).toStdWString();
+    const std::wstring wparams = params.toStdWString();
 
     SHELLEXECUTEINFOW sei;
     ZeroMemory(&sei, sizeof(sei));
@@ -132,10 +140,19 @@ void WinWgTunnel::up(const QString &confPath, const bat::WgConfig &)
     }
     m_confPath = confPath;
     m_iface = QFileInfo(confPath).completeBaseName();   // WireGuard names the tunnel after the file
+    const QString nativeWg = QDir::toNativeSeparators(wireguardExe());
     const QString nativeConf = QDir::toNativeSeparators(confPath);
-    runElevated({QStringLiteral("/installtunnelservice"),
-                 QLatin1Char('"') + nativeConf + QLatin1Char('"')},
-                [this](bool ok) {
+    // Uninstall any stale service of the same name FIRST (the '&' runs install
+    // regardless of whether one existed), then install — both in a single UAC
+    // elevation. Without this a leftover/orphaned tunnel from a crash or a failed
+    // teardown blocks the connect with "The object already exists" and can wedge
+    // Windows' network + a provider's own VPN app (the tester hit exactly that).
+    const QString command =
+        QStringLiteral("\"%1\" /uninstalltunnelservice %2 & \"%1\" /installtunnelservice \"%3\"")
+            .arg(nativeWg, m_iface, nativeConf);
+    runElevatedRaw(QStringLiteral("cmd.exe"),
+                   QStringLiteral("/s /c \"%1\"").arg(command),
+                   [this](bool ok) {
         // Service installed != tunnel working. Only report connected once the
         // adapter actually passes traffic (verifyHandshakeThenConnect), so we
         // never claim "protected" while a failed full-tunnel blackouts the user.

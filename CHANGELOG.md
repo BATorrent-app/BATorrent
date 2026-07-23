@@ -1,5 +1,23 @@
 # Changelog
 
+## v4.8.0-beta3
+
+Second 4.8 test build, from the beta tester round. Still a beta for testing.
+
+### Fixed
+- A torrent could flip between "seeding" and "downloading" forever, or show
+  "SEEDING" at 0 bytes — the state now reflects what's actually verified on disk.
+- File-type labels (PDF/EXE/ZIP) no longer appear on movie/media posters.
+- Integrated VPN robustness (Windows): the app no longer reports "protected"
+  before the tunnel actually carries traffic; a tunnel that fails to connect is
+  torn down automatically so it can't leave you offline; and a leftover tunnel
+  from a previous run is cleared before connecting, instead of wedging the
+  connection with "The object already exists".
+- Several crash/robustness fixes under the hood.
+
+### Added
+- Rename imported VPN profiles (e.g. "DK, Copenhagen").
+
 ## v4.8.0-beta1
 
 First 4.8 test build. The theme is the privacy layer (integrated VPN) plus the
