@@ -14,10 +14,12 @@ if(BAT_LIBTORRENT_SOURCE)
     set(BAT_TORRENT_LIB torrent-rasterbar)
     add_compile_definitions(BAT_LIBTORRENT_FORK)
     if(MSVC)
-        # MSVC Release has no /Zi → no torrent-rasterbar.pdb → every Sentry
-        # crash inside the engine DLL (the top crasher lives there) shows
-        # <unknown> frames. Debug info costs nothing at runtime.
-        target_compile_options(torrent-rasterbar PRIVATE $<$<CONFIG:Release>:/Zi>)
+        # MSVC Release ships no debug info → no torrent-rasterbar.pdb → every
+        # Sentry crash inside the engine DLL (the top crasher lives there) shows
+        # <unknown> frames. /Z7 embeds the debug info in each .obj (unlike /Zi's
+        # shared PDB, /Z7 is compatible with compiler caching / sccache); /DEBUG
+        # still emits the .pdb at link time. Costs nothing at runtime.
+        target_compile_options(torrent-rasterbar PRIVATE $<$<CONFIG:Release>:/Z7>)
         target_link_options(torrent-rasterbar PRIVATE
             $<$<CONFIG:Release>:/DEBUG /OPT:REF /OPT:ICF>)
     endif()
