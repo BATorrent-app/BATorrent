@@ -1178,5 +1178,6 @@
   "set_vpn_split": "Bölünmüş tünel",
   "set_vpn_split_note": "Yalnızca BATorrent trafiği VPN'i kullanır — sistemin geri kalanı normal bağlantıda kalır. Tracker ad çözümlemesi sistem DNS'ini kullanır. Bir sonraki bağlantıda geçerli olur.",
   "set_vpn_autoconnect": "Başlangıçta bağlan",
-  "set_vpn_autoconnect_note": "BATorrent açıldığında son kullanılan profile yeniden bağlanır (yönetici izni ister)."
+  "set_vpn_autoconnect_note": "BATorrent açıldığında son kullanılan profile yeniden bağlanır (yönetici izni ister).",
+  "set_iface_note": "VPN uygulamanı (IVPN, Mullvad…) çalıştır, sonra ağ arayüzünü buradan seç — sadece BATorrent'in trafiği oradan geçer."
 }

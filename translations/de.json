@@ -1178,5 +1178,6 @@
   "set_vpn_split": "Split-Tunnel",
   "set_vpn_split_note": "Nur der Verkehr von BATorrent nutzt das VPN — alles andere bleibt auf deiner normalen Verbindung. Tracker-Namensauflösung nutzt das System-DNS. Gilt ab der nächsten Verbindung.",
   "set_vpn_autoconnect": "Beim Start verbinden",
-  "set_vpn_autoconnect_note": "Verbindet beim Start von BATorrent das zuletzt genutzte Profil erneut (fragt nach Administratorrechten)."
+  "set_vpn_autoconnect_note": "Verbindet beim Start von BATorrent das zuletzt genutzte Profil erneut (fragt nach Administratorrechten).",
+  "set_iface_note": "Starte deine VPN-App (IVPN, Mullvad…) und wähle hier ihre Netzwerkschnittstelle — nur der Verkehr von BATorrent läuft darüber."
 }

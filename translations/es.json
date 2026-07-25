@@ -1178,5 +1178,6 @@
   "set_vpn_split": "Túnel dividido",
   "set_vpn_split_note": "Solo el tráfico de BATorrent usa la VPN — el resto del sistema sigue en tu conexión normal. La resolución de nombres de los trackers usa el DNS del sistema. Se aplica en la próxima conexión.",
   "set_vpn_autoconnect": "Conectar al iniciar",
-  "set_vpn_autoconnect_note": "Reconecta el último perfil usado cuando BATorrent arranca (pide permisos de administrador)."
+  "set_vpn_autoconnect_note": "Reconecta el último perfil usado cuando BATorrent arranca (pide permisos de administrador).",
+  "set_iface_note": "Ejecuta tu app de VPN (IVPN, Mullvad…) y luego elige aquí su interfaz de red — solo el tráfico de BATorrent pasa por ella."
 }

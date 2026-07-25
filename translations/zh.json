@@ -1178,5 +1178,6 @@
   "set_vpn_split": "分流隧道",
   "set_vpn_split_note": "只有 BATorrent 的流量走 VPN，系统其余流量保持普通连接。Tracker 域名解析使用系统 DNS。下次连接时生效。",
   "set_vpn_autoconnect": "启动时连接",
-  "set_vpn_autoconnect_note": "BATorrent 启动时自动重连上次使用的配置文件（会请求管理员权限）。"
+  "set_vpn_autoconnect_note": "BATorrent 启动时自动重连上次使用的配置文件（会请求管理员权限）。",
+  "set_iface_note": "运行你的 VPN 应用（IVPN、Mullvad 等），然后在此选择它的网络接口——只有 BATorrent 的流量会经过它。"
 }

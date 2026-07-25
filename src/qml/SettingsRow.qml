@@ -226,7 +226,10 @@ ColumnLayout {
                         }
                     }
                     BtnFlat {
-                        Layout.fillWidth: true
+                        // not full-width — a proportionate button reads cleaner than
+                        // a big red bar spanning the whole hero (tester)
+                        Layout.alignment: Qt.AlignLeft
+                        Layout.preferredWidth: Math.max(160, implicitWidth)
                         primary: !hero.on
                         enabled: hero.st === 1 || hero.st === 2
                                  || (typeof vpn !== "undefined" && vpn.profiles.length > 0)
