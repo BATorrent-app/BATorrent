@@ -127,14 +127,13 @@ QtObject {
             { type: "toggle", key: "ptMode", label: (i18n.language, i18n.t("settings_pt_mode")), note: (i18n.language, i18n.t("set_pt_note")) },
             { type: "toggle", key: "blockLeechers", label: (i18n.language, i18n.t("settings_block_leechers")), on: true }
         ],
-        // 3 VPN
+        // 3 VPN — "light" model: BATorrent routes its own traffic through the VPN
+        // the user already runs (IVPN/Mullvad/…) by binding to its interface. The
+        // embedded-WireGuard cockpit (import .conf, connect in-app) is hidden here
+        // — kept in the codebase for a future premium tier.
         [
-            { type: "group", label: (i18n.language, i18n.t("set_grp_wireguard")) },
-            { type: "vpn", label: "" },
-            { type: "toggle", key: "vpnSplitTunnel", label: (i18n.language, i18n.t("set_vpn_split")), note: (i18n.language, i18n.t("set_vpn_split_note")) },
-            { type: "toggle", key: "vpnAutoConnect", label: (i18n.language, i18n.t("set_vpn_autoconnect")), note: (i18n.language, i18n.t("set_vpn_autoconnect_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_iface_bind")) },
-            { type: "iface", label: (i18n.language, i18n.t("set_iface2")) },
+            { type: "iface", label: (i18n.language, i18n.t("set_iface2")), note: (i18n.language, i18n.t("set_iface_note")) },
             { type: "toggle", key: "killSwitchEnabled", label: (i18n.language, i18n.t("settings_kill_switch")), on: true, note: (i18n.language, i18n.t("set_killswitch_note")) },
             { type: "toggle", key: "autoResumeOnReconnect", label: (i18n.language, i18n.t("settings_auto_resume")), on: true, note: (i18n.language, i18n.t("set_autoresume_note")) },
             { type: "toggle", key: "useTor", label: (i18n.language, i18n.t("settings_use_tor")), note: (i18n.language, i18n.t("set_use_tor_note")) },

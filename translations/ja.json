@@ -1178,5 +1178,6 @@
   "set_vpn_split": "スプリットトンネル",
   "set_vpn_split_note": "BATorrent の通信だけが VPN を使い、それ以外は通常の接続のままです。トラッカーの名前解決はシステム DNS を使用します。次回の接続から適用されます。",
   "set_vpn_autoconnect": "起動時に接続",
-  "set_vpn_autoconnect_note": "BATorrent の起動時に最後に使用したプロファイルへ再接続します（管理者権限を求めます）。"
+  "set_vpn_autoconnect_note": "BATorrent の起動時に最後に使用したプロファイルへ再接続します（管理者権限を求めます）。",
+  "set_iface_note": "VPNアプリ（IVPN、Mullvadなど）を起動し、そのネットワークインターフェースをここで選びます。BATorrentの通信だけがそこを通ります。"
 }

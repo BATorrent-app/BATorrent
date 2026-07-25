@@ -345,7 +345,19 @@ Rectangle {
             Layout.preferredHeight: 34
             Layout.preferredWidth: vpnRow.implicitWidth + 22
             radius: 9
-            readonly property int st: (typeof vpn !== "undefined") ? vpn.connState : 0
+            // "Light" VPN: the pill reflects whether BATorrent is bound to a VPN
+            // network interface (green = protected), not the dormant WireGuard
+            // cockpit's connection state.
+            property bool bound: false
+            function refreshBound() {
+                bound = (typeof settings !== "undefined") && settings.get("outgoingInterface") !== ""
+            }
+            Component.onCompleted: refreshBound()
+            Connections {
+                target: (typeof settings !== "undefined") ? settings : null
+                function onChanged() { vpnChip.refreshBound() }
+            }
+            readonly property int st: bound ? 2 : 0
             readonly property color stColor: st === 2 ? Theme.grn
                                            : st === 1 ? Theme.amber
                                            : st === 3 ? Theme.accent : Theme.t4
