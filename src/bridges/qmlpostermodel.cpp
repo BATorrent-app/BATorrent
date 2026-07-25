@@ -202,6 +202,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         }
         return QString();
     }
+    case QueuePosRole:    return info.queuePos;
     }
     return {};
 }
@@ -232,7 +233,8 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {DownloadedRole,  "downloaded"},
         {PlayableRole,    "playable"},
         {YearRole,        "year"},
-        {GenresRole,      "genres"}
+        {GenresRole,      "genres"},
+        {QueuePosRole,    "queuePos"}
     };
 }
 
@@ -275,7 +277,9 @@ void QmlPosterModel::emitRows(bool fullRoles)
         DownSpeedRole, UpSpeedRole, NumPeersRole, DownRateRole, UpRateRole,
         // size resolves once a magnet's metadata arrives — without it the grid
         // (and list) stay stuck at "0 B" until some full refresh happens.
-        SizeRole, SizeBytesRole, DownloadedRole };
+        SizeRole, SizeBytesRole, DownloadedRole,
+        // queue position shifts as items are added / finish / are reordered
+        QueuePosRole };
     if (fullRoles)
         emit dataChanged(index(0), index(m_lastCount - 1));
     else

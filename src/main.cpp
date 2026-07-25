@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include <QApplication>
+#include <memory>
 #include <QIcon>
 #include <QStringList>
 #include <QFont>
@@ -876,6 +877,24 @@ int main(int argc, char *argv[])
                 client->deleteLater();
             });
         });
+
+#ifdef Q_OS_MACOS
+        // Dock reopen: clicking the dock icon of a running app whose window is
+        // hidden (close-to-tray) leaves nothing to bring back — Qt has no
+        // cross-platform "reopen" event, so the window stayed lost until a full
+        // relaunch. Restore it when the app becomes active while hidden, matching
+        // the tray-click path. Armed after a delay so the launch-time activation
+        // doesn't fight "start in tray".
+        auto dockArmed = std::make_shared<bool>(false);
+        QTimer::singleShot(2500, &app, [dockArmed]() { *dockArmed = true; });
+        QObject::connect(&app, &QGuiApplication::applicationStateChanged, &app,
+                         [rootObj, dockArmed](Qt::ApplicationState state) {
+            if (!*dockArmed || state != Qt::ApplicationActive) return;
+            if (auto *w = qobject_cast<QWindow *>(rootObj)) {
+                if (w->visibility() == QWindow::Hidden) { w->show(); w->raise(); w->requestActivate(); }
+            }
+        });
+#endif
 
         // First-instance CLI args (.torrent / magnet passed on launch)
         for (int i = 1; i < app.arguments().size(); ++i) {
