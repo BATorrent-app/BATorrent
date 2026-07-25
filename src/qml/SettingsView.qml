@@ -287,7 +287,10 @@ Rectangle {
                                 font.weight: Font.Bold
                                 font.letterSpacing: 0.8
                                 font.family: Theme.fontSans
-                                font.capitalization: Font.AllUppercase
+                                // Brand names keep their own casing: "WireGuard" has
+                                // an intentional inner capital that ALL-CAPS destroys.
+                                font.capitalization: modelData.label.toLowerCase().indexOf("wireguard") >= 0
+                                    ? Font.MixedCase : Font.AllUppercase
                             }
 
                             // .card
@@ -346,12 +349,14 @@ Rectangle {
                 // a change auto-saves; a clearer "Saved" pulse the moment it does,
                 // so the user never wonders whether their edit stuck (tester: the
                 // old flash was too subtle to notice).
+                // "Saved" pulses only on an actual change; no permanent
+                // "changes are applied immediately" caption cluttering the footer.
                 IconImg {
                     id: savedCheck
                     src: "qrc:/icons/check.svg"; s: 13
                     tint: Theme.grn
                     transformOrigin: Item.Center
-                    opacity: savedFlash.running ? 1 : 0.55
+                    opacity: savedFlash.running ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 200 } }
                     SequentialAnimation {
                         id: savedPop
@@ -361,13 +366,13 @@ Rectangle {
                 }
                 Text {
                     id: savedText
-                    text: savedFlash.running ? (i18n.language, i18n.t("set_saved_now"))
-                                             : (i18n.language, i18n.t("set_changes_instant"))
-                    color: savedFlash.running ? Theme.grn : Theme.t4
-                    font.pixelSize: savedFlash.running ? 12 : 11
-                    font.weight: savedFlash.running ? Font.DemiBold : Font.Normal
+                    text: (i18n.language, i18n.t("set_saved_now"))
+                    color: Theme.grn
+                    opacity: savedFlash.running ? 1 : 0
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
                     font.family: Theme.fontSans
-                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on opacity { NumberAnimation { duration: 200 } }
                 }
                 Timer { id: savedFlash; interval: 1800 }
                 Connections {

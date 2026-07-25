@@ -32,6 +32,7 @@ Item {
     required property string downloaded
     required property int year
     required property string genres
+    required property int queuePos
 
     readonly property bool isDownloading: stateKey !== "seeding" && stateKey !== "finished"
         && stateKey !== "completed" && stateKey !== "paused" && stateKey !== "queued"
@@ -43,10 +44,9 @@ Item {
     // status word below the poster is redundant, so we show movie info instead.
     readonly property bool hasBadge: stateKey === "seeding" || stateKey === "queued"
         || progress >= 0.999
-    // "2021 · Action, Horror" — release year + genres from TMDB, whichever exist
-    readonly property string metaLine: (year > 0 && genres.length > 0)
-        ? (year + " · " + genres)
-        : (year > 0 ? String(year) : genres)
+    // Genres only beneath the poster — the release year moved to a chip on the
+    // poster's top-left corner (tester: cleaner hierarchy, more room below).
+    readonly property string metaLine: genres
 
     readonly property string posterUrl: win.fileUrl(posterPath)
 
@@ -175,11 +175,12 @@ Item {
             anchors.left: parent.left; anchors.right: parent.right
             anchors.bottom: parent.bottom
             anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.bottomMargin: 8
-            height: 4; radius: 2
-            color: Qt.rgba(0, 0, 0, 0.55)
+            height: 6; radius: 3
+            color: Qt.rgba(0, 0, 0, 0.6)
             Rectangle {
-                height: parent.height; radius: 2
-                width: parent.width * tile.progress
+                height: parent.height; radius: 3
+                // clamp to at least a round nub so early progress still reads
+                width: Math.max(parent.height, parent.width * tile.progress)
                 color: win.fillFor(tile.stateKey)
                 Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
             }
@@ -236,19 +237,36 @@ Item {
             Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
 
-        // category chip (top-left) — dark pill so it reads on any cover
-        Rectangle {
-            visible: tile.category.length > 0
+        // top-left stack: release year, then the category chip — dark pills that
+        // read on any cover. Year is the at-a-glance identifier the tester wanted
+        // on the poster itself; the line below the poster now carries genres only.
+        Column {
             anchors.left: parent.left; anchors.top: parent.top
             anchors.leftMargin: 8; anchors.topMargin: 8
-            radius: 9; color: "#99000000"
-            implicitWidth: catTxt.implicitWidth + 12; implicitHeight: 18
-            Text {
-                id: catTxt; anchors.centerIn: parent
-                text: tile.category
-                color: "#ffffff"; opacity: 0.88
-                font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
-                font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
+            spacing: 5
+            Rectangle {
+                visible: tile.year > 0
+                radius: 9; color: "#99000000"
+                implicitWidth: yrTxt.implicitWidth + 12; implicitHeight: 18
+                Text {
+                    id: yrTxt; anchors.centerIn: parent
+                    text: tile.year
+                    color: "#ffffff"; opacity: 0.92
+                    font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
+                    font.features: Theme.tnum
+                }
+            }
+            Rectangle {
+                visible: tile.category.length > 0
+                radius: 9; color: "#99000000"
+                implicitWidth: catTxt.implicitWidth + 12; implicitHeight: 18
+                Text {
+                    id: catTxt; anchors.centerIn: parent
+                    text: tile.category
+                    color: "#ffffff"; opacity: 0.88
+                    font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
+                    font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
+                }
             }
         }
         // seeding pulse — a faint amber glow sweeping along the poster's bottom
@@ -278,19 +296,30 @@ Item {
             }
         }
 
-        // download % (top-right) — hidden once complete or while queued (the
-        // QUEUE badge owns that corner then); tint follows state
+        // downloading badge (top-right) — completes the DONE/SEEDING/QUEUE set: a
+        // red down-arrow ring + the live %. Sits with the rest of the status set
+        // (the year owns the top-left now); hidden once complete or while queued.
         Rectangle {
             visible: tile.progress < 0.999 && tile.stateKey !== "queued"
             anchors.right: parent.right; anchors.top: parent.top
             anchors.rightMargin: 8; anchors.topMargin: 8
             radius: 9; color: "#cc000000"
-            implicitWidth: pctTxt.implicitWidth + 14; implicitHeight: 18
-            Text {
-                id: pctTxt; anchors.centerIn: parent
-                text: Math.floor(tile.progress * 100) + "%"
-                color: "#ffffff"
-                font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
+            implicitWidth: dlRow.implicitWidth + 14; implicitHeight: 18
+            Row {
+                id: dlRow; anchors.centerIn: parent; spacing: 4
+                Rectangle {
+                    width: 13; height: 13; radius: 6.5
+                    color: "transparent"; border.color: Theme.accent; border.width: 1.5
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text { anchors.centerIn: parent; text: "↓"; color: Theme.accent; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Math.floor(tile.progress * 100) + "%"
+                    color: "#ffffff"; opacity: 0.92
+                    font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
+                    font.features: Theme.tnum
+                }
             }
         }
         // done badge (top-right) — same dark-glass pill as the % badge, with
@@ -363,7 +392,8 @@ Item {
                     Text { anchors.centerIn: parent; text: "⋯"; color: Theme.t4; font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans }
                 }
                 Text {
-                    text: (i18n.language, i18n.t("state_queued"))
+                    // .arg(queuePos) — was showing the literal "#%1" on every tile
+                    text: (i18n.language, i18n.t("state_queued").arg(tile.queuePos))
                     color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
                     font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
                     anchors.verticalCenter: parent.verticalCenter

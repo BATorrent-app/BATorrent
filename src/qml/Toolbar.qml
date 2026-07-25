@@ -138,11 +138,11 @@ Rectangle {
             Column {
                 spacing: 3
                 Text {
-                    text: (i18n.language, i18n.t("graph_download"))
+                    text: (i18n.language, i18n.t("graph_download").toLowerCase())
                     color: Theme.t4
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                     font.weight: Font.Bold
-                    font.letterSpacing: 1
+                    font.capitalization: Font.Capitalize
                     font.family: Theme.fontSans
                 }
                 Row {
@@ -167,11 +167,11 @@ Rectangle {
             Column {
                 spacing: 3
                 Text {
-                    text: (i18n.language, i18n.t("graph_upload"))
+                    text: (i18n.language, i18n.t("graph_upload").toLowerCase())
                     color: Theme.t4
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                     font.weight: Font.Bold
-                    font.letterSpacing: 1
+                    font.capitalization: Font.Capitalize
                     font.family: Theme.fontSans
                 }
                 Row {
