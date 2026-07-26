@@ -16,6 +16,11 @@ Rectangle {
     property var win
     property alias searchInput: searchInput
 
+    // The accent ring means "you're typing here". It has to go the moment
+    // attention moves elsewhere — a TextInput keeps activeFocus until something
+    // else asks for it, so every interaction that isn't typing calls this.
+    function clearSearchFocus() { if (searchInput.activeFocus) searchInput.focus = false }
+
     component Pill: Rectangle {
         id: pi
         property string label
@@ -28,6 +33,12 @@ Rectangle {
         implicitWidth: pillRow.implicitWidth + 26
         color: on ? Theme.accentTint : (piMa.containsMouse ? Theme.hover : "transparent")
 
+        // announced as a radio: the pills are one exclusive choice, and the count
+        // belongs in the name or the reader never says how many matched
+        Accessible.role: Accessible.RadioButton
+        Accessible.name: pi.count.length > 0 ? (pi.label + ", " + pi.count) : pi.label
+        Accessible.checked: pi.on
+        Accessible.onPressAction: pi.clicked()
         activeFocusOnTab: true
         Keys.onReturnPressed: pi.clicked()
         Keys.onSpacePressed: pi.clicked()
@@ -48,6 +59,7 @@ Rectangle {
             anchors.centerIn: parent
             spacing: 7
             Text {
+                id: pillLabel
                 anchors.verticalCenter: parent.verticalCenter
                 text: pi.label
                 color: pi.on ? Theme.accentText : (piMa.containsMouse ? Theme.t2 : Theme.t3)
@@ -56,7 +68,10 @@ Rectangle {
                 font.weight: Font.Medium
             }
             Text {
-                anchors.verticalCenter: parent.verticalCenter
+                // baseline, not verticalCenter: the count is a size smaller, and
+                // centring two different type sizes aligns their line boxes while
+                // leaving the baselines a pixel apart — the number visibly floats
+                anchors.baseline: pillLabel.baseline
                 text: pi.count
                 color: pi.on ? Theme.accentText : Theme.t4
                 font.pixelSize: 11
@@ -369,12 +384,28 @@ Rectangle {
                             implicitWidth: 200
                             delegate: CatItem {}
                             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+                            // The four built-ins are static; user-created ones are
+                            // appended on open — the same rule the right-click menu
+                            // follows. This list was hardcoded too, so a category
+                            // you created could be assigned but never filtered by.
+                            onAboutToShow: catFilterCustoms.model = win.customCategories()
                             CatItem { text: (i18n.language, i18n.t("filter_all_categories")); onTriggered: win.applyCatFilter("") }
                             MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
                             CatItem { text: win.catLabel("Apps");   onTriggered: win.applyCatFilter("Apps") }
                             CatItem { text: win.catLabel("Games");  onTriggered: win.applyCatFilter("Games") }
                             CatItem { text: win.catLabel("Movies"); onTriggered: win.applyCatFilter("Movies") }
                             CatItem { text: win.catLabel("Series"); onTriggered: win.applyCatFilter("Series") }
+                            Instantiator {
+                                id: catFilterCustoms
+                                model: []
+                                delegate: CatItem {
+                                    required property var modelData
+                                    text: modelData
+                                    onTriggered: win.applyCatFilter(modelData)
+                                }
+                                onObjectAdded: function(index, object) { catFilterMenu.insertItem(6 + index, object) }
+                                onObjectRemoved: function(index, object) { catFilterMenu.removeItem(object) }
+                            }
                         }
                     }
                 }

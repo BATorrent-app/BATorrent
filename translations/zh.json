@@ -1187,5 +1187,7 @@
   "trust_cam": "影院偷录",
   "trust_cam_note": "CAM/TS 版本是在影院内用摄像机录制的——画面晃动、声音差、还会拍到观众。",
   "trust_spam_name": "二次上传",
-  "trust_spam_name_note": "名称以网站地址开头，是二次上传的标志。这类资源比原始发布更常夹带安装程序。"
+  "trust_spam_name_note": "名称以网站地址开头，是二次上传的标志。这类资源比原始发布更常夹带安装程序。",
+  "tb_copy": "复制",
+  "tb_folder": "文件夹"
 }

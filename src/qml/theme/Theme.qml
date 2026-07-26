@@ -45,12 +45,12 @@ QtObject {
     readonly property int sp6: 32
 
     // ---------- fonts ----------
-    // Inter is bundled (added via QFontDatabase in main.cpp) and used on every
-    // platform so the UI is pixel-identical across macOS/Windows/Linux — the
-    // system fonts (SF / Segoe UI) diverge in family and metrics otherwise.
-    readonly property string fontSans: "Inter"
+    // IBM Plex Sans is bundled (added via QFontDatabase in main.cpp) and used on
+    // every platform so the UI is pixel-identical across macOS/Windows/Linux —
+    // the system fonts (SF / Segoe UI) diverge in family and metrics otherwise.
+    readonly property string fontSans: "IBM Plex Sans"
     readonly property string fontMono: Qt.platform.os === "windows" ? "Consolas" : (Qt.platform.os === "osx" ? "Menlo" : "monospace")
-    // tabular figures for numeric readouts (font.features: Theme.tnum) — Inter
+    // tabular figures for numeric readouts (font.features: Theme.tnum) — Plex
     // aligns digits like a mono font without the terminal texture; mono stays
     // only for raw data (hashes, logs)
     readonly property var tnum: ({ "tnum": true })
@@ -167,20 +167,22 @@ QtObject {
         name === "matrix"   ? "#84dd9b" : "#b4b5ba"
 
     readonly property color t3:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.52) :
-        name === "light"    ? "#6c6e76" :
-        name === "midnight" ? "#6a82b8" :
-        name === "sakura"   ? "#8a5a70" :
-        name === "darkstar" ? "#8a7eb8" :
-        name === "matrix"   ? "#519f66" : "#818288"
+        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.68) :
+        name === "light"    ? "#5c5d64" :
+        name === "midnight" ? "#8498c4" :
+        name === "sakura"   ? "#774d60" :
+        name === "darkstar" ? "#9e94c4" :
+        name === "matrix"   ? "#55a86c" : "#999a9f"
+
 
     readonly property color t4:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.36) :
-        name === "light"    ? "#9a9da6" :
-        name === "midnight" ? "#47588a" :
-        name === "sakura"   ? "#b58aa0" :
-        name === "darkstar" ? "#645889" :
-        name === "matrix"   ? "#356b45" : "#5b5c63"
+        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.55) :
+        name === "light"    ? "#727581" :
+        name === "midnight" ? "#687bb1" :
+        name === "sakura"   ? "#98607d" :
+        name === "darkstar" ? "#8478a8" :
+        name === "matrix"   ? "#458a59" : "#7d7e87"
+
 
     // ---------- custom theme (name === "custom"): active profile colors ----------
     // Six user colors (bg/panel/text + 3 accents). No legibility auto-fixing —
