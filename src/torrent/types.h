@@ -35,6 +35,24 @@ struct TorrentInfo {
     QStringList tags;
 };
 
+// Stable classification key for a torrent's state — the token every UI surface
+// keys its colour off (grid tile, detail bar, status dot). Distinct from
+// TorrentInfo::stateString, which is a *translated label* and therefore useless
+// for comparison. Lives here so the poster model and the selection bridge can't
+// drift apart.
+inline QString torrentStateKey(const TorrentInfo &info)
+{
+    if (info.filesMissing) return QStringLiteral("missing");
+    if (info.completed)    return QStringLiteral("completed");
+    if (info.queued)       return QStringLiteral("queued");
+    if (info.paused)       return QStringLiteral("paused");
+    // progress==1.0 alone isn't seeding: a torrent with every file deselected
+    // (total_wanted==0, e.g. YTS stream-while-watch mid-apply) reads progress
+    // 1.0 with zero bytes on disk and flashed "SEEDING" at 0%.
+    if (info.progress >= 1.0f && info.totalDone > 0) return QStringLiteral("seeding");
+    return QStringLiteral("downloading");
+}
+
 struct PeerInfo {
     QString ip;
     int port;

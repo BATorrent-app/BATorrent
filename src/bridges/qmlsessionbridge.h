@@ -62,6 +62,8 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString selectedAdded READ selectedAdded NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedPath READ selectedPath NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedState READ selectedState NOTIFY selectionChanged)
+    // the untranslated classification key — selectedState is a display label
+    Q_PROPERTY(QString selectedStateKey READ selectedStateKey NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedFilesMissing READ selectedFilesMissing NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedPoster READ selectedPoster NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDescription READ selectedDescription NOTIFY selectionChanged)
@@ -321,6 +323,7 @@ public:
     QString selectedAdded() const;
     QString selectedPath() const;
     QString selectedState() const;
+    QString selectedStateKey() const;
     bool selectedFilesMissing() const;
     QString selectedPoster() const;
     QString selectedDescription() const;

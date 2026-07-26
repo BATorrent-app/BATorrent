@@ -28,6 +28,18 @@ void SessionManager::setTorrentCategory(int index, const QString &category)
     else
         m_categories[hash] = category;
 
+    // Persist immediately. The map used to be written only by saveResumeData(),
+    // which runs on quit and a couple of other events — quit through any path
+    // that skipped it and the user's category was simply gone next launch.
+    // setCategorySavePath (below) already wrote through; this now matches it.
+    {
+        QSettings s("BATorrent", "BATorrent");
+        s.beginGroup("categories");
+        if (category.isEmpty()) s.remove(hash);
+        else                    s.setValue(hash, category);
+        s.endGroup();
+    }
+
     // If the category has a save path and the torrent is still downloading,
     // update the intended destination (temp path integration).
     if (!category.isEmpty() && m_categorySavePaths.contains(category)) {
@@ -49,7 +61,11 @@ void SessionManager::setTorrentCategory(int index, const QString &category)
 
 QStringList SessionManager::categories() const
 {
-    QStringList list = {"Movies", "Games", "Software", "Music", "Other"};
+    // Must match the built-ins the UI offers (Main.qml catLabel translates exactly
+    // these four). They used to disagree — the engine advertised Software/Music/
+    // Other, which the menu never showed and which then looked like stray custom
+    // categories to anything listing them.
+    QStringList list = {"Apps", "Games", "Movies", "Series"};
     // Add any custom categories that aren't in the built-in list
     for (auto it = m_categories.cbegin(); it != m_categories.cend(); ++it) {
         if (!list.contains(it.value()) && !it.value().isEmpty())
