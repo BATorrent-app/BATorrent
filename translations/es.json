@@ -1187,5 +1187,7 @@
   "trust_cam": "grabado en el cine",
   "trust_cam_note": "Un lanzamiento CAM/TS se graba con cámara dentro de un cine: imagen temblorosa, mal sonido, gente delante.",
   "trust_spam_name": "resubida",
-  "trust_spam_name_note": "El nombre empieza con la dirección de un sitio, la firma de una resubida. Estas traen instaladores incluidos más a menudo que el lanzamiento original."
+  "trust_spam_name_note": "El nombre empieza con la dirección de un sitio, la firma de una resubida. Estas traen instaladores incluidos más a menudo que el lanzamiento original.",
+  "tb_copy": "Copiar",
+  "tb_folder": "Carpeta"
 }

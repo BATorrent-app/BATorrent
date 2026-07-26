@@ -38,6 +38,14 @@ Rectangle {
         opacity: disabled ? 0.35 : 1.0
 
         function trigger() { if (tb.spinOnClick) tbSpin.restart(); tb.clicked() }
+        // without these a screen reader reads nothing at all here — the label is
+        // a plain Text with no semantic tie to the control
+        Accessible.role: Accessible.Button
+        Accessible.name: tb.label
+        // no Accessible.disabled in QML — hide the control from the tree instead
+        // so a reader doesn't offer an action that does nothing
+        Accessible.ignored: tb.disabled
+        Accessible.onPressAction: if (!tb.disabled) tb.trigger()
         activeFocusOnTab: !disabled
         Keys.onReturnPressed: if (!disabled) tb.trigger()
         Keys.onSpacePressed: if (!disabled) tb.trigger()
@@ -60,9 +68,11 @@ Rectangle {
                 id: tbIcon
                 anchors.horizontalCenter: parent.horizontalCenter
                 src: tb.icon
-                tint: tb.active ? Theme.accent : (!tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3)
+                // one step brighter than the label: a stroke carries far less ink
+                // than a glyph, so matching colours makes the icon read fainter
+                tint: tb.active ? Theme.accent : (!tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t2)
                 s: 18
-                NumberAnimation { id: tbSpin; target: tbIcon; property: "rotation"; from: 0; to: 360; duration: 620; easing.type: Easing.OutCubic }
+                NumberAnimation { id: tbSpin; target: tbIcon; property: "rotation"; from: 0; to: 360; duration: 380; easing.type: Easing.OutCubic }
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -114,11 +124,16 @@ Rectangle {
         TBtn { label: (i18n.language, i18n.t("tb_stop"));   icon: "qrc:/icons/stop.svg";  disabled: !win.hasSel; onClicked: session.pauseSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; spinOnClick: true; onClicked: { if (toolbar.win) toolbar.win.flashRefresh(); if (typeof session !== "undefined") session.refreshAll() } }
         TGrpDiv {}
-        // G3: Remover
+        // G3: ações sobre a seleção (tester: copiar magnet e abrir pasta estavam
+        // só no menu de contexto, apesar de anunciadas como estando aqui)
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
+        TBtn { label: (i18n.language, i18n.t("tb_copy"));   icon: "qrc:/icons/copy.svg";   disabled: !win.hasSel; onClicked: session.copyMagnetLink() }
+        TBtn { label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; disabled: !win.hasSel; onClicked: session.openSaveFolder() }
         TGrpDiv {}
-        // G4: Buscar, RSS
-        TBtn { label: (i18n.language, i18n.t("tb_search"));  icon: "qrc:/icons/search.svg"; onClicked: toolbar.navigate(1) }
+        // G4: RSS. The "Search" button used to live here and was removed: it
+        // navigated to the Find page, but sat next to the downloads filter
+        // field wearing the same magnifier — two meanings, one icon. Page
+        // switching belongs to the nav rail; this toolbar acts on torrents.
         TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: toolbar.openRss() }
         TGrpDiv {}
         // G5: Config.

@@ -1187,5 +1187,7 @@
   "trust_cam": "filmed in cinema",
   "trust_cam_note": "A CAM/TS release is recorded with a camera inside a cinema — shaky picture, poor sound, people in frame.",
   "trust_spam_name": "reupload",
-  "trust_spam_name_note": "The name starts with a site address, the signature of a re-upload. These carry bundled installers more often than the original release."
+  "trust_spam_name_note": "The name starts with a site address, the signature of a re-upload. These carry bundled installers more often than the original release.",
+  "tb_copy": "Copy",
+  "tb_folder": "Folder"
 }

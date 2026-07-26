@@ -1187,5 +1187,7 @@
   "trust_cam": "im Kino abgefilmt",
   "trust_cam_note": "Ein CAM/TS-Release wird mit einer Kamera im Kino aufgenommen — wackliges Bild, schlechter Ton, Leute im Bild.",
   "trust_spam_name": "Reupload",
-  "trust_spam_name_note": "Der Name beginnt mit einer Website-Adresse, die Signatur eines Reuploads. Diese enthalten häufiger mitgelieferte Installer als das Original-Release."
+  "trust_spam_name_note": "Der Name beginnt mit einer Website-Adresse, die Signatur eines Reuploads. Diese enthalten häufiger mitgelieferte Installer als das Original-Release.",
+  "tb_copy": "Kopieren",
+  "tb_folder": "Ordner"
 }

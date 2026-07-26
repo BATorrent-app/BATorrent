@@ -1187,5 +1187,7 @@
   "trust_cam": "sinemada çekilmiş",
   "trust_cam_note": "CAM/TS sürümü sinema salonunda kamerayla çekilir — titrek görüntü, kötü ses, karede insanlar.",
   "trust_spam_name": "yeniden yükleme",
-  "trust_spam_name_note": "Ad bir site adresiyle başlıyor; bu yeniden yüklemenin imzasıdır. Bunlar orijinal sürüme göre daha sık paket yükleyici içerir."
+  "trust_spam_name_note": "Ad bir site adresiyle başlıyor; bu yeniden yüklemenin imzasıdır. Bunlar orijinal sürüme göre daha sık paket yükleyici içerir.",
+  "tb_copy": "Kopyala",
+  "tb_folder": "Klasör"
 }
