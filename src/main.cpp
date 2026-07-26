@@ -65,6 +65,7 @@
 #include "services/platform/utils.h"
 
 #include <libtorrent/version.hpp>
+#include <boost/version.hpp>
 
 // Serves the app logo recolored for the OS scheme to QML (the system tray
 // icon.source wants a URL, not a QIcon). URL id is "light"/"dark"; the body
@@ -386,20 +387,32 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Load Inter font family
-    QFontDatabase::addApplicationFont(":/fonts/Inter-Regular.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/Inter-Medium.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/Inter-SemiBold.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/Inter-Bold.ttf");
+    // Load IBM Plex Sans family
+    QFontDatabase::addApplicationFont(":/fonts/IBMPlexSans-Regular.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/IBMPlexSans-Medium.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/IBMPlexSans-SemiBold.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/IBMPlexSans-Bold.ttf");
     QFontDatabase::addApplicationFont(":/fonts/NewRocker-Regular.ttf");   // brand wordmark
 
-    QFont defaultFont("Inter", 10);
+    // A family Qt can't resolve falls back silently to the system font — the UI
+    // still "works", just wrong everywhere. Say so in the log instead.
+    if (!QFontDatabase::families().contains(QStringLiteral("IBM Plex Sans")))
+        qWarning() << "[font] IBM Plex Sans failed to register — the UI is on a fallback family";
+
+    QFont defaultFont("IBM Plex Sans", 10);
     defaultFont.setStyleStrategy(QFont::PreferAntialias);
     app.setFont(defaultFont);
 
     // Use the Qt Quick default (distance-field) text rendering on every
     // platform so Windows matches macOS. Native Windows rendering was crisper
-    // but rendered the Inter weights noticeably thinner than the Mac reference.
+    // but rendered the bundled weights noticeably thinner than the Mac reference.
+
+    // Dependency versions in the log, not in the About box: a bug report ships
+    // the log, and this is the first thing you need when a crash is library-specific.
+    qInfo().nospace().noquote() << "[versions] BATorrent " << QCoreApplication::applicationVersion()
+                      << " · Qt " << qVersion()
+                      << " · libtorrent " << LIBTORRENT_VERSION
+                      << " · Boost " << QString::fromLatin1(BOOST_LIB_VERSION).replace('_', '.');
 
     QQuickStyle::setStyle("Basic");
     {

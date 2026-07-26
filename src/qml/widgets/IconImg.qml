@@ -4,6 +4,7 @@
 
 // Source: bat-dialog.css / batorrent-home.css — pequenos ícones SVG tingidos.
 import QtQuick
+import QtQuick.Window
 import QtQuick.Effects
 
 Item {
@@ -14,11 +15,15 @@ Item {
     implicitWidth: s
     implicitHeight: s
 
+    // Rasterize at the display's real density. A fixed 2x was fine on Retina but
+    // got upscaled — visibly soft — on 3x screens (Windows at 300%, some 4K).
+    readonly property int rasterPx: Math.max(2, Math.ceil(Screen.devicePixelRatio)) * ico.s
+
     Image {
         id: imgSrc
         anchors.fill: parent
         source: ico.src
-        sourceSize: Qt.size(ico.s * 2, ico.s * 2)
+        sourceSize: Qt.size(ico.rasterPx, ico.rasterPx)
         fillMode: Image.PreserveAspectFit
         visible: false
         layer.enabled: true

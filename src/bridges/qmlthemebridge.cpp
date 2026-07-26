@@ -351,20 +351,6 @@ QString QmlThemeBridge::releaseNotes() const
     return QString::fromUtf8(f.readAll());
 }
 
-QVariantList QmlThemeBridge::libraries() const
-{
-    QVariantList out;
-    auto add = [&](const QString &nm, const QString &v) {
-        QVariantMap m; m["nm"] = nm; m["v"] = v; out << m;
-    };
-    add("Qt", QString::fromLatin1(qVersion()));
-    add("libtorrent-rasterbar", QStringLiteral(LIBTORRENT_VERSION));
-#ifdef OPENSSL_VERSION_STR
-    add("OpenSSL", QStringLiteral(OPENSSL_VERSION_STR));
-#endif
-    add("Boost", QString::fromLatin1(BOOST_LIB_VERSION).replace('_', '.'));
-    return out;
-}
 
 QPixmap QmlThemeBridge::renderLogo(bool darkBody, int size, qreal dpr)
 {
