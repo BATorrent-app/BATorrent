@@ -1179,5 +1179,13 @@
   "set_vpn_split_note": "Only BATorrent's traffic uses the VPN — everything else stays on your normal connection. Tracker name lookups use system DNS. Applies on the next connect.",
   "set_vpn_autoconnect": "Connect on launch",
   "set_vpn_autoconnect_note": "Reconnects the last used profile when BATorrent starts (asks for admin rights).",
-  "set_iface_note": "Run your VPN app (IVPN, Mullvad…), then pick its network interface here — only BATorrent's traffic goes through it."
+  "set_iface_note": "Run your VPN app (IVPN, Mullvad…), then pick its network interface here — only BATorrent's traffic goes through it.",
+  "trust_password": "password",
+  "trust_password_note": "The uploader asks for a password, usually on an external site. That is the classic bait for adware and fake download pages.",
+  "trust_fake_size": "size mismatch",
+  "trust_fake_size_note": "The file is far too small for the resolution it claims. Expect an upscale, a placeholder, or something that is not the film at all.",
+  "trust_cam": "filmed in cinema",
+  "trust_cam_note": "A CAM/TS release is recorded with a camera inside a cinema — shaky picture, poor sound, people in frame.",
+  "trust_spam_name": "reupload",
+  "trust_spam_name_note": "The name starts with a site address, the signature of a re-upload. These carry bundled installers more often than the original release."
 }

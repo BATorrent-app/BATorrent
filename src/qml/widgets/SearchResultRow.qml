@@ -5,6 +5,7 @@
 // One flat search result: thumb, name + attribute tags, size/seeds/leech
 // columns, add button. `sv` is the owning SearchView (filters, api, helpers).
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import "../theme"
 
@@ -112,6 +113,19 @@ Rectangle {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 6
+                // Pre-download warning (ReleaseTrust). Silent on a clean release —
+                // one red intensity, whether it's a caution or a risk.
+                TChip {
+                    id: trustChip
+                    readonly property string why: row.modelData.trustWhy || ""
+                    visible: why.length > 0
+                    red: true
+                    text: why.length > 0 ? "! " + (i18n.language, i18n.t(why)) : ""
+                    ToolTip.visible: trustMa.containsMouse
+                    ToolTip.text: why.length > 0 ? (i18n.language, i18n.t(why + "_note")) : ""
+                    ToolTip.delay: 300
+                    MouseArea { id: trustMa; anchors.fill: parent; hoverEnabled: true }
+                }
                 SourceTag { text: row.modelData.sub || row.modelData.provider || "" }
                 MetaTag {
                     text: {
@@ -125,7 +139,9 @@ Rectangle {
                     accent: row.modelData.native === true
                 }
                 MetaTag { text: row.modelData.quality || ""; accent: true }
-                MetaTag { text: row.modelData.source || "" }
+                // CAM is shown by the trust chip instead — louder, and in words a
+                // non-scene user actually understands.
+                MetaTag { text: row.modelData.source === "CAM" ? "" : (row.modelData.source || "") }
                 MetaTag { text: row.modelData.codec || "" }
                 MetaTag { text: row.modelData.hdr ? "HDR" : ""; accent: true }
                 // parsed episode/pack tag inside a picked series' releases

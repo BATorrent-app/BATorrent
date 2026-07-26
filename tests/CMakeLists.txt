@@ -50,6 +50,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/security/archiveextractor.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasepick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/searchranker.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/releasetrust.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/debridpick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp
@@ -237,6 +238,7 @@ bat_add_test(test_gamesource test_gamesource.cpp)
 bat_add_test(test_memguard   test_memguard.cpp)
 bat_add_test(test_geoipdb    test_geoipdb.cpp)
 bat_add_test(test_searchranker test_searchranker.cpp)
+bat_add_test(test_releasetrust test_releasetrust.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_magnettrackers test_magnettrackers.cpp)

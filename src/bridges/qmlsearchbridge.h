@@ -117,6 +117,9 @@ private:
     // Parse quality/source/codec/hdr/lang tokens out of a release name for filtering.
     static void fillMediaAttrs(QVariantMap &m, const QString &name);
     static QString appLangCode();   // the app UI language as a release-tag code (PT/EN/…)
+    // Pre-download trust verdict — reads the attrs fillMediaAttrs just wrote, so
+    // it has to run after it (and after seedsN/sizeBytes are set).
+    static void fillTrust(QVariantMap &m, const QString &name);
     // Flat aggregate search over every enabled source (the old "Tudo" behavior).
     void rawAggregateSearch(const QString &q, int categoryCode);
     // Type-scoped drill-down for a picked title: games hit game catalogs + the

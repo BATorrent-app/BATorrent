@@ -13,6 +13,7 @@
 #include "services/metadata/nameparser.h"
 #include "services/metadata/releasepick.h"
 #include "services/metadata/searchranker.h"
+#include "services/metadata/releasetrust.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
 #include "services/platform/utils.h"
@@ -97,6 +98,7 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
             m["quality"] = s.quality;
             m["seedsN"] = 0; m["sizeBytes"] = s.size;
             fillMediaAttrs(m, s.title);
+            fillTrust(m, s.title);
             m_results << m;
         }
         emit resultsChanged();
@@ -264,6 +266,21 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
     // Dub/sub/original relative to the user's language — the axis the segmented
     // filter acts on (a dubbed-hater and a dub-lover want opposite results).
     m["audioMode"] = AudioMode::key(AudioMode::classify(name, appLang));
+}
+
+void QmlSearchBridge::fillTrust(QVariantMap &m, const QString &name)
+{
+    ReleaseTrust::Release r;
+    r.name = name;
+    r.quality = m.value(QStringLiteral("quality")).toString();
+    r.source = m.value(QStringLiteral("source")).toString();
+    r.seeders = m.value(QStringLiteral("seedsN")).toInt();
+    r.sizeBytes = m.value(QStringLiteral("sizeBytes")).toLongLong();
+
+    const auto v = ReleaseTrust::assess(r);
+    m["trust"] = ReleaseTrust::tierKey(v.tier);
+    m["trustWhy"] = v.reasons.isEmpty() ? QString() : v.reasons.first();
+    m["trustScore"] = v.score;
 }
 
 QString QmlSearchBridge::appLangCode()
@@ -786,6 +803,7 @@ void QmlSearchBridge::appendGameRows(const QList<GameDownload> &games)
         m["poster"] = ""; m["coverHash"] = "";
         m["seedsN"] = 0; m["sizeBytes"] = 0;
         fillMediaAttrs(m, g.title);
+        fillTrust(m, g.title);
         m_results << m;
         m_resultMagnets << g.magnet;
         m_resultHttp << g.httpUrl;
@@ -824,6 +842,7 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         m["poster"] = ""; m["coverHash"] = r.infoHash;
         m["seedsN"] = r.seeders; m["sizeBytes"] = static_cast<qlonglong>(r.size);
         fillMediaAttrs(m, r.name);
+        fillTrust(m, r.name);
         m_results << m;
         m_resultMagnets << r.magnet;
         m_resultHttp << QString();          // torrent rows download via magnet

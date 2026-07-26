@@ -80,6 +80,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/security/archiveextractor.cpp
     src/services/metadata/releasepick.cpp
     src/services/metadata/searchranker.cpp
+    src/services/metadata/releasetrust.cpp
     src/services/integrations/debridpick.cpp
     src/services/integrations/installerprofile.cpp
     src/services/security/defender.cpp
