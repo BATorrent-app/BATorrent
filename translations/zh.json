@@ -1179,5 +1179,13 @@
   "set_vpn_split_note": "只有 BATorrent 的流量走 VPN，系统其余流量保持普通连接。Tracker 域名解析使用系统 DNS。下次连接时生效。",
   "set_vpn_autoconnect": "启动时连接",
   "set_vpn_autoconnect_note": "BATorrent 启动时自动重连上次使用的配置文件（会请求管理员权限）。",
-  "set_iface_note": "运行你的 VPN 应用（IVPN、Mullvad 等），然后在此选择它的网络接口——只有 BATorrent 的流量会经过它。"
+  "set_iface_note": "运行你的 VPN 应用（IVPN、Mullvad 等），然后在此选择它的网络接口——只有 BATorrent 的流量会经过它。",
+  "trust_password": "需要密码",
+  "trust_password_note": "上传者要求输入密码，通常在外部网站上。这是广告软件和虚假下载页面的典型诱饵。",
+  "trust_fake_size": "体积不符",
+  "trust_fake_size_note": "文件体积远小于所标注的分辨率。很可能是拉伸画质、占位文件，甚至根本不是这部影片。",
+  "trust_cam": "影院偷录",
+  "trust_cam_note": "CAM/TS 版本是在影院内用摄像机录制的——画面晃动、声音差、还会拍到观众。",
+  "trust_spam_name": "二次上传",
+  "trust_spam_name_note": "名称以网站地址开头，是二次上传的标志。这类资源比原始发布更常夹带安装程序。"
 }

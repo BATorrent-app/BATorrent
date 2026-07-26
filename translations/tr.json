@@ -1179,5 +1179,13 @@
   "set_vpn_split_note": "Yalnızca BATorrent trafiği VPN'i kullanır — sistemin geri kalanı normal bağlantıda kalır. Tracker ad çözümlemesi sistem DNS'ini kullanır. Bir sonraki bağlantıda geçerli olur.",
   "set_vpn_autoconnect": "Başlangıçta bağlan",
   "set_vpn_autoconnect_note": "BATorrent açıldığında son kullanılan profile yeniden bağlanır (yönetici izni ister).",
-  "set_iface_note": "VPN uygulamanı (IVPN, Mullvad…) çalıştır, sonra ağ arayüzünü buradan seç — sadece BATorrent'in trafiği oradan geçer."
+  "set_iface_note": "VPN uygulamanı (IVPN, Mullvad…) çalıştır, sonra ağ arayüzünü buradan seç — sadece BATorrent'in trafiği oradan geçer.",
+  "trust_password": "parola",
+  "trust_password_note": "Yükleyici genellikle harici bir sitede parola istiyor. Bu, reklam yazılımı ve sahte indirme sayfaları için klasik bir tuzaktır.",
+  "trust_fake_size": "boyut tutmuyor",
+  "trust_fake_size_note": "Dosya, belirtilen çözünürlük için fazlasıyla küçük. Yükseltilmiş bir görüntü, dolgu dosyası ya da hiç film olmayan bir şey bekleyin.",
+  "trust_cam": "sinemada çekilmiş",
+  "trust_cam_note": "CAM/TS sürümü sinema salonunda kamerayla çekilir — titrek görüntü, kötü ses, karede insanlar.",
+  "trust_spam_name": "yeniden yükleme",
+  "trust_spam_name_note": "Ad bir site adresiyle başlıyor; bu yeniden yüklemenin imzasıdır. Bunlar orijinal sürüme göre daha sık paket yükleyici içerir."
 }

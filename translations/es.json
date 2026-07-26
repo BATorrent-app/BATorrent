@@ -1179,5 +1179,13 @@
   "set_vpn_split_note": "Solo el tráfico de BATorrent usa la VPN — el resto del sistema sigue en tu conexión normal. La resolución de nombres de los trackers usa el DNS del sistema. Se aplica en la próxima conexión.",
   "set_vpn_autoconnect": "Conectar al iniciar",
   "set_vpn_autoconnect_note": "Reconecta el último perfil usado cuando BATorrent arranca (pide permisos de administrador).",
-  "set_iface_note": "Ejecuta tu app de VPN (IVPN, Mullvad…) y luego elige aquí su interfaz de red — solo el tráfico de BATorrent pasa por ella."
+  "set_iface_note": "Ejecuta tu app de VPN (IVPN, Mullvad…) y luego elige aquí su interfaz de red — solo el tráfico de BATorrent pasa por ella.",
+  "trust_password": "contraseña",
+  "trust_password_note": "El uploader pide una contraseña, normalmente en un sitio externo. Es el cebo clásico para adware y páginas de descarga falsas.",
+  "trust_fake_size": "tamaño no cuadra",
+  "trust_fake_size_note": "El archivo es demasiado pequeño para la resolución que anuncia. Espera un reescalado, un relleno o algo que ni siquiera es la película.",
+  "trust_cam": "grabado en el cine",
+  "trust_cam_note": "Un lanzamiento CAM/TS se graba con cámara dentro de un cine: imagen temblorosa, mal sonido, gente delante.",
+  "trust_spam_name": "resubida",
+  "trust_spam_name_note": "El nombre empieza con la dirección de un sitio, la firma de una resubida. Estas traen instaladores incluidos más a menudo que el lanzamiento original."
 }

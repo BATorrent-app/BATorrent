@@ -1179,5 +1179,13 @@
   "set_vpn_split_note": "Nur der Verkehr von BATorrent nutzt das VPN — alles andere bleibt auf deiner normalen Verbindung. Tracker-Namensauflösung nutzt das System-DNS. Gilt ab der nächsten Verbindung.",
   "set_vpn_autoconnect": "Beim Start verbinden",
   "set_vpn_autoconnect_note": "Verbindet beim Start von BATorrent das zuletzt genutzte Profil erneut (fragt nach Administratorrechten).",
-  "set_iface_note": "Starte deine VPN-App (IVPN, Mullvad…) und wähle hier ihre Netzwerkschnittstelle — nur der Verkehr von BATorrent läuft darüber."
+  "set_iface_note": "Starte deine VPN-App (IVPN, Mullvad…) und wähle hier ihre Netzwerkschnittstelle — nur der Verkehr von BATorrent läuft darüber.",
+  "trust_password": "Passwort",
+  "trust_password_note": "Der Uploader verlangt ein Passwort, meist auf einer fremden Seite. Das ist der klassische Köder für Adware und gefälschte Download-Seiten.",
+  "trust_fake_size": "Größe passt nicht",
+  "trust_fake_size_note": "Die Datei ist viel zu klein für die angegebene Auflösung. Erwarte ein Upscale, eine Platzhalterdatei oder etwas, das gar nicht der Film ist.",
+  "trust_cam": "im Kino abgefilmt",
+  "trust_cam_note": "Ein CAM/TS-Release wird mit einer Kamera im Kino aufgenommen — wackliges Bild, schlechter Ton, Leute im Bild.",
+  "trust_spam_name": "Reupload",
+  "trust_spam_name_note": "Der Name beginnt mit einer Website-Adresse, die Signatur eines Reuploads. Diese enthalten häufiger mitgelieferte Installer als das Original-Release."
 }
