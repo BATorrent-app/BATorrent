@@ -319,33 +319,45 @@ Window {
                     }
                 }
 
-                // no feeds yet: a real empty state with the only action that matters
-                ColumnLayout {
+                // no feeds yet: a real empty state with the only action that matters.
+                // Centred with explicit geometry (Item + centerIn) rather than
+                // Layout.alignment: nested layouts kept resolving this block against
+                // the wrong width and it sat visibly left of the panel's middle.
+                Item {
                     visible: win.feedList.length === 0
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    spacing: Theme.sp3
-                    Item { Layout.fillHeight: true }
-                    IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/rss.svg"; tint: Theme.t4; s: 36 }
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: (i18n.language, i18n.t("rss_empty_title"))
-                        color: Theme.t2; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+
+                    Column {
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width - 2 * Theme.sp5, 420)
+                        spacing: Theme.sp3
+
+                        IconImg {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            src: "qrc:/icons/rss.svg"; tint: Theme.t4; s: 36
+                        }
+                        Text {
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            text: (i18n.language, i18n.t("rss_empty_title"))
+                            color: Theme.t2; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                        }
+                        Text {
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            text: (i18n.language, i18n.t("rss_empty_sub"))
+                            color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
+                        }
+                        Item { width: 1; height: 6 }   // BtnFlat is a Rectangle: no padding properties
+                        BtnFlat {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            primary: true
+                            text: (i18n.language, i18n.t("rss_add_feed_btn"))
+                            onClicked: addOverlay.visible = true
+                        }
                     }
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: (i18n.language, i18n.t("rss_empty_sub"))
-                        color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-                    BtnFlat {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.topMargin: 6
-                        primary: true
-                        text: (i18n.language, i18n.t("rss_add_feed_btn"))
-                        onClicked: addOverlay.visible = true
-                    }
-                    Item { Layout.fillHeight: true }
                 }
 
                 // .ilist

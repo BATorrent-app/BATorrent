@@ -12,6 +12,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import QtQuick.Shapes
 import "theme"
 import "widgets"
 
@@ -34,6 +35,19 @@ BatDialog {
     // Key by "major.minor" so hotfix bumps (4.3.0 → 4.3.1) keep the release's
     // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
+        "4.8": {
+            note: "I built the VPN twice. The first one had BATorrent running its own WireGuard tunnel — and it picked a fight with every VPN app you already had, asked for your admin password every single time, and on Windows it could kill your internet outright. A tester lost his connection for two days because of me. So I deleted it.<br><br>This one just uses the VPN you already pay for. Point BATorrent at it in Settings and only this app goes through it. If it drops, downloads stop.<br><br>Search got suspicious, too — it'll tell you when a release wants a password or is too small to be what it claims, before you waste the bandwidth.<br><br>The rest is a lot of small things you'll feel more than notice.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
+            , highlights: [
+                "VPN: bind BATorrent to the VPN you already run",
+                "Search warns about password bait, impossible file sizes and cam rips",
+                "Download from a direct link (Ctrl+D) and from file hosts",
+                "Blocklist of known bad peers, on by default",
+                "Copy magnet and Open folder are now in the toolbar, not just the menu",
+                "Speed graph with a real scale — read the numbers off the gridlines",
+                "New icon set and typeface; text contrast now passes WCAG AA",
+                "Categories you create stick around, and show up in every menu"
+            ]
+        },
         "4.7": {
             note: "This one's called Cinema, and it's mostly about the player. Audio, subtitles and playback speed used to be spread across three menus — now they're one panel. Hover the seek bar for a frame preview, get a next-episode countdown as a movie ends, skip intros and credits when the file has chapters, and the picture's colors spill softly into the black bars. Less \"torrent client playing a file\", more just watching something.<br><br>Also: Linux stopped crashing at launch (a packaging slip on my end — sorry), waiting downloads finally say they're queued, and the save dialogs remember your favorite folders.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
             , highlights: [
@@ -114,31 +128,63 @@ BatDialog {
     readonly property string noteText: content.note.length > 0
         ? content.note : (i18n.language, i18n.t("whatsnew_generic_note"))
 
-    // ===== hero header =====
-    RowLayout {
+    // ===== hero header — billed like a poster =====
+    // This screen is seen once per release and is the only moment the app gets
+    // to announce itself, so it stops looking like a settings row: the version
+    // is the headliner, set in the wordmark face at a size nothing else uses.
+    Item {
         Layout.fillWidth: true
-        spacing: 14
-        Image {
-            Layout.preferredWidth: 52; Layout.preferredHeight: 52; Layout.alignment: Qt.AlignVCenter
-            source: "qrc:/images/logo.svg"; sourceSize: Qt.size(104, 104); fillMode: Image.PreserveAspectFit
-            layer.enabled: Theme.isLight
-            layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
+        Layout.preferredHeight: dlg.isWelcome ? 92 : 132
+        clip: true
+
+        // Red bleed behind the numerals. It has to be a Shape/RadialGradient —
+        // QML's plain Gradient is LINEAR, and using it here painted a hard-edged
+        // slab instead of a glow. The falloff still meets the block's top margin
+        // before it reaches zero; that edge is acceptable, a flat slab was not.
+        Shape {
+            anchors.fill: parent
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                strokeColor: "transparent"
+                fillGradient: RadialGradient {
+                    centerX: 74; centerY: parent.height * 0.46; centerRadius: 190
+                    focalX: centerX; focalY: centerY
+                    GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.32) }
+                    GradientStop { position: 0.5; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.11) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+                PathRectangle { width: 520; height: 150 }
+            }
         }
-        ColumnLayout {
-            Layout.fillWidth: true; spacing: 5
-            RowLayout {
+
+        Column {
+            anchors.left: parent.left
+            anchors.leftMargin: 2
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 0
+
+            Row {
                 spacing: 8
                 Eyebrow { text: (i18n.language, i18n.t(dlg.isWelcome ? "welcome_eyebrow" : "whatsnew_eyebrow")); red: true }
-                TChip { visible: dlg.appVer.length > 0; text: "v" + dlg.appVer }
+            }
+            // the headliner: version numerals in New Rocker, oversized on purpose
+            Text {
+                visible: dlg.appVer.length > 0
+                text: dlg.appVer.split(".").slice(0, 2).join(".")
+                color: Theme.t1
+                font.family: "New Rocker"
+                font.pixelSize: dlg.isWelcome ? 52 : 88
+                topPadding: -4; bottomPadding: dlg.isWelcome ? -8 : -16
             }
             Row {
                 spacing: 0
-                Text { text: "BAT"; color: Theme.accent; font.family: "New Rocker"; font.pixelSize: 27 }
-                Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 27 }
+                Text { text: "BAT"; color: Theme.accent; font.family: "New Rocker"; font.pixelSize: 24 }
+                Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 24 }
             }
         }
     }
-    Rectangle { Layout.fillWidth: true; Layout.topMargin: 2; height: 1; color: Theme.hairSoft }
+    // a solid accent rule, not a hairline — it separates the billing from the mark
+    Rectangle { Layout.fillWidth: true; Layout.topMargin: 6; height: 2; color: Theme.accent; opacity: 0.9 }
 
     // ===== WELCOME body =====
     Text {
@@ -213,16 +259,40 @@ BatDialog {
         }
         Repeater {
             model: dlg.content.highlights
+            // Billed, not bulleted: the first line is the release's headline act
+            // and gets real size; the rest sit under it as supporting type. A flat
+            // list of identical rows says every change matters equally, which is
+            // never true and reads as a changelog dump.
             delegate: RowLayout {
                 id: hRow
                 required property var modelData
-                Layout.fillWidth: true; spacing: 10
-                Text { text: "›"; color: Theme.accent; font.pixelSize: 15; font.weight: Font.Bold; Layout.alignment: Qt.AlignTop }
+                required property int index
+                readonly property bool lead: index === 0
+                Layout.fillWidth: true
+                Layout.topMargin: lead ? 2 : 0
+                spacing: 10
+                Text {
+                    text: hRow.lead ? "▸" : "›"
+                    color: Theme.accent
+                    font.pixelSize: hRow.lead ? 15 : 13
+                    font.weight: Font.Bold
+                    Layout.alignment: Qt.AlignTop
+                    Layout.topMargin: hRow.lead ? 4 : 0
+                }
                 Text {
                     Layout.fillWidth: true
+                    // Shorter measure for the lead. Display type wants FEWER
+                    // characters per line than body copy, not more — at full width
+                    // it ran past every bullet below and dropped two words onto a
+                    // second line, so the two blocks looked unrelated.
+                    Layout.rightMargin: hRow.lead ? 64 : 0
                     text: hRow.modelData
-                    color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans
-                    wrapMode: Text.WordWrap; lineHeight: 1.35
+                    color: hRow.lead ? Theme.t1 : Theme.t2
+                    font.pixelSize: hRow.lead ? 19 : 13
+                    font.weight: hRow.lead ? Font.Bold : Font.Normal
+                    font.letterSpacing: hRow.lead ? -0.3 : 0
+                    font.family: Theme.fontSans
+                    wrapMode: Text.WordWrap; lineHeight: hRow.lead ? 1.2 : 1.35
                 }
             }
         }

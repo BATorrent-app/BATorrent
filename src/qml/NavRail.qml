@@ -26,6 +26,7 @@ Rectangle {
     signal vpnClicked()          // open the VPN cockpit (Settings → VPN section)
     signal selectTorrent(string infoHash)
     signal makeRoomRequested()
+    signal aboutRequested()      // the brand mark is the way into About
 
     // Contextual rail slot (rotating carousel): the state lives in the shared
     // DownloadCarousel so the top-bar chip drives the exact same logic.
@@ -129,6 +130,18 @@ Rectangle {
                 Behavior on opacity { NumberAnimation { duration: 140 } }
                 Text { text: "BAT"; color: Theme.accent; font.family: "New Rocker"; font.pixelSize: 21 }
                 Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 21 }
+            }
+            // the whole brand block opens About — the conventional home for a
+            // logotype, and the only place version/credits were reachable from
+            MouseArea {
+                id: brandMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: rail.aboutRequested()
+                ToolTip.visible: containsMouse
+                ToolTip.text: (i18n.language, i18n.t("menu_about"))
+                ToolTip.delay: 500
             }
         }
 

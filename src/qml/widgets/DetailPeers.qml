@@ -79,21 +79,34 @@ ColumnLayout {
                 Item {
                     Layout.preferredWidth: 56; Layout.fillHeight: true
                     property string fsrc: pane.flagSrc(modelData.cc)
-                    // crisp SVG flag when we ship it; else emoji (mac) / code (Windows)
+                    // One treatment per row, identical on every platform: our SVG
+                    // when the country is one of the 19 we ship, otherwise a code
+                    // chip of the SAME size. This used to fall back to the emoji
+                    // flag on mac and a bare code on Windows — so the column mixed
+                    // flat 3:2 artwork with rounded emoji, and the same screen
+                    // looked different per OS.
                     Image {
                         visible: parent.fsrc !== ""
                         source: parent.fsrc
-                        width: 20; height: 14; anchors.verticalCenter: parent.verticalCenter
-                        sourceSize: Qt.size(30, 20); smooth: true; asynchronous: true
-                    }
-                    Text {
-                        visible: parent.fsrc === ""
-                        text: Qt.platform.os === "windows" ? (modelData.cc || "") : (modelData.flag || "")
+                        width: 21; height: 14        // 3:2, matching the SVG viewBox
                         anchors.verticalCenter: parent.verticalCenter
-                        color: Qt.platform.os === "windows" ? Theme.t3 : Theme.t1
-                        font.pixelSize: Qt.platform.os === "windows" ? 10 : 13
-                        font.weight: Qt.platform.os === "windows" ? Font.DemiBold : Font.Normal
-                        font.family: Theme.fontSans
+                        fillMode: Image.PreserveAspectFit
+                        sourceSize: Qt.size(42, 28); smooth: true; asynchronous: true
+                    }
+                    Rectangle {
+                        visible: parent.fsrc === "" && (modelData.cc || "").length > 0
+                        width: 21; height: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        radius: 2
+                        color: "transparent"
+                        border.color: Theme.hair; border.width: 1
+                        Text {
+                            anchors.centerIn: parent
+                            text: (modelData.cc || "").toUpperCase()
+                            color: Theme.t3
+                            font.pixelSize: 8; font.weight: Font.Bold; font.letterSpacing: 0.3
+                            font.family: Theme.fontSans
+                        }
                     }
                 }
                 Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
@@ -118,23 +131,31 @@ ColumnLayout {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 7
+                    // same rule as the wide list: SVG or code chip, never emoji
                     Item {
                         property string fsrc: pane.flagSrc(modelData.cc)
-                        Layout.preferredWidth: fsrc !== "" ? 18 : cmpCode.implicitWidth
+                        Layout.preferredWidth: 18
                         Layout.preferredHeight: 13; Layout.alignment: Qt.AlignVCenter
                         Image {
                             visible: parent.fsrc !== ""; source: parent.fsrc
                             width: 18; height: 12; anchors.verticalCenter: parent.verticalCenter
-                            sourceSize: Qt.size(30, 20); smooth: true; asynchronous: true
+                            fillMode: Image.PreserveAspectFit
+                            sourceSize: Qt.size(36, 24); smooth: true; asynchronous: true
                         }
-                        Text {
-                            id: cmpCode; visible: parent.fsrc === ""
-                            text: Qt.platform.os === "windows" ? (modelData.cc || "") : (modelData.flag || "")
+                        Rectangle {
+                            visible: parent.fsrc === "" && (modelData.cc || "").length > 0
+                            width: 18; height: 12
                             anchors.verticalCenter: parent.verticalCenter
-                            color: Qt.platform.os === "windows" ? Theme.t3 : Theme.t1
-                            font.pixelSize: Qt.platform.os === "windows" ? 10 : 12
-                            font.weight: Qt.platform.os === "windows" ? Font.DemiBold : Font.Normal
-                            font.family: Theme.fontSans
+                            radius: 2
+                            color: "transparent"
+                            border.color: Theme.hair; border.width: 1
+                            Text {
+                                anchors.centerIn: parent
+                                text: (modelData.cc || "").toUpperCase()
+                                color: Theme.t3
+                                font.pixelSize: 7; font.weight: Font.Bold
+                                font.family: Theme.fontSans
+                            }
                         }
                     }
                     Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }

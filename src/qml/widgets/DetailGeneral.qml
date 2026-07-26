@@ -180,46 +180,50 @@ Flickable {
                     Rectangle {
                         height: parent.height; radius: 2
                         width: parent.width * (gen.win.hasSel ? session.selectedProgress : 0)
-                        // red exists at exactly one intensity: while the
-                        // download is moving. A finished bar goes neutral —
-                        // translucent accent over a dark panel reads as a
-                        // third, muddy red, not a quieter one; "done" already
-                        // lives in the ✓ badge.
-                        color: (gen.win.hasSel && session.selectedProgress >= 0.999)
-                               ? Qt.rgba(1, 1, 1, 0.16)
-                               : Theme.accent
+                        // same state→colour language as the grid tile and the
+                        // status dot: downloading red, seeding amber, done green
+                        color: gen.win.fillFor(gen.win.hasSel ? session.selectedStateKey : "")
                         Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                         Behavior on color { ColorAnimation { duration: 200 } }
                     }
                 }
             }
 
-            // big live transfer: DOWN (accent) · UP (amber) · ETA — the one
-            // place per-direction color earns its keep (single instance)
+            // big live transfer: DOWN · UP · ETA. Only the arrows carry the
+            // direction colour; the rates read neutral
             RowLayout {
                 visible: gen.win.hasSel
                 Layout.fillWidth: true
                 Layout.topMargin: 10
                 spacing: Theme.sp6
                 Repeater {
-                    // per-direction colour only while that direction is actually
-                    // moving (>1 KB/s) — an idle 2 KB/s trickle in bold red is
-                    // inverted hierarchy; at rest the numbers read neutral
+                    // the arrow is a fixed legend for the direction, not a live
+                    // indicator — it stays red/amber whatever the rate. Dimming it
+                    // at low speed made the panel look broken at 2 KB/s.
                     model: [
-                        { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: gen.win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent,
-                          on: gen.win.hasSel && session.selectedDownRate > 1024 },
-                        { lbl: (i18n.language, i18n.t("graph_upload")),   arrow: "↑ ", v: gen.win.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber,
-                          on: gen.win.hasSel && session.selectedUpRate > 1024 },
-                        { lbl: (i18n.language, i18n.t("col_eta")),        arrow: "",   v: gen.win.hasSel ? session.selectedEta       : "—", c: Theme.t1, on: true }
+                        { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: gen.win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent },
+                        { lbl: (i18n.language, i18n.t("graph_upload")),   arrow: "↑ ", v: gen.win.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber },
+                        { lbl: (i18n.language, i18n.t("col_eta")),        arrow: "",   v: gen.win.hasSel ? session.selectedEta       : "—", c: Theme.t1 }
                     ]
                     delegate: Column {
                         spacing: 3
                         Text { text: modelData.lbl; color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
-                        Text {
-                            text: modelData.arrow + modelData.v
-                            color: modelData.on ? modelData.c : Theme.t3
-                            font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
-                            Behavior on color { ColorAnimation { duration: 200 } }
+                        // the arrow carries the direction colour, the number stays
+                        // neutral — a whole reading in red/amber shouts louder than
+                        // a rate deserves
+                        Row {
+                            spacing: 4
+                            Text {
+                                visible: modelData.arrow.length > 0
+                                text: modelData.arrow
+                                color: modelData.c
+                                font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                            }
+                            Text {
+                                text: modelData.v
+                                color: Theme.t1
+                                font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
+                            }
                         }
                     }
                 }

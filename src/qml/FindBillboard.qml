@@ -66,7 +66,7 @@ Item {
     onHeroIndexChanged: heroFade.restart()
     SequentialAnimation {
         id: heroFade
-        NumberAnimation { target: heroContent; property: "opacity"; to: 0; duration: 220; easing.type: Easing.InCubic }
+        NumberAnimation { target: heroContent; property: "opacity"; to: 0; duration: 220; easing.type: Easing.OutCubic }
         ScriptAction { script: bb.shownIndex = bb.heroIndex }
         NumberAnimation { target: heroContent; property: "opacity"; to: 1; duration: 420; easing.type: Easing.OutCubic }
     }

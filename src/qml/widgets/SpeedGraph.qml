@@ -13,17 +13,35 @@ Item {
     property var dl: []
     property var ul: []
     readonly property int slots: 60
+    // room for the axis labels; the plot starts after it
+    readonly property int gutter: 42
+    readonly property int divisions: 4
 
-    readonly property int scaledMax: {
+    readonly property real peak: {
         var m = 1
         for (var i = 0; i < dl.length; ++i) if (dl[i] > m) m = dl[i]
         for (var j = 0; j < ul.length; ++j) if (ul[j] > m) m = ul[j]
-        return Math.round(m * 1.15)
+        return m
     }
 
-    function scaleText(b) {
-        if (b >= 1024 * 1024) return (b / (1024 * 1024)).toFixed(1) + " MB/s"
-        return Math.round(b / 1024) + " KB/s"
+    // Round the STEP, not the max: peak×1.15 gave arbitrary ceilings ("7 KB/s")
+    // that no gridline could label sensibly. Snapping the step to 1-2-5×10ⁿ makes
+    // every tick a number a person reads without decoding — 0 5 10 15 20.
+    readonly property real unitBytes: peak >= 1024 * 1024 ? 1024 * 1024 : 1024
+    readonly property real step: {
+        var raw = (peak / unitBytes) / divisions
+        if (raw <= 0) return 1
+        var e = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10))
+        var f = raw / e
+        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e
+    }
+    readonly property real scaledMax: step * divisions * unitBytes
+
+    // unit on the top tick only — repeating it down the axis is redundant ink
+    function tickText(v, withUnit) {
+        var u = v / g.unitBytes
+        var s = (g.step < 1 ? u.toFixed(1) : String(Math.round(u)))
+        return withUnit ? s + (g.unitBytes > 1024 ? " MB/s" : " KB/s") : s
     }
     function areaPath(arr, h) {
         if (!arr || arr.length === 0) return ""
@@ -58,19 +76,47 @@ Item {
         return s
     }
 
-    Text {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        text: g.scaleText(g.scaledMax)
-        color: Theme.t4
-        font.pixelSize: 10
-        font.family: Theme.fontSans
-        z: 1
+    // Y axis: recessive gridlines with the value on the left. Same geometry as
+    // the Shape below, so a curve touching a line really is at that value.
+    Item {
+        id: axis
+        anchors.fill: parent
+        anchors.leftMargin: g.gutter
+        anchors.topMargin: 16
+        anchors.bottomMargin: 2
+
+        Repeater {
+            model: g.divisions + 1
+            delegate: Item {
+                required property int index
+                readonly property real value: g.step * index * g.unitBytes
+                // mirrors yAt() in the path builders
+                y: axis.height - (value / g.scaledMax) * (axis.height - 2)
+                width: axis.width
+                height: 1
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: index === 0 ? Theme.hair : Theme.hairSoft
+                }
+                Text {
+                    anchors.right: parent.left
+                    anchors.rightMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: g.tickText(parent.value, index === g.divisions)
+                    color: Theme.t4
+                    font.pixelSize: 9
+                    font.family: Theme.fontSans
+                    font.features: Theme.tnum
+                }
+            }
+        }
     }
 
     Shape {
         id: shape
         anchors.fill: parent
+        anchors.leftMargin: g.gutter
         anchors.topMargin: 16
         anchors.bottomMargin: 2
         preferredRendererType: Shape.CurveRenderer

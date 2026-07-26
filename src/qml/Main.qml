@@ -59,6 +59,7 @@ Window {
     // 3 HUB · 4 Settings). Owned by the window so navigation works whichever
     // nav component (rail or top bar) is loaded.
     property int currentPage: 0
+    onCurrentPageChanged: clearFilterFocus()
     // classic layout = the pre-4.5 left nav rail; default is the top bar.
     // Only one nav component is ever loaded — a hidden rail would keep its
     // carousel timer and ~30 session bindings alive for nothing.
@@ -71,9 +72,30 @@ Window {
     // redundant on the Downloads page)
     property bool showDownloadChip: true
     readonly property Item navHost: layoutClassic ? navRailLoader.item : navBarLoader.item
+    // Selection lives in two places: session (source rows, drives the detail
+    // panel) and win.selectedRows (proxy rows, drives what LOOKS selected).
+    // selectByInfoHash only ever touched the first, so jumping here from the
+    // download chip highlighted nothing — the engine knew, the grid didn't.
     function selectTorrentByHash(infoHash) {
         if (typeof session === "undefined") return
         if (!session.selectByInfoHash(infoHash)) { win.setFilter("all"); session.selectByInfoHash(infoHash) }
+        if (typeof torrentFilter === "undefined") return
+
+        var proxy = []
+        var src = session.selectedRows()
+        for (var i = 0; i < src.length; ++i) {
+            var p = torrentFilter.mapFromSource(src[i])
+            if (p >= 0) proxy.push(p)
+        }
+        win.selectedRows = proxy
+        win.selected = proxy.length > 0 ? proxy[0] : -1
+        win.anchorRow = win.selected
+        // and bring it into view — a highlighted row scrolled off screen still
+        // reads as "nothing happened"
+        if (win.selected >= 0) {
+            var v = win.gridView ? libraryView.grid : libraryView.list
+            if (v) v.positionViewAtIndex(win.selected, ListView.Contain)
+        }
     }
     function promptRenameFile(idx, current) {
         inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), current, "",
@@ -275,7 +297,13 @@ Window {
         }
         session.setSelectedRows(src)
     }
+    // The downloads filter keeps activeFocus (and its accent ring) until
+    // something else claims it. Every gesture that means "I'm done typing" —
+    // picking a torrent, clicking blank space, leaving the page — routes here.
+    function clearFilterFocus() { if (filterBar) filterBar.clearSearchFocus() }
+
     function selectRow(proxyRow, mods) {
+        clearFilterFocus()
         mods = mods || 0
         var ctrl = (mods & Qt.ControlModifier) || (mods & Qt.MetaModifier)
         var shift = (mods & Qt.ShiftModifier)
@@ -329,6 +357,16 @@ Window {
     // (presetCats); only the *display* is translated. Switching language must
     // not desync a torrent's category from the filter/menu, so never store the
     // translated label.
+    // categories the user created, i.e. everything the engine knows minus the
+    // four built-ins the menu already lists statically
+    function customCategories() {
+        if (typeof session === "undefined") return []
+        var builtins = ["Apps", "Games", "Movies", "Series"]
+        return session.categories().filter(function (c) {
+            return c.length > 0 && builtins.indexOf(c) < 0
+        })
+    }
+
     function catLabel(value) {
         switch (value) {
         case "Apps":   return i18n.language, i18n.t("cat_apps")
@@ -599,10 +637,29 @@ Window {
             CtxItem { text: (session.selectedSuperSeeding ? "✓ " : "") + (i18n.language, i18n.t("ctx_super_seeding")); onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding) }
         }
         Menu {
+            id: catMenu
             title: (i18n.language, i18n.t("ctx_grp_organize"))
             implicitWidth: 200
             delegate: CatItem {}
             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+
+            // The four built-ins below are static (catLabel translates them).
+            // Anything the user typed via "Other…" is appended here — before this,
+            // a custom category was applied to the torrent but never appeared in
+            // the list, so it looked like it hadn't been saved.
+            onAboutToShow: customCats.model = win.customCategories()
+            Instantiator {
+                id: customCats
+                model: []
+                delegate: CatItem {
+                    required property var modelData
+                    text: (session.selectedCategory() === modelData ? "✓ " : "") + modelData
+                    onTriggered: session.setSelectedCategory(modelData)
+                }
+                onObjectAdded: function(index, object) { catMenu.insertItem(4 + index, object) }
+                onObjectRemoved: function(index, object) { catMenu.removeItem(object) }
+            }
+
             CatItem { text: (session.selectedCategory() === "Apps"   ? "✓ " : "") + win.catLabel("Apps");   onTriggered: session.setSelectedCategory("Apps") }
             CatItem { text: (session.selectedCategory() === "Games"  ? "✓ " : "") + win.catLabel("Games");  onTriggered: session.setSelectedCategory("Games") }
             CatItem { text: (session.selectedCategory() === "Movies" ? "✓ " : "") + win.catLabel("Movies"); onTriggered: session.setSelectedCategory("Movies") }
@@ -1089,6 +1146,7 @@ Window {
                 onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }
                 onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
                 onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
+                onAboutRequested: aboutDlg.open()
             }
         }
 
@@ -1111,6 +1169,7 @@ Window {
                     onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }
                     onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
                     onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
+                    onAboutRequested: aboutDlg.open()
                 }
             }
 
@@ -1120,14 +1179,28 @@ Window {
                 Layout.fillHeight: true
                 currentIndex: win.currentPage
 
-                // premium page switch: the new page fades + rises in
+                // Directional page switch. It used to rise 12px from below no
+                // matter which tab you came from, which says nothing — the tabs
+                // sit in a row, so moving right should enter from the right and
+                // moving left from the left. Now the motion matches the gesture,
+                // and going back reverses it instead of repeating it.
                 transform: Translate { id: pageShift }
-                onCurrentIndexChanged: pageSwitchAnim.restart()
+                property int prevPage: 0
+                property real enterFrom: 34
+                onCurrentIndexChanged: {
+                    enterFrom = (currentIndex > prevPage ? 34 : -34)
+                    prevPage = currentIndex
+                    pageSwitchAnim.restart()
+                }
                 SequentialAnimation {
                     id: pageSwitchAnim
                     ParallelAnimation {
-                        NumberAnimation { target: contentStack; property: "opacity"; from: 0.0; to: 1.0; duration: 190; easing.type: Easing.OutCubic }
-                        NumberAnimation { target: pageShift; property: "y"; from: 12; to: 0; duration: 240; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: contentStack; property: "opacity"; from: 0.0; to: 1.0; duration: 170; easing.type: Easing.OutCubic }
+                        NumberAnimation {
+                            target: pageShift; property: "x"
+                            from: contentStack.enterFrom; to: 0
+                            duration: 260; easing.type: Easing.OutCubic
+                        }
                     }
                 }
 
@@ -1356,28 +1429,39 @@ Window {
     // Refresh flash — a brief full-screen dim + a spinning red refresh glyph, so a
     // manual Refresh is unmistakable on screen (the tester couldn't tell the toolbar
     // icon spin meant anything happened).
-    Rectangle {
+    Item {
         id: refreshFlash
         anchors.fill: parent
         z: 9999
-        color: "#000000"
-        opacity: 0
-        visible: opacity > 0.01
+        // One driver, two different peaks. The glyph used to be a CHILD of the
+        // dimming rectangle, so the parent's opacity multiplied into it and the
+        // icon could never be brighter than the backdrop — that's why it read as
+        // washed out. Siblings now: backdrop goes to 0.78, the icon to full.
+        property real amt: 0
+        visible: amt > 0.01
+
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: refreshFlash.amt * 0.78
+        }
         IconImg {
             id: refreshFlashIcon
             anchors.centerIn: parent
             src: "qrc:/icons/refresh.svg"
             tint: Theme.accent
-            s: 68
-            RotationAnimation on rotation { id: refreshFlashSpin; running: false; from: 0; to: 360; duration: 620; loops: 1 }
+            s: 76
+            opacity: refreshFlash.amt
+            scale: 0.88 + 0.12 * refreshFlash.amt
+            RotationAnimation on rotation { id: refreshFlashSpin; running: false; from: 0; to: 360; duration: 380; loops: 1 }
         }
         SequentialAnimation {
             id: refreshFlashAnim
-            NumberAnimation { target: refreshFlash; property: "opacity"; to: 0.55; duration: 120; easing.type: Easing.OutCubic }
+            NumberAnimation { target: refreshFlash; property: "amt"; to: 1.0; duration: 120; easing.type: Easing.OutCubic }
             PauseAnimation { duration: 300 }
-            NumberAnimation { target: refreshFlash; property: "opacity"; to: 0.0; duration: 280; easing.type: Easing.InCubic }
+            NumberAnimation { target: refreshFlash; property: "amt"; to: 0.0; duration: 280; easing.type: Easing.OutCubic }
         }
-        MouseArea { anchors.fill: parent; enabled: refreshFlash.opacity > 0.01 }   // swallow clicks mid-flash
+        MouseArea { anchors.fill: parent; enabled: refreshFlash.amt > 0.01 }   // swallow clicks mid-flash
     }
 
     MakeRoomPanel {
