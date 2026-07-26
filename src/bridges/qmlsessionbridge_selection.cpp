@@ -142,6 +142,12 @@ QString QmlSessionBridge::selectedState() const
     return m_session->torrentAt(m_selectedIndex).stateString;
 }
 
+QString QmlSessionBridge::selectedStateKey() const
+{
+    if (!hasSelection()) return {};
+    return torrentStateKey(m_session->torrentAt(m_selectedIndex));
+}
+
 bool QmlSessionBridge::selectedFilesMissing() const
 {
     if (!hasSelection()) return false;
