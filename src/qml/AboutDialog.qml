@@ -121,36 +121,10 @@ BatDialog {
         }
     }
 
-    // .glabel BIBLIOTECAS
-    Text {
-        text: (i18n.language, i18n.t("about_libraries"))
-        color: Theme.t4
-        font.pixelSize: 10
-        font.weight: Font.Bold
-        font.letterSpacing: 0.8
-        font.family: Theme.fontSans
-    }
-    ColumnLayout {
-        Layout.fillWidth: true
-        spacing: 0
-        Repeater {
-            id: libsRep
-            model: (typeof themeBridge !== "undefined") ? themeBridge.libraries() : []
-            delegate: ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 0
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 8
-                    Layout.bottomMargin: 8
-                    Text { text: modelData.nm; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans }
-                    Item { Layout.fillWidth: true }
-                    Text { text: modelData.v; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
-                }
-                Rectangle { visible: index < libsRep.count - 1; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
-            }
-        }
-    }
+    // The per-library version table used to live here. It was four rows of
+    // numbers nobody reads in a dialog people open once. The two jobs it did are
+    // covered elsewhere: attribution lives in THIRD_PARTY.md, and the versions go
+    // to the startup log, where a bug report can actually pick them up.
 
     // translation credits — community contributors
     Text {

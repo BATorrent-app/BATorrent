@@ -1,0 +1,2 @@
+<!-- Tabler "arrow-down" (MIT) — stroke normalizado para 1.8; usado nos badges do grid, onde o glifo de texto nao centraliza na tinta -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14" /> <path d="M18 13l-6 6" /> <path d="M6 13l6 6" /></svg>

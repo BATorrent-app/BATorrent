@@ -167,7 +167,10 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
                 BtnFlat {
-                    text: "🦇  " + (i18n.language, i18n.t("wrapped_title"))
+                    // BtnFlat has always taken an icon — the bat was an emoji here,
+                    // which renders as the OS's glyph, not our mark
+                    icon: "qrc:/images/logo.svg"
+                    text: (i18n.language, i18n.t("wrapped_title"))
                     onClicked: win.openWrapped()
                 }
                 Item { Layout.fillWidth: true }
