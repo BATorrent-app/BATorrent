@@ -165,7 +165,9 @@ Rectangle {
                     IconImg {
                         anchors.verticalCenter: parent.verticalCenter
                         src: "qrc:/icons/download.svg"
-                        tint: Theme.accentText
+                        // same red/amber as the detail panel's arrows — the muted
+                        // pair read as a different pair of colours one screen apart
+                        tint: Theme.accent
                         s: 12
                     }
                     Text {
@@ -194,7 +196,7 @@ Rectangle {
                     IconImg {
                         anchors.verticalCenter: parent.verticalCenter
                         src: "qrc:/icons/upload.svg"
-                        tint: Theme.up
+                        tint: Theme.amber
                         s: 12
                     }
                     Text {
