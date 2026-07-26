@@ -13,6 +13,7 @@
 #include <QRegularExpression>
 #include <QDir>
 #include <QFile>
+#include <QTimer>
 
 RssManager &RssManager::instance()
 {
@@ -34,6 +35,20 @@ void RssManager::setSession(IEngine *session, const QString &savePath)
 {
     m_session = session;
     m_defaultSavePath = savePath;
+
+    // Items are NOT persisted — only the feed definitions are. So every launch
+    // starts with an empty list, and checkAllFeeds() won't refill it because it
+    // honours checkIntervalMin and lastChecked was minutes ago: the feed sat at
+    // "0 items" for up to half an hour, looking broken. Refetch exactly the feeds
+    // we have nothing cached for, once, shortly after startup (delayed so the UI
+    // is listening for feedUpdated by the time it lands).
+    QTimer::singleShot(1500, this, [this]() {
+        for (int i = 0; i < m_feeds.size(); ++i) {
+            if (!m_feeds[i].enabled) continue;
+            if (!m_items.value(i).isEmpty()) continue;
+            checkFeed(i);
+        }
+    });
 }
 
 void RssManager::setupTimers()
@@ -280,32 +295,7 @@ void RssManager::autoDownloadMatching(int feedIndex)
                 continue;
         }
 
-        // Download it
-        if (item.link.startsWith("magnet:")) {
-            m_session->addMagnet(item.link, savePath);
-        } else if (item.link.endsWith(".torrent") || item.link.contains("download")) {
-            // Fetch .torrent file and add it
-            QNetworkRequest req(QUrl(item.link));
-            req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
-            auto *reply = m_net->get(req);
-            QString sp = savePath;
-
-            connect(reply, &QNetworkReply::finished, this, [this, reply, sp]() {
-                reply->deleteLater();
-                if (reply->error() != QNetworkReply::NoError) return;
-
-                // Save to temp file and add
-                QString tmpPath = QDir::tempPath() + "/batorrent_rss_" +
-                    QString::number(QDateTime::currentMSecsSinceEpoch()) + ".torrent";
-                QFile f(tmpPath);
-                if (f.open(QIODevice::WriteOnly)) {
-                    f.write(reply->readAll());
-                    f.close();
-                    m_session->addTorrent(tmpPath, sp);
-                    QFile::remove(tmpPath);
-                }
-            });
-        }
+        addFromLink(item.link, savePath);
 
         item.downloaded = true;
         m_downloadedLinks.insert(item.link);
@@ -313,6 +303,60 @@ void RssManager::autoDownloadMatching(int feedIndex)
     }
 
     saveFeeds();
+}
+
+// A feed item's link is one of three things: a magnet, a remote .torrent, or (rarely)
+// a local path. Only magnets can go straight to the engine — SessionManager::addTorrent
+// opens its argument as a FILE, so handing it an https URL just throws. The auto-download
+// rules already fetched-then-added; the manual click didn't, so clicking an item on any
+// feed that publishes .torrent links (Nyaa, most trackers) silently did nothing.
+void RssManager::addFromLink(const QString &link, const QString &savePath)
+{
+    if (!m_session || link.isEmpty()) return;
+
+    if (link.startsWith(QLatin1String("magnet:"))) {
+        m_session->addMagnet(link, savePath);
+        return;
+    }
+    if (!link.startsWith(QLatin1String("http"))) {   // already a local .torrent
+        m_session->addTorrent(link, savePath);
+        return;
+    }
+
+    QNetworkRequest req{QUrl(link)};
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/1.9"));
+    // trackers routinely 302 from /download/<id> to the real file
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                     QNetworkRequest::NoLessSafeRedirectPolicy);
+    auto *reply = m_net->get(req);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, savePath]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            qWarning() << "[rss] .torrent fetch failed:" << reply->errorString();
+            return;
+        }
+        const QByteArray body = reply->readAll();
+        // A bencoded torrent starts with 'd'. An error page or a login redirect
+        // would otherwise be written to disk and fail deep inside libtorrent with
+        // a useless message.
+        if (body.isEmpty() || body.front() != 'd') {
+            qWarning() << "[rss] response is not a .torrent (" << body.size() << "bytes )";
+            return;
+        }
+        const QString tmpPath = QDir::tempPath() + QStringLiteral("/batorrent_rss_")
+                              + QString::number(QDateTime::currentMSecsSinceEpoch())
+                              + QStringLiteral(".torrent");
+        QFile f(tmpPath);
+        if (!f.open(QIODevice::WriteOnly)) {
+            qWarning() << "[rss] cannot write" << tmpPath;
+            return;
+        }
+        f.write(body);
+        f.close();
+        m_session->addTorrent(tmpPath, savePath);
+        QFile::remove(tmpPath);   // libtorrent has parsed it by now
+    });
 }
 
 // --- Manual download ---
@@ -334,10 +378,7 @@ void RssManager::downloadItem(int feedIndex, int itemIndex)
     const auto &feed = m_feeds[feedIndex];
     QString savePath = feed.savePath.isEmpty() ? m_defaultSavePath : feed.savePath;
 
-    if (item.link.startsWith("magnet:"))
-        m_session->addMagnet(item.link, savePath);
-    else
-        m_session->addTorrent(item.link, savePath);
+    addFromLink(item.link, savePath);
 
     item.downloaded = true;
     m_downloadedLinks.insert(item.link);

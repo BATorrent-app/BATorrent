@@ -56,6 +56,9 @@ public:
     QList<RssItem> itemsForFeed(int index) const;
     void downloadItem(int feedIndex, int itemIndex);
 
+    // single entry point for turning a feed item's link into a torrent
+    void addFromLink(const QString &link, const QString &savePath);
+
     // Persistence
     void loadFeeds();
     void saveFeeds();
