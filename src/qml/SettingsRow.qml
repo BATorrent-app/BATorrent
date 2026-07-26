@@ -203,7 +203,7 @@ ColumnLayout {
                                 visible: hero.st === 1
                                 SequentialAnimation on opacity {
                                     running: hero.st === 1; loops: Animation.Infinite
-                                    NumberAnimation { from: 0.7; to: 0.0; duration: 1100 }
+                                    NumberAnimation { from: 0.7; to: 0.0; duration: 300; easing.type: Easing.OutCubic }
                                 }
                             }
                         }

@@ -25,6 +25,7 @@ Rectangle {
     signal vpnClicked()          // open the VPN cockpit (Settings → VPN section)
     signal selectTorrent(string infoHash)
     signal makeRoomRequested()
+    signal aboutRequested()      // the brand mark is the way into About
 
     // responsive degradation: the chip loses its text first, then the disk
     // gauge loses its labels — nothing ever clips
@@ -106,6 +107,7 @@ Rectangle {
         // ----- brand — glyph only; the wordmark lives where the brand
         // introduces itself (splash, About, expanded rail) -----
         Image {
+            id: brandGlyph
             Layout.alignment: Qt.AlignVCenter
             Layout.rightMargin: 2
             Layout.preferredWidth: 32
@@ -115,6 +117,23 @@ Rectangle {
             fillMode: Image.PreserveAspectFit
             layer.enabled: Theme.isLight
             layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
+
+            // clicking the logotype opens About — the conventional home for it.
+            // (The rail's brand block does the same; both chromes need it, since
+            // only one of the two is on screen at a time.)
+            MouseArea {
+                id: brandMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: bar.aboutRequested()
+                ToolTip.visible: containsMouse
+                ToolTip.text: (i18n.language, i18n.t("menu_about"))
+                ToolTip.delay: 500
+            }
+            Accessible.role: Accessible.Button
+            Accessible.name: (i18n.language, i18n.t("menu_about"))
+            Accessible.onPressAction: bar.aboutRequested()
         }
 
         // ----- page tabs -----
@@ -127,6 +146,24 @@ Rectangle {
                 readonly property bool active: bar.currentIndex === modelData.page
                 Layout.fillHeight: true
                 Layout.preferredWidth: visible ? tabRow.implicitWidth + 30 : 0
+
+                // page switching was mouse-only and silent to a screen reader
+                Accessible.role: Accessible.PageTab
+                Accessible.name: navTab.modelData.label
+                Accessible.checked: navTab.active
+                Accessible.onPressAction: bar.pageRequested(navTab.modelData.page)
+                activeFocusOnTab: true
+                Keys.onReturnPressed: bar.pageRequested(navTab.modelData.page)
+                Keys.onSpacePressed: bar.pageRequested(navTab.modelData.page)
+                Rectangle {
+                    visible: navTab.activeFocus
+                    anchors.fill: parent
+                    anchors.margins: 4
+                    radius: 9
+                    color: "transparent"
+                    border.color: Theme.focusRing
+                    border.width: Theme.focusRingWidth
+                }
 
                 Row {
                     id: tabRow

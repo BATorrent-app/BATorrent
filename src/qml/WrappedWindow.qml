@@ -53,7 +53,10 @@ Window {
         }
     }
     Rectangle {
-        width: parent.width * 1.4; height: width
+        // win.width, not parent.width: this is a direct child of a Window, where
+        // `parent` is null while bindings first evaluate — it threw a TypeError
+        // and the glow never got a size
+        width: win.width * 1.4; height: width
         x: -width * 0.2; y: -width * 0.62
         radius: width / 2
         opacity: 0.5
@@ -64,14 +67,20 @@ Window {
     }
 
     Flickable {
+        id: scroll
         anchors.fill: parent
+        // contentWidth was never set, so the contentItem stayed 0 wide — and the
+        // column below bound its width to `parent`, which inside a Flickable IS
+        // that contentItem, not the Flickable. Everything collapsed to zero width
+        // and the whole window painted empty.
+        contentWidth: width
         contentHeight: col.implicitHeight + 64
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
         ColumnLayout {
             id: col
-            width: parent.width
+            width: scroll.width
             x: 0
             spacing: 26
 
@@ -255,10 +264,13 @@ Window {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            // empty state
+            // Empty state — must weigh EVERY recorded axis. It used to test only
+            // down + added, so a year of pure seeding (up in the tens of GB, no new
+            // torrents) reported "nothing here" over a history file full of data.
             Text {
                 Layout.alignment: Qt.AlignHCenter
                 visible: (win.data.down || 0) === 0 && (win.data.added || 0) === 0
+                         && (win.data.up || 0) === 0 && (win.data.completed || 0) === 0
                 text: (i18n.language, i18n.t("wrapped_empty"))
                 color: "#80808a"; font.pixelSize: 13; font.family: Theme.fontSans
                 horizontalAlignment: Text.AlignHCenter

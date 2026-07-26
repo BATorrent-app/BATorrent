@@ -145,7 +145,14 @@ Item {
         id: grid
         opacity: (win.gridView && !parent.empty) ? 1 : 0
         visible: opacity > 0.01
-        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        // Grid and list are two views of the SAME rows, so the switch should read
+        // as one changing form, not two things swapping. The incoming view grows
+        // the last 1.5% into place while the outgoing shrinks away underneath —
+        // a plain cross-fade left both hanging half-visible on top of each other.
+        scale: (win.gridView && !parent.empty) ? 1 : 0.985
+        transformOrigin: Item.Center
+        Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
         anchors.fill: parent
         topMargin: Theme.sp5
         bottomMargin: Theme.sp5
@@ -203,6 +210,7 @@ Item {
         onClicked: function(mouse) {
             var idx = grid.indexAt(mouse.x + grid.contentX, mouse.y + grid.contentY)
             if (idx < 0) {
+                win.clearFilterFocus()
                 if (win.selectedRows.length > 0) {
                     win.selectedRows = []; win.selected = -1; win._commitSel()
                 }
@@ -222,7 +230,10 @@ Item {
         id: list
         opacity: (!win.gridView && !parent.empty) ? 1 : 0
         visible: opacity > 0.01
-        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        scale: (!win.gridView && !parent.empty) ? 1 : 0.985
+        transformOrigin: Item.Center
+        Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
         anchors.fill: parent
         clip: true
         model: win.model

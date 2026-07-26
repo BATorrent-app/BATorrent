@@ -33,7 +33,16 @@ Item {
 
     property alias title: ttl.text
     property int cardW: 480
+    // cardH is a FLOOR, not a fixed size: the card grows to fit its body so a
+    // few stray pixels of content never produce a scrollbar. Bounded by the
+    // window, and the body Flickable still scrolls past that point. Without
+    // this, every dialog needs its height re-tuned whenever the UI font or a
+    // translation gets taller. Set fitContent: false for a deliberately fixed card.
     property int cardH: 460
+    property bool fitContent: true
+    readonly property int chromeH: 36 + (showFooter ? 56 : 0)
+    readonly property int fittedH: Math.min(Math.max(cardH, chromeH + bodyHost.implicitHeight + 2 * Theme.sp5),
+                                            Math.max(240, dlg.height - 48))
     property string footHint: ""
     property string okText: (i18n.language, i18n.t("btn_ok"))
     property string cancelText: (i18n.language, i18n.t("btn_cancel"))
@@ -87,7 +96,7 @@ Item {
         id: card
         anchors.centerIn: parent
         width: dlg.cardW
-        height: dlg.cardH
+        height: dlg.fitContent ? dlg.fittedH : dlg.cardH
         opacity: dlg.anim
         scale: 0.97 + 0.03 * dlg.anim
         radius: 13

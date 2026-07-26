@@ -175,12 +175,20 @@ Item {
             anchors.left: parent.left; anchors.right: parent.right
             anchors.bottom: parent.bottom
             anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.bottomMargin: 8
-            height: 6; radius: 3
-            color: Qt.rgba(0, 0, 0, 0.6)
+            // taller and on a darker track than the original 6px hairline: over
+            // busy poster art a thin bar disappears, and this is the one element
+            // carrying state at grid scale
+            height: 9; radius: 4.5
+            color: Qt.rgba(0, 0, 0, 0.78)
+            border.color: Qt.rgba(1, 1, 1, 0.10)
+            border.width: 1
             Rectangle {
-                height: parent.height; radius: 3
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 1
+                height: parent.height - 2; radius: (parent.height - 2) / 2
                 // clamp to at least a round nub so early progress still reads
-                width: Math.max(parent.height, parent.width * tile.progress)
+                width: Math.max(height, (parent.width - 2) * tile.progress)
                 color: win.fillFor(tile.stateKey)
                 Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
             }
@@ -237,32 +245,53 @@ Item {
             Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
 
-        // top-left stack: release year, then the category chip — dark pills that
-        // read on any cover. Year is the at-a-glance identifier the tester wanted
-        // on the poster itself; the line below the poster now carries genres only.
-        Column {
+        // top-left: year and category in ONE pill. They used to be two stacked
+        // chips, which put a second dark slab over the artwork the moment a
+        // torrent had a category — they're one metadata line, so they read as one.
+        // Year stays on the poster (tester's ask); the line below carries genres.
+        Rectangle {
             anchors.left: parent.left; anchors.top: parent.top
             anchors.leftMargin: 8; anchors.topMargin: 8
-            spacing: 5
-            Rectangle {
-                visible: tile.year > 0
-                radius: 9; color: "#99000000"
-                implicitWidth: yrTxt.implicitWidth + 12; implicitHeight: 18
+            visible: tile.year > 0 || tile.category.length > 0
+            radius: 9; color: "#99000000"
+            // hard ceiling: a user-named category ("MARACUJAMARACUJA…") would grow
+            // the pill straight across the cover and under the status badge
+            readonly property int maxW: Math.round(tile.width * 0.62)
+            implicitWidth: Math.min(tagRow.implicitWidth + 12, maxW); implicitHeight: 18
+
+            Row {
+                id: tagRow
+                anchors.centerIn: parent
+                spacing: 5
                 Text {
-                    id: yrTxt; anchors.centerIn: parent
+                    id: yrTxt
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: tile.year > 0
                     text: tile.year
                     color: "#ffffff"; opacity: 0.92
                     font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
                     font.features: Theme.tnum
                 }
-            }
-            Rectangle {
-                visible: tile.category.length > 0
-                radius: 9; color: "#99000000"
-                implicitWidth: catTxt.implicitWidth + 12; implicitHeight: 18
                 Text {
-                    id: catTxt; anchors.centerIn: parent
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: tile.year > 0 && tile.category.length > 0
+                    text: "·"
+                    color: "#ffffff"; opacity: 0.45
+                    font.pixelSize: 10; font.family: Theme.fontSans
+                }
+                Text {
+                    id: catTxt
+                    // baseline would drag the smaller caps off the year's line;
+                    // both are all-caps blocks here, so optical centring is right
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: tile.category.length > 0
                     text: tile.category
+                    // elide needs an explicit width — without one the Text just
+                    // grows and the ceiling above would clip mid-letter instead
+                    width: Math.min(implicitWidth,
+                                    tagRow.parent.maxW - 12
+                                    - (yrTxt.visible ? yrTxt.implicitWidth + 10 : 0))
+                    elide: Text.ElideRight
                     color: "#ffffff"; opacity: 0.88
                     font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
                     font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
@@ -311,7 +340,10 @@ Item {
                     width: 13; height: 13; radius: 6.5
                     color: "transparent"; border.color: Theme.accent; border.width: 1.5
                     anchors.verticalCenter: parent.verticalCenter
-                    Text { anchors.centerIn: parent; text: "↓"; color: Theme.accent; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans }
+                    // the icon, not the "↓" glyph: a text arrow centres on its
+                    // line box, and its ink sits off-centre by a pixel inside a
+                    // 13px ring — visibly crooked, and font-dependent on top
+                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/arrow-down.svg"; tint: Theme.accent; s: 9 }
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -365,7 +397,7 @@ Item {
                     width: 13; height: 13; radius: 6.5
                     color: "transparent"; border.color: Theme.amber; border.width: 1.5
                     anchors.verticalCenter: parent.verticalCenter
-                    Text { anchors.centerIn: parent; text: "↑"; color: Theme.amber; font.pixelSize: 9; font.weight: Font.Bold; font.family: Theme.fontSans }
+                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/arrow-up.svg"; tint: Theme.amber; s: 9 }
                 }
                 Text {
                     text: (i18n.language, i18n.t("state_seeding"))

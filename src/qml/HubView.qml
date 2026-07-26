@@ -32,9 +32,14 @@ Item {
     }
     readonly property bool empty: library.length === 0 && gameItems.length === 0
     // newest in your library (movies + games), front and centre — Plex/Netflix style
+    // Runs through applyView like every other shelf. It used to build straight
+    // off the raw lists, which made the search box look broken: it IS the shelf
+    // filling the screen, so typing filtered the two shelves below the fold and
+    // nothing you could see.
     readonly property var recentlyAdded: {
-        var all = library.concat(gameItems)
-        all.sort(function (a, b) { return (b.addedTime || 0) - (a.addedTime || 0) })
+        var all = applyView(library.concat(gameItems))
+        if (librarySort !== "name")   // applyView already handled the name case
+            all.sort(function (a, b) { return (b.addedTime || 0) - (a.addedTime || 0) })
         return all.slice(0, 12)
     }
 
@@ -391,6 +396,17 @@ Item {
                             GradientStop { position: 0.62; color: "#cc0e0e10" }
                             GradientStop { position: 1.0; color: "#660e0e10" }
                         }
+                    }
+                    // eyebrow anchored to the panel, not to the item block — the
+                    // games rail next to it always shows its title, and an empty
+                    // rail with no heading read as a broken half of the pair
+                    Text {
+                        anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 20
+                        visible: cwHero.it === null
+                        text: (i18n.language, i18n.t("hub_continue")).toUpperCase()
+                        color: Theme.accent; font.pixelSize: 11; font.weight: Font.Bold
+                        font.letterSpacing: 1.2; font.family: Theme.fontSans
+                        z: 2
                     }
                     RailPlaceholder { anchors.centerIn: parent; visible: cwHero.it === null; text: (i18n.language, i18n.t("hub_watch_placeholder")) }
 
