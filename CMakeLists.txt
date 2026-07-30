@@ -55,6 +55,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/sessionmanager.cpp
     src/torrent/sessionmanager_streaming.cpp
     src/torrent/sessionmanager_config.cpp
+    src/torrent/sessionconfig.cpp
     src/torrent/sessionmanager_persistence.cpp
     src/torrent/sessionmanager_categories.cpp
     src/torrent/sessionmanager_pertorrent.cpp
@@ -90,6 +91,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/debridpick.cpp
     src/services/integrations/installerprofile.cpp
     src/services/integrations/gameinstall.cpp
+    src/services/integrations/gameexedetect.cpp
     src/services/security/defender.cpp
     src/services/platform/logger.cpp
     src/services/security/crashhandler.cpp

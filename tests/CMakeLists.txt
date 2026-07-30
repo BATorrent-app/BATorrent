@@ -30,6 +30,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_streaming.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionconfig.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_persistence.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_categories.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_pertorrent.cpp
@@ -37,6 +38,11 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_info.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_network.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_security.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_lifecycle.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_tick.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_scheduler.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_stats.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_import.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/ipblocklist.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/proxycontroller.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
@@ -55,6 +61,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/integrations/debridpick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/gameinstall.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/gameexedetect.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/rssmanager.cpp
@@ -82,6 +89,9 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_playback.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_selection.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_disk.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_actions.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_clipboard.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_stats.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlthemebridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsettingsbridge.cpp
@@ -244,6 +254,8 @@ bat_add_test(test_geoipdb    test_geoipdb.cpp)
 bat_add_test(test_searchranker test_searchranker.cpp)
 bat_add_test(test_gamereleasepick test_gamereleasepick.cpp)
 bat_add_test(test_gameinstallstate test_gameinstallstate.cpp)
+bat_add_test(test_sessionconfig test_sessionconfig.cpp)
+bat_add_test(test_gameexedetect test_gameexedetect.cpp)
 bat_add_test(test_releasegroup test_releasegroup.cpp)
 bat_add_test(test_contentlanguage test_contentlanguage.cpp)
 bat_add_test(test_releasetrust test_releasetrust.cpp)
