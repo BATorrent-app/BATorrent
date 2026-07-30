@@ -1233,5 +1233,14 @@
   "wrapped_downloaded": "Downloaded",
   "wrapped_empty": "Not enough history yet — your recap fills in as you use BATorrent through the year.",
   "wrapped_title": "Year in Torrents",
-  "wrapped_top_categories": "Top categories"
+  "wrapped_top_categories": "Top categories",
+  "set_graphics_api": "Graphics renderer",
+  "set_graphics_api_note": "Use Software if the window opens blank or gray. Restart required.",
+  "set_graphics_auto": "Auto",
+  "set_graphics_software": "Software (compatibility)",
+  "set_graphics_opengl": "OpenGL",
+  "set_graphics_d3d11": "Direct3D 11",
+  "boot_qml_failed": "BATorrent couldn't load its interface.",
+  "boot_qml_failed_info": "The log may explain why. Try the Software renderer in Settings → Advanced after reinstalling if this persists.",
+  "boot_scene_graph_error": "Graphics failed to start. Switching to Software renderer — please restart BATorrent."
 }

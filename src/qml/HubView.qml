@@ -152,7 +152,8 @@ Item {
         if (disco) disco.load()   // ensure rows exist so "Recommended for you" can populate
     }
     onVisibleChanged: if (visible) refresh()
-    Component.onCompleted: refresh()
+    // Do not refresh on Component.onCompleted — StackLayout instantiates Hub at
+    // boot and a full movieLibrary/gameLibrary walk freezes the first paint.
 
     // live: a download finishing while the HUB is open shows up without re-entering
     Connections {

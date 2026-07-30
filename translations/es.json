@@ -1233,5 +1233,14 @@
   "wrapped_downloaded": "Descargado",
   "wrapped_empty": "Aún no hay suficiente historial — tu resumen se completa a medida que usas BATorrent durante el año.",
   "wrapped_title": "Tu año en torrents",
-  "wrapped_top_categories": "Categorías principales"
+  "wrapped_top_categories": "Categorías principales",
+  "set_graphics_api": "Renderizador gráfico",
+  "set_graphics_api_note": "Usa Software si la ventana se abre en blanco o gris. Requiere reinicio.",
+  "set_graphics_auto": "Auto",
+  "set_graphics_software": "Software (compatibilidad)",
+  "set_graphics_opengl": "OpenGL",
+  "set_graphics_d3d11": "Direct3D 11",
+  "boot_qml_failed": "BATorrent no pudo cargar su interfaz.",
+  "boot_qml_failed_info": "El registro puede explicar el motivo. Si sigue, prueba el renderizador Software en Ajustes → Avanzado.",
+  "boot_scene_graph_error": "Los gráficos no arrancaron. Cambiando a Software — reinicia BATorrent."
 }

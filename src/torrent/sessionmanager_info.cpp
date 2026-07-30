@@ -14,6 +14,7 @@
 #include <libtorrent/announce_entry.hpp>
 #include <QFileInfo>
 #include <QDir>
+#include <QDebug>
 #include <sstream>
 
 std::vector<PeerInfo> SessionManager::peersAt(int index, int maxPeers) const
@@ -68,24 +69,32 @@ std::vector<FileInfo> SessionManager::filesAt(int index) const
     if (!m_torrents[index].is_valid())
         return result;
 
-    auto ti = m_torrents[index].torrent_file();
-    if (!ti) return result;
+    try {
+        auto ti = m_torrents[index].torrent_file();
+        if (!ti) return result;
 
-    std::vector<std::int64_t> fileProgress;
-    m_torrents[index].file_progress(fileProgress);
+        std::vector<std::int64_t> fileProgress;
+        m_torrents[index].file_progress(fileProgress);
 
-    const auto &fs = ti->files();
-    for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
-        int idx = static_cast<int>(i);
-        FileInfo fi;
-        fi.path = QString::fromStdString(fs.file_path(i));
-        fi.size = fs.file_size(i);
-        fi.progress = (fi.size > 0 && idx < static_cast<int>(fileProgress.size()))
-            ? static_cast<float>(fileProgress[idx]) / fi.size : 0.0f;
-        fi.priority = static_cast<std::uint8_t>(m_torrents[index].file_priority(i));
-        result.push_back(fi);
+        const auto &fs = ti->files();
+        for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
+            int idx = static_cast<int>(i);
+            FileInfo fi;
+            fi.path = QString::fromStdString(fs.file_path(i));
+            fi.size = fs.file_size(i);
+            fi.progress = (fi.size > 0 && idx < static_cast<int>(fileProgress.size()))
+                ? static_cast<float>(fileProgress[idx]) / fi.size : 0.0f;
+            fi.priority = static_cast<std::uint8_t>(m_torrents[index].file_priority(i));
+            result.push_back(fi);
+        }
+        return result;
+    } catch (const std::exception &e) {
+        qWarning() << "[session] filesAt exception:" << e.what();
+        return {};
+    } catch (...) {
+        qWarning() << "[session] filesAt: unknown exception";
+        return {};
     }
-    return result;
 }
 
 std::vector<TrackerInfo> SessionManager::trackersAt(int index) const

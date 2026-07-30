@@ -7,6 +7,7 @@
 
 #if defined(Q_OS_WIN) && !defined(BAT_STORE_BUILD)
 #include <QProcess>
+#include <QPointer>
 #endif
 
 namespace Defender {
@@ -14,23 +15,49 @@ namespace Defender {
 bool addExclusion(const QString &path)
 {
 #if defined(Q_OS_WIN) && !defined(BAT_STORE_BUILD)
-    if (path.isEmpty() || !QDir(path).exists()) return false;
-    // Escape ' for the PowerShell single-quoted literal, then base64(UTF-16LE)
-    // the whole command and run it via -EncodedCommand. This sidesteps the
-    // nested-quoting/command-injection trap of interpolating a path into a
-    // single-quoted string that is itself inside another single-quoted arg.
+    // Fire-and-forget elevated PowerShell. The old QProcess::execute path blocked
+    // the GUI thread on UAC (Windows ghosted the window — "tela cinza").
+    addExclusionAsync(path, {});
+    return true;   // queued; actual success is unknown until the process exits
+#else
+    Q_UNUSED(path);
+    return false;
+#endif
+}
+
+void addExclusionAsync(const QString &path, std::function<void(bool)> done)
+{
+#if defined(Q_OS_WIN) && !defined(BAT_STORE_BUILD)
+    if (path.isEmpty() || !QDir(path).exists()) {
+        if (done) done(false);
+        return;
+    }
     QString escaped = path; escaped.replace(QLatin1Char('\''), QStringLiteral("''"));
     const QString inner = QStringLiteral("Add-MpPreference -ExclusionPath '%1'").arg(escaped);
     QByteArray utf16le;
-    for (QChar c : inner) { ushort u = c.unicode(); utf16le.append(char(u & 0xFF)); utf16le.append(char((u >> 8) & 0xFF)); }
-    const QString b64 = QString::fromLatin1(utf16le.toBase64());  // [A-Za-z0-9+/=] — quote-safe
-    int ret = QProcess::execute(QStringLiteral("powershell.exe"),
-        {QStringLiteral("-Command"),
-         QStringLiteral("Start-Process powershell -ArgumentList '-EncodedCommand','%1' -Verb RunAs -Wait").arg(b64)});
-    return ret == 0;
+    for (QChar c : inner) {
+        ushort u = c.unicode();
+        utf16le.append(char(u & 0xFF));
+        utf16le.append(char((u >> 8) & 0xFF));
+    }
+    const QString b64 = QString::fromLatin1(utf16le.toBase64());
+    auto *p = new QProcess;
+    QObject::connect(p, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                     p, [p, done](int code, QProcess::ExitStatus) {
+        if (done) done(code == 0);
+        p->deleteLater();
+    });
+    QObject::connect(p, &QProcess::errorOccurred, p, [p, done](QProcess::ProcessError) {
+        if (done) done(false);
+        p->deleteLater();
+    });
+    p->start(QStringLiteral("powershell.exe"),
+             {QStringLiteral("-Command"),
+              QStringLiteral("Start-Process powershell -ArgumentList '-EncodedCommand','%1' -Verb RunAs -Wait")
+                  .arg(b64)});
 #else
     Q_UNUSED(path);
-    return false;   // Windows-only
+    if (done) done(false);
 #endif
 }
 

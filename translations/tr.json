@@ -1233,5 +1233,14 @@
   "wrapped_downloaded": "İndirilen",
   "wrapped_empty": "Henüz yeterli geçmiş yok — yıl boyunca BATorrent'i kullandıkça özetiniz dolar.",
   "wrapped_title": "Torrent'te Yıl",
-  "wrapped_top_categories": "En çok kategori"
+  "wrapped_top_categories": "En çok kategori",
+  "set_graphics_api": "Grafik oluşturucu",
+  "set_graphics_api_note": "Pencere gri/boş açılırsa Software seçin. Yeniden başlatma gerekir.",
+  "set_graphics_auto": "Otomatik",
+  "set_graphics_software": "Software (uyumluluk)",
+  "set_graphics_opengl": "OpenGL",
+  "set_graphics_d3d11": "Direct3D 11",
+  "boot_qml_failed": "BATorrent arayüzünü yükleyemedi.",
+  "boot_qml_failed_info": "Günlük nedeni gösterebilir. Sürerse Ayarlar → Gelişmiş içinde Software deneyin.",
+  "boot_scene_graph_error": "Grafik başlatılamadı. Software'e geçiliyor — BATorrent'i yeniden başlatın."
 }

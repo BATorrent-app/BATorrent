@@ -1233,5 +1233,14 @@
   "wrapped_downloaded": "ダウンロード",
   "wrapped_empty": "まだ履歴が足りません — 1年を通して BATorrent を使うほどまとまります。",
   "wrapped_title": "トレント・イヤー",
-  "wrapped_top_categories": "トップカテゴリ"
+  "wrapped_top_categories": "トップカテゴリ",
+  "set_graphics_api": "グラフィックレンダラー",
+  "set_graphics_api_note": "画面が灰色や空白のときは Software を選んで再起動してください。",
+  "set_graphics_auto": "自動",
+  "set_graphics_software": "Software（互換）",
+  "set_graphics_opengl": "OpenGL",
+  "set_graphics_d3d11": "Direct3D 11",
+  "boot_qml_failed": "BATorrent は UI を読み込めませんでした。",
+  "boot_qml_failed_info": "ログに原因があることがあります。続く場合は設定→詳細で Software を試してください。",
+  "boot_scene_graph_error": "グラフィックの起動に失敗。Software に切替えます。再起動してください。"
 }

@@ -14,7 +14,6 @@
 
 #if defined(Q_OS_WIN)
 #include <windows.h>
-#include <dbghelp.h>
 #else
 #include <csignal>
 #include <execinfo.h>
@@ -24,7 +23,6 @@
 
 namespace {
 
-// Captured at install() so the signal/exception handler touches no Qt and no heap.
 char g_dir[1024] = {0};
 char g_version[64] = {0};
 
@@ -46,40 +44,40 @@ void posixHandler(int sig)
         writeStr(fd, "\nbacktrace:\n");
         void *frames[64];
         int n = ::backtrace(frames, 64);
-        ::backtrace_symbols_fd(frames, n, fd);   // async-signal-safe
+        ::backtrace_symbols_fd(frames, n, fd);
         ::close(fd);
     }
-    ::signal(sig, SIG_DFL);   // let the OS produce its own report / core dump
+    ::signal(sig, SIG_DFL);
     ::raise(sig);
 }
 #else
 LONG WINAPI winHandler(EXCEPTION_POINTERS *info)
 {
+    // Keep this filter allocation-light: no SymInitialize/dbghelp (loader lock /
+    // heap may already be corrupt). Raw addresses only; WER/Crashpad still run.
     char path[1200];
     std::snprintf(path, sizeof(path), "%s\\crash-%lld.log", g_dir, (long long)::time(nullptr));
-    FILE *f = std::fopen(path, "w");
-    if (f) {
-        std::fprintf(f, "BATorrent crash report\nversion: %s\ncode: 0x%lx\n",
-                     g_version, info->ExceptionRecord->ExceptionCode);
-        HANDLE proc = GetCurrentProcess();
-        SymInitialize(proc, nullptr, TRUE);
+    HANDLE file = CreateFileA(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+                              FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file != INVALID_HANDLE_VALUE) {
+        char header[256];
+        int n = std::snprintf(header, sizeof(header),
+                              "BATorrent crash report\nversion: %s\ncode: 0x%lx\nframes:\n",
+                              g_version, info && info->ExceptionRecord
+                                             ? info->ExceptionRecord->ExceptionCode
+                                             : 0ul);
+        DWORD written = 0;
+        if (n > 0) WriteFile(file, header, DWORD(n), &written, nullptr);
         void *frames[64];
-        USHORT n = CaptureStackBackTrace(0, 64, frames, nullptr);
-        char buf[sizeof(SYMBOL_INFO) + 256];
-        auto *sym = reinterpret_cast<SYMBOL_INFO *>(buf);
-        sym->SizeOfStruct = sizeof(SYMBOL_INFO);
-        sym->MaxNameLen = 255;
-        for (USHORT i = 0; i < n; ++i) {
-            DWORD64 addr = reinterpret_cast<DWORD64>(frames[i]);
-            DWORD64 disp = 0;
-            if (SymFromAddr(proc, addr, &disp, sym))
-                std::fprintf(f, "  %s + 0x%llx\n", sym->Name, (unsigned long long)disp);
-            else
-                std::fprintf(f, "  0x%llx\n", (unsigned long long)addr);
+        USHORT count = CaptureStackBackTrace(0, 64, frames, nullptr);
+        for (USHORT i = 0; i < count; ++i) {
+            char line[64];
+            int ln = std::snprintf(line, sizeof(line), "  0x%p\n", frames[i]);
+            if (ln > 0) WriteFile(file, line, DWORD(ln), &written, nullptr);
         }
-        std::fclose(f);
+        CloseHandle(file);
     }
-    return EXCEPTION_EXECUTE_HANDLER;
+    return EXCEPTION_CONTINUE_SEARCH;   // let WER / Crashpad handle termination
 }
 #endif
 

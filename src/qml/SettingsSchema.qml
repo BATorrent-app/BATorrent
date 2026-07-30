@@ -230,6 +230,12 @@ QtObject {
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_engine")) },
             { type: "toggle", key: "engineSplit", label: (i18n.language, i18n.t("set_engine_split")), note: (i18n.language, i18n.t("set_engine_split_note")) },
+            { type: "select", key: "graphicsApi", label: (i18n.language, i18n.t("set_graphics_api")),
+              options: [(i18n.language, i18n.t("set_graphics_auto")),
+                        (i18n.language, i18n.t("set_graphics_software")),
+                        (i18n.language, i18n.t("set_graphics_opengl")),
+                        (i18n.language, i18n.t("set_graphics_d3d11"))],
+              value: 0, note: (i18n.language, i18n.t("set_graphics_api_note")) },
             { type: "group", label: (i18n.language, i18n.t("adv_disk_io")) },
             { type: "number", key: "advAioThreads", label: (i18n.language, i18n.t("adv_aio_threads")), value: "4" },
             { type: "number", key: "advHashingThreads", label: (i18n.language, i18n.t("adv_hashing_threads")), value: "2" },

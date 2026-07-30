@@ -1233,5 +1233,14 @@
   "wrapped_downloaded": "已下载",
   "wrapped_empty": "历史数据还不够——随着你全年使用 BATorrent，回顾会逐渐充实。",
   "wrapped_title": "年度种子回顾",
-  "wrapped_top_categories": "热门分类"
+  "wrapped_top_categories": "热门分类",
+  "set_graphics_api": "图形渲染器",
+  "set_graphics_api_note": "若窗口灰屏或空白，请选 Software 并重启。",
+  "set_graphics_auto": "自动",
+  "set_graphics_software": "Software（兼容）",
+  "set_graphics_opengl": "OpenGL",
+  "set_graphics_d3d11": "Direct3D 11",
+  "boot_qml_failed": "BATorrent 无法加载界面。",
+  "boot_qml_failed_info": "日志可能说明原因。若仍出现，请在设置→高级中尝试 Software 渲染器。",
+  "boot_scene_graph_error": "图形启动失败。将切换到 Software — 请重启 BATorrent。"
 }

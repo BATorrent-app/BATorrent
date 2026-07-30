@@ -1233,5 +1233,14 @@
   "wrapped_downloaded": "Baixado",
   "wrapped_empty": "Ainda não há histórico suficiente — sua retrospectiva se preenche conforme você usa o BATorrent ao longo do ano.",
   "wrapped_title": "Retrospectiva Torrent",
-  "wrapped_top_categories": "Categorias principais"
+  "wrapped_top_categories": "Categorias principais",
+  "set_graphics_api": "Renderizador gráfico",
+  "set_graphics_api_note": "Use Software se a janela abrir em branco ou cinza. Reinício necessário.",
+  "set_graphics_auto": "Auto",
+  "set_graphics_software": "Software (compatibilidade)",
+  "set_graphics_opengl": "OpenGL",
+  "set_graphics_d3d11": "Direct3D 11",
+  "boot_qml_failed": "O BATorrent não conseguiu carregar a interface.",
+  "boot_qml_failed_info": "O log pode explicar o motivo. Se continuar, tente o renderizador Software em Ajustes → Avançado após reinstalar.",
+  "boot_scene_graph_error": "A gráfica falhou ao iniciar. Alternando para Software — reinicie o BATorrent."
 }

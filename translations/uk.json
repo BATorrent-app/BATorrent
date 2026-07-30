@@ -1233,5 +1233,14 @@
   "wrapped_downloaded": "Завантажено",
   "wrapped_empty": "Поки недостатньо історії — підсумок наповнюється під час використання BATorrent протягом року.",
   "wrapped_title": "Рік у торентах",
-  "wrapped_top_categories": "Топ категорій"
+  "wrapped_top_categories": "Топ категорій",
+  "set_graphics_api": "Графічний рушій",
+  "set_graphics_api_note": "Оберіть Software, якщо вікно сіре чи порожнє. Потрібен перезапуск.",
+  "set_graphics_auto": "Авто",
+  "set_graphics_software": "Software (сумісність)",
+  "set_graphics_opengl": "OpenGL",
+  "set_graphics_d3d11": "Direct3D 11",
+  "boot_qml_failed": "BATorrent не зміг завантажити інтерфейс.",
+  "boot_qml_failed_info": "Журнал може пояснити причину. Якщо повторюється — Software у Налаштування → Додатково.",
+  "boot_scene_graph_error": "Графіка не запустилась. Перемикаємо на Software — перезапустіть BATorrent."
 }

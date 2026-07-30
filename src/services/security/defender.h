@@ -6,13 +6,16 @@
 #define DEFENDER_H
 
 #include <QString>
+#include <functional>
 
 namespace Defender {
 
-// Windows-only: add a folder to Windows Defender's exclusion list via an
-// elevated (UAC) PowerShell call. Returns false on non-Windows, in Store
-// builds, or if the user declines elevation. Safe to call with any path.
+// Windows-only: queue an elevated (UAC) PowerShell call to exclude a folder.
+// Never blocks the GUI thread. Returns true if the request was queued.
 bool addExclusion(const QString &path);
+
+// Optional completion callback (may run on the GUI thread via QProcess signals).
+void addExclusionAsync(const QString &path, std::function<void(bool ok)> done);
 
 }
 

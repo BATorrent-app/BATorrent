@@ -36,7 +36,10 @@ jobs:
           cmake --build build -j$(nproc) --target BATorrent
       - name: Boot offscreen and scan for QML errors
         run: |
-          QT_QPA_PLATFORM=offscreen BAT_QML_STRICT=warn timeout 30 ./build/BATorrent > boot.log 2>&1 || true
+          # BAT_SMOKE_LOADERS activates deferred window Loaders once so type
+          # errors in RssWindow / WrappedWindow / etc. surface here.
+          QT_QPA_PLATFORM=offscreen BAT_QML_STRICT=warn BAT_SMOKE_LOADERS=1 \
+            timeout 35 ./build/BATorrent > boot.log 2>&1 || true
           echo "=== boot log (tail) ==="; tail -40 boot.log
           # Engine-level load failures are always fatal; QML runtime errors are
           # matched by pattern. Extend the list when a new class escapes.
@@ -44,8 +47,6 @@ jobs:
             echo "::error::QML errors at boot"; grep -En "failed to load component|is not a type|TypeError:|ReferenceError:|Unable to assign|Invalid property assignment|Cannot specify|instantiated recursively" boot.log | head -20
             exit 1
           fi
-          # Catch missing translation keys that only surface as empty UI copy
-          # (Get & Install / Get & Watch overlays are eager enough at boot to
-          # exercise the key paths used by the overlay component).
+          # Catch missing translation keys that only surface as empty UI copy.
           python3 scripts/check-i18n-parity.py
           echo "boot clean"

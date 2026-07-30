@@ -343,6 +343,13 @@ void QmlThemeBridge::markBootHealthy() const
     st.sync();
 }
 
+void QmlThemeBridge::setSoftwareRenderer(bool on)
+{
+    if (m_softwareRenderer == on) return;
+    m_softwareRenderer = on;
+    emit changed();
+}
+
 QString QmlThemeBridge::releaseNotes() const
 {
     QFile f(QStringLiteral(":/CHANGELOG.md"));   // the real source of truth

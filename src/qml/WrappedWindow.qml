@@ -19,13 +19,13 @@ Window {
     flags: Qt.Window
 
     property int year: 0
-    property var data: ({})
-    readonly property var months: data.months || []
-    readonly property var cats: data.categories || []
+    property var recapData: ({})
+    readonly property var months: recapData.months || []
+    readonly property var cats: recapData.categories || []
 
     function openFor(y) {
         win.year = y
-        win.data = (typeof session !== "undefined") ? session.wrapped(y) : ({})
+        win.recapData = (typeof session !== "undefined") ? session.wrapped(y) : ({})
         win.show(); win.raise(); win.requestActivate()
     }
 
@@ -115,7 +115,7 @@ Window {
                 spacing: 2
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: win.fmtBytes(win.data.down || 0)
+                    text: win.fmtBytes(win.recapData.down || 0)
                     color: "#ffffff"; font.pixelSize: 56; font.weight: Font.Black; font.family: Theme.fontSans
                 }
                 Text {
@@ -133,9 +133,9 @@ Window {
                 spacing: 14
                 Repeater {
                     model: [
-                        { v: String(win.data.added || 0),     l: i18n.t("wrapped_added") },
-                        { v: String(win.data.completed || 0), l: i18n.t("wrapped_completed") },
-                        { v: String(win.data.activeDays || 0), l: i18n.t("wrapped_active_days") }
+                        { v: String(win.recapData.added || 0),     l: i18n.t("wrapped_added") },
+                        { v: String(win.recapData.completed || 0), l: i18n.t("wrapped_completed") },
+                        { v: String(win.recapData.activeDays || 0), l: i18n.t("wrapped_active_days") }
                     ]
                     delegate: Rectangle {
                         id: statCard
@@ -171,7 +171,7 @@ Window {
                 Layout.fillWidth: true
                 Layout.leftMargin: 24; Layout.rightMargin: 24
                 spacing: 10
-                visible: (win.data.down || 0) > 0
+                visible: (win.recapData.down || 0) > 0
                 Text {
                     text: (i18n.language, i18n.t("wrapped_by_month"))
                     color: "#e8e8ec"; font.pixelSize: 13; font.weight: Font.Bold; font.family: Theme.fontSans
@@ -258,8 +258,8 @@ Window {
             // busiest day
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                visible: (win.data.busiestDown || 0) > 0
-                text: i18n.t("wrapped_busiest").arg(win.data.busiestDay || "").arg(win.fmtBytes(win.data.busiestDown || 0))
+                visible: (win.recapData.busiestDown || 0) > 0
+                text: i18n.t("wrapped_busiest").arg(win.recapData.busiestDay || "").arg(win.fmtBytes(win.recapData.busiestDown || 0))
                 color: "#a8a8b0"; font.pixelSize: 12; font.family: Theme.fontSans
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -269,8 +269,8 @@ Window {
             // torrents) reported "nothing here" over a history file full of data.
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                visible: (win.data.down || 0) === 0 && (win.data.added || 0) === 0
-                         && (win.data.up || 0) === 0 && (win.data.completed || 0) === 0
+                visible: (win.recapData.down || 0) === 0 && (win.recapData.added || 0) === 0
+                         && (win.recapData.up || 0) === 0 && (win.recapData.completed || 0) === 0
                 text: (i18n.language, i18n.t("wrapped_empty"))
                 color: "#80808a"; font.pixelSize: 13; font.family: Theme.fontSans
                 horizontalAlignment: Text.AlignHCenter

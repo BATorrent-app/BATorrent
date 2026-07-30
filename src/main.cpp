@@ -20,6 +20,9 @@
 #include <QQmlContext>
 #include <QQuickImageProvider>
 #include <QQuickStyle>
+#include <QGuiApplication>
+#include <QSplashScreen>
+#include <QPixmap>
 #include <QQuickWindow>
 #include <QSGRendererInterface>
 #include <QLocale>
@@ -40,6 +43,7 @@
 #include "services/discovery/discoveryservice.h"
 #include "services/platform/translator.h"
 #include "bridges/qmlposterbridge.h"
+#include "bridges/qmlsessionbridge.h"
 #include "webui/streamserver.h"
 #include "services/discovery/gamesourcemanager.h"
 #include "services/integrations/rssmanager.h"
@@ -85,6 +89,41 @@ public:
 };
 
 static const QString kServerName = QStringLiteral("BATorrent-SingleInstance");
+
+// Must run before QApplication constructs the first QQuickWindow. Index matches
+// Settings → Advanced "graphicsApi" (0 Auto, 1 Software, 2 OpenGL, 3 D3D11).
+static void applyGraphicsApiPreference()
+{
+    QString api = QString::fromLocal8Bit(qgetenv("BAT_GRAPHICS_API")).trimmed().toLower();
+    if (api.isEmpty()) {
+        const int idx = QSettings(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"))
+                            .value(QStringLiteral("graphicsApi"), 0).toInt();
+        if (idx == 1) api = QStringLiteral("software");
+        else if (idx == 2) api = QStringLiteral("opengl");
+        else if (idx == 3) api = QStringLiteral("d3d11");
+    }
+    if (api == QLatin1String("software"))
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+    else if (api == QLatin1String("opengl"))
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+    else if (api == QLatin1String("d3d11") || api == QLatin1String("direct3d11"))
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::Direct3D11);
+}
+
+static void showQmlLoadFailure(const QString &logHint)
+{
+    qInstallMessageHandler(nullptr);
+    QMessageBox box;
+    box.setIcon(QMessageBox::Critical);
+    box.setWindowTitle(QStringLiteral("BATorrent"));
+    box.setText(QStringLiteral("BATorrent couldn't load its interface."));
+    box.setInformativeText(
+        QStringLiteral("The log may explain why (%1). If the window opens blank or gray, "
+                       "reinstall or set graphicsApi=software in settings and restart.")
+            .arg(logHint));
+    box.addButton(QMessageBox::Ok);
+    box.exec();
+}
 
 static QString collectArgs(const QStringList &args)
 {
@@ -246,6 +285,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Graphics API before QApplication — otherwise the first QQuickWindow locks
+    // in D3D11/Metal and a gray client area has nowhere to fall back.
+    applyGraphicsApiPreference();
+
     QApplication app(argc, argv);
     // Set the org name so default-constructed QSettings() resolves to the same
     // store as the explicit QSettings("BATorrent","BATorrent") used elsewhere —
@@ -289,11 +332,8 @@ int main(int argc, char *argv[])
     // rate would otherwise translate to ~10 QSettings opens/sec).
     setSpeedUnit(QSettings("BATorrent", "BATorrent").value("speedUnit", 0).toInt());
 
-    // One-time migration of plaintext secrets from QSettings into the OS
-    // keyring (no-op on subsequent runs and on builds without QtKeychain).
-    SecretStore::instance().migrateFromSettings({
-        "proxyPass", "plexToken", "jellyfinApiKey"
-    });
+    // Keychain migration runs after the first painted frame (see frameSwapped
+    // below) so a stalled Credential Manager can't look like "won't open".
 
     // One-time migration: "autoShutdown" (bool) -> "postDownloadAction" (index,
     // 6 = shut down). A user who had it on keeps getting a shutdown, not
@@ -304,31 +344,56 @@ int main(int argc, char *argv[])
             st.setValue("postDownloadAction", 6);
     }
 
-    // webUiPasswordHash used to live in the keychain, but on unsigned macOS
-    // builds reading it at every cold start pops a login-keychain prompt. It's
-    // only a SHA-256 hash (not a usable credential), so it now lives in
-    // QSettings; pull any existing one back out of the keychain (one-time — the
-    // plaintext webUiPassword stays in the keychain). Reading a missing item
-    // doesn't prompt, so users who never enabled the WebUI see nothing.
-    {
-        QSettings st;
-        if (!st.contains("webUiPasswordHash")) {
-            const QString h = SecretStore::instance().get("webUiPasswordHash");
-            if (!h.isEmpty()) {
-                st.setValue("webUiPasswordHash", h);
-                SecretStore::instance().set("webUiPasswordHash", QString());
-            }
-        }
-    }
-
     // Single-instance check: if another instance is running, forward args and quit
     QString argsPayload = collectArgs(app.arguments());
     if (sendToRunningInstance(argsPayload))
         return 0;
 
+    // Claim the socket NOW — before SessionManager/resume — so a second launch
+    // during a slow boot forwards here instead of fighting the same resume dir.
+    QLocalServer::removeServer(kServerName);
+    auto *instanceServer = new QLocalServer(&app);
+    if (!instanceServer->listen(kServerName))
+        qWarning() << "[instance] listen failed:" << instanceServer->errorString();
+    auto sessionBridgeHolder = std::make_shared<QmlSessionBridge *>(nullptr);
+    auto rootHolder = std::make_shared<QObject *>(nullptr);
+    auto pendingForwarded = std::make_shared<QStringList>();
+    QObject::connect(instanceServer, &QLocalServer::newConnection, &app,
+                     [instanceServer, sessionBridgeHolder, rootHolder, pendingForwarded]() {
+        QLocalSocket *client = instanceServer->nextPendingConnection();
+        if (!client) return;
+        if (auto *w = qobject_cast<QWindow *>(*rootHolder)) {
+            if (w->visibility() == QWindow::Hidden) w->show();
+            else if (w->windowStates() & Qt::WindowMinimized)
+                w->setWindowStates(w->windowStates() & ~Qt::WindowMinimized);
+            w->raise(); w->requestActivate();
+        }
+        QObject::connect(client, &QLocalSocket::readyRead, client,
+                         [client, sessionBridgeHolder, pendingForwarded]() {
+            const QStringList lines = QString::fromUtf8(client->readAll())
+                                          .split('\n', Qt::SkipEmptyParts);
+            if (QmlSessionBridge *bridge = *sessionBridgeHolder) {
+                for (const QString &line : lines) {
+                    if (line.endsWith(".torrent")) bridge->requestAddTorrentFile(line);
+                    else if (line.startsWith("magnet:") || line.startsWith("bittorrent:"))
+                        bridge->addMagnetUri(line);
+                }
+            } else {
+                *pendingForwarded << lines;
+            }
+            client->deleteLater();
+        });
+    });
+
+    // Native splash so a long resume parse isn't "I launched and nothing happened".
+    QSplashScreen splash(QPixmap(QStringLiteral(":/images/logo1.png"))
+                             .scaled(160, 160, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    splash.show();
+    app.processEvents();
+
     // --- boot-health sentinel: catch a crash during startup (e.g. corrupt resume
     // data, or a bad auto-update) and offer recovery BEFORE the risky init runs
-    // again. markBootHealthy() (called from QML once the UI is up) clears it.
+    // again. markBootHealthy() clears it after the first painted frame.
     bool safeMode = false;
     {
         QSettings st;
@@ -804,6 +869,9 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("debrid", debrid);
         engine.rootContext()->setContextProperty("notifications", notificationBridge);
         engine.rootContext()->setContextProperty("i18n", i18nBridge);
+        // qml-smoke / CI: force-instantiate deferred window Loaders once.
+        engine.rootContext()->setContextProperty(
+            "batSmokeLoaders", qEnvironmentVariableIsSet("BAT_SMOKE_LOADERS"));
 #ifndef BAT_STORE_BUILD
         engine.rootContext()->setContextProperty("updater", updaterBridge);
         engine.rootContext()->setContextProperty("vpn", vpnManager);
@@ -818,9 +886,30 @@ int main(int argc, char *argv[])
         const QUrl rootUrl = devQmlDir.isEmpty()
             ? QUrl(QStringLiteral("qrc:/src/qml/Main.qml"))
             : QUrl::fromLocalFile(QDir(devQmlDir).filePath(QStringLiteral("Main.qml")));
+
+        bool mainObjectOk = false;
+        QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app,
+                         [&mainObjectOk, rootUrl](QObject *obj, const QUrl &objUrl) {
+            if (objUrl != rootUrl) return;
+            mainObjectOk = (obj != nullptr);
+        });
         engine.load(rootUrl);
-        if (engine.rootObjects().isEmpty())
-            return -1;
+        if (engine.rootObjects().isEmpty() || !mainObjectOk) {
+            splash.finish(nullptr);
+            const QString logPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                                    + QStringLiteral("/batorrent.log");
+            showQmlLoadFailure(logPath);
+            return 1;
+        }
+
+        *sessionBridgeHolder = sessionBridge;
+        *rootHolder = engine.rootObjects().first();
+        for (const QString &line : *pendingForwarded) {
+            if (line.endsWith(".torrent")) sessionBridge->requestAddTorrentFile(line);
+            else if (line.startsWith("magnet:") || line.startsWith("bittorrent:"))
+                sessionBridge->addMagnetUri(line);
+        }
+        pendingForwarded->clear();
 
         if (!devQmlDir.isEmpty()) {
             // Poll .qml mtimes rather than QFileSystemWatcher: editors save by
@@ -862,7 +951,10 @@ int main(int argc, char *argv[])
         // falls back to the Software renderer (no GPU), the whole UI stutters
         // like a game compiling shaders even on a fast card — this line in the
         // log tells us that immediately instead of guessing.
-        if (auto *qw = qobject_cast<QQuickWindow *>(engine.rootObjects().first())) {
+        auto *qw = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+        if (qw) {
+            // QQuickWindow is not a QWidget — finish(nullptr) just dismisses the splash.
+            splash.finish(nullptr);
             const char *backend = "Unknown";
             switch (qw->rendererInterface()->graphicsApi()) {
             case QSGRendererInterface::Software:   backend = "Software (NO GPU — expect heavy stutter)"; break;
@@ -873,42 +965,74 @@ int main(int argc, char *argv[])
             case QSGRendererInterface::Metal:      backend = "Metal"; break;
             default: break;
             }
+            themeBridge->setSoftwareRenderer(
+                qw->rendererInterface()->graphicsApi() == QSGRendererInterface::Software
+                || QSettings(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"))
+                       .value(QStringLiteral("graphicsApi"), 0).toInt() == 1);
             Logger::instance().log(Logger::Info,
                 QStringLiteral("[render] scene graph backend: %1").arg(QLatin1String(backend)));
+
+            // Boot is healthy only after a real painted frame — a Timer firing
+            // while the client area stays gray used to clear the crash sentinel.
+            auto gotFrame = std::make_shared<bool>(false);
+            auto frameConn = std::make_shared<QMetaObject::Connection>();
+            *frameConn = QObject::connect(qw, &QQuickWindow::frameSwapped, themeBridge,
+                             [themeBridge, gotFrame, frameConn]() {
+                if (*gotFrame) return;
+                *gotFrame = true;
+                QObject::disconnect(*frameConn);
+                themeBridge->markBootHealthy();
+                // Deferred keychain I/O — Credential Manager stalls must not
+                // block the first paint.
+                SecretStore::instance().migrateFromSettings({
+                    "proxyPass", "plexToken", "jellyfinApiKey"
+                });
+                {
+                    QSettings st;
+                    if (!st.contains("webUiPasswordHash")) {
+                        const QString h = SecretStore::instance().get("webUiPasswordHash");
+                        if (!h.isEmpty()) {
+                            st.setValue("webUiPasswordHash", h);
+                            SecretStore::instance().set("webUiPasswordHash", QString());
+                        }
+                    }
+                }
+                qInfo() << "[boot] first frame presented — boot healthy";
+                if (qEnvironmentVariableIsSet("BAT_SMOKE_EXIT_ON_FRAME"))
+                    QCoreApplication::exit(0);
+            });
+            QObject::connect(qw, &QQuickWindow::sceneGraphError, qw,
+                             [gotFrame](QQuickWindow::SceneGraphError, const QString &msg) {
+                qCritical() << "[render] sceneGraphError:" << msg;
+                QSettings st(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"));
+                st.setValue(QStringLiteral("graphicsApi"), 1);   // Software next launch
+                st.sync();
+                if (qEnvironmentVariableIsSet("BAT_SMOKE_EXIT_ON_FRAME"))
+                    QCoreApplication::exit(3);
+                QMessageBox::warning(nullptr, QStringLiteral("BATorrent"),
+                    QStringLiteral("Graphics failed to start. Switching to Software renderer — "
+                                   "please restart BATorrent.\n\n%1").arg(msg));
+            });
+            QTimer::singleShot(10000, &app, [gotFrame]() {
+                if (*gotFrame) return;
+                qCritical() << "[boot] no frame within 10s — treating as gray-screen failure";
+                QSettings st(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"));
+                if (st.value(QStringLiteral("graphicsApi"), 0).toInt() != 1) {
+                    st.setValue(QStringLiteral("graphicsApi"), 1);
+                    st.sync();
+                }
+                if (qEnvironmentVariableIsSet("BAT_SMOKE_EXIT_ON_FRAME"))
+                    QCoreApplication::exit(2);
+            });
+        } else {
+            splash.finish(nullptr);
         }
 #ifndef BAT_STORE_BUILD
         if (!safeMode)                // in safe mode, don't re-trigger a possibly-bad auto-update
             updaterBridge->check(true);   // silent check on startup
 #endif
 
-        // Single-instance server (the legacy path had this; the QML path didn't,
-        // so launching again opened a second copy). Listen for forwarded args
-        // from a second launch, raise our window, and add any .torrent/magnet.
-        QObject *rootObj = engine.rootObjects().first();
-        QLocalServer::removeServer(kServerName);
-        auto *instanceServer = new QLocalServer(&app);
-        instanceServer->listen(kServerName);
-        QObject::connect(instanceServer, &QLocalServer::newConnection, &app,
-                         [instanceServer, rootObj, sessionBridge]() {
-            QLocalSocket *client = instanceServer->nextPendingConnection();
-            if (auto *w = qobject_cast<QWindow *>(rootObj)) {
-                // show() demotes a maximized window to normal (reported: a
-                // browser magnet click un-maximized the app). Only touch
-                // visibility when actually hidden/minimized.
-                if (w->visibility() == QWindow::Hidden) w->show();
-                else if (w->windowStates() & Qt::WindowMinimized)
-                    w->setWindowStates(w->windowStates() & ~Qt::WindowMinimized);
-                w->raise(); w->requestActivate();
-            }
-            QObject::connect(client, &QLocalSocket::readyRead, client, [client, sessionBridge]() {
-                const QStringList lines = QString::fromUtf8(client->readAll()).split('\n', Qt::SkipEmptyParts);
-                for (const QString &line : lines) {
-                    if (line.endsWith(".torrent")) sessionBridge->requestAddTorrentFile(line);
-                    else if (line.startsWith("magnet:") || line.startsWith("bittorrent:")) sessionBridge->addMagnetUri(line);
-                }
-                client->deleteLater();
-            });
-        });
+        // Instance server already listening (early claim). Raise/forward wired above.
 
 #ifdef Q_OS_MACOS
         // Dock reopen: clicking the dock icon of a running app whose window is
@@ -917,6 +1041,7 @@ int main(int argc, char *argv[])
         // relaunch. Restore it when the app becomes active while hidden, matching
         // the tray-click path. Armed after a delay so the launch-time activation
         // doesn't fight "start in tray".
+        QObject *rootObj = engine.rootObjects().first();
         auto dockArmed = std::make_shared<bool>(false);
         QTimer::singleShot(2500, &app, [dockArmed]() { *dockArmed = true; });
         QObject::connect(&app, &QGuiApplication::applicationStateChanged, &app,

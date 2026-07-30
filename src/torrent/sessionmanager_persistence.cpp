@@ -159,9 +159,12 @@ void SessionManager::flushResumeDataBlocking(int timeoutMs)
 
     while (m_resumeOutstanding > 0
            && std::chrono::steady_clock::now() < deadline) {
-        // Wait for the next alert up to whatever time is left in the
-        // deadline window. wait_for_alert returns immediately if alerts
-        // are already queued.
+        // Finish the current pop batch before waiting on new alerts — otherwise
+        // a save_resume_data_alert already in m_alertDrain would never run.
+        if (!m_alertDrain.empty()) {
+            processAlerts();
+            continue;
+        }
         auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
             deadline - std::chrono::steady_clock::now());
         if (remaining.count() <= 0) break;

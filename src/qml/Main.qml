@@ -174,12 +174,8 @@ Window {
     }
     onWidthChanged: if (win.visibility === Window.Windowed) geomSave.restart()
     onHeightChanged: if (win.visibility === Window.Windowed) geomSave.restart()
-    // once the app has survived a few seconds, clear the boot-crash sentinel
-    // (used by main.cpp's safe-mode recovery)
-    Timer {
-        interval: 3500; running: true; repeat: false
-        onTriggered: if (typeof themeBridge !== "undefined") themeBridge.markBootHealthy()
-    }
+    // Boot-crash sentinel is cleared from C++ on the first frameSwapped (a QML
+    // Timer used to fire even when the client area stayed gray).
     // Regaining focus with a fresh magnet link on the clipboard pops the Add
     // dialog pre-filled — copy a link in the browser, alt-tab back, confirm.
     // Deferred: when activation comes from a CLICK, the press that focused the
@@ -1635,6 +1631,22 @@ Window {
             // closing the window tears the player down so reopening starts fresh,
             // and refreshes the HUB so the watched-% bar reflects this session
             onClosed: Qt.callLater(function() { playerWinLoader.active = false; if (hubPage) hubPage.refresh() })
+        }
+    }
+    // CI (BAT_SMOKE_LOADERS): instantiate deferred windows once so load errors
+    // in RssWindow / WrappedWindow / etc. cannot hide behind active: false.
+    Timer {
+        running: typeof batSmokeLoaders !== "undefined" && batSmokeLoaders
+        interval: 300
+        onTriggered: {
+            rssWinLoader.active = true
+            shortcutsWinLoader.active = true
+            statsWinLoader.active = true
+            wrappedWinLoader.active = true
+            removedWinLoader.active = true
+            logWinLoader.active = true
+            diagWinLoader.active = true
+            // Skip PlayerWindow — needs multimedia backends not always in smoke envs.
         }
     }
     Connections {

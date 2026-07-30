@@ -1233,5 +1233,14 @@
   "wrapped_downloaded": "Загружено",
   "wrapped_empty": "Пока недостаточно истории — итог наполнится по мере использования BATorrent в течение года.",
   "wrapped_title": "Год в торрентах",
-  "wrapped_top_categories": "Топ категорий"
+  "wrapped_top_categories": "Топ категорий",
+  "set_graphics_api": "Графический движок",
+  "set_graphics_api_note": "Выберите Software, если окно серое или пустое. Нужен перезапуск.",
+  "set_graphics_auto": "Авто",
+  "set_graphics_software": "Software (совместимость)",
+  "set_graphics_opengl": "OpenGL",
+  "set_graphics_d3d11": "Direct3D 11",
+  "boot_qml_failed": "BATorrent не смог загрузить интерфейс.",
+  "boot_qml_failed_info": "Причина может быть в журнале. При повторе попробуйте Software в Настройки → Дополнительно.",
+  "boot_scene_graph_error": "Графика не запустилась. Переключаем на Software — перезапустите BATorrent."
 }
