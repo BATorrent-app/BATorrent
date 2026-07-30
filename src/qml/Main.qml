@@ -72,31 +72,32 @@ Window {
     // redundant on the Downloads page)
     property bool showDownloadChip: true
     readonly property Item navHost: layoutClassic ? navRailLoader.item : navBarLoader.item
-    // Selection lives in two places: session (source rows, drives the detail
-    // panel) and win.selectedRows (proxy rows, drives what LOOKS selected).
-    // selectByInfoHash only ever touched the first, so jumping here from the
-    // download chip highlighted nothing — the engine knew, the grid didn't.
-    function selectTorrentByHash(infoHash) {
-        if (typeof session === "undefined") return
-        if (!session.selectByInfoHash(infoHash)) { win.setFilter("all"); session.selectByInfoHash(infoHash) }
-        if (typeof torrentFilter === "undefined") return
 
-        var proxy = []
-        var src = session.selectedRows()
-        for (var i = 0; i < src.length; ++i) {
-            var p = torrentFilter.mapFromSource(src[i])
-            if (p >= 0) proxy.push(p)
+    // Selection/filter state lives on library; aliases keep win.* call sites working
+    // while leaf components migrate (LibraryView still talks to win).
+    LibraryController {
+        id: library
+        onClearFilterFocusRequested: win.clearFilterFocus()
+        onReleaseSearchFocusRequested: {
+            if (filterBar && filterBar.searchInput && filterBar.searchInput.activeFocus)
+                filterBar.searchInput.focus = false
         }
-        win.selectedRows = proxy
-        win.selected = proxy.length > 0 ? proxy[0] : -1
-        win.anchorRow = win.selected
-        // and bring it into view — a highlighted row scrolled off screen still
-        // reads as "nothing happened"
-        if (win.selected >= 0) {
-            var v = win.gridView ? libraryView.grid : libraryView.list
-            if (v) v.positionViewAtIndex(win.selected, ListView.Contain)
+        onScrollToRowRequested: function(row) {
+            var v = library.gridView ? libraryView.grid : libraryView.list
+            if (v) v.positionViewAtIndex(row, ListView.Contain)
         }
     }
+    property alias selected: library.selected
+    property alias selectedRows: library.selectedRows
+    property alias anchorRow: library.anchorRow
+    property alias gridView: library.gridView
+    property alias classicMode: library.classicMode
+    property alias activeFilter: library.activeFilter
+    property alias catFilter: library.catFilter
+    property alias sortColumn: library.sortColumn
+    property alias sortAsc: library.sortAsc
+
+    function selectTorrentByHash(infoHash) { library.selectTorrentByHash(infoHash) }
     function promptRenameFile(idx, current) {
         inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), current, "",
             function(t){ if (t.length > 0) session.renameSelectedFile(idx, t) })
@@ -116,16 +117,6 @@ Window {
         }
     }
 
-    property int selected: -1          // focus row (drives the detail panel)
-    property var selectedRows: []      // multi-selection (proxy rows)
-    property int anchorRow: -1         // shift-range anchor
-    property bool gridView: true
-    // classic mode: a clean, cover-less, raw-name list for users the media-hub
-    // styling puts off (qBittorrent-like). Persisted; implies the list layout.
-    property bool classicMode: false
-    onClassicModeChanged: if (typeof settings !== "undefined") settings.set("classicMode", classicMode)
-    property string activeFilter: "all"
-    property string catFilter: ""
     // startup splash — ceremony only when something happened: first run or the
     // first launch after an update. A routine (often magnet-click) launch goes
     // straight to the UI. The Settings toggle still kills it entirely.
@@ -138,8 +129,8 @@ Window {
             if (sw >= win.minimumWidth && sw <= Screen.desktopAvailableWidth) win.width = sw
             if (sh >= win.minimumHeight && sh <= Screen.desktopAvailableHeight) win.height = sh
         }
-        if (typeof settings !== "undefined") win.classicMode = settings.get("classicMode") === true
-        if (win.classicMode) win.gridView = false   // classic is a list layout
+        if (typeof settings !== "undefined") library.classicMode = settings.get("classicMode") === true
+        if (library.classicMode) library.gridView = false   // classic is a list layout
         if (typeof settings !== "undefined") {
             var lc = settings.get("layoutClassic")
             win.layoutClassic = (lc === true || lc === 1 || lc === "1" || lc === "true")
@@ -244,8 +235,6 @@ Window {
     // The Peers tab pulls every peer from libtorrent — only keep it live while open.
     readonly property bool peersTabOpen: win.hasSel && win.detailTab === 1
     onPeersTabOpenChanged: if (typeof session !== "undefined") session.setDetailPeersActive(peersTabOpen)
-    property string sortColumn: ""
-    property bool sortAsc: true
 
     // live model from C++ (QmlTorrentFilterProxy → QmlPosterModel). Roles:
     // torrentName, metaTitle, stateKey, progress(0..1), posterPath, stateString,
@@ -284,71 +273,18 @@ Window {
               : sec + "s"
         return i18n.t("eta_left").arg(u)
     }
-    function _commitSel() {
-        if (typeof session === "undefined" || typeof torrentFilter === "undefined") return
-        var src = []
-        for (var i = 0; i < win.selectedRows.length; ++i) {
-            var s = torrentFilter.mapToSource(win.selectedRows[i])
-            if (s >= 0) src.push(s)
-        }
-        session.setSelectedRows(src)
-    }
+    function _commitSel() { library.commitSel() }
     // The downloads filter keeps activeFocus (and its accent ring) until
     // something else claims it. Every gesture that means "I'm done typing" —
     // picking a torrent, clicking blank space, leaving the page — routes here.
     function clearFilterFocus() { if (filterBar) filterBar.clearSearchFocus() }
 
-    function selectRow(proxyRow, mods) {
-        clearFilterFocus()
-        mods = mods || 0
-        var ctrl = (mods & Qt.ControlModifier) || (mods & Qt.MetaModifier)
-        var shift = (mods & Qt.ShiftModifier)
-        var rows = win.selectedRows.slice()
-        if (shift && win.anchorRow >= 0) {
-            rows = []
-            var a = Math.min(win.anchorRow, proxyRow)
-            var b = Math.max(win.anchorRow, proxyRow)
-            for (var i = a; i <= b; ++i) rows.push(i)
-        } else if (ctrl) {
-            var idx = rows.indexOf(proxyRow)
-            if (idx >= 0) rows.splice(idx, 1); else rows.push(proxyRow)
-            win.anchorRow = proxyRow
-        } else {
-            rows = [proxyRow]
-            win.anchorRow = proxyRow
-        }
-        win.selectedRows = rows
-        win.selected = proxyRow
-        _commitSel()
-        if (filterBar.searchInput.activeFocus) filterBar.searchInput.focus = false   // release the search field so its accent border doesn't stick
-    }
-    function isRowSelected(proxyRow) { return win.selectedRows.indexOf(proxyRow) >= 0 }
-    function selectAll() {
-        if (typeof session === "undefined" || typeof torrentFilter === "undefined") return
-        var rows = []
-        for (var s = 0; s < session.torrentCount; ++s) {
-            var p = torrentFilter.mapFromSource(s)
-            if (p >= 0) rows.push(p)
-        }
-        rows.sort(function(x, y) { return x - y })
-        win.selectedRows = rows
-        win.anchorRow = rows.length > 0 ? rows[0] : -1
-        win.selected = rows.length > 0 ? rows[rows.length - 1] : -1
-        _commitSel()
-    }
-    function toggleSort(col) {
-        if (win.sortColumn === col) win.sortAsc = !win.sortAsc
-        else { win.sortColumn = col; win.sortAsc = true }
-        if (typeof torrentFilter !== "undefined") torrentFilter.setSortColumn(col, win.sortAsc)
-    }
-    function setFilter(f) {
-        win.activeFilter = f
-        if (typeof torrentFilter !== "undefined") torrentFilter.setFilterState(f)
-    }
-    function applyCatFilter(c) {
-        win.catFilter = c
-        if (typeof torrentFilter !== "undefined") torrentFilter.setCategoryFilter(c)
-    }
+    function selectRow(proxyRow, mods) { library.selectRow(proxyRow, mods) }
+    function isRowSelected(proxyRow) { return library.isRowSelected(proxyRow) }
+    function selectAll() { library.selectAll() }
+    function toggleSort(col) { library.toggleSort(col) }
+    function setFilter(f) { library.setFilter(f) }
+    function applyCatFilter(c) { library.applyCatFilter(c) }
     // Categories are stored/filtered by a stable language-independent value
     // (presetCats); only the *display* is translated. Switching language must
     // not desync a torrent's category from the filter/menu, so never store the
@@ -379,34 +315,22 @@ Window {
         if (!win.isRowSelected(proxyRow)) win.selectRow(proxyRow)
         ctxMenu.popup()
     }
-    // keep the visual selection glued to the item when the queue reorders
-    function remapRow(r, from, to) {
-        if (r === from) return to
-        if (from < to) return (r > from && r <= to) ? r - 1 : r
-        else           return (r >= to && r < from) ? r + 1 : r
-    }
+    function remapRow(r, from, to) { return library.remapRow(r, from, to) }
     Connections {
         target: typeof session !== "undefined" ? session : null
         ignoreUnknownSignals: true
-        function onQueueMoved(from, to) {
-            var rows = []
-            for (var i = 0; i < win.selectedRows.length; ++i)
-                rows.push(win.remapRow(win.selectedRows[i], from, to))
-            win.selectedRows = rows
-            if (win.selected >= 0) win.selected = win.remapRow(win.selected, from, to)
-            if (win.anchorRow >= 0) win.anchorRow = win.remapRow(win.anchorRow, from, to)
-        }
+        function onQueueMoved(from, to) { library.onQueueMoved(from, to) }
     }
     function gridCols() { return Math.max(1, Math.floor(libraryView.grid.width / libraryView.grid.cellWidth)) }
     function moveSel(step) {
-        var view = win.gridView ? libraryView.grid : libraryView.list
+        var view = library.gridView ? libraryView.grid : libraryView.list
         var n = view.count
         if (n <= 0) return
-        var cur = win.selected
+        var cur = library.selected
         var next = cur < 0 ? (step > 0 ? 0 : n - 1)
                            : Math.max(0, Math.min(n - 1, cur + step))
         win.selectRow(next)
-        view.positionViewAtIndex(next, win.gridView ? GridView.Contain : ListView.Contain)
+        view.positionViewAtIndex(next, library.gridView ? GridView.Contain : ListView.Contain)
     }
 
     // ----- shared context menu (right-click on grid tile / list row) -----
