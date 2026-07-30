@@ -14,6 +14,7 @@ import "../theme"
 Rectangle {
     id: sidebar
     property var win
+    property var controller
     signal renameFileRequested(int idx, string current)
 
     property bool dismissed: false
@@ -27,7 +28,7 @@ Rectangle {
     // Pinned means the same here as in the bottom panel: stay open regardless of
     // selection, and ignore a previous dismiss. Without this the pin button would
     // be decoration — visibility was keyed only on hasSel && !dismissed.
-    readonly property bool shown: showInspector && win.gridView
+    readonly property bool shown: showInspector && controller.gridView
                                   && (win.detailsLocked || (win.hasSel && !dismissed))
 
     Layout.fillHeight: true

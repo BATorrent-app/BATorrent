@@ -14,6 +14,7 @@ ColumnLayout {
     spacing: 0
 
     required property var host
+    required property var controller
 
     signal addMagnetRequested()
     signal addLinkRequested()
@@ -25,6 +26,7 @@ ColumnLayout {
     FilterBar {
         id: filterBar
         win: root.host
+        controller: root.controller
     }
 
     RowLayout {
@@ -34,19 +36,21 @@ ColumnLayout {
         LibraryView {
             id: libraryView
             win: root.host
+            controller: root.controller
             onAddMagnetRequested: root.addMagnetRequested()
             onAddLinkRequested: root.addLinkRequested()
         }
         DetailSidebar {
             win: root.host
-            showInspector: root.host.gridView && !root.host.detailBottom
+            controller: root.controller
+            showInspector: root.controller.gridView && !root.host.detailBottom
             onRenameFileRequested: function(idx, current) { root.renameFileRequested(idx, current) }
         }
     }
 
     DetailPanel {
         win: root.host
-        visible: !root.host.gridView || root.host.detailBottom
+        visible: !root.controller.gridView || root.host.detailBottom
         onRenameFileRequested: function(idx, current) { root.renameFileRequested(idx, current) }
     }
 

@@ -8,6 +8,7 @@ import "../theme"
 
 Rectangle {
     property var win
+    property var controller
     id: lrow
     width: ListView.view.width
     height: 56
@@ -37,12 +38,12 @@ Rectangle {
     // hover-exclusive MouseArea starves any in-delegate handler)
     readonly property Item stateCell: lrowStateText
 
-    color: win.isRowSelected(index) ? Theme.sel : (listArea.hoveredRow === index ? Theme.hover : "transparent")
+    color: controller.isRowSelected(index) ? Theme.sel : (listArea.hoveredRow === index ? Theme.hover : "transparent")
 
     // .sel inset 2px barra esquerda — t1 (not accent), so it doesn't blend
     // into a red downloading progress bar in the same row
     Rectangle {
-        visible: win.isRowSelected(lrow.index)
+        visible: controller.isRowSelected(lrow.index)
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom

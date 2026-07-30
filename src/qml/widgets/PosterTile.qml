@@ -8,6 +8,7 @@ import "../theme"
 
 Item {
     property var win
+    property var controller
     id: tile
     width: 178
     height: 286
@@ -201,7 +202,7 @@ Item {
             // also visible while the tile is SELECTED, so arrow-key navigation reaches
             // Play at all — hover-only meant the action didn't exist for keyboard
             visible: tile.playable && tile.progress > 0.02
-                     && (tileMa.containsMouse || ptMa.containsMouse || win.isRowSelected(tile.index))
+                     && (tileMa.containsMouse || ptMa.containsMouse || controller.isRowSelected(tile.index))
             x: (parent.width - width) / 2
             y: (parent.height - height) / 2
             width: 46; height: 46; radius: 23
@@ -234,7 +235,7 @@ Item {
             anchors.margins: -2
             radius: 12
             color: "transparent"
-            visible: win.isRowSelected(tile.index)
+            visible: controller.isRowSelected(tile.index)
             border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.28)
             border.width: 4
         }
@@ -243,8 +244,8 @@ Item {
             anchors.fill: parent
             radius: 10
             color: "transparent"
-            border.color: win.isRowSelected(tile.index) ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
-            border.width: win.isRowSelected(tile.index) ? 2 : 1
+            border.color: controller.isRowSelected(tile.index) ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
+            border.width: controller.isRowSelected(tile.index) ? 2 : 1
             Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
 
@@ -444,15 +445,15 @@ Item {
             cursorShape: Qt.PointingHandCursor
             onClicked: function(mouse) {
                 if (mouse.button === Qt.RightButton) {
-                    if (!win.isRowSelected(tile.index)) win.selectRow(tile.index, 0)
+                    if (!controller.isRowSelected(tile.index)) controller.selectRow(tile.index, 0)
                     win.openContext(tile.index)
                 } else {
-                    win.selectRow(tile.index, mouse.modifiers)
+                    controller.selectRow(tile.index, mouse.modifiers)
                 }
             }
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.RightButton) {
-                    win.selectRow(tile.index, 0); session.openSelectedFile()
+                    controller.selectRow(tile.index, 0); session.openSelectedFile()
                 }
             }
         }

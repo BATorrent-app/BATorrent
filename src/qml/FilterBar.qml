@@ -14,6 +14,7 @@ import "widgets"
 Rectangle {
     id: filterBar
     property var win
+    property var controller
     property alias searchInput: searchInput
 
     // The accent ring means "you're typing here". It has to go the moment
@@ -26,7 +27,7 @@ Rectangle {
         property string label
         property string count
         property string filterKey: "all"   // NOT `state` — that shadows Item.state
-        property bool on: win.activeFilter === filterKey
+        property bool on: controller.activeFilter === filterKey
         signal clicked()
         radius: 8
         height: 30
@@ -218,7 +219,7 @@ Rectangle {
                 spacing: 2
 
                 Rectangle {
-                    readonly property bool on: win.gridView && !win.classicMode
+                    readonly property bool on: controller.gridView && !controller.classicMode
                     implicitWidth: segGr.implicitWidth + 22
                     height: 28
                     radius: 6
@@ -242,10 +243,10 @@ Rectangle {
                             font.family: Theme.fontSans
                         }
                     }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.classicMode = false; win.gridView = true } }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { controller.classicMode = false; controller.gridView = true } }
                 }
                 Rectangle {
-                    readonly property bool on: win.classicMode
+                    readonly property bool on: controller.classicMode
                     implicitWidth: segCl.implicitWidth + 22
                     height: 28
                     radius: 6
@@ -269,7 +270,7 @@ Rectangle {
                             font.family: Theme.fontSans
                         }
                     }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.classicMode = true; win.gridView = false } }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { controller.classicMode = true; controller.gridView = false } }
                 }
             }
         }
@@ -319,20 +320,20 @@ Rectangle {
                         id: pillsRow
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: Theme.sp1
-                        Pill { label: (i18n.language, i18n.t("filter_all"));     filterKey: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: win.setFilter("all") }
-                        Pill { label: (i18n.language, i18n.t("filter_all_active"));    filterKey: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: win.setFilter("active") }
-                        Pill { label: (i18n.language, i18n.t("filter_downloading"));  filterKey: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: win.setFilter("downloading") }
-                        Pill { label: (i18n.language, i18n.t("filter_seeding"));  filterKey: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: win.setFilter("seeding") }
-                        Pill { label: (i18n.language, i18n.t("filter_paused"));   filterKey: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: win.setFilter("paused") }
+                        Pill { label: (i18n.language, i18n.t("filter_all"));     filterKey: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: controller.setFilter("all") }
+                        Pill { label: (i18n.language, i18n.t("filter_all_active"));    filterKey: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: controller.setFilter("active") }
+                        Pill { label: (i18n.language, i18n.t("filter_downloading"));  filterKey: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: controller.setFilter("downloading") }
+                        Pill { label: (i18n.language, i18n.t("filter_seeding"));  filterKey: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: controller.setFilter("seeding") }
+                        Pill { label: (i18n.language, i18n.t("filter_paused"));   filterKey: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: controller.setFilter("paused") }
                         // always visible, like the other pills (tester asked for it to stay
                         // put next to Paused/Completed instead of appearing only when a queue
                         // limit is holding torrents back)
                         Pill {
                             label: (i18n.language, i18n.t("filter_queued")); filterKey: "queued"
                             count: typeof session !== "undefined" ? session.queuedCount : 0
-                            onClicked: win.setFilter("queued")
+                            onClicked: controller.setFilter("queued")
                         }
-                        Pill { label: (i18n.language, i18n.t("filter_completed")); filterKey: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: win.setFilter("completed") }
+                        Pill { label: (i18n.language, i18n.t("filter_completed")); filterKey: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: controller.setFilter("completed") }
                     }
 
                     // keeps the category button right-aligned while everything fits
@@ -360,8 +361,8 @@ Rectangle {
                             spacing: 8
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: win.catFilter.length > 0 ? win.catLabel(win.catFilter) : (i18n.language, i18n.t("filter_all_categories"))
-                                color: win.catFilter.length > 0 ? Theme.t1 : Theme.t2
+                                text: controller.catFilter.length > 0 ? win.catLabel(controller.catFilter) : (i18n.language, i18n.t("filter_all_categories"))
+                                color: controller.catFilter.length > 0 ? Theme.t1 : Theme.t2
                                 font.pixelSize: 12
                                 font.family: Theme.fontSans
                             }
@@ -389,19 +390,19 @@ Rectangle {
                             // follows. This list was hardcoded too, so a category
                             // you created could be assigned but never filtered by.
                             onAboutToShow: catFilterCustoms.model = win.customCategories()
-                            CatItem { text: (i18n.language, i18n.t("filter_all_categories")); onTriggered: win.applyCatFilter("") }
+                            CatItem { text: (i18n.language, i18n.t("filter_all_categories")); onTriggered: controller.applyCatFilter("") }
                             MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-                            CatItem { text: win.catLabel("Apps");   onTriggered: win.applyCatFilter("Apps") }
-                            CatItem { text: win.catLabel("Games");  onTriggered: win.applyCatFilter("Games") }
-                            CatItem { text: win.catLabel("Movies"); onTriggered: win.applyCatFilter("Movies") }
-                            CatItem { text: win.catLabel("Series"); onTriggered: win.applyCatFilter("Series") }
+                            CatItem { text: win.catLabel("Apps");   onTriggered: controller.applyCatFilter("Apps") }
+                            CatItem { text: win.catLabel("Games");  onTriggered: controller.applyCatFilter("Games") }
+                            CatItem { text: win.catLabel("Movies"); onTriggered: controller.applyCatFilter("Movies") }
+                            CatItem { text: win.catLabel("Series"); onTriggered: controller.applyCatFilter("Series") }
                             Instantiator {
                                 id: catFilterCustoms
                                 model: []
                                 delegate: CatItem {
                                     required property var modelData
                                     text: modelData
-                                    onTriggered: win.applyCatFilter(modelData)
+                                    onTriggered: controller.applyCatFilter(modelData)
                                 }
                                 onObjectAdded: function(index, object) { catFilterMenu.insertItem(6 + index, object) }
                                 onObjectRemoved: function(index, object) { catFilterMenu.removeItem(object) }

@@ -5,9 +5,8 @@
 import QtQuick
 
 // Selection + filter state for the downloads library. Instantiated as a child
-// of Main's Window (id: library); Main keeps property aliases so existing
-// win.selected / win.selectRow call sites keep working. Does not touch view
-// ids — scroll/focus side-effects go through signals.
+// of Main's Window (id: library). Leaf chrome takes it as `controller` —
+// no win.* hunting for selection. Scroll/focus side-effects go through signals.
 QtObject {
     id: root
 
