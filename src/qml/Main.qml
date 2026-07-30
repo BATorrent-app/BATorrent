@@ -73,8 +73,8 @@ Window {
     property bool showDownloadChip: true
     readonly property Item navHost: layoutClassic ? navRailLoader.item : navBarLoader.item
 
-    // Selection/filter state lives on library; aliases keep win.* call sites working
-    // while leaf components migrate (LibraryView still talks to win).
+    // Selection/filter state lives on library. Leaf chrome takes `controller`
+    // explicitly — no win.* aliases for selection anymore.
     LibraryController {
         id: library
         onClearFilterFocusRequested: win.clearFilterFocus()
@@ -88,15 +88,6 @@ Window {
             if (v) v.positionViewAtIndex(row, ListView.Contain)
         }
     }
-    property alias selected: library.selected
-    property alias selectedRows: library.selectedRows
-    property alias anchorRow: library.anchorRow
-    property alias gridView: library.gridView
-    property alias classicMode: library.classicMode
-    property alias activeFilter: library.activeFilter
-    property alias catFilter: library.catFilter
-    property alias sortColumn: library.sortColumn
-    property alias sortAsc: library.sortAsc
 
     function selectTorrentByHash(infoHash) { library.selectTorrentByHash(infoHash) }
     function promptRenameFile(idx, current) {
@@ -514,7 +505,7 @@ Window {
             height: visible ? implicitHeight : 0
             iconSrc: "qrc:/icons/lock.svg"
             text: (i18n.language, i18n.t("ctx_defender_exclude"))
-            onTriggered: session.excludeTorrentFromDefender(torrentFilter.mapToSource(win.selected))
+            onTriggered: session.excludeTorrentFromDefender(torrentFilter.mapToSource(library.selected))
         }
         CtxItem {
             visible: session.selectedHasArchives
@@ -864,7 +855,7 @@ Window {
             win.currentPage = 0
             if (typeof torrentFilter === "undefined") return
             var p = torrentFilter.mapFromSource(src)
-            if (p < 0) { win.setFilter("all"); p = torrentFilter.mapFromSource(src) }
+            if (p < 0) { library.setFilter("all"); p = torrentFilter.mapFromSource(src) }
             if (p >= 0) win.selectRow(p)
         }
     }
@@ -1161,6 +1152,7 @@ Window {
             Layout.fillWidth: true
             Layout.fillHeight: true
             host: win
+            controller: library
             onAddMagnetRequested: magnetDlg.open()
             onAddLinkRequested: promptHttpDownload()
             onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
@@ -1626,22 +1618,22 @@ Window {
     Shortcut { sequence: "Ctrl+F"; onActivated: libraryChrome.filterBar.searchInput.forceActiveFocus() }
     Shortcut { sequence: "Ctrl+R"; onActivated: if (typeof session !== "undefined") session.forceRecheckSelected() }
     // reorder queue: vertical in list, horizontal in grid (tiles sit side by side)
-    Shortcut { sequence: "Ctrl+Up";    enabled: !win.gridView; onActivated: if (typeof session !== "undefined") session.queueUpSelected() }
-    Shortcut { sequence: "Ctrl+Down";  enabled: !win.gridView; onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
-    Shortcut { sequence: "Ctrl+Left";  enabled: win.gridView;  onActivated: if (typeof session !== "undefined") session.queueUpSelected() }
-    Shortcut { sequence: "Ctrl+Right"; enabled: win.gridView;  onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
+    Shortcut { sequence: "Ctrl+Up";    enabled: !library.gridView; onActivated: if (typeof session !== "undefined") session.queueUpSelected() }
+    Shortcut { sequence: "Ctrl+Down";  enabled: !library.gridView; onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
+    Shortcut { sequence: "Ctrl+Left";  enabled: library.gridView;  onActivated: if (typeof session !== "undefined") session.queueUpSelected() }
+    Shortcut { sequence: "Ctrl+Right"; enabled: library.gridView;  onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
     // navigate selection — suppressed while the command palette owns the keyboard
     // (otherwise the arrows scroll the list behind it instead of its results)
-    Shortcut { sequence: "Up";    enabled: !cmdPalette.opened; onActivated: win.moveSel(win.gridView ? -win.gridCols() : -1) }
-    Shortcut { sequence: "Down";  enabled: !cmdPalette.opened; onActivated: win.moveSel(win.gridView ?  win.gridCols() :  1) }
-    Shortcut { sequence: "Left";  enabled: win.gridView && !cmdPalette.opened; onActivated: win.moveSel(-1) }
-    Shortcut { sequence: "Right"; enabled: win.gridView && !cmdPalette.opened; onActivated: win.moveSel(1) }
-    Shortcut { sequence: "Ctrl+1"; onActivated: win.setFilter("all") }
-    Shortcut { sequence: "Ctrl+2"; onActivated: win.setFilter("downloading") }
-    Shortcut { sequence: "Ctrl+3"; onActivated: win.setFilter("seeding") }
-    Shortcut { sequence: "Ctrl+4"; onActivated: win.setFilter("completed") }
-    Shortcut { sequence: "Ctrl+5"; onActivated: win.setFilter("active") }
-    Shortcut { sequence: "Ctrl+6"; onActivated: win.setFilter("paused") }
+    Shortcut { sequence: "Up";    enabled: !cmdPalette.opened; onActivated: win.moveSel(library.gridView ? -win.gridCols() : -1) }
+    Shortcut { sequence: "Down";  enabled: !cmdPalette.opened; onActivated: win.moveSel(library.gridView ?  win.gridCols() :  1) }
+    Shortcut { sequence: "Left";  enabled: library.gridView && !cmdPalette.opened; onActivated: win.moveSel(-1) }
+    Shortcut { sequence: "Right"; enabled: library.gridView && !cmdPalette.opened; onActivated: win.moveSel(1) }
+    Shortcut { sequence: "Ctrl+1"; onActivated: library.setFilter("all") }
+    Shortcut { sequence: "Ctrl+2"; onActivated: library.setFilter("downloading") }
+    Shortcut { sequence: "Ctrl+3"; onActivated: library.setFilter("seeding") }
+    Shortcut { sequence: "Ctrl+4"; onActivated: library.setFilter("completed") }
+    Shortcut { sequence: "Ctrl+5"; onActivated: library.setFilter("active") }
+    Shortcut { sequence: "Ctrl+6"; onActivated: library.setFilter("paused") }
     Shortcut { sequence: "Ctrl+Shift+T"; onActivated: Theme.cycle() }
 
     // startup splash overlay (above everything, incl. toasts at z:9000)

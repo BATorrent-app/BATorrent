@@ -15,6 +15,7 @@ import "widgets"
 Item {
     id: libraryView
     property var win
+    property var controller
     property alias grid: grid
     property alias list: list
     signal addMagnetRequested()
@@ -40,20 +41,20 @@ Item {
                 text: hc.label
                 // anime art sits behind the right columns — lift the weak grey + a contrasting
                 // outline so headers stay legible over both dark and bright parts of the art
-                color: win.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : (Theme.hasAnime ? Theme.t2 : Theme.t4))
+                color: controller.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : (Theme.hasAnime ? Theme.t2 : Theme.t4))
                 style: Theme.hasAnime ? Text.Outline : Text.Normal
                 styleColor: Theme.isLight ? "#ffffff" : "#000000"
                 font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: win.sortColumn === hc.col
-                text: win.sortAsc ? "▲" : "▼"
+                visible: controller.sortColumn === hc.col
+                text: controller.sortAsc ? "▲" : "▼"
                 color: Theme.accent
                 font.pixelSize: 7
             }
         }
-        MouseArea { id: hcMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.toggleSort(hc.col) }
+        MouseArea { id: hcMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: controller.toggleSort(hc.col) }
     }
 
     Layout.fillWidth: true
@@ -116,7 +117,7 @@ Item {
             fillMode: Image.PreserveAspectFit
             // list rows put state/peer columns right on top of the art —
             // drop it to a watermark there so data wins the contrast fight
-            opacity: win.gridView ? 0.9 : 0.25
+            opacity: controller.gridView ? 0.9 : 0.25
             Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
         }
         // fade left edge (mask: linear-gradient(90deg, transparent, #000 55%))
@@ -143,13 +144,13 @@ Item {
     // ----- GRID -----
     GridView {
         id: grid
-        opacity: (win.gridView && !parent.empty) ? 1 : 0
+        opacity: (controller.gridView && !parent.empty) ? 1 : 0
         visible: opacity > 0.01
         // Grid and list are two views of the SAME rows, so the switch should read
         // as one changing form, not two things swapping. The incoming view grows
         // the last 1.5% into place while the outgoing shrinks away underneath —
         // a plain cross-fade left both hanging half-visible on top of each other.
-        scale: (Theme.reduceMotion || (win.gridView && !parent.empty)) ? 1 : 0.985
+        scale: (Theme.reduceMotion || (controller.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
         Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
@@ -193,7 +194,7 @@ Item {
         interactive: true
         z: 1
 
-        delegate: PosterTile { win: libraryView.win }
+        delegate: PosterTile { win: libraryView.win; controller: libraryView.controller }
     }
 
     // Empty-grid click → clear selection. Sits OVER the grid (z:2) and
@@ -202,7 +203,7 @@ Item {
     // MouseArea inside the Flickable never received these.
     MouseArea {
         anchors.fill: grid
-        visible: win.gridView && !parent.empty
+        visible: controller.gridView && !parent.empty
         enabled: visible
         z: 2
         acceptedButtons: Qt.LeftButton
@@ -211,8 +212,8 @@ Item {
             var idx = grid.indexAt(mouse.x + grid.contentX, mouse.y + grid.contentY)
             if (idx < 0) {
                 win.clearFilterFocus()
-                if (win.selectedRows.length > 0) {
-                    win.selectedRows = []; win.selected = -1; win._commitSel()
+                if (controller.selectedRows.length > 0) {
+                    controller.selectedRows = []; controller.selected = -1; controller.commitSel()
                 }
             } else {
                 mouse.accepted = false   // let the tile's MouseArea handle it
@@ -228,9 +229,9 @@ Item {
     // ----- LIST -----
     ListView {
         id: list
-        opacity: (!win.gridView && !parent.empty) ? 1 : 0
+        opacity: (!controller.gridView && !parent.empty) ? 1 : 0
         visible: opacity > 0.01
-        scale: (Theme.reduceMotion || (!win.gridView && !parent.empty)) ? 1 : 0.985
+        scale: (Theme.reduceMotion || (!controller.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
         Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
@@ -271,14 +272,14 @@ Item {
             }
         }
 
-        delegate: TorrentRow { win: libraryView.win }
+        delegate: TorrentRow { win: libraryView.win; controller: libraryView.controller }
     }
 
     // ----- marquee + click/hover overlay for the list -----
     MouseArea {
         id: listArea
         anchors.fill: list
-        visible: !win.gridView && !parent.empty
+        visible: !controller.gridView && !parent.empty
         enabled: visible
         hoverEnabled: true
         preventStealing: true   // don't let the ListView steal the gesture
@@ -377,10 +378,10 @@ Item {
                     var ry = list.headerItem.height + i * rowH - list.contentY
                     if (ry + rowH > top && ry < bot) rows.push(i)
                 }
-                win.selectedRows = rows
-                win.selected = rows.length > 0 ? rows[rows.length - 1] : -1
-                win.anchorRow = rows.length > 0 ? rows[0] : -1
-                win._commitSel()
+                controller.selectedRows = rows
+                controller.selected = rows.length > 0 ? rows[rows.length - 1] : -1
+                controller.anchorRow = rows.length > 0 ? rows[0] : -1
+                controller.commitSel()
                 dragging = false
                 return
             }
@@ -389,15 +390,15 @@ Item {
             var clickRow = rowAt(mouse.y, mouse.x)
             if (clickRow < 0) {
                 if (mouse.button === Qt.LeftButton) {
-                    win.selectedRows = []; win.selected = -1; win._commitSel()
+                    controller.selectedRows = []; controller.selected = -1; controller.commitSel()
                 }
                 return
             }
             if (mouse.button === Qt.RightButton) {
-                if (!win.isRowSelected(clickRow)) win.selectRow(clickRow, 0)
+                if (!controller.isRowSelected(clickRow)) controller.selectRow(clickRow, 0)
                 win.openContext(clickRow)
             } else {
-                win.selectRow(clickRow, mouse.modifiers)
+                controller.selectRow(clickRow, mouse.modifiers)
             }
         }
         onDoubleClicked: function(mouse) {
@@ -405,7 +406,7 @@ Item {
             // select the clicked row first so we reveal *that* torrent,
             // not whatever was selected before, then open its folder
             // with the file highlighted.
-            if (r >= 0) { win.selectRow(r, 0); session.openSelectedFile() }
+            if (r >= 0) { controller.selectRow(r, 0); session.openSelectedFile() }
         }
 
         Rectangle {
