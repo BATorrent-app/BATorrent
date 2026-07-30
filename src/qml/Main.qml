@@ -79,11 +79,12 @@ Window {
         id: library
         onClearFilterFocusRequested: win.clearFilterFocus()
         onReleaseSearchFocusRequested: {
-            if (filterBar && filterBar.searchInput && filterBar.searchInput.activeFocus)
-                filterBar.searchInput.focus = false
+            var fb = libraryChrome.filterBar
+            if (fb && fb.searchInput && fb.searchInput.activeFocus)
+                fb.searchInput.focus = false
         }
         onScrollToRowRequested: function(row) {
-            var v = library.gridView ? libraryView.grid : libraryView.list
+            var v = library.gridView ? libraryChrome.libraryView.grid : libraryChrome.libraryView.list
             if (v) v.positionViewAtIndex(row, ListView.Contain)
         }
     }
@@ -277,7 +278,7 @@ Window {
     // The downloads filter keeps activeFocus (and its accent ring) until
     // something else claims it. Every gesture that means "I'm done typing" —
     // picking a torrent, clicking blank space, leaving the page — routes here.
-    function clearFilterFocus() { if (filterBar) filterBar.clearSearchFocus() }
+    function clearFilterFocus() { if (libraryChrome.filterBar) libraryChrome.filterBar.clearSearchFocus() }
 
     function selectRow(proxyRow, mods) { library.selectRow(proxyRow, mods) }
     function isRowSelected(proxyRow) { return library.isRowSelected(proxyRow) }
@@ -321,9 +322,9 @@ Window {
         ignoreUnknownSignals: true
         function onQueueMoved(from, to) { library.onQueueMoved(from, to) }
     }
-    function gridCols() { return Math.max(1, Math.floor(libraryView.grid.width / libraryView.grid.cellWidth)) }
+    function gridCols() { return Math.max(1, Math.floor(libraryChrome.libraryView.grid.width / libraryChrome.libraryView.grid.cellWidth)) }
     function moveSel(step) {
-        var view = library.gridView ? libraryView.grid : libraryView.list
+        var view = library.gridView ? libraryChrome.libraryView.grid : libraryChrome.libraryView.list
         var n = view.count
         if (n <= 0) return
         var cur = library.selected
@@ -667,6 +668,8 @@ Window {
     }
 
     // ================== NATIVE MENU BAR (ported from mainwindow.cpp) ==================
+    // Must stay a direct child of Window (not nested under Layout) — macOS menus
+    // break otherwise.
     Platform.MenuBar {
         Platform.Menu {
             title: (i18n.language, i18n.t("menu_file_title"))
@@ -725,30 +728,10 @@ Window {
     }
 
     // ----- system tray -----
-    // Left click (Trigger) / double click restores the window — Windows
-    // convention. Right click opens the context menu automatically. The rich
-    // mini-stats popup is folded into the menu's first (disabled) line.
-    Platform.SystemTrayIcon {
+    AppTray {
         id: trayIcon
-        visible: true
-        // Recolor the logo for the OS tray scheme so it isn't invisible on a
-        // light Windows tray. The ?v= suffix busts the image-provider cache.
-        icon.source: (typeof themeBridge !== "undefined" && themeBridge.osLight)
-                     ? "image://applogo/dark?v=l" : "image://applogo/light?v=d"
-        icon.mask: false
-        tooltip: "BATorrent"
-        // Right-click shows our custom painted popup (TrayPopupWindow) on EVERY
-        // platform. The native Qt.labs `menu` is intentionally not used: it never
-        // popped on the Windows tray here, and the painted popup is the design we
-        // want anyway. Left/double click restores the window.
-        onActivated: function(reason) {
-            if (reason === Platform.SystemTrayIcon.Trigger
-                || reason === Platform.SystemTrayIcon.DoubleClick) {
-                win.show(); win.raise(); win.requestActivate()
-            } else if (reason === Platform.SystemTrayIcon.Context) {
-                trayPopup.popUpAt(trayIcon.geometry)
-            }
-        }
+        onRestoreRequested: { win.show(); win.raise(); win.requestActivate() }
+        onContextRequested: function(geo) { trayPopup.popUpAt(geo) }
     }
 
     // Background events → in-app toast (when the window is up) AND the native
@@ -1172,41 +1155,16 @@ Window {
             onNavigate: function(index) { win.currentPage = index }
         }
 
-        // ================== SUBBAR ==================
-        FilterBar {
-            id: filterBar
-            win: win
-        }
-
-        // ================== CONTENT (grid OR list) + grid inspector ==================
-        RowLayout {
+        // ================== SUBBAR + LIBRARY ==================
+        LibraryChrome {
+            id: libraryChrome
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 0
-            LibraryView {
-                id: libraryView
-                win: win
-                onAddMagnetRequested: magnetDlg.open()
-                onAddLinkRequested: promptHttpDownload()
-            }
-            DetailSidebar {
-                win: win
-                // side inspector only in grid mode when the user hasn't chosen
-                // the bottom deck
-                showInspector: win.gridView && !win.detailBottom
-                onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
-            }
-        }
-
-        // ================== DETAIL (bottom deck: list mode always; grid mode
-        // when the user prefers the panel at the bottom) ==================
-        DetailPanel {
-            win: win
-            visible: !win.gridView || win.detailBottom
+            host: win
+            onAddMagnetRequested: magnetDlg.open()
+            onAddLinkRequested: promptHttpDownload()
             onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
         }
-        // ================== STATUS BAR ==================
-        StatusBar {}
                 }
                 // ----- page 1: Encontrar (Find) — browse + search -----
                 SearchView {
@@ -1525,12 +1483,22 @@ Window {
 
     // ================== TOP-LEVEL WINDOWS (lazy) ==================
     // Built on first open via Loader, not at startup — instantiating all of
-    // them eagerly stalled the UI thread for
-    // seconds on launch and inflated memory. showWin() creates then shows.
-    function showWin(loader) {
-        loader.active = true
-        if (loader.item) { loader.item.show(); loader.item.raise(); loader.item.requestActivate() }
+    // them eagerly stalled the UI thread for seconds on launch.
+    MainWindowLoaders {
+        id: windowLoaders
+        hubPage: hubPage
     }
+    property alias rssWinLoader: windowLoaders.rssWinLoader
+    property alias shortcutsWinLoader: windowLoaders.shortcutsWinLoader
+    property alias statsWinLoader: windowLoaders.statsWinLoader
+    property alias wrappedWinLoader: windowLoaders.wrappedWinLoader
+    property alias removedWinLoader: windowLoaders.removedWinLoader
+    property alias logWinLoader: windowLoaders.logWinLoader
+    property alias diagWinLoader: windowLoaders.diagWinLoader
+    property alias playerWinLoader: windowLoaders.playerWinLoader
+
+    function showWin(loader) { windowLoaders.showWin(loader) }
+    function showWrapped() { windowLoaders.showWrapped() }
     // Build a valid file: URL for a local path. On Windows a path is "C:/…",
     // so plain "file://"+path yields "file://C:/…" where QUrl reads "C:" as a
     // host and the image fails to load; Windows needs the triple-slash form.
@@ -1538,48 +1506,11 @@ Window {
         if (!p || p.length === 0) return ""
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
-    Loader { id: rssWinLoader;       active: false; sourceComponent: RssWindow {} }
-    Loader { id: shortcutsWinLoader; active: false; sourceComponent: ShortcutsWindow {} }
-    Loader { id: statsWinLoader;     active: false; sourceComponent: StatisticsWindow { onOpenWrapped: win.showWrapped() } }
-    Loader { id: wrappedWinLoader;   active: false; sourceComponent: WrappedWindow {} }
-    function showWrapped() {
-        wrappedWinLoader.active = true
-        if (wrappedWinLoader.item) wrappedWinLoader.item.openFor(new Date().getFullYear())
-    }
-    Loader { id: removedWinLoader;   active: false; sourceComponent: RemovedHistoryWindow {} }
-    Loader { id: logWinLoader;       active: false; sourceComponent: LogViewerWindow {} }
-    Loader { id: diagWinLoader;      active: false; sourceComponent: DiagnosticsWindow {} }
-    Loader {
-        id: playerWinLoader; active: false
-        sourceComponent: PlayerWindow {
-            // closing the window tears the player down so reopening starts fresh,
-            // and refreshes the HUB so the watched-% bar reflects this session
-            onClosed: Qt.callLater(function() { playerWinLoader.active = false; if (hubPage) hubPage.refresh() })
-        }
-    }
-    // CI (BAT_SMOKE_LOADERS): instantiate deferred windows once so load errors
-    // in RssWindow / WrappedWindow / etc. cannot hide behind active: false.
-    Timer {
-        running: typeof batSmokeLoaders !== "undefined" && batSmokeLoaders
-        interval: 300
-        onTriggered: {
-            rssWinLoader.active = true
-            shortcutsWinLoader.active = true
-            statsWinLoader.active = true
-            wrappedWinLoader.active = true
-            removedWinLoader.active = true
-            logWinLoader.active = true
-            diagWinLoader.active = true
-            // Skip PlayerWindow — needs multimedia backends not always in smoke envs.
-        }
-    }
     Connections {
         target: session
         function onOpenPlayer(url, title, hash, fileIndex) {
             gwOverlay.hide()
-            playerWinLoader.active = true
-            var w = playerWinLoader.item
-            if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, title, hash, fileIndex) }
+            windowLoaders.openPlayer(url, title, hash, fileIndex)
         }
         function onWatchProgress(hash, percent) {
             if (gwOverlay.phase === "buffering" && hash === gwOverlay.hash) gwOverlay.percent = percent
@@ -1593,9 +1524,7 @@ Window {
         ignoreUnknownSignals: true
         function onStreamReady(url, name) {
             gwOverlay.hide()
-            playerWinLoader.active = true
-            var w = playerWinLoader.item
-            if (w) { w.show(); w.raise(); w.requestActivate(); w.openMedia(url, name, "debrid", 0) }
+            windowLoaders.openPlayer(url, name, "debrid", 0)
         }
         function onErrorOccurred(msg) {
             gwOverlay.hide()
@@ -1694,7 +1623,7 @@ Window {
     }
 
     Shortcut { sequences: [StandardKey.HelpContents]; onActivated: win.showWin(shortcutsWinLoader) }
-    Shortcut { sequence: "Ctrl+F"; onActivated: filterBar.searchInput.forceActiveFocus() }
+    Shortcut { sequence: "Ctrl+F"; onActivated: libraryChrome.filterBar.searchInput.forceActiveFocus() }
     Shortcut { sequence: "Ctrl+R"; onActivated: if (typeof session !== "undefined") session.forceRecheckSelected() }
     // reorder queue: vertical in list, horizontal in grid (tiles sit side by side)
     Shortcut { sequence: "Ctrl+Up";    enabled: !win.gridView; onActivated: if (typeof session !== "undefined") session.queueUpSelected() }

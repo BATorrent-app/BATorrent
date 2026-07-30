@@ -110,6 +110,9 @@
 <file>icons/world.svg</file>
 <file>../src/qml/Main.qml</file>
 <file>../src/qml/LibraryController.qml</file>
+<file>../src/qml/AppTray.qml</file>
+<file>../src/qml/MainWindowLoaders.qml</file>
+<file>../src/qml/LibraryChrome.qml</file>
 <file>../src/qml/Splash.qml</file>
         <file>../src/qml/TrayPopupWindow.qml</file>
         <file>../src/qml/UpdateDialog.qml</file>
