@@ -26,6 +26,7 @@
 #include <QDebug>
 #include <sstream>
 #include <chrono>
+#include <algorithm>
 
 QByteArray SessionManager::captureResumeData(int index) const
 {
@@ -388,3 +389,55 @@ void SessionManager::migrateLegacyResumeData()
         if (QFile::copy(legacyDir.filePath(f), newDir.filePath(f))) ++n;
     qDebug() << "[session] migrated" << n << "resume files from legacy dir" << legacyResume;
 }
+
+// --- removed-history (moved from sessionmanager.cpp) ---
+
+QList<RemovedEntry> SessionManager::recentlyRemoved() const
+{
+    QList<RemovedEntry> out;
+    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
+    if (!removedDir.exists()) return out;
+    QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
+    for (const QString &hash : meta.childGroups()) {
+        meta.beginGroup(hash);
+        RemovedEntry e;
+        e.hash = hash;
+        e.name = meta.value("name").toString();
+        e.totalSize = meta.value("size").toLongLong();
+        e.removedAt = meta.value("removedAt").toLongLong();
+        e.resumePath = removedDir.filePath(hash + ".resume");
+        meta.endGroup();
+        if (QFile::exists(e.resumePath)) out.append(e);
+    }
+    std::sort(out.begin(), out.end(), [](const RemovedEntry &a, const RemovedEntry &b) {
+        return a.removedAt > b.removedAt; // newest first
+    });
+    return out;
+}
+
+bool SessionManager::restoreRemoved(const QString &hash)
+{
+    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
+    QString path = removedDir.filePath(hash + ".resume");
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    QByteArray bytes = f.readAll();
+    f.close();
+    if (!restoreFromResumeData(bytes)) return false;
+    // Successful restore — remove the history entry so it doesn't stay
+    // there forever after the user re-added.
+    QFile::remove(path);
+    QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
+    meta.remove(hash);
+    return true;
+}
+
+void SessionManager::clearRemovedHistory()
+{
+    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
+    if (!removedDir.exists()) return;
+    for (const QString &f : removedDir.entryList({"*.resume"}, QDir::Files))
+        QFile::remove(removedDir.filePath(f));
+    QFile::remove(removedDir.filePath("history.ini"));
+}
+

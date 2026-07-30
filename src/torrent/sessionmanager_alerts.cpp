@@ -18,6 +18,7 @@
 #include <QDebug>
 #include <QDateTime>
 #include <QTimer>
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <algorithm>
@@ -34,7 +35,7 @@ void SessionManager::processAlerts()
     if (m_alertDrain.empty())
         m_session.pop_alerts(&m_alertDrain);
 
-    constexpr size_t kMaxPerTick = 250;
+    constexpr size_t kMaxPerTick = 1000;
     if (m_alertDrain.size() > kMaxPerTick) {
         static qint64 lastStormLog = 0;
         const qint64 now = QDateTime::currentSecsSinceEpoch();
@@ -78,7 +79,10 @@ void SessionManager::processAlerts()
     }
     m_alertDrain.erase(m_alertDrain.begin(), m_alertDrain.begin() + static_cast<std::ptrdiff_t>(n));
 
-    if (!m_alertDrain.empty() && !m_alertDrainScheduled) {
+    // Don't keep pumping after quit was requested — otherwise smoke/exit and a
+    // user close can sit behind thousands of resume/check alerts.
+    if (!m_alertDrain.empty() && !m_alertDrainScheduled
+            && !QCoreApplication::closingDown()) {
         m_alertDrainScheduled = true;
         QTimer::singleShot(0, this, [this]() {
             m_alertDrainScheduled = false;
