@@ -64,7 +64,6 @@
 <file>icons/volume.svg</file>
 <file>icons/volume-mute.svg</file>
 <file>icons/replay.svg</file>
-<file>icons/forward.svg</file>
 <file>icons/subtitles.svg</file>
 <file>icons/lock.svg</file>
 <file>icons/lock-open.svg</file>
@@ -96,6 +95,8 @@
 <file>icons/filter.svg</file>
 <file>icons/folder.svg</file>
 <file>icons/arrow-down.svg</file>
+<file>icons/skip-back-10.svg</file>
+<file>icons/skip-fwd-10.svg</file>
 <file>icons/arrow-up.svg</file>
 <file>icons/folder-open.svg</file>
 <file>icons/info.svg</file>
@@ -153,6 +154,7 @@
 <file>../src/qml/SearchTitlesPane.qml</file>
 <file>../src/qml/FindBillboard.qml</file>
 <file>../src/qml/FindBrowse.qml</file>
+<file>../src/qml/FindCatalogBrowse.qml</file>
 <file>../src/qml/SearchEmptyState.qml</file>
 <file>../src/qml/SearchDetailDrawer.qml</file>
 <file>../src/qml/SearchGameMgr.qml</file>

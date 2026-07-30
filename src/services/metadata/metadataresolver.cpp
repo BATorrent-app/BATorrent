@@ -14,7 +14,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QSettings>
-#include "services/platform/translator.h"
+#include "services/platform/contentlanguage.h"
 #include <QStandardPaths>
 #include <QUrlQuery>
 
@@ -31,19 +31,9 @@ QString tmdbApiKey()
 const QString TmdbBaseUrl = QStringLiteral("https://api.themoviedb.org/3");
 const QString TmdbPosterBase = QStringLiteral("https://image.tmdb.org/t/p/w342");
 
-// App language → TMDB locale, so titles/overviews/genres come localized.
-QString tmdbLang()
-{
-    switch (Translator::instance().language()) {
-    case Translator::Portuguese: return QStringLiteral("pt-BR");
-    case Translator::Chinese:    return QStringLiteral("zh-CN");
-    case Translator::Japanese:   return QStringLiteral("ja-JP");
-    case Translator::Russian:    return QStringLiteral("ru-RU");
-    case Translator::Spanish:    return QStringLiteral("es-ES");
-    case Translator::German:     return QStringLiteral("de-DE");
-    default:                     return QStringLiteral("en-US");
-    }
-}
+// Content language → TMDB locale, so titles/overviews/genres come in the
+// language the user wants to watch in (not necessarily the app's).
+QString tmdbLang() { return ContentLanguage::tmdb(); }
 
 const QHash<int, QString> &tmdbGenres()
 {

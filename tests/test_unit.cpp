@@ -1275,16 +1275,16 @@ static const qint64 GB_ = 1024LL * 1024 * 1024;
 
 TEST_CASE("ReleasePick: dead releases (0 seeders) are never chosen", "[release]") {
     QList<Candidate> c = {
-        {"1080p", true, 0, 8 * GB_},   // perfect but dead
-        {"720p",  false, 5, 2 * GB_},
+        {"1080p", true,  0, 0, 8 * GB_},   // perfect but dead
+        {"720p",  false, 0, 5, 2 * GB_},
     };
     REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);
 }
 
 TEST_CASE("ReleasePick: honors preferred quality over more seeders", "[release]") {
     QList<Candidate> c = {
-        {"4K",    false, 500, 40 * GB_},
-        {"1080p", false, 50,  8 * GB_},
+        {"4K",    false, 0, 500, 40 * GB_},
+        {"1080p", false, 0, 50,  8 * GB_},
     };
     REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);   // wants 1080p even with fewer seeders
     REQUIRE(ReleasePick::best(c, "4K", 0) == 0);
@@ -1292,50 +1292,67 @@ TEST_CASE("ReleasePick: honors preferred quality over more seeders", "[release]"
 
 TEST_CASE("ReleasePick: native language breaks ties within a tier", "[release]") {
     QList<Candidate> c = {
-        {"1080p", false, 200, 8 * GB_},
-        {"1080p", true,  50,  8 * GB_},   // fewer seeders but native
+        {"1080p", false, 0, 200, 8 * GB_},
+        {"1080p", true,  0, 50,  8 * GB_},   // fewer seeders but native (legacy bool)
     };
     REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);
 }
 
 TEST_CASE("ReleasePick: native language wins over higher quality (viewer default)", "[release]") {
     QList<Candidate> c = {
-        {"4K",    false, 800, 40 * GB_},  // best quality + seeders, but not your language
-        {"720p",  true,  20,  3 * GB_},   // your language, lower quality
+        {"4K",    false, 0, 800, 40 * GB_},  // best quality + seeders, but not your language
+        {"720p",  true,  0, 20,  3 * GB_},   // your language, lower quality
     };
     REQUIRE(ReleasePick::best(c, "1080p", 0, true) == 1);   // preferNative → language first
     REQUIRE(ReleasePick::best(c, "1080p", 0, false) == 0);  // quality-first mode → 4K
 }
 
+TEST_CASE("ReleasePick: dubbed beats subtitled when preferNative", "[release]") {
+    QList<Candidate> c = {
+        {"1080p", true, 1, 50, 8 * GB_},   // sub
+        {"1080p", true, 2, 50, 8 * GB_},   // dub
+    };
+    REQUIRE(ReleasePick::best(c, "1080p", 0, true) == 1);
+}
+
+TEST_CASE("ReleasePick: dubbed beats higher quality original when preferNative", "[release]") {
+    QList<Candidate> c = {
+        {"4K",   false, 0, 200, 40 * GB_},
+        {"720p", true,  2, 40,  8 * GB_},
+    };
+    REQUIRE(ReleasePick::best(c, "1080p", 0, true) == 1);   // language ladder first
+    REQUIRE(ReleasePick::best(c, "1080p", 0, false) == 0);  // quality-first → 4K over 720p
+}
+
 TEST_CASE("ReleasePick: seeders break ties when quality and native equal", "[release]") {
     QList<Candidate> c = {
-        {"1080p", false, 30,  8 * GB_},
-        {"1080p", false, 120, 8 * GB_},
+        {"1080p", false, 0, 30,  8 * GB_},
+        {"1080p", false, 0, 120, 8 * GB_},
     };
     REQUIRE(ReleasePick::best(c, "1080p", 0) == 1);
 }
 
 TEST_CASE("ReleasePick: size cap excludes huge releases when a smaller one fits", "[release]") {
     QList<Candidate> c = {
-        {"4K",    false, 500, 40 * GB_},
-        {"1080p", false, 80,  6 * GB_},
+        {"4K",    false, 0, 500, 40 * GB_},
+        {"1080p", false, 0, 80,  6 * GB_},
     };
     REQUIRE(ReleasePick::best(c, "4K", 10 * GB_) == 1);   // 4K too big → fall to the one under cap
 }
 
 TEST_CASE("ReleasePick: size cap ignored if nothing fits", "[release]") {
     QList<Candidate> c = {
-        {"4K",    false, 500, 40 * GB_},
-        {"1080p", false, 80,  20 * GB_},
+        {"4K",    false, 0, 500, 40 * GB_},
+        {"1080p", false, 0, 80,  20 * GB_},
     };
     REQUIRE(ReleasePick::best(c, "1080p", 5 * GB_) != -1);   // nothing under 5GB → still pick something alive
 }
 
 TEST_CASE("ReleasePick: Auto prefers 1080p sweet spot", "[release]") {
     QList<Candidate> c = {
-        {"480p",  false, 999, 1 * GB_},
-        {"1080p", false, 10,  8 * GB_},
-        {"4K",    false, 100, 40 * GB_},
+        {"480p",  false, 0, 999, 1 * GB_},
+        {"1080p", false, 0, 10,  8 * GB_},
+        {"4K",    false, 0, 100, 40 * GB_},
     };
     REQUIRE(ReleasePick::best(c, "Auto", 0) == 1);
 }

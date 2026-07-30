@@ -2,9 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// "Preparing to watch" overlay for the one-click Get & Watch flow: shows the
-// phase (searching a release → buffering with live %), and a Cancel. Driven by
-// Main.qml from the search/session bridge signals.
+// Overlay for Get & Watch (movie/series) and Get & Install (games): searching →
+// buffering/downloading/installing → auto-open, with Cancel. Driven by Main.qml.
 import QtQuick
 import QtQuick.Layouts
 import "theme"
@@ -16,22 +15,26 @@ Item {
     z: 350
     visible: phase !== ""
 
-    // "" hidden | "searching" | "buffering" | "failed"
+    // "" | searching | buffering | downloading | installing | failed
     property string phase: ""
     property string title: ""
     property string hash: ""
-    property real percent: 0          // 0..1, buffering
+    property real percent: 0          // 0..1
     property string failMessage: ""
+    property bool forGame: false      // picks gi_* phase copy when true
 
     signal canceled()
 
-    function show(p, t) { phase = p; title = t; hash = ""; percent = 0 }
-    function hide() { phase = ""; hash = ""; percent = 0; autoHide.stop() }
+    function show(p, t) { phase = p; title = t; hash = ""; percent = 0; failMessage = "" }
+    function hide() { phase = ""; hash = ""; percent = 0; failMessage = ""; forGame = false; autoHide.stop() }
     function fail(msg) { phase = "failed"; failMessage = msg; autoHide.restart() }
+
+    readonly property bool showSpinner: phase === "searching" || phase === "installing"
+    readonly property bool showPct: phase === "buffering" || phase === "downloading"
+    readonly property bool showBar: phase === "buffering" || phase === "downloading" || phase === "installing"
 
     Timer { id: autoHide; interval: 3500; onTriggered: ov.hide() }
 
-    // dim + swallow clicks behind the card
     Rectangle {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.55)
@@ -53,7 +56,6 @@ Item {
             width: parent.width - 48
             spacing: 16
 
-            // spinner (searching) or progress ring text (buffering)
             Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 54; Layout.preferredHeight: 54
@@ -65,8 +67,6 @@ Item {
                     border.color: Theme.hairSoft
                     border.width: 4
                 }
-                // rotating arc for "searching"; filling arc would need Canvas — keep
-                // it simple: a spinning accent dot ring.
                 Rectangle {
                     id: spinner
                     anchors.fill: parent
@@ -74,14 +74,12 @@ Item {
                     color: "transparent"
                     border.color: Theme.accent
                     border.width: 4
-                    opacity: ov.phase === "searching" ? 1 : 0.25
-                    // mask to a quarter via a rotating overlay isn't trivial; use a
-                    // simple rotation of a notched ring drawn with a conic-ish trick:
+                    opacity: ov.showSpinner ? 1 : 0.25
                     RotationAnimation on rotation {
                         from: 0; to: 360; duration: 900
-                        loops: Animation.Infinite; running: ov.phase === "searching"
+                        loops: Animation.Infinite; running: ov.showSpinner
                     }
-                    Rectangle {   // the "gap" that makes the ring look like a spinner
+                    Rectangle {
                         width: parent.width / 2; height: parent.height / 2
                         color: Theme.bg
                         anchors.right: parent.right; anchors.top: parent.top
@@ -89,7 +87,7 @@ Item {
                 }
                 Text {
                     anchors.centerIn: parent
-                    visible: ov.phase === "buffering"
+                    visible: ov.showPct
                     text: Math.round(ov.percent * 100) + "%"
                     color: Theme.t1; font.pixelSize: 13; font.weight: Font.Bold; font.family: Theme.fontMono
                 }
@@ -115,19 +113,24 @@ Item {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
-                text: ov.phase === "searching" ? i18n.t("gw_phase_searching")
-                    : ov.phase === "buffering" ? i18n.t("gw_phase_buffering")
-                    : ov.failMessage
+                text: {
+                    if (ov.phase === "failed") return ov.failMessage
+                    if (ov.phase === "searching")
+                        return i18n.t(ov.forGame ? "gi_phase_searching" : "gw_phase_searching")
+                    if (ov.phase === "buffering") return i18n.t("gw_phase_buffering")
+                    if (ov.phase === "downloading") return i18n.t("gi_phase_downloading")
+                    if (ov.phase === "installing") return i18n.t("gi_phase_installing")
+                    return ""
+                }
                 color: Theme.t3
                 font.pixelSize: 12; font.family: Theme.fontSans
             }
 
-            // thin progress bar while buffering
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 4
                 radius: 2
-                visible: ov.phase === "buffering"
+                visible: ov.showBar
                 color: Theme.track
                 Rectangle {
                     height: parent.height; radius: 2

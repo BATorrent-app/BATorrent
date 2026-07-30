@@ -198,7 +198,10 @@ Item {
         // too). Only for video torrents (never games), and only once there's
         // something to stream. On top of tileMa so its own click wins.
         Rectangle {
-            visible: tile.playable && tile.progress > 0.02 && (tileMa.containsMouse || ptMa.containsMouse)
+            // also visible while the tile is SELECTED, so arrow-key navigation reaches
+            // Play at all — hover-only meant the action didn't exist for keyboard
+            visible: tile.playable && tile.progress > 0.02
+                     && (tileMa.containsMouse || ptMa.containsMouse || win.isRowSelected(tile.index))
             x: (parent.width - width) / 2
             y: (parent.height - height) / 2
             width: 46; height: 46; radius: 23

@@ -586,10 +586,21 @@ ColumnLayout {
             icons: field.icons || []
             currentIndex: {
                 if (field.isLang) return i18n.language
+                // Index 0 is "same as the app"; the languages follow, so the
+                // stored value is the index minus one (-1 = follow).
+                if (field.isContentLang) {
+                    var cv = (typeof settings !== "undefined") ? settings.get("contentLanguage") : undefined
+                    return (cv === undefined || cv === null || cv === "" || cv < 0) ? 0 : cv + 1
+                }
                 var v = (typeof settings !== "undefined" && field.key !== undefined) ? settings.get(field.key) : field.value
                 return (v === undefined || v === null || v === "") ? 0 : v
             }
-            onActivated: function(i) { if (field.isLang) i18n.setLanguage(i); else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, i) }
+            onActivated: function(i) {
+                if (field.isLang) i18n.setLanguage(i)
+                else if (field.isContentLang) {
+                    if (typeof settings !== "undefined") settings.set("contentLanguage", i - 1)
+                } else if (typeof settings !== "undefined" && field.key !== undefined) settings.set(field.key, i)
+            }
         }
     }
     Component {

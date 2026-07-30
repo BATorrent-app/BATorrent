@@ -98,7 +98,7 @@ Item {
         width: dlg.cardW
         height: dlg.fitContent ? dlg.fittedH : dlg.cardH
         opacity: dlg.anim
-        scale: 0.97 + 0.03 * dlg.anim
+        scale: Theme.reduceMotion ? 1 : (0.97 + 0.03 * dlg.anim)
         radius: 13
         color: Theme.bg
         border.color: Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.14)

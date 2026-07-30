@@ -8,6 +8,18 @@
 import QtQuick
 
 QtObject {
+    id: root
+
+    // The nine shipped languages, in Translator::Language order. Shared by the
+    // interface picker and the content picker so the two can't drift.
+    readonly property var languageNames: ["English", "Português", "中文", "日本語", "Русский",
+                                          "Español", "Deutsch", "Українська", "Türkçe"]
+    readonly property var languageFlags: ["qrc:/icons/flags/en.svg", "qrc:/icons/flags/pt.svg",
+                                          "qrc:/icons/flags/zh.svg", "qrc:/icons/flags/ja.svg",
+                                          "qrc:/icons/flags/ru.svg", "qrc:/icons/flags/es.svg",
+                                          "qrc:/icons/flags/de.svg", "qrc:/icons/flags/uk.svg",
+                                          "qrc:/icons/flags/tr.svg"]
+
     // ---- nav metadata ----
     readonly property var navs: [
         { nav: (i18n.language, i18n.t("detail_general")),               icon: "qrc:/icons/set-general.svg" },
@@ -38,7 +50,7 @@ QtObject {
         // 0 Geral
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
-            { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: ["English", "Português", "中文", "日本語", "Русский", "Español", "Deutsch", "Українська", "Türkçe"], icons: ["qrc:/icons/flags/en.svg", "qrc:/icons/flags/pt.svg", "qrc:/icons/flags/zh.svg", "qrc:/icons/flags/ja.svg", "qrc:/icons/flags/ru.svg", "qrc:/icons/flags/es.svg", "qrc:/icons/flags/de.svg", "qrc:/icons/flags/uk.svg", "qrc:/icons/flags/tr.svg"], value: 0 },
+            { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: root.languageNames, icons: root.languageFlags, value: 0 },
             { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", "Matrix", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
             { type: "toggle", key: "followSystem", label: (i18n.language, i18n.t("set_follow_system")), note: (i18n.language, i18n.t("set_follow_system_note")) },
             { type: "appicon", label: (i18n.language, i18n.t("set_app_icon")), note: (i18n.language, i18n.t("set_app_icon_note")) },
@@ -55,6 +67,7 @@ QtObject {
             { type: "color",  role: "tertiary",  label: (i18n.language, i18n.t("set_custom_tertiary")),  customOnly: true },
             { type: "bgimage", label: (i18n.language, i18n.t("set_custom_bgimage")),  customOnly: true },
             { type: "slider",  label: (i18n.language, i18n.t("set_custom_opacity")),  customOnly: true },
+            { type: "toggle", key: "reduceMotion", on: false, label: (i18n.language, i18n.t("set_reduce_motion")), note: (i18n.language, i18n.t("set_reduce_motion_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_downloads")) },
             { type: "path", key: "lastSavePath", label: (i18n.language, i18n.t("set_default_save2")) },
             { type: "toggle", key: "useDefaultPath", label: (i18n.language, i18n.t("settings_use_default_path")), on: true },
@@ -66,13 +79,19 @@ QtObject {
             { type: "group", label: (i18n.language, i18n.t("set_grp_extraction")) },
             { type: "toggle", key: "autoExtract", label: (i18n.language, i18n.t("set_auto_extract2")), note: (i18n.language, i18n.t("set_auto_extract_note")) },
             { type: "toggle", key: "autoExtractDelete", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
-            { type: "text", key: "extractPasswords", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "senha1; senha2; online-fix.me", note: (i18n.language, i18n.t("set_extract_passwords_note")), w: "grow" },
+            { type: "text", key: "extractPasswords", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "pass1; pass2; online-fix.me", note: (i18n.language, i18n.t("set_extract_passwords_note")), w: "grow" },
             { type: "toggle", key: "gameAutoInstall", label: (i18n.language, i18n.t("set_game_autoinstall")), note: (i18n.language, i18n.t("set_game_autoinstall_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_playback")) },
             { type: "select", key: "preferredQuality", label: (i18n.language, i18n.t("set_preferred_quality")), options: ["Auto", "1080p", "720p", "2160p"], value: 1, note: (i18n.language, i18n.t("set_pref_quality_note")) },
             { type: "number", key: "preferMaxSize", label: (i18n.language, i18n.t("set_max_size")), value: "0", suffix: "MB", note: (i18n.language, i18n.t("note_unlimited")) },
             { type: "toggle", key: "autoplayNext", on: true, label: (i18n.language, i18n.t("set_autoplay_next")), note: (i18n.language, i18n.t("set_autoplay_next_note")) },
             { type: "toggle", key: "preferNativeLang", on: true, label: (i18n.language, i18n.t("set_prefer_native")), note: (i18n.language, i18n.t("set_prefer_native_note")) },
+            // Separate from the interface language on purpose: reading English
+            // menus and wanting Portuguese audio is a normal combination.
+            { type: "select", isContentLang: true, label: (i18n.language, i18n.t("set_content_language")),
+              options: [(i18n.language, i18n.t("set_content_language_same"))].concat(root.languageNames),
+              icons: [""].concat(root.languageFlags),
+              note: (i18n.language, i18n.t("set_content_language_note")), value: 0 },
             { type: "number", key: "subFontScale", label: (i18n.language, i18n.t("set_sub_size")), value: "100", suffix: "%" },
             { type: "select", key: "subColor", label: (i18n.language, i18n.t("set_sub_color")), options: [(i18n.language, i18n.t("color_white")), (i18n.language, i18n.t("color_yellow")), (i18n.language, i18n.t("color_cyan")), (i18n.language, i18n.t("color_green"))], value: 0 },
             { type: "number", key: "subBgOpacity", label: (i18n.language, i18n.t("set_sub_bg")), value: "0", suffix: "%", note: (i18n.language, i18n.t("set_sub_bg_note")) },
@@ -157,7 +176,7 @@ QtObject {
             { type: "text", key: "proxyHost", label: (i18n.language, i18n.t("set_proxy_host2")), mono: true, placeholder: "127.0.0.1", w: "w-md" },
             { type: "number", key: "proxyPort", label: (i18n.language, i18n.t("set_port2")), value: "1080" },
             { type: "text", key: "proxyUser", label: (i18n.language, i18n.t("set_user2")), placeholder: (i18n.language, i18n.t("settings_proxy_user_hint")), w: "w-md" },
-            { type: "password", key: "proxyPass", label: (i18n.language, i18n.t("set_pass2")), w: "w-md" },
+            { type: "password", key: "proxyPass", label: (i18n.language, i18n.t("set_pass2")), w: "w-md" , placeholder: "••••••••" },
             { type: "toggle", key: "proxyLeakProof", on: true, label: (i18n.language, i18n.t("set_proxy_leakproof")), note: (i18n.language, i18n.t("set_proxy_leakproof_note")) },
             { type: "button", action: "proxyMullvad", label: (i18n.language, i18n.t("set_proxy_presets")), btn: "Mullvad SOCKS5", note: (i18n.language, i18n.t("set_proxy_presets_note")) },
             { type: "button", action: "proxyLeakTest", label: (i18n.language, i18n.t("set_proxy_leaktest")), btn: (i18n.language, i18n.t("set_proxy_leaktest_btn")), note: (i18n.language, i18n.t("set_proxy_leaktest_note")) },
@@ -170,7 +189,7 @@ QtObject {
             { type: "group", label: (i18n.language, i18n.t("set_grp_webserver")) },
             { type: "toggle", key: "webUiEnabled", label: (i18n.language, i18n.t("settings_webui_enable")) },
             { type: "number", key: "webUiPort", label: (i18n.language, i18n.t("set_port2")), value: "8080" },
-            { type: "text", key: "webUiUser", label: (i18n.language, i18n.t("set_user2")), value: "admin", w: "w-md" },
+            { type: "text", key: "webUiUser", label: (i18n.language, i18n.t("set_user2")), value: "admin", w: "w-md" , placeholder: "admin" },
             { type: "password", key: "webUiPassword", label: (i18n.language, i18n.t("set_pass2")), placeholder: (i18n.language, i18n.t("settings_webui_pass_hint")), w: "w-md" },
             { type: "toggle", key: "webUiRemoteAccess", label: (i18n.language, i18n.t("settings_webui_remote")) },
             { type: "warning", text: (i18n.language, i18n.t("settings_webui_warning_msg")) },
@@ -181,7 +200,7 @@ QtObject {
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_telegram")) },
             { type: "text", key: "telegramToken", label: (i18n.language, i18n.t("settings_telegram_token")), mono: true, placeholder: "123456:ABC-DEF…", w: "grow", note: (i18n.language, i18n.t("set_telegram_token_note")) },
-            { type: "text", key: "telegramChatId", label: (i18n.language, i18n.t("settings_telegram_chat")), mono: true, placeholder: "@seucanal ou ID numérico", w: "w-md" },
+            { type: "text", key: "telegramChatId", label: (i18n.language, i18n.t("settings_telegram_chat")), mono: true, placeholder: "@canal  ·  -1001234567890", w: "w-md" },
             { type: "toggle", key: "telegramEvtFinished", label: (i18n.language, i18n.t("settings_telegram_finished")), on: true },
             { type: "toggle", key: "telegramEvtKill", label: (i18n.language, i18n.t("settings_telegram_killswitch")) },
             { type: "toggle", key: "telegramEvtRss", label: (i18n.language, i18n.t("settings_telegram_rss")) },
@@ -202,10 +221,10 @@ QtObject {
             { type: "group", label: (i18n.language, i18n.t("set_grp_media_server")) },
             { type: "toggle", key: "plexEnabled", label: (i18n.language, i18n.t("set_media_plex")) },
             { type: "text", key: "plexUrl", label: (i18n.language, i18n.t("set_plex_url")), mono: true, placeholder: "http://127.0.0.1:32400", w: "grow" },
-            { type: "password", key: "plexToken", label: (i18n.language, i18n.t("set_plex_token")), mono: true, w: "w-md" },
+            { type: "password", key: "plexToken", label: (i18n.language, i18n.t("set_plex_token")), mono: true, w: "w-md" , placeholder: "xxxxxxxxxxxxxxxxxxxx" },
             { type: "toggle", key: "jellyfinEnabled", label: (i18n.language, i18n.t("set_media_jellyfin")) },
             { type: "text", key: "jellyfinUrl", label: (i18n.language, i18n.t("set_jellyfin_url")), mono: true, placeholder: "http://127.0.0.1:8096", w: "grow" },
-            { type: "password", key: "jellyfinApiKey", label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" }
+            { type: "password", key: "jellyfinApiKey", label: (i18n.language, i18n.t("set_media_apikey")), mono: true, w: "w-md" , placeholder: "a1b2c3d4e5f6a1b2c3d4e5f6" }
         ],
         // 8 Avançado
         [
@@ -234,11 +253,11 @@ QtObject {
             { type: "button", action: "fullBackup", label: (i18n.language, i18n.t("action_full_backup")), btn: (i18n.language, i18n.t("btn_export")) },
             { type: "button", action: "fullRestore", label: (i18n.language, i18n.t("action_full_restore")), btn: (i18n.language, i18n.t("btn_import")) },
             { type: "group", label: (i18n.language, i18n.t("adv_metadata_api")) },
-            { type: "text", key: "tmdbApiKey", label: (i18n.language, i18n.t("set_tmdb2")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_tmdb_note")) },
-            { type: "text", key: "igdbClientId", label: (i18n.language, i18n.t("set_igdb_id2")), mono: true, w: "w-md" },
-            { type: "text", key: "igdbClientSecret", label: (i18n.language, i18n.t("set_igdb_secret2")), mono: true, w: "w-md" },
-            { type: "text", key: "subdlApiKey", label: (i18n.language, i18n.t("set_subdl_key")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_subdl_key_note")) },
-            { type: "text", key: "osApiKey", label: (i18n.language, i18n.t("set_os_key")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_os_key_note")) },
+            { type: "text", key: "tmdbApiKey", label: (i18n.language, i18n.t("set_tmdb2")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_tmdb_note")) , placeholder: "a1b2c3d4e5f6a1b2c3d4e5f6" },
+            { type: "text", key: "igdbClientId", label: (i18n.language, i18n.t("set_igdb_id2")), mono: true, w: "w-md" , placeholder: "abc123def456…" },
+            { type: "text", key: "igdbClientSecret", label: (i18n.language, i18n.t("set_igdb_secret2")), mono: true, w: "w-md" , placeholder: "abc123def456…" },
+            { type: "text", key: "subdlApiKey", label: (i18n.language, i18n.t("set_subdl_key")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_subdl_key_note")) , placeholder: "xxxxxxxxxxxxxxxx" },
+            { type: "text", key: "osApiKey", label: (i18n.language, i18n.t("set_os_key")), mono: true, w: "grow", note: (i18n.language, i18n.t("set_os_key_note")) , placeholder: "xxxxxxxxxxxxxxxx" },
             { type: "group", label: (i18n.language, i18n.t("set_grp_debrid")) },
             { type: "debrid", label: (i18n.language, i18n.t("set_debrid_provider")) },
             { type: "debridtoken", label: (i18n.language, i18n.t("set_rd_account")), note: (i18n.language, i18n.t("set_debrid_note")) },

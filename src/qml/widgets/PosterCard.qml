@@ -171,10 +171,9 @@ Item {
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 9 }
     }
 
-    // ▶ Get & Watch — centered play button on hover (movie/series only). On top
-    // of the main MouseArea so its own click is intercepted.
+    // ▶ Get & Watch / Get & Install — centered play button on hover
     Rectangle {
-        visible: card.type !== "game" && (ma.containsMouse || pbMa.containsMouse)
+        visible: ma.containsMouse || pbMa.containsMouse
         x: (card.posterW - width) / 2
         y: (card.posterH - height) / 2
         width: 46; height: 46; radius: 23

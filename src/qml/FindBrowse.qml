@@ -15,8 +15,10 @@ Item {
     id: browse
     property string typeFilter: "all"   // all | game | movie | series
     property bool active: true          // gates the billboard rotation
+    property bool showCatalogEntry: false
     signal findRequested(string title)
     signal typeFilterRequested(string type)
+    signal catalogBrowseRequested(string group)   // "" = all catalogs; else release group
 
     readonly property alias scrollY: flick.contentY
 
@@ -156,6 +158,32 @@ Item {
                     onActivated: function(item) { browse.findRequested(item.title) }
                     onGetWatch: function(item) { browse.getWatch(item) }
                     onSeeAllRequested: function(type) { browse.typeFilterRequested(type) }
+                }
+            }
+
+            // Entry into the Hydra dump — does not replace the shelves above.
+            Item {
+                width: col.width
+                height: catEntry.visible ? 44 : 0
+                visible: browse.showCatalogEntry
+                Text {
+                    id: catEntry
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.sp5
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, i18n.t("find_catalog_browse"))
+                    color: catMa.containsMouse ? Theme.accentText : Theme.accent
+                    font.pixelSize: 13
+                    font.weight: Font.DemiBold
+                    font.family: Theme.fontSans
+                    MouseArea {
+                        id: catMa
+                        anchors.fill: parent
+                        anchors.margins: -6
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: browse.catalogBrowseRequested("")
+                    }
                 }
             }
 

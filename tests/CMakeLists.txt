@@ -49,10 +49,12 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archiveextractor.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasepick.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/gamereleasepick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/searchranker.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasetrust.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/debridpick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/integrations/gameinstall.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/rssmanager.cpp
@@ -62,6 +64,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/metadata/audiomode.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/episodegroup.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/releasegroup.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/contentlanguage.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/mkvchapters.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownload.cpp
@@ -238,6 +242,10 @@ bat_add_test(test_gamesource test_gamesource.cpp)
 bat_add_test(test_memguard   test_memguard.cpp)
 bat_add_test(test_geoipdb    test_geoipdb.cpp)
 bat_add_test(test_searchranker test_searchranker.cpp)
+bat_add_test(test_gamereleasepick test_gamereleasepick.cpp)
+bat_add_test(test_gameinstallstate test_gameinstallstate.cpp)
+bat_add_test(test_releasegroup test_releasegroup.cpp)
+bat_add_test(test_contentlanguage test_contentlanguage.cpp)
 bat_add_test(test_releasetrust test_releasetrust.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
@@ -280,5 +288,7 @@ endif()
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
     DEPENDS test_security test_memory test_unit test_nameparser test_bridge test_gamesource
+            test_gamereleasepick test_gameinstallstate test_searchranker test_releasegroup
+            test_contentlanguage test_releasetrust
     COMMENT "Running all BATorrent tests..."
 )

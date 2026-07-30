@@ -21,9 +21,9 @@ Rectangle {
         if (r === "ptbr") return "🇧🇷  " + i18n.t("src_region_ptbr")
         if (r === "cis") return "🇷🇺  " + i18n.t("src_region_cis")
         if (r === "es") return "🇪🇸  " + i18n.t("src_region_es")
-        if (r === "anime") return "🌸  " + i18n.t("src_region_anime")
-        if (r === "self") return "🛠  " + i18n.t("src_region_self")
-        return "🌐  " + i18n.t("src_region_global")
+        if (r === "anime") return i18n.t("src_region_anime")
+        if (r === "self") return i18n.t("src_region_self")
+        return i18n.t("src_region_global")
     }
 
     // catalog rows grouped into [{region, items:[...]}], regions in a stable order

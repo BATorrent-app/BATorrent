@@ -556,17 +556,36 @@ int main(int argc, char *argv[])
         searchBridge->setDiscovery(discoveryService);
 
 #ifndef BAT_STORE_BUILD
-        // Seed a default community game catalog once so "Jogos" works out of the
-        // box (open → search → download). Store builds stay clean. The user can
-        // remove it; the seed flag keeps it from coming back.
+        // Seed / migrate the default game catalog. Bump kCatalogSeedGen when the
+        // default URL changes so existing installs pick up the BATorrent feed once
+        // (users who removed all catalogs stay empty — we only add if missing).
         {
+            static const int kCatalogSeedGen = 5;
+            static const char *kCatalogName = "BATorrent Games";
+            // Public Hydra JSON gist (neutral filename). Published by a private pipeline.
+            static const char *kCatalogUrl =
+                "https://gist.githubusercontent.com/Mateuscruz19/038beb9fef8681e191e3053b8a79c29b/raw/feed.json";
+            static const char *kLegacyUrl =
+                "https://raw.githubusercontent.com/Jdjsjjqq/rutracker-hydra/main/combined_torrents.json";
+            static const char *kLegacyGistGames =
+                "https://gist.githubusercontent.com/Mateuscruz19/038beb9fef8681e191e3053b8a79c29b/raw/games.json";
+            static const char *kLegacyGistBat =
+                "https://gist.githubusercontent.com/Mateuscruz19/038beb9fef8681e191e3053b8a79c29b/raw/batorrent-games.json";
+
             QSettings gs;
-            if (!gs.value(QStringLiteral("gameSourcesSeeded"), false).toBool()) {
+            const int gen = gs.value(QStringLiteral("gameCatalogSeedGen"), 0).toInt();
+            auto &gsm = GameSourceManager::instance();
+            if (gen < kCatalogSeedGen) {
+                gs.setValue(QStringLiteral("gameCatalogSeedGen"), kCatalogSeedGen);
                 gs.setValue(QStringLiteral("gameSourcesSeeded"), true);
-                auto &gsm = GameSourceManager::instance();
-                if (gsm.sources().isEmpty())
-                    gsm.addSource(QStringLiteral("RuTracker (Combined)"),
-                                  QStringLiteral("https://raw.githubusercontent.com/Jdjsjjqq/rutracker-hydra/main/combined_torrents.json"));
+                gsm.removeSource(QString::fromUtf8(kLegacyUrl));
+                gsm.removeSource(QString::fromUtf8(kLegacyGistGames));
+                gsm.removeSource(QString::fromUtf8(kLegacyGistBat));
+                bool has = false;
+                for (const auto &s : gsm.sources())
+                    if (s.second == QLatin1String(kCatalogUrl)) { has = true; break; }
+                if (!has)
+                    gsm.addSource(QString::fromUtf8(kCatalogName), QString::fromUtf8(kCatalogUrl));
             }
         }
 #endif

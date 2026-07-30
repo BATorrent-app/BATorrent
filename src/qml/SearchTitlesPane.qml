@@ -142,7 +142,14 @@ ColumnLayout {
                 year: {
                     var y = modelData.year || ""
                     var t = pane.sv.typeLabel(modelData.type || "")
-                    return t.length > 0 ? (y.length > 0 ? y + "  ·  " + t : t) : y
+                    var base = t.length > 0 ? (y.length > 0 ? y + "  ·  " + t : t) : y
+                    // Show the original name when it differs from the localised
+                    // one: it confirms the right work, and explains why results
+                    // come back under a name the user never typed.
+                    var orig = modelData.originalTitle || ""
+                    if (orig.length > 0 && orig !== (modelData.name || ""))
+                        base = base.length > 0 ? base + "  ·  " + orig : orig
+                    return base
                 }
                 rating: modelData.rating || 0
                 type: modelData.type || ""

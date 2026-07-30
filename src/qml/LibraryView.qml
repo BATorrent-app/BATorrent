@@ -149,7 +149,7 @@ Item {
         // as one changing form, not two things swapping. The incoming view grows
         // the last 1.5% into place while the outgoing shrinks away underneath —
         // a plain cross-fade left both hanging half-visible on top of each other.
-        scale: (win.gridView && !parent.empty) ? 1 : 0.985
+        scale: (Theme.reduceMotion || (win.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
         Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
@@ -230,7 +230,7 @@ Item {
         id: list
         opacity: (!win.gridView && !parent.empty) ? 1 : 0
         visible: opacity > 0.01
-        scale: (!win.gridView && !parent.empty) ? 1 : 0.985
+        scale: (Theme.reduceMotion || (!win.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
         Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }

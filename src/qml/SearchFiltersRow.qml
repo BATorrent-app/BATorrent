@@ -58,14 +58,14 @@ Rectangle {
             model: [i18n.t("search_filter_all")].concat(row.sv.sourceOptions)
             onActivated: row.sv.sourceFilter = currentIndex <= 0 ? "" : currentText
         }
-        // repacker (any mode that has repacked releases)
+        // who released it — the axis users trust, and the one they asked for
         TSelect {
             id: repSel
-            visible: row.sv.repackerOptions.length > 0
+            visible: row.sv.groupOptions.length > 0
             Layout.preferredHeight: 30
             Layout.preferredWidth: 140
-            model: [i18n.t("search_repacker_all")].concat(row.sv.repackerOptions)
-            onActivated: row.sv.repackerFilter = currentIndex <= 0 ? "" : currentText
+            model: [i18n.t("search_group_all")].concat(row.sv.groupOptions)
+            onActivated: row.sv.groupFilter = currentIndex <= 0 ? "" : currentText
         }
         // audio language (video modes that have tagged releases)
         TSelect {
@@ -91,9 +91,15 @@ Rectangle {
             id: sortSel
             Layout.preferredHeight: 30
             Layout.preferredWidth: 150
-            property var keys: ["", "seeders", "size", "name"]
-            model: [i18n.t("search_sort_relevance"), i18n.t("search_sort_seeders"),
-                    i18n.t("search_sort_size"), i18n.t("search_sort_name")]
+            property var keys: row.sv.hasVersions
+                               ? ["", "seeders", "size", "name", "version"]
+                               : ["", "seeders", "size", "name"]
+            model: {
+                var base = [i18n.t("search_sort_relevance"), i18n.t("search_sort_seeders"),
+                            i18n.t("search_sort_size"), i18n.t("search_sort_name")]
+                if (row.sv.hasVersions) base.push(i18n.t("search_sort_version"))
+                return (i18n.language, base)
+            }
             onActivated: row.sv.sortKey = keys[currentIndex]
         }
 
@@ -112,7 +118,7 @@ Rectangle {
             onClicked: row.sv.pickBest()
         }
         BtnFlat {
-            visible: row.sv.qualityFilter !== "" || row.sv.sourceFilter !== "" || row.sv.repackerFilter !== ""
+            visible: row.sv.qualityFilter !== "" || row.sv.sourceFilter !== "" || row.sv.groupFilter !== ""
                      || row.sv.providerFilter !== "" || row.sv.minSeeds > 0 || row.sv.sortKey !== ""
             text: (i18n.language, i18n.t("search_filter_clear"))
             onClicked: row.sv.clearFilters()

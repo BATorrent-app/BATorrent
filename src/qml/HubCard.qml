@@ -155,7 +155,14 @@ Item {
                 Rectangle { visible: card.item.completed; width: 6; height: 6; radius: 3; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: card.item.completed ? i18n.t("hub_installed") : ("↓ " + Math.floor((card.item.progress || 0) * 100) + "%")
+                    text: {
+                        if (!card.item.completed)
+                            return "↓ " + Math.floor((card.item.progress || 0) * 100) + "%"
+                        var s = card.item.installState
+                        if (s === 4 || s === 5) return i18n.t("hub_ready_to_play")
+                        if (s === 1) return i18n.t("hub_ready_to_install")
+                        return i18n.t("hub_ready_to_install")
+                    }
                     color: card.item.completed ? Theme.grn : Theme.accent
                     font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans
                 }

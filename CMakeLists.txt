@@ -79,10 +79,12 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/security/archivescan.cpp
     src/services/security/archiveextractor.cpp
     src/services/metadata/releasepick.cpp
+    src/services/metadata/gamereleasepick.cpp
     src/services/metadata/searchranker.cpp
     src/services/metadata/releasetrust.cpp
     src/services/integrations/debridpick.cpp
     src/services/integrations/installerprofile.cpp
+    src/services/integrations/gameinstall.cpp
     src/services/security/defender.cpp
     src/services/platform/logger.cpp
     src/services/security/crashhandler.cpp
@@ -101,6 +103,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/metadata/audiomode.cpp
     src/services/metadata/episodegroup.cpp
     src/services/metadata/nameparser.cpp
+    src/services/metadata/releasegroup.cpp
+    src/services/platform/contentlanguage.cpp
     src/services/metadata/metadataresolver.cpp
     src/services/metadata/mkvchapters.cpp
     src/services/downloads/httpdownload.cpp

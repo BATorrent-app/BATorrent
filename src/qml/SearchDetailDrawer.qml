@@ -125,11 +125,11 @@ Item {
                     TChip { visible: root.sv.selected && (root.sv.selected.codec || "").length > 0; text: root.sv.selected ? (root.sv.selected.codec || "") : "" }
                     TChip { visible: root.sv.selected && root.sv.selected.hdr; text: "HDR" }
                     TChip {
-                        visible: root.sv.selected && (root.sv.selected.repacker || "").length > 0
-                        text: root.sv.selected ? (root.sv.selected.repacker || "") : ""
+                        visible: root.sv.selected && (root.sv.selected.releaseGroup || "").length > 0
+                        text: root.sv.selected ? (root.sv.selected.releaseGroup || "") : ""
                         clickable: true
-                        red: root.sv.selected && root.sv.repackerFilter === (root.sv.selected.repacker || "")
-                        onClicked: { root.sv.repackerFilter = root.sv.selected.repacker || ""; root.sv.detailOpen = false }
+                        red: root.sv.selected && root.sv.groupFilter === (root.sv.selected.releaseGroup || "")
+                        onClicked: { root.sv.groupFilter = root.sv.selected.releaseGroup || ""; root.sv.detailOpen = false }
                     }
                 }
 

@@ -279,7 +279,7 @@ Window {
 
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                text: "Made with BATorrent  🦇"
+                text: "Made with BATorrent"
                 color: "#55555e"; font.pixelSize: 11; font.family: Theme.fontSans
             }
             Item { Layout.preferredHeight: 8; Layout.fillWidth: true }

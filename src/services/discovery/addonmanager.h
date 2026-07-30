@@ -80,11 +80,37 @@ struct ProviderPreset {
     bool needsConfig = false;  // URL has an API_KEY / host placeholder to edit first
 };
 
+// A curated Stremio addon we either seed out-of-box or offer as one-tap install.
+// Keys are NEVER shipped — needsConfig addons open configureUrl in the browser;
+// the user pastes the generated manifest URL back into BATorrent.
+struct CuratedAddon {
+    QString id;              // stable Stremio id (when known)
+    QString name;
+    QString descKey;         // i18n
+    QString description;     // English fallback
+    QString url;             // install base (no /manifest.json); empty if configure-only
+    QString configureUrl;    // browser page to mint a keyed install URL
+    QString lang;            // "pt","es","ru","anime",… ; empty = global
+    QStringList types;
+    QStringList resources;
+    bool seedDefault = false;  // install on first run / seed bump
+    bool alwaysOn = false;     // stay enabled; else enabled when lang matches Content language
+    bool needsConfig = false;  // must open configureUrl (API key / trial)
+    bool needsDebrid = false;  // expects Real-Debrid / TorBox (or addon-own key)
+};
+
 class AddonManager : public QObject
 {
     Q_OBJECT
 public:
     static AddonManager &instance();
+
+    // Single source of truth for seeded + suggested Stremio addons.
+    static QList<CuratedAddon> curatedCatalog();
+
+    // Install missing curated free addons + enable core/anime/matching-language packs.
+    // Safe to call after Content language changes.
+    void syncCuratedAddons();
 
     // Addon management (Stremio-compatible)
     void addAddon(const QString &url);

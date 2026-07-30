@@ -219,12 +219,21 @@ Item {
                                                           bb.heroItem.type || "movie")
                     }
                     BtnFlat {
+                        visible: bb.heroItem && bb.heroItem.type === "game"
+                        primary: true
+                        text: (i18n.language, i18n.t("gi_get_and_install"))
+                        onClicked: if (bb.heroItem && typeof search !== "undefined")
+                                       search.getAndWatch(bb.heroItem.title,
+                                                          bb.heroItem.year || "",
+                                                          "game")
+                    }
+                    BtnFlat {
                         visible: bb.trailerKey !== ""
                         text: (i18n.language, i18n.t("gw_trailer"))
                         onClicked: Qt.openUrlExternally("https://www.youtube.com/watch?v=" + bb.trailerKey)
                     }
                     BtnFlat {
-                        primary: bb.heroItem && bb.heroItem.type === "game"
+                        primary: false
                         text: (i18n.language, i18n.t("find_details"))
                         onClicked: if (bb.heroItem) bb.detailsRequested(bb.heroItem.title)
                     }
