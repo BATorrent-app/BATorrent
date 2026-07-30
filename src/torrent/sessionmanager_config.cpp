@@ -8,6 +8,7 @@
 // verbatim; no behaviour change. Per-torrent overrides live elsewhere.
 
 #include "torrent/sessionmanager.h"
+#include "torrent/sessionconfig.h"
 
 #include <libtorrent/settings_pack.hpp>
 #include <libtorrent/ip_filter.hpp>
@@ -23,6 +24,7 @@
 #include "services/security/archivescan.h"
 #include "services/security/archiveextractor.h"
 #include <libtorrent/torrent_info.hpp>
+#include <vector>
 
 void SessionManager::setDownloadLimit(int kbps)
 {
@@ -79,9 +81,7 @@ void SessionManager::setListenPort(int port)
     }
     // Dual-stack unless bound to a specific interface IP or force-v4 is on —
     // a v4-only listen silently halves reachability on v6-capable swarms.
-    QString iface = (listenAddr != "0.0.0.0" || m_forceIpv4)
-        ? QString("%1:%2").arg(listenAddr).arg(port)
-        : QString("0.0.0.0:%1,[::]:%1").arg(port);
+    const QString iface = SessionConfig::listenInterfaces(listenAddr, port, m_forceIpv4);
     pack.set_str(lt::settings_pack::listen_interfaces, iface.toStdString());
     m_session.apply_settings(pack);
     QSettings("BATorrent", "BATorrent").setValue("listenPort", port);
@@ -448,10 +448,7 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
     else if (key == "contentLayout")       setContentLayout(v.toInt());
     else if (key == "torrentExportDir")    setTorrentExportDir(v.toString());
     else if (key == "extractPasswords") {
-        QStringList pw;
-        const auto parts = v.toString().split(QRegularExpression(QStringLiteral("[;\\n]")), Qt::SkipEmptyParts);
-        for (const QString &p : parts) { QString t = p.trimmed(); if (!t.isEmpty()) pw << t; }
-        setExtractPasswords(pw);
+        setExtractPasswords(SessionConfig::parseExtractPasswords(v.toString()));
     }
     else if (key == "autoExtract")         setAutoExtract(v.toBool());
     else if (key == "autoExtractDelete")   setAutoExtractDelete(v.toBool());
@@ -460,9 +457,7 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
     else if (key == "autoMoveEnabled")     setAutoMove(v.toBool(), autoMovePath());
     else if (key == "autoMovePath")        setAutoMove(autoMoveEnabled(), v.toString());
     else if (key == "autoComplete") {
-        const qint64 days[] = {0, 1, 3, 7, 14, 30};
-        int i = v.toInt();
-        setAutoCompleteSeconds((i >= 0 && i < 6 ? days[i] : 0) * 86400);
+        setAutoCompleteSeconds(SessionConfig::autoCompleteSecondsFromIndex(v.toInt()));
     }
     else return false;
     return true;
@@ -472,19 +467,8 @@ void SessionManager::executeOnComplete(const QString &name, const QString &saveP
                                        const QString &hash, qint64 totalSize)
 {
     if (m_runOnComplete.isEmpty()) return;
-
-    auto shellQuote = [](const QString &s) -> QString {
-        QString q = s;
-        q.replace(QLatin1Char('\''), QStringLiteral("'\\''"));
-        return QLatin1Char('\'') + q + QLatin1Char('\'');
-    };
-
-    QString cmd = m_runOnComplete;
-    cmd.replace("%N", shellQuote(name));
-    cmd.replace("%D", shellQuote(savePath));
-    cmd.replace("%H", shellQuote(hash));
-    cmd.replace("%Z", shellQuote(QString::number(totalSize)));
-    cmd.replace("%F", shellQuote(savePath + "/" + name));
+    const QString cmd = SessionConfig::expandOnCompleteCommand(
+        m_runOnComplete, name, savePath, hash, totalSize);
     qDebug() << "[session] executeOnComplete:" << cmd;
     QProcess::startDetached("/bin/sh", {"-c", cmd});
 }
@@ -508,9 +492,7 @@ int SessionManager::portStatus() const { return m_portStatus; }
 
 void SessionManager::updatePortStatus()
 {
-    const int s = !m_listenOk ? 3        // closed — not even listening
-                : m_portmapOk ? 1        // open — UPnP/NAT-PMP mapped the port
-                              : 2;       // firewalled/unknown — listening, no map
+    const int s = SessionConfig::portStatusCode(m_listenOk, m_portmapOk);
     if (s == m_portStatus) return;
     m_portStatus = s;
     emit portStatusChanged(s);
@@ -631,37 +613,14 @@ void SessionManager::applyContentLayout(lt::add_torrent_params &atp)
 {
     if (!atp.ti || m_contentLayout == 0) return;
     const auto &files = atp.ti->files();
-    const int numFiles = static_cast<int>(files.num_files());
-    if (numFiles == 0) return;
-
-    if (m_contentLayout == 2) {
-        // No subfolder: strip the common root directory from all file paths.
-        std::string root = files.file_path(lt::file_index_t(0));
-        auto slash = root.find('/');
-        if (slash != std::string::npos && numFiles > 1) {
-            std::string prefix = root.substr(0, slash + 1);
-            bool allMatch = true;
-            for (lt::file_index_t i(0); i < files.end_file(); ++i) {
-                if (files.file_path(i).compare(0, prefix.size(), prefix) != 0) {
-                    allMatch = false;
-                    break;
-                }
-            }
-            if (allMatch) {
-                for (lt::file_index_t i(0); i < files.end_file(); ++i) {
-                    std::string p = files.file_path(i);
-                    atp.renamed_files[i] = p.substr(prefix.size());
-                }
-            }
-        }
-    } else if (m_contentLayout == 1 && numFiles == 1) {
-        // Create subfolder for single-file torrents.
-        std::string name = atp.ti->name();
-        std::string filePath = files.file_path(lt::file_index_t(0));
-        if (filePath.find('/') == std::string::npos) {
-            atp.renamed_files[lt::file_index_t(0)] = name + "/" + filePath;
-        }
-    }
+    std::vector<std::string> paths;
+    paths.reserve(static_cast<size_t>(files.num_files()));
+    for (lt::file_index_t i(0); i < files.end_file(); ++i)
+        paths.push_back(files.file_path(i));
+    const auto plan = SessionConfig::planContentLayout(
+        m_contentLayout, atp.ti->name(), paths);
+    for (const auto &kv : plan)
+        atp.renamed_files[lt::file_index_t(kv.first)] = kv.second;
 }
 
 // --- Excluded file patterns ---

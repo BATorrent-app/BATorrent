@@ -11,6 +11,7 @@
 #include "bridges/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"   // full IEngine + TorrentInfo (m_session calls)
 #include "services/integrations/gameinstall.h"
+#include "services/integrations/gameexedetect.h"
 #include "services/integrations/installerprofile.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/platform/logger.h"
@@ -20,8 +21,6 @@
 #include <QProcess>
 #include <QThread>
 #include <QDir>
-#include <QDirIterator>
-#include <climits>
 #include <QFileInfo>
 #include <QFile>
 #include <QSettings>
@@ -46,13 +45,6 @@ static_assert(GameInstall::Downloading == 0
            && GameInstall::NeedsSetup == 6
            && GameInstall::Failed == 7);
 
-// "completed" is the MANUAL marked-as-done flag (user action that stops
-// seeding) — a game whose data finished downloading but still seeds must
-// count as playable, or Play dies silently until "mark as completed".
-static bool dataComplete(const TorrentInfo &info)
-{
-    return info.completed || info.progress >= 1.0f;
-}
 
 QVariantList QmlSessionBridge::gameLibrary() const
 {
@@ -94,7 +86,10 @@ QVariantList QmlSessionBridge::gameLibrary() const
                     else if (p.endsWith(QStringLiteral(".mkv")) || p.endsWith(QStringLiteral(".mp4"))
                              || p.endsWith(QStringLiteral(".avi"))) hasVideo = true;
                 }
-                if (hasExe && !hasVideo) { isGame = true; title = pn.cleanTitle.isEmpty() ? info.name : pn.cleanTitle; }
+                if (GameExeDetect::looksLikeGameFromFiles(hasExe, hasVideo)) {
+                    isGame = true;
+                    title = pn.cleanTitle.isEmpty() ? info.name : pn.cleanTitle;
+                }
             }
         }
         if (!isGame) continue;
@@ -116,7 +111,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["playSeconds"] = QSettings().value(QStringLiteral("gameSeconds/") + hash, 0).toLongLong();
         m["launches"]   = QSettings().value(QStringLiteral("gameLaunches/") + hash, 0).toLongLong();
         m["playing"]    = m_runningGames.contains(hash);
-        m["installState"] = gameInstallState(hash, dataComplete(info));
+        m["installState"] = gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));
         out << m;
     }
     return out;
@@ -145,59 +140,6 @@ QString QmlSessionBridge::gameFolder(const QString &infoHash) const
     const TorrentInfo info = m_session->torrentAt(row);
     const QString root = info.savePath + QStringLiteral("/") + info.name;
     return QFileInfo(root).isDir() ? root : info.savePath;
-}
-
-// Best-guess game executable inside a folder. Skips redists/uninstallers,
-// treats setup/installer separately, and prefers the largest .exe near the
-// root (where a game's main binary usually lives). A heuristic — the user can
-// always override via "Set executable…". Returns "" if nothing runnable.
-static QString autodetectGameExe(const QString &folder, bool *isInstaller)
-{
-    if (isInstaller) *isInstaller = false;
-    if (folder.isEmpty()) return {};
-    static const QStringList skip = {
-        "unins", "redist", "vcredist", "vc_redist", "directx", "dxsetup", "dotnet",
-        "dotnetfx", "oalinst", "_commonredist", "prereq", "crashreport", "crashpad",
-        "python", "benchmark", "config", "settings", "cleanup" };
-    static const QStringList installerHints = { "setup", "install" };
-
-    QString bestGame, installer;
-    qint64 bestScore = -1;
-    int scanned = 0;
-    QDirIterator it(folder, {QStringLiteral("*.exe")}, QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext() && scanned < 4000) {
-        const QString path = it.next();
-        ++scanned;
-        const QString lower = QFileInfo(path).fileName().toLower();
-        bool skipIt = false;
-        for (const auto &s : skip) if (lower.contains(s)) { skipIt = true; break; }
-        if (skipIt) continue;
-        bool inst = false;
-        for (const auto &s : installerHints) if (lower.contains(s)) { inst = true; break; }
-        if (inst) { if (installer.isEmpty()) installer = path; continue; }
-
-        const QString rel = path.mid(folder.size());
-        const int depth = rel.count(QLatin1Char('/'));
-        qint64 score = QFileInfo(path).size();
-        if (depth <= 1) score += qint64(800) * 1024 * 1024;            // root binary strongly preferred
-        if (lower.contains("launcher")) score -= qint64(300) * 1024 * 1024;
-        if (score > bestScore) { bestScore = score; bestGame = path; }
-    }
-    if (!bestGame.isEmpty()) return bestGame;
-#if defined(Q_OS_MACOS)
-    // mac releases ship .app bundles, not .exe — prefer the shallowest one
-    QString bestApp;
-    int bestDepth = INT_MAX;
-    QDirIterator ait(folder, {QStringLiteral("*.app")}, QDir::Dirs, QDirIterator::Subdirectories);
-    while (ait.hasNext()) {
-        const QString path = ait.next();
-        const int depth = path.mid(folder.size()).count(QLatin1Char('/'));
-        if (depth < bestDepth) { bestDepth = depth; bestApp = path; }
-    }
-    if (!bestApp.isEmpty()) return bestApp;
-#endif
-    if (!installer.isEmpty()) { if (isInstaller) *isInstaller = true; return installer; }
-    return {};
 }
 
 static bool pidAlive(qint64 pid)
@@ -246,7 +188,7 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
     QString exe = gameExe(infoHash);              // a manual override always wins
     bool isInstaller = false;
     if (exe.isEmpty() || !QFile::exists(exe))
-        exe = autodetectGameExe(gameFolder(infoHash), &isInstaller);
+        exe = GameExeDetect::autodetect(gameFolder(infoHash), &isInstaller);
 
     if (!exe.isEmpty() && QFile::exists(exe)) {
         qint64 pid = 0;
@@ -339,7 +281,8 @@ void QmlSessionBridge::installGame(const QString &infoHash)
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return;
-    if (!dataComplete(m_session->torrentAt(row))) return;   // nothing to install yet
+    const TorrentInfo info = m_session->torrentAt(row);
+    if (!GameExeDetect::dataComplete(info.completed, info.progress)) return;
 
     const int st = m_gameInstallState.value(infoHash, -1);
     if (st == GIS_Extracting || st == GIS_Installing) return;   // already in flight
@@ -393,7 +336,7 @@ void QmlSessionBridge::finalizeInstall(const QString &infoHash)
     // used to ghost the Get & Install overlay (Windows "Not Responding").
     auto *thread = QThread::create([this, infoHash, folder]() {
         bool isInstaller = false;
-        const QString exe = autodetectGameExe(folder, &isInstaller);
+        const QString exe = GameExeDetect::autodetect(folder, &isInstaller);
         QString iso;
         if (exe.isEmpty()) {
             for (const QFileInfo &fi : QDir(folder).entryInfoList({QStringLiteral("*.iso")}, QDir::Files)) {
@@ -469,7 +412,7 @@ void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &inst
             p->deleteLater();
             const bool ok = (code == 0 || code == 3010 || code == 1641);  // MSI reboot codes = success
             bool inst = false;
-            const QString exe = ok ? autodetectGameExe(targetDir, &inst) : QString();
+            const QString exe = ok ? GameExeDetect::autodetect(targetDir, &inst) : QString();
             if (!exe.isEmpty() && !inst) {
                 QSettings().setValue(QStringLiteral("gameExe/") + infoHash, exe);
                 m_gameInstallState.remove(infoHash);
@@ -521,7 +464,7 @@ void QmlSessionBridge::pollInstallWatch()
         m_installWatch.remove(hash);
         bool inst = false;
         const QString folder = gameFolder(hash);
-        const QString exe = autodetectGameExe(folder, &inst);
+        const QString exe = GameExeDetect::autodetect(folder, &inst);
         if (!exe.isEmpty() && !inst) {
             applyCrackIfPresent(folder, QFileInfo(exe).absolutePath());
             QSettings().setValue(QStringLiteral("gameExe/") + hash, exe);
@@ -600,7 +543,8 @@ int QmlSessionBridge::selectedGameState() const
 {
     if (!hasSelection() || !isGameTorrent(m_selectedIndex)) return -1;
     const QString hash = m_session->torrentHashAt(m_selectedIndex);
-    return gameInstallState(hash, dataComplete(m_session->torrentAt(m_selectedIndex)));
+    const TorrentInfo info = m_session->torrentAt(m_selectedIndex);
+    return gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));
 }
 
 void QmlSessionBridge::installSelectedGame()
@@ -644,7 +588,7 @@ void QmlSessionBridge::pollPendingInstall()
         double progress = 0.0;
         if (row >= 0) {
             const TorrentInfo info = m_session->torrentAt(row);
-            pin.downloadDone = dataComplete(info);
+            pin.downloadDone = GameExeDetect::dataComplete(info.completed, info.progress);
             pin.state = gameInstallState(hash, pin.downloadDone);
             progress = pin.downloadDone ? 1.0 : double(info.progress);
         }
