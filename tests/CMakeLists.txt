@@ -94,6 +94,13 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_stats.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlthemebridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_attrs.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_work.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_ranking.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_getwatch.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_aggregate.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_games.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsettingsbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlrssbridge.h          # AUTOMOC: classes implemented in qmlposterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmladdonbridge.h
