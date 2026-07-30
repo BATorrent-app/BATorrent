@@ -109,6 +109,7 @@
 <file>icons/sort.svg</file>
 <file>icons/world.svg</file>
 <file>../src/qml/Main.qml</file>
+<file>../src/qml/LibraryController.qml</file>
 <file>../src/qml/Splash.qml</file>
         <file>../src/qml/TrayPopupWindow.qml</file>
         <file>../src/qml/UpdateDialog.qml</file>
