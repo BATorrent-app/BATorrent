@@ -1,0 +1,484 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+//
+// QmlSessionBridge — selected-torrent actions (pause/remove/queue/limits/…).
+// Split out of qmlsessionbridge.cpp verbatim; no behaviour change.
+
+#include "bridges/qmlsessionbridge.h"
+#include "torrent/sessionmanager.h"
+#include "services/security/defender.h"
+#include "services/metadata/metadataresolver.h"
+#include "services/platform/translator.h"
+#include "services/platform/utils.h"
+
+#include <QDesktopServices>
+#include <QDir>
+#include <QFileInfo>
+#include <QUrl>
+#include <QSettings>
+#include <algorithm>
+
+// Resolve the active rows (multi-select, falling back to the focus index).
+static QList<int> resolveRows(const QList<int> &rows, int idx)
+{
+    if (!rows.isEmpty()) return rows;
+    return idx >= 0 ? QList<int>{idx} : QList<int>{};
+}
+
+void QmlSessionBridge::pauseSelected()
+{
+    if (m_selectedRows.isEmpty()) {
+        if (m_selectedIndex >= 0) m_session->pauseTorrent(m_selectedIndex);
+        return;
+    }
+    for (int r : m_selectedRows) m_session->pauseTorrent(r);
+}
+
+void QmlSessionBridge::resumeSelected()
+{
+    if (m_selectedRows.isEmpty()) {
+        if (m_selectedIndex >= 0) m_session->resumeTorrent(m_selectedIndex);
+        return;
+    }
+    for (int r : m_selectedRows) m_session->resumeTorrent(r);
+}
+
+// Highest index first, so erasing earlier rows doesn't shift the ones we
+// haven't removed yet. Both remove paths share this so they can't diverge.
+void QmlSessionBridge::removeSelectedRows(bool deleteFiles, bool permanent)
+{
+    QList<int> rows = m_selectedRows.isEmpty()
+        ? (m_selectedIndex >= 0 ? QList<int>{m_selectedIndex} : QList<int>{})
+        : m_selectedRows;
+    if (rows.isEmpty()) return;
+    const int n = rows.size();
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    // A batch fires beginRemoveRows/endRemoveRows back-to-back with no time for
+    // the grid/list's remove+displaced Transition to settle between them —
+    // flagged so the view can skip animating a batch (see LibraryView.qml).
+    if (n > 1) { m_bulkRemoveInProgress = true; emit bulkRemoveInProgressChanged(); }
+    for (int r : rows) m_session->removeTorrent(r, deleteFiles, permanent);
+    if (n > 1) { m_bulkRemoveInProgress = false; emit bulkRemoveInProgressChanged(); }
+    m_selectedRows.clear();
+    m_selectedIndex = -1;
+    emit selectionChanged(); emit selectionListsChanged();
+    // set the expectation: trashed files still occupy disk until the Trash is emptied
+    if (deleteFiles)
+        emit toast(permanent ? tr_("remove_deleted") : tr_("remove_trashed"),
+                   n > 1 ? QString::number(n) : QString());
+}
+void QmlSessionBridge::removeSelectedWithFilesPermanent() { removeSelectedRows(true, true); }
+
+void QmlSessionBridge::removeSelected()          { removeSelectedRows(false); }
+void QmlSessionBridge::removeSelectedWithFiles() { removeSelectedRows(true); }
+
+void QmlSessionBridge::pauseAll() { m_session->pauseAll(); }
+void QmlSessionBridge::resumeAll() { m_session->resumeAll(); }
+
+void QmlSessionBridge::openSaveFolder()
+{
+    // Same behavior as a double-click: reveal the torrent's own folder/file,
+    // not the bare save_path. Was opening save_path directly (e.g. Downloads),
+    // which is why right-click "open folder" diverged from double-click.
+    openSelectedFile();
+}
+
+bool QmlSessionBridge::excludeTorrentFromDefender(int row)
+{
+    if (row < 0) return false;
+    auto info = m_session->torrentAt(row);
+    // Prefer the torrent's own content folder; fall back to the save root.
+    QString dir = info.savePath;
+    const QString contentDir = QDir(info.savePath).filePath(info.name);
+    if (QDir(contentDir).exists()) dir = contentDir;
+    const bool ok = Defender::addExclusion(dir);
+    emit toast(ok ? tr_("defender_excluded_ok") : tr_("defender_excluded_fail"), info.name);
+    return ok;
+}
+
+bool QmlSessionBridge::selectedHasArchives() const
+{
+    return hasSelection() && m_session->torrentHasArchives(m_selectedIndex);
+}
+
+bool QmlSessionBridge::selectedHasVideo() const
+{
+    // A game that bundles cutscene/intro videos must not offer Play — Install wins.
+    return hasSelection() && m_session->torrentHasVideo(m_selectedIndex)
+           && !isGameTorrent(m_selectedIndex);
+}
+
+void QmlSessionBridge::extractSelected(const QString &password)
+{
+    if (!hasSelection()) return;
+    m_session->extractTorrent(m_selectedIndex, password);
+    emit toast(tr_("extract_started"), m_session->torrentAt(m_selectedIndex).name);
+}
+
+bool QmlSessionBridge::selectedForceStart() const
+{
+    return hasSelection() && m_session->isForceStart(m_selectedIndex);
+}
+
+bool QmlSessionBridge::selectedSuperSeeding() const
+{
+    return hasSelection() && m_session->isSuperSeeding(m_selectedIndex);
+}
+
+bool QmlSessionBridge::selectedCompleted() const
+{
+    return hasSelection() && m_session->torrentAt(m_selectedIndex).completed;
+}
+
+bool QmlSessionBridge::selectedPaused() const
+{
+    return hasSelection() && m_session->torrentAt(m_selectedIndex).paused;
+}
+
+void QmlSessionBridge::setSelectedForceStart(bool on)
+{
+    if (hasSelection()) m_session->setForceStart(m_selectedIndex, on);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::setSelectedSuperSeeding(bool on)
+{
+    if (hasSelection()) m_session->setSuperSeeding(m_selectedIndex, on);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::markSelectedCompleted()
+{
+    if (hasSelection()) m_session->markCompleted(m_selectedIndex);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::unmarkSelectedCompleted()
+{
+    if (hasSelection()) m_session->unmarkCompleted(m_selectedIndex);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::forceRecheckSelected()
+{
+    if (hasSelection()) m_session->forceRecheck(m_selectedIndex);
+}
+
+bool QmlSessionBridge::exportSelectedTorrent(const QString &destPath)
+{
+    return hasSelection() && m_session->exportTorrent(m_selectedIndex, destPath);
+}
+
+void QmlSessionBridge::forceReannounceSelected()
+{
+    if (hasSelection()) m_session->forceReannounce(m_selectedIndex);
+}
+
+void QmlSessionBridge::refreshAll()
+{
+    // Manual "Refresh": re-announce every torrent to its trackers (fetch a
+    // fresh peer set) and push a stats recompute now. The list already updates
+    // live per tick — this is the on-demand kick some users want.
+    const int n = m_session->torrentCount();
+    for (int i = 0; i < n; ++i)
+        m_session->forceReannounce(i);
+    emitStats();
+    // Re-emit every role now so speed/ETA/status visibly repaint on the spot,
+    // instead of the user waiting for the next periodic tick to see any change.
+    emit queueRefreshNeeded();
+    emit toast(tr_("toast_refreshed"), QString());
+}
+
+void QmlSessionBridge::queueUpSelected()
+{
+    QList<int> rows = m_selectedRows.isEmpty()
+        ? (m_selectedIndex >= 0 ? QList<int>{m_selectedIndex} : QList<int>{})
+        : m_selectedRows;
+    if (rows.isEmpty()) return;
+    std::sort(rows.begin(), rows.end());
+    QList<int> newRows;
+    for (int r : rows) {
+        if (r > 0 && !newRows.contains(r - 1)) {
+            m_session->setTorrentQueuePosition(r, r - 1);
+            emit queueMoved(r, r - 1);
+            newRows << (r - 1);
+        } else {
+            newRows << r;
+        }
+    }
+    m_selectedRows = newRows;
+    m_selectedIndex = newRows.isEmpty() ? -1 : newRows.last();
+    // queueMoved already drives QmlPosterModel::moveRow (a real beginMoveRows),
+    // so the rows slide smoothly. A queueRefreshNeeded here would re-emit
+    // dataChanged for the whole list and reload every cover → full-screen flash.
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::queueDownSelected()
+{
+    QList<int> rows = m_selectedRows.isEmpty()
+        ? (m_selectedIndex >= 0 ? QList<int>{m_selectedIndex} : QList<int>{})
+        : m_selectedRows;
+    if (rows.isEmpty()) return;
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    int lastIdx = m_session->torrentCount() - 1;
+    QList<int> newRows;
+    for (int r : rows) {
+        if (r < lastIdx && !newRows.contains(r + 1)) {
+            m_session->setTorrentQueuePosition(r, r + 1);
+            emit queueMoved(r, r + 1);
+            newRows << (r + 1);
+        } else {
+            newRows << r;
+        }
+    }
+    m_selectedRows = newRows;
+    m_selectedIndex = newRows.isEmpty() ? -1 : newRows.first();
+    // see queueUpSelected: moveRow handles the visual move; no full refresh.
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::queueTopSelected()
+{
+    QList<int> rows = resolveRows(m_selectedRows, m_selectedIndex);
+    if (rows.size() == 1 && rows.first() > 0) {
+        int r = rows.first();
+        m_session->setTorrentQueuePosition(r, 0);
+        emit queueMoved(r, 0);                 // smooth move, no flash
+        m_selectedRows = {0};
+        m_selectedIndex = 0;
+    } else {
+        for (int r : rows) m_session->setTorrentQueuePosition(r, 0);
+        emit queueRefreshNeeded();
+    }
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::queueBottomSelected()
+{
+    const int last = m_session->torrentCount() - 1;
+    QList<int> rows = resolveRows(m_selectedRows, m_selectedIndex);
+    if (rows.size() == 1 && rows.first() < last) {
+        int r = rows.first();
+        m_session->setTorrentQueuePosition(r, last);
+        emit queueMoved(r, last);              // smooth move, no flash
+        m_selectedRows = {last};
+        m_selectedIndex = last;
+    } else {
+        for (int r : rows) m_session->setTorrentQueuePosition(r, last);
+        emit queueRefreshNeeded();
+    }
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::stopSeedingSelected()
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->stopSeedingTorrent(r);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+QString QmlSessionBridge::urlToLocalPath(const QString &url) const
+{
+    if (url.startsWith(QStringLiteral("file:")))
+        return QUrl(url).toLocalFile();
+    return url;
+}
+
+void QmlSessionBridge::moveSelectedStorage(const QString &path)
+{
+    if (path.isEmpty()) return;
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->moveStorage(r, path);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::setSelectedDownloadLimit(int kbps)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentDownloadLimit(r, kbps);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::setSelectedUploadLimit(int kbps)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentUploadLimit(r, kbps);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::setSelectedSequential(bool on)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setSequentialDownload(r, on);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+bool QmlSessionBridge::selectedSequential() const
+{
+    return hasSelection() && m_session->isSequentialDownload(m_selectedIndex);
+}
+
+void QmlSessionBridge::setSelectedStopAfter(int mode)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentStopAfterDownload(r, mode);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+int QmlSessionBridge::selectedStopAfter() const
+{
+    return hasSelection() ? m_session->torrentStopAfterDownload(m_selectedIndex) : -1;
+}
+
+void QmlSessionBridge::setSelectedMaxSeedDays(int days)
+{
+    const qint64 secs = days < 0 ? -1 : qint64(days) * 86400;
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentMaxSeedSeconds(r, secs);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+int QmlSessionBridge::selectedMaxSeedDays() const
+{
+    if (!hasSelection()) return -1;
+    const qint64 s = m_session->torrentMaxSeedSeconds(m_selectedIndex);
+    return s < 0 ? -1 : int(s / 86400);
+}
+
+void QmlSessionBridge::renameSelected(const QString &name)
+{
+    if (hasSelection() && !name.trimmed().isEmpty())
+        m_session->renameFile(m_selectedIndex, 0, name.trimmed());
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+QString QmlSessionBridge::diagnoseSelectedSlow() const
+{
+    if (!hasSelection()) return QString();
+    TorrentInfo info = m_session->torrentAt(m_selectedIndex);
+    QStringList lines;
+    if (info.paused) lines << "★ " + tr_("diag_paused");
+    else if (info.completed) lines << "★ " + tr_("diag_completed");
+    else if (info.progress >= 1.0f)
+        lines << "★ " + tr_(info.uploadRate == 0 ? "diag_seeding_no_uploaders" : "diag_seeding_ok");
+    else if (info.numPeers == 0) lines << "★ " + tr_("diag_no_peers");
+    else if (info.numSeeds == 0) lines << "★ " + tr_("diag_no_seeds");
+    else if (info.downloadRate == 0) lines << "★ " + tr_("diag_choked");
+    else {
+        const int dlimit = m_session->torrentDownloadLimit(m_selectedIndex);
+        if (dlimit > 0 && info.downloadRate >= dlimit * 1024 * 0.9)
+            lines << "★ " + tr_("diag_at_local_limit").arg(dlimit);
+        else
+            lines << "★ " + tr_("diag_throughput_normal").arg(formatSpeed(info.downloadRate));
+    }
+    lines << "" << tr_("diag_facts");
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_peers"), QString::number(info.numPeers));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("detail_kv_seeds"), QString::number(info.numSeeds));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_down"), formatSpeed(info.downloadRate));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_up"), formatSpeed(info.uploadRate));
+    lines << QStringLiteral("    • %1: %2").arg(tr_("col_state"), info.stateString);
+    return lines.join('\n');
+}
+
+void QmlSessionBridge::setSelectedCategory(const QString &category)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentCategory(r, category);
+    emit selectionChanged(); emit selectionListsChanged();
+    emit queueRefreshNeeded();   // category is a full-role edit → repaint the cards
+}
+
+void QmlSessionBridge::setSelectedTags(const QStringList &tags)
+{
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->setTorrentTags(r, tags);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::addTrackerToSelected(const QString &url)
+{
+    if (url.isEmpty()) return;
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+        m_session->addTracker(r, url);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::removeTrackerFromSelected(const QString &url)
+{
+    if (url.isEmpty() || !hasSelection()) return;
+    QStringList keep;
+    for (const auto &t : m_session->trackersAt(m_selectedIndex))
+        if (t.url != url) keep << t.url;
+    m_session->replaceTrackers(m_selectedIndex, keep);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::renameSelectedFile(int fileIndex, const QString &newName)
+{
+    if (!hasSelection() || newName.isEmpty()) return;
+    m_session->renameFile(m_selectedIndex, fileIndex, newName);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::setSelectedFilePriority(int fileIndex, int priority)
+{
+    if (!hasSelection()) return;
+    m_session->setFilePriority(m_selectedIndex, fileIndex, priority);
+    emit selectionChanged(); emit selectionListsChanged();
+}
+
+void QmlSessionBridge::openSelectedFile()
+{
+    if (!hasSelection()) return;
+    const QString path = m_session->torrentRootPath(m_selectedIndex);
+    if (!path.isEmpty()) revealInFileManager(path);   // open the folder with the item selected
+}
+
+void QmlSessionBridge::relinkSelectedCover(const QString &query, const QString &typeStr)
+{
+    if (!hasSelection() || !m_resolver || query.trimmed().isEmpty()) return;
+    const QString hash = m_session->torrentHashAt(m_selectedIndex);
+    if (hash.isEmpty()) return;
+    const ContentType type = typeStr == QLatin1String("series") ? ContentType::Series
+                           : typeStr == QLatin1String("game")   ? ContentType::Game
+                                                                : ContentType::Movie;
+    m_resolver->resolveManual(hash, query.trimmed(), type);
+}
+
+void QmlSessionBridge::clearSelectedCover()
+{
+    if (!hasSelection() || !m_resolver) return;
+    const QString hash = m_session->torrentHashAt(m_selectedIndex);
+    if (!hash.isEmpty()) m_resolver->clearMetadata(hash);
+}
+
+void QmlSessionBridge::importQbittorrent(const QString &savePath)
+{
+    m_session->importFromQBittorrent(savePath);
+    emit queueRefreshNeeded();
+}
+
+int QmlSessionBridge::selectedDownloadLimit() const
+{
+    return hasSelection() ? m_session->torrentDownloadLimit(m_selectedIndex) : 0;
+}
+
+int QmlSessionBridge::selectedUploadLimit() const
+{
+    return hasSelection() ? m_session->torrentUploadLimit(m_selectedIndex) : 0;
+}
+
+QString QmlSessionBridge::selectedCategory() const
+{
+    return hasSelection() ? m_session->torrentAt(m_selectedIndex).category : QString();
+}
+
+QStringList QmlSessionBridge::selectedTagList() const
+{
+    return hasSelection() ? m_session->torrentTags(m_selectedIndex) : QStringList();
+}
+
+QStringList QmlSessionBridge::categories() const { return m_session->categories(); }
+
