@@ -141,6 +141,13 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmlsessionbridge_stats.cpp
     src/bridges/qmlthemebridge.cpp
     src/bridges/qmlsearchbridge.cpp
+    src/bridges/qmlsearchbridge_util.cpp
+    src/bridges/qmlsearchbridge_attrs.cpp
+    src/bridges/qmlsearchbridge_work.cpp
+    src/bridges/qmlsearchbridge_ranking.cpp
+    src/bridges/qmlsearchbridge_getwatch.cpp
+    src/bridges/qmlsearchbridge_aggregate.cpp
+    src/bridges/qmlsearchbridge_games.cpp
     src/bridges/qmlsettingsbridge.cpp
     # bridge classes implemented in qmlposterbridge.cpp — listed so AUTOMOC builds their metaobjects
     src/bridges/qmlrssbridge.h
