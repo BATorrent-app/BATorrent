@@ -16,6 +16,8 @@
 #include <libtorrent/torrent_info.hpp>
 #include <QString>
 #include <QDebug>
+#include <QDateTime>
+#include <QTimer>
 #include <QDir>
 #include <QFile>
 #include <algorithm>
@@ -26,10 +28,26 @@
 
 void SessionManager::processAlerts()
 {
-    std::vector<lt::alert *> alerts;
-    m_session.pop_alerts(&alerts);
+    // Cap work per tick so an alert storm can't freeze the GUI thread. Alerts
+    // stay valid until the *next* pop_alerts — drain the current batch across
+    // zero-delay ticks instead of dropping mid-batch.
+    if (m_alertDrain.empty())
+        m_session.pop_alerts(&m_alertDrain);
 
-    for (auto *a : alerts) {
+    constexpr size_t kMaxPerTick = 250;
+    if (m_alertDrain.size() > kMaxPerTick) {
+        static qint64 lastStormLog = 0;
+        const qint64 now = QDateTime::currentSecsSinceEpoch();
+        if (now - lastStormLog >= 5) {
+            qWarning() << "[session] alert storm:" << m_alertDrain.size()
+                       << "queued, processing" << kMaxPerTick << "this tick";
+            lastStormLog = now;
+        }
+    }
+
+    const size_t n = std::min(m_alertDrain.size(), kMaxPerTick);
+    for (size_t i = 0; i < n; ++i) {
+      auto *a = m_alertDrain[i];
       try {
         if (auto *su = lt::alert_cast<lt::state_update_alert>(a)) { onStateUpdate(su); continue; }
         if (auto *fa = lt::alert_cast<lt::torrent_finished_alert>(a)) onTorrentFinished(fa);
@@ -57,6 +75,15 @@ void SessionManager::processAlerts()
       } catch (...) {
         qWarning() << "[session] alert processing: unknown exception caught";
       }
+    }
+    m_alertDrain.erase(m_alertDrain.begin(), m_alertDrain.begin() + static_cast<std::ptrdiff_t>(n));
+
+    if (!m_alertDrain.empty() && !m_alertDrainScheduled) {
+        m_alertDrainScheduled = true;
+        QTimer::singleShot(0, this, [this]() {
+            m_alertDrainScheduled = false;
+            processAlerts();
+        });
     }
 }
 

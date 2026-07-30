@@ -12,6 +12,7 @@
 #include <QProcess>
 #include <QCoreApplication>
 #include <QStorageInfo>
+#include <QThread>
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
 #include <libtorrent/magnet_uri.hpp>
@@ -799,6 +800,27 @@ void SessionManager::resumeAll()
     }
 }
 
+void SessionManager::refreshDiskFreeAsync(const QString &savePath)
+{
+    if (savePath.isEmpty()) return;
+    static qint64 lastKick = 0;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    // Probe at most every 5s, or immediately when the path changes.
+    if (savePath == m_cachedDiskPath && now - lastKick < 5) return;
+    lastKick = now;
+    const QString path = savePath;
+    auto *thread = QThread::create([this, path]() {
+        QStorageInfo storage(path);
+        const qint64 freeB = storage.isValid() ? storage.bytesAvailable() : -1;
+        QMetaObject::invokeMethod(this, [this, path, freeB]() {
+            m_cachedDiskPath = path;
+            m_cachedDiskFree = freeB;
+        }, Qt::QueuedConnection);
+    });
+    QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
+}
+
 int SessionManager::torrentCount() const
 {
     return static_cast<int>(m_torrents.size());
@@ -812,6 +834,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
     if (!m_torrents[index].is_valid())
         return info;
 
+    try {
     lt::torrent_status st = cachedStatus(m_torrents[index]);
     info.handle = m_torrents[index];
     info.name = QString::fromStdString(st.name);
@@ -920,6 +943,13 @@ TorrentInfo SessionManager::torrentAt(int index) const
     }
 
     return info;
+    } catch (const std::exception &e) {
+        qWarning() << "[session] torrentAt exception:" << e.what();
+        return TorrentInfo{};
+    } catch (...) {
+        qWarning() << "[session] torrentAt: unknown exception";
+        return TorrentInfo{};
+    }
 }
 
 
@@ -1160,8 +1190,8 @@ void SessionManager::updateStats()
         QSettings s("BATorrent", "BATorrent");
         const QString savePath = s.value("lastSavePath",
             QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
-        QStorageInfo storage(savePath);
-        const qint64 freeB = storage.isValid() ? storage.bytesAvailable() : -1;
+        refreshDiskFreeAsync(savePath);
+        const qint64 freeB = m_cachedDiskFree;
 
         if (freeB >= 0 && freeB < 512LL * 1024 * 1024 && !m_diskAutoPaused) {
             int paused = 0;

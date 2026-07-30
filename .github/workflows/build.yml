@@ -397,43 +397,49 @@ jobs:
       # this build) with every unit test green. Launch the real packaged exe
       # and fail the build if it doesn't survive — that's the only check that
       # actually matches "did the app open".
-      - name: Smoke test — the packaged app must actually launch
+      - name: Smoke test — the packaged app must paint a frame
         shell: pwsh
         run: |
-          # Pre-seed lastSeenVersion to an old release so the update-only code
-          # path (What's New / dev-note dialog) gets exercised too — a
-          # fresh-install-only smoke test would miss a bug that only fires on
-          # the upgrade path, which is exactly what real users hit first.
           New-Item -Path "HKCU:\Software\BATorrent\BATorrent" -Force | Out-Null
           New-ItemProperty -Path "HKCU:\Software\BATorrent\BATorrent" -Name "lastSeenVersion" -Value "1.0.0" -PropertyType String -Force | Out-Null
 
           $env:BAT_QML_STRICT = "warn"
-          $env:QT_DEBUG_PLUGINS = "1"
+          $env:BAT_SMOKE_EXIT_ON_FRAME = "1"
+          # QT_DEBUG_PLUGINS noise goes to a separate log — do not pattern-match it
+          # for "module could not be found" (optional plugin probes false-positive).
+          $env:QT_DEBUG_PLUGINS = "0"
           $outLog = "smoketest_stdout.log"
           $errLog = "smoketest_stderr.log"
           $proc = Start-Process -FilePath "release\BATorrent.exe" -PassThru `
             -RedirectStandardOutput $outLog -RedirectStandardError $errLog
-          Start-Sleep -Seconds 12
-          $stillRunning = -not $proc.HasExited
-          if ($stillRunning) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
-
-          Write-Host "----- stdout/stderr -----"
-          Get-Content $outLog, $errLog -ErrorAction SilentlyContinue | Write-Host
-
-          if (-not $stillRunning) {
-            Write-Host "::error::BATorrent.exe exited within 12s of launch (exit code $($proc.ExitCode)) — this build would not open for users."
+          # frameSwapped → exit 0; timeout/no-frame → exit 2; sceneGraphError → 3
+          $deadline = (Get-Date).AddSeconds(25)
+          while (-not $proc.HasExited -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200 }
+          if (-not $proc.HasExited) {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            Write-Host "::error::packaged app never painted a frame within 25s (gray-screen class)"
+            Get-Content $outLog, $errLog -ErrorAction SilentlyContinue | Write-Host
             exit 1
           }
-
+          Write-Host "----- stdout/stderr -----"
+          Get-Content $outLog, $errLog -ErrorAction SilentlyContinue | Write-Host
+          if ($proc.ExitCode -ne 0) {
+            Write-Host "::error::BATorrent.exe exited $($proc.ExitCode) without a successful first frame"
+            exit 1
+          }
           $combined = @()
           if (Test-Path $outLog) { $combined += Get-Content $outLog -ErrorAction SilentlyContinue }
           if (Test-Path $errLog) { $combined += Get-Content $errLog -ErrorAction SilentlyContinue }
           $text = $combined -join "`n"
-          if ($text -match 'failed to load component|is not a type|TypeError:|ReferenceError:|Invalid property assignment|instantiated recursively|This application failed to start because|The specified module could not be found|Entry Point Not Found|procedure entry point') {
-            Write-Host "::error::packaged Windows boot logged a load/DLL/QML failure — would not open cleanly for users"
+          if ($text -notmatch '\[boot\] first frame presented') {
+            Write-Host "::error::missing first-frame boot log — smoke did not prove paint"
             exit 1
           }
-          Write-Host "Smoke test passed: the app was still running after 12s with a clean log."
+          if ($text -match 'failed to load component|is not a type|TypeError:|ReferenceError:|Invalid property assignment|instantiated recursively|This application failed to start because|Entry Point Not Found|procedure entry point|\[QML ERROR\]') {
+            Write-Host "::error::packaged Windows boot logged a load/QML failure"
+            exit 1
+          }
+          Write-Host "Smoke test passed: first frame presented."
 
       - name: Generate installer wizard images
         shell: pwsh

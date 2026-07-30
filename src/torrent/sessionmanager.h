@@ -500,6 +500,8 @@ private:
     // tick on top of all the other periodic checks.
     mutable std::map<lt::torrent_handle, lt::torrent_status> m_statusCache;
     QTimer m_updateTimer;
+    std::vector<lt::alert *> m_alertDrain;   // in-flight pop batch; never pop while non-empty
+    bool m_alertDrainScheduled = false;
     std::unique_ptr<StatsHistory> m_statsHistory;
 #ifdef BAT_LIBTORRENT_FORK
     GeoIpProvider m_geoIp;
@@ -511,6 +513,9 @@ private:
     bool m_utpEnabled = true;
     bool m_anonymousMode = false;
     bool m_diskAutoPaused = false;   // hysteresis: active downloads paused due to critically low disk
+    qint64 m_cachedDiskFree = -1;    // bytes; refreshed off the GUI thread
+    QString m_cachedDiskPath;
+    void refreshDiskFreeAsync(const QString &savePath);
     bool m_forceIpv4 = false;
     bool m_ptMode = false;
     bool m_blockLeechers = false;

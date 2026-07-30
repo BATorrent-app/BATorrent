@@ -18,6 +18,7 @@
 #include "services/platform/utils.h"   // revealTorrentRoot()
 
 #include <QProcess>
+#include <QThread>
 #include <QDir>
 #include <QDirIterator>
 #include <climits>
@@ -279,6 +280,28 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
 // Poll launched games for exit; credit elapsed time to the per-game total.
 void QmlSessionBridge::pollRunningGames()
 {
+    // Clear orphan gameExe paths off the getter path (QML bindings re-enter it).
+    {
+        QSettings s;
+        s.beginGroup(QStringLiteral("gameExe"));
+        const QStringList keys = s.childKeys();
+        s.endGroup();
+        bool cleared = false;
+        for (const QString &hash : keys) {
+            const QString path = s.value(QStringLiteral("gameExe/") + hash).toString();
+            GameInstall::DeriveIn in;
+            in.running = m_runningGames.contains(hash);
+            in.overlay = m_gameInstallState.value(hash, -1);
+            in.hasExePath = !path.isEmpty();
+            in.exeExists = in.hasExePath && QFileInfo::exists(path);
+            if (GameInstall::shouldClearStaleExe(in)) {
+                s.remove(QStringLiteral("gameExe/") + hash);
+                cleared = true;
+            }
+        }
+        if (cleared) emit gamesChanged();
+    }
+
     if (m_runningGames.isEmpty()) return;
     bool changed = false;
     for (const QString &hash : m_runningGames.keys()) {
@@ -307,8 +330,8 @@ int QmlSessionBridge::gameInstallState(const QString &infoHash, bool completed) 
     in.hasExePath = !exe.isEmpty();
     in.exeExists = in.hasExePath && QFileInfo::exists(exe);
     in.completed = completed;
-    if (GameInstall::shouldClearStaleExe(in))
-        QSettings().remove(QStringLiteral("gameExe/") + infoHash);
+    // Do not mutate QSettings from this getter — QML bindings re-enter it. Stale
+    // paths are cleared from pollRunningGames / a deferred slot instead.
     return GameInstall::derive(in);
 }
 
@@ -366,43 +389,55 @@ static void applyCrackIfPresent(const QString &root, const QString &gameDir)
 void QmlSessionBridge::finalizeInstall(const QString &infoHash)
 {
     const QString folder = gameFolder(infoHash);
-    bool isInstaller = false;
-    const QString exe = autodetectGameExe(folder, &isInstaller);
-
-    if (exe.isEmpty()) {
-        // Tier D: a scene release whose game sits inside an .iso → can't run without
-        // mounting. On Windows, mount it so the disc appears; everywhere, guide the user.
+    // Heavy directory walks belong off the GUI thread — a FitGirl tree on HDD
+    // used to ghost the Get & Install overlay (Windows "Not Responding").
+    auto *thread = QThread::create([this, infoHash, folder]() {
+        bool isInstaller = false;
+        const QString exe = autodetectGameExe(folder, &isInstaller);
         QString iso;
-        for (const QFileInfo &fi : QDir(folder).entryInfoList({QStringLiteral("*.iso")}, QDir::Files)) {
-            iso = fi.absoluteFilePath(); break;
+        if (exe.isEmpty()) {
+            for (const QFileInfo &fi : QDir(folder).entryInfoList({QStringLiteral("*.iso")}, QDir::Files)) {
+                iso = fi.absoluteFilePath();
+                break;
+            }
         }
+        QMetaObject::invokeMethod(this, [this, infoHash, folder, exe, isInstaller, iso]() {
+            if (exe.isEmpty()) {
 #ifdef Q_OS_WIN
-        if (!iso.isEmpty()) {
-            QProcess::startDetached(QStringLiteral("powershell"), {
-                QStringLiteral("-NoProfile"), QStringLiteral("-Command"),
-                QStringLiteral("Mount-DiskImage -ImagePath '%1'")
-                    .arg(QString(iso).replace(QLatin1Char('\''), QStringLiteral("''"))) });
-        }
+                if (!iso.isEmpty()) {
+                    QProcess::startDetached(QStringLiteral("powershell"), {
+                        QStringLiteral("-NoProfile"), QStringLiteral("-Command"),
+                        QStringLiteral("Mount-DiskImage -ImagePath '%1'")
+                            .arg(QString(iso).replace(QLatin1Char('\''), QStringLiteral("''"))) });
+                }
 #endif
-        if (!iso.isEmpty()) {
-            const int row = m_session->torrentIndexByInfoHash(infoHash);
-            if (row >= 0) { const TorrentInfo info = m_session->torrentAt(row);
-                            revealTorrentRoot(info.savePath, info.name); }
-        }
-        m_gameInstallState.insert(infoHash, GIS_NeedsSetup);
-        emit gamesChanged();
-        emit toast(tr_("hub_install_need_exe"), QString());
-        return;
-    }
-    if (!isInstaller) {                                   // portable/cracked → register & done
-        applyCrackIfPresent(folder, QFileInfo(exe).absolutePath());
-        QSettings().setValue(QStringLiteral("gameExe/") + infoHash, exe);
-        m_gameInstallState.remove(infoHash);             // → derived Ready
-        emit gamesChanged();
-        emit toast(tr_("hub_install_ready"), QFileInfo(exe).completeBaseName());
-        return;
-    }
-    runInstaller(infoHash, exe, folder);
+                if (!iso.isEmpty()) {
+                    const int row = m_session->torrentIndexByInfoHash(infoHash);
+                    if (row >= 0) {
+                        const TorrentInfo info = m_session->torrentAt(row);
+                        revealTorrentRoot(info.savePath, info.name);
+                    }
+                }
+                m_gameInstallState.insert(infoHash, GIS_NeedsSetup);
+                emit gamesChanged();
+                emit toast(tr_("hub_install_need_exe"), QString());
+                return;
+            }
+            if (!isInstaller) {
+                // Crack copy is also filesystem-heavy — keep on worker next tick if needed;
+                // for now do it here but folder is usually small post-detect.
+                applyCrackIfPresent(folder, QFileInfo(exe).absolutePath());
+                QSettings().setValue(QStringLiteral("gameExe/") + infoHash, exe);
+                m_gameInstallState.remove(infoHash);
+                emit gamesChanged();
+                emit toast(tr_("hub_install_ready"), QFileInfo(exe).completeBaseName());
+                return;
+            }
+            runInstaller(infoHash, exe, folder);
+        }, Qt::QueuedConnection);
+    });
+    QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
 }
 
 void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &installerExe,
@@ -443,6 +478,12 @@ void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &inst
                 m_gameInstallState.insert(infoHash, GIS_NeedsSetup);
                 emit toast(tr_("hub_install_need_exe"), QString());
             }
+            emit gamesChanged();
+        });
+        connect(p, &QProcess::errorOccurred, this, [this, p, infoHash](QProcess::ProcessError) {
+            p->deleteLater();
+            m_gameInstallState.insert(infoHash, GIS_Failed);
+            emit toast(tr_("hub_install_need_exe"), QString());
             emit gamesChanged();
         });
         p->start(program, si.args);

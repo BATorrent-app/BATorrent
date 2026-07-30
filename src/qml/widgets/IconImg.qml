@@ -15,9 +15,9 @@ Item {
     implicitWidth: s
     implicitHeight: s
 
-    // Rasterize at the display's real density. A fixed 2x was fine on Retina but
-    // got upscaled — visibly soft — on 3x screens (Windows at 300%, some 4K).
     readonly property int rasterPx: Math.max(2, Math.ceil(Screen.devicePixelRatio)) * ico.s
+    // Software RHI + MultiEffect = blank icons on the gray-screen path.
+    readonly property bool soft: typeof themeBridge !== "undefined" && themeBridge.softwareRenderer
 
     Image {
         id: imgSrc
@@ -25,10 +25,11 @@ Item {
         source: ico.src
         sourceSize: Qt.size(ico.rasterPx, ico.rasterPx)
         fillMode: Image.PreserveAspectFit
-        visible: false
-        layer.enabled: true
+        visible: ico.soft
+        layer.enabled: !ico.soft
     }
     MultiEffect {
+        visible: !ico.soft
         source: imgSrc
         anchors.fill: imgSrc
         colorization: 1.0

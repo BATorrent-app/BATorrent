@@ -58,7 +58,7 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 [Files]
-Source: "..\release\*"; DestDir: "{app}"; Flags: recursesubdirs
+Source: "..\release\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

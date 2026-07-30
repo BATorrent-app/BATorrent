@@ -34,9 +34,15 @@ class QmlThemeBridge : public QObject
     // Dock (macOS) / taskbar+window (Windows) icon; does NOT touch the signed
     // bundle's Finder/.exe icon.
     Q_PROPERTY(QString appIconChoice READ appIconChoice WRITE setAppIcon NOTIFY appIconChanged)
+    // True when the process is on the Software scene-graph backend (or forced
+    // via settings) — QML can skip MultiEffect / heavy shaders.
+    Q_PROPERTY(bool softwareRenderer READ softwareRenderer NOTIFY changed)
 
 public:
     explicit QmlThemeBridge(QObject *parent = nullptr);
+
+    bool softwareRenderer() const { return m_softwareRenderer; }
+    void setSoftwareRenderer(bool on);
 
     QString themeName() const;
     void setThemeName(const QString &n);
@@ -111,6 +117,7 @@ private:
     int m_activeProfile = 0;
     bool m_osLight = false;
     QString m_appIconChoice;
+    bool m_softwareRenderer = false;
     void applyAppIcon(const QString &key);   // sets QGuiApplication window icon
 };
 

@@ -21,6 +21,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+
+      - name: Apply fork patches
+        shell: bash
+        run: ./scripts/apply-fork-patches.sh
 
       - name: Install Qt
         uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
@@ -39,11 +45,11 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: C:\vcpkg\installed
-          key: vcpkg-libtorrent-x64-windows-v1
+          key: vcpkg-boost-openssl-x64-windows-store-v1
 
-      - name: Install libtorrent via vcpkg
+      - name: Install Boost/OpenSSL via vcpkg
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
-        run: C:\vcpkg\vcpkg install libtorrent:x64-windows
+        run: C:\vcpkg\vcpkg install boost-system boost-asio openssl:x64-windows
 
       - name: Cache choco packages
         id: cache-choco
@@ -69,13 +75,13 @@ jobs:
 
       - name: Build (Store variant — auto-updater disabled, Discover hidden)
         env:
-          # Discover is hidden in Store builds, but Search (title-first) and the
-          # HUB still use TMDB/IGDB for covers/metadata, so keys are still baked.
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+          BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release `
+            -DBAT_LIBTORRENT_SOURCE=ON `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DBAT_STORE_BUILD=ON
           cmake --build build --config Release
@@ -85,27 +91,28 @@ jobs:
         run: |
           $version = "${{ github.event.inputs.version }}"
 
-          # Create package layout
           mkdir msix-layout
           Copy-Item build/Release/BATorrent.exe msix-layout/
-          windeployqt --qmldir src/qml msix-layout/BATorrent.exe
+          windeployqt --qmldir src/qml --compiler-runtime msix-layout/BATorrent.exe
 
-          # Copy vcpkg DLLs
+          $qtBin = Split-Path (Get-Command windeployqt).Source
+          Get-ChildItem "$qtBin" -Filter "*.dll" | Where-Object {
+            $_.Name -match '^(avcodec|avformat|avutil|swscale|swresample|avdevice|avfilter)-'
+          } | Copy-Item -Destination msix-layout/ -Force
+
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
-          Get-ChildItem "$vcpkgBin/*.dll" | Copy-Item -Destination msix-layout/
+          Get-ChildItem "$vcpkgBin/*.dll" |
+            Where-Object { $_.Name -ne 'torrent-rasterbar.dll' } |
+            Copy-Item -Destination msix-layout/
 
-          # Copy the template manifest and patch version using byte-level
-          # I/O to avoid PowerShell's encoding quirks (BOM insertion,
-          # UTF-16 default) that makeappx rejects.
+          $forkDll = "build/third_party/libtorrent/Release/torrent-rasterbar.dll"
+          if (!(Test-Path $forkDll)) { throw "fork libtorrent DLL missing at $forkDll" }
+          Copy-Item $forkDll -Destination msix-layout/ -Force
+
           $raw = [System.IO.File]::ReadAllText("$PWD\installer\msix\AppxManifest.xml", [System.Text.Encoding]::UTF8)
-          # Target ONLY the Identity element's Version attribute. The naive
-          # pattern Version="..." also matches MinVersion and MaxVersionTested,
-          # replacing them with the app version (2.5.1.0) and breaking the
-          # TargetDeviceFamily declaration.
           $raw = $raw -creplace '(Identity[^>]*?)Version="[\d.]+"', "`$1Version=`"$version`""
           [System.IO.File]::WriteAllText("$PWD\msix-layout\AppxManifest.xml", $raw, [System.Text.UTF8Encoding]::new($false))
 
-          # Generate logo assets from source PNG at required Store sizes
           $sizes = @(
             @{Name="StoreLogo.png"; Size=50},
             @{Name="Square44x44Logo.png"; Size=44},
@@ -118,6 +125,28 @@ jobs:
             $h = if ($s.Height) { $s.Height } else { $s.Size }
             magick src/images/logo1.png -resize "$($s.Size)x$h" -background "#0e0a0a" -gravity center -extent "$($s.Size)x$h" "msix-layout/assets/$($s.Name)"
           }
+
+      - name: Verify MSIX layout (DLLs + fork)
+        shell: pwsh
+        run: ./scripts/ci/check-windows-bundle.ps1 -Dir msix-layout
+
+      - name: Smoke test MSIX layout paints a frame
+        shell: pwsh
+        run: |
+          $env:BAT_QML_STRICT = "warn"
+          $env:BAT_SMOKE_EXIT_ON_FRAME = "1"
+          $outLog = "msix_smoke_out.log"; $errLog = "msix_smoke_err.log"
+          $proc = Start-Process -FilePath "msix-layout\BATorrent.exe" -PassThru `
+            -RedirectStandardOutput $outLog -RedirectStandardError $errLog
+          $deadline = (Get-Date).AddSeconds(25)
+          while (-not $proc.HasExited -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200 }
+          if (-not $proc.HasExited) {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            Get-Content $outLog, $errLog -ErrorAction SilentlyContinue | Write-Host
+            throw "MSIX layout never painted a frame"
+          }
+          Get-Content $outLog, $errLog -ErrorAction SilentlyContinue | Write-Host
+          if ($proc.ExitCode -ne 0) { throw "MSIX layout exit $($proc.ExitCode)" }
 
       - name: Create MSIX package
         shell: pwsh
