@@ -35,11 +35,13 @@ Rectangle {
     property bool showGameMgr: false
     property bool showSourcesMgr: false
     property var gameList: []
+    // Bumped when Hydra catalogs re-index so FindCatalogBrowse tabs/total rebind.
+    property int gameCatalogGen: 0
 
     // ---- client-side filter/sort state ----
     property string qualityFilter: ""
     property string sourceFilter: ""
-    property string repackerFilter: ""
+    property string groupFilter: ""
     property string providerFilter: ""
     property string langFilter: ""
     property string audioModeFilter: ""   // "" = all | "dub" | "sub" | "original"
@@ -95,7 +97,10 @@ Rectangle {
                                              && typeof discovery !== "undefined"
     property string typeFilter: "all"   // all | game | movie | series (browse pills)
     readonly property bool browse: findBar.text.trim().length === 0
-    readonly property bool docked: !browse || (catalogAvailable && browsePane.scrollY > 36)
+    // Explicit catalog dump (Online-Fix / FitGirl / …) — opened from FindBrowse, not a redesign of landing.
+    property bool showCatalogBrowse: false
+    readonly property real browseScrollY: showCatalogBrowse ? catalogBrowsePane.scrollY : browsePane.scrollY
+    readonly property bool docked: !browse || (catalogAvailable && browseScrollY > 36)
 
     // ---- detail drawer state ----
     property var selected: null
@@ -103,7 +108,37 @@ Rectangle {
     property bool detailOpen: false
     property string detailPoster: ""
 
+    onBrowseChanged: if (!browse) showCatalogBrowse = false
+    onTypeFilterChanged: {
+        if (typeFilter === "game")
+            return
+        showCatalogBrowse = false
+        groupFilter = ""
+        if (catalogBrowsePane) {
+            catalogBrowsePane.group = ""
+            catalogBrowsePane.pageIndex = 0
+        }
+    }
+
     function reloadGames() { gameList = (api ? api.gameSources() : []) }
+
+    function openCatalogBrowse(group) {
+        showCatalogBrowse = true
+        if (catalogBrowsePane) {
+            catalogBrowsePane.pageIndex = 0
+            catalogBrowsePane.selectGroup(group || "")
+        }
+        groupFilter = group || ""
+    }
+
+    function closeCatalogBrowse() {
+        showCatalogBrowse = false
+        groupFilter = ""
+        if (catalogBrowsePane) {
+            catalogBrowsePane.group = ""
+            catalogBrowsePane.pageIndex = 0
+        }
+    }
 
     function typeLabel(t) {
         if (t === "movie") return i18n.t("search_type_movie")
@@ -141,8 +176,17 @@ Rectangle {
 
     readonly property var qualityOptions: distinctTokens("quality", ["4K", "1080p", "720p", "480p"])
     readonly property var sourceOptions: distinctTokens("source", ["Remux", "BluRay", "WEB", "HDTV", "DVD", "CAM"])
-    readonly property var repackerOptions: distinctTokens("repacker", [])
+    readonly property var groupOptions: distinctTokens("releaseGroup", [])
     readonly property var providerOptions: distinctTokens("provider", [])
+
+    // Sorting by version is only offered when the results actually carry one —
+    // it's a game axis, and an empty sort key on a movie list is dead UI.
+    readonly property bool hasVersions: {
+        var rs = api ? api.results : []
+        for (var i = 0; i < rs.length; i++)
+            if ((rs[i].version || "").length > 0) return true
+        return false
+    }
 
     // languages present across results (each result's `langs` is a list)
     readonly property var langOptions: {
@@ -169,10 +213,13 @@ Rectangle {
         var res = api.results
         // Relevance scoring lives in the tested C++ SearchRanker (via the bridge),
         // not here — the view only reads the scores to sort by.
-        var qwords = api.queryWords()
+        // One word-set per name the work was searched under (localised + original).
+        // Scoring against the typed query alone would sink every release named in
+        // the other language — we'd find it and then bury it.
+        var qsets = api.queryWordSets()
         for (var i = 0; i < res.length; i++) {
             var o = res[i]; o._idx = i
-            o._rel = api.relevance(o.name, qwords)
+            o._rel = api.relevanceMulti(o.name, qsets)
             arr.push(o)
         }
         // episode picker: air order, season tab only — release filters don't apply
@@ -193,7 +240,7 @@ Rectangle {
         }
         if (qualityFilter !== "") arr = arr.filter(function (r) { return r.quality === qualityFilter })
         if (sourceFilter !== "") arr = arr.filter(function (r) { return r.source === sourceFilter })
-        if (repackerFilter !== "") arr = arr.filter(function (r) { return r.repacker === repackerFilter })
+        if (groupFilter !== "" && !page.showCatalogBrowse) arr = arr.filter(function (r) { return r.releaseGroup === groupFilter })
         if (providerFilter !== "") arr = arr.filter(function (r) { return r.provider === providerFilter })
         if (langFilter !== "") arr = arr.filter(function (r) { return (r.langs || []).indexOf(langFilter) !== -1 })
         if (audioModeFilter !== "") arr = arr.filter(function (r) { return (r.audioMode || "original") === audioModeFilter })
@@ -201,23 +248,48 @@ Rectangle {
         if (sortKey === "seeders") arr.sort(function (a, b) { return (b.seedsN || 0) - (a.seedsN || 0) })
         else if (sortKey === "size") arr.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) })
         else if (sortKey === "name") arr.sort(function (a, b) { return (a.name || "").localeCompare(b.name || "") })
+        else if (sortKey === "version") arr.sort(function (a, b) { return page.api ? page.api.compareBuildVersions(b.version || "", a.version || "") : 0 })
         // default = Relevance. When viewing one picked title's releases (the watch
         // context) and "prefer my language" is on, the user's own language leads —
         // grouped above quality/seeders, Torrentio-style — so a viewer who needs a
         // dub/sub in their language finds it first.
         else {
-            var nativeFirst = page.api && page.api.singleTitleView
-                              && (typeof settings === "undefined" || settings.get("preferNativeLang") !== false)
-            arr.sort(function (a, b) {
-                if (nativeFirst) {
-                    var n0 = (b.native ? 1 : 0) - (a.native ? 1 : 0); if (n0) return n0
+            // Games: catalog/version beat indexer seed counts — otherwise a stale
+            // BitSearch hit with 3 seeds buries the fresh Online-Fix catalog row
+            // (catalogs report no seeders).
+            var gameRank = page.api && (page.api.workType === "game" || page.api.mode === "games")
+            if (gameRank) {
+                arr.sort(function (a, b) {
+                    var g = page.api.compareGameReleases(a, b); if (g) return -g
+                    var rd = (b._rel || 0) - (a._rel || 0); if (rd) return rd
+                    return a._idx - b._idx
+                })
+            } else {
+                var nativeFirst = page.api && page.api.singleTitleView
+                                  && (typeof settings === "undefined" || settings.get("preferNativeLang") !== false)
+                // Ladder, not a boolean. `native` only says "carries my language",
+                // which lumps a dub together with a subtitled original — opposite
+                // things for a viewer. AudioMode already classifies each release
+                // relative to the user's language; this is the order people actually
+                // want: dubbed → subtitled → original.
+                function langRank(r) {
+                    switch (r.audioMode) {
+                    case "dub": return 2
+                    case "sub": return 1
+                    default:    return 0
+                    }
                 }
-                var rd = (b._rel || 0) - (a._rel || 0); if (rd) return rd
-                var nd = (b.native ? 1 : 0) - (a.native ? 1 : 0); if (nd) return nd
-                // equal relevance (one title's releases all match) → healthiest first
-                var sd = (b.seedsN || 0) - (a.seedsN || 0); if (sd) return sd
-                return a._idx - b._idx
-            })
+                arr.sort(function (a, b) {
+                    if (nativeFirst) {
+                        var l0 = langRank(b) - langRank(a); if (l0) return l0
+                    }
+                    var rd = (b._rel || 0) - (a._rel || 0); if (rd) return rd
+                    var nd = (b.native ? 1 : 0) - (a.native ? 1 : 0); if (nd) return nd
+                    // equal relevance (one title's releases all match) → healthiest first
+                    var sd = (b.seedsN || 0) - (a.seedsN || 0); if (sd) return sd
+                    return a._idx - b._idx
+                })
+            }
         }
         return arr
     }
@@ -238,7 +310,7 @@ Rectangle {
     }
 
     function clearFilters() {
-        qualityFilter = ""; sourceFilter = ""; repackerFilter = ""; providerFilter = ""; langFilter = ""; audioModeFilter = ""; minSeeds = 0; sortKey = ""
+        qualityFilter = ""; sourceFilter = ""; groupFilter = ""; providerFilter = ""; langFilter = ""; audioModeFilter = ""; minSeeds = 0; sortKey = ""
         seasonFilter = -2; episodeFilter = -1
         filtersRow.reset()
     }
@@ -246,7 +318,7 @@ Rectangle {
     Connections {
         target: page.api
         ignoreUnknownSignals: true
-        function onGameSourcesChanged() { page.reloadGames() }
+        function onGameSourcesChanged() { page.reloadGames(); page.gameCatalogGen++ }
         function onResultsChanged() {
             page.detailOpen = false
             // episode picker: land on the first season, not a 300-row flat list
@@ -418,11 +490,25 @@ Rectangle {
             id: browsePane
             Layout.fillWidth: true
             Layout.preferredHeight: mainCol.height - findBar.height
-            visible: page.browse && page.catalogAvailable
+            visible: page.browse && page.catalogAvailable && !page.showCatalogBrowse
             typeFilter: page.typeFilter
-            active: page.visible && page.browse && page.catalogAvailable
+            active: page.visible && page.browse && page.catalogAvailable && !page.showCatalogBrowse
+            showCatalogEntry: {
+                var _ = page.gameCatalogGen
+                return page.api && page.api.gameSources().length > 0
+            }
             onFindRequested: function(title) { page.runQuery(title) }
             onTypeFilterRequested: function(type) { page.typeFilter = type }
+            onCatalogBrowseRequested: function(group) { page.openCatalogBrowse(group || "") }
+        }
+
+        FindCatalogBrowse {
+            id: catalogBrowsePane
+            sv: page
+            Layout.fillWidth: true
+            Layout.preferredHeight: mainCol.height - findBar.height
+            visible: page.browse && page.showCatalogBrowse
+            onBackRequested: page.closeCatalogBrowse()
         }
 
         // picked-work header — says WHICH title (and type) these releases belong

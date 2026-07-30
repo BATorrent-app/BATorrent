@@ -15,7 +15,7 @@
 #include "services/security/crashhandler.h"
 #include "services/platform/qrcodegen.h"
 #include "services/platform/utils.h"
-#include "services/platform/translator.h"
+#include "services/platform/contentlanguage.h"
 #include "services/platform/soundplayer.h"
 #include "services/subtitles/subtitlesearch.h"
 #include "services/integrations/geoip.h"
@@ -218,18 +218,26 @@ QVariantList QmlAddonBridge::installed() const
 
 QVariantList QmlAddonBridge::suggested() const
 {
-    struct S { const char *nm; const char *d; const char *url; };
-    static const S items[] = {
-        { "Cinemeta", "Catálogos oficiais de filmes e séries", "https://v3-cinemeta.strem.io" },
-        { "Torrentio", "Streams de torrent para filmes e séries", "https://torrentio.strem.fun" },
-    };
     QVariantList out;
-    for (const auto &s : items) {
+    for (const auto &s : AddonManager::curatedCatalog()) {
         QVariantMap m;
-        m["name"] = QString::fromUtf8(s.nm);
-        m["description"] = QString::fromUtf8(s.d);
-        m["url"] = QString::fromUtf8(s.url);
-        m["installed"] = isInstalled(QString::fromUtf8(s.url));
+        m[QStringLiteral("name")] = s.name;
+        m[QStringLiteral("descKey")] = s.descKey;
+        m[QStringLiteral("description")] = s.description;
+        m[QStringLiteral("url")] = s.url;
+        m[QStringLiteral("configureUrl")] = s.configureUrl;
+        m[QStringLiteral("lang")] = s.lang;
+        m[QStringLiteral("needsConfig")] = s.needsConfig;
+        m[QStringLiteral("needsDebrid")] = s.needsDebrid;
+        m[QStringLiteral("seedDefault")] = s.seedDefault;
+        m[QStringLiteral("alwaysOn")] = s.alwaysOn;
+        const bool installed = (!s.url.isEmpty() && isInstalled(s.url))
+                               || (!s.id.isEmpty() && [&]() {
+                                      for (const auto &a : AddonManager::instance().addons())
+                                          if (a.id == s.id) return true;
+                                      return false;
+                                  }());
+        m[QStringLiteral("installed")] = installed;
         out << m;
     }
     return out;
@@ -250,9 +258,18 @@ void QmlAddonBridge::refreshTrackers() { AddonManager::instance().fetchTrackerLi
 
 bool QmlAddonBridge::isInstalled(const QString &url) const
 {
+    QString want = url.trimmed();
+    while (want.endsWith(QLatin1Char('/')))
+        want.chop(1);
+    static const QString manifest = QStringLiteral("/manifest.json");
+    if (want.endsWith(manifest, Qt::CaseInsensitive))
+        want.chop(manifest.size());
+    while (want.endsWith(QLatin1Char('/')))
+        want.chop(1);
+
     const auto list = AddonManager::instance().addons();
     for (const auto &a : list)
-        if (a.url == url) return true;
+        if (a.url == want) return true;
     return false;
 }
 
@@ -469,9 +486,8 @@ void QmlSubtitleBridge::searchFor(const QString &infoHash, int fileIndex, const 
     // display title doesn't
     const QString queryName = vi.fileName().isEmpty() ? mediaTitle : vi.fileName();
     QStringList useLangs = langs;
-    if (useLangs.isEmpty()) {   // default: the UI language + English
-        static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk"};
-        useLangs << QString::fromLatin1(codes[static_cast<int>(Translator::instance().language())]);
+    if (useLangs.isEmpty()) {   // default: the content language + English
+        useLangs << ContentLanguage::subtitleCode();
         if (!useLangs.contains(QStringLiteral("en"))) useLangs << QStringLiteral("en");
     }
     int tmdbId = 0;

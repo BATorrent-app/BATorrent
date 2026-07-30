@@ -875,6 +875,29 @@ Window {
             else
                 win.notifyUser(i18n.t("toast_movie_ready"), name, 3)
         }
+        function onGameReady(infoHash, name) {
+            if (win.visible && win.visibility !== Window.Minimized && win.visibility !== Window.Hidden)
+                toastHost.show(i18n.t("toast_game_ready"), name, 3, "install:" + infoHash, i18n.t("hub_gs_install"))
+            else
+                win.notifyUser(i18n.t("toast_game_ready"), name, 3)
+        }
+        function onInstallProgress(hash, percent) {
+            if (hash !== gwOverlay.hash) return
+            gwOverlay.percent = percent
+            if (percent >= 1 && (gwOverlay.phase === "downloading" || gwOverlay.phase === "searching"))
+                gwOverlay.phase = "installing"
+            else if (gwOverlay.phase === "searching" || gwOverlay.phase === "")
+                gwOverlay.phase = "downloading"
+        }
+        function onInstallFailed(title, reasonKey) {
+            var key = reasonKey || "gi_failed"
+            gwOverlay.forGame = true
+            gwOverlay.fail(i18n.t(key).arg(title))
+        }
+        function onInstallFinished(infoHash, title) {
+            if (gwOverlay.hash === infoHash || gwOverlay.forGame)
+                gwOverlay.hide()
+        }
     }
 
     // Own schema instance so the palette can index individual options — it's
@@ -944,13 +967,16 @@ Window {
     }
     Shortcut { sequence: "Ctrl+K"; onActivated: cmdPalette.toggle() }
 
-    // "Preparing to watch" overlay for the one-click Get & Watch flow
+    // "Preparing to watch / install" overlay for one-click Get & Watch / Get & Install
     GetWatchOverlay {
         id: gwOverlay
         onCanceled: {
             if (typeof debrid !== "undefined" && debrid.busy) debrid.cancelStream()
             else if (phase === "searching") { if (typeof search !== "undefined") search.cancelGetAndWatch() }
-            else if (hash !== "" && typeof session !== "undefined") session.cancelWatch(hash)
+            else if (hash !== "" && typeof session !== "undefined") {
+                if (forGame) session.cancelInstall(hash)
+                else session.cancelWatch(hash)
+            }
         }
     }
 
@@ -965,6 +991,10 @@ Window {
                 Qt.openUrlExternally("https://github.com/BATorrent-app/BATorrent")
             else if (actionId.indexOf("play:") === 0 && typeof session !== "undefined")
                 session.playByHash(actionId.substring(5))
+            else if (actionId.indexOf("install:") === 0 && typeof session !== "undefined") {
+                session.installGame(actionId.substring(8))
+                win.currentPage = 2
+            }
         }
     }
 
@@ -1188,7 +1218,7 @@ Window {
                 property int prevPage: 0
                 property real enterFrom: 34
                 onCurrentIndexChanged: {
-                    enterFrom = (currentIndex > prevPage ? 34 : -34)
+                    enterFrom = Theme.reduceMotion ? 0 : (currentIndex > prevPage ? 34 : -34)
                     prevPage = currentIndex
                     pageSwitchAnim.restart()
                 }
@@ -1452,7 +1482,7 @@ Window {
             tint: Theme.accent
             s: 76
             opacity: refreshFlash.amt
-            scale: 0.88 + 0.12 * refreshFlash.amt
+            scale: Theme.reduceMotion ? 1 : (0.88 + 0.12 * refreshFlash.amt)
             RotationAnimation on rotation { id: refreshFlashSpin; running: false; from: 0; to: 360; duration: 380; loops: 1 }
         }
         SequentialAnimation {
@@ -1657,13 +1687,28 @@ Window {
             selectAddedTimer.tries = 0
             selectAddedTimer.restart()
         }
-        // Get & Watch flow → drives the preparing overlay
-        function onWatchSearching(title) { gwOverlay.show("searching", title) }
-        function onWatchNoRelease(title) { gwOverlay.fail(i18n.t("gw_no_release").arg(title)) }
+        // Get & Watch / Get & Install → preparing overlay
+        function onWatchSearching(title) {
+            gwOverlay.forGame = (typeof search !== "undefined" && search.getFlowType === "game")
+            gwOverlay.show("searching", title)
+        }
+        function onWatchNoRelease(title) {
+            var key = gwOverlay.forGame ? "gi_no_release" : "gw_no_release"
+            gwOverlay.fail(i18n.t(key).arg(title))
+        }
         function onPrepareAndWatch(infoHash, title) {
+            gwOverlay.forGame = false
             gwOverlay.hash = infoHash
             gwOverlay.phase = "buffering"
             if (typeof session !== "undefined") session.watchWhenReady(infoHash, title)
+        }
+        function onPrepareAndInstall(infoHash, title) {
+            gwOverlay.forGame = true
+            gwOverlay.hash = infoHash
+            gwOverlay.title = title
+            gwOverlay.phase = "downloading"
+            gwOverlay.percent = 0
+            if (typeof session !== "undefined") session.installWhenReady(infoHash, title)
         }
     }
     Timer {

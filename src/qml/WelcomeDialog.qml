@@ -23,7 +23,7 @@ BatDialog {
 
     title: (i18n.language, i18n.t(isWelcome ? "welcome_window_title" : "whatsnew_title"))
     cardW: 540
-    cardH: isWelcome ? 452 : 584
+    cardH: isWelcome ? 560 : 584
     okText: (i18n.language, i18n.t(isWelcome ? "welcome_start" : "whatsnew_ok"))
     showCancel: false
 
@@ -201,6 +201,74 @@ BatDialog {
         color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans
         wrapMode: Text.WordWrap; lineHeight: 1.45
     }
+    // Asked here, before anything else, because this is exactly where a new user
+    // is lost: the app opens in the OS language and they can't find a dub or a
+    // subtitle, so they leave. Interface and content are two questions — reading
+    // English menus while wanting Portuguese audio is a normal combination.
+    Rectangle {
+        visible: dlg.isWelcome
+        Layout.fillWidth: true; Layout.topMargin: Theme.sp2
+        implicitHeight: langCol.implicitHeight + 2 * Theme.sp3
+        radius: 12
+        color: Theme.field
+        border.color: Theme.hair; border.width: 1
+
+        SettingsSchema { id: langSchema }
+
+        ColumnLayout {
+            id: langCol
+            anchors.fill: parent
+            anchors.margins: Theme.sp3
+            spacing: 10
+
+            Text {
+                text: (i18n.language, i18n.t("welcome_lang_title"))
+                color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
+                font.letterSpacing: 1.2; font.family: Theme.fontSans
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 5
+                    Text {
+                        text: (i18n.language, i18n.t("set_language2"))
+                        color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans
+                    }
+                    TSelect {
+                        Layout.fillWidth: true
+                        model: langSchema.languageNames
+                        icons: langSchema.languageFlags
+                        currentIndex: i18n.language
+                        onActivated: function (i) { i18n.setLanguage(i) }
+                    }
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 5
+                    Text {
+                        text: (i18n.language, i18n.t("set_content_language"))
+                        color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans
+                    }
+                    TSelect {
+                        Layout.fillWidth: true
+                        model: [(i18n.language, i18n.t("set_content_language_same"))].concat(langSchema.languageNames)
+                        icons: [""].concat(langSchema.languageFlags)
+                        currentIndex: {
+                            if (typeof settings === "undefined") return 0
+                            var cv = settings.get("contentLanguage")
+                            return (cv === undefined || cv === null || cv === "" || cv < 0) ? 0 : cv + 1
+                        }
+                        onActivated: function (i) {
+                            if (typeof settings !== "undefined") settings.set("contentLanguage", i - 1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     RowLayout {
         visible: dlg.isWelcome
         Layout.fillWidth: true; Layout.topMargin: Theme.sp2; spacing: 10

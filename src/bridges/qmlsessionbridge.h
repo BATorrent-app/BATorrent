@@ -6,6 +6,7 @@
 #define QMLSESSIONBRIDGE_H
 
 #include "bridges/bridgecommon.h"
+#include "services/integrations/gameinstall.h"
 
 class HttpDownloadManager;
 
@@ -360,6 +361,9 @@ public:
     // player once it's buffered enough. cancelWatch drops a pending request.
     Q_INVOKABLE void watchWhenReady(const QString &infoHash, const QString &title);
     Q_INVOKABLE void cancelWatch(const QString &infoHash);
+    // Get & Install: same idea for games — download → install chain → launch.
+    Q_INVOKABLE void installWhenReady(const QString &infoHash, const QString &title);
+    Q_INVOKABLE void cancelInstall(const QString &infoHash);
 
 signals:
     void statsChanged();
@@ -382,6 +386,10 @@ signals:
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
     void gamesChanged();   // a game started/stopped → refresh the game library
     void movieReady(const QString &infoHash, const QString &name);   // a movie/series finished → offer Play now
+    void gameReady(const QString &infoHash, const QString &name);    // game download done → offer Install
+    void installProgress(const QString &infoHash, double percent);  // Get&Install download/install progress
+    void installFailed(const QString &title, const QString &reasonKey); // gi_failed / gi_need_setup
+    void installFinished(const QString &infoHash, const QString &title); // launched (or ready)
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
     // the user always picks save path / files — never a silent auto-download.
@@ -396,28 +404,30 @@ private slots:
     void onGameTorrentFinished(const QString &name, const QString &infoHash);  // auto-install hook
 
 private:
-    // States surfaced to the game card as "installState" (int). Downloading/Ready/
-    // Playing are derived from torrent + run state; the rest are transient overlays
-    // held in m_gameInstallState while an operation is in flight.
+    // States surfaced to the game card as "installState" (int). Values MUST match
+    // GameInstall::* (services/integrations/gameinstall.h) — QML and tests depend on them.
     enum GameInstallState {
-        GIS_Downloading = 0,   // still downloading
-        GIS_ReadyToInstall,    // download done, not installed yet → "Install"
-        GIS_Extracting,        // unpacking archives
-        GIS_Installing,        // installer running (silent) or awaiting user ("finish setup")
-        GIS_Ready,             // exe known → "Play"
-        GIS_Playing,           // process alive
-        GIS_NeedsSetup,        // couldn't find an exe → "Set up game"
-        GIS_Failed,            // extraction failed → "Retry"
+        GIS_Downloading    = GameInstall::Downloading,
+        GIS_ReadyToInstall = GameInstall::ReadyToInstall,
+        GIS_Extracting     = GameInstall::Extracting,
+        GIS_Installing     = GameInstall::Installing,
+        GIS_Ready          = GameInstall::Ready,
+        GIS_Playing        = GameInstall::Playing,
+        GIS_NeedsSetup     = GameInstall::NeedsSetup,
+        GIS_Failed         = GameInstall::Failed,
     };
     int gameInstallState(const QString &infoHash, bool completed) const;
     bool isGameTorrent(int row) const;               // game detection (metadata → parser → exe/no-video)
     void finalizeInstall(const QString &infoHash);   // post-extract: detect exe or run installer
     void runInstaller(const QString &infoHash, const QString &installerExe, const QString &folder);
     void pollInstallWatch();   // guided installs: watch the folder for a produced exe
+    void pollPendingInstall(); // Get & Install: download → installGame → launch
 
     IEngine *m_session;   // the session API — SessionManager in-process today, IpcEngine after the split
     HttpDownloadManager *m_httpDownloads = nullptr;   // direct-HTTP downloads (set in main.cpp)
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
+    QHash<QString, QPair<QString, qint64>> m_pendingInstall; // Get&Install: infoHash → {title, startedAtSec}
+    QSet<QString> m_installStarted;   // hashes where installGame was already kicked for pending install
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game
     QHash<QString, qint64> m_gameStartMs;    // infoHash → launch timestamp (ms)
     QHash<QString, int> m_gameInstallState;  // infoHash → transient GameInstallState overlay

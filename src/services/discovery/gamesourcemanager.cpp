@@ -4,6 +4,8 @@
 
 #include "services/discovery/gamesourcemanager.h"
 
+#include "services/metadata/releasegroup.h"
+
 #include <QSettings>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -17,8 +19,12 @@
 #include <QFileInfo>
 #include <QCryptographicHash>
 #include <QDateTime>
+#include <QHash>
+#include <QSet>
+#include <QVariantMap>
+#include <algorithm>
 
-static constexpr qint64 kCacheTtlSecs = 12 * 60 * 60;   // catalogs change ~daily
+static constexpr qint64 kCacheTtlSecs = 6 * 60 * 60;   // catalog CI refreshes daily; stay under a day
 
 // Several popular catalogs (FitGirl, DODI, …) 403 a non-browser User-Agent —
 // this is the wall that makes the feature look "impossible" without it.
@@ -148,6 +154,104 @@ QList<GameDownload> GameSourceManager::search(const QString &query, int limit) c
             out.append(g);
             if (out.size() >= limit) break;
         }
+    }
+    return out;
+}
+
+namespace {
+
+bool browseNewerFirst(const GameDownload &a, const GameDownload &b)
+{
+    if (a.uploadDate != b.uploadDate)
+        return a.uploadDate > b.uploadDate;   // ISO-8601 sorts lexicographically
+    return QString::compare(a.title, b.title, Qt::CaseInsensitive) < 0;
+}
+
+QList<GameDownload> filteredSorted(const QList<GameDownload> &games, const QString &group)
+{
+    QList<GameDownload> out;
+    out.reserve(games.size());
+    for (const GameDownload &g : games) {
+        if (!group.isEmpty() && ReleaseGroup::detect(g.title) != group)
+            continue;
+        out.append(g);
+    }
+    std::sort(out.begin(), out.end(), browseNewerFirst);
+    return out;
+}
+
+// Tabs users actually open first; anything else follows alphabetically.
+const QStringList &repackTabPriority()
+{
+    static const QStringList order = {
+        QStringLiteral("Online-Fix"),
+        QStringLiteral("FitGirl"),
+        QStringLiteral("DODI"),
+        QStringLiteral("SteamRIP"),
+        QStringLiteral("ElAmigos"),
+        QStringLiteral("Xatab"),
+        QStringLiteral("R.G. Mechanics"),
+        QStringLiteral("KaOsKrew"),
+        QStringLiteral("Tiny Repacks"),
+        QStringLiteral("GOG"),
+    };
+    return order;
+}
+
+} // namespace
+
+int GameSourceManager::countByGroup(const QString &group) const
+{
+    if (group.isEmpty())
+        return m_games.size();
+    int n = 0;
+    for (const GameDownload &g : m_games)
+        if (ReleaseGroup::detect(g.title) == group)
+            ++n;
+    return n;
+}
+
+QList<GameDownload> GameSourceManager::browse(const QString &group, int offset, int limit) const
+{
+    if (limit <= 0 || offset < 0)
+        return {};
+    const QList<GameDownload> all = filteredSorted(m_games, group);
+    if (offset >= all.size())
+        return {};
+    return all.mid(offset, limit);
+}
+
+QVariantList GameSourceManager::groupCounts() const
+{
+    QHash<QString, int> counts;
+    for (const GameDownload &g : m_games) {
+        const QString rg = ReleaseGroup::detect(g.title);
+        if (!rg.isEmpty())
+            counts[rg] += 1;
+    }
+
+    QVariantList out;
+    QSet<QString> seen;
+    for (const QString &name : repackTabPriority()) {
+        const int n = counts.value(name);
+        if (n <= 0) continue;
+        QVariantMap row;
+        row.insert(QStringLiteral("name"), name);
+        row.insert(QStringLiteral("count"), n);
+        out.append(row);
+        seen.insert(name);
+    }
+
+    QStringList rest = counts.keys();
+    std::sort(rest.begin(), rest.end(), [](const QString &a, const QString &b) {
+        return QString::compare(a, b, Qt::CaseInsensitive) < 0;
+    });
+    for (const QString &name : rest) {
+        if (seen.contains(name)) continue;
+        QVariantMap row;
+        row.insert(QStringLiteral("name"), name);
+        row.insert(QStringLiteral("count"), counts.value(name));
+        out.append(row);
     }
     return out;
 }

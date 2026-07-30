@@ -29,6 +29,8 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QString workPoster READ workPoster NOTIFY workChanged)
     Q_PROPERTY(QString workYear READ workYear NOTIFY workChanged)
     Q_PROPERTY(QStringList workStills READ workStills NOTIFY workStillsChanged)
+    // "movie"|"series"|"game" while a Get & Watch / Install flow is active (else "").
+    Q_PROPERTY(QString getFlowType READ getFlowType NOTIFY getFlowChanged)
 public:
     explicit QmlSearchBridge(IEngine *session, QObject *parent = nullptr);
 
@@ -47,6 +49,7 @@ public:
     QString workPoster() const { return m_workPoster; }
     QString workYear() const { return m_workYear; }
     QStringList workStills() const { return m_workStills; }
+    QString getFlowType() const { return m_gwActive ? m_gwType : QString(); }
     Q_INVOKABLE void fetchWorkStills();   // lazy TMDB backdrops for the picked title
 
     Q_INVOKABLE void refreshSources();
@@ -58,13 +61,29 @@ public:
     // sorts by relevance without reimplementing the scoring in QML/JS.
     Q_INVOKABLE QStringList queryWords() const;                       // significant words of the active query
     Q_INVOKABLE int relevance(const QString &name, const QStringList &words) const;
+    // Multi-title ranking: a drill-down is searched under the localised name AND
+    // the original one, so a result may legitimately match either. Scoring only
+    // against the typed query would sink every release named in the other
+    // language to the bottom — found, then hidden.
+    Q_INVOKABLE QVariantList queryWordSets() const;                   // one word list per searched title
+    Q_INVOKABLE int relevanceMulti(const QString &name, const QVariantList &sets) const;
     Q_INVOKABLE int bestResultIndex() const { return pickBestResult(); }   // best release in the current list, or -1
+    // Game list sort: >0 means a ranks above b (catalog/version/date/seeds).
+    Q_INVOKABLE int compareGameReleases(const QVariantMap &a, const QVariantMap &b) const;
+    // Build-version order alone, for the explicit "newest version" sort. Shares
+    // GameReleasePick's parser so the list can't disagree with "Get the best".
+    Q_INVOKABLE int compareBuildVersions(const QString &a, const QString &b) const;
 
     // Hydra-format game catalogs the user adds (neutral infra — nothing bundled).
     Q_INVOKABLE QVariantList gameSources() const;          // [{name, url}]
     Q_INVOKABLE void addGameSource(const QString &name, const QString &url);
     Q_INVOKABLE void removeGameSource(const QString &url);
     Q_INVOKABLE void refreshGames();
+    // Find → Games catalog browse (paginated, optional release-group tab).
+    Q_INVOKABLE void ensureGamesIndexed();                 // refresh from cache if index empty
+    Q_INVOKABLE void browseGames(const QString &group, int page, int pageSize = 48);
+    Q_INVOKABLE int gameBrowseTotal(const QString &group) const;
+    Q_INVOKABLE QVariantList gameRepackTabs() const;       // [{name, count}]
 
     // Lazily resolve a TMDB cover for a torrent row (by its info hash) as it
     // scrolls into view — mirrors the Downloads grid's on-demand resolution.
@@ -78,9 +97,8 @@ public:
     Q_INVOKABLE void searchRaw();   // escape hatch: flat aggregate over every source
     Q_INVOKABLE void copyMagnet(int index);   // copy a flat result's magnet to the clipboard
     Q_INVOKABLE QString magnetAt(int index) const;   // a flat result's magnet (for Real-Debrid)
-    // One-click "Get & Watch": search the title, auto-pick the best release, add
-    // it, then hand the hash off (prepareAndWatch) so the player opens when it
-    // buffers. Movie/series only — games are handled separately.
+    // One-click Get & Watch (movie/series) or Get & Install (game): search the
+    // title, auto-pick the best release, add it, then hand the hash off.
     Q_INVOKABLE void getAndWatch(const QString &title, const QString &year, const QString &type);
     Q_INVOKABLE void cancelGetAndWatch();   // user cancelled before a release was added
     // Discover hero: one cached source lookup per featured title → emits sourceSummary.
@@ -98,10 +116,12 @@ signals:
     void coverReady(const QString &infoHash, const QString &posterPath);
     void addedTorrent(const QString &infoHash);   // a magnet was added from Search
     void addWontFit(int index, const QString &name, qint64 needed, qint64 freeBytes);   // result too big for the save volume; QML confirms before force-add
-    void watchSearching(const QString &title);    // Get&Watch: started looking for a release
-    void watchNoRelease(const QString &title);    // Get&Watch: nothing usable found
-    void prepareAndWatch(const QString &infoHash, const QString &title);   // added → buffer & open
+    void watchSearching(const QString &title);    // Get&Watch / Get&Install: started looking
+    void watchNoRelease(const QString &title);    // nothing usable found
+    void prepareAndWatch(const QString &infoHash, const QString &title);   // movie → buffer & open
+    void prepareAndInstall(const QString &infoHash, const QString &title); // game → download & install
     void sourceSummary(const QString &title, int count, qint64 bestSize, int maxSeeds);
+    void getFlowChanged();
 
 private:
     bool fitsOnSaveVolume(qint64 needed) const;   // false ⇒ won't fit on the save disk
@@ -113,10 +133,18 @@ private:
     void appendGameRows(const QList<GameDownload> &games);
     void appendTorrentRows(const QList<TorrentSearchResult> &results);
     void finishAggregateSource();
-    static QString detectRepacker(const QString &name);
+    // Copy seed/leech from indexer rows onto catalog magnets with the same
+    // infohash, and drop the duplicate indexer rows. Catalog JSON has no swarm.
+    void mergeCatalogSwarms();
+    // When indexers didn't return the catalog hash, ask BitSearch once for the
+    // active title and patch matching catalog rows.
+    void requestCatalogSeedEnrichment();
+    void applySeedHits(const QHash<QString, QPair<int, int>> &byHash);   // hash → (seeds, leech)
+    static QString infoHashFromMagnet(const QString &magnet);
+    static qint64 parseSizeToBytes(const QString &s);
+    static QString detectReleaseGroup(const QString &name);
     // Parse quality/source/codec/hdr/lang tokens out of a release name for filtering.
     static void fillMediaAttrs(QVariantMap &m, const QString &name);
-    static QString appLangCode();   // the app UI language as a release-tag code (PT/EN/…)
     // Pre-download trust verdict — reads the attrs fillMediaAttrs just wrote, so
     // it has to run after it (and after seedsN/sizeBytes are set).
     static void fillTrust(QVariantMap &m, const QString &name);
@@ -124,7 +152,13 @@ private:
     void rawAggregateSearch(const QString &q, int categoryCode);
     // Type-scoped drill-down for a picked title: games hit game catalogs + the
     // games category; movies/series hit video torrents only (no game catalogs).
-    void searchSourcesForWork(const QString &title, const QString &year, const QString &type);
+    // originalTitle: the work's name in its own language. A work is hunted under
+    // BOTH names when they differ — see the .cpp for why one is never enough.
+    void searchSourcesForWork(const QString &title, const QString &year, const QString &type,
+                              const QString &originalTitle = QString());
+    // the names the current drill-down was searched under (localised + original)
+    QStringList m_activeTitles;
+
     int pickBestResult() const;       // index of the best release in m_results, or -1
     void gwResolve();                 // Get&Watch: pick + add once the search settles
     void setWorkContext(const QVariantMap &work);   // a titles-grid row (title/type/year/poster/tmdbId/stills)
@@ -179,6 +213,7 @@ private:
     QString m_streamHintTitle;          // parent catalog title for a Stremio stream add
     int m_streamHintType = -1;          // its ContentType (Movie/Series) as int
     QVariantList m_catalogResultsSnapshot;
+    int m_seedEnrichGen = 0;              // invalidate in-flight BitSearch seed lookups
 };
 
 #endif // QMLSEARCHBRIDGE_H

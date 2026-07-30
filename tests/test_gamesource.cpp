@@ -75,3 +75,48 @@ TEST_CASE("indexCatalog parses Hydra format; keeps http-only entries as a fallba
         CHECK(gsm.indexCatalog("Bad", QByteArray("not json")) == 0);
     }
 }
+
+TEST_CASE("browse filters by release group, sorts by date, and paginates", "[gamesource]")
+{
+    auto &gsm = GameSourceManager::instance();
+    const QByteArray fixture = R"({
+        "name": "Browse Fixture",
+        "downloads": [
+            { "title": "BrowseZzz Older [Online-Fix]",
+              "uris": ["magnet:?xt=urn:btih:aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111"],
+              "fileSize": "1 GB", "uploadDate": "2024-01-01T00:00:00Z" },
+            { "title": "BrowseZzz Newer [Online-Fix]",
+              "uris": ["magnet:?xt=urn:btih:bbbb2222bbbb2222bbbb2222bbbb2222bbbb2222"],
+              "fileSize": "2 GB", "uploadDate": "2025-06-01T00:00:00Z" },
+            { "title": "BrowseZzz Fit [FitGirl Repack]",
+              "uris": ["magnet:?xt=urn:btih:cccc3333cccc3333cccc3333cccc3333cccc3333"],
+              "fileSize": "3 GB", "uploadDate": "2025-07-01T00:00:00Z" },
+            { "title": "BrowseZzz Dodi [DODI Repack]",
+              "uris": ["magnet:?xt=urn:btih:dddd4444dddd4444dddd4444dddd4444dddd4444"],
+              "fileSize": "4 GB", "uploadDate": "2025-05-01T00:00:00Z" }
+        ]
+    })";
+    REQUIRE(gsm.indexCatalog("Browse Fixture", fixture) == 4);
+
+    REQUIRE(gsm.countByGroup(QStringLiteral("Online-Fix")) >= 2);
+    REQUIRE(gsm.countByGroup(QStringLiteral("FitGirl")) >= 1);
+    REQUIRE(gsm.countByGroup(QString()) >= 4);
+
+    const auto ofPage = gsm.browse(QStringLiteral("Online-Fix"), 0, 10);
+    REQUIRE(ofPage.size() >= 2);
+    // Newest Online-Fix first among our fixture titles
+    CHECK(ofPage[0].title.contains(QStringLiteral("Newer")));
+    CHECK(ofPage[1].title.contains(QStringLiteral("Older")));
+
+    const auto page0 = gsm.browse(QStringLiteral("Online-Fix"), 0, 1);
+    const auto page1 = gsm.browse(QStringLiteral("Online-Fix"), 1, 1);
+    REQUIRE(page0.size() == 1);
+    REQUIRE(page1.size() == 1);
+    CHECK(page0[0].title != page1[0].title);
+
+    const auto tabs = gsm.groupCounts();
+    REQUIRE_FALSE(tabs.isEmpty());
+    // Online-Fix / FitGirl lead when present
+    const QString first = tabs[0].toMap().value(QStringLiteral("name")).toString();
+    CHECK((first == QLatin1String("Online-Fix") || first == QLatin1String("FitGirl")));
+}

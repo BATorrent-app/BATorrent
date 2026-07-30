@@ -44,4 +44,8 @@ jobs:
             echo "::error::QML errors at boot"; grep -En "failed to load component|is not a type|TypeError:|ReferenceError:|Unable to assign|Invalid property assignment|Cannot specify|instantiated recursively" boot.log | head -20
             exit 1
           fi
+          # Catch missing translation keys that only surface as empty UI copy
+          # (Get & Install / Get & Watch overlays are eager enough at boot to
+          # exercise the key paths used by the overlay component).
+          python3 scripts/check-i18n-parity.py
           echo "boot clean"

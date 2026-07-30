@@ -10,6 +10,7 @@
 
 #include "bridges/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"   // full IEngine + TorrentInfo (m_session calls)
+#include "services/integrations/gameinstall.h"
 #include "services/integrations/installerprofile.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/platform/logger.h"
@@ -34,6 +35,15 @@
 #include <csignal>
 #include <cerrno>
 #endif
+
+static_assert(GameInstall::Downloading == 0
+           && GameInstall::ReadyToInstall == 1
+           && GameInstall::Extracting == 2
+           && GameInstall::Installing == 3
+           && GameInstall::Ready == 4
+           && GameInstall::Playing == 5
+           && GameInstall::NeedsSetup == 6
+           && GameInstall::Failed == 7);
 
 // "completed" is the MANUAL marked-as-done flag (user action that stops
 // seeding) — a game whose data finished downloading but still seeds must
@@ -290,15 +300,16 @@ void QmlSessionBridge::pollRunningGames()
 
 int QmlSessionBridge::gameInstallState(const QString &infoHash, bool completed) const
 {
-    if (m_runningGames.contains(infoHash)) return GIS_Playing;
-    if (m_gameInstallState.contains(infoHash)) return m_gameInstallState.value(infoHash);
-    // a manually-set exe outranks download progress: the user pointed at a
-    // runnable binary, so Play must work even while the torrent still checks
     const QString exe = gameExe(infoHash);
-    if (!exe.isEmpty() && QFile::exists(exe)) return GIS_Ready;
-    if (!completed) return GIS_Downloading;
-    if (!exe.isEmpty()) return GIS_Ready;
-    return GIS_ReadyToInstall;
+    GameInstall::DeriveIn in;
+    in.running = m_runningGames.contains(infoHash);
+    in.overlay = m_gameInstallState.value(infoHash, -1);
+    in.hasExePath = !exe.isEmpty();
+    in.exeExists = in.hasExePath && QFileInfo::exists(exe);
+    in.completed = completed;
+    if (GameInstall::shouldClearStaleExe(in))
+        QSettings().remove(QStringLiteral("gameExe/") + infoHash);
+    return GameInstall::derive(in);
 }
 
 void QmlSessionBridge::installGame(const QString &infoHash)
@@ -525,8 +536,13 @@ void QmlSessionBridge::onGameTorrentFinished(const QString &name, const QString 
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return;
     if (isGameTorrent(row)) {
+        // Get & Install pending for this hash always continues the chain.
+        if (m_pendingInstall.contains(infoHash))
+            return;   // pollPendingInstall will call installGame when complete
         if (QSettings().value(QStringLiteral("gameAutoInstall"), false).toBool())
             installGame(infoHash);
+        else
+            emit gameReady(infoHash, name);
         return;
     }
     // a finished movie/series → offer one-click playback (the "completion loop")
@@ -554,4 +570,82 @@ void QmlSessionBridge::installSelectedGame()
 void QmlSessionBridge::playSelectedGame()
 {
     if (hasSelection()) launchGame(m_session->torrentHashAt(m_selectedIndex));
+}
+
+void QmlSessionBridge::installWhenReady(const QString &infoHash, const QString &title)
+{
+    if (infoHash.isEmpty()) return;
+    m_pendingInstall.insert(infoHash, qMakePair(title, QDateTime::currentSecsSinceEpoch()));
+    m_installStarted.remove(infoHash);
+    emit installProgress(infoHash, 0);
+}
+
+void QmlSessionBridge::cancelInstall(const QString &infoHash)
+{
+    m_pendingInstall.remove(infoHash);
+    m_installStarted.remove(infoHash);
+}
+
+void QmlSessionBridge::pollPendingInstall()
+{
+    if (m_pendingInstall.isEmpty()) return;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    for (const QString &hash : m_pendingInstall.keys()) {
+        const auto pending = m_pendingInstall.value(hash);
+        const QString title = pending.first;
+        const int row = m_session->torrentIndexByInfoHash(hash);
+
+        GameInstall::PendingIn pin;
+        pin.ageSec = now - pending.second;
+        pin.torrentMissing = (row < 0);
+        pin.installAlreadyKicked = m_installStarted.contains(hash);
+
+        double progress = 0.0;
+        if (row >= 0) {
+            const TorrentInfo info = m_session->torrentAt(row);
+            pin.downloadDone = dataComplete(info);
+            pin.state = gameInstallState(hash, pin.downloadDone);
+            progress = pin.downloadDone ? 1.0 : double(info.progress);
+        }
+
+        using PA = GameInstall::PendingAction;
+        const PA action = GameInstall::nextPendingAction(pin);
+        switch (action) {
+        case PA::Wait:
+            break;
+        case PA::EmitInstallProgress:
+            emit installProgress(hash, 1.0);
+            break;
+        case PA::EmitDownloadProgress:
+            emit installProgress(hash, progress);
+            break;
+        case PA::KickInstall:
+            emit installProgress(hash, 1.0);
+            m_installStarted.insert(hash);
+            installGame(hash);
+            break;
+        case PA::LaunchAndFinish:
+            m_pendingInstall.remove(hash);
+            m_installStarted.remove(hash);
+            launchGame(hash);
+            emit installFinished(hash, title);
+            break;
+        case PA::FinishOnly:
+            m_pendingInstall.remove(hash);
+            m_installStarted.remove(hash);
+            emit installFinished(hash, title);
+            break;
+        case PA::FailNeedSetup:
+            m_pendingInstall.remove(hash);
+            m_installStarted.remove(hash);
+            emit installFailed(title, QStringLiteral("gi_need_setup"));
+            break;
+        case PA::FailGeneric:
+        case PA::FailTimeout:
+            m_pendingInstall.remove(hash);
+            m_installStarted.remove(hash);
+            emit installFailed(title, QStringLiteral("gi_failed"));
+            break;
+        }
+    }
 }

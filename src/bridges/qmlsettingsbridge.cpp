@@ -369,6 +369,8 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     // RPC. Unknown keys are UI-only prefs → the shared QSettings store.
     if (m_engine && m_engine->applySetting(key, v)) { emit changed(); return; }
     QSettings().setValue(key, v);
+    if (key == QLatin1String("contentLanguage"))
+        AddonManager::instance().syncCuratedAddons();
     emit changed();
 }
 

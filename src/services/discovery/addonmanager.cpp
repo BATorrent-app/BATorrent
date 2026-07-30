@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "services/discovery/addonmanager.h"
+#include "services/platform/contentlanguage.h"
 #include "services/platform/translator.h"
 #include "services/platform/utils.h"
 #include <QNetworkAccessManager>
@@ -42,6 +43,19 @@ bool isValidInfoHash(const QString &h)
     static const QRegularExpression re(
         QStringLiteral("^([0-9A-Fa-f]{40}|[0-9A-Fa-f]{64}|[A-Za-z2-7]{32})$"));
     return re.match(h).hasMatch();
+}
+
+QString normalizeAddonBaseUrl(QString url)
+{
+    url = url.trimmed();
+    while (url.endsWith(QLatin1Char('/')))
+        url.chop(1);
+    static const QString manifest = QStringLiteral("/manifest.json");
+    if (url.endsWith(manifest, Qt::CaseInsensitive))
+        url.chop(manifest.size());
+    while (url.endsWith(QLatin1Char('/')))
+        url.chop(1);
+    return url;
 }
 }
 
@@ -107,46 +121,164 @@ void AddonManager::saveAddons()
 
 void AddonManager::installDefaults()
 {
+    // Seed gen bumps install missing curated free addons for existing users.
+    // 4 = broad out-of-box: core + Brazuca + Anime Kitsu + Nyaa pack + all lang packs
+    //     (regional packs installed; enabled intelligently via syncCuratedAddons).
+    constexpr int kAddonSeedGen = 4;
     QSettings settings("BATorrent", "BATorrent");
-    if (settings.value("addonsInitialized", false).toBool())
-        return;
+    const int have = settings.value(QStringLiteral("addonCatalogSeed"), 0).toInt();
+    if (have < kAddonSeedGen) {
+        settings.setValue(QStringLiteral("addonsInitialized"), true);
+        syncCuratedAddons();
+        settings.setValue(QStringLiteral("addonCatalogSeed"), kAddonSeedGen);
+    }
+}
 
-    settings.setValue("addonsInitialized", true);
-
-    // Pre-install Cinemeta (catalog) and Torrentio (streams)
-    struct DefaultAddon {
-        QString id, name, desc, url;
-        QStringList types, resources;
-    };
-    QList<DefaultAddon> defaults = {
-        {"com.linvo.cinemeta", "Cinemeta",
-         "The official addon for movie and series catalogs",
-         "https://v3-cinemeta.strem.io",
-         {"movie", "series"}, {"catalog", "meta"}},
-        {"com.stremio.torrentio.addon", "Torrentio",
-         "Torrent streams from multiple providers",
-         "https://torrentio.strem.fun",
-         {"movie", "series"}, {"stream"}},
-    };
-
-    for (const auto &d : defaults) {
-        bool exists = false;
-        for (const auto &a : m_addons) {
-            if (a.url == d.url || a.id == d.id) { exists = true; break; }
+void AddonManager::syncCuratedAddons()
+{
+    const QString contentLang = []() -> QString {
+        switch (ContentLanguage::current()) {
+        case Translator::Portuguese: return QStringLiteral("pt");
+        case Translator::Spanish:    return QStringLiteral("es");
+        case Translator::Russian:    return QStringLiteral("ru");
+        case Translator::Chinese:    return QStringLiteral("zh");
+        case Translator::Japanese:   return QStringLiteral("ja");
+        case Translator::German:     return QStringLiteral("de");
+        case Translator::Turkish:    return QStringLiteral("tr");
+        case Translator::Ukrainian:  return QStringLiteral("uk");
+        case Translator::English:    break;
         }
-        if (!exists) {
+        return QStringLiteral("en");
+    }();
+
+    bool changed = false;
+    for (const auto &d : curatedCatalog()) {
+        if (d.needsConfig || d.url.isEmpty() || !d.seedDefault)
+            continue;
+
+        int idx = -1;
+        for (int i = 0; i < m_addons.size(); ++i) {
+            if (m_addons[i].url == d.url || (!d.id.isEmpty() && m_addons[i].id == d.id)) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
             AddonManifest m;
             m.id = d.id;
             m.name = d.name;
-            m.description = d.desc;
+            m.description = d.description;
             m.url = d.url;
             m.types = d.types;
             m.resources = d.resources;
-            m.enabled = true;
+            m.enabled = true; // set below
             m_addons.append(m);
+            idx = m_addons.size() - 1;
+            changed = true;
+        }
+
+        // Core / anime / empty-lang always on; regional packs only when they
+        // match Content language (keeps stream fan-out sane).
+        const bool wantOn = d.alwaysOn
+                            || d.lang.isEmpty()
+                            || d.lang == QLatin1String("anime")
+                            || d.lang == contentLang;
+        if (m_addons[idx].enabled != wantOn) {
+            m_addons[idx].enabled = wantOn;
+            changed = true;
         }
     }
-    saveAddons();
+    if (changed)
+        saveAddons();
+}
+
+QList<CuratedAddon> AddonManager::curatedCatalog()
+{
+    using L = QStringList;
+    const L movieSeries = {QStringLiteral("movie"), QStringLiteral("series")};
+    const L movieSeriesAnime = {QStringLiteral("movie"), QStringLiteral("series"), QStringLiteral("anime")};
+    const L stream = {QStringLiteral("stream")};
+    const L catalogMeta = {QStringLiteral("catalog"), QStringLiteral("meta")};
+    const L catalogStream = {QStringLiteral("catalog"), QStringLiteral("stream")};
+    const L animeMeta = {QStringLiteral("catalog"), QStringLiteral("meta"), QStringLiteral("subtitles")};
+
+    // seedDefault + alwaysOn = out-of-box and always queried
+    // seedDefault only     = installed; enabled when Content language matches `lang`
+    // needsConfig          = suggested Configure… only (no seed)
+    return {
+        {QStringLiteral("com.linvo.cinemeta"), QStringLiteral("Cinemeta"),
+         QStringLiteral("addon_sug_cinemeta"),
+         QStringLiteral("Official catalogs for movies and series"),
+         QStringLiteral("https://v3-cinemeta.strem.io"), {}, {},
+         movieSeries, catalogMeta, true, true, false, false},
+
+        {QStringLiteral("com.stremio.torrentio.addon"), QStringLiteral("Torrentio"),
+         QStringLiteral("addon_sug_torrentio"),
+         QStringLiteral("Torrent streams from many indexers (respects Content language)"),
+         QStringLiteral("https://torrentio.strem.fun"), {}, {},
+         movieSeries, stream, true, true, false, false},
+
+        {QStringLiteral("com.stremio.brazuca.addon"), QStringLiteral("Brazuca Torrents"),
+         QStringLiteral("addon_sug_brazuca"),
+         QStringLiteral("Brazilian dubbed movies & series — BaixaFilmes, RedeTorrent, VacaTorrent…"),
+         QStringLiteral("https://94c8cb9f702d-brazuca-torrents.baby-beamup.club"), {},
+         QStringLiteral("pt"), movieSeriesAnime, stream, true, true, false, false},
+
+        {QStringLiteral("community.anime.kitsu"), QStringLiteral("Anime Kitsu"),
+         QStringLiteral("addon_sug_anime_kitsu"),
+         QStringLiteral("Anime catalogs & episode meta (Kitsu / MAL / AniList ids)"),
+         QStringLiteral("https://anime-kitsu.strem.fun"), {},
+         QStringLiteral("anime"), movieSeriesAnime, animeMeta, true, true, false, false},
+
+        {{}, QStringLiteral("Torrentio · Anime (Nyaa)"), QStringLiteral("addon_sug_torrentio_anime"),
+         QStringLiteral("Nyaa.si, TokyoTosho, AniDex, HorribleSubs — anime torrents"),
+         QStringLiteral("https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex,horriblesubs,nekobt"),
+         {}, QStringLiteral("anime"), movieSeriesAnime, stream, true, true, false, false},
+
+        {{}, QStringLiteral("Torrentio · Português"), QStringLiteral("addon_sug_torrentio_pt"),
+         QStringLiteral("Torrentio locked to Portuguese / dubbed BR indexers"),
+         QStringLiteral("https://torrentio.strem.fun/providers=comando,bludv,micoleaodublado,yts,eztv,rarbg,1337x|language=portuguese"),
+         {}, QStringLiteral("pt"), movieSeries, stream, true, false, false, false},
+        {{}, QStringLiteral("Torrentio · Español"), QStringLiteral("addon_sug_torrentio_es"),
+         QStringLiteral("Spanish / LATAM — Cinecalidad, MejorTorrent, Wolfmax4k…"),
+         QStringLiteral("https://torrentio.strem.fun/providers=cinecalidad,mejortorrent,wolfmax4k,bludv,comando,yts,eztv,rarbg,1337x|language=spanish"),
+         {}, QStringLiteral("es"), movieSeries, stream, true, false, false, false},
+        {{}, QStringLiteral("Torrentio · Русский"), QStringLiteral("addon_sug_torrentio_ru"),
+         QStringLiteral("Russian — Rutor, RuTracker and language filter"),
+         QStringLiteral("https://torrentio.strem.fun/providers=rutor,rutracker,yts,eztv,rarbg,1337x,thepiratebay|language=russian"),
+         {}, QStringLiteral("ru"), movieSeries, stream, true, false, false, false},
+        {{}, QStringLiteral("Torrentio · 中文"), QStringLiteral("addon_sug_torrentio_zh"),
+         QStringLiteral("Chinese — language-first Torrentio results"),
+         QStringLiteral("https://torrentio.strem.fun/language=chinese"),
+         {}, QStringLiteral("zh"), movieSeries, stream, true, false, false, false},
+        {{}, QStringLiteral("Torrentio · 日本語"), QStringLiteral("addon_sug_torrentio_ja"),
+         QStringLiteral("Japanese — language-first Torrentio results"),
+         QStringLiteral("https://torrentio.strem.fun/language=japanese"),
+         {}, QStringLiteral("ja"), movieSeries, stream, true, false, false, false},
+        {{}, QStringLiteral("Torrentio · Deutsch"), QStringLiteral("addon_sug_torrentio_de"),
+         QStringLiteral("German — language-first Torrentio results"),
+         QStringLiteral("https://torrentio.strem.fun/language=german"),
+         {}, QStringLiteral("de"), movieSeries, stream, true, false, false, false},
+        {{}, QStringLiteral("Torrentio · Türkçe"), QStringLiteral("addon_sug_torrentio_tr"),
+         QStringLiteral("Turkish — language-first Torrentio results"),
+         QStringLiteral("https://torrentio.strem.fun/language=turkish"),
+         {}, QStringLiteral("tr"), movieSeries, stream, true, false, false, false},
+        {{}, QStringLiteral("Torrentio · Українська"), QStringLiteral("addon_sug_torrentio_uk"),
+         QStringLiteral("Ukrainian — language-first Torrentio results"),
+         QStringLiteral("https://torrentio.strem.fun/language=ukrainian"),
+         {}, QStringLiteral("uk"), movieSeries, stream, true, false, false, false},
+
+        {QStringLiteral("org.reptilia.aradeb"), QStringLiteral("Aradeb"),
+         QStringLiteral("addon_sug_aradeb"),
+         QStringLiteral("Arabic catalogs & streams — needs a free trial or donor key + debrid"),
+         {}, QStringLiteral("https://aradeb.518878.xyz/configure"),
+         QStringLiteral("ar"), movieSeries, catalogStream, false, false, true, true},
+
+        {{}, QStringLiteral("Torrentio · Configure"), QStringLiteral("addon_sug_torrentio_cfg"),
+         QStringLiteral("Open Torrentio’s config page — pick providers, language, optional debrid — then paste the install link"),
+         {}, QStringLiteral("https://torrentio.strem.fun/configure"),
+         {}, movieSeries, stream, false, false, true, false},
+    };
 }
 
 bool AddonManager::hasCatalogAddon() const
@@ -223,9 +355,11 @@ void AddonManager::fetchMeta(const QString &type, const QString &id)
 
 void AddonManager::addAddon(const QString &url)
 {
-    QString baseUrl = url;
-    if (baseUrl.endsWith('/'))
-        baseUrl.chop(1);
+    QString baseUrl = normalizeAddonBaseUrl(url);
+    if (baseUrl.isEmpty()) {
+        emit addonError(QStringLiteral("Invalid addon URL."));
+        return;
+    }
 
     // Check duplicates
     for (const auto &a : m_addons) {
@@ -379,12 +513,12 @@ QString AddonManager::streamBaseUrl(const QString &addonUrl, const QString &torr
 }
 
 namespace {
-// Torrentio's `language=` values for the app UI languages. English stays
+// Torrentio's `language=` values for the user's content language. English stays
 // unconfigured — the global default already is English-first.
 QString torrentioLanguageForApp()
 {
     if (!QSettings().value("preferNativeLang", true).toBool()) return {};
-    switch (Translator::instance().language()) {
+    switch (ContentLanguage::current()) {
     case Translator::Portuguese: return QStringLiteral("portuguese");
     case Translator::Spanish:    return QStringLiteral("spanish");
     case Translator::Russian:    return QStringLiteral("russian");
@@ -704,6 +838,10 @@ void AddonManager::installDefaultProviders()
         {"bitsearch", "BitSearch (multi-idioma)",
          "https://bitsearch.eu/api/v1/search?q={query}&limit=50",
          "results", "title", "infohash", "size", "seeders", "leechers", "global", true},
+        // RuTor via public TorAPI — CIS/Russian titles without a Stremio round-trip
+        {"rutor_torapi", "RuTor",
+         "https://torapi.vercel.app/api/search/title/rutor?query={query}",
+         "", "Name", "Hash", "Size", "Seeds", "Peers", "cis", true},
     };
 
     // Seed each built-in once (tracked by id) so a new provider reaches existing

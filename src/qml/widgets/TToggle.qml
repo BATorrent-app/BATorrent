@@ -16,7 +16,12 @@ Rectangle {
     implicitWidth: 38
     implicitHeight: 21
     radius: 999
-    color: on ? Theme.accent : Theme.field
+    // ON is a light track with a dark knob, not a red pill. A Settings page can
+    // carry eight of these at once, and filling every one with the accent turned
+    // red into a surface — the opposite of the rule the rest of the app follows,
+    // where red means something is happening. Red stays for signals; "this option
+    // is on" is a state, and state reads fine in neutral.
+    color: on ? Theme.t1 : Theme.field
     border.color: on ? "transparent" : Theme.hair
     border.width: 1
 
@@ -40,7 +45,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         x: tg.on ? 19 : 2
         color: tg.on
-            ? "#ffffff"
+            ? Theme.panel                                   // dark knob on the light track
             : (Theme.isDark ? "#8c8884" : "#ffffff")
         Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
         Behavior on color { ColorAnimation { duration: 160 } }

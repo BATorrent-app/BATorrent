@@ -135,8 +135,14 @@ Window {
         if (at !== undefined && at !== "" && Number(at) >= 0 && Number(at) < player.audioTracks.length)
             player.activeAudioTrack = Number(at)
         var st = settings.get("subTrack_" + win.infoHash)
-        if (st !== undefined && st !== "" && Number(st) < player.subtitleTracks.length)
-            player.activeSubtitleTrack = Number(st)
+        if (st !== undefined && st !== "") {
+            var sn = Number(st)
+            // -1 = user chose "Subtitles off"; don't treat it as "unset"
+            if (sn < 0)
+                player.activeSubtitleTrack = -1
+            else if (sn < player.subtitleTracks.length)
+                player.activeSubtitleTrack = sn
+        }
     }
 
     // picture-in-picture: shrink to a small always-on-top corner window
@@ -1062,16 +1068,13 @@ Window {
                             color: rwMa.containsMouse ? "#1effffff" : "transparent"
                             Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         }
+                        // the 10 is inside the glyph now — it used to be a Text laid
+                        // over two icons from different families, so -10 and +10
+                        // never looked like a pair
                         IconImg {
-                            anchors.centerIn: parent; src: "qrc:/icons/replay.svg"; s: 22
+                            anchors.centerIn: parent; src: "qrc:/icons/skip-back-10.svg"; s: 24
                             tint: rwMa.containsMouse ? Theme.t1 : Theme.t2
                             Behavior on tint { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                        }
-                        Text {
-                            anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"
-                            color: rwMa.containsMouse ? Theme.t1 : Theme.t2
-                            font.pixelSize: 7; font.weight: Font.Bold; font.family: Theme.fontSans
-                            Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
                         }
                         MouseArea { id: rwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(-10000) }
                     }
@@ -1111,15 +1114,9 @@ Window {
                             Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         }
                         IconImg {
-                            anchors.centerIn: parent; src: "qrc:/icons/forward.svg"; s: 22
+                            anchors.centerIn: parent; src: "qrc:/icons/skip-fwd-10.svg"; s: 24
                             tint: fwMa.containsMouse ? Theme.t1 : Theme.t2
                             Behavior on tint { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                        }
-                        Text {
-                            anchors.centerIn: parent; anchors.verticalCenterOffset: 1; text: "10"
-                            color: fwMa.containsMouse ? Theme.t1 : Theme.t2
-                            font.pixelSize: 7; font.weight: Font.Bold; font.family: Theme.fontSans
-                            Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
                         }
                         MouseArea { id: fwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.seekBy(10000) }
                     }

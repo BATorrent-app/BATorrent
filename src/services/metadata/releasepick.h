@@ -17,7 +17,8 @@ namespace ReleasePick {
 
 struct Candidate {
     QString quality;     // "4K" | "1080p" | "720p" | "480p" | "" (unknown)
-    bool native = false; // release is in the user's language
+    bool native = false; // legacy: any match for the user's language (dub or sub)
+    int audioRank = 0;   // 2 = dubbed, 1 = subtitled, 0 = original — preferNative uses this ladder
     int seeders = 0;
     qint64 sizeBytes = 0;
 };
@@ -25,9 +26,9 @@ struct Candidate {
 // Returns the index of the best candidate, or -1 if none is usable.
 // preferredQuality: "4K" | "1080p" | "720p" | "Auto"/"" (Auto = 1080p sweet spot).
 // maxSizeBytes: 0 = no cap.
-// preferNative: when true, a release in the user's language wins over a
-// higher-quality one (what most movie/series viewers actually want — Torrentio
-// behaviour). When false, quality leads and native is only a tiebreaker.
+// preferNative: when true, language wins over quality using the audio ladder
+// (dubbed > subtitled > original). When false, quality leads and audioRank /
+// native is only a tiebreaker.
 int best(const QList<Candidate> &cands, const QString &preferredQuality,
          qint64 maxSizeBytes, bool preferNative = true);
 

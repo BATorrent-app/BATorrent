@@ -65,9 +65,9 @@ ColumnLayout {
                 Repeater {
                     model: [
                         { k: "",         t: i18n.t("search_audio_all") },
-                        { k: "dub",      t: "🎙  " + i18n.t("search_audio_dub") },
-                        { k: "sub",      t: "💬  " + i18n.t("search_audio_sub") },
-                        { k: "original", t: "🌐  " + i18n.t("search_audio_original") }
+                        { k: "dub",      t: i18n.t("search_audio_dub") },
+                        { k: "sub",      t: i18n.t("search_audio_sub") },
+                        { k: "original", t: i18n.t("search_audio_original") }
                     ]
                     delegate: SegChip {
                         required property var modelData

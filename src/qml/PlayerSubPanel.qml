@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Online-subtitles side panel: a right-edge drawer with a dimming scrim,
-// language toggle chips, sync nudges and a result list wired to the subsearch
+// exclusive language chips, sync nudges and a result list wired to the subsearch
 // bridge. `pw` is the owning PlayerWindow (subtitle state + loadExternalSubs);
 // `mediaPlayer` the MediaPlayer. Fills the player; scrim + Esc + a real close
 // button all dismiss it (the old tiny ✕ was impossible to find).
@@ -33,22 +33,26 @@ Item {
     readonly property var langCodes: ["pt", "en", "es", "fr", "de", "it", "ru", "ja", "zh"]
     property var subLangs: {
         var s = (typeof settings !== "undefined") ? settings.get("subtitleLangs") : ""
-        if (s && s.length > 0) return ("" + s).split(",")
+        if (s && s.length > 0) {
+            // Older builds stored multi-select (e.g. "pt,en"); keep the first.
+            var parts = ("" + s).split(",").filter(function (x) { return x.length > 0 })
+            return parts.length > 0 ? [parts[0]] : ["en"]
+        }
         var li = (typeof i18n !== "undefined") ? i18n.language : 0
         var ui = ["en", "pt", "zh", "ja", "ru", "es", "de", "uk"][li] || "en"
-        return ui === "en" ? ["en"] : [ui, "en"]
+        return [ui]
     }
     function langLabel(c) {
         return ({ pt: "PT", en: "EN", es: "ES", fr: "FR", de: "DE",
                   it: "IT", ru: "RU", ja: "JA", zh: "ZH" })[c] || c.toUpperCase()
     }
-    function toggleLang(code) {
-        var a = subLangs.slice()
-        var i = a.indexOf(code)
-        if (i >= 0) a.splice(i, 1); else a.push(code)
-        if (a.length === 0) a = ["en"]
+    // Exclusive: one search language at a time (radio, not multi-toggle).
+    function selectLang(code) {
+        if (!code || (subLangs.length === 1 && subLangs[0] === code))
+            return
+        var a = [code]
         subLangs = a
-        if (typeof settings !== "undefined") settings.set("subtitleLangs", a.join(","))
+        if (typeof settings !== "undefined") settings.set("subtitleLangs", code)
         if (typeof subsearch !== "undefined")
             subsearch.searchFor(pw.infoHash, pw.fileIndex, pw.mediaTitle, a)
     }
@@ -174,7 +178,7 @@ Item {
                                 font.pixelSize: 12; font.weight: chip.on ? Font.DemiBold : Font.Medium
                                 font.letterSpacing: 0.4; font.family: Theme.fontSans
                             }
-                            MouseArea { id: lcMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleLang(chip.modelData) }
+                            MouseArea { id: lcMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.selectLang(chip.modelData) }
                         }
                     }
                 }

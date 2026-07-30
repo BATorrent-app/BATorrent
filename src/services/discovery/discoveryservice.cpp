@@ -21,7 +21,7 @@
 #include <QLocale>
 #include <QPair>
 #include <algorithm>
-#include "services/platform/translator.h"
+#include "services/platform/contentlanguage.h"
 
 namespace {
 
@@ -54,18 +54,7 @@ const QString TmdbBaseUrl    = QStringLiteral("https://api.themoviedb.org/3");
 const QString TmdbPosterBase = QStringLiteral("https://image.tmdb.org/t/p/w342");
 const QString TmdbBackdrop   = QStringLiteral("https://image.tmdb.org/t/p/w1280");
 
-QString tmdbLang()
-{
-    switch (Translator::instance().language()) {
-    case Translator::Portuguese: return QStringLiteral("pt-BR");
-    case Translator::Chinese:    return QStringLiteral("zh-CN");
-    case Translator::Japanese:   return QStringLiteral("ja-JP");
-    case Translator::Russian:    return QStringLiteral("ru-RU");
-    case Translator::Spanish:    return QStringLiteral("es-ES");
-    case Translator::German:     return QStringLiteral("de-DE");
-    default:                     return QStringLiteral("en-US");
-    }
-}
+QString tmdbLang() { return ContentLanguage::tmdb(); }
 
 QString cacheFile()
 {
@@ -73,26 +62,10 @@ QString cacheFile()
            + QStringLiteral("/discover/discover.json");
 }
 
-// The user's country (ISO 3166), for country-relative TMDB rows. From the system
-// locale (e.g. "pt_BR" → BR), falling back to the app UI language's home country.
+// The user's country (ISO 3166), for country-relative TMDB rows.
 QString discoverRegion()
 {
-    const QString sys = QLocale::system().name();        // e.g. "pt_BR"
-    const int us = sys.indexOf(QLatin1Char('_'));
-    if (us >= 0 && sys.size() >= us + 3) {
-        const QString cc = sys.mid(us + 1, 2).toUpper();
-        if (cc[0].isLetter() && cc[1].isLetter()) return cc;
-    }
-    switch (Translator::instance().language()) {
-    case Translator::Portuguese: return QStringLiteral("BR");
-    case Translator::Russian:    return QStringLiteral("RU");
-    case Translator::Japanese:   return QStringLiteral("JP");
-    case Translator::German:     return QStringLiteral("DE");
-    case Translator::Spanish:    return QStringLiteral("ES");
-    case Translator::Ukrainian:  return QStringLiteral("UA");
-    case Translator::Chinese:    return QStringLiteral("CN");
-    default:                     return QStringLiteral("US");
-    }
+    return ContentLanguage::region();
 }
 
 const qint64 CacheTtlSecs = 12 * 60 * 60;
@@ -236,6 +209,14 @@ void DiscoveryService::searchTmdbTitles(const QString &query)
                 QVariantMap m;
                 m.insert(QStringLiteral("title"), o.value(isTv ? QLatin1String("name")
                                                                : QLatin1String("title")).toString());
+                // The original-language name, which we already receive and used to
+                // throw away. `title` is localised (the request carries language=),
+                // so on a pt-BR app the picked work only ever searched trackers as
+                // "Shang-Chi e a Lenda dos Dez Anéis" and missed every release
+                // published under the original name.
+                m.insert(QStringLiteral("originalTitle"),
+                         o.value(isTv ? QLatin1String("original_name")
+                                      : QLatin1String("original_title")).toString());
                 m.insert(QStringLiteral("tmdbId"), o.value(QLatin1String("id")).toInt());
                 m.insert(QStringLiteral("poster"), TmdbPosterBase + poster);
                 m.insert(QStringLiteral("year"), date.length() >= 4 ? date.left(4) : QString());

@@ -48,6 +48,24 @@ BatDialog {
             font.pixelSize: 12
             font.family: Theme.fontSans
         }
+        Text {
+            Layout.fillWidth: true
+            Layout.maximumWidth: 460
+            wrapMode: Text.WordWrap
+            text: (i18n.language, i18n.t("addon_keys_note"))
+            color: Theme.t4
+            font.pixelSize: 11
+            font.family: Theme.fontSans
+        }
+        Text {
+            Layout.fillWidth: true
+            Layout.maximumWidth: 460
+            wrapMode: Text.WordWrap
+            text: (i18n.language, i18n.t("addon_oob_note"))
+            color: Theme.t4
+            font.pixelSize: 11
+            font.family: Theme.fontSans
+        }
     }
 
     // 2. install via manifest URL
@@ -213,8 +231,46 @@ BatDialog {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
-                                Text { text: modelData.name; color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                                Text { text: modelData.description; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; elide: Text.ElideRight; Layout.fillWidth: true }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    Text { text: modelData.name; color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                                    Rectangle {
+                                        visible: !!(modelData.lang && modelData.lang.length)
+                                        implicitWidth: langBadge.implicitWidth + 10
+                                        implicitHeight: 16
+                                        radius: 4
+                                        color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
+                                        Text {
+                                            id: langBadge; anchors.centerIn: parent
+                                            text: (modelData.lang || "").toUpperCase()
+                                            color: Theme.accent; font.pixelSize: 9; font.weight: Font.DemiBold
+                                            font.family: Theme.fontSans
+                                        }
+                                    }
+                                    Rectangle {
+                                        visible: !!(modelData.needsDebrid || modelData.needsConfig)
+                                        implicitWidth: keyBadge.implicitWidth + 10
+                                        implicitHeight: 16
+                                        radius: 4
+                                        color: "#22f5a623"
+                                        Text {
+                                            id: keyBadge; anchors.centerIn: parent
+                                            text: modelData.needsDebrid
+                                                  ? (i18n.language, i18n.t("addon_badge_debrid"))
+                                                  : (i18n.language, i18n.t("addon_badge_key"))
+                                            color: "#f5a623"; font.pixelSize: 9; font.weight: Font.DemiBold
+                                            font.family: Theme.fontSans
+                                        }
+                                    }
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: (i18n.language, modelData.descKey && modelData.descKey.length
+                                           ? i18n.t(modelData.descKey) : modelData.description)
+                                    color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans
+                                    elide: Text.ElideRight; wrapMode: Text.WordWrap; maximumLineCount: 2
+                                }
                             }
                             Row {
                                 visible: modelData.installed
@@ -222,7 +278,24 @@ BatDialog {
                                 IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/play.svg"; tint: Theme.up; s: 14 }
                                 Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("addon_installed_chip")); color: Theme.up; font.pixelSize: 11; font.family: Theme.fontSans }
                             }
-                            BtnFlat { visible: !modelData.installed; sm: true; text: (i18n.language, i18n.t("addon_install_btn")); onClicked: if (dlg.addonsApi) dlg.addonsApi.addAddon(modelData.url) }
+                            // Free install
+                            BtnFlat {
+                                visible: !modelData.installed && !modelData.needsConfig && modelData.url && modelData.url.length
+                                sm: true
+                                text: (i18n.language, i18n.t("addon_install_btn"))
+                                onClicked: if (dlg.addonsApi) dlg.addonsApi.addAddon(modelData.url)
+                            }
+                            // Keyed / configurable: open vendor page, then paste the install URL above
+                            BtnFlat {
+                                visible: !modelData.installed && modelData.needsConfig && modelData.configureUrl && modelData.configureUrl.length
+                                sm: true
+                                primary: true
+                                text: (i18n.language, i18n.t("addon_configure_btn"))
+                                onClicked: {
+                                    Qt.openUrlExternally(modelData.configureUrl)
+                                    dlg.errorText = i18n.t("addon_configure_hint")
+                                }
+                            }
                         }
                         Rectangle { visible: index < (dlg.addonsApi ? dlg.addonsApi.suggested.length - 1 : 0); Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
                     }

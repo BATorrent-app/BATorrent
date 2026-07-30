@@ -376,6 +376,7 @@ void QmlSessionBridge::onWatchTick()
 {
     pollRunningGames();
     pollInstallWatch();
+    pollPendingInstall();
     if (m_pendingWatch.isEmpty()) return;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     for (const QString &hash : m_pendingWatch.keys()) {

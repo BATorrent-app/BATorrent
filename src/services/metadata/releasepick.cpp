@@ -41,26 +41,29 @@ int best(const QList<Candidate> &cands, const QString &preferredQuality,
     }
 
     int bestIdx = -1;
-    int bestQ = -1; bool bestNative = false; int bestSeeds = -1;
+    int bestQ = -1; int bestAudio = -1; int bestSeeds = -1;
     for (int i = 0; i < cands.size(); ++i) {
         const Candidate &c = cands[i];
         if (c.seeders <= 0) continue;                                  // dead
         if (anyUnderCap && c.sizeBytes > 0 && c.sizeBytes > maxSizeBytes) continue;
 
+        // Prefer the explicit ladder; fall back to the old native bool for callers
+        // that haven't been wired to audioRank yet.
+        const int audio = c.audioRank > 0 ? c.audioRank : (c.native ? 1 : 0);
         const int q = qualityScore(c.quality, order);
         bool better;
         if (bestIdx < 0) {
             better = true;
-        } else if (preferNative && c.native != bestNative) {
-            better = c.native;                       // language wins over quality
+        } else if (preferNative && audio != bestAudio) {
+            better = audio > bestAudio;              // dubbed > subbed > original
         } else if (q != bestQ) {
             better = q > bestQ;
-        } else if (c.native != bestNative) {
-            better = c.native;                       // native breaks a quality tie
+        } else if (audio != bestAudio) {
+            better = audio > bestAudio;              // audio breaks a quality tie
         } else {
             better = c.seeders > bestSeeds;
         }
-        if (better) { bestIdx = i; bestQ = q; bestNative = c.native; bestSeeds = c.seeders; }
+        if (better) { bestIdx = i; bestQ = q; bestAudio = audio; bestSeeds = c.seeders; }
     }
     return bestIdx;
 }

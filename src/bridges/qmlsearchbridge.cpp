@@ -11,13 +11,15 @@
 #include "services/downloads/httpdownloadmanager.h"
 #include "services/downloads/filehostresolver.h"
 #include "services/metadata/nameparser.h"
+#include "services/metadata/releasegroup.h"
 #include "services/metadata/releasepick.h"
+#include "services/metadata/gamereleasepick.h"
 #include "services/metadata/searchranker.h"
 #include "services/metadata/releasetrust.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
 #include "services/platform/utils.h"
-#include "services/platform/translator.h"
+#include "services/platform/contentlanguage.h"
 #include "webui/webserver.h"
 #include <QCryptographicHash>
 #include <QStorageInfo>
@@ -39,6 +41,12 @@
 #include <QApplication>
 #include <QWindow>
 #include <QEvent>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QRegularExpression>
+#include <QUrl>
+#include <algorithm>
 #ifdef Q_OS_WIN
 #  include <windows.h>
 #  include <dwmapi.h>
@@ -66,7 +74,9 @@
 #include <libtorrent/file_storage.hpp>
 #include <libtorrent/create_torrent.hpp>
 #include <libtorrent/bencode.hpp>
+#include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/version.hpp>
+#include <sstream>
 #include <openssl/opensslv.h>
 #include <boost/version.hpp>
 
@@ -93,7 +103,7 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
             m["sub"] = s.addonName;
             m["provider"] = s.addonName;
             m["sizeStr"] = s.size > 0 ? formatSize(s.size) : QString();
-            m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+            m["seeds"] = ""; m["leech"] = ""; m["releaseGroup"] = "";
             m["poster"] = m_streamHintPoster; m["coverHash"] = "";
             m["quality"] = s.quality;
             m["seedsN"] = 0; m["sizeBytes"] = s.size;
@@ -171,32 +181,27 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
         m_savePath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
 }
 
-QString QmlSearchBridge::detectRepacker(const QString &name)
+namespace {
+// Two titles are "the same" when they differ only by accents, case or
+// punctuation — "Shang-Chi" vs "Shang Chi". Without folding, an English app
+// would fire the identical query twice for every English film.
+bool sameTitle(const QString &a, const QString &b)
 {
-    const QString lower = name.toLower();
-    if (lower.contains("fitgirl")) return "FitGirl";
-    if (lower.contains("dodi")) return "DODI";
-    if (lower.contains("online-fix") || lower.contains("onlinefix")) return "Online-Fix";
-    if (lower.contains("elamigos")) return "ElAmigos";
-    if (lower.contains("xatab")) return "Xatab";
-    if (lower.contains("r.g. mechanics") || lower.contains("rg mechanics")) return "R.G. Mechanics";
-    if (lower.contains("gog")) return "GOG";
-    if (lower.contains("codex")) return "CODEX";
-    if (lower.contains("plaza")) return "PLAZA";
-    if (lower.contains("skidrow")) return "SKIDROW";
-    if (lower.contains("kaoskrew") || lower.contains("kaos krew")) return "KaOsKrew";
-    if (lower.contains("tenoke")) return "TENOKE";
-    if (lower.contains("empress")) return "EMPRESS";
-    if (lower.contains("razor1911") || lower.contains("razor 1911")) return "Razor1911";
-    if (lower.contains("goldberg")) return "Goldberg";
-    if (lower.contains("0xdeadc0de") || lower.contains("0xdeadcode")) return "0xdeadc0de";
-    if (lower.contains("masquerade")) return "Masquerade";
-    if (lower.contains("chovka")) return "Chovka";
-    if (lower.contains("tinyrepacks") || lower.contains("tiny repacks")) return "Tiny Repacks";
-    if (lower.contains("cpy")) return "CPY";
-    if (lower.contains("-flt") || lower.contains("flt]")) return "FLT";
-    if (lower.contains("-rune") || lower.contains("rune]")) return "RUNE";
-    return "";
+    auto fold = [](const QString &s) {
+        const QString d = s.normalized(QString::NormalizationForm_D).toLower();
+        QString out;
+        for (const QChar &c : d)
+            if (c.isLetterOrNumber() && c.category() != QChar::Mark_NonSpacing)
+                out.append(c);
+        return out;
+    };
+    return fold(a) == fold(b);
+}
+}
+
+QString QmlSearchBridge::detectReleaseGroup(const QString &name)
+{
+    return ReleaseGroup::detect(name);
 }
 
 void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
@@ -260,12 +265,17 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
     m["lang"] = langs.isEmpty() ? QString() : langs.first();
     m["dubbed"] = dubbed || multi;
 
-    const QString appLang = appLangCode();
-    m["native"] = langs.contains(appLang)
-                  || (appLang != QLatin1String("EN") && (multi || langs.contains(QLatin1String("MULTI"))));
+    // Game builds: one search returns the same title a dozen times, and the only
+    // thing separating the rows is the version. Without it the list is 51
+    // indistinguishable lines.
+    m["version"] = GameReleasePick::parseVersion(name);
+
+    const QString contentLang = ContentLanguage::releaseTag();
+    m["native"] = langs.contains(contentLang)
+                  || (contentLang != QLatin1String("EN") && (multi || langs.contains(QLatin1String("MULTI"))));
     // Dub/sub/original relative to the user's language — the axis the segmented
     // filter acts on (a dubbed-hater and a dub-lover want opposite results).
-    m["audioMode"] = AudioMode::key(AudioMode::classify(name, appLang));
+    m["audioMode"] = AudioMode::key(AudioMode::classify(name, contentLang));
 }
 
 void QmlSearchBridge::fillTrust(QVariantMap &m, const QString &name)
@@ -281,20 +291,6 @@ void QmlSearchBridge::fillTrust(QVariantMap &m, const QString &name)
     m["trust"] = ReleaseTrust::tierKey(v.tier);
     m["trustWhy"] = v.reasons.isEmpty() ? QString() : v.reasons.first();
     m["trustScore"] = v.score;
-}
-
-QString QmlSearchBridge::appLangCode()
-{
-    switch (Translator::instance().language()) {
-    case Translator::Portuguese: return QStringLiteral("PT");
-    case Translator::Spanish:    return QStringLiteral("ES");
-    case Translator::German:     return QStringLiteral("DE");
-    case Translator::Russian:    return QStringLiteral("RU");
-    case Translator::Japanese:   return QStringLiteral("JA");
-    case Translator::Chinese:    return QStringLiteral("ZH");
-    case Translator::Ukrainian:  return QStringLiteral("UK");
-    default:                     return QStringLiteral("EN");
-    }
 }
 
 void QmlSearchBridge::setResolver(MetadataResolver *r)
@@ -397,6 +393,7 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
             QVariantMap row;
             row["name"]    = w.value(QStringLiteral("title"));
             row["title"]   = w.value(QStringLiteral("title"));
+            row["originalTitle"] = w.value(QStringLiteral("originalTitle"));
             row["sub"]     = w.value(QStringLiteral("type"));
             row["sizeStr"] = w.value(QStringLiteral("year"));
             row["year"]    = w.value(QStringLiteral("year"));
@@ -420,7 +417,8 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
     });
 }
 
-void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &year, const QString &type)
+void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &year,
+                                           const QString &type, const QString &originalTitle)
 {
     m_results.clear();
     m_resultMagnets.clear();
@@ -447,14 +445,31 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
         if (gsm.gameCount() > 0) appendGameRows(gsm.search(title));
         else if (!gsm.sources().isEmpty()) { m_pendingGameQuery = title; ++m_pendingSources; gsm.refresh(); }
     }
-    // movies disambiguate well with a year; games/series search cleaner by title
-    const QString q = (type == QLatin1String("movie") && !year.isEmpty())
-                    ? title + QLatin1Char(' ') + year : title;
+    // A work is released under different names per language, and the uploader
+    // picks one: a Portuguese dub is "Shang-Chi e a Lenda dos Dez Anéis", the
+    // original is "Shang-Chi and the Legend of the Ten Rings". Since our TMDB
+    // requests carry language=, `title` is already localised — so searching it
+    // alone found the dubs and missed everything published under the original
+    // name (usually the majority, and the better-seeded half). Hunt under both.
+    //
+    // Capped at two on purpose. Adding TMDB's alternative_titles here would
+    // multiply requests per provider, and on a private tracker that is how an
+    // account gets banned.
+    QStringList titles{ title };
+    if (!originalTitle.isEmpty() && !sameTitle(originalTitle, title))
+        titles << originalTitle;
+    m_activeTitles = titles;
+
     const int cat = isGame ? 400 : 200;   // 400 = games, 200 = video
     const auto providers = mgr.searchProviders();
-    for (int i = 0; i < providers.size(); ++i)
-        if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q, cat); }
-    if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, cat); }
+    for (const QString &t : titles) {
+        // movies disambiguate well with a year; games/series search cleaner by title
+        const QString q = (type == QLatin1String("movie") && !year.isEmpty())
+                        ? t + QLatin1Char(' ') + year : t;
+        for (int i = 0; i < providers.size(); ++i)
+            if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q, cat); }
+        if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, cat); }
+    }
     if (m_pendingSources == 0) {
         setSearching(false);
         setStatus(tr_("search_results_n").arg(m_results.size()));
@@ -473,14 +488,60 @@ int QmlSearchBridge::relevance(const QString &name, const QStringList &words) co
     return SearchRanker::relevanceScore(name, words);
 }
 
+QVariantList QmlSearchBridge::queryWordSets() const
+{
+    QVariantList out;
+    // the names this drill-down was actually searched under; falls back to the
+    // typed query for a flat/raw search, where there is no picked work
+    const QStringList titles = m_activeTitles.isEmpty() ? QStringList{ m_activeQuery }
+                                                        : m_activeTitles;
+    for (const QString &t : titles) {
+        const QStringList w = SearchRanker::significantWords(t);
+        if (!w.isEmpty()) out << QVariant(w);
+    }
+    return out;
+}
+
+int QmlSearchBridge::relevanceMulti(const QString &name, const QVariantList &sets) const
+{
+    QList<QStringList> ws;
+    ws.reserve(sets.size());
+    for (const QVariant &v : sets) ws << v.toStringList();
+    return SearchRanker::bestRelevance(name, ws);
+}
+
+static GameReleasePick::Candidate gameCandFromRow(const QVariantMap &m, bool hasUri)
+{
+    return { m.value(QStringLiteral("fromCatalog")).toBool(),
+             m.value(QStringLiteral("version")).toString(),
+             m.value(QStringLiteral("uploadDate")).toString(),
+             m.value(QStringLiteral("seedsN")).toInt(),
+             hasUri };
+}
+
 int QmlSearchBridge::pickBestResult() const
 {
+    if (m_isGameSearch || m_workType == QLatin1String("game")) {
+        QList<GameReleasePick::Candidate> cands;
+        cands.reserve(m_results.size());
+        for (int i = 0; i < m_results.size(); ++i) {
+            const bool hasUri = (i < m_resultMagnets.size() && !m_resultMagnets[i].isEmpty())
+                             || (i < m_resultHttp.size() && !m_resultHttp[i].isEmpty());
+            cands.append(gameCandFromRow(m_results[i].toMap(), hasUri));
+        }
+        return GameReleasePick::best(cands);
+    }
+
     QList<ReleasePick::Candidate> cands;
     cands.reserve(m_results.size());
     for (const QVariant &v : m_results) {
         const QVariantMap m = v.toMap();
+        const QString mode = m.value(QStringLiteral("audioMode")).toString();
+        const int audioRank = mode == QLatin1String("dub") ? 2
+                            : mode == QLatin1String("sub") ? 1 : 0;
         cands.append({ m.value(QStringLiteral("quality")).toString(),
-                       m.value(QStringLiteral("native")).toBool(),
+                       m.value(QStringLiteral("native")).toBool() || audioRank > 0,
+                       audioRank,
                        m.value(QStringLiteral("seedsN")).toInt(),
                        m.value(QStringLiteral("sizeBytes")).toLongLong() });
     }
@@ -494,13 +555,26 @@ int QmlSearchBridge::pickBestResult() const
     return ReleasePick::best(cands, prefQ, maxBytes, preferNative);
 }
 
+int QmlSearchBridge::compareBuildVersions(const QString &a, const QString &b) const
+{
+    return GameReleasePick::compareVersions(a, b);
+}
+
+int QmlSearchBridge::compareGameReleases(const QVariantMap &a, const QVariantMap &b) const
+{
+    // strcmp-style: positive means a ranks above b (matches GameReleasePick::compareCandidates).
+    return GameReleasePick::compareCandidates(
+        gameCandFromRow(a, a.value(QStringLiteral("hasUri"), true).toBool()),
+        gameCandFromRow(b, b.value(QStringLiteral("hasUri"), true).toBool()));
+}
+
 void QmlSearchBridge::getAndWatch(const QString &title, const QString &year, const QString &type)
 {
-    if (type == QLatin1String("game")) return;   // games are not stream-to-watch (Tema 4)
     m_gwActive = true;
     m_gwCancelled = false;
     m_gwTitle = title;
-    m_gwType = type;
+    m_gwType = type.isEmpty() ? QStringLiteral("movie") : type;
+    emit getFlowChanged();
     emit watchSearching(title);
     setWorkContext({ { QStringLiteral("title"), title },
                      { QStringLiteral("type"), type },
@@ -514,6 +588,7 @@ void QmlSearchBridge::cancelGetAndWatch()
 {
     m_gwActive = false;
     m_gwCancelled = true;
+    emit getFlowChanged();
 }
 
 void QmlSearchBridge::summarizeSources(const QString &title)
@@ -533,9 +608,30 @@ void QmlSearchBridge::summarizeSources(const QString &title)
 void QmlSearchBridge::gwResolve()
 {
     m_gwActive = false;
+    emit getFlowChanged();
     if (m_gwCancelled) { m_gwCancelled = false; return; }   // user backed out during the search
-    const int idx = pickBestResult();
-    if (idx < 0 || idx >= m_resultMagnets.size() || m_resultMagnets[idx].isEmpty()) {
+
+    auto hasMagnet = [this](int i) {
+        return i >= 0 && i < m_resultMagnets.size() && !m_resultMagnets[i].isEmpty();
+    };
+
+    // Prefer the ranked pick; if it's HTTP-only, re-rank among magnet rows so
+    // Get & Install / Get & Watch always get an info-hash they can poll.
+    int idx = pickBestResult();
+    if (!hasMagnet(idx)
+        && (m_gwType == QLatin1String("game") || m_isGameSearch
+            || m_workType == QLatin1String("game"))) {
+        QList<GameReleasePick::Candidate> cands;
+        QList<int> idxs;
+        for (int i = 0; i < m_results.size(); ++i) {
+            if (!hasMagnet(i)) continue;
+            idxs.append(i);
+            cands.append(gameCandFromRow(m_results[i].toMap(), true));
+        }
+        const int local = GameReleasePick::best(cands);
+        idx = (local >= 0 && local < idxs.size()) ? idxs[local] : -1;
+    }
+    if (!hasMagnet(idx)) {
         emit watchNoRelease(m_gwTitle);
         return;
     }
@@ -552,11 +648,17 @@ void QmlSearchBridge::gwResolve()
         type = m_gwType == QLatin1String("series") ? static_cast<int>(ContentType::Series)
              : m_gwType == QLatin1String("game")   ? static_cast<int>(ContentType::Game)
              : static_cast<int>(ContentType::Movie);
+    } else if (m_gwType == QLatin1String("game")) {
+        type = static_cast<int>(ContentType::Game);
+        if (hint.isEmpty()) hint = m_gwTitle;
     }
     m_session->addMagnet(magnet, m_savePath, hint, type);
     QString hash = rm.value(QStringLiteral("coverHash")).toString();
     if (hash.isEmpty()) hash = btihFromMagnet(magnet);
-    emit prepareAndWatch(hash, m_gwTitle);
+    if (m_gwType == QLatin1String("game"))
+        emit prepareAndInstall(hash, m_gwTitle);
+    else
+        emit prepareAndWatch(hash, m_gwTitle);
 }
 
 void QmlSearchBridge::copyMagnet(int index)
@@ -761,6 +863,16 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
 
 static QString btihFromMagnet(const QString &magnet)
 {
+    // Prefer libtorrent's parser so Base32 xt=urn:btih: tokens become the same
+    // hex info-hash SessionManager indexes — otherwise installWhenReady /
+    // watchWhenReady poll a hash that never matches and time out.
+    lt::error_code ec;
+    const lt::add_torrent_params atp = lt::parse_magnet_uri(magnet.toStdString(), ec);
+    if (!ec) {
+        const QString hex = QString::fromStdString(
+            (std::ostringstream() << atp.info_hashes.get_best()).str());
+        if (!hex.isEmpty()) return hex;
+    }
     static const QRegularExpression re(QStringLiteral("xt=urn:btih:([A-Za-z0-9]+)"),
                                        QRegularExpression::CaseInsensitiveOption);
     const auto m = re.match(magnet);
@@ -799,9 +911,14 @@ void QmlSearchBridge::appendGameRows(const QList<GameDownload> &games)
         m["provider"] = g.source;
         m["sizeStr"] = g.fileSize;
         m["seeds"] = ""; m["leech"] = ""; m["hasSeeds"] = false;
-        m["repacker"] = detectRepacker(g.title);
-        m["poster"] = ""; m["coverHash"] = "";
-        m["seedsN"] = 0; m["sizeBytes"] = 0;
+        m["releaseGroup"] = detectReleaseGroup(g.title);
+        const QString ih = infoHashFromMagnet(g.magnet);
+        m["poster"] = ""; m["coverHash"] = ih;
+        m["seedsN"] = 0;
+        m["sizeBytes"] = parseSizeToBytes(g.fileSize);
+        m["fromCatalog"] = true;
+        m["uploadDate"] = g.uploadDate;
+        m["hasUri"] = !g.magnet.isEmpty() || !g.httpUrl.isEmpty();
         fillMediaAttrs(m, g.title);
         fillTrust(m, g.title);
         m_results << m;
@@ -838,9 +955,15 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         m["seeds"] = QString::number(r.seeders);
         m["leech"] = QString::number(r.leechers);
         m["hasSeeds"] = r.seeders > 0;
-        m["repacker"] = detectRepacker(r.name);
-        m["poster"] = ""; m["coverHash"] = r.infoHash;
+        m["releaseGroup"] = detectReleaseGroup(r.name);
+        QString ih = r.infoHash.toLower();
+        if (ih.size() != 40)
+            ih = infoHashFromMagnet(r.magnet);
+        m["poster"] = ""; m["coverHash"] = ih;
         m["seedsN"] = r.seeders; m["sizeBytes"] = static_cast<qlonglong>(r.size);
+        m["fromCatalog"] = false;
+        m["uploadDate"] = QString();
+        m["hasUri"] = !r.magnet.isEmpty();
         fillMediaAttrs(m, r.name);
         fillTrust(m, r.name);
         m_results << m;
@@ -848,6 +971,7 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         m_resultHttp << QString();          // torrent rows download via magnet
         m_resultTitles << QString();        // torrent rows have no game cover hint
     }
+    mergeCatalogSwarms();
     emit resultsChanged();
 }
 
@@ -855,8 +979,206 @@ void QmlSearchBridge::finishAggregateSource()
 {
     if (--m_pendingSources > 0) return;
     setSearching(false);
+    mergeCatalogSwarms();
     setStatus(tr_("search_results_n").arg(m_results.size()));
+    requestCatalogSeedEnrichment();
     if (m_gwActive) gwResolve();
+}
+
+QString QmlSearchBridge::infoHashFromMagnet(const QString &magnet)
+{
+    static const QRegularExpression re(QStringLiteral("btih:([0-9A-Fa-f]{40})"),
+                                       QRegularExpression::CaseInsensitiveOption);
+    const auto m = re.match(magnet);
+    return m.hasMatch() ? m.captured(1).toLower() : QString();
+}
+
+qint64 QmlSearchBridge::parseSizeToBytes(const QString &s)
+{
+    const QString t = s.trimmed();
+    if (t.isEmpty()) return 0;
+    bool ok = false;
+    // raw integer bytes
+    if (!t.contains(QLatin1Char(' ')) && !t.contains(QLatin1Char('.')) && t.at(0).isDigit()) {
+        const qint64 n = t.toLongLong(&ok);
+        if (ok && n > 0) return n;
+    }
+    static const QRegularExpression re(
+        QStringLiteral(R"(^\s*([\d]+(?:[.,]\d+)?)\s*(B|KB|MB|GB|TB)\s*$)"),
+        QRegularExpression::CaseInsensitiveOption);
+    const auto m = re.match(t);
+    if (!m.hasMatch()) return 0;
+    QString num = m.captured(1);
+    num.replace(QLatin1Char(','), QLatin1Char('.'));
+    const double v = num.toDouble(&ok);
+    if (!ok || v < 0) return 0;
+    const QString u = m.captured(2).toUpper();
+    double mul = 1;
+    if (u == QLatin1String("KB")) mul = 1024.0;
+    else if (u == QLatin1String("MB")) mul = 1024.0 * 1024.0;
+    else if (u == QLatin1String("GB")) mul = 1024.0 * 1024.0 * 1024.0;
+    else if (u == QLatin1String("TB")) mul = 1024.0 * 1024.0 * 1024.0 * 1024.0;
+    return static_cast<qint64>(v * mul + 0.5);
+}
+
+void QmlSearchBridge::applySeedHits(const QHash<QString, QPair<int, int>> &byHash)
+{
+    if (byHash.isEmpty()) return;
+    bool changed = false;
+    for (int i = 0; i < m_results.size(); ++i) {
+        QVariantMap m = m_results[i].toMap();
+        if (!m.value(QStringLiteral("fromCatalog")).toBool()) continue;
+        QString h = m.value(QStringLiteral("coverHash")).toString().toLower();
+        if (h.size() != 40 && i < m_resultMagnets.size())
+            h = infoHashFromMagnet(m_resultMagnets[i]);
+        if (!byHash.contains(h)) continue;
+        const auto hit = byHash.value(h);
+        if (hit.first <= m.value(QStringLiteral("seedsN")).toInt()) continue;
+        m[QStringLiteral("seedsN")] = hit.first;
+        m[QStringLiteral("seeds")] = QString::number(hit.first);
+        m[QStringLiteral("leech")] = QString::number(hit.second);
+        m[QStringLiteral("hasSeeds")] = hit.first > 0;
+        m_results[i] = m;
+        changed = true;
+    }
+    if (changed) emit resultsChanged();
+}
+
+void QmlSearchBridge::mergeCatalogSwarms()
+{
+    QSet<QString> catalogHashes;
+    QHash<QString, QPair<int, int>> swarm;   // hash → (seeds, leech)
+    QHash<QString, qint64> sizes;
+
+    for (int i = 0; i < m_results.size(); ++i) {
+        const QVariantMap m = m_results[i].toMap();
+        QString h = m.value(QStringLiteral("coverHash")).toString().toLower();
+        if (h.size() != 40 && i < m_resultMagnets.size())
+            h = infoHashFromMagnet(m_resultMagnets[i]);
+        if (h.size() != 40) continue;
+
+        if (m.value(QStringLiteral("fromCatalog")).toBool()) {
+            catalogHashes.insert(h);
+            continue;
+        }
+        const int seeds = m.value(QStringLiteral("seedsN")).toInt();
+        const int leech = m.value(QStringLiteral("leech")).toString().toInt();
+        if (!swarm.contains(h) || seeds > swarm.value(h).first)
+            swarm.insert(h, {seeds, leech});
+        const qint64 sz = m.value(QStringLiteral("sizeBytes")).toLongLong();
+        if (sz > 0) sizes.insert(h, sz);
+    }
+    if (catalogHashes.isEmpty()) return;
+
+    applySeedHits(swarm);
+
+    // Prefer the catalog row: drop indexer duplicates of the same magnet.
+    QList<int> drop;
+    for (int i = 0; i < m_results.size(); ++i) {
+        const QVariantMap m = m_results[i].toMap();
+        if (m.value(QStringLiteral("fromCatalog")).toBool()) {
+            QString h = m.value(QStringLiteral("coverHash")).toString().toLower();
+            if (h.size() != 40 && i < m_resultMagnets.size())
+                h = infoHashFromMagnet(m_resultMagnets[i]);
+            if (sizes.contains(h) && m.value(QStringLiteral("sizeBytes")).toLongLong() <= 0) {
+                QVariantMap mm = m;
+                mm[QStringLiteral("sizeBytes")] = sizes.value(h);
+                mm[QStringLiteral("sizeStr")] = formatSize(sizes.value(h));
+                m_results[i] = mm;
+            }
+            continue;
+        }
+        QString h = m.value(QStringLiteral("coverHash")).toString().toLower();
+        if (h.size() != 40 && i < m_resultMagnets.size())
+            h = infoHashFromMagnet(m_resultMagnets[i]);
+        if (catalogHashes.contains(h))
+            drop.append(i);
+    }
+    if (drop.isEmpty()) {
+        emit resultsChanged();
+        return;
+    }
+    std::sort(drop.begin(), drop.end(), std::greater<int>());
+    for (int i : drop) {
+        m_results.removeAt(i);
+        if (i < m_resultMagnets.size()) m_resultMagnets.removeAt(i);
+        if (i < m_resultHttp.size()) m_resultHttp.removeAt(i);
+        if (i < m_resultTitles.size()) m_resultTitles.removeAt(i);
+    }
+    emit resultsChanged();
+}
+
+void QmlSearchBridge::requestCatalogSeedEnrichment()
+{
+    QStringList queries;
+    const QString titled = !m_workTitle.trimmed().isEmpty() ? m_workTitle.trimmed()
+                         : m_activeQuery.trimmed();
+    if (!titled.isEmpty()) {
+        queries << titled;
+    } else {
+        // Catalog browse page: budget a few title lookups (BitSearch rate limits).
+        int budget = 8;
+        for (const QVariant &v : m_results) {
+            if (budget <= 0) break;
+            const QVariantMap m = v.toMap();
+            if (!m.value(QStringLiteral("fromCatalog")).toBool()) continue;
+            if (m.value(QStringLiteral("seedsN")).toInt() > 0) continue;
+            if (m.value(QStringLiteral("coverHash")).toString().size() != 40) continue;
+            const QString name = m.value(QStringLiteral("name")).toString().trimmed();
+            if (name.isEmpty() || queries.contains(name)) continue;
+            queries << name;
+            --budget;
+        }
+    }
+    if (queries.isEmpty()) return;
+
+    bool need = false;
+    for (const QVariant &v : m_results) {
+        const QVariantMap m = v.toMap();
+        if (m.value(QStringLiteral("fromCatalog")).toBool()
+            && m.value(QStringLiteral("seedsN")).toInt() <= 0
+            && m.value(QStringLiteral("coverHash")).toString().size() == 40) {
+            need = true;
+            break;
+        }
+    }
+    if (!need) return;
+
+    const int gen = ++m_seedEnrichGen;
+    auto *nam = new QNetworkAccessManager(this);
+    int *pending = new int(queries.size());
+    for (const QString &q : queries) {
+        const QUrl url(QStringLiteral("https://bitsearch.eu/api/v1/search?q=%1&limit=50")
+                           .arg(QString::fromUtf8(QUrl::toPercentEncoding(q))));
+        QNetworkRequest req(url);
+        req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/2.0"));
+        req.setTransferTimeout(12000);
+        QNetworkReply *reply = nam->get(req);
+        connect(reply, &QNetworkReply::finished, this, [this, reply, nam, pending, gen]() {
+            reply->deleteLater();
+            if (gen == m_seedEnrichGen && reply->error() == QNetworkReply::NoError) {
+                const QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
+                const QJsonArray arr = root.value(QStringLiteral("results")).toArray();
+                QHash<QString, QPair<int, int>> byHash;
+                for (const QJsonValue &v : arr) {
+                    const QJsonObject o = v.toObject();
+                    QString h = o.value(QStringLiteral("infohash")).toString().toLower();
+                    if (h.size() != 40)
+                        h = o.value(QStringLiteral("info_hash")).toString().toLower();
+                    if (h.size() != 40) continue;
+                    const int seeds = o.value(QStringLiteral("seeders")).toInt();
+                    const int leech = o.value(QStringLiteral("leechers")).toInt();
+                    if (!byHash.contains(h) || seeds > byHash.value(h).first)
+                        byHash.insert(h, {seeds, leech});
+                }
+                applySeedHits(byHash);
+            }
+            if (--(*pending) == 0) {
+                delete pending;
+                nam->deleteLater();
+            }
+        });
+    }
 }
 
 void QmlSearchBridge::runGameSearch(const QString &query)
@@ -869,6 +1191,7 @@ void QmlSearchBridge::runGameSearch(const QString &query)
     appendGameRows(m_gameCache);
     setSearching(false);
     setStatus(tr_("search_results_n").arg(m_results.size()));
+    requestCatalogSeedEnrichment();
 }
 
 QVariantList QmlSearchBridge::gameSources() const
@@ -903,6 +1226,65 @@ void QmlSearchBridge::refreshGames()
     GameSourceManager::instance().refresh(true);   // manual refresh → bypass cache
 }
 
+void QmlSearchBridge::ensureGamesIndexed()
+{
+    auto &gsm = GameSourceManager::instance();
+    if (gsm.gameCount() > 0 || gsm.sources().isEmpty())
+        return;
+    setStatus(tr_("search_loading_game_catalogs"));
+    gsm.refresh(false);
+}
+
+void QmlSearchBridge::browseGames(const QString &group, int page, int pageSize)
+{
+    auto &gsm = GameSourceManager::instance();
+    if (gsm.gameCount() == 0 && !gsm.sources().isEmpty()) {
+        ensureGamesIndexed();
+        return;   // refreshed signal → QML retries browse
+    }
+
+    const int size = pageSize > 0 ? pageSize : 48;
+    const int p = page < 0 ? 0 : page;
+    const int total = gsm.countByGroup(group);
+    const int offset = p * size;
+
+    clearWorkContext();
+    m_fromTitles = false;
+    m_titleSources = false;
+    m_isGameSearch = true;
+    m_aggregate = false;
+    m_activeQuery.clear();
+    m_lastQuery.clear();
+    setMode(QStringLiteral("games"));
+
+    m_results.clear();
+    m_resultMagnets.clear();
+    m_resultTitles.clear();
+    m_resultHttp.clear();
+    m_gameCache = gsm.browse(group, offset, size);
+    appendGameRows(m_gameCache);
+    setSearching(false);
+
+    if (total <= 0) {
+        setStatus(tr_("find_catalog_empty"));
+        return;
+    }
+    const int from = offset + 1;
+    const int to = qMin(offset + m_results.size(), total);
+    setStatus(tr_("find_catalog_showing").arg(from).arg(to).arg(total));
+    requestCatalogSeedEnrichment();
+}
+
+int QmlSearchBridge::gameBrowseTotal(const QString &group) const
+{
+    return GameSourceManager::instance().countByGroup(group);
+}
+
+QVariantList QmlSearchBridge::gameRepackTabs() const
+{
+    return GameSourceManager::instance().groupCounts();
+}
+
 bool QmlSearchBridge::fitsOnSaveVolume(qint64 needed) const
 {
     if (needed <= 0) return true;   // unknown size — don't block
@@ -920,7 +1302,8 @@ void QmlSearchBridge::activateResult(int index, bool force)
         setWorkContext(w);
         searchSourcesForWork(w.value(QStringLiteral("name")).toString(),
                              w.value(QStringLiteral("year")).toString(),
-                             w.value(QStringLiteral("type")).toString());
+                             w.value(QStringLiteral("type")).toString(),
+                             w.value(QStringLiteral("originalTitle")).toString());
         return;
     }
     if (m_mode == "catalog") {
@@ -1048,7 +1431,7 @@ void QmlSearchBridge::rebuildCatalogRows()
         m["name"] = it.name;
         m["sub"] = it.type;
         m["sizeStr"] = it.year > 0 ? QString::number(it.year) : QString();
-        m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+        m["seeds"] = ""; m["leech"] = ""; m["releaseGroup"] = "";
         m["poster"] = it.poster; m["coverHash"] = "";
         m["seedsN"] = 0; m["sizeBytes"] = 0;
         fillMediaAttrs(m, it.name);
@@ -1070,7 +1453,7 @@ void QmlSearchBridge::showEpisodeRows()
         m["name"] = ep.value(QStringLiteral("name"));
         m["sub"] = ""; m["provider"] = "";
         m["sizeStr"] = ep.value(QStringLiteral("released")).toString();
-        m["seeds"] = ""; m["leech"] = ""; m["repacker"] = "";
+        m["seeds"] = ""; m["leech"] = ""; m["releaseGroup"] = "";
         m["poster"] = m_streamHintPoster; m["coverHash"] = "";
         m["seedsN"] = 0; m["sizeBytes"] = 0;
         m["season"] = ep.value(QStringLiteral("season"));

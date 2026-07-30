@@ -102,12 +102,12 @@ Rectangle {
                     elide: Text.ElideRight
                 }
                 TChip {
-                    visible: (row.modelData.repacker || "").length > 0
-                    text: row.modelData.repacker || ""
+                    visible: (row.modelData.releaseGroup || "").length > 0
+                    text: row.modelData.releaseGroup || ""
                     clickable: true
-                    red: row.sv.repackerFilter === (row.modelData.repacker || "")
-                    onClicked: row.sv.repackerFilter =
-                        (row.sv.repackerFilter === row.modelData.repacker ? "" : (row.modelData.repacker || ""))
+                    red: row.sv.groupFilter === (row.modelData.releaseGroup || "")
+                    onClicked: row.sv.groupFilter =
+                        (row.sv.groupFilter === row.modelData.releaseGroup ? "" : (row.modelData.releaseGroup || ""))
                 }
             }
             RowLayout {
@@ -127,16 +127,29 @@ Rectangle {
                     MouseArea { id: trustMa; anchors.fill: parent; hoverEnabled: true }
                 }
                 SourceTag { text: row.modelData.sub || row.modelData.provider || "" }
+                // How the release delivers *your* language. "original" gets no chip:
+                // it's the default state, and a badge on every row is noise.
+                TChip {
+                    readonly property string mode: row.modelData.audioMode || "original"
+                    visible: mode === "dub" || mode === "sub"
+                    text: (i18n.language, i18n.t(mode === "dub" ? "search_audio_dub" : "search_audio_sub"))
+                    clickable: true
+                    red: row.sv.audioModeFilter === mode
+                    onClicked: row.sv.audioModeFilter = (row.sv.audioModeFilter === mode ? "" : mode)
+                }
                 MetaTag {
                     text: {
                         var ls = row.modelData.langs || []
                         if (ls.length === 0) return ""
                         var s = ls.slice(0, 3).join("/")
                         if (ls.length > 3) s += "+" + (ls.length - 3)
-                        if (row.modelData.dubbed === true) s += " DUB"
                         return s
                     }
                     accent: row.modelData.native === true
+                }
+                MetaTag {
+                    text: (row.modelData.version || "").length > 0 ? "v" + row.modelData.version : ""
+                    accent: true
                 }
                 MetaTag { text: row.modelData.quality || ""; accent: true }
                 // CAM is shown by the trust chip instead — louder, and in words a

@@ -15,6 +15,7 @@
 #include <QString>
 #include <QList>
 #include <QPair>
+#include <QVariantList>
 #include <QNetworkAccessManager>
 
 struct GameDownload {
@@ -40,6 +41,12 @@ public:
     void refresh(bool forceNetwork = false);          // re-index; uses disk cache unless forced
     QList<GameDownload> search(const QString &query, int limit = 100) const;
     int gameCount() const { return m_games.size(); }
+
+    // Catalog browse (empty-query Find → Games). group "" = all; else ReleaseGroup
+    // display name (Online-Fix, FitGirl, …). Sorted uploadDate desc, then title.
+    int countByGroup(const QString &group) const;
+    QList<GameDownload> browse(const QString &group, int offset, int limit) const;
+    QVariantList groupCounts() const;   // [{name, count}, …] non-empty groups, tab order
 
     // Parse one catalog into the index; returns how many entries were added.
     // Exposed (and pure) so it can be unit-tested without the network.

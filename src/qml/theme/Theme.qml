@@ -259,6 +259,13 @@ QtObject {
     readonly property int durBase: 160
     readonly property int durSlow: 240
 
+    // Reduced motion: fewer and gentler animations, NOT zero. Opacity and colour
+    // transitions stay — they explain what changed. What goes is displacement and
+    // scale, which is what actually triggers vestibular discomfort. Qt exposes no
+    // OS-level preference, so this has to be our own switch.
+    readonly property bool reduceMotion:
+        typeof settings !== "undefined" && settings.get("reduceMotion") === true
+
     // ---------- anime accent art (per theme) ----------
     readonly property string animeSource:
         name === "dark"     ? "qrc:/images/eyes-dark.png" :

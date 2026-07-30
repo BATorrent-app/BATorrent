@@ -21,6 +21,10 @@ jobs:
   # Test suite (Catch2): runs the unit/security/memory tests so regressions —
   # especially resume-data migration and auto-update version detection — are
   # caught in CI instead of by users on upgrade.
+  #
+  # Keep this list in sync with the pure/metadata suites that Find + Get&Watch /
+  # Get&Install depend on. A green AppImage that never ran pick/install tests
+  # is how buggy releases ship.
   test:
     runs-on: ubuntu-22.04
     steps:
@@ -36,10 +40,16 @@ jobs:
         with:
           packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev
           version: 3.0
+      - name: i18n parity + key usage
+        run: python3 scripts/check-i18n-parity.py
       - name: Build tests
         run: |
+          # Core + Find/Get&Install metadata. Skip network-heavy / platform VPN
+          # binaries here — they have their own jobs or local runs.
+          TESTS="test_unit test_security test_memory test_nameparser test_bridge test_gamesource test_memguard test_geoipdb test_gamereleasepick test_gameinstallstate test_searchranker test_releasegroup test_contentlanguage test_releasetrust test_episodegroup test_debrid test_magnettrackers test_ipblocklist"
+          echo "TESTS=$TESTS" >> "$GITHUB_ENV"
           cmake -B build-tests -DBAT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build-tests -j$(nproc) --target test_unit test_security test_memory test_nameparser test_bridge test_gamesource test_memguard test_geoipdb
+          cmake --build build-tests -j$(nproc) --target $TESTS
       - name: Run tests
         env:
           LC_ALL: C        # deterministic locale for the formatSize/formatSpeed checks
@@ -51,7 +61,7 @@ jobs:
           # so we gate on the reported result, not the post-run exit code. A
           # real test failure prints the failure summary (no "All tests passed").
           fail=0
-          for t in test_unit test_security test_memory test_nameparser test_bridge test_gamesource test_memguard test_geoipdb; do
+          for t in $TESTS; do
             echo "=== $t ==="
             out=$(./build-tests/tests/$t 2>&1) || true
             echo "$out"
@@ -185,19 +195,13 @@ jobs:
           mv BATorrent-*.AppImage BATorrent-linux-x86_64.AppImage
 
       # Guard: this exact class of bug (issue #32) must never ship again — the
-      # bundled libtorrent has to export the fork's set_geo_local_fn.
-      - name: Verify fork libtorrent is bundled
+      # bundled libtorrent has to export the fork's set_geo_local_fn. Also boot
+      # the *packaged* AppImage (ldd + offscreen QML) so a green build/ binary
+      # can't hide a broken AppDir layout.
+      - name: Verify AppImage opens (deps + packaged boot)
         run: |
-          ./BATorrent-linux-x86_64.AppImage --appimage-extract >/dev/null
-          lib=$(find squashfs-root -name 'libtorrent-rasterbar.so*' | head -1)
-          if [ -z "$lib" ]; then echo "::error::no libtorrent in the AppImage"; exit 1; fi
-          echo "Checking $lib for the fork symbol..."
-          if ! nm -D --defined-only "$lib" 2>/dev/null | grep -q set_geo_local_fn; then
-            echo "::error::bundled libtorrent lacks set_geo_local_fn — stock lib shipped, launch would crash (issue #32)."
-            exit 1
-          fi
-          echo "OK: fork libtorrent bundled (set_geo_local_fn present)."
-          rm -rf squashfs-root
+          chmod +x scripts/ci/check-linux-appimage.sh
+          ./scripts/ci/check-linux-appimage.sh BATorrent-linux-x86_64.AppImage
 
       - name: Upload debug symbols to Sentry
         if: env.SENTRY_ENABLED == '1' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != ''
@@ -380,6 +384,13 @@ jobs:
           Write-Host "Bundled WireGuard $wgVer for the integrated VPN"
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
+      # Static package integrity BEFORE launch: missing qwindows.dll / wrong
+      # torrent-rasterbar.dll / unresolved imports crash before any useful log.
+      - name: Verify Windows bundle (DLLs + fork export)
+        shell: pwsh
+        run: |
+          ./scripts/ci/check-windows-bundle.ps1 -Dir release
+
       # Nothing before this point ever actually LAUNCHES the built app — a
       # silent "doesn't open, no error" failure (QML load failure, a DLL
       # mismatch, ...) has shipped to users twice now (v4.3.0's DLL mismatch;
@@ -397,21 +408,32 @@ jobs:
           New-ItemProperty -Path "HKCU:\Software\BATorrent\BATorrent" -Name "lastSeenVersion" -Value "1.0.0" -PropertyType String -Force | Out-Null
 
           $env:BAT_QML_STRICT = "warn"
+          $env:QT_DEBUG_PLUGINS = "1"
           $outLog = "smoketest_stdout.log"
+          $errLog = "smoketest_stderr.log"
           $proc = Start-Process -FilePath "release\BATorrent.exe" -PassThru `
-            -RedirectStandardOutput $outLog -RedirectStandardError "smoketest_stderr.log"
+            -RedirectStandardOutput $outLog -RedirectStandardError $errLog
           Start-Sleep -Seconds 12
           $stillRunning = -not $proc.HasExited
           if ($stillRunning) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
 
           Write-Host "----- stdout/stderr -----"
-          Get-Content $outLog, "smoketest_stderr.log" -ErrorAction SilentlyContinue | Write-Host
+          Get-Content $outLog, $errLog -ErrorAction SilentlyContinue | Write-Host
 
           if (-not $stillRunning) {
             Write-Host "::error::BATorrent.exe exited within 12s of launch (exit code $($proc.ExitCode)) — this build would not open for users."
             exit 1
           }
-          Write-Host "Smoke test passed: the app was still running after 12s."
+
+          $combined = @()
+          if (Test-Path $outLog) { $combined += Get-Content $outLog -ErrorAction SilentlyContinue }
+          if (Test-Path $errLog) { $combined += Get-Content $errLog -ErrorAction SilentlyContinue }
+          $text = $combined -join "`n"
+          if ($text -match 'failed to load component|is not a type|TypeError:|ReferenceError:|Invalid property assignment|instantiated recursively|This application failed to start because|The specified module could not be found|Entry Point Not Found|procedure entry point') {
+            Write-Host "::error::packaged Windows boot logged a load/DLL/QML failure — would not open cleanly for users"
+            exit 1
+          }
+          Write-Host "Smoke test passed: the app was still running after 12s with a clean log."
 
       - name: Generate installer wizard images
         shell: pwsh
@@ -629,6 +651,13 @@ jobs:
           done
           test -f BATorrent-macos-arm64.dmg
 
+      # macdeployqt can succeed and still ship an .app that dyld rejects or that
+      # QML refuses to load. Gate on the *bundled* tree, not build/*.app.
+      - name: Verify macOS bundle opens (frameworks + packaged boot)
+        run: |
+          chmod +x scripts/ci/check-macos-bundle.sh
+          ./scripts/ci/check-macos-bundle.sh dmg/BATorrent.app
+
       # Symbolicates field crashes. Needs SENTRY_AUTH_TOKEN (secret) + SENTRY_ORG
       # and SENTRY_PROJECT (repo variables); skipped (non-fatal) if any is absent.
       - name: Upload debug symbols to Sentry
@@ -653,8 +682,12 @@ jobs:
     # Only publish a GitHub release when the trigger is an actual version
     # tag. Manual / PR runs build the artifacts (downloadable from the
     # workflow page) but stop short of cutting a release.
+    #
+    # CRITICAL: needs `test` too. Builds used to publish even when Catch2 was
+    # red because release only waited on platform jobs — unit-test failures
+    # never blocked a tag from shipping.
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-linux, build-windows, build-macos]
+    needs: [test, build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
