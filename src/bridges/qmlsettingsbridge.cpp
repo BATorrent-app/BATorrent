@@ -2,77 +2,32 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "bridges/qmlposterbridge.h"
+#include "bridges/qmlsettingsbridge.h"
 #include "torrent/sessionmanager.h"
-#include "services/metadata/metadataresolver.h"
-#include "services/discovery/discoveryservice.h"
-#include "services/security/defender.h"
-#include "services/metadata/nameparser.h"
-#include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
-#include "services/platform/logger.h"
-#include "services/platform/qrcodegen.h"
-#include "services/platform/utils.h"
+#include "services/security/defender.h"
 #include "services/platform/translator.h"
-#include "services/integrations/geoip.h"
-#include "services/integrations/discordrpc.h"
-#include "services/integrations/updater.h"
+#include "services/platform/settingsbackup.h"
+#include "services/platform/settingspolicy.h"
+#include "services/platform/fileassociation.h"
 #include "services/integrations/notifier.h"
 #include "services/security/passwordhash.h"
 #include "services/security/secretstore.h"
 #include "webui/webserver.h"
+
 #include <QNetworkAccessManager>
 #include <QNetworkProxy>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QDateTime>
-
 #include <QNetworkInterface>
-
-#include <QClipboard>
-#include <QDesktopServices>
 #include <QDir>
-#include <QDirIterator>
-#include <QProcess>
 #include <QFile>
-#include <QFileInfo>
-#include <QGuiApplication>
-#include <QApplication>
-#include <QWindow>
-#include <QEvent>
-#ifdef Q_OS_WIN
-#  include <windows.h>
-#  include <dwmapi.h>
-#  ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
-#    define DWMWA_USE_IMMERSIVE_DARK_MODE 20
-#  endif
-#endif
-#include <QCoreApplication>
-#include <QStyleHints>
-#include <QPainter>
-#include <QSvgRenderer>
 #include <QJsonDocument>
-#include <QJsonArray>
 #include <QJsonObject>
-#include <QJsonValue>
-#include <cstring>
-#include <algorithm>
 #include <QRandomGenerator>
-#include <QRegularExpression>
 #include <QSettings>
-#include <QSet>
 #include <QStandardPaths>
 #include <QUrl>
-
-#include <libtorrent/torrent_info.hpp>
-#include <libtorrent/file_storage.hpp>
-#include <libtorrent/create_torrent.hpp>
-#include <libtorrent/bencode.hpp>
-#include <libtorrent/version.hpp>
-#include <openssl/opensslv.h>
-#include <boost/version.hpp>
-#include <memory>
-#include <sstream>
 
 QmlSettingsBridge::QmlSettingsBridge(SessionManager *session, IEngine *engine, QObject *parent)
     : QObject(parent), m_session(session), m_engine(engine) { applyWebUi(); }
@@ -91,20 +46,16 @@ void QmlSettingsBridge::applyWebUi()
     const bool hasAuth = !user.isEmpty() && !passHash.isEmpty();
     if (hasAuth)
         m_webServer->setCredentials(user, passHash);
-    // Never expose an unauthenticated control surface to the LAN: without
-    // credentials, force localhost-only even if remote access was requested.
-    bool remote = st.value("webUiRemoteAccess", false).toBool() && hasAuth;
+    const bool remote = SettingsPolicy::webUiRemoteAllowed(
+        st.value("webUiRemoteAccess", false).toBool(), hasAuth);
     m_webServer->start(quint16(st.value("webUiPort", 8080).toInt()), remote);
 }
 
 QString QmlSettingsBridge::enablePairing()
 {
-    // Readable strong password (no 0/O/1/I/l ambiguity — it gets typed on a phone).
-    static const QString alphabet =
-        QStringLiteral("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789");
-    QString pw;
-    for (int i = 0; i < 14; ++i)
-        pw.append(alphabet.at(QRandomGenerator::global()->bounded(alphabet.size())));
+    const QString pw = SettingsPolicy::generatePairingPassword(14, [](int n) {
+        return QRandomGenerator::global()->bounded(n);
+    });
 
     QSettings st;
     st.setValue("webUiEnabled", true);
@@ -151,7 +102,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     // Engine mode is a meta-setting (which engine to run), not a session value;
     // exposed to the UI as a bool toggle. Applies on next app start.
     if (key == QLatin1String("engineSplit"))
-        return QSettings().value(QStringLiteral("engineMode")).toString() == QLatin1String("ipc");
+        return SettingsPolicy::engineSplitFromMode(
+            QSettings().value(QStringLiteral("engineMode")).toString());
     // IPC engine mode: no in-process session — read the persisted value from the
     // shared QSettings store (which is what the engine child applies from).
     if (!m_session) return QSettings().value(key);
@@ -204,12 +156,8 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "watchedFolder")       return s->watchedFolder();
     if (key == "autoMoveEnabled")     return s->autoMoveEnabled();
     if (key == "autoMovePath")        return s->autoMovePath();
-    if (key == "autoComplete") {
-        const qint64 days[] = {0, 1, 3, 7, 14, 30};
-        const int d = int(s->autoCompleteSeconds() / 86400);
-        for (int i = 0; i < 6; ++i) if (days[i] == d) return i;
-        return 0;
-    }
+    if (key == "autoComplete")
+        return SettingsPolicy::autoCompleteIndex(s->autoCompleteSeconds());
     // advanced libtorrent tuning
     if (key.startsWith(QStringLiteral("adv"))) {
         auto a = s->advancedSettings();
@@ -223,20 +171,17 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         if (key == "advUnchokeSlots")   return a.unchokeSlotsLimit;
         if (key == "advMaxUploadsTor")  return a.maxUploadsPerTorrent;
         if (key == "advMaxConnsTor")    return a.maxConnectionsPerTorrent;
-        if (key == "advChokingAlgo")    return a.chokingAlgorithm == 2 ? 1 : 0;  // lt rate_based=2 → UI idx 1
+        if (key == "advChokingAlgo")    return SettingsPolicy::advChokingUiIndex(a.chokingAlgorithm);
         if (key == "advSeedChoking")    return a.seedChokingAlgorithm;
         if (key == "advRateOverhead")   return a.rateLimitIpOverhead;
         if (key == "advIgnoreLan")      return a.ignoreLimitsOnLAN;
     }
     // telegram (token lives in the keychain; events are a bitmask)
     if (key == "telegramToken")   return SecretStore::instance().get("telegramBotToken");
-    {
-        int bit = telegramEventBit(key);
-        if (bit) {
-            QSettings st;
-            int mask = st.value("telegramEvents", 0x0F).toInt();   // default: all on
-            return bool(mask & bit);
-        }
+    if (int bit = SettingsPolicy::telegramEventBit(key)) {
+        QSettings st;
+        int mask = st.value("telegramEvents", 0x0F).toInt();   // default: all on
+        return bool(mask & bit);
     }
     if (key == "discordEnabled") { QSettings st; return st.value("discordEnabled", true).toBool(); }
     // webui
@@ -250,25 +195,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     // Force a real bool: the Windows registry stores bool as DWORD and reads it
     // back as int, so a raw `=== true` check in QML fails and the dialog re-shows.
     if (key == "welcomeShown") { QSettings st; return st.value(QStringLiteral("welcomeShown"), false).toBool(); }
-    // Same DWORD-vs-int trap for every generic UI bool toggle (close-to-tray,
-    // splash, etc. "forgetting" they were turned off). Coerce to a real bool when
-    // the key is set; leave it invalid when unset so QML's own `on:`/strict-compare
-    // defaults still apply.
-    static const QSet<QString> uiBoolKeys = {
-        QStringLiteral("closeToTray"), QStringLiteral("showSplash"), QStringLiteral("startTray"),
-        QStringLiteral("notifSound"), QStringLiteral("randomPort"), QStringLiteral("autoShutdown"),
-        QStringLiteral("autoTrackers"), QStringLiteral("addPublicTrackers"),
-        QStringLiteral("assocTorrent"), QStringLiteral("assocMagnet"), QStringLiteral("assocBittorrent"),
-        QStringLiteral("detailBottom"), QStringLiteral("showDownloadChip"),
-        QStringLiteral("torrentSearchEnabled"),
-        QStringLiteral("useDefaultPath"), QStringLiteral("verboseLogging"), QStringLiteral("useTor"),
-        QStringLiteral("plexEnabled"), QStringLiteral("jellyfinEnabled"), QStringLiteral("tourSeen"),
-        QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude"),
-        QStringLiteral("autoplayNext"), QStringLiteral("preferNativeLang"),
-        QStringLiteral("gameAutoInstall"), QStringLiteral("blockBadPeers"),
-        QStringLiteral("vpnSplitTunnel"), QStringLiteral("vpnAutoConnect")
-    };
-    if (uiBoolKeys.contains(key)) {
+    if (SettingsPolicy::isUiBoolKey(key)) {
         QSettings st;
         return st.contains(key) ? QVariant(st.value(key).toBool()) : QVariant();
     }
@@ -277,21 +204,6 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     return st.value(key);
 }
 
-// Maps a per-event toggle key to its TelegramNotifier::Events bit (0 if not one).
-int QmlSettingsBridge::telegramEventBit(const QString &key)
-{
-    if (key == "telegramEvtFinished") return 1 << 0;
-    if (key == "telegramEvtKill")     return 1 << 1;
-    if (key == "telegramEvtRss")      return 1 << 2;
-    if (key == "telegramEvtError")    return 1 << 3;
-    return 0;
-}
-
-#ifdef Q_OS_WIN
-// defined below (near setAsDefaultApp); forward-declared so set() can call it
-static bool applyWinAssociation(const QString &kind, bool on);
-#endif
-
 void QmlSettingsBridge::set(const QString &key, const QVariant &v)
 {
     // per-type file/protocol association toggles (Windows registry; a no-op
@@ -299,17 +211,15 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     if (key == QLatin1String("assocTorrent") || key == QLatin1String("assocMagnet")
         || key == QLatin1String("assocBittorrent")) {
         QSettings().setValue(key, v.toBool());
-#ifdef Q_OS_WIN
         const QString kind = key == QLatin1String("assocTorrent") ? QStringLiteral("torrent")
                            : key == QLatin1String("assocMagnet")  ? QStringLiteral("magnet")
                                                                   : QStringLiteral("bittorrent");
-        applyWinAssociation(kind, v.toBool());
-#endif
+        FileAssociation::apply(kind, v.toBool());
         emit changed(); return;
     }
     if (key == QLatin1String("engineSplit")) {
         QSettings().setValue(QStringLiteral("engineMode"),
-                             v.toBool() ? QStringLiteral("ipc") : QStringLiteral("inprocess"));
+                             SettingsPolicy::engineModeValue(v.toBool()));
         emit changed(); return;   // takes effect on next app start
     }
     // telegram: token → keychain, events → bitmask, chatId → settings; reload after.
@@ -318,11 +228,10 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
         if (m_telegram) m_telegram->reload();
         emit changed(); return;
     }
-    if (int bit = telegramEventBit(key)) {
+    if (int bit = SettingsPolicy::telegramEventBit(key)) {
         QSettings st;
         int mask = st.value("telegramEvents", 0x0F).toInt();
-        if (v.toBool()) mask |= bit; else mask &= ~bit;
-        st.setValue("telegramEvents", mask);
+        st.setValue("telegramEvents", SettingsPolicy::applyTelegramEventMask(mask, bit, v.toBool()));
         if (m_telegram) m_telegram->reload();
         emit changed(); return;
     }
@@ -358,8 +267,11 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     if (key == "useTor") {   // one-toggle Tor preset: route through 127.0.0.1:9050 SOCKS5
         QSettings st; st.setValue("useTor", v.toBool());
         if (v.toBool()) {
-            if (m_engine) m_engine->setProxySettings(1, QStringLiteral("127.0.0.1"), 9050, QString(), QString());
-            st.setValue("proxyType", 1); st.setValue("proxyHost", "127.0.0.1"); st.setValue("proxyPort", 9050);
+            const auto preset = SettingsPolicy::proxyPreset(QStringLiteral("tor"));
+            if (m_engine) m_engine->setProxySettings(preset.type, preset.host, preset.port, QString(), QString());
+            st.setValue("proxyType", preset.type);
+            st.setValue("proxyHost", preset.host);
+            st.setValue("proxyPort", preset.port);
         }
         emit changed(); return;
     }
@@ -410,19 +322,14 @@ bool QmlSettingsBridge::excludeFromDefender()
     return Defender::addExclusion(path);
 }
 
-static QString localPath(const QString &p)
-{
-    return p.startsWith(QStringLiteral("file:")) ? QUrl(p).toLocalFile() : p;
-}
-
 QString QmlSettingsBridge::exportSettings(const QString &path)
 {
-    static const QStringList secrets = {"proxyPass","plexToken","jellyfinApiKey","webUiPasswordHash"};
     QSettings st;
-    QJsonObject obj;
+    QVariantMap map;
     for (const auto &k : st.allKeys())
-        if (!secrets.contains(k)) obj[k] = QJsonValue::fromVariant(st.value(k));
-    QFile f(localPath(path));
+        map.insert(k, st.value(k));
+    const QJsonObject obj = SettingsBackup::settingsObjectFromMap(map, /*stripSecrets=*/true);
+    QFile f(SettingsBackup::localPath(path));
     if (!f.open(QIODevice::WriteOnly)) return tr_("full_restore_failed");
     f.write(QJsonDocument(obj).toJson());
     return tr_("export_success");
@@ -430,7 +337,7 @@ QString QmlSettingsBridge::exportSettings(const QString &path)
 
 QString QmlSettingsBridge::importSettings(const QString &path)
 {
-    QFile f(localPath(path));
+    QFile f(SettingsBackup::localPath(path));
     if (!f.open(QIODevice::ReadOnly)) return tr_("full_restore_failed");
     const QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
     if (!doc.isObject()) return tr_("full_restore_bad_format");
@@ -443,63 +350,45 @@ QString QmlSettingsBridge::importSettings(const QString &path)
 
 QString QmlSettingsBridge::fullBackup(const QString &path)
 {
-    QFile f(localPath(path));
+    QFile f(SettingsBackup::localPath(path));
     if (!f.open(QIODevice::WriteOnly)) return tr_("full_restore_failed");
-    QByteArray archive("BATBACKUP1\n");
     QList<QPair<QString, QByteArray>> entries;
     QSettings st;
-    QJsonObject obj;
-    for (const auto &k : st.allKeys()) obj[k] = QJsonValue::fromVariant(st.value(k));
-    entries.append({"settings.json", QJsonDocument(obj).toJson()});
+    QVariantMap map;
+    for (const auto &k : st.allKeys())
+        map.insert(k, st.value(k));
+    entries.append({QStringLiteral("settings.json"),
+                    QJsonDocument(SettingsBackup::settingsObjectFromMap(map, false)).toJson()});
     QDir resumeDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/resume");
     if (resumeDir.exists())
         for (const auto &name : resumeDir.entryList({"*.resume"}, QDir::Files)) {
             QFile rf(resumeDir.filePath(name));
-            if (rf.open(QIODevice::ReadOnly)) entries.append({"resume/" + name, rf.readAll()});
+            if (rf.open(QIODevice::ReadOnly))
+                entries.append({QStringLiteral("resume/") + name, rf.readAll()});
         }
-    quint32 count = entries.size();
-    archive.append(reinterpret_cast<const char *>(&count), 4);
-    for (const auto &e : entries) {
-        QByteArray nb = e.first.toUtf8();
-        quint32 nl = nb.size(); quint64 dl = e.second.size();
-        archive.append(reinterpret_cast<const char *>(&nl), 4);
-        archive.append(nb);
-        archive.append(reinterpret_cast<const char *>(&dl), 8);
-        archive.append(e.second);
-    }
-    f.write(archive);
+    f.write(SettingsBackup::pack(entries));
     return tr_("full_backup_done");
 }
 
 QString QmlSettingsBridge::fullRestore(const QString &path)
 {
-    QFile f(localPath(path));
+    QFile f(SettingsBackup::localPath(path));
     if (!f.open(QIODevice::ReadOnly)) return tr_("full_restore_failed");
-    const QByteArray data = f.readAll();
-    if (!data.startsWith("BATBACKUP1\n")) return tr_("full_restore_bad_format");
-    const char *p = data.constData() + 11, *end = data.constData() + data.size();
-    if (p + 4 > end) return tr_("full_restore_bad_format");
-    quint32 count; memcpy(&count, p, 4); p += 4;
+    const auto unpacked = SettingsBackup::unpack(f.readAll());
+    if (!unpacked.ok) return tr_("full_restore_bad_format");
     const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(base + "/resume");
     int restored = 0;
-    for (quint32 i = 0; i < count; ++i) {
-        if (end - p < 4) break;
-        quint32 nl; memcpy(&nl, p, 4); p += 4;
-        if (nl > 4096 || static_cast<ptrdiff_t>(nl) > end - p) break;
-        const QString name = QString::fromUtf8(p, nl); p += nl;
-        if (end - p < 8) break;
-        quint64 dl; memcpy(&dl, p, 8); p += 8;
-        if (dl > 1073741824ULL || static_cast<ptrdiff_t>(dl) > end - p) break;
-        const QByteArray payload(p, dl); p += dl;
-        if (name == "settings.json") {
-            const auto obj = QJsonDocument::fromJson(payload).object();
+    for (const auto &e : unpacked.entries) {
+        if (e.first == QLatin1String("settings.json")) {
+            const auto obj = QJsonDocument::fromJson(e.second).object();
             QSettings s;
-            for (auto it = obj.begin(); it != obj.end(); ++it) s.setValue(it.key(), it.value().toVariant());
+            for (auto it = obj.begin(); it != obj.end(); ++it)
+                s.setValue(it.key(), it.value().toVariant());
             ++restored;
-        } else if (name.startsWith("resume/")) {
-            QFile rf(base + "/" + name);
-            if (rf.open(QIODevice::WriteOnly)) { rf.write(payload); ++restored; }
+        } else if (e.first.startsWith(QLatin1String("resume/"))) {
+            QFile rf(base + "/" + e.first);
+            if (rf.open(QIODevice::WriteOnly)) { rf.write(e.second); ++restored; }
         }
     }
     return tr_("full_restore_done").arg(restored) + "\n" + tr_("import_restart");
@@ -520,132 +409,54 @@ QStringList QmlSettingsBridge::networkInterfaces() const
     return out;
 }
 
-#ifdef Q_OS_WIN
-// One association slice — .torrent, magnet: or bittorrent: — written or
-// removed independently (tester ask: per-type toggles). The key layout is the
-// exact set the one-shot "set as default" button proved out in the wild; the
-// "Default Programs" Capabilities plumbing is shared and needed for Windows'
-// per-protocol picker and for browsers to offer us as a handler at all.
-static bool applyWinAssociation(const QString &kind, bool on)
-{
-    const QString nativeExe = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
-    const QString cmd = "\"" + nativeExe + "\" \"%1\"";
-    QSettings reg("HKEY_CURRENT_USER\\Software\\Classes", QSettings::NativeFormat);
-    QSettings caps("HKEY_CURRENT_USER\\Software\\BATorrent\\Capabilities", QSettings::NativeFormat);
-
-    auto proto = [&](const QString &progId, const QString &friendly,
-                     const QString &scheme, const QString &schemeFriendly) {
-        if (on) {
-            reg.setValue(progId + "/.", friendly);
-            reg.setValue(progId + "/URL Protocol", "");
-            reg.setValue(progId + "/shell/open/command/.", cmd);
-            reg.setValue(progId + "/DefaultIcon/.", nativeExe + ",0");
-            reg.setValue(scheme + "/.", schemeFriendly);
-            reg.setValue(scheme + "/URL Protocol", "");
-            reg.setValue(scheme + "/shell/open/command/.", cmd);
-            reg.setValue(scheme + "/DefaultIcon/.", nativeExe + ",0");
-            caps.setValue("UrlAssociations/" + scheme, progId);
-        } else {
-            reg.remove(progId);
-            // only strip the bare scheme key while it still points at us
-            if (reg.value(scheme + "/shell/open/command/.").toString().contains(nativeExe))
-                reg.remove(scheme);
-            caps.remove("UrlAssociations/" + scheme);
-        }
-    };
-
-    if (kind == QLatin1String("torrent")) {
-        if (on) {
-            reg.setValue(".torrent/.", "BATorrent.torrent");
-            reg.setValue("BATorrent.torrent/.", "BATorrent Torrent File");
-            reg.setValue("BATorrent.torrent/shell/open/command/.", cmd);
-            reg.setValue("BATorrent.torrent/DefaultIcon/.", nativeExe + ",0");
-            caps.setValue("FileAssociations/.torrent", "BATorrent.torrent");
-        } else {
-            if (reg.value(".torrent/.").toString() == QLatin1String("BATorrent.torrent"))
-                reg.remove(".torrent");
-            reg.remove("BATorrent.torrent");
-            caps.remove("FileAssociations/.torrent");
-        }
-    } else if (kind == QLatin1String("magnet")) {
-        proto("BATorrent.Url.Magnet", "BATorrent Magnet Link", "magnet", "URL:Magnet Protocol");
-    } else if (kind == QLatin1String("bittorrent")) {
-        proto("BATorrent.Url.BitTorrent", "BATorrent BitTorrent Link", "bittorrent", "URL:BitTorrent Protocol");
-    } else {
-        return false;
-    }
-
-    caps.setValue("ApplicationName", "BATorrent");
-    caps.setValue("ApplicationDescription", "Lightweight, open-source BitTorrent client");
-    caps.setValue("ApplicationIcon", nativeExe + ",0");
-    reg.sync(); caps.sync();
-    QSettings registered("HKEY_CURRENT_USER\\Software\\RegisteredApplications", QSettings::NativeFormat);
-    registered.setValue("BATorrent", "Software\\BATorrent\\Capabilities");
-    registered.sync();
-    return reg.status() == QSettings::NoError && caps.status() == QSettings::NoError
-        && registered.status() == QSettings::NoError;
-}
-#endif
-
 bool QmlSettingsBridge::setAsDefaultApp()
 {
-    const QString exe = QCoreApplication::applicationFilePath();
-    bool ok = false;
-#ifdef Q_OS_WIN
-    Q_UNUSED(exe)
-    // (the old `cmd /c assoc` follow-up is gone: it does nothing on Win10+
-    // and flashed a console window)
-    ok = applyWinAssociation(QStringLiteral("torrent"), true)
-      && applyWinAssociation(QStringLiteral("magnet"), true)
-      && applyWinAssociation(QStringLiteral("bittorrent"), true);
-    if (ok) {
-        QSettings s;
-        s.setValue("assocTorrent", true);
-        s.setValue("assocMagnet", true);
-        s.setValue("assocBittorrent", true);
-    }
-#elif defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
-    // A missing helper (xdg-mime / duti) leaves exitCode() at its default 0,
-    // which would look like success — gate on the process actually finishing.
-    auto run = [](const QString &exe, const QStringList &args) {
-        QProcess p;
-        p.start(exe, args);
-        return p.waitForFinished(3000)
-            && p.exitStatus() == QProcess::NormalExit
-            && p.exitCode() == 0;
-    };
-  #if defined(Q_OS_LINUX)
-    ok = run("xdg-mime", {"default", "batorrent.desktop", "application/x-bittorrent"})
-      && run("xdg-mime", {"default", "batorrent.desktop", "x-scheme-handler/magnet"});
-  #else
-    ok = run("duti", {"-s", "com.batorrent.app", ".torrent", "all"});
-  #endif
-#endif
-    return ok;
+    return FileAssociation::setAsDefaultApp();
 }
 
 void QmlSettingsBridge::applyProxyPreset(const QString &name)
 {
-    // Mullvad exposes a local SOCKS5 (only while connected to Mullvad); Tor's is
-    // the local daemon. Other providers (AirVPN, etc.) need their own host/creds,
-    // so a preset there just selects SOCKS5 and leaves the fields to the user.
+    const auto preset = SettingsPolicy::proxyPreset(name);
     QSettings st;
-    if (name == QStringLiteral("mullvad")) {
-        m_session->setProxySettings(1, QStringLiteral("10.64.0.1"), 1080, QString(), QString());
-        st.setValue("proxyType", 1); st.setValue("proxyHost", "10.64.0.1"); st.setValue("proxyPort", 1080);
-    } else if (name == QStringLiteral("tor")) {
-        m_session->setProxySettings(1, QStringLiteral("127.0.0.1"), 9050, QString(), QString());
-        st.setValue("proxyType", 1); st.setValue("proxyHost", "127.0.0.1"); st.setValue("proxyPort", 9050);
+    const int type = preset.type;
+    QString host;
+    int port = 0;
+    QString user;
+    QString pass;
+    if (preset.keepHost) {
+        if (m_session) {
+            host = m_session->proxyHost();
+            port = m_session->proxyPort();
+            user = m_session->proxyUser();
+            pass = m_session->proxyPass();
+        } else {
+            host = st.value(QStringLiteral("proxyHost")).toString();
+            port = st.value(QStringLiteral("proxyPort")).toInt();
+            user = st.value(QStringLiteral("proxyUser")).toString();
+            pass = st.value(QStringLiteral("proxyPass")).toString();
+        }
     } else {
-        m_session->setProxySettings(1, m_session->proxyHost(), m_session->proxyPort(),
-                                    m_session->proxyUser(), m_session->proxyPass());
-        st.setValue("proxyType", 1);
+        host = preset.host;
+        port = preset.port;
+    }
+    if (m_engine)
+        m_engine->setProxySettings(type, host, port, user, pass);
+    else if (m_session)
+        m_session->setProxySettings(type, host, port, user, pass);
+    st.setValue("proxyType", type);
+    if (!preset.keepHost) {
+        st.setValue("proxyHost", host);
+        st.setValue("proxyPort", port);
     }
     emit changed();
 }
 
 void QmlSettingsBridge::proxyLeakTest()
 {
+    if (!m_session) {
+        emit proxyLeakTestResult(false, QString());
+        return;
+    }
     const int type = m_session->proxyType();
     if (type == 0 || m_session->proxyHost().isEmpty()) {
         emit proxyLeakTestResult(false, QString());
@@ -667,6 +478,3 @@ void QmlSettingsBridge::proxyLeakTest()
         nam->deleteLater();
     });
 }
-
-// --- QmlNotificationBridge ---
-

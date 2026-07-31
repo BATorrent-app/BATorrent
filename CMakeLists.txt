@@ -127,6 +127,9 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/metadata/nameparser.cpp
     src/services/metadata/releasegroup.cpp
     src/services/platform/contentlanguage.cpp
+    src/services/platform/settingsbackup.cpp
+    src/services/platform/settingspolicy.cpp
+    src/services/platform/fileassociation.cpp
     src/services/metadata/metadataresolver.cpp
     src/services/metadata/metadatamatch.cpp
     src/services/metadata/mkvchapters.cpp
