@@ -1,9 +1,7 @@
 # BATorrent — Architecture
 
 A map of how BATorrent is put together: where things live, how the layers talk,
-and the non-obvious gotchas. Aimed at anyone (human or AI) about to change the
-code. For *what* the app does, see the [README](../README.md); for the engineering
-contract and conventions, see [`CLAUDE.md`](../CLAUDE.md).
+and the non-obvious gotchas. For *what* the app does, see the [README](../README.md).
 
 BATorrent is a desktop BitTorrent client: a **libtorrent** engine wrapped in C++,
 driven by a **Qt 6 / QML** UI, with an optional browser **WebUI**. One process,
@@ -145,14 +143,14 @@ platforms and publish (GitHub Release → Microsoft Store MSIX → Homebrew tap 
 Flathub). A plain push to `main` does **not** release. CI also runs a wide
 analysis wall: `build` (+ Catch2), `codeql`, `sanitizers` (ASan/UBSan), `tsan`,
 `clang-tidy`, `cppcheck`, `semgrep`, `osv-scanner`, `scorecard`, plus the Store
-build and AI code review.
+build.
 
 ---
 
 ## Conventions & gotchas
 
-- **Comments are rare by design** (see `CLAUDE.md`): only when the *why* is
-  non-obvious. Don't narrate *what* well-named code already says.
+- **Comments are rare by design**: only when the *why* is non-obvious. Don't
+  narrate *what* well-named code already says.
 - **i18n binding trick**: write UI strings as `(i18n.language, i18n.t("key"))` —
   referencing `i18n.language` makes the binding re-evaluate on a live language
   switch. A bare `i18n.t("key")` won't re-translate.

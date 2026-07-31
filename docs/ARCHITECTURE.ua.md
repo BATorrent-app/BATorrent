@@ -1,7 +1,7 @@
 # BATorrent — Архітектура
 
 Карта того, як зібраний BATorrent: де що живе, як взаємодіють шари
-та неочевидні підводні камені. Призначено для всіх (людей або ШІ), хто збирається змінювати код. Про те, *що* робить програма, читайте в [README](../README.ua.md); про інженерні угоди та конвенції — у [`CLAUDE.md`](../CLAUDE.md).
+та неочевидні підводні камені. Про те, *що* робить програма, читайте в [README](../README.ua.md).
 
 BATorrent — десктопний BitTorrent-клієнт: рушій **libtorrent**, обгорнутий у C++, з інтерфейсом на **Qt 6 / QML** та опційним браузерним **WebUI**. Один процес, три платформи (Windows / macOS / Linux).
 
@@ -140,14 +140,13 @@ cmake --build build-tests --target test_unit test_security test_memory test_name
 платформ і публікації (GitHub Release → Microsoft Store MSIX → Homebrew tap →
 Flathub). Звичайний push у `main` релізу **не** запускає. CI також проводить широкий
 аналіз: `build` (+ Catch2), `codeql`, `sanitizers` (ASan/UBSan), `tsan`,
-`clang-tidy`, `cppcheck`, `semgrep`, `osv-scanner`, `scorecard`, плюс Store-збірка
-та AI-рев'ю коду.
+`clang-tidy`, `cppcheck`, `semgrep`, `osv-scanner`, `scorecard`, плюс Store-збірка.
 
 ---
 
 ## Конвенції та підводні камені
 
-- **Коментарів навмисно мало** (див. `CLAUDE.md`): лише коли *чому* неочевидно.
+- **Коментарів навмисно мало**: лише коли *чому* неочевидно.
   Не коментуйте *що* робить добре названий код.
 - **Трюк з прив'язкою i18n**: пишіть UI-рядки як `(i18n.language, i18n.t("key"))` —
   звернення до `i18n.language` змушує прив'язку переобчислюватися при переключенні мови.
