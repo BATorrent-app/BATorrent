@@ -18,6 +18,8 @@
 #include <QFileInfo>
 #include <QVariantMap>
 #include <QMetaType>
+#include <QSignalSpy>
+#include <QRegularExpression>
 
 #include <libtorrent/file_storage.hpp>
 #include <libtorrent/create_torrent.hpp>
@@ -63,6 +65,37 @@ static QString makeFixtureTorrent(const QString &dir, const QString &tag = QStri
     ct.add_tracker("udp://tracker.test:6969/announce", 0);
     ct.set_priv(true);                                  // private → fully offline
     lt::set_piece_hashes(ct, dir.toStdString());        // parent of `name`
+
+    std::vector<char> buf;
+    lt::bencode(std::back_inserter(buf), ct.generate());
+    const QString out = dir + "/" + name + ".torrent";
+    QFile f(out); f.open(QIODevice::WriteOnly);
+    f.write(buf.data(), static_cast<qsizetype>(buf.size()));
+    f.close();
+    return out;
+}
+
+// Private multi-file torrent with a video leaf (larger) + a sample text file.
+// Used to pin streamUrl / playFile URL shape and priority side-effects.
+static QString makeVideoFixtureTorrent(const QString &dir, const QString &tag = QString())
+{
+    const QString name = tag.isEmpty() ? QStringLiteral("bat_video")
+                                       : QStringLiteral("bat_video_") + tag;
+    const QString content = dir + "/" + name;
+    QDir().mkpath(content);
+    auto writeN = [](const QString &p, int n, char c) {
+        QFile f(p); f.open(QIODevice::WriteOnly); f.write(QByteArray(n, c)); f.close();
+    };
+    const char filler = tag.isEmpty() ? 'v' : tag.at(0).toLatin1();
+    writeN(content + "/sample.txt", 50, filler);
+    writeN(content + "/Show.S01E01.mkv", 400, filler);
+
+    lt::file_storage fs;
+    lt::add_files(fs, content.toStdString());
+    lt::create_torrent ct(fs, 16384, lt::create_torrent::v1_only);
+    ct.add_tracker("udp://tracker.test:6969/announce", 0);
+    ct.set_priv(true);
+    lt::set_piece_hashes(ct, dir.toStdString());
 
     std::vector<char> buf;
     lt::bencode(std::back_inserter(buf), ct.generate());
@@ -404,4 +437,181 @@ TEST_CASE("Settings bridge: UI bool toggles read back as real bool", "[bridge][s
     QSettings().remove(QStringLiteral("randomPort"));
     QSettings().sync();
     REQUIRE_FALSE(sb.get(QStringLiteral("randomPort")).isValid());
+}
+
+// ============================================================================
+//  playFile / streamUrl / clearResume — past-regression characterization (P0)
+// ============================================================================
+static QString stripIncompleteSuffix(QString path)
+{
+    if (path.endsWith(QStringLiteral(".!bt"))) path.chop(4);
+    return path;
+}
+
+static int findVideoFileIndex(const std::vector<FileInfo> &files)
+{
+    for (int i = 0; i < int(files.size()); ++i) {
+        const QString mp = stripIncompleteSuffix(files[size_t(i)].path);
+        if (mp.endsWith(QStringLiteral(".mkv"), Qt::CaseInsensitive)
+            || mp.endsWith(QStringLiteral(".mp4"), Qt::CaseInsensitive))
+            return i;
+    }
+    return -1;
+}
+
+TEST_CASE("playFile: no-op when port unset, hash missing, or index OOB",
+          "[bridge][playback][playFile]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    const int base = session.torrentCount();
+    const QString torrentPath = makeVideoFixtureTorrent(tmp.path(), QStringLiteral("noop"));
+    session.addTorrent(torrentPath, tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == base + 1; }));
+
+    const int row = base;
+    const QString hash = session.torrentHashAt(row);
+    REQUIRE_FALSE(hash.isEmpty());
+    REQUIRE(pumpUntil([&] { return int(session.filesAt(row).size()) >= 2; }));
+    const int nFiles = int(session.filesAt(row).size());
+
+    QSignalSpy spy(&bridge, &QmlSessionBridge::openPlayer);
+
+    bridge.playFile(hash, 0);                                 // port still 0
+    bridge.playFile(QStringLiteral("deadbeef"), 0);           // unknown hash
+    bridge.setStreamPort(18765);
+    bridge.playFile(hash, -1);
+    bridge.playFile(hash, nFiles);
+    REQUIRE(spy.count() == 0);
+}
+
+TEST_CASE("playFile: emits stream URL and sets sequential + file priorities",
+          "[bridge][playback][playFile]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    const int base = session.torrentCount();
+    const QString torrentPath = makeVideoFixtureTorrent(tmp.path(), QStringLiteral("play"));
+    session.addTorrent(torrentPath, tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == base + 1; }));
+
+    const int row = base;
+    const QString hash = session.torrentHashAt(row);
+    REQUIRE_FALSE(hash.isEmpty());
+    REQUIRE(pumpUntil([&] { return findVideoFileIndex(session.filesAt(row)) >= 0; }));
+    const int videoIdx = findVideoFileIndex(session.filesAt(row));
+    REQUIRE(videoIdx >= 0);
+
+    constexpr quint16 port = 18766;
+    bridge.setStreamPort(port);
+    QSignalSpy spy(&bridge, &QmlSessionBridge::openPlayer);
+    bridge.playFile(hash, videoIdx);
+    REQUIRE(spy.count() == 1);
+
+    const QString url = spy.at(0).at(0).toString();
+    const QString emittedHash = spy.at(0).at(2).toString();
+    const int emittedIdx = spy.at(0).at(3).toInt();
+    REQUIRE(emittedHash == hash);
+    REQUIRE(emittedIdx == videoIdx);
+    REQUIRE(url == QStringLiteral("http://127.0.0.1:%1/stream/%2/%3")
+                       .arg(port).arg(hash).arg(videoIdx));
+    static const QRegularExpression re(
+        QStringLiteral("^http://127\\.0\\.0\\.1:\\d+/stream/[0-9a-fA-F]+/\\d+$"));
+    REQUIRE(re.match(url).hasMatch());
+
+    REQUIRE(pumpUntil([&] {
+        if (!session.isSequentialDownload(row)) return false;
+        const auto files = session.filesAt(row);
+        if (videoIdx >= int(files.size())) return false;
+        if (files[size_t(videoIdx)].priority != 7) return false;
+        for (int i = 0; i < int(files.size()); ++i) {
+            if (i == videoIdx) continue;
+            if (files[size_t(i)].priority != 0) return false;
+        }
+        return true;
+    }));
+}
+
+TEST_CASE("streamUrl: empty without port or video; shape picks largest video",
+          "[bridge][playback][streamUrl]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    // Text-only fixture → no video → empty even with a port.
+    {
+        const int base = session.torrentCount();
+        const QString path = makeFixtureTorrent(tmp.path(), QStringLiteral("txt"));
+        session.addTorrent(path, tmp.path() + "/dl");
+        REQUIRE(pumpUntil([&] { return session.torrentCount() == base + 1; }));
+        const int row = base;
+        REQUIRE(bridge.streamUrl(row).isEmpty());           // port 0
+        bridge.setStreamPort(18767);
+        REQUIRE(bridge.streamUrl(row).isEmpty());           // no video leaf
+        REQUIRE(bridge.streamUrl(-1).isEmpty());
+        REQUIRE(bridge.streamUrl(session.torrentCount()).isEmpty());
+    }
+
+    const int base = session.torrentCount();
+    const QString vpath = makeVideoFixtureTorrent(tmp.path(), QStringLiteral("url"));
+    session.addTorrent(vpath, tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == base + 1; }));
+    const int row = base;
+    const QString hash = session.torrentHashAt(row);
+    REQUIRE(pumpUntil([&] { return findVideoFileIndex(session.filesAt(row)) >= 0; }));
+    const int videoIdx = findVideoFileIndex(session.filesAt(row));
+    REQUIRE(videoIdx >= 0);
+
+    constexpr quint16 port = 18767;
+    bridge.setStreamPort(port);
+    const QString url = bridge.streamUrl(row);
+    REQUIRE(url == QStringLiteral("http://127.0.0.1:%1/stream/%2/%3")
+                       .arg(port).arg(hash).arg(videoIdx));
+}
+
+TEST_CASE("clearResume: removes resume_ hash_index and _dur/_at sidecars",
+          "[bridge][playback][clearResume]")
+{
+    app();
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    const QString hash = QStringLiteral("abcdef0123456789abcdef0123456789abcdef01");
+    constexpr int fileIndex = 3;
+    const QString rk = QStringLiteral("resume_%1_%2").arg(hash).arg(fileIndex);
+    QSettings s;
+    s.setValue(rk, 42.5);
+    s.setValue(rk + QStringLiteral("_dur"), 1200.0);
+    s.setValue(rk + QStringLiteral("_at"), qint64(1700000000));
+    s.sync();
+    REQUIRE(s.contains(rk));
+    REQUIRE(s.contains(rk + QStringLiteral("_dur")));
+    REQUIRE(s.contains(rk + QStringLiteral("_at")));
+
+    bridge.clearResume(hash, fileIndex);
+    s.sync();
+    REQUIRE_FALSE(s.contains(rk));
+    REQUIRE_FALSE(s.contains(rk + QStringLiteral("_dur")));
+    REQUIRE_FALSE(s.contains(rk + QStringLiteral("_at")));
 }

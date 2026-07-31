@@ -345,5 +345,8 @@ add_custom_target(check
     DEPENDS test_security test_memory test_unit test_nameparser test_bridge test_gamesource
             test_gamereleasepick test_gameinstallstate test_searchranker test_releasegroup
             test_contentlanguage test_releasetrust
+            test_sessionresume test_metadatamatch test_sessionconfig
+            test_addonparse test_tmdbparse test_igdbparse test_settingshelpers
+            test_discoveryassemble test_discoverysearch test_hublogic
     COMMENT "Running all BATorrent tests..."
 )
