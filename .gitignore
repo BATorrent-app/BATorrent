@@ -11,9 +11,10 @@ compile_commands.json
 # Local secrets (TMDB / IGDB API keys) — never commit
 .env
 
-# IDE
+# IDE / editor tooling (local only — not product source)
 .vscode/
 .idea/
+.cursor/
 .cache/
 *.swp
 *~
