@@ -6,8 +6,8 @@
 // for the snapshot numbers; the graph and "now" row bind live to the session.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Window {
     id: win

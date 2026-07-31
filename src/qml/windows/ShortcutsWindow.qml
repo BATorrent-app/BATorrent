@@ -5,8 +5,8 @@
 // Keyboard shortcuts reference. Static data (ported from shortcutsdialog.cpp), no bridge.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Window {
     id: win

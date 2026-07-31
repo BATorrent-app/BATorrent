@@ -7,8 +7,8 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Window {
     id: win

@@ -5,8 +5,8 @@
 // Recently-removed torrents with one-click restore. session.recentlyRemoved()/restoreRemoved().
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Window {
     id: win

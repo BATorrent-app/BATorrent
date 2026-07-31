@@ -4,6 +4,7 @@
 
 import QtQuick
 import "player"
+import "windows"
 
 // Lazy top-level utility windows. Instantiated inside Main; callers use
 // showWin(loader) / showWrapped() or the aliased loader ids — no parent walks.
