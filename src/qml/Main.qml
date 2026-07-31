@@ -324,7 +324,7 @@ Window {
         id: ctxMenu
         host: win
         controller: library
-        inputPrompt: inputPrompt
+        inputPrompt: win.inputPrompt
         removeDialog: removeDlg
         setLocationDialog: setLocationDlg
         exportDialog: exportTorrentDlg
@@ -337,7 +337,7 @@ Window {
         host: win
         openFileDialog: openFileDlg
         magnetDialog: magnetDlg
-        inputPrompt: inputPrompt
+        inputPrompt: win.inputPrompt
         createDialog: createDlg
         inspectFileDialog: inspectFileDlg
         importQbtDialog: importQbtDlg
@@ -428,7 +428,7 @@ Window {
             welcomeDialog: welcomeDlg
             releaseNotesDialog: releaseNotesDlg
             aboutDialog: aboutDlg
-            makeRoomPanel: makeRoomPanel
+            makeRoomPanel: win.makeRoomPanel
             settingsPage: settingsPage
         }
 

@@ -53,8 +53,11 @@ jobs:
           echo "=== boot log (tail) ==="; tail -40 boot.log
           # Engine-level load failures are always fatal; QML runtime errors are
           # matched by pattern. Extend the list when a new class escapes.
-          if grep -Eq "failed to load component|is not a type|TypeError:|ReferenceError:|Unable to assign|Invalid property assignment|Cannot specify .* anchors for items inside|is instantiated recursively" boot.log; then
-            echo "::error::QML errors at boot"; grep -En "failed to load component|is not a type|TypeError:|ReferenceError:|Unable to assign|Invalid property assignment|Cannot specify|instantiated recursively" boot.log | head -20
+          # "Binding loop detected" earns its place here: three of them shipped in
+          # Main.qml (x: x self-references) and only the Windows paint smoke saw
+          # them, because this list did not cover the class.
+          if grep -Eq "failed to load component|is not a type|TypeError:|ReferenceError:|Unable to assign|Invalid property assignment|Cannot specify .* anchors for items inside|is instantiated recursively|Binding loop detected" boot.log; then
+            echo "::error::QML errors at boot"; grep -En "failed to load component|is not a type|TypeError:|ReferenceError:|Unable to assign|Invalid property assignment|Cannot specify|instantiated recursively|Binding loop detected" boot.log | head -20
             exit 1
           fi
           # Catch missing translation keys that only surface as empty UI copy.
