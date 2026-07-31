@@ -120,6 +120,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/updater.cpp
     src/services/discovery/addonmanager.cpp
     src/services/discovery/addonparse.cpp
+    src/services/discovery/addonfinish.cpp
     src/services/discovery/addoncatalog.cpp
     src/services/integrations/rssmanager.cpp
     src/services/integrations/geoip.cpp
@@ -151,6 +152,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/discovery/discoveryservice.cpp
     src/services/discovery/discoveryassemble.cpp
     src/services/discovery/discoverysearch.cpp
+    src/services/discovery/discoveryfinish.cpp
     src/services/discovery/hublogic.cpp
     src/services/discovery/tmdbparse.cpp
     src/services/discovery/igdbparse.cpp

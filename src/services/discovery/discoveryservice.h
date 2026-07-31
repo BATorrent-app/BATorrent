@@ -89,7 +89,6 @@ private:
     void setIgdbHeaders(QNetworkRequest &req) const;
     void ensureIgdbToken(std::function<void()> then);
     void maybeFinish();
-    void assembleAndEmit();
     bool loadFromCache();
     void saveToCache();
 
