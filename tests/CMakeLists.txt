@@ -94,6 +94,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_gameinstall.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_library.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_playback.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_subtitles.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_watch.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_selection.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_disk.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_actions.cpp
