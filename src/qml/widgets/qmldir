@@ -12,6 +12,9 @@ PathFld 1.0 PathFld.qml
 Eyebrow 1.0 Eyebrow.qml
 EmptyState 1.0 EmptyState.qml
 PosterThumb 1.0 PosterThumb.qml
+PosterTile 1.0 PosterTile.qml
+PosterTileBadges 1.0 PosterTileBadges.qml
+PosterTileMeta 1.0 PosterTileMeta.qml
 PosterCard 1.0 PosterCard.qml
 DetailPeers 1.0 DetailPeers.qml
 DetailKVSection 1.0 DetailKVSection.qml

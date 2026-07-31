@@ -41,17 +41,11 @@ Item {
     readonly property int etaSec: (downRate > 0 && progress < 1.0 && sizeBytes > 0)
         ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
 
-    // states that carry a top-right badge (DONE/SEEDING/QUEUE) — for those the
-    // status word below the poster is redundant, so we show movie info instead.
     readonly property bool hasBadge: stateKey === "seeding" || stateKey === "queued"
         || progress >= 0.999
-    // Genres only beneath the poster — the release year moved to a chip on the
-    // poster's top-left corner (tester: cleaner hierarchy, more room below).
     readonly property string metaLine: genres
-
     readonly property string posterUrl: win.fileUrl(posterPath)
 
-    // soft drop shadow under the cover, fading in on hover
     Rectangle {
         z: -1
         width: 178 * 0.84
@@ -66,19 +60,16 @@ Item {
         layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 28 }
     }
 
-    // .poster wrapper (aspect 3:4 ≈ 178:237)
     Item {
         id: posterWrap
         width: 178
         height: 237
 
-        // fallback (no poster): tinted bg + watermark + category + title
         Rectangle {
             anchors.fill: parent
             radius: 10
             color: "#161618"
             visible: tile.posterUrl === ""
-            // watermark: BATorrent logo (not the title's first letter)
             Image {
                 anchors.centerIn: parent
                 width: parent.width * 0.5
@@ -91,12 +82,17 @@ Item {
                 layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
             }
             Text {
-                anchors.left: parent.left; anchors.right: parent.right
+                anchors.left: parent.left
+                anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                anchors.leftMargin: 13; anchors.rightMargin: 13; anchors.bottomMargin: 15
+                anchors.leftMargin: 13
+                anchors.rightMargin: 13
+                anchors.bottomMargin: 15
                 text: tile.metaTitle || tile.torrentName
                 color: "#f5f5f6"
-                font.pixelSize: 18; font.weight: Font.Bold; font.letterSpacing: -0.3
+                font.pixelSize: 18
+                font.weight: Font.Bold
+                font.letterSpacing: -0.3
                 font.family: Theme.fontSans
                 wrapMode: Text.WordWrap
                 maximumLineCount: 3
@@ -104,7 +100,6 @@ Item {
             }
         }
 
-        // poster image (masked rounded) — only when present
         Rectangle {
             id: posterBg
             anchors.fill: parent
@@ -116,8 +111,6 @@ Item {
                 source: tile.posterUrl
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
-                // decode at ~2× display size, not the poster's full
-                // resolution — cuts memory and decode time per cover.
                 sourceSize: Qt.size(356, 474)
                 cache: true
             }
@@ -148,7 +141,6 @@ Item {
             maskSource: posterMask
             visible: tile.posterUrl !== ""
         }
-        // title over the fade (only when poster present)
         Text {
             visible: tile.posterUrl !== ""
             anchors.left: parent.left
@@ -167,19 +159,17 @@ Item {
             maximumLineCount: 2
             wrapMode: Text.WordWrap
         }
-        // progress — an inset rounded pill, not a full-width bar fused to the
-        // bottom edge. The old bar sat directly under the selection ring (both
-        // touching the border), so a red download bar and the red ring read as
-        // one element; the inset gap keeps status and selection visually apart.
+
         Rectangle {
             visible: tile.progress < 0.999
-            anchors.left: parent.left; anchors.right: parent.right
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.bottomMargin: 8
-            // taller and on a darker track than the original 6px hairline: over
-            // busy poster art a thin bar disappears, and this is the one element
-            // carrying state at grid scale
-            height: 9; radius: 4.5
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            anchors.bottomMargin: 8
+            height: 9
+            radius: 4.5
             color: Qt.rgba(0, 0, 0, 0.78)
             border.color: Qt.rgba(1, 1, 1, 0.10)
             border.width: 1
@@ -187,28 +177,23 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: 1
-                height: parent.height - 2; radius: (parent.height - 2) / 2
-                // clamp to at least a round nub so early progress still reads
+                height: parent.height - 2
+                radius: (parent.height - 2) / 2
                 width: Math.max(height, (parent.width - 2) * tile.progress)
                 color: win.fillFor(tile.stateKey)
                 Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
             }
         }
-        // ▶ hover play — a downloaded movie is playable straight from the grid,
-        // matching the Find/HUB cards (playback still lives in the context menu
-        // too). Only for video torrents (never games), and only once there's
-        // something to stream. On top of tileMa so its own click wins.
+
         Rectangle {
-            // also visible while the tile is SELECTED, so arrow-key navigation reaches
-            // Play at all — hover-only meant the action didn't exist for keyboard
             visible: tile.playable && tile.progress > 0.02
                      && (tileMa.containsMouse || ptMa.containsMouse || controller.isRowSelected(tile.index))
             x: (parent.width - width) / 2
             y: (parent.height - height) / 2
-            width: 46; height: 46; radius: 23
+            width: 46
+            height: 46
+            radius: 23
             z: 5
-            // dark glass disc, always — red shows up only as the hover accent
-            // (ring + glyph), never as a filled surface
             color: "#cc101014"
             border.color: ptMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
             border.width: 1
@@ -216,8 +201,11 @@ Item {
             Behavior on border.color { ColorAnimation { duration: 120 } }
             Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
             IconImg {
-                anchors.centerIn: parent; anchors.horizontalCenterOffset: 1
-                src: "qrc:/icons/play.svg"; tint: ptMa.containsMouse ? Theme.accent : "#ffffff"; s: 18
+                anchors.centerIn: parent
+                anchors.horizontalCenterOffset: 1
+                src: "qrc:/icons/play.svg"
+                tint: ptMa.containsMouse ? Theme.accent : "#ffffff"
+                s: 18
             }
             MouseArea {
                 id: ptMa
@@ -228,8 +216,6 @@ Item {
             }
         }
 
-        // selection glow — a soft accent halo so "selected" reads as selection,
-        // never mistaken for a status color sitting on the border
         Rectangle {
             anchors.fill: parent
             anchors.margins: -2
@@ -239,203 +225,17 @@ Item {
             border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.28)
             border.width: 4
         }
-        // border overlay (radius 10, hair / accent ring when selected)
         Rectangle {
             anchors.fill: parent
             radius: 10
             color: "transparent"
-            border.color: controller.isRowSelected(tile.index) ? Theme.accent : (tileMa.containsMouse ? Qt.rgba(1,1,1,0.2) : Theme.hair)
+            border.color: controller.isRowSelected(tile.index) ? Theme.accent
+                          : (tileMa.containsMouse ? Qt.rgba(1, 1, 1, 0.2) : Theme.hair)
             border.width: controller.isRowSelected(tile.index) ? 2 : 1
             Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
 
-        // top-left: year and category in ONE pill. They used to be two stacked
-        // chips, which put a second dark slab over the artwork the moment a
-        // torrent had a category — they're one metadata line, so they read as one.
-        // Year stays on the poster (tester's ask); the line below carries genres.
-        Rectangle {
-            anchors.left: parent.left; anchors.top: parent.top
-            anchors.leftMargin: 8; anchors.topMargin: 8
-            visible: tile.year > 0 || tile.category.length > 0
-            radius: 9; color: "#99000000"
-            // hard ceiling: a user-named category ("MARACUJAMARACUJA…") would grow
-            // the pill straight across the cover and under the status badge
-            readonly property int maxW: Math.round(tile.width * 0.62)
-            implicitWidth: Math.min(tagRow.implicitWidth + 12, maxW); implicitHeight: 18
-
-            Row {
-                id: tagRow
-                anchors.centerIn: parent
-                spacing: 5
-                Text {
-                    id: yrTxt
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: tile.year > 0
-                    text: tile.year
-                    color: "#ffffff"; opacity: 0.92
-                    font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
-                    font.features: Theme.tnum
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: tile.year > 0 && tile.category.length > 0
-                    text: "·"
-                    color: "#ffffff"; opacity: 0.45
-                    font.pixelSize: 10; font.family: Theme.fontSans
-                }
-                Text {
-                    id: catTxt
-                    // baseline would drag the smaller caps off the year's line;
-                    // both are all-caps blocks here, so optical centring is right
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: tile.category.length > 0
-                    text: tile.category
-                    // elide needs an explicit width — without one the Text just
-                    // grows and the ceiling above would clip mid-letter instead
-                    width: Math.min(implicitWidth,
-                                    tagRow.parent.maxW - 12
-                                    - (yrTxt.visible ? yrTxt.implicitWidth + 10 : 0))
-                    elide: Text.ElideRight
-                    color: "#ffffff"; opacity: 0.88
-                    font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
-                    font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
-                }
-            }
-        }
-        // seeding pulse — a faint amber glow sweeping along the poster's bottom
-        // edge while actively uploading; disappears when seeding stops. Amber =
-        // the app's seeding colour (dot + text below say the same thing); a
-        // whisper you catch in the corner of the eye, not a bar competing with
-        // the poster. Green stays reserved for the DONE checkmark.
-        Rectangle {
-            id: seedTrack
-            visible: tile.stateKey === "seeding" && tile.upRate > 0
-            anchors.left: parent.left; anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.bottomMargin: 8
-            height: 2; radius: 1
-            color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.10)
-            clip: true
-            Rectangle {
-                id: seedSheen
-                width: 44; height: parent.height; radius: parent.radius
-                color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5)
-                SequentialAnimation on x {
-                    running: seedTrack.visible
-                    loops: Animation.Infinite
-                    NumberAnimation { from: -seedSheen.width; to: seedTrack.width; duration: 2600; easing.type: Easing.InOutSine }
-                    PauseAnimation { duration: 900 }
-                }
-            }
-        }
-
-        // downloading badge (top-right) — completes the DONE/SEEDING/QUEUE set: a
-        // red down-arrow ring + the live %. Sits with the rest of the status set
-        // (the year owns the top-left now); hidden once complete or while queued.
-        Rectangle {
-            visible: tile.progress < 0.999 && tile.stateKey !== "queued"
-            anchors.right: parent.right; anchors.top: parent.top
-            anchors.rightMargin: 8; anchors.topMargin: 8
-            radius: 9; color: "#cc000000"
-            implicitWidth: dlRow.implicitWidth + 14; implicitHeight: 18
-            Row {
-                id: dlRow; anchors.centerIn: parent; spacing: 4
-                Rectangle {
-                    width: 13; height: 13; radius: 6.5
-                    color: "transparent"; border.color: Theme.accent; border.width: 1.5
-                    anchors.verticalCenter: parent.verticalCenter
-                    // the icon, not the "↓" glyph: a text arrow centres on its
-                    // line box, and its ink sits off-centre by a pixel inside a
-                    // 13px ring — visibly crooked, and font-dependent on top
-                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/arrow-down.svg"; tint: Theme.accent; s: 9 }
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Math.floor(tile.progress * 100) + "%"
-                    color: "#ffffff"; opacity: 0.92
-                    font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
-                    font.features: Theme.tnum
-                }
-            }
-        }
-        // done badge (top-right) — same dark-glass pill as the % badge, with
-        // green confined to the checkmark glyph: color as signal, not surface.
-        // Hidden while actively seeding — the seeding badge below owns that state.
-        Rectangle {
-            visible: tile.progress >= 0.999 && tile.stateKey !== "seeding"
-            anchors.right: parent.right; anchors.top: parent.top
-            anchors.rightMargin: 8; anchors.topMargin: 8
-            radius: 9; color: "#cc000000"
-            implicitWidth: doneRow.implicitWidth + 14; implicitHeight: 18
-            Row {
-                id: doneRow; anchors.centerIn: parent; spacing: 4
-                // green ring + check: more legible than a bare glyph, but the green
-                // stays an outline (a signal), never a filled surface (tester #2, option C)
-                Rectangle {
-                    width: 13; height: 13; radius: 6.5
-                    color: "transparent"; border.color: Theme.grn; border.width: 1.5
-                    anchors.verticalCenter: parent.verticalCenter
-                    Text { anchors.centerIn: parent; text: "✓"; color: Theme.grn; font.pixelSize: 8; font.weight: Font.Bold; font.family: Theme.fontSans }
-                }
-                Text {
-                    text: (i18n.language, i18n.t("state_done_badge"))
-                    color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
-                    font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-        }
-        // seeding badge (top-right) — same pill, a gold up-arrow ring: marks the
-        // torrents that are actively uploading, distinct from a finished-idle DONE
-        // (tester request). Gold matches the seeding pulse + the ↑ arrow; it stays
-        // an outline glyph, not a surface. Green is reserved for DONE.
-        Rectangle {
-            visible: tile.stateKey === "seeding"
-            anchors.right: parent.right; anchors.top: parent.top
-            anchors.rightMargin: 8; anchors.topMargin: 8
-            radius: 9; color: "#cc000000"
-            implicitWidth: seedRow.implicitWidth + 14; implicitHeight: 18
-            Row {
-                id: seedRow; anchors.centerIn: parent; spacing: 4
-                Rectangle {
-                    width: 13; height: 13; radius: 6.5
-                    color: "transparent"; border.color: Theme.amber; border.width: 1.5
-                    anchors.verticalCenter: parent.verticalCenter
-                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/arrow-up.svg"; tint: Theme.amber; s: 9 }
-                }
-                Text {
-                    text: (i18n.language, i18n.t("state_seeding"))
-                    color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
-                    font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-        }
-        // queue badge (top-right) — a muted hollow ring: this torrent is waiting
-        // its turn (queued), distinct from an active download's % pill.
-        Rectangle {
-            visible: tile.stateKey === "queued"
-            anchors.right: parent.right; anchors.top: parent.top
-            anchors.rightMargin: 8; anchors.topMargin: 8
-            radius: 9; color: "#cc000000"
-            implicitWidth: queueRow.implicitWidth + 14; implicitHeight: 18
-            Row {
-                id: queueRow; anchors.centerIn: parent; spacing: 4
-                Rectangle {
-                    width: 13; height: 13; radius: 6.5
-                    color: "transparent"; border.color: Theme.t4; border.width: 1.5
-                    anchors.verticalCenter: parent.verticalCenter
-                    Text { anchors.centerIn: parent; text: "⋯"; color: Theme.t4; font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans }
-                }
-                Text {
-                    // .arg(queuePos) — was showing the literal "#%1" on every tile
-                    text: (i18n.language, i18n.t("state_queued").arg(tile.queuePos))
-                    color: "#ffffff"; opacity: 0.92; font.pixelSize: 9; font.weight: Font.Bold
-                    font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5; font.family: Theme.fontSans
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-        }
+        PosterTileBadges { tile: tile }
 
         MouseArea {
             id: tileMa
@@ -453,76 +253,20 @@ Item {
             }
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.RightButton) {
-                    controller.selectRow(tile.index, 0); session.openSelectedFile()
+                    controller.selectRow(tile.index, 0)
+                    session.openSelectedFile()
                 }
             }
         }
     }
 
-    // meta — line 1: state dot + live info (speed·ETA when downloading,
-    // else the status word); line 2: size. No redundant "Downloading":
-    // the dot + the % pill + the bar already say it.
-    Column {
+    PosterTileMeta {
         id: meta
+        tile: tile
+        win: tile.win
         anchors.top: posterWrap.bottom
         anchors.topMargin: 10
         anchors.left: posterWrap.left
         anchors.right: posterWrap.right
-        spacing: 2
-
-        Item {
-            width: meta.width; height: 16
-            Row {
-                anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
-                spacing: 6
-                Rectangle {
-                    width: 6; height: 6; radius: 3
-                    anchors.verticalCenter: parent.verticalCenter
-                    // a stalled download reads amber (health), not the state colour
-                    color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.dotFor(tile.stateKey)
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    // stalled reads amber (dot + text); the full reason is on hover —
-                    // the grid card is too narrow to show it inline without clipping.
-                    // When a badge already carries the status (done/seeding/queued),
-                    // this slot shows movie info (year · genres) instead of repeating it.
-                    text: tile.isDownloading ? ("↓ " + tile.downSpeed)
-                          : (tile.hasBadge && tile.metaLine.length > 0) ? tile.metaLine
-                          : (tile.stateKey === "seeding"
-                             ? ((i18n.language, i18n.t("state_seeding")) + " · ↑ " + tile.upSpeed)
-                             // the DONE badge already says the download finished —
-                             // the long "Download complete — seeding paused" only
-                             // truncated here (list rows keep it: no badge there)
-                             : (tile.progress >= 0.999 && tile.stateKey === "paused")
-                             ? (i18n.language, i18n.t("state_paused"))
-                             : tile.stateString)
-                    color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber
-                           : (tile.hasBadge && tile.metaLine.length > 0) ? Theme.t4
-                           : win.textFor(tile.stateKey)
-                    font.pixelSize: 12; font.family: Theme.fontSans
-                    // elide needs an explicit width — without it a long state
-                    // ("Download finished — seeding paused") overlapped the size
-                    width: Math.min(implicitWidth, meta.width - 12 - rightTxt.width - 10)
-                    elide: Text.ElideRight
-                }
-            }
-            Text {
-                id: rightTxt
-                // ETA while downloading; otherwise the size takes this slot
-                // (line 2 carries downloaded-of-total during a download).
-                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
-                text: tile.isDownloading ? (tile.etaSec >= 0 ? win.fmtEta(tile.etaSec) : "") : tile.size
-                color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
-            }
-        }
-        Text {
-            width: meta.width
-            horizontalAlignment: Text.AlignRight
-            visible: tile.isDownloading
-            // "107 MB of 6.4 GB" — progress in real bytes, not just the %
-            text: tile.downloaded + " " + (i18n.language, i18n.t("word_of")) + " " + tile.size
-            color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
-        }
     }
 }

@@ -27,7 +27,7 @@ Update this file when a workstream lands or LOC materially changes.
 | `bridges/qmlposterbridge.cpp` | — | 1 | D | ☑ | Split into per-class TUs (10d9b14); umbrella header remains |
 | `metadata/metadataresolver.cpp` | 632 | 2 | Meta | ☑ | 761→632; MetadataMatch + Catch2 (title/IGDB pick) |
 | `metadata/metadatamatch.{h,cpp}` | 51+186 | 2 | Meta | ☑ | Pure fold/Jaccard/IGDB pick/type helpers |
-| `qml/HubView.qml` | 704 | 1–2 | F | ◐ | HubLogic/Format/Menus/DetailDrawer peeled |
+| `qml/HubView.qml` | 205 | 1–2 | F | ☑ | 704→205; HubCompute + ContinueRails + Shelves (+ Format/Menus/Card/Drawer); rails leaf 381 soft overhang |
 | `torrent/sessionmanager.h` | 685 | — | — | ☑ accept | Declarations only; W5 decision: leave |
 | `bridges/qmlsettingsbridge.cpp` | 672 | 1–2 | D | ☐ | get/set + backup/proxy/pairing fat |
 | `webui/webserver.cpp` | 660 | 2 | Web | ☐ | Optional if quiet in Sentry |
@@ -35,7 +35,7 @@ Update this file when a workstream lands or LOC materially changes.
 | `qml/Main.qml` | 641 | — | — | ◐ | Composition root; App* peels done; don't grow |
 | `qml/NavRail.qml` | 443 | 1–2 | F | ◐ | 610→443; Disk + DownloadSlot peeled; VPN/settings/collapse still inline; AppTour ids intact |
 | `qml/NavBar.qml` | 274 | 1–2 | F | ☑ | 512→274; DownloadChip + DiskGauge + VpnChip leaves |
-| `widgets/PosterTile.qml` | 528 | 1–2 | F | ☐ | S4 target; stays under widgets/ |
+| `widgets/PosterTile.qml` | 272 | 1–2 | F | ☑ | 528→272; PosterTileBadges + PosterTileMeta; stays under widgets/ |
 | `bridges/session/qmlsessionbridge.h` | 474 | 1–2 | D | ◐ | API surface; shrink only by moving logic to services; peels live under `bridges/session/` + `bridges/search/` |
 | `torrent/sessionmanager_lifecycle.cpp` | 450 | 1 | C | ☑ | SessionResume trash/history helpers + Catch2 |
 | `torrent/sessionmanager_persistence.cpp` | 442 | 1 | C | ☑ | SessionResume suffix/corrupt/legacy + Catch2 |
@@ -55,8 +55,8 @@ Update this file when a workstream lands or LOC materially changes.
 ## Active / next roster
 
 Sprint 1–3 Fat UI Settings+Search+NavBar **done**; NavRail 443 (soft overhang —
-VPN/settings/collapse still inline). **S4:** Hub/PosterTile + `qml/player/` reorg;
-i18n CI locked (WS-G).
+VPN/settings/collapse still inline). **S4 F Hub/Poster done** (HubView 205,
+PosterTile 272); i18n CI locked (WS-G). Next: Agent R `qml/player/` (exclusive qrc).
 
 ## Open decisions (carry forward)
 
@@ -84,10 +84,18 @@ i18n CI locked (WS-G).
 - [ ] Bridges = glue; logic in services/torrent + tests
 - [x] i18n CI on PRs (`scripts/check-i18n-parity.py` — parity, dup keys, `i18n.t`/`tr_` usage)
 - [x] main bootstrap composed
-- [ ] Fat UI (Settings/Search/Nav/Hub) within bar
+- [ ] Fat UI (Settings/Search/Nav/Hub) within bar — Hub/Poster/Search/NavBar done; NavRail 443 soft
 - [ ] Confidence: change engine/UI without fear
 
 ## Per-sprint log
+
+### 2026-07-31 — Sprint 4 / WS-F HubView + PosterTile peel
+
+- HubView 704→205: `HubCompute`, `HubContinueRails`, `HubShelves` (Format/Menus/Card/Drawer
+  already present); host aliases; disco Connections stay on host (QtObject has no default prop)
+- PosterTile 528→272: `PosterTileBadges`, `PosterTileMeta`; qmldir lists PosterTile family
+- Build + `BAT_QML_STRICT=warn` + `BAT_SMOKE_EXIT_ON_FRAME`: first frame healthy
+- Remaining Fat UI soft: HubContinueRails 381, NavRail 443; Fat UI qrc frozen for Agent R
 
 ### 2026-07-31 — Sprint 4 / WS-G i18n CI
 

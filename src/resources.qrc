@@ -206,6 +206,9 @@
 <file>../src/qml/HubView.qml</file>
 <file>../src/qml/HubMenus.qml</file>
 <file>../src/qml/HubFormat.qml</file>
+<file>../src/qml/HubCompute.qml</file>
+<file>../src/qml/HubContinueRails.qml</file>
+<file>../src/qml/HubShelves.qml</file>
 <file>../src/qml/HubDetailDrawer.qml</file>
 <file>../src/qml/HubCard.qml</file>
 <file>../src/qml/LibraryView.qml</file>
@@ -233,6 +236,8 @@
 <file>../src/qml/widgets/WheelScroller.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
 <file>../src/qml/widgets/PosterTile.qml</file>
+<file>../src/qml/widgets/PosterTileBadges.qml</file>
+<file>../src/qml/widgets/PosterTileMeta.qml</file>
 <file>../src/qml/widgets/PChip.qml</file>
 <file>../src/qml/widgets/FavFolders.qml</file>
 <file>../src/qml/widgets/SearchResultRow.qml</file>
