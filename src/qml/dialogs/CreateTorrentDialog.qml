@@ -6,8 +6,8 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 BatDialog {
     id: dlg

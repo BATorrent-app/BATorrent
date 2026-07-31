@@ -8,6 +8,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import "theme"
 import "widgets"
+import "dialogs"
 
 // In-app overlay dialogs + torrent open queue. Host is the Main Window; dialog
 // ids are aliased back onto Main for menus/chrome.
