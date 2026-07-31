@@ -4,6 +4,7 @@
 
 #include "services/discovery/discoveryservice.h"
 #include "services/discovery/hublogic.h"
+#include "services/discovery/igdbparse.h"
 #include "services/discovery/tmdbparse.h"
 #include "services/platform/contentlanguage.h"
 
@@ -407,11 +408,6 @@ void DiscoveryService::fetchRecommendations(int tmdbId, const QString &type)
     });
 }
 
-namespace {   // defined further down (anonymous namespace) — forward-declare to use here
-QVariantList gamesToItems(const QList<QJsonObject> &objs, int cap);
-QList<QJsonObject> toObjects(const QJsonArray &arr);
-}
-
 void DiscoveryService::fetchGameRecommendations(const QString &gameName)
 {
     if (gameName.trimmed().isEmpty()) { emit gameRecommendationsReady(gameName, {}); return; }
@@ -433,7 +429,7 @@ void DiscoveryService::fetchGameRecommendations(const QString &gameName)
                 if (!arr.isEmpty()) {
                     const QJsonArray sims = arr.first().toObject()
                                                 .value(QLatin1String("similar_games")).toArray();
-                    items = gamesToItems(toObjects(sims), 16);
+                    items = IgdbParse::gameCards(IgdbParse::objectsFromArray(sims), 16);
                 }
             } else {
                 qDebug() << "[discover] IGDB similar-games error:" << reply->errorString();
@@ -556,96 +552,6 @@ void DiscoveryService::ensureIgdbToken(std::function<void()> then)
     });
 }
 
-namespace {
-
-// IGDB game object → poster card map (cover required, de-duped by title, capped).
-QVariantList gamesToItems(const QList<QJsonObject> &objs, int cap)
-{
-    QVariantList items;
-    QStringList seen;
-    for (const QJsonObject &o : objs) {
-        if (items.size() >= cap) break;
-        const QString imageId = o.value(QLatin1String("cover")).toObject()
-                                    .value(QLatin1String("image_id")).toString();
-        if (imageId.isEmpty()) continue;
-        const QString name = o.value(QLatin1String("name")).toString();
-        if (name.isEmpty() || seen.contains(name)) continue;
-        // IGDB has no "free" flag — drop the obvious free-to-play / live-service /
-        // gacha / MMO titles. They dominate game popularity and ratings but make
-        // no sense to download via torrent (you just install them for free, or
-        // they're server-side). Substrings are specific enough not to catch paid
-        // franchise entries (e.g. "warzone" not "call of duty").
-        static const QStringList freeLiveService = {
-            // arena / hero shooters / battle royale
-            "counter-strike", "dota 2", "league of legends", "fortnite", "valorant",
-            "apex legends", "warframe", "roblox", "marvel rivals", "the finals",
-            "overwatch", "destiny 2", "team fortress", "warzone", "rocket league",
-            "fall guys", "brawlhalla", "naraka", "smite", "paladins", "splitgate",
-            "the first descendant", "xdefiant", "deadlock", "multiversus", "the day before",
-            "pubg", "playerunknown", "delta force", "crossfire", "spellbreak", "hyper scape",
-            // gacha / live-service RPG
-            "genshin", "honkai", "wuthering waves", "zenless zone zero", "tower of fantasy",
-            "blue archive", "arknights", "nikke", "goddess of victory", "punishing: gray raven",
-            "epic seven", "summoners war", "raid: shadow legends", "diablo immortal",
-            // MMO (server-side, not torrentable)
-            "lost ark", "new world", "throne and liberty", "once human", "world of warcraft",
-            "final fantasy xiv", "elder scrolls online", "star wars: the old republic",
-            "guild wars", "neverwinter", "runescape", "eve online", "star trek online",
-            "dc universe online", "phantasy star online", "blade and soul", "blade & soul",
-            "tera online", "vindictus", "dauntless", "albion online", "lord of the rings online",
-            // F2P military / vehicle / card
-            "war thunder", "world of tanks", "world of warships", "crossout", "enlisted",
-            "star conflict", "hearthstone", "legends of runeterra", "magic: the gathering arena",
-            "yu-gi-oh! master duel", "yu-gi-oh master duel", "marvel snap",
-            // F2P mobile/crossplay that show up by popularity
-            "mobile legends", "honor of kings", "clash of", "pokemon unite", "pokemon go" };
-        const QString lname = name.toLower();
-        bool freeLs = false;
-        for (const QString &d : freeLiveService) if (lname.contains(d)) { freeLs = true; break; }
-        if (freeLs) continue;
-        seen.append(name);
-        const qint64 rel = qint64(o.value(QLatin1String("first_release_date")).toDouble());
-        // games have no backdrop field — use an artwork (or a screenshot) so they
-        // can headline the hero banner too.
-        QString backdrop;
-        const QJsonArray arts = o.value(QLatin1String("artworks")).toArray();
-        if (!arts.isEmpty()) {
-            const QString aid = arts.first().toObject().value(QLatin1String("image_id")).toString();
-            if (!aid.isEmpty())
-                backdrop = QStringLiteral("https://images.igdb.com/igdb/image/upload/t_1080p/%1.jpg").arg(aid);
-        }
-        if (backdrop.isEmpty()) {
-            const QJsonArray shots = o.value(QLatin1String("screenshots")).toArray();
-            if (!shots.isEmpty()) {
-                const QString sid = shots.first().toObject().value(QLatin1String("image_id")).toString();
-                if (!sid.isEmpty())
-                    backdrop = QStringLiteral("https://images.igdb.com/igdb/image/upload/t_screenshot_huge/%1.jpg").arg(sid);
-            }
-        }
-        QVariantMap m;
-        m.insert(QStringLiteral("title"), name);
-        m.insert(QStringLiteral("poster"),
-                 QStringLiteral("https://images.igdb.com/igdb/image/upload/t_cover_big/%1.jpg").arg(imageId));
-        m.insert(QStringLiteral("backdrop"), backdrop);
-        m.insert(QStringLiteral("year"), rel > 0
-                 ? QString::number(QDateTime::fromSecsSinceEpoch(rel).date().year()) : QString());
-        m.insert(QStringLiteral("rating"), o.value(QLatin1String("rating")).toDouble() / 10.0);
-        m.insert(QStringLiteral("overview"), o.value(QLatin1String("summary")).toString());
-        m.insert(QStringLiteral("type"), QStringLiteral("game"));
-        items.append(m);
-    }
-    return items;
-}
-
-QList<QJsonObject> toObjects(const QJsonArray &arr)
-{
-    QList<QJsonObject> objs;
-    for (const QJsonValue &v : arr) objs.append(v.toObject());
-    return objs;
-}
-
-} // namespace
-
 void DiscoveryService::setIgdbHeaders(QNetworkRequest &req) const
 {
     req.setRawHeader("Client-ID", igdbClientId().toUtf8());
@@ -742,14 +648,14 @@ void DiscoveryService::fetchIgdbGamesByIds(int order, const QString &label, cons
         reply->deleteLater();
         QVariantList items;
         if (reply->error() == QNetworkReply::NoError) {
-            QList<QJsonObject> objs = toObjects(QJsonDocument::fromJson(reply->readAll()).array());
+            QList<QJsonObject> objs = IgdbParse::objectsFromArray(QJsonDocument::fromJson(reply->readAll()).array());
             QHash<qint64, int> rank;                       // id → popularity position
             for (int i = 0; i < ids.size(); ++i) rank.insert(ids[i], i);
             std::sort(objs.begin(), objs.end(), [&rank](const QJsonObject &a, const QJsonObject &b) {
                 return rank.value(qint64(a.value(QLatin1String("id")).toDouble()), 99999)
                      < rank.value(qint64(b.value(QLatin1String("id")).toDouble()), 99999);
             });
-            items = gamesToItems(objs, 24);
+            items = IgdbParse::gameCards(objs, 24);
         } else {
             qDebug() << "[discover] IGDB games-by-id error:" << reply->errorString();
         }
@@ -781,7 +687,7 @@ void DiscoveryService::fetchIgdbRecent(int order, const QString &label)
             reply->deleteLater();
             QVariantList items;
             if (reply->error() == QNetworkReply::NoError)
-                items = gamesToItems(toObjects(QJsonDocument::fromJson(reply->readAll()).array()), 24);
+                items = IgdbParse::gameCardsFromJson(reply->readAll(), 24);
             else
                 qDebug() << "[discover] IGDB recent error:" << reply->errorString();
             QVariantMap row;
@@ -811,7 +717,7 @@ void DiscoveryService::fetchIgdbGames(int order, const QString &label,
             reply->deleteLater();
             QVariantList items;
             if (reply->error() == QNetworkReply::NoError)
-                items = gamesToItems(toObjects(QJsonDocument::fromJson(reply->readAll()).array()), 30);
+                items = IgdbParse::gameCardsFromJson(reply->readAll(), 30);
             else
                 qDebug() << "[discover] IGDB games shelf error:" << reply->errorString();
             QVariantMap row;

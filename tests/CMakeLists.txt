@@ -131,6 +131,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/hublogic.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/tmdbparse.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/igdbparse.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/qrcodegen.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoip.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoipdb.cpp
@@ -281,6 +282,7 @@ bat_add_test(test_gamereleasepick test_gamereleasepick.cpp)
 bat_add_test(test_gameinstallstate test_gameinstallstate.cpp)
 bat_add_test(test_hublogic test_hublogic.cpp)
 bat_add_test(test_tmdbparse test_tmdbparse.cpp)
+bat_add_test(test_igdbparse test_igdbparse.cpp)
 bat_add_test(test_sessionconfig test_sessionconfig.cpp)
 bat_add_test(test_gameexedetect test_gameexedetect.cpp)
 bat_add_test(test_releasegroup test_releasegroup.cpp)
