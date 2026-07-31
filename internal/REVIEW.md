@@ -3,6 +3,7 @@
 Bar: `CLAUDE.md`. Execution plan: `internal/QUALITY_PLAN.md`.
 Folder reorg (navigation only): `internal/FOLDER_REORG_PLAN.md` (WS-Reorg).
 **Sprint roadmap (S4–S7 + Ótimo gate):** `internal/SPRINT_ROADMAP.md`.
+**After Ótimo — learning path (vertical by user action):** `internal/LEARNING_PATH.md`.
 Update this file when a workstream lands or LOC materially changes.
 
 **Snapshot date:** 2026-07-31  
@@ -86,6 +87,10 @@ PosterTile 272); i18n CI locked (WS-G). Next: Agent R `qml/player/` (exclusive q
 - [x] main bootstrap composed
 - [ ] Fat UI (Settings/Search/Nav/Hub) within bar — Hub/Poster/Search/NavBar done; NavRail 443 soft
 - [ ] Confidence: change engine/UI without fear
+
+**Then (only after Ótimo):** start vertical learning — see `internal/LEARNING_PATH.md`
+(first slice: Watch → playFile → PlayerWindow). No deep function-by-function teaching
+while peels still move the map.
 
 ## Per-sprint log
 
