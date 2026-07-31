@@ -130,6 +130,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/metadata/metadataresolver.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/hublogic.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/tmdbimages.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/qrcodegen.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoip.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoipdb.cpp
@@ -279,6 +280,7 @@ bat_add_test(test_searchranker test_searchranker.cpp)
 bat_add_test(test_gamereleasepick test_gamereleasepick.cpp)
 bat_add_test(test_gameinstallstate test_gameinstallstate.cpp)
 bat_add_test(test_hublogic test_hublogic.cpp)
+bat_add_test(test_tmdbimages test_tmdbimages.cpp)
 bat_add_test(test_sessionconfig test_sessionconfig.cpp)
 bat_add_test(test_gameexedetect test_gameexedetect.cpp)
 bat_add_test(test_releasegroup test_releasegroup.cpp)
