@@ -217,7 +217,19 @@ Window {
     // up whatever's present. Shared by the context menu and the recovery banner.
     function promptSetLocation() { setLocationDlg.open() }
     // Full-screen visual acknowledgement for a manual Refresh.
-    function flashRefresh() { refreshFlashIcon.rotation = 0; refreshFlashSpin.restart(); refreshFlashAnim.restart() }
+    function flashRefresh() { refreshFlash.flash() }
+
+    // post-download action: cancelable countdown after all downloads finish
+    property int shutdownLeft: 0
+    property string shutdownActionLabel: ""
+    readonly property var postDownloadActionKeys: ["post_action_none", "post_action_close",
+        "post_action_lock", "post_action_sleep", "post_action_hibernate",
+        "post_action_signout", "post_action_shutdown", "post_action_restart"]
+    function postDownloadActionLabel(idx) {
+        var key = win.postDownloadActionKeys[idx] || "post_action_shutdown"
+        return i18n.t(key)
+    }
+
     // lock pins the panel to its current open/closed state, overriding auto-collapse
     property bool detailsLocked: typeof settings !== "undefined" && settings.get("detailsLocked") === true
     function toggleDetailsLocked() {
@@ -758,279 +770,36 @@ Window {
         }
     }
 
-    // ================== DRAG & DROP (.torrent / magnet) ==================
-    DropArea {
-        id: dropZone
-        anchors.fill: parent
-        z: 150
-        function isMagnetLike(s) {
-            var u = s.toLowerCase()
-            return u.indexOf("magnet:") === 0 || u.indexOf("bittorrent:") === 0
-        }
-        function accepts(drag) {
-            if (drag.hasUrls) {
-                for (var i = 0; i < drag.urls.length; ++i) {
-                    var u = drag.urls[i].toString().toLowerCase()
-                    if (u.endsWith(".torrent") || dropZone.isMagnetLike(u)) return true
-                }
-            }
-            if (drag.hasText && dropZone.isMagnetLike(drag.text)) return true
-            return false
-        }
-        onEntered: function(drag) { drag.accepted = accepts(drag) }
-        onDropped: function(drop) {
-            if (typeof session === "undefined") return
-            // Browsers hand a dragged magnet link over as a url, not just text —
-            // sort those out before treating the rest of drop.urls as .torrent files.
-            var torrentUrls = []
-            var addedMagnet = false
-            if (drop.hasUrls) {
-                for (var i = 0; i < drop.urls.length; ++i) {
-                    var u = drop.urls[i].toString()
-                    if (dropZone.isMagnetLike(u)) { session.addMagnetUri(u); addedMagnet = true }
-                    else torrentUrls.push(u)
-                }
-            }
-            // Queue every dropped .torrent so each gets the preview/choose-folder
-            // dialog in turn, instead of only the first.
-            if (torrentUrls.length > 0) win.enqueueTorrentUrls(torrentUrls)
-            // browsers hand the SAME magnet as url AND text — the text path is
-            // only a fallback, or a drop creates two identical torrents
-            if (!addedMagnet && drop.hasText && dropZone.isMagnetLike(drop.text)) session.addMagnetUri(drop.text)
-            drop.accept()
-        }
-    }
-    Rectangle {
-        anchors.fill: parent
-        z: 151
-        color: Qt.rgba(0, 0, 0, 0.65)
-        visible: opacity > 0.01
-        opacity: dropZone.containsDrag ? 1 : 0
-        Behavior on opacity { OpacityAnimator { duration: 150; easing.type: Easing.OutCubic } }
-        Rectangle {
-            anchors.centerIn: parent
-            width: 360; height: 200; radius: 16
-            color: Theme.panel
-            border.color: Theme.accent
-            border.width: 2
-            scale: dropZone.containsDrag ? 1.0 : 0.95
-            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: 12
-                IconImg { Layout.alignment: Qt.AlignHCenter; src: "qrc:/icons/magnet.svg"; tint: Theme.accentText; s: 52 }
-                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("dnd_drop_title")); color: Theme.t1; font.pixelSize: 16; font.weight: Font.Bold; font.family: Theme.fontSans }
-                Text { Layout.alignment: Qt.AlignHCenter; text: (i18n.language, i18n.t("dnd_drop_sub")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
-            }
-        }
+    AppDropOverlay {
+        onTorrentUrlsDropped: function(urls) { win.enqueueTorrentUrls(urls) }
     }
 
-    // ================== NATIVE FILE PICKER (Abrir) ==================
-    FileDialog {
-        id: openFileDlg
-        title: (i18n.language, i18n.t("dlg_open_torrent"))
-        nameFilters: [(i18n.language, i18n.t("filter_torrent_files")), (i18n.language, i18n.t("filter_all_files"))]
-        onAccepted: {
-            if (typeof session === "undefined") return
-            var path = selectedFile.toString()
-            var p = session.previewTorrent(path)
-            if (!p.ok) { session.addTorrentFile(path); return }
-            addTorrentDlg.savePath = session.defaultSavePath()
-            addTorrentDlg.loadPreview(p, path)
-            addTorrentDlg.open()
-        }
+    AppOverlays {
+        id: overlays
+        host: win
     }
-
-    // ================== OVERLAY DIALOGS (in-app, backdrop covers all) ==================
-    MagnetDialog {
-        id: magnetDlg
-        onAccepted: if (magnetText.length > 0 && typeof session !== "undefined") session.addMagnetUri(magnetText, savePath)
-    }
-    // pending .torrent paths awaiting the add dialog (filled by drops / multi-open)
-    property var torrentQueue: []
-    // drive opens off a timer so the dialog never opens inside the drop event or
-    // the dialog's own accept/close handler (both fight focus on macOS).
-    Timer { id: queueTimer; interval: 130; onTriggered: win.processTorrentQueue() }
-    // .torrent opened from outside (file association / CLI / second instance):
-    // run it through the same queue+dialog as a drop, never a silent add.
-    Connections {
-        target: typeof session !== "undefined" ? session : null
-        function onOpenTorrentRequested(path) { win.enqueueTorrentUrls([path]) }
-    }
-    function enqueueTorrentUrls(urls) {
-        for (var i = 0; i < urls.length; ++i) {
-            var u = urls[i]
-            if (u.toLowerCase().endsWith(".torrent")) win.torrentQueue.push(u)
-        }
-        queueTimer.restart()
-    }
-    function processTorrentQueue() {
-        if (typeof session === "undefined") { win.torrentQueue = []; return }
-        if (addTorrentDlg.opened) return        // wait until the current one closes
-        var useDefault = settings.get("useDefaultPath") === true
-        while (win.torrentQueue.length > 0) {
-            var u = win.torrentQueue.shift()
-            var p = session.previewTorrent(u)
-            // "skip the dialog" is a convenience for the common case — it stops
-            // being convenient the moment the download can't actually fit, so a
-            // known size that won't fit still surfaces the dialog (with its
-            // disk-fit warning) instead of silently failing mid-download.
-            var known = p && p.ok && (p.totalSizeBytes || 0) > 0
-            var fits = !known || session.freeSaveBytes() < 0 || p.totalSizeBytes <= session.freeSaveBytes()
-            if (useDefault && fits) { session.addTorrentFile(u); continue }
-            if (p && p.ok) {
-                addTorrentDlg.savePath = session.defaultSavePath()
-                addTorrentDlg.loadPreview(p, u)
-                addTorrentDlg.open()
-                return                          // resume on accept/reject
-            }
-            session.addTorrentFile(u)           // unpreviewable → add directly, keep going
-        }
-    }
-    AddTorrentDialog {
-        id: addTorrentDlg
-        onAccepted: {
-            if (typeof session !== "undefined") session.addTorrentWithPrefs(torrentPath, savePath, priorities())
-            queueTimer.restart()                // open the next once this one has closed
-        }
-        onRejected: queueTimer.restart()
-        onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
-    }
-    RemoveDialog {
-        id: removeDlg
-        onAccepted: if (typeof session !== "undefined") {
-            if (deleteFiles) {
-                if (deletePermanently) session.removeSelectedWithFilesPermanent()
-                else session.removeSelectedWithFiles()
-            } else session.removeSelected()
-        }
-    }
-    // Refresh flash — a brief full-screen dim + a spinning red refresh glyph, so a
-    // manual Refresh is unmistakable on screen (the tester couldn't tell the toolbar
-    // icon spin meant anything happened).
-    Item {
-        id: refreshFlash
-        anchors.fill: parent
-        z: 9999
-        // One driver, two different peaks. The glyph used to be a CHILD of the
-        // dimming rectangle, so the parent's opacity multiplied into it and the
-        // icon could never be brighter than the backdrop — that's why it read as
-        // washed out. Siblings now: backdrop goes to 0.78, the icon to full.
-        property real amt: 0
-        visible: amt > 0.01
-
-        Rectangle {
-            anchors.fill: parent
-            color: "#000000"
-            opacity: refreshFlash.amt * 0.78
-        }
-        IconImg {
-            id: refreshFlashIcon
-            anchors.centerIn: parent
-            src: "qrc:/icons/refresh.svg"
-            tint: Theme.accent
-            s: 76
-            opacity: refreshFlash.amt
-            scale: Theme.reduceMotion ? 1 : (0.88 + 0.12 * refreshFlash.amt)
-            RotationAnimation on rotation { id: refreshFlashSpin; running: false; from: 0; to: 360; duration: 380; loops: 1 }
-        }
-        SequentialAnimation {
-            id: refreshFlashAnim
-            NumberAnimation { target: refreshFlash; property: "amt"; to: 1.0; duration: 120; easing.type: Easing.OutCubic }
-            PauseAnimation { duration: 300 }
-            NumberAnimation { target: refreshFlash; property: "amt"; to: 0.0; duration: 280; easing.type: Easing.OutCubic }
-        }
-        MouseArea { anchors.fill: parent; enabled: refreshFlash.amt > 0.01 }   // swallow clicks mid-flash
-    }
-
-    MakeRoomPanel {
-        id: makeRoomPanel
-        onDeleteRequested: function (infoHash) {
-            if (typeof session === "undefined") return
-            if (session.selectByInfoHash(infoHash)) removeDlg.open()
-        }
-        // the row list is a snapshot (Q_INVOKABLE, not a bound property) — refresh
-        // it after a delete goes through so the panel doesn't show a stale entry
-        Connections {
-            target: typeof session !== "undefined" ? session : null
-            ignoreUnknownSignals: true
-            function onStatsChanged() { if (makeRoomPanel.open) makeRoomPanel.reload() }
-        }
-    }
-    InputPromptDialog   { id: inputPrompt }
-    UpdateDialog        { id: updateDlg }
-
-    // "why is this slow" diagnostic report
-    BatDialog {
-        id: diagnoseDlg
-        property string body: ""
-        title: (i18n.language, i18n.t("ctx_why_slow"))
-        cardW: 460; cardH: 320
-        showCancel: false
-        Text {
-            Layout.fillWidth: true
-            text: diagnoseDlg.body
-            color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono
-            wrapMode: Text.WordWrap; lineHeight: 1.4
-        }
-    }
-
-    // post-download action: cancelable countdown after all downloads finish
-    property int shutdownLeft: 0
-    property string shutdownActionLabel: ""
-    readonly property var postDownloadActionKeys: ["post_action_none", "post_action_close",
-        "post_action_lock", "post_action_sleep", "post_action_hibernate",
-        "post_action_signout", "post_action_shutdown", "post_action_restart"]
-    function postDownloadActionLabel(idx) {
-        var key = win.postDownloadActionKeys[idx] || "post_action_shutdown"
-        return i18n.t(key)
-    }
-    Timer {
-        id: shutdownTimer; interval: 1000; repeat: true
-        onTriggered: {
-            win.shutdownLeft--
-            if (win.shutdownLeft <= 0) { stop(); shutdownDlg.close(); if (typeof session !== "undefined") session.performPostDownloadAction() }
-        }
-    }
-    Connections {
-        target: typeof session !== "undefined" ? session : null
-        ignoreUnknownSignals: true
-        function onAllDownloadsComplete() {
-            win.shutdownActionLabel = win.postDownloadActionLabel(
-                typeof settings !== "undefined" ? settings.get("postDownloadAction") : 6)
-            win.shutdownLeft = 60; shutdownTimer.restart(); shutdownDlg.open()
-        }
-    }
-    BatDialog {
-        id: shutdownDlg
-        title: (i18n.language, i18n.t("shutdown_title"))
-        cardW: 420; cardH: 190
-        showOk: false
-        cancelText: (i18n.language, i18n.t("btn_cancel"))
-        onRejected: shutdownTimer.stop()
-        Text {
-            Layout.fillWidth: true
-            text: (i18n.language, i18n.t("shutdown_msg2")).arg(win.shutdownActionLabel).arg(win.shutdownLeft)
-            color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans
-            wrapMode: Text.WordWrap
-        }
-    }
-    Connections {
-        target: typeof updater !== "undefined" ? updater : null
-        ignoreUnknownSignals: true
-        function onUpdateFound(version, url, assetName) { updateDlg.showAvailable(version, url, assetName) }
-        function onNoUpdate(silent) { if (!silent) updateDlg.showNone() }
-    }
-    CreateTorrentDialog { id: createDlg }
-    AddAddonDialog      { id: addAddonDlg }
-    ReleaseNotesDialog  { id: releaseNotesDlg }
-    WelcomeDialog {
-        id: welcomeDlg
-        onAccepted: win.maybeStartTour()
-        onRejected: win.maybeStartTour()        // closing via X/backdrop also leads into the tour
-        onOpenReleaseNotes: releaseNotesDlg.open()
-    }
-    AboutDialog         { id: aboutDlg }
+    property alias openFileDlg: overlays.openFileDlg
+    property alias magnetDlg: overlays.magnetDlg
+    property alias addTorrentDlg: overlays.addTorrentDlg
+    property alias removeDlg: overlays.removeDlg
+    property alias makeRoomPanel: overlays.makeRoomPanel
+    property alias inputPrompt: overlays.inputPrompt
+    property alias updateDlg: overlays.updateDlg
+    property alias diagnoseDlg: overlays.diagnoseDlg
+    property alias createDlg: overlays.createDlg
+    property alias addAddonDlg: overlays.addAddonDlg
+    property alias releaseNotesDlg: overlays.releaseNotesDlg
+    property alias welcomeDlg: overlays.welcomeDlg
+    property alias aboutDlg: overlays.aboutDlg
+    property alias inspectorDlg: overlays.inspectorDlg
+    property alias pairingDlg: overlays.pairingDlg
+    property alias inspectFileDlg: overlays.inspectFileDlg
+    property alias exportTorrentDlg: overlays.exportTorrentDlg
+    property alias importQbtDlg: overlays.importQbtDlg
+    property alias refreshFlash: overlays.refreshFlash
+    property alias torrentQueue: overlays.torrentQueue
+    function enqueueTorrentUrls(urls) { overlays.enqueueTorrentUrls(urls) }
+    function processTorrentQueue() { overlays.processTorrentQueue() }
 
     TourOverlay {
         id: tourOverlay
@@ -1159,40 +928,6 @@ Window {
             if (tries >= 15) stop()
         }
     }
-    InspectorDialog      { id: inspectorDlg }
-    PairingDialog        { id: pairingDlg }
-
-    // Inspect a .torrent file before adding (File menu)
-    FileDialog {
-        id: inspectFileDlg
-        title: (i18n.language, i18n.t("inspector_title"))
-        nameFilters: [(i18n.language, i18n.t("filter_torrent_files"))]
-        onAccepted: inspectorDlg.load(session.urlToLocalPath(inspectFileDlg.selectedFile.toString()))
-    }
-
-    // Export the selected torrent's .torrent metadata to disk (ctx menu)
-    FileDialog {
-        id: exportTorrentDlg
-        title: (i18n.language, i18n.t("ctx_export_torrent"))
-        fileMode: FileDialog.SaveFile
-        defaultSuffix: "torrent"
-        nameFilters: [(i18n.language, i18n.t("filter_torrent_files"))]
-        currentFile: (typeof session !== "undefined" && session.selectedName.length > 0)
-                     ? ("file:" + session.selectedName + ".torrent") : "file:export.torrent"
-        onAccepted: {
-            if (typeof session === "undefined") return
-            var ok = session.exportSelectedTorrent(exportTorrentDlg.selectedFile.toString())
-            win.notifyUser("BATorrent", i18n.t(ok ? "export_torrent_ok" : "export_torrent_failed"), ok ? 0 : 2)
-        }
-    }
-
-    // Import torrents from an existing qBittorrent install (choose default save path)
-    FolderDialog {
-        id: importQbtDlg
-        title: (i18n.language, i18n.t("import_savepath_title"))
-        onAccepted: if (typeof session !== "undefined") session.importQbittorrent(session.urlToLocalPath(importQbtDlg.selectedFolder.toString()))
-    }
-
     LibraryShortcuts {
         host: win
         library: library

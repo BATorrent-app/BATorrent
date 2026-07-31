@@ -31,6 +31,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_streaming.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_config.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_limits.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_apply.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionconfig.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_persistence.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_categories.cpp
@@ -86,12 +87,16 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlposterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_add.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_details.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_games.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_gameinstall.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_library.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_playback.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_selection.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_disk.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_actions.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_queue.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_clipboard.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_stats.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlthemebridge.cpp
@@ -100,6 +105,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_attrs.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_work.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_covers.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_activate.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_ranking.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_getwatch.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_aggregate.cpp

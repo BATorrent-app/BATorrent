@@ -117,6 +117,9 @@
 <file>../src/qml/LibraryChrome.qml</file>
 <file>../src/qml/LibraryContextMenu.qml</file>
 <file>../src/qml/LibraryShortcuts.qml</file>
+<file>../src/qml/RefreshFlash.qml</file>
+<file>../src/qml/AppDropOverlay.qml</file>
+<file>../src/qml/AppOverlays.qml</file>
 <file>../src/qml/Splash.qml</file>
         <file>../src/qml/TrayPopupWindow.qml</file>
         <file>../src/qml/UpdateDialog.qml</file>
