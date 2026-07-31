@@ -16,7 +16,7 @@ import "widgets"
 
 Window {
     id: win
-    PlayerFormat { id: fmt }
+    PlayerFormat { id: playerFmt }
     width: 1120; height: 720
     minimumWidth: 560; minimumHeight: 360
     color: "#000000"
@@ -39,40 +39,10 @@ Window {
     property string resolvedTitle: ""
     property string resolvedSubtitle: ""
     readonly property string headerTitle: resolvedTitle.length > 0 ? resolvedTitle : mediaTitle
-    readonly property string mediaQuality: fmt.qualityFromName(mediaFileName)
-    readonly property string mediaAudio: fmt.audioFromName(mediaFileName)
+    readonly property string mediaQuality: playerFmt.qualityFromName(mediaFileName)
+    readonly property string mediaAudio: playerFmt.audioFromName(mediaFileName)
     property string infoHash: ""
     property int fileIndex: 0
-    readonly property string resumeKey: "resume_" + infoHash + "_" + fileIndex
-    property bool resumed: false
-    property int resumeAtMs: 0
-    property int pendingResumeMs: -1
-    property int resumeTries: 0
-    function tryApplyResume() {
-        if (win.pendingResumeMs > 5000 && player.duration > 0 && player.seekable
-            && win.pendingResumeMs < player.duration - 15000) {
-            win.resumeAtMs = win.pendingResumeMs
-            win.pendingResumeMs = -1
-            win.resumeTries = 0
-            player.position = win.resumeAtMs
-            resumeCue.show()
-            resumeRetry.restart()
-        }
-    }
-    // Windows' FFmpeg backend often discards a seek issued during initial buffering,
-    // snapping the position back to 0 once playback actually starts. Re-issue the
-    // seek until it lands (bounded), so resume isn't silently lost on Windows.
-    Timer {
-        id: resumeRetry
-        interval: 300; repeat: true
-        onTriggered: {
-            if (win.resumeAtMs <= 5000) { stop(); return }
-            if (Math.abs(player.position - win.resumeAtMs) <= 4000) { stop(); return }   // landed
-            if (win.resumeTries >= 8) { stop(); return }                                  // give up after ~2.4s
-            win.resumeTries++
-            if (player.seekable) player.position = win.resumeAtMs
-        }
-    }
     property bool muted: false
     property real volume: 0.9
     property bool controlsShown: true
@@ -170,96 +140,32 @@ Window {
         updateCue(player.position)
     }
     function updateCue(rawPos) {
-        var r = fmt.cueAt(extCues, extCueIdx, rawPos, extSubOffset)
+        var r = playerFmt.cueAt(extCues, extCueIdx, rawPos, extSubOffset)
         extCueIdx = r.idx
         extCueText = r.text
     }
     readonly property bool fullscreen: win.visibility === Window.FullScreen
 
-    function fmt(ms) { return fmt.fmt(ms) }
-    function fmtBytes(b) { return fmt.fmtBytes(b) }
+    function fmt(ms) { return playerFmt.fmt(ms) }
+    function fmtBytes(b) { return playerFmt.fmtBytes(b) }
+    function fileUrl(p) { return playerFmt.fileUrl(p) }
 
-    // download stats for the buffer bar + badge, polled while the player is open
-    property var streamStats: ({})
-    property bool aheadShown: false
-    Timer {
-        interval: 1000; repeat: true
-        running: win.visible && typeof session !== "undefined"
-        triggeredOnStart: true
-        onTriggered: {
-            win.streamStats = session.streamFileStats(win.infoHash, win.fileIndex)
-            if (!win.aheadShown && win.stillDownloading && win.bufferedAheadMs > 1500) {
-                win.aheadShown = true
-                aheadPill.show()
-            }
-        }
-    }
-    // streaming runway: how far the contiguous download reaches, and how much
-    // playback time is buffered past the playhead.
-    readonly property bool stillDownloading: ((win.streamStats && win.streamStats.progress) || 0) < 0.999
-    readonly property real downloadedToMs: (win.streamStats && win.streamStats.buffered > 0 && player.duration > 0)
-                                           ? win.streamStats.buffered * player.duration : 0
-    readonly property real bufferedAheadMs: Math.max(0, downloadedToMs - player.position)
-    // Reading from a growing torrent file, FFmpeg's backend freezes on an
-    // underrun without ever reporting MediaPlayer.StalledMedia — position just
-    // stops advancing while playbackState stays Playing, with no visual sign.
-    // Detect it ourselves from the same runway math the "ahead" pill already
-    // uses, debounced so a normal neck-and-neck moment doesn't flicker the spinner.
-    readonly property bool starvedNow: player.playbackState === MediaPlayer.PlayingState
-                                       && win.stillDownloading && win.bufferedAheadMs < 400
-    property bool starved: false
-    onStarvedNowChanged: {
-        if (starvedNow) starveDebounce.restart()
-        else { starveDebounce.stop(); starved = false }   // recovery is instant
-    }
-    Timer { id: starveDebounce; interval: 350; onTriggered: if (win.starvedNow) win.starved = true }
-    function fmtAhead(ms) { return fmt.fmtAhead(ms) }
-    function fileUrl(p) { return fmt.fileUrl(p) }
-    // compact runway for the control-bar pill ("+38 min", "+45s")
-    function fmtRunway(ms) { return fmt.fmtRunway(ms) }
-    // entry point used by Main.qml when (re)opening the player with new media
-    property int nextIdx: -1     // file index of the next episode, or -1
+    property int nextIdx: -1
     property bool autoplayNext: (typeof settings === "undefined") || settings.get("autoplayNext") !== false
-    // MKV chapters → skip intro/credits chip
     property var chapters: []
-    readonly property var activeSkip: {
-        for (var i = 0; i < chapters.length; ++i) {
-            var c = chapters[i]
-            if (c.kind && c.endMs > 0 && player.position >= c.startMs && player.position < c.endMs - 1000)
-                return c
-        }
-        return null
-    }
-    // next-episode end card
     property string nextPoster: ""
     property string nextTitle: ""
     property string nextSubtitle: ""
-    property bool endCardDismissed: false
-    property int countdownSec: 0            // >0 while auto-advancing
-    readonly property real endCardLeadMs: 28000   // card appears this close to the end
-    readonly property bool inLeadWindow: player.duration > 0 && player.position > 0
-        && (player.duration - player.position) <= endCardLeadMs
-    readonly property bool showEndCard: win.nextIdx >= 0 && !win.endCardDismissed
-        && win.autoplayNext && (win.inLeadWindow || win.countdownSec > 0)
-    function playNextNow() {
-        countdown.stop(); win.countdownSec = 0
-        if (typeof session !== "undefined" && win.nextIdx >= 0)
-            session.playFile(win.infoHash, win.nextIdx)
-    }
-    function maybePlayNext() {
-        if (typeof session === "undefined" || win.nextIdx < 0) return
-        if (!win.autoplayNext || win.endCardDismissed) return
-        // hand off to the visible countdown instead of a silent cut
-        win.countdownSec = 8
-        countdown.restart()
-    }
-    Timer {
-        id: countdown; interval: 1000; repeat: true
-        onTriggered: { win.countdownSec -= 1; if (win.countdownSec <= 0) win.playNextNow() }
-    }
+
+    readonly property bool stillDownloading: runway.stillDownloading
+    readonly property real downloadedToMs: runway.downloadedToMs
+    readonly property real bufferedAheadMs: runway.bufferedAheadMs
+    readonly property var streamStats: runway.streamStats
+    readonly property bool starved: runway.starved
+    readonly property bool showEndCard: endCard.showEndCard
+
     function openMedia(url, title, hash, fileIdx) {
-        win.saveResume()
-        win.resumed = false
+        resume.save()
         win.streamUrl = url
         win.mediaTitle = title
         win.infoHash = hash
@@ -269,17 +175,11 @@ Window {
         var pt = (typeof session !== "undefined") ? session.playerTitle(hash, fileIdx) : ({})
         win.resolvedTitle = pt.title || ""
         win.resolvedSubtitle = pt.subtitle || ""
-        win.pendingResumeMs = (typeof settings !== "undefined") ? Number(settings.get(win.resumeKey) || 0) : 0
-        win.resumeAtMs = 0
-        win.resumeTries = 0
-        resumeRetry.stop()
-        win.aheadShown = false
+        resume.prepareOpen()
+        runway.reset()
         win.chapters = (typeof session !== "undefined") ? session.mkvChapters(hash, fileIdx) : []
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
-        // pre-resolve the next episode's card data (same show → same poster)
-        win.endCardDismissed = false
-        win.countdownSec = 0
-        countdown.stop()
+        endCard.reset()
         if (win.nextIdx >= 0 && typeof session !== "undefined") {
             var np = session.playerTitle(hash, win.nextIdx)
             win.nextTitle = np.title || ""
@@ -295,17 +195,6 @@ Window {
         }
         player.play()
     }
-    function saveResume() {
-        if (typeof settings === "undefined" || player.duration <= 0) return
-        // remember the runtime so the HUB can draw a "watched %" bar on the poster
-        settings.set(resumeKey + "_dur", Math.floor(player.duration))
-        settings.set(resumeKey + "_at", Date.now())   // recency for HUB "Continue watching"
-        // near the end → clear (watched); otherwise remember the position
-        if (player.position > player.duration - 15000) {
-            settings.set(resumeKey, 0)
-            settings.set(resumeKey + "_watched", true)
-        } else if (player.position > 5000) settings.set(resumeKey, Math.floor(player.position))
-    }
 
     MediaPlayer {
         id: player
@@ -313,25 +202,21 @@ Window {
         videoOutput: videoOut
         audioOutput: AudioOutput { id: audio; volume: win.volume; muted: win.muted }
         onPositionChanged: win.updateCue(player.position)
-        onDurationChanged: win.tryApplyResume()
-        onSeekableChanged: win.tryApplyResume()
+        onDurationChanged: resume.tryApply()
+        onSeekableChanged: resume.tryApply()
         onPlaybackStateChanged: {
-            if (playbackState === MediaPlayer.PlayingState) win.tryApplyResume()
-            else win.showControls()   // pausing always brings the chrome back
+            if (playbackState === MediaPlayer.PlayingState) resume.tryApply()
+            else win.showControls()
         }
         onMediaStatusChanged: {
-            if (mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) win.tryApplyResume()
-            else if (mediaStatus === MediaPlayer.EndOfMedia) { win.saveResume(); win.maybePlayNext() }
+            if (mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) resume.tryApply()
+            else if (mediaStatus === MediaPlayer.EndOfMedia) { resume.save(); endCard.maybePlayNext() }
         }
         onTracksChanged: win.restoreTracks()
     }
 
-    // periodic + lifecycle resume saves
-    Timer { interval: 5000; running: player.playbackState === MediaPlayer.PlayingState; repeat: true; onTriggered: win.saveResume() }
-    // X must actually stop playback (the window only hides while the app keeps
-    // running in tray) and tear down the player so reopening starts fresh.
     signal closed()
-    onClosing: { win.saveResume(); player.stop(); win.closed() }
+    onClosing: { resume.save(); player.stop(); win.closed() }
 
     Rectangle { anchors.fill: parent; color: "#000000" }
 
@@ -372,55 +257,23 @@ Window {
         onDoubleClicked: win.toggleFullscreen()
     }
 
-    // resume cue — a brief "↩ 12:34" pill so the viewer notices the movie picked
-    // up where they left off (the jump is otherwise silent and easy to distrust)
-    Rectangle {
-        id: resumeCue
-        function show() { opacity = 1; hideTimer.restart() }
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: (topBar.visible ? topBar.height : 0) + 16
-        z: 50
-        opacity: 0
-        visible: opacity > 0
-        radius: 999
-        color: "#cc000000"
-        border.color: Theme.accent; border.width: 1
-        implicitWidth: rcLbl.implicitWidth + 26; implicitHeight: 30
-        Behavior on opacity { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
-        Text {
-            id: rcLbl
-            anchors.centerIn: parent
-            text: "↩  " + win.fmt(win.resumeAtMs)
-            color: "white"; font.pixelSize: 13; font.family: Theme.fontMono
-        }
-        Timer { id: hideTimer; interval: 3500; onTriggered: resumeCue.opacity = 0 }
+    PlayerResume {
+        id: resume
+        mediaPlayer: player
+        infoHash: win.infoHash
+        fileIndex: win.fileIndex
+        formatHelper: playerFmt
+        topInset: topBar.visible ? topBar.height : 0
     }
 
-    // streaming runway pill — how much playback is buffered past the playhead
-    Rectangle {
-        id: aheadPill
-        anchors.top: parent.top; anchors.left: parent.left
-        anchors.topMargin: (topBar.visible ? topBar.height : 0) + 14; anchors.leftMargin: 18
-        z: 49
-        function show() { opacity = 1; apHide.restart() }
-        opacity: 0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 600; easing.type: Easing.InOutQuad } }
-        Timer { id: apHide; interval: 6000; onTriggered: aheadPill.opacity = 0 }
-        radius: 8
-        color: "#cc0a0a0c"; border.width: 1
-        border.color: Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.35)
-        implicitWidth: apRow.implicitWidth + 22; implicitHeight: 30
-        Row {
-            id: apRow; anchors.centerIn: parent; spacing: 7
-            Rectangle { width: 7; height: 7; radius: 4; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: win.fmtAhead(win.bufferedAheadMs)
-                color: Theme.grn; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
-            }
-        }
+    PlayerRunway {
+        id: runway
+        mediaPlayer: player
+        infoHash: win.infoHash
+        fileIndex: win.fileIndex
+        windowVisible: win.visible
+        formatHelper: playerFmt
+        topInset: topBar.visible ? topBar.height : 0
     }
 
     // buffering / error overlay
@@ -444,7 +297,7 @@ Window {
             visible: player.error !== MediaPlayer.NoError
             primary: true
             text: (i18n.language, i18n.t("player_open_external"))
-            onClicked: { win.saveResume(); win.openExternal(); win.close() }
+            onClicked: { resume.save(); win.openExternal(); win.close() }
         }
     }
 
@@ -522,7 +375,7 @@ Window {
         implicitWidth: 210
         BatMenuItem {
             text: (i18n.language, i18n.t("player_external"))
-            onTriggered: { win.saveResume(); win.openExternal() }
+            onTriggered: { resume.save(); win.openExternal() }
         }
     }
 
@@ -555,145 +408,24 @@ Window {
         onLoadFile: subFileDlg.open()
     }
 
-    // ---- skip intro / credits chip (bottom-right, above the control bar) ----
-    // Netflix-style: appears while the playhead sits inside a chapter the MKV
-    // labelled intro/opening/credits, seeks to its end. Visible even when the
-    // chrome is hidden, but yields to the end card.
-    Rectangle {
-        id: skipChip
-        z: 57
-        readonly property var sk: win.activeSkip
-        visible: opacity > 0
-        opacity: (sk && !win.showEndCard) ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        anchors.right: parent.right; anchors.bottom: parent.bottom
-        anchors.rightMargin: 24
-        anchors.bottomMargin: win.controlsShown ? 134 : 40
-        Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        width: skipRow.width + 30; height: 40
-        radius: 8
-        color: skMa.containsMouse ? "#ffffff" : "#e6101014"
-        border.color: skMa.containsMouse ? "#ffffff" : Theme.hair; border.width: 1
-        Behavior on color { ColorAnimation { duration: 120 } }
-        Row {
-            id: skipRow; anchors.centerIn: parent; spacing: 8
-            IconImg {
-                anchors.verticalCenter: parent.verticalCenter
-                src: "qrc:/icons/skip-forward.svg"; s: 15
-                tint: skMa.containsMouse ? "#0a0a0c" : Theme.t1
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: skipChip.sk ? (skipChip.sk.kind === "credits"
-                        ? (i18n.language, i18n.t("player_skip_credits"))
-                        : (i18n.language, i18n.t("player_skip_intro"))) : ""
-                color: skMa.containsMouse ? "#0a0a0c" : Theme.t1
-                font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
-            }
-        }
-        MouseArea {
-            id: skMa; anchors.fill: parent
-            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-            onClicked: if (skipChip.sk) { player.position = skipChip.sk.endMs; win.showControls() }
-        }
+    PlayerSkipChip {
+        mediaPlayer: player
+        chapters: win.chapters
+        endCardVisible: win.showEndCard
+        controlsShown: win.controlsShown
+        onSkipped: win.showControls()
     }
 
-    // ---- next-episode end card (bottom-right, above the control bar) ----
-    Rectangle {
+    PlayerEndCard {
         id: endCard
-        z: 58
-        visible: opacity > 0
-        opacity: win.showEndCard ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-        anchors.right: parent.right; anchors.bottom: parent.bottom
-        anchors.rightMargin: 24; anchors.bottomMargin: 134
-        width: 348; height: 116
-        radius: 12
-        color: "#f2101014"
-        border.color: Theme.hair; border.width: 1
-        transform: Translate { y: win.showEndCard ? 0 : 10; Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } } }
-
-        Row {
-            anchors.fill: parent; anchors.margins: 12; spacing: 12
-
-            // poster with a countdown ring overlay
-            Item {
-                width: 62; height: 92; anchors.verticalCenter: parent.verticalCenter
-                Rectangle {
-                    anchors.fill: parent; radius: 7; clip: true
-                    color: "#1c1c20"; border.color: Theme.hairSoft; border.width: 1
-                    Image {
-                        anchors.fill: parent
-                        source: win.nextPoster.length > 0 ? win.fileUrl(win.nextPoster) : ""
-                        fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true
-                    }
-                }
-                // ring that fills as the countdown runs down
-                Canvas {
-                    id: ring
-                    anchors.centerIn: parent; width: 40; height: 40
-                    visible: win.countdownSec > 0
-                    property real frac: win.countdownSec / 8
-                    onFracChanged: requestPaint()
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.reset()
-                        var cx = width/2, cy = height/2, r = 17
-                        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2)
-                        ctx.lineWidth = 3; ctx.strokeStyle = "#40000000"; ctx.stroke()
-                        ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI/2, -Math.PI/2 + Math.PI*2*frac)
-                        ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.strokeStyle = "#e5332b"; ctx.stroke()
-                    }
-                    Text {
-                        anchors.centerIn: parent; text: win.countdownSec
-                        color: "#fff"; font.pixelSize: 15; font.weight: Font.Bold; font.family: Theme.fontSans
-                    }
-                }
-            }
-
-            Column {
-                width: parent.width - 62 - 12
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 3
-                Text {
-                    text: (win.countdownSec > 0)
-                          ? ((i18n.language, i18n.t("player_next_ep")) + " · " + win.countdownSec + "s")
-                          : (i18n.language, i18n.t("player_up_next"))
-                    color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
-                    font.letterSpacing: 0.6; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
-                }
-                Text {
-                    width: parent.width; text: win.nextTitle
-                    color: "#f3f3f4"; font.pixelSize: 14; font.weight: Font.DemiBold
-                    font.family: Theme.fontSans; elide: Text.ElideRight
-                }
-                Text {
-                    width: parent.width; visible: win.nextSubtitle.length > 0
-                    text: win.nextSubtitle
-                    color: "#8a8b90"; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
-                }
-                Row {
-                    spacing: 8; topPadding: 4
-                    Rectangle {
-                        width: playNowRow.width + 22; height: 28; radius: 7; color: pnMa.containsMouse ? "#ff2e37" : Theme.accent
-                        Behavior on color { ColorAnimation { duration: 100 } }
-                        Row {
-                            id: playNowRow; anchors.centerIn: parent; spacing: 6
-                            IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/play.svg"; tint: "#fff"; s: 13 }
-                            Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("player_watch_now")); color: "#fff"; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                        }
-                        MouseArea { id: pnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.playNextNow() }
-                    }
-                    Rectangle {
-                        width: cancelTxt.width + 22; height: 28; radius: 7
-                        color: cnMa.containsMouse ? "#1affffff" : "transparent"
-                        border.color: Theme.hair; border.width: 1
-                        Text { id: cancelTxt; anchors.centerIn: parent; text: (i18n.language, i18n.t("btn_cancel")); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans }
-                        MouseArea { id: cnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: { countdown.stop(); win.countdownSec = 0; win.endCardDismissed = true } }
-                    }
-                }
-            }
-        }
+        mediaPlayer: player
+        infoHash: win.infoHash
+        nextIdx: win.nextIdx
+        autoplayNext: win.autoplayNext
+        nextPoster: win.nextPoster
+        nextTitle: win.nextTitle
+        nextSubtitle: win.nextSubtitle
+        formatHelper: playerFmt
     }
 
     // ---- title bar: gradient scrim · centered title + chips · info ----
@@ -942,7 +674,7 @@ Window {
                             IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/clock.svg"; tint: parent.parent.low ? Theme.amber : Theme.t3; s: 13 }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "+" + win.fmtRunway(win.bufferedAheadMs)
+                                text: "+" + playerFmt.fmtRunway(win.bufferedAheadMs)
                                 color: parent.parent.low ? Theme.amber : Theme.t2
                                 font.pixelSize: 12; font.family: Theme.fontMono
                             }
@@ -950,7 +682,7 @@ Window {
                         MouseArea { id: dlMa; anchors.fill: parent; hoverEnabled: true }
                         ToolTip.visible: dlMa.containsMouse
                         ToolTip.delay: 250
-                        ToolTip.text: win.fmtAhead(win.bufferedAheadMs) + "  ·  "
+                        ToolTip.text: playerFmt.fmtAhead(win.bufferedAheadMs) + "  ·  "
                                       + win.fmtBytes((win.streamStats && win.streamStats.downloadedBytes) || 0)
                                       + " / " + win.fmtBytes((win.streamStats && win.streamStats.totalBytes) || 0)
                     }
