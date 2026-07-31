@@ -4,8 +4,8 @@
 
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 // Drag-and-drop surface for .torrent / magnet. Emits torrentUrlsDropped so the
 // host can enqueue through its add-dialog queue (no sibling-id walks).

@@ -12,6 +12,7 @@ import QtQuick.Dialogs
 import Qt.labs.platform as Platform
 import "theme"
 import "widgets"
+import "overlays"
 
 Window {
     id: win

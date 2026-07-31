@@ -3,8 +3,8 @@
 // See LICENSE file for details
 
 import QtQuick
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 // Full-screen acknowledgement for a manual Refresh. Sibling backdrop + glyph
 // so the icon isn't dimmed by the parent's opacity.
