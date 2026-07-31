@@ -16,6 +16,11 @@ PosterTile 1.0 PosterTile.qml
 PosterTileBadges 1.0 PosterTileBadges.qml
 PosterTileMeta 1.0 PosterTileMeta.qml
 PosterCard 1.0 PosterCard.qml
+PosterShelf 1.0 PosterShelf.qml
+TorrentRow 1.0 TorrentRow.qml
+SearchResultRow 1.0 SearchResultRow.qml
+CatItem 1.0 CatItem.qml
+PChip 1.0 PChip.qml
 DetailPeers 1.0 DetailPeers.qml
 DetailKVSection 1.0 DetailKVSection.qml
 DetailGeneral 1.0 DetailGeneral.qml
@@ -23,7 +28,6 @@ DetailGraph 1.0 DetailGraph.qml
 DetailTabs 1.0 DetailTabs.qml
 DownloadCarousel 1.0 DownloadCarousel.qml
 DetailSidebar 1.0 DetailSidebar.qml
-PosterShelf 1.0 PosterShelf.qml
 DetailFiles 1.0 DetailFiles.qml
 DetailTrackers 1.0 DetailTrackers.qml
 DetailPieces 1.0 DetailPieces.qml
