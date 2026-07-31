@@ -51,6 +51,13 @@ endif()
 
 add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/main.cpp
+    src/app/enginechild.cpp
+    src/app/singleinstance.cpp
+    src/app/boothealth.cpp
+    src/app/appruntime.cpp
+    src/app/appservices.cpp
+    src/app/qmlcontextwiring.cpp
+    src/app/qmlboot.cpp
     src/torrent/iengine.h        # header-only QObject — listed so AUTOMOC builds its metaobject
     src/torrent/sessionmanager.cpp
     src/torrent/sessionmanager_query.cpp
@@ -139,7 +146,6 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/discovery/tmdbparse.cpp
     src/services/discovery/igdbparse.cpp
     src/services/discovery/gamesourcemanager.cpp
-    src/bridges/qmlposterbridge.cpp
     src/bridges/qmlpostermodel.cpp
     src/bridges/qmlsessionbridge.cpp
     src/bridges/qmlsessionbridge_add.cpp
@@ -171,16 +177,16 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmlsearchbridge_aggregate.cpp
     src/bridges/qmlsearchbridge_games.cpp
     src/bridges/qmlsettingsbridge.cpp
-    # bridge classes implemented in qmlposterbridge.cpp — listed so AUTOMOC builds their metaobjects
-    src/bridges/qmlrssbridge.h
-    src/bridges/qmladdonbridge.h
-    src/bridges/qmlpairingbridge.h
-    src/bridges/qmlsubtitlebridge.h
-    src/bridges/qmllogbridge.h
+    src/bridges/qmlrssbridge.cpp
+    src/bridges/qmladdonbridge.cpp
+    src/bridges/qmlpairingbridge.cpp
+    src/bridges/qmlsubtitlebridge.cpp
+    src/bridges/qmllogbridge.cpp
+    src/bridges/qmlnotificationbridge.cpp
+    src/bridges/discordrpcbridge.cpp
+    src/bridges/qmlupdaterbridge.cpp
+    # header-only QObject — listed so AUTOMOC builds its metaobject
     src/bridges/qmli18nbridge.h
-    src/bridges/qmlnotificationbridge.h
-    src/bridges/discordrpcbridge.h
-    src/bridges/qmlupdaterbridge.h
     src/webui/webserver.cpp
     src/webui/streamserver.cpp
     ${RESOURCES}
