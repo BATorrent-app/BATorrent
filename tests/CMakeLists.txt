@@ -89,7 +89,6 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.h
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlposterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_add.cpp
@@ -121,15 +120,15 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_aggregate.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_games.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsettingsbridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlrssbridge.h          # AUTOMOC: classes implemented in qmlposterbridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmladdonbridge.h
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlpairingbridge.h
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsubtitlebridge.h
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmllogbridge.h
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmli18nbridge.h
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlnotificationbridge.h
-    ${CMAKE_SOURCE_DIR}/src/bridges/discordrpcbridge.h
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlupdaterbridge.h
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlrssbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmladdonbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlpairingbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsubtitlebridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmllogbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlnotificationbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/discordrpcbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlupdaterbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmli18nbridge.h   # header-only QObject
     ${CMAKE_SOURCE_DIR}/src/services/metadata/metadataresolver.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/hublogic.cpp
