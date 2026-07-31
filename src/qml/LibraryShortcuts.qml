@@ -52,10 +52,10 @@ Item {
     Shortcut { sequence: "Ctrl+Right"; enabled: library.gridView;  onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
     // navigate selection — suppressed while the command palette owns the keyboard
     // (otherwise the arrows scroll the list behind it instead of its results)
-    Shortcut { sequence: "Up";    enabled: !cmdPalette.opened; onActivated: host.moveSel(library.gridView ? -host.gridCols() : -1) }
-    Shortcut { sequence: "Down";  enabled: !cmdPalette.opened; onActivated: host.moveSel(library.gridView ?  host.gridCols() :  1) }
-    Shortcut { sequence: "Left";  enabled: library.gridView && !cmdPalette.opened; onActivated: host.moveSel(-1) }
-    Shortcut { sequence: "Right"; enabled: library.gridView && !cmdPalette.opened; onActivated: host.moveSel(1) }
+    Shortcut { sequence: "Up";    enabled: !(cmdPalette && cmdPalette.opened); onActivated: host.moveSel(library.gridView ? -host.gridCols() : -1) }
+    Shortcut { sequence: "Down";  enabled: !(cmdPalette && cmdPalette.opened); onActivated: host.moveSel(library.gridView ?  host.gridCols() :  1) }
+    Shortcut { sequence: "Left";  enabled: library.gridView && !(cmdPalette && cmdPalette.opened); onActivated: host.moveSel(-1) }
+    Shortcut { sequence: "Right"; enabled: library.gridView && !(cmdPalette && cmdPalette.opened); onActivated: host.moveSel(1) }
     Shortcut { sequence: "Ctrl+1"; onActivated: library.setFilter("all") }
     Shortcut { sequence: "Ctrl+2"; onActivated: library.setFilter("downloading") }
     Shortcut { sequence: "Ctrl+3"; onActivated: library.setFilter("seeding") }

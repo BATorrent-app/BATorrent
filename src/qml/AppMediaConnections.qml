@@ -8,19 +8,24 @@ import QtQuick
 // media-flow Connections clutter; host owns page jumps and notifyUser.
 Item {
     required property var host
-    required property var gwOverlay
-    required property var windowLoaders
+    // Names intentionally differ from Main ids/aliases — `gwOverlay: gwOverlay`
+    // self-shadows to undefined and aborts openPlayer before the window opens.
+    required property var watchOverlay
+    required property var loaders
 
     Connections {
         target: session
         function onOpenPlayer(url, title, hash, fileIndex) {
-            gwOverlay.hide()
-            windowLoaders.openPlayer(url, title, hash, fileIndex)
+            if (watchOverlay) watchOverlay.hide()
+            loaders.openPlayer(url, title, hash, fileIndex)
         }
         function onWatchProgress(hash, percent) {
-            if (gwOverlay.phase === "buffering" && hash === gwOverlay.hash) gwOverlay.percent = percent
+            if (watchOverlay && watchOverlay.phase === "buffering" && hash === watchOverlay.hash)
+                watchOverlay.percent = percent
         }
-        function onWatchFailed(title) { gwOverlay.fail(i18n.t("gw_failed").arg(title)) }
+        function onWatchFailed(title) {
+            if (watchOverlay) watchOverlay.fail(i18n.t("gw_failed").arg(title))
+        }
     }
 
     // Debrid: magnet → provider cache → direct link → built-in player.
@@ -28,21 +33,22 @@ Item {
         target: typeof debrid !== "undefined" ? debrid : null
         ignoreUnknownSignals: true
         function onStreamReady(url, name) {
-            gwOverlay.hide()
-            windowLoaders.openPlayer(url, name, "debrid", 0)
+            if (watchOverlay) watchOverlay.hide()
+            loaders.openPlayer(url, name, "debrid", 0)
         }
         function onErrorOccurred(msg) {
-            gwOverlay.hide()
+            if (watchOverlay) watchOverlay.hide()
             host.notifyUser(debrid.providerName, msg, 2)
         }
         function onBusyChanged() {
-            if (debrid.busy) gwOverlay.show("buffering", debrid.providerName)
-            else if (gwOverlay.phase === "buffering") gwOverlay.hide()
+            if (!watchOverlay) return
+            if (debrid.busy) watchOverlay.show("buffering", debrid.providerName)
+            else if (watchOverlay.phase === "buffering") watchOverlay.hide()
         }
         function onStatusChanged() {
-            if (!debrid.busy) return
-            if (debrid.status !== "") gwOverlay.title = debrid.status
-            gwOverlay.percent = debrid.progress / 100
+            if (!watchOverlay || !debrid.busy) return
+            if (debrid.status !== "") watchOverlay.title = debrid.status
+            watchOverlay.percent = debrid.progress / 100
         }
     }
 
@@ -59,25 +65,29 @@ Item {
         }
         // Get & Watch / Get & Install → preparing overlay
         function onWatchSearching(title) {
-            gwOverlay.forGame = (typeof search !== "undefined" && search.getFlowType === "game")
-            gwOverlay.show("searching", title)
+            if (!watchOverlay) return
+            watchOverlay.forGame = (typeof search !== "undefined" && search.getFlowType === "game")
+            watchOverlay.show("searching", title)
         }
         function onWatchNoRelease(title) {
-            var key = gwOverlay.forGame ? "gi_no_release" : "gw_no_release"
-            gwOverlay.fail(i18n.t(key).arg(title))
+            if (!watchOverlay) return
+            var key = watchOverlay.forGame ? "gi_no_release" : "gw_no_release"
+            watchOverlay.fail(i18n.t(key).arg(title))
         }
         function onPrepareAndWatch(infoHash, title) {
-            gwOverlay.forGame = false
-            gwOverlay.hash = infoHash
-            gwOverlay.phase = "buffering"
+            if (!watchOverlay) return
+            watchOverlay.forGame = false
+            watchOverlay.hash = infoHash
+            watchOverlay.phase = "buffering"
             if (typeof session !== "undefined") session.watchWhenReady(infoHash, title)
         }
         function onPrepareAndInstall(infoHash, title) {
-            gwOverlay.forGame = true
-            gwOverlay.hash = infoHash
-            gwOverlay.title = title
-            gwOverlay.phase = "downloading"
-            gwOverlay.percent = 0
+            if (!watchOverlay) return
+            watchOverlay.forGame = true
+            watchOverlay.hash = infoHash
+            watchOverlay.title = title
+            watchOverlay.phase = "downloading"
+            watchOverlay.percent = 0
             if (typeof session !== "undefined") session.installWhenReady(infoHash, title)
         }
     }

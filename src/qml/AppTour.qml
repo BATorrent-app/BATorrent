@@ -6,12 +6,15 @@ import QtQuick
 
 Item {
     id: root
+    anchors.fill: parent
     required property var host
-    required property var toolbar
+    // Avoid `toolbar: toolbar` self-shadow (same name as Main's Toolbar id).
+    required property var toolBar
     property alias tourOverlay: tourOverlay
 
     TourOverlay {
         id: tourOverlay
+        anchors.fill: parent
         onPageRequested: function(page) { host.currentPage = page }
         // step 0 is the welcome (centered, no spotlight); the rest spotlight the UI
         // bat/pose vary per step so all 3 candidate SVGs (noto/twemoji/openmoji)
@@ -20,7 +23,7 @@ Item {
             { page: 0, title: i18n.t("tour_s1_t"), text: i18n.t(host.layoutClassic ? "tour_s1_d" : "tour_s1_d_top"),
               rectFn: function() { return host.navHost ? host.navHost.itemRect("rail", tourOverlay) : Qt.rect(0,0,0,0) } },
             { page: 0, title: i18n.t("tour_s2_t"), text: i18n.t("tour_s2_d"),
-              rectFn: function() { return host.rectIn(toolbar.tbOpen, tourOverlay) } },
+              rectFn: function() { return host.rectIn(toolBar.tbOpen, tourOverlay) } },
             { page: 1, title: i18n.t("tour_s3_t"), text: i18n.t("tour_s3_d"),
               rectFn: function() { return host.navHost ? host.navHost.itemRect(1, tourOverlay) : Qt.rect(0,0,0,0) } },
             { page: 2, title: i18n.t("tour_s5_t"), text: i18n.t("tour_s5_d"),
