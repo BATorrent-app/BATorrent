@@ -16,6 +16,7 @@ import "widgets"
 
 Window {
     id: win
+    PlayerFormat { id: fmt }
     width: 1120; height: 720
     minimumWidth: 560; minimumHeight: 360
     color: "#000000"
@@ -247,18 +248,8 @@ Window {
         }
     }
 
-    function fmt(ms) {
-        if (ms <= 0) return "0:00"
-        var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60
-        var p = function(n){ return (n < 10 ? "0" : "") + n }
-        return (h > 0 ? h + ":" + p(m) : m) + ":" + p(ss)
-    }
-    function fmtBytes(b) {
-        if (!b || b <= 0) return "0 MB"
-        var u = ["KB", "MB", "GB", "TB"], i = -1
-        do { b /= 1024; i++ } while (b >= 1024 && i < u.length - 1)
-        return b.toFixed(b < 10 ? 1 : 0) + " " + u[i]
-    }
+    function fmt(ms) { return fmt.fmt(ms) }
+    function fmtBytes(b) { return fmt.fmtBytes(b) }
 
     // download stats for the buffer bar + badge, polled while the player is open
     property var streamStats: ({})
@@ -294,24 +285,10 @@ Window {
         else { starveDebounce.stop(); starved = false }   // recovery is instant
     }
     Timer { id: starveDebounce; interval: 350; onTriggered: if (win.starvedNow) win.starved = true }
-    function fmtAhead(ms) {
-        var s = Math.floor(ms / 1000)
-        if (s >= 3600) return Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m buffered ahead"
-        if (s >= 60)   return Math.floor(s / 60) + " min buffered ahead"
-        return s + "s buffered ahead"
-    }
-    function fileUrl(p) {
-        if (!p || p.length === 0) return ""
-        if (/^(file|qrc|https?|image):/.test(p)) return p
-        return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
-    }
+    function fmtAhead(ms) { return fmt.fmtAhead(ms) }
+    function fileUrl(p) { return fmt.fileUrl(p) }
     // compact runway for the control-bar pill ("+38 min", "+45s")
-    function fmtRunway(ms) {
-        var s = Math.floor(ms / 1000)
-        if (s >= 3600) return Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m"
-        if (s >= 60)   return Math.floor(s / 60) + " min"
-        return s + "s"
-    }
+    function fmtRunway(ms) { return fmt.fmtRunway(ms) }
     // entry point used by Main.qml when (re)opening the player with new media
     property int nextIdx: -1     // file index of the next episode, or -1
     property bool autoplayNext: (typeof settings === "undefined") || settings.get("autoplayNext") !== false
