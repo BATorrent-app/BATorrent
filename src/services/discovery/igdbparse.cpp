@@ -5,9 +5,11 @@
 #include "services/discovery/igdbparse.h"
 
 #include <QDateTime>
+#include <QHash>
 #include <QJsonDocument>
 #include <QJsonValue>
 #include <QVariantMap>
+#include <algorithm>
 
 namespace IgdbParse {
 
@@ -139,6 +141,91 @@ QVariantList gameCards(const QList<QJsonObject> &objs, int cap)
 QVariantList gameCardsFromJson(const QByteArray &jsonArray, int cap)
 {
     return gameCards(objectsFromJson(jsonArray), cap);
+}
+
+QVariantList titleSearchRows(const QByteArray &jsonArray)
+{
+    QVariantList out;
+    if (jsonArray.isEmpty())
+        return out;
+    const QJsonArray arr = QJsonDocument::fromJson(jsonArray).array();
+    for (const QJsonValue &v : arr) {
+        const QJsonObject o = v.toObject();
+        const QString imageId = o.value(QLatin1String("cover")).toObject()
+                                    .value(QLatin1String("image_id")).toString();
+        if (imageId.isEmpty()) continue;
+        const QString name = o.value(QLatin1String("name")).toString();
+        if (name.isEmpty()) continue;
+        const qint64 rel = qint64(o.value(QLatin1String("first_release_date")).toDouble());
+        QVariantMap m;
+        m.insert(QStringLiteral("title"), name);
+        m.insert(QStringLiteral("poster"),
+                 QStringLiteral("https://images.igdb.com/igdb/image/upload/t_cover_big/%1.jpg").arg(imageId));
+        m.insert(QStringLiteral("year"), rel > 0
+                 ? QString::number(QDateTime::fromSecsSinceEpoch(rel).date().year()) : QString());
+        m.insert(QStringLiteral("rating"), o.value(QLatin1String("total_rating")).toDouble() / 10.0);
+        m.insert(QStringLiteral("overview"), o.value(QLatin1String("summary")).toString());
+        m.insert(QStringLiteral("type"), QStringLiteral("game"));
+        QStringList stills;
+        const QJsonArray shots = o.value(QLatin1String("screenshots")).toArray();
+        for (const QJsonValue &sv : shots) {
+            const QString sid = sv.toObject().value(QLatin1String("image_id")).toString();
+            if (!sid.isEmpty())
+                stills << QStringLiteral("https://images.igdb.com/igdb/image/upload/t_screenshot_huge/%1.jpg").arg(sid);
+            if (stills.size() >= 10) break;
+        }
+        m.insert(QStringLiteral("stills"), stills);
+        out.append(m);
+    }
+    return out;
+}
+
+int pickHypeTypeId(const QByteArray &popularityTypesJson, int fallback)
+{
+    int sellers = 0, want = 0, playing = 0;
+    if (popularityTypesJson.isEmpty())
+        return fallback;
+    const QJsonArray arr = QJsonDocument::fromJson(popularityTypesJson).array();
+    for (const QJsonValue &v : arr) {
+        const QJsonObject o = v.toObject();
+        const QString name = o.value(QLatin1String("name")).toString().toLower();
+        const int id = o.value(QLatin1String("id")).toInt();
+        if (name.contains(QLatin1String("top seller"))) sellers = id;
+        else if (name.contains(QLatin1String("want to play"))) want = id;
+        else if (name.contains(QLatin1String("playing"))) playing = id;
+    }
+    if (sellers) return sellers;
+    if (want) return want;
+    if (playing) return playing;
+    return fallback;
+}
+
+QList<qint64> orderedGameIds(const QByteArray &primitivesJson)
+{
+    QList<qint64> ids;
+    if (primitivesJson.isEmpty())
+        return ids;
+    const QJsonArray arr = QJsonDocument::fromJson(primitivesJson).array();
+    for (const QJsonValue &v : arr) {
+        const qint64 gid = qint64(v.toObject().value(QLatin1String("game_id")).toDouble());
+        if (gid > 0 && !ids.contains(gid))
+            ids.append(gid);
+    }
+    return ids;
+}
+
+QList<QJsonObject> sortObjectsByIdRank(const QList<QJsonObject> &objs,
+                                       const QList<qint64> &rankedIds)
+{
+    QList<QJsonObject> sorted = objs;
+    QHash<qint64, int> rank;
+    for (int i = 0; i < rankedIds.size(); ++i)
+        rank.insert(rankedIds[i], i);
+    std::sort(sorted.begin(), sorted.end(), [&rank](const QJsonObject &a, const QJsonObject &b) {
+        return rank.value(qint64(a.value(QLatin1String("id")).toDouble()), 99999)
+             < rank.value(qint64(b.value(QLatin1String("id")).toDouble()), 99999);
+    });
+    return sorted;
 }
 
 } // namespace IgdbParse
