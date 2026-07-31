@@ -150,6 +150,9 @@
     <file>../src/qml/PlayerEndCard.qml</file>
     <file>../src/qml/PlayerSkipChip.qml</file>
     <file>../src/qml/PlayerRunway.qml</file>
+    <file>../src/qml/PlayerChrome.qml</file>
+    <file>../src/qml/PlayerScrubber.qml</file>
+    <file>../src/qml/PlayerShortcuts.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/CommandPalette.qml</file>
 <file>../src/qml/RssWindow.qml</file>
