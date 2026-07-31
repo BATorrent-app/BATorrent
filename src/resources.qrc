@@ -143,7 +143,8 @@
 <file>../src/qml/AboutDialog.qml</file>
 <file>../src/qml/PlayerWindow.qml</file>
 <file>../src/qml/PlayerFormat.qml</file>
-<file>../src/qml/PlayerSubPanel.qml</file>
+    <file>../src/qml/PlayerSlider.qml</file>
+    <file>../src/qml/PlayerSubPanel.qml</file>
 <file>../src/qml/PlayerOptionsPanel.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/CommandPalette.qml</file>

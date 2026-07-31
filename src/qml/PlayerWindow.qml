@@ -39,22 +39,8 @@ Window {
     property string resolvedTitle: ""
     property string resolvedSubtitle: ""
     readonly property string headerTitle: resolvedTitle.length > 0 ? resolvedTitle : mediaTitle
-    readonly property string mediaQuality: {
-        var n = mediaFileName.toLowerCase()
-        if (/2160p|\buhd\b|\b4k\b/.test(n)) return "4K"
-        if (/1080p/.test(n)) return "1080p"
-        if (/720p/.test(n))  return "720p"
-        if (/480p/.test(n))  return "480p"
-        return ""
-    }
-    readonly property string mediaAudio: {
-        var n = mediaFileName.toLowerCase()
-        if (/7\.1/.test(n)) return "7.1"
-        if (/5\.1/.test(n)) return "5.1"
-        if (/atmos/.test(n)) return "Atmos"
-        if (/\b2\.0\b|stereo|aac2/.test(n)) return "2.0"
-        return ""
-    }
+    readonly property string mediaQuality: fmt.qualityFromName(mediaFileName)
+    readonly property string mediaAudio: fmt.audioFromName(mediaFileName)
     property string infoHash: ""
     property int fileIndex: 0
     readonly property string resumeKey: "resume_" + infoHash + "_" + fileIndex
@@ -184,69 +170,11 @@ Window {
         updateCue(player.position)
     }
     function updateCue(rawPos) {
-        if (extCues.length === 0) { extCueText = ""; return }
-        var pos = rawPos - extSubOffset
-        var i = extCueIdx
-        if (i >= 0 && i < extCues.length) {
-            var c = extCues[i]
-            if (pos >= c.start && pos <= c.end) { extCueText = c.text; return }
-            if (pos > c.end && i + 1 < extCues.length && pos < extCues[i + 1].start) { extCueText = ""; return }
-        }
-        // seek or first sample: binary-search the last cue starting at/before pos
-        var lo = 0, hi = extCues.length - 1, found = -1
-        while (lo <= hi) {
-            var mid = (lo + hi) >> 1
-            if (extCues[mid].start <= pos) { found = mid; lo = mid + 1 } else hi = mid - 1
-        }
-        extCueIdx = found
-        extCueText = (found >= 0 && pos <= extCues[found].end) ? extCues[found].text : ""
+        var r = fmt.cueAt(extCues, extCueIdx, rawPos, extSubOffset)
+        extCueIdx = r.idx
+        extCueText = r.text
     }
     readonly property bool fullscreen: win.visibility === Window.FullScreen
-
-    // slim, themed slider (no default "ball" handle)
-    component PSlider: Slider {
-        id: sl
-        property real buffered: 0   // 0..1 downloaded-from-start, drawn dim behind the fill
-        readonly property bool active: sl.pressed || sl.hovered
-        implicitHeight: 18
-        background: Rectangle {
-            x: sl.leftPadding; y: sl.topPadding + sl.availableHeight / 2 - height / 2
-            width: sl.availableWidth
-            height: sl.active ? 7 : 5; radius: height / 2
-            color: "#26ffffff"
-            Behavior on height { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-            // downloaded layer (what's safe to seek to)
-            Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: parent.radius; color: "#4dffffff" }
-            // playback layer (what you're watching) — accent with a soft glow
-            Rectangle {
-                width: sl.visualPosition * parent.width; height: parent.height; radius: parent.radius
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0.0; color: Theme.accent }
-                    GradientStop { position: 1.0; color: "#ff2e3d" }
-                }
-                layer.enabled: sl.active
-                layer.effect: MultiEffect { blurEnabled: true; blur: 0.6; blurMax: 8 }
-            }
-        }
-        handle: Item {
-            implicitWidth: sl.active ? 15 : 0
-            implicitHeight: implicitWidth
-            x: sl.leftPadding + sl.visualPosition * (sl.availableWidth - width)
-            y: sl.topPadding + sl.availableHeight / 2 - height / 2
-            Behavior on implicitWidth { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
-            MultiEffect {
-                source: disc
-                anchors.fill: disc
-                shadowEnabled: true
-                shadowBlur: 1.0
-                blurMax: 10
-                shadowColor: "#80000000"
-                visible: parent.width > 0
-            }
-            Rectangle { id: disc; anchors.fill: parent; radius: width / 2; color: "#ffffff" }
-        }
-    }
 
     function fmt(ms) { return fmt.fmt(ms) }
     function fmtBytes(b) { return fmt.fmtBytes(b) }
@@ -881,7 +809,7 @@ Window {
                     font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
                     Layout.minimumWidth: 52; horizontalAlignment: Text.AlignRight
                 }
-                PSlider {
+                PlayerSlider {
                     id: seek
                     Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
                     from: 0; to: Math.max(1, player.duration)
