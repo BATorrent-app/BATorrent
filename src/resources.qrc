@@ -129,18 +129,18 @@
 <file>../src/qml/AppTour.qml</file>
 <file>../src/qml/Splash.qml</file>
         <file>../src/qml/windows/TrayPopupWindow.qml</file>
-        <file>../src/qml/UpdateDialog.qml</file>
-        <file>../src/qml/InputPromptDialog.qml</file>
-<file>../src/qml/BatDialog.qml</file>
-<file>../src/qml/MagnetDialog.qml</file>
-<file>../src/qml/RemoveDialog.qml</file>
-<file>../src/qml/AddTorrentDialog.qml</file>
-<file>../src/qml/CreateTorrentDialog.qml</file>
-<file>../src/qml/AddAddonDialog.qml</file>
-<file>../src/qml/ReleaseNotesDialog.qml</file>
-<file>../src/qml/WelcomeDialog.qml</file>
+        <file>../src/qml/dialogs/UpdateDialog.qml</file>
+        <file>../src/qml/dialogs/InputPromptDialog.qml</file>
+<file>../src/qml/dialogs/BatDialog.qml</file>
+<file>../src/qml/dialogs/MagnetDialog.qml</file>
+<file>../src/qml/dialogs/RemoveDialog.qml</file>
+<file>../src/qml/dialogs/AddTorrentDialog.qml</file>
+<file>../src/qml/dialogs/CreateTorrentDialog.qml</file>
+<file>../src/qml/dialogs/AddAddonDialog.qml</file>
+<file>../src/qml/dialogs/ReleaseNotesDialog.qml</file>
+<file>../src/qml/dialogs/WelcomeDialog.qml</file>
 <file>../src/qml/TourOverlay.qml</file>
-<file>../src/qml/AboutDialog.qml</file>
+<file>../src/qml/dialogs/AboutDialog.qml</file>
     <file>../src/qml/player/PlayerWindow.qml</file>
     <file>../src/qml/player/PlayerFormat.qml</file>
     <file>../src/qml/player/PlayerSlider.qml</file>
@@ -165,10 +165,10 @@
 <file>../src/qml/windows/ShortcutsWindow.qml</file>
 <file>../src/qml/windows/StatisticsWindow.qml</file>
 <file>../src/qml/windows/RemovedHistoryWindow.qml</file>
-<file>../src/qml/InspectorDialog.qml</file>
+<file>../src/qml/dialogs/InspectorDialog.qml</file>
 <file>../src/qml/windows/LogViewerWindow.qml</file>
 <file>../src/qml/windows/DiagnosticsWindow.qml</file>
-<file>../src/qml/PairingDialog.qml</file>
+<file>../src/qml/dialogs/PairingDialog.qml</file>
 <file>../src/qml/NavRail.qml</file>
 <file>../src/qml/NavRailDisk.qml</file>
 <file>../src/qml/NavRailDownloadSlot.qml</file>
@@ -192,7 +192,7 @@
 <file>../src/qml/SearchListPane.qml</file>
 <file>../src/qml/SearchTitlesPane.qml</file>
 <file>../src/qml/SearchResultsFooter.qml</file>
-<file>../src/qml/SearchFitDialog.qml</file>
+<file>../src/qml/dialogs/SearchFitDialog.qml</file>
 <file>../src/qml/FindBillboard.qml</file>
 <file>../src/qml/FindBrowse.qml</file>
 <file>../src/qml/FindCatalogBrowse.qml</file>

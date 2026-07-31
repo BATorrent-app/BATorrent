@@ -5,8 +5,8 @@
 // Source: BATorrent About.html + bat-dialog.css + <style> inline
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 BatDialog {
     id: dlg

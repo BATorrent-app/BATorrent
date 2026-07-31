@@ -6,8 +6,8 @@
 // LAN access, then shows the QR + URL + credentials. `pairing` + `settings` bridges.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 BatDialog {
     id: dlg

@@ -6,8 +6,8 @@
 // Only reachable in non-Store builds (the bridge is null otherwise).
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 BatDialog {
     id: dlg

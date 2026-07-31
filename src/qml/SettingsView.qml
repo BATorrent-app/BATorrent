@@ -9,6 +9,7 @@ import QtQuick.Controls.Basic
 import QtQuick.Dialogs
 import "theme"
 import "widgets"
+import "dialogs"
 
 Rectangle {
     id: win

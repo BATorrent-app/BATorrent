@@ -11,6 +11,7 @@ import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import "theme"
 import "widgets"
+import "dialogs"
 
 Rectangle {
     id: page

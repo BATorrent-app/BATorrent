@@ -7,8 +7,8 @@
 // text is passed to the callback when the user confirms.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 BatDialog {
     id: dlg

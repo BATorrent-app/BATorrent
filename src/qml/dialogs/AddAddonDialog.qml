@@ -5,8 +5,8 @@
 // Source: BATorrent Add Addon.html + bat-dialog.css — wired to QmlAddonBridge (`addons`).
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 BatDialog {
     id: dlg

@@ -5,8 +5,8 @@
 // Disk add-guard: bridge blocks a too-big add and asks here first.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Item {
     id: root

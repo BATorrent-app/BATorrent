@@ -6,8 +6,8 @@
 // (themeBridge) so nothing is hardcoded.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 BatDialog {
     id: dlg
