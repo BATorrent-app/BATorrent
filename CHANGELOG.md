@@ -1,8 +1,10 @@
 # Changelog
 
-## v4.8.0-beta5
+## v4.8.0-beta6
 
 Test build for the beta round. Still a beta, not a public release.
+(Replaces v4.8.0-beta5, which never published: the onboarding screen used a
+QML type that only exists in Qt 6.8, so the packaged build failed to start.)
 
 ### Changed
 - The VPN is now a "light" model: instead of running its own tunnel, BATorrent
