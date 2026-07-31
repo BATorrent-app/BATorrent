@@ -38,6 +38,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_categories.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_pertorrent.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_alerts.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_alerts_finish.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_info.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_network.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_security.cpp
