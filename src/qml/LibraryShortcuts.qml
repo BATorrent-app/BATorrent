@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
+import QtQuick.Dialogs
 import "theme"
 
 // Library keyboard shortcuts. Instantiated as a Window child so Application/
@@ -12,6 +13,34 @@ Item {
     required property var library
     required property var filterBar
     required property var cmdPalette
+
+    property alias setLocationDlg: setLocationDlg
+
+    Shortcut {
+        sequence: StandardKey.SelectAll
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var f = host.activeFocusItem
+            if (f && f.cursorPosition !== undefined) return
+            host.selectAll()
+        }
+    }
+    Shortcut {
+        sequences: [ StandardKey.Paste ]
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            var f = host.activeFocusItem
+            if (f && f.cursorPosition !== undefined) return
+            if (typeof session !== "undefined") session.smartPaste()
+        }
+    }
+
+    FolderDialog {
+        id: setLocationDlg
+        title: (i18n.language, i18n.t("ctx_move_storage_title"))
+        onAccepted: if (typeof session !== "undefined")
+            session.moveSelectedStorage(session.urlToLocalPath(setLocationDlg.selectedFolder.toString()))
+    }
 
     Shortcut { sequences: [StandardKey.HelpContents]; onActivated: host.showWin(host.shortcutsWinLoader) }
     Shortcut { sequence: "Ctrl+F"; onActivated: filterBar.searchInput.forceActiveFocus() }

@@ -216,6 +216,7 @@ Window {
     // to re-download into) — libtorrent moves storage there, then a recheck picks
     // up whatever's present. Shared by the context menu and the recovery banner.
     function promptSetLocation() { setLocationDlg.open() }
+    property alias setLocationDlg: libraryShortcuts.setLocationDlg
     // Full-screen visual acknowledgement for a manual Refresh.
     function flashRefresh() { refreshFlash.flash() }
 
@@ -347,37 +348,6 @@ Window {
         setLocationDialog: setLocationDlg
         exportDialog: exportTorrentDlg
         diagnoseDialog: diagnoseDlg
-    }
-
-    // ApplicationShortcut context: with the default WindowShortcut these didn't
-    // fire on Windows (QQuickWidget focus quirk, reported by a tester). The
-    // text-field guard keeps Ctrl+A / Ctrl+V working normally inside inputs.
-    Shortcut {
-        sequence: StandardKey.SelectAll
-        context: Qt.ApplicationShortcut
-        onActivated: {
-            var f = win.activeFocusItem
-            if (f && f.cursorPosition !== undefined) return   // let an input select its own text
-            win.selectAll()
-        }
-    }
-    // Smart Paste: Ctrl+V adds a magnet / 40-char hash / .torrent URL straight from
-    // the clipboard — unless a text field has focus (then let it paste text).
-    Shortcut {
-        sequences: [ StandardKey.Paste ]
-        context: Qt.ApplicationShortcut
-        onActivated: {
-            var f = win.activeFocusItem
-            if (f && f.cursorPosition !== undefined) return
-            session.smartPaste()
-        }
-    }
-
-    // "Definir local…" — move the selected torrent's storage to a new folder
-    FolderDialog {
-        id: setLocationDlg
-        title: (i18n.language, i18n.t("ctx_move_storage_title"))
-        onAccepted: session.moveSelectedStorage(session.urlToLocalPath(setLocationDlg.selectedFolder.toString()))
     }
 
     // Must stay a direct child of Window (not nested under Layout) — macOS menus
@@ -694,6 +664,7 @@ Window {
     }
 
     LibraryShortcuts {
+        id: libraryShortcuts
         host: win
         library: library
         filterBar: libraryChrome.filterBar
