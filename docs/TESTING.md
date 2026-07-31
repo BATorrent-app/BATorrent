@@ -32,8 +32,8 @@ know the net will catch the regressions that matter.
 | Catch2 binaries | **40** `tests/test_*.cpp` (~**400+** `TEST_CASE`/`SCENARIO`) |
 | Test LOC | ~6.7k lines of tests vs ~**~55k+** product C++ / **~22k** QML |
 | Strength | Parsers, security scanners, release pick/rank, session **pure** resume helpers, settings helpers, HTTP range/plan, VPN config |
-| Weakness | `QmlSessionBridge` playback/library paths, most of SessionManager alert/lifecycle glue, DiscoveryService network orchestration, almost all product QML surfaces |
-| CI Catch2 allowlist | `build.yml` runs peel + metadata suites including `test_sessionresume`, `test_sessionremove`, `test_metadatamatch`, `test_sessionconfig`, parse/discovery helpers, `test_hublogic`, `test_settingshelpers`, plus prior core binaries. Local-HTTP / VPN integration suites stay local-first |
+| Weakness | `QmlSessionBridge` library/watchlist glue beyond playFile, most of SessionManager alert/lifecycle glue, almost all product QML surfaces |
+| CI Catch2 allowlist | `build.yml` runs peel + metadata suites including `test_sessionresume`, `test_sessionremove`, `test_metadatamatch`, `test_sessionconfig`, parse/discovery helpers, `test_discoveryfinish`, `test_addonfinish`, `test_hublogic`, `test_settingshelpers`, plus prior core binaries. Local-HTTP / VPN integration suites stay local-first |
 | QML | 9 Quick Test files (controls/Splash/Toast) + **boot-offscreen** smoke — no Watch / Search / Hub journey automation |
 | Coverage tooling | **Not wired** in CMake. Apple Clang ships `llvm-cov` / `llvm-profdata` on macOS; optional local recipe below. Do not treat % lines as the gate |
 
@@ -56,7 +56,7 @@ Rough map of `tests/test_*.cpp` to product domains. Counts are `TEST_CASE` /
 |--------|--------|-----------|----------------|--------------|
 | **torrent / engine** | `sessionconfig`, `sessionresume`, `sessionremove`, `ipblocklist`, `bandwidthschedule`, `magnettrackers`, `proxycontroller`, chunks of `unit` | ~100+ | Resume naming/migration/corrupt policy; incomplete-suffix reconcile; finish move + emit mute; remove disposition × missing targets; config round-trips; empty-session API | Full alert_cast branches; tick/scheduler simulation; streaming piece priority |
 | **bridges** | `bridge` | 16 | Headless bridge construct + fixture torrent add paths; **playFile / streamUrl / clearResume** | library/watchlist; selection/diagnose |
-| **discovery** | `tmdbparse`, `igdbparse`, `addonparse`, `discoverysearch`, `discoveryassemble`, `hublogic`, `gamesource` | ~40 | JSON→card mappers; assemble dedupe; search query helpers; HubLogic | `DiscoveryService` QNAM orchestration; AddonManager network + gen counters |
+| **discovery** | `tmdbparse`, `igdbparse`, `addonparse`, `addonfinish`, `discoverysearch`, `discoveryassemble`, `discoveryfinish`, `hublogic`, `gamesource` | ~50 | JSON→card mappers; assemble dedupe; search query helpers; HubLogic; offline shelf/search finish + AddonManager catalog/stream gen-counter | Live TMDB/IGDB/QNAM (intentional — optional `[net]`) |
 | **metadata** | `nameparser`, `metadatamatch`, `searchranker`, `releasegroup`, `releasetrust`, `gamereleasepick`, `episodegroup`, `mkvchapters`, `unit` (ReleasePick/AudioMode) | ~100+ | Title parse, poster locate + AppData sibling + hash casing, ranking/trust | Full `MetadataResolver` fetch pipeline (intentional — network) |
 | **security** | `security`, `memguard`, archive chunks in `unit` | ~30+ | SuspiciousScan, PasswordHash, archive volume rules | Platform Defender edges (OS-dependent) |
 | **downloads** | `httpdownload`, `httpdownloadmanager`, `rangeplan`, `filehostresolver` | ~19 | Range plan, finish/remove persistence | Rare redirect/host edge cases |
@@ -166,11 +166,15 @@ peel. Network is flaky in CI.
 | Work | Approach |
 |------|----------|
 | Keep expanding pure mappers | TMDB/IGDB/AddonParse fixtures (ongoing) |
-| `DiscoveryService` | Inject `QNetworkAccessManager` **or** a thin `IHttpGet` fake; drive assemble/search finishers with fixture bodies |
-| `AddonManager` search | Fixture provider JSON through AddonParse (done) + one fake QNAM gen-counter race test if cheap |
+| `DiscoveryService` | Thin `DiscoveryFinish` seam (ingest fixture bodies → assemble/search finish); QNAM stays in the service |
+| `AddonManager` search | Fixture provider JSON through AddonParse (done) + `AddonFinish` gen-counter stale-drop characterization |
 
 **P2 DoD:** Shelf/search finish paths can be exercised offline; live TMDB/IGDB
 remain manual / rare integration tags (`[net]`).
+
+- [x] `DiscoveryFinish` + `test_discoveryfinish` (success / empty / error bodies)
+- [x] `AddonFinish` + `test_addonfinish` (parse wiring + stale gen drop)
+- [x] CI allowlist + `check` target include both binaries
 
 ### P3 — Critical QML / scripted smoke
 
@@ -211,8 +215,8 @@ Declare **test Ótimo** when **all** of the following hold:
    land “and tests later.”
 3. **Engine seams** — alert-finish / remove / resume policy changes require updating
    characterization tests (P1 largely done or consciously deferred with REVIEW notes).
-4. **Discovery** — offline fixture path exists for assemble/search finish (P2); live
-   API remains optional.
+4. **Discovery** — offline fixture path exists for assemble/search finish (P2 done via
+   `DiscoveryFinish` / `AddonFinish`); live API remains optional.
 5. **QML** — boot smoke green on PRs; at least one automated or checklist-gated path
    for Watch and Search (P3).
 6. **CI allowlist ≈ CMake targets that are fast/offline** — no long-lived orphan
@@ -235,7 +239,7 @@ Parallelize only when file ownership is disjoint. Serialize `tests/CMakeLists.tx
 | **T0 CI allowlist** | S | `.github/workflows/build.yml` (+ maybe `tests/CMakeLists.txt` `check` target list) | Product `src/` behaviour | P0 binaries in PR CI |
 | **T0b playFile net** | S–M | `tests/test_bridge.cpp` or NEW `tests/test_playback.cpp`, optional tiny pure helper under `bridges/session/` or `torrent/` | Discovery, QML views | Stream URL + guard characterization |
 | **T1 alert/remove** | M | `sessionmanager_alerts_finish.cpp`, persistence/lifecycle **helpers only**, `test_sessionresume` / `test_sessionremove` | bridges/*, qml/*, discovery | Tables for finish + remove |
-| **T2 discovery fakes** | M | `discoveryservice.*` (inject seam only), `discoveryassemble`/`discoverysearch` tests, fixture JSON under `tests/fixtures/` | sessionmanager peels, qml | Offline shelf/search finish |
+| **T2 discovery fakes** | M | `discoveryfinish` / `addonfinish` seams + tests, fixture JSON inline | sessionmanager peels, qml | Offline shelf/search finish + catalog gen race — **done** |
 | **T3 QML journeys** | M | `tests/qml/**`, optionally `qml-smoke.yml` env flags | Catch2 engine rewrites | Watch + Search smoke or Quick Test |
 | **T-cov (optional)** | S | NEW `scripts/coverage-macos.sh` + doc only; **no default CMake ON** | Forcing coverage in CI | Local HTML/text report for gap triage |
 

@@ -4,6 +4,7 @@
 
 #include "services/discovery/addonmanager.h"
 #include "services/discovery/addoncatalog.h"
+#include "services/discovery/addonfinish.h"
 #include "services/discovery/addonparse.h"
 #include "services/platform/contentlanguage.h"
 #include "services/platform/translator.h"
@@ -308,22 +309,13 @@ void AddonManager::searchCatalog(const QString &query)
 
             connect(reply, &QNetworkReply::finished, this, [this, reply, gen]() {
                 reply->deleteLater();
-                if (gen != m_catalogGen) return;
-                m_pendingCatalog--;
-
-                if (reply->error() == QNetworkReply::NoError) {
-                    for (const auto &item : AddonParse::parseCatalogMetas(reply->readAll())) {
-                        bool dup = false;
-                        for (const auto &existing : m_catalogResults) {
-                            if (existing.id == item.id) { dup = true; break; }
-                        }
-                        if (!dup)
-                            m_catalogResults.append(item);
-                    }
-                }
-
+                const auto outcome = AddonFinish::applyCatalogReply(
+                    m_catalogGen, m_pendingCatalog, m_catalogResults, gen,
+                    reply->error() == QNetworkReply::NoError, reply->readAll());
+                if (outcome == AddonFinish::ReplyOutcome::Stale)
+                    return;
                 emit catalogResults(m_catalogResults);
-                if (m_pendingCatalog <= 0)
+                if (outcome == AddonFinish::ReplyOutcome::Finished)
                     emit catalogFinished();
             });
         }
@@ -360,16 +352,13 @@ void AddonManager::getStreams(const QString &type, const QString &id)
 
         connect(reply, &QNetworkReply::finished, this, [this, reply, gen, addonName = addon.name]() {
             reply->deleteLater();
-            if (gen != m_streamGen) return;
-            m_pendingStreams--;
-
-            if (reply->error() == QNetworkReply::NoError) {
-                for (const auto &r : AddonParse::parseStreamResults(reply->readAll(), addonName))
-                    m_streamResults.append(r);
-            }
-
+            const auto outcome = AddonFinish::applyStreamReply(
+                m_streamGen, m_pendingStreams, m_streamResults, gen,
+                reply->error() == QNetworkReply::NoError, reply->readAll(), addonName);
+            if (outcome == AddonFinish::ReplyOutcome::Stale)
+                return;
             emit streamResults(m_streamResults);
-            if (m_pendingStreams <= 0)
+            if (outcome == AddonFinish::ReplyOutcome::Finished)
                 emit streamFinished();
         });
     }

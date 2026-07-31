@@ -3,8 +3,7 @@
 // See LICENSE file for details
 
 #include "services/discovery/discoveryservice.h"
-#include "services/discovery/discoveryassemble.h"
-#include "services/discovery/discoverysearch.h"
+#include "services/discovery/discoveryfinish.h"
 #include "services/discovery/hublogic.h"
 #include "services/discovery/igdbparse.h"
 #include "services/discovery/tmdbparse.h"
@@ -224,8 +223,9 @@ void DiscoveryService::searchTmdbTitles(const QString &query)
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
-        if (reply->error() == QNetworkReply::NoError)
-            m_searchWorks += TmdbParse::multiSearchRows(reply->readAll(), TmdbPosterBase);
+        DiscoveryFinish::ingestTmdbSearch(
+            m_searchWorks, reply->error() == QNetworkReply::NoError, reply->readAll(),
+            TmdbPosterBase);
         maybeFinishSearch();
     });
 }
@@ -249,10 +249,10 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
         QNetworkReply *reply = m_nam->post(req, body);
         connect(reply, &QNetworkReply::finished, this, [this, reply]() {
             reply->deleteLater();
-            if (reply->error() == QNetworkReply::NoError)
-                m_searchWorks += IgdbParse::titleSearchRows(reply->readAll());
-            else
+            if (reply->error() != QNetworkReply::NoError)
                 qDebug() << "[search] IGDB title search error:" << reply->errorString();
+            DiscoveryFinish::ingestIgdbSearch(
+                m_searchWorks, reply->error() == QNetworkReply::NoError, reply->readAll());
             maybeFinishSearch();
         });
     });
@@ -260,8 +260,10 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
 
 void DiscoveryService::maybeFinishSearch()
 {
-    if (--m_searchPending > 0) return;
-    emit titleResults(m_searchQuery, DiscoverySearch::rankAndMerge(m_searchQuery, m_searchWorks));
+    QVariantList ranked;
+    if (!DiscoveryFinish::tryFinishSearch(m_searchPending, m_searchQuery, m_searchWorks, &ranked))
+        return;
+    emit titleResults(m_searchQuery, ranked);
 }
 
 bool DiscoveryService::hasMetadataKeys() const
@@ -408,19 +410,10 @@ void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, order, label, type]() {
         reply->deleteLater();
-
-        const bool isTv = type == QLatin1String("series");
-        const QVariantList items = (reply->error() == QNetworkReply::NoError)
-            ? TmdbParse::shelfRows(reply->readAll(), isTv, TmdbPosterBase, TmdbBackdrop)
-            : QVariantList{};
-        // Merge-append: a shelf is fetched across multiple pages, all sharing
-        // one `order`. Dedup by poster URL so a page overlap can't double a title.
-        QVariantMap row = m_accum.value(order);
-        const QVariantList merged = DiscoveryAssemble::mergeShelfByPoster(
-            row.value(QStringLiteral("items")).toList(), items);
-        row.insert(QStringLiteral("label"), label);
-        row.insert(QStringLiteral("items"), merged);
-        if (!merged.isEmpty()) m_accum.insert(order, row);
+        DiscoveryFinish::ingestTmdbShelf(
+            m_accum, order, label, type == QLatin1String("series"),
+            reply->error() == QNetworkReply::NoError, reply->readAll(),
+            TmdbPosterBase, TmdbBackdrop);
         maybeFinish();
     });
 }
@@ -612,19 +605,17 @@ void DiscoveryService::fetchIgdbGames(int order, const QString &label,
 
 void DiscoveryService::maybeFinish()
 {
-    if (--m_pending > 0) return;
-    assembleAndEmit();
+    QVariantList rows;
+    QVariantList hero;
+    if (!DiscoveryFinish::tryFinishShelves(m_pending, m_accum, &rows, &hero))
+        return;
+    m_rows = rows;
+    m_hero = hero;
+    emit rowsChanged();
+    emit heroChanged();
     saveToCache();
     setLoading(false);
     if (m_rows.isEmpty()) setStatus(tr_("discover_empty"));
-}
-
-void DiscoveryService::assembleAndEmit()
-{
-    m_rows = DiscoveryAssemble::rowsFromAccum(m_accum);
-    m_hero = DiscoveryAssemble::heroFromAccum(m_accum);
-    emit rowsChanged();
-    emit heroChanged();
 }
 
 bool DiscoveryService::loadFromCache()

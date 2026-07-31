@@ -73,6 +73,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/integrations/rssmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addonmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addonparse.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/addonfinish.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addoncatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/updater.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/logger.cpp
@@ -137,6 +138,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryassemble.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoverysearch.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryfinish.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/hublogic.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/tmdbparse.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/igdbparse.cpp
@@ -294,6 +296,8 @@ bat_add_test(test_igdbparse test_igdbparse.cpp)
 bat_add_test(test_addonparse test_addonparse.cpp)
 bat_add_test(test_discoverysearch test_discoverysearch.cpp)
 bat_add_test(test_discoveryassemble test_discoveryassemble.cpp)
+bat_add_test(test_discoveryfinish test_discoveryfinish.cpp)
+bat_add_test(test_addonfinish test_addonfinish.cpp)
 bat_add_test(test_sessionconfig test_sessionconfig.cpp)
 bat_add_test(test_sessionresume test_sessionresume.cpp)
 bat_add_test(test_sessionremove test_sessionremove.cpp)
@@ -348,6 +352,7 @@ add_custom_target(check
             test_contentlanguage test_releasetrust
             test_sessionresume test_sessionremove test_metadatamatch test_sessionconfig
             test_addonparse test_tmdbparse test_igdbparse test_settingshelpers
-            test_discoveryassemble test_discoverysearch test_hublogic
+            test_discoveryassemble test_discoverysearch test_discoveryfinish
+            test_addonfinish test_hublogic
     COMMENT "Running all BATorrent tests..."
 )
