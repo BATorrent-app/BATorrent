@@ -131,43 +131,6 @@ void QmlSessionBridge::openExternalForHash(const QString &infoHash, int fileInde
 
 // External subtitles for the built-in player: parse to plain cue maps the
 // QML overlay can binary-search.
-QVariantList QmlSessionBridge::loadSubtitleFile(const QString &path)
-{
-    QString p = path;
-    if (p.startsWith(QLatin1String("file://"))) p = QUrl(p).toLocalFile();
-    QVariantList out;
-    const auto cues = SubtitleParser::parseFile(p);
-    out.reserve(cues.size());
-    for (const auto &c : cues) {
-        QVariantMap m;
-        m["start"] = c.startMs;
-        m["end"] = c.endMs;
-        m["text"] = c.text;
-        out << m;
-    }
-    return out;
-}
-
-QString QmlSessionBridge::findSidecarSubtitle(const QString &infoHash, int fileIndex)
-{
-    const int row = m_session->torrentIndexByInfoHash(infoHash);
-    if (row < 0) return {};
-    QString video = m_session->streamFilePath(row, fileIndex);
-    if (video.isEmpty()) return {};
-    if (video.endsWith(QLatin1String(".!bt"))) video.chop(4);
-    const QFileInfo vi(video);
-    const QString base = vi.completeBaseName();
-    QDir dir = vi.dir();
-    for (const char *ext : {"srt", "vtt"}) {
-        const QString exact = dir.filePath(base + QLatin1Char('.') + QLatin1String(ext));
-        if (QFileInfo::exists(exact)) return exact;
-    }
-    // language-suffixed sidecars ("Movie.pt-BR.srt") sort first by name
-    const QStringList matches = dir.entryList({base + QStringLiteral("*.srt"), base + QStringLiteral("*.vtt")},
-                                              QDir::Files, QDir::Name);
-    return matches.isEmpty() ? QString() : dir.filePath(matches.first());
-}
-
 void QmlSessionBridge::playSelected()
 {
     if (!hasSelection()) return;
@@ -357,48 +320,3 @@ QString QmlSessionBridge::posterForHash(const QString &infoHash) const
     if (!meta.valid || meta.posterPath.isEmpty()) return {};
     return meta.posterPath;
 }
-
-void QmlSessionBridge::watchWhenReady(const QString &infoHash, const QString &title)
-{
-    if (infoHash.isEmpty()) return;
-    m_pendingWatch.insert(infoHash, qMakePair(title, QDateTime::currentSecsSinceEpoch()));
-    emit watchBuffering(title);
-}
-
-void QmlSessionBridge::cancelWatch(const QString &infoHash)
-{
-    m_pendingWatch.remove(infoHash);
-}
-
-// Runs each ~1s tick: open the player for any pending Get&Watch hash that has
-// become playable; give up after ~2 min of no metadata/seeds.
-void QmlSessionBridge::onWatchTick()
-{
-    pollRunningGames();
-    pollInstallWatch();
-    pollPendingInstall();
-    if (m_pendingWatch.isEmpty()) return;
-    const qint64 now = QDateTime::currentSecsSinceEpoch();
-    for (const QString &hash : m_pendingWatch.keys()) {
-        const int idx = m_session->torrentIndexByInfoHash(hash);
-        if (idx >= 0) {
-            const TorrentInfo info = m_session->torrentAt(idx);
-            emit watchProgress(hash, info.progress);
-            if (m_session->torrentHasVideo(idx)) {
-                const bool ready = info.completed || info.progress >= 0.02f
-                                 || info.totalDone > 5LL * 1024 * 1024;
-                if (ready) {
-                    m_pendingWatch.remove(hash);
-                    playByHash(hash);
-                    continue;
-                }
-            }
-        }
-        if (now - m_pendingWatch.value(hash).second > 120)
-            emit watchFailed(m_pendingWatch.take(hash).first);
-    }
-}
-
-// The game library + launch + install pipeline lives in
-// qmlsessionbridge_games.cpp.
-
