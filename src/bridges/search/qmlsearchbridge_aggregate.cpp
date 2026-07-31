@@ -4,8 +4,8 @@
 //
 // QmlSearchBridge — aggregate row append + catalog seed enrichment.
 
-#include "bridges/qmlsearchbridge.h"
-#include "bridges/qmlsearchbridge_util.h"
+#include "bridges/search/qmlsearchbridge.h"
+#include "bridges/search/qmlsearchbridge_util.h"
 #include "torrent/iengine.h"
 #include "services/metadata/audiomode.h"
 #include "services/metadata/episodegroup.h"

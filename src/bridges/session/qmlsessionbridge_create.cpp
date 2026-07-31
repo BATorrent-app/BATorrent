@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — create .torrent from a file/folder.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/platform/translator.h"
 

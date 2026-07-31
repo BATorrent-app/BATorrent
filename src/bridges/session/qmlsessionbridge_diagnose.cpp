@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — "why is this slow" report for the selected torrent.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/metadata/nameparser.h"

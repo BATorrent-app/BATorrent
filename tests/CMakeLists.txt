@@ -90,35 +90,35 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_add.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_details.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_create.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_games.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_gameinstall.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_library.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_playback.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_subtitles.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_watch.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_selection.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_disk.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_transfers.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_actions.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_diagnose.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_queue.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_clipboard.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_stats.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_add.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_details.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_create.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_games.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_gameinstall.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_library.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_playback.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_subtitles.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_watch.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_selection.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_disk.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_transfers.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_actions.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_diagnose.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_queue.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_clipboard.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_stats.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlthemebridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_util.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_attrs.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_work.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_covers.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_activate.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_ranking.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_getwatch.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_aggregate.cpp
-    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_games.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_attrs.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_work.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_covers.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_activate.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_ranking.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_getwatch.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_aggregate.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_games.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsettingsbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlrssbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmladdonbridge.cpp

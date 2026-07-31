@@ -4,7 +4,7 @@
 
 #include "app/singleinstance.h"
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 
 #include <QLocalServer>
 #include <QLocalSocket>

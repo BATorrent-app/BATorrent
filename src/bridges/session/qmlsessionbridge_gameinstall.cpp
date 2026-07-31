@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — game install pipeline (extract → installer → finalize).
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/integrations/gameinstall.h"
 #include "services/integrations/gameexedetect.h"

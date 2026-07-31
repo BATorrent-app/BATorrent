@@ -5,7 +5,7 @@
 // QmlSessionBridge — selected-torrent actions (pause/remove/queue/limits/…).
 // Split out of qmlsessionbridge.cpp verbatim; no behaviour change.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/security/defender.h"
 #include "services/metadata/metadataresolver.h"

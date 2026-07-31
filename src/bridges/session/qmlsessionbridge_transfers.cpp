@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — make-room list + active/seeding/resume projections.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/platform/utils.h"

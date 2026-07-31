@@ -7,7 +7,7 @@
 // watchlist (persisted in QSettings as JSON). Split out of qmlsessionbridge.cpp
 // verbatim; no behaviour change.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"   // full IEngine + TorrentInfo
 #include "services/metadata/metadataresolver.h"
 #include "services/metadata/nameparser.h"

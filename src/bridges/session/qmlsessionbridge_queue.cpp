@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — queue reorder for the current selection.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 
 #include <QList>

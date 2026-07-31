@@ -7,7 +7,7 @@
 // play-by-selection / play-by-hash, next-episode resolution, and the
 // watch-when-ready polling. Split out of qmlsessionbridge.cpp verbatim.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"   // full IEngine + TorrentInfo
 #include "services/subtitles/subtitleparser.h"
 #include "services/metadata/metadataresolver.h"
