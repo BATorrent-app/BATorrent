@@ -35,7 +35,7 @@ Rectangle {
     readonly property DownloadCarousel carousel: DownloadCarousel {
         id: car
         currentPage: bar.currentIndex
-        hovered: chipHover.hovered
+        hovered: dlChip.chipHovered
         active: car.dlList.length > 0
     }
     Connections {
@@ -44,9 +44,9 @@ Rectangle {
     }
     SequentialAnimation {
         id: chipFade
-        NumberAnimation { target: chipContent; property: "opacity"; to: 0; duration: 160; easing.type: Easing.InCubic }
+        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 0; duration: 160; easing.type: Easing.InCubic }
         ScriptAction { script: car.dlShown = car.dlIndex }
-        NumberAnimation { target: chipContent; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
+        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
     }
 
     readonly property var diskVolumes: (typeof session !== "undefined") ? session.diskVolumes : []
@@ -208,247 +208,9 @@ Rectangle {
 
         Item { Layout.fillWidth: true }
 
-        // ----- download chip (the rail carousel, condensed) -----
-        Rectangle {
-            id: dlChip
-            visible: car.dlList.length > 0 && bar.showDownloadChip
-            Layout.alignment: Qt.AlignVCenter
-            Layout.preferredHeight: 40
-            Layout.preferredWidth: chipContent.implicitWidth + 20
-            radius: 9
-            color: chipHover.hovered ? Theme.hover : "transparent"
-            Behavior on color { ColorAnimation { duration: 130 } }
-            HoverHandler { id: chipHover }
-
-            RowLayout {
-                id: chipContent
-                anchors.centerIn: parent
-                spacing: 10
-
-                PosterThumb {
-                    Layout.preferredWidth: 24; Layout.preferredHeight: 32
-                    posterUrl: car.dlItem ? (car.dlItem.poster || "") : ""
-                    label: car.dlItem ? (car.dlItem.title || "") : ""
-                }
-                ColumnLayout {
-                    visible: !bar.tightChip
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: 3
-                    Text {
-                        Layout.maximumWidth: 130
-                        text: car.dlItem ? (car.dlItem.title || "") : ""
-                        color: Theme.t2
-                        font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                        elide: Text.ElideRight
-                    }
-                    RowLayout {
-                        spacing: 6
-                        // svg play/pause glyphs — ▶/⏸ text renders as colored
-                        // system emoji on Windows
-                        IconImg {
-                            visible: car.dlItem && (car.slotResume || car.dlItem.paused === true)
-                            src: car.slotResume ? "qrc:/icons/play.svg" : "qrc:/icons/pause.svg"
-                            tint: Theme.accent; s: 9
-                            Layout.alignment: Qt.AlignVCenter
-                        }
-                        Text {
-                            text: !car.dlItem ? ""
-                                  : car.slotResume ? i18n.t("hub_resume")
-                                  : (car.dlItem.paused === true) ? i18n.t("state_paused")
-                                  : car.slotSeed ? ("↑ " + (car.dlItem.upSpeed || ""))
-                                  : ("↓ " + (car.dlItem.downSpeed || ""))
-                            color: Theme.accent
-                            font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum
-                        }
-                        Rectangle {
-                            visible: !car.slotResume
-                            Layout.preferredWidth: 46; Layout.preferredHeight: 2
-                            Layout.alignment: Qt.AlignVCenter
-                            radius: 1; color: Theme.track
-                            Rectangle {
-                                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
-                                width: parent.width * Math.min(1, car.dlItem ? (car.dlItem.progress || 0) : 0)
-                                radius: 1; color: Theme.accent
-                            }
-                        }
-                    }
-                }
-                Text {
-                    visible: car.dlList.length > 1
-                    text: (car.dlShown + 1) + "/" + car.dlList.length
-                    color: Theme.t4
-                    font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum
-                }
-            }
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (!car.dlItem) return
-                    if (car.slotResume) {
-                        if (car.dlItem.kind === "game") session.launchGame(car.dlItem.infoHash)
-                        else session.playByHash(car.dlItem.infoHash)
-                    } else {
-                        bar.selectTorrent(car.dlItem.infoHash); bar.pageRequested(0)
-                    }
-                }
-            }
-            ToolTip.visible: chipHover.hovered
-            ToolTip.text: (i18n.language, i18n.t(car.slotResume ? "nav_continue" : (car.slotSeed ? "nav_seeding" : "nav_downloading")))
-            ToolTip.delay: 400
-        }
-
-        // ----- disk gauge (worst save volume; click → free up space) -----
-        Item {
-            id: diskGauge
-            visible: bar.diskShown !== null
-            Layout.alignment: Qt.AlignVCenter
-            Layout.preferredHeight: 40
-            Layout.preferredWidth: bar.tightDisk ? 76 : diskCol.implicitWidth + 24
-            Rectangle {
-                anchors.fill: parent
-                radius: 9
-                color: diskMa.containsMouse ? Theme.hover : "transparent"
-                Behavior on color { ColorAnimation { duration: 130 } }
-            }
-            ColumnLayout {
-                id: diskCol
-                anchors.centerIn: parent
-                spacing: 5
-                opacity: 1
-                // soft dip when the rotation advances to the next disk
-                Connections {
-                    target: bar
-                    function onDiskIdxChanged() { diskFade.restart() }
-                }
-                SequentialAnimation {
-                    id: diskFade
-                    NumberAnimation { target: diskCol; property: "opacity"; to: 0.25; duration: 110; easing.type: Easing.InCubic }
-                    NumberAnimation { target: diskCol; property: "opacity"; to: 1.0; duration: 160; easing.type: Easing.OutCubic }
-                }
-                RowLayout {
-                    visible: !bar.tightDisk
-                    spacing: 8
-                    Text {
-                        Layout.maximumWidth: 110
-                        text: bar.diskShown ? bar.diskShown.name : ""
-                        color: Theme.t4; elide: Text.ElideRight
-                        font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
-                        font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
-                    }
-                    Text {
-                        text: bar.diskShown ? (i18n.language, i18n.t("status_free_space")).arg(bar.diskShown.free) : ""
-                        color: Theme.t3
-                        font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
-                    }
-                }
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 56
-                    Layout.preferredHeight: 3
-                    radius: 2; color: Theme.track
-                    Rectangle {
-                        readonly property real used: bar.diskShown ? Math.max(0.02, Math.min(1, bar.diskShown.usedFraction)) : 0
-                        anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
-                        width: parent.width * used
-                        radius: 2
-                        // neutral gauge; color only signals real disk pressure
-                        color: used > 0.95 ? Theme.accent : used > 0.85 ? Theme.amber : Theme.t4
-                    }
-                }
-            }
-            MouseArea {
-                id: diskMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: bar.makeRoomRequested()
-            }
-            ToolTip.visible: diskMa.containsMouse
-            ToolTip.text: {
-                var lines = []
-                for (var i = 0; i < bar.diskVolumes.length; ++i)
-                    lines.push(bar.diskVolumes[i].name + " — " + (i18n.language, i18n.t("status_free_space")).arg(bar.diskVolumes[i].free))
-                return lines.join("\n")
-            }
-            ToolTip.delay: 400
-        }
-
-        // ----- VPN status pill (live state + one-click connect/disconnect) -----
-        Rectangle {
-            id: vpnChip
-            visible: typeof vpn !== "undefined"
-            Layout.alignment: Qt.AlignVCenter
-            Layout.preferredHeight: 34
-            Layout.preferredWidth: vpnRow.implicitWidth + 22
-            radius: 9
-            // "Light" VPN: the pill reflects whether BATorrent is bound to a VPN
-            // network interface (green = protected), not the dormant WireGuard
-            // cockpit's connection state.
-            property bool bound: false
-            function refreshBound() {
-                bound = (typeof settings !== "undefined") && settings.get("outgoingInterface") !== ""
-            }
-            Component.onCompleted: refreshBound()
-            Connections {
-                target: (typeof settings !== "undefined") ? settings : null
-                function onChanged() { vpnChip.refreshBound() }
-            }
-            readonly property int st: bound ? 2 : 0
-            readonly property color stColor: st === 2 ? Theme.grn
-                                           : st === 1 ? Theme.amber
-                                           : st === 3 ? Theme.accent : Theme.t4
-            color: vpnMa.containsMouse ? Theme.hover : "transparent"
-            Behavior on color { ColorAnimation { duration: 130 } }
-            RowLayout {
-                id: vpnRow
-                anchors.centerIn: parent
-                spacing: 8
-                Item {
-                    Layout.preferredWidth: 16; Layout.preferredHeight: 16
-                    IconImg {
-                        anchors.centerIn: parent
-                        src: "qrc:/icons/set-vpn.svg"
-                        tint: vpnChip.stColor; s: 15
-                    }
-                    // status dot over the icon corner; pulses while connecting
-                    Rectangle {
-                        width: 7; height: 7; radius: 3.5
-                        anchors.right: parent.right; anchors.bottom: parent.bottom
-                        anchors.rightMargin: -1; anchors.bottomMargin: -1
-                        color: vpnChip.stColor
-                        SequentialAnimation on opacity {
-                            running: vpnChip.st === 1
-                            loops: Animation.Infinite
-                            NumberAnimation { from: 1; to: 0.3; duration: 600 }
-                            NumberAnimation { from: 0.3; to: 1; duration: 600 }
-                        }
-                    }
-                }
-                Text {
-                    visible: !bar.tightChip
-                    text: "VPN"
-                    color: vpnChip.st === 2 ? Theme.t2 : Theme.t3
-                    font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                }
-            }
-            MouseArea {
-                id: vpnMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                // The pill is the always-visible status + the door to the cockpit;
-                // connect/disconnect lives on the big toggle inside it.
-                onClicked: bar.vpnClicked()
-            }
-            ToolTip.visible: vpnMa.containsMouse
-            ToolTip.delay: 400
-            ToolTip.text: (i18n.language, "VPN — " +
-                (vpnChip.st === 2 ? i18n.t("vpn_state_on")
-                 : vpnChip.st === 1 ? i18n.t("vpn_state_connecting")
-                 : vpnChip.st === 3 ? i18n.t("vpn_state_failed")
-                 : i18n.t("vpn_state_off")))
-        }
+        NavBarDownloadChip { id: dlChip; bar: bar; car: car }
+        NavBarDiskGauge { bar: bar }
+        NavBarVpnChip { bar: bar }
 
         // ----- donate (heart: gray at rest, red on hover) -----
         Item {
