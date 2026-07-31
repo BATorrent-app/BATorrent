@@ -143,29 +143,8 @@ Window {
             win.visible = false
         if (!showSplash) win.maybeShowWelcome()
     }
-    // persist window size (debounced; only while in normal windowed state so a
-    // maximize/fullscreen doesn't get saved as the restore size)
-    Timer {
-        id: geomSave
-        interval: 600; repeat: false
-        onTriggered: {
-            if (typeof settings === "undefined") return
-            if (win.visibility !== Window.Windowed) return
-            settings.set("winWidth", win.width)
-            settings.set("winHeight", win.height)
-        }
-    }
-    onWidthChanged: if (win.visibility === Window.Windowed) geomSave.restart()
-    onHeightChanged: if (win.visibility === Window.Windowed) geomSave.restart()
-    // Boot-crash sentinel is cleared from C++ on the first frameSwapped (a QML
-    // Timer used to fire even when the client area stayed gray).
-    // Regaining focus with a fresh magnet link on the clipboard pops the Add
-    // dialog pre-filled — copy a link in the browser, alt-tab back, confirm.
-    // Deferred: when activation comes from a CLICK, the press that focused the
-    // window used to land on the fresh dialog's backdrop and close it instantly
-    // (reported as "the dialog disappears before I can press Download").
-    onActiveChanged: if (active) clipMagnetDelay.restart()
-    Timer { id: clipMagnetDelay; interval: 250; onTriggered: win.checkClipboardMagnet() }
+    AppWindowLifecycle { host: win }
+
     function checkClipboardMagnet() {
         if (typeof session === "undefined") return
         if (magnetDlg.opened || addTorrentDlg.opened) return
