@@ -34,4 +34,43 @@ QtObject {
         if (/^(file|qrc|https?|image):/.test(p)) return p
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
+    function qualityFromName(n) {
+        n = ("" + n).toLowerCase()
+        if (/2160p|\buhd\b|\b4k\b/.test(n)) return "4K"
+        if (/1080p/.test(n)) return "1080p"
+        if (/720p/.test(n))  return "720p"
+        if (/480p/.test(n))  return "480p"
+        return ""
+    }
+    function audioFromName(n) {
+        n = ("" + n).toLowerCase()
+        if (/7\.1/.test(n)) return "7.1"
+        if (/5\.1/.test(n)) return "5.1"
+        if (/atmos/.test(n)) return "Atmos"
+        if (/\b2\.0\b|stereo|aac2/.test(n)) return "2.0"
+        return ""
+    }
+    // External sidecar cue lookup. Returns { idx, text }.
+    function cueAt(cues, idx, rawPos, offsetMs) {
+        if (!cues || cues.length === 0)
+            return { idx: idx, text: "" }
+        var pos = rawPos - (offsetMs || 0)
+        var i = idx
+        if (i >= 0 && i < cues.length) {
+            var c = cues[i]
+            if (pos >= c.start && pos <= c.end)
+                return { idx: i, text: c.text }
+            if (pos > c.end && i + 1 < cues.length && pos < cues[i + 1].start)
+                return { idx: i, text: "" }
+        }
+        var lo = 0, hi = cues.length - 1, found = -1
+        while (lo <= hi) {
+            var mid = (lo + hi) >> 1
+            if (cues[mid].start <= pos) { found = mid; lo = mid + 1 } else hi = mid - 1
+        }
+        return {
+            idx: found,
+            text: (found >= 0 && pos <= cues[found].end) ? cues[found].text : ""
+        }
+    }
 }
