@@ -8,7 +8,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
-import "theme"
+import "../theme"
 
 Window {
     id: overlay

@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
+import ".."
 
 Item {
     id: root

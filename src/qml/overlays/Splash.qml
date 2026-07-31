@@ -8,7 +8,7 @@
 import QtQuick
 import QtQuick.Shapes
 import QtQuick.Effects
-import "theme"
+import "../theme"
 
 Item {
     id: root

@@ -10,8 +10,8 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Item {
     id: tour

@@ -6,8 +6,8 @@
 // buffering/downloading/installing → auto-open, with Cancel. Driven by Main.qml.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Item {
     id: ov

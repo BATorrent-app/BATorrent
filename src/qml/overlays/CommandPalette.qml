@@ -7,8 +7,8 @@
 // add latency.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Item {
     id: pal
