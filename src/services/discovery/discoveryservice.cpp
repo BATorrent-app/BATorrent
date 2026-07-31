@@ -4,6 +4,7 @@
 
 #include "services/discovery/discoveryservice.h"
 #include "services/discovery/hublogic.h"
+#include "services/discovery/tmdbimages.h"
 #include "services/platform/contentlanguage.h"
 
 #include <QDir>
@@ -398,7 +399,7 @@ void DiscoveryService::fetchTrailer(int tmdbId, const QString &type)
     const QString kind = (type == QLatin1String("series")) ? QStringLiteral("tv") : QStringLiteral("movie");
     QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2/videos").arg(kind).arg(tmdbId));
     QUrlQuery q;
-    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());   // no language: trailers are usually en-tagged
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
     url.setQuery(q);
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
@@ -406,20 +407,9 @@ void DiscoveryService::fetchTrailer(int tmdbId, const QString &type)
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
         reply->deleteLater();
-        QString key, teaser;
-        if (reply->error() == QNetworkReply::NoError) {
-            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
-                                       .object().value(QLatin1String("results")).toArray();
-            for (const QJsonValue &v : arr) {
-                const QJsonObject o = v.toObject();
-                if (o.value(QLatin1String("site")).toString() != QLatin1String("YouTube")) continue;
-                const QString t = o.value(QLatin1String("type")).toString();
-                const QString k = o.value(QLatin1String("key")).toString();
-                if (t == QLatin1String("Trailer")) { key = k; break; }       // prefer an official trailer
-                if (teaser.isEmpty() && t == QLatin1String("Teaser")) teaser = k;
-            }
-            if (key.isEmpty()) key = teaser;
-        }
+        const QString key = (reply->error() == QNetworkReply::NoError)
+            ? TmdbImages::youtubeTrailerKey(reply->readAll())
+            : QString{};
         emit trailerReady(tmdbId, key);
     });
 }
@@ -539,7 +529,7 @@ void DiscoveryService::fetchBackdrops(int tmdbId, const QString &type)
     const QString kind = (type == QLatin1String("series")) ? QStringLiteral("tv") : QStringLiteral("movie");
     QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2/images").arg(kind).arg(tmdbId));
     QUrlQuery q;
-    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());   // no language: backdrops are mostly untagged
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
     url.setQuery(q);
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
@@ -547,25 +537,9 @@ void DiscoveryService::fetchBackdrops(int tmdbId, const QString &type)
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
         reply->deleteLater();
-        QStringList urls;
-        if (reply->error() == QNetworkReply::NoError) {
-            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
-                                       .object().value(QLatin1String("backdrops")).toArray();
-            // language-tagged backdrops carry burned-in title text — prefer clean ones
-            auto collect = [&urls, &arr](bool untaggedOnly) {
-                for (const QJsonValue &v : arr) {
-                    if (urls.size() >= 10) return;
-                    const QJsonObject o = v.toObject();
-                    const bool untagged = o.value(QLatin1String("iso_639_1")).isNull();
-                    if (untaggedOnly != untagged) continue;
-                    const QString path = o.value(QLatin1String("file_path")).toString();
-                    if (!path.isEmpty() && !urls.contains(TmdbBackdrop + path))
-                        urls << TmdbBackdrop + path;
-                }
-            };
-            collect(true);
-            collect(false);
-        }
+        const QStringList urls = (reply->error() == QNetworkReply::NoError)
+            ? TmdbImages::backdropUrls(reply->readAll(), TmdbBackdrop)
+            : QStringList{};
         emit backdropsReady(tmdbId, urls);
     });
 }
