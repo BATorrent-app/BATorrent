@@ -11,8 +11,8 @@ import QtQuick.Controls
 import QtQuick.Effects
 import QtMultimedia
 import QtQuick.Dialogs
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Window {
     id: win

@@ -9,8 +9,8 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtMultimedia
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Item {
     id: root

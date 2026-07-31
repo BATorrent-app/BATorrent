@@ -5,8 +5,8 @@
 // Next-episode end card + autoplay countdown. Host owns nextIdx / titles;
 // this leaf owns lead-window visibility, countdown, and the card chrome.
 import QtQuick
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Item {
     id: root

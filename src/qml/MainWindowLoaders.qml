@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
+import "player"
 
 // Lazy top-level utility windows. Instantiated inside Main; callers use
 // showWin(loader) / showWrapped() or the aliased loader ids — no parent walks.
@@ -71,6 +72,7 @@ Item {
             removedWinLoader.active = true
             logWinLoader.active = true
             diagWinLoader.active = true
+            playerWinLoader.active = true
         }
     }
 }

@@ -7,7 +7,7 @@
 // during buffering — retry re-issues until it lands (bounded).
 import QtQuick
 import QtMultimedia
-import "theme"
+import "../theme"
 
 Item {
     id: root
