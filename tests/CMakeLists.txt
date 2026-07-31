@@ -43,6 +43,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_scheduler.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_stats.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_import.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_extract.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/ipblocklist.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/proxycontroller.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
