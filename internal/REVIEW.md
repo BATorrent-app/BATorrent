@@ -6,7 +6,7 @@ Folder reorg (navigation only): `internal/FOLDER_REORG_PLAN.md` (WS-Reorg).
 Update this file when a workstream lands or LOC materially changes.
 
 **Snapshot date:** 2026-07-31  
-**Branch vs origin/main:** ~37 ahead (engine/bridge/Main/discovery peels shipped; S3 F2 Search/Nav WIP).
+**Branch vs origin/main:** ~40 ahead (engine/bridge/Main/discovery peels shipped; S3 F2 Search/Nav done).
 
 ## Gate status
 
