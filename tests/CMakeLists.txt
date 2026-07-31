@@ -34,6 +34,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_limits.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_apply.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionconfig.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionresume.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_persistence.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_categories.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_pertorrent.cpp
@@ -284,6 +285,7 @@ bat_add_test(test_hublogic test_hublogic.cpp)
 bat_add_test(test_tmdbparse test_tmdbparse.cpp)
 bat_add_test(test_igdbparse test_igdbparse.cpp)
 bat_add_test(test_sessionconfig test_sessionconfig.cpp)
+bat_add_test(test_sessionresume test_sessionresume.cpp)
 bat_add_test(test_gameexedetect test_gameexedetect.cpp)
 bat_add_test(test_releasegroup test_releasegroup.cpp)
 bat_add_test(test_contentlanguage test_contentlanguage.cpp)

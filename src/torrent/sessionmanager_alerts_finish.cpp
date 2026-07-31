@@ -6,6 +6,7 @@
 
 #include "torrent/sessionmanager.h"
 #include "torrent/sessionconfig.h"
+#include "torrent/sessionresume.h"
 #include "services/platform/translator.h"
 #include "services/platform/logger.h"
 #include "services/security/archivescan.h"
@@ -32,11 +33,8 @@ void SessionManager::onTorrentFinished(const lt::torrent_finished_alert *fa)
         const auto &files = ti->files();
         for (lt::file_index_t i(0); i < files.end_file(); ++i) {
             std::string current = files.file_path(i);
-            if (current.size() >= 4
-                && current.compare(current.size() - 4, 4, ".!bt") == 0) {
-                std::string stripped(current, 0, current.size() - 4);
-                fa->handle.rename_file(i, stripped);
-            }
+            if (SessionResume::stripIncompleteSuffix(current))
+                fa->handle.rename_file(i, current);
         }
     }
 
@@ -69,7 +67,7 @@ void SessionManager::onTorrentFinished(const lt::torrent_finished_alert *fa)
         // effects run, but the user-facing completion (script +
         // notification + media-server webhook) is muted.
         const bool resumeRefinish = m_completedAtStartup.contains(hash);
-        if (!resumeRefinish) {
+        if (SessionResume::shouldEmitTorrentFinished(downloadedThisSession, resumeRefinish)) {
             qDebug() << "[session] torrent finished:" << name << "hash:" << hash.left(16);
             if (m_statsHistory) m_statsHistory->recordCompleted(m_categories.value(hash));
             executeOnComplete(name, QString::fromStdString(st.save_path),
