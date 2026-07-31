@@ -4,7 +4,7 @@
 
 #include "services/discovery/discoveryservice.h"
 #include "services/discovery/hublogic.h"
-#include "services/discovery/tmdbimages.h"
+#include "services/discovery/tmdbparse.h"
 #include "services/platform/contentlanguage.h"
 
 #include <QDir>
@@ -239,38 +239,8 @@ void DiscoveryService::searchTmdbTitles(const QString &query)
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
-        if (reply->error() == QNetworkReply::NoError) {
-            const QJsonArray results = QJsonDocument::fromJson(reply->readAll())
-                                           .object().value(QLatin1String("results")).toArray();
-            for (const QJsonValue &v : results) {
-                const QJsonObject o = v.toObject();
-                const QString mt = o.value(QLatin1String("media_type")).toString();
-                if (mt != QLatin1String("movie") && mt != QLatin1String("tv")) continue;
-                const QString poster = o.value(QLatin1String("poster_path")).toString();
-                if (poster.isEmpty()) continue;
-                const bool isTv = mt == QLatin1String("tv");
-                const QString date = o.value(isTv ? QLatin1String("first_air_date")
-                                                   : QLatin1String("release_date")).toString();
-                QVariantMap m;
-                m.insert(QStringLiteral("title"), o.value(isTv ? QLatin1String("name")
-                                                               : QLatin1String("title")).toString());
-                // The original-language name, which we already receive and used to
-                // throw away. `title` is localised (the request carries language=),
-                // so on a pt-BR app the picked work only ever searched trackers as
-                // "Shang-Chi e a Lenda dos Dez Anéis" and missed every release
-                // published under the original name.
-                m.insert(QStringLiteral("originalTitle"),
-                         o.value(isTv ? QLatin1String("original_name")
-                                      : QLatin1String("original_title")).toString());
-                m.insert(QStringLiteral("tmdbId"), o.value(QLatin1String("id")).toInt());
-                m.insert(QStringLiteral("poster"), TmdbPosterBase + poster);
-                m.insert(QStringLiteral("year"), date.length() >= 4 ? date.left(4) : QString());
-                m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
-                m.insert(QStringLiteral("overview"), o.value(QLatin1String("overview")).toString());
-                m.insert(QStringLiteral("type"), isTv ? QStringLiteral("series") : QStringLiteral("movie"));
-                m_searchWorks.append(m);
-            }
-        }
+        if (reply->error() == QNetworkReply::NoError)
+            m_searchWorks += TmdbParse::multiSearchRows(reply->readAll(), TmdbPosterBase);
         maybeFinishSearch();
     });
 }
@@ -408,7 +378,7 @@ void DiscoveryService::fetchTrailer(int tmdbId, const QString &type)
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
         reply->deleteLater();
         const QString key = (reply->error() == QNetworkReply::NoError)
-            ? TmdbImages::youtubeTrailerKey(reply->readAll())
+            ? TmdbParse::youtubeTrailerKey(reply->readAll())
             : QString{};
         emit trailerReady(tmdbId, key);
     });
@@ -430,28 +400,9 @@ void DiscoveryService::fetchRecommendations(int tmdbId, const QString &type)
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId, isTv]() {
         reply->deleteLater();
-        QVariantList items;
-        if (reply->error() == QNetworkReply::NoError) {
-            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
-                                       .object().value(QLatin1String("results")).toArray();
-            for (const QJsonValue &v : arr) {
-                const QJsonObject o = v.toObject();
-                const QString poster = o.value(QLatin1String("poster_path")).toString();
-                if (poster.isEmpty()) continue;
-                const QString date = o.value(isTv ? QLatin1String("first_air_date")
-                                                  : QLatin1String("release_date")).toString();
-                QVariantMap m;
-                m.insert(QStringLiteral("title"), o.value(isTv ? QLatin1String("name")
-                                                               : QLatin1String("title")).toString());
-                m.insert(QStringLiteral("poster"), TmdbPosterBase + poster);
-                m.insert(QStringLiteral("year"), date.length() >= 4 ? date.left(4) : QString());
-                m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
-                m.insert(QStringLiteral("overview"), o.value(QLatin1String("overview")).toString());
-                m.insert(QStringLiteral("type"), isTv ? QStringLiteral("series") : QStringLiteral("movie"));
-                items.append(m);
-                if (items.size() >= 16) break;
-            }
-        }
+        const QVariantList items = (reply->error() == QNetworkReply::NoError)
+            ? TmdbParse::recommendationRows(reply->readAll(), isTv, TmdbPosterBase)
+            : QVariantList{};
         emit recommendationsReady(tmdbId, items);
     });
 }
@@ -506,19 +457,9 @@ void DiscoveryService::fetchEpisodes(int tmdbId, int season)
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId, season]() {
         reply->deleteLater();
-        QVariantList eps;
-        if (reply->error() == QNetworkReply::NoError) {
-            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll())
-                                       .object().value(QLatin1String("episodes")).toArray();
-            for (const QJsonValue &v : arr) {
-                const QJsonObject o = v.toObject();
-                QVariantMap m;
-                m["episode"] = o.value(QLatin1String("episode_number")).toInt();
-                m["name"] = o.value(QLatin1String("name")).toString();
-                m["air_date"] = o.value(QLatin1String("air_date")).toString();
-                eps << m;
-            }
-        }
+        const QVariantList eps = (reply->error() == QNetworkReply::NoError)
+            ? TmdbParse::episodeRows(reply->readAll())
+            : QVariantList{};
         emit episodesReady(tmdbId, season, eps);
     });
 }
@@ -538,7 +479,7 @@ void DiscoveryService::fetchBackdrops(int tmdbId, const QString &type)
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
         reply->deleteLater();
         const QStringList urls = (reply->error() == QNetworkReply::NoError)
-            ? TmdbImages::backdropUrls(reply->readAll(), TmdbBackdrop)
+            ? TmdbParse::backdropUrls(reply->readAll(), TmdbBackdrop)
             : QStringList{};
         emit backdropsReady(tmdbId, urls);
     });
@@ -565,31 +506,10 @@ void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &
     connect(reply, &QNetworkReply::finished, this, [this, reply, order, label, type]() {
         reply->deleteLater();
 
-        QVariantList items;
-        if (reply->error() == QNetworkReply::NoError) {
-            const QJsonArray results = QJsonDocument::fromJson(reply->readAll())
-                                           .object().value(QLatin1String("results")).toArray();
-            for (const QJsonValue &v : results) {
-                const QJsonObject o = v.toObject();
-                const QString poster = o.value(QLatin1String("poster_path")).toString();
-                if (poster.isEmpty()) continue;
-                const bool isTv = type == QLatin1String("series");
-                const QString date = o.value(isTv ? QLatin1String("first_air_date")
-                                                   : QLatin1String("release_date")).toString();
-                QVariantMap m;
-                m.insert(QStringLiteral("title"), o.value(isTv ? QLatin1String("name")
-                                                               : QLatin1String("title")).toString());
-                m.insert(QStringLiteral("poster"), TmdbPosterBase + poster);
-                const QString backdrop = o.value(QLatin1String("backdrop_path")).toString();
-                m.insert(QStringLiteral("backdrop"), backdrop.isEmpty() ? QString() : TmdbBackdrop + backdrop);
-                m.insert(QStringLiteral("year"), date.length() >= 4 ? date.left(4) : QString());
-                m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
-                m.insert(QStringLiteral("overview"), o.value(QLatin1String("overview")).toString());
-                m.insert(QStringLiteral("type"), type);
-                m.insert(QStringLiteral("tmdbId"), o.value(QLatin1String("id")).toInt());
-                items.append(m);
-            }
-        }
+        const bool isTv = type == QLatin1String("series");
+        const QVariantList items = (reply->error() == QNetworkReply::NoError)
+            ? TmdbParse::shelfRows(reply->readAll(), isTv, TmdbPosterBase, TmdbBackdrop)
+            : QVariantList{};
         // Merge-append: a shelf is fetched across multiple pages, all sharing
         // one `order`. Dedup by poster URL so a page overlap can't double a title.
         QVariantMap row = m_accum.value(order);
