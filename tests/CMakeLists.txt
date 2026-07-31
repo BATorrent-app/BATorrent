@@ -81,6 +81,9 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasegroup.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/contentlanguage.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/settingsbackup.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/settingspolicy.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/fileassociation.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/mkvchapters.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownload.cpp
@@ -305,6 +308,7 @@ bat_add_test(test_filehostresolver test_filehostresolver.cpp)
 bat_add_test(test_wireguardconfig test_wireguardconfig.cpp)
 bat_add_test(test_vpnmanager test_vpnmanager.cpp)
 bat_add_test(test_proxycontroller test_proxycontroller.cpp)
+bat_add_test(test_settingshelpers test_settingshelpers.cpp)
 bat_add_test(test_ipcprotocol test_ipcprotocol.cpp)
 bat_add_test(test_debrid     test_debrid.cpp)
 

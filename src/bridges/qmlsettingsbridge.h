@@ -54,7 +54,6 @@ signals:
     void telegramTestResult(bool ok, const QString &message);
     void proxyLeakTestResult(bool ok, const QString &message);
 private:
-    static int telegramEventBit(const QString &key);   // toggle key → Events bit (0 if none)
     void applyWebUi();                                  // (re)start the WebUI server from settings
     SessionManager *m_session;
     IEngine *m_engine;                                  // always valid; drives the WebUI in split mode

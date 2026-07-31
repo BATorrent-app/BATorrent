@@ -30,7 +30,7 @@ Update this file when a workstream lands or LOC materially changes.
 | `metadata/metadatamatch.{h,cpp}` | 51+186 | 2 | Meta | ☑ | Pure fold/Jaccard/IGDB pick/type helpers |
 | `qml/HubView.qml` | 205 | 1–2 | F | ☑ | 704→205; HubCompute + ContinueRails + Shelves (+ Format/Menus/Card/Drawer); rails leaf 381 soft overhang |
 | `torrent/sessionmanager.h` | 685 | — | — | ☑ accept | Declarations only; W5 decision: leave |
-| `bridges/qmlsettingsbridge.cpp` | 672 | 1–2 | D | ☐ | get/set + backup/proxy/pairing fat |
+| `bridges/qmlsettingsbridge.cpp` | 480 | 1–2 | D | ◐ | 672→480; SettingsBackup + SettingsPolicy + FileAssociation + Catch2; get/set dispatch remains
 | `webui/webserver.cpp` | 660 | 2 | Web | ☐ | Optional if quiet in Sentry |
 | `qml/SearchView.qml` | 279 | 1–2 | F | ☑ | 644→279; Format/Compute/Recents/WorkHeader/Footer/FitDialog leaves; host aliases |
 | `qml/Main.qml` | 641 | — | — | ◐ | Composition root; App* peels done; don't grow |
@@ -197,7 +197,18 @@ function-by-function teaching while peels still move the map.
 - Includes → root-relative `bridges/session/...` / `bridges/search/...`; no behaviour change
 - **Phase 0 status: Done** — CMake + tests CMake list `bridges/session|search/...`; no
   root session/search stubs
-- Remaining debt: `qmlsettingsbridge.cpp` 672 (S5); session header API surface
+- Remaining debt: `qmlsettingsbridge.cpp` 480 get/set dispatch (S5 ◐); session header API surface
+
+### 2026-07-31 — Sprint 5 / Agent D settings peel
+
+- `qmlsettingsbridge.cpp` 672→480: glue over Session/QSettings/SecretStore
+- New platform helpers: `settingsbackup` (BATBACKUP1 + export secrets),
+  `settingspolicy` (telegram bits, UI bools, presets, pairing alphabet),
+  `fileassociation` (OS default-app / per-type assoc)
+- Catch2: `test_settingshelpers` (75 assertions)
+- Smoke: `BAT_QML_STRICT=warn` + `BAT_SMOKE_EXIT_ON_FRAME` first frame healthy
+- Remaining: get/set key→session dispatch (~soft overhang vs 400); no further
+  mechanical TU split without a table/codegen collaborator
 
 ### 2026-07-31 — Folder reorg plan (WS-Reorg)
 
@@ -213,7 +224,7 @@ function-by-function teaching while peels still move the map.
   DiscordRpc 63 · Updater 45; umbrella `qmlposterbridge.h` kept
 - CMake/tests list the new TUs; `qmli18nbridge.h` stays header-only (AUTOMOC)
 - AddonBridge still calls AddonManager public API only (`curatedCatalog` / `providerCatalog`)
-- Smoke: `BAT_QML_STRICT=warn` boot OK (17 resumes); remaining debt: `qmlsettingsbridge.cpp` 672
+- Smoke: `BAT_QML_STRICT=warn` boot OK (17 resumes); remaining debt: `qmlsettingsbridge.cpp` 480 (S5 ◐)
 
 ### 2026-07-31 — plan refresh
 
