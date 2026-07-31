@@ -29,11 +29,11 @@ know the net will catch the regressions that matter.
 
 | Signal | Reality (2026-07-31) |
 |--------|----------------------|
-| Catch2 binaries | **39** `tests/test_*.cpp` (~**393** `TEST_CASE`/`SCENARIO`) |
+| Catch2 binaries | **40** `tests/test_*.cpp` (~**400+** `TEST_CASE`/`SCENARIO`) |
 | Test LOC | ~6.7k lines of tests vs ~**~55k+** product C++ / **~22k** QML |
 | Strength | Parsers, security scanners, release pick/rank, session **pure** resume helpers, settings helpers, HTTP range/plan, VPN config |
 | Weakness | `QmlSessionBridge` playback/library paths, most of SessionManager alert/lifecycle glue, DiscoveryService network orchestration, almost all product QML surfaces |
-| CI Catch2 allowlist | `build.yml` runs peel + metadata suites including `test_sessionresume`, `test_metadatamatch`, `test_sessionconfig`, parse/discovery helpers, `test_hublogic`, `test_settingshelpers`, plus prior core binaries. Local-HTTP / VPN integration suites stay local-first |
+| CI Catch2 allowlist | `build.yml` runs peel + metadata suites including `test_sessionresume`, `test_sessionremove`, `test_metadatamatch`, `test_sessionconfig`, parse/discovery helpers, `test_hublogic`, `test_settingshelpers`, plus prior core binaries. Local-HTTP / VPN integration suites stay local-first |
 | QML | 9 Quick Test files (controls/Splash/Toast) + **boot-offscreen** smoke — no Watch / Search / Hub journey automation |
 | Coverage tooling | **Not wired** in CMake. Apple Clang ships `llvm-cov` / `llvm-profdata` on macOS; optional local recipe below. Do not treat % lines as the gate |
 
@@ -54,7 +54,7 @@ Rough map of `tests/test_*.cpp` to product domains. Counts are `TEST_CASE` /
 
 | Domain | Suites | Cases (≈) | What is locked | Primary gaps |
 |--------|--------|-----------|----------------|--------------|
-| **torrent / engine** | `sessionconfig`, `sessionresume`, `ipblocklist`, `bandwidthschedule`, `magnettrackers`, `proxycontroller`, chunks of `unit` | ~90+ | Resume naming/migration/corrupt policy; incomplete-suffix reconcile; config round-trips; empty-session API | Alert finish / `file_completed` product paths; removeTorrent matrices still partly glue; tick/scheduler; streaming piece priority |
+| **torrent / engine** | `sessionconfig`, `sessionresume`, `sessionremove`, `ipblocklist`, `bandwidthschedule`, `magnettrackers`, `proxycontroller`, chunks of `unit` | ~100+ | Resume naming/migration/corrupt policy; incomplete-suffix reconcile; finish move + emit mute; remove disposition × missing targets; config round-trips; empty-session API | Full alert_cast branches; tick/scheduler simulation; streaming piece priority |
 | **bridges** | `bridge` | 16 | Headless bridge construct + fixture torrent add paths; **playFile / streamUrl / clearResume** | library/watchlist; selection/diagnose |
 | **discovery** | `tmdbparse`, `igdbparse`, `addonparse`, `discoverysearch`, `discoveryassemble`, `hublogic`, `gamesource` | ~40 | JSON→card mappers; assemble dedupe; search query helpers; HubLogic | `DiscoveryService` QNAM orchestration; AddonManager network + gen counters |
 | **metadata** | `nameparser`, `metadatamatch`, `searchranker`, `releasegroup`, `releasetrust`, `gamereleasepick`, `episodegroup`, `mkvchapters`, `unit` (ReleasePick/AudioMode) | ~100+ | Title parse, poster locate + AppData sibling + hash casing, ranking/trust | Full `MetadataResolver` fetch pipeline (intentional — network) |
@@ -149,8 +149,14 @@ peeled (`sessionmanager_alerts_finish.cpp`); resume characterization landed
 | Scheduler / bandwidth already partly covered | Keep; avoid full session tick simulation |
 | Query / info projections | Prefer pure mappers over live handles |
 
-**P1 DoD:** Changing alert-finish or remove policy without a failing test is hard;
-no requirement to cover every `alert_cast` branch.
+**P1 DoD**
+
+- [x] Finish move destination + payload/emit mute tables (`SessionResume::*`,
+      `test_sessionresume`)
+- [x] `removalDisposition` + `existingRemovalTargets` on temp dirs
+      (`test_sessionremove`); CI allowlist includes the binary
+- [ ] Query/info pure mappers (deferred — live-handle projections still glue)
+- [ ] No requirement to cover every `alert_cast` branch
 
 ### P2 — Discovery / network boundary fakes
 
@@ -228,7 +234,7 @@ Parallelize only when file ownership is disjoint. Serialize `tests/CMakeLists.tx
 |--------|------|------|-----------|-------------|
 | **T0 CI allowlist** | S | `.github/workflows/build.yml` (+ maybe `tests/CMakeLists.txt` `check` target list) | Product `src/` behaviour | P0 binaries in PR CI |
 | **T0b playFile net** | S–M | `tests/test_bridge.cpp` or NEW `tests/test_playback.cpp`, optional tiny pure helper under `bridges/session/` or `torrent/` | Discovery, QML views | Stream URL + guard characterization |
-| **T1 alert/remove** | M | `sessionmanager_alerts_finish.cpp`, persistence/lifecycle **helpers only**, `test_sessionresume` / new `test_sessionremove` | bridges/*, qml/*, discovery | Tables for finish + remove |
+| **T1 alert/remove** | M | `sessionmanager_alerts_finish.cpp`, persistence/lifecycle **helpers only**, `test_sessionresume` / `test_sessionremove` | bridges/*, qml/*, discovery | Tables for finish + remove |
 | **T2 discovery fakes** | M | `discoveryservice.*` (inject seam only), `discoveryassemble`/`discoverysearch` tests, fixture JSON under `tests/fixtures/` | sessionmanager peels, qml | Offline shelf/search finish |
 | **T3 QML journeys** | M | `tests/qml/**`, optionally `qml-smoke.yml` env flags | Catch2 engine rewrites | Watch + Search smoke or Quick Test |
 | **T-cov (optional)** | S | NEW `scripts/coverage-macos.sh` + doc only; **no default CMake ON** | Forcing coverage in CI | Local HTML/text report for gap triage |

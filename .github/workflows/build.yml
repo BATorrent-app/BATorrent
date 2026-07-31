@@ -47,7 +47,7 @@ jobs:
           # Core + Find/Get&Install metadata + peel characterization nets (P0).
           # Skip network-heavy / platform VPN / local-HTTP integration binaries —
           # they have their own jobs or local runs.
-          TESTS="test_unit test_security test_memory test_nameparser test_bridge test_gamesource test_memguard test_geoipdb test_gamereleasepick test_gameinstallstate test_searchranker test_releasegroup test_contentlanguage test_releasetrust test_episodegroup test_debrid test_magnettrackers test_ipblocklist test_sessionresume test_metadatamatch test_sessionconfig test_addonparse test_tmdbparse test_igdbparse test_settingshelpers test_discoveryassemble test_discoverysearch test_hublogic test_bandwidthschedule test_gameexedetect test_mkvchapters test_rangeplan test_proxycontroller test_ipcprotocol test_filehostresolver test_wireguardconfig"
+          TESTS="test_unit test_security test_memory test_nameparser test_bridge test_gamesource test_memguard test_geoipdb test_gamereleasepick test_gameinstallstate test_searchranker test_releasegroup test_contentlanguage test_releasetrust test_episodegroup test_debrid test_magnettrackers test_ipblocklist test_sessionresume test_sessionremove test_metadatamatch test_sessionconfig test_addonparse test_tmdbparse test_igdbparse test_settingshelpers test_discoveryassemble test_discoverysearch test_hublogic test_bandwidthschedule test_gameexedetect test_mkvchapters test_rangeplan test_proxycontroller test_ipcprotocol test_filehostresolver test_wireguardconfig"
           echo "TESTS=$TESTS" >> "$GITHUB_ENV"
           cmake -B build-tests -DBAT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
           cmake --build build-tests -j$(nproc) --target $TESTS

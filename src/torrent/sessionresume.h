@@ -76,6 +76,30 @@ QStringList trashTargetsForRemoval(const QString &savePath,
 // should be scheduled when deleteFiles is requested.
 bool shouldScheduleFileRemoval(bool deleteFiles, const QStringList &trashTargets);
 
+enum class RemovalDisposition {
+    Keep,             // leave data on disk (deleteFiles false, or no targets)
+    Trash,            // recoverable OS trash
+    PermanentDelete,  // hard delete (permanent flag)
+};
+
+// deleteFiles × permanent × non-empty targets → what removeTorrent schedules.
+RemovalDisposition removalDisposition(bool deleteFiles,
+                                      bool permanent,
+                                      const QStringList &trashTargets);
+
+// Paths that still exist — scheduleTrash/Delete skip missing entries (already
+// gone, or never created) instead of treating absence as failure.
+QStringList existingRemovalTargets(const QStringList &targets);
+
+// True when libtorrent reported payload bytes this session (gates move/pause/
+// extract and pairs with shouldEmitTorrentFinished for user-facing notify).
+bool downloadedPayloadThisSession(std::int64_t totalPayloadDownload);
+
+// Intended temp→final path wins; else optional auto-move folder; else stay.
+QString finishMoveDestination(const QString &intendedPathOrEmpty,
+                              bool autoMoveEnabled,
+                              const QString &autoMovePath);
+
 // Finish-alert mute: payload==0 (resume verify) OR marked complete at startup.
 bool shouldEmitTorrentFinished(bool downloadedThisSession, bool completedAtStartup);
 

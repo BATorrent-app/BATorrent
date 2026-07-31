@@ -41,19 +41,20 @@ void SessionManager::onTorrentFinished(const lt::torrent_finished_alert *fa)
     // Skip torrents that were already complete when the session
     // started — libtorrent fires one finish alert per torrent during
     // the resume check, even if no bytes were actually downloaded.
-    bool downloadedThisSession = (st.total_payload_download > 0);
+    const bool downloadedThisSession =
+        SessionResume::downloadedPayloadThisSession(st.total_payload_download);
 
     if (downloadedThisSession) {
         QString hash = QString::fromStdString(
             (std::ostringstream() << st.info_hashes.get_best()).str());
 
-        // Temp path → move to intended final path first
-        if (m_torrentIntendedPath.contains(hash)) {
-            QString dest = m_torrentIntendedPath.take(hash);
+        QString intended;
+        if (m_torrentIntendedPath.contains(hash))
+            intended = m_torrentIntendedPath.take(hash);
+        const QString dest = SessionResume::finishMoveDestination(
+            intended, m_autoMoveEnabled, m_autoMovePath);
+        if (!dest.isEmpty())
             fa->handle.move_storage(dest.toStdString());
-        } else if (m_autoMoveEnabled && !m_autoMovePath.isEmpty()) {
-            fa->handle.move_storage(m_autoMovePath.toStdString());
-        }
         if (effectiveStopAfterDownload(hash))
             fa->handle.pause();
 
