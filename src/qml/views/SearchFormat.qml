@@ -25,10 +25,10 @@ QtObject {
         return ""
     }
 
-    // Local paths (resolver covers) need a file: URL; http/qrc pass through.
     function fileUrl(p) {
         if (!p || p.length === 0) return ""
-        if (p.indexOf("http") === 0 || p.indexOf("qrc") === 0) return p
+        if (p.indexOf("http") === 0 || p.indexOf("qrc") === 0 || p.indexOf("file:") === 0)
+            return p
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
 

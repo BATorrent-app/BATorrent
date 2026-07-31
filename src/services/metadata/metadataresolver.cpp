@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -36,6 +37,109 @@ const QString TmdbPosterBase = QStringLiteral("https://image.tmdb.org/t/p/w342")
 
 QString tmdbLang() { return ContentLanguage::tmdb(); }
 
+// Pre-3.0 AppData lived one level up (…/BATorrent vs …/BATorrent/BATorrent).
+// Resume already migrates; covers lived in metadata/ + posters/ and were left
+// behind — library tiles then resolved titles from names but never found art.
+void migrateLegacyMetadataDirs(const QString &appData)
+{
+    QSettings s;
+    if (s.value(QStringLiteral("metadataMigrated"), false).toBool())
+        return;
+    s.setValue(QStringLiteral("metadataMigrated"), true);
+
+    const QString legacyRoot = MetadataMatch::legacyAppDataSibling(appData);
+    if (legacyRoot.isEmpty())
+        return;
+
+    const QString newMeta = appData + QStringLiteral("/metadata");
+    const QString newPosters = appData + QStringLiteral("/posters");
+    QDir().mkpath(newMeta);
+    QDir().mkpath(newPosters);
+
+    auto copyMissing = [](const QString &fromDir, const QString &toDir,
+                          const QStringList &filters) -> int {
+        QDir from(fromDir);
+        if (!from.exists())
+            return 0;
+        int n = 0;
+        for (const QString &f : from.entryList(filters, QDir::Files)) {
+            const QString dest = toDir + QLatin1Char('/') + f;
+            if (QFile::exists(dest))
+                continue;
+            if (QFile::copy(from.filePath(f), dest))
+                ++n;
+        }
+        return n;
+    };
+
+    // Prefer legacy JSON when the nested entry has no usable poster (title-only
+    // stubs from a failed download after the AppData nest).
+    auto refreshPosterlessMeta = [&](const QString &fromDir, const QString &toDir) -> int {
+        QDir from(fromDir);
+        if (!from.exists())
+            return 0;
+        int n = 0;
+        for (const QString &f : from.entryList({QStringLiteral("*.json")}, QDir::Files)) {
+            const QString dest = toDir + QLatin1Char('/') + f;
+            if (!QFile::exists(dest))
+                continue;
+            QFile destFile(dest);
+            if (!destFile.open(QIODevice::ReadOnly))
+                continue;
+            const QJsonObject destObj = QJsonDocument::fromJson(destFile.readAll()).object();
+            destFile.close();
+            const QString hash = f.chopped(5);
+            const QString destPoster = MetadataMatch::locatePosterFile(
+                destObj.value(QLatin1String("posterFile")).toString(), newPosters, hash);
+            if (!destPoster.isEmpty())
+                continue;
+            const QString src = from.filePath(f);
+            QFile::remove(dest);
+            if (QFile::copy(src, dest))
+                ++n;
+        }
+        return n;
+    };
+
+    auto rewritePosterPaths = [&](const QString &metaDir) -> int {
+        QDir dir(metaDir);
+        if (!dir.exists())
+            return 0;
+        int n = 0;
+        for (const QString &f : dir.entryList({QStringLiteral("*.json")}, QDir::Files)) {
+            const QString path = dir.filePath(f);
+            QFile file(path);
+            if (!file.open(QIODevice::ReadOnly))
+                continue;
+            QJsonObject obj = QJsonDocument::fromJson(file.readAll()).object();
+            file.close();
+            const QString hash = f.chopped(5);
+            const QString stored = obj.value(QLatin1String("posterFile")).toString();
+            const QString located = MetadataMatch::locatePosterFile(stored, newPosters, hash);
+            if (located.isEmpty() || located == stored)
+                continue;
+            obj.insert(QLatin1String("posterFile"), located);
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+                continue;
+            file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+            ++n;
+        }
+        return n;
+    };
+
+    const int posterN = copyMissing(legacyRoot + QStringLiteral("/posters"), newPosters,
+                                    {QStringLiteral("*.jpg"), QStringLiteral("*.jpeg"),
+                                     QStringLiteral("*.png"), QStringLiteral("*.webp")});
+    const int metaN = copyMissing(legacyRoot + QStringLiteral("/metadata"), newMeta,
+                                  {QStringLiteral("*.json")});
+    const int refreshed = refreshPosterlessMeta(legacyRoot + QStringLiteral("/metadata"), newMeta);
+    const int rewritten = rewritePosterPaths(newMeta);
+    if (metaN > 0 || posterN > 0 || refreshed > 0 || rewritten > 0)
+        qInfo() << "[metadata] migrated" << metaN << "cache files and" << posterN
+                << "posters from legacy AppData"
+                << "(refreshed" << refreshed << ", rewrote" << rewritten << "paths)";
+}
+
 } // namespace
 
 MetadataResolver::MetadataResolver(QObject *parent)
@@ -47,6 +151,8 @@ MetadataResolver::MetadataResolver(QObject *parent)
     m_rateLimiter.setInterval(300);
     m_rateLimiter.setSingleShot(true);
     connect(&m_rateLimiter, &QTimer::timeout, this, &MetadataResolver::processQueue);
+
+    migrateLegacyMetadataDirs(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     QDir dir(cacheDir());
     if (dir.exists()) {
@@ -61,8 +167,16 @@ MetadataResolver::MetadataResolver(QObject *parent)
 void MetadataResolver::resolve(const QString &infoHash, const QString &torrentName,
                                const QStringList &fileNames)
 {
-    if (m_cache.contains(infoHash))
+    const QString key = MetadataMatch::canonicalInfoHash(infoHash);
+    if (key.isEmpty())
         return;
+    if (m_cache.contains(key)) {
+        const MetadataResult c = m_cache.value(key);
+        // Have art, or an intentional clearMetadata blank — don't re-hit TMDB/IGDB.
+        if (!c.posterPath.isEmpty() || (c.valid && c.title.isEmpty()))
+            return;
+        // Title cached but poster file gone/stale — fall through to refill art.
+    }
 
     ParsedName parsed = NameParser::parse(torrentName);
     // The file payload outranks the name for game-vs-movie (a name can lie). Keep
@@ -71,7 +185,7 @@ void MetadataResolver::resolve(const QString &infoHash, const QString &torrentNa
     parsed.contentType = MetadataMatch::applyFileTypeOverride(parsed.contentType, fileNames);
     qDebug() << "[metadata] resolve:" << torrentName << "->" << parsed.cleanTitle
              << "type:" << static_cast<int>(parsed.contentType);
-    m_queue.enqueue({infoHash, parsed});
+    m_queue.enqueue({key, parsed});
 
     if (!m_requestInFlight && !m_rateLimiter.isActive())
         processQueue();
@@ -79,22 +193,28 @@ void MetadataResolver::resolve(const QString &infoHash, const QString &torrentNa
 
 MetadataResult MetadataResolver::cached(const QString &infoHash) const
 {
-    return m_cache.value(infoHash);
+    return m_cache.value(MetadataMatch::canonicalInfoHash(infoHash));
 }
 
 bool MetadataResolver::hasCached(const QString &infoHash) const
 {
-    return m_cache.contains(infoHash);
+    return m_cache.contains(MetadataMatch::canonicalInfoHash(infoHash));
 }
 
 void MetadataResolver::batchResolve(const QStringList &infoHashes, const QStringList &torrentNames)
 {
     const int count = qMin(infoHashes.size(), torrentNames.size());
     for (int i = 0; i < count; ++i) {
-        if (!m_cache.contains(infoHashes[i])) {
-            ParsedName parsed = NameParser::parse(torrentNames[i]);
-            m_queue.enqueue({infoHashes[i], parsed});
+        const QString key = MetadataMatch::canonicalInfoHash(infoHashes[i]);
+        if (key.isEmpty())
+            continue;
+        if (m_cache.contains(key)) {
+            const MetadataResult c = m_cache.value(key);
+            if (!c.posterPath.isEmpty() || (c.valid && c.title.isEmpty()))
+                continue;
         }
+        ParsedName parsed = NameParser::parse(torrentNames[i]);
+        m_queue.enqueue({key, parsed});
     }
 
     if (!m_requestInFlight && !m_rateLimiter.isActive() && !m_queue.isEmpty())
@@ -108,12 +228,15 @@ void MetadataResolver::resolveManual(const QString &infoHash, const QString &que
     // and drop any cached entry so the cache-skip in resolve() doesn't block the
     // re-query. The new result is cached + saved, so it persists and auto-resolve
     // never clobbers it.
+    const QString key = MetadataMatch::canonicalInfoHash(infoHash);
+    if (key.isEmpty())
+        return;
     ParsedName parsed = NameParser::parse(query);
     if (parsed.cleanTitle.trimmed().isEmpty())
         parsed.cleanTitle = query.trimmed();
     parsed.contentType = type;
-    m_cache.remove(infoHash);
-    m_queue.enqueue({infoHash, parsed});
+    m_cache.remove(key);
+    m_queue.enqueue({key, parsed});
     if (!m_requestInFlight && !m_rateLimiter.isActive())
         processQueue();
 }
@@ -122,11 +245,14 @@ void MetadataResolver::clearMetadata(const QString &infoHash)
 {
     // "No cover" — a valid-but-empty entry shows the placeholder + the parsed/raw
     // title, and (being cached) is never auto-resolved again.
+    const QString key = MetadataMatch::canonicalInfoHash(infoHash);
+    if (key.isEmpty())
+        return;
     MetadataResult r;
     r.valid = true;
-    m_cache.insert(infoHash, r);
-    saveToDisk(infoHash, r);
-    emit metadataReady(infoHash, r);
+    m_cache.insert(key, r);
+    saveToDisk(key, r);
+    emit metadataReady(key, r);
 }
 
 void MetadataResolver::processQueue()
@@ -527,6 +653,7 @@ void MetadataResolver::downloadPoster(const QString &infoHash, const QString &ur
                                        const MetadataResult &partial)
 {
     QDir().mkpath(posterDir());
+    const QString key = MetadataMatch::canonicalInfoHash(infoHash);
 
     QUrl posterUrl(url);
     QNetworkRequest req{posterUrl};
@@ -535,13 +662,13 @@ void MetadataResolver::downloadPoster(const QString &infoHash, const QString &ur
 
     QNetworkReply *reply = m_nam->get(req);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, infoHash, partial]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, key, partial]() {
         reply->deleteLater();
 
         MetadataResult result = partial;
 
         if (reply->error() == QNetworkReply::NoError) {
-            const QString filePath = posterDir() + QLatin1Char('/') + infoHash + QStringLiteral(".jpg");
+            const QString filePath = posterDir() + QLatin1Char('/') + key + QStringLiteral(".jpg");
             QFile file(filePath);
             if (file.open(QIODevice::WriteOnly)) {
                 file.write(reply->readAll());
@@ -553,16 +680,20 @@ void MetadataResolver::downloadPoster(const QString &infoHash, const QString &ur
             qDebug() << "[metadata] poster download failed:" << reply->errorString();
         }
 
-        m_cache.insert(infoHash, result);
-        saveToDisk(infoHash, result);
-        emit metadataReady(infoHash, result);
+        m_cache.insert(key, result);
+        saveToDisk(key, result);
+        emit metadataReady(key, result);
         m_rateLimiter.start();
     });
 }
 
 void MetadataResolver::loadFromDisk(const QString &infoHash)
 {
-    QFile file(cacheDir() + QLatin1Char('/') + infoHash + QStringLiteral(".json"));
+    const QString key = MetadataMatch::canonicalInfoHash(infoHash);
+    QString jsonPath = cacheDir() + QLatin1Char('/') + infoHash + QStringLiteral(".json");
+    if (!QFile::exists(jsonPath) && infoHash != key)
+        jsonPath = cacheDir() + QLatin1Char('/') + key + QStringLiteral(".json");
+    QFile file(jsonPath);
     if (!file.open(QIODevice::ReadOnly))
         return;
 
@@ -588,15 +719,15 @@ void MetadataResolver::loadFromDisk(const QString &infoHash)
         result.platforms.append(v.toString());
 
     const QString posterFile = obj.value(QLatin1String("posterFile")).toString();
-    if (!posterFile.isEmpty() && QFile::exists(posterFile))
-        result.posterPath = posterFile;
+    result.posterPath = MetadataMatch::locatePosterFile(posterFile, posterDir(), key);
 
-    m_cache.insert(infoHash, result);
+    m_cache.insert(key, result);
 }
 
 void MetadataResolver::saveToDisk(const QString &infoHash, const MetadataResult &result)
 {
     QDir().mkpath(cacheDir());
+    const QString key = MetadataMatch::canonicalInfoHash(infoHash);
 
     QJsonObject obj;
     obj.insert(QLatin1String("title"), result.title);
@@ -611,7 +742,7 @@ void MetadataResolver::saveToDisk(const QString &infoHash, const MetadataResult 
                MetadataMatch::contentTypeToString(result.contentType));
     obj.insert(QLatin1String("resolvedAt"), QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
 
-    QString path = cacheDir() + QLatin1Char('/') + infoHash + QStringLiteral(".json");
+    QString path = cacheDir() + QLatin1Char('/') + key + QStringLiteral(".json");
     QFile file(path);
     if (file.open(QIODevice::WriteOnly))
         file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact));

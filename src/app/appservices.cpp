@@ -222,13 +222,16 @@ AppServices AppServices::create(QApplication &app)
     AddonManager::instance().fetchTrackerList();
 
     {
+        // batchResolve itself skips entries that already have art (or an
+        // intentional clearMetadata blank). Pass every hash so title-without-
+        // poster (stale AppData path) can refill covers after a migrate.
         QStringList hashes, names;
         for (int i = 0; i < svc.eng->torrentCount(); ++i) {
             QString h = svc.eng->torrentHashAt(i);
-            if (!h.isEmpty() && !svc.resolver->hasCached(h)) {
-                hashes << h;
-                names << svc.eng->torrentAt(i).name;
-            }
+            if (h.isEmpty())
+                continue;
+            hashes << h;
+            names << svc.eng->torrentAt(i).name;
         }
         if (!hashes.isEmpty())
             svc.resolver->batchResolve(hashes, names);

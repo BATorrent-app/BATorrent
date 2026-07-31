@@ -48,4 +48,18 @@ ContentType contentTypeFromString(const QString &s);
 
 QStringList genreNamesFromIds(const QJsonArray &genreIds);
 
+// Info-hashes are hex; magnets/addons may upper-case them while libtorrent
+// prints lower-case. One canonical form keeps the on-disk cache and lookups aligned.
+inline QString canonicalInfoHash(const QString &hash) { return hash.toLower(); }
+
+// Parent of AppDataLocation (…/BATorrent/BATorrent → …/BATorrent) for pre-3.0
+// metadata/poster dirs. Empty when AppData is already top-level or unset.
+QString legacyAppDataSibling(const QString &appDataLocation);
+
+// Resolve a cached poster path after AppData moves: prefer an existing stored
+// absolute path, else posterDir/<hash>.jpg, else posterDir/<basename>.
+QString locatePosterFile(const QString &storedPath,
+                         const QString &posterDir,
+                         const QString &infoHash);
+
 } // namespace MetadataMatch

@@ -5,6 +5,9 @@
 #include "services/metadata/metadatamatch.h"
 
 #include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QHash>
 #include <QRegularExpression>
 #include <QSet>
@@ -181,6 +184,42 @@ QStringList genreNamesFromIds(const QJsonArray &genreIds)
             out.append(name);
     }
     return out;
+}
+
+QString legacyAppDataSibling(const QString &appDataLocation)
+{
+    if (appDataLocation.isEmpty())
+        return {};
+    const QString parent = QFileInfo(QDir::cleanPath(appDataLocation)).path();
+    if (parent.isEmpty() || parent == QLatin1String(".")
+        || QDir::cleanPath(parent) == QDir::cleanPath(appDataLocation))
+        return {};
+    return parent;
+}
+
+QString locatePosterFile(const QString &storedPath,
+                         const QString &posterDir,
+                         const QString &infoHash)
+{
+    if (!storedPath.isEmpty() && QFile::exists(storedPath))
+        return storedPath;
+    if (posterDir.isEmpty())
+        return {};
+    const QString hash = canonicalInfoHash(infoHash);
+    if (!hash.isEmpty()) {
+        const QString byHash = posterDir + QLatin1Char('/') + hash + QStringLiteral(".jpg");
+        if (QFile::exists(byHash))
+            return byHash;
+    }
+    if (!storedPath.isEmpty()) {
+        const QString name = QFileInfo(storedPath).fileName();
+        if (!name.isEmpty()) {
+            const QString relocated = posterDir + QLatin1Char('/') + name;
+            if (QFile::exists(relocated))
+                return relocated;
+        }
+    }
+    return {};
 }
 
 } // namespace MetadataMatch
