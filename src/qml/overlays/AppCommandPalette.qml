@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
-import ".."
+import "../views"
 
 Item {
     id: root

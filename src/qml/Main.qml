@@ -13,6 +13,7 @@ import Qt.labs.platform as Platform
 import "theme"
 import "widgets"
 import "overlays"
+import "views"
 
 Window {
     id: win
