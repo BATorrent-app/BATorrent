@@ -3,6 +3,8 @@
 // See LICENSE file for details
 
 #include "services/discovery/addonmanager.h"
+#include "services/discovery/addoncatalog.h"
+#include "services/discovery/addonparse.h"
 #include "services/platform/contentlanguage.h"
 #include "services/platform/translator.h"
 #include "services/platform/utils.h"
@@ -12,52 +14,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QRegularExpression>
 #include <QSettings>
 #include <QUrl>
 #include <algorithm>
-
-namespace {
-// Public trackers appended to magnets built from a bare info_hash so freshly
-// added results can find peers before any tracker/DHT bootstrap.
-QString magnetTrackerParams()
-{
-    static const QStringList trackers = {
-        "udp://tracker.opentrackr.org:1337/announce",
-        "udp://open.stealth.si:80/announce",
-        "udp://tracker.openbittorrent.com:6969/announce",
-        "udp://exodus.desync.com:6969/announce",
-    };
-    QString params;
-    for (const auto &t : trackers)
-        params += "&tr=" + QUrl::toPercentEncoding(t);
-    return params;
-}
-
-// A btih from a search provider is concatenated raw into the magnet URI; a
-// hostile provider (user-added, or a MITM on an http: preset) can smuggle
-// extra magnet params (&ws=, &tr=…) through it. Accept only a real info-hash:
-// 40 hex (v1) or 64 hex (v2 hex form). Base32 v1 (32 chars) is also valid.
-bool isValidInfoHash(const QString &h)
-{
-    static const QRegularExpression re(
-        QStringLiteral("^([0-9A-Fa-f]{40}|[0-9A-Fa-f]{64}|[A-Za-z2-7]{32})$"));
-    return re.match(h).hasMatch();
-}
-
-QString normalizeAddonBaseUrl(QString url)
-{
-    url = url.trimmed();
-    while (url.endsWith(QLatin1Char('/')))
-        url.chop(1);
-    static const QString manifest = QStringLiteral("/manifest.json");
-    if (url.endsWith(manifest, Qt::CaseInsensitive))
-        url.chop(manifest.size());
-    while (url.endsWith(QLatin1Char('/')))
-        url.chop(1);
-    return url;
-}
-}
 
 AddonManager &AddonManager::instance()
 {
@@ -97,7 +56,6 @@ void AddonManager::loadAddons()
     }
     settings.endArray();
 
-    // Load cached tracker list
     m_trackerList = settings.value("trackerList").toStringList();
 }
 
@@ -171,14 +129,12 @@ void AddonManager::syncCuratedAddons()
             m.url = d.url;
             m.types = d.types;
             m.resources = d.resources;
-            m.enabled = true; // set below
+            m.enabled = true;
             m_addons.append(m);
             idx = m_addons.size() - 1;
             changed = true;
         }
 
-        // Core / anime / empty-lang always on; regional packs only when they
-        // match Content language (keeps stream fan-out sane).
         const bool wantOn = d.alwaysOn
                             || d.lang.isEmpty()
                             || d.lang == QLatin1String("anime")
@@ -194,91 +150,7 @@ void AddonManager::syncCuratedAddons()
 
 QList<CuratedAddon> AddonManager::curatedCatalog()
 {
-    using L = QStringList;
-    const L movieSeries = {QStringLiteral("movie"), QStringLiteral("series")};
-    const L movieSeriesAnime = {QStringLiteral("movie"), QStringLiteral("series"), QStringLiteral("anime")};
-    const L stream = {QStringLiteral("stream")};
-    const L catalogMeta = {QStringLiteral("catalog"), QStringLiteral("meta")};
-    const L catalogStream = {QStringLiteral("catalog"), QStringLiteral("stream")};
-    const L animeMeta = {QStringLiteral("catalog"), QStringLiteral("meta"), QStringLiteral("subtitles")};
-
-    // seedDefault + alwaysOn = out-of-box and always queried
-    // seedDefault only     = installed; enabled when Content language matches `lang`
-    // needsConfig          = suggested Configure… only (no seed)
-    return {
-        {QStringLiteral("com.linvo.cinemeta"), QStringLiteral("Cinemeta"),
-         QStringLiteral("addon_sug_cinemeta"),
-         QStringLiteral("Official catalogs for movies and series"),
-         QStringLiteral("https://v3-cinemeta.strem.io"), {}, {},
-         movieSeries, catalogMeta, true, true, false, false},
-
-        {QStringLiteral("com.stremio.torrentio.addon"), QStringLiteral("Torrentio"),
-         QStringLiteral("addon_sug_torrentio"),
-         QStringLiteral("Torrent streams from many indexers (respects Content language)"),
-         QStringLiteral("https://torrentio.strem.fun"), {}, {},
-         movieSeries, stream, true, true, false, false},
-
-        {QStringLiteral("com.stremio.brazuca.addon"), QStringLiteral("Brazuca Torrents"),
-         QStringLiteral("addon_sug_brazuca"),
-         QStringLiteral("Brazilian dubbed movies & series — BaixaFilmes, RedeTorrent, VacaTorrent…"),
-         QStringLiteral("https://94c8cb9f702d-brazuca-torrents.baby-beamup.club"), {},
-         QStringLiteral("pt"), movieSeriesAnime, stream, true, true, false, false},
-
-        {QStringLiteral("community.anime.kitsu"), QStringLiteral("Anime Kitsu"),
-         QStringLiteral("addon_sug_anime_kitsu"),
-         QStringLiteral("Anime catalogs & episode meta (Kitsu / MAL / AniList ids)"),
-         QStringLiteral("https://anime-kitsu.strem.fun"), {},
-         QStringLiteral("anime"), movieSeriesAnime, animeMeta, true, true, false, false},
-
-        {{}, QStringLiteral("Torrentio · Anime (Nyaa)"), QStringLiteral("addon_sug_torrentio_anime"),
-         QStringLiteral("Nyaa.si, TokyoTosho, AniDex, HorribleSubs — anime torrents"),
-         QStringLiteral("https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex,horriblesubs,nekobt"),
-         {}, QStringLiteral("anime"), movieSeriesAnime, stream, true, true, false, false},
-
-        {{}, QStringLiteral("Torrentio · Português"), QStringLiteral("addon_sug_torrentio_pt"),
-         QStringLiteral("Torrentio locked to Portuguese / dubbed BR indexers"),
-         QStringLiteral("https://torrentio.strem.fun/providers=comando,bludv,micoleaodublado,yts,eztv,rarbg,1337x|language=portuguese"),
-         {}, QStringLiteral("pt"), movieSeries, stream, true, false, false, false},
-        {{}, QStringLiteral("Torrentio · Español"), QStringLiteral("addon_sug_torrentio_es"),
-         QStringLiteral("Spanish / LATAM — Cinecalidad, MejorTorrent, Wolfmax4k…"),
-         QStringLiteral("https://torrentio.strem.fun/providers=cinecalidad,mejortorrent,wolfmax4k,bludv,comando,yts,eztv,rarbg,1337x|language=spanish"),
-         {}, QStringLiteral("es"), movieSeries, stream, true, false, false, false},
-        {{}, QStringLiteral("Torrentio · Русский"), QStringLiteral("addon_sug_torrentio_ru"),
-         QStringLiteral("Russian — Rutor, RuTracker and language filter"),
-         QStringLiteral("https://torrentio.strem.fun/providers=rutor,rutracker,yts,eztv,rarbg,1337x,thepiratebay|language=russian"),
-         {}, QStringLiteral("ru"), movieSeries, stream, true, false, false, false},
-        {{}, QStringLiteral("Torrentio · 中文"), QStringLiteral("addon_sug_torrentio_zh"),
-         QStringLiteral("Chinese — language-first Torrentio results"),
-         QStringLiteral("https://torrentio.strem.fun/language=chinese"),
-         {}, QStringLiteral("zh"), movieSeries, stream, true, false, false, false},
-        {{}, QStringLiteral("Torrentio · 日本語"), QStringLiteral("addon_sug_torrentio_ja"),
-         QStringLiteral("Japanese — language-first Torrentio results"),
-         QStringLiteral("https://torrentio.strem.fun/language=japanese"),
-         {}, QStringLiteral("ja"), movieSeries, stream, true, false, false, false},
-        {{}, QStringLiteral("Torrentio · Deutsch"), QStringLiteral("addon_sug_torrentio_de"),
-         QStringLiteral("German — language-first Torrentio results"),
-         QStringLiteral("https://torrentio.strem.fun/language=german"),
-         {}, QStringLiteral("de"), movieSeries, stream, true, false, false, false},
-        {{}, QStringLiteral("Torrentio · Türkçe"), QStringLiteral("addon_sug_torrentio_tr"),
-         QStringLiteral("Turkish — language-first Torrentio results"),
-         QStringLiteral("https://torrentio.strem.fun/language=turkish"),
-         {}, QStringLiteral("tr"), movieSeries, stream, true, false, false, false},
-        {{}, QStringLiteral("Torrentio · Українська"), QStringLiteral("addon_sug_torrentio_uk"),
-         QStringLiteral("Ukrainian — language-first Torrentio results"),
-         QStringLiteral("https://torrentio.strem.fun/language=ukrainian"),
-         {}, QStringLiteral("uk"), movieSeries, stream, true, false, false, false},
-
-        {QStringLiteral("org.reptilia.aradeb"), QStringLiteral("Aradeb"),
-         QStringLiteral("addon_sug_aradeb"),
-         QStringLiteral("Arabic catalogs & streams — needs a free trial or donor key + debrid"),
-         {}, QStringLiteral("https://aradeb.518878.xyz/configure"),
-         QStringLiteral("ar"), movieSeries, catalogStream, false, false, true, true},
-
-        {{}, QStringLiteral("Torrentio · Configure"), QStringLiteral("addon_sug_torrentio_cfg"),
-         QStringLiteral("Open Torrentio’s config page — pick providers, language, optional debrid — then paste the install link"),
-         {}, QStringLiteral("https://torrentio.strem.fun/configure"),
-         {}, movieSeries, stream, false, false, true, false},
-    };
+    return AddonCatalog::curatedCatalog();
 }
 
 bool AddonManager::hasCatalogAddon() const
@@ -355,13 +227,12 @@ void AddonManager::fetchMeta(const QString &type, const QString &id)
 
 void AddonManager::addAddon(const QString &url)
 {
-    QString baseUrl = normalizeAddonBaseUrl(url);
+    QString baseUrl = AddonParse::normalizeAddonBaseUrl(url);
     if (baseUrl.isEmpty()) {
         emit addonError(QStringLiteral("Invalid addon URL."));
         return;
     }
 
-    // Check duplicates
     for (const auto &a : m_addons) {
         if (a.url == baseUrl) {
             emit addonError("Addon already installed.");
@@ -385,35 +256,12 @@ void AddonManager::fetchManifest(const QString &url)
             return;
         }
 
-        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-        if (!doc.isObject()) {
+        AddonManifest m;
+        if (!AddonParse::parseManifestJson(reply->readAll(), url, &m)) {
             emit addonError("Invalid manifest format.");
             return;
         }
 
-        // Parse Stremio manifest
-        QJsonObject obj = doc.object();
-        AddonManifest m;
-        m.id = obj.value("id").toString();
-        m.name = obj.value("name").toString("Unknown Addon");
-        m.description = obj.value("description").toString();
-        m.url = url;
-
-        // Parse types
-        QJsonArray types = obj.value("types").toArray();
-        for (const auto &t : types)
-            m.types.append(t.toString());
-
-        // Parse resources
-        QJsonArray resources = obj.value("resources").toArray();
-        for (const auto &r : resources) {
-            if (r.isString())
-                m.resources.append(r.toString());
-            else if (r.isObject())
-                m.resources.append(r.toObject().value("name").toString());
-        }
-
-        m.enabled = true;
         m_addons.append(m);
         saveAddons();
         emit addonAdded(m);
@@ -439,7 +287,6 @@ QList<AddonManifest> AddonManager::addons() const
     return m_addons;
 }
 
-// Stremio catalog search: GET {url}/catalog/{type}/{catalogId}/search={query}.json
 void AddonManager::searchCatalog(const QString &query)
 {
     m_catalogResults.clear();
@@ -450,10 +297,8 @@ void AddonManager::searchCatalog(const QString &query)
         if (!addon.enabled || !addon.resources.contains("catalog"))
             continue;
 
-        // Search each type the addon supports
         for (const auto &type : addon.types) {
             m_pendingCatalog++;
-            // Stremio search URL format
             QString searchUrl = QString("%1/catalog/%2/top/search=%3.json")
                 .arg(addon.url, type, QUrl::toPercentEncoding(query));
 
@@ -463,32 +308,16 @@ void AddonManager::searchCatalog(const QString &query)
 
             connect(reply, &QNetworkReply::finished, this, [this, reply, gen]() {
                 reply->deleteLater();
-                if (gen != m_catalogGen) return; // stale reply, ignore
+                if (gen != m_catalogGen) return;
                 m_pendingCatalog--;
 
                 if (reply->error() == QNetworkReply::NoError) {
-                    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-                    QJsonObject obj = doc.object();
-                    QJsonArray metas = obj.value("metas").toArray();
-
-                    for (const auto &val : metas) {
-                        QJsonObject m = val.toObject();
-                        CatalogItem item;
-                        item.id = m.value("id").toString();
-                        item.type = m.value("type").toString();
-                        item.name = decodeHtmlEntities(m.value("name").toString());
-                        item.poster = m.value("poster").toString();
-                        // Year from releaseInfo or year field
-                        QString release = m.value("releaseInfo").toString();
-                        if (!release.isEmpty())
-                            item.year = release.left(4).toInt();
-
-                        // Avoid duplicates by IMDB ID
+                    for (const auto &item : AddonParse::parseCatalogMetas(reply->readAll())) {
                         bool dup = false;
                         for (const auto &existing : m_catalogResults) {
                             if (existing.id == item.id) { dup = true; break; }
                         }
-                        if (!dup && !item.id.isEmpty())
+                        if (!dup)
                             m_catalogResults.append(item);
                     }
                 }
@@ -506,34 +335,9 @@ void AddonManager::searchCatalog(const QString &query)
 
 QString AddonManager::streamBaseUrl(const QString &addonUrl, const QString &torrentioLang)
 {
-    if (torrentioLang.isEmpty()) return addonUrl;
-    if (!QUrl(addonUrl).host().contains(QLatin1String("torrentio"))) return addonUrl;
-    if (addonUrl.contains(QLatin1Char('='))) return addonUrl;   // user already configured it
-    return addonUrl + QLatin1String("/language=") + torrentioLang;
+    return AddonParse::streamBaseUrl(addonUrl, torrentioLang);
 }
 
-namespace {
-// Torrentio's `language=` values for the user's content language. English stays
-// unconfigured — the global default already is English-first.
-QString torrentioLanguageForApp()
-{
-    if (!QSettings().value("preferNativeLang", true).toBool()) return {};
-    switch (ContentLanguage::current()) {
-    case Translator::Portuguese: return QStringLiteral("portuguese");
-    case Translator::Spanish:    return QStringLiteral("spanish");
-    case Translator::Russian:    return QStringLiteral("russian");
-    case Translator::Japanese:   return QStringLiteral("japanese");
-    case Translator::Chinese:    return QStringLiteral("chinese");
-    case Translator::German:     return QStringLiteral("german");
-    case Translator::Ukrainian:  return QStringLiteral("ukrainian");
-    case Translator::Turkish:    return QStringLiteral("turkish");
-    case Translator::English:    break;
-    }
-    return {};
-}
-}
-
-// Stremio stream: GET {url}/stream/{type}/{id}.json
 void AddonManager::getStreams(const QString &type, const QString &id)
 {
     m_streamResults.clear();
@@ -548,7 +352,7 @@ void AddonManager::getStreams(const QString &type, const QString &id)
 
         m_pendingStreams++;
         QString streamUrl = QString("%1/stream/%2/%3.json")
-            .arg(streamBaseUrl(addon.url, torrentioLanguageForApp()), type, id);
+            .arg(streamBaseUrl(addon.url, AddonParse::torrentioLanguageForApp()), type, id);
 
         QNetworkRequest req{QUrl(streamUrl)};
         req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
@@ -556,47 +360,12 @@ void AddonManager::getStreams(const QString &type, const QString &id)
 
         connect(reply, &QNetworkReply::finished, this, [this, reply, gen, addonName = addon.name]() {
             reply->deleteLater();
-            if (gen != m_streamGen) return; // stale reply, ignore
+            if (gen != m_streamGen) return;
             m_pendingStreams--;
 
             if (reply->error() == QNetworkReply::NoError) {
-                QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-                QJsonObject obj = doc.object();
-                QJsonArray streams = obj.value("streams").toArray();
-
-                for (const auto &val : streams) {
-                    QJsonObject s = val.toObject();
-                    StreamResult r;
-                    r.addonName = addonName;
-
-                    // Stremio streams can have infoHash+fileIdx or direct magnet
-                    QString infoHash = s.value("infoHash").toString();
-                    if (isValidInfoHash(infoHash)) {
-                        r.magnet = QString("magnet:?xt=urn:btih:%1").arg(infoHash);
-                        // Add trackers from behaviorHints or sources
-                        QJsonArray sources = s.value("sources").toArray();
-                        for (const auto &src : sources) {
-                            QString tracker = src.toString();
-                            if (tracker.startsWith("tracker:"))
-                                r.magnet += "&tr=" + QUrl::toPercentEncoding(tracker.mid(8));
-                        }
-                    } else {
-                        // Direct URL (magnet or HTTP)
-                        r.magnet = s.value("url").toString();
-                    }
-
-                    // Parse title/name for quality info
-                    r.title = decodeHtmlEntities(s.value("title").toString());
-                    if (r.title.isEmpty())
-                        r.title = decodeHtmlEntities(s.value("name").toString());
-
-                    // Extract size from behaviorHints
-                    QJsonObject hints = s.value("behaviorHints").toObject();
-                    r.size = hints.value("videoSize").toVariant().toLongLong();
-
-                    if (!r.magnet.isEmpty() && r.magnet.startsWith("magnet:"))
-                        m_streamResults.append(r);
-                }
+                for (const auto &r : AddonParse::parseStreamResults(reply->readAll(), addonName))
+                    m_streamResults.append(r);
             }
 
             emit streamResults(m_streamResults);
@@ -608,8 +377,6 @@ void AddonManager::getStreams(const QString &type, const QString &id)
     if (m_pendingStreams == 0)
         emit streamFinished();
 }
-
-// --- Auto tracker list ---
 
 void AddonManager::fetchTrackerList()
 {
@@ -656,8 +423,6 @@ void AddonManager::setAutoTrackersEnabled(bool enabled)
     settings.setValue("autoTrackers", enabled);
 }
 
-// --- Torrent Search ---
-
 bool AddonManager::torrentSearchEnabled() const
 {
     return m_torrentSearchEnabled;
@@ -699,7 +464,7 @@ void AddonManager::searchTorrents(const QString &query, int category)
 
     QNetworkRequest req{QUrl(searchUrl)};
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/2.0");
-    req.setTransferTimeout(15000);   // don't let a slow provider hang the search UI
+    req.setTransferTimeout(15000);
     auto *reply = m_net->get(req);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
@@ -710,48 +475,20 @@ void AddonManager::searchTorrents(const QString &query, int category)
             return;
         }
 
-        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-        if (!doc.isArray()) {
+        const QByteArray data = reply->readAll();
+        if (!QJsonDocument::fromJson(data).isArray()) {
             emit torrentSearchError(tr("Invalid response format."));
             emit torrentSearchFinished();
             return;
         }
 
-        const QString trackerParams = magnetTrackerParams();
-
-        QList<TorrentSearchResult> results;
-        QJsonArray arr = doc.array();
-        for (const auto &val : arr) {
-            QJsonObject obj = val.toObject();
-            QString name = decodeHtmlEntities(obj.value("name").toString());
-            QString infoHash = obj.value("info_hash").toString();
-            if (!isValidInfoHash(infoHash))   // reject junk + magnet-param injection
-                continue;
-
-            TorrentSearchResult r;
-            r.name = name;
-            r.infoHash = infoHash;
-            r.size = obj.value("size").toVariant().toLongLong();
-            r.seeders = obj.value("seeders").toVariant().toInt();
-            r.leechers = obj.value("leechers").toVariant().toInt();
-            r.category = obj.value("category").toString();
-            r.provider = QStringLiteral("Torrents");
-            r.magnet = QString("magnet:?xt=urn:btih:%1&dn=%2%3")
-                .arg(infoHash, QUrl::toPercentEncoding(name), trackerParams);
-
-            results.append(r);
-        }
-
-        emit torrentSearchResults(results);
+        emit torrentSearchResults(AddonParse::parseApibayArray(data));
         emit torrentSearchFinished();
     });
 }
 
 void AddonManager::summarizeTorrents(const QString &query, int category)
 {
-    // Prefer the default search providers (apibay etc.) — enabled out of the box,
-    // so the hero summary works without flipping the legacy "torrent search" on.
-    // Falls back to the legacy single-URL endpoint. Stays off the search UI signals.
     int provIdx = -1;
     for (int i = 0; i < m_searchProviders.size(); ++i)
         if (m_searchProviders[i].enabled && !m_searchProviders[i].urlTemplate.isEmpty()) { provIdx = i; break; }
@@ -786,7 +523,7 @@ void AddonManager::summarizeTorrents(const QString &query, int category)
 
         QList<TorrentSearchResult> results;
         if (useProvider) {
-            results = parseProviderResponse(prov, data);   // handles each provider's JSON shape
+            results = AddonParse::parseProviderResponse(prov, data);
         } else {
             const QJsonDocument doc = QJsonDocument::fromJson(data);
             if (doc.isArray())
@@ -802,7 +539,7 @@ void AddonManager::summarizeTorrents(const QString &query, int category)
         }
 
         int count = 0, maxSeeds = -1;
-        qint64 bestSize = 0;   // size of the healthiest (most-seeded) release
+        qint64 bestSize = 0;
         for (const auto &r : results) {
             ++count;
             if (r.seeders > maxSeeds) { maxSeeds = r.seeders; bestSize = r.size; }
@@ -811,51 +548,17 @@ void AddonManager::summarizeTorrents(const QString &query, int category)
     });
 }
 
-// --- Search Providers ---
-
 void AddonManager::installDefaultProviders()
 {
     QSettings s("BATorrent", "BATorrent");
 
-    // Only the safe public-JSON, global sources ship enabled by default. Every
-    // localized source lives in providerCatalog() so the user opts in per region.
-    struct Def { QString id, name, url, arr, nm, hash, sz, seed, leech, region; bool enabled; };
-    const QList<Def> defaults = {
-        {"apibay", "The Pirate Bay (apibay)",
-         "https://apibay.org/q.php?q={query}&cat={category}",
-         "", "name", "info_hash", "size", "seeders", "leechers", "global", true},
-        {"nyaa_api", "Nyaa.si",
-         "https://nyaa.si/api/v2?q={query}&limit=50",
-         "torrents", "title", "info_hash", "total_size", "seeders", "leechers", "anime", true},
-        // Open torrent database (no login), returns raw-byte sizes + real swarm
-        // counts. Global content; safe to enable like apibay/nyaa.
-        {"torrents_csv", "Torrents-CSV",
-         "https://torrents-csv.com/service/search?q={query}&size=50",
-         "torrents", "name", "infohash", "size_bytes", "seeders", "leechers", "global", true},
-        // BitSearch: login-free multi-tracker aggregator (TPB/1337x/YTS/nyaa across
-        // languages). results[] with infohash → magnet built like apibay. ~200
-        // req/day per IP anon; that's per-search, generous for normal use.
-        {"bitsearch", "BitSearch (multi-idioma)",
-         "https://bitsearch.eu/api/v1/search?q={query}&limit=50",
-         "results", "title", "infohash", "size", "seeders", "leechers", "global", true},
-        // RuTor via public TorAPI — CIS/Russian titles without a Stremio round-trip
-        {"rutor_torapi", "RuTor",
-         "https://torapi.vercel.app/api/search/title/rutor?query={query}",
-         "", "Name", "Hash", "Size", "Seeds", "Peers", "cis", true},
-    };
-
-    // Seed each built-in once (tracked by id) so a new provider reaches existing
-    // users on update, while one the user deleted never resurrects.
     QStringList seeded = s.value("seededProviderIds").toStringList();
     if (seeded.isEmpty() && s.value("searchProvidersInitialized", false).toBool())
-        seeded << QStringLiteral("apibay") << QStringLiteral("nyaa_api");  // pre-seed-flag users
-    // Migration: the CIS/Jackett presets used to seed here (off). They now live in
-    // the catalog only — mark them seeded so they don't resurrect as dead rows,
-    // but keep any the user actually enabled.
+        seeded << QStringLiteral("apibay") << QStringLiteral("nyaa_api");
     for (const char *legacy : { "rutor_torapi", "rutracker_torapi", "jackett_local" })
         if (!seeded.contains(QLatin1String(legacy))) seeded << QLatin1String(legacy);
     bool changed = false;
-    for (const auto &d : defaults) {
+    for (const auto &d : AddonCatalog::defaultProviders()) {
         if (seeded.contains(d.id)) continue;
         seeded << d.id;
         changed = true;
@@ -878,91 +581,7 @@ void AddonManager::installDefaultProviders()
 
 QList<ProviderPreset> AddonManager::providerCatalog()
 {
-    auto torApi = [](const QString &id, const QString &name, const QString &tracker,
-                     const QString &region, const QString &note, bool selfHost = false) {
-        ProviderPreset ps;
-        SearchProvider &p = ps.provider;
-        p.id = id;
-        p.name = name;
-        // Lifailon/TorAPI exposes each tracker under /api/search/title/<tracker>;
-        // it scrapes server-side and returns the info_hash, so no login is needed
-        // for the public trackers. The default instance is editable to self-host.
-        p.urlTemplate = QStringLiteral("https://torapi.vercel.app/api/search/title/%1?query={query}").arg(tracker);
-        p.arrayPath = QString();
-        p.namePath = QStringLiteral("Name");
-        p.hashPath = QStringLiteral("Hash");
-        p.sizePath = QStringLiteral("Size");
-        p.seedersPath = QStringLiteral("Seeds");
-        p.leechersPath = QStringLiteral("Peers");
-        p.builtIn = true;
-        p.region = region;
-        ps.note = note;
-        ps.needsConfig = selfHost;
-        return ps;
-    };
-    auto json = [](const QString &id, const QString &name, const QString &url,
-                   const QString &arr, const QString &nm, const QString &hash,
-                   const QString &sz, const QString &seed, const QString &leech,
-                   const QString &region, const QString &note, bool needsConfig = false) {
-        ProviderPreset ps;
-        SearchProvider &p = ps.provider;
-        p.id = id; p.name = name; p.urlTemplate = url;
-        p.arrayPath = arr; p.namePath = nm; p.hashPath = hash;
-        p.sizePath = sz; p.seedersPath = seed; p.leechersPath = leech;
-        p.builtIn = true; p.region = region;
-        ps.note = note; ps.needsConfig = needsConfig;
-        return ps;
-    };
-
-    QList<ProviderPreset> cat;
-
-    // Only GET endpoints with a {query} template fit searchWithProvider — POST-body
-    // aggregators (Knaben v1) can't be presets here; Jackett covers that ground.
-
-    // ── PT-BR (filmes/séries — via torrent-indexer self-host) ────────────────
-    // felipemarinho97/torrent-indexer scrapes Comando/BluDV/Torrent dos Filmes/etc.
-    // and returns info_hash + magnet as JSON. No public instance → self-host (Docker).
-    {
-        ProviderPreset ps;
-        SearchProvider &p = ps.provider;
-        p.id = QStringLiteral("torrentindexer_ptbr");
-        p.name = QStringLiteral("Comando/BluDV… (torrent-indexer)");
-        p.urlTemplate = QStringLiteral("http://127.0.0.1:7006/search?q={query}");
-        p.arrayPath = QStringLiteral("results");
-        p.namePath = QStringLiteral("title");
-        p.hashPath = QStringLiteral("info_hash");
-        p.sizePath = QStringLiteral("size");
-        p.seedersPath = QStringLiteral("seed_count");
-        p.leechersPath = QStringLiteral("leech_count");
-        p.builtIn = true;
-        p.region = QStringLiteral("ptbr");
-        ps.note = QStringLiteral("Filmes/séries PT-BR. Exige rodar o torrent-indexer localmente (Docker) — edite a URL.");
-        ps.needsConfig = true;
-        cat << ps;
-    }
-
-    // ── CIS / Russo (via TorAPI) ─────────────────────────────────────────────
-    // Only RuTor returns the info_hash in *title* search (verified); Kinozal/
-    // NNM-Club expose it only in per-ID detail lookups, which searchWithProvider
-    // doesn't do — so they'd yield magnet-less rows and are deliberately omitted.
-    cat << torApi(QStringLiteral("rutor_torapi"), QStringLiteral("RuTor"), QStringLiteral("rutor"),
-                  QStringLiteral("cis"),
-                  QStringLiteral("Tracker russo público. Consulta via instância TorAPI de terceiros (editável)."));
-    cat << torApi(QStringLiteral("rutracker_torapi"), QStringLiteral("RuTracker (self-host)"),
-                  QStringLiteral("rutracker"), QStringLiteral("cis"),
-                  QStringLiteral("Exige login → só funciona apontando para uma TorAPI própria com sua conta."),
-                  /*selfHost*/ true);
-
-    // ── Localizado via Jackett (cobre BluDV/Comando PT-BR, ES, etc.) ─────────
-    cat << json(QStringLiteral("jackett_local"), QStringLiteral("Jackett (todos os seus indexers)"),
-                QStringLiteral("http://127.0.0.1:9117/api/v2.0/indexers/all/results?apikey=API_KEY&Query={query}"),
-                QStringLiteral("Results"), QStringLiteral("Title"), QStringLiteral("InfoHash"),
-                QStringLiteral("Size"), QStringLiteral("Seeders"), QStringLiteral("Peers"),
-                QStringLiteral("self"),
-                QStringLiteral("Uma fonte cobre TODOS os indexers localizados do seu Jackett (PT-BR, ES…). Troque API_KEY."),
-                /*needsConfig*/ true);
-
-    return cat;
+    return AddonCatalog::providerCatalog();
 }
 
 void AddonManager::loadSearchProviders()
@@ -1047,68 +666,6 @@ void AddonManager::setSearchProviderUrl(int index, const QString &urlTemplate)
     saveSearchProviders();
 }
 
-// Size can arrive as raw bytes (apibay/nyaa) or a human string like "28.47 GB"
-// (the TorAPI providers scrape display text). Accept both.
-static qint64 parseSizeValue(const QJsonValue &v)
-{
-    if (v.isDouble()) return static_cast<qint64>(v.toDouble());
-    QString s = v.toString().trimmed();
-    s.replace(QChar(0x00A0), QLatin1Char(' '));   // TorAPI separates number/unit with NBSP
-    if (s.isEmpty()) return 0;
-    bool ok = false;
-    const qint64 plain = s.toLongLong(&ok);
-    if (ok) return plain;
-    static const QRegularExpression re(
-        QStringLiteral("([\\d.,]+)\\s*([KMGT]?)i?B"), QRegularExpression::CaseInsensitiveOption);
-    const auto m = re.match(s);
-    if (!m.hasMatch()) return 0;
-    const double num = m.captured(1).replace(QLatin1Char(','), QLatin1Char('.')).toDouble();
-    const QString u = m.captured(2).toUpper();
-    const double mult = u == QLatin1String("K") ? 1024.0
-                      : u == QLatin1String("M") ? 1024.0 * 1024
-                      : u == QLatin1String("G") ? 1024.0 * 1024 * 1024
-                      : u == QLatin1String("T") ? 1024.0 * 1024 * 1024 * 1024 : 1.0;
-    return static_cast<qint64>(num * mult);
-}
-
-QList<TorrentSearchResult> AddonManager::parseProviderResponse(
-    const SearchProvider &p, const QByteArray &data)
-{
-    QJsonDocument doc = QJsonDocument::fromJson(data);
-
-    QJsonArray arr;
-    if (p.arrayPath.isEmpty()) {
-        if (doc.isArray()) arr = doc.array();
-    } else {
-        QJsonObject root = doc.object();
-        QJsonValue v = root.value(p.arrayPath);
-        if (v.isArray()) arr = v.toArray();
-    }
-
-    const QString trackerParams = magnetTrackerParams();
-
-    QList<TorrentSearchResult> results;
-    for (const auto &val : arr) {
-        QJsonObject obj = val.toObject();
-        QString name = decodeHtmlEntities(obj.value(p.namePath).toString());
-        QString infoHash = obj.value(p.hashPath).toString();
-        if (infoHash.isEmpty() || infoHash == "0") continue;
-
-        TorrentSearchResult r;
-        r.name = name;
-        r.infoHash = infoHash;
-        r.size = parseSizeValue(obj.value(p.sizePath));
-        r.seeders = obj.value(p.seedersPath).toVariant().toInt();
-        r.leechers = obj.value(p.leechersPath).toVariant().toInt();
-        r.category = obj.value("category").toString();
-        r.provider = p.name;
-        r.magnet = QString("magnet:?xt=urn:btih:%1&dn=%2%3")
-            .arg(infoHash, QUrl::toPercentEncoding(name), trackerParams);
-        results.append(r);
-    }
-    return results;
-}
-
 void AddonManager::searchWithProvider(int providerIndex, const QString &query, int category)
 {
     if (providerIndex < 0 || providerIndex >= m_searchProviders.size()) {
@@ -1127,7 +684,7 @@ void AddonManager::searchWithProvider(int providerIndex, const QString &query, i
 
     QNetworkRequest req{QUrl(url)};
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/" APP_VERSION);
-    req.setTransferTimeout(15000);   // a slow/dead provider must not hang the search UI
+    req.setTransferTimeout(15000);
     auto *reply = m_net->get(req);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply, p]() {
@@ -1137,7 +694,7 @@ void AddonManager::searchWithProvider(int providerIndex, const QString &query, i
             emit torrentSearchFinished();
             return;
         }
-        auto results = parseProviderResponse(p, reply->readAll());
+        auto results = AddonParse::parseProviderResponse(p, reply->readAll());
         emit torrentSearchResults(results);
         emit torrentSearchFinished();
     });

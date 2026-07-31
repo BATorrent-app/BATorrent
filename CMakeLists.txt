@@ -109,6 +109,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/security/blocklistupdater.cpp
     src/services/integrations/updater.cpp
     src/services/discovery/addonmanager.cpp
+    src/services/discovery/addonparse.cpp
+    src/services/discovery/addoncatalog.cpp
     src/services/integrations/rssmanager.cpp
     src/services/integrations/geoip.cpp
     src/services/integrations/geoipdb.cpp
