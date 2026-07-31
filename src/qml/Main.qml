@@ -342,7 +342,7 @@ Window {
         removeDialog: removeDlg
         addAddonDialog: addAddonDlg
         pairingDialog: pairingDlg
-        tourOverlay: tourOverlay
+        tourOverlay: appTour.tourOverlay
         welcomeDialog: welcomeDlg
         releaseNotesDialog: releaseNotesDlg
         aboutDialog: aboutDlg
@@ -385,9 +385,9 @@ Window {
         host: win
         settingsPage: settingsPage
         library: library
-        magnetDlg: magnetDlg
-        openFileDlg: openFileDlg
-        createDlg: createDlg
+        magnetDlg: overlays.magnetDlg
+        openFileDlg: overlays.openFileDlg
+        createDlg: overlays.createDlg
     }
     property alias cmdPalette: appCmdPalette.cmdPalette
 
@@ -422,7 +422,7 @@ Window {
             removeDialog: removeDlg
             addAddonDialog: addAddonDlg
             pairingDialog: pairingDlg
-            tourOverlay: tourOverlay
+            tourOverlay: appTour.tourOverlay
             welcomeDialog: welcomeDlg
             releaseNotesDialog: releaseNotesDlg
             aboutDialog: aboutDlg
@@ -587,7 +587,7 @@ Window {
     AppTour {
         id: appTour
         host: win
-        toolbar: toolbar
+        toolBar: toolbar
     }
     property alias tourOverlay: appTour.tourOverlay
 
@@ -618,8 +618,8 @@ Window {
     }
     AppMediaConnections {
         host: win
-        gwOverlay: gwOverlay
-        windowLoaders: windowLoaders
+        watchOverlay: appNotifications.gwOverlay
+        loaders: windowLoaders
     }
 
     LibraryShortcuts {
@@ -627,7 +627,7 @@ Window {
         host: win
         library: library
         filterBar: libraryChrome.filterBar
-        cmdPalette: cmdPalette
+        cmdPalette: appCmdPalette.cmdPalette
     }
 
     AppSplash { host: win }
