@@ -98,7 +98,9 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_watch.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_selection.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_disk.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_transfers.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_actions.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_diagnose.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_queue.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_clipboard.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_stats.cpp
