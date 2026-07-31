@@ -13,6 +13,13 @@ Item {
     property alias gwOverlay: gwOverlay
     property alias toastHost: toastHost
 
+    // background events (finished, error, kill switch, RSS)
+    Connections {
+        target: typeof notifications !== "undefined" ? notifications : null
+        ignoreUnknownSignals: true
+        function onNotify(title, body, level) { host.notifyUser(title, body, level) }
+    }
+
     // session-originated toasts (stream feedback, etc.)
     Connections {
         target: typeof session !== "undefined" ? session : null

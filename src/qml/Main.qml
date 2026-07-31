@@ -401,13 +401,6 @@ Window {
         }
     }
 
-    // background events (finished, error, kill switch, RSS)
-    Connections {
-        target: typeof notifications !== "undefined" ? notifications : null
-        ignoreUnknownSignals: true
-        function onNotify(title, body, level) { win.notifyUser(title, body, level) }
-    }
-
     AppCommandPalette {
         id: appCmdPalette
         host: win
@@ -671,15 +664,8 @@ Window {
         cmdPalette: cmdPalette
     }
 
-    // startup splash overlay (above everything, incl. toasts at z:9000)
-    Loader {
-        active: win.showSplash
-        anchors.fill: parent
-        z: 10000
-        sourceComponent: Splash {
-            onFinished: { win.showSplash = false; win.maybeShowWelcome() }
-        }
-    }
+    AppSplash { host: win }
+
 }
 
 
