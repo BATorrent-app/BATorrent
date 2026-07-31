@@ -2,8 +2,11 @@
 #include <catch2/catch_approx.hpp>
 #include "services/metadata/metadatamatch.h"
 
+#include <QDir>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QTemporaryDir>
 
 using Catch::Approx;
 
@@ -164,4 +167,52 @@ TEST_CASE("genreNamesFromIds maps known TMDB ids", "[metadatamatch]") {
     ids.append(99999); // unknown → skipped
     REQUIRE(MetadataMatch::genreNamesFromIds(ids)
             == QStringList({QStringLiteral("Action"), QStringLiteral("Sci-Fi")}));
+}
+
+TEST_CASE("canonicalInfoHash lowercases hex", "[metadatamatch]") {
+    REQUIRE(MetadataMatch::canonicalInfoHash(QStringLiteral("ABCD"))
+            == QStringLiteral("abcd"));
+    REQUIRE(MetadataMatch::canonicalInfoHash(QStringLiteral("abcd"))
+            == QStringLiteral("abcd"));
+}
+
+TEST_CASE("legacyAppDataSibling peels nested AppData", "[metadatamatch]") {
+    REQUIRE(MetadataMatch::legacyAppDataSibling(
+                QStringLiteral("/Users/x/Library/Application Support/BATorrent/BATorrent"))
+            == QStringLiteral("/Users/x/Library/Application Support/BATorrent"));
+    REQUIRE(MetadataMatch::legacyAppDataSibling(QString()).isEmpty());
+}
+
+TEST_CASE("locatePosterFile prefers existing stored path then hash jpg",
+          "[metadatamatch]") {
+    REQUIRE(MetadataMatch::locatePosterFile(QString(), QString(), QString()).isEmpty());
+
+    // Non-existent stored path + empty poster dir → empty
+    REQUIRE(MetadataMatch::locatePosterFile(
+                QStringLiteral("/no/such/poster.jpg"),
+                QString(),
+                QStringLiteral("abc")).isEmpty());
+
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    const QString posterDir = tmp.path() + QStringLiteral("/posters");
+    REQUIRE(QDir().mkpath(posterDir));
+    const QString hash = QStringLiteral("aabbccddeeff00112233445566778899aabbccdd");
+    const QString jpg = posterDir + QLatin1Char('/') + hash + QStringLiteral(".jpg");
+    {
+        QFile f(jpg);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write("x");
+    }
+
+    // Stale absolute path → recover via posterDir/<hash>.jpg
+    REQUIRE(MetadataMatch::locatePosterFile(
+                QStringLiteral("/old/AppData/posters/") + hash + QStringLiteral(".jpg"),
+                posterDir, hash)
+            == jpg);
+
+    // Upper-case hash lookup still finds the lower-case file name
+    REQUIRE(MetadataMatch::locatePosterFile(
+                QString(), posterDir, hash.toUpper())
+            == jpg);
 }

@@ -616,6 +616,8 @@ Window {
     // host and the image fails to load; Windows needs the triple-slash form.
     function fileUrl(p) {
         if (!p || p.length === 0) return ""
+        if (p.indexOf("http") === 0 || p.indexOf("qrc:") === 0 || p.indexOf("file:") === 0)
+            return p
         return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
     }
     AppMediaConnections {
