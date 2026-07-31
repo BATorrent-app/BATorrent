@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Fail CI when translation locales drift or QML/C++ references missing keys.
+"""Fail CI when translation locales drift, duplicate keys, or referenced keys miss.
 
-Parity: every translations/*.json must share the same key set as en.json.
-Usage:  every i18n.t("key") / tr_("key") / QStringLiteral("gi_*"|"gw_*"|...)
-        toast action keys used from C++ must exist in en.json.
+Parity:   every translations/*.json must share the same key set as en.json.
+Dupes:    no file may repeat a key (json.loads keeps last-wins silently).
+Usage:    every i18n.t("key") / tr_("key") in src/ must exist in en.json.
 
+Run:      python3 scripts/check-i18n-parity.py
 Exit 0 on success, 1 on drift. Prints a concise report either way.
 """
 from __future__ import annotations
@@ -26,16 +27,38 @@ DYNAMIC_PREFIXES = (
 )
 
 
-def load_locales() -> dict[str, set[str]]:
+def _load_object(path: Path) -> tuple[dict, list[str]]:
+    """Parse a JSON object; return (data, duplicate_keys)."""
+    dups: list[str] = []
+
+    def hook(pairs: list[tuple[str, object]]) -> dict:
+        out: dict = {}
+        for k, v in pairs:
+            if k in out:
+                dups.append(k)
+            out[k] = v
+        return out
+
+    data = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=hook)
+    if not isinstance(data, dict):
+        raise SystemExit(f"{path.name}: expected a JSON object")
+    return data, dups
+
+
+def load_locales() -> tuple[dict[str, set[str]], list[str]]:
     out: dict[str, set[str]] = {}
+    errs: list[str] = []
     for p in sorted(TRANS.glob("*.json")):
-        data = json.loads(p.read_text(encoding="utf-8"))
-        if not isinstance(data, dict):
-            raise SystemExit(f"{p.name}: expected a JSON object")
+        data, dups = _load_object(p)
         out[p.name] = set(data)
+        if dups:
+            uniq = sorted(set(dups))
+            sample = uniq[:5]
+            more = f" (+{len(uniq) - 5} more)" if len(uniq) > 5 else ""
+            errs.append(f"{p.name}: {len(uniq)} duplicate key(s) (e.g. {sample}){more}")
     if "en.json" not in out:
         raise SystemExit("translations/en.json missing")
-    return out
+    return out, errs
 
 
 def check_parity(locales: dict[str, set[str]]) -> list[str]:
@@ -80,8 +103,8 @@ def check_used(en: set[str], used: set[str]) -> list[str]:
 
 
 def main() -> int:
-    locales = load_locales()
-    errs = check_parity(locales)
+    locales, errs = load_locales()
+    errs.extend(check_parity(locales))
     used = collect_used_keys()
     errs.extend(check_used(locales["en.json"], used))
 
