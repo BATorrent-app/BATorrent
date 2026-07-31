@@ -120,6 +120,8 @@
 <file>../src/qml/RefreshFlash.qml</file>
 <file>../src/qml/AppDropOverlay.qml</file>
 <file>../src/qml/AppOverlays.qml</file>
+<file>../src/qml/AppMediaConnections.qml</file>
+<file>../src/qml/AppCommandPalette.qml</file>
 <file>../src/qml/Splash.qml</file>
         <file>../src/qml/TrayPopupWindow.qml</file>
         <file>../src/qml/UpdateDialog.qml</file>
