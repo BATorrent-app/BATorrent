@@ -4,10 +4,12 @@
 
 #include "app/appservices.h"
 
+#include "app/gamecatalogseed.h"
+#include "app/mediarefresh.h"
+#include "app/vpnwiring.h"
 #include "bridges/qmlposterbridge.h"
 #include "services/discovery/addonmanager.h"
 #include "services/discovery/discoveryservice.h"
-#include "services/discovery/gamesourcemanager.h"
 #include "services/downloads/httpdownloadmanager.h"
 #include "services/downloads/httpmergeengine.h"
 #include "services/integrations/debridmanager.h"
@@ -17,7 +19,6 @@
 #include "services/platform/translator.h"
 #include "services/platform/utils.h"
 #include "services/security/blocklistupdater.h"
-#include "services/security/secretstore.h"
 #include "services/vpn/vpnmanager.h"
 #include "services/vpn/wgtunnelfactory.h"
 #include "ipc/ipcengine.h"
@@ -28,78 +29,7 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QLocale>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QNetworkRequest>
 #include <QSettings>
-#include <QTimer>
-#include <QUrl>
-
-#ifndef BAT_STORE_BUILD
-static void seedGameCatalog()
-{
-    static const int kCatalogSeedGen = 5;
-    static const char *kCatalogName = "BATorrent Games";
-    static const char *kCatalogUrl =
-        "https://gist.githubusercontent.com/Mateuscruz19/038beb9fef8681e191e3053b8a79c29b/raw/feed.json";
-    static const char *kLegacyUrl =
-        "https://raw.githubusercontent.com/Jdjsjjqq/rutracker-hydra/main/combined_torrents.json";
-    static const char *kLegacyGistGames =
-        "https://gist.githubusercontent.com/Mateuscruz19/038beb9fef8681e191e3053b8a79c29b/raw/games.json";
-    static const char *kLegacyGistBat =
-        "https://gist.githubusercontent.com/Mateuscruz19/038beb9fef8681e191e3053b8a79c29b/raw/batorrent-games.json";
-
-    QSettings gs;
-    const int gen = gs.value(QStringLiteral("gameCatalogSeedGen"), 0).toInt();
-    auto &gsm = GameSourceManager::instance();
-    if (gen < kCatalogSeedGen) {
-        gs.setValue(QStringLiteral("gameCatalogSeedGen"), kCatalogSeedGen);
-        gs.setValue(QStringLiteral("gameSourcesSeeded"), true);
-        gsm.removeSource(QString::fromUtf8(kLegacyUrl));
-        gsm.removeSource(QString::fromUtf8(kLegacyGistGames));
-        gsm.removeSource(QString::fromUtf8(kLegacyGistBat));
-        bool has = false;
-        for (const auto &s : gsm.sources())
-            if (s.second == QLatin1String(kCatalogUrl)) { has = true; break; }
-        if (!has)
-            gsm.addSource(QString::fromUtf8(kCatalogName), QString::fromUtf8(kCatalogUrl));
-    }
-}
-#endif
-
-static void wireVpn(QApplication &app, VpnManager *vpnManager, IEngine *eng)
-{
-    QObject::connect(vpnManager, &VpnManager::interfaceUp, &app, [vpnManager, eng](const QString &iface) {
-        if (!vpnManager->tunnelIsReal()) return;
-        QSettings s;
-        if (!s.contains(QStringLiteral("preVpnInterface")))
-            s.setValue(QStringLiteral("preVpnInterface"), s.value(QStringLiteral("outgoingInterface")).toString());
-        eng->applySetting(QStringLiteral("outgoingInterface"), iface);
-    });
-    QObject::connect(vpnManager, &VpnManager::interfaceDown, &app, [vpnManager, eng](bool deliberate) {
-        if (!vpnManager->tunnelIsReal()) return;
-        QSettings s;
-        if (!s.contains(QStringLiteral("preVpnInterface"))) return;
-        if (!deliberate && s.value(QStringLiteral("killSwitchEnabled"), false).toBool()) return;
-        eng->applySetting(QStringLiteral("outgoingInterface"),
-                          s.value(QStringLiteral("preVpnInterface")).toString());
-        s.remove(QStringLiteral("preVpnInterface"));
-    });
-    vpnManager->adoptRunningTunnel();
-    if (vpnManager->state() != VpnManager::State::Connected) {
-        QSettings s;
-        if (s.contains(QStringLiteral("preVpnInterface"))
-            && !s.value(QStringLiteral("killSwitchEnabled"), false).toBool()) {
-            eng->applySetting(QStringLiteral("outgoingInterface"),
-                              s.value(QStringLiteral("preVpnInterface")).toString());
-            s.remove(QStringLiteral("preVpnInterface"));
-        }
-    }
-    if (vpnManager->tunnelIsReal()
-        && QSettings().value(QStringLiteral("vpnAutoConnect"), false).toBool()) {
-        QTimer::singleShot(1500, vpnManager, &VpnManager::connectLastUsed);
-    }
-}
 
 static void applyLanguage()
 {
@@ -148,7 +78,7 @@ AppServices AppServices::create(QApplication &app)
     svc.eng = new HttpMergeEngine(baseEng, svc.httpDownloads, &app);
 
     svc.vpnManager = new VpnManager(makeWgTunnel(&app), &app);
-    wireVpn(app, svc.vpnManager, svc.eng);
+    VpnWiring::wire(&app, svc.vpnManager, svc.eng);
 
     svc.resolver = new MetadataResolver(&app);
     svc.posterModel = new QmlPosterModel(svc.eng, svc.resolver, &app);
@@ -192,7 +122,7 @@ AppServices AppServices::create(QApplication &app)
     svc.searchBridge->setDiscovery(svc.discoveryService);
 
 #ifndef BAT_STORE_BUILD
-    seedGameCatalog();
+    GameCatalogSeed::apply();
 #endif
 
     svc.logBridge = new QmlLogBridge(&app);
@@ -232,30 +162,7 @@ AppServices AppServices::create(QApplication &app)
                      telegram, &TelegramNotifier::onRssAutoDownloaded);
     svc.settingsBridge->setTelegramNotifier(telegram);
 
-    auto *mediaNam = new QNetworkAccessManager(&app);
-    QObject::connect(svc.eng, &IEngine::torrentFinished, &app, [mediaNam](const QString &, const QString &) {
-        QSettings st;
-        if (st.value("plexEnabled", false).toBool()) {
-            const QString url = st.value("plexUrl").toString();
-            const QString token = SecretStore::instance().get("plexToken");
-            if (!url.isEmpty() && !token.isEmpty()) {
-                QNetworkRequest req(QUrl(url + "/library/sections/all/refresh?X-Plex-Token=" + token));
-                req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
-                auto *r = mediaNam->get(req);
-                QObject::connect(r, &QNetworkReply::finished, r, &QNetworkReply::deleteLater);
-            }
-        }
-        if (st.value("jellyfinEnabled", false).toBool()) {
-            const QString url = st.value("jellyfinUrl").toString();
-            const QString key = SecretStore::instance().get("jellyfinApiKey");
-            if (!url.isEmpty() && !key.isEmpty()) {
-                QNetworkRequest req(QUrl(url + "/Library/Refresh?api_key=" + key));
-                req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent");
-                auto *r = mediaNam->post(req, QByteArray());
-                QObject::connect(r, &QNetworkReply::finished, r, &QNetworkReply::deleteLater);
-            }
-        }
-    });
+    MediaRefresh::install(&app, svc.eng);
 
     svc.discordBridge = new DiscordRpcBridge(svc.eng, &app);
     QObject::connect(svc.eng, &IEngine::torrentsUpdated,

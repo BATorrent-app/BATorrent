@@ -56,6 +56,9 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/boothealth.cpp
     src/app/appruntime.cpp
     src/app/appservices.cpp
+    src/app/vpnwiring.cpp
+    src/app/mediarefresh.cpp
+    src/app/gamecatalogseed.cpp
     src/app/qmlcontextwiring.cpp
     src/app/qmlboot.cpp
     src/torrent/iengine.h        # header-only QObject — listed so AUTOMOC builds its metaobject
