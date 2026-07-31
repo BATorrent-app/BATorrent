@@ -46,4 +46,9 @@ void fillAdvancedPack(libtorrent::settings_pack &pack, const AdvancedSettings &a
 // Mutates `a` when key is a known adv* setting. Returns false if unknown.
 bool patchAdvancedKey(AdvancedSettings &a, const QString &key, const QVariant &v);
 
+// File indexes whose path matches any valid regex in `patterns` (case-insensitive).
+// Invalid patterns are skipped. Empty patterns → empty result.
+std::vector<int> excludedFileIndexes(const QStringList &patterns,
+                                     const QStringList &filePaths);
+
 } // namespace SessionConfig

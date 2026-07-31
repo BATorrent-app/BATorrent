@@ -75,3 +75,16 @@ TEST_CASE("patchAdvancedKey maps known adv keys", "[sessionconfig]") {
     REQUIRE_FALSE(a.ignoreLimitsOnLAN);
     REQUIRE_FALSE(SessionConfig::patchAdvancedKey(a, QStringLiteral("advNope"), 1));
 }
+
+TEST_CASE("excludedFileIndexes matches case-insensitive regexes", "[sessionconfig]") {
+    const QStringList paths{
+        QStringLiteral("Movie/feature.mkv"),
+        QStringLiteral("Movie/sample.mkv"),
+        QStringLiteral("Movie/Subs/en.srt"),
+    };
+    const auto hit = SessionConfig::excludedFileIndexes(
+        {QStringLiteral("sample"), QStringLiteral("\\.srt$"), QStringLiteral("(")},
+        paths);
+    REQUIRE(hit == std::vector<int>({1, 2}));
+    REQUIRE(SessionConfig::excludedFileIndexes({}, paths).empty());
+}

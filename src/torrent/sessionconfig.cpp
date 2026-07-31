@@ -193,4 +193,35 @@ bool patchAdvancedKey(AdvancedSettings &a, const QString &key, const QVariant &v
     return true;
 }
 
+std::vector<int> excludedFileIndexes(const QStringList &patterns,
+                                     const QStringList &filePaths)
+{
+    std::vector<int> out;
+    if (patterns.isEmpty() || filePaths.isEmpty())
+        return out;
+
+    QList<QRegularExpression> regexes;
+    for (const QString &p : patterns) {
+        const QString trimmed = p.trimmed();
+        if (trimmed.isEmpty())
+            continue;
+        QRegularExpression re(trimmed, QRegularExpression::CaseInsensitiveOption);
+        if (re.isValid())
+            regexes.append(re);
+    }
+    if (regexes.isEmpty())
+        return out;
+
+    out.reserve(static_cast<size_t>(filePaths.size()));
+    for (int i = 0; i < filePaths.size(); ++i) {
+        for (const auto &re : regexes) {
+            if (re.match(filePaths.at(i)).hasMatch()) {
+                out.push_back(i);
+                break;
+            }
+        }
+    }
+    return out;
+}
+
 } // namespace SessionConfig

@@ -55,6 +55,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/sessionmanager.cpp
     src/torrent/sessionmanager_streaming.cpp
     src/torrent/sessionmanager_config.cpp
+    src/torrent/sessionmanager_limits.cpp
     src/torrent/sessionconfig.cpp
     src/torrent/sessionmanager_persistence.cpp
     src/torrent/sessionmanager_categories.cpp
@@ -145,6 +146,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmlsearchbridge_util.cpp
     src/bridges/qmlsearchbridge_attrs.cpp
     src/bridges/qmlsearchbridge_work.cpp
+    src/bridges/qmlsearchbridge_covers.cpp
     src/bridges/qmlsearchbridge_ranking.cpp
     src/bridges/qmlsearchbridge_getwatch.cpp
     src/bridges/qmlsearchbridge_aggregate.cpp

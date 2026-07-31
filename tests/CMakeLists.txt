@@ -30,6 +30,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_streaming.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_limits.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionconfig.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_persistence.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_categories.cpp
@@ -98,6 +99,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_util.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_attrs.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_work.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_covers.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_ranking.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_getwatch.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsearchbridge_aggregate.cpp
