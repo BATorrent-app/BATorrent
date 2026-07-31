@@ -197,7 +197,6 @@ private:
     void installDefaultProviders();
     void loadSearchProviders();
     void saveSearchProviders();
-    QList<TorrentSearchResult> parseProviderResponse(const SearchProvider &p, const QByteArray &data);
     int m_pendingCatalog = 0;
     int m_pendingStreams = 0;
     // Generation counters: every searchCatalog / getStreams call bumps the

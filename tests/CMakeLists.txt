@@ -72,6 +72,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/rssmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addonmanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/addonparse.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/addoncatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/updater.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/logger.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/audiomode.cpp
@@ -284,6 +286,7 @@ bat_add_test(test_gameinstallstate test_gameinstallstate.cpp)
 bat_add_test(test_hublogic test_hublogic.cpp)
 bat_add_test(test_tmdbparse test_tmdbparse.cpp)
 bat_add_test(test_igdbparse test_igdbparse.cpp)
+bat_add_test(test_addonparse test_addonparse.cpp)
 bat_add_test(test_sessionconfig test_sessionconfig.cpp)
 bat_add_test(test_sessionresume test_sessionresume.cpp)
 bat_add_test(test_gameexedetect test_gameexedetect.cpp)
