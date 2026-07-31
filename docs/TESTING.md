@@ -4,8 +4,9 @@ How we raise **change-without-fear** confidence to the same bar as structural Ó
 (`CLAUDE.md` soft ceilings + peels). This is the durable product plan. Sprint
 rosters and working boards live under gitignored `internal/` when needed.
 
-**Related:** [ARCHITECTURE.md](ARCHITECTURE.md) · Catch2 harness in `tests/` ·
-QML boot smoke in `.github/workflows/qml-smoke.yml`.
+**Related:** [ARCHITECTURE.md](ARCHITECTURE.md) · [CI.md](CI.md) (what must be
+green) · Catch2 harness in `tests/` · QML boot smoke in
+`.github/workflows/qml-smoke.yml`.
 
 ---
 

@@ -154,7 +154,12 @@ BatDialog {
                     GradientStop { position: 0.5; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.11) }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
-                PathRectangle { width: 520; height: 150 }
+                # PathRectangle needs Qt 6.8+; CI and current packaging use 6.7.
+                PathMove { x: 0; y: 0 }
+                PathLine { x: 520; y: 0 }
+                PathLine { x: 520; y: 150 }
+                PathLine { x: 0; y: 150 }
+                PathLine { x: 0; y: 0 }
             }
         }
 

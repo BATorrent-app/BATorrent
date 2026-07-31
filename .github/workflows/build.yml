@@ -1,5 +1,11 @@
 name: Build & Release
 
+# Required product gate (see docs/CI.md). Catch2 allowlist + Linux/Windows/macOS
+# artifacts + QML smoke. Publishes a GitHub release only on v* tags.
+#
+# PR path filter: docs-only / Actions-scanner-only bumps skip the full rebuild.
+# Touching build.yml or qml-smoke.yml still runs the gate (verifies action pins).
+
 on:
   # Tag push -> build all platforms AND publish a GitHub release.
   push:
@@ -10,9 +16,20 @@ on:
   # without cutting a real version.
   workflow_dispatch:
   # PR against main -> build all platforms so CI catches breakage before
-  # merge. No release.
+  # merge. No release. Path-filtered so Dependabot Actions bumps that only
+  # touch scanner workflows do not rebuild the world.
   pull_request:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'translations/**'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - 'scripts/**'
+      - 'third_party/**'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/qml-smoke.yml'
 
 # One run per ref. A superseded PR/dispatch run is cancelled, but a tag run is
 # never cancelled: a half-published release is worse than a redundant build.

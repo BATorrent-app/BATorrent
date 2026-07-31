@@ -1,8 +1,9 @@
-name: i18n
+name: i18n parity
 
-# Fast gate: locale key parity, duplicate keys, and i18n.t()/tr_() usage.
-# Pure Python — no Qt/build. Also runs inside build.yml (test job) and
-# qml-smoke.yml; this workflow exists so translation-only PRs fail in seconds.
+# Required fast gate (see docs/CI.md): locale key parity, duplicate keys, and
+# i18n.t()/tr_() usage. Pure Python — no Qt/build. Also runs inside build.yml
+# (test job) and qml-smoke.yml; this workflow exists so translation-only PRs
+# fail in seconds without a full rebuild.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

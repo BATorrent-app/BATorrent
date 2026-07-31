@@ -1,18 +1,13 @@
 name: QML Smoke
 
-# The one class of bug the other 11 checks can't see: QML/UI runtime errors.
-# QML type errors, broken bindings and "Column will not function" only surface
-# when the engine actually loads Main.qml — so boot the real binary offscreen
-# and fail on any QML error. The whole page tree (Downloads/Find/HUB/Settings)
-# instantiates eagerly at boot, so load errors anywhere in it are caught here.
+# Required UI gate (see docs/CI.md). Catches QML type/load errors the C++ build
+# cannot see: boot the real binary offscreen and fail on engine/QML errors.
+# Also runs Qt Quick Test (tests/qml/tst_*) for Watch/Search/library journeys.
 #
-# Also runs Qt Quick Test (tests/qml/tst_*) for Watch/Search/library journeys
-# that boot smoke alone cannot assert.
+# PR coverage: called from build.yml (do not add pull_request here — doubles every PR).
+# Push to main: path-filtered so docs/Actions-only commits skip this rebuild.
 
 on:
-  # Called by build.yml so a tag cannot ship a binary that fails to load
-  # Main.qml. PR coverage comes through that call, not from a second trigger
-  # here — running both would double every pull request.
   workflow_call:
   push:
     branches: [main]
@@ -22,6 +17,7 @@ on:
       - 'tests/qml/**'
       - 'tests/CMakeLists.txt'
       - '.github/workflows/qml-smoke.yml'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

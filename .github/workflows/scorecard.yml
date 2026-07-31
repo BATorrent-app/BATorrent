@@ -1,5 +1,8 @@
 name: Scorecard
 
+# OpenSSF Scorecard — supply-chain posture for the default branch.
+# Weekly + branch-protection events only (not every push to main).
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
@@ -8,8 +11,7 @@ on:
   branch_protection_rule:
   schedule:
     - cron: '0 6 * * 1'   # weekly, Monday 06:00 UTC
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions: read-all
 

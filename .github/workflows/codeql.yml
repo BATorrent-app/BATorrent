@@ -1,15 +1,19 @@
 name: CodeQL
 
+# Security scan of the C++ tree. Full configure+build — not a PR gate.
+# Weekly / manual / label `ci-deep`.
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  pull_request:
-    branches: [main]
   schedule:
     - cron: '0 6 * * 1'   # weekly, Monday 06:00 UTC
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [labeled]
 
 permissions:
   contents: read
@@ -17,6 +21,7 @@ permissions:
 jobs:
   analyze:
     name: Analyze (C++)
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci-deep'
     runs-on: ubuntu-22.04
     permissions:
       security-events: write

@@ -1,15 +1,19 @@
 name: OSV-Scanner
 
+# Dependency vulnerability scan. Weekly / manual / label `ci-deep` — not a PR gate.
+# Actions-only Dependabot bumps do not need this on every PR.
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  pull_request:
-    branches: [main]
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [labeled]
 
 permissions:
   contents: read
@@ -17,6 +21,7 @@ permissions:
 jobs:
   scan:
     name: OSV vulnerability scan
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci-deep'
     runs-on: ubuntu-22.04
     permissions:
       security-events: write
