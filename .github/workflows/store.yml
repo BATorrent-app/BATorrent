@@ -5,6 +5,10 @@ name: Microsoft Store (MSIX)
 # Microsoft signs it during the Store submission process.
 #
 # Trigger manually from the Actions tab when preparing a Store update.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
     inputs:

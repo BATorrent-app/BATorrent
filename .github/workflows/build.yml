@@ -14,8 +14,18 @@ on:
   pull_request:
     branches: [main]
 
+# One run per ref. A superseded PR/dispatch run is cancelled, but a tag run is
+# never cancelled: a half-published release is worse than a redundant build.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 permissions:
   contents: read
+
+# Naming: a release run says so, so the artifact-producing run is obvious in
+# the Actions list instead of repeating the commit subject.
+run-name: ${{ startsWith(github.ref, 'refs/tags/') && format('Release {0}', github.ref_name) || format('CI build ({0})', github.event_name) }}
 
 jobs:
   # Test suite (Catch2): runs the unit/security/memory tests so regressions —
@@ -685,6 +695,12 @@ jobs:
           name: macos-build
           path: BATorrent-macos-arm64.dmg
 
+  # QML/UI runtime errors are invisible to a compiler, so the release waits on
+  # the offscreen boot too. Reused from qml-smoke.yml rather than duplicated so
+  # there is one definition of the check.
+  qml-smoke:
+    uses: ./.github/workflows/qml-smoke.yml
+
   release:
     # Only publish a GitHub release when the trigger is an actual version
     # tag. Manual / PR runs build the artifacts (downloadable from the
@@ -692,9 +708,10 @@ jobs:
     #
     # CRITICAL: needs `test` too. Builds used to publish even when Catch2 was
     # red because release only waited on platform jobs — unit-test failures
-    # never blocked a tag from shipping.
+    # never blocked a tag from shipping. qml-smoke is here for the same reason:
+    # a build that compiles but fails to load Main.qml must not ship.
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, build-linux, build-windows, build-macos]
+    needs: [test, qml-smoke, build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write

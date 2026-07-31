@@ -10,20 +10,22 @@ name: QML Smoke
 # that boot smoke alone cannot assert.
 
 on:
+  # Called by build.yml so a tag cannot ship a binary that fails to load
+  # Main.qml. PR coverage comes through that call, not from a second trigger
+  # here — running both would double every pull request.
+  workflow_call:
   push:
-    branches: ['**']
+    branches: [main]
     paths:
       - 'src/**'
       - 'translations/**'
       - 'tests/qml/**'
       - 'tests/CMakeLists.txt'
       - '.github/workflows/qml-smoke.yml'
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'translations/**'
-      - 'tests/qml/**'
-      - 'tests/CMakeLists.txt'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   boot-offscreen:
