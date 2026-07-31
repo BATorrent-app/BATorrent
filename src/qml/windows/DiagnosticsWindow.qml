@@ -5,8 +5,8 @@
 // Network diagnostics snapshot. session.diagnostics() (QmlSessionBridge).
 import QtQuick
 import QtQuick.Layouts
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Window {
     id: win

@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
+import "windows"
 
 TrayPopupWindow {
     required property var host

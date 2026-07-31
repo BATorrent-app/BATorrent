@@ -128,7 +128,7 @@
 <file>../src/qml/AppWindowLifecycle.qml</file>
 <file>../src/qml/AppTour.qml</file>
 <file>../src/qml/Splash.qml</file>
-        <file>../src/qml/TrayPopupWindow.qml</file>
+        <file>../src/qml/windows/TrayPopupWindow.qml</file>
         <file>../src/qml/UpdateDialog.qml</file>
         <file>../src/qml/InputPromptDialog.qml</file>
 <file>../src/qml/BatDialog.qml</file>
@@ -155,19 +155,19 @@
     <file>../src/qml/player/PlayerShortcuts.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/CommandPalette.qml</file>
-<file>../src/qml/RssWindow.qml</file>
+<file>../src/qml/windows/RssWindow.qml</file>
 <file>../src/qml/SettingsView.qml</file>
 <file>../src/qml/SettingsRow.qml</file>
 <file>../src/qml/SettingsVpnCard.qml</file>
 <file>../src/qml/SettingsThemeControls.qml</file>
 <file>../src/qml/SettingsFieldControls.qml</file>
 <file>../src/qml/SettingsSchema.qml</file>
-<file>../src/qml/ShortcutsWindow.qml</file>
-<file>../src/qml/StatisticsWindow.qml</file>
-<file>../src/qml/RemovedHistoryWindow.qml</file>
+<file>../src/qml/windows/ShortcutsWindow.qml</file>
+<file>../src/qml/windows/StatisticsWindow.qml</file>
+<file>../src/qml/windows/RemovedHistoryWindow.qml</file>
 <file>../src/qml/InspectorDialog.qml</file>
-<file>../src/qml/LogViewerWindow.qml</file>
-<file>../src/qml/DiagnosticsWindow.qml</file>
+<file>../src/qml/windows/LogViewerWindow.qml</file>
+<file>../src/qml/windows/DiagnosticsWindow.qml</file>
 <file>../src/qml/PairingDialog.qml</file>
 <file>../src/qml/NavRail.qml</file>
 <file>../src/qml/NavRailDisk.qml</file>
@@ -202,7 +202,7 @@
 <file>../src/qml/SourcesManager.qml</file>
 <file>../src/qml/MakeRoomPanel.qml</file>
 <file>../src/qml/GetWatchOverlay.qml</file>
-<file>../src/qml/WrappedWindow.qml</file>
+<file>../src/qml/windows/WrappedWindow.qml</file>
 <file>../src/qml/HubView.qml</file>
 <file>../src/qml/HubMenus.qml</file>
 <file>../src/qml/HubFormat.qml</file>
