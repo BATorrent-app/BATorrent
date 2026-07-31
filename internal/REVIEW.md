@@ -2,10 +2,11 @@
 
 Bar: `CLAUDE.md`. Execution plan: `internal/QUALITY_PLAN.md`.
 Folder reorg (navigation only): `internal/FOLDER_REORG_PLAN.md` (WS-Reorg).
+**Sprint roadmap (S4–S7 + Ótimo gate):** `internal/SPRINT_ROADMAP.md`.
 Update this file when a workstream lands or LOC materially changes.
 
 **Snapshot date:** 2026-07-31  
-**Branch vs origin/main:** ~25 commits ahead (engine/bridge/Main/discovery peels already shipped).
+**Branch vs origin/main:** ~37 ahead (engine/bridge/Main/discovery peels shipped; S3 F2 Search/Nav WIP).
 
 ## Gate status
 
@@ -30,9 +31,11 @@ Update this file when a workstream lands or LOC materially changes.
 | `torrent/sessionmanager.h` | 685 | — | — | ☑ accept | Declarations only; W5 decision: leave |
 | `bridges/qmlsettingsbridge.cpp` | 672 | 1–2 | D | ☐ | get/set + backup/proxy/pairing fat |
 | `webui/webserver.cpp` | 660 | 2 | Web | ☐ | Optional if quiet in Sentry |
-| `qml/SearchView.qml` | 644 | 1–2 | F | ◐ | Many Search* leaves; `computeView` still heavy |
+| `qml/SearchView.qml` | 279 | 1–2 | F | ☑ | 644→279; Format/Compute/Recents/WorkHeader/Footer/FitDialog leaves; host aliases |
 | `qml/Main.qml` | 641 | — | — | ◐ | Composition root; App* peels done; don't grow |
-| `qml/NavRail.qml` | 610 | 1–2 | F | ☐ | buildItems + carousel |
+| `qml/NavRail.qml` | 443 | 1–2 | F | ◐ | 610→443; Disk + DownloadSlot peeled; VPN/settings/collapse still inline; AppTour ids intact |
+| `qml/NavBar.qml` | 274 | 1–2 | F | ☑ | 512→274; DownloadChip + DiskGauge + VpnChip leaves |
+| `widgets/PosterTile.qml` | 528 | 1–2 | F | ☐ | S4 target; stays under widgets/ |
 | `bridges/session/qmlsessionbridge.h` | 474 | 1–2 | D | ◐ | API surface; shrink only by moving logic to services; peels live under `bridges/session/` + `bridges/search/` |
 | `torrent/sessionmanager_lifecycle.cpp` | 450 | 1 | C | ☑ | SessionResume trash/history helpers + Catch2 |
 | `torrent/sessionmanager_persistence.cpp` | 442 | 1 | C | ☑ | SessionResume suffix/corrupt/legacy + Catch2 |
@@ -49,22 +52,19 @@ Update this file when a workstream lands or LOC materially changes.
 - Main App* extracts (Tray, Notifications, Overlays, Tour, Lifecycle, Menus, LibraryController…)
 - DebridPick + passwordhash PBKDF2 tests
 
-## Sprint 1 roster (parallel — disjoint files)
+## Active / next roster
 
-| Agent | WS | Owns | Forbidden |
-|-------|----|------|-----------|
-| A Player | A | PlayerWindow + new Player* leaves + coordinated qrc | Main, bridges, torrent, discovery |
-| B Addon | B | addonmanager, discovery parse, new AddonParse/Catalog, tests | qml, bridges, torrent, main |
-| C Session | C | persistence/lifecycle/alerts + characterization tests | qml, bridges, discovery, main |
-
-**Do not start** D Bridges / E Boot / F Fat UI until sprint 1 merges (CMake/qrc conflict risk).
+Sprint 1–3 Fat UI Settings+Search+NavBar **done**; NavRail 443 (soft overhang —
+VPN/settings/collapse still inline). **Next launch (S4):** see
+`internal/SPRINT_ROADMAP.md` — Hub/PosterTile + `qml/player/` reorg (+ optional i18n CI).
 
 ## Open decisions (carry forward)
 
 - `engineMode=ipc` default stays OFF until Sentry justifies
 - Main selection JS stays QML (W5) unless a bug demands a C++ net
 - `sessionmanager.h` size accepted (partial-class strategy)
-- qml/ folder reorg → see `internal/FOLDER_REORG_PLAN.md` (after Fat UI/qrc settles; Phase 0 bridges first)
+- qml/ folder reorg → see `internal/FOLDER_REORG_PLAN.md` + sprint timing in
+  `internal/SPRINT_ROADMAP.md` (Phase 0 bridges Done; Phase 1 `player/` = S4 after F2)
 - Updater: no crypto verify on installer (needs release-pipeline hashes)
 - secretstore plaintext fallback without QtKeychain (source builds only)
 - ctest post-pass segfault = harness quirk; CI runs binaries directly
@@ -89,13 +89,31 @@ Update this file when a workstream lands or LOC materially changes.
 
 ## Per-sprint log
 
+### 2026-07-31 — Sprint 3 / WS-F SearchView + Nav peel (F2)
+
+- SearchView 644→279: `SearchFormat`, `SearchCompute`, `SearchRecents`,
+  `SearchWorkHeader`, `SearchResultsFooter`, `SearchFitDialog` (HubFormat-style
+  aliases; filter state stays on host; AppTour untouched)
+- NavBar 512→274: `NavBarDownloadChip`, `NavBarDiskGauge`, `NavBarVpnChip`
+- NavRail 610→443: `NavRailDisk`, `NavRailDownloadSlot`; `settingsItem` /
+  `navRepeater` / `itemRect` kept for AppTour
+- Build + `BAT_QML_STRICT=warn` + `BAT_SMOKE_EXIT_ON_FRAME`: first frame healthy
+- Remaining Fat UI: HubView 704, PosterTile 528, NavRail 443 (optional further peel)
+
+### 2026-07-31 — Sprint roadmap (S4–S7 planned)
+
+- Wrote `internal/SPRINT_ROADMAP.md`: S3 end conditions (Search+Nav vs Search-only),
+  S4 Hub/Poster + `qml/player/`, S5 reorg slices + settings/i18n, S6 AppServices +
+  discovery + comments, optional S7, Ótimo → function-by-function learning gate
+- Phase 0 bridges CMake paths confirmed Done; F2 qml/qrc settled
+
 ### 2026-07-31 — Sprint 3 / WS-F SettingsRow peel
 
 - Peeled `SettingsVpnCard`, `SettingsThemeControls`, `SettingsFieldControls` from
   SettingsRow (family files, not type maps); host props (`field: rowRoot.field`)
 - SettingsRow 791→153; leaves 194 / 197 / 299 — all ≤ soft ceiling
 - Build + `BAT_QML_STRICT=warn` + `BAT_SMOKE_EXIT_ON_FRAME`: first frame healthy
-- Remaining Fat UI: SearchView 644, NavRail 610, NavBar 512, HubView 704, PosterTile 528
+- Remaining Fat UI: SearchView/Nav done (F2); HubView 704, PosterTile 528 → S4
 
 ### 2026-07-31 — Sprint 3 / Meta MetadataMatch
 
@@ -156,9 +174,9 @@ Update this file when a workstream lands or LOC materially changes.
 - `git mv` peels into `src/bridges/session/` (`qmlsessionbridge*`) and
   `src/bridges/search/` (`qmlsearchbridge*` + util); other bridges stay at root
 - Includes → root-relative `bridges/session/...` / `bridges/search/...`; no behaviour change
-- **Phase 0 status:** trees + includes largely landed; confirm CMake/`tests/CMakeLists.txt`
-  paths and no leftover root symlinks before calling Done (see FOLDER_REORG_PLAN)
-- Remaining debt: `qmlsettingsbridge.cpp` 672; session header API surface
+- **Phase 0 status: Done** — CMake + tests CMake list `bridges/session|search/...`; no
+  root session/search stubs
+- Remaining debt: `qmlsettingsbridge.cpp` 672 (S5); session header API surface
 
 ### 2026-07-31 — Folder reorg plan (WS-Reorg)
 
