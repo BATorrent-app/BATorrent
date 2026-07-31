@@ -1,0 +1,32 @@
+name: i18n
+
+# Fast gate: locale key parity, duplicate keys, and i18n.t()/tr_() usage.
+# Pure Python — no Qt/build. Also runs inside build.yml (test job) and
+# qml-smoke.yml; this workflow exists so translation-only PRs fail in seconds.
+
+on:
+  push:
+    paths:
+      - 'translations/**'
+      - 'scripts/check-i18n-parity.py'
+      - '.github/workflows/i18n.yml'
+      - 'src/**/*.qml'
+      - 'src/**/*.cpp'
+      - 'src/**/*.h'
+  pull_request:
+    paths:
+      - 'translations/**'
+      - 'scripts/check-i18n-parity.py'
+      - '.github/workflows/i18n.yml'
+      - 'src/**/*.qml'
+      - 'src/**/*.cpp'
+      - 'src/**/*.h'
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: i18n parity + duplicates + key usage
+        run: python3 scripts/check-i18n-parity.py

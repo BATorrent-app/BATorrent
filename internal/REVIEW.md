@@ -48,15 +48,15 @@ Update this file when a workstream lands or LOC materially changes.
 - Session bridge multi-TU under `bridges/session/`; search bridge multi-TU under `bridges/search/`
 - Poster bridge one-per-class `.h`/`.cpp` + umbrella `qmlposterbridge.h` (dump gone)
 - TmdbParse / IgdbParse / HubLogic / SessionConfig / SessionResume / AddonParse / AddonCatalog / MetadataMatch + Catch2
-- i18n: **1244 keys × 9 locales** (de/en/es/ja/pt/ru/tr/uk/zh) — parity OK; need CI lock
+- i18n: **1244 keys × 9 locales** (de/en/es/ja/pt/ru/tr/uk/zh) — parity OK; CI locked (`python3 scripts/check-i18n-parity.py`; workflow `i18n.yml` + build/qml-smoke)
 - Main App* extracts (Tray, Notifications, Overlays, Tour, Lifecycle, Menus, LibraryController…)
 - DebridPick + passwordhash PBKDF2 tests
 
 ## Active / next roster
 
 Sprint 1–3 Fat UI Settings+Search+NavBar **done**; NavRail 443 (soft overhang —
-VPN/settings/collapse still inline). **Next launch (S4):** see
-`internal/SPRINT_ROADMAP.md` — Hub/PosterTile + `qml/player/` reorg (+ optional i18n CI).
+VPN/settings/collapse still inline). **S4:** Hub/PosterTile + `qml/player/` reorg;
+i18n CI locked (WS-G).
 
 ## Open decisions (carry forward)
 
@@ -82,12 +82,20 @@ VPN/settings/collapse still inline). **Next launch (S4):** see
 
 - [ ] Soft ceilings mostly met (documented exceptions only)
 - [ ] Bridges = glue; logic in services/torrent + tests
-- [ ] i18n CI on PRs
+- [x] i18n CI on PRs (`scripts/check-i18n-parity.py` — parity, dup keys, `i18n.t`/`tr_` usage)
 - [x] main bootstrap composed
 - [ ] Fat UI (Settings/Search/Nav/Hub) within bar
 - [ ] Confidence: change engine/UI without fear
 
 ## Per-sprint log
+
+### 2026-07-31 — Sprint 4 / WS-G i18n CI
+
+- Hardened `scripts/check-i18n-parity.py`: same-key parity across 9 locales,
+  duplicate-key detection (JSON last-wins), optional `i18n.t()`/`tr_()` usage
+- Lightweight `.github/workflows/i18n.yml` (Python-only); also in build.yml +
+  qml-smoke.yml
+- Run locally: `python3 scripts/check-i18n-parity.py`
 
 ### 2026-07-31 — Sprint 3 / WS-F SearchView + Nav peel (F2)
 
