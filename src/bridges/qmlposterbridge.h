@@ -8,10 +8,10 @@
 // Umbrella: bridge classes now live one-per-file; keeps the old include path working.
 
 #include "bridges/qmlpostermodel.h"
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "bridges/qmlthemebridge.h"
 #include "bridges/qmlrssbridge.h"
-#include "bridges/qmlsearchbridge.h"
+#include "bridges/search/qmlsearchbridge.h"
 #include "bridges/qmladdonbridge.h"
 #include "bridges/qmlpairingbridge.h"
 #include "bridges/qmlsubtitlebridge.h"

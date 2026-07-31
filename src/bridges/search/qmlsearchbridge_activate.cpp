@@ -4,8 +4,8 @@
 //
 // QmlSearchBridge — activateResult / back / catalog+episode row rebuild.
 
-#include "bridges/qmlsearchbridge.h"
-#include "bridges/qmlsearchbridge_util.h"
+#include "bridges/search/qmlsearchbridge.h"
+#include "bridges/search/qmlsearchbridge_util.h"
 #include "torrent/iengine.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/addonmanager.h"

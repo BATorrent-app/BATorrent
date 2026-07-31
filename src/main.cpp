@@ -22,7 +22,7 @@
 #include "app/qmlboot.h"
 #include "app/qmlcontextwiring.h"
 #include "app/singleinstance.h"
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "bridges/qmlupdaterbridge.h"
 #include "services/platform/logger.h"
 #include "services/security/crashhandler.h"

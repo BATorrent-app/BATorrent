@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — selected torrent detail panels (peers/files/trackers/pieces).
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/integrations/geoip.h"
 #include "services/platform/utils.h"

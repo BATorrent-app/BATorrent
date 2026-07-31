@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-#include "bridges/qmlsearchbridge_util.h"
+#include "bridges/search/qmlsearchbridge_util.h"
 
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/error_code.hpp>

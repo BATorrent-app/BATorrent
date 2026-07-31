@@ -6,7 +6,7 @@
 #define BATORRENT_APPSERVICES_H
 
 // Complete types: main/callers invoke methods on session + updater pointers.
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "bridges/qmlupdaterbridge.h"
 
 class QApplication;

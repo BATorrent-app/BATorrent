@@ -148,35 +148,35 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/discovery/igdbparse.cpp
     src/services/discovery/gamesourcemanager.cpp
     src/bridges/qmlpostermodel.cpp
-    src/bridges/qmlsessionbridge.cpp
-    src/bridges/qmlsessionbridge_add.cpp
-    src/bridges/qmlsessionbridge_details.cpp
-    src/bridges/qmlsessionbridge_create.cpp
-    src/bridges/qmlsessionbridge_games.cpp
-    src/bridges/qmlsessionbridge_gameinstall.cpp
-    src/bridges/qmlsessionbridge_library.cpp
-    src/bridges/qmlsessionbridge_playback.cpp
-    src/bridges/qmlsessionbridge_subtitles.cpp
-    src/bridges/qmlsessionbridge_watch.cpp
-    src/bridges/qmlsessionbridge_selection.cpp
-    src/bridges/qmlsessionbridge_disk.cpp
-    src/bridges/qmlsessionbridge_transfers.cpp
-    src/bridges/qmlsessionbridge_actions.cpp
-    src/bridges/qmlsessionbridge_diagnose.cpp
-    src/bridges/qmlsessionbridge_queue.cpp
-    src/bridges/qmlsessionbridge_clipboard.cpp
-    src/bridges/qmlsessionbridge_stats.cpp
+    src/bridges/session/qmlsessionbridge.cpp
+    src/bridges/session/qmlsessionbridge_add.cpp
+    src/bridges/session/qmlsessionbridge_details.cpp
+    src/bridges/session/qmlsessionbridge_create.cpp
+    src/bridges/session/qmlsessionbridge_games.cpp
+    src/bridges/session/qmlsessionbridge_gameinstall.cpp
+    src/bridges/session/qmlsessionbridge_library.cpp
+    src/bridges/session/qmlsessionbridge_playback.cpp
+    src/bridges/session/qmlsessionbridge_subtitles.cpp
+    src/bridges/session/qmlsessionbridge_watch.cpp
+    src/bridges/session/qmlsessionbridge_selection.cpp
+    src/bridges/session/qmlsessionbridge_disk.cpp
+    src/bridges/session/qmlsessionbridge_transfers.cpp
+    src/bridges/session/qmlsessionbridge_actions.cpp
+    src/bridges/session/qmlsessionbridge_diagnose.cpp
+    src/bridges/session/qmlsessionbridge_queue.cpp
+    src/bridges/session/qmlsessionbridge_clipboard.cpp
+    src/bridges/session/qmlsessionbridge_stats.cpp
     src/bridges/qmlthemebridge.cpp
-    src/bridges/qmlsearchbridge.cpp
-    src/bridges/qmlsearchbridge_util.cpp
-    src/bridges/qmlsearchbridge_attrs.cpp
-    src/bridges/qmlsearchbridge_work.cpp
-    src/bridges/qmlsearchbridge_covers.cpp
-    src/bridges/qmlsearchbridge_activate.cpp
-    src/bridges/qmlsearchbridge_ranking.cpp
-    src/bridges/qmlsearchbridge_getwatch.cpp
-    src/bridges/qmlsearchbridge_aggregate.cpp
-    src/bridges/qmlsearchbridge_games.cpp
+    src/bridges/search/qmlsearchbridge.cpp
+    src/bridges/search/qmlsearchbridge_util.cpp
+    src/bridges/search/qmlsearchbridge_attrs.cpp
+    src/bridges/search/qmlsearchbridge_work.cpp
+    src/bridges/search/qmlsearchbridge_covers.cpp
+    src/bridges/search/qmlsearchbridge_activate.cpp
+    src/bridges/search/qmlsearchbridge_ranking.cpp
+    src/bridges/search/qmlsearchbridge_getwatch.cpp
+    src/bridges/search/qmlsearchbridge_aggregate.cpp
+    src/bridges/search/qmlsearchbridge_games.cpp
     src/bridges/qmlsettingsbridge.cpp
     src/bridges/qmlrssbridge.cpp
     src/bridges/qmladdonbridge.cpp

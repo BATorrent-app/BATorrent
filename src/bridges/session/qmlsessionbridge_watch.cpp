@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — watch-when-ready buffering gate for Get & Watch.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 
 void QmlSessionBridge::watchWhenReady(const QString &infoHash, const QString &title)

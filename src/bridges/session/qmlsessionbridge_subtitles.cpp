@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — sidecar / file subtitle loading for the player.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/subtitles/subtitleparser.h"
 #include "services/platform/utils.h"

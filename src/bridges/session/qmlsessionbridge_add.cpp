@@ -4,7 +4,7 @@
 //
 // QmlSessionBridge — add torrent/magnet/http + preview.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/downloads/httpdownloadmanager.h"

@@ -4,7 +4,7 @@
 //
 // QmlSearchBridge — poster/cover resolution against MetadataResolver.
 
-#include "bridges/qmlsearchbridge.h"
+#include "bridges/search/qmlsearchbridge.h"
 #include "services/metadata/metadataresolver.h"
 
 void QmlSearchBridge::setResolver(MetadataResolver *r)

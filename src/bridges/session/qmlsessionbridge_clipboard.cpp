@@ -5,7 +5,7 @@
 // QmlSessionBridge — clipboard / smart-paste helpers. Split out of
 // qmlsessionbridge.cpp verbatim; no behaviour change.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
 #include "services/platform/translator.h"
 

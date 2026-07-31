@@ -8,7 +8,7 @@
 // plus the selected-game QML actions. Split out of qmlsessionbridge.cpp
 // verbatim; no behaviour change.
 
-#include "bridges/qmlsessionbridge.h"
+#include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"   // full IEngine + TorrentInfo (m_session calls)
 #include "services/integrations/gameinstall.h"
 #include "services/integrations/gameexedetect.h"
