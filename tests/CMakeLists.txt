@@ -135,6 +135,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/metadata/metadataresolver.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/metadatamatch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryassemble.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/discoverysearch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/hublogic.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/tmdbparse.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/igdbparse.cpp
@@ -290,6 +292,8 @@ bat_add_test(test_hublogic test_hublogic.cpp)
 bat_add_test(test_tmdbparse test_tmdbparse.cpp)
 bat_add_test(test_igdbparse test_igdbparse.cpp)
 bat_add_test(test_addonparse test_addonparse.cpp)
+bat_add_test(test_discoverysearch test_discoverysearch.cpp)
+bat_add_test(test_discoveryassemble test_discoveryassemble.cpp)
 bat_add_test(test_sessionconfig test_sessionconfig.cpp)
 bat_add_test(test_sessionresume test_sessionresume.cpp)
 bat_add_test(test_metadatamatch test_metadatamatch.cpp)

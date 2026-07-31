@@ -3,43 +3,29 @@
 // See LICENSE file for details
 
 #include "services/discovery/discoveryservice.h"
+#include "services/discovery/discoveryassemble.h"
+#include "services/discovery/discoverysearch.h"
 #include "services/discovery/hublogic.h"
 #include "services/discovery/igdbparse.h"
 #include "services/discovery/tmdbparse.h"
 #include "services/platform/contentlanguage.h"
 
-#include <QDir>
-#include <QFile>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonValue>
-#include <QLocale>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QNetworkRequest>
-#include <QSettings>
-#include <QStandardPaths>
-#include <QUrlQuery>
-
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QPair>
+#include <QSet>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
 #include <QUrlQuery>
-#include <QHash>
-#include <QSet>
-#include <QLocale>
-#include <QPair>
-#include <algorithm>
 
 namespace {
 
@@ -80,7 +66,6 @@ QString cacheFile()
            + QStringLiteral("/discover/discover.json");
 }
 
-// The user's country (ISO 3166), for country-relative TMDB rows.
 QString discoverRegion()
 {
     return ContentLanguage::region();
@@ -189,7 +174,6 @@ void DiscoveryService::refresh()
         shelf(11, QStringLiteral("/movie/popular"),  tr_("discover_popular_movies"),  QStringLiteral("movie"),  regionOnly);
         shelf(12, QStringLiteral("/discover/tv"),    tr_("discover_trending_series"), QStringLiteral("series"), regionDiscover);
         shelf(13, QStringLiteral("/tv/popular"),     tr_("discover_popular_series"),  QStringLiteral("series"), {});
-        // genre shelves (popular within a genre, region-aware)
         auto genre = [regionDiscover](int id) {
             QList<QPair<QString, QString>> e = regionDiscover;
             e.append({ QStringLiteral("with_genres"), QString::number(id) });
@@ -265,39 +249,10 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
         QNetworkReply *reply = m_nam->post(req, body);
         connect(reply, &QNetworkReply::finished, this, [this, reply]() {
             reply->deleteLater();
-            if (reply->error() == QNetworkReply::NoError) {
-                const QJsonArray arr = QJsonDocument::fromJson(reply->readAll()).array();
-                for (const QJsonValue &v : arr) {
-                    const QJsonObject o = v.toObject();
-                    const QString imageId = o.value(QLatin1String("cover")).toObject()
-                                                .value(QLatin1String("image_id")).toString();
-                    if (imageId.isEmpty()) continue;
-                    const QString name = o.value(QLatin1String("name")).toString();
-                    if (name.isEmpty()) continue;
-                    const qint64 rel = qint64(o.value(QLatin1String("first_release_date")).toDouble());
-                    QVariantMap m;
-                    m.insert(QStringLiteral("title"), name);
-                    m.insert(QStringLiteral("poster"),
-                             QStringLiteral("https://images.igdb.com/igdb/image/upload/t_cover_big/%1.jpg").arg(imageId));
-                    m.insert(QStringLiteral("year"), rel > 0
-                             ? QString::number(QDateTime::fromSecsSinceEpoch(rel).date().year()) : QString());
-                    m.insert(QStringLiteral("rating"), o.value(QLatin1String("total_rating")).toDouble() / 10.0);
-                    m.insert(QStringLiteral("overview"), o.value(QLatin1String("summary")).toString());
-                    m.insert(QStringLiteral("type"), QStringLiteral("game"));
-                    QStringList stills;
-                    const QJsonArray shots = o.value(QLatin1String("screenshots")).toArray();
-                    for (const QJsonValue &sv : shots) {
-                        const QString sid = sv.toObject().value(QLatin1String("image_id")).toString();
-                        if (!sid.isEmpty())
-                            stills << QStringLiteral("https://images.igdb.com/igdb/image/upload/t_screenshot_huge/%1.jpg").arg(sid);
-                        if (stills.size() >= 10) break;
-                    }
-                    m.insert(QStringLiteral("stills"), stills);
-                    m_searchWorks.append(m);
-                }
-            } else {
+            if (reply->error() == QNetworkReply::NoError)
+                m_searchWorks += IgdbParse::titleSearchRows(reply->readAll());
+            else
                 qDebug() << "[search] IGDB title search error:" << reply->errorString();
-            }
             maybeFinishSearch();
         });
     });
@@ -306,55 +261,7 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
 void DiscoveryService::maybeFinishSearch()
 {
     if (--m_searchPending > 0) return;
-
-    const QString ql = m_searchQuery.toLower();
-    auto score = [&ql](const QVariant &v) {
-        const QString t = v.toMap().value(QStringLiteral("title")).toString().toLower();
-        if (t == ql) return 0;
-        if (t.startsWith(ql)) return 1;
-        if (t.contains(ql)) return 2;
-        return 3;
-    };
-    auto byScore = [&score](const QVariant &a, const QVariant &b) { return score(a) < score(b); };
-
-    // Split by kind, relevance-sort each, then interleave so movies and games
-    // mix from the top instead of "all movies, then all games".
-    QVariantList vids, games;
-    for (const QVariant &v : std::as_const(m_searchWorks)) {
-        if (v.toMap().value(QStringLiteral("type")).toString() == QLatin1String("game")) games.append(v);
-        else vids.append(v);
-    }
-    std::stable_sort(vids.begin(), vids.end(), byScore);
-    std::stable_sort(games.begin(), games.end(), byScore);
-
-    // Merge by (name-match score, rating): when the game and the series share the
-    // exact name ("Game of Thrones", "The Witcher") the better-rated work leads
-    // the grid and the hero — a blind game-first tiebreak sent GoT to the game.
-    auto rating = [](const QVariant &v) { return v.toMap().value(QStringLiteral("rating")).toDouble(); };
-    QVariantList merged;
-    int gi = 0, vi = 0;
-    while (gi < games.size() || vi < vids.size()) {
-        if (vi >= vids.size()) { merged.append(games[gi++]); continue; }
-        if (gi >= games.size()) { merged.append(vids[vi++]); continue; }
-        const int sg = score(games[gi]), sv = score(vids[vi]);
-        if (sg < sv || (sg == sv && rating(games[gi]) >= rating(vids[vi])))
-            merged.append(games[gi++]);
-        else
-            merged.append(vids[vi++]);
-    }
-
-    QVariantList out;
-    QSet<QString> seen;
-    for (const QVariant &v : std::as_const(merged)) {
-        const QVariantMap m = v.toMap();
-        const QString key = m.value(QStringLiteral("title")).toString().toLower() + QLatin1Char('|')
-                          + m.value(QStringLiteral("year")).toString() + QLatin1Char('|')
-                          + m.value(QStringLiteral("type")).toString();
-        if (seen.contains(key)) continue;
-        seen.insert(key);
-        out.append(v);
-    }
-    emit titleResults(m_searchQuery, out);
+    emit titleResults(m_searchQuery, DiscoverySearch::rankAndMerge(m_searchQuery, m_searchWorks));
 }
 
 bool DiscoveryService::hasMetadataKeys() const
@@ -509,14 +416,8 @@ void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &
         // Merge-append: a shelf is fetched across multiple pages, all sharing
         // one `order`. Dedup by poster URL so a page overlap can't double a title.
         QVariantMap row = m_accum.value(order);
-        QVariantList merged = row.value(QStringLiteral("items")).toList();
-        QSet<QString> seen;
-        for (const QVariant &v : std::as_const(merged))
-            seen.insert(v.toMap().value(QStringLiteral("poster")).toString());
-        for (const QVariant &v : std::as_const(items)) {
-            const QString key = v.toMap().value(QStringLiteral("poster")).toString();
-            if (!seen.contains(key)) { merged.append(v); seen.insert(key); }
-        }
+        const QVariantList merged = DiscoveryAssemble::mergeShelfByPoster(
+            row.value(QStringLiteral("items")).toList(), items);
         row.insert(QStringLiteral("label"), label);
         row.insert(QStringLiteral("items"), merged);
         if (!merged.isEmpty()) m_accum.insert(order, row);
@@ -581,19 +482,9 @@ void DiscoveryService::fetchIgdbTrending(int order, const QString &label)
         QNetworkReply *reply = m_nam->post(req, QByteArray("fields id,name; limit 50;"));
         connect(reply, &QNetworkReply::finished, this, [this, reply, order, label]() {
             reply->deleteLater();
-            int sellers = 0, want = 0, playing = 0;
-            if (reply->error() == QNetworkReply::NoError) {
-                const QJsonArray arr = QJsonDocument::fromJson(reply->readAll()).array();
-                for (const QJsonValue &v : arr) {
-                    const QJsonObject o = v.toObject();
-                    const QString name = o.value(QLatin1String("name")).toString().toLower();
-                    const int id = o.value(QLatin1String("id")).toInt();
-                    if (name.contains(QLatin1String("top seller"))) sellers = id;
-                    else if (name.contains(QLatin1String("want to play"))) want = id;
-                    else if (name.contains(QLatin1String("playing"))) playing = id;
-                }
-            }
-            m_hypeTypeId = sellers ? sellers : (want ? want : (playing ? playing : 9));   // 9 = Global Top Sellers
+            const QByteArray body = (reply->error() == QNetworkReply::NoError)
+                ? reply->readAll() : QByteArray{};
+            m_hypeTypeId = IgdbParse::pickHypeTypeId(body);
             fetchIgdbHypeIds(order, label);
         });
     });
@@ -612,15 +503,10 @@ void DiscoveryService::fetchIgdbHypeIds(int order, const QString &label)
     connect(reply, &QNetworkReply::finished, this, [this, reply, order, label]() {
         reply->deleteLater();
         QList<qint64> ids;
-        if (reply->error() == QNetworkReply::NoError) {
-            const QJsonArray arr = QJsonDocument::fromJson(reply->readAll()).array();
-            for (const QJsonValue &v : arr) {
-                const qint64 gid = qint64(v.toObject().value(QLatin1String("game_id")).toDouble());
-                if (gid > 0 && !ids.contains(gid)) ids.append(gid);
-            }
-        } else {
+        if (reply->error() == QNetworkReply::NoError)
+            ids = IgdbParse::orderedGameIds(reply->readAll());
+        else
             qDebug() << "[discover] IGDB popularity error:" << reply->errorString();
-        }
         if (ids.isEmpty()) { maybeFinish(); return; }
         fetchIgdbGamesByIds(order, label, ids);
     });
@@ -648,13 +534,8 @@ void DiscoveryService::fetchIgdbGamesByIds(int order, const QString &label, cons
         reply->deleteLater();
         QVariantList items;
         if (reply->error() == QNetworkReply::NoError) {
-            QList<QJsonObject> objs = IgdbParse::objectsFromArray(QJsonDocument::fromJson(reply->readAll()).array());
-            QHash<qint64, int> rank;                       // id → popularity position
-            for (int i = 0; i < ids.size(); ++i) rank.insert(ids[i], i);
-            std::sort(objs.begin(), objs.end(), [&rank](const QJsonObject &a, const QJsonObject &b) {
-                return rank.value(qint64(a.value(QLatin1String("id")).toDouble()), 99999)
-                     < rank.value(qint64(b.value(QLatin1String("id")).toDouble()), 99999);
-            });
+            const auto objs = IgdbParse::sortObjectsByIdRank(
+                IgdbParse::objectsFromJson(reply->readAll()), ids);
             items = IgdbParse::gameCards(objs, 24);
         } else {
             qDebug() << "[discover] IGDB games-by-id error:" << reply->errorString();
@@ -740,58 +621,8 @@ void DiscoveryService::maybeFinish()
 
 void DiscoveryService::assembleAndEmit()
 {
-    m_rows.clear();
-    // De-dup across rows: a title in Trending shouldn't repeat in Popular, etc.
-    // Keep the first occurrence (rows are in priority order).
-    QSet<QString> seenTitles;
-    // Stable canonical genre key per genre-shelf (by fetch order) — lets the HUB
-    // match the user's taste to a shelf without depending on the translated label.
-    static const QHash<int, QString> orderGenre = {
-        {3, QStringLiteral("rpg")},      {4, QStringLiteral("shooter")},
-        {5, QStringLiteral("strategy")}, {6, QStringLiteral("indie")},
-        {14, QStringLiteral("action")},  {15, QStringLiteral("scifi")},
-        {16, QStringLiteral("horror")}
-    };
-    for (auto it = m_accum.constBegin(); it != m_accum.constEnd(); ++it) {
-        QVariantMap row = it.value();
-        row[QStringLiteral("genre")] = orderGenre.value(it.key());
-        QVariantList kept;
-        for (const QVariant &v : row.value(QStringLiteral("items")).toList()) {
-            const QVariantMap m = v.toMap();
-            const QString key = m.value(QStringLiteral("title")).toString().toLower()
-                              + QLatin1Char('|') + m.value(QStringLiteral("type")).toString();
-            if (seenTitles.contains(key)) continue;
-            seenTitles.insert(key);
-            kept.append(v);
-        }
-        if (!kept.isEmpty()) { row[QStringLiteral("items")] = kept; m_rows.append(row); }
-    }
-
-    // hero: round-robin one item per row per pass, so the banner mixes movies,
-    // games and series (not 6 movies). Needs a backdrop + overview.
-    m_hero.clear();
-    QStringList seen;
-    QList<QVariantList> rowItems;
-    int maxItems = 0;
-    for (auto it = m_accum.constBegin(); it != m_accum.constEnd(); ++it) {
-        const QVariantList items = it.value().value(QStringLiteral("items")).toList();
-        rowItems.append(items);
-        maxItems = qMax(maxItems, int(items.size()));
-    }
-    for (int col = 0; col < maxItems && m_hero.size() < 6; ++col) {
-        for (const QVariantList &items : rowItems) {
-            if (m_hero.size() >= 6) break;
-            if (col >= items.size()) continue;
-            const QVariantMap m = items[col].toMap();
-            if (m.value(QStringLiteral("backdrop")).toString().isEmpty()
-                || m.value(QStringLiteral("overview")).toString().isEmpty()) continue;
-            const QString title = m.value(QStringLiteral("title")).toString();
-            if (seen.contains(title)) continue;
-            seen.append(title);
-            m_hero.append(m);
-        }
-    }
-
+    m_rows = DiscoveryAssemble::rowsFromAccum(m_accum);
+    m_hero = DiscoveryAssemble::heroFromAccum(m_accum);
     emit rowsChanged();
     emit heroChanged();
 }

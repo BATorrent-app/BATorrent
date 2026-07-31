@@ -26,4 +26,17 @@ QList<QJsonObject> objectsFromJson(const QByteArray &jsonArray);
 QVariantList gameCards(const QList<QJsonObject> &objs, int cap);
 QVariantList gameCardsFromJson(const QByteArray &jsonArray, int cap);
 
+// /games search → title-search cards (cover + stills, total_rating /10).
+QVariantList titleSearchRows(const QByteArray &jsonArray);
+
+// popularity_types: prefer Global Top Sellers → Want to Play → Playing → fallback.
+int pickHypeTypeId(const QByteArray &popularityTypesJson, int fallback = 9);
+
+// popularity_primitives → ordered unique game_id list (value desc already in payload).
+QList<qint64> orderedGameIds(const QByteArray &primitivesJson);
+
+// Re-sort game objects into the popularity id order (unknown ids last).
+QList<QJsonObject> sortObjectsByIdRank(const QList<QJsonObject> &objs,
+                                       const QList<qint64> &rankedIds);
+
 } // namespace IgdbParse
