@@ -140,6 +140,43 @@ bool shouldScheduleFileRemoval(bool deleteFiles, const QStringList &trashTargets
     return deleteFiles && !trashTargets.isEmpty();
 }
 
+RemovalDisposition removalDisposition(bool deleteFiles,
+                                      bool permanent,
+                                      const QStringList &trashTargets)
+{
+    if (!shouldScheduleFileRemoval(deleteFiles, trashTargets))
+        return RemovalDisposition::Keep;
+    return permanent ? RemovalDisposition::PermanentDelete
+                     : RemovalDisposition::Trash;
+}
+
+QStringList existingRemovalTargets(const QStringList &targets)
+{
+    QStringList out;
+    out.reserve(targets.size());
+    for (const QString &p : targets) {
+        if (QFileInfo::exists(p))
+            out.append(p);
+    }
+    return out;
+}
+
+bool downloadedPayloadThisSession(std::int64_t totalPayloadDownload)
+{
+    return totalPayloadDownload > 0;
+}
+
+QString finishMoveDestination(const QString &intendedPathOrEmpty,
+                              bool autoMoveEnabled,
+                              const QString &autoMovePath)
+{
+    if (!intendedPathOrEmpty.isEmpty())
+        return intendedPathOrEmpty;
+    if (autoMoveEnabled && !autoMovePath.isEmpty())
+        return autoMovePath;
+    return {};
+}
+
 bool shouldEmitTorrentFinished(bool downloadedThisSession, bool completedAtStartup)
 {
     return downloadedThisSession && !completedAtStartup;

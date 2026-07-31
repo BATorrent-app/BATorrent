@@ -134,6 +134,40 @@ TEST_CASE("shouldEmitTorrentFinished mute matrix", "[sessionresume]") {
     REQUIRE(SessionResume::shouldEmitTorrentFinished(true, false));
 }
 
+TEST_CASE("downloadedPayloadThisSession gates finish side effects",
+          "[sessionresume]") {
+    REQUIRE_FALSE(SessionResume::downloadedPayloadThisSession(0));
+    REQUIRE_FALSE(SessionResume::downloadedPayloadThisSession(-1));
+    REQUIRE(SessionResume::downloadedPayloadThisSession(1));
+    REQUIRE(SessionResume::downloadedPayloadThisSession(4096));
+}
+
+TEST_CASE("finishMoveDestination: intended wins over auto-move",
+          "[sessionresume]") {
+    REQUIRE(SessionResume::finishMoveDestination(
+                QStringLiteral("/final"), true, QStringLiteral("/auto"))
+            == QStringLiteral("/final"));
+    REQUIRE(SessionResume::finishMoveDestination(
+                QString(), true, QStringLiteral("/auto"))
+            == QStringLiteral("/auto"));
+    REQUIRE(SessionResume::finishMoveDestination(
+                QString(), false, QStringLiteral("/auto")).isEmpty());
+    REQUIRE(SessionResume::finishMoveDestination(
+                QString(), true, QString()).isEmpty());
+    REQUIRE(SessionResume::finishMoveDestination(
+                QString(), false, QString()).isEmpty());
+}
+
+TEST_CASE("finish .!bt strip: only suffixed paths rename", "[sessionresume]") {
+    std::string plain = "a.mkv";
+    REQUIRE_FALSE(SessionResume::stripIncompleteSuffix(plain));
+    REQUIRE(plain == "a.mkv");
+
+    std::string done = "a.mkv.!bt";
+    REQUIRE(SessionResume::stripIncompleteSuffix(done));
+    REQUIRE(done == "a.mkv");
+}
+
 TEST_CASE("removedHistoryHashesToPrune keeps newest 50", "[sessionresume]") {
     std::vector<std::pair<qint64, QString>> sorted;
     for (int i = 0; i < 53; ++i)

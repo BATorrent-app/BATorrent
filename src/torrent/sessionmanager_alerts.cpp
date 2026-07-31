@@ -9,6 +9,7 @@
 // verbatim; no behaviour change. cachedStatus() stays in core (general helper).
 
 #include "torrent/sessionmanager.h"
+#include "torrent/sessionresume.h"
 #include "torrent/magnettrackers.h"
 #include "services/platform/logger.h"
 #include "services/platform/translator.h"
@@ -114,11 +115,8 @@ void SessionManager::onStateUpdate(const lt::state_update_alert *su)
                         lt::file_index_t idx(i);
                         if (progress[i] != fs.file_size(idx)) continue;
                         std::string cur = fs.file_path(idx);
-                        if (cur.size() >= 4
-                            && cur.compare(cur.size() - 4, 4, ".!bt") == 0) {
-                            st.handle.rename_file(idx,
-                                std::string(cur, 0, cur.size() - 4));
-                        }
+                        if (SessionResume::stripIncompleteSuffix(cur))
+                            st.handle.rename_file(idx, cur);
                     }
                 }
             } catch (const std::exception &) {
@@ -302,11 +300,8 @@ void SessionManager::onFileCompleted(const lt::file_completed_alert *fc)
     auto ti = fc->handle.torrent_file();
     if (ti) {
         std::string current = ti->files().file_path(fc->index);
-        if (current.size() >= 4
-            && current.compare(current.size() - 4, 4, ".!bt") == 0) {
-            std::string stripped(current, 0, current.size() - 4);
-            fc->handle.rename_file(fc->index, stripped);
-        }
+        if (SessionResume::stripIncompleteSuffix(current))
+            fc->handle.rename_file(fc->index, current);
     }
 }
 

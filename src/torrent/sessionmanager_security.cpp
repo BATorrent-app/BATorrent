@@ -8,6 +8,7 @@
 // sessionmanager.cpp verbatim; no behaviour change.
 
 #include "torrent/sessionmanager.h"
+#include "torrent/sessionresume.h"
 #include "torrent/memguard.h"
 #include "services/platform/translator.h"
 #include "services/security/suspiciousscan.h"
@@ -232,8 +233,7 @@ void SessionManager::scheduleTrash(const QStringList &targets, int attempt)
     const int delay = qMin(2000 + attempt * 800, 4000);
     QTimer::singleShot(delay, this, [this, targets, attempt]() {
         QStringList remaining;
-        for (const QString &p : targets) {
-            if (!QFileInfo::exists(p)) continue;          // gone (trashed, or never there)
+        for (const QString &p : SessionResume::existingRemovalTargets(targets)) {
             if (!QFile::moveToTrash(p)) remaining << p;   // still locked — try again
         }
         clearDoneTargets("pendingTrashTargets", targets, remaining);
@@ -249,9 +249,8 @@ void SessionManager::scheduleDelete(const QStringList &targets, int attempt)
     const int delay = qMin(2000 + attempt * 800, 4000);
     QTimer::singleShot(delay, this, [this, targets, attempt]() {
         QStringList remaining;
-        for (const QString &p : targets) {
+        for (const QString &p : SessionResume::existingRemovalTargets(targets)) {
             QFileInfo fi(p);
-            if (!fi.exists()) continue;
             const bool ok = fi.isDir() ? QDir(p).removeRecursively() : QFile::remove(p);
             if (!ok) remaining << p;
         }

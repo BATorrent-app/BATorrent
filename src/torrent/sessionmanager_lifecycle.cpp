@@ -345,9 +345,15 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         // until the handles are gone instead of giving up after one attempt.
         if (deleteFiles) h.pause();
         m_session.remove_torrent(h, {});
-        if (SessionResume::shouldScheduleFileRemoval(deleteFiles, trashTargets)) {
-            if (permanent) scheduleDelete(trashTargets, 0);
-            else scheduleTrash(trashTargets, 0);
+        switch (SessionResume::removalDisposition(deleteFiles, permanent, trashTargets)) {
+        case SessionResume::RemovalDisposition::Trash:
+            scheduleTrash(trashTargets, 0);
+            break;
+        case SessionResume::RemovalDisposition::PermanentDelete:
+            scheduleDelete(trashTargets, 0);
+            break;
+        case SessionResume::RemovalDisposition::Keep:
+            break;
         }
     } catch (const std::exception &e) {
         qWarning() << "[session] removeTorrent exception:" << e.what();
