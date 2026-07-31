@@ -89,8 +89,8 @@ PosterTile 272); i18n CI locked (WS-G). Next: Agent R `qml/player/` (exclusive q
 - [ ] Confidence: change engine/UI without fear
 
 **Then (only after Ótimo):** start vertical learning — see `internal/LEARNING_PATH.md`
-(first slice: Watch → playFile → PlayerWindow). No deep function-by-function teaching
-while peels still move the map.
+(survival card first; then Watch → playFile → PlayerWindow). No deep
+function-by-function teaching while peels still move the map.
 
 ## Per-sprint log
 
