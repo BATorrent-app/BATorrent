@@ -295,74 +295,15 @@ qint64 SessionManager::maxSeedSeconds() const
 
 AdvancedSettings SessionManager::advancedSettings() const
 {
-    QSettings s("BATorrent", "BATorrent");
-    AdvancedSettings a;
-    a.aioThreads = s.value("adv/aioThreads", 10).toInt();
-    a.hashingThreads = s.value("adv/hashingThreads", 2).toInt();
-    a.filePoolSize = s.value("adv/filePoolSize", 100).toInt();
-    a.checkingMemUsage = s.value("adv/checkingMemUsage", 512).toInt();
-    a.diskIOReadMode = s.value("adv/diskIOReadMode", 0).toInt();
-    a.diskIOWriteMode = s.value("adv/diskIOWriteMode", 0).toInt();
-    a.connectionsLimit = s.value("adv/connectionsLimit", 500).toInt();
-    a.connectionSpeed = s.value("adv/connectionSpeed", 30).toInt();
-    a.maxUploadsPerTorrent = s.value("adv/maxUploadsPerTorrent", 4).toInt();
-    a.maxConnectionsPerTorrent = s.value("adv/maxConnectionsPerTorrent", 100).toInt();
-    a.unchokeSlotsLimit = s.value("adv/unchokeSlotsLimit", 20).toInt();
-    a.chokingAlgorithm = s.value("adv/chokingAlgorithm", 0).toInt();
-    a.seedChokingAlgorithm = s.value("adv/seedChokingAlgorithm", 0).toInt();
-    a.sendBufferWatermark = s.value("adv/sendBufferWatermark", 500).toInt();
-    a.outgoingPortMin = s.value("adv/outgoingPortMin", 0).toInt();
-    a.outgoingPortMax = s.value("adv/outgoingPortMax", 0).toInt();
-    a.rateLimitIpOverhead = s.value("adv/rateLimitIpOverhead", false).toBool();
-    a.ignoreLimitsOnLAN = s.value("adv/ignoreLimitsOnLAN", true).toBool();
-    return a;
+    return SessionConfig::loadAdvanced(QSettings(QStringLiteral("BATorrent"), QStringLiteral("BATorrent")));
 }
 
 void SessionManager::setAdvancedSettings(const AdvancedSettings &a)
 {
-    QSettings s("BATorrent", "BATorrent");
-    s.setValue("adv/aioThreads", a.aioThreads);
-    s.setValue("adv/hashingThreads", a.hashingThreads);
-    s.setValue("adv/filePoolSize", a.filePoolSize);
-    s.setValue("adv/checkingMemUsage", a.checkingMemUsage);
-    s.setValue("adv/diskIOReadMode", a.diskIOReadMode);
-    s.setValue("adv/diskIOWriteMode", a.diskIOWriteMode);
-    s.setValue("adv/connectionsLimit", a.connectionsLimit);
-    s.setValue("adv/connectionSpeed", a.connectionSpeed);
-    s.setValue("adv/maxUploadsPerTorrent", a.maxUploadsPerTorrent);
-    s.setValue("adv/maxConnectionsPerTorrent", a.maxConnectionsPerTorrent);
-    s.setValue("adv/unchokeSlotsLimit", a.unchokeSlotsLimit);
-    s.setValue("adv/chokingAlgorithm", a.chokingAlgorithm);
-    s.setValue("adv/seedChokingAlgorithm", a.seedChokingAlgorithm);
-    s.setValue("adv/sendBufferWatermark", a.sendBufferWatermark);
-    s.setValue("adv/outgoingPortMin", a.outgoingPortMin);
-    s.setValue("adv/outgoingPortMax", a.outgoingPortMax);
-    s.setValue("adv/rateLimitIpOverhead", a.rateLimitIpOverhead);
-    s.setValue("adv/ignoreLimitsOnLAN", a.ignoreLimitsOnLAN);
-
+    QSettings s(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"));
+    SessionConfig::persistAdvanced(s, a);
     lt::settings_pack pack;
-    pack.set_int(lt::settings_pack::aio_threads, a.aioThreads);
-    pack.set_int(lt::settings_pack::hashing_threads, a.hashingThreads);
-    pack.set_int(lt::settings_pack::file_pool_size, a.filePoolSize);
-    pack.set_int(lt::settings_pack::checking_mem_usage, a.checkingMemUsage);
-    pack.set_int(lt::settings_pack::disk_io_read_mode, a.diskIOReadMode);
-    pack.set_int(lt::settings_pack::disk_io_write_mode, a.diskIOWriteMode);
-    pack.set_int(lt::settings_pack::connections_limit, a.connectionsLimit);
-    pack.set_int(lt::settings_pack::connection_speed, a.connectionSpeed);
-    pack.set_int(lt::settings_pack::unchoke_slots_limit, a.unchokeSlotsLimit);
-    pack.set_int(lt::settings_pack::choking_algorithm, a.chokingAlgorithm);
-    pack.set_int(lt::settings_pack::seed_choking_algorithm, a.seedChokingAlgorithm);
-    pack.set_int(lt::settings_pack::send_buffer_watermark, a.sendBufferWatermark * 1024);
-    pack.set_bool(lt::settings_pack::rate_limit_ip_overhead, a.rateLimitIpOverhead);
-    if (a.outgoingPortMin > 0 && a.outgoingPortMax >= a.outgoingPortMin) {
-        pack.set_int(lt::settings_pack::outgoing_port, a.outgoingPortMin);
-        pack.set_int(lt::settings_pack::num_outgoing_ports, a.outgoingPortMax - a.outgoingPortMin + 1);
-    }
-    // LAN peer class exemption: peers on local networks (10.x, 172.16.x,
-    // 192.168.x) bypass speed limits. Uses peer_classes instead of the
-    // deprecated ignore_limits_on_local_network.
-    (void)a.ignoreLimitsOnLAN; // applied via peer classes, not settings_pack
-
+    SessionConfig::fillAdvancedPack(pack, a);
     m_session.apply_settings(pack);
     qDebug() << "[session] advanced settings applied";
 }
@@ -391,24 +332,10 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
 {
     if (key.startsWith(QLatin1String("adv"))) {
         AdvancedSettings a = advancedSettings();
-        bool hit = true;
-        if (key == "advAioThreads")          a.aioThreads = v.toInt();
-        else if (key == "advHashingThreads") a.hashingThreads = v.toInt();
-        else if (key == "advFilePool")       a.filePoolSize = v.toInt();
-        else if (key == "advCheckingMem")    a.checkingMemUsage = v.toInt();
-        else if (key == "advSendBuffer")     a.sendBufferWatermark = v.toInt();
-        else if (key == "advConnLimit")      a.connectionsLimit = v.toInt();
-        else if (key == "advConnSpeed")      a.connectionSpeed = v.toInt();
-        else if (key == "advUnchokeSlots")   a.unchokeSlotsLimit = v.toInt();
-        else if (key == "advMaxUploadsTor")  a.maxUploadsPerTorrent = v.toInt();
-        else if (key == "advMaxConnsTor")    a.maxConnectionsPerTorrent = v.toInt();
-        else if (key == "advChokingAlgo")    a.chokingAlgorithm = v.toInt() == 1 ? 2 : 0;
-        else if (key == "advSeedChoking")    a.seedChokingAlgorithm = v.toInt();
-        else if (key == "advRateOverhead")   a.rateLimitIpOverhead = v.toBool();
-        else if (key == "advIgnoreLan")      a.ignoreLimitsOnLAN = v.toBool();
-        else hit = false;
-        if (hit) setAdvancedSettings(a);
-        return hit;
+        if (!SessionConfig::patchAdvancedKey(a, key, v))
+            return false;
+        setAdvancedSettings(a);
+        return true;
     }
     if (key == "downloadLimit")            setDownloadLimit(v.toInt());
     else if (key == "uploadLimit")         setUploadLimit(v.toInt());
@@ -539,53 +466,6 @@ void SessionManager::setExtractPasswords(const QStringList &passwords)
 
 QStringList SessionManager::extractPasswords() const { return m_extractPasswords; }
 
-void SessionManager::extractArchives(const QString &savePath, const QString &torrentName,
-                                     const QString &priorityPassword, const QString &infoHash)
-{
-    m_extractor->setPasswords(m_extractPasswords);
-    m_extractor->setDeleteAfter(m_autoExtractDelete);
-    m_extractor->extract(savePath, torrentName, priorityPassword, infoHash);
-}
-
-bool SessionManager::torrentHasArchives(int index) const
-{
-    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return false;
-    if (!m_torrents[index].is_valid()) return false;   // torrent_file() throws on an invalid handle
-    auto ti = m_torrents[index].torrent_file();
-    if (!ti) return false;
-    const auto &fs = ti->files();
-    QStringList names;
-    for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
-        QString p = QString::fromStdString(fs.file_path(i));
-        if (p.endsWith(QLatin1String(".!bt"))) p.chop(4);
-        names << p;
-    }
-    return !ArchiveScan::archivesToExtract(names).isEmpty();
-}
-
-bool SessionManager::torrentHasVideo(int index) const
-{
-    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return false;
-    if (!m_torrents[index].is_valid()) return false;   // torrent_file() throws on an invalid handle
-    auto ti = m_torrents[index].torrent_file();
-    if (!ti) return false;
-    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts",".mpg",".mpeg",".m2ts"};
-    const auto &fs = ti->files();
-    for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
-        QString p = QString::fromStdString(fs.file_path(i)).toLower();
-        if (p.endsWith(QLatin1String(".!bt"))) p.chop(4);
-        for (const auto &ext : videoExts)
-            if (p.endsWith(ext)) return true;
-    }
-    return false;
-}
-
-void SessionManager::extractTorrent(int index, const QString &password)
-{
-    if (index < 0 || index >= static_cast<int>(m_torrents.size())) return;
-    const TorrentInfo info = torrentAt(index);
-    extractArchives(info.savePath, info.name, password, torrentHashAt(index));
-}
 
 // --- Temp path ---
 

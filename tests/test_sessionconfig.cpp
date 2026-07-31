@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include "torrent/sessionconfig.h"
+#include "torrent/types.h"
 
 TEST_CASE("listenInterfaces: dual-stack by default", "[sessionconfig]") {
     REQUIRE(SessionConfig::listenInterfaces(QStringLiteral("0.0.0.0"), 6881, false)
@@ -62,4 +63,15 @@ TEST_CASE("planContentLayout creates subfolder for single file", "[sessionconfig
 TEST_CASE("planContentLayout no-op for original or mismatched roots", "[sessionconfig]") {
     REQUIRE(SessionConfig::planContentLayout(0, "X", {"a/b"}).empty());
     REQUIRE(SessionConfig::planContentLayout(2, "X", {"A/a", "B/b"}).empty());
+}
+
+TEST_CASE("patchAdvancedKey maps known adv keys", "[sessionconfig]") {
+    AdvancedSettings a;
+    REQUIRE(SessionConfig::patchAdvancedKey(a, QStringLiteral("advAioThreads"), 12));
+    REQUIRE(a.aioThreads == 12);
+    REQUIRE(SessionConfig::patchAdvancedKey(a, QStringLiteral("advChokingAlgo"), 1));
+    REQUIRE(a.chokingAlgorithm == 2);
+    REQUIRE(SessionConfig::patchAdvancedKey(a, QStringLiteral("advIgnoreLan"), false));
+    REQUIRE_FALSE(a.ignoreLimitsOnLAN);
+    REQUIRE_FALSE(SessionConfig::patchAdvancedKey(a, QStringLiteral("advNope"), 1));
 }

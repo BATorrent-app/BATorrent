@@ -111,6 +111,8 @@
 <file>../src/qml/Main.qml</file>
 <file>../src/qml/LibraryController.qml</file>
 <file>../src/qml/AppTray.qml</file>
+<file>../src/qml/AppWinMenuBar.qml</file>
+<file>../src/qml/AppMenuBar.qml</file>
 <file>../src/qml/MainWindowLoaders.qml</file>
 <file>../src/qml/LibraryChrome.qml</file>
 <file>../src/qml/LibraryContextMenu.qml</file>
