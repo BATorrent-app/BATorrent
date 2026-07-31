@@ -124,6 +124,7 @@
 <file>../src/qml/AppCommandPalette.qml</file>
 <file>../src/qml/AppNotifications.qml</file>
 <file>../src/qml/AppTrayPopup.qml</file>
+<file>../src/qml/AppSplash.qml</file>
 <file>../src/qml/Splash.qml</file>
         <file>../src/qml/TrayPopupWindow.qml</file>
         <file>../src/qml/UpdateDialog.qml</file>
