@@ -231,13 +231,23 @@ endif()
 # =============================================================================
 #  Helper: create a test target
 # =============================================================================
+# The app sources every test links are compiled ONCE here instead of once per
+# test target — with 40+ targets that was the same ~107 translation units built
+# over and over, and it dominated the CI test job.
+#
+# OBJECT, not STATIC: a static archive lets the linker drop translation units
+# nothing references directly, which would silently take Qt metatype/static
+# registrations with it. OBJECT keeps the link contents identical to before.
+add_library(bat_test_core OBJECT ${COMMON_SOURCES})
+target_compile_definitions(bat_test_core PUBLIC ${COMMON_DEFS})
+target_link_libraries(bat_test_core PUBLIC ${COMMON_LIBS})
+target_include_directories(bat_test_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
+
 function(bat_add_test NAME SOURCE)
     # Qt MOC needs AUTOMOC
     set(CMAKE_AUTOMOC ON)
-    qt_add_executable(${NAME} ${SOURCE} ${COMMON_SOURCES})
-    target_compile_definitions(${NAME} PRIVATE ${COMMON_DEFS})
-    target_link_libraries(${NAME} PRIVATE ${COMMON_LIBS})
-    target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    qt_add_executable(${NAME} ${SOURCE})
+    target_link_libraries(${NAME} PRIVATE bat_test_core)
     catch_discover_tests(${NAME})
 
     # --- Dr. Memory wrapper target ---
