@@ -1,0 +1,26 @@
+---
+description: BATorrent learning gate — Ótimo first; skill split; Watch→playFile slice
+alwaysApply: true
+---
+
+# Learning path (short)
+
+Full text: `docs/LEARNING_PATH.md` (tracked). Do not rely on `internal/` — it is gitignored.
+
+## Until Ótimo
+
+- Product quality / peels / tests / reorg win over pedagogy.
+- Do **not** start deep function-by-function teaching while the map still moves.
+- C++/Qt mentoring only as short asides; structural work is the main thread.
+
+## Skill split (do not mix)
+
+1. **Known langs** (JS/TS/Python/Java-ish): rusty **inventing** solutions — decompositions, not syntax.
+2. **C++/Qt:** **zero tooling literacy** — no assumed npm/CMake/moc/qrc/include-path knowledge.
+
+## After Ótimo
+
+1. Teach the **C++/Qt survival card** in `docs/LEARNING_PATH.md` first.
+2. Learn **vertically by user action**. First slice: **Watch → `playFile` → `PlayerWindow`**.
+3. At each stop: what goes in / out / why the name exists. Sessions 30–45 min.
+4. Comment bar stays *why*-only (`CLAUDE.md`); learning should cut narrating comments.
