@@ -126,6 +126,7 @@
 <file>../src/qml/AppTrayPopup.qml</file>
 <file>../src/qml/AppSplash.qml</file>
 <file>../src/qml/AppWindowLifecycle.qml</file>
+<file>../src/qml/AppTour.qml</file>
 <file>../src/qml/Splash.qml</file>
         <file>../src/qml/TrayPopupWindow.qml</file>
         <file>../src/qml/UpdateDialog.qml</file>
