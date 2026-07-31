@@ -6,7 +6,7 @@
 // (FFmpeg freezes without StalledMedia), and show the one-shot ahead pill.
 import QtQuick
 import QtMultimedia
-import "theme"
+import "../theme"
 
 Item {
     id: root

@@ -8,7 +8,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtMultimedia
-import "theme"
+import "../theme"
 
 RowLayout {
     id: root

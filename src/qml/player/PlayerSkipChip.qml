@@ -5,8 +5,8 @@
 // Netflix-style skip intro/credits chip. Visible while playhead sits in a
 // labelled chapter; yields to the end card; works even when chrome is hidden.
 import QtQuick
-import "theme"
-import "widgets"
+import "../theme"
+import "../widgets"
 
 Item {
     id: root

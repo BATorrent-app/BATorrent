@@ -141,18 +141,18 @@
 <file>../src/qml/WelcomeDialog.qml</file>
 <file>../src/qml/TourOverlay.qml</file>
 <file>../src/qml/AboutDialog.qml</file>
-    <file>../src/qml/PlayerWindow.qml</file>
-    <file>../src/qml/PlayerFormat.qml</file>
-    <file>../src/qml/PlayerSlider.qml</file>
-    <file>../src/qml/PlayerSubPanel.qml</file>
-    <file>../src/qml/PlayerOptionsPanel.qml</file>
-    <file>../src/qml/PlayerResume.qml</file>
-    <file>../src/qml/PlayerEndCard.qml</file>
-    <file>../src/qml/PlayerSkipChip.qml</file>
-    <file>../src/qml/PlayerRunway.qml</file>
-    <file>../src/qml/PlayerChrome.qml</file>
-    <file>../src/qml/PlayerScrubber.qml</file>
-    <file>../src/qml/PlayerShortcuts.qml</file>
+    <file>../src/qml/player/PlayerWindow.qml</file>
+    <file>../src/qml/player/PlayerFormat.qml</file>
+    <file>../src/qml/player/PlayerSlider.qml</file>
+    <file>../src/qml/player/PlayerSubPanel.qml</file>
+    <file>../src/qml/player/PlayerOptionsPanel.qml</file>
+    <file>../src/qml/player/PlayerResume.qml</file>
+    <file>../src/qml/player/PlayerEndCard.qml</file>
+    <file>../src/qml/player/PlayerSkipChip.qml</file>
+    <file>../src/qml/player/PlayerRunway.qml</file>
+    <file>../src/qml/player/PlayerChrome.qml</file>
+    <file>../src/qml/player/PlayerScrubber.qml</file>
+    <file>../src/qml/player/PlayerShortcuts.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/CommandPalette.qml</file>
 <file>../src/qml/RssWindow.qml</file>

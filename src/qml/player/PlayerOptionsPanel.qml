@@ -8,7 +8,7 @@
 // accent, surfaces stay dark.
 import QtQuick
 import QtQuick.Layouts
-import "theme"
+import "../theme"
 
 Item {
     id: opts

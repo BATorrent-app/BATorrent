@@ -5,7 +5,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
-import "theme"
+import "../theme"
 
 Slider {
     id: sl
