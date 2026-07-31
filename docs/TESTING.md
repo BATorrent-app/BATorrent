@@ -34,7 +34,7 @@ know the net will catch the regressions that matter.
 | Strength | Parsers, security scanners, release pick/rank, session **pure** resume helpers, settings helpers, HTTP range/plan, VPN config |
 | Weakness | `QmlSessionBridge` library/watchlist glue beyond playFile, most of SessionManager alert/lifecycle glue, almost all product QML surfaces |
 | CI Catch2 allowlist | `build.yml` runs peel + metadata suites including `test_sessionresume`, `test_sessionremove`, `test_metadatamatch`, `test_sessionconfig`, parse/discovery helpers, `test_discoveryfinish`, `test_addonfinish`, `test_hublogic`, `test_settingshelpers`, plus prior core binaries. Local-HTTP / VPN integration suites stay local-first |
-| QML | 9 Quick Test files (controls/Splash/Toast) + **boot-offscreen** smoke — no Watch / Search / Hub journey automation |
+| QML | 13 Quick Test files (controls/Splash/Toast + SearchCompute / HubCompute / GetWatchOverlay / LibraryController) + **boot-offscreen** smoke; `qml-smoke.yml` also runs `test_qml` |
 | Coverage tooling | **Not wired** in CMake. Apple Clang ships `llvm-cov` / `llvm-profdata` on macOS; optional local recipe below. Do not treat % lines as the gate |
 
 Structural peels (SessionResume, MetadataMatch, AddonParse, Discovery assemble/search,
@@ -67,7 +67,7 @@ Rough map of `tests/test_*.cpp` to product domains. Counts are `TEST_CASE` /
 | **ipc** | `ipcprotocol` | 6 | Frame/serialize contract | Engine-child process E2E |
 | **webui** | `unit` + `tests/webui/test_webui.mjs` | ~15 + JS | HTTP API schema smoke | Auth/session hardening matrix |
 | **games / install** | `gameinstallstate`, `gameexedetect`, `gamereleasepick` | ~28 | Install state machine, exe detect | Bridge gameinstall glue |
-| **QML** | `tests/qml/tst_*.qml` + qml-smoke workflow | 9 + boot | Control widgets, Splash dismiss | Watch / Search / library covers |
+| **QML** | `tests/qml/tst_*.qml` + qml-smoke workflow | 13 + boot | Control widgets, Splash dismiss; SearchCompute filter/sort bind; HubCompute continue+playByHash; GetWatchOverlay phases; LibraryController selection | Full PlayerWindow / Main page robots; poster pixel diffs |
 | **misc / harness** | `memory`, `unit` trash/migration | — | ASan-oriented memory; trash env | — |
 
 ---
@@ -190,6 +190,12 @@ remain manual / rare integration tags (`[net]`).
 **P3 DoD:** A broken Watch→play wiring or Search results model bind fails either
 Catch2 (C++ seam) or a named smoke/Quick Test — not only a human report.
 
+- [x] `tst_SearchCompute` — fixture results → quality/minSeeds/seeders sort → `viewModel`
+- [x] `tst_HubCompute` — continue-watching order + `playMovie` → `playByHash` / episode menu
+- [x] `tst_GetWatchOverlay` — searching/buffering/fail/cancel phase contract
+- [x] `tst_LibraryController` — selection/sort/filter state without live session
+- [x] `qml-smoke.yml` `quick-test` job builds and runs `test_qml` offscreen
+
 ---
 
 ## Non-goals
@@ -217,8 +223,8 @@ Declare **test Ótimo** when **all** of the following hold:
    characterization tests (P1 largely done or consciously deferred with REVIEW notes).
 4. **Discovery** — offline fixture path exists for assemble/search finish (P2 done via
    `DiscoveryFinish` / `AddonFinish`); live API remains optional.
-5. **QML** — boot smoke green on PRs; at least one automated or checklist-gated path
-   for Watch and Search (P3).
+5. **QML** — boot smoke green on PRs; Watch (`tst_HubCompute` / `tst_GetWatchOverlay`)
+   and Search (`tst_SearchCompute`) Quick Tests run in `qml-smoke.yml` (P3 done).
 6. **CI allowlist ≈ CMake targets that are fast/offline** — no long-lived orphan
    binaries that only run on one developer’s machine.
 7. **Team confidence** — willing to change SessionManager / bridges / discovery without
@@ -240,7 +246,7 @@ Parallelize only when file ownership is disjoint. Serialize `tests/CMakeLists.tx
 | **T0b playFile net** | S–M | `tests/test_bridge.cpp` or NEW `tests/test_playback.cpp`, optional tiny pure helper under `bridges/session/` or `torrent/` | Discovery, QML views | Stream URL + guard characterization |
 | **T1 alert/remove** | M | `sessionmanager_alerts_finish.cpp`, persistence/lifecycle **helpers only**, `test_sessionresume` / `test_sessionremove` | bridges/*, qml/*, discovery | Tables for finish + remove |
 | **T2 discovery fakes** | M | `discoveryfinish` / `addonfinish` seams + tests, fixture JSON inline | sessionmanager peels, qml | Offline shelf/search finish + catalog gen race — **done** |
-| **T3 QML journeys** | M | `tests/qml/**`, optionally `qml-smoke.yml` env flags | Catch2 engine rewrites | Watch + Search smoke or Quick Test |
+| **T3 QML journeys** | M | `tests/qml/**`, optionally `qml-smoke.yml` env flags | Catch2 engine rewrites | Watch + Search Quick Test — **done** (`tst_HubCompute` / `tst_SearchCompute` + overlay/library) |
 | **T-cov (optional)** | S | NEW `scripts/coverage-macos.sh` + doc only; **no default CMake ON** | Forcing coverage in CI | Local HTML/text report for gap triage |
 
 ### Optional macOS coverage recipe (not installed / not wired)
