@@ -5,13 +5,25 @@ name: QML Smoke
 # when the engine actually loads Main.qml — so boot the real binary offscreen
 # and fail on any QML error. The whole page tree (Downloads/Find/HUB/Settings)
 # instantiates eagerly at boot, so load errors anywhere in it are caught here.
+#
+# Also runs Qt Quick Test (tests/qml/tst_*) for Watch/Search/library journeys
+# that boot smoke alone cannot assert.
 
 on:
   push:
     branches: ['**']
-    paths: ['src/**', 'translations/**', '.github/workflows/qml-smoke.yml']
+    paths:
+      - 'src/**'
+      - 'translations/**'
+      - 'tests/qml/**'
+      - 'tests/CMakeLists.txt'
+      - '.github/workflows/qml-smoke.yml'
   pull_request:
-    paths: ['src/**', 'translations/**']
+    paths:
+      - 'src/**'
+      - 'translations/**'
+      - 'tests/qml/**'
+      - 'tests/CMakeLists.txt'
 
 jobs:
   boot-offscreen:
@@ -50,3 +62,28 @@ jobs:
           # Catch missing translation keys that only surface as empty UI copy.
           python3 scripts/check-i18n-parity.py
           echo "boot clean"
+
+  quick-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
+        with:
+          version: '6.7.*'
+          modules: qtmultimedia
+          cache: true
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@2c09a5e66da6c8016428a2172bd76e5e4f14bb17 # latest
+        with:
+          packages: cmake g++ libtorrent-rasterbar-dev libboost-dev libssl-dev libgl-dev libglx-dev libegl-dev
+          version: 3.0
+      - name: Build Qt Quick Test
+        run: |
+          # test_qml links app resources.qrc only (no Catch2 COMMON_SOURCES).
+          cmake -B build-qml -DBAT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-qml -j$(nproc) --target test_qml
+      - name: Run Watch / Search / widget Quick Tests
+        run: |
+          QT_QPA_PLATFORM=offscreen ./build-qml/tests/test_qml

@@ -5,7 +5,7 @@
 
 import QtQuick
 import QtTest
-import "qrc:/src/qml"
+import "qrc:/src/qml/overlays"
 
 Item {
     id: root
