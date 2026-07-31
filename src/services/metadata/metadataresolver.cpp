@@ -5,6 +5,7 @@
 #include "services/metadata/metadataresolver.h"
 
 #include <QDateTime>
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QJsonArray>
@@ -14,9 +15,11 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QSettings>
-#include "services/platform/contentlanguage.h"
 #include <QStandardPaths>
 #include <QUrlQuery>
+
+#include "services/metadata/metadatamatch.h"
+#include "services/platform/contentlanguage.h"
 
 namespace {
 
@@ -31,54 +34,7 @@ QString tmdbApiKey()
 const QString TmdbBaseUrl = QStringLiteral("https://api.themoviedb.org/3");
 const QString TmdbPosterBase = QStringLiteral("https://image.tmdb.org/t/p/w342");
 
-// Content language → TMDB locale, so titles/overviews/genres come in the
-// language the user wants to watch in (not necessarily the app's).
 QString tmdbLang() { return ContentLanguage::tmdb(); }
-
-const QHash<int, QString> &tmdbGenres()
-{
-    static const QHash<int, QString> map = {
-        {28, QStringLiteral("Action")},
-        {12, QStringLiteral("Adventure")},
-        {16, QStringLiteral("Animation")},
-        {35, QStringLiteral("Comedy")},
-        {80, QStringLiteral("Crime")},
-        {99, QStringLiteral("Documentary")},
-        {18, QStringLiteral("Drama")},
-        {10751, QStringLiteral("Family")},
-        {14, QStringLiteral("Fantasy")},
-        {36, QStringLiteral("History")},
-        {27, QStringLiteral("Horror")},
-        {10402, QStringLiteral("Music")},
-        {9648, QStringLiteral("Mystery")},
-        {10749, QStringLiteral("Romance")},
-        {878, QStringLiteral("Sci-Fi")},
-        {10770, QStringLiteral("TV Movie")},
-        {53, QStringLiteral("Thriller")},
-        {10752, QStringLiteral("War")},
-        {37, QStringLiteral("Western")}
-    };
-    return map;
-}
-
-QString contentTypeToString(ContentType ct)
-{
-    switch (ct) {
-    case ContentType::Movie:   return QStringLiteral("movie");
-    case ContentType::Series:  return QStringLiteral("series");
-    case ContentType::Game:    return QStringLiteral("game");
-    case ContentType::Unknown: return QStringLiteral("unknown");
-    }
-    return QStringLiteral("unknown");
-}
-
-ContentType contentTypeFromString(const QString &s)
-{
-    if (s == QLatin1String("movie"))  return ContentType::Movie;
-    if (s == QLatin1String("series")) return ContentType::Series;
-    if (s == QLatin1String("game"))   return ContentType::Game;
-    return ContentType::Unknown;
-}
 
 } // namespace
 
@@ -112,10 +68,7 @@ void MetadataResolver::resolve(const QString &infoHash, const QString &torrentNa
     // The file payload outranks the name for game-vs-movie (a name can lie). Keep
     // a name-derived Series though — episode markers there are reliable, and a
     // single-episode torrent looks like a movie by file count alone.
-    if (!fileNames.isEmpty() && parsed.contentType != ContentType::Series) {
-        const ContentType byFiles = NameParser::classifyByFiles(fileNames);
-        if (byFiles != ContentType::Unknown) parsed.contentType = byFiles;
-    }
+    parsed.contentType = MetadataMatch::applyFileTypeOverride(parsed.contentType, fileNames);
     qDebug() << "[metadata] resolve:" << torrentName << "->" << parsed.cleanTitle
              << "type:" << static_cast<int>(parsed.contentType);
     m_queue.enqueue({infoHash, parsed});
@@ -197,9 +150,6 @@ void MetadataResolver::processQueue()
     }
 }
 
-// defined with the other title-matching helpers further down (they share foldTitle)
-static bool confidentTitle(const QString &query, const QString &title);
-
 void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName &parsed)
 {
     qDebug() << "[metadata] queryTmdbMovie:" << parsed.cleanTitle;
@@ -250,7 +200,8 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
         // → some film called "Debian"). Only a confident title match sticks; else
         // try TV, and failing that stay coverless.
         if (parsed.contentType == ContentType::Unknown
-            && !confidentTitle(parsed.cleanTitle, item.value(QLatin1String("title")).toString())) {
+            && !MetadataMatch::confidentTitle(parsed.cleanTitle,
+                                              item.value(QLatin1String("title")).toString())) {
             queryTmdbTv(infoHash, parsed);
             return;
         }
@@ -266,13 +217,8 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
         if (releaseDate.length() >= 4)
             result.year = releaseDate.left(4).toInt();
 
-        const QJsonArray genreIds = item.value(QLatin1String("genre_ids")).toArray();
-        const auto &genreMap = tmdbGenres();
-        for (const QJsonValue &gv : genreIds) {
-            const QString name = genreMap.value(gv.toInt());
-            if (!name.isEmpty())
-                result.genres.append(name);
-        }
+        result.genres = MetadataMatch::genreNamesFromIds(
+            item.value(QLatin1String("genre_ids")).toArray());
 
         const QString posterPath = item.value(QLatin1String("poster_path")).toString();
         const int tmdbId = item.value(QLatin1String("id")).toInt();
@@ -337,7 +283,8 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
         // last stop in the Unknown chain (IGDB → movie → here) — without a
         // confident title match, leave it coverless rather than guess a show.
         if (parsed.contentType == ContentType::Unknown
-            && !confidentTitle(parsed.cleanTitle, item.value(QLatin1String("name")).toString())) {
+            && !MetadataMatch::confidentTitle(parsed.cleanTitle,
+                                              item.value(QLatin1String("name")).toString())) {
             m_rateLimiter.start();
             return;
         }
@@ -353,13 +300,8 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
         if (firstAirDate.length() >= 4)
             result.year = firstAirDate.left(4).toInt();
 
-        const QJsonArray genreIds = item.value(QLatin1String("genre_ids")).toArray();
-        const auto &genreMap = tmdbGenres();
-        for (const QJsonValue &gv : genreIds) {
-            const QString name = genreMap.value(gv.toInt());
-            if (!name.isEmpty())
-                result.genres.append(name);
-        }
+        result.genres = MetadataMatch::genreNamesFromIds(
+            item.value(QLatin1String("genre_ids")).toArray());
 
         const QString posterPath = item.value(QLatin1String("poster_path")).toString();
         const int tmdbId = item.value(QLatin1String("id")).toInt();
@@ -466,62 +408,6 @@ void MetadataResolver::ensureIgdbToken()
     });
 }
 
-// Accent/diacritic-folded lowercase, so "Ragnarök" == "Ragnarok".
-static QString foldTitle(const QString &s)
-{
-    QString n = s.normalized(QString::NormalizationForm_KD);
-    n.remove(QRegularExpression(QStringLiteral("[\\x{0300}-\\x{036F}]")));   // diacritics
-    // Drop apostrophes so "Baldur's" == "Baldurs" — torrent names usually strip
-    // them while IGDB/TMDB keep them, which sank the token-overlap score.
-    n.remove(QRegularExpression(QStringLiteral("['\\x{2019}\\x{2018}`]")));
-    return n.toLower();
-}
-
-static QSet<QString> titleTokens(const QString &s)
-{
-    QSet<QString> out;
-    const auto parts = foldTitle(s).split(QRegularExpression(QStringLiteral("[^a-z0-9]+")), Qt::SkipEmptyParts);
-    static const QSet<QString> stop = { QStringLiteral("the"), QStringLiteral("a"),
-        QStringLiteral("of"), QStringLiteral("and"), QStringLiteral("edition") };
-    // Canonicalize sequel numerals so "GTA V" == "GTA 5" and "Final Fantasy VII"
-    // == "...7". Applied to both query and API result, so it only ever helps the
-    // overlap. Single i/c/d/l/m left out — too word-like, rarely a sequel number.
-    static const QHash<QString, QString> roman = {
-        {QStringLiteral("ii"),"2"},{QStringLiteral("iii"),"3"},{QStringLiteral("iv"),"4"},
-        {QStringLiteral("v"),"5"},{QStringLiteral("vi"),"6"},{QStringLiteral("vii"),"7"},
-        {QStringLiteral("viii"),"8"},{QStringLiteral("ix"),"9"},{QStringLiteral("x"),"10"},
-        {QStringLiteral("xi"),"11"},{QStringLiteral("xii"),"12"},{QStringLiteral("xiii"),"13"},
-        {QStringLiteral("xiv"),"14"},{QStringLiteral("xv"),"15"}
-    };
-    for (const auto &p : parts) {
-        if (stop.contains(p)) continue;
-        const auto it = roman.constFind(p);
-        out.insert(it != roman.constEnd() ? it.value() : p);
-    }
-    return out;
-}
-
-// Jaccard token overlap, 0..1. Picks the right API result instead of results[0]
-// (e.g. "God of War Ragnarök" → the real game, not "Ragnarok War of Chaos").
-static double titleSimilarity(const QString &a, const QString &b)
-{
-    const QSet<QString> ta = titleTokens(a), tb = titleTokens(b);
-    if (ta.isEmpty() || tb.isEmpty()) return 0.0;
-    int inter = 0;
-    for (const auto &t : ta) if (tb.contains(t)) ++inter;
-    const int uni = ta.size() + tb.size() - inter;
-    return uni ? double(inter) / double(uni) : 0.0;
-}
-
-// Trustworthy metadata match: folded titles equal, or token overlap clears the
-// same 0.34 bar the IGDB picker uses. Gates fuzzy matches for Unknown torrents
-// so a generic "debian" file can't adopt a random film/show called "Debian".
-static bool confidentTitle(const QString &query, const QString &title)
-{
-    return titleSimilarity(query, title) >= 0.34
-        || foldTitle(title) == foldTitle(query);
-}
-
 void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &parsed,
                                  const QString &searchOverride)
 {
@@ -553,8 +439,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
 
     // escape the quoted search term — cleanTitle comes from the torrent name,
     // so a stray " or \ would break out of the Apicalypse string literal.
-    QString safeTitle = queryTitle;
-    safeTitle.replace('\\', QStringLiteral("\\\\")).replace('"', QStringLiteral("\\\""));
+    const QString safeTitle = MetadataMatch::escapeApicalypse(queryTitle);
     QString body = QStringLiteral("search \"%1\"; fields name,summary,rating,first_release_date,genres.name,platforms.name,cover.image_id; limit 5;")
         .arg(safeTitle);
 
@@ -581,34 +466,18 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
         // overlap), with a small bonus when the release year matches. This beats
         // taking results[0], which is how a loose IGDB search returned the wrong
         // game. Below the threshold we trust nothing (placeholder > wrong cover).
-        QJsonObject item;
-        double bestScore = 0.0;
-        for (const auto &v : results) {
-            const QJsonObject obj = v.toObject();
-            double score = titleSimilarity(parsed.cleanTitle, obj.value(QLatin1String("name")).toString());
-            if (parsed.year > 0) {
-                const qint64 rel = qint64(obj.value(QLatin1String("first_release_date")).toDouble());
-                if (rel > 0) {
-                    const int ry = QDateTime::fromSecsSinceEpoch(rel).date().year();
-                    if (qAbs(ry - parsed.year) <= 1) score += 0.15;
-                }
-            }
-            if (score > bestScore) { bestScore = score; item = obj; }
-        }
-        // Exact (folded) title match always passes; otherwise need decent overlap.
-        const bool found = bestScore >= 0.34
-            || foldTitle(item.value(QLatin1String("name")).toString()) == foldTitle(parsed.cleanTitle);
+        const auto pick = MetadataMatch::pickBestIgdbResult(
+            results, parsed.cleanTitle, parsed.year);
+        const QJsonObject item = pick.item;
 
-        if (!found) {
+        if (!pick.found) {
             // IGDB's search chokes on long subtitled names ("Garfield Kart 2
             // All You Can Drift" finds nothing; "Garfield Kart 2" does). Retry
             // with the front half of the tokens, down to 3 — scoring above
             // still compares against the full title, so a wrong-franchise hit
             // can't sneak in just because the query got shorter.
-            const QStringList toks = queryTitle.split(QLatin1Char(' '), Qt::SkipEmptyParts);
-            if (toks.size() > 3) {
-                const int keep = qMax(3, int((toks.size() + 1) / 2));
-                const QString shorter = QStringList(toks.mid(0, keep)).join(QLatin1Char(' '));
+            const QString shorter = MetadataMatch::shortenedSearchTitle(queryTitle);
+            if (!shorter.isEmpty()) {
                 qDebug() << "[metadata] IGDB: retrying with shortened title" << shorter;
                 queryIgdb(infoHash, parsed, shorter);
                 return;
@@ -707,7 +576,8 @@ void MetadataResolver::loadFromDisk(const QString &infoHash)
     result.rating = obj.value(QLatin1String("rating")).toDouble();
     result.year = obj.value(QLatin1String("year")).toInt();
     result.tmdbId = obj.value(QLatin1String("tmdbId")).toInt();
-    result.contentType = contentTypeFromString(obj.value(QLatin1String("contentType")).toString());
+    result.contentType = MetadataMatch::contentTypeFromString(
+        obj.value(QLatin1String("contentType")).toString());
 
     const QJsonArray genresArr = obj.value(QLatin1String("genres")).toArray();
     for (const QJsonValue &v : genresArr)
@@ -737,7 +607,8 @@ void MetadataResolver::saveToDisk(const QString &infoHash, const MetadataResult 
     obj.insert(QLatin1String("genres"), QJsonArray::fromStringList(result.genres));
     obj.insert(QLatin1String("platforms"), QJsonArray::fromStringList(result.platforms));
     obj.insert(QLatin1String("posterFile"), result.posterPath);
-    obj.insert(QLatin1String("contentType"), contentTypeToString(result.contentType));
+    obj.insert(QLatin1String("contentType"),
+               MetadataMatch::contentTypeToString(result.contentType));
     obj.insert(QLatin1String("resolvedAt"), QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
 
     QString path = cacheDir() + QLatin1Char('/') + infoHash + QStringLiteral(".json");

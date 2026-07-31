@@ -130,6 +130,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlupdaterbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmli18nbridge.h   # header-only QObject
     ${CMAKE_SOURCE_DIR}/src/services/metadata/metadataresolver.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/metadatamatch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/hublogic.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/tmdbparse.cpp
@@ -288,6 +289,7 @@ bat_add_test(test_igdbparse test_igdbparse.cpp)
 bat_add_test(test_addonparse test_addonparse.cpp)
 bat_add_test(test_sessionconfig test_sessionconfig.cpp)
 bat_add_test(test_sessionresume test_sessionresume.cpp)
+bat_add_test(test_metadatamatch test_metadatamatch.cpp)
 bat_add_test(test_gameexedetect test_gameexedetect.cpp)
 bat_add_test(test_releasegroup test_releasegroup.cpp)
 bat_add_test(test_contentlanguage test_contentlanguage.cpp)
