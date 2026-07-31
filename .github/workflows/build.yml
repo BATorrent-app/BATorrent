@@ -69,6 +69,13 @@ jobs:
           version: 3.0
       - name: i18n parity + key usage
         run: python3 scripts/check-i18n-parity.py
+      # This job had no compiler cache at all, so every run rebuilt the whole
+      # test tree from cold — the single biggest reason it ran over an hour.
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: test-linux
+          max-size: 800M
       - name: Build tests
         run: |
           # Core + Find/Get&Install metadata + peel characterization nets (P0).
@@ -76,7 +83,8 @@ jobs:
           # they have their own jobs or local runs.
           TESTS="test_unit test_security test_memory test_nameparser test_bridge test_gamesource test_memguard test_geoipdb test_gamereleasepick test_gameinstallstate test_searchranker test_releasegroup test_contentlanguage test_releasetrust test_episodegroup test_debrid test_magnettrackers test_ipblocklist test_sessionresume test_sessionremove test_metadatamatch test_sessionconfig test_addonparse test_tmdbparse test_igdbparse test_settingshelpers test_discoveryassemble test_discoverysearch test_discoveryfinish test_addonfinish test_hublogic test_bandwidthschedule test_gameexedetect test_mkvchapters test_rangeplan test_proxycontroller test_ipcprotocol test_filehostresolver test_wireguardconfig"
           echo "TESTS=$TESTS" >> "$GITHUB_ENV"
-          cmake -B build-tests -DBAT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake -B build-tests -DBAT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build-tests -j$(nproc) --target $TESTS
       - name: Run tests
         env:
@@ -362,6 +370,27 @@ jobs:
           if ($ff.Count -eq 0) { throw "no ffmpeg DLLs in $qtBin — built-in player would fail on MKV/HEVC" }
           $ff | Copy-Item -Destination release/ -Force
           Write-Host "Bundled ffmpeg runtime: $($ff.Name -join ', ')"
+
+          # windeployqt --compiler-runtime only finds the redist when the MSVC
+          # environment is set up; on a bare runner it skips silently and the ZIP
+          # ships without MSVCP140/VCRUNTIME140. That opens fine on a dev box (the
+          # redist is installed) and fails to launch on a clean machine, so copy
+          # them explicitly and refuse to package if they cannot be found.
+          $vcRedist = Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio" -Recurse -Directory `
+                        -Filter "x64" -ErrorAction SilentlyContinue |
+                      Where-Object { $_.FullName -match '\\VC\\Redist\\MSVC\\[^\\]+\\x64$' } |
+                      Sort-Object FullName -Descending | Select-Object -First 1
+          $crt = @()
+          if ($vcRedist) {
+            $crt = Get-ChildItem $vcRedist.FullName -Recurse -Filter "*.dll" -ErrorAction SilentlyContinue |
+                   Where-Object { $_.Name -match '^(MSVCP140|VCRUNTIME140|CONCRT140)' } |
+                   Group-Object Name | ForEach-Object { $_.Group[0] }
+          }
+          if ($crt.Count -eq 0) {
+            throw "MSVC runtime (MSVCP140/VCRUNTIME140) not found — the portable ZIP would not launch on a clean machine"
+          }
+          $crt | Copy-Item -Destination release/ -Force
+          Write-Host "Bundled MSVC runtime: $(($crt | ForEach-Object Name) -join ', ')"
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           # vcpkg's libtorrent is only a vehicle to pull Boost/OpenSSL into the
           # toolchain — its torrent-rasterbar.dll is a DIFFERENT build from our

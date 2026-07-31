@@ -81,7 +81,10 @@ if (-not $dumpbin) {
         }
     }
 
-    $systemish = [regex]'^(?i)(api-ms-win-|ext-ms-|KERNEL32|USER32|GDI32|ADVAPI32|SHELL32|OLE32|OLEAUT32|WS2_32|WINMM|IMM32|VERSION|SETUPAPI|CFGMGR32|CRYPT32|BCRYPT|NCRYPT|SECHOST|RPCRT4|COMBASE|SHLWAPI|UXTHEME|DWMAPI|IPHLPAPI|DNSAPI|NTDLL|MSVCRT|MSVCP_WIN|ucrtbase|WINTRUST|bcryptprimitives|nsi|WTSAPI32|USERENV|PROPSYS|CLBCatQ|COMDLG32|WINSPOOL|SHCORE|dxgi|d3d11|d3d12|DWrite|dxcore|HID|powrprof|dbghelp|PSAPI|MPR|NETAPI32|SAMLIB|wldp|CRYPTBASE|FLTLIB|gpapi|mswsock|WSOCK32|NORMALIZ|NSI|dhcpcsvc|WINHTTP|webio|URLMON|iertutil|sxs|profapi)\b'
+    # Shipped by Windows itself — flagging these as "missing from the bundle" is
+    # noise, no application vendors them. Keep MSVC*140* OUT of this list: those
+    # are the redistributable runtime and a portable ZIP really must carry them.
+    $systemish = [regex]'^(?i)(api-ms-win-|ext-ms-|KERNEL32|USER32|GDI32|ADVAPI32|SHELL32|OLE32|OLEAUT32|WS2_32|WINMM|IMM32|VERSION|SETUPAPI|CFGMGR32|CRYPT32|BCRYPT|NCRYPT|SECHOST|RPCRT4|COMBASE|SHLWAPI|UXTHEME|DWMAPI|IPHLPAPI|DNSAPI|NTDLL|MSVCRT|MSVCP_WIN|ucrtbase|WINTRUST|bcryptprimitives|nsi|WTSAPI32|USERENV|PROPSYS|CLBCatQ|COMDLG32|WINSPOOL|SHCORE|dxgi|d3d9|d3d11|d3d12|DWrite|dxcore|HID|powrprof|dbghelp|PSAPI|MPR|NETAPI32|SAMLIB|wldp|CRYPTBASE|FLTLIB|gpapi|mswsock|WSOCK32|NORMALIZ|NSI|dhcpcsvc|WINHTTP|webio|URLMON|iertutil|sxs|profapi|AUTHZ|Secur32|SSPICLI|CRYPTSP|WINSTA|OPENGL32|GLU32|AVRT|MSACM32|MFPlat|MF|MFReadWrite|WindowsCodecs|d2d1|UIAutomationCore|OLEACC|dcomp|InputHost|CoreMessaging|TextInputFramework|twinapi|Windows\.UI|WinTypes|kernel\.appcore|umpdc|cryptnet|msasn1|devobj|edputil)\b'
 
     $targets = @((Join-Path $Dir "BATorrent.exe"))
     $targets += Get-ChildItem $Dir -Filter "Qt6*.dll" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
