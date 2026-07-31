@@ -141,11 +141,15 @@
 <file>../src/qml/WelcomeDialog.qml</file>
 <file>../src/qml/TourOverlay.qml</file>
 <file>../src/qml/AboutDialog.qml</file>
-<file>../src/qml/PlayerWindow.qml</file>
-<file>../src/qml/PlayerFormat.qml</file>
+    <file>../src/qml/PlayerWindow.qml</file>
+    <file>../src/qml/PlayerFormat.qml</file>
     <file>../src/qml/PlayerSlider.qml</file>
     <file>../src/qml/PlayerSubPanel.qml</file>
-<file>../src/qml/PlayerOptionsPanel.qml</file>
+    <file>../src/qml/PlayerOptionsPanel.qml</file>
+    <file>../src/qml/PlayerResume.qml</file>
+    <file>../src/qml/PlayerEndCard.qml</file>
+    <file>../src/qml/PlayerSkipChip.qml</file>
+    <file>../src/qml/PlayerRunway.qml</file>
 <file>../src/qml/ToastOverlay.qml</file>
 <file>../src/qml/CommandPalette.qml</file>
 <file>../src/qml/RssWindow.qml</file>
