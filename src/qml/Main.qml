@@ -456,15 +456,9 @@ Window {
     property alias gwOverlay: appNotifications.gwOverlay
     property alias toastHost: appNotifications.toastHost
 
-    TrayPopupWindow {
+    AppTrayPopup {
         id: trayPopup
-        onShowApp:      { win.show(); win.raise(); win.requestActivate() }
-        onOpenTorrent:  { win.show(); win.raise(); win.requestActivate(); openFileDlg.open() }
-        onOpenMagnet:   { win.show(); win.raise(); win.requestActivate(); magnetDlg.open() }
-        onPauseAll:     if (typeof session !== "undefined") session.pauseAll()
-        onResumeAll:    if (typeof session !== "undefined") session.resumeAll()
-        onOpenSettings: { win.show(); win.raise(); win.requestActivate(); win.currentPage = 3 }
-        onQuitApp:      Qt.quit()
+        host: win
     }
 
     // (IconImg vem de widgets/)
