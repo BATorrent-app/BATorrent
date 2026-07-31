@@ -9,6 +9,7 @@
 // the core file — it's wired directly into the ctor/dtor.
 
 #include "torrent/sessionmanager.h"
+#include "torrent/sessionresume.h"
 
 #include <libtorrent/read_resume_data.hpp>
 #include <libtorrent/write_resume_data.hpp>
@@ -32,7 +33,7 @@ QByteArray SessionManager::captureResumeData(int index) const
 {
     QString hash = torrentHash(index);
     if (hash.isEmpty()) return {};
-    QFile f(QDir(resumeDataDir()).filePath(hash + ".resume"));
+    QFile f(QDir(resumeDataDir()).filePath(SessionResume::resumeFileName(hash)));
     if (!f.open(QIODevice::ReadOnly)) return {};
     return f.readAll();
 }
@@ -85,7 +86,7 @@ void SessionManager::persistMagnetParams(lt::add_torrent_params atp,
     if (!dir.exists())
         dir.mkpath(".");
     const std::vector<char> buf = lt::write_resume_data_buf(atp);
-    QSaveFile file(dir.filePath(hash + ".resume"));
+    QSaveFile file(dir.filePath(SessionResume::resumeFileName(hash)));
     if (!file.open(QIODevice::WriteOnly))
         return;
     file.write(buf.data(), static_cast<qint64>(buf.size()));
@@ -189,7 +190,7 @@ bool SessionManager::persistResumeAlert(const lt::save_resume_data_alert *rd)
         (std::ostringstream() << rd->params.info_hashes.get_best()).str());
     if (m_removedHashes.contains(hash))
         return false;
-    QString filePath = dir.filePath(hash + ".resume");
+    QString filePath = dir.filePath(SessionResume::resumeFileName(hash));
     // Atomic: write to a temp file and rename on commit, so a crash mid-write
     // can never leave a torn/corrupt .resume that a later startup has to quarantine.
     QSaveFile file(filePath);
@@ -222,11 +223,9 @@ void SessionManager::loadResumeData()
             // — the pieces themselves are still on disk under save_path.
             qWarning("loadResumeData: %s corrupt, attempting recovery (%s)",
                      qPrintable(fileName), ec.message().c_str());
-            if (!atp.ti) {
-                // No torrent_info embedded — nothing we can recover from.
-                // Move the corrupt file aside so a future startup doesn't
-                // hit the same parse failure forever.
-                dir.rename(fileName, fileName + ".corrupt");
+            if (SessionResume::corruptResumeAction(static_cast<bool>(atp.ti))
+                == SessionResume::CorruptResumeAction::Quarantine) {
+                dir.rename(fileName, SessionResume::corruptSidecarName(fileName));
                 continue;
             }
             // Wipe state that read_resume_data may have partially set; we
@@ -262,26 +261,29 @@ void SessionManager::loadResumeData()
             for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
                 std::string eff = atp.renamed_files.count(i) ? atp.renamed_files[i]
                                                              : fs.file_path(i);
-                const bool suffixed = eff.size() >= 4 && eff.compare(eff.size() - 4, 4, ".!bt") == 0;
-                const std::string base = suffixed ? eff.substr(0, eff.size() - 4) : eff;
+                const bool suffixed = eff.size() >= 4
+                    && eff.compare(eff.size() - 4, 4, SessionResume::kIncompleteSuffix) == 0;
+                const std::string base = suffixed
+                    ? eff.substr(0, eff.size() - 4) : eff;
                 const std::int64_t wantSize = fs.file_size(i);
                 const QString basePath = QDir(savePath).filePath(
                     QDir::fromNativeSeparators(QString::fromStdString(base)));
-                const QFileInfo plain(basePath), bt(basePath + QStringLiteral(".!bt"));
-                std::string chosen = eff;
-                if (plain.isFile() && plain.size() == wantSize)   chosen = base;
-                else if (bt.isFile() && bt.size() == wantSize)    chosen = base + ".!bt";
-                else {
-                    // Only files the user actually wants count toward completeness.
-                    // Stream-while-watch sets every non-video file (e.g. YTS's
-                    // .txt/.jpg) to priority 0, so they never hit disk — without
-                    // this guard the torrent looks "incomplete" and re-finishes
-                    // (re-firing "download complete") on every launch.
-                    const std::size_t idx = static_cast<std::size_t>(static_cast<int>(i));
-                    const bool wanted = idx >= prio.size() || prio[idx] != lt::dont_download;
-                    if (wanted) allWantedFullSize = false;
-                }
-                if (chosen != eff) atp.renamed_files[i] = chosen;
+                const QFileInfo plain(basePath);
+                const QFileInfo bt(basePath + QLatin1String(SessionResume::kIncompleteSuffix));
+                // Only files the user actually wants count toward completeness.
+                // Stream-while-watch sets every non-video file (e.g. YTS's
+                // .txt/.jpg) to priority 0, so they never hit disk — without
+                // this guard the torrent looks "incomplete" and re-finishes
+                // (re-firing "download complete") on every launch.
+                const std::size_t idx = static_cast<std::size_t>(static_cast<int>(i));
+                const bool wanted = idx >= prio.size() || prio[idx] != lt::dont_download;
+                const auto pick = SessionResume::reconcileIncompleteSuffix(
+                    eff, wantSize, wanted,
+                    {plain.isFile(), plain.size(), bt.isFile(), bt.size()});
+                if (!pick.wantedFullSize)
+                    allWantedFullSize = false;
+                if (pick.chosen != eff)
+                    atp.renamed_files[i] = pick.chosen;
             }
             // All wanted files present at full size → complete for what the user
             // kept. Remember it as already-complete so the finish alert (fired
@@ -370,18 +372,15 @@ void SessionManager::migrateLegacyResumeData()
     s.setValue(QStringLiteral("resumeMigrated"), true);
 
     QDir newDir(resumeDataDir());
-    if (!newDir.entryList({"*.resume"}, QDir::Files).isEmpty())
-        return;   // already populated — nothing to migrate
+    const bool newDirHasResumes = !newDir.entryList({"*.resume"}, QDir::Files).isEmpty();
 
     const QString appData = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QDir up(appData);
-    if (!up.cdUp()) return;
-    const QString legacyResume = up.filePath("resume");   // <APPDATA>/BATorrent/resume
-    if (QDir::cleanPath(legacyResume) == QDir::cleanPath(newDir.absolutePath())) return;
-
+    const QString legacyResume = SessionResume::legacyResumeDir(appData);
     QDir legacyDir(legacyResume);
     const QStringList files = legacyDir.entryList({"*.resume", "*.torrent"}, QDir::Files);
-    if (files.isEmpty()) return;
+    if (!SessionResume::shouldCopyLegacyResumes(newDirHasResumes, legacyResume,
+                                                newDir.absolutePath(), !files.isEmpty()))
+        return;
 
     newDir.mkpath(".");
     int n = 0;
@@ -395,7 +394,7 @@ void SessionManager::migrateLegacyResumeData()
 QList<RemovedEntry> SessionManager::recentlyRemoved() const
 {
     QList<RemovedEntry> out;
-    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
+    QDir removedDir(SessionResume::removedHistoryDir(resumeDataDir()));
     if (!removedDir.exists()) return out;
     QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
     for (const QString &hash : meta.childGroups()) {
@@ -405,7 +404,7 @@ QList<RemovedEntry> SessionManager::recentlyRemoved() const
         e.name = meta.value("name").toString();
         e.totalSize = meta.value("size").toLongLong();
         e.removedAt = meta.value("removedAt").toLongLong();
-        e.resumePath = removedDir.filePath(hash + ".resume");
+        e.resumePath = removedDir.filePath(SessionResume::resumeFileName(hash));
         meta.endGroup();
         if (QFile::exists(e.resumePath)) out.append(e);
     }
@@ -417,8 +416,8 @@ QList<RemovedEntry> SessionManager::recentlyRemoved() const
 
 bool SessionManager::restoreRemoved(const QString &hash)
 {
-    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
-    QString path = removedDir.filePath(hash + ".resume");
+    QDir removedDir(SessionResume::removedHistoryDir(resumeDataDir()));
+    QString path = removedDir.filePath(SessionResume::resumeFileName(hash));
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly)) return false;
     QByteArray bytes = f.readAll();
@@ -434,7 +433,7 @@ bool SessionManager::restoreRemoved(const QString &hash)
 
 void SessionManager::clearRemovedHistory()
 {
-    QDir removedDir(QFileInfo(QDir(resumeDataDir()), "../removed").absoluteFilePath());
+    QDir removedDir(SessionResume::removedHistoryDir(resumeDataDir()));
     if (!removedDir.exists()) return;
     for (const QString &f : removedDir.entryList({"*.resume"}, QDir::Files))
         QFile::remove(removedDir.filePath(f));

@@ -59,6 +59,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/sessionmanager_limits.cpp
     src/torrent/sessionmanager_apply.cpp
     src/torrent/sessionconfig.cpp
+    src/torrent/sessionresume.cpp
     src/torrent/sessionmanager_persistence.cpp
     src/torrent/sessionmanager_categories.cpp
     src/torrent/sessionmanager_pertorrent.cpp

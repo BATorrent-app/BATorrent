@@ -7,6 +7,7 @@
 // no behaviour change.
 
 #include "torrent/sessionmanager.h"
+#include "torrent/sessionresume.h"
 #include "torrent/magnettrackers.h"
 #include "services/platform/logger.h"
 #include "services/platform/translator.h"
@@ -145,10 +146,10 @@ void SessionManager::applyIncompleteSuffix(lt::add_torrent_params &atp)
     const auto &files = atp.ti->files();
     for (lt::file_index_t i(0); i < files.end_file(); ++i) {
         std::string original = files.file_path(i);
-        if (original.size() >= 4
-            && original.compare(original.size() - 4, 4, ".!bt") == 0)
+        const std::string suffixed = SessionResume::withIncompleteSuffix(original);
+        if (suffixed == original)
             continue; // already suffixed (resume data round-trip)
-        atp.renamed_files[i] = original + ".!bt";
+        atp.renamed_files[i] = suffixed;
     }
 }
 
@@ -259,11 +260,11 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
             if (mit != m_magnetHashes.end()) hash = mit->second;
         }
         QDir dir(resumeDataDir());
-        QDir removedDir(QFileInfo(dir, "../removed").absoluteFilePath());
+        QDir removedDir(SessionResume::removedHistoryDir(resumeDataDir()));
         if (!removedDir.exists()) removedDir.mkpath(".");
-        QFile::remove(removedDir.filePath(hash + ".resume"));
-        QFile::rename(dir.filePath(hash + ".resume"),
-                      removedDir.filePath(hash + ".resume"));
+        QFile::remove(removedDir.filePath(SessionResume::resumeFileName(hash)));
+        QFile::rename(dir.filePath(SessionResume::resumeFileName(hash)),
+                      removedDir.filePath(SessionResume::resumeFileName(hash)));
         QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
         meta.beginGroup(hash);
         meta.setValue("name", QString::fromStdString(st.name));
@@ -272,17 +273,18 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         meta.endGroup();
         meta.beginGroup("");
         QStringList groups = meta.childGroups();
-        if (groups.size() > 50) {
-            QList<QPair<qint64, QString>> sorted;
+        if (groups.size() > SessionResume::kRemovedHistoryKeep) {
+            std::vector<std::pair<qint64, QString>> sorted;
+            sorted.reserve(static_cast<size_t>(groups.size()));
             for (const QString &g : groups) {
                 meta.beginGroup(g);
-                sorted.append({meta.value("removedAt").toLongLong(), g});
+                sorted.emplace_back(meta.value("removedAt").toLongLong(), g);
                 meta.endGroup();
             }
             std::sort(sorted.begin(), sorted.end());
-            for (int i = 0; i < sorted.size() - 50; ++i) {
-                meta.remove(sorted[i].second);
-                QFile::remove(removedDir.filePath(sorted[i].second + ".resume"));
+            for (const QString &oldHash : SessionResume::removedHistoryHashesToPrune(sorted)) {
+                meta.remove(oldHash);
+                QFile::remove(removedDir.filePath(SessionResume::resumeFileName(oldHash)));
             }
         }
         meta.endGroup();
@@ -324,34 +326,16 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         QStringList trashTargets;
         if (deleteFiles) {
             const QString savePath = QString::fromStdString(st.save_path);
-            QSet<QString> tops;
+            QStringList filePaths;
             if (auto ti = h.torrent_file()) {
                 const auto &fs = ti->files();
-                for (const auto i : fs.file_range()) {
-                    QString p = QString::fromStdString(std::string(fs.file_path(i)));
-                    // libtorrent reports backslash paths on Windows; normalize so
-                    // multi-file torrents resolve to their top-level folder instead
-                    // of being trashed file-by-file (folder left behind).
-                    p.replace(QLatin1Char('\\'), QLatin1Char('/'));
-                    const int slash = p.indexOf(QLatin1Char('/'));
-                    tops.insert(slash > 0 ? p.left(slash) : p);
-                }
+                for (const auto i : fs.file_range())
+                    filePaths << QString::fromStdString(std::string(fs.file_path(i)));
             } else {
-                tops.insert(QString::fromStdString(st.name));
+                filePaths << QString::fromStdString(st.name);
             }
-            for (const QString &t : tops) {
-                if (t.isEmpty()) continue;
-                // the in-memory file_path may already carry the incomplete-file
-                // ".!bt" suffix (rename_file persists on the handle) — normalize
-                // to the base name and target both on-disk variants
-                QString base = t;
-                if (base.endsWith(QLatin1String(".!bt"))) base.chop(4);
-                trashTargets << QDir(savePath).filePath(base)
-                             << QDir(savePath).filePath(base + QStringLiteral(".!bt"));
-            }
-            // also the hidden partial-pieces sidecar (.{hash}.parts) — otherwise it
-            // lingers orphaned in the save folder after a remove-with-files
-            trashTargets << QDir(savePath).filePath(QStringLiteral(".") + hash + QStringLiteral(".parts"));
+            trashTargets = SessionResume::trashTargetsForRemoval(
+                savePath, SessionResume::topLevelTrashNames(filePaths), hash);
         }
 
         // An actively-downloading torrent still has its files open when we ask
@@ -361,7 +345,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         // until the handles are gone instead of giving up after one attempt.
         if (deleteFiles) h.pause();
         m_session.remove_torrent(h, {});
-        if (!trashTargets.isEmpty()) {
+        if (SessionResume::shouldScheduleFileRemoval(deleteFiles, trashTargets)) {
             if (permanent) scheduleDelete(trashTargets, 0);
             else scheduleTrash(trashTargets, 0);
         }
