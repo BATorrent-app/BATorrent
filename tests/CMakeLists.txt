@@ -89,6 +89,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_add.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_details.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_create.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_games.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_gameinstall.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlsessionbridge_library.cpp

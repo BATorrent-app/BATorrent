@@ -136,6 +136,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmlsessionbridge.cpp
     src/bridges/qmlsessionbridge_add.cpp
     src/bridges/qmlsessionbridge_details.cpp
+    src/bridges/qmlsessionbridge_create.cpp
     src/bridges/qmlsessionbridge_games.cpp
     src/bridges/qmlsessionbridge_gameinstall.cpp
     src/bridges/qmlsessionbridge_library.cpp
