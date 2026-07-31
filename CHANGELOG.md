@@ -1,5 +1,35 @@
 # Changelog
 
+## v4.8.0-beta5
+
+Test build for the beta round. Still a beta, not a public release.
+
+### Changed
+- The VPN is now a "light" model: instead of running its own tunnel, BATorrent
+  binds to the VPN you already have connected, so your provider's app stays in
+  charge and BATorrent simply refuses to move traffic outside it. The built-in
+  WireGuard cockpit is hidden while that path is reworked.
+
+### Added
+- Language-aware content: the app's language now drives what surfaces first, so
+  results and recommendations in your own language stop being buried.
+- Games: "Get & Install" flow, plus fresher game sources.
+- Search warns about a release that looks bad before you download it.
+- Accessibility: text contrast now passes AA, and controls are reachable by a
+  screen reader.
+
+### Fixed
+- Queue positions show each item's real number instead of the same label on all.
+- Categories survive a restart.
+- RSS: downloads that silently never started, and a list that stayed empty until
+  the next check.
+- Posters and covers that went missing.
+- One consistent icon set and typeface across the interface.
+- Transfer direction uses one red and one amber instead of two of each.
+- Startup robustness on Windows, and a set of crash fixes under the hood.
+
+---
+
 ## v4.8.0-beta3
 
 Second 4.8 test build, from the beta tester round. Still a beta for testing.
