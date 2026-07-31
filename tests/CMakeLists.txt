@@ -28,6 +28,7 @@ include(Catch)
 set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/iengine.h        # header-only QObject — listed so AUTOMOC builds its metaobject
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_query.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_streaming.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_config.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_limits.cpp
@@ -127,6 +128,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlupdaterbridge.h
     ${CMAKE_SOURCE_DIR}/src/services/metadata/metadataresolver.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/hublogic.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/qrcodegen.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoip.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/geoipdb.cpp
@@ -275,6 +277,7 @@ bat_add_test(test_geoipdb    test_geoipdb.cpp)
 bat_add_test(test_searchranker test_searchranker.cpp)
 bat_add_test(test_gamereleasepick test_gamereleasepick.cpp)
 bat_add_test(test_gameinstallstate test_gameinstallstate.cpp)
+bat_add_test(test_hublogic test_hublogic.cpp)
 bat_add_test(test_sessionconfig test_sessionconfig.cpp)
 bat_add_test(test_gameexedetect test_gameexedetect.cpp)
 bat_add_test(test_releasegroup test_releasegroup.cpp)

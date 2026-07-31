@@ -3,6 +3,22 @@
 // See LICENSE file for details
 
 #include "services/discovery/discoveryservice.h"
+#include "services/discovery/hublogic.h"
+#include "services/platform/contentlanguage.h"
+
+#include <QDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QLocale>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QUrlQuery>
 
 #include <QDateTime>
 #include <QDir>
@@ -15,13 +31,13 @@
 #include <QNetworkRequest>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QUrl>
 #include <QUrlQuery>
 #include <QHash>
 #include <QSet>
 #include <QLocale>
 #include <QPair>
 #include <algorithm>
-#include "services/platform/contentlanguage.h"
 
 namespace {
 
@@ -78,6 +94,34 @@ DiscoveryService::DiscoveryService(QObject *parent)
     , m_nam(new QNetworkAccessManager(this))
 {
     m_nam->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
+}
+
+QString DiscoveryService::genreKey(const QString &name) const
+{
+    return HubLogic::genreKey(name);
+}
+
+QString DiscoveryService::topGenreFromNames(const QStringList &genreNames) const
+{
+    return HubLogic::topGenre(genreNames);
+}
+
+QVariantList DiscoveryService::applyLibraryView(const QVariantList &list,
+                                               const QString &search,
+                                               const QString &sort) const
+{
+    return HubLogic::applyView(list, search, sort);
+}
+
+QVariantList DiscoveryService::excludeOwned(const QVariantList &candidates,
+                                            const QStringList &ownedTitles,
+                                            int limit) const
+{
+    QSet<QString> owned;
+    owned.reserve(ownedTitles.size());
+    for (const QString &t : ownedTitles)
+        owned.insert(t.toLower());
+    return HubLogic::excludeOwnedTitles(candidates, owned, limit);
 }
 
 void DiscoveryService::load()
