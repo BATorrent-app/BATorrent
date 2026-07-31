@@ -4,8 +4,13 @@ name: i18n
 # Pure Python — no Qt/build. Also runs inside build.yml (test job) and
 # qml-smoke.yml; this workflow exists so translation-only PRs fail in seconds.
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
+    branches: [main]
     paths:
       - 'translations/**'
       - 'scripts/check-i18n-parity.py'

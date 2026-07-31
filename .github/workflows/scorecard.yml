@@ -1,5 +1,9 @@
 name: Scorecard
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   branch_protection_rule:
   schedule:
