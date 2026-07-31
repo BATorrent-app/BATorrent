@@ -1,0 +1,15 @@
+---
+description: BATorrent is a shipping product — keep the public tree professional
+alwaysApply: true
+---
+
+# Product bar
+
+- BATorrent is a **shipping product** (thousands of users), not a study or school repo.
+- Tracked repo contents must look like **professional shipping software**.
+- Personal learning notes, curricula, and “things I don’t understand” belong only in
+  gitignored `internal/` (or entirely out of tree) — never under tracked `docs/` or
+  product `.cursor/rules/`. Agents may read `internal/LEARNING_PATH.md` when present
+  for mentoring context; that file is not product documentation.
+- Quality work and refactors serve **product stability and craft**. Learning may
+  happen in parallel; it must never become the public artifact.
