@@ -51,6 +51,16 @@ public:
     // Backdrop/still URLs for a title (text-free ones first). Emits backdropsReady.
     Q_INVOKABLE void fetchBackdrops(int tmdbId, const QString &type);
 
+    // Hub library helpers (pure; also covered by test_hublogic).
+    Q_INVOKABLE QString genreKey(const QString &name) const;
+    Q_INVOKABLE QString topGenreFromNames(const QStringList &genreNames) const;
+    Q_INVOKABLE QVariantList applyLibraryView(const QVariantList &list,
+                                             const QString &search,
+                                             const QString &sort) const;
+    Q_INVOKABLE QVariantList excludeOwned(const QVariantList &candidates,
+                                         const QStringList &ownedTitles,
+                                         int limit = 12) const;
+
 signals:
     void rowsChanged();
     void heroChanged();

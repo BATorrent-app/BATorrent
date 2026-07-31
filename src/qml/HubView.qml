@@ -46,48 +46,34 @@ Item {
     // ---- "Recommended for you": match your library's top genre to a discovery
     // genre-shelf. Game genres (IGDB) are English-stable; movie genres handle EN/PT. ----
     function genreKey(name) {
-        var s = (name || "").toLowerCase()
-        if (s.indexOf("rpg") >= 0 || s.indexOf("role") >= 0) return "rpg"
-        if (s.indexOf("shoot") >= 0 || s.indexOf("tiro") >= 0 || s.indexOf("fps") >= 0) return "shooter"
-        if (s.indexOf("strateg") >= 0 || s.indexOf("estrat") >= 0) return "strategy"
-        if (s.indexOf("indie") >= 0) return "indie"
-        if (s.indexOf("sci") >= 0 || s.indexOf("ficç") >= 0 || s.indexOf("cient") >= 0) return "scifi"
-        if (s.indexOf("horror") >= 0 || s.indexOf("terror") >= 0) return "horror"
-        if (s.indexOf("action") >= 0 || s.indexOf("ação") >= 0 || s.indexOf("acao") >= 0) return "action"
-        return ""
+        return disco ? disco.genreKey(name) : ""
     }
     readonly property string topGenre: {
-        var counts = ({})
-        function tally(arr) {
-            if (!arr) return
-            for (var i = 0; i < arr.length; i++) {
-                var k = page.genreKey(arr[i])
-                if (k.length > 0) counts[k] = (counts[k] || 0) + 1
-            }
+        if (!disco) return ""
+        var names = []
+        for (var g = 0; g < gameItems.length; g++) {
+            var gg = gameItems[g].genres || []
+            for (var i = 0; i < gg.length; i++) names.push(gg[i])
         }
-        for (var g = 0; g < gameItems.length; g++) tally(gameItems[g].genres)
-        for (var m = 0; m < library.length; m++) tally(library[m].genres)
-        var best = "", bestN = 0
-        for (var key in counts) if (counts[key] > bestN) { bestN = counts[key]; best = key }
-        return best
+        for (var m = 0; m < library.length; m++) {
+            var mg = library[m].genres || []
+            for (var j = 0; j < mg.length; j++) names.push(mg[j])
+        }
+        return disco.topGenreFromNames(names)
     }
     readonly property var recommendations: {
         if (topGenre.length === 0 || !disco) return []
         var rows = disco.rows || []
-        var have = ({})
-        for (var i = 0; i < library.length; i++) have[(library[i].title || "").toLowerCase()] = true
-        for (var j = 0; j < gameItems.length; j++) have[(gameItems[j].title || "").toLowerCase()] = true
-        var out = []
-        for (var r = 0; r < rows.length && out.length < 12; r++) {
+        var owned = []
+        for (var i = 0; i < library.length; i++) owned.push(library[i].title || "")
+        for (var j = 0; j < gameItems.length; j++) owned.push(gameItems[j].title || "")
+        var cand = []
+        for (var r = 0; r < rows.length; r++) {
             if (rows[r].genre !== topGenre) continue
             var items = rows[r].items || []
-            for (var k = 0; k < items.length && out.length < 12; k++) {
-                var it = items[k]
-                if (have[(it.title || "").toLowerCase()]) continue
-                out.push(it)
-            }
+            for (var k = 0; k < items.length; k++) cand.push(items[k])
         }
-        return out
+        return disco.excludeOwned(cand, owned, 12)
     }
 
     // "Because you watched {X}" — TMDB per-title recommendations for your latest watch
@@ -106,25 +92,15 @@ Item {
         ignoreUnknownSignals: true
         function onRecommendationsReady(tmdbId, items) {
             if (!page.recSeed || page.recSeed.tmdbId !== tmdbId) return
-            var have = ({})
-            for (var i = 0; i < page.library.length; i++) have[(page.library[i].title || "").toLowerCase()] = true
-            var out = []
-            for (var k = 0; k < items.length && out.length < 12; k++) {
-                if (have[(items[k].title || "").toLowerCase()]) continue
-                out.push(items[k])
-            }
-            page.perTitleRecs = out
+            var owned = []
+            for (var i = 0; i < page.library.length; i++) owned.push(page.library[i].title || "")
+            page.perTitleRecs = page.disco ? page.disco.excludeOwned(items, owned, 12) : []
         }
         function onGameRecommendationsReady(gameName, items) {
             if (!page.gameSeed || (page.gameSeed.title || "") !== gameName) return
-            var have = ({})
-            for (var i = 0; i < page.gameItems.length; i++) have[(page.gameItems[i].title || "").toLowerCase()] = true
-            var out = []
-            for (var k = 0; k < items.length && out.length < 12; k++) {
-                if (have[(items[k].title || "").toLowerCase()]) continue
-                out.push(items[k])
-            }
-            page.gameRecs = out
+            var owned = []
+            for (var i = 0; i < page.gameItems.length; i++) owned.push(page.gameItems[i].title || "")
+            page.gameRecs = page.disco ? page.disco.excludeOwned(items, owned, 12) : []
         }
     }
     // "Because you played {X}" — IGDB similar games for your latest played game
@@ -146,6 +122,16 @@ Item {
 
     // discovery feed (shared with the Discover page) — source for recommendations
     readonly property var disco: typeof discovery !== "undefined" ? discovery : null
+    HubFormat { id: fmt; page: page }
+    HubMenus {
+        id: menus
+        page: page
+    }
+    property alias exePicker: menus.exePicker
+    property alias gameMenu: menus.gameMenu
+    property alias continueMenu: menus.continueMenu
+    property alias episodeMenu: menus.episodeMenu
+
     function refresh() {
         library = api ? api.movieLibrary() : []
         gameItems = api ? api.gameLibrary() : []
@@ -164,54 +150,19 @@ Item {
     }
 
     // human "12h 30m" / "45m" from seconds
-    function fmtPlaytime(secs) {
-        if (!secs || secs <= 0) return ""
-        var h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60)
-        return h > 0 ? (h + "h " + m + "m") : (m + "m")
-    }
-    function fmtLeft(ms) {
-        if (!ms || ms <= 0) return ""
-        var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
-        return i18n.t("hub_time_left").replace("%1", h > 0 ? (h + "h " + m + "m") : (m + "m"))
-    }
+    function fmtPlaytime(secs) { return fmt.fmtPlaytime(secs) }
+    function fmtLeft(ms) { return fmt.fmtLeft(ms) }
     // S2E05 for the episode you're mid-way through (continue-watching a series)
-    function episodeLabel(item) {
-        if (!item || !item.isSeries || !item.videos) return ""
-        for (var i = 0; i < item.videos.length; i++) {
-            var v = item.videos[i]
-            if (v.idx === item.fileIndex && (v.season > 0 || v.episode > 0))
-                return "S" + v.season + "E" + (v.episode < 10 ? "0" + v.episode : v.episode)
-        }
-        return ""
-    }
-    function fmtSize(b) {
-        if (!b || b <= 0) return ""
-        var u = ["B", "KB", "MB", "GB", "TB"]
-        var i = Math.min(u.length - 1, Math.floor(Math.log(b) / Math.log(1024)))
-        return (b / Math.pow(1024, i)).toFixed(i >= 3 ? 1 : 0) + " " + u[i]
-    }
+    function episodeLabel(item) { return fmt.episodeLabel(item) }
+    function fmtSize(b) { return fmt.fmtSize(b) }
 
     function applyView(list) {
-        var q = librarySearch.trim().toLowerCase()
-        var arr = q.length > 0
-            ? list.filter(function (i) { return (i.title || "").toLowerCase().indexOf(q) >= 0 })
-            : list.slice()
-        if (librarySort === "name")
-            arr.sort(function (a, b) { return (a.title || "").localeCompare(b.title || "") })
-        return arr
+        if (disco) return disco.applyLibraryView(list, librarySearch, librarySort)
+        return list
     }
-    function fmtTime(ms) {
-        if (!ms || ms <= 0) return ""
-        var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60
-        function pad(n) { return (n < 10 ? "0" : "") + n }
-        return (h > 0 ? h + ":" + pad(m) : m + "") + ":" + pad(ss)
-    }
+    function fmtTime(ms) { return fmt.fmtTime(ms) }
 
-    function fileUrl(p) {
-        if (!p || p.length === 0) return ""
-        if (p.indexOf("file:") === 0) return p
-        return (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(p)
-    }
+    function fileUrl(p) { return fmt.fileUrl(p) }
 
     // Play a movie: single video → play; multiple (a series) → pick an episode.
     function playMovie(item) {
@@ -240,56 +191,17 @@ Item {
         default: break
         }
     }
-    function gameStateLabel(item) {
-        if (!item) return ""
-        switch (item.installState) {
-        case 0: return "↓ " + Math.floor((item.progress || 0) * 100) + "%"
-        case 1: return i18n.t("hub_gs_install")
-        case 2: return i18n.t("hub_gs_extracting")
-        case 3: return i18n.t("hub_gs_finish_setup")
-        case 4: return i18n.t("hub_gs_play")
-        case 5: return i18n.t("hub_gs_playing")
-        case 6: return i18n.t("hub_gs_setup")
-        case 7: return i18n.t("hub_gs_retry")
-        }
-        return ""
-    }
+    function gameStateLabel(item) { return fmt.gameStateLabel(item) }
     // actionable (accent) vs busy (muted) — drives the state button's colour
-    function gameStateActionable(item) {
-        if (!item) return false
-        var s = item.installState
-        return s === 1 || s === 4 || s === 6 || s === 7
-    }
+    function gameStateActionable(item) { return fmt.gameStateActionable(item) }
     // card footer line: state + size ("Ready to play · 9 GB", "↓ 64% · 12 GB", …)
-    function cardStatus(item, isGame) {
-        if (!item) return ""
-        if (item.playing === true) return i18n.t("hub_playing_now")
-        var sz = page.fmtSize(item.size || 0)
-        var dot = sz ? ("  ·  " + sz) : ""
-        if (isGame) {
-            switch (item.installState) {
-            case 0: return "↓ " + Math.floor((item.progress || 0) * 100) + "%" + dot
-            case 4: return i18n.t("hub_ready_to_play") + dot
-            case 1: return i18n.t("hub_installed") + dot
-            default: return page.gameStateLabel(item) + dot
-            }
-        }
-        return item.completed ? (i18n.t("hub_installed") + dot)
-                              : ("↓ " + Math.floor((item.progress || 0) * 100) + "%" + dot)
-    }
+    function cardStatus(item, isGame) { return fmt.cardStatus(item, isGame) }
     function gameMenuOpenFolder(hash) {
         if (!api) return
         var folder = api.gameFolder(hash)
         if (folder && folder.length > 0) Qt.openUrlExternally(page.fileUrl(folder))
     }
-    function fmtAgo(ms) {
-        if (!ms || ms <= 0) return ""
-        var h = Math.floor((Date.now() - ms) / 3600000)
-        if (h < 24) return h < 1 ? i18n.t("hub_today") : i18n.t("hub_hours_ago").replace("%1", h)
-        var d = Math.floor(h / 24)
-        if (d === 1) return i18n.t("hub_yesterday")
-        return i18n.t("hub_days_ago").replace("%1", d)
-    }
+    function fmtAgo(ms) { return fmt.fmtAgo(ms) }
     function openExePicker(hash, launchAfter) {
         exePicker.pendingHash = hash
         exePicker.launchAfter = launchAfter
@@ -784,109 +696,6 @@ Item {
             width: parent.width - 32
             color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans
             horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
-        }
-    }
-
-    // ---- games: manual executable picker + per-game context menu ----
-    FileDialog {
-        id: exePicker
-        property string pendingHash: ""
-        property bool launchAfter: true
-        title: (i18n.language, i18n.t("hub_set_exe"))
-        onAccepted: {
-            if (!page.api || pendingHash.length === 0) return
-            page.api.setGameExe(pendingHash, selectedFile.toString())
-            page.refresh()
-            if (launchAfter) page.api.launchGame(pendingHash)
-        }
-    }
-
-    BatMenu {
-        id: gameMenu
-        property string hash: ""
-        function openFor(h) { hash = h; popup() }
-        implicitWidth: 200
-        BatMenuItem {
-            text: (i18n.language, i18n.t("hub_gs_install"))
-            onTriggered: if (page.api) page.api.installGame(gameMenu.hash)
-        }
-        BatMenuItem {
-            text: (i18n.language, i18n.t("hub_set_exe"))
-            onTriggered: page.openExePicker(gameMenu.hash, false)
-        }
-        BatMenuItem {
-            text: (i18n.language, i18n.t("hub_open_folder"))
-            onTriggered: if (page.api) Qt.openUrlExternally(page.fileUrl(page.api.gameFolder(gameMenu.hash)))
-        }
-    }
-
-    BatMenu {
-        id: continueMenu
-        property string hash: ""
-        property int fileIdx: 0
-        function openFor(h, f) { hash = h; fileIdx = f || 0; popup() }
-        implicitWidth: 210
-        BatMenuItem {
-            text: (i18n.language, i18n.t("hub_remove_continue"))
-            onTriggered: {
-                if (page.api) page.api.clearResume(continueMenu.hash, continueMenu.fileIdx)
-                page.refresh()
-            }
-        }
-    }
-
-    // episode picker for multi-video torrents (series). Pulls real episode
-    // titles from TMDB per season and merges them in live (falls back to file
-    // names if there's no metadata).
-    BatMenu {
-        id: episodeMenu
-        property string hash: ""
-        property var videos: []
-        property int tmdbId: 0
-        property var titles: ({})      // "season_episode" → title
-        function openFor(item) {
-            hash = item.infoHash
-            videos = item.videos || []
-            tmdbId = item.tmdbId || 0
-            titles = ({})
-            if (tmdbId > 0 && page.api) {
-                var seen = ({})
-                for (var i = 0; i < videos.length; i++) {
-                    var sn = videos[i].season
-                    if (sn >= 0 && !seen[sn]) { seen[sn] = true; page.api.fetchEpisodes(tmdbId, sn) }
-                }
-            }
-            popup()
-        }
-        implicitWidth: 380
-        Connections {
-            target: page.api
-            ignoreUnknownSignals: true
-            function onEpisodesReady(tmdbId, season, episodes) {
-                if (tmdbId !== episodeMenu.tmdbId) return
-                var t = Object.assign({}, episodeMenu.titles)
-                for (var i = 0; i < episodes.length; i++)
-                    t[season + "_" + episodes[i].episode] = episodes[i].name
-                episodeMenu.titles = t
-            }
-        }
-        Repeater {
-            model: episodeMenu.videos
-            BatMenuItem {
-                id: epItem
-                required property var modelData
-                text: {
-                    var m = epItem.modelData
-                    var check = m.watched ? "✓  " : ""
-                    if (m.season >= 0 && m.episode >= 0) {
-                        var title = episodeMenu.titles[m.season + "_" + m.episode] || m.name
-                        return check + "S" + m.season + "·E" + (m.episode < 10 ? "0" + m.episode : m.episode) + "  —  " + title
-                    }
-                    return check + m.name
-                }
-                elideMode: Text.ElideMiddle
-                onTriggered: if (page.api) page.api.playFile(episodeMenu.hash, epItem.modelData.idx)
-            }
         }
     }
 
