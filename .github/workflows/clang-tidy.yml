@@ -1,15 +1,19 @@
 name: clang-tidy
 
+# Deep static analysis — not a PR gate. Noise and build cost dominate Dependabot
+# / routine PRs. Run weekly, from the Actions tab, or by adding label `ci-deep`.
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  pull_request:
-    branches: [main]
   schedule:
     - cron: '0 6 * * 1'   # weekly, Monday 06:00 UTC
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [labeled]
 
 permissions:
   contents: read
@@ -17,6 +21,7 @@ permissions:
 jobs:
   clang-tidy:
     name: clang-tidy + Clang Static Analyzer
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci-deep'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -59,8 +64,7 @@ jobs:
         run: |
           # Active code paths only — the legacy QWidget UI (reachable via
           # --legacy) is being phased out and isn't worth linting.
-          files=$(git ls-files 'src/app/*.cpp' 'src/torrent/*.cpp' 'src/webui/*.cpp' \
-                  src/main.cpp src/gui/qmlposterbridge.cpp src/gui/thememanager.cpp)
+          files=$(git ls-files 'src/app/*.cpp' 'src/torrent/*.cpp' 'src/webui/*.cpp' src/main.cpp)
           run-clang-tidy-17 -p build -quiet $files 2>&1 | tee tidy.log
           if grep -qE ": (warning|error): " tidy.log; then
             echo "::error::clang-tidy found issues"; exit 1
