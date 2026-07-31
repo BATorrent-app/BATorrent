@@ -133,7 +133,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/vpn/vpnmanager.cpp
     src/services/discovery/discoveryservice.cpp
     src/services/discovery/hublogic.cpp
-    src/services/discovery/tmdbimages.cpp
+    src/services/discovery/tmdbparse.cpp
     src/services/discovery/gamesourcemanager.cpp
     src/bridges/qmlposterbridge.cpp
     src/bridges/qmlpostermodel.cpp
