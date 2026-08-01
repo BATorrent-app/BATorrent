@@ -19,8 +19,12 @@ on:
       - '.github/workflows/qml-smoke.yml'
   workflow_dispatch:
 
+# Literal name, NOT github.workflow: inside a called workflow that expression
+# resolves to the CALLER's name, so this landed in build.yml's own group and the
+# call collided with its parent — the job was cancelled before it existed and the
+# run went red with no red step.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  group: qml-smoke-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
