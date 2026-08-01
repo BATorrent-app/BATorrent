@@ -259,10 +259,6 @@
 <file>fonts/IBMPlexSans-Medium.ttf</file>
 <file>fonts/IBMPlexSans-SemiBold.ttf</file>
 <file>fonts/IBMPlexSans-Bold.ttf</file>
-<file>fonts/Inter-Regular.ttf</file>
-<file>fonts/Inter-Medium.ttf</file>
-<file>fonts/Inter-SemiBold.ttf</file>
-<file>fonts/Inter-Bold.ttf</file>
 <file>fonts/NewRocker-Regular.ttf</file>
 <file>../translations/en.json</file>
 <file>../translations/pt.json</file>
