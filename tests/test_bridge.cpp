@@ -615,3 +615,40 @@ TEST_CASE("clearResume: removes resume_ hash_index and _dur/_at sidecars",
     REQUIRE_FALSE(s.contains(rk + QStringLiteral("_dur")));
     REQUIRE_FALSE(s.contains(rk + QStringLiteral("_at")));
 }
+
+// A magnet carries its info-hash in the URI, so a re-add is knowable before any
+// metadata arrives. Without the guard, add_torrent hands back the EXISTING
+// handle and it lands in m_torrents twice: two rows reading one handle (same
+// size/speed/progress), and removing either strands the other.
+TEST_CASE("addMagnet rejects a duplicate info-hash", "[session][add][magnet]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    const int base = session.torrentCount();
+
+    // Same info-hash, different tracker/display-name — the "same content from
+    // two sources" case: one torrent, two magnet links.
+    const QString hash = QStringLiteral("85360c42e678d8f814c54b448f9e49b5db93db8f");
+    const QString first  = QStringLiteral("magnet:?xt=urn:btih:%1&dn=Source+A").arg(hash);
+    const QString second = QStringLiteral("magnet:?xt=urn:btih:%1&dn=Source+B"
+                                          "&tr=udp%3A%2F%2Ftracker.example%3A80").arg(hash);
+
+    session.addMagnet(first, tmp.path() + "/dl", QString(), 0);
+    REQUIRE(session.torrentCount() == base + 1);
+
+    session.addMagnet(second, tmp.path() + "/dl", QString(), 0);
+    REQUIRE(session.torrentCount() == base + 1);
+
+    // A genuinely different hash still gets through.
+    const QString other = QStringLiteral("magnet:?xt=urn:btih:"
+        "1111111111111111111111111111111111111111&dn=Other");
+    session.addMagnet(other, tmp.path() + "/dl", QString(), 0);
+    REQUIRE(session.torrentCount() == base + 2);
+
+    QDir(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+             .filePath("resume")).removeRecursively();
+}

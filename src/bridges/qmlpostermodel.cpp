@@ -289,11 +289,13 @@ void QmlPosterModel::removeRow(int index)
 
 void QmlPosterModel::posterResolved(const QString &hash)
 {
+    // No early return: a hash can legitimately back more than one row (a resume
+    // round-trip mid-add, or a list that predates the addMagnet duplicate guard).
+    // Stopping at the first match left the other tile blank with no way to fix it.
     for (int row = 0; row < m_lastCount; ++row) {
         if (m_session->torrentHashAt(row) == hash) {
             emit dataChanged(index(row), index(row),
                              {PosterPathRole, MetaTitleRole, YearRole, GenresRole});
-            return;
         }
     }
 }
