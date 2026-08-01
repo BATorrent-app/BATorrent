@@ -16,7 +16,11 @@ Rectangle {
     property alias contentOpacity: chipContent.opacity
     readonly property bool chipHovered: chipHover.hovered
 
-    visible: car.dlList.length > 0 && bar.showDownloadChip
+    // Not on Downloads (page 0): this is peripheral awareness for when the list
+    // is off screen. Beside the list it only repeats a row the grid already
+    // shows bigger, which is what made the top bar feel like it was reporting
+    // the same download three times.
+    visible: car.dlList.length > 0 && bar.showDownloadChip && bar.currentIndex !== 0
     Layout.alignment: Qt.AlignVCenter
     Layout.preferredHeight: 40
     Layout.preferredWidth: chipContent.implicitWidth + 20

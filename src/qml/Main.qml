@@ -519,7 +519,6 @@ Window {
             onAddLink: promptHttpDownload()
             onRemoveSelected: removeDlg.open()
             onOpenRss: win.showWin(rssWinLoader)
-            onNavigate: function(index) { win.currentPage = index }
         }
 
         // ================== SUBBAR + LIBRARY ==================

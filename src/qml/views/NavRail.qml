@@ -37,7 +37,10 @@ Rectangle {
         hovered: dlSlot.slotHovered
         active: rail.showDl
     }
-    readonly property bool showDl: !collapsed && car.dlList.length > 0 && showDownloadChip
+    // Same rule as the top bar's chip: off on Downloads (page 0), where the
+    // list itself is the better version of this information.
+    readonly property bool showDl: !collapsed && car.dlList.length > 0
+                                   && showDownloadChip && currentIndex !== 0
     Connections {
         target: car
         function onDlIndexChanged() { dlFade.restart() }
