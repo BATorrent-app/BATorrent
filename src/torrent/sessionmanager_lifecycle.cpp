@@ -159,6 +159,18 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath,
     try {
         qDebug() << "[session] addMagnet:" << uri.left(80) << "save:" << savePath;
         lt::add_torrent_params atp = lt::parse_magnet_uri(uri.toStdString());
+
+        // Same guard the .torrent paths have. A magnet carries its info-hash in
+        // the URI, so the duplicate is knowable before any metadata arrives —
+        // without this, add_torrent hands back the EXISTING handle and we push
+        // it into m_torrents twice: two tiles reading one handle (identical
+        // size/speed/progress), only one of which the resolver ever fills in,
+        // and removing either one strands the other on a dead handle.
+        if (isDuplicate(atp.info_hashes)) {
+            qDebug() << "[session] addMagnet: duplicate ignored";
+            return;
+        }
+
         atp.save_path = savePath.toStdString();
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
