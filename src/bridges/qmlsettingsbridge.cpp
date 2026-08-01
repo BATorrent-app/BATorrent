@@ -10,6 +10,7 @@
 #include "services/platform/settingsbackup.h"
 #include "services/platform/settingspolicy.h"
 #include "services/platform/fileassociation.h"
+#include "services/platform/autostart.h"
 #include "services/integrations/notifier.h"
 #include "services/security/passwordhash.h"
 #include "services/security/secretstore.h"
@@ -144,6 +145,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "proxyLeakProof")      return s->proxyLeakProof();
     if (key == "ipFilterPath")        return s->ipFilterPath();
     // files / media
+    if (key == "startWithSystem")     return Autostart::isEnabled();
     if (key == "tempPath")            return s->tempPath();
     if (key == "preallocate")         return s->preallocate();
     if (key == "autoRecheck")         return s->autoRecheck();
@@ -206,6 +208,14 @@ QVariant QmlSettingsBridge::get(const QString &key) const
 
 void QmlSettingsBridge::set(const QString &key, const QVariant &v)
 {
+    // Read back from the OS rather than trusting our own copy: the user can
+    // revoke the entry from Task Manager / System Settings, and then the toggle
+    // would keep claiming it is on.
+    if (key == QLatin1String("startWithSystem")) {
+        Autostart::setEnabled(v.toBool());
+        QSettings().setValue(key, Autostart::isEnabled());
+        emit changed(); return;
+    }
     // per-type file/protocol association toggles (Windows registry; a no-op
     // persist elsewhere — the rows are hidden off-Windows anyway)
     if (key == QLatin1String("assocTorrent") || key == QLatin1String("assocMagnet")

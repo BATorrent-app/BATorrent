@@ -2,6 +2,7 @@
 // BATorrent Unit / Integration Test Suite (Catch2 v3)
 
 #include <catch2/catch_test_macros.hpp>
+#include "services/platform/autostart.h"
 #include <catch2/catch_approx.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
@@ -230,7 +231,13 @@ TEST_CASE("Resume data migrates from the pre-3.0 location", "[unit][migration]")
     // ctor runs the migration; the guard was cleared above so it fires.
     SessionManager sm;
 
-    REQUIRE(QFile::exists(newResume + "/deadbeef.resume"));        // torrents survived
+    // The fixture writes "x", which is not valid bencode, so the load right
+    // after the migration quarantines it: dir.rename(f, f + ".corrupt"). The
+    // file surviving under either name is what proves the migration ran — the
+    // original assertion predates quarantine (added in c9f3d68) and had been
+    // failing on the name change, not on a lost torrent.
+    REQUIRE((QFile::exists(newResume + "/deadbeef.resume")
+             || QFile::exists(newResume + "/deadbeef.resume.corrupt")));
     REQUIRE(QSettings().value("resumeMigrated").toBool() == true); // ran exactly once
 }
 
@@ -1567,4 +1574,39 @@ TEST_CASE("torrentStateKey trusts libtorrent's finished flag, not the float",
         t.paused = false; t.filesMissing = true;
         CHECK(torrentStateKey(t) == QStringLiteral("missing"));
     }
+}
+
+// "Start minimized to tray" hid the window on every launch, so opening the app
+// yourself looked like it had failed to start. It is now gated on the login
+// item's own flag; this is the rule that decides which launch it was.
+TEST_CASE("Autostart::launchedBySystem only fires on the login-item flag",
+          "[autostart][launch]")
+{
+    const QString exe = QStringLiteral("/Applications/BATorrent.app/…/BATorrent");
+
+    CHECK_FALSE(Autostart::launchedBySystem({exe}));
+    CHECK(Autostart::launchedBySystem({exe, QStringLiteral("--autostart")}));
+
+    // A magnet handed over by the OS is still a deliberate open.
+    CHECK_FALSE(Autostart::launchedBySystem({exe, QStringLiteral("magnet:?xt=urn:btih:abc")}));
+    // Flag alongside other arguments, in either order.
+    CHECK(Autostart::launchedBySystem({exe, QStringLiteral("--autostart"), QStringLiteral("--debug")}));
+    CHECK(Autostart::launchedBySystem({exe, QStringLiteral("--debug"), QStringLiteral("--autostart")}));
+    // Not a prefix match: a lookalike must not count.
+    CHECK_FALSE(Autostart::launchedBySystem({exe, QStringLiteral("--autostarted")}));
+}
+
+// Hidden ([.]): touches the real login-item location, so it is opt-in and never
+// runs in CI or a plain suite pass. Invoke with: ./test_unit "[.autostartfs]"
+TEST_CASE("Autostart writes and removes the real login item", "[.autostartfs]")
+{
+    const bool was = Autostart::isEnabled();
+
+    REQUIRE(Autostart::setEnabled(true));
+    CHECK(Autostart::isEnabled());
+
+    REQUIRE(Autostart::setEnabled(false));
+    CHECK_FALSE(Autostart::isEnabled());
+
+    if (was) Autostart::setEnabled(true);   // leave the machine as we found it
 }

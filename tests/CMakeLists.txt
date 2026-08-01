@@ -85,6 +85,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/platform/settingsbackup.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/settingspolicy.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/fileassociation.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/autostart.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/mkvchapters.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownload.cpp
