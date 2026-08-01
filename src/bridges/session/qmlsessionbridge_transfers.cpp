@@ -29,7 +29,7 @@ QVariantList QmlSessionBridge::makeRoomList() const
         m["addedTime"]  = info.addedTime;
         m["category"]   = info.category;
         m["paused"]     = info.paused;
-        m["completed"]  = info.completed || info.progress >= 1.0f;
+        m["completed"]  = info.completed || info.finished;
         m["seeding"]    = info.completed && !info.paused && info.uploadRate > 0;
         out << m;
     }
@@ -59,7 +59,7 @@ QVariantList QmlSessionBridge::activeDownloads() const
         const TorrentInfo info = m_session->torrentAt(i);
         // incomplete = a download in flight; paused/queued ones still count so the
         // card never empties when disk-low auto-pause or the user paused everything.
-        if (info.completed || info.progress >= 1.0f) continue;
+        if (info.completed || info.finished) continue;
         const QString hash = m_session->torrentHashAt(i);
         QString poster;
         if (m_resolver && m_resolver->hasCached(hash)) {

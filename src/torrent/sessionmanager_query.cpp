@@ -37,6 +37,8 @@ TorrentInfo SessionManager::torrentAt(int index) const
     info.totalSize = st.total_wanted;
     info.totalDone = st.total_wanted_done;
     info.progress = st.progress;
+    info.finished = st.is_finished;
+    info.seeding = st.is_seeding;
     info.numPeers = st.num_peers;
     info.numSeeds = st.num_seeds;
     info.stateString = stateToString(st.state);
@@ -66,12 +68,17 @@ TorrentInfo SessionManager::torrentAt(int index) const
         // about whether the download itself is done (reported by a user).
         info.stateString = info.queued
             ? tr_("state_queued").arg(info.queuePos)
-            : (info.progress >= 1.0f) ? tr_("state_paused_done") : tr_("state_paused");
+            : (info.finished) ? tr_("state_paused_done") : tr_("state_paused");
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else {
-        info.downloadRate = st.download_rate;
-        info.uploadRate = st.upload_rate;
+        // Payload, not the total: download_rate counts protocol chatter
+        // (handshakes, HAVE, bitfields, keepalives, incoming requests), so a
+        // torrent sitting at 100% reported a permanent trickle of "download"
+        // and never looked done. It also made every connected torrent count as
+        // active, and skewed ETA — which libtorrent's own docs call out.
+        info.downloadRate = st.download_payload_rate;
+        info.uploadRate = st.upload_payload_rate;
     }
 
     // Data deleted/moved out from under a live torrent: libtorrent errors on the
@@ -89,7 +96,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
 
     // qBittorrent's most-repeated complaint is a silent "stalled" — name the
     // actual blocker so the state cell can explain itself on hover
-    if (!info.completed && !info.paused && info.progress < 1.0f
+    if (!info.completed && !info.paused && !info.finished
             && st.state == lt::torrent_status::downloading
             && info.downloadRate < 1024) {
         if (st.errc)
@@ -114,7 +121,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
             const qint64 mins = (QDateTime::currentSecsSinceEpoch() - it->second) / 60;
             info.stateDetail = tr_("state_fetching_metadata").arg(mins);
         }
-    } else if (!info.completed && !info.paused && info.progress < 1.0f
+    } else if (!info.completed && !info.paused && !info.finished
                && st.state == lt::torrent_status::downloading
                && info.downloadRate >= 1024 && info.numPeers > 0
                && st.distributed_copies >= 0.0f && st.distributed_copies < 1.0f) {

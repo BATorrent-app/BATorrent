@@ -24,6 +24,11 @@ struct TorrentInfo {
     QString stateDetail;   // why a downloading torrent isn't moving ("" when fine)
     bool paused;
     bool completed = false;
+    // Straight from libtorrent, which counts pieces instead of comparing a
+    // float: finished = every piece with priority > 0 is on disk (so it
+    // respects deselected files); seeding = every piece, wanted or not.
+    bool finished = false;
+    bool seeding = false;
     bool filesMissing = false;   // data was deleted/moved off disk under a live torrent
     bool queued = false;   // paused by the download-queue cap, not the user
     int queuePos = 0;      // 1-based position among queued torrents
@@ -46,10 +51,13 @@ inline QString torrentStateKey(const TorrentInfo &info)
     if (info.completed)    return QStringLiteral("completed");
     if (info.queued)       return QStringLiteral("queued");
     if (info.paused)       return QStringLiteral("paused");
-    // progress==1.0 alone isn't seeding: a torrent with every file deselected
-    // (total_wanted==0, e.g. YTS stream-while-watch mid-apply) reads progress
-    // 1.0 with zero bytes on disk and flashed "SEEDING" at 0%.
-    if (info.progress >= 1.0f && info.totalDone > 0) return QStringLiteral("seeding");
+    // Ask libtorrent, don't compare a float. progress is total_wanted_done over
+    // total_wanted in floating point, so a finished torrent can sit at
+    // 0.99999994 and never satisfy >= 1.0f — that is a torrent stuck on
+    // DOWNLOADING for months over a few bytes it already has. is_finished
+    // counts pieces, and already excludes priority-0 files, which is what the
+    // old totalDone > 0 guard was reaching for.
+    if (info.finished || info.seeding) return QStringLiteral("seeding");
     return QStringLiteral("downloading");
 }
 

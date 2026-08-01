@@ -1525,3 +1525,46 @@ TEST_CASE("AudioMode: key strings are stable", "[audiomode]") {
     REQUIRE(AudioMode::key(AudioMode::Subbed) == "sub");
     REQUIRE(AudioMode::key(AudioMode::Original) == "original");
 }
+
+// A torrent that finished months ago sat on DOWNLOADING forever: the state came
+// from `progress >= 1.0f`, and progress is total_wanted_done/total_wanted in
+// floating point, so it can land on 0.99999994 and never qualify. libtorrent's
+// is_finished counts pieces instead, and already excludes priority-0 files.
+TEST_CASE("torrentStateKey trusts libtorrent's finished flag, not the float",
+          "[types][state]")
+{
+    TorrentInfo t;
+    t.paused = false; t.completed = false; t.queued = false; t.filesMissing = false;
+
+    SECTION("float short of 1.0 but libtorrent says finished") {
+        t.progress = 0.99999994f;   // representable; < 1.0f
+        t.totalDone = 4148528658LL;
+        t.finished = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("seeding"));
+    }
+    SECTION("genuinely mid-download") {
+        t.progress = 0.80f;
+        t.totalDone = 3000000000LL;
+        t.finished = false; t.seeding = false;
+        CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
+    }
+    SECTION("every file deselected: not finished, and no bytes to seed") {
+        // The case the old totalDone > 0 guard existed for — is_finished is
+        // false here, so it no longer needs a hand-rolled guard.
+        t.progress = 1.0f;
+        t.totalDone = 0;
+        t.finished = false; t.seeding = false;
+        CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
+    }
+    SECTION("seeding wins over a stale completed flag being absent") {
+        t.progress = 1.0f; t.totalDone = 100; t.seeding = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("seeding"));
+    }
+    SECTION("paused and missing still outrank finished") {
+        t.finished = true;
+        t.paused = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("paused"));
+        t.paused = false; t.filesMissing = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("missing"));
+    }
+}

@@ -133,7 +133,7 @@ QString QmlSessionBridge::selectedPath() const
 
 bool QmlSessionBridge::selectedDataDone() const
 {
-    return hasSelection() && m_session->torrentAt(m_selectedIndex).progress >= 1.0f;
+    return hasSelection() && m_session->torrentAt(m_selectedIndex).finished;
 }
 
 QString QmlSessionBridge::selectedState() const

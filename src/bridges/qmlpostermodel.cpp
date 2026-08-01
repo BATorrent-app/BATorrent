@@ -88,7 +88,7 @@ int QmlPosterModel::rowCount(const QModelIndex &) const
 // but bytes remaining). Compact d/h/m/s like qBittorrent.
 static QString formatEta(const TorrentInfo &info)
 {
-    if (info.completed || info.progress >= 1.0f) return {};
+    if (info.completed || info.finished) return {};
     const qint64 remaining = info.totalSize - info.totalDone;
     if (remaining <= 0) return {};
     if (info.downloadRate <= 0) return QStringLiteral("∞");
