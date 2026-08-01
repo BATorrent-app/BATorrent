@@ -263,12 +263,21 @@ void MetadataResolver::finishLookup(const QString &infoHash)
 
 void MetadataResolver::clearMetadata(const QString &infoHash)
 {
-    // "No cover" — a valid-but-empty entry shows the placeholder + the parsed/raw
-    // title, and (being cached) is never auto-resolved again.
+    // "No cover" drops the artwork, not everything we know. A blank entry also
+    // wiped contentType, and the tile then had no way to say GAME or MOVIE in
+    // the poster's place — asking for no art is not asking the app to forget
+    // what the torrent is. Being cached, it is still never auto-resolved again.
     const QString key = MetadataMatch::canonicalInfoHash(infoHash);
     if (key.isEmpty())
         return;
     MetadataResult r;
+    const MetadataResult prev = m_cache.value(key);
+    if (prev.valid) {
+        r.contentType = prev.contentType;
+        r.year        = prev.year;
+        r.genres      = prev.genres;
+        r.tmdbId      = prev.tmdbId;
+    }
     r.valid = true;
     m_cache.insert(key, r);
     saveToDisk(key, r);
