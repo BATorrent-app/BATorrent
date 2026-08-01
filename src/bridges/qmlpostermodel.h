@@ -36,7 +36,12 @@ public:
         PlayableRole,       // a video torrent with no .exe → offer in-tile Play
         YearRole,           // TMDB release year (0 if unknown) — poster subtitle
         GenresRole,         // top genres, ", "-joined (empty if unknown)
-        QueuePosRole        // 1-based position among queued torrents (0 if not queued)
+        QueuePosRole,       // 1-based position among queued torrents (0 if not queued)
+        // The preset category a torrent falls into on its own ("Movies",
+        // "Series", "Games", "Apps", or empty when unknown). The manual
+        // category still wins where the user set one; this is what makes the
+        // filter useful before anyone has tagged anything by hand.
+        AutoCategoryRole
     };
 
     explicit QmlPosterModel(IEngine *session, MetadataResolver *resolver,
@@ -59,6 +64,12 @@ private:
     IEngine *m_session;
     MetadataResolver *m_resolver;
     int m_lastCount = 0;
+    // PlayableRole needs the file list, and filesAt() is a blocking sync_call
+    // into the libtorrent thread. Asking once per row per refresh froze the UI
+    // for seconds whenever that thread was busy (peer crypto saturates it). The
+    // file list is fixed once metadata lands, so answer from here after the
+    // first look. Keyed by info-hash, not row: rows move.
+    mutable QHash<QString, bool> m_playableCache;
 };
 class QmlTorrentFilterProxy : public QSortFilterProxyModel
 {

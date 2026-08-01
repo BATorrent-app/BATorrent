@@ -155,6 +155,29 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case UpSpeedRole:     return formatSpeed(info.uploadRate);
     case SizeRole:        return formatSize(info.totalSize);
     case CategoryRole:    return info.category;
+    case AutoCategoryRole: {
+        // Resolver first: a TMDB/IGDB hit is a far better answer than the name.
+        // Deliberately avoids filesAt() — that is a blocking call into the
+        // libtorrent thread and this role is read while filtering.
+        if (m_resolver && !hash.isEmpty() && m_resolver->hasCached(hash)) {
+            const MetadataResult meta = m_resolver->cached(hash);
+            if (meta.valid) {
+                switch (meta.contentType) {
+                case ContentType::Movie:  return QStringLiteral("Movies");
+                case ContentType::Series: return QStringLiteral("Series");
+                case ContentType::Game:   return QStringLiteral("Games");
+                case ContentType::Unknown: break;
+                }
+            }
+        }
+        switch (NameParser::parse(info.name).contentType) {
+        case ContentType::Movie:  return QStringLiteral("Movies");
+        case ContentType::Series: return QStringLiteral("Series");
+        case ContentType::Game:   return QStringLiteral("Games");
+        case ContentType::Unknown: break;
+        }
+        return QString();
+    }
     case NumPeersRole:    return info.numPeers;
     case DownRateRole:    return info.downloadRate;
     case UpRateRole:      return info.uploadRate;
@@ -167,6 +190,15 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case PlayableRole: {
         // authoritative movie test, same file rule as the game classifier:
         // any .exe ⇒ game (not playable here); a video with no .exe ⇒ movie.
+        if (!hash.isEmpty()) {
+            const auto it = m_playableCache.constFind(hash);
+            if (it != m_playableCache.constEnd())
+                return *it;
+        }
+        // A magnet with no metadata yet has no files to judge; don't cache the
+        // "no" or the verdict would stick after the file list arrives.
+        if (info.totalSize <= 0)
+            return false;
         bool hasVideo = false, hasExe = false;
         static const QStringList vExt = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts",".mpg",".mpeg",".m2ts"};
         for (const auto &f : m_session->filesAt(index.row())) {
@@ -175,7 +207,10 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
             if (fp.endsWith(QLatin1String(".exe"))) { hasExe = true; break; }
             for (const auto &e : vExt) if (fp.endsWith(e)) { hasVideo = true; break; }
         }
-        return hasVideo && !hasExe;
+        const bool playable = hasVideo && !hasExe;
+        if (!hash.isEmpty())
+            m_playableCache.insert(hash, playable);
+        return playable;
     }
     case YearRole: {
         if (m_resolver && m_resolver->hasCached(hash)) {
@@ -224,7 +259,8 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {PlayableRole,    "playable"},
         {YearRole,        "year"},
         {GenresRole,      "genres"},
-        {QueuePosRole,    "queuePos"}
+        {QueuePosRole,    "queuePos"},
+        {AutoCategoryRole, "autoCategory"}
     };
 }
 
@@ -435,7 +471,13 @@ bool QmlTorrentFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &s
     }
 
     if (!m_categoryFilter.isEmpty()) {
-        if (src->data(idx, QmlPosterModel::CategoryRole).toString() != m_categoryFilter)
+        // Manual category wins where the user set one; otherwise fall back to
+        // what the torrent is. Comparing only against the manual field hid
+        // every item, because nothing carries a manual category by default.
+        QString cat = src->data(idx, QmlPosterModel::CategoryRole).toString();
+        if (cat.isEmpty())
+            cat = src->data(idx, QmlPosterModel::AutoCategoryRole).toString();
+        if (cat != m_categoryFilter)
             return false;
     }
 
