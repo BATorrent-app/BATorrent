@@ -202,7 +202,32 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
             bestSize = f.size;
             best = ext.toUpper();
         }
-        if (!hash.isEmpty())
+        // No usable extension — an extension-less payload, or a name whose only
+        // dot belongs to the title. Fall back to what the torrent *is*, which
+        // the library already works out for the category filter. A tile with
+        // nothing but a title reads as broken, and "GAME" still answers the
+        // question the cover would have.
+        if (best.isEmpty()) {
+            // Resolver before the parser, same order the category filter uses:
+            // a plain "Elden Ring" or "Hogwarts Legacy" parses as Unknown, and
+            // only the IGDB/TMDB hit knows what it is.
+            ContentType kind = ContentType::Unknown;
+            if (m_resolver && !hash.isEmpty() && m_resolver->hasCached(hash)) {
+                const MetadataResult meta = m_resolver->cached(hash);
+                if (meta.valid) kind = meta.contentType;
+            }
+            if (kind == ContentType::Unknown)
+                kind = NameParser::parse(info.name).contentType;
+            switch (kind) {
+            case ContentType::Movie:  best = QStringLiteral("MOVIE");  break;
+            case ContentType::Series: best = QStringLiteral("SERIES"); break;
+            case ContentType::Game:   best = QStringLiteral("GAME");   break;
+            case ContentType::Unknown: break;
+            }
+        }
+        // Only a real answer is cached: an empty one means we asked too early
+        // (metadata or the resolver still in flight) and must be retried.
+        if (!hash.isEmpty() && !best.isEmpty())
             m_fileKindCache.insert(hash, best);
         return best;
     }

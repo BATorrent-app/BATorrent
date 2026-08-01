@@ -71,6 +71,22 @@ Item {
             radius: 10
             color: "#161618"
             visible: tile.posterUrl === ""
+            // Last resort only: no usable extension, no resolved type, nothing
+            // to say. The bat earns the middle when it is genuinely the only
+            // thing we know — as a permanent backdrop it was just noise.
+            Image {
+                anchors.centerIn: parent
+                width: parent.width * 0.5
+                height: width
+                visible: tile.fileKind.length === 0
+                source: "qrc:/images/logo.svg"
+                sourceSize: Qt.size(width * 2, width * 2)
+                fillMode: Image.PreserveAspectFit
+                opacity: 0.06
+                layer.enabled: Theme.isLight
+                layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
+            }
+
             // A typographic cover rather than a centred watermark. Centred and
             // symmetrical is what reads as a placeholder; a hero set high and
             // left, with air under it, reads as a decision. The extension is
