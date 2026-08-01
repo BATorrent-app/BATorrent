@@ -61,6 +61,11 @@ Item {
                 opacity: 0.32
             }
             Rectangle {
+                id: shimmer
+                // The animation below cannot say `parent`: a NumberAnimation is
+                // not an Item, so `parent` resolves to null there and every
+                // frame logged "Cannot read property 'width' of null".
+                readonly property real span: shimmer.parent ? shimmer.parent.width : 0
                 width: parent.width * 0.7
                 height: parent.height * 2.2
                 rotation: 18
@@ -71,9 +76,9 @@ Item {
                     GradientStop { position: 0.5; color: "#16ffffff" }
                     GradientStop { position: 1.0; color: "#00ffffff" }
                 }
-                x: -parent.width
+                x: -shimmer.span
                 NumberAnimation on x {
-                    from: -parent.width; to: parent.width * 1.7
+                    from: -shimmer.span; to: shimmer.span * 1.7
                     duration: 1200; loops: Animation.Infinite
                     running: imgSrc.status !== Image.Ready
                 }
