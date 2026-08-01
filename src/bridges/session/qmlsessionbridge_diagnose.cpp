@@ -27,7 +27,7 @@ QString QmlSessionBridge::diagnoseSelectedSlow() const
     QStringList lines;
     if (info.paused) lines << "★ " + tr_("diag_paused");
     else if (info.completed) lines << "★ " + tr_("diag_completed");
-    else if (info.progress >= 1.0f)
+    else if (info.finished)
         lines << "★ " + tr_(info.uploadRate == 0 ? "diag_seeding_no_uploaders" : "diag_seeding_ok");
     else if (info.numPeers == 0) lines << "★ " + tr_("diag_no_peers");
     else if (info.numSeeds == 0) lines << "★ " + tr_("diag_no_seeds");

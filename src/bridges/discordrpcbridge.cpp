@@ -37,7 +37,7 @@ void DiscordRpcBridge::refresh()
     for (int i = 0; i < m_session->torrentCount(); ++i) {
         TorrentInfo info = m_session->torrentAt(i);
         if (info.paused || info.completed) continue;
-        if (info.progress >= 1.0f) { ++seeding; continue; }
+        if (info.finished) { ++seeding; continue; }
         if (info.downloadRate > featuredRate) {
             featuredRate = info.downloadRate;
             featured = i;

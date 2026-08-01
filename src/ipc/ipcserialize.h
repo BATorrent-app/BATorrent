@@ -20,7 +20,10 @@ inline QDataStream &operator<<(QDataStream &s, const TorrentInfo &t)
       << qint32(t.numPeers) << qint32(t.numSeeds) << t.stateString << t.stateDetail
       << t.paused << t.completed << t.ratio << t.availability
       << qint64(t.totalUploaded) << qint64(t.addedTime) << t.category << t.tags
-      << t.queued << qint32(t.queuePos) << t.filesMissing;
+      << t.queued << qint32(t.queuePos) << t.filesMissing
+      // Appended: without these the split-engine UI derives every state from a
+      // default-false pair and shows DOWNLOADING for everything.
+      << t.finished << t.seeding;
     return s;
 }
 inline QDataStream &operator>>(QDataStream &s, TorrentInfo &t)
@@ -30,7 +33,8 @@ inline QDataStream &operator>>(QDataStream &s, TorrentInfo &t)
       >> t.progress >> dr >> ur >> np >> ns >> t.stateString >> t.stateDetail
       >> t.paused >> t.completed >> t.ratio >> t.availability
       >> t.totalUploaded >> t.addedTime >> t.category >> t.tags
-      >> t.queued >> qp >> t.filesMissing;
+      >> t.queued >> qp >> t.filesMissing
+      >> t.finished >> t.seeding;
     t.downloadRate = dr; t.uploadRate = ur; t.numPeers = np; t.numSeeds = ns;
     t.queuePos = qp;
     return s;
