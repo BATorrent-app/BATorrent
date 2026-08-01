@@ -16,6 +16,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QHash>
+#include <QPointer>
 #include <QMessageBox>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
@@ -172,10 +173,16 @@ void armMacDockReopen(QObject *rootObj, QApplication *app)
 #ifdef Q_OS_MACOS
     auto dockArmed = std::make_shared<bool>(false);
     QTimer::singleShot(2500, app, [dockArmed]() { *dockArmed = true; });
+    // QPointer, not a raw capture: the context object is `app`, which outlives
+    // the QML root, so on shutdown (or any engine teardown) this still fires
+    // with a dangling pointer and qobject_cast reads freed memory — SIGSEGV
+    // inside setApplicationState, i.e. a crash while the app is being brought
+    // to the front.
+    QPointer<QObject> root(rootObj);
     QObject::connect(app, &QGuiApplication::applicationStateChanged, app,
-                     [rootObj, dockArmed](Qt::ApplicationState state) {
-        if (!*dockArmed || state != Qt::ApplicationActive) return;
-        if (auto *w = qobject_cast<QWindow *>(rootObj)) {
+                     [root, dockArmed](Qt::ApplicationState state) {
+        if (!*dockArmed || state != Qt::ApplicationActive || root.isNull()) return;
+        if (auto *w = qobject_cast<QWindow *>(root.data())) {
             if (w->visibility() == QWindow::Hidden) { w->show(); w->raise(); w->requestActivate(); }
         }
     });
