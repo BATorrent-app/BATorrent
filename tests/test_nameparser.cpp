@@ -136,3 +136,26 @@ TEST_CASE("classifyByFiles: payload extensions decide the type", "[nameparser]")
     // A game with a bundled intro video still reads as a game (payload dominates).
     CHECK(NameParser::classifyByFiles({"game.exe", "d3d.dll", "intro.mkv"}) == ContentType::Game);
 }
+
+// The category filter falls back to the parsed type when no manual category is
+// set. These are the mappings it relies on; if the parser stops answering for a
+// shape, "Movies" silently hides items again (the beta7 report, point 4).
+TEST_CASE("parsed content type backs the category fallback", "[nameparser][category]")
+{
+    auto cat = [](const char *raw) {
+        switch (NameParser::parse(QString::fromUtf8(raw)).contentType) {
+        case ContentType::Movie:  return QStringLiteral("Movies");
+        case ContentType::Series: return QStringLiteral("Series");
+        case ContentType::Game:   return QStringLiteral("Games");
+        case ContentType::Unknown: return QString();
+        }
+        return QString();
+    };
+
+    CHECK(cat("Breaking Bad S05E14") == QStringLiteral("Series"));
+    CHECK(cat("The.Last.of.Us.S01E01.1080p.WEB.h264") == QStringLiteral("Series"));
+    CHECK(cat("Oppenheimer.2023.1080p.BluRay.x264") == QStringLiteral("Movies"));
+    CHECK(cat("Dune Part Two 2024 2160p") == QStringLiteral("Movies"));
+    CHECK(cat("Cyberpunk.2077.v2.1-RUNE") == QStringLiteral("Games"));
+    CHECK(cat("Hogwarts Legacy Deluxe Edition [FitGirl Repack]") == QStringLiteral("Games"));
+}
