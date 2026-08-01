@@ -523,6 +523,7 @@ Window {
             onAddLink: promptHttpDownload()
             onRemoveSelected: removeDlg.open()
             onOpenRss: win.showWin(rssWinLoader)
+            onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
         }
 
         // ================== SUBBAR + LIBRARY ==================

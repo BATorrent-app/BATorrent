@@ -222,7 +222,6 @@ Rectangle {
 
         Item { Layout.fillHeight: true }   // push disk + donate + Settings + collapse to the bottom
 
-        NavRailDisk { rail: rail }
         Rectangle {
             Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16
             Layout.topMargin: 10; Layout.bottomMargin: 4

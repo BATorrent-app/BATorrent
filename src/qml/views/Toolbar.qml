@@ -20,6 +20,7 @@ Rectangle {
     signal addLink()
     signal removeSelected()
     signal openRss()
+    signal makeRoomRequested()
 
     component TBtn: Rectangle {
         id: tb
@@ -141,6 +142,14 @@ Rectangle {
 
         // .tb-spacer
         Item { Layout.fillWidth: true }
+
+        // Free space sits with the transfer figures rather than in the nav:
+        // all three are facts about this page's work, and the gauge followed
+        // the user into Find and Settings for no reason.
+        DiskGauge {
+            onMakeRoomRequested: toolbar.makeRoomRequested()
+        }
+        TGrpDiv {}
 
         // global speed readout — boxless, neutral values; the tinted arrow
         // icons carry the down/up semantic without shouting
