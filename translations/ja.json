@@ -179,6 +179,7 @@
   "ctx_move_storage": "ストレージを移動…",
   "ctx_move_storage_title": "新しい場所を設定",
   "ctx_no_cover": "カバーなし",
+  "cover_no_match": "そのタイトルのカバーが見つかりません",
   "ctx_open_folder": "フォルダーを開く",
   "ctx_path_copied": "パスをコピーしました",
   "ctx_pause_download": "ダウンロードを一時停止",

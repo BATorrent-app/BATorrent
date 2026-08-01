@@ -179,6 +179,7 @@
   "ctx_move_storage": "Speicher verschieben…",
   "ctx_move_storage_title": "Neuen Speicherort festlegen",
   "ctx_no_cover": "Kein Cover",
+  "cover_no_match": "Kein Cover für diesen Titel gefunden",
   "ctx_open_folder": "Ordner öffnen",
   "ctx_path_copied": "Pfad kopiert",
   "ctx_pause_download": "Download pausieren",

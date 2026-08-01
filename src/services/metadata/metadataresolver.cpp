@@ -152,6 +152,14 @@ MetadataResolver::MetadataResolver(QObject *parent)
     m_rateLimiter.setSingleShot(true);
     connect(&m_rateLimiter, &QTimer::timeout, this, &MetadataResolver::processQueue);
 
+    // A hit clears the pending manual entry, so finishLookup() — which every
+    // lookup ends on — only reports the misses. Wiring it here keeps the
+    // invariant true for any future success path without touching it.
+    connect(this, &MetadataResolver::metadataReady, this,
+            [this](const QString &infoHash, const MetadataResult &) {
+        m_manualQueries.remove(infoHash);
+    });
+
     migrateLegacyMetadataDirs(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     QDir dir(cacheDir());
@@ -236,9 +244,21 @@ void MetadataResolver::resolveManual(const QString &infoHash, const QString &que
         parsed.cleanTitle = query.trimmed();
     parsed.contentType = type;
     m_cache.remove(key);
+    m_manualQueries.insert(key, query.trimmed());
     m_queue.enqueue({key, parsed});
     if (!m_requestInFlight && !m_rateLimiter.isActive())
         processQueue();
+}
+
+void MetadataResolver::finishLookup(const QString &infoHash)
+{
+    auto it = m_manualQueries.find(infoHash);
+    if (it != m_manualQueries.end()) {
+        const QString query = it.value();
+        m_manualQueries.erase(it);
+        emit manualResolveFailed(infoHash, query);
+    }
+    m_rateLimiter.start();
 }
 
 void MetadataResolver::clearMetadata(const QString &infoHash)
@@ -302,7 +322,7 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
 
         if (reply->error() != QNetworkReply::NoError) {
             qDebug() << "[metadata] TMDB error:" << reply->errorString();
-            m_rateLimiter.start();
+            finishLookup(infoHash);
             return;
         }
 
@@ -316,7 +336,7 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
                 queryTmdbTv(infoHash, parsed);
                 return;
             }
-            m_rateLimiter.start();
+            finishLookup(infoHash);
             return;
         }
 
@@ -357,7 +377,7 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
                 m_cache.insert(infoHash, r);
                 saveToDisk(infoHash, r);
                 emit metadataReady(infoHash, r);
-                m_rateLimiter.start();
+                finishLookup(infoHash);
             }
         };
         // empty overview = no translation for this language → fall back to EN
@@ -392,7 +412,7 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
         m_requestInFlight = false;
 
         if (reply->error() != QNetworkReply::NoError) {
-            m_rateLimiter.start();
+            finishLookup(infoHash);
             return;
         }
 
@@ -400,7 +420,7 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
         const QJsonArray results = doc.object().value(QLatin1String("results")).toArray();
 
         if (results.isEmpty()) {
-            m_rateLimiter.start();
+            finishLookup(infoHash);
             return;
         }
 
@@ -411,7 +431,7 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
         if (parsed.contentType == ContentType::Unknown
             && !MetadataMatch::confidentTitle(parsed.cleanTitle,
                                               item.value(QLatin1String("name")).toString())) {
-            m_rateLimiter.start();
+            finishLookup(infoHash);
             return;
         }
 
@@ -440,7 +460,7 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
                 m_cache.insert(infoHash, r);
                 saveToDisk(infoHash, r);
                 emit metadataReady(infoHash, r);
-                m_rateLimiter.start();
+                finishLookup(infoHash);
             }
         };
         if (result.description.isEmpty() && tmdbId > 0 && tmdbLang() != QStringLiteral("en-US"))
@@ -544,7 +564,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
         if (parsed.contentType == ContentType::Unknown)
             queryTmdbMovie(infoHash, parsed);
         else
-            m_rateLimiter.start();
+            finishLookup(infoHash);
         return;
     }
 
@@ -581,7 +601,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
             if (parsed.contentType == ContentType::Unknown)
                 queryTmdbMovie(infoHash, parsed);
             else
-                m_rateLimiter.start();
+                finishLookup(infoHash);
             return;
         }
 
@@ -612,7 +632,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
             if (parsed.contentType == ContentType::Unknown)
                 queryTmdbMovie(infoHash, parsed);
             else
-                m_rateLimiter.start();
+                finishLookup(infoHash);
             return;
         }
 
@@ -644,7 +664,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
             m_cache.insert(infoHash, result);
             saveToDisk(infoHash, result);
             emit metadataReady(infoHash, result);
-            m_rateLimiter.start();
+            finishLookup(infoHash);
         }
     });
 }
@@ -683,7 +703,7 @@ void MetadataResolver::downloadPoster(const QString &infoHash, const QString &ur
         m_cache.insert(key, result);
         saveToDisk(key, result);
         emit metadataReady(key, result);
-        m_rateLimiter.start();
+        finishLookup(key);
     });
 }
 

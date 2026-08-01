@@ -179,6 +179,7 @@
   "ctx_move_storage": "Перемістити сховище…",
   "ctx_move_storage_title": "Вказати нове розташування",
   "ctx_no_cover": "Без обкладинки",
+  "cover_no_match": "Обкладинку для цієї назви не знайдено",
   "ctx_open_folder": "Відкрити папку",
   "ctx_path_copied": "Шлях скопійовано",
   "ctx_pause_download": "Призупинити завантаження",

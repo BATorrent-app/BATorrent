@@ -48,6 +48,10 @@ public:
 
 signals:
     void metadataReady(const QString &infoHash, const MetadataResult &result);
+    // A user-typed re-link that found nothing. Auto-resolve stays silent (it
+    // runs unprompted and a miss is not news), but someone who typed a title
+    // and pressed enter is owed an answer instead of a no-op.
+    void manualResolveFailed(const QString &infoHash, const QString &query);
 
 private:
     void processQueue();
@@ -78,6 +82,15 @@ private:
     QString m_igdbAccessToken;
     qint64 m_igdbTokenExpiry = 0;
     QQueue<QPair<QString, ParsedName>> m_igdbPending;
+
+    // Hashes whose in-flight lookup came from resolveManual, with the typed
+    // query — so a miss can report back which title found nothing.
+    QHash<QString, QString> m_manualQueries;
+    // Every lookup ends here: releases the rate limiter for the next queue item
+    // and, if this hash was a manual re-link that produced nothing, says so.
+    // Success paths emit metadataReady first, which drops the pending entry, so
+    // reaching here after a hit reports nothing.
+    void finishLookup(const QString &infoHash);
 };
 
 #endif
