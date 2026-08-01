@@ -20,7 +20,6 @@ Rectangle {
     signal addLink()
     signal removeSelected()
     signal openRss()
-    signal navigate(int index)
 
     component TBtn: Rectangle {
         id: tb
@@ -134,10 +133,10 @@ Rectangle {
         // navigated to the Find page, but sat next to the downloads filter
         // field wearing the same magnifier — two meanings, one icon. Page
         // switching belongs to the nav rail; this toolbar acts on torrents.
+        // Settings followed Search out of here for the same reason, one release
+        // later: it wore the same gear as the nav bar's own Settings, two steps
+        // away on screen, so the pair read as a bug rather than a shortcut.
         TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: toolbar.openRss() }
-        TGrpDiv {}
-        // G5: Config.
-        TBtn { label: (i18n.language, i18n.t("tb_settings")); icon: "qrc:/icons/settings.svg"; onClicked: toolbar.navigate(3) }
 
 
         // .tb-spacer

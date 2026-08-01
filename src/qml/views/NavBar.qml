@@ -215,18 +215,35 @@ Rectangle {
         // ----- donate (heart: gray at rest, red on hover) -----
         Item {
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: 34; Layout.preferredHeight: 34
+            // Sized off its own content now that it carries a label, using the
+            // same icon+text row the tabs use so the bar reads as one strip.
+            Layout.preferredWidth: donRow.implicitWidth + 20
+            Layout.preferredHeight: 34
             Rectangle {
                 anchors.fill: parent
                 radius: 8
                 color: donMa.containsMouse ? Theme.accentTint : "transparent"
                 Behavior on color { ColorAnimation { duration: 140 } }
             }
-            IconImg {
+            Row {
+                id: donRow
                 anchors.centerIn: parent
-                src: "qrc:/icons/heart-line.svg"
-                tint: donMa.containsMouse ? Theme.accent : Theme.t3
-                s: 16
+                spacing: 9
+                IconImg {
+                    anchors.verticalCenter: parent.verticalCenter
+                    src: "qrc:/icons/heart-line.svg"
+                    tint: donMa.containsMouse ? Theme.accent : Theme.t3
+                    s: 16
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, i18n.t("action_donate"))
+                    color: donMa.containsMouse ? Theme.accent : Theme.t3
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    font.family: Theme.fontSans
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                }
             }
             MouseArea {
                 id: donMa
@@ -235,9 +252,6 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
             }
-            ToolTip.text: (i18n.language, i18n.t("action_donate"))
-            ToolTip.visible: donMa.containsMouse
-            ToolTip.delay: 400
         }
 
         // ----- settings (page 4) -----
@@ -245,19 +259,34 @@ Rectangle {
             id: settingsBtn
             readonly property bool active: bar.currentIndex === 3
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: 34; Layout.preferredHeight: 34
+            Layout.preferredWidth: setRow.implicitWidth + 20
+            Layout.preferredHeight: 34
             Rectangle {
                 anchors.fill: parent
                 radius: 8
                 color: settingsBtn.active ? Theme.hover : (setMa.containsMouse ? Theme.hover : "transparent")
                 Behavior on color { ColorAnimation { duration: 140 } }
             }
-            IconImg {
+            Row {
+                id: setRow
                 anchors.centerIn: parent
-                src: "qrc:/icons/sliders.svg"
-                tint: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
-                s: 16
-                Behavior on tint { ColorAnimation { duration: 140 } }
+                spacing: 9
+                IconImg {
+                    anchors.verticalCenter: parent.verticalCenter
+                    src: "qrc:/icons/sliders.svg"
+                    tint: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
+                    s: 16
+                    Behavior on tint { ColorAnimation { duration: 140 } }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, i18n.t("tb_settings"))
+                    color: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
+                    font.pixelSize: 14
+                    font.weight: settingsBtn.active ? Font.DemiBold : Font.Medium
+                    font.family: Theme.fontSans
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                }
             }
             MouseArea {
                 id: setMa
@@ -266,9 +295,6 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: bar.settingsClicked()
             }
-            ToolTip.text: (i18n.language, i18n.t("tb_settings"))
-            ToolTip.visible: setMa.containsMouse
-            ToolTip.delay: 400
         }
     }
 }
