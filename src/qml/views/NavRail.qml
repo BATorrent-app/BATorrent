@@ -108,12 +108,9 @@ Rectangle {
         // orrent t1) so it reads as the logotype, not generic text.
         Item {
             Layout.fillWidth: true
-            // unified chrome: the traffic lights live in this corner — push the
-            // brand below them instead of underneath
-            Layout.preferredHeight: Theme.unifiedChrome ? 88 : 66
+            Layout.preferredHeight: 66
             Image {
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: Theme.unifiedChrome ? 11 : 0
                 anchors.left: parent.left; anchors.leftMargin: 18
                 width: 30; height: 30
                 source: "qrc:/images/logo.svg"
@@ -126,7 +123,6 @@ Rectangle {
             // Two-tone: BAT in accent (echoes the bat's red), orrent in t1.
             Row {
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: Theme.unifiedChrome ? 11 : 0
                 anchors.left: parent.left; anchors.leftMargin: 52
                 spacing: 0
                 opacity: rail.collapsed ? 0 : 1

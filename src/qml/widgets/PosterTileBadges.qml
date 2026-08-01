@@ -120,18 +120,19 @@ Item {
             id: dlRow
             anchors.centerIn: parent
             spacing: 4
+            // Ring carries the colour; the glyph is white. Tinting both the
+            // same left a thin stroke sitting on its own ring with nothing to
+            // read against — the circle showed and the arrow did not.
             Rectangle {
-                width: 13
-                height: 13
-                radius: 6.5
-                color: "transparent"
-                border.color: Theme.accent
-                border.width: 1.5
+                width: 14
+                height: 14
+                radius: 7
+                color: Theme.accent
                 anchors.verticalCenter: parent.verticalCenter
                 IconImg {
                     anchors.centerIn: parent
                     src: "qrc:/icons/arrow-down.svg"
-                    tint: Theme.accent
+                    tint: "#ffffff"
                     s: 9
                 }
             }
@@ -164,18 +165,16 @@ Item {
             anchors.centerIn: parent
             spacing: 4
             Rectangle {
-                width: 13
-                height: 13
-                radius: 6.5
-                color: "transparent"
-                border.color: Theme.grn
-                border.width: 1.5
+                width: 14
+                height: 14
+                radius: 7
+                color: Theme.grn
                 anchors.verticalCenter: parent.verticalCenter
                 Text {
                     anchors.centerIn: parent
                     text: "✓"
-                    color: Theme.grn
-                    font.pixelSize: 8
+                    color: "#ffffff"
+                    font.pixelSize: 9
                     font.weight: Font.Bold
                     font.family: Theme.fontSans
                 }
@@ -210,17 +209,15 @@ Item {
             anchors.centerIn: parent
             spacing: 4
             Rectangle {
-                width: 13
-                height: 13
-                radius: 6.5
-                color: "transparent"
-                border.color: Theme.amber
-                border.width: 1.5
+                width: 14
+                height: 14
+                radius: 7
+                color: Theme.amber
                 anchors.verticalCenter: parent.verticalCenter
                 IconImg {
                     anchors.centerIn: parent
                     src: "qrc:/icons/arrow-up.svg"
-                    tint: Theme.amber
+                    tint: "#ffffff"
                     s: 9
                 }
             }

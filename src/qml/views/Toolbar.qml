@@ -113,10 +113,14 @@ Rectangle {
         spacing: Theme.sp2
 
         // brand moved to the nav rail; toolbar starts at the actions
-        // G1: Abrir, Magnet, Link
-        TBtn { id: tbOpen; label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/open.svg";  onClicked: toolbar.openFile() }
+        // G1: the three ways content comes in. Each glyph names its own source:
+        // a file, a magnet, a URL. open.svg used to sit on "Open" wearing an
+        // arrow leaving the document — the export glyph, saying the opposite of
+        // the label — and "Link" wore the download tray while link.svg, an
+        // actual chain, sat unused in the icon set.
+        TBtn { id: tbOpen; label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/file.svg";  onClicked: toolbar.openFile() }
         TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: toolbar.addMagnet() }
-        TBtn { label: (i18n.language, i18n.t("tb_link"));    icon: "qrc:/icons/download.svg"; onClicked: toolbar.addLink() }
+        TBtn { label: (i18n.language, i18n.t("tb_link"));    icon: "qrc:/icons/link.svg"; onClicked: toolbar.addLink() }
         TGrpDiv {}
         // G2: Pausar, Retomar, Parar, Atualizar (tester: keep transport controls together)
         TBtn { label: (i18n.language, i18n.t("tb_pause"));  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }

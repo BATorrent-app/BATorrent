@@ -31,10 +31,13 @@ Window {
                            Screen.desktopAvailableWidth > 0 ? Screen.desktopAvailableWidth : 1288)
     minimumHeight: 640
     color: Theme.bg
-    // classic rail merges the macOS titlebar into its brand zone; the top-bar
-    // layout keeps the native titlebar so the traffic lights live outside the bar
-    flags: (Theme.unifiedChrome && layoutClassic) ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
-    title: (Theme.unifiedChrome && layoutClassic) ? "" : "BATorrent"
+    // Native titlebar in both layouts. Classic used to merge it into the rail's
+    // brand zone, which left the macOS traffic lights floating over the rail
+    // instead of sitting in a titlebar — the horizontal layout never did that,
+    // and it reads better. unifiedChrome stays on for the secondary windows,
+    // which draw their own title and would otherwise show it twice.
+    flags: Qt.Window
+    title: "BATorrent"
 
     // Close button hides to the tray instead of quitting (quitOnLastWindowClosed
     // is false). If no tray is available, really quit so the app can't get stuck
