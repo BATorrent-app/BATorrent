@@ -179,6 +179,7 @@
   "ctx_move_storage": "移动存储位置…",
   "ctx_move_storage_title": "设置新位置",
   "ctx_no_cover": "无封面",
+  "cover_no_match": "未找到该标题的封面",
   "ctx_open_folder": "打开文件夹",
   "ctx_path_copied": "已复制路径",
   "ctx_pause_download": "暂停下载",

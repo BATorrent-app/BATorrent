@@ -179,6 +179,7 @@
   "ctx_move_storage": "Mover arquivos…",
   "ctx_move_storage_title": "Definir novo local",
   "ctx_no_cover": "Sem capa",
+  "cover_no_match": "Nenhuma capa encontrada para esse título",
   "ctx_open_folder": "Abrir pasta",
   "ctx_path_copied": "Caminho copiado",
   "ctx_pause_download": "Pausar download",

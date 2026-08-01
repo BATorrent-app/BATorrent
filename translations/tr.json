@@ -179,6 +179,7 @@
   "ctx_move_storage": "Depolama konumunu taşı…",
   "ctx_move_storage_title": "Yeni konumu belirle",
   "ctx_no_cover": "Kapak yok",
+  "cover_no_match": "Bu başlık için kapak bulunamadı",
   "ctx_open_folder": "Klasörü aç",
   "ctx_path_copied": "Yol kopyalandı",
   "ctx_pause_download": "İndirmeyi duraklat",

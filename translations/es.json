@@ -179,6 +179,7 @@
   "ctx_move_storage": "Mover almacenamiento…",
   "ctx_move_storage_title": "Definir nueva ubicación",
   "ctx_no_cover": "Sin carátula",
+  "cover_no_match": "No se encontró ninguna carátula para ese título",
   "ctx_open_folder": "Abrir carpeta",
   "ctx_path_copied": "Ruta copiada",
   "ctx_pause_download": "Pausar descarga",

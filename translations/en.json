@@ -179,6 +179,7 @@
   "ctx_move_storage": "Move storage…",
   "ctx_move_storage_title": "Set new location",
   "ctx_no_cover": "No cover",
+  "cover_no_match": "No cover found for that title",
   "ctx_open_folder": "Open folder",
   "ctx_path_copied": "Path copied",
   "ctx_pause_download": "Pause download",

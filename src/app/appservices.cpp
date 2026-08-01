@@ -182,6 +182,14 @@ AppServices AppServices::create(QApplication &app)
                      svc.sessionBridge, &QmlSessionBridge::onTorrentRemoved);
     QObject::connect(svc.resolver, &MetadataResolver::metadataReady,
                      svc.posterModel, &QmlPosterModel::posterResolved);
+    // "Fix cover" that matched nothing used to be a no-op on screen: the dialog
+    // closed, the tile stayed blank, and there was no way to tell a miss from a
+    // bug. Say so.
+    QObject::connect(svc.resolver, &MetadataResolver::manualResolveFailed,
+                     svc.sessionBridge,
+                     [bridge = svc.sessionBridge](const QString &, const QString &query) {
+        emit bridge->toast(tr_("cover_no_match"), query);
+    });
     QObject::connect(svc.sessionBridge, &QmlSessionBridge::queueRefreshNeeded,
                      svc.posterModel, &QmlPosterModel::refreshFull);
     QObject::connect(svc.sessionBridge, &QmlSessionBridge::queueMoved,

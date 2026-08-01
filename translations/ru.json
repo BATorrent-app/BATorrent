@@ -179,6 +179,7 @@
   "ctx_move_storage": "Переместить хранилище…",
   "ctx_move_storage_title": "Указать новое расположение",
   "ctx_no_cover": "Без обложки",
+  "cover_no_match": "Обложка для этого названия не найдена",
   "ctx_open_folder": "Открыть папку",
   "ctx_path_copied": "Путь скопирован",
   "ctx_pause_download": "Приостановить загрузку",
