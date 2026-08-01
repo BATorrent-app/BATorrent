@@ -41,7 +41,11 @@ public:
         // "Series", "Games", "Apps", or empty when unknown). The manual
         // category still wins where the user set one; this is what makes the
         // filter useful before anyone has tagged anything by hand.
-        AutoCategoryRole
+        AutoCategoryRole,
+        // Uppercase extension of the biggest file ("ISO", "MKV", "ZIP"), for the
+        // typographic cover a torrent with no artwork gets. Empty while a magnet
+        // still has no file list.
+        FileKindRole
     };
 
     explicit QmlPosterModel(IEngine *session, MetadataResolver *resolver,
@@ -70,6 +74,9 @@ private:
     // file list is fixed once metadata lands, so answer from here after the
     // first look. Keyed by info-hash, not row: rows move.
     mutable QHash<QString, bool> m_playableCache;
+    // Same reason as above: the file list costs a blocking hop into the
+    // libtorrent thread, and it stops changing once metadata lands.
+    mutable QHash<QString, QString> m_fileKindCache;
 };
 class QmlTorrentFilterProxy : public QSortFilterProxyModel
 {

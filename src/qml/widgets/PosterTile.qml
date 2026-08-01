@@ -21,6 +21,7 @@ Item {
     required property string posterPath
     required property string stateString
     required property string stateDetail
+    required property string fileKind
     required property string category
     required property string size
     required property string downSpeed
@@ -70,16 +71,43 @@ Item {
             radius: 10
             color: "#161618"
             visible: tile.posterUrl === ""
-            Image {
-                anchors.centerIn: parent
-                width: parent.width * 0.5
-                height: width
-                source: "qrc:/images/logo.svg"
-                sourceSize: Qt.size(width * 2, width * 2)
-                fillMode: Image.PreserveAspectFit
-                opacity: 0.06
-                layer.enabled: Theme.isLight
-                layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
+            // A typographic cover rather than a centred watermark. Centred and
+            // symmetrical is what reads as a placeholder; a hero set high and
+            // left, with air under it, reads as a decision. The extension is
+            // also the most useful thing we know about a torrent with no art.
+            Column {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: 13
+                anchors.rightMargin: 13
+                anchors.topMargin: Math.round(parent.height * 0.17)
+                spacing: 7
+                visible: tile.fileKind.length > 0
+
+                Text {
+                    id: kindText
+                    text: tile.fileKind
+                    color: "#f5f5f6"
+                    // HorizontalFit so a long one (M2TS, WEBM) shrinks to the
+                    // tile instead of being clipped or eliding to nonsense.
+                    font.pixelSize: Math.round(tile.width * 0.30)
+                    fontSizeMode: Text.HorizontalFit
+                    minimumPixelSize: 20
+                    width: parent.width
+                    horizontalAlignment: Text.AlignLeft
+                    font.weight: Font.Bold
+                    font.letterSpacing: -1.5
+                    font.family: Theme.fontSans
+                }
+                // Red only here, and only under the hero: colour is signal, and
+                // this is the one place on a blank tile that earns it.
+                Rectangle {
+                    width: Math.min(kindText.contentWidth, parent.width)
+                    height: 3
+                    radius: 1.5
+                    color: Theme.accent
+                }
             }
             Text {
                 anchors.left: parent.left
