@@ -64,15 +64,8 @@ void SingleInstance::claim(QObject *parent)
                          [this, client]() {
             const QStringList lines = QString::fromUtf8(client->readAll())
                                           .split('\n', Qt::SkipEmptyParts);
-            if (QmlSessionBridge *bridge = *m_bridge) {
-                for (const QString &line : lines) {
-                    if (line.endsWith(".torrent")) bridge->requestAddTorrentFile(line);
-                    else if (line.startsWith("magnet:") || line.startsWith("bittorrent:"))
-                        bridge->addMagnetUri(line);
-                }
-            } else {
-                *m_pending << lines;
-            }
+            for (const QString &line : lines)
+                deliver(line);
             client->deleteLater();
         });
     });
@@ -88,14 +81,28 @@ void SingleInstance::setRootWindow(QObject *root)
     if (m_root) *m_root = root;
 }
 
+namespace {
+void route(QmlSessionBridge *bridge, const QString &line)
+{
+    if (line.endsWith(QLatin1String(".torrent"))) bridge->requestAddTorrentFile(line);
+    else if (line.startsWith(QLatin1String("magnet:"))
+             || line.startsWith(QLatin1String("bittorrent:")))
+        bridge->addMagnetUri(line);
+}
+} // namespace
+
+void SingleInstance::deliver(const QString &line)
+{
+    if (line.isEmpty()) return;
+    if (m_bridge && *m_bridge) route(*m_bridge, line);
+    else if (m_pending)        *m_pending << line;
+}
+
 void SingleInstance::flushPending()
 {
     if (!m_pending || !m_bridge || !*m_bridge) return;
     QmlSessionBridge *bridge = *m_bridge;
-    for (const QString &line : *m_pending) {
-        if (line.endsWith(".torrent")) bridge->requestAddTorrentFile(line);
-        else if (line.startsWith("magnet:") || line.startsWith("bittorrent:"))
-            bridge->addMagnetUri(line);
-    }
+    for (const QString &line : *m_pending)
+        route(bridge, line);
     m_pending->clear();
 }

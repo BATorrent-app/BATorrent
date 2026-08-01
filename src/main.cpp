@@ -22,6 +22,7 @@
 #include "app/qmlboot.h"
 #include "app/qmlcontextwiring.h"
 #include "app/singleinstance.h"
+#include "app/macfileopen.h"
 #include "bridges/session/qmlsessionbridge.h"
 #include "bridges/qmlupdaterbridge.h"
 #include "services/platform/logger.h"
@@ -68,6 +69,9 @@ int main(int argc, char *argv[])
 
     SingleInstance instance;
     instance.claim(&app);
+    // Before anything slow: macOS posts the open-file event early, and the
+    // filter has to be up to catch it.
+    MacFileOpen::install(&app, &instance);
 
     QSplashScreen splash(QPixmap(QStringLiteral(":/images/logo1.png"))
                              .scaled(160, 160, Qt::KeepAspectRatio, Qt::SmoothTransformation));

@@ -25,6 +25,11 @@ public:
     // boot forwards here instead of fighting the same resume dir.
     void claim(QObject *parent);
 
+    // One routing rule for every way a torrent reaches us: argv, the
+    // single-instance socket, and macOS's open-file event. Queues when the
+    // bridge is not up yet — macOS can deliver a double-click before exec().
+    void deliver(const QString &line);
+
     void setSessionBridge(QmlSessionBridge *bridge);
     void setRootWindow(QObject *root);
     void flushPending();

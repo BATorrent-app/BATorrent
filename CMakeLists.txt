@@ -53,6 +53,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/main.cpp
     src/app/enginechild.cpp
     src/app/singleinstance.cpp
+    src/app/macfileopen.cpp
     src/app/boothealth.cpp
     src/app/appruntime.cpp
     src/app/appservices.cpp

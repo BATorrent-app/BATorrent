@@ -37,5 +37,47 @@
 	     no liability. Mirrors what Transmission does. -->
 	<key>LSFileQuarantineEnabled</key>
 	<true/>
+
+	<!-- Without these, Launch Services never associates the app with a
+	     .torrent and never posts the open-file event: double-clicking one
+	     opened BATorrent and then nothing happened. The registry-style
+	     association we do at runtime is a Windows mechanism; macOS reads the
+	     bundle. -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>BitTorrent file</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.bittorrent.torrent</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>torrent</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- magnet: and bittorrent: arrive through the same event, with url()
+	     set instead of file(). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Magnet link</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>magnet</string>
+				<string>bittorrent</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
