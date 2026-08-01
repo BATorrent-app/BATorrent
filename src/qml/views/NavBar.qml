@@ -209,7 +209,6 @@ Rectangle {
         Item { Layout.fillWidth: true }
 
         NavBarDownloadChip { id: dlChip; bar: bar; car: car }
-        NavBarDiskGauge { bar: bar }
         NavBarVpnChip { bar: bar }
 
         // ----- donate (heart: gray at rest, red on hover) -----

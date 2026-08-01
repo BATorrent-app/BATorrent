@@ -170,7 +170,6 @@
 <file>../src/qml/windows/DiagnosticsWindow.qml</file>
 <file>../src/qml/dialogs/PairingDialog.qml</file>
 <file>../src/qml/views/NavRail.qml</file>
-<file>../src/qml/views/NavRailDisk.qml</file>
 <file>../src/qml/views/NavRailDownloadSlot.qml</file>
 <file>../src/qml/views/DetailPanel.qml</file>
 <file>../src/qml/views/FilterBar.qml</file>
@@ -178,7 +177,7 @@
 <file>../src/qml/views/StatusBar.qml</file>
 <file>../src/qml/views/NavBar.qml</file>
 <file>../src/qml/views/NavBarDownloadChip.qml</file>
-<file>../src/qml/views/NavBarDiskGauge.qml</file>
+<file>../src/qml/views/DiskGauge.qml</file>
 <file>../src/qml/views/NavBarVpnChip.qml</file>
 <file>../src/qml/views/SearchView.qml</file>
 <file>../src/qml/views/FindBar.qml</file>
