@@ -178,6 +178,34 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         }
         return QString();
     }
+    case FileKindRole: {
+        if (!hash.isEmpty()) {
+            const auto it = m_fileKindCache.constFind(hash);
+            if (it != m_fileKindCache.constEnd())
+                return *it;
+        }
+        if (info.totalSize <= 0)
+            return QString();   // magnet without metadata — nothing to name yet
+        // Biggest file, not the first: a release folder carries samples, nfos
+        // and screenshots, and the payload is the one that matters.
+        QString best;
+        qint64 bestSize = -1;
+        for (const auto &f : m_session->filesAt(index.row())) {
+            if (f.size <= bestSize) continue;
+            QString p = f.path;
+            if (p.endsWith(QLatin1String(".!bt"))) p.chop(4);   // still downloading
+            const int dot = p.lastIndexOf(QLatin1Char('.'));
+            if (dot < 0 || dot == p.size() - 1) continue;
+            const QString ext = p.mid(dot + 1);
+            // A "extension" that long is a dot in the name, not a suffix.
+            if (ext.size() > 5) continue;
+            bestSize = f.size;
+            best = ext.toUpper();
+        }
+        if (!hash.isEmpty())
+            m_fileKindCache.insert(hash, best);
+        return best;
+    }
     case NumPeersRole:    return info.numPeers;
     case DownRateRole:    return info.downloadRate;
     case UpRateRole:      return info.uploadRate;
@@ -260,7 +288,8 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {YearRole,        "year"},
         {GenresRole,      "genres"},
         {QueuePosRole,    "queuePos"},
-        {AutoCategoryRole, "autoCategory"}
+        {AutoCategoryRole, "autoCategory"},
+        {FileKindRole,    "fileKind"}
     };
 }
 
