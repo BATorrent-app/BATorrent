@@ -256,7 +256,15 @@ Menu {
         CtxItem { text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_up"), i18n.t("prompt_speed_kbs"), String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
         CtxItem { text: (session.selectedSequential() ? "✓ " : "") + (i18n.language, i18n.t("ctx_sequential")); onTriggered: session.setSelectedSequential(!session.selectedSequential()) }
         CtxItem { text: (session.selectedForceStart ? "✓ " : "") + (i18n.language, i18n.t("ctx_force_start_plain")); onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
-        CtxItem { text: (session.selectedSuperSeeding ? "✓ " : "") + (i18n.language, i18n.t("ctx_super_seeding")); onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding) }
+        // Only offered on a complete seed: libtorrent ignores the flag otherwise
+        // ("if the torrent is not a seed, this flag has no effect") but still
+        // reports it set, so the menu used to show a tick over a no-op. CtxItem
+        // hides itself when disabled, which is the behaviour we want here.
+        CtxItem {
+            enabled: session.selectedDataDone
+            text: (session.selectedSuperSeeding ? "✓ " : "") + (i18n.language, i18n.t("ctx_super_seeding"))
+            onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding)
+        }
     }
     Menu {
         id: catMenu
