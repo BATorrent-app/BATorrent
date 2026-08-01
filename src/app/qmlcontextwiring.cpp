@@ -12,6 +12,9 @@
 #include <QQmlContext>
 #include <cstdlib>
 
+#include "services/platform/autostart.h"
+#include <QCoreApplication>
+
 namespace QmlContextWiring {
 
 void registerProperties(QQmlContext *ctx, const QmlContextObjects &o)
@@ -30,6 +33,10 @@ void registerProperties(QQmlContext *ctx, const QmlContextObjects &o)
 #else
     ctx->setContextProperty("isStoreBuild", false);
 #endif
+    // Whether the login-item entry started us, so "start minimized to tray"
+    // can apply to the system's launch and not to a deliberate one.
+    ctx->setContextProperty("launchedBySystem",
+                            Autostart::launchedBySystem(QCoreApplication::arguments()));
     ctx->setContextProperty("logs", o.logs);
     ctx->setContextProperty("subsearch", o.subsearch);
     ctx->setContextProperty("pairing", o.pairing);

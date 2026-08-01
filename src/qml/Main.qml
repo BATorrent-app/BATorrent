@@ -140,8 +140,12 @@ Window {
             var isUpdate = curVer.length > 0 && settings.get("lastSeenVersion") !== curVer
             showSplash = settings.get("showSplash") !== false && (isFirstRun || isUpdate)
         }
-        // start hidden in the tray if the user asked for it (and a tray exists)
-        if (typeof settings !== "undefined" && settings.get("startTray") === true && trayIcon.available)
+        // Start hidden only when the login item launched us. Applying this to a
+        // deliberate launch made the app look like it had failed to open: you
+        // double-click the icon and nothing appears (tester report, beta7 #12).
+        if (typeof launchedBySystem !== "undefined" && launchedBySystem
+                && typeof settings !== "undefined" && settings.get("startTray") === true
+                && trayIcon.available)
             win.visible = false
         if (!showSplash) win.maybeShowWelcome()
     }
