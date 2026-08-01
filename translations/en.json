@@ -219,6 +219,7 @@
   "defender_excluded_ok": "Folder excluded from Windows Defender",
   "detail_collapse": "Collapse details",
   "detail_expand": "Expand details",
+  "detail_expand_needs_selection": "Select a torrent to see its details",
   "detail_files": "Files",
   "detail_general": "General",
   "detail_graph": "Graph",

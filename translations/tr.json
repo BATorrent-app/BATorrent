@@ -219,6 +219,7 @@
   "defender_excluded_ok": "Klasör Windows Defender'dan hariç tutuldu",
   "detail_collapse": "Ayrıntıları daralt",
   "detail_expand": "Ayrıntıları genişlet",
+  "detail_expand_needs_selection": "Ayrıntıları görmek için bir torrent seçin",
   "detail_files": "Dosyalar",
   "detail_general": "Genel",
   "detail_graph": "Grafik",

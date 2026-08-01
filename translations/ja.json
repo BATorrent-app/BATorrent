@@ -219,6 +219,7 @@
   "defender_excluded_ok": "フォルダーを Windows Defender の除外に追加しました",
   "detail_collapse": "詳細を折りたたむ",
   "detail_expand": "詳細を展開",
+  "detail_expand_needs_selection": "詳細を見るにはトレントを選択してください",
   "detail_files": "ファイル",
   "detail_general": "概要",
   "detail_graph": "グラフ",

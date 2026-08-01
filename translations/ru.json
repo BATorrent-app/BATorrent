@@ -219,6 +219,7 @@
   "defender_excluded_ok": "Папка исключена из Windows Defender",
   "detail_collapse": "Свернуть детали",
   "detail_expand": "Развернуть детали",
+  "detail_expand_needs_selection": "Выберите торрент, чтобы увидеть детали",
   "detail_files": "Файлы",
   "detail_general": "Общее",
   "detail_graph": "График",
