@@ -219,6 +219,7 @@
   "defender_excluded_ok": "Carpeta excluida de Windows Defender",
   "detail_collapse": "Contraer detalles",
   "detail_expand": "Expandir detalles",
+  "detail_expand_needs_selection": "Selecciona un torrent para ver sus detalles",
   "detail_files": "Archivos",
   "detail_general": "General",
   "detail_graph": "Gráfico",

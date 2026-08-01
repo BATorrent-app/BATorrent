@@ -219,6 +219,7 @@
   "defender_excluded_ok": "Pasta excluída do Windows Defender",
   "detail_collapse": "Recolher detalhes",
   "detail_expand": "Expandir detalhes",
+  "detail_expand_needs_selection": "Selecione um torrent para ver os detalhes",
   "detail_files": "Arquivos",
   "detail_general": "Geral",
   "detail_graph": "Gráfico",

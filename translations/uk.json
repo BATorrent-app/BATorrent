@@ -219,6 +219,7 @@
   "defender_excluded_ok": "Папку виключено з Windows Defender",
   "detail_collapse": "Згорнути деталі",
   "detail_expand": "Розгорнути деталі",
+  "detail_expand_needs_selection": "Виберіть торент, щоб побачити деталі",
   "detail_files": "Файли",
   "detail_general": "Загальне",
   "detail_graph": "Графік",

@@ -219,6 +219,7 @@
   "defender_excluded_ok": "已将文件夹从 Windows Defender 中排除",
   "detail_collapse": "收起详情",
   "detail_expand": "展开详情",
+  "detail_expand_needs_selection": "选择一个种子以查看详细信息",
   "detail_files": "文件",
   "detail_general": "概要",
   "detail_graph": "图表",

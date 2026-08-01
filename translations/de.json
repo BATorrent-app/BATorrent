@@ -219,6 +219,7 @@
   "defender_excluded_ok": "Ordner von Windows Defender ausgeschlossen",
   "detail_collapse": "Details einklappen",
   "detail_expand": "Details ausklappen",
+  "detail_expand_needs_selection": "Wähle einen Torrent, um Details zu sehen",
   "detail_files": "Dateien",
   "detail_general": "Allgemein",
   "detail_graph": "Diagramm",

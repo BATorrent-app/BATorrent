@@ -36,28 +36,41 @@ Rectangle {
             // collapse / expand the whole detail panel (state persists)
             Rectangle {
                 id: collapseBtn
+                // With nothing selected the panel is forced collapsed regardless
+                // of detailsCollapsed, so toggling here changed nothing and the
+                // button read as broken. The lock overrides that force, so it
+                // stays live while locked.
+                readonly property bool actsOnClick: detailPanel.win.hasSel || detailPanel.win.detailsLocked
                 anchors.right: parent.right; anchors.rightMargin: Theme.sp4
                 anchors.verticalCenter: parent.verticalCenter
                 width: 30; height: 26; radius: 7
-                color: colMa.containsMouse ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : Theme.hover
-                border.width: 1; border.color: colMa.containsMouse ? Theme.accent : Theme.hair
+                opacity: actsOnClick ? 1 : 0.4
+                Behavior on opacity { NumberAnimation { duration: 140 } }
+                color: colMa.containsMouse && actsOnClick ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : Theme.hover
+                border.width: 1; border.color: colMa.containsMouse && actsOnClick ? Theme.accent : Theme.hair
                 Behavior on color { ColorAnimation { duration: 120 } }
                 Text {
                     anchors.centerIn: parent
                     text: "⌄"
                     rotation: detailPanel.win.detailsShownCollapsed ? 180 : 0
                     Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                    color: colMa.containsMouse ? Theme.t1 : Theme.t2
+                    color: colMa.containsMouse && collapseBtn.actsOnClick ? Theme.t1 : Theme.t2
                     font.pixelSize: 18; font.bold: true; font.family: Theme.fontSans
                 }
                 MouseArea {
                     id: colMa
                     anchors.fill: parent
-                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    // Not `enabled: false`: that kills hover too, and then the
+                    // tooltip explaining why the button is inert never shows.
+                    acceptedButtons: collapseBtn.actsOnClick ? Qt.LeftButton : Qt.NoButton
+                    hoverEnabled: true
+                    cursorShape: collapseBtn.actsOnClick ? Qt.PointingHandCursor : Qt.ArrowCursor
                     onClicked: detailPanel.win.toggleDetailsCollapsed()
                 }
                 ToolTip.visible: colMa.containsMouse
-                ToolTip.text: detailPanel.win.detailsShownCollapsed ? i18n.t("detail_expand") : i18n.t("detail_collapse")
+                ToolTip.text: !collapseBtn.actsOnClick
+                    ? (i18n.language, i18n.t("detail_expand_needs_selection"))
+                    : (detailPanel.win.detailsShownCollapsed ? i18n.t("detail_expand") : i18n.t("detail_collapse"))
                 ToolTip.delay: 400
             }
 
