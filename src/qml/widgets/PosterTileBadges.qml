@@ -274,7 +274,7 @@ Item {
                 text: (i18n.language, i18n.t("state_queued").arg(tile.queuePos))
                 color: "#ffffff"
                 opacity: 0.92
-                font.pixelSize: 9
+                font.pixelSize: 10
                 font.weight: Font.Bold
                 font.capitalization: Font.AllUppercase
                 font.letterSpacing: 0.5

@@ -21,9 +21,9 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
             Rectangle {
-                width: 6
-                height: 6
-                radius: 3
+                width: 7
+                height: 7
+                radius: 3.5
                 anchors.verticalCenter: parent.verticalCenter
                 color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.dotFor(tile.stateKey)
             }
@@ -39,7 +39,11 @@ Column {
                 color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber
                        : (tile.hasBadge && tile.metaLine.length > 0) ? Theme.t4
                        : win.textFor(tile.stateKey)
-                font.pixelSize: 12
+                font.pixelSize: 13
+                // Medium is a bundled IBM Plex face, not a synthesised weight —
+                // it buys legibility at this size without another pixel of line
+                // height, which the tile has no room for.
+                font.weight: Font.Medium
                 font.family: Theme.fontSans
                 width: Math.min(implicitWidth, root.width - 12 - rightTxt.width - 10)
                 elide: Text.ElideRight
