@@ -120,9 +120,9 @@ Item {
             id: dlRow
             anchors.centerIn: parent
             spacing: 4
-            // Ring carries the colour; the glyph is white. Tinting both the
-            // same left a thin stroke sitting on its own ring with nothing to
-            // read against — the circle showed and the arrow did not.
+            // Filled disc, filled glyph. The arrow was a stroked SVG — 1.8 on a
+            // 24 viewBox — so at 9px its stroke computed to 0.68px and simply
+            // had no width to be seen at. A solid triangle survives any size.
             Rectangle {
                 width: 14
                 height: 14
@@ -131,9 +131,9 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 IconImg {
                     anchors.centerIn: parent
-                    src: "qrc:/icons/arrow-down.svg"
+                    src: "qrc:/icons/caret-down-fill.svg"
                     tint: "#ffffff"
-                    s: 9
+                    s: 8
                 }
             }
             Text {
@@ -216,9 +216,9 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 IconImg {
                     anchors.centerIn: parent
-                    src: "qrc:/icons/arrow-up.svg"
+                    src: "qrc:/icons/caret-up-fill.svg"
                     tint: "#ffffff"
-                    s: 9
+                    s: 8
                 }
             }
             Text {
