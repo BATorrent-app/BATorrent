@@ -1,10 +1,14 @@
 # Changelog
 
-## v4.8.0-beta6
+## v4.8.0-beta7
 
 Test build for the beta round. Still a beta, not a public release.
-(Replaces v4.8.0-beta5, which never published: the onboarding screen used a
-QML type that only exists in Qt 6.8, so the packaged build failed to start.)
+
+beta5 and beta6 never published. beta5 used a QML type that only exists in
+Qt 6.8 while the build pins 6.7, so the packaged app failed to start; beta6
+shipped the Windows bundle without the MSVC runtime, which would not launch on
+a machine that has no redistributable installed. Both are fixed here, along
+with three binding loops in the main window that ran on every boot.
 
 ### Changed
 - The VPN is now a "light" model: instead of running its own tunnel, BATorrent
