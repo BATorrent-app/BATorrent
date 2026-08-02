@@ -18,6 +18,8 @@
 #include <QVariantList>
 #include <QVector>
 
+class GeoIpResolver;
+
 class VpnManager : public QObject
 {
     Q_OBJECT
@@ -72,7 +74,12 @@ signals:
     void interfaceDown(bool deliberate);
 
 private:
-    struct Profile { QString id; QString name; QString endpoint; };
+    struct Profile { QString id; QString name; QString endpoint; QString cc; QString pendingIp; };
+
+    // Which country a profile lands in — Sherwan asked for flags beside the
+    // profiles, and the endpoint is the only honest source (a config named
+    // "germany" can point anywhere). Resolved lazily, cached in memory only.
+    void resolveCountry(const QString &id);
 
     void setState(State s);
     void load();
@@ -83,6 +90,8 @@ private:
     QString confPath(const QString &id) const;
     QString splitConfPath(const QString &id) const;
     int indexOf(const QString &id) const;
+
+    GeoIpResolver *m_geoIp = nullptr;
 
     QVector<Profile> m_profiles;
     WgTunnel *m_tunnel;

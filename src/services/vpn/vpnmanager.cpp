@@ -2,6 +2,10 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
+#include <QHostAddress>
+#include <QHostInfo>
+#include <QPointer>
+#include "services/integrations/geoip.h"
 #include "services/vpn/vpnmanager.h"
 
 #include <QDir>
@@ -151,11 +155,64 @@ void VpnManager::removeProfile(const QString &id)
 QVariantList VpnManager::profiles() const
 {
     QVariantList out;
-    for (const Profile &p : m_profiles)
+    for (const Profile &p : m_profiles) {
+        if (p.cc.isEmpty() && !p.endpoint.isEmpty())
+            const_cast<VpnManager *>(this)->resolveCountry(p.id);
         out.append(QVariantMap{ {QStringLiteral("id"), p.id},
                                 {QStringLiteral("name"), p.name},
-                                {QStringLiteral("endpoint"), p.endpoint} });
+                                {QStringLiteral("endpoint"), p.endpoint},
+                                {QStringLiteral("cc"), p.cc.toUpper()} });
+    }
     return out;
+}
+
+// The endpoint is "host:port"; a hostname needs DNS before the geo lookup can
+// say anything. Both steps are async and guarded by a QPointer, since a profile
+// can be deleted while either is in flight.
+void VpnManager::resolveCountry(const QString &id)
+{
+    const int i = indexOf(id);
+    if (i < 0 || !m_profiles[i].cc.isEmpty()) return;
+
+    const QString endpoint = m_profiles[i].endpoint;
+    const int colon = endpoint.lastIndexOf(QLatin1Char(':'));
+    QString host = colon > 0 ? endpoint.left(colon) : endpoint;
+    host.remove(QLatin1Char('[')).remove(QLatin1Char(']'));   // IPv6 literal
+    if (host.isEmpty()) return;
+
+    if (!m_geoIp) {
+        m_geoIp = new GeoIpResolver(this);
+        connect(m_geoIp, &GeoIpResolver::resolved, this,
+                [this](const QString &ip, const QString &cc) {
+                    if (cc.isEmpty()) return;
+                    bool touched = false;
+                    for (Profile &p : m_profiles) {
+                        if (p.cc.isEmpty() && p.pendingIp == ip) { p.cc = cc; touched = true; }
+                    }
+                    if (touched) emit profilesChanged();
+                });
+    }
+
+    const QHostAddress addr(host);
+    if (!addr.isNull()) {
+        m_profiles[i].pendingIp = host;
+        const QString cached = m_geoIp->cachedCountry(host);
+        if (!cached.isEmpty()) { m_profiles[i].cc = cached; return; }
+        m_geoIp->resolve(host);
+        return;
+    }
+
+    QPointer<VpnManager> self(this);
+    QHostInfo::lookupHost(host, this, [self, id](const QHostInfo &info) {
+        if (!self || info.addresses().isEmpty()) return;
+        const int j = self->indexOf(id);
+        if (j < 0 || !self->m_profiles[j].cc.isEmpty()) return;
+        const QString ip = info.addresses().first().toString();
+        self->m_profiles[j].pendingIp = ip;
+        const QString cached = self->m_geoIp->cachedCountry(ip);
+        if (!cached.isEmpty()) { self->m_profiles[j].cc = cached; emit self->profilesChanged(); return; }
+        self->m_geoIp->resolve(ip);
+    });
 }
 
 void VpnManager::connectProfile(const QString &id)
