@@ -306,7 +306,7 @@
   "dlg_download_complete": "İndirme Tamamlandı",
   "dlg_error": "Hata",
   "dlg_open_torrent": "Torrent Aç",
-  "dnd_drop_sub": ".torrent dosyaları veya mıknatıs bağlantıları",
+  "dnd_drop_sub": ".torrent dosyaları, magnet bağlantıları veya bir indirme bağlantısı",
   "dnd_drop_title": "Eklemek için bırakın",
   "empty_body": ".torrent dosyasını bu pencerenin herhangi bir yerine bırakın, mıknatıs bağlantısı yapıştırın veya araç çubuğunu kullanın.",
   "empty_body2": "Bir .torrent dosyası ekleyin, mıknatıs bağlantısı yapıştırın veya arama yapın — indirmeleriniz burada görünür.",
@@ -1266,5 +1266,6 @@
   "welcome_view_note": "Varsayılan kapaklardır. Liste daha fazlasını ve tüm sütunları gösterir.",
   "welcome_view_q": "KAPAKLAR MI LİSTE Mİ?",
   "welcome_view_grid": "Kapaklar",
-  "welcome_view_classic": "Liste"
+  "welcome_view_classic": "Liste",
+  "vpn_drop_conf": "İçe aktarmak için .conf bırakın"
 }

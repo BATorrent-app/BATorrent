@@ -306,7 +306,7 @@
   "dlg_download_complete": "ダウンロード完了",
   "dlg_error": "エラー",
   "dlg_open_torrent": "トレントを開く",
-  "dnd_drop_sub": ".torrent ファイルまたはマグネットリンク",
+  "dnd_drop_sub": ".torrent ファイル、マグネットリンク、ダウンロードリンク",
   "dnd_drop_title": "ドロップして追加",
   "empty_body": ".torrent ファイルをこのウィンドウの任意の場所にドロップするか、マグネットリンクを貼り付けるか、ツールバーを使用してください。",
   "empty_body2": ".torrent ファイルを追加、マグネットリンクを貼り付け、または検索 — ダウンロードがここに表示されます。",
@@ -1266,5 +1266,6 @@
   "welcome_view_note": "既定はカバー表示です。リストは情報量が多く、全列を表示します。",
   "welcome_view_q": "カバーかリストか",
   "welcome_view_grid": "カバー",
-  "welcome_view_classic": "リスト"
+  "welcome_view_classic": "リスト",
+  "vpn_drop_conf": ".conf をドロップしてインポート"
 }
