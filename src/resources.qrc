@@ -69,12 +69,15 @@
 <file>icons/subtitles.svg</file>
 <file>icons/lock.svg</file>
 <file>icons/lock-open.svg</file>
+<file>icons/lock-solid.svg</file>
+<file>icons/lock-open-solid.svg</file>
 <file>icons/upload.svg</file>
 <file>icons/chevron.svg</file>
 <file>icons/heart.svg</file>
 <file>icons/heart-line.svg</file>
 <file>icons/sliders.svg</file>
 <file>icons/close.svg</file>
+<file>icons/close-bold.svg</file>
 <file>icons/flags/en.svg</file>
 <file>icons/flags/pt.svg</file>
 <file>icons/flags/zh.svg</file>
