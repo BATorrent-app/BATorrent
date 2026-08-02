@@ -217,10 +217,11 @@ Rectangle {
             }
         }
 
+        Item { Layout.fillHeight: true }   // the slot and the bottom group settle together at the foot
+
         NavRailDownloadSlot { id: dlSlot; rail: rail; car: car }
         NavRailMiniDownloads { rail: rail; car: car }
 
-        Item { Layout.fillHeight: true }   // push disk + donate + Settings + collapse to the bottom
 
         Rectangle {
             Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16
