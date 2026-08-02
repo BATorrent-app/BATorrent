@@ -18,11 +18,10 @@ ColumnLayout {
     required property var rail
     required property var car
 
-    // Deliberately not car.dlList: on Downloads that switches to resume items,
-    // which are finished things to continue watching and would show full bars in
-    // a strip about transfers. It also goes dark on page 0, and page 0 is where
-    // the empty rail is most visible. What is moving, then what is seeding.
-    readonly property var list: car.downloadList.length > 0 ? car.downloadList : car.seedingList
+    // Only what is actually moving. Falling back to seeding turned this into a
+    // list of the whole library sitting at 100%, which says nothing and reads as
+    // a bug. Nothing downloading means nothing to show here.
+    readonly property var list: car.downloadList
     readonly property bool active: rail.collapsed && rail.showDownloadChip && list.length > 0
     readonly property int shownCount: Math.min(4, list.length)
 
