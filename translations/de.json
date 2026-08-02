@@ -98,7 +98,7 @@
   "btn_export": "Exportieren…",
   "btn_import": "Importieren…",
   "btn_ok": "OK",
-  "cat_apps": "Programme",
+  "cat_apps": "Software",
   "cat_games": "Spiele",
   "cat_movies": "Filme",
   "cat_series": "Serien",
@@ -1267,5 +1267,6 @@
   "welcome_view_q": "COVER ODER LISTE?",
   "welcome_view_grid": "Cover",
   "welcome_view_classic": "Liste",
-  "vpn_drop_conf": ".conf hier ablegen zum Importieren"
+  "vpn_drop_conf": ".conf hier ablegen zum Importieren",
+  "cat_compressed": "Archive"
 }

@@ -129,9 +129,11 @@ Rectangle {
         TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; spinOnClick: true; onClicked: { if (toolbar.win) toolbar.win.flashRefresh(); if (typeof session !== "undefined") session.refreshAll() } }
         TGrpDiv {}
         // G3: ações sobre a seleção (tester: copiar magnet e abrir pasta estavam
-        // só no menu de contexto, apesar de anunciadas como estando aqui)
+        // só no menu de contexto, apesar de anunciadas como estando aqui).
+        // Copy wears a magnet inside a copy sheet, not the plain copy glyph:
+        // it copies the magnet link, and the generic sheet read as "copy path".
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
-        TBtn { label: (i18n.language, i18n.t("tb_copy"));   icon: "qrc:/icons/copy.svg";   disabled: !win.hasSel; onClicked: session.copyMagnetLink() }
+        TBtn { label: (i18n.language, i18n.t("tb_copy"));   icon: "qrc:/icons/magnet-copy.svg"; disabled: !win.hasSel; onClicked: session.copyMagnetLink() }
         TBtn { label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; disabled: !win.hasSel; onClicked: session.openSaveFolder() }
         TGrpDiv {}
         // G4: RSS. The "Search" button used to live here and was removed: it

@@ -1267,5 +1267,6 @@
   "welcome_view_q": "CAPAS OU LISTA?",
   "welcome_view_grid": "Capas",
   "welcome_view_classic": "Lista",
-  "vpn_drop_conf": "Solte o .conf para importar"
+  "vpn_drop_conf": "Solte o .conf para importar",
+  "cat_compressed": "Compactados"
 }

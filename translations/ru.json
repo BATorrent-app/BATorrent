@@ -1267,5 +1267,6 @@
   "welcome_view_q": "ОБЛОЖКИ ИЛИ СПИСОК?",
   "welcome_view_grid": "Обложки",
   "welcome_view_classic": "Список",
-  "vpn_drop_conf": "Перетащите .conf для импорта"
+  "vpn_drop_conf": "Перетащите .conf для импорта",
+  "cat_compressed": "Архивы"
 }

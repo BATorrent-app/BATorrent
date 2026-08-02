@@ -273,7 +273,7 @@ Menu {
         delegate: CatItem {}
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
 
-        // The four built-ins below are static (catLabel translates them).
+        // The built-ins below are static (catLabel translates them).
         // Anything the user typed via "Other…" is appended here — before this,
         // a custom category was applied to the torrent but never appeared in
         // the list, so it looked like it hadn't been saved.
@@ -286,7 +286,7 @@ Menu {
                 text: (session.selectedCategory() === modelData ? "✓ " : "") + modelData
                 onTriggered: session.setSelectedCategory(modelData)
             }
-            onObjectAdded: function(index, object) { catMenu.insertItem(4 + index, object) }
+            onObjectAdded: function(index, object) { catMenu.insertItem(5 + index, object) }
             onObjectRemoved: function(index, object) { catMenu.removeItem(object) }
         }
 
@@ -294,6 +294,7 @@ Menu {
         CatItem { text: (session.selectedCategory() === "Games"  ? "✓ " : "") + host.catLabel("Games");  onTriggered: session.setSelectedCategory("Games") }
         CatItem { text: (session.selectedCategory() === "Movies" ? "✓ " : "") + host.catLabel("Movies"); onTriggered: session.setSelectedCategory("Movies") }
         CatItem { text: (session.selectedCategory() === "Series" ? "✓ " : "") + host.catLabel("Series"); onTriggered: session.setSelectedCategory("Series") }
+        CatItem { text: (session.selectedCategory() === "Compressed" ? "✓ " : "") + host.catLabel("Compressed"); onTriggered: session.setSelectedCategory("Compressed") }
         MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
         CatItem { text: (session.selectedCategory() === "" ? "✓ " : "") + (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
         CatItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith(i18n.t("ctx_category"), i18n.t("prompt_category_name"), session.selectedCategory(), i18n.t("prompt_category_eg"), function(t){ session.setSelectedCategory(t) }) }

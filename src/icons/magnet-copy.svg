@@ -1,0 +1,5 @@
+<!-- "copy magnet": Tabler magnet scaled into the front sheet of Tabler copy, so
+     the top bar can say add-a-magnet and copy-a-magnet with the same object.
+     Stroke 1.8 on the sheet, 1.6 on the magnet so the smaller shape does not
+     read heavier than the frame around it. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /> <path d="M9.667 7h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667v-8.666a2.667 2.667 0 0 1 2.667 -2.667z" /> <g stroke-width="1.6"><path d="M11 15.2v-3.7a.9 .9 0 0 1 .9 -.9h.45a.9 .9 0 0 1 .9 .9v3.7a.9 .9 0 0 0 2.7 0v-3.7a.9 .9 0 0 1 .9 -.9h.45a.9 .9 0 0 1 .9 .9v3.7a3.6 3.6 0 0 1 -7.2 0" /> <path d="M11 13.4h1.35" /> <path d="M16.85 13.4h1.35" /></g></svg>
