@@ -80,11 +80,11 @@ Rectangle {
                 anchors.right: collapseBtn.left; anchors.rightMargin: 2
                 anchors.verticalCenter: parent.verticalCenter
                 width: 28; height: 28; z: 5
-                readonly property color tint: lockMa.containsMouse ? Theme.t1 : (detailPanel.win.detailsLocked ? Theme.accent : Theme.t4)
+                readonly property color tint: lockMa.containsMouse ? Theme.t1 : (detailPanel.win.detailsLocked ? Theme.accent : Theme.t3)
                 IconImg {
                     anchors.centerIn: parent
-                    s: 15
-                    src: detailPanel.win.detailsLocked ? "qrc:/icons/lock.svg" : "qrc:/icons/lock-open.svg"
+                    s: 17
+                    src: detailPanel.win.detailsLocked ? "qrc:/icons/lock-solid.svg" : "qrc:/icons/lock-open-solid.svg"
                     tint: lockBtn.tint
                 }
                 MouseArea {
