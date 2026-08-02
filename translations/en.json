@@ -515,7 +515,7 @@
   "menu_statistics": "Statistics…",
   "menu_torrent": "&Torrent",
   "menu_torrent_title": "Torrent",
-  "menu_setup_wizard": "Setup wizard",
+  "menu_setup_wizard": "Wizard",
   "menu_tour": "Interactive tutorial",
   "menu_welcome": "Welcome",
   "menu_whatsnew": "What's new",
@@ -1261,5 +1261,10 @@
   "welcome_nav_left": "On the left",
   "welcome_detail_q": "AND THE TORRENT DETAILS?",
   "welcome_detail_right": "On the right",
-  "welcome_detail_bottom": "At the bottom"
+  "welcome_detail_bottom": "At the bottom",
+  "welcome_view_title": "How should your library read?",
+  "welcome_view_note": "Covers are the default. The list packs more in and shows every column.",
+  "welcome_view_q": "COVERS OR LIST?",
+  "welcome_view_grid": "Covers",
+  "welcome_view_classic": "List"
 }
