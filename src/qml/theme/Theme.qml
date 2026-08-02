@@ -55,6 +55,18 @@ QtObject {
     // only for raw data (hashes, logs)
     readonly property var tnum: ({ "tnum": true })
 
+    // Preview triplets for a theme you are NOT currently in — the onboarding
+    // shows all six side by side, and bg/panel/accent below can only answer for
+    // the active one. Keep in step with the chains right under this.
+    readonly property var swatches: [
+        { key: "dark",     bg: "#0e0e10", panel: "#1a1a1d", accent: "#e5332b" },
+        { key: "light",    bg: "#ffffff", panel: "#f4f5f7", accent: "#e5332b" },
+        { key: "midnight", bg: "#05080f", panel: "#0f1830", accent: "#e5332b" },
+        { key: "sakura",   bg: "#fde6ef", panel: "#ffffff", accent: "#d6336c" },
+        { key: "darkstar", bg: "#0b0612", panel: "#190f2e", accent: "#a855f7" },
+        { key: "matrix",   bg: "#040806", panel: "#0d1a11", accent: "#2be86a" }
+    ]
+
     // ---------- surfaces ----------
     readonly property color bg:
         name === "custom"   ? customBgColor :

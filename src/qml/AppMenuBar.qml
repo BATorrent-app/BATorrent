@@ -61,6 +61,7 @@ Platform.MenuBar {
     }
     Platform.Menu {
         title: (i18n.language, i18n.t("menu_help_title"))
+        Platform.MenuItem { text: (i18n.language, i18n.t("menu_setup_wizard")); onTriggered: { welcomeDialog.mode = "welcome"; welcomeDialog.open() } }
         Platform.MenuItem { text: (i18n.language, i18n.t("menu_tour")); onTriggered: tourOverlay.start() }
         Platform.MenuItem { text: (i18n.language, i18n.t("menu_whatsnew")); onTriggered: { welcomeDialog.mode = "update"; welcomeDialog.open() } }
         Platform.MenuItem { text: (i18n.language, i18n.t("menu_release_notes")); onTriggered: releaseNotesDialog.open() }
