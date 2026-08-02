@@ -89,7 +89,10 @@ QVariantList QmlSessionBridge::seedingTransfers() const
     const int n = m_session->torrentCount();
     for (int i = 0; i < n; ++i) {
         const TorrentInfo info = m_session->torrentAt(i);
-        if (!info.completed) continue;   // any finished torrent (paused or seeding) — the card's fallback
+        // finished/seeding come straight from libtorrent; `completed` is only the
+        // set the user marked by hand. Filtering on that alone made this fallback
+        // return nothing while four torrents were visibly seeding.
+        if (!info.finished && !info.seeding && !info.completed) continue;
         const QString hash = m_session->torrentHashAt(i);
         QString poster;
         if (m_resolver && m_resolver->hasCached(hash)) {
