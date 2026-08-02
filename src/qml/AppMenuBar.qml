@@ -7,6 +7,7 @@ import Qt.labs.platform as Platform
 
 // Native/global menu bar. Must be instantiated as a direct Window child on macOS.
 Platform.MenuBar {
+    id: menus
     required property var host
     required property var openFileDialog
     required property var magnetDialog
@@ -21,6 +22,7 @@ Platform.MenuBar {
     required property var welcomeDialog
     required property var releaseNotesDialog
     required property var aboutDialog
+
 
 
     Platform.Menu {
@@ -61,8 +63,17 @@ Platform.MenuBar {
     }
     Platform.Menu {
         title: (i18n.language, i18n.t("menu_help_title"))
-        Platform.MenuItem { text: (i18n.language, i18n.t("menu_setup_wizard")); onTriggered: { welcomeDialog.mode = "welcome"; welcomeDialog.open() } }
         Platform.MenuItem { text: (i18n.language, i18n.t("menu_tour")); onTriggered: tourOverlay.start() }
+        // role: NoRole is load-bearing. Qt runs a text heuristic on macOS menu
+        // titles and merges anything reading like "setup"/"config" into the
+        // application menu as Preferences — the row simply vanished from Help
+        // while the text was correct all along. The English name avoids the
+        // keyword now, but pt "Assistente de configuração" would still trip it.
+        Platform.MenuItem {
+            role: Platform.MenuItem.NoRole
+            text: (i18n.language, i18n.t("menu_setup_wizard"))
+            onTriggered: { welcomeDialog.mode = "welcome"; welcomeDialog.open() }
+        }
         Platform.MenuItem { text: (i18n.language, i18n.t("menu_whatsnew")); onTriggered: { welcomeDialog.mode = "update"; welcomeDialog.open() } }
         Platform.MenuItem { text: (i18n.language, i18n.t("menu_release_notes")); onTriggered: releaseNotesDialog.open() }
         Platform.MenuItem { text: (i18n.language, i18n.t("menu_shortcuts")); onTriggered: host.showWin(host.shortcutsWinLoader) }
