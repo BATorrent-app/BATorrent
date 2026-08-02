@@ -37,10 +37,11 @@ Rectangle {
         hovered: dlSlot.slotHovered
         active: rail.showDl
     }
-    // Same rule as the top bar's chip: off on Downloads (page 0), where the
-    // list itself is the better version of this information.
-    readonly property bool showDl: !collapsed && car.dlList.length > 0
-                                   && showDownloadChip && currentIndex !== 0
+    // Shown on every page, Downloads included. It used to be gated off page 0
+    // on the theory that the list says it better, but that left the rail with a
+    // hole exactly where users spend their time — and it also meant the
+    // carousel's resume mode, which only arms on page 0, could never appear.
+    readonly property bool showDl: !collapsed && car.dlList.length > 0 && showDownloadChip
     Connections {
         target: car
         function onDlIndexChanged() { dlFade.restart() }
@@ -215,6 +216,9 @@ Rectangle {
                 ToolTip.delay: 400
             }
         }
+
+        NavRailDownloadSlot { id: dlSlot; rail: rail; car: car }
+        NavRailMiniDownloads { rail: rail; car: car }
 
         Item { Layout.fillHeight: true }   // push disk + donate + Settings + collapse to the bottom
 
@@ -433,8 +437,6 @@ Rectangle {
             ToolTip.visible: rail.collapsed && tglMa.containsMouse
             ToolTip.delay: 400
         }
-
-        NavRailDownloadSlot { id: dlSlot; rail: rail; car: car }
 
         Item { Layout.preferredHeight: 8 }
     }
