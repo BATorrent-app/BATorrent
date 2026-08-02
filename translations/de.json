@@ -306,7 +306,7 @@
   "dlg_download_complete": "Download abgeschlossen",
   "dlg_error": "Fehler",
   "dlg_open_torrent": "Torrent öffnen",
-  "dnd_drop_sub": ".torrent-Dateien oder Magnet-Links",
+  "dnd_drop_sub": ".torrent-Dateien, Magnet-Links oder ein Download-Link",
   "dnd_drop_title": "Zum Hinzufügen ablegen",
   "empty_body": "Ziehen Sie eine .torrent-Datei in dieses Fenster, fügen Sie einen Magnet-Link ein oder verwenden Sie die Symbolleiste.",
   "empty_body2": "Füge eine .torrent-Datei hinzu, füge einen Magnet-Link ein oder suche – deine Downloads erscheinen hier.",
@@ -1266,5 +1266,6 @@
   "welcome_view_note": "Cover sind der Standard. Die Liste zeigt mehr und alle Spalten.",
   "welcome_view_q": "COVER ODER LISTE?",
   "welcome_view_grid": "Cover",
-  "welcome_view_classic": "Liste"
+  "welcome_view_classic": "Liste",
+  "vpn_drop_conf": ".conf hier ablegen zum Importieren"
 }

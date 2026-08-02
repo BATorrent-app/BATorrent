@@ -33,6 +33,48 @@ ColumnLayout {
         color: on ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.08) : Theme.field
         border.color: on ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.30) : Theme.hair
         border.width: 1
+
+        // Drop a .conf on the status card. The file browser stays for people who
+        // want it, but a config fresh out of a provider's download folder should
+        // not need one. It sits inside the hero rather than on the column: a
+        // layout manages every Item child, so a DropArea there would claim a row.
+        DropArea {
+            id: confDrop
+            anchors.fill: parent
+            z: 40
+            function accepts(d) {
+                if (!d.hasUrls) return false
+                for (var i = 0; i < d.urls.length; ++i)
+                    if (d.urls[i].toString().toLowerCase().endsWith(".conf")) return true
+                return false
+            }
+            onEntered: function(drag) { drag.accepted = accepts(drag) }
+            onDropped: function(drop) {
+                if (typeof vpn === "undefined") return
+                for (var i = 0; i < drop.urls.length; ++i) {
+                    var u = drop.urls[i].toString()
+                    if (u.toLowerCase().endsWith(".conf")) vpn.importFromFile(u, "")
+                }
+                drop.accept()
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 12
+                visible: opacity > 0.01
+                opacity: confDrop.containsDrag ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 140 } }
+                color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.10)
+                border.color: Theme.accent
+                border.width: 2
+                Text {
+                    anchors.centerIn: parent
+                    text: (i18n.language, i18n.t("vpn_drop_conf"))
+                    color: Theme.t1
+                    font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                }
+            }
+        }
         implicitHeight: heroCol.implicitHeight + 32
         Behavior on color { ColorAnimation { duration: 200 } }
         ColumnLayout {
@@ -192,4 +234,5 @@ ColumnLayout {
         nameFilters: ["WireGuard config (*.conf)", "All files (*)"]
         onAccepted: if (typeof vpn !== "undefined") vpn.importFromFile(selectedFile.toString(), "")
     }
+
 }

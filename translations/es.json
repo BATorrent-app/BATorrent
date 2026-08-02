@@ -306,7 +306,7 @@
   "dlg_download_complete": "Descarga completa",
   "dlg_error": "Error",
   "dlg_open_torrent": "Abrir Torrent",
-  "dnd_drop_sub": "archivos .torrent o enlaces magnet",
+  "dnd_drop_sub": "archivos .torrent, enlaces magnet o un enlace de descarga",
   "dnd_drop_title": "Suelta para añadir",
   "empty_body": "Suelta un archivo .torrent en cualquier parte de esta ventana, pega un enlace magnet o usa la barra de herramientas.",
   "empty_body2": "Añade un archivo .torrent, pega un enlace magnet o busca — tus descargas aparecen aquí.",
@@ -1266,5 +1266,6 @@
   "welcome_view_note": "Las portadas son lo predeterminado. La lista muestra más y todas las columnas.",
   "welcome_view_q": "¿PORTADAS O LISTA?",
   "welcome_view_grid": "Portadas",
-  "welcome_view_classic": "Lista"
+  "welcome_view_classic": "Lista",
+  "vpn_drop_conf": "Suelta el .conf para importar"
 }

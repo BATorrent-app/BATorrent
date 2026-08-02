@@ -306,7 +306,7 @@
   "dlg_download_complete": "下载完成",
   "dlg_error": "错误",
   "dlg_open_torrent": "打开种子",
-  "dnd_drop_sub": ".torrent 文件或磁力链接",
+  "dnd_drop_sub": ".torrent 文件、磁力链接或下载链接",
   "dnd_drop_title": "拖放以添加",
   "empty_body": "将 .torrent 文件拖到窗口的任意位置，粘贴磁力链接，或使用工具栏。",
   "empty_body2": "添加 .torrent 文件、粘贴磁力链接或搜索——下载会显示在这里。",
@@ -1266,5 +1266,6 @@
   "welcome_view_note": "默认显示封面。列表容纳更多内容并显示全部列。",
   "welcome_view_q": "封面还是列表？",
   "welcome_view_grid": "封面",
-  "welcome_view_classic": "列表"
+  "welcome_view_classic": "列表",
+  "vpn_drop_conf": "拖入 .conf 以导入"
 }

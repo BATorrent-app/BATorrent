@@ -306,7 +306,7 @@
   "dlg_download_complete": "Загрузка завершена",
   "dlg_error": "Ошибка",
   "dlg_open_torrent": "Открыть торрент",
-  "dnd_drop_sub": "файлы .torrent или magnet-ссылки",
+  "dnd_drop_sub": "файлы .torrent, magnet-ссылки или ссылка на загрузку",
   "dnd_drop_title": "Отпустите, чтобы добавить",
   "empty_body": "Перетащите .torrent файл в окно, вставьте магнет-ссылку или используйте панель инструментов.",
   "empty_body2": "Добавьте файл .torrent, вставьте magnet-ссылку или выполните поиск — ваши загрузки появятся здесь.",
@@ -1266,5 +1266,6 @@
   "welcome_view_note": "По умолчанию — обложки. Список вмещает больше и показывает все колонки.",
   "welcome_view_q": "ОБЛОЖКИ ИЛИ СПИСОК?",
   "welcome_view_grid": "Обложки",
-  "welcome_view_classic": "Список"
+  "welcome_view_classic": "Список",
+  "vpn_drop_conf": "Перетащите .conf для импорта"
 }

@@ -306,7 +306,7 @@
   "dlg_download_complete": "Download Concluído",
   "dlg_error": "Erro",
   "dlg_open_torrent": "Abrir Torrent",
-  "dnd_drop_sub": "arquivos .torrent ou links magnet",
+  "dnd_drop_sub": "arquivos .torrent, links magnet ou um link de download",
   "dnd_drop_title": "Soltar para adicionar",
   "empty_body": "Solte um arquivo .torrent em qualquer lugar da janela, cole um link magnet, ou use a barra de ferramentas.",
   "empty_body2": "Adicione um arquivo .torrent, cole um link magnet ou busque — seus downloads aparecem aqui.",
@@ -1266,5 +1266,6 @@
   "welcome_view_note": "As capas são o padrão. A lista cabe mais e mostra todas as colunas.",
   "welcome_view_q": "CAPAS OU LISTA?",
   "welcome_view_grid": "Capas",
-  "welcome_view_classic": "Lista"
+  "welcome_view_classic": "Lista",
+  "vpn_drop_conf": "Solte o .conf para importar"
 }

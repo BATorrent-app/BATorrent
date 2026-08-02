@@ -306,7 +306,7 @@
   "dlg_download_complete": "Download Complete",
   "dlg_error": "Error",
   "dlg_open_torrent": "Open Torrent",
-  "dnd_drop_sub": ".torrent files or magnet links",
+  "dnd_drop_sub": ".torrent files, magnet links or a download link",
   "dnd_drop_title": "Drop to add",
   "empty_body": "Drop a .torrent file anywhere on this window, paste a magnet link, or use the toolbar.",
   "empty_body2": "Add a .torrent file, paste a magnet link or search — your downloads show up here.",
@@ -1266,5 +1266,6 @@
   "welcome_view_note": "Covers are the default. The list packs more in and shows every column.",
   "welcome_view_q": "COVERS OR LIST?",
   "welcome_view_grid": "Covers",
-  "welcome_view_classic": "List"
+  "welcome_view_classic": "List",
+  "vpn_drop_conf": "Drop the .conf to import"
 }
