@@ -14,6 +14,17 @@ ColumnLayout {
     id: vpnCol
     spacing: 10
 
+    // Same rule the peers table uses: a crisp SVG for the countries we ship,
+    // the bare code for the long tail. Never the emoji flag — Windows has no
+    // glyphs for regional indicators and renders them as letter boxes.
+    readonly property var flagCodes: ["at","be","ch","de","dk","fi","fr","id",
+        "ie","it","jp","nl","no","pl","pt","ro","ru","se","ua"]
+    function flagSrc(cc) {
+        if (!cc) return ""
+        var c = cc.toLowerCase()
+        return flagCodes.indexOf(c) >= 0 ? ("qrc:/icons/countryflags/" + c + ".svg") : ""
+    }
+
     function activeProfileLabel() {
         if (typeof vpn === "undefined") return ""
         for (var i = 0; i < vpn.profiles.length; ++i)
@@ -169,6 +180,28 @@ ColumnLayout {
             }
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 10; spacing: 8
+                Item {
+                    readonly property string cc: profRow.modelData.cc || ""
+                    visible: cc.length > 0
+                    Layout.preferredWidth: visible ? 22 : 0
+                    Layout.preferredHeight: 16
+                    Image {
+                        anchors.centerIn: parent
+                        visible: String(source).length > 0
+                        source: vpnCol.flagSrc(parent.cc)
+                        width: 22; height: 16
+                        sourceSize: Qt.size(44, 32)
+                        fillMode: Image.PreserveAspectFit
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        visible: vpnCol.flagSrc(parent.cc) === ""
+                        text: parent.cc
+                        color: Theme.t3
+                        font.pixelSize: 10; font.weight: Font.Bold
+                        font.family: Theme.fontSans; font.letterSpacing: 0.5
+                    }
+                }
                 ColumnLayout {
                     Layout.fillWidth: true; spacing: 1
                     Text { visible: !profRow.editing; text: modelData.name; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans
