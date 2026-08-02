@@ -120,21 +120,16 @@ Item {
             id: dlRow
             anchors.centerIn: parent
             spacing: 4
-            // Filled disc, filled glyph. The arrow was a stroked SVG — 1.8 on a
-            // 24 viewBox — so at 9px its stroke computed to 0.68px and simply
-            // had no width to be seen at. A solid triangle survives any size.
-            Rectangle {
-                width: 14
-                height: 14
-                radius: 7
-                color: Theme.accent
+            // A text arrow, the same way the meta line under the tile does it.
+            // The disc-in-a-pill was two nested containers inside 18px, and the
+            // glyph it held was a stroked SVG with no room for its own stroke.
+            Text {
                 anchors.verticalCenter: parent.verticalCenter
-                IconImg {
-                    anchors.centerIn: parent
-                    src: "qrc:/icons/caret-down-fill.svg"
-                    tint: "#ffffff"
-                    s: 8
-                }
+                text: "\u2193"
+                color: Theme.accent
+                font.pixelSize: 12
+                font.weight: Font.Bold
+                font.family: Theme.fontSans
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
@@ -164,20 +159,13 @@ Item {
             id: doneRow
             anchors.centerIn: parent
             spacing: 4
-            Rectangle {
-                width: 14
-                height: 14
-                radius: 7
-                color: Theme.grn
+            Text {
                 anchors.verticalCenter: parent.verticalCenter
-                Text {
-                    anchors.centerIn: parent
-                    text: "✓"
-                    color: "#ffffff"
-                    font.pixelSize: 9
-                    font.weight: Font.Bold
-                    font.family: Theme.fontSans
-                }
+                text: "✓"
+                color: Theme.grn
+                font.pixelSize: 12
+                font.weight: Font.Bold
+                font.family: Theme.fontSans
             }
             Text {
                 text: (i18n.language, i18n.t("state_done_badge"))
@@ -208,18 +196,13 @@ Item {
             id: seedRow
             anchors.centerIn: parent
             spacing: 4
-            Rectangle {
-                width: 14
-                height: 14
-                radius: 7
-                color: Theme.amber
+            Text {
                 anchors.verticalCenter: parent.verticalCenter
-                IconImg {
-                    anchors.centerIn: parent
-                    src: "qrc:/icons/caret-up-fill.svg"
-                    tint: "#ffffff"
-                    s: 8
-                }
+                text: "\u2191"
+                color: Theme.amber
+                font.pixelSize: 12
+                font.weight: Font.Bold
+                font.family: Theme.fontSans
             }
             Text {
                 text: (i18n.language, i18n.t("state_seeding"))
