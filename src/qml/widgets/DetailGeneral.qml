@@ -86,148 +86,18 @@ Flickable {
             }
         }
 
-        Item {
-            visible: body.hasCover
-            Layout.preferredWidth: body.hasCover ? 104 : 0
-            Layout.preferredHeight: 146
-            Layout.alignment: Qt.AlignTop
 
-            Rectangle {
-                id: coverContent
-                anchors.fill: parent
-                color: "#161618"
-                visible: false
-                layer.enabled: true
-                Image {
-                    anchors.fill: parent
-                    source: gen.win.fileUrl(gen.win.hasSel ? session.selectedPoster : "")
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                    sourceSize: Qt.size(208, 292)
-                }
-            }
-            Rectangle {
-                id: coverMask
-                anchors.fill: parent
-                radius: 8
-                color: "white"
-                visible: false
-                layer.enabled: true
-            }
-            MultiEffect {
-                source: coverContent
-                anchors.fill: parent
-                maskEnabled: true
-                maskSource: coverMask
-            }
-            Rectangle {
-                anchors.fill: parent
-                radius: 8
-                color: "transparent"
-                border.color: Theme.hair
-                border.width: 1
-            }
-        }
-
-        // .dmain — title, meta, progress, live transfer
-        ColumnLayout {
+        // .dmain — identity beside the cover, then the numbers full width
+        // The sidebar shows this above the tabs, permanently; the bottom deck
+        // has no height for a fixed header, so it keeps it inside this tab.
+        DetailIdentity {
+            visible: !gen.vertical
+            win: gen.win
+            vertical: gen.vertical
             Layout.preferredWidth: gen.vertical ? -1 : 460
             Layout.maximumWidth: gen.vertical ? Number.POSITIVE_INFINITY : 460
             Layout.fillWidth: gen.vertical
             Layout.alignment: Qt.AlignTop
-            spacing: 6
-
-            Text {
-                text: gen.win.hasSel ? (session.selectedMetaTitle.length > 0 ? session.selectedMetaTitle : session.selectedName) : (i18n.language, i18n.t("empty_no_selection"))
-                color: Theme.t1
-                font.pixelSize: 17
-                font.weight: Font.DemiBold
-                font.letterSpacing: -0.2
-                font.family: Theme.fontSans
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-            Text {
-                visible: gen.win.hasSel && session.selectedMetaInfo.length > 0
-                text: gen.win.hasSel ? session.selectedMetaInfo : ""
-                color: Theme.t3
-                font.pixelSize: 12
-                font.family: Theme.fontSans
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-            // progress bar — % (left) + downloaded / total (right)
-            ColumnLayout {
-                visible: gen.win.hasSel
-                Layout.fillWidth: true
-                Layout.topMargin: 10
-                spacing: 6
-                RowLayout {
-                    Layout.fillWidth: true
-                    Text {
-                        text: Math.round((gen.win.hasSel ? session.selectedProgress : 0) * 100) + "%"
-                        color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
-                    }
-                    Item { Layout.fillWidth: true }
-                    Text {
-                        text: gen.win.hasSel ? (session.selectedDownloaded.split(" (")[0] + "  /  " + session.selectedSize) : ""
-                        color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
-                    }
-                }
-                Rectangle {
-                    Layout.fillWidth: true; height: 4; radius: 2; color: Theme.track
-                    Rectangle {
-                        height: parent.height; radius: 2
-                        width: parent.width * (gen.win.hasSel ? session.selectedProgress : 0)
-                        // same state→colour language as the grid tile and the
-                        // status dot: downloading red, seeding amber, done green
-                        color: gen.win.fillFor(gen.win.hasSel ? session.selectedStateKey : "")
-                        Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                        Behavior on color { ColorAnimation { duration: 200 } }
-                    }
-                }
-            }
-
-            // big live transfer: DOWN · UP · ETA. Only the arrows carry the
-            // direction colour; the rates read neutral
-            RowLayout {
-                visible: gen.win.hasSel
-                Layout.fillWidth: true
-                Layout.topMargin: 10
-                spacing: Theme.sp6
-                Repeater {
-                    // the arrow is a fixed legend for the direction, not a live
-                    // indicator — it stays red/amber whatever the rate. Dimming it
-                    // at low speed made the panel look broken at 2 KB/s.
-                    model: [
-                        { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: gen.win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent },
-                        { lbl: (i18n.language, i18n.t("graph_upload")),   arrow: "↑ ", v: gen.win.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber },
-                        { lbl: (i18n.language, i18n.t("col_eta")),        arrow: "",   v: gen.win.hasSel ? session.selectedEta       : "—", c: Theme.t1 }
-                    ]
-                    delegate: Column {
-                        spacing: 3
-                        Text { text: modelData.lbl; color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
-                        // the arrow carries the direction colour, the number stays
-                        // neutral — a whole reading in red/amber shouts louder than
-                        // a rate deserves
-                        Row {
-                            spacing: 4
-                            Text {
-                                visible: modelData.arrow.length > 0
-                                text: modelData.arrow
-                                color: modelData.c
-                                font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                            }
-                            Text {
-                                text: modelData.v
-                                color: Theme.t1
-                                font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         Item { visible: !gen.vertical; Layout.fillWidth: true }
