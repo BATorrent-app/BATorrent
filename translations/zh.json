@@ -98,7 +98,7 @@
   "btn_export": "导出…",
   "btn_import": "导入…",
   "btn_ok": "确定",
-  "cat_apps": "程序",
+  "cat_apps": "软件",
   "cat_games": "游戏",
   "cat_movies": "电影",
   "cat_series": "剧集",
@@ -1267,5 +1267,6 @@
   "welcome_view_q": "封面还是列表？",
   "welcome_view_grid": "封面",
   "welcome_view_classic": "列表",
-  "vpn_drop_conf": "拖入 .conf 以导入"
+  "vpn_drop_conf": "拖入 .conf 以导入",
+  "cat_compressed": "压缩包"
 }

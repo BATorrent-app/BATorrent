@@ -98,7 +98,7 @@
   "btn_export": "Dışa Aktar…",
   "btn_import": "İçe Aktar…",
   "btn_ok": "Tamam",
-  "cat_apps": "Uygulamalar",
+  "cat_apps": "Yazılım",
   "cat_games": "Oyunlar",
   "cat_movies": "Filmler",
   "cat_series": "Diziler",
@@ -1267,5 +1267,6 @@
   "welcome_view_q": "KAPAKLAR MI LİSTE Mİ?",
   "welcome_view_grid": "Kapaklar",
   "welcome_view_classic": "Liste",
-  "vpn_drop_conf": "İçe aktarmak için .conf bırakın"
+  "vpn_drop_conf": "İçe aktarmak için .conf bırakın",
+  "cat_compressed": "Arşivler"
 }

@@ -98,7 +98,7 @@
   "btn_export": "エクスポート…",
   "btn_import": "インポート…",
   "btn_ok": "OK",
-  "cat_apps": "アプリ",
+  "cat_apps": "ソフトウェア",
   "cat_games": "ゲーム",
   "cat_movies": "映画",
   "cat_series": "シリーズ",
@@ -1267,5 +1267,6 @@
   "welcome_view_q": "カバーかリストか",
   "welcome_view_grid": "カバー",
   "welcome_view_classic": "リスト",
-  "vpn_drop_conf": ".conf をドロップしてインポート"
+  "vpn_drop_conf": ".conf をドロップしてインポート",
+  "cat_compressed": "圧縮ファイル"
 }

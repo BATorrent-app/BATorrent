@@ -201,7 +201,7 @@ Window {
         var p = item.mapToItem(ref, 0, 0)
         return Qt.rect(p.x, p.y, item.width, item.height)
     }
-    readonly property var presetCats: ["Apps", "Games", "Movies", "Series"]
+    readonly property var presetCats: ["Apps", "Games", "Movies", "Series", "Compressed"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
     property bool detailsCollapsed: typeof settings !== "undefined" && settings.get("detailsCollapsed") === true
     function toggleDetailsCollapsed() {
@@ -294,7 +294,7 @@ Window {
     // four built-ins the menu already lists statically
     function customCategories() {
         if (typeof session === "undefined") return []
-        var builtins = ["Apps", "Games", "Movies", "Series"]
+        var builtins = ["Apps", "Games", "Movies", "Series", "Compressed"]
         return session.categories().filter(function (c) {
             return c.length > 0 && builtins.indexOf(c) < 0
         })
@@ -306,6 +306,9 @@ Window {
         case "Games":  return i18n.language, i18n.t("cat_games")
         case "Movies": return i18n.language, i18n.t("cat_movies")
         case "Series": return i18n.language, i18n.t("cat_series")
+        // "Apps" stays the stored value on purpose — it is what every existing
+        // torrent already carries. Only its label became Software, per Sherwan.
+        case "Compressed": return i18n.language, i18n.t("cat_compressed")
         default:       return value   // custom category — show as the user typed it
         }
     }

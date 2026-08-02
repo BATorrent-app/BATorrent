@@ -396,6 +396,7 @@ Rectangle {
                             CatItem { text: win.catLabel("Games");  onTriggered: controller.applyCatFilter("Games") }
                             CatItem { text: win.catLabel("Movies"); onTriggered: controller.applyCatFilter("Movies") }
                             CatItem { text: win.catLabel("Series"); onTriggered: controller.applyCatFilter("Series") }
+                            CatItem { text: win.catLabel("Compressed"); onTriggered: controller.applyCatFilter("Compressed") }
                             Instantiator {
                                 id: catFilterCustoms
                                 model: []
