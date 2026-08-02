@@ -515,7 +515,7 @@
   "menu_statistics": "İstatistikler…",
   "menu_torrent": "&Torrent",
   "menu_torrent_title": "Torrent",
-  "menu_setup_wizard": "Kurulum sihirbazı",
+  "menu_setup_wizard": "Sihirbaz",
   "menu_tour": "Etkileşimli tur",
   "menu_welcome": "Hoş Geldiniz",
   "menu_whatsnew": "Yenilikler",
@@ -1261,5 +1261,10 @@
   "welcome_nav_left": "Solda",
   "welcome_detail_q": "PEKİ TORRENT DETAYLARI?",
   "welcome_detail_right": "Sağda",
-  "welcome_detail_bottom": "Altta"
+  "welcome_detail_bottom": "Altta",
+  "welcome_view_title": "Kitaplığın nasıl görünsün?",
+  "welcome_view_note": "Varsayılan kapaklardır. Liste daha fazlasını ve tüm sütunları gösterir.",
+  "welcome_view_q": "KAPAKLAR MI LİSTE Mİ?",
+  "welcome_view_grid": "Kapaklar",
+  "welcome_view_classic": "Liste"
 }

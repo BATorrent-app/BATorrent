@@ -111,6 +111,14 @@ Window {
             win.layoutClassic = (v === true || v === 1 || v === "1" || v === "true")
             win.detailBottom = settings.get("detailBottom") === true
             win.showDownloadChip = settings.get("showDownloadChip") !== false
+            // Read here too, not only at startup: the setup wizard writes this
+            // one like the other three and promises the app follows along.
+            var cm = settings.get("classicMode") === true
+            if (cm !== library.classicMode) {
+                library.classicMode = cm
+                if (cm) library.gridView = false
+                else library.gridView = true
+            }
         }
     }
 

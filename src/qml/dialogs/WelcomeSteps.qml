@@ -15,7 +15,7 @@ import "../views"
 ColumnLayout {
     id: steps
     property int step: 0
-    readonly property int lastStep: 2
+    readonly property int lastStep: 3
 
     Layout.fillWidth: true
     spacing: Theme.sp3
@@ -28,6 +28,7 @@ ColumnLayout {
     // copies and refreshes them on settings.changed.
     property bool navLeft: false
     property bool detailBottom: false
+    property bool classicView: false
     function boolPref(key) {
         if (typeof settings === "undefined") return false
         var v = settings.get(key)
@@ -36,6 +37,7 @@ ColumnLayout {
     function refreshLayout() {
         navLeft = boolPref("layoutClassic")
         detailBottom = boolPref("detailBottom")
+        classicView = boolPref("classicMode")
     }
     Component.onCompleted: refreshLayout()
     Connections {
@@ -47,6 +49,7 @@ ColumnLayout {
         Layout.fillWidth: true
         text: (i18n.language, i18n.t(steps.step === 0 ? "welcome_heading"
                                    : steps.step === 1 ? "welcome_theme_title"
+                                   : steps.step === 2 ? "welcome_view_title"
                                    : "welcome_layout_title"))
         color: Theme.t1
         font.pixelSize: 20; font.weight: Font.Bold; font.family: Theme.fontSans
@@ -56,6 +59,7 @@ ColumnLayout {
         Layout.fillWidth: true
         text: (i18n.language, i18n.t(steps.step === 0 ? "welcome_blurb2"
                                    : steps.step === 1 ? "welcome_theme_note"
+                                   : steps.step === 2 ? "welcome_view_note"
                                    : "welcome_layout_note"))
         color: Theme.t2
         font.pixelSize: 13; font.family: Theme.fontSans
@@ -180,9 +184,45 @@ ColumnLayout {
         }
     }
 
-    // ---- step 2: layout ----
+    // ---- step 2: how the library reads ----
     ColumnLayout {
         visible: steps.step === 2
+        Layout.fillWidth: true; Layout.topMargin: Theme.sp1
+        spacing: Theme.sp3
+
+        Text {
+            text: (i18n.language, i18n.t("welcome_view_q"))
+            color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
+            font.letterSpacing: 1.2; font.family: Theme.fontSans
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 14
+            LayoutChoiceTile {
+                asking: "view"
+                classic: false
+                navLeft: steps.navLeft
+                detailBottom: steps.detailBottom
+                selected: !steps.classicView
+                label: (i18n.language, i18n.t("welcome_view_grid"))
+                onPicked: if (typeof settings !== "undefined") settings.set("classicMode", false)
+            }
+            LayoutChoiceTile {
+                asking: "view"
+                classic: true
+                navLeft: steps.navLeft
+                detailBottom: steps.detailBottom
+                selected: steps.classicView
+                label: (i18n.language, i18n.t("welcome_view_classic"))
+                onPicked: if (typeof settings !== "undefined") settings.set("classicMode", true)
+            }
+            Item { Layout.fillWidth: true }
+        }
+    }
+
+    // ---- step 3: layout ----
+    ColumnLayout {
+        visible: steps.step === 3
         Layout.fillWidth: true; Layout.topMargin: Theme.sp1
         spacing: Theme.sp3
 

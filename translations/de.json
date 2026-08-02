@@ -515,7 +515,7 @@
   "menu_statistics": "Statistiken…",
   "menu_torrent": "&Torrent",
   "menu_torrent_title": "Torrent",
-  "menu_setup_wizard": "Einrichtungsassistent",
+  "menu_setup_wizard": "Assistent",
   "menu_tour": "Interaktives Tutorial",
   "menu_welcome": "Willkommen",
   "menu_whatsnew": "Neuigkeiten",
@@ -1261,5 +1261,10 @@
   "welcome_nav_left": "Links",
   "welcome_detail_q": "UND DIE TORRENT-DETAILS?",
   "welcome_detail_right": "Rechts",
-  "welcome_detail_bottom": "Unten"
+  "welcome_detail_bottom": "Unten",
+  "welcome_view_title": "Wie soll deine Bibliothek aussehen?",
+  "welcome_view_note": "Cover sind der Standard. Die Liste zeigt mehr und alle Spalten.",
+  "welcome_view_q": "COVER ODER LISTE?",
+  "welcome_view_grid": "Cover",
+  "welcome_view_classic": "Liste"
 }

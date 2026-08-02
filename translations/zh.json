@@ -515,7 +515,7 @@
   "menu_statistics": "统计…",
   "menu_torrent": "种子(&T)",
   "menu_torrent_title": "种子",
-  "menu_setup_wizard": "设置向导",
+  "menu_setup_wizard": "向导",
   "menu_tour": "互动教程",
   "menu_welcome": "欢迎",
   "menu_whatsnew": "更新内容",
@@ -1261,5 +1261,10 @@
   "welcome_nav_left": "左侧",
   "welcome_detail_q": "种子详情呢？",
   "welcome_detail_right": "右侧",
-  "welcome_detail_bottom": "底部"
+  "welcome_detail_bottom": "底部",
+  "welcome_view_title": "你的库如何呈现？",
+  "welcome_view_note": "默认显示封面。列表容纳更多内容并显示全部列。",
+  "welcome_view_q": "封面还是列表？",
+  "welcome_view_grid": "封面",
+  "welcome_view_classic": "列表"
 }

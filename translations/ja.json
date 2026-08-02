@@ -515,7 +515,7 @@
   "menu_statistics": "統計…",
   "menu_torrent": "トレント(&T)",
   "menu_torrent_title": "トレント",
-  "menu_setup_wizard": "初期設定ウィザード",
+  "menu_setup_wizard": "ウィザード",
   "menu_tour": "対話型チュートリアル",
   "menu_welcome": "ようこそ",
   "menu_whatsnew": "新着情報",
@@ -1261,5 +1261,10 @@
   "welcome_nav_left": "左",
   "welcome_detail_q": "トレントの詳細は？",
   "welcome_detail_right": "右",
-  "welcome_detail_bottom": "下"
+  "welcome_detail_bottom": "下",
+  "welcome_view_title": "ライブラリの見せ方",
+  "welcome_view_note": "既定はカバー表示です。リストは情報量が多く、全列を表示します。",
+  "welcome_view_q": "カバーかリストか",
+  "welcome_view_grid": "カバー",
+  "welcome_view_classic": "リスト"
 }

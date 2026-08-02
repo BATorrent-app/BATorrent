@@ -13,7 +13,8 @@ Item {
     id: tile
     property bool navLeft: false
     property bool detailBottom: false
-    property string asking: "nav"      // "nav" | "detail" — which part is live
+    property bool classic: false       // list rows instead of poster cards
+    property string asking: "nav"      // "nav" | "detail" | "view" — the live part
     property string label: ""
     property bool selected: false
     signal picked()
@@ -21,9 +22,8 @@ Item {
     implicitWidth: 132
     implicitHeight: frame.height + cap.height + 8
 
-    readonly property bool navLive: asking === "nav"
-    readonly property real navOp: navLive ? 1 : 0.28
-    readonly property real detOp: navLive ? 0.28 : 1
+    readonly property real navOp: asking === "nav" ? 1 : 0.28
+    readonly property real detOp: asking === "detail" ? 1 : 0.28
 
     Rectangle {
         id: frame
@@ -79,24 +79,44 @@ Item {
             }
         }
 
-        // the content grid — poster cards, so the frame reads as this app
-        Grid {
+        // the content area — poster cards or classic rows, whichever this tile
+        // is arguing for
+        Item {
             id: content
             anchors.left: tile.navLeft ? navRail.right : parent.left
             anchors.right: tile.detailBottom ? parent.right : detailPane.left
             anchors.top: tile.navLeft ? parent.top : navBar.bottom
             anchors.bottom: tile.detailBottom ? detailPane.top : parent.bottom
             anchors.margins: 5
-            columns: 3
-            rowSpacing: 4
-            columnSpacing: 4
-            Repeater {
-                model: 6
-                Rectangle {
-                    width: (content.width - 2 * content.columnSpacing) / 3
-                    height: Math.max(4, (content.height - content.rowSpacing) / 2)
-                    radius: 2
-                    color: Theme.hover
+
+            Grid {
+                visible: !tile.classic
+                anchors.fill: parent
+                columns: 3
+                rowSpacing: 4
+                columnSpacing: 4
+                Repeater {
+                    model: 6
+                    Rectangle {
+                        width: (content.width - 8) / 3
+                        height: Math.max(4, (content.height - 4) / 2)
+                        radius: 2
+                        color: Theme.hover
+                    }
+                }
+            }
+            Column {
+                visible: tile.classic
+                anchors.fill: parent
+                spacing: 4
+                Repeater {
+                    model: 5
+                    Rectangle {
+                        width: content.width
+                        height: Math.max(3, (content.height - 16) / 5)
+                        radius: 1.5
+                        color: Theme.hover
+                    }
                 }
             }
         }

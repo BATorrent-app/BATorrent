@@ -515,7 +515,7 @@
   "menu_statistics": "Статистика…",
   "menu_torrent": "&Торрент",
   "menu_torrent_title": "Торрент",
-  "menu_setup_wizard": "Майстер налаштування",
+  "menu_setup_wizard": "Майстер",
   "menu_tour": "Інтерактивний посібник",
   "menu_welcome": "Вітання",
   "menu_whatsnew": "Що нового",
@@ -1261,5 +1261,10 @@
   "welcome_nav_left": "Ліворуч",
   "welcome_detail_q": "А ДЕТАЛІ ТОРЕНТА?",
   "welcome_detail_right": "Праворуч",
-  "welcome_detail_bottom": "Знизу"
+  "welcome_detail_bottom": "Знизу",
+  "welcome_view_title": "Як показувати бібліотеку?",
+  "welcome_view_note": "Типово — обкладинки. Список вміщає більше й показує всі стовпці.",
+  "welcome_view_q": "ОБКЛАДИНКИ ЧИ СПИСОК?",
+  "welcome_view_grid": "Обкладинки",
+  "welcome_view_classic": "Список"
 }
