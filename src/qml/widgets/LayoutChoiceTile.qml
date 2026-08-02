@@ -1,0 +1,157 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
+// A miniature of the app's own frame, used to pick where the navigation and the
+// detail panel live. One tile serves both questions: it always draws the whole
+// layout and dims whichever half is not being asked about, so the answer is
+// shown in place instead of described in a sentence.
+import QtQuick
+import "../theme"
+
+Item {
+    id: tile
+    property bool navLeft: false
+    property bool detailBottom: false
+    property string asking: "nav"      // "nav" | "detail" — which part is live
+    property string label: ""
+    property bool selected: false
+    signal picked()
+
+    implicitWidth: 132
+    implicitHeight: frame.height + cap.height + 8
+
+    readonly property bool navLive: asking === "nav"
+    readonly property real navOp: navLive ? 1 : 0.28
+    readonly property real detOp: navLive ? 0.28 : 1
+
+    Rectangle {
+        id: frame
+        width: parent.width
+        height: 86
+        radius: 9
+        color: Theme.bg
+        border.width: tile.selected ? 2 : 1
+        border.color: tile.selected ? Theme.accent
+                    : (tileMa.containsMouse ? Theme.t4 : Theme.hair)
+        Behavior on border.color { ColorAnimation { duration: 140 } }
+        clip: true
+
+        // navigation: a bar across the top or a rail down the left side
+        Rectangle {
+            id: navBar
+            visible: !tile.navLeft
+            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+            anchors.margins: 5
+            height: 13
+            radius: 4
+            color: Theme.panel
+            opacity: tile.navOp
+            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left; anchors.leftMargin: 5
+                spacing: 4
+                Repeater {
+                    model: 3
+                    Rectangle { width: 12; height: 3; radius: 1.5; color: Theme.t4 }
+                }
+            }
+        }
+        Rectangle {
+            id: navRail
+            visible: tile.navLeft
+            anchors.top: parent.top; anchors.bottom: parent.bottom; anchors.left: parent.left
+            anchors.margins: 5
+            width: 26
+            radius: 4
+            color: Theme.panel
+            opacity: tile.navOp
+            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Column {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top; anchors.topMargin: 7
+                spacing: 5
+                Repeater {
+                    model: 3
+                    Rectangle { width: 14; height: 3; radius: 1.5; color: Theme.t4 }
+                }
+            }
+        }
+
+        // the content grid — poster cards, so the frame reads as this app
+        Grid {
+            id: content
+            anchors.left: tile.navLeft ? navRail.right : parent.left
+            anchors.right: tile.detailBottom ? parent.right : detailPane.left
+            anchors.top: tile.navLeft ? parent.top : navBar.bottom
+            anchors.bottom: tile.detailBottom ? detailPane.top : parent.bottom
+            anchors.margins: 5
+            columns: 3
+            rowSpacing: 4
+            columnSpacing: 4
+            Repeater {
+                model: 6
+                Rectangle {
+                    width: (content.width - 2 * content.columnSpacing) / 3
+                    height: Math.max(4, (content.height - content.rowSpacing) / 2)
+                    radius: 2
+                    color: Theme.hover
+                }
+            }
+        }
+
+        // detail surface: a right column or a bottom deck
+        Rectangle {
+            id: detailPane
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.top: tile.detailBottom ? undefined : (tile.navLeft ? parent.top : navBar.bottom)
+            anchors.left: tile.detailBottom ? (tile.navLeft ? navRail.right : parent.left) : undefined
+            anchors.margins: 5
+            width: tile.detailBottom ? undefined : 30
+            height: tile.detailBottom ? 24 : undefined
+            radius: 4
+            color: Theme.panel
+            border.width: 1
+            border.color: Theme.hair
+            opacity: tile.detOp
+            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Rectangle {
+                x: 4; y: 4
+                width: tile.detailBottom ? 13 : 10
+                height: tile.detailBottom ? 16 : 14
+                radius: 2
+                color: Theme.hover
+            }
+            Rectangle {
+                x: tile.detailBottom ? 21 : 4
+                y: tile.detailBottom ? 6 : 21
+                width: tile.detailBottom ? 40 : 22
+                height: 3
+                radius: 1.5
+                color: Theme.accent
+            }
+        }
+    }
+
+    Text {
+        id: cap
+        anchors.top: frame.bottom
+        anchors.topMargin: 8
+        anchors.horizontalCenter: parent.horizontalCenter
+        text: tile.label
+        color: tile.selected ? Theme.t1 : Theme.t3
+        font.pixelSize: 12
+        font.weight: tile.selected ? Font.DemiBold : Font.Normal
+        font.family: Theme.fontSans
+    }
+
+    MouseArea {
+        id: tileMa
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: tile.picked()
+    }
+}

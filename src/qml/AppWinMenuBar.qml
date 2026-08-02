@@ -112,6 +112,7 @@ MenuBar {
     }
     BarMenu {
         title: (i18n.language, i18n.t("menu_help_title"))
+        BarItem { text: (i18n.language, i18n.t("menu_setup_wizard")); onTriggered: { welcomeDialog.mode = "welcome"; welcomeDialog.open() } }
         BarItem { text: (i18n.language, i18n.t("menu_tour")); onTriggered: tourOverlay.start() }
         BarItem { text: (i18n.language, i18n.t("menu_whatsnew")); onTriggered: { welcomeDialog.mode = "update"; welcomeDialog.open() } }
         BarItem { text: (i18n.language, i18n.t("menu_release_notes")); onTriggered: releaseNotesDialog.open() }

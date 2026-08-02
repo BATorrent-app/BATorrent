@@ -58,6 +58,14 @@ Item {
     signal accepted()
     signal rejected()
 
+    // Step flows (onboarding): the footer buttons advance instead of finishing,
+    // so accepted() keeps meaning "the dialog is done" — hosts that start a tour
+    // or write a setting on accepted() would otherwise fire on step one.
+    property bool holdOnOk: false
+    property bool holdOnCancel: false
+    signal nextRequested()
+    signal backRequested()
+
     Shortcut {
         sequences: [StandardKey.Cancel]
         enabled: dlg.opened && DialogStack.topItem === dlg
@@ -67,7 +75,10 @@ Item {
         sequences: ["Return", "Enter"]
         enabled: dlg.opened && DialogStack.topItem === dlg
                  && dlg.acceptOnReturn && dlg.showFooter && dlg.showOk
-        onActivated: { dlg.accepted(); dlg.close() }
+        onActivated: {
+            if (dlg.holdOnOk) dlg.nextRequested()
+            else { dlg.accepted(); dlg.close() }
+        }
     }
 
     // backdrop (rgba(0,0,0,0.5) dark / rgba(20,20,28,0.32) light)
@@ -194,13 +205,19 @@ Item {
                         BtnFlat {
                             visible: dlg.showCancel
                             text: dlg.cancelText
-                            onClicked: { dlg.rejected(); dlg.close() }
+                            onClicked: {
+                                if (dlg.holdOnCancel) dlg.backRequested()
+                                else { dlg.rejected(); dlg.close() }
+                            }
                         }
                         BtnFlat {
                             visible: dlg.showOk
                             primary: true
                             text: dlg.okText
-                            onClicked: { dlg.accepted(); dlg.close() }
+                            onClicked: {
+                                if (dlg.holdOnOk) dlg.nextRequested()
+                                else { dlg.accepted(); dlg.close() }
+                            }
                         }
                     }
                 }
