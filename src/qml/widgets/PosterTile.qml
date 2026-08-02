@@ -192,7 +192,10 @@ Item {
             anchors.bottom: parent.bottom
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            anchors.bottomMargin: 12
+            // Clears the progress bar's band (8 + 9 high) instead of sitting in
+            // it. Drops back down when the bar goes away on completion.
+            anchors.bottomMargin: progBar.visible ? 25 : 12
+            Behavior on anchors.bottomMargin { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
             text: tile.metaTitle || tile.torrentName
             color: "#f5f5f6"
             font.pixelSize: 15
@@ -205,6 +208,7 @@ Item {
         }
 
         Rectangle {
+            id: progBar
             visible: tile.progress < 0.999
             anchors.left: parent.left
             anchors.right: parent.right
