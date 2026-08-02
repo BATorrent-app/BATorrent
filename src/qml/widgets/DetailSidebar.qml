@@ -31,16 +31,85 @@ Rectangle {
     readonly property bool shown: showInspector && controller.gridView
                                   && (win.detailsLocked || (win.hasSel && !dismissed))
 
+    // Same collapse the bottom deck has, and the same state behind it: the two are
+    // one feature in two placements, so collapsing one and finding the other open
+    // would read as a bug. Sideways it takes width instead of height, down to a
+    // rail that still carries the pin and the way back.
+    readonly property bool collapsed: win.detailsShownCollapsed
+
     Layout.fillHeight: true
-    Layout.preferredWidth: shown ? 340 : 0
+    Layout.preferredWidth: shown ? (collapsed ? 46 : 340) : 0
     Behavior on Layout.preferredWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
     visible: Layout.preferredWidth > 0
     clip: true
     color: Theme.panel
     Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.hair }
 
+    // collapsed rail — the panel has to be reachable from its own edge
+    ColumnLayout {
+        visible: sidebar.collapsed
+        width: 46
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        spacing: 2
+
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 45
+            Rectangle {
+                anchors.centerIn: parent
+                width: 30; height: 30; radius: 8
+                color: expandMa.containsMouse ? Theme.hover : "transparent"
+                Text {
+                    anchors.centerIn: parent
+                    text: "‹"
+                    color: expandMa.containsMouse ? Theme.t1 : Theme.t3
+                    font.pixelSize: 18; font.bold: true; font.family: Theme.fontSans
+                }
+                MouseArea {
+                    id: expandMa
+                    anchors.fill: parent
+                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: sidebar.win.toggleDetailsCollapsed()
+                }
+                ToolTip.visible: expandMa.containsMouse
+                ToolTip.text: (i18n.language, i18n.t("detail_expand"))
+                ToolTip.delay: 400
+            }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
+        }
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 34
+            Rectangle {
+                anchors.centerIn: parent
+                width: 30; height: 30; radius: 8
+                color: railPinMa.containsMouse ? Theme.hover : "transparent"
+                IconImg {
+                    anchors.centerIn: parent
+                    s: 16
+                    src: sidebar.win.detailsLocked ? "qrc:/icons/lock-solid.svg" : "qrc:/icons/lock-open-solid.svg"
+                    tint: railPinMa.containsMouse ? Theme.t1
+                          : (sidebar.win.detailsLocked ? Theme.accent : Theme.t3)
+                }
+                MouseArea {
+                    id: railPinMa
+                    anchors.fill: parent
+                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: sidebar.win.toggleDetailsLocked()
+                }
+                ToolTip.visible: railPinMa.containsMouse
+                ToolTip.text: (i18n.language, sidebar.win.detailsLocked ? i18n.t("detail_pinned") : i18n.t("detail_pin"))
+                ToolTip.delay: 400
+            }
+        }
+        Item { Layout.fillHeight: true }
+    }
+
     // content keeps its full width during the slide so text doesn't reflow
     Item {
+        visible: !sidebar.collapsed
         width: 340
         anchors.right: parent.right
         anchors.top: parent.top
@@ -74,6 +143,28 @@ Rectangle {
                 // Pin, same control the bottom panel has. The two panels are the
                 // same feature in two placements, so an option present in one and
                 // missing in the other reads as the sidebar being the lesser mode.
+                Rectangle {
+                    id: collapseBtn
+                    anchors.right: pinBtn.left; anchors.rightMargin: 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 34; height: 34; radius: 8
+                    color: collMa.containsMouse ? Theme.hover : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "›"
+                        color: collMa.containsMouse ? Theme.t1 : Theme.t3
+                        font.pixelSize: 18; font.bold: true; font.family: Theme.fontSans
+                    }
+                    MouseArea {
+                        id: collMa
+                        anchors.fill: parent
+                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: sidebar.win.toggleDetailsCollapsed()
+                    }
+                    ToolTip.visible: collMa.containsMouse
+                    ToolTip.text: (i18n.language, i18n.t("detail_collapse"))
+                    ToolTip.delay: 400
+                }
                 Rectangle {
                     id: pinBtn
                     anchors.right: closeBtn.left; anchors.rightMargin: 2
