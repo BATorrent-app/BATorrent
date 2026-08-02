@@ -9,6 +9,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import "../theme"
+import "../widgets"
 
 Window {
     id: overlay
@@ -86,9 +87,36 @@ Window {
                     layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
                 }
 
+                // The whole card has always dismissed on click, but nothing said
+                // so. Above the card-wide area (z) so it keeps its own cursor
+                // and hover, and it holds the timer like the action link does.
+                Item {
+                    id: closeX
+                    x: card.width - 26
+                    y: 8
+                    width: 18; height: 18
+                    z: 3
+                    IconImg {
+                        anchors.centerIn: parent
+                        s: 12
+                        src: "qrc:/icons/close-bold.svg"
+                        tint: closeXMa.containsMouse ? Theme.t1 : Theme.t4
+                    }
+                    MouseArea {
+                        id: closeXMa
+                        anchors.fill: parent
+                        anchors.margins: -3
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: dismissTimer.stop()
+                        onExited: dismissTimer.restart()
+                        onClicked: card.dismiss()
+                    }
+                }
+
                 Column {
                     anchors.left: tlogo.right; anchors.leftMargin: 14
-                    anchors.right: parent.right; anchors.rightMargin: 16
+                    anchors.right: parent.right; anchors.rightMargin: 30
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 4
                     z: 2   // the action button must win clicks over the card-wide dismiss area
