@@ -53,15 +53,21 @@ Rectangle {
             // header: title + close
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 40
+                Layout.preferredHeight: 45
                 Text {
                     anchors.left: parent.left; anchors.leftMargin: Theme.sp4
                     anchors.right: pinBtn.left; anchors.rightMargin: Theme.sp2
                     anchors.verticalCenter: parent.verticalCenter
-                    text: sidebar.win.hasSel ? (session.selectedMetaTitle.length > 0 ? session.selectedMetaTitle : session.selectedName) : ""
-                    color: Theme.t1
-                    font.pixelSize: 13
-                    font.weight: Font.DemiBold
+                    // A label, not the name: the identity block right below
+                    // already says which torrent this is, in the size that
+                    // question deserves. Two of the same title, one small and
+                    // one large, just read as a mistake.
+                    text: (i18n.language, i18n.t("detail_selected_torrent"))
+                    color: Theme.t4
+                    font.pixelSize: 10
+                    font.weight: Font.Bold
+                    font.letterSpacing: 1.0
+                    font.capitalization: Font.AllUppercase
                     font.family: Theme.fontSans
                     elide: Text.ElideRight
                 }
@@ -72,14 +78,17 @@ Rectangle {
                     id: pinBtn
                     anchors.right: closeBtn.left; anchors.rightMargin: 2
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 26; height: 26; radius: 7
+                    width: 34; height: 34; radius: 8
                     color: pinMa.containsMouse ? Theme.hover : "transparent"
+                    // The stroked Tabler lock lands near a 1.1px stroke at this
+                    // size — thin and faint at once, which is why the pair read
+                    // as decoration. The solid body holds its weight instead.
                     IconImg {
                         anchors.centerIn: parent
-                        s: 15
-                        src: sidebar.win.detailsLocked ? "qrc:/icons/lock.svg" : "qrc:/icons/lock-open.svg"
+                        s: 17
+                        src: sidebar.win.detailsLocked ? "qrc:/icons/lock-solid.svg" : "qrc:/icons/lock-open-solid.svg"
                         tint: pinMa.containsMouse ? Theme.t1
-                              : (sidebar.win.detailsLocked ? Theme.accent : Theme.t4)
+                              : (sidebar.win.detailsLocked ? Theme.accent : Theme.t3)
                     }
                     MouseArea {
                         id: pinMa
@@ -95,13 +104,13 @@ Rectangle {
                     id: closeBtn
                     anchors.right: parent.right; anchors.rightMargin: Theme.sp3
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 26; height: 26; radius: 7
+                    width: 34; height: 34; radius: 8
                     color: closeMa.containsMouse ? Theme.hover : "transparent"
-                    Text {
+                    IconImg {
                         anchors.centerIn: parent
-                        text: "✕"
-                        color: closeMa.containsMouse ? Theme.t1 : Theme.t4
-                        font.pixelSize: 12; font.family: Theme.fontSans
+                        s: 17
+                        src: "qrc:/icons/close-bold.svg"
+                        tint: closeMa.containsMouse ? Theme.t1 : Theme.t3
                     }
                     MouseArea {
                         id: closeMa
@@ -116,6 +125,25 @@ Rectangle {
                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
             }
 
+            // Fixed above the tabs: which torrent you are looking at should not
+            // disappear when you go read its peers or its files.
+            DetailIdentity {
+                visible: sidebar.win.hasSel
+                win: sidebar.win
+                vertical: true
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.sp4
+                Layout.rightMargin: Theme.sp4
+                Layout.topMargin: Theme.sp4
+                Layout.bottomMargin: Theme.sp4
+            }
+            Rectangle {
+                visible: sidebar.win.hasSel
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Theme.hair
+            }
+
             DetailTabs {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
@@ -125,7 +153,7 @@ Rectangle {
                 current: sidebar.win.detailTab
                 onSelect: function(idx) { sidebar.win.detailTab = idx }
             }
-            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.hair }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
 
             // panes — same guard discipline as the bottom panel: only the open
             // tab of the VISIBLE surface binds live data

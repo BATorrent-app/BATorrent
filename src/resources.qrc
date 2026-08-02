@@ -250,6 +250,7 @@
 <file>../src/qml/widgets/DetailPeers.qml</file>
 <file>../src/qml/widgets/DetailKVSection.qml</file>
 <file>../src/qml/widgets/DetailGeneral.qml</file>
+<file>../src/qml/widgets/DetailIdentity.qml</file>
 <file>../src/qml/widgets/DetailGraph.qml</file>
 <file>../src/qml/widgets/DetailTabs.qml</file>
 <file>../src/qml/widgets/DownloadCarousel.qml</file>

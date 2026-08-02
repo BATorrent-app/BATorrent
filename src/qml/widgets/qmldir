@@ -24,6 +24,7 @@ PChip 1.0 PChip.qml
 DetailPeers 1.0 DetailPeers.qml
 DetailKVSection 1.0 DetailKVSection.qml
 DetailGeneral 1.0 DetailGeneral.qml
+DetailIdentity 1.0 DetailIdentity.qml
 DetailGraph 1.0 DetailGraph.qml
 DetailTabs 1.0 DetailTabs.qml
 DownloadCarousel 1.0 DownloadCarousel.qml
