@@ -176,6 +176,7 @@
 <file>../src/qml/dialogs/PairingDialog.qml</file>
 <file>../src/qml/views/NavRail.qml</file>
 <file>../src/qml/views/NavRailDownloadSlot.qml</file>
+<file>../src/qml/views/NavRailMiniDownloads.qml</file>
 <file>../src/qml/views/DetailPanel.qml</file>
 <file>../src/qml/views/FilterBar.qml</file>
 <file>../src/qml/views/Toolbar.qml</file>
