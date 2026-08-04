@@ -16,6 +16,7 @@ Item {
     id: libraryView
     property var win
     property var controller
+    property var modelOverride: null
     property alias grid: grid
     property alias list: list
     signal addMagnetRequested()
@@ -61,7 +62,9 @@ Item {
     Layout.fillHeight: true
     clip: true
 
-    readonly property bool empty: typeof session !== "undefined" && session.torrentCount === 0
+    readonly property bool empty: modelOverride !== null
+                                  ? modelOverride.count === 0
+                                  : (typeof session !== "undefined" && session.torrentCount === 0)
 
     // full custom background image (z:-1, behind anime art and grid/list).
     // A theme-bg scrim at user-controlled opacity sits on top for legibility.
@@ -190,7 +193,7 @@ Item {
             NumberAnimation { properties: "x,y"; duration: 280; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
         }
         clip: true
-        model: win.model
+        model: libraryView.modelOverride !== null ? libraryView.modelOverride : win.model
         interactive: true
         z: 1
 
@@ -237,7 +240,7 @@ Item {
         Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
         anchors.fill: parent
         clip: true
-        model: win.model
+        model: libraryView.modelOverride !== null ? libraryView.modelOverride : win.model
         interactive: true
         z: 1
         WheelScroller { flick: list }

@@ -15,7 +15,13 @@ Rectangle {
     id: filterBar
     property var win
     property var controller
+    property var countOverride: null
     property alias searchInput: searchInput
+
+    function countFor(key, fallback) {
+        return countOverride !== null && countOverride[key] !== undefined
+            ? countOverride[key] : fallback
+    }
 
     // The accent ring means "you're typing here". It has to go the moment
     // attention moves elsewhere — a TextInput keeps activeFocus until something
@@ -320,20 +326,20 @@ Rectangle {
                         id: pillsRow
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: Theme.sp1
-                        Pill { label: (i18n.language, i18n.t("filter_all"));     filterKey: "all";         count: typeof session !== "undefined" ? session.torrentCount : 0;     onClicked: controller.setFilter("all") }
-                        Pill { label: (i18n.language, i18n.t("filter_all_active"));    filterKey: "active";      count: typeof session !== "undefined" ? session.activeCount : 0;      onClicked: controller.setFilter("active") }
-                        Pill { label: (i18n.language, i18n.t("filter_downloading"));  filterKey: "downloading"; count: typeof session !== "undefined" ? session.downloadingCount : 0; onClicked: controller.setFilter("downloading") }
-                        Pill { label: (i18n.language, i18n.t("filter_seeding"));  filterKey: "seeding";     count: typeof session !== "undefined" ? session.seedingCount : 0;     onClicked: controller.setFilter("seeding") }
-                        Pill { label: (i18n.language, i18n.t("filter_paused"));   filterKey: "paused";      count: typeof session !== "undefined" ? session.pausedCount : 0;      onClicked: controller.setFilter("paused") }
+                        Pill { label: (i18n.language, i18n.t("filter_all"));     filterKey: "all";         count: filterBar.countFor("all", typeof session !== "undefined" ? session.torrentCount : 0);     onClicked: controller.setFilter("all") }
+                        Pill { label: (i18n.language, i18n.t("filter_all_active"));    filterKey: "active";      count: filterBar.countFor("active", typeof session !== "undefined" ? session.activeCount : 0);      onClicked: controller.setFilter("active") }
+                        Pill { label: (i18n.language, i18n.t("filter_downloading"));  filterKey: "downloading"; count: filterBar.countFor("downloading", typeof session !== "undefined" ? session.downloadingCount : 0); onClicked: controller.setFilter("downloading") }
+                        Pill { label: (i18n.language, i18n.t("filter_seeding"));  filterKey: "seeding";     count: filterBar.countFor("seeding", typeof session !== "undefined" ? session.seedingCount : 0);     onClicked: controller.setFilter("seeding") }
+                        Pill { label: (i18n.language, i18n.t("filter_paused"));   filterKey: "paused";      count: filterBar.countFor("paused", typeof session !== "undefined" ? session.pausedCount : 0);      onClicked: controller.setFilter("paused") }
                         // always visible, like the other pills (tester asked for it to stay
                         // put next to Paused/Completed instead of appearing only when a queue
                         // limit is holding torrents back)
                         Pill {
                             label: (i18n.language, i18n.t("filter_queued")); filterKey: "queued"
-                            count: typeof session !== "undefined" ? session.queuedCount : 0
+                            count: filterBar.countFor("queued", typeof session !== "undefined" ? session.queuedCount : 0)
                             onClicked: controller.setFilter("queued")
                         }
-                        Pill { label: (i18n.language, i18n.t("filter_completed")); filterKey: "completed";   count: typeof session !== "undefined" ? session.completedCount : 0;   onClicked: controller.setFilter("completed") }
+                        Pill { label: (i18n.language, i18n.t("filter_completed")); filterKey: "completed";   count: filterBar.countFor("completed", typeof session !== "undefined" ? session.completedCount : 0);   onClicked: controller.setFilter("completed") }
                     }
 
                     // keeps the category button right-aligned while everything fits

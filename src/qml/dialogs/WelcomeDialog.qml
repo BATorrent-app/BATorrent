@@ -22,11 +22,14 @@ BatDialog {
     property string mode: "update"          // "welcome" | "update"
     readonly property bool isWelcome: mode === "welcome"
 
+    uiPalette: isWelcome ? WizardPalette : Theme
     title: (i18n.language, i18n.t(isWelcome ? "welcome_window_title" : "whatsnew_title"))
-    cardW: 540
-    cardH: isWelcome ? 560 : 584
+    cardW: isWelcome ? Math.min(960, Math.max(320, width - 48)) : 540
+    cardH: isWelcome ? Math.min(640, Math.max(480, height - 48)) : 584
+    fitContent: !isWelcome
+    backdropColor: isWelcome ? "#000000" : standardBackdropColor
 
-    // Welcome is a three-step setup; "update" keeps its single OK. holdOnOk
+    // Welcome is a multi-step setup; "update" keeps its single OK. holdOnOk
     // routes the footer to nextRequested() so accepted() still means "done" —
     // the host starts the tour on it.
     property int step: 0
@@ -37,7 +40,9 @@ BatDialog {
     showCancel: isWelcome && step > 0
     holdOnOk: isWelcome && step < setup.lastStep
     holdOnCancel: isWelcome
-    footHint: isWelcome ? (step + 1) + " / " + (setup.lastStep + 1) : ""
+    footHint: isWelcome
+        ? (i18n.language, i18n.t("welcome_step_progress")).arg(step + 1).arg(setup.lastStep + 1)
+        : ""
     onNextRequested: if (step < setup.lastStep) step++
     onBackRequested: if (step > 0) step--
     // Reopened from Help → Setup wizard, so it must not resume on whatever step
@@ -145,13 +150,12 @@ BatDialog {
     readonly property string noteText: content.note.length > 0
         ? content.note : (i18n.language, i18n.t("whatsnew_generic_note"))
 
-    // ===== hero header — billed like a poster =====
-    // This screen is seen once per release and is the only moment the app gets
-    // to announce itself, so it stops looking like a settings row: the version
-    // is the headliner, set in the wordmark face at a size nothing else uses.
+    // Update mode keeps the poster hero; welcome drops it so the first step
+    // opens on the question itself instead of a second brand billboard.
     Item {
+        visible: !dlg.isWelcome
         Layout.fillWidth: true
-        Layout.preferredHeight: dlg.isWelcome ? 92 : 132
+        Layout.preferredHeight: visible ? 132 : 0
         clip: true
 
         // Red bleed behind the numerals. It has to be a Shape/RadialGradient —
@@ -166,13 +170,13 @@ BatDialog {
                 fillGradient: RadialGradient {
                     centerX: 74; centerY: parent.height * 0.46; centerRadius: 190
                     focalX: centerX; focalY: centerY
-                    GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.32) }
-                    GradientStop { position: 0.5; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.11) }
+                    GradientStop { position: 0.0; color: Qt.rgba(dlg.uiPalette.accent.r, dlg.uiPalette.accent.g, dlg.uiPalette.accent.b, 0.32) }
+                    GradientStop { position: 0.5; color: Qt.rgba(dlg.uiPalette.accent.r, dlg.uiPalette.accent.g, dlg.uiPalette.accent.b, 0.11) }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
                 PathMove { x: 0; y: 0 }
-                PathLine { x: 520; y: 0 }
-                PathLine { x: 520; y: 150 }
+                PathLine { x: dlg.cardW; y: 0 }
+                PathLine { x: dlg.cardW; y: 150 }
                 PathLine { x: 0; y: 150 }
                 PathLine { x: 0; y: 0 }
             }
@@ -184,34 +188,38 @@ BatDialog {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 0
 
-            Row {
-                spacing: 8
-                Eyebrow { text: (i18n.language, i18n.t(dlg.isWelcome ? "welcome_eyebrow" : "whatsnew_eyebrow")); red: true }
-            }
-            // the headliner: version numerals in New Rocker, oversized on purpose
+            Eyebrow { text: (i18n.language, i18n.t("whatsnew_eyebrow")); red: true; uiPalette: dlg.uiPalette }
             Text {
                 visible: dlg.appVer.length > 0
                 text: dlg.appVer.split(".").slice(0, 2).join(".")
-                color: Theme.t1
+                color: dlg.uiPalette.t1
                 font.family: "New Rocker"
-                font.pixelSize: dlg.isWelcome ? 52 : 88
-                topPadding: -4; bottomPadding: dlg.isWelcome ? -8 : -16
+                font.pixelSize: 88
+                topPadding: -4; bottomPadding: -16
             }
             Row {
                 spacing: 0
-                Text { text: "BAT"; color: Theme.accent; font.family: "New Rocker"; font.pixelSize: 24 }
-                Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 24 }
+                Text { text: "BAT"; color: dlg.uiPalette.accent; font.family: "New Rocker"; font.pixelSize: 24 }
+                Text { text: "orrent"; color: dlg.uiPalette.t1; font.family: "New Rocker"; font.pixelSize: 24 }
             }
         }
     }
-    // a solid accent rule, not a hairline — it separates the billing from the mark
-    Rectangle { Layout.fillWidth: true; Layout.topMargin: 6; height: 2; color: Theme.accent; opacity: 0.9 }
+    Rectangle {
+        visible: !dlg.isWelcome
+        Layout.fillWidth: true
+        Layout.topMargin: 6
+        Layout.preferredHeight: visible ? 2 : 0
+        height: 2
+        color: dlg.uiPalette.accent
+        opacity: 0.9
+    }
 
     // ===== WELCOME body =====
     WelcomeSteps {
         id: setup
         visible: dlg.isWelcome
         step: dlg.step
+        uiPalette: dlg.uiPalette
     }
 
     // ===== UPDATE body =====
@@ -219,14 +227,14 @@ BatDialog {
         visible: !dlg.isWelcome
         Layout.fillWidth: true; Layout.topMargin: Theme.sp2
         text: (i18n.language, i18n.t("whatsnew_heading"))
-        color: Theme.t1; font.pixelSize: 20; font.weight: Font.Bold; font.family: Theme.fontSans
+        color: dlg.uiPalette.t1; font.pixelSize: 20; font.weight: Font.Bold; font.family: dlg.uiPalette.fontSans
         wrapMode: Text.WordWrap
     }
     // dev note card
     Rectangle {
         visible: !dlg.isWelcome
         Layout.fillWidth: true
-        radius: 11; color: Theme.panel; border.color: Theme.hair; border.width: 1
+        radius: 11; color: dlg.uiPalette.panel; border.color: dlg.uiPalette.hair; border.width: 1
         Layout.preferredHeight: noteCol.implicitHeight + 28
         ColumnLayout {
             id: noteCol
@@ -234,7 +242,7 @@ BatDialog {
             spacing: 7
             Text {
                 text: (i18n.language, i18n.t("whatsnew_devnote_label"))
-                color: Theme.accent; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 0.4; font.family: Theme.fontSans
+                color: dlg.uiPalette.accent; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 0.4; font.family: dlg.uiPalette.fontSans
             }
             Text {
                 Layout.fillWidth: true
@@ -243,8 +251,8 @@ BatDialog {
                 // survives as real line breaks); a note with a link like 4.4's
                 // gets auto-detected as rich text — which is why THAT entry
                 // uses <br> instead of \n\n for its paragraph breaks.
-                linkColor: Theme.accentText
-                color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans
+                linkColor: dlg.uiPalette.accentText
+                color: dlg.uiPalette.t2; font.pixelSize: 13; font.family: dlg.uiPalette.fontSans
                 wrapMode: Text.WordWrap; lineHeight: 1.45
                 onLinkActivated: function(link) { Qt.openUrlExternally(link) }
             }
@@ -256,7 +264,7 @@ BatDialog {
         Layout.fillWidth: true; Layout.topMargin: Theme.sp1; spacing: 8
         Text {
             text: (i18n.language, i18n.t("whatsnew_highlights"))
-            color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+            color: dlg.uiPalette.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: dlg.uiPalette.fontSans
         }
         Repeater {
             model: dlg.content.highlights
@@ -274,7 +282,7 @@ BatDialog {
                 spacing: 10
                 Text {
                     text: hRow.lead ? "▸" : "›"
-                    color: Theme.accent
+                    color: dlg.uiPalette.accent
                     font.pixelSize: hRow.lead ? 15 : 13
                     font.weight: Font.Bold
                     Layout.alignment: Qt.AlignTop
@@ -288,11 +296,11 @@ BatDialog {
                     // second line, so the two blocks looked unrelated.
                     Layout.rightMargin: hRow.lead ? 64 : 0
                     text: hRow.modelData
-                    color: hRow.lead ? Theme.t1 : Theme.t2
+                    color: hRow.lead ? dlg.uiPalette.t1 : dlg.uiPalette.t2
                     font.pixelSize: hRow.lead ? 19 : 13
                     font.weight: hRow.lead ? Font.Bold : Font.Normal
                     font.letterSpacing: hRow.lead ? -0.3 : 0
-                    font.family: Theme.fontSans
+                    font.family: dlg.uiPalette.fontSans
                     wrapMode: Text.WordWrap; lineHeight: hRow.lead ? 1.2 : 1.35
                 }
             }

@@ -28,6 +28,39 @@ ColumnLayout {
     Layout.fillHeight: false
     spacing: 6
 
+    // One definition, two homes. Stacked under the cover it reads as the
+    // panel's headline; beside it, in the wide deck, it belongs to the title
+    // block like any other fact about the release. Which one shows is the
+    // only difference, so the two placements cannot drift apart.
+    component ProgressBlock: ColumnLayout {
+        spacing: 6
+        RowLayout {
+            Layout.fillWidth: true
+            Text {
+                text: Math.round((ident.win.hasSel ? session.selectedProgress : 0) * 100) + "%"
+                color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
+            }
+            Item { Layout.fillWidth: true }
+            Text {
+                text: ident.win.hasSel ? (session.selectedDownloaded.split(" (")[0] + "  /  " + session.selectedSize) : ""
+                color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+            }
+        }
+        Rectangle {
+            Layout.fillWidth: true; Layout.preferredHeight: 4; radius: 2; color: Theme.track
+            Rectangle {
+                height: parent.height; radius: 2
+                width: parent.width * (ident.win.hasSel ? session.selectedProgress : 0)
+                // same state→colour language as the grid tile and the
+                // status dot: downloading red, seeding amber, done green
+                color: ident.win.fillFor(ident.win.hasSel ? session.selectedStateKey : "")
+                Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: 200 } }
+            }
+        }
+    }
+
+
         // Cover and the title that names it read as one unit. Stacked, the
         // sidebar spent its first 150px on art with the title pushed below
         // the fold; the progress bar stays full width under both, since it
@@ -225,39 +258,19 @@ ColumnLayout {
                         tip: (i18n.language, i18n.t("tb_copy"))
                         onClicked: session.copyMagnetLink()
                     }
+
+                ProgressBlock {
+                    visible: !ident.vertical && ident.win.hasSel
+                    Layout.fillWidth: true
+                    Layout.topMargin: 6
+                }
                 }
             }
         }
-        // progress bar — % (left) + downloaded / total (right)
-        ColumnLayout {
-            visible: ident.win.hasSel
+        ProgressBlock {
+            visible: ident.vertical && ident.win.hasSel
             Layout.fillWidth: true
             Layout.topMargin: 10
-            spacing: 6
-            RowLayout {
-                Layout.fillWidth: true
-                Text {
-                    text: Math.round((ident.win.hasSel ? session.selectedProgress : 0) * 100) + "%"
-                    color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
-                }
-                Item { Layout.fillWidth: true }
-                Text {
-                    text: ident.win.hasSel ? (session.selectedDownloaded.split(" (")[0] + "  /  " + session.selectedSize) : ""
-                    color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
-                }
-            }
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 4; radius: 2; color: Theme.track
-                Rectangle {
-                    height: parent.height; radius: 2
-                    width: parent.width * (ident.win.hasSel ? session.selectedProgress : 0)
-                    // same state→colour language as the grid tile and the
-                    // status dot: downloading red, seeding amber, done green
-                    color: ident.win.fillFor(ident.win.hasSel ? session.selectedStateKey : "")
-                    Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                    Behavior on color { ColorAnimation { duration: 200 } }
-                }
-            }
         }
 
         // big live transfer: DOWN · UP · ETA. Only the arrows carry the

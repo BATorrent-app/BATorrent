@@ -188,8 +188,10 @@ Item {
     ReleaseNotesDialog  { id: releaseNotesDlg }
     WelcomeDialog {
         id: welcomeDlg
-        onAccepted: host.maybeStartTour()
-        onRejected: host.maybeStartTour()
+        onAccepted: {
+            if (mode === "welcome") host.completeWelcome()
+            else host.maybeStartTour()
+        }
         onOpenReleaseNotes: releaseNotesDlg.open()
     }
     AboutDialog         { id: aboutDlg }

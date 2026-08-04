@@ -25,7 +25,7 @@ Flickable {
         x: Theme.sp5
         y: Theme.sp5
         width: gen.width - Theme.sp5 * 2
-        columns: gen.vertical ? 1 : 4
+        columns: 1
         columnSpacing: Theme.sp6
         rowSpacing: Theme.sp4
 
@@ -87,20 +87,9 @@ Flickable {
         }
 
 
-        // .dmain — identity beside the cover, then the numbers full width
-        // The sidebar shows this above the tabs, permanently; the bottom deck
-        // has no height for a fixed header, so it keeps it inside this tab.
-        DetailIdentity {
-            visible: !gen.vertical
-            win: gen.win
-            vertical: gen.vertical
-            Layout.preferredWidth: gen.vertical ? -1 : 460
-            Layout.maximumWidth: gen.vertical ? Number.POSITIVE_INFINITY : 460
-            Layout.fillWidth: gen.vertical
-            Layout.alignment: Qt.AlignTop
-        }
-
-        Item { visible: !gen.vertical; Layout.fillWidth: true }
+        // No identity block here anymore: both hosts keep it outside the tabs,
+        // so which torrent you are reading survives a jump to Peers or Files.
+        // This pane is only the numbers now.
 
         // .dcols — three KV sections (row in the panel, stacked in the inspector)
         GridLayout {

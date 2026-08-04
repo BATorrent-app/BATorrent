@@ -18,6 +18,7 @@ Item {
     // keep the item alive briefly after close so the exit animation can play
     visible: opened || anim > 0
     property bool opened: false
+    property var uiPalette: Theme
     // 0..1 drives the entrance/exit (backdrop fade + card scale+fade)
     property real anim: 0
     Behavior on anim { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
@@ -49,6 +50,9 @@ Item {
     property bool showFooter: true
     property bool showCancel: true
     property bool showOk: true
+    readonly property color standardBackdropColor: uiPalette.isDark ? Qt.rgba(0, 0, 0, 0.5)
+                                                                    : Qt.rgba(20/255, 20/255, 28/255, 0.32)
+    property color backdropColor: standardBackdropColor
     default property alias bodyContent: bodyHost.data
 
     // Return-to-accept is off for dialogs whose body has a multiline editor
@@ -69,7 +73,10 @@ Item {
     Shortcut {
         sequences: [StandardKey.Cancel]
         enabled: dlg.opened && DialogStack.topItem === dlg
-        onActivated: { dlg.rejected(); dlg.close() }
+        onActivated: {
+            if (dlg.holdOnCancel) dlg.backRequested()
+            else { dlg.rejected(); dlg.close() }
+        }
     }
     Shortcut {
         sequences: ["Return", "Enter"]
@@ -85,8 +92,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         opacity: dlg.anim
-        color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.5)
-                            : Qt.rgba(20/255, 20/255, 28/255, 0.32)
+        color: dlg.backdropColor
         // also swallow wheel/trackpad scroll so it doesn't reach the list behind
         MouseArea { anchors.fill: parent; onClicked: { dlg.rejected(); dlg.close() }
             onWheel: function(wheel) { wheel.accepted = true } }
@@ -111,8 +117,8 @@ Item {
         opacity: dlg.anim
         scale: Theme.reduceMotion ? 1 : (0.97 + 0.03 * dlg.anim)
         radius: 13
-        color: Theme.bg
-        border.color: Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.14)
+        color: dlg.uiPalette.bg
+        border.color: dlg.uiPalette.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.14)
         border.width: 1
         clip: true
         // swallow backdrop clicks + scroll landing on the card chrome (the body
@@ -127,15 +133,15 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
-                color: Theme.elev
+                color: dlg.uiPalette.elev
 
                 Text {
                     id: ttl
                     anchors.centerIn: parent
-                    color: Theme.t2
+                    color: dlg.uiPalette.t2
                     font.pixelSize: 13
                     font.weight: Font.DemiBold
-                    font.family: Theme.fontSans
+                    font.family: dlg.uiPalette.fontSans
                 }
                 // .x-close
                 Rectangle {
@@ -145,11 +151,11 @@ Item {
                     width: 22
                     height: 22
                     radius: 6
-                    color: xMa.containsMouse ? Theme.hover : "transparent"
+                    color: xMa.containsMouse ? dlg.uiPalette.hover : "transparent"
                     IconImg {
                         anchors.centerIn: parent
                         src: "qrc:/icons/close.svg"
-                        tint: xMa.containsMouse ? Theme.t1 : Theme.t4
+                        tint: xMa.containsMouse ? dlg.uiPalette.t1 : dlg.uiPalette.t4
                         s: 13
                     }
                     MouseArea {
@@ -160,7 +166,7 @@ Item {
                         onClicked: { dlg.rejected(); dlg.close() }
                     }
                 }
-                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: dlg.uiPalette.hairSoft }
             }
 
             // .body (scrollable, padding 24)
@@ -187,17 +193,17 @@ Item {
                 visible: dlg.showFooter
                 Layout.fillWidth: true
                 Layout.preferredHeight: 56
-                color: Theme.elev
-                Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair }
+                color: dlg.uiPalette.elev
+                Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: dlg.uiPalette.hair }
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: Theme.sp5
                     anchors.rightMargin: 20
                     Text {
                         text: dlg.footHint
-                        color: Theme.t4
+                        color: dlg.uiPalette.t4
                         font.pixelSize: 11
-                        font.family: Theme.fontSans
+                        font.family: dlg.uiPalette.fontSans
                     }
                     Item { Layout.fillWidth: true }
                     Row {
@@ -205,6 +211,7 @@ Item {
                         BtnFlat {
                             visible: dlg.showCancel
                             text: dlg.cancelText
+                            uiPalette: dlg.uiPalette
                             onClicked: {
                                 if (dlg.holdOnCancel) dlg.backRequested()
                                 else { dlg.rejected(); dlg.close() }
@@ -214,6 +221,7 @@ Item {
                             visible: dlg.showOk
                             primary: true
                             text: dlg.okText
+                            uiPalette: dlg.uiPalette
                             onClicked: {
                                 if (dlg.holdOnOk) dlg.nextRequested()
                                 else { dlg.accepted(); dlg.close() }

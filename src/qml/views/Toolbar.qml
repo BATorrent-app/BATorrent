@@ -14,6 +14,8 @@ import "../widgets"
 Rectangle {
     id: toolbar
     property var win
+    property string downSpeedOverride: ""
+    property string upSpeedOverride: ""
     property alias tbOpen: tbOpen
     signal openFile()
     signal addMagnet()
@@ -186,7 +188,8 @@ Rectangle {
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"
+                        text: toolbar.downSpeedOverride.length > 0 ? toolbar.downSpeedOverride
+                              : (typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s")
                         color: Theme.t1
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
@@ -215,7 +218,8 @@ Rectangle {
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"
+                        text: toolbar.upSpeedOverride.length > 0 ? toolbar.upSpeedOverride
+                              : (typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s")
                         color: Theme.t1
                         font.pixelSize: 13
                         font.weight: Font.DemiBold

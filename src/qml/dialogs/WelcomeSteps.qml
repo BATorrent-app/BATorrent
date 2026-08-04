@@ -2,8 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// The first-run setup, asked as three short steps instead of one long form:
-// language, theme, layout. Every answer is written immediately, so the app and
+// The first-run setup, asked as four short steps instead of one long form:
+// language, theme, library view and layout. Every answer is written immediately, so the app and
 // this very dialog re-dress themselves while the user is still deciding — the
 // preview IS the product, which no swatch or caption can match.
 import QtQuick
@@ -12,13 +12,19 @@ import "../theme"
 import "../widgets"
 import "../views"
 
-ColumnLayout {
+GridLayout {
     id: steps
     property int step: 0
-    readonly property int lastStep: 3
+    property var uiPalette: Theme
+    readonly property int lastStep: 4
+    readonly property bool narrow: width < 760
 
     Layout.fillWidth: true
-    spacing: Theme.sp3
+    Layout.preferredHeight: narrow ? controls.implicitHeight + previewPane.implicitHeight + Theme.sp4
+                                   : Math.max(controls.implicitHeight, previewPane.implicitHeight)
+    columns: narrow ? 1 : 2
+    columnSpacing: Theme.sp5
+    rowSpacing: Theme.sp4
 
     SettingsSchema { id: schema }
 
@@ -45,26 +51,35 @@ ColumnLayout {
         function onChanged() { steps.refreshLayout() }
     }
 
-    Text {
-        Layout.fillWidth: true
-        text: (i18n.language, i18n.t(steps.step === 0 ? "welcome_heading"
-                                   : steps.step === 1 ? "welcome_theme_title"
-                                   : steps.step === 2 ? "welcome_view_title"
-                                   : "welcome_layout_title"))
-        color: Theme.t1
-        font.pixelSize: 20; font.weight: Font.Bold; font.family: Theme.fontSans
-        wrapMode: Text.WordWrap
-    }
-    Text {
-        Layout.fillWidth: true
-        text: (i18n.language, i18n.t(steps.step === 0 ? "welcome_blurb2"
-                                   : steps.step === 1 ? "welcome_theme_note"
-                                   : steps.step === 2 ? "welcome_view_note"
-                                   : "welcome_layout_note"))
-        color: Theme.t2
-        font.pixelSize: 13; font.family: Theme.fontSans
-        wrapMode: Text.WordWrap; lineHeight: 1.45
-    }
+    ColumnLayout {
+        id: controls
+        Layout.fillWidth: steps.narrow
+        Layout.preferredWidth: steps.narrow ? -1 : 316
+        Layout.alignment: Qt.AlignTop
+        spacing: Theme.sp3
+
+        Text {
+            Layout.fillWidth: true
+            text: (i18n.language, i18n.t(steps.step === 0 ? "welcome_heading"
+                                       : steps.step === 1 ? "welcome_theme_title"
+                                       : steps.step === 2 ? "welcome_view_title"
+                                       : steps.step === 3 ? "welcome_nav_title"
+                                       : "welcome_detail_title"))
+            color: steps.uiPalette.t1
+            font.pixelSize: 22; font.weight: Font.Bold; font.family: steps.uiPalette.fontSans
+            wrapMode: Text.WordWrap
+        }
+        Text {
+            Layout.fillWidth: true
+            text: (i18n.language, i18n.t(steps.step === 0 ? "welcome_blurb2"
+                                       : steps.step === 1 ? "welcome_theme_note"
+                                       : steps.step === 2 ? "welcome_view_note"
+                                       : steps.step === 3 ? "welcome_nav_note"
+                                       : "welcome_detail_note"))
+            color: steps.uiPalette.t2
+            font.pixelSize: 13; font.family: steps.uiPalette.fontSans
+            wrapMode: Text.WordWrap; lineHeight: 1.45
+        }
 
     // ---- step 0: language ----
     // Interface and content are two questions on purpose: reading English menus
@@ -75,8 +90,8 @@ ColumnLayout {
         Layout.fillWidth: true; Layout.topMargin: Theme.sp1
         implicitHeight: langCol.implicitHeight + 2 * Theme.sp3
         radius: 12
-        color: Theme.field
-        border.color: Theme.hair; border.width: 1
+        color: steps.uiPalette.field
+        border.color: steps.uiPalette.hair; border.width: 1
 
         ColumnLayout {
             id: langCol
@@ -86,21 +101,22 @@ ColumnLayout {
 
             Text {
                 text: (i18n.language, i18n.t("welcome_lang_title"))
-                color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
-                font.letterSpacing: 1.2; font.family: Theme.fontSans
+                color: steps.uiPalette.accent; font.pixelSize: 10; font.weight: Font.Bold
+                font.letterSpacing: 1.2; font.family: steps.uiPalette.fontSans
             }
-            RowLayout {
+            ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: 14
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 5
                     Text {
                         text: (i18n.language, i18n.t("set_language2"))
-                        color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans
+                        color: steps.uiPalette.t3; font.pixelSize: 11; font.family: steps.uiPalette.fontSans
                     }
                     TSelect {
                         Layout.fillWidth: true
+                        uiPalette: steps.uiPalette
                         model: schema.languageNames
                         icons: schema.languageFlags
                         currentIndex: i18n.language
@@ -112,10 +128,11 @@ ColumnLayout {
                     spacing: 5
                     Text {
                         text: (i18n.language, i18n.t("set_content_language"))
-                        color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans
+                        color: steps.uiPalette.t3; font.pixelSize: 11; font.family: steps.uiPalette.fontSans
                     }
                     TSelect {
                         Layout.fillWidth: true
+                        uiPalette: steps.uiPalette
                         model: [(i18n.language, i18n.t("set_content_language_same"))].concat(schema.languageNames)
                         icons: [""].concat(schema.languageFlags)
                         currentIndex: {
@@ -127,61 +144,25 @@ ColumnLayout {
                             if (typeof settings !== "undefined") settings.set("contentLanguage", i - 1)
                         }
                     }
+                    Text {
+                        Layout.fillWidth: true
+                        text: (i18n.language, i18n.t("set_content_language_note"))
+                        color: steps.uiPalette.t4
+                        font.pixelSize: 11
+                        font.family: steps.uiPalette.fontSans
+                        wrapMode: Text.WordWrap
+                        lineHeight: 1.35
+                    }
                 }
             }
         }
     }
 
     // ---- step 1: theme ----
-    Grid {
+    WelcomeThemePicker {
         visible: steps.step === 1
         Layout.fillWidth: true; Layout.topMargin: Theme.sp1
-        columns: 3
-        spacing: 10
-        Repeater {
-            model: Theme.swatches
-            delegate: Rectangle {
-                id: sw
-                required property var modelData
-                readonly property bool sel: Theme.name === sw.modelData.key
-                width: 154; height: 62
-                radius: 10
-                color: sw.modelData.bg
-                border.width: sw.sel ? 2 : 1
-                border.color: sw.sel ? Theme.accent : (swMa.containsMouse ? Theme.t4 : Theme.hair)
-                Behavior on border.color { ColorAnimation { duration: 140 } }
-
-                Rectangle {
-                    x: 10; y: 10; width: 44; height: 42; radius: 6
-                    color: sw.modelData.panel
-                    Rectangle { x: 7; y: 8; width: 22; height: 4; radius: 2; color: sw.modelData.accent }
-                    Rectangle { x: 7; y: 18; width: 30; height: 3; radius: 1.5
-                                color: sw.modelData.accent; opacity: 0.35 }
-                }
-                Text {
-                    x: 64; anchors.verticalCenter: parent.verticalCenter
-                    text: sw.modelData.key === "dark" ? (i18n.language, i18n.t("set_theme_dark"))
-                        : sw.modelData.key === "light" ? (i18n.language, i18n.t("set_theme_light"))
-                        : sw.modelData.key === "midnight" ? "Midnight"
-                        : sw.modelData.key === "sakura" ? "Sakura"
-                        : sw.modelData.key === "darkstar" ? "Dark Star" : "Matrix"
-                    // Reads on the swatch's own background, not the app's — this
-                    // tile is a window into another theme.
-                    color: sw.modelData.key === "light" || sw.modelData.key === "sakura"
-                           ? "#16171a" : "#f3f3f4"
-                    font.pixelSize: 13
-                    font.weight: sw.sel ? Font.DemiBold : Font.Normal
-                    font.family: Theme.fontSans
-                }
-                MouseArea {
-                    id: swMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Theme.setName(sw.modelData.key)
-                }
-            }
-        }
+        uiPalette: steps.uiPalette
     }
 
     // ---- step 2: how the library reads ----
@@ -192,13 +173,14 @@ ColumnLayout {
 
         Text {
             text: (i18n.language, i18n.t("welcome_view_q"))
-            color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
-            font.letterSpacing: 1.2; font.family: Theme.fontSans
+            color: steps.uiPalette.accent; font.pixelSize: 10; font.weight: Font.Bold
+            font.letterSpacing: 1.2; font.family: steps.uiPalette.fontSans
         }
         RowLayout {
             Layout.fillWidth: true
             spacing: 14
             LayoutChoiceTile {
+                uiPalette: steps.uiPalette
                 asking: "view"
                 classic: false
                 navLeft: steps.navLeft
@@ -208,6 +190,7 @@ ColumnLayout {
                 onPicked: if (typeof settings !== "undefined") settings.set("classicMode", false)
             }
             LayoutChoiceTile {
+                uiPalette: steps.uiPalette
                 asking: "view"
                 classic: true
                 navLeft: steps.navLeft
@@ -220,21 +203,17 @@ ColumnLayout {
         }
     }
 
-    // ---- step 3: layout ----
+    // ---- step 3: navigation ----
     ColumnLayout {
         visible: steps.step === 3
         Layout.fillWidth: true; Layout.topMargin: Theme.sp1
         spacing: Theme.sp3
 
-        Text {
-            text: (i18n.language, i18n.t("welcome_nav_q"))
-            color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
-            font.letterSpacing: 1.2; font.family: Theme.fontSans
-        }
         RowLayout {
             Layout.fillWidth: true
             spacing: 14
             LayoutChoiceTile {
+                uiPalette: steps.uiPalette
                 asking: "nav"
                 navLeft: false
                 detailBottom: steps.detailBottom
@@ -243,6 +222,7 @@ ColumnLayout {
                 onPicked: if (typeof settings !== "undefined") settings.set("layoutClassic", false)
             }
             LayoutChoiceTile {
+                uiPalette: steps.uiPalette
                 asking: "nav"
                 navLeft: true
                 detailBottom: steps.detailBottom
@@ -252,17 +232,19 @@ ColumnLayout {
             }
             Item { Layout.fillWidth: true }
         }
+    }
 
-        Text {
-            Layout.topMargin: Theme.sp2
-            text: (i18n.language, i18n.t("welcome_detail_q"))
-            color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
-            font.letterSpacing: 1.2; font.family: Theme.fontSans
-        }
+    // ---- step 4: detail panel ----
+    ColumnLayout {
+        visible: steps.step === 4
+        Layout.fillWidth: true; Layout.topMargin: Theme.sp1
+        spacing: Theme.sp3
+
         RowLayout {
             Layout.fillWidth: true
             spacing: 14
             LayoutChoiceTile {
+                uiPalette: steps.uiPalette
                 asking: "detail"
                 navLeft: steps.navLeft
                 detailBottom: false
@@ -271,6 +253,7 @@ ColumnLayout {
                 onPicked: if (typeof settings !== "undefined") settings.set("detailBottom", false)
             }
             LayoutChoiceTile {
+                uiPalette: steps.uiPalette
                 asking: "detail"
                 navLeft: steps.navLeft
                 detailBottom: true
@@ -290,14 +273,29 @@ ColumnLayout {
         Rectangle {
             Layout.alignment: Qt.AlignTop
             Layout.preferredWidth: 28; Layout.preferredHeight: 28
-            radius: 8; color: Theme.field
-            IconImg { anchors.centerIn: parent; src: "qrc:/icons/discover.svg"; tint: Theme.accentText; s: 15 }
+            radius: 8; color: steps.uiPalette.field
+            IconImg { anchors.centerIn: parent; src: "qrc:/icons/discover.svg"; tint: steps.uiPalette.accentText; s: 15 }
         }
         Text {
             Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter
             text: (i18n.language, i18n.t("welcome_tour_hint"))
-            color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans
+            color: steps.uiPalette.t3; font.pixelSize: 12; font.family: steps.uiPalette.fontSans
             wrapMode: Text.WordWrap; lineHeight: 1.35
         }
+    }
+
+    }
+
+    OnboardingPreviewPane {
+        id: previewPane
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        Layout.alignment: Qt.AlignTop
+        classic: steps.classicView
+        navLeft: steps.navLeft
+        detailBottom: steps.detailBottom
+        step: steps.step
+        narrow: steps.narrow
+        uiPalette: steps.uiPalette
     }
 }

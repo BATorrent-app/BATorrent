@@ -37,11 +37,19 @@ class QmlThemeBridge : public QObject
     // True when the process is on the Software scene-graph backend (or forced
     // via settings) — QML can skip MultiEffect / heavy shaders.
     Q_PROPERTY(bool softwareRenderer READ softwareRenderer NOTIFY changed)
+    // Dev-only: with BAT_QML_DIR set, icons load from that tree's ../icons
+    // instead of the compiled resource, so an SVG edit shows up like a QML one.
+    // Empty in a release build, where the qrc is the only source.
+    Q_PROPERTY(QString devIconDir READ devIconDir CONSTANT)
+    Q_PROPERTY(int iconEpoch READ iconEpoch NOTIFY iconEpochChanged)
 
 public:
     explicit QmlThemeBridge(QObject *parent = nullptr);
 
     bool softwareRenderer() const { return m_softwareRenderer; }
+    QString devIconDir() const;
+    static int iconEpoch();
+    static void bumpIconEpoch();
     void setSoftwareRenderer(bool on);
 
     QString themeName() const;
@@ -91,6 +99,7 @@ public:
     static QPixmap renderLogo(bool darkBody, int size, qreal dpr = 1.0);
 
 signals:
+    void iconEpochChanged();
     void changed();
     void profilesChanged();
     void osSchemeChanged();
