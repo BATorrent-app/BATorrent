@@ -1275,5 +1275,8 @@
   "welcome_view_grid": "Portadas",
   "welcome_view_classic": "Lista",
   "vpn_drop_conf": "Suelta el .conf para importar",
-  "cat_compressed": "Comprimidos"
+  "cat_compressed": "Comprimidos",
+  "set_default_save_note": "Todo torrent va aquí, salvo que elijas otra carpeta al añadirlo.",
+  "settings_iface_vpn": "probablemente VPN",
+  "settings_iface_vpn_active": "tu VPN, conectada"
 }

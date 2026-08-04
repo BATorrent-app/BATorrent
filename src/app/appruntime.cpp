@@ -2,6 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
+#include <QPainter>
 #include "app/appruntime.h"
 
 #include "bridges/qmlthemebridge.h"
@@ -40,6 +41,27 @@ public:
         const int sz = requested.width() > 0 ? requested.width() : 256;
         const bool darkBody = id.startsWith("dark");
         QPixmap pm = QmlThemeBridge::renderLogo(darkBody, sz, 1.0);
+
+        // VPN state as a dot under the wing, the way IVPN marks its own tray
+        // icon. Only drawn when the caller asks for it: a permanent red badge
+        // on a machine with no VPN configured would be an alarm about nothing.
+        if (!pm.isNull() && (id.contains(QLatin1String("vpn=on"))
+                             || id.contains(QLatin1String("vpn=off")))) {
+            const bool up = id.contains(QLatin1String("vpn=on"));
+            QPainter p(&pm);
+            p.setRenderHint(QPainter::Antialiasing);
+            const qreal d = sz * 0.34;
+            const QRectF dot(sz - d, sz - d, d, d);
+            // Punch a transparent ring first so the dot reads as a badge on top
+            // of the wing instead of a blob merged into it.
+            p.setCompositionMode(QPainter::CompositionMode_Clear);
+            p.setPen(Qt::NoPen);
+            p.setBrush(Qt::black);
+            p.drawEllipse(dot.adjusted(-sz * 0.05, -sz * 0.05, sz * 0.05, sz * 0.05));
+            p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            p.setBrush(up ? QColor(0x36, 0xb3, 0x7e) : QColor(0xe0, 0x57, 0x4b));
+            p.drawEllipse(dot);
+        }
         if (size) *size = pm.size();
         return pm;
     }

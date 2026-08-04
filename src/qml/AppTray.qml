@@ -9,10 +9,17 @@ import Qt.labs.platform as Platform
 Platform.SystemTrayIcon {
     id: root
     visible: true
-    icon.source: (typeof themeBridge !== "undefined" && themeBridge.osLight)
-                 ? "image://applogo/dark?v=l" : "image://applogo/light?v=d"
+    // The dot only exists once a VPN profile does. Sherwan asked for green when
+    // bound and red when not; red on a machine that never had a VPN would be an
+    // alarm about a feature the user does not use.
+    readonly property bool hasVpn: typeof vpn !== "undefined" && vpn.profiles.length > 0
+    readonly property string vpnTag: hasVpn ? (vpn.connState === 2 ? "&vpn=on" : "&vpn=off") : ""
+    icon.source: ((typeof themeBridge !== "undefined" && themeBridge.osLight)
+                  ? "image://applogo/dark?v=l" : "image://applogo/light?v=d") + vpnTag
     icon.mask: false
-    tooltip: "BATorrent"
+    tooltip: root.hasVpn
+             ? "BATorrent  ·  " + (i18n.language, i18n.t(vpn.connState === 2 ? "vpn_hero_protected" : "vpn_hero_exposed"))
+             : "BATorrent"
 
     signal restoreRequested()
     signal contextRequested(var geometry)

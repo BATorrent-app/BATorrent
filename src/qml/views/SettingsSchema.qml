@@ -69,7 +69,12 @@ QtObject {
             { type: "slider",  label: (i18n.language, i18n.t("set_custom_opacity")),  customOnly: true },
             { type: "toggle", key: "reduceMotion", on: false, label: (i18n.language, i18n.t("set_reduce_motion")), note: (i18n.language, i18n.t("set_reduce_motion_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_downloads")) },
-            { type: "path", key: "lastSavePath", label: (i18n.language, i18n.t("set_default_save2")) },
+            // Empty here does not mean "no default": it falls back to the OS Downloads
+            // folder. Showing that as the placeholder is what makes the default look
+            // like a setting instead of something the app decides fresh each time.
+            { type: "path", key: "lastSavePath", label: (i18n.language, i18n.t("set_default_save2")),
+              placeholder: (typeof session !== "undefined") ? session.defaultSavePath() : "",
+              note: (i18n.language, i18n.t("set_default_save_note")) },
             { type: "toggle", key: "useDefaultPath", label: (i18n.language, i18n.t("settings_use_default_path")), on: true },
             { type: "path", key: "tempPath", label: (i18n.language, i18n.t("set_temp_path2")), placeholder: (i18n.language, i18n.t("set_temp_path_ph")), note: (i18n.language, i18n.t("set_temp_path_note")) },
             { type: "toggle", key: "autoMoveEnabled", label: (i18n.language, i18n.t("settings_automove")) },
