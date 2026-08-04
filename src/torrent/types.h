@@ -45,6 +45,16 @@ struct TorrentInfo {
 // TorrentInfo::stateString, which is a *translated label* and therefore useless
 // for comparison. Lives here so the poster model and the selection bridge can't
 // drift apart.
+// libtorrent answers is_finished/is_seeding by comparing wanted-bytes-done to
+// wanted-bytes, so a torrent with nothing wanted YET answers yes: a magnet whose
+// metadata has not arrived (total_wanted == 0) reports finished and seeding
+// while it has never transferred a byte. Every caller has to qualify those two
+// flags through this, or a fresh magnet shows up as SEEDING.
+inline bool torrentHasWork(bool hasMetadata, long long totalWanted)
+{
+    return hasMetadata && totalWanted > 0;
+}
+
 inline QString torrentStateKey(const TorrentInfo &info)
 {
     if (info.filesMissing) return QStringLiteral("missing");
