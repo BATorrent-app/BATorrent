@@ -187,8 +187,8 @@ Rectangle {
                     IconImg {
                         Layout.alignment: Qt.AlignVCenter
                         src: navItem.modelData.icon
-                        tint: navItem.active ? Theme.t1 : Theme.t3
-                        s: 18
+                        tint: navItem.active ? Theme.t1 : Theme.t2
+                        s: 20
                         Behavior on tint { ColorAnimation { duration: 140 } }
                     }
                     Text {
@@ -255,7 +255,7 @@ Rectangle {
                 Item {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredWidth: 18; Layout.preferredHeight: 18
-                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/set-vpn.svg"; tint: vpnItem.stColor; s: 18 }
+                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/set-vpn.svg"; tint: vpnItem.stColor; s: 20 }
                     Rectangle {
                         width: 7; height: 7; radius: 3.5
                         anchors.right: parent.right; anchors.bottom: parent.bottom
@@ -310,7 +310,7 @@ Rectangle {
                 anchors.leftMargin: rail.collapsed ? 13 : 17
                 anchors.rightMargin: 12
                 spacing: 13
-                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/heart.svg"; tint: donMa.containsMouse ? Theme.accent : Theme.t3; s: 18 }
+                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/heart.svg"; tint: donMa.containsMouse ? Theme.accent : Theme.t2; s: 20 }
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
@@ -364,7 +364,7 @@ Rectangle {
                 anchors.leftMargin: rail.collapsed ? 13 : 17
                 anchors.rightMargin: 12
                 spacing: 13
-                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/settings.svg"; tint: settingsItem.active ? Theme.t1 : Theme.t3; s: 18; Behavior on tint { ColorAnimation { duration: 140 } } }
+                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/settings.svg"; tint: settingsItem.active ? Theme.t1 : Theme.t2; s: 20; Behavior on tint { ColorAnimation { duration: 140 } } }
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
