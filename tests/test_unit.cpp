@@ -1537,6 +1537,27 @@ TEST_CASE("AudioMode: key strings are stable", "[audiomode]") {
 // from `progress >= 1.0f`, and progress is total_wanted_done/total_wanted in
 // floating point, so it can land on 0.99999994 and never qualify. libtorrent's
 // is_finished counts pieces instead, and already excludes priority-0 files.
+// A magnet added seconds ago showed up as SEEDING. libtorrent decides
+// is_finished/is_seeding by comparing wanted-bytes-done against wanted-bytes,
+// and before metadata arrives both are zero — so the answer is yes for a
+// torrent that has never transferred anything. The queue was innocent; the
+// state was.
+TEST_CASE("torrentHasWork rejects the states libtorrent reports for nothing",
+          "[types][state]")
+{
+    SECTION("no metadata yet: a fresh magnet") {
+        CHECK_FALSE(torrentHasWork(false, 0));
+        CHECK_FALSE(torrentHasWork(false, 1024));   // size is meaningless without it
+    }
+    SECTION("metadata, but every file deselected") {
+        CHECK_FALSE(torrentHasWork(true, 0));
+    }
+    SECTION("something actually wanted") {
+        CHECK(torrentHasWork(true, 1));
+        CHECK(torrentHasWork(true, 4148528658LL));
+    }
+}
+
 TEST_CASE("torrentStateKey trusts libtorrent's finished flag, not the float",
           "[types][state]")
 {
@@ -1566,6 +1587,13 @@ TEST_CASE("torrentStateKey trusts libtorrent's finished flag, not the float",
     SECTION("seeding wins over a stale completed flag being absent") {
         t.progress = 1.0f; t.totalDone = 100; t.seeding = true;
         CHECK(torrentStateKey(t) == QStringLiteral("seeding"));
+    }
+    SECTION("fresh magnet: flags qualified away, so it is not seeding") {
+        // What the query layer now produces for a magnet without metadata.
+        t.progress = 0.0f; t.totalDone = 0;
+        t.finished = torrentHasWork(false, 0) && true;
+        t.seeding  = torrentHasWork(false, 0) && true;
+        CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
     }
     SECTION("paused and missing still outrank finished") {
         t.finished = true;

@@ -37,8 +37,11 @@ TorrentInfo SessionManager::torrentAt(int index) const
     info.totalSize = st.total_wanted;
     info.totalDone = st.total_wanted_done;
     info.progress = st.progress;
-    info.finished = st.is_finished;
-    info.seeding = st.is_seeding;
+    // Qualified, never raw: without metadata total_wanted is 0 and libtorrent
+    // reports both of these true for a magnet that has done nothing.
+    const bool hasWork = torrentHasWork(st.has_metadata, static_cast<long long>(st.total_wanted));
+    info.finished = hasWork && st.is_finished;
+    info.seeding = hasWork && st.is_seeding;
     info.numPeers = st.num_peers;
     info.numSeeds = st.num_seeds;
     info.stateString = stateToString(st.state);
