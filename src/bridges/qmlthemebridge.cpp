@@ -101,6 +101,24 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
     }
 }
 
+namespace {
+// Process-wide: every IconImg reads the same counter, and the hot-reload watcher
+// is the only thing that moves it. Not persisted — it exists for one dev session.
+int g_iconEpoch = 0;
+}
+
+int QmlThemeBridge::iconEpoch() { return g_iconEpoch; }
+void QmlThemeBridge::bumpIconEpoch() { ++g_iconEpoch; }
+
+QString QmlThemeBridge::devIconDir() const
+{
+    const QString qmlDir = qEnvironmentVariable("BAT_QML_DIR");
+    if (qmlDir.isEmpty()) return {};
+    const QDir icons(QDir(qmlDir).filePath(QStringLiteral("../icons")));
+    if (!icons.exists()) return {};
+    return QUrl::fromLocalFile(icons.absolutePath()).toString();
+}
+
 QString QmlThemeBridge::themeName() const
 {
     // When following the OS, the effective theme tracks the system scheme so the

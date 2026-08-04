@@ -66,10 +66,20 @@ void startHotReloadIfDev(QQmlApplicationEngine *engine, const QUrl &url, QApplic
     const QString devQmlDir = qEnvironmentVariable("BAT_QML_DIR");
     if (devQmlDir.isEmpty()) return;
 
-    auto snapshot = [](const QString &dir) {
+    // The icon tree is watched too: IconImg redirects qrc:/icons to it in dev,
+    // and an SVG edit is a design edit like any QML one.
+    const QString devIconDir = QDir(devQmlDir).filePath(QStringLiteral("../icons"));
+
+    auto snapshot = [devIconDir](const QString &dir) {
         QHash<QString, qint64> m;
         QDirIterator it(dir, {QStringLiteral("*.qml"), QStringLiteral("qmldir")},
                         QDir::Files, QDirIterator::Subdirectories);
+        QDirIterator ic(devIconDir, {QStringLiteral("*.svg")},
+                        QDir::Files, QDirIterator::Subdirectories);
+        while (ic.hasNext()) {
+            const QString p = ic.next();
+            m.insert(p, QFileInfo(p).lastModified().toMSecsSinceEpoch());
+        }
         while (it.hasNext()) {
             const QString p = it.next();
             m.insert(p, QFileInfo(p).lastModified().toMSecsSinceEpoch());
@@ -85,6 +95,10 @@ void startHotReloadIfDev(QQmlApplicationEngine *engine, const QUrl &url, QApplic
         if (now == *lastSeen) return;
         *lastSeen = now;
         const QList<QObject *> old = engine->rootObjects();
+        // Qt keys its pixmap cache on the URL alone, so a re-saved SVG at the
+        // same path would keep serving the old raster. IconImg appends this
+        // counter as a query string; bumping it is what makes the edit visible.
+        QmlThemeBridge::bumpIconEpoch();
         engine->clearComponentCache();
         engine->load(url);
         for (QObject *o : old) {

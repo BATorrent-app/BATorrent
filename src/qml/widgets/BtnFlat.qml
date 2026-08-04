@@ -14,6 +14,7 @@ Rectangle {
     property string icon: ""               // qrc path opcional (esquerda)
     property bool sm: false
     property bool primary: false
+    property var uiPalette: Theme
     signal clicked()
 
     implicitWidth: row.implicitWidth + (sm ? 22 : 28)
@@ -26,8 +27,8 @@ Rectangle {
     Keys.onEnterPressed: btn.clicked()
     Keys.onSpacePressed: btn.clicked()
 
-    scale: ma.pressed ? Theme.pressScale : 1
-    Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+    scale: ma.pressed ? uiPalette.pressScale : 1
+    Behavior on scale { NumberAnimation { duration: uiPalette.durFast; easing.type: Easing.OutCubic } }
 
     // keyboard-focus ring (Tab reaches here; mouse clicks never move focus)
     Rectangle {
@@ -36,17 +37,17 @@ Rectangle {
         anchors.margins: -3
         radius: btn.radius + 3
         color: "transparent"
-        border.color: Theme.focusRing
-        border.width: Theme.focusRingWidth
+        border.color: btn.uiPalette.focusRing
+        border.width: btn.uiPalette.focusRingWidth
     }
     color: btn.primary
-        ? (ma.containsMouse ? Theme.accentDark : Theme.accent)
-        : (Theme.isDark ? Qt.rgba(0,0,0,0) : Qt.rgba(0,0,0,0))  // transparent (bg vem do field via parent se preciso)
+        ? (ma.containsMouse ? uiPalette.accentDark : uiPalette.accent)
+        : "transparent"
     border.color: btn.primary
         ? "transparent"
         : (ma.containsMouse
-            ? (Theme.isDark ? Qt.rgba(1,1,1,0.20) : Qt.rgba(0,0,0,0.22))
-            : Theme.hair)
+            ? (uiPalette.isDark ? Qt.rgba(1,1,1,0.20) : Qt.rgba(0,0,0,0.22))
+            : uiPalette.hair)
     border.width: btn.primary ? 0 : 1
 
     Row {
@@ -57,16 +58,16 @@ Rectangle {
             visible: btn.icon !== ""
             anchors.verticalCenter: parent.verticalCenter
             src: btn.icon
-            tint: btn.primary ? "#ffffff" : (ma.containsMouse ? Theme.t1 : Theme.t2)
+            tint: btn.primary ? "#ffffff" : (ma.containsMouse ? btn.uiPalette.t1 : btn.uiPalette.t2)
             s: 14
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: btn.text
-            color: btn.primary ? "#ffffff" : (ma.containsMouse ? Theme.t1 : Theme.t2)
+            color: btn.primary ? "#ffffff" : (ma.containsMouse ? btn.uiPalette.t1 : btn.uiPalette.t2)
             font.pixelSize: btn.sm ? 11 : 12
             font.weight: btn.primary ? Font.DemiBold : Font.Medium
-            font.family: Theme.fontSans
+            font.family: btn.uiPalette.fontSans
         }
     }
 

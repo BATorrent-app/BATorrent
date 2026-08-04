@@ -176,7 +176,6 @@ Window {
         var cur = (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? themeBridge.appVersion : ""
         var firstRun = settings.get("welcomeShown") !== true
         if (firstRun) {
-            settings.set("welcomeShown", true)
             welcomeDlg.mode = "welcome"
             welcomeDlg.open()
         } else if (cur.length > 0 && settings.get("lastSeenVersion") !== cur) {
@@ -186,8 +185,14 @@ Window {
         if (cur.length > 0) settings.set("lastSeenVersion", cur)
     }
 
-    // The tour runs once ever, right after the first welcome/update screen the
-    // user closes (fresh install OR the big update). Later updates: dialog only.
+    function completeWelcome() {
+        if (typeof settings === "undefined") return
+        settings.set("welcomeShown", true)
+        maybeStartTour()
+    }
+
+    // The tour runs once ever, after setup is completed or the first update
+    // screen is accepted. Dismissing setup leaves it available next launch.
     function maybeStartTour() {
         if (typeof settings === "undefined") return
         if (settings.get("tourSeen") !== true) {

@@ -21,6 +21,7 @@ Rectangle {
 
     property int currentIndex: 0            // bound down from the window; never self-assigned
     property bool collapsed: false
+    property bool persistCollapsedState: true
     signal pageRequested(int page)
     signal settingsClicked()
     signal vpnClicked()          // open the VPN cockpit (Settings → VPN section)
@@ -58,13 +59,14 @@ Rectangle {
     // QSettings stores bool differently per platform (macOS plist=bool, Windows
     // registry=int, Linux INI=string), so persist as 0/1 and read all forms.
     Component.onCompleted: {
-        if (typeof settings === "undefined") return
+        if (!persistCollapsedState || typeof settings === "undefined") return
         var v = settings.get("navRailCollapsed")
         collapsed = (v === true || v === 1 || v === "1" || v === "true")
     }
     function toggleCollapsed() {
         collapsed = !collapsed
-        if (typeof settings !== "undefined") settings.set("navRailCollapsed", collapsed ? 1 : 0)
+        if (persistCollapsedState && typeof settings !== "undefined")
+            settings.set("navRailCollapsed", collapsed ? 1 : 0)
     }
 
     // right hairline

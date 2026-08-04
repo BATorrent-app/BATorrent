@@ -147,6 +147,12 @@
 <file>../src/qml/dialogs/ReleaseNotesDialog.qml</file>
 <file>../src/qml/dialogs/WelcomeDialog.qml</file>
 <file>../src/qml/dialogs/WelcomeSteps.qml</file>
+<file>../src/qml/dialogs/OnboardingPreview.qml</file>
+<file>../src/qml/dialogs/OnboardingPreviewLibrary.qml</file>
+<file>../src/qml/dialogs/OnboardingPreviewDetail.qml</file>
+<file>../src/qml/dialogs/OnboardingPreviewFocus.qml</file>
+<file>../src/qml/dialogs/OnboardingPreviewPane.qml</file>
+<file>../src/qml/dialogs/WelcomeThemePicker.qml</file>
 <file>../src/qml/overlays/TourOverlay.qml</file>
 <file>../src/qml/dialogs/AboutDialog.qml</file>
     <file>../src/qml/player/PlayerWindow.qml</file>
@@ -221,6 +227,7 @@
 <file>../src/qml/views/HubCard.qml</file>
 <file>../src/qml/views/LibraryView.qml</file>
 <file>../src/qml/theme/Theme.qml</file>
+<file>../src/qml/theme/WizardPalette.qml</file>
 <file>../src/qml/theme/qmldir</file>
 <file>../src/qml/widgets/qmldir</file>
 <file>../src/qml/widgets/IconImg.qml</file>

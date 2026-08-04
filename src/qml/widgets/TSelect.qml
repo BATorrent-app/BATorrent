@@ -11,9 +11,10 @@ import "../theme"
 
 ComboBox {
     id: cb
+    property var uiPalette: Theme
     implicitHeight: 30
     font.pixelSize: 12
-    font.family: Theme.fontSans
+    font.family: uiPalette.fontSans
 
     // optional per-item leading icon (parallel to model; e.g. language flags).
     // empty array → plain text select, unchanged.
@@ -31,7 +32,7 @@ ComboBox {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: cb.displayText
-            color: Theme.t1
+            color: cb.uiPalette.t1
             font: cb.font
             rightPadding: 30
             elide: Text.ElideRight
@@ -40,8 +41,8 @@ ComboBox {
 
     background: Rectangle {
         radius: 7
-        color: Theme.field
-        border.color: cb.activeFocus ? Theme.accent : Theme.hair
+        color: cb.uiPalette.field
+        border.color: cb.activeFocus ? cb.uiPalette.accent : cb.uiPalette.hair
         border.width: 1
     }
 
@@ -53,7 +54,7 @@ ComboBox {
         onPaint: {
             var c = getContext("2d")
             c.reset()
-            c.fillStyle = Theme.t3
+            c.fillStyle = cb.uiPalette.t3
             c.beginPath()
             c.moveTo(0, 0); c.lineTo(width, 0); c.lineTo(width / 2, height); c.closePath()
             c.fill()
@@ -66,8 +67,8 @@ ComboBox {
         padding: 4
         background: Rectangle {
             radius: 8
-            color: Theme.elev
-            border.color: Theme.hair
+            color: cb.uiPalette.elev
+            border.color: cb.uiPalette.hair
             border.width: 1
         }
         contentItem: ListView {
@@ -96,14 +97,14 @@ ComboBox {
                 // models (no textRole) fall back to modelData unchanged.
                 text: (cb.textRole.length > 0 && modelData && modelData[cb.textRole] !== undefined)
                       ? modelData[cb.textRole] : modelData
-                color: Theme.t1
+                color: cb.uiPalette.t1
                 font.pixelSize: 12
-                font.family: Theme.fontSans
+                font.family: cb.uiPalette.fontSans
             }
         }
         background: Rectangle {
             radius: 5
-            color: highlighted ? Theme.hover : "transparent"
+            color: highlighted ? cb.uiPalette.hover : "transparent"
         }
     }
 }

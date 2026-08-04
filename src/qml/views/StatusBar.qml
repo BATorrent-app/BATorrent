@@ -12,6 +12,13 @@ import "../theme"
 import "../widgets"
 
 Rectangle {
+    id: status
+    property var stats: null
+
+    function stat(key, fallback) {
+        return stats !== null && stats[key] !== undefined ? stats[key] : fallback
+    }
+
     Layout.fillWidth: true
     Layout.preferredHeight: 30
     color: Theme.panel
@@ -32,9 +39,9 @@ Rectangle {
             font.features: Theme.tnum
         }
         Text {
-            text: typeof session !== "undefined"
-                  ? (i18n.language, i18n.t("status_torrents_active")).arg(session.torrentCount).arg(session.activeCount)
-                  : "0 torrents"
+            text: (i18n.language, i18n.t("status_torrents_active"))
+                  .arg(status.stat("torrentCount", typeof session !== "undefined" ? session.torrentCount : 0))
+                  .arg(status.stat("activeCount", typeof session !== "undefined" ? session.activeCount : 0))
             color: Theme.t4
             font.pixelSize: 12
             font.family: Theme.fontSans
@@ -45,7 +52,8 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.leftMargin: Theme.sp2
             width: 26; height: 22; radius: 6
-            readonly property bool on: typeof session !== "undefined" && session.altSpeedsActive
+            readonly property bool on: status.stat("altSpeedsActive",
+                                                    typeof session !== "undefined" && session.altSpeedsActive)
             color: on ? Theme.accentTint : (turtleMa.containsMouse ? Theme.hover : "transparent")
             IconImg {
                 anchors.centerIn: parent
@@ -58,7 +66,8 @@ Rectangle {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive)
+                onClicked: if (status.stats === null && typeof session !== "undefined")
+                               session.setAltSpeedsActive(!session.altSpeedsActive)
             }
             ToolTip.text: (i18n.language, i18n.t("tb_alt_speed"))
             ToolTip.visible: turtleMa.containsMouse
@@ -71,7 +80,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.leftMargin: Theme.sp2
             spacing: 6
-            property int ps: typeof session !== "undefined" ? session.portStatus : 0
+            property int ps: status.stat("portStatus", typeof session !== "undefined" ? session.portStatus : 0)
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 8; height: 8; radius: 4
@@ -91,23 +100,24 @@ Rectangle {
         }
         Item { Layout.fillWidth: true }
         Text { text: "↓"; color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans }
-        Text { text: typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
+        Text { text: status.stat("totalDownSpeed", typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
         Text { text: "↑"; color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; Layout.leftMargin: Theme.sp1 }
-        Text { text: typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
+        Text { text: status.stat("totalUpSpeed", typeof session !== "undefined" ? session.totalUpSpeed : "0 KB/s"); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
         Text {
-            text: typeof session !== "undefined"
-                  ? "·  " + (i18n.language, i18n.t("status_totals")).arg(session.totalDownloaded).arg(session.totalUploaded).arg(session.globalRatio)
-                  : ""
+            text: "·  " + (i18n.language, i18n.t("status_totals"))
+                  .arg(status.stat("totalDownloaded", typeof session !== "undefined" ? session.totalDownloaded : "0 B"))
+                  .arg(status.stat("totalUploaded", typeof session !== "undefined" ? session.totalUploaded : "0 B"))
+                  .arg(status.stat("globalRatio", typeof session !== "undefined" ? session.globalRatio : "0.00"))
             color: Theme.t4
             font.pixelSize: 12
             font.family: Theme.fontSans
             font.features: Theme.tnum
         }
         Text {
-            visible: typeof session !== "undefined" && session.freeDiskSpace.length > 0
-            text: typeof session !== "undefined"
-                  ? "·  " + (i18n.language, i18n.t("status_free_space")).arg(session.freeDiskSpace)
-                  : ""
+            readonly property string freeSpace: status.stat("freeDiskSpace",
+                typeof session !== "undefined" ? session.freeDiskSpace : "")
+            visible: freeSpace.length > 0
+            text: "·  " + (i18n.language, i18n.t("status_free_space")).arg(freeSpace)
             color: Theme.t4
             font.pixelSize: 12
             font.family: Theme.fontSans

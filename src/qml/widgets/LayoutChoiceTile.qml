@@ -17,24 +17,38 @@ Item {
     property string asking: "nav"      // "nav" | "detail" | "view" — the live part
     property string label: ""
     property bool selected: false
+    property var uiPalette: Theme
     signal picked()
 
     implicitWidth: 132
     implicitHeight: frame.height + cap.height + 8
+    activeFocusOnTab: true
+    Accessible.role: Accessible.RadioButton
+    Accessible.name: label
+    Accessible.checked: selected
+
+    function pick() {
+        forceActiveFocus()
+        picked()
+    }
 
     readonly property real navOp: asking === "nav" ? 1 : 0.28
     readonly property real detOp: asking === "detail" ? 1 : 0.28
+    // Detail only belongs on the detail question — drawing it (even dimmed)
+    // on nav/view tiles muddies what is being chosen.
+    readonly property bool showDetail: asking === "detail"
 
     Rectangle {
         id: frame
         width: parent.width
         height: 86
         radius: 9
-        color: Theme.bg
-        border.width: tile.selected ? 2 : 1
-        border.color: tile.selected ? Theme.accent
-                    : (tileMa.containsMouse ? Theme.t4 : Theme.hair)
-        Behavior on border.color { ColorAnimation { duration: 140 } }
+        color: tile.uiPalette.bg
+        border.width: tile.selected || tile.activeFocus ? 2 : 1
+        border.color: tile.selected ? tile.uiPalette.accent
+                    : tile.activeFocus ? tile.uiPalette.focusRing
+                    : (tileMa.containsMouse ? tile.uiPalette.t4 : tile.uiPalette.hair)
+        Behavior on border.color { ColorAnimation { duration: Theme.reduceMotion ? 0 : 140 } }
         clip: true
 
         // navigation: a bar across the top or a rail down the left side
@@ -45,7 +59,7 @@ Item {
             anchors.margins: 5
             height: 13
             radius: 4
-            color: Theme.panel
+            color: tile.uiPalette.panel
             opacity: tile.navOp
             Behavior on opacity { NumberAnimation { duration: 180 } }
             Row {
@@ -54,7 +68,7 @@ Item {
                 spacing: 4
                 Repeater {
                     model: 3
-                    Rectangle { width: 12; height: 3; radius: 1.5; color: Theme.t4 }
+                    Rectangle { width: 12; height: 3; radius: 1.5; color: tile.uiPalette.t4 }
                 }
             }
         }
@@ -65,7 +79,7 @@ Item {
             anchors.margins: 5
             width: 26
             radius: 4
-            color: Theme.panel
+            color: tile.uiPalette.panel
             opacity: tile.navOp
             Behavior on opacity { NumberAnimation { duration: 180 } }
             Column {
@@ -74,7 +88,7 @@ Item {
                 spacing: 5
                 Repeater {
                     model: 3
-                    Rectangle { width: 14; height: 3; radius: 1.5; color: Theme.t4 }
+                    Rectangle { width: 14; height: 3; radius: 1.5; color: tile.uiPalette.t4 }
                 }
             }
         }
@@ -84,9 +98,9 @@ Item {
         Item {
             id: content
             anchors.left: tile.navLeft ? navRail.right : parent.left
-            anchors.right: tile.detailBottom ? parent.right : detailPane.left
+            anchors.right: (tile.showDetail && !tile.detailBottom) ? detailPane.left : parent.right
             anchors.top: tile.navLeft ? parent.top : navBar.bottom
-            anchors.bottom: tile.detailBottom ? detailPane.top : parent.bottom
+            anchors.bottom: (tile.showDetail && tile.detailBottom) ? detailPane.top : parent.bottom
             anchors.margins: 5
 
             Grid {
@@ -101,7 +115,7 @@ Item {
                         width: (content.width - 8) / 3
                         height: Math.max(4, (content.height - 4) / 2)
                         radius: 2
-                        color: Theme.hover
+                        color: tile.uiPalette.hover
                     }
                 }
             }
@@ -115,7 +129,7 @@ Item {
                         width: content.width
                         height: Math.max(3, (content.height - 16) / 5)
                         radius: 1.5
-                        color: Theme.hover
+                        color: tile.uiPalette.hover
                     }
                 }
             }
@@ -124,6 +138,7 @@ Item {
         // detail surface: a right column or a bottom deck
         Rectangle {
             id: detailPane
+            visible: tile.showDetail
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             anchors.top: tile.detailBottom ? undefined : (tile.navLeft ? parent.top : navBar.bottom)
@@ -132,9 +147,9 @@ Item {
             width: tile.detailBottom ? undefined : 30
             height: tile.detailBottom ? 24 : undefined
             radius: 4
-            color: Theme.panel
+            color: tile.uiPalette.panel
             border.width: 1
-            border.color: Theme.hair
+            border.color: tile.uiPalette.hair
             opacity: tile.detOp
             Behavior on opacity { NumberAnimation { duration: 180 } }
             Rectangle {
@@ -142,7 +157,7 @@ Item {
                 width: tile.detailBottom ? 13 : 10
                 height: tile.detailBottom ? 16 : 14
                 radius: 2
-                color: Theme.hover
+                color: tile.uiPalette.hover
             }
             Rectangle {
                 x: tile.detailBottom ? 21 : 4
@@ -150,7 +165,7 @@ Item {
                 width: tile.detailBottom ? 40 : 22
                 height: 3
                 radius: 1.5
-                color: Theme.accent
+                color: tile.uiPalette.accent
             }
         }
     }
@@ -161,10 +176,10 @@ Item {
         anchors.topMargin: 8
         anchors.horizontalCenter: parent.horizontalCenter
         text: tile.label
-        color: tile.selected ? Theme.t1 : Theme.t3
+        color: tile.selected ? tile.uiPalette.t1 : tile.uiPalette.t3
         font.pixelSize: 12
         font.weight: tile.selected ? Font.DemiBold : Font.Normal
-        font.family: Theme.fontSans
+        font.family: tile.uiPalette.fontSans
     }
 
     MouseArea {
@@ -172,6 +187,13 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: tile.picked()
+        onClicked: tile.pick()
+    }
+
+    Keys.onPressed: function(event) {
+        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            tile.pick()
+            event.accepted = true
+        }
     }
 }

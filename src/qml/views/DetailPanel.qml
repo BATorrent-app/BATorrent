@@ -49,13 +49,13 @@ Rectangle {
                 color: colMa.containsMouse && actsOnClick ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : Theme.hover
                 border.width: 1; border.color: colMa.containsMouse && actsOnClick ? Theme.accent : Theme.hair
                 Behavior on color { ColorAnimation { duration: 120 } }
-                Text {
+                IconImg {
                     anchors.centerIn: parent
-                    text: "⌄"
+                    s: 17
+                    src: "qrc:/icons/chevron-bold.svg"
                     rotation: detailPanel.win.detailsShownCollapsed ? 180 : 0
                     Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                    color: colMa.containsMouse && collapseBtn.actsOnClick ? Theme.t1 : Theme.t2
-                    font.pixelSize: 18; font.bold: true; font.family: Theme.fontSans
+                    tint: colMa.containsMouse && collapseBtn.actsOnClick ? Theme.t1 : Theme.t2
                 }
                 MouseArea {
                     id: colMa
@@ -123,28 +123,49 @@ Rectangle {
         // entry per piece (huge torrents froze the GUI thread without the guard).
         // `detailPanel.visible` joins the guard because in grid mode the side
         // inspector shows instead and this panel must go fully inert.
-        StackLayout {
+        // Identity on the left, tabs on the right — the same split the side
+        // inspector has, laid on its side. Before this the poster left the
+        // screen the moment you opened Peers, so you lost track of which
+        // torrent the numbers belonged to.
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: detailPanel.win.detailTab
+            Layout.leftMargin: Theme.sp5
+            spacing: Theme.sp6
 
-            DetailGeneral { win: detailPanel.win; vertical: false }
-            DetailPeers {
-                peers: (detailPanel.visible && detailPanel.win.hasSel && detailPanel.win.detailTab === 1) ? session.selectedPeerList : []
-                loading: detailPanel.win.peersTabOpen && session.peersLoading
+            DetailIdentity {
+                visible: detailPanel.win.hasSel
+                win: detailPanel.win
+                vertical: false
+                Layout.preferredWidth: 460
+                Layout.maximumWidth: 460
+                Layout.alignment: Qt.AlignTop
+                Layout.topMargin: Theme.sp4
             }
-            DetailFiles {
-                files: (detailPanel.visible && detailPanel.win.hasSel && detailPanel.win.detailTab === 2) ? session.selectedFiles : []
-                onRenameFile: function(idx, current) {
-                    detailPanel.renameFileRequested(idx, current)
+
+            StackLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: detailPanel.win.detailTab
+
+                DetailGeneral { win: detailPanel.win; vertical: false }
+                DetailPeers {
+                    peers: (detailPanel.visible && detailPanel.win.hasSel && detailPanel.win.detailTab === 1) ? session.selectedPeerList : []
+                    loading: detailPanel.win.peersTabOpen && session.peersLoading
                 }
-            }
-            DetailTrackers { trackers: (detailPanel.visible && detailPanel.win.hasSel && detailPanel.win.detailTab === 3) ? session.selectedTrackers : [] }
-            DetailPieces   { pieces:   (detailPanel.visible && detailPanel.win.hasSel && detailPanel.win.detailTab === 4) ? session.selectedPieces   : ({}) }
-            DetailGraph {
-                dl: (detailPanel.visible && detailPanel.win.hasSel) ? session.selectedDownHistory : []
-                ul: (detailPanel.visible && detailPanel.win.hasSel) ? session.selectedUpHistory : []
-                hasData: detailPanel.win.hasSel
+                DetailFiles {
+                    files: (detailPanel.visible && detailPanel.win.hasSel && detailPanel.win.detailTab === 2) ? session.selectedFiles : []
+                    onRenameFile: function(idx, current) {
+                        detailPanel.renameFileRequested(idx, current)
+                    }
+                }
+                DetailTrackers { trackers: (detailPanel.visible && detailPanel.win.hasSel && detailPanel.win.detailTab === 3) ? session.selectedTrackers : [] }
+                DetailPieces   { pieces:   (detailPanel.visible && detailPanel.win.hasSel && detailPanel.win.detailTab === 4) ? session.selectedPieces   : ({}) }
+                DetailGraph {
+                    dl: (detailPanel.visible && detailPanel.win.hasSel) ? session.selectedDownHistory : []
+                    ul: (detailPanel.visible && detailPanel.win.hasSel) ? session.selectedUpHistory : []
+                    hasData: detailPanel.win.hasSel
+                }
             }
         }
     }

@@ -61,11 +61,12 @@ Rectangle {
                 anchors.centerIn: parent
                 width: 30; height: 30; radius: 8
                 color: expandMa.containsMouse ? Theme.hover : "transparent"
-                Text {
+                IconImg {
                     anchors.centerIn: parent
-                    text: "‹"
-                    color: expandMa.containsMouse ? Theme.t1 : Theme.t3
-                    font.pixelSize: 18; font.bold: true; font.family: Theme.fontSans
+                    s: 17
+                    src: "qrc:/icons/chevron-bold.svg"
+                    rotation: 90            // a base do chevron aponta para baixo
+                    tint: expandMa.containsMouse ? Theme.t1 : Theme.t3
                 }
                 MouseArea {
                     id: expandMa
@@ -149,11 +150,15 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 34; height: 34; radius: 8
                     color: collMa.containsMouse ? Theme.hover : "transparent"
-                    Text {
+                    // Os tres controles deste cabecalho sao um conjunto: mesmo
+                    // tamanho (17) e, entre os dois de acao, o mesmo traco (2.4).
+                    // O cadeado e estado, por isso e o unico solido.
+                    IconImg {
                         anchors.centerIn: parent
-                        text: "›"
-                        color: collMa.containsMouse ? Theme.t1 : Theme.t3
-                        font.pixelSize: 18; font.bold: true; font.family: Theme.fontSans
+                        s: 17
+                        src: "qrc:/icons/chevron-bold.svg"
+                        rotation: -90
+                        tint: collMa.containsMouse ? Theme.t1 : Theme.t3
                     }
                     MouseArea {
                         id: collMa
