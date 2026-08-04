@@ -630,7 +630,6 @@ Window {
     property alias removedWinLoader: windowLoaders.removedWinLoader
     property alias logWinLoader: windowLoaders.logWinLoader
     property alias diagWinLoader: windowLoaders.diagWinLoader
-    property alias playerWinLoader: windowLoaders.playerWinLoader
 
     function showWin(loader) { windowLoaders.showWin(loader) }
     function showWrapped() { windowLoaders.showWrapped() }
