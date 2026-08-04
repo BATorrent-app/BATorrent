@@ -1,2 +1,2 @@
-<!-- Tabler "stop" (MIT) — stroke normalizado para 1.8; recolorido em runtime pelo tint do IconImg -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -10" /></svg>
+<!-- Tabler "stop" filled (MIT) — silhueta desenhada, nao contorno preenchido -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#9ca3af" > <path stroke="none" d="M0 0h24v24H0z" fill="none"/> <path d="M17 4h-10a3 3 0 0 0 -3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3 -3v-10a3 3 0 0 0 -3 -3z" /> </svg>

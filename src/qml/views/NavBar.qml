@@ -230,7 +230,7 @@ Rectangle {
                 spacing: 9
                 IconImg {
                     anchors.verticalCenter: parent.verticalCenter
-                    src: "qrc:/icons/heart-line.svg"
+                    src: "qrc:/icons/heart.svg"
                     tint: donMa.containsMouse ? Theme.accent : Theme.t3
                     s: 16
                 }
@@ -272,7 +272,7 @@ Rectangle {
                 spacing: 9
                 IconImg {
                     anchors.verticalCenter: parent.verticalCenter
-                    src: "qrc:/icons/sliders.svg"
+                    src: "qrc:/icons/settings.svg"
                     tint: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
                     s: 16
                     Behavior on tint { ColorAnimation { duration: 140 } }

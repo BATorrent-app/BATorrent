@@ -1,0 +1,4 @@
+<!-- Chevron de peso, par do close-bold: os dois são AÇÃO no mesmo cabeçalho e
+     precisam do mesmo traço (2.4). Aponta para BAIXO como o chevron.svg — quem
+     usa rotaciona a partir daqui. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6" /></svg>
