@@ -1275,5 +1275,8 @@
   "welcome_view_grid": "Kapaklar",
   "welcome_view_classic": "Liste",
   "vpn_drop_conf": "İçe aktarmak için .conf bırakın",
-  "cat_compressed": "Arşivler"
+  "cat_compressed": "Arşivler",
+  "set_default_save_note": "Eklerken başka bir klasör seçmediğiniz sürece her torrent buraya iner.",
+  "settings_iface_vpn": "muhtemelen VPN",
+  "settings_iface_vpn_active": "VPN'iniz, bağlı"
 }

@@ -404,17 +404,42 @@ QString QmlSettingsBridge::fullRestore(const QString &path)
     return tr_("full_restore_done").arg(restored) + "\n" + tr_("import_restart");
 }
 
+namespace {
+// A tunnel is point-to-point at the OS level, and every VPN client names its
+// device from the same short list. Neither test is conclusive on its own — a
+// mobile-broadband modem is also point-to-point — but the pair is right often
+// enough to label, and the label is a hint, not a claim.
+bool looksLikeTunnel(const QNetworkInterface &iface)
+{
+    if (iface.flags() & QNetworkInterface::IsPointToPoint) return true;
+    const QString n = (iface.name() + QLatin1Char(' ') + iface.humanReadableName()).toLower();
+    for (const char *tag : { "utun", "tun", "tap", "wg", "ppp", "wireguard", "vpn", "ipsec" })
+        if (n.contains(QLatin1String(tag))) return true;
+    return false;
+}
+}
+
 QStringList QmlSettingsBridge::networkInterfaces() const
 {
     QStringList out;
     out << tr_("settings_iface_any");
+    // The interface the app's own tunnel came up on, when there is one. That is
+    // the only entry we can name with certainty, and it is the one the user is
+    // looking for: "which of these two is my VPN".
+    const QString active = QSettings().value(QStringLiteral("vpnActiveIface")).toString();
     for (const QNetworkInterface &iface : QNetworkInterface::allInterfaces()) {
         if (!(iface.flags() & QNetworkInterface::IsUp)) continue;
         if (iface.flags() & QNetworkInterface::IsLoopBack) continue;
         QString ip;
         for (const QNetworkAddressEntry &e : iface.addressEntries())
             if (e.ip().protocol() == QAbstractSocket::IPv4Protocol) { ip = e.ip().toString(); break; }
-        out << (ip.isEmpty() ? iface.name() : QStringLiteral("%1 — %2").arg(iface.name(), ip));
+        QString label = ip.isEmpty() ? iface.name()
+                                     : QStringLiteral("%1 — %2").arg(iface.name(), ip);
+        if (!active.isEmpty() && iface.name() == active)
+            label += QStringLiteral("  ·  ") + tr_("settings_iface_vpn_active");
+        else if (looksLikeTunnel(iface))
+            label += QStringLiteral("  ·  ") + tr_("settings_iface_vpn");
+        out << label;
     }
     return out;
 }

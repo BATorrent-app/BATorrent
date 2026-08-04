@@ -1275,5 +1275,8 @@
   "welcome_view_grid": "Обложки",
   "welcome_view_classic": "Список",
   "vpn_drop_conf": "Перетащите .conf для импорта",
-  "cat_compressed": "Архивы"
+  "cat_compressed": "Архивы",
+  "set_default_save_note": "Все торренты сохраняются сюда, если при добавлении не выбрать другую папку.",
+  "settings_iface_vpn": "вероятно VPN",
+  "settings_iface_vpn_active": "ваш VPN, подключён"
 }
