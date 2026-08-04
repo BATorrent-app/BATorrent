@@ -46,6 +46,11 @@ Item {
         }
         var w = playerWindowComp.createObject(null)
         if (!w) return
+        // Cascade. Every player opens at the same default geometry, so the
+        // second one covered the first pixel for pixel and read as the video
+        // having been replaced — the windows were both there the whole time.
+        var step = 34 * (openPlayers.length % 6)
+        if (step > 0) { w.x = w.x + step; w.y = w.y + step }
         openPlayers.push(w)
         w.show(); w.raise(); w.requestActivate()
         w.openMedia(url, title, hash, fileIndex)
