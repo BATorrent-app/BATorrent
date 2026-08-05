@@ -20,10 +20,13 @@ Column {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
+            // 7px was too small to read at a glance — the tester could not tell
+            // the states apart. Already a solid circle, so the fix is size, not
+            // shape.
             Rectangle {
-                width: 7
-                height: 7
-                radius: 3.5
+                width: 9
+                height: 9
+                radius: 4.5
                 anchors.verticalCenter: parent.verticalCenter
                 color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.dotFor(tile.stateKey)
             }
