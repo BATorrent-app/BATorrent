@@ -1279,5 +1279,6 @@
   "set_default_save_note": "Усі торенти зберігаються сюди, якщо під час додавання не вибрати іншу теку.",
   "settings_iface_vpn": "імовірно VPN",
   "settings_iface_vpn_active": "ваш VPN, підключено",
-  "state_error": "Помилка"
+  "state_error": "Помилка",
+  "whatsnew_open_wizard": "Налаштувати вигляд"
 }
