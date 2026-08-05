@@ -69,42 +69,49 @@ Item {
             }
         }
 
-        // trouble states: a travelling band, because there is no honest number
+        // trouble states: the whole track becomes a moving hazard stripe. A small
+        // band sliding across read as an object crossing the bar; stripes that
+        // travel inside a full bar say "this one is in a special state and still
+        // alive", without claiming a percentage it does not have.
         Item {
-            id: band
+            anchors.fill: parent
             visible: track.trouble
-            width: Math.max(28, bed.width * 0.22)
-            height: bed.height
-            // Repeating sweep. Reduced motion turns it into a static band parked
-            // at the left — the colour still says what happened.
-            SequentialAnimation on x {
-                running: track.trouble && track.visible && !Theme.reduceMotion
-                loops: Animation.Infinite
-                NumberAnimation { from: -band.width; to: bed.width; duration: 1900; easing.type: Easing.InOutSine }
-                PauseAnimation { duration: 260 }
-            }
-            x: Theme.reduceMotion ? 0 : -band.width
+            clip: true
 
-            Rectangle {
-                anchors.fill: parent
-                radius: bed.radius
-                color: track.fill
-                visible: track.stateKey === "error"
-            }
-            // missing: red and white verticals, drawn rather than tiled so the
-            // stripe width holds at any bar height
             Row {
-                anchors.fill: parent
-                visible: track.stateKey === "missing"
-                spacing: 0
+                id: stripes
+                height: parent.height
+                // One period wider than the track on each side, so the loop can
+                // shift by exactly one period and start over invisibly.
+                readonly property int stripeW: 6
+                readonly property int period: stripeW * 2
+                x: 0
                 Repeater {
-                    model: Math.max(2, Math.floor(band.width / 6))
-                    delegate: Rectangle {
-                        required property int index
-                        width: 6
-                        height: band.height
-                        color: index % 2 === 0 ? track.fill : "#f2f2f4"
+                    model: Math.ceil(bed.width / stripes.period) + 2
+                    delegate: Row {
+                        height: stripes.height
+                        Rectangle {
+                            width: stripes.stripeW; height: parent.height
+                            color: track.fill
+                        }
+                        Rectangle {
+                            width: stripes.stripeW; height: parent.height
+                            // White for missing, a darker red for error: same
+                            // motion, and error still reads as solid red.
+                            color: track.stateKey === "error"
+                                   ? Qt.darker(track.fill, 1.9) : "#f2f2f4"
+                        }
                     }
+                }
+                NumberAnimation on x {
+                    running: track.trouble && track.visible && !Theme.reduceMotion
+                    loops: Animation.Infinite
+                    from: 0
+                    to: -stripes.period
+                    duration: 700
+                    // Linear on purpose: any easing turns a steady march into a
+                    // pulse, which reads as a heartbeat rather than movement.
+                    easing.type: Easing.Linear
                 }
             }
         }
