@@ -263,7 +263,9 @@ Window {
     function dotFor(k) {
         if (k === "finished" || k === "completed") return Theme.grn   // done = green
         if (k === "seeding") return Theme.amber                       // seeding = amber
-        if (k === "paused" || k === "queued") return Theme.t4         // paused = gray
+        // t3, not t4: t4 is the last step before invisible, and a paused dot
+        // that cannot be seen says nothing at all.
+        if (k === "paused" || k === "queued") return Theme.t3
         return Theme.accent                                           // downloading = red
     }
     function fmtEta(sec) {
