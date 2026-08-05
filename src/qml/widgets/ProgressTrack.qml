@@ -20,6 +20,10 @@ Item {
     property real progress: 0
     property string stateKey: ""
     property color fill: Theme.fillFor(track.stateKey)
+    // A highlight travelling over the fill: "this is moving right now". The
+    // seeding bar used to be a separate 2px line at the poster's edge, which
+    // made seeding and downloading two different shapes for the same fact.
+    property bool sheen: false
 
     readonly property bool trouble: Theme.isTroubleState(track.stateKey)
     implicitHeight: 4
@@ -42,6 +46,27 @@ Item {
             color: track.fill
             Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
             Behavior on color { ColorAnimation { duration: 200 } }
+            clip: true
+
+            Rectangle {
+                id: sheenBand
+                visible: track.sheen && !Theme.reduceMotion
+                width: Math.max(24, parent.width * 0.28)
+                height: parent.height
+                radius: parent.radius
+                color: Qt.rgba(1, 1, 1, 0.35)
+                SequentialAnimation on x {
+                    running: sheenBand.visible
+                    loops: Animation.Infinite
+                    NumberAnimation {
+                        from: -sheenBand.width
+                        to: Math.max(1, sheenBand.parent.width)
+                        duration: 2600
+                        easing.type: Easing.InOutSine
+                    }
+                    PauseAnimation { duration: 900 }
+                }
+            }
         }
 
         // trouble states: a travelling band, because there is no honest number

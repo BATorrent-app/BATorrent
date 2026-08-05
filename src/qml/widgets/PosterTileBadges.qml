@@ -71,39 +71,9 @@ Item {
         }
     }
 
-    // seeding pulse along the poster's bottom edge while uploading
-    Rectangle {
-        id: seedTrack
-        visible: tile.stateKey === "seeding" && tile.upRate > 0
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
-        anchors.bottomMargin: 8
-        height: 2
-        radius: 1
-        color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.10)
-        clip: true
-        Rectangle {
-            id: seedSheen
-            width: 44
-            height: parent.height
-            radius: parent.radius
-            color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5)
-            SequentialAnimation on x {
-                running: seedTrack.visible
-                loops: Animation.Infinite
-                NumberAnimation {
-                    from: -seedSheen.width
-                    to: seedTrack.width
-                    duration: 2600
-                    easing.type: Easing.InOutSine
-                }
-                PauseAnimation { duration: 900 }
-            }
-        }
-    }
+    // The seeding pulse moved into the progress bar itself: it was a 2px
+    // line at the poster's edge while downloading got a 9px pill, so the two
+    // states drew the same fact at different sizes.
 
     // downloading badge (top-right)
     Rectangle {
