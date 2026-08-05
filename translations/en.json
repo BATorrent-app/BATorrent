@@ -1279,5 +1279,6 @@
   "set_default_save_note": "Every torrent lands here unless you pick another folder while adding it.",
   "settings_iface_vpn": "likely VPN",
   "settings_iface_vpn_active": "your VPN, connected",
-  "state_error": "Error"
+  "state_error": "Error",
+  "whatsnew_open_wizard": "Set up the look"
 }

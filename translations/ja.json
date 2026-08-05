@@ -1279,5 +1279,6 @@
   "set_default_save_note": "追加時に別のフォルダーを選ばない限り、すべてのトレントはここに保存されます。",
   "settings_iface_vpn": "VPN の可能性",
   "settings_iface_vpn_active": "接続中の VPN",
-  "state_error": "エラー"
+  "state_error": "エラー",
+  "whatsnew_open_wizard": "見た目を設定"
 }

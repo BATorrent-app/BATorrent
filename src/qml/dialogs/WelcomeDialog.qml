@@ -306,10 +306,21 @@ BatDialog {
             }
         }
     }
-    BtnFlat {
+    // The wizard is new in 4.8, and someone updating would never meet it — it
+    // only opens on a fresh install. Offered rather than forced: every answer in
+    // it applies the moment it is clicked, so dropping an existing user into it
+    // would rewrite a layout they already chose, with no way back.
+    RowLayout {
         visible: !dlg.isWelcome
         Layout.topMargin: Theme.sp2
-        text: (i18n.language, i18n.t("whatsnew_full_notes"))
-        onClicked: { dlg.openReleaseNotes(); dlg.close() }
+        spacing: Theme.sp2
+        BtnFlat {
+            text: (i18n.language, i18n.t("whatsnew_full_notes"))
+            onClicked: { dlg.openReleaseNotes(); dlg.close() }
+        }
+        BtnFlat {
+            text: (i18n.language, i18n.t("whatsnew_open_wizard"))
+            onClicked: { dlg.step = 0; dlg.mode = "welcome" }
+        }
     }
 }
