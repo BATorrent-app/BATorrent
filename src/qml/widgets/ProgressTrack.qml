@@ -80,16 +80,28 @@ Item {
 
             Row {
                 id: stripes
-                height: parent.height
+                // Three times the bar's height, hung above it, so a tilted stripe
+                // still covers the full band at both ends instead of leaving a
+                // triangular gap in the corners.
+                height: parent.height * 3
+                y: -parent.height
                 // One period wider than the track on each side, so the loop can
                 // shift by exactly one period and start over invisibly.
-                readonly property int stripeW: 6
+                // Wide on purpose: at 6px a 178px tile fits fifteen blocks and
+                // reads as a barcode. Half the count reads as a hazard marking.
+                readonly property int stripeW: 11
                 readonly property int period: stripeW * 2
                 x: 0
                 Repeater {
                     model: Math.ceil(bed.width / stripes.period) + 2
                     delegate: Row {
                         height: stripes.height
+                        // 30°, not 45°: on a 9px bar a 45° stripe is too short to
+                        // cross the band and reads as a diamond. And a diagonal
+                        // cannot be mistaken for a progress bar — no progress bar
+                        // is diagonal — which is exactly what these states need.
+                        rotation: 30
+                        transformOrigin: Item.Center
                         Rectangle {
                             width: stripes.stripeW; height: parent.height
                             color: track.fill
@@ -98,8 +110,11 @@ Item {
                             width: stripes.stripeW; height: parent.height
                             // White for missing, a darker red for error: same
                             // motion, and error still reads as solid red.
+                            // Off-white, not white: pure white against the accent
+                            // is the highest contrast in the palette and shouted
+                            // louder than "your files moved" deserves.
                             color: track.stateKey === "error"
-                                   ? Qt.darker(track.fill, 1.9) : "#f2f2f4"
+                                   ? Qt.darker(track.fill, 1.9) : "#c9c9cf"
                         }
                     }
                 }
