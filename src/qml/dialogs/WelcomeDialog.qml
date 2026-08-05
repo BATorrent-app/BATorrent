@@ -58,8 +58,8 @@ BatDialog {
     // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
         "4.8": {
-            note: "You can now point BATorrent at your own VPN. Set it up in Settings and only this app goes through it — if the tunnel drops, transfers stop instead of falling back to your normal connection.<br><br>It also downloads any direct link now, not just torrents. Paste it or drop it on the window.<br><br>First run has a wizard, so the app looks the way you want from the start. There is a new typeface, and a long list of design fixes throughout.<br><br>A hug to <b>@teoveo</b>, who is where most of the ideas in this version came from.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
-                        , highlights: [
+            note: "You can now point BATorrent at your own VPN. Set it up in Settings and only this app goes through it, and if the tunnel drops transfers stop instead of falling back to your normal connection.<br>It also downloads any direct link now, not just torrents. Paste it or drop it on the window.<br>First run has a wizard, so the app looks the way you want from the start. There is a new typeface, and a long list of design fixes throughout.<br>A hug to <a href=\"https://github.com/teoveo\">@teoveo</a>, who is where most of the ideas in this version came from.<br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
+            , highlights: [
                 "Point BATorrent at your own VPN — only this app goes through it",
                 "Download any direct link, not just torrents",
                 "A wizard on first run: language, theme and layout, applied as you click",
