@@ -1,5 +1,62 @@
 # Changelog
 
+## v4.8.0
+
+### Added
+- Point BATorrent at your own VPN. Set it up in Settings and only this app goes
+  through it; if the tunnel drops, transfers stop instead of falling back to
+  your normal connection. Split tunnel, auto-connect, and the binding rechecked
+  over the tunnel's whole life instead of once at startup.
+- Drop a WireGuard `.conf` on the VPN card to import it. Each profile shows the
+  country it actually lands in, resolved from the endpoint rather than the name.
+- The network interface picker names the tunnel BATorrent brought up, and marks
+  the ones that look like tunnels, instead of listing identical-looking adapters.
+- Direct downloads: any http link, segmented and resumable, with a fallback for
+  servers that refuse range requests. File hosts included. Paste it, use Ctrl+D,
+  or drop the link on the window.
+- A setup wizard on first run: language and content language, theme, covers or
+  list, and where the navigation and detail panel sit. Every answer applies as
+  it is clicked. Reachable any time from Help, and shown once to everyone
+  updating to 4.8, since most of these settings were never easy to find.
+- Search warns about releases that want a password, are too small to be what
+  they claim, or are cam rips, before the bandwidth is spent.
+- More than one video plays at once, each in its own window.
+- Start with the system, without the window opening minimised when it is
+  launched by hand.
+- macOS: double-clicking a `.torrent` opens BATorrent.
+- Windows: a bigger tray icon with a status dot under the wing, green while
+  bound to the VPN and red while not.
+- Software replaces Apps as a category name, and Compressed joins the built-ins.
+
+### Changed
+- One progress bar for every state, same height and place: downloading in the
+  accent, seeding amber, done green, paused grey. Missing files and storage
+  errors get moving hazard stripes instead of a percentage, because a torrent
+  that stopped at 62% still has a number and drawing it claims progress that is
+  not happening.
+- The detail panel keeps cover, title and progress on screen while the tabs
+  change, in both the side inspector and the bottom deck. The inspector
+  collapses to a rail, like the deck already could.
+- New typeface, and one icon rule throughout: solid names a thing or a state,
+  a stroke names an action. Every context-menu item has an icon now, and the
+  toolbar's Copy wears a magnet, because it copies a magnet link.
+- Free space moved next to the transfer figures; the navigation rail shows what
+  is transferring in the space it used to leave empty.
+- Notifications have a dismiss button. They always closed on click, but nothing
+  said so.
+- Find: "See all" opens that shelf as a grid instead of changing a filter chip.
+
+### Fixed
+- Brand-new magnets no longer appear as SEEDING. libtorrent reports "finished"
+  for a torrent that has nothing to do yet, and that answer was trusted raw.
+- Storage failures are their own state, separate from files that merely moved.
+- Adding the same magnet twice no longer creates a second entry that fights the
+  first for the same data.
+- The category filter no longer hides everything when a category is selected.
+- Expand details is disabled when nothing is selected, instead of looking broken.
+
+---
+
 ## v4.8.0-beta7
 
 Test build for the beta round. Still a beta, not a public release.
