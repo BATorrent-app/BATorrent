@@ -242,20 +242,20 @@ Menu {
         implicitWidth: 200
         delegate: CtxItem {}
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { text: (i18n.language, i18n.t("ctx_queue_top")); onTriggered: session.queueTopSelected() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_queue_up")); onTriggered: session.queueUpSelected() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_queue_down")); onTriggered: session.queueDownSelected() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_queue_bottom")); onTriggered: session.queueBottomSelected() }
+        CtxItem { iconSrc: "qrc:/icons/chevrons-up.svg"; text: (i18n.language, i18n.t("ctx_queue_top")); onTriggered: session.queueTopSelected() }
+        CtxItem { iconSrc: "qrc:/icons/chevron-up.svg"; text: (i18n.language, i18n.t("ctx_queue_up")); onTriggered: session.queueUpSelected() }
+        CtxItem { iconSrc: "qrc:/icons/chevron.svg"; text: (i18n.language, i18n.t("ctx_queue_down")); onTriggered: session.queueDownSelected() }
+        CtxItem { iconSrc: "qrc:/icons/chevrons-down.svg"; text: (i18n.language, i18n.t("ctx_queue_bottom")); onTriggered: session.queueBottomSelected() }
     }
     Menu {
         title: (i18n.language, i18n.t("ctx_grp_download"))
         implicitWidth: 230
         delegate: CtxItem {}
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { text: (i18n.language, i18n.t("ctx_speed_down")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_down"), i18n.t("prompt_speed_kbs"), String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
-        CtxItem { text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_up"), i18n.t("prompt_speed_kbs"), String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
-        CtxItem { text: (session.selectedSequential() ? "✓ " : "") + (i18n.language, i18n.t("ctx_sequential")); onTriggered: session.setSelectedSequential(!session.selectedSequential()) }
-        CtxItem { text: (session.selectedForceStart ? "✓ " : "") + (i18n.language, i18n.t("ctx_force_start_plain")); onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
+        CtxItem { iconSrc: "qrc:/icons/download.svg"; text: (i18n.language, i18n.t("ctx_speed_down")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_down"), i18n.t("prompt_speed_kbs"), String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
+        CtxItem { iconSrc: "qrc:/icons/upload.svg"; text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_up"), i18n.t("prompt_speed_kbs"), String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
+        CtxItem { iconSrc: "qrc:/icons/arrows-sort.svg"; text: (session.selectedSequential() ? "✓ " : "") + (i18n.language, i18n.t("ctx_sequential")); onTriggered: session.setSelectedSequential(!session.selectedSequential()) }
+        CtxItem { iconSrc: "qrc:/icons/bolt.svg"; text: (session.selectedForceStart ? "✓ " : "") + (i18n.language, i18n.t("ctx_force_start_plain")); onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
         // Only offered on a complete seed: libtorrent ignores the flag otherwise
         // ("if the torrent is not a seed, this flag has no effect") but still
         // reports it set, so the menu used to show a tick over a no-op. CtxItem
@@ -307,39 +307,39 @@ Menu {
         implicitWidth: 180
         delegate: CtxItem {}
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { text: (i18n.language, i18n.t("ctx_copy_name")); onTriggered: session.copySelectedName() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
+        CtxItem { iconSrc: "qrc:/icons/abc.svg"; text: (i18n.language, i18n.t("ctx_copy_name")); onTriggered: session.copySelectedName() }
+        CtxItem { iconSrc: "qrc:/icons/hash.svg"; text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
     }
     Menu {
         title: (i18n.language, i18n.t("ctx_fix_cover"))
         implicitWidth: 200
         delegate: CtxItem {}
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { text: host.catLabel("Movies"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "movie") }) }
-        CtxItem { text: host.catLabel("Series"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "series") }) }
-        CtxItem { text: host.catLabel("Games"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Cyberpunk 2077", function(t){ session.relinkSelectedCover(t, "game") }) }
+        CtxItem { iconSrc: "qrc:/icons/movie.svg"; text: host.catLabel("Movies"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "movie") }) }
+        CtxItem { iconSrc: "qrc:/icons/device-tv.svg"; text: host.catLabel("Series"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "series") }) }
+        CtxItem { iconSrc: "qrc:/icons/device-gamepad-2.svg"; text: host.catLabel("Games"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Cyberpunk 2077", function(t){ session.relinkSelectedCover(t, "game") }) }
         MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-        CtxItem { text: (i18n.language, i18n.t("ctx_no_cover")); onTriggered: session.clearSelectedCover() }
+        CtxItem { iconSrc: "qrc:/icons/photo-off.svg"; text: (i18n.language, i18n.t("ctx_no_cover")); onTriggered: session.clearSelectedCover() }
     }
     Menu {
         title: (i18n.language, i18n.t("ctx_grp_more"))
         implicitWidth: 230
         delegate: CtxItem {}
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDialog.open() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_export_torrent")); onTriggered: exportDialog.open() }
-        CtxItem { text: (i18n.language, i18n.t("ctx_why_slow")); onTriggered: { diagnoseDialog.body = session.diagnoseSelectedSlow(); diagnoseDialog.open() } }
-        CtxItem { text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
+        CtxItem { iconSrc: "qrc:/icons/folder-symlink.svg"; text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDialog.open() }
+        CtxItem { iconSrc: "qrc:/icons/refresh.svg"; text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
+        CtxItem { iconSrc: "qrc:/icons/broadcast.svg"; text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
+        CtxItem { iconSrc: "qrc:/icons/file-export.svg"; text: (i18n.language, i18n.t("ctx_export_torrent")); onTriggered: exportDialog.open() }
+        CtxItem { iconSrc: "qrc:/icons/gauge.svg"; text: (i18n.language, i18n.t("ctx_why_slow")); onTriggered: { diagnoseDialog.body = session.diagnoseSelectedSlow(); diagnoseDialog.open() } }
+        CtxItem { iconSrc: "qrc:/icons/stop.svg"; text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
         Menu {
             title: (i18n.language, i18n.t("ctx_seed_rules"))
             implicitWidth: 220
             delegate: CtxItem {}
             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-            CtxItem { text: (i18n.language, i18n.t("ctx_seed_use_default")); onTriggered: { session.setSelectedStopAfter(-1); session.setSelectedMaxSeedDays(-1) } }
-            CtxItem { text: (session.selectedStopAfter() === 1 ? "✓ " : "") + (i18n.language, i18n.t("ctx_stop_after_download")); onTriggered: session.setSelectedStopAfter(session.selectedStopAfter() === 1 ? 0 : 1) }
-            CtxItem { text: (i18n.language, i18n.t("ctx_max_seed_time")); onTriggered: inputPrompt.openWith(i18n.t("ctx_max_seed_time"), i18n.t("ctx_max_seed_prompt"), String(Math.max(0, session.selectedMaxSeedDays())), "0", function(t){ session.setSelectedMaxSeedDays(parseInt(t) || 0) }) }
+            CtxItem { iconSrc: "qrc:/icons/replay.svg"; text: (i18n.language, i18n.t("ctx_seed_use_default")); onTriggered: { session.setSelectedStopAfter(-1); session.setSelectedMaxSeedDays(-1) } }
+            CtxItem { iconSrc: "qrc:/icons/check.svg"; text: (session.selectedStopAfter() === 1 ? "✓ " : "") + (i18n.language, i18n.t("ctx_stop_after_download")); onTriggered: session.setSelectedStopAfter(session.selectedStopAfter() === 1 ? 0 : 1) }
+            CtxItem { iconSrc: "qrc:/icons/clock.svg"; text: (i18n.language, i18n.t("ctx_max_seed_time")); onTriggered: inputPrompt.openWith(i18n.t("ctx_max_seed_time"), i18n.t("ctx_max_seed_prompt"), String(Math.max(0, session.selectedMaxSeedDays())), "0", function(t){ session.setSelectedMaxSeedDays(parseInt(t) || 0) }) }
         }
     }
     Sep {}
