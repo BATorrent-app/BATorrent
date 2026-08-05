@@ -46,17 +46,11 @@ ColumnLayout {
                 color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
             }
         }
-        Rectangle {
-            Layout.fillWidth: true; Layout.preferredHeight: 4; radius: 2; color: Theme.track
-            Rectangle {
-                height: parent.height; radius: 2
-                width: parent.width * (ident.win.hasSel ? session.selectedProgress : 0)
-                // same state→colour language as the grid tile and the
-                // status dot: downloading red, seeding amber, done green
-                color: ident.win.fillFor(ident.win.hasSel ? session.selectedStateKey : "")
-                Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                Behavior on color { ColorAnimation { duration: 200 } }
-            }
+        ProgressTrack {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 4
+            progress: ident.win.hasSel ? session.selectedProgress : 0
+            stateKey: ident.win.hasSel ? session.selectedStateKey : ""
         }
     }
 

@@ -1278,5 +1278,6 @@
   "cat_compressed": "压缩包",
   "set_default_save_note": "除非添加时另选文件夹，所有种子都会保存到这里。",
   "settings_iface_vpn": "可能是 VPN",
-  "settings_iface_vpn_active": "你的 VPN，已连接"
+  "settings_iface_vpn_active": "你的 VPN，已连接",
+  "state_error": "错误"
 }

@@ -30,6 +30,7 @@ struct TorrentInfo {
     bool finished = false;
     bool seeding = false;
     bool filesMissing = false;   // data was deleted/moved off disk under a live torrent
+    bool hasError = false;       // libtorrent parked it: disk full, permissions, bad piece storage
     bool queued = false;   // paused by the download-queue cap, not the user
     int queuePos = 0;      // 1-based position among queued torrents
     float ratio;
@@ -57,7 +58,12 @@ inline bool torrentHasWork(bool hasMetadata, long long totalWanted)
 
 inline QString torrentStateKey(const TorrentInfo &info)
 {
+    // Missing first, then error. filesMissing is itself derived from an errc
+    // (no_such_file_or_directory), so testing hasError first would swallow the
+    // more specific diagnosis and tell the user "error" when we know exactly
+    // which error it is and how to fix it.
     if (info.filesMissing) return QStringLiteral("missing");
+    if (info.hasError)     return QStringLiteral("error");
     if (info.completed)    return QStringLiteral("completed");
     if (info.queued)       return QStringLiteral("queued");
     if (info.paused)       return QStringLiteral("paused");

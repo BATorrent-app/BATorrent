@@ -209,7 +209,7 @@ Item {
 
         Rectangle {
             id: progBar
-            visible: tile.progress < 0.999
+            visible: tile.progress < 0.999 || Theme.isTroubleState(tile.stateKey)
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
@@ -221,15 +221,18 @@ Item {
             color: Qt.rgba(0, 0, 0, 0.78)
             border.color: Qt.rgba(1, 1, 1, 0.10)
             border.width: 1
-            Rectangle {
+            // The pill keeps its dark backing (it sits over artwork); the bar
+            // itself is the shared one, so a missing or errored torrent shows
+            // the travelling indicator here too.
+            ProgressTrack {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
+                anchors.right: parent.right
                 anchors.leftMargin: 1
+                anchors.rightMargin: 1
                 height: parent.height - 2
-                radius: (parent.height - 2) / 2
-                width: Math.max(height, (parent.width - 2) * tile.progress)
-                color: win.fillFor(tile.stateKey)
-                Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+                progress: tile.progress
+                stateKey: tile.stateKey
             }
         }
 
