@@ -15,6 +15,15 @@ ColumnLayout {
     spacing: 0
     visible: sv.isTitles && !sv.browse
 
+    // The stage-1 loading and not-found state, centred on this pane — it owns
+    // the whole page while titles are being resolved.
+    SearchEmptyState {
+        sv: pane.sv
+        visible: !pane.sv.api || pane.sv.api.results.length === 0
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+    }
+
     // ---- best-match hero state ----
     readonly property bool showBestMatch: sv.isTitles && sv.api && sv.api.results.length > 0 && !sv.api.searching
     readonly property var bestItem: showBestMatch ? sv.api.results[0] : null
