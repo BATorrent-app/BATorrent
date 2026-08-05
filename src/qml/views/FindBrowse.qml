@@ -68,6 +68,12 @@ Item {
     // the scroll column positions by explicit child geometry instead.
     Flickable {
         id: flick
+        // Hidden while the skeleton owns the screen. Without this the column is
+        // an empty stack whose only visible child is the red "browse the whole
+        // catalogue" line, so it rides at the TOP of the page during the first
+        // fetch and flickers as the game sources resolve — the opposite of the
+        // bottom-of-the-shelves position it holds once loaded.
+        visible: !skeleton.visible
         anchors.fill: parent
         contentHeight: col.height
         boundsBehavior: Flickable.StopAtBounds
