@@ -225,6 +225,7 @@
 <file>../src/qml/views/FindBillboard.qml</file>
 <file>../src/qml/views/FindBrowse.qml</file>
 <file>../src/qml/views/FindCatalogBrowse.qml</file>
+<file>../src/qml/views/FindRowGrid.qml</file>
 <file>../src/qml/views/SearchEmptyState.qml</file>
 <file>../src/qml/views/SearchDetailDrawer.qml</file>
 <file>../src/qml/views/SearchGameMgr.qml</file>

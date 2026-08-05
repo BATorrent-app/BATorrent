@@ -17,7 +17,7 @@ Item {
     property bool active: true          // gates the billboard rotation
     property bool showCatalogEntry: false
     signal findRequested(string title)
-    signal typeFilterRequested(string type)
+    signal rowGridRequested(string rowLabel, var rowItems)
     signal catalogBrowseRequested(string group)   // "" = all catalogs; else release group
 
     readonly property alias scrollY: flick.contentY
@@ -139,7 +139,7 @@ Item {
                     flickH: flick.height
                     onActivated: function(item) { browse.findRequested(item.title) }
                     onGetWatch: function(item) { browse.getWatch(item) }
-                    onSeeAllRequested: function(type) { browse.typeFilterRequested(type) }
+                    onSeeAllRequested: function(l, it) { browse.rowGridRequested(l, it) }
                 }
             }
 
@@ -163,7 +163,7 @@ Item {
                     flickH: flick.height
                     onActivated: function(item) { browse.findRequested(item.title) }
                     onGetWatch: function(item) { browse.getWatch(item) }
-                    onSeeAllRequested: function(type) { browse.typeFilterRequested(type) }
+                    onSeeAllRequested: function(l, it) { browse.rowGridRequested(l, it) }
                 }
             }
 

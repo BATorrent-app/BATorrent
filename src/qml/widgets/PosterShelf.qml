@@ -20,7 +20,8 @@ Item {
     property real flickH: 0
     signal activated(var item)
     signal getWatch(var item)
-    signal seeAllRequested(string type)
+    // The whole row, not its type: See all means "show me this shelf".
+    signal seeAllRequested(string rowLabel, var rowItems)
 
     width: parent ? parent.width : 0
     height: header.height + 10 + 252
@@ -53,7 +54,7 @@ Item {
                 id: saMa; anchors.fill: parent; anchors.margins: -4
                 hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                 onClicked: if (shelf.items && shelf.items.length > 0)
-                               shelf.seeAllRequested(shelf.items[0].type || "")
+                               shelf.seeAllRequested(shelf.label, shelf.items)
             }
         }
     }

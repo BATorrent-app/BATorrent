@@ -55,6 +55,13 @@ Rectangle {
     readonly property bool catalogAvailable: !(typeof isStoreBuild !== "undefined" && isStoreBuild)
                                              && typeof discovery !== "undefined"
     property string typeFilter: "all"
+    // "See all" opens one shelf as a grid. Separate from showCatalogBrowse,
+    // which is the games dump and has its own paging.
+    property bool showRowGrid: false
+    property string rowGridLabel: ""
+    property var rowGridItems: []
+    function openRowGrid(l, it) { rowGridLabel = l; rowGridItems = it; showRowGrid = true }
+    function closeRowGrid() { showRowGrid = false; rowGridItems = [] }
     readonly property bool browse: findBar.text.trim().length === 0
     property bool showCatalogBrowse: false
     readonly property real browseScrollY: showCatalogBrowse ? catalogBrowsePane.scrollY : browsePane.scrollY
@@ -89,7 +96,7 @@ Rectangle {
     function fmtSize(b) { return fmt.fmtSize(b) }
     function fmtCount(n) { return fmt.fmtCount(n) }
 
-    onBrowseChanged: if (!browse) showCatalogBrowse = false
+    onBrowseChanged: if (!browse) { showCatalogBrowse = false; showRowGrid = false }
     onTypeFilterChanged: {
         if (typeFilter === "game")
             return
@@ -241,16 +248,29 @@ Rectangle {
             id: browsePane
             Layout.fillWidth: true
             Layout.preferredHeight: mainCol.height - findBar.height
-            visible: page.browse && page.catalogAvailable && !page.showCatalogBrowse
+            visible: page.browse && page.catalogAvailable && !page.showCatalogBrowse && !page.showRowGrid
             typeFilter: page.typeFilter
-            active: page.visible && page.browse && page.catalogAvailable && !page.showCatalogBrowse
+            active: page.visible && page.browse && page.catalogAvailable && !page.showCatalogBrowse && !page.showRowGrid
             showCatalogEntry: {
                 var _ = page.gameCatalogGen
                 return page.api && page.api.gameSources().length > 0
             }
             onFindRequested: function(title) { page.runQuery(title) }
-            onTypeFilterRequested: function(type) { page.typeFilter = type }
+            onRowGridRequested: function(l, it) { page.openRowGrid(l, it) }
             onCatalogBrowseRequested: function(group) { page.openCatalogBrowse(group || "") }
+        }
+
+        FindRowGrid {
+            id: rowGridPane
+            sv: page
+            Layout.fillWidth: true
+            Layout.preferredHeight: mainCol.height - findBar.height
+            visible: page.browse && page.showRowGrid
+            label: page.rowGridLabel
+            items: page.rowGridItems
+            onBackRequested: page.closeRowGrid()
+            onActivated: function(item) { page.runQuery(item.title) }
+            onGetWatch: function(item) { browsePane.getWatch(item) }
         }
 
         FindCatalogBrowse {
@@ -265,7 +285,11 @@ Rectangle {
         SearchWorkHeader { sv: page }
         SearchFiltersRow { id: filtersRow; sv: page }
         SearchModeBars { sv: page }
-        SearchListPane { sv: page; Layout.fillWidth: true; Layout.fillHeight: true }
+        // Hidden during the titles stage instead of merely emptied: both panes
+        // ask for fillHeight, so an empty results list still claimed a share of
+        // the page and pushed the loading spinner — which lives in its empty
+        // state — away from the centre.
+        SearchListPane { sv: page; visible: !page.isTitles; Layout.fillWidth: true; Layout.fillHeight: true }
         SearchTitlesPane { sv: page; Layout.fillWidth: true; Layout.fillHeight: true }
         SearchResultsFooter { sv: page }
     }
