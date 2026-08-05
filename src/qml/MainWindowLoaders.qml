@@ -105,7 +105,11 @@ Item {
             removedWinLoader.active = true
             logWinLoader.active = true
             diagWinLoader.active = true
-            playerWinLoader.active = true
+            // The player is no longer a Loader, so the smoke has to build one
+            // the same way openPlayer does — otherwise PlayerWindow quietly
+            // drops out of the check that every deferred window still loads.
+            var w = playerWindowComp.createObject(null)
+            if (w) w.destroy()
         }
     }
 }
