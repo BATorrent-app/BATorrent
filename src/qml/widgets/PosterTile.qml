@@ -192,10 +192,8 @@ Item {
             anchors.bottom: parent.bottom
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            // Clears the progress bar's band (8 + 9 high) instead of sitting in
-            // it. Drops back down when the bar goes away on completion.
-            anchors.bottomMargin: progBar.visible ? 25 : 12
-            Behavior on anchors.bottomMargin { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            // Clears the progress bar's band (8 + 9 high) instead of sitting in it.
+            anchors.bottomMargin: 25
             text: tile.metaTitle || tile.torrentName
             color: "#f5f5f6"
             font.pixelSize: 15
@@ -209,7 +207,10 @@ Item {
 
         Rectangle {
             id: progBar
-            visible: tile.progress < 0.999 || Theme.isTroubleState(tile.stateKey)
+            // Always on, in every state. Downloading and seeding used to be two
+            // different shapes — a 9px pill versus a 2px line at the poster's
+            // edge — for the same fact. Same height, same width, same place.
+            visible: true
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
@@ -233,6 +234,7 @@ Item {
                 height: parent.height - 2
                 progress: tile.progress
                 stateKey: tile.stateKey
+                sheen: tile.stateKey === "seeding" && tile.upRate > 0
             }
         }
 
