@@ -58,15 +58,15 @@ BatDialog {
     // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
         "4.8": {
-            note: "I built the VPN twice. The first one had BATorrent running its own WireGuard tunnel — and it picked a fight with every VPN app you already had, asked for your admin password every single time, and on Windows it could kill your internet outright. A tester lost his connection for two days because of me. So I deleted it.<br><br>This one just uses the VPN you already pay for. Point BATorrent at it in Settings and only this app goes through it. If it drops, downloads stop instead of quietly falling back to your normal connection.<br><br>BATorrent also stopped being only a torrent client this release: paste or drop a direct link and it downloads that too, in pieces, resumable, from file hosts included.<br><br>The rest of it came from one person. Sherwan has been testing every build and sending me screenshots — of progress bars that claimed progress on torrents that had stopped, of a copy button wearing the wrong icon, of states that said downloading and seeding at the same time. I fixed those, and then kept going: the panel now keeps the poster on screen while you read the tabs, first run asks how you want the app to look and applies it as you click, and every icon in the app follows one rule instead of five.<br><br>None of that is a headline feature. It is the difference between software you use and software you tolerate, and I would not have seen most of it without someone describing it precisely.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
-            , highlights: [
-                "VPN: bind BATorrent to the VPN you already run, and stop if it drops",
-                "Download from a direct link or a file host — drop the link on the window",
-                "First run asks four questions and applies each one as you click",
+            note: "You can now point BATorrent at your own VPN. Set it up in Settings and only this app goes through it — if the tunnel drops, transfers stop instead of falling back to your normal connection.<br><br>It also downloads any direct link now, not just torrents. Paste it or drop it on the window.<br><br>First run has a wizard, so the app looks the way you want from the start. There is a new typeface, and a long list of design fixes throughout.<br><br>A hug to <b>@teoveo</b>, who is where most of the ideas in this version came from.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b> — I read everything.<br><br>— Mateus"
+                        , highlights: [
+                "Point BATorrent at your own VPN — only this app goes through it",
+                "Download any direct link, not just torrents",
+                "A wizard on first run: language, theme and layout, applied as you click",
+                "New typeface, and a design pass over the whole app",
                 "Every state has its own progress bar, including one for files that vanished",
                 "The detail panel keeps the torrent on screen while you change tabs",
                 "Search warns about password bait, impossible file sizes and cam rips",
-                "New icon language: solid for things, stroke for actions",
                 "Watch more than one video at once, each in its own window"
             ]
         },
