@@ -1278,5 +1278,6 @@
   "cat_compressed": "Arşivler",
   "set_default_save_note": "Eklerken başka bir klasör seçmediğiniz sürece her torrent buraya iner.",
   "settings_iface_vpn": "muhtemelen VPN",
-  "settings_iface_vpn_active": "VPN'iniz, bağlı"
+  "settings_iface_vpn_active": "VPN'iniz, bağlı",
+  "state_error": "Hata"
 }

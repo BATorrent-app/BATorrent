@@ -67,6 +67,22 @@ QtObject {
         { key: "matrix",   bg: "#040806", panel: "#0d1a11", accent: "#2be86a" }
     ]
 
+    // ---------- state → colour ----------
+    // One home for the language, because the dot, the label and the progress
+    // bar have to agree: done green, seeding amber, paused grey, trouble red.
+    // Downloading keeps the brand accent — green there would collide with done,
+    // which is what green already means everywhere else in the app.
+    function fillFor(k) {
+        if (k === "finished" || k === "completed") return grn
+        if (k === "seeding") return amber
+        if (k === "paused" || k === "queued") return pausedFill
+        if (k === "missing" || k === "error") return accent
+        return accent
+    }
+    // States that cannot report progress: the bar carries a moving indicator
+    // instead of a fill, because a percentage would be a lie.
+    function isTroubleState(k) { return k === "missing" || k === "error" }
+
     // ---------- surfaces ----------
     readonly property color bg:
         name === "custom"   ? customBgColor :

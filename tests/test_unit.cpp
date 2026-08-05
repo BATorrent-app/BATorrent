@@ -1588,6 +1588,15 @@ TEST_CASE("torrentStateKey trusts libtorrent's finished flag, not the float",
         t.progress = 1.0f; t.totalDone = 100; t.seeding = true;
         CHECK(torrentStateKey(t) == QStringLiteral("seeding"));
     }
+    SECTION("missing outranks the generic error it is derived from") {
+        // filesMissing comes from errc == no_such_file_or_directory, so both
+        // flags are set at once; the specific answer has to win.
+        t.filesMissing = true; t.hasError = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("missing"));
+        t.filesMissing = false;
+        CHECK(torrentStateKey(t) == QStringLiteral("error"));
+        t.hasError = false;
+    }
     SECTION("fresh magnet: flags qualified away, so it is not seeding") {
         // What the query layer now produces for a magnet without metadata.
         t.progress = 0.0f; t.totalDone = 0;

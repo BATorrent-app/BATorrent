@@ -95,7 +95,7 @@ Rectangle {
         })
         demoModel.append({
             torrentName: "Creative.Tools.Bundle", metaTitle: "Creative Tools",
-            stateKey: "paused", progress: 0.54, posterPath: "",
+            stateKey: "missing", progress: 0.54, posterPath: "",
             stateString: i18n.t("state_paused"), stateDetail: "", fileKind: "ZIP",
             category: "Apps", size: "4.8 GB", downSpeed: "0 KB/s",
             upSpeed: "0 KB/s", downRate: 0, upRate: 0,
@@ -121,12 +121,10 @@ Rectangle {
         property bool detailsCollapsed: false
         readonly property bool detailsShownCollapsed: false
 
-        function fillFor(key) {
-            if (key === "finished" || key === "completed") return Theme.grn
-            if (key === "seeding") return Theme.amber
-            if (key === "paused" || key === "queued") return Theme.pausedFill
-            return Theme.accent
-        }
+        // Delegates like the real window does — the preview must not carry its
+        // own copy of the state language, or the two drift and the wizard shows
+        // a colour the app no longer uses.
+        function fillFor(key) { return Theme.fillFor(key) }
         function textFor(key) {
             if (key === "finished" || key === "completed") return Theme.grn
             if (key === "seeding") return Theme.up

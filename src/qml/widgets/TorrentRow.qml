@@ -90,14 +90,14 @@ Rectangle {
                 radius: 9
                 color: Theme.field
                 clip: true
-                Rectangle {
-                    readonly property color fc: win.fillFor(lrow.stateKey)
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    width: Math.max(lrow.progress > 0.001 ? 2 : 0, parent.width * lrow.progress)
-                    radius: 9
-                    color: Qt.rgba(fc.r, fc.g, fc.b, 0.30)
+                // The row's fill is the shared bar at 30% so the percentage text
+                // stays readable on top of it; trouble states switch to the
+                // travelling indicator like everywhere else.
+                ProgressTrack {
+                    anchors.fill: parent
+                    progress: lrow.progress
+                    stateKey: lrow.stateKey
+                    opacity: 0.30
                 }
                 Text {
                     id: pbarPct

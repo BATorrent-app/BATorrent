@@ -13,6 +13,7 @@ Eyebrow 1.0 Eyebrow.qml
 EmptyState 1.0 EmptyState.qml
 LayoutChoiceTile 1.0 LayoutChoiceTile.qml
 PosterThumb 1.0 PosterThumb.qml
+ProgressTrack 1.0 ProgressTrack.qml
 PosterTile 1.0 PosterTile.qml
 PosterTileBadges 1.0 PosterTileBadges.qml
 PosterTileMeta 1.0 PosterTileMeta.qml

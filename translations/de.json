@@ -1278,5 +1278,6 @@
   "cat_compressed": "Archive",
   "set_default_save_note": "Jeder Torrent landet hier, sofern du beim Hinzufügen keinen anderen Ordner wählst.",
   "settings_iface_vpn": "vermutlich VPN",
-  "settings_iface_vpn_active": "dein VPN, verbunden"
+  "settings_iface_vpn_active": "dein VPN, verbunden",
+  "state_error": "Fehler"
 }

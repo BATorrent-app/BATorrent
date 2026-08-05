@@ -251,14 +251,9 @@ Window {
     readonly property bool detailsShownCollapsed: win.detailsLocked ? win.detailsCollapsed : (win.detailsCollapsed || !win.hasSel)
 
     // ----- state→color helpers (keyed by real stateKey) -----
-    function fillFor(k) {
-        // match the dot/text semantics: done = green, seeding = amber — a red
-        // 100% pill reads as an error at a glance
-        if (k === "finished" || k === "completed") return Theme.grn
-        if (k === "seeding") return Theme.amber
-        if (k === "paused" || k === "queued") return Theme.pausedFill
-        return Theme.accent
-    }
+    // The mapping lives in Theme so the progress bar can reach it without a
+    // window; this stays as the call site every view already uses.
+    function fillFor(k) { return Theme.fillFor(k) }
     function textFor(k) {
         if (k === "finished" || k === "completed") return Theme.grn   // done = green
         if (k === "seeding") return Theme.up                          // seeding = amber

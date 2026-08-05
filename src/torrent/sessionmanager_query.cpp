@@ -40,6 +40,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
     // Qualified, never raw: without metadata total_wanted is 0 and libtorrent
     // reports both of these true for a magnet that has done nothing.
     const bool hasWork = torrentHasWork(st.has_metadata, static_cast<long long>(st.total_wanted));
+    info.hasError = bool(st.errc);
     info.finished = hasWork && st.is_finished;
     info.seeding = hasWork && st.is_seeding;
     info.numPeers = st.num_peers;
@@ -95,6 +96,10 @@ TorrentInfo SessionManager::torrentAt(int index) const
         info.stateDetail = tr_("state_files_missing");
         info.downloadRate = 0;
         info.uploadRate = 0;
+    } else if (info.hasError) {
+        // Any other storage failure: disk full, permissions, a read-only volume.
+        info.stateString = tr_("state_error");
+        info.stateDetail = QString::fromStdString(st.errc.message());
     }
 
     // qBittorrent's most-repeated complaint is a silent "stalled" — name the
