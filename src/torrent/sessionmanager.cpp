@@ -205,6 +205,7 @@ SessionManager::SessionManager(QObject *parent)
 
     // Load stop-seeding rules
     m_stopAfterDownload = settings.value("stopAfterDownload", false).toBool();
+    m_pauseOnMissingData = settings.value("pauseOnMissingData", true).toBool();
     m_maxSeedSeconds = settings.value("maxSeedSeconds", 0).toLongLong();
     m_autoCompleteSeconds = settings.value("autoCompleteSeconds", 0).toLongLong();
     m_anonymousMode = settings.value("anonymousMode", false).toBool();

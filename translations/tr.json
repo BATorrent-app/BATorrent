@@ -1280,5 +1280,9 @@
   "settings_iface_vpn": "muhtemelen VPN",
   "settings_iface_vpn_active": "VPN'iniz, bağlı",
   "state_error": "Hata",
-  "whatsnew_open_wizard": "Görünümü ayarla"
+  "whatsnew_open_wizard": "Görünümü ayarla",
+  "settings_pause_missing": "Dosyalar kaybolduğunda duraklat",
+  "set_pause_missing_note": "Bir torrentin verileri BATorrent dışında silinirse, her şeyi yeniden indirmek yerine duraklatılır.",
+  "warn_missing_paused_one": "“%1” duraklatıldı — dosyaları artık diskte değil.",
+  "warn_missing_paused": "%1 torrent duraklatıldı — dosyaları artık diskte değil."
 }

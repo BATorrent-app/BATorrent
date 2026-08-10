@@ -45,7 +45,6 @@ TorrentInfo SessionManager::torrentAt(int index) const
     info.seeding = hasWork && st.is_seeding;
     info.numPeers = st.num_peers;
     info.numSeeds = st.num_seeds;
-    info.stateString = stateToString(st.state);
     info.paused = (st.flags & lt::torrent_flags::paused) != lt::torrent_flags_t{};
     if (info.paused && m_queuePaused.count(m_torrents[index])) {
         info.queued = true;
@@ -62,17 +61,9 @@ TorrentInfo SessionManager::torrentAt(int index) const
         info.completed = m_completedTorrents.contains(hash);
 
     if (info.completed) {
-        info.stateString = tr_("state_completed");
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else if (info.paused) {
-        // "Stop seeding after download" pauses the handle directly (see
-        // onTorrentFinished) without going through markCompleted(), so a
-        // finished torrent otherwise reads as bare "Paused" — ambiguous
-        // about whether the download itself is done (reported by a user).
-        info.stateString = info.queued
-            ? tr_("state_queued").arg(info.queuePos)
-            : (info.finished) ? tr_("state_paused_done") : tr_("state_paused");
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else {
@@ -90,17 +81,31 @@ TorrentInfo SessionManager::torrentAt(int index) const
     // a torrent that silently reads as complete/seeding while the files are gone
     // (tester: a movie sat inactive with no explanation after a manual delete). The
     // errc == enum compare is category-aware, so it matches on every platform.
-    if (st.errc == boost::system::errc::no_such_file_or_directory) {
+    // The errc only fires once libtorrent touches the file, which a seeding
+    // torrent nobody requests never does — checkMissingFiles() stats for it
+    // instead, so the state is honest without waiting for a read.
+    if (st.errc == boost::system::errc::no_such_file_or_directory
+            || (!hash.isEmpty() && m_missingHashes.contains(hash))) {
         info.filesMissing = true;
-        info.stateString = tr_("state_files_missing");
         info.stateDetail = tr_("state_files_missing");
         info.downloadRate = 0;
         info.uploadRate = 0;
     } else if (info.hasError) {
         // Any other storage failure: disk full, permissions, a read-only volume.
-        info.stateString = tr_("state_error");
         info.stateDetail = QString::fromStdString(st.errc.message());
     }
+
+    // One classification, one label. Every flag that feeds torrentStateKey() is
+    // set by now, so the string the list renders and the key the grid renders
+    // can no longer contradict each other. Empty means the key has nothing more
+    // specific than libtorrent's own enum (checking, fetching metadata).
+    const QString labelKey = torrentStateLabelKey(info);
+    if (labelKey.isEmpty())
+        info.stateString = stateToString(st.state);
+    else if (labelKey == QLatin1String("state_queued"))
+        info.stateString = tr_(labelKey).arg(info.queuePos);
+    else
+        info.stateString = tr_(labelKey);
 
     // qBittorrent's most-repeated complaint is a silent "stalled" — name the
     // actual blocker so the state cell can explain itself on hover

@@ -115,6 +115,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == "maxActiveDownloads")  return s->maxActiveDownloads();
     if (key == "seedRatioLimit")      return s->seedRatioLimit();
     if (key == "stopAfterDownload")   return s->stopAfterDownload();
+    if (key == "pauseOnMissingData") return s->pauseOnMissingData();
     if (key == "maxSeedDays")         return int(s->maxSeedSeconds() / 86400);
     if (key == "schedulerEnabled")    return s->schedulerEnabled();
     if (key == "altDownloadLimit")    return s->altDownloadLimit();

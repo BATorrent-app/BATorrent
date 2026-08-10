@@ -1280,5 +1280,9 @@
   "settings_iface_vpn": "vermutlich VPN",
   "settings_iface_vpn_active": "dein VPN, verbunden",
   "state_error": "Fehler",
-  "whatsnew_open_wizard": "Aussehen einrichten"
+  "whatsnew_open_wizard": "Aussehen einrichten",
+  "settings_pause_missing": "Pausieren, wenn die Dateien fehlen",
+  "set_pause_missing_note": "Werden die Daten eines Torrents außerhalb von BATorrent gelöscht, wird pausiert statt alles erneut herunterzuladen.",
+  "warn_missing_paused_one": "„%1“ pausiert – die Dateien sind nicht mehr auf der Festplatte.",
+  "warn_missing_paused": "%1 Torrents pausiert – ihre Dateien sind nicht mehr auf der Festplatte."
 }

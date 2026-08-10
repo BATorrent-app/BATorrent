@@ -270,6 +270,19 @@ bool SessionManager::stopAfterDownload() const
     return m_stopAfterDownload;
 }
 
+void SessionManager::setPauseOnMissingData(bool enabled)
+{
+    m_pauseOnMissingData = enabled;
+    // Turning it back on must not immediately re-pause what the user resumed
+    // while it was off — only a fresh disappearance should act.
+    if (!enabled) m_missingPaused.clear();
+}
+
+bool SessionManager::pauseOnMissingData() const
+{
+    return m_pauseOnMissingData;
+}
+
 void SessionManager::setMaxSeedSeconds(qint64 seconds)
 {
     m_maxSeedSeconds = seconds;

@@ -1280,5 +1280,9 @@
   "settings_iface_vpn": "provavelmente VPN",
   "settings_iface_vpn_active": "sua VPN, conectada",
   "state_error": "Erro",
-  "whatsnew_open_wizard": "Ajustar a aparência"
+  "whatsnew_open_wizard": "Ajustar a aparência",
+  "settings_pause_missing": "Pausar quando os arquivos sumirem",
+  "set_pause_missing_note": "Se os dados de um torrent forem apagados fora do BATorrent, pausa em vez de baixar tudo de novo.",
+  "warn_missing_paused_one": "“%1” pausado — os arquivos não estão mais no disco.",
+  "warn_missing_paused": "%1 torrents pausados — os arquivos não estão mais no disco."
 }

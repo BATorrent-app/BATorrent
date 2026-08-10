@@ -1647,3 +1647,93 @@ TEST_CASE("Autostart writes and removes the real login item", "[.autostartfs]")
 
     if (was) Autostart::setEnabled(true);   // leave the machine as we found it
 }
+
+// ============================================================================
+//  State label: the grid and the list must never disagree
+// ============================================================================
+
+// Reported on 4.8.0: the same magnet read "Seeding" in grid view and
+// "Downloading" in classic view. The two views were rendering two independently
+// produced values — the grid built a label from torrentStateKey(), the list
+// rendered TorrentInfo::stateString, which came straight from libtorrent's
+// state enum. torrentStateLabelKey() is now the single classification both use.
+// Found while writing the label tests below: `TorrentInfo t;` is
+// default-initialisation, so every scalar without an in-class initialiser held
+// garbage. An indeterminate `paused` alone makes a running torrent render as
+// stopped, and the value is different on every run.
+TEST_CASE("TorrentInfo default-initialises every scalar", "[types][regression]")
+{
+    TorrentInfo t;   // deliberately not {} — that would zero it regardless
+    CHECK(t.totalSize == 0);
+    CHECK(t.totalDone == 0);
+    CHECK(t.progress == 0.0f);
+    CHECK(t.downloadRate == 0);
+    CHECK(t.uploadRate == 0);
+    CHECK(t.numPeers == 0);
+    CHECK(t.numSeeds == 0);
+    CHECK_FALSE(t.paused);
+    CHECK(t.ratio == 0.0f);
+    // The classification has to be stable for a default-constructed value too.
+    CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
+}
+
+TEST_CASE("torrentStateLabelKey never contradicts torrentStateKey",
+          "[types][state][regression]")
+{
+    TorrentInfo t;
+
+    SECTION("the reported case: finished flag set while the enum still says downloading") {
+        t.finished = true;
+        REQUIRE(torrentStateKey(t) == QStringLiteral("seeding"));
+        // Non-empty means the key overrides the enum, so the list can no longer
+        // keep showing "Downloading" for a torrent the grid calls "Seeding".
+        CHECK(torrentStateLabelKey(t) == QStringLiteral("state_seeding"));
+    }
+
+    SECTION("every key that carries its own label produces one") {
+        struct Case { const char *key; const char *label; TorrentInfo info; };
+        TorrentInfo missing;   missing.filesMissing = true;
+        TorrentInfo error;     error.hasError = true;
+        TorrentInfo completed; completed.completed = true;
+        TorrentInfo queued;    queued.queued = true;
+        TorrentInfo paused;    paused.paused = true;
+        TorrentInfo seeding;   seeding.seeding = true;
+
+        const Case cases[] = {
+            {"missing",   "state_files_missing", missing},
+            {"error",     "state_error",         error},
+            {"completed", "state_completed",     completed},
+            {"queued",    "state_queued",        queued},
+            {"paused",    "state_paused",        paused},
+            {"seeding",   "state_seeding",       seeding},
+        };
+        for (const auto &c : cases) {
+            INFO("state key: " << c.key);
+            CHECK(torrentStateKey(c.info) == QString::fromLatin1(c.key));
+            CHECK(torrentStateLabelKey(c.info) == QString::fromLatin1(c.label));
+        }
+    }
+
+    SECTION("a paused torrent that already finished says so") {
+        t.paused = true;
+        CHECK(torrentStateLabelKey(t) == QStringLiteral("state_paused"));
+        t.finished = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("paused"));
+        CHECK(torrentStateLabelKey(t) == QStringLiteral("state_paused_done"));
+    }
+
+    SECTION("only plain downloading defers to libtorrent's enum") {
+        // Empty is the signal to fall back to stateToString(), which still
+        // distinguishes checking files from fetching metadata — states the key
+        // deliberately does not model.
+        CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
+        CHECK(torrentStateLabelKey(t).isEmpty());
+    }
+
+    SECTION("a fresh magnet defers too, instead of claiming to seed") {
+        t.finished = torrentHasWork(false, 0) && true;
+        t.seeding  = torrentHasWork(false, 0) && true;
+        CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
+        CHECK(torrentStateLabelKey(t).isEmpty());
+    }
+}

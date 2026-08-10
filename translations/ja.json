@@ -1280,5 +1280,9 @@
   "settings_iface_vpn": "VPN の可能性",
   "settings_iface_vpn_active": "接続中の VPN",
   "state_error": "エラー",
-  "whatsnew_open_wizard": "見た目を設定"
+  "whatsnew_open_wizard": "見た目を設定",
+  "settings_pause_missing": "ファイルが見つからないときは一時停止",
+  "set_pause_missing_note": "BATorrent の外でデータが削除された場合、すべてを再ダウンロードせずに一時停止します。",
+  "warn_missing_paused_one": "「%1」を一時停止しました — ファイルがディスク上にありません。",
+  "warn_missing_paused": "%1 件のトレントを一時停止しました — ファイルがディスク上にありません。"
 }

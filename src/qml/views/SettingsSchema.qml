@@ -125,6 +125,7 @@ QtObject {
             { type: "number", key: "seedRatioLimit", label: (i18n.language, i18n.t("set_seed_ratio2")), value: "2.0", note: (i18n.language, i18n.t("set_seed_ratio_note")) },
             { type: "number", key: "maxSeedDays", label: (i18n.language, i18n.t("set_max_seed_days2")), value: "0", suffix: (i18n.language, i18n.t("settings_days")) },
             { type: "toggle", key: "stopAfterDownload", label: (i18n.language, i18n.t("settings_stop_after_download")) },
+            { type: "toggle", key: "pauseOnMissingData", on: true, label: (i18n.language, i18n.t("settings_pause_missing")), note: (i18n.language, i18n.t("set_pause_missing_note")) },
             { type: "select", key: "autoComplete", label: (i18n.language, i18n.t("settings_auto_complete")), options: [(i18n.language, i18n.t("auto_complete_never")), (i18n.language, i18n.t("auto_complete_1d")), (i18n.language, i18n.t("auto_complete_3d")), (i18n.language, i18n.t("auto_complete_7d")), (i18n.language, i18n.t("auto_complete_14d")), (i18n.language, i18n.t("auto_complete_30d"))], value: 0, note: (i18n.language, i18n.t("set_auto_complete_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_scheduler")) },
             { type: "toggle", key: "schedulerEnabled", label: (i18n.language, i18n.t("settings_scheduler_enable")), note: (i18n.language, i18n.t("set_scheduler_note")) },

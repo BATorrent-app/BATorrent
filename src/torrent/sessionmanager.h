@@ -198,6 +198,8 @@ public:
     // Stop seeding when download completes (global default)
     void setStopAfterDownload(bool enabled);
     bool stopAfterDownload() const;
+    void setPauseOnMissingData(bool enabled);
+    bool pauseOnMissingData() const;
 
     // Maximum seeding time in seconds (global default, 0 = unlimited)
     void setMaxSeedSeconds(qint64 seconds);
@@ -664,6 +666,31 @@ private:
     // silently giving up and deleting it.
     std::map<lt::torrent_handle, qint64> m_magnetAddedAt;
     void checkMagnetTimeouts();   // prunes m_magnetAddedAt once metadata arrives (or the handle dies)
+
+    // Info-hashes whose content is no longer on disk. libtorrent only raises
+    // no_such_file_or_directory once it actually reads the file, so a seeding
+    // torrent nobody requests never errors and keeps claiming to hold data that
+    // was deleted months ago (reported on 4.8.0). We stat for it ourselves.
+    // Deleting data is a human action, so 10s is far more resolution than the
+    // user needs, and stat-ing every torrent every tick is not free on a NAS.
+    // BAT_MISSING_PROBE_MS overrides it: an end-to-end test would otherwise
+    // spend half a minute of wall clock per assertion waiting out the
+    // confirmation loop, which is how it ends up too slow to run in CI.
+    static constexpr int kMissingProbeMs = 10000;
+    const int m_missingProbeMs = qEnvironmentVariableIntValue("BAT_MISSING_PROBE_MS") > 0
+                                 ? qEnvironmentVariableIntValue("BAT_MISSING_PROBE_MS")
+                                 : kMissingProbeMs;
+    QSet<QString> m_missingHashes;   // confirmed gone: seen by two probes in a row
+    QSet<QString> m_missingSeen;     // the raw result of the previous probe
+    bool m_missingProbeRunning = false;
+    qint64 m_lastMissingProbe = 0;
+    void checkMissingFiles();
+    // Pausing on confirmed-missing data stops the silent re-download of a
+    // torrent whose files the user deleted on purpose. Torrents paused this way
+    // are remembered so a manual resume is not undone on the next probe.
+    void pauseMissing(const QSet<QString> &confirmed);
+    QSet<QString> m_missingPaused;
+    bool m_pauseOnMissingData = true;
 
     // Bandwidth scheduler
     int m_altDownLimit = 0;

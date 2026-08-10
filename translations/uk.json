@@ -1280,5 +1280,9 @@
   "settings_iface_vpn": "імовірно VPN",
   "settings_iface_vpn_active": "ваш VPN, підключено",
   "state_error": "Помилка",
-  "whatsnew_open_wizard": "Налаштувати вигляд"
+  "whatsnew_open_wizard": "Налаштувати вигляд",
+  "settings_pause_missing": "Призупинити, якщо файли зникли",
+  "set_pause_missing_note": "Якщо дані торента видалено поза BATorrent, призупинити його, а не завантажувати все заново.",
+  "warn_missing_paused_one": "«%1» призупинено — файлів більше немає на диску.",
+  "warn_missing_paused": "Призупинено торентів: %1 — файлів більше немає на диску."
 }

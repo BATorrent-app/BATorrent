@@ -6,7 +6,10 @@
 // download queue). Split out of sessionmanager.cpp verbatim; no behaviour change.
 
 #include "torrent/sessionmanager.h"
+#include "torrent/contentprobe.h"
 #include "services/platform/translator.h"
+
+#include <libtorrent/torrent_info.hpp>
 
 #include <QDebug>
 #include <QDateTime>
@@ -35,6 +38,113 @@ void SessionManager::refreshDiskFreeAsync(const QString &savePath)
     });
     QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
     thread->start();
+}
+
+void SessionManager::checkMissingFiles()
+{
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_missingProbeRunning || now - m_lastMissingProbe < m_missingProbeMs) return;
+    m_lastMissingProbe = now;
+
+    // Handles and torrent_info must be read here: only this thread may touch
+    // them. The probe thread gets plain strings.
+    struct Probe { QString hash; QStringList candidates; };
+    std::vector<Probe> probes;
+    probes.reserve(m_torrents.size());
+
+    for (const auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        const lt::torrent_status st = cachedStatus(h);
+        if (!st.has_metadata) continue;
+        // Nothing written yet is nothing to miss. total_wanted_done is the only
+        // honest signal: progress is a float, and is_finished lies while
+        // total_wanted is 0 (see torrentHasWork).
+        if (st.total_wanted_done <= 0) continue;
+
+        QString rel;
+        bool multiFile = false;
+        if (auto ti = h.torrent_file(); ti && ti->num_files() > 0) {
+            multiFile = ti->num_files() > 1;
+            rel = QString::fromStdString(ti->files().file_path(lt::file_index_t(0)));
+        }
+
+        const QStringList candidates = bat::contentRootCandidates(
+            QString::fromStdString(st.save_path), rel,
+            QString::fromStdString(st.name), multiFile);
+        if (candidates.isEmpty()) continue;
+
+        probes.push_back({QString::fromStdString(
+            (std::ostringstream() << st.info_hashes.get_best()).str()), candidates});
+    }
+
+    if (probes.empty()) {
+        m_missingHashes.clear();
+        m_missingSeen.clear();
+        return;
+    }
+
+    m_missingProbeRunning = true;
+    auto *thread = QThread::create([this, probes]() {
+        QSet<QString> missing;
+        for (const auto &p : probes)
+            if (!bat::contentPresent(p.candidates, bat::defaultExists))
+                missing.insert(p.hash);
+        QMetaObject::invokeMethod(this, [this, missing]() {
+            // Two probes in a row before we believe it. A network share that
+            // drops for a moment, or an external disk still spinning up, would
+            // otherwise flip a healthy torrent to "missing" and pause it.
+            const QSet<QString> confirmed = missing & m_missingSeen;
+            m_missingSeen = missing;
+
+            // Whole-set replacement, not a merge: a torrent that was probed and
+            // found is absent from `confirmed` and must stop being flagged.
+            if (confirmed != m_missingHashes) {
+                for (const QString &h : confirmed)
+                    if (!m_missingHashes.contains(h))
+                        qWarning().noquote() << "[session] data gone from disk:" << h;
+                m_missingHashes = confirmed;
+            }
+            // Forget torrents that came back, so a later disappearance pauses again.
+            m_missingPaused &= confirmed;
+            pauseMissing(confirmed);
+            m_missingProbeRunning = false;
+        }, Qt::QueuedConnection);
+    });
+    QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
+}
+
+void SessionManager::pauseMissing(const QSet<QString> &confirmed)
+{
+    if (!m_pauseOnMissingData || confirmed.isEmpty()) return;
+
+    int paused = 0;
+    QString lastName;
+    for (int i = 0; i < static_cast<int>(m_torrents.size()); ++i) {
+        const auto &h = m_torrents[i];
+        if (!h.is_valid()) continue;
+        const lt::torrent_status st = cachedStatus(h);
+        if (!st.has_metadata) continue;
+        if (st.flags & lt::torrent_flags::paused) continue;
+
+        const QString hash = QString::fromStdString(
+            (std::ostringstream() << st.info_hashes.get_best()).str());
+        if (!confirmed.contains(hash)) continue;
+        // Already acted on this one; the user is free to resume it and we do
+        // not fight them on the next probe.
+        if (m_missingPaused.contains(hash)) continue;
+
+        h.pause();
+        m_missingPaused.insert(hash);
+        lastName = QString::fromStdString(st.name);
+        ++paused;
+    }
+
+    if (paused > 0) {
+        qWarning() << "[session] paused" << paused << "torrent(s) with no data on disk";
+        emit torrentError(paused == 1 ? tr_("warn_missing_paused_one").arg(lastName)
+                                      : tr_("warn_missing_paused").arg(paused));
+    }
 }
 
 void SessionManager::updateStats()
@@ -93,6 +203,7 @@ void SessionManager::updateStats()
     checkInterfaceStatus();
     checkBandwidthSchedule();
     checkMagnetTimeouts();
+    checkMissingFiles();
     checkMemoryGuard();
     enforceDownloadQueue();
     if (!m_torrents.empty())

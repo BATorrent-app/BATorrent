@@ -13,16 +13,19 @@ struct TorrentInfo {
     lt::torrent_handle handle;
     QString name;
     QString savePath;
-    qint64 totalSize;
-    qint64 totalDone;
-    float progress;
-    int downloadRate;
-    int uploadRate;
-    int numPeers;
-    int numSeeds;
+    // Every scalar carries a default: `TorrentInfo t;` is default-initialisation,
+    // so anything left out here is read as garbage — an indeterminate `paused`
+    // renders a running torrent as stopped.
+    qint64 totalSize = 0;
+    qint64 totalDone = 0;
+    float progress = 0.0f;
+    int downloadRate = 0;
+    int uploadRate = 0;
+    int numPeers = 0;
+    int numSeeds = 0;
     QString stateString;
     QString stateDetail;   // why a downloading torrent isn't moving ("" when fine)
-    bool paused;
+    bool paused = false;
     bool completed = false;
     // Straight from libtorrent, which counts pieces instead of comparing a
     // float: finished = every piece with priority > 0 is on disk (so it
@@ -33,7 +36,7 @@ struct TorrentInfo {
     bool hasError = false;       // libtorrent parked it: disk full, permissions, bad piece storage
     bool queued = false;   // paused by the download-queue cap, not the user
     int queuePos = 0;      // 1-based position among queued torrents
-    float ratio;
+    float ratio = 0.0f;
     float availability = 0;     // distributed copies (swarm health)
     qint64 totalUploaded = 0;
     qint64 addedTime = 0;       // unix seconds
@@ -75,6 +78,32 @@ inline QString torrentStateKey(const TorrentInfo &info)
     // old totalDone > 0 guard was reaching for.
     if (info.finished || info.seeding) return QStringLiteral("seeding");
     return QStringLiteral("downloading");
+}
+
+// Translation key for the label that goes with torrentStateKey(), or empty when
+// libtorrent's own state enum says more than the key does (checking files,
+// fetching metadata — both live under "downloading").
+//
+// stateString and stateKey used to be produced independently: the key from
+// TorrentInfo's flags, the string from the libtorrent enum. The grid renders a
+// label built from the key and the list renders stateString, so the same
+// torrent could read "Seeding" in one view and "Downloading" in the other
+// (reported on 4.8.0). One classification has to feed both.
+inline QString torrentStateLabelKey(const TorrentInfo &info)
+{
+    const QString key = torrentStateKey(info);
+    if (key == QLatin1String("missing"))   return QStringLiteral("state_files_missing");
+    if (key == QLatin1String("error"))     return QStringLiteral("state_error");
+    if (key == QLatin1String("completed")) return QStringLiteral("state_completed");
+    if (key == QLatin1String("queued"))    return QStringLiteral("state_queued");
+    if (key == QLatin1String("paused"))
+        // "Stop seeding after download" pauses the handle directly, so a
+        // finished torrent otherwise reads as bare "Paused" — ambiguous about
+        // whether the download itself got done.
+        return info.finished ? QStringLiteral("state_paused_done")
+                             : QStringLiteral("state_paused");
+    if (key == QLatin1String("seeding"))   return QStringLiteral("state_seeding");
+    return {};
 }
 
 struct PeerInfo {

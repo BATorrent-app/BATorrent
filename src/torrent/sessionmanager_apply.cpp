@@ -27,6 +27,7 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
     else if (key == "maxActiveDownloads")  setMaxActiveDownloads(v.toInt());
     else if (key == "seedRatioLimit")      setSeedRatioLimit(v.toFloat());
     else if (key == "stopAfterDownload")   setStopAfterDownload(v.toBool());
+    else if (key == "pauseOnMissingData") setPauseOnMissingData(v.toBool());
     else if (key == "maxSeedDays")         setMaxSeedSeconds(qint64(v.toInt()) * 86400);
     else if (key == "schedulerEnabled")    setSchedulerEnabled(v.toBool());
     else if (key == "altDownloadLimit")    setAltSpeedLimits(v.toInt(), altUploadLimit());

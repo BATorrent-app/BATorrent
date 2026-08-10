@@ -1280,5 +1280,9 @@
   "settings_iface_vpn": "可能是 VPN",
   "settings_iface_vpn_active": "你的 VPN，已连接",
   "state_error": "错误",
-  "whatsnew_open_wizard": "设置外观"
+  "whatsnew_open_wizard": "设置外观",
+  "settings_pause_missing": "文件丢失时暂停",
+  "set_pause_missing_note": "如果种子数据在 BATorrent 之外被删除，则暂停而不是重新下载全部内容。",
+  "warn_missing_paused_one": "已暂停“%1” — 其文件已不在磁盘上。",
+  "warn_missing_paused": "已暂停 %1 个种子 — 其文件已不在磁盘上。"
 }

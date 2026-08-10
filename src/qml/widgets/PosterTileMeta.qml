@@ -32,13 +32,15 @@ Column {
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
+                // stateString is the one label the engine produced for this
+                // state; the list renders it too. Building a second one here
+                // from stateKey is what let the grid say "Seeding" while the
+                // list said "Downloading" about the same torrent.
                 text: tile.isDownloading ? ("↓ " + tile.downSpeed)
                       : (tile.hasBadge && tile.metaLine.length > 0) ? tile.metaLine
-                      : (tile.stateKey === "seeding"
-                         ? ((i18n.language, i18n.t("state_seeding")) + " · ↑ " + tile.upSpeed)
-                         : (tile.progress >= 0.999 && tile.stateKey === "paused")
-                         ? (i18n.language, i18n.t("state_paused"))
-                         : tile.stateString)
+                      : tile.stateKey === "seeding"
+                         ? (tile.stateString + " · ↑ " + tile.upSpeed)
+                         : tile.stateString
                 color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber
                        : (tile.hasBadge && tile.metaLine.length > 0) ? Theme.t4
                        : win.textFor(tile.stateKey)

@@ -28,6 +28,8 @@
 #include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/gamesourcemanager.h"
+#include "services/platform/translator.h"
+#include "torrent/types.h"
 #include "bridges/qmlposterbridge.h"
 
 namespace lt = libtorrent;
@@ -651,4 +653,82 @@ TEST_CASE("addMagnet rejects a duplicate info-hash", "[session][add][magnet]")
 
     QDir(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
              .filePath("resume")).removeRecursively();
+}
+
+// ============================================================================
+//  QmlPosterModel — the grid and the list read the same row
+// ============================================================================
+
+// Reported on 4.8.0: the same torrent showed "Seeding" in grid view and
+// "Downloading" in classic view. Both views are fed by this one model — the
+// grid off StateKeyRole, the list off StateStringRole — and the two roles were
+// produced by independent code paths that could disagree.
+//
+// This is the layer the earlier fix was missing. torrentHasWork() had a unit
+// test and it passed while the symptom stayed alive on screen, because nothing
+// exercised the roles the UI actually binds to.
+TEST_CASE("Poster model: the state key and the state label agree on every row",
+          "[bridge][model][regression][state]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    // Tagged: an untagged fixture has the same info-hash as the one the
+    // selection test adds, and the second add is rejected as a duplicate.
+    const QString torrentPath = makeFixtureTorrent(tmp.path(), QStringLiteral("state"));
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlPosterModel model(&session, &resolver);
+
+    // Earlier cases leave resume data behind, so this session may already hold
+    // torrents. That is useful here: more rows, more states to check.
+    const int before = session.torrentCount();
+    session.addTorrent(torrentPath, tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() > before; }));
+    model.refreshFull();
+    REQUIRE(model.rowCount() == session.torrentCount());
+
+    const QString downloading = tr_(QStringLiteral("state_downloading"));
+    const QString seeding     = tr_(QStringLiteral("state_seeding"));
+
+    for (int r = 0; r < model.rowCount(); ++r) {
+        INFO("row " << r);
+        const QModelIndex row = model.index(r, 0);
+        const QString key   = model.data(row, QmlPosterModel::StateKeyRole).toString();
+        const QString label = model.data(row, QmlPosterModel::StateStringRole).toString();
+        REQUIRE_FALSE(key.isEmpty());
+        REQUIRE_FALSE(label.isEmpty());
+
+        // The contradiction itself: the grid must not be able to call a row
+        // "seeding" while the list prints the downloading label for it.
+        if (key == QStringLiteral("seeding"))
+            CHECK(label != downloading);
+        if (label == seeding)
+            CHECK(key == QStringLiteral("seeding"));
+
+        // And the general invariant: when the key carries a label of its own,
+        // that is the label on the row. "queued" is excluded only because its
+        // label takes the position as an argument.
+        const QString labelKey = torrentStateLabelKey(session.torrentAt(r));
+        if (!labelKey.isEmpty() && labelKey != QStringLiteral("state_queued")) {
+            INFO("state key: " << key.toStdString());
+            CHECK(label == tr_(labelKey));
+        }
+    }
+
+    // Drive one row to a state the classification owns and libtorrent's enum
+    // knows nothing about. If the label wiring is removed from torrentAt(),
+    // stateString is left empty and the REQUIRE above fails on every row.
+    const int added = session.torrentCount() - 1;
+    session.markCompleted(added);
+    model.refreshFull();
+
+    const QModelIndex doneRow = model.index(added, 0);
+    CHECK(model.data(doneRow, QmlPosterModel::StateKeyRole).toString()
+          == QStringLiteral("completed"));
+    CHECK(model.data(doneRow, QmlPosterModel::StateStringRole).toString()
+          == tr_(QStringLiteral("state_completed")));
+    CHECK(model.data(doneRow, QmlPosterModel::StateStringRole).toString() != seeding);
 }

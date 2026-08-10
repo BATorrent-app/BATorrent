@@ -116,6 +116,7 @@ void SessionManager::saveResumeData()
     settings.endGroup();
 
     settings.setValue("stopAfterDownload", m_stopAfterDownload);
+    settings.setValue("pauseOnMissingData", m_pauseOnMissingData);
     settings.setValue("maxSeedSeconds", m_maxSeedSeconds);
 
     settings.beginGroup("torrentStopAfter");

@@ -1280,5 +1280,9 @@
   "settings_iface_vpn": "likely VPN",
   "settings_iface_vpn_active": "your VPN, connected",
   "state_error": "Error",
-  "whatsnew_open_wizard": "Set up the look"
+  "whatsnew_open_wizard": "Set up the look",
+  "settings_pause_missing": "Pause when the files are gone",
+  "set_pause_missing_note": "If a torrent's data is deleted outside BATorrent, pause it instead of downloading it all over again.",
+  "warn_missing_paused_one": "Paused “%1” — its files are no longer on disk.",
+  "warn_missing_paused": "Paused %1 torrents — their files are no longer on disk."
 }

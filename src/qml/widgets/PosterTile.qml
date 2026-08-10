@@ -36,9 +36,11 @@ Item {
     required property string genres
     required property int queuePos
 
-    readonly property bool isDownloading: stateKey !== "seeding" && stateKey !== "finished"
-        && stateKey !== "completed" && stateKey !== "paused" && stateKey !== "queued"
-        && stateKey !== "missing"
+    // Allow-list, not a deny-list: the old form listed every state that is not
+    // downloading, so it never excluded "error" (an errored torrent showed a
+    // download speed) and still named "finished", which torrentStateKey has
+    // never produced. Any state added later would leak through too.
+    readonly property bool isDownloading: stateKey === "downloading"
     readonly property int etaSec: (downRate > 0 && progress < 1.0 && sizeBytes > 0)
         ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
 

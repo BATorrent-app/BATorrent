@@ -49,6 +49,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_stats.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_import.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_extract.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/contentprobe.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/ipblocklist.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/proxycontroller.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/crashhandler.cpp     # CrashHandler::lastReport (used by qmlposterbridge)
@@ -318,6 +319,7 @@ bat_add_test(test_releasegroup test_releasegroup.cpp)
 bat_add_test(test_contentlanguage test_contentlanguage.cpp)
 bat_add_test(test_releasetrust test_releasetrust.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
+bat_add_test(test_contentprobe test_contentprobe.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_magnettrackers test_magnettrackers.cpp)
 bat_add_test(test_mkvchapters test_mkvchapters.cpp)
