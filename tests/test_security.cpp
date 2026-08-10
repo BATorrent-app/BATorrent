@@ -32,10 +32,14 @@ static int   s_argc = 1;
 static char  s_arg0[] = "test_security";
 static char *s_argv[] = { s_arg0, nullptr };
 
-struct QtApp {
-    QCoreApplication app{s_argc, s_argv};
-};
-static QtApp &qtApp() { static QtApp a; return a; }
+// Heap-allocated and deliberately never freed. Held by value, the QCoreApplication
+// is destroyed during static teardown, after Qt's own global state has gone —
+// ~QObject then dereferences a dead signal-slot table and the process segfaults
+// on exit, long after Catch2 has reported every assertion green.
+static QCoreApplication &qtApp() {
+    static QCoreApplication *a = new QCoreApplication(s_argc, s_argv);
+    return *a;
+}
 
 static QByteArray sendRaw(quint16 port, const QByteArray &req, int timeout = 3000)
 {

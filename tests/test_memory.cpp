@@ -54,9 +54,13 @@ static int   s_argc = 1;
 static char  s_arg0[] = "test_memory";
 static char *s_argv[] = { s_arg0, nullptr };
 
+// Heap-allocated and deliberately never freed. Held by value, the QCoreApplication
+// is destroyed during static teardown, after Qt's own global state has gone —
+// ~QObject then dereferences a dead signal-slot table and the process segfaults
+// on exit, long after Catch2 has reported every assertion green.
 static QCoreApplication &app() {
-    static QCoreApplication a(s_argc, s_argv);
-    return a;
+    static QCoreApplication *a = new QCoreApplication(s_argc, s_argv);
+    return *a;
 }
 
 // Event-loop-safe HTTP request for in-process server tests

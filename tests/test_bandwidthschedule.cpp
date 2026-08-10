@@ -5,7 +5,11 @@ using bat::inBandwidthSchedule;
 
 static constexpr int ALL_DAYS = 0x7F;   // Mon..Sun
 
-TEST_CASE("schedule: a normal (non-wrapping) window is [from, to)") {
+// Catch2 parses [...] in a test name as a tag, so an interval like "[from, to)"
+// silently breaks discovery and collapses every case in this file into one
+// bogus ctest entry that can never match. Say it in words instead.
+TEST_CASE("schedule: a normal non-wrapping window includes from and excludes to",
+          "[unit][schedule]") {
     // 01:00 -> 07:00, every day
     REQUIRE_FALSE(inBandwidthSchedule(0, 0, ALL_DAYS, 1, 7));   // 00:00 before
     REQUIRE(inBandwidthSchedule(0, 1, ALL_DAYS, 1, 7));         // 01:00 start (inclusive)
@@ -14,7 +18,7 @@ TEST_CASE("schedule: a normal (non-wrapping) window is [from, to)") {
     REQUIRE_FALSE(inBandwidthSchedule(0, 12, ALL_DAYS, 1, 7));  // midday out
 }
 
-TEST_CASE("schedule: a window that wraps midnight (22 -> 6)") {
+TEST_CASE("schedule: a window that wraps midnight (22 -> 6)", "[unit][schedule]") {
     REQUIRE(inBandwidthSchedule(0, 22, ALL_DAYS, 22, 6));       // 22:00 start
     REQUIRE(inBandwidthSchedule(0, 23, ALL_DAYS, 22, 6));       // 23:00
     REQUIRE(inBandwidthSchedule(0, 0, ALL_DAYS, 22, 6));        // 00:00 next day
@@ -23,7 +27,7 @@ TEST_CASE("schedule: a window that wraps midnight (22 -> 6)") {
     REQUIRE_FALSE(inBandwidthSchedule(0, 12, ALL_DAYS, 22, 6)); // midday out
 }
 
-TEST_CASE("schedule: the day mask gates the window") {
+TEST_CASE("schedule: the day mask gates the window", "[unit][schedule]") {
     const int monOnly = 1 << 0;
     const int sunOnly = 1 << 6;
     REQUIRE(inBandwidthSchedule(0, 3, monOnly, 1, 7));          // Monday enabled
@@ -32,7 +36,7 @@ TEST_CASE("schedule: the day mask gates the window") {
     REQUIRE_FALSE(inBandwidthSchedule(0, 3, 0, 1, 7));          // no days ⇒ never
 }
 
-TEST_CASE("schedule: out-of-range weekday never matches") {
+TEST_CASE("schedule: out-of-range weekday never matches", "[unit][schedule]") {
     REQUIRE_FALSE(inBandwidthSchedule(-1, 3, ALL_DAYS, 1, 7));
     REQUIRE_FALSE(inBandwidthSchedule(7, 3, ALL_DAYS, 1, 7));
 }
