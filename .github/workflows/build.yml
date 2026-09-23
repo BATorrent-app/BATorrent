@@ -138,7 +138,7 @@ jobs:
           packages: cmake g++ libboost-dev libssl-dev libfuse2 libgl-dev libglx-dev libegl-dev imagemagick
           version: 4
 
-      # Crash reporting (opt-in, same gate as macOS). No apt package for
+      # Crash reporting, only built when BAT_SENTRY_DSN is set (same as macOS). No apt package for
       # sentry-native, so build it from source when BAT_SENTRY_DSN is set.
       - name: Configure Sentry
         run: |
@@ -321,7 +321,7 @@ jobs:
       - name: Convert PNG to multi-resolution ICO
         run: magick src/images/logo1.png -define icon:auto-resize=256,64,48,32,16 src/images/logo1.ico
 
-      # Crash reporting (opt-in, same gate as macOS). sentry-native via vcpkg;
+      # Crash reporting, only built when BAT_SENTRY_DSN is set (same as macOS). sentry-native via vcpkg;
       # find_package(sentry) resolves through the vcpkg toolchain automatically.
       - name: Configure Sentry
         shell: pwsh
