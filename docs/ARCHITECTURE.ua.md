@@ -59,7 +59,7 @@ src/
     webserver.*       Мінімальний HTTP-сервер: роздає index.html + /api/* JSON. Аутентифікація.
     index.html        Самодостатній WebUI SPA (HTML/CSS/JS, стилізований як програма).
   qml/                UI (див. «Шар QML» нижче).
-  fonts/ icons/ images/  Вбудовані ресурси (шрифт Inter, SVG-іконки, логотип).
+  fonts/ icons/ images/  Вбудовані ресурси (шрифт IBM Plex Sans, SVG-іконки, логотип).
   resources.qrc       Вбудовує qml/ + ресурси. webui/webuiresources.qrc вбудовує index.html.
 tests/                Тестові набори Catch2 (unit / security / memory / nameparser).
 dist/                 Пакування: маніфест flatpak, формула homebrew, .desktop.
@@ -164,7 +164,7 @@ Flathub). Звичайний push у `main` релізу **не** запуска
   `resources.qrc` перевіряйте через `grep -c <Name> build/qrc_resources.cpp` —
   відсутній запис призведе до збою лише під час *виконання* QML, а не при компіляції.
 - **Кросплатформний QML**: на Windows використовуйте URL типу `file:` (наприклад,
-  `win.fileUrl`), вбудований шрифт **Inter** (не системний), `pixelSize` (не
+  `win.fileUrl`), вбудований шрифт **IBM Plex Sans** (не системний), `pixelSize` (не
   `pointSize`) і враховуйте нативний рендеринг тексту. Програма пише **власний**
   файл журналу — Windows DebugView для неї марний.
 - **Запускайте свіжозібраний бінарник напряму**, а не через `open` (який запустить

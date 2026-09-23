@@ -51,7 +51,7 @@ src/
     notifier          Native OS notifications.
     discordrpc        Discord Rich Presence.
     geoip             Peer country flags (resolved by IP, cached).
-    translator        i18n: loads :/translations/<code>.json (7 languages).
+    translator        i18n: loads :/translations/<code>.json (9 languages).
     logger            App log (the app writes its own file — see gotchas).
     qrcodegen         QR matrix generator (phone pairing).
     utils             Formatting helpers (sizes, speeds), shared constants.
@@ -61,7 +61,7 @@ src/
     webserver.*       Tiny HTTP server: serves index.html + /api/* JSON. Auth.
     index.html        Self-contained WebUI SPA (HTML/CSS/JS, themed like the app).
   qml/                The UI (see "QML layer" below).
-  fonts/ icons/ images/  Bundled assets (Inter font, SVG icons, logo).
+  fonts/ icons/ images/  Bundled assets (IBM Plex Sans, SVG icons, logo).
   resources.qrc       Embeds qml/ + assets. webui/webuiresources.qrc embeds index.html.
 tests/                Catch2 suites (unit / security / memory / nameparser).
 dist/                 Packaging: flatpak manifest, homebrew formula, .desktop.
@@ -166,7 +166,7 @@ build.
   `resources.qrc`, verify with `grep -c <Name> build/qrc_resources.cpp` — a
   missing entry only fails at QML *runtime*, not at compile time.
 - **Cross-platform QML**: on Windows use `file:` URLs (e.g. `win.fileUrl`), the
-  bundled **Inter** font (not the system font), `pixelSize` (not `pointSize`),
+  bundled **IBM Plex Sans** font (not the system font), `pixelSize` (not `pointSize`),
   and mind native text rendering. The app writes its **own** log file — Windows
   DebugView is useless for it.
 - **Run the freshly built binary directly**, not `open` (which launches the
