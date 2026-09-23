@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: bat-dialog.css / batorrent-home.css — pequenos ícones SVG tingidos.
+// Pequeno ícone SVG tingido.
 import QtQuick
 import QtQuick.Window
 import QtQuick.Effects

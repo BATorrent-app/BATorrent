@@ -2,8 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent Add Torrent.html + bat-dialog.css
-// Data-driven: populated from session.previewTorrent(path). OK → addTorrentWithPrefs.
+// Filled from session.previewTorrent(path); OK calls addTorrentWithPrefs.
 import QtQuick
 import QtQuick.Dialogs
 import QtQuick.Effects

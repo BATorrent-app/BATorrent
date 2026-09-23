@@ -2,7 +2,6 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent Settings.html + batorrent-settings.css (+ settings-data.js)
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic

@@ -2,8 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent List Thumbs.html .thumb — poster thumbnail for list rows.
-// 30×40 (3:4), radius 5, object-fit cover. Fallback: initial letter centered.
+// Poster thumbnail for list rows; shows the first letter when there's no poster.
 import QtQuick
 import QtQuick.Effects
 import "../theme"

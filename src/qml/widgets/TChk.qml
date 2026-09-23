@@ -2,10 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: bat-dialog.css .chk — checkbox 17×17.
-// off: bg field; border 1 hair; check oculto.
-// on:  bg accent; border transparent; check svg 11px #fff opacity 1.
-// partial: bg field; border Theme.accent; traço central 8×2 Theme.accent.
+// Checkbox with on, off and partial states.
 import QtQuick
 import "../theme"
 

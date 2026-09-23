@@ -99,9 +99,9 @@ Item {
     }
 
 
-    // anime art (eyes top-right / spider bottom-right). Ported 1:1 from .eyes-accent:
-    // the CSS fades the edges via two intersected linear masks; since only Theme.bg sits
-    // behind the art, we reproduce it with two bg-colored gradient scrims (left + bottom/top).
+    // anime art (eyes top-right / spider bottom-right). The edges fade out;
+    // only Theme.bg sits behind the art, so two bg-colored gradient scrims
+    // (left + bottom/top) are enough.
     Item {
         id: animeArtWrap
         visible: Theme.hasAnime && !parent.empty

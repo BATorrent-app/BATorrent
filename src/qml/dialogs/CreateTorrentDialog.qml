@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent Create Torrent.html — wired to session.createTorrent().
+// Create-torrent dialog, backed by session.createTorrent().
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Dialogs

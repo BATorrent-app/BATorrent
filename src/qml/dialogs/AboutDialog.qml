@@ -2,7 +2,6 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent About.html + bat-dialog.css + <style> inline
 import QtQuick
 import QtQuick.Layouts
 import "../theme"

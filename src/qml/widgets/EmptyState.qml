@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent Empty.html (.empty block) — centered empty state for the Main content area.
+// Empty state for the main content area.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"

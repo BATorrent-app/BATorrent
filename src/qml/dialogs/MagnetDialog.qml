@@ -2,7 +2,6 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent Magnet.html + bat-dialog.css
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Dialogs

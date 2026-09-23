@@ -2,9 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: bat-dialog.css .toggle — track 38×21 radius 999, knob 15×15.
-// off: bg field; knob #8c8884 (dark) / #fff (light); border 1 hair.
-// on:  bg accent; knob #fff; border transparent. knob desliza 2 → 19.
+// On/off switch.
 import QtQuick
 import "../theme"
 

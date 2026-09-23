@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent Add Addon.html + bat-dialog.css — wired to QmlAddonBridge (`addons`).
+// Add-addon dialog, backed by QmlAddonBridge (`addons`).
 import QtQuick
 import QtQuick.Layouts
 import "../theme"

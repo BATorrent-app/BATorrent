@@ -2,9 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: bat-dialog.css textarea.ta — multiline.
-// min-height 88; padding 11; bg Theme.field; border 1px Theme.hair; radius 8.
-// fontMono 11.5; line-height 1.5. :focus → border Theme.accent.
+// Multi-line text field.
 import QtQuick
 import QtQuick.Controls.Basic
 import "../theme"

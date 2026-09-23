@@ -2,9 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: bat-dialog.css .eyebrow — small UPPERCASE caption.
-// 9px / weight 700 / letter-spacing 1.8 / Theme.t4 / UPPERCASE.
-// .eyebrow.red → color Theme.accent (mais saturado que t4).
+// Small uppercase caption above a section.
 import QtQuick
 import "../theme"
 

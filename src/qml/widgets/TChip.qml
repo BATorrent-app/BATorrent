@@ -2,9 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: bat-dialog.css .chip — pill pequena.
-// font 10 mono / Theme.t3; bg field; border 1 hair; padding 2 8; radius 999.
-// .chip.red → color Theme.accentText; bg Theme.sel; border rgba(229,51,43,0.3).
+// Small pill label.
 import QtQuick
 import "../theme"
 

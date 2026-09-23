@@ -5,18 +5,9 @@
 pragma Singleton
 import QtQuick
 
-// ============================================================
-//  BATorrent — Theme singleton (ground-truth tokens)
-//  Cada token abaixo é LEITURA LITERAL dos :root dos CSS:
-//    dark      ← batorrent-home.css
-//    light     ← batorrent-home-light.css
-//    midnight  ← batorrent-home-midnight.css
-//    sakura    ← batorrent-home-sakura.css
-//    darkstar  ← batorrent-home-darkstar.css
-//  Nada de hex/rgba hardcoded fora deste arquivo.
-//  Theme.name chaveia tudo; Theme.anime liga a arte de acento.
-//  Persistência via QmlThemeBridge (QSettings: qmlThemeName, qmlAnime).
-// ============================================================
+// Tokens de cor e fonte de todos os temas. Nenhum hex/rgba fora deste arquivo.
+// Theme.name troca o tema; Theme.anime liga a arte de acento.
+// Salvo via QmlThemeBridge (QSettings: qmlThemeName, qmlAnime).
 QtObject {
     id: theme
 
@@ -265,7 +256,7 @@ QtObject {
         isLight ? "#6a6c73" : "#54555c"
 
     // --grn (verde de saúde: seeds em Search, "Instalado" em Addons, badge "Auto" em RSS)
-    // bat-dialog*.css: dark/midnight/darkstar #3fb950 ; light/sakura #2e9c40
+    // dark/midnight/darkstar #3fb950 ; light/sakura #2e9c40
     readonly property color grn:
         name === "custom" ? customTertiaryColor :
         name === "matrix" ? "#44e070" : (isLight ? "#2e9c40" : "#3fb950")

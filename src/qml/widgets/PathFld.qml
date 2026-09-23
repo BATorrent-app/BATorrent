@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: bat-dialog.css .path — Row gap 8: .field (flex 1, mono) + browse button.
+// Path field with a Browse button.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"

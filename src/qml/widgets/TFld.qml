@@ -2,10 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: bat-dialog.css .field — input row.
-// height 34; padding 0 11; gap 8; bg Theme.field; border 1px Theme.hair; radius 8.
-// :focus-within → border Theme.accent. ícone 14px Theme.t4; input 12.5 Theme.t1; placeholder Theme.t4.
-// .mono → fontMono 11.5.
+// Single-line text input.
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts

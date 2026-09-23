@@ -2,9 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: batorrent-settings.css .select / bat-dialog .select
-// height 30, appearance none, padding 0 30 0 10, bg Theme.field, border 1px Theme.hair, radius 7.
-// caret triângulo Theme.t3 à direita. :focus → border Theme.accent.
+// Dropdown select.
 import QtQuick
 import QtQuick.Controls.Basic
 import "../theme"

@@ -2,7 +2,6 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Source: BATorrent Home.html + batorrent-home.css (+ batorrent-home.js model)
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Effects
