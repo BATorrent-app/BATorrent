@@ -57,7 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Install Qt
-        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
+        uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4
         with:
           version: '6.7.*'
           modules: qtmultimedia
@@ -121,7 +121,7 @@ jobs:
       # Qt from aqt (6.7): Ubuntu's apt Qt (6.2) is too old for the QML
       # (MultiEffect / QtQuick.Effects needs 6.5+). boost/ssl for the fork stay apt.
       - name: Install Qt
-        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
+        uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4
         with:
           version: '6.7.*'
           modules: qtmultimedia
@@ -270,7 +270,7 @@ jobs:
         run: ./scripts/apply-fork-patches.sh
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
+        uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4
         with:
           version: '6.7.*'
           modules: qtmultimedia
@@ -580,7 +580,7 @@ jobs:
         run: ./scripts/apply-fork-patches.sh
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
+        uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4
         with:
           version: '6.7.*'
           modules: qtmultimedia
