@@ -74,8 +74,8 @@ Item {
             color: "#161618"
             visible: tile.posterUrl === ""
             // Last resort only: no usable extension, no resolved type, nothing
-            // to say. The bat earns the middle when it is genuinely the only
-            // thing we know: as a permanent backdrop it was just noise.
+            // to say. The bat goes in the middle only when it is the only
+            // thing we know; as a permanent backdrop it was just noise.
             Image {
                 anchors.centerIn: parent
                 width: parent.width * 0.5

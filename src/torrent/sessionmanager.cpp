@@ -335,7 +335,7 @@ SessionManager::SessionManager(QObject *parent)
     // the process is the synchronous parse inside loadResumeData(). So we raise
     // the flag right before it and lower it right after: if the parse crashes,
     // the flag survives to the next launch and we skip resume data once to
-    // recover. Crucially the window is just loadResumeData()'s duration (ms):
+    // recover. The window is only loadResumeData()'s duration (ms):
     // an earlier version only cleared the flag after 15s of uptime, so quitting
     // before then looked like a crash and made every torrent vanish for a launch.
     migrateLegacyResumeData();   // pull torrents from the pre-3.0 data dir if needed

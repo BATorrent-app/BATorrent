@@ -193,8 +193,7 @@ Window {
             welcomeDlg.mode = "welcome"
             welcomeDlg.open()
         } else if (cur.length > 0 && last !== cur) {
-            // No silent undo on dismiss: the point of showing this to existing
-            // users is that they discover settings they never found: content
+            // No silent undo on dismiss. Existing users see this so they discover settings they never found: content
             // language, which side the navigation sits on. A choice made here is
             // a choice, and quietly reverting it on close would undo the reason
             // for showing the wizard at all. Everything stays reachable in

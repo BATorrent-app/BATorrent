@@ -6,7 +6,7 @@
 // one rotating card with title and speed; collapsed there is no room for that,
 // and the space it would have used sat empty between the nav items and the
 // bottom group. Here the same transfers become a short column of covers with a
-// progress bar, which is the most a 64px column can honestly say.
+// progress bar, which is about all a 64px column can show.
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts

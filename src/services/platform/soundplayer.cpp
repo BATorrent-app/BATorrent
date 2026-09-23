@@ -15,9 +15,8 @@
 
 namespace {
 
-// A warm two-note "ta-da" chime (G5 -> D6, a rising perfect fifth). The old
-// version was two pure sine beeps in sequence: which is exactly why it read as
-// a BIOS beep. Two things fix that: a struck-bell timbre (fundamental plus a
+// A warm two-note "ta-da" chime (G5 -> D6, a rising perfect fifth). Two pure
+// sine beeps sound like a BIOS beep. Two things avoid that: a struck-bell timbre (fundamental plus a
 // few decaying harmonics) and an exponential decay envelope so each note rings
 // out and rings into the next instead of stopping dead.
 QByteArray synthesizeChime(const QAudioFormat &format)

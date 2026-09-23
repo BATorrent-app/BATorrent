@@ -98,8 +98,8 @@ Item {
                         height: stripes.height
                         // 30°, not 45°: on a 9px bar a 45° stripe is too short to
                         // cross the band and reads as a diamond. And a diagonal
-                        // cannot be mistaken for a progress bar: no progress bar
-                        // is diagonal: which is exactly what these states need.
+                        // can't be mistaken for progress, since no progress bar
+                        // is diagonal. That is what these states need.
                         rotation: 30
                         transformOrigin: Item.Center
                         Rectangle {
