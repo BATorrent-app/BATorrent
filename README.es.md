@@ -9,7 +9,7 @@
 <h1 align="center">BATorrent</h1>
 
 <p align="center">
-  <i>El cliente BitTorrent con cara — carátulas de películas, seis temas, cero anuncios.</i>
+  <i>Un cliente BitTorrent que muestra tus descargas como carátulas y no como filas de una hoja de cálculo.</i>
 </p>
 
 <p align="center">
@@ -20,87 +20,97 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
-
 <p align="center">
-  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — ábrelo y listo, las carátulas se resuelven solas" width="860">
+  <a href="https://batorrent.com/assets/trailer.mp4"><img src="src/images/trailer-poster.jpg" alt="Mira el tráiler de BATorrent (1:30)" width="860"></a>
 </p>
 
-La mayoría de los clientes de torrent parecen un formulario de Hacienda. Este muestra tus descargas como un **muro de carátulas de películas, series y juegos** — lo mismo que reconoces en Netflix o Steam — y te deja vestirlo con seis temas (o tu propio fondo de pantalla). Por dentro lleva el probado motor **libtorrent**, así que no es un juguete bonito: es un cliente de verdad que da la casualidad de que tiene buen gusto.
+BATorrent es un cliente de torrent de escritorio construido sobre el motor [libtorrent](https://www.libtorrent.org/), el mismo que usan qBittorrent y Deluge. La interfaz lee el nombre de cada torrent, busca el póster que le corresponde (películas y series en TMDB, juegos en IGDB) y organiza tus descargas en una cuadrícula de carátulas en lugar de una lista de nombres de archivo. Por debajo hay un cliente completo que corre sobre una [versión parcheada de ese motor](#el-motor).
 
-> **Sin anuncios. Sin telemetría. Sin versión "Pro". Sin cuenta.** La única petición que hace por su cuenta es la comprobación de actualizaciones en GitHub, y puedes desactivarla. El código está aquí mismo — lee [`updater.cpp`](src/services/integrations/updater.cpp) y compruébalo tú mismo.
+Es gratuito y de código abierto, sin anuncios, telemetría, versión "Pro" ni cuenta. La única petición de red que hace por su cuenta es la comprobación de actualizaciones en GitHub, y hay una opción para desactivarla. Si quieres verificarlo, el código está en [`updater.cpp`](src/services/integrations/updater.cpp).
 
+## Por qué lo hice
 
-## Por qué existe
+Soy un desarrollador solo, en Brasil. Quería un cliente de torrent que se tomara en serio la privacidad, funcionara de forma nativa en Windows, macOS y Linux, y no pareciera diseñado en 2009. No encontré ninguno que me gustara, así que escribí el mío. Tiene licencia MIT, así que si algún día el proyecto añadiera telemetría o anuncios, cualquiera podría hacer un fork del código y distribuirlo sin ellos. La interfaz está traducida a nueve idiomas.
 
-Soy un desarrollador solo en Brasil. Quería un cliente de torrent que se tomara en serio la privacidad, corriera de forma nativa en cualquier escritorio y no pareciera hecho en 2009 — y como no encontré ninguno, hice el mío. Es gratis y con **licencia MIT**: sin trampas, sin telemetría apareciendo más tarde y sin que puedan venderlo en silencio a una empresa que le añada anuncios. Ocho idiomas, porque "útil" no debería significar "solo en inglés".
-
-## El aspecto
-
-<p align="center">
-  <img src="src/images/themes.gif" alt="Cambiando entre los temas integrados" width="860">
-</p>
+## La interfaz
 
 <p align="center">
-  <img src="src/images/shot-grid.jpg" alt="Cover-art grid" width="860">
+  <img src="src/images/shot-list.jpg" alt="Vista de lista compacta, para cuando prefieres detalle a decoración" width="860">
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.jpg" alt="List view" width="860">
+  <img src="src/images/shot-palette-v43.jpg" alt="Paleta de comandos (Ctrl/⌘+K): búsqueda difusa de cualquier torrent o acción" width="860">
 </p>
 
 <p align="center">
-  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="860">
+  <img src="src/images/shot-theme.jpg" alt="Sakura, uno de los temas integrados" width="860">
 </p>
 
-- **Carátulas automáticas** — lee el nombre del torrent y trae el póster real (películas y series vía TMDB, juegos vía IGDB) a una vista de cuadrícula. Un clic cambia a una lista compacta.
-- **Seis temas** — Dark, Light, Midnight, Sakura, Dark Star y uno totalmente **Personalizado** (tu propio fondo + colores de acento), cada uno con arte de acento anime opcional.
-- Gráfico de velocidad en tiempo real, progreso coloreado por estado, un popup en la bandeja con velocidades en vivo y ETA — los detalles que hacen que se *sienta* terminado.
+- **Carátulas.** Obtiene los pósteres a partir del nombre del torrent y los muestra en una cuadrícula. Con un clic cambias a una lista compacta cuando prefieres detalle a decoración.
+- **Seis temas.** Dark, Light, Midnight, Sakura, Dark Star y un tema Custom en el que eliges tu propio fondo y color de acento. Todos admiten arte de acento anime opcional.
+- **Paleta de comandos.** Ctrl/⌘+K abre un buscador difuso para cualquier torrent o acción: pausar todo, activar la velocidad alternativa, saltar a cualquier página. Nada de eso requiere el mouse.
+- **Estado en vivo.** Un gráfico de velocidad en tiempo real, barras de progreso con colores según el estado y un popup en la bandeja con las velocidades actuales y el tiempo restante.
 
-## Lo que de verdad hace
+## Qué hace
 
-| | |
-|---|---|
-| 🔒 **Privacidad primero** | Vinculación a la interfaz de la VPN + **kill switch** (corta todo el tráfico si el túnel cae), modo PT para trackers privados, preajuste Tor, handshake anónimo, bloqueo anti-leecher |
-| 🔎 **Buscar y añadir** | Búsqueda integrada (incl. fuentes abiertas CIS/RuTor, sin login), Pegado Inteligente (magnet / `.torrent` / `thunder://` / hash con Ctrl+V), descarga automática por RSS con filtros regex, arrastrar y soltar |
-| 📱 **Contrólalo desde cualquier sitio** | WebUI en el navegador con **emparejamiento por QR** — escanea desde el móvil, sin teclear IPs. El QR se genera localmente; tu dirección nunca sale de la máquina |
-| 📺 **Ver y organizar** | Reproduce mientras descargas, extracción automática de archivos, categorías + etiquetas, actualización de la biblioteca Plex/Jellyfin/Emby al completar |
-| 🔔 **Mantente al tanto** | Notificaciones nativas de escritorio, alertas de Telegram, Discord Rich Presence ("Descargando X · 67%") |
+**Míralo en la app.** Trae un reproductor de video integrado (basado en FFmpeg, así que reproduce MKV, AVI y WebM directamente) y puedes empezar a ver mientras el archivo todavía se descarga, porque primero baja el comienzo. Busca y descarga subtítulos por ti (a través de SubDL), carga automáticamente los archivos `.srt`/`.vtt` que están junto al video y te deja ajustar la sincronía en vivo. Al terminar, puede actualizar una biblioteca de Plex, Jellyfin o Emby.
+
+**Reproducción instantánea con debrid.** Conecta una cuenta de [Real-Debrid](https://real-debrid.com) o [TorBox](https://torbox.app) y, cuando un magnet ya está en su caché, BATorrent desbloquea el enlace y lo transmite directamente al reproductor integrado, sin descargar ni compartir nada en tu equipo.
+
+**También juegos.** Los torrents de juegos también reciben su carátula (a través de IGDB). Busca en catálogos de juegos, descarga, instala y ejecuta desde la propia app, para que tu biblioteca pirata se comporte un poco como una lista de Steam en vez de una carpeta llena de instaladores.
+
+**Descubrir.** Una página de inicio navegable al estilo de Netflix (pósteres en tendencia, un destacado que va rotando) para encontrar algo que bajar sin salir de la app.
+
+<p align="center">
+  <img src="src/images/shot-discover.jpg" alt="Descubrir: una página de inicio navegable con pósteres en tendencia" width="860">
+</p>
+
+**Privacidad.** Vincula el tráfico a una interfaz de VPN específica, con un kill switch que corta todo si el túnel se cae. También tiene un modo para trackers privados, un preajuste para Tor, handshakes anónimos y bloqueo de clientes anti-leecher. Incluye una prueba de fuga de IP para confirmar que todo funciona.
+
+**Buscar y añadir.** Búsqueda integrada (incluidas fuentes abiertas CIS/RuTor que no piden login), Smart Paste, que reconoce un magnet, un `.torrent`, un enlace `thunder://` o un info hash al pulsar Ctrl+V, descarga automática por RSS con filtros regex, una carpeta vigilada y arrastrar y soltar.
+
+<p align="center">
+  <img src="src/images/shot-search.jpg" alt="Búsqueda integrada: carátulas, calificaciones y el mejor resultado al instante" width="860">
+</p>
+
+**Control remoto.** Una WebUI en el navegador con emparejamiento por QR: escanea el código con el teléfono en lugar de escribir direcciones IP. El QR se genera en tu equipo y la dirección nunca sale de él.
+
+**Organizar.** Extracción automática de archivos comprimidos al terminar, orden por categorías y etiquetas, límites de ratio y de tiempo globales y por torrent, y programación del ancho de banda por hora y día.
+
+**Notificaciones.** Alertas nativas de escritorio, mensajes de Telegram y Discord Rich Presence.
 
 <details>
-<summary><b>…y la cola larga</b> (haz clic para expandir)</summary>
+<summary><b>Lista completa de funciones</b></summary>
 
-Prioridad por archivo · descarga secuencial · inyección automática de trackers · control del diseño del contenido · regex de archivos excluidos · carpeta temporal de descarga · estado Completado con ventanas de seeding · auto-pausa ante errores de archivo · límites globales + por torrent de ratio/tiempo · programador de ancho de banda (hora + día) · importar desde qBittorrent · crear archivos `.torrent` · inspector de torrent · listas de bloqueo de IP · cifrado de protocolo · mirror de actualización Gitee · apagado automático al terminar · exclusión de Windows Defender · copia de seguridad/restauración completa · historial de eliminados recientemente · forzar inicio · visor de registro integrado + diagnósticos + prueba de fuga de IP · formato según la configuración regional · atajos de teclado.
+Prioridad por archivo, descarga secuencial, inyección automática de trackers, control del diseño del contenido, regex para excluir archivos, ruta temporal de descarga separada, un estado de completado con ventanas de seeding, pausa automática ante errores de archivo, límites de ratio y de tiempo globales y por torrent, un programador de ancho de banda por hora y día, importación desde qBittorrent, creación de archivos `.torrent`, un inspector de torrents, listas de bloqueo de IP, cifrado del protocolo, un mirror de actualizaciones en Gitee, apagado automático al terminar las descargas, un asistente para la exclusión en Windows Defender, copia de seguridad y restauración completas, historial de eliminados recientemente, inicio forzado, un visor de registros integrado con diagnósticos y prueba de fuga de IP, formato según la configuración regional y atajos de teclado.
 
 </details>
 
-
 ## El motor
 
-La mayoría de las apps de torrent enlazan libtorrent estándar. BATorrent lleva un pequeño **fork parcheado** que le permite cambiar comportamientos del motor que la API pública no alcanza:
+La mayoría de las apps de torrent enlazan libtorrent tal cual. BATorrent incluye un pequeño fork parcheado, lo que le permite cambiar comportamientos del motor a los que la API pública no llega:
 
-- **Arranque más rápido de la tubería.** En un enlace de gran ancho de banda y alta latencia, la tubería de peticiones estándar crece de a un paso; el fork la hace crecer geométricamente, llenando una tubería ancha en una fracción de las idas y vueltas. Medido en ~+27 % en un enlace rápido en el propio benchmark A/B del proyecto, sin los baches del estándar entre ejecuciones, y nunca empeora.
-- **Preferencia por peers del mismo país.** Una base de datos GeoIP sin conexión (db-ip Lite) etiqueta cada peer por país, y el ranking de peers del fork prefiere los de tu propio país cuando puede elegir — lo que suele significar menor latencia y menos rutas transfronterizas con throttling.
+- **Arranque más rápido del pipeline.** En un enlace de mucho ancho de banda y alta latencia, el pipeline de peticiones estándar crece de a un paso; el fork lo hace crecer de forma geométrica, así que llena una conexión amplia en una fracción de las idas y vueltas. En el benchmark A/B del propio proyecto midió alrededor de +27% en un enlace rápido, sin los atascos que la versión estándar tiene de una ejecución a otra, y nunca rinde peor.
+- **Preferencia por peers del mismo país.** Una base de datos GeoIP sin conexión (db-ip Lite) etiqueta cada peer por país, y el ranking de peers del fork prefiere los de tu propio país cuando puede elegir, lo que suele significar menos latencia y menos rutas internacionales con throttling.
 
-Ambas son funciones del fork en tiempo de compilación (desactivadas en un build estándar) y se aplican como parches versionados en [`third_party/patches/`](third_party/patches), no como una copia incrustada.
+Ambas son funciones del fork que se activan al compilar, están desactivadas en un build estándar y se aplican como parches versionados en [`third_party/patches/`](third_party/patches) en lugar de una copia incluida en el repositorio.
 
-## Conseguirlo
+## Instalación
 
-| Plataforma | | |
+| Plataforma | Descarga | Requisitos |
 |---|---|---|
-| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [Instalador](https://github.com/BATorrent-app/BATorrent/releases/latest) · [Portátil](https://github.com/BATorrent-app/BATorrent/releases/latest) | Windows 10+ |
-| **macOS** | **`brew install --cask Mateuscruz19/batorrent/batorrent`** · [`.dmg`](https://github.com/BATorrent-app/BATorrent/releases/latest) | macOS 12+ · Apple Silicon |
-| **Linux** | [AppImage](https://github.com/BATorrent-app/BATorrent/releases/latest) | glibc 2.35+ |
+| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6), [Instalador](https://batorrent.com/win) o [Portátil](https://batorrent.com/portable) | Windows 10 o posterior |
+| **macOS** | `brew install --cask Mateuscruz19/batorrent/batorrent` o el [`.dmg`](https://batorrent.com/mac) | macOS 12+, Apple Silicon |
+| **Linux** | [AppImage](https://batorrent.com/linux) | glibc 2.35+ |
 
-Después solo arrastra un `.torrent` o un magnet a la ventana. Eso es todo.
+Con el programa abierto, arrastra un archivo `.torrent` o un enlace magnet a la ventana.
 
-<sub>**macOS:** todavía sin notarizar (el programa de desarrollador de Apple es de pago). Homebrew es la vía más suave — `brew` quita la marca de cuarentena, así que abre sin el aviso de Gatekeeper. Con el `.dmg`, clic derecho → **Abrir** la primera vez.</sub>
-
+<sub><b>Nota sobre macOS:</b> la app todavía no está notarizada (el programa de desarrolladores de Apple es una suscripción de pago). Homebrew es la vía más sencilla porque <code>brew</code> quita la marca de cuarentena, así que se abre sin el aviso de Gatekeeper. Si usas el <code>.dmg</code>, la primera vez haz clic derecho en la app y elige <b>Abrir</b>.</sub>
 
 <details>
-<summary><b>Compilar desde el código fuente y notas de ingeniería</b></summary>
+<summary><b>Compilar desde el código fuente</b></summary>
 
-### Requisitos
-C++17 · CMake 3.16+ · Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`) · libtorrent-rasterbar 2.0+ · Boost · Qt6Keychain (opcional).
+**Requisitos:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`), libtorrent-rasterbar 2.0+, Boost y, de forma opcional, Qt6Keychain.
 
 ```bash
 # Debian / Ubuntu
@@ -108,9 +118,14 @@ sudo apt install build-essential cmake qt6-base-dev qt6-svg-dev qt6-multimedia-d
     libtorrent-rasterbar-dev libboost-dev libssl-dev
 cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && ./build/BATorrent
 ```
-(macOS: `brew install qt libtorrent-rasterbar boost openssl`. Windows: instalador de Qt + `vcpkg install libtorrent:x64-windows`.)
 
-### Calidad y seguridad
+En macOS: `brew install qt libtorrent-rasterbar boost openssl`.
+En Windows: el instalador de Qt más `vcpkg install libtorrent:x64-windows`.
+
+</details>
+
+<details>
+<summary><b>Calidad y seguridad</b></summary>
 
 <p>
   <a href="https://github.com/BATorrent-app/BATorrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/BATorrent-app/BATorrent/actions/workflows/codeql.yml/badge.svg"></a>
@@ -120,16 +135,20 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && ./build/B
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
-- **Pruebas** — suite Catch2 (unidad, seguridad, memoria) en cada build de CI; el nuevo comportamiento del backend lleva su prueba.
-- **Sanitizers** — pasa limpio bajo AddressSanitizer + UndefinedBehaviorSanitizer (0 fugas / use-after-free / UB).
-- **Revisado** antes de cada release en cuanto a seguridad de memoria/hilos, autenticación de la WebUI, inyección, path traversal, validación de entrada y manejo de secretos. Los secretos viven en el keychain del sistema, nunca en texto plano; la WebUI solo se abre a la red cuando defines una contraseña.
+- Una suite de pruebas Catch2 (unitarias, de seguridad y de memoria) se ejecuta en cada build de CI; todo comportamiento nuevo del backend llega con su prueba.
+- El build pasa limpio con AddressSanitizer y UndefinedBehaviorSanitizer.
+- Antes de cada release se revisa el código en cuanto a seguridad de memoria y de hilos, autenticación de la WebUI, inyección, path traversal, validación de entradas y manejo de secretos. Los secretos se guardan en el llavero del sistema y no en texto plano, y la WebUI solo se abre a la red después de que defines una contraseña.
 
 </details>
 
 ## Contribuir
 
-Issues y PRs son bienvenidos — para cualquier cosa no trivial, abre una issue primero. Informes de error: incluye tu plataforma + versión (`Ayuda → Acerca de`) y los pasos para reproducirlo. Las traducciones se agradecen especialmente.
+Los issues y pull requests son bienvenidos. Para cualquier cambio no trivial, abre primero un issue para que acordemos el enfoque. Los reportes de errores son más útiles si incluyen tu plataforma y versión (en `Ayuda → Acerca de`) y los pasos para reproducir el problema. Las traducciones se agradecen especialmente.
 
-## Licencia
+## Licencia y marca
 
-[MIT](LICENSE) © 2024–2026 Mateus Cruz · hecho en Brasil 🦇
+El **código** está bajo licencia [MIT](LICENSE), © 2024-2026 Mateus Cruz. Puedes hacer un fork y distribuir tu propio build.
+
+El **nombre "BATorrent" y el logo** pertenecen al proyecto y no están cubiertos por la licencia del código. Si redistribuyes un fork, por favor ponle un nombre propio para que los usuarios sepan cuál es el build oficial. Los detalles están en [TRADEMARK.md](TRADEMARK.md). Los forks y contribuciones de buena fe son bienvenidos.
+
+Hecho en Brasil.

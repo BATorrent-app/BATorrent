@@ -21,16 +21,16 @@
 </p>
 
 <p align="center">
-  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — seus downloads como uma parede de capas" width="860">
+  <a href="https://batorrent.com/assets/trailer.mp4"><img src="src/images/trailer-poster.jpg" alt="Assista ao trailer do BATorrent (1:30)" width="860"></a>
 </p>
 
-O BATorrent é um cliente de torrent para desktop feito sobre o motor [libtorrent](https://www.libtorrent.org/), o mesmo que o qBittorrent e o Deluge usam. A interface lê o nome de cada torrent, busca o pôster correspondente (filmes e séries no TMDB, jogos no IGDB) e organiza seus downloads numa grade de capas, em vez de uma lista de nomes de arquivo. As capas ficam em cima de um cliente que aguenta o tranco, e sobre um motor que foi [ajustado, não apenas usado de fábrica](#o-motor).
+O BATorrent é um cliente de torrent para desktop feito sobre o motor [libtorrent](https://www.libtorrent.org/), o mesmo que o qBittorrent e o Deluge usam. A interface lê o nome de cada torrent, busca o pôster correspondente (filmes e séries no TMDB, jogos no IGDB) e organiza seus downloads numa grade de capas, em vez de uma lista de nomes de arquivo. Por baixo das capas há um cliente completo, rodando numa [versão modificada desse motor](#o-motor).
 
-É gratuito e de código aberto. Sem anúncios, sem telemetria, sem versão "Pro", sem conta. A única requisição que ele faz por conta própria é a verificação de atualização no GitHub, e existe uma opção para desligar isso. Se quiser conferir, o código está em [`updater.cpp`](src/services/integrations/updater.cpp).
+É gratuito e de código aberto, sem anúncios, telemetria, versão "Pro" ou conta. A única requisição que ele faz por conta própria é a verificação de atualização no GitHub, e existe uma opção para desligar isso. Se quiser conferir, o código está em [`updater.cpp`](src/services/integrations/updater.cpp).
 
 ## Por que eu fiz isso
 
-Sou um desenvolvedor sozinho, no Brasil. Eu queria um cliente de torrent que levasse privacidade a sério, rodasse de forma nativa no Windows, no macOS e no Linux, e que não parecesse ter sido desenhado em 2009. Como não achei nenhum que me agradasse, escrevi o meu. Ele é licenciado sob a MIT, o que significa que nenhuma telemetria pode ser enfiada mais tarde e ninguém pode comprar o projeto e grudar anúncios nele. A interface vem em nove idiomas, porque "útil" não deveria significar "só em inglês".
+Sou um desenvolvedor sozinho, no Brasil. Eu queria um cliente de torrent que levasse privacidade a sério, rodasse de forma nativa no Windows, no macOS e no Linux, e que não parecesse ter sido desenhado em 2009. Como não achei nenhum que me agradasse, escrevi o meu. Ele é licenciado sob a MIT, então se o projeto um dia colocasse telemetria ou anúncios, qualquer pessoa poderia fazer um fork do código e distribuí-lo sem isso. A interface está traduzida para nove idiomas.
 
 ## A interface
 
@@ -48,29 +48,29 @@ Sou um desenvolvedor sozinho, no Brasil. Eu queria um cliente de torrent que lev
 
 - **Capas automáticas.** Ele identifica o pôster a partir do nome do torrent e o exibe numa grade. Um clique alterna para uma lista densa quando você quer detalhe em vez de decoração.
 - **Seis temas.** Dark, Light, Midnight, Sakura, Dark Star e um tema Custom em que você escolhe o próprio fundo e a cor de destaque. Cada um aceita arte de destaque de anime, opcional.
-- **Paleta de comandos.** O Ctrl/⌘+K abre uma busca rápida por qualquer torrent ou ação: pausar tudo, alternar a velocidade alternativa, ir para qualquer página, sem precisar do mouse.
+- **Paleta de comandos.** O Ctrl/⌘+K abre uma busca rápida por qualquer torrent ou ação: pausar tudo, alternar a velocidade alternativa, ir para qualquer página. Nada disso precisa do mouse.
 - **Status ao vivo.** Um gráfico de velocidade em tempo real, barras de progresso coloridas por estado e um popup na bandeja com as velocidades atuais e o tempo restante.
 
 ## O que ele faz
 
-**Assista dentro do app.** Tem um player de vídeo embutido (com FFmpeg, então toca MKV, AVI e WebM direto) e você pode começar a assistir enquanto o arquivo ainda baixa, ele só busca o começo primeiro. Ele procura e baixa legendas para você (pelo SubDL), carrega automaticamente arquivos `.srt`/`.vtt` ao lado do vídeo e deixa você ajustar a sincronia ao vivo. Ao concluir, pode atualizar uma biblioteca do Plex, Jellyfin ou Emby.
+**Assista dentro do app.** Tem um player de vídeo embutido (com FFmpeg, então toca MKV, AVI e WebM direto) e você pode começar a assistir enquanto o arquivo ainda baixa, porque ele busca o começo primeiro. Ele procura e baixa legendas para você (pelo SubDL), carrega automaticamente arquivos `.srt`/`.vtt` ao lado do vídeo e deixa você ajustar a sincronia ao vivo. Ao concluir, pode atualizar uma biblioteca do Plex, Jellyfin ou Emby.
 
 **Reprodução instantânea com debrid.** Conecte uma conta [Real-Debrid](https://real-debrid.com) ou [TorBox](https://torbox.app) e, quando um magnet já está em cache no lado deles, o BATorrent libera o link e transmite direto no player embutido, sem baixar nem semear localmente.
 
-**Jogos, não só vídeo.** Torrents de jogos também ganham capa (pelo IGDB). Busque em catálogos de jogos, baixe e depois instale e abra de dentro do app, para que sua biblioteca pirata se comporte um pouco como uma lista da Steam, em vez de uma pasta cheia de instaladores.
+**Jogos também.** Torrents de jogos também ganham capa (pelo IGDB). Busque em catálogos de jogos, baixe e depois instale e abra de dentro do app, para que sua biblioteca pirata se comporte um pouco como uma lista da Steam, em vez de uma pasta cheia de instaladores.
 
 **Descobrir.** Uma página inicial navegável no estilo Netflix (pôsteres em alta, um destaque rotativo) para achar algo para baixar sem sair do app.
 
 <p align="center">
-  <img src="src/images/shot-discover.jpg" alt="Descobrir — uma página inicial navegável de pôsteres em alta" width="860">
+  <img src="src/images/shot-discover.jpg" alt="Descobrir: uma página inicial navegável de pôsteres em alta" width="860">
 </p>
 
-**Privacidade.** Vincule a uma interface de VPN específica, com um kill switch que corta todo o tráfego se o túnel cair. Modo para trackers privados, preset para Tor, handshake anônimo e bloqueio de clientes sanguessuga (leechers). Há um teste de vazamento de IP embutido para confirmar que está funcionando.
+**Privacidade.** Vincule a uma interface de VPN específica, com um kill switch que corta todo o tráfego se o túnel cair. Também tem modo para trackers privados, preset para Tor, handshake anônimo e bloqueio de clientes sanguessuga (leechers). Há um teste de vazamento de IP embutido para confirmar que está funcionando.
 
 **Buscar e adicionar.** Busca embutida (incluindo fontes abertas da CIS/RuTor, sem login), Smart Paste que reconhece um magnet, um `.torrent`, um link `thunder://` ou um info hash no Ctrl+V, download automático por RSS com filtros regex, uma pasta monitorada, e arrastar e soltar.
 
 <p align="center">
-  <img src="src/images/shot-search.jpg" alt="Busca embutida — capas, notas e o melhor resultado na hora" width="860">
+  <img src="src/images/shot-search.jpg" alt="Busca embutida: capas, notas e o melhor resultado na hora" width="860">
 </p>
 
 **Controle remoto.** Uma WebUI no navegador com pareamento por QR: escaneie o código pelo celular em vez de digitar endereços de IP. O QR é gerado na sua máquina e o endereço nunca sai dela.
@@ -147,8 +147,8 @@ Issues e pull requests são bem-vindos. Para qualquer coisa não trivial, abra u
 
 ## Licença e marca
 
-O **código** é [MIT](LICENSE), © 2024–2026 Mateus Cruz. Faça fork, construa em cima, distribua.
+O **código** é [MIT](LICENSE), © 2024-2026 Mateus Cruz. Você pode fazer fork e distribuir o seu próprio build.
 
-O **nome "BATorrent" e o logo** são a identidade do projeto e não fazem parte da licença do código. Se você redistribuir um fork, por favor dê a ele um nome próprio, para que os usuários saibam qual é o build oficial. Os detalhes estão em [TRADEMARK.md](TRADEMARK.md). Forks e contribuições de boa-fé são bem-vindos.
+O **nome "BATorrent" e o logo** pertencem ao projeto e não fazem parte da licença do código. Se você redistribuir um fork, por favor dê a ele um nome próprio, para que os usuários saibam qual é o build oficial. Os detalhes estão em [TRADEMARK.md](TRADEMARK.md). Forks e contribuições de boa-fé são bem-vindos.
 
 Feito no Brasil.
