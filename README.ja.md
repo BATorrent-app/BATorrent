@@ -9,7 +9,7 @@
 <h1 align="center">BATorrent</h1>
 
 <p align="center">
-  <i>顔のある BitTorrent クライアント — 映画のカバー、6つのテーマ、広告ゼロ。</i>
+  <i>ダウンロードを表計算の行ではなく、カバーアートで表示する BitTorrent クライアント。</i>
 </p>
 
 <p align="center">
@@ -20,87 +20,97 @@
   <a href="https://apps.microsoft.com/detail/9n4l3tq24rc6"><img alt="Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-get-dc2626?style=flat-square&logo=microsoft"></a>
 </p>
 
-
 <p align="center">
-  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — 開いてすぐ使える、カバーは自動で表示" width="860">
+  <a href="https://batorrent.com/assets/trailer.mp4"><img src="src/images/trailer-poster.jpg" alt="BATorrent のトレーラーを見る (1:30)" width="860"></a>
 </p>
 
-たいていのトレントクライアントは納税申告書みたいな見た目です。これはダウンロードを **映画・ドラマ・ゲームのカバーの壁** として見せます — Netflix や Steam で見慣れたあの感じ — そして6つのテーマ（あるいは自分の壁紙）で着せ替えできます。中身は実績ある **libtorrent** エンジンなので、見た目だけのおもちゃではありません。たまたまセンスも持ち合わせた、本物のクライアントです。
+BATorrent は [libtorrent](https://www.libtorrent.org/) エンジンで動くデスクトップ向けトレントクライアントです。qBittorrent や Deluge と同じエンジンを使っています。フロントエンドは各トレントの名前を読み取って対応するポスターを探し (映画やドラマは TMDB、ゲームは IGDB から取得)、ダウンロードをファイル名の一覧ではなくカバーのグリッドとして並べます。その下では、[パッチを当てたエンジン](#エンジン) の上でフル機能のクライアントが動いています。
 
-> **広告なし。テレメトリなし。「Pro」版なし。アカウント不要。** 自分から行う唯一の通信は GitHub の更新確認だけで、それもオフにできます。ソースはここにあります — [`updater.cpp`](src/services/integrations/updater.cpp) を読んで自分で確かめてください。
-
+無料のオープンソースで、広告、テレメトリ、「Pro」プラン、アカウントはありません。アプリが自分から行う通信は GitHub への更新確認だけで、これもスイッチでオフにできます。確かめたい場合は [`updater.cpp`](src/services/integrations/updater.cpp) のコードを見てください。
 
 ## なぜ作ったのか
 
-私はブラジルの個人開発者です。プライバシーを真剣に扱い、どのデスクトップでもネイティブに動き、2009年製のような見た目ではないトレントクライアントが欲しかった — でも見つからなかったので、自分で作りました。無料で **MIT ライセンス** です。隠れた条件もなく、後からテレメトリが忍び込むこともなく、広告を付け足す会社にこっそり売られることもありません。8つの言語に対応 — 「使える」が「英語だけ」を意味すべきではないからです。
+私はブラジルに住む個人開発者です。プライバシーをきちんと扱い、Windows、macOS、Linux でネイティブに動き、2009年に作られたような見た目ではないトレントクライアントが欲しかったのですが、気に入るものが見つからなかったので自分で書きました。MIT ライセンスなので、もしこのプロジェクトがテレメトリや広告を追加したとしても、誰でもコードをフォークしてそれらを外したものを配布できます。インターフェイスは9言語に翻訳されています。
 
-## 見た目
+## インターフェイス
 
 <p align="center">
-  <img src="src/images/themes.gif" alt="内蔵テーマの切り替え" width="860">
+  <img src="src/images/shot-list.jpg" alt="見た目より情報量を優先したいときのコンパクトなリスト表示" width="860">
 </p>
 
 <p align="center">
-  <img src="src/images/shot-grid.jpg" alt="Cover-art grid" width="860">
+  <img src="src/images/shot-palette-v43.jpg" alt="コマンドパレット (Ctrl/⌘+K): どのトレントや操作もあいまい検索で呼び出せる" width="860">
 </p>
 
 <p align="center">
-  <img src="src/images/shot-list.jpg" alt="List view" width="860">
+  <img src="src/images/shot-theme.jpg" alt="内蔵テーマのひとつ、Sakura" width="860">
 </p>
+
+- **カバーアート。** トレント名からポスターを取得してグリッドに表示します。見た目より情報量が欲しいときは、1クリックでコンパクトなリスト表示に切り替えられます。
+- **6つのテーマ。** Dark、Light、Midnight、Sakura、Dark Star、それに背景とアクセントカラーを自分で選べる Custom テーマがあります。どのテーマにもアニメ風のアクセントアートを付けられます (任意)。
+- **コマンドパレット。** Ctrl/⌘+K であいまい検索が開き、トレントや操作をすぐ呼び出せます。すべて一時停止、代替速度の切り替え、任意のページへの移動などが、マウスなしでできます。
+- **リアルタイムの状態表示。** リアルタイムの速度グラフ、状態ごとに色分けされた進捗バー、現在の速度と残り時間を表示するトレイポップアップがあります。
+
+## できること
+
+**アプリ内で視聴。** 動画プレーヤーを内蔵しています (FFmpeg ベースなので MKV、AVI、WebM をそのまま再生できます)。ファイルの先頭から先に取得するので、ダウンロード中でも再生を始められます。字幕の検索とダウンロード (SubDL 経由) も行い、同じフォルダの `.srt`/`.vtt` ファイルは自動で読み込み、再生しながらタイミングを微調整できます。ダウンロード完了時に Plex、Jellyfin、Emby のライブラリを更新することもできます。
+
+**debrid で即時再生。** [Real-Debrid](https://real-debrid.com) か [TorBox](https://torbox.app) のアカウントを接続すると、magnet がすでに向こう側にキャッシュされている場合、BATorrent はリンクの制限を解除して内蔵プレーヤーに直接ストリーミングします。手元のマシンでダウンロードやシードは発生しません。
+
+**ゲームにも対応。** ゲームのトレントにもカバーアートが付きます (IGDB 経由)。ゲームのカタログを検索してダウンロードし、そのままアプリ内でインストールと起動ができるので、海賊版ライブラリがセットアップファイルの詰まったフォルダではなく、Steam のリストに少し近い使い心地になります。
+
+**Discover。** Netflix 風に眺められるトップページ (トレンドのポスター、切り替わるヒーロー表示) があり、アプリを離れずに次にダウンロードするものを探せます。
 
 <p align="center">
-  <img src="src/images/shot-theme.jpg" alt="Sakura theme" width="860">
+  <img src="src/images/shot-discover.jpg" alt="Discover: トレンドのポスターを眺められるトップページ" width="860">
 </p>
 
-- **自動カバーアート** — トレント名を読み取り、本物のポスター（映画・ドラマは TMDB、ゲームは IGDB）をグリッド表示に取り込みます。1クリックでコンパクトなリスト表示に切り替え。
-- **6つのテーマ** — Dark、Light、Midnight、Sakura、Dark Star、そして完全 **カスタム**（自分の背景 + アクセントカラー）。それぞれ任意のアニメ風アクセントアート付き。
-- リアルタイムの速度グラフ、状態で色分けされた進捗、ライブ速度と残り時間を表示するトレイポップアップ — *完成された* と感じさせる細部です。
+**プライバシー。** 特定の VPN インターフェイスにバインドでき、トンネルが切れたら全通信を遮断するキルスイッチも備えています。ほかにプライベートトラッカー用モード、Tor プリセット、匿名ハンドシェイク、リーチャーのクライアントのブロックがあります。正しく機能しているかは内蔵の IP リークテストで確認できます。
 
-## 実際にできること
+**探して追加。** 内蔵検索 (ログイン不要の CIS/RuTor のオープンなソースも含む)、Ctrl+V で magnet、`.torrent`、`thunder://` リンク、info hash を認識する Smart Paste、正規表現フィルタ付きの RSS 自動ダウンロード、監視フォルダ、ドラッグ＆ドロップに対応しています。
 
-| | |
-|---|---|
-| 🔒 **プライバシー最優先** | VPN インターフェイスへのバインド + **キルスイッチ**（トンネルが落ちたら全通信を遮断）、プライベートトラッカー向け PT モード、Tor プリセット、匿名ハンドシェイク、リーチャー（吸血）ブロック |
-| 🔎 **探して追加** | 内蔵検索（CIS/RuTor のオープンソース含む、ログイン不要）、スマートペースト（Ctrl+V で magnet / `.torrent` / `thunder://` / hash）、正規表現フィルタ付き RSS 自動ダウンロード、ドラッグ＆ドロップ |
-| 📱 **どこからでも操作** | ブラウザ WebUI と **QR ペアリング** — スマホでスキャンするだけ、IP 入力不要。QR はローカル生成で、アドレスが端末から出ることはありません |
-| 📺 **視聴と整理** | ダウンロード中の再生、アーカイブの自動展開、カテゴリ + タグ、完了時に Plex/Jellyfin/Emby のライブラリを更新 |
-| 🔔 **見逃さない** | ネイティブのデスクトップ通知、Telegram アラート、Discord リッチプレゼンス（「X をダウンロード中 · 67%」） |
+<p align="center">
+  <img src="src/images/shot-search.jpg" alt="内蔵検索: カバーアート、評価、いちばん合う結果をすぐ表示" width="860">
+</p>
+
+**リモート操作。** ブラウザから使える WebUI があり、QR コードでペアリングできます。IP アドレスを打ち込む代わりに、スマホでコードを読み取るだけです。QR はあなたのマシン上で生成され、アドレスが外に出ることはありません。
+
+**整理。** 完了時のアーカイブ自動展開、カテゴリとタグによる分類、トレント別と全体のレシオ制限と時間制限、時間帯と曜日ごとの帯域スケジュールに対応しています。
+
+**通知。** ネイティブのデスクトップ通知、Telegram へのメッセージ、Discord Rich Presence に対応しています。
 
 <details>
-<summary><b>…そしてロングテール</b>（クリックで展開）</summary>
+<summary><b>全機能一覧</b></summary>
 
-ファイル別の優先度 · 順次ダウンロード · トラッカー自動追加 · コンテンツ配置の制御 · 除外ファイルの正規表現 · 一時ダウンロード先 · シード期間付きの「完了」状態 · ファイルエラー時の自動一時停止 · 全体 + トレント別のレシオ/時間制限 · 帯域スケジューラ（時間 + 曜日）· qBittorrent からのインポート · `.torrent` ファイル作成 · トレントインスペクタ · IP ブロックリスト · プロトコル暗号化 · Gitee 更新ミラー · 完了時の自動シャットダウン · Windows Defender 除外 · 完全バックアップ/復元 · 最近削除した履歴 · 強制開始 · 内蔵ログビューア + 診断 + IP リークテスト · ロケール対応の書式 · キーボードショートカット。
+ファイルごとの優先度、順次ダウンロード、トラッカーの自動追加、コンテンツ配置の制御、除外ファイルの正規表現、一時ダウンロード先の個別指定、シード期間付きの完了状態、ファイルエラー時の自動一時停止、全体とトレント別のレシオ制限と時間制限、時間帯と曜日による帯域スケジューラ、qBittorrent からのインポート、`.torrent` の作成、トレントインスペクタ、IP ブロックリスト、プロトコル暗号化、Gitee の更新ミラー、ダウンロード完了時の自動シャットダウン、Windows Defender の除外設定ヘルパー、完全なバックアップと復元、最近削除した項目の履歴、強制開始、診断と IP リークテスト付きの内蔵ログビューア、ロケールに合わせた表示形式、キーボードショートカット。
 
 </details>
 
-
 ## エンジン
 
-多くの torrent アプリは標準の libtorrent をそのままリンクします。BATorrent は小さな**パッチ適用フォーク**を同梱し、公開 API では届かないエンジンの挙動を変更しています。
+多くのトレントアプリは標準の libtorrent をそのままリンクしています。BATorrent はこれに小さなパッチを当てたフォークを同梱しているので、公開 API からは変えられないエンジンの挙動にも手を入れられます。
 
-- **パイプラインの立ち上がりが速い。** 高帯域・高遅延の回線では、標準のリクエストパイプラインは 1 段ずつしか伸びません。フォークではこれを幾何級数的に伸ばし、太い回線をわずかな往復で埋めます。プロジェクト独自の A/B ベンチマークで高速回線で約 **+27%** を計測。標準版のような実行ごとの失速がなく、性能が下がることもありません。
-- **同一国の peer を優先。** オフラインの GeoIP データベース（db-ip Lite）が各 peer を国で分類し、フォークの peer ランキングは選択の余地があるとき自国の peer を優先します。多くの場合これは、低遅延で、帯域制限を受けやすい国際経路が減ることを意味します。
+- **パイプラインの立ち上がりが速い。** 帯域が広く遅延の大きい回線では、標準のリクエストパイプラインは1段ずつしか伸びません。フォークでは等比級数的に伸ばすので、太い回線をずっと少ない往復回数で埋められます。プロジェクト独自の A/B ベンチマークでは、高速回線で約 +27% を計測しました。標準版で起きる実行ごとの停滞もなく、性能が落ちるケースもありません。
+- **同じ国のピアを優先。** オフラインの GeoIP データベース (db-ip Lite) で各ピアに国を割り当て、フォークのピアランキングは選べる場合に自分と同じ国のピアを優先します。その結果、遅延が小さくなり、帯域制限のかかった国際経路を通ることが減る傾向があります。
 
-どちらもフォークのコンパイル時機能（標準ビルドでは無効）で、埋め込みコピーではなく [`third_party/patches/`](third_party/patches) 配下のバージョン管理されたパッチとして適用されます。
+どちらもフォークのコンパイル時機能で、標準ビルドでは無効です。コードを丸ごと取り込むのではなく、[`third_party/patches/`](third_party/patches) 以下のバージョン管理されたパッチとして適用しています。
 
-## 入手
+## インストール
 
-| プラットフォーム | | |
+| プラットフォーム | ダウンロード | 動作環境 |
 |---|---|---|
-| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6) · [インストーラー](https://github.com/BATorrent-app/BATorrent/releases/latest) · [ポータブル版](https://github.com/BATorrent-app/BATorrent/releases/latest) | Windows 10+ |
-| **macOS** | **`brew install --cask Mateuscruz19/batorrent/batorrent`** · [`.dmg`](https://github.com/BATorrent-app/BATorrent/releases/latest) | macOS 12+ · Apple Silicon |
-| **Linux** | [AppImage](https://github.com/BATorrent-app/BATorrent/releases/latest) | glibc 2.35+ |
+| **Windows** | [Microsoft Store](https://apps.microsoft.com/detail/9n4l3tq24rc6)、[インストーラー](https://batorrent.com/win)、[ポータブル版](https://batorrent.com/portable) | Windows 10 以降 |
+| **macOS** | `brew install --cask Mateuscruz19/batorrent/batorrent` または [`.dmg`](https://batorrent.com/mac) | macOS 12+、Apple Silicon |
+| **Linux** | [AppImage](https://batorrent.com/linux) | glibc 2.35+ |
 
-あとは `.torrent` か magnet をウィンドウにドロップするだけ。それだけです。
+起動したら、`.torrent` ファイルか magnet リンクをウィンドウにドロップしてください。
 
-<sub>**macOS:** まだ公証（notarization）されていません（Apple の開発者プログラムは有料のため）。Homebrew が最もスムーズです — `brew` が隔離フラグを外すので、Gatekeeper のダイアログなしで開きます。`.dmg` の場合は初回のみ右クリック → **開く**。</sub>
-
+<sub><b>macOS についての注意:</b> アプリはまだ公証 (notarization) を受けていません (Apple の開発者プログラムは有料のサブスクリプションのため)。<code>brew</code> が隔離フラグを外してくれるので、Homebrew を使うのがいちばん簡単で、Gatekeeper のダイアログも出ません。<code>.dmg</code> を使う場合は、初回だけアプリを右クリックして<b>開く</b>を選んでください。</sub>
 
 <details>
-<summary><b>ソースからのビルドと技術メモ</b></summary>
+<summary><b>ソースからビルド</b></summary>
 
-### 必要環境
-C++17 · CMake 3.16+ · Qt 6（`Widgets`, `Network`, `Svg`, `Multimedia`）· libtorrent-rasterbar 2.0+ · Boost · Qt6Keychain（任意）。
+**必要なもの:** C++17、CMake 3.16+、Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`)、libtorrent-rasterbar 2.0+、Boost、必要に応じて Qt6Keychain。
 
 ```bash
 # Debian / Ubuntu
@@ -108,9 +118,14 @@ sudo apt install build-essential cmake qt6-base-dev qt6-svg-dev qt6-multimedia-d
     libtorrent-rasterbar-dev libboost-dev libssl-dev
 cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && ./build/BATorrent
 ```
-（macOS: `brew install qt libtorrent-rasterbar boost openssl`。Windows: Qt インストーラー + `vcpkg install libtorrent:x64-windows`。）
 
-### 品質とセキュリティ
+macOS の場合: `brew install qt libtorrent-rasterbar boost openssl`。
+Windows の場合: Qt インストーラーと `vcpkg install libtorrent:x64-windows`。
+
+</details>
+
+<details>
+<summary><b>品質とセキュリティ</b></summary>
 
 <p>
   <a href="https://github.com/BATorrent-app/BATorrent/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/BATorrent-app/BATorrent/actions/workflows/codeql.yml/badge.svg"></a>
@@ -120,16 +135,20 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && ./build/B
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
-- **テスト** — すべての CI ビルドで Catch2 スイート（ユニット・セキュリティ・メモリ）。新しいバックエンドの挙動にはテストを追加。
-- **サニタイザ** — AddressSanitizer + UndefinedBehaviorSanitizer でクリーンに通過（リーク / use-after-free / UB ゼロ）。
-- **レビュー** — 各リリース前にメモリ/スレッド安全性、WebUI 認証、インジェクション、パストラバーサル、入力検証、シークレット管理を確認。シークレットは OS のキーチェーンに保存され、平文にはなりません。WebUI はパスワードを設定して初めてネットワークに公開されます。
+- CI のビルドごとに Catch2 のテストスイート (ユニット、セキュリティ、メモリ) を実行しています。バックエンドに新しい挙動を加えるときは、テストも一緒に追加します。
+- ビルドは AddressSanitizer と UndefinedBehaviorSanitizer の下で問題なく通ります。
+- リリースの前には毎回、メモリとスレッドの安全性、WebUI の認証、インジェクション、パストラバーサル、入力検証、シークレットの扱いについてコードをレビューしています。シークレットは平文ではなく OS のキーチェーンに保存し、WebUI はパスワードを設定するまでネットワークに公開されません。
 
 </details>
 
-## 貢献
+## コントリビュート
 
-Issue と PR を歓迎します — 些細でないものは先に Issue を立ててください。バグ報告には、プラットフォーム + バージョン（`ヘルプ → バージョン情報`）と再現手順を添えてください。翻訳は特に歓迎します。
+Issue とプルリクエストを歓迎します。小さな修正でない場合は、進め方をすり合わせるために先に Issue を立ててください。バグ報告には、プラットフォームとバージョン (`ヘルプ → バージョン情報` で確認できます)、再現手順を書いてもらえると助かります。翻訳は特に歓迎しています。
 
-## ライセンス
+## ライセンスと商標
 
-[MIT](LICENSE) © 2024–2026 Mateus Cruz · made in Brazil 🦇
+**コード** のライセンスは [MIT](LICENSE) です。© 2024-2026 Mateus Cruz。自由にフォークして、独自のビルドを配布できます。
+
+**「BATorrent」という名前とロゴ** はプロジェクトに帰属し、コードのライセンスの対象外です。フォークを再配布する場合は、どれが公式ビルドかユーザーが見分けられるよう、別の名前を付けてください。詳しくは [TRADEMARK.md](TRADEMARK.md) にあります。善意のフォークやコントリビュートは歓迎します。
+
+Made in Brazil.

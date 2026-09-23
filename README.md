@@ -21,16 +21,16 @@
 </p>
 
 <p align="center">
-  <img src="src/images/shot-grid-v43.jpg" alt="BATorrent — your downloads as a wall of cover art" width="860">
+  <a href="https://batorrent.com/assets/trailer.mp4"><img src="src/images/trailer-poster.jpg" alt="Watch the BATorrent trailer (1:30)" width="860"></a>
 </p>
 
-BATorrent is a desktop torrent client built on the [libtorrent](https://www.libtorrent.org/) engine, the same one qBittorrent and Deluge use. The front end reads each torrent's name, looks up the matching poster (movies and shows from TMDB, games from IGDB), and lays your downloads out as a grid of covers instead of a list of filenames. The covers sit on top of a client that actually holds up, and on an engine that's been [tuned, not just shipped stock](#the-engine).
+BATorrent is a desktop torrent client built on the [libtorrent](https://www.libtorrent.org/) engine, the same one qBittorrent and Deluge use. The front end reads each torrent's name, looks up the matching poster (movies and shows from TMDB, games from IGDB), and lays your downloads out as a grid of covers instead of a list of filenames. Underneath is a full-featured client running on a [patched build of that engine](#the-engine).
 
-It's free and open source. No ads, no telemetry, no "Pro" tier, no account. The only network request it makes on its own is the update check against GitHub, and there's a switch to turn that off. If you want to confirm that, the code is [`updater.cpp`](src/services/integrations/updater.cpp).
+It's free and open source, with no ads, telemetry, "Pro" tier or account. The only network request it makes on its own is the update check against GitHub, and there's a switch to turn that off. If you want to confirm that, the code is [`updater.cpp`](src/services/integrations/updater.cpp).
 
 ## Why I built it
 
-I'm one developer in Brazil. I wanted a torrent client that took privacy seriously, ran natively on Windows, macOS and Linux, and didn't look like it was designed in 2009. I couldn't find one I liked, so I wrote it. It's MIT-licensed, which means no telemetry can be slipped in later and nobody can buy the project and bolt ads onto it. The interface ships in nine languages, because "useful" shouldn't mean "English only."
+I'm one developer in Brazil. I wanted a torrent client that took privacy seriously, ran natively on Windows, macOS and Linux, and didn't look like it was designed in 2009. I couldn't find one I liked, so I wrote it. It's MIT-licensed, so if the project ever added telemetry or ads, anyone could fork the code and ship it without them. The interface is translated into nine languages.
 
 ## The interface
 
@@ -48,29 +48,29 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 
 - **Cover art.** It resolves posters from the torrent name and shows them in a grid. One click switches to a dense list when you want detail over decoration.
 - **Six themes.** Dark, Light, Midnight, Sakura, Dark Star, and a Custom theme where you pick your own background and accent colour. Each supports optional anime accent art.
-- **Command palette.** Ctrl/⌘+K opens a fuzzy finder for any torrent or action: pause all, toggle alternate speed, jump to any page, no mouse required.
+- **Command palette.** Ctrl/⌘+K opens a fuzzy finder for any torrent or action: pause all, toggle alternate speed, jump to any page. None of it needs the mouse.
 - **Live status.** A real-time speed graph, state-coloured progress bars, and a tray popup with current speeds and ETA.
 
 ## What it does
 
-**Watch it in the app.** There's a built-in video player (FFmpeg-backed, so it plays MKV, AVI and WebM directly) and you can start watching while the file is still downloading, it just fetches the beginning first. It searches and downloads subtitles for you (via SubDL), auto-loads sidecar `.srt`/`.vtt` files, and lets you nudge the sync live. On completion it can refresh a Plex, Jellyfin or Emby library.
+**Watch it in the app.** There's a built-in video player (FFmpeg-backed, so it plays MKV, AVI and WebM directly) and you can start watching while the file is still downloading, since it fetches the beginning first. It searches and downloads subtitles for you (via SubDL), auto-loads sidecar `.srt`/`.vtt` files, and lets you nudge the sync live. On completion it can refresh a Plex, Jellyfin or Emby library.
 
-**Instant playback with debrid.** Connect a [Real-Debrid](https://real-debrid.com) or [TorBox](https://torbox.app) account and, when a magnet is already cached on their side, BATorrent unrestricts the link and streams it straight into the built-in player, no local download or seeding needed.
+**Instant playback with debrid.** Connect a [Real-Debrid](https://real-debrid.com) or [TorBox](https://torbox.app) account and, when a magnet is already cached on their side, BATorrent unrestricts the link and streams it straight into the built-in player, so nothing gets downloaded or seeded on your machine.
 
-**Games, not just video.** Game torrents get their cover art too (via IGDB). Search game catalogs, download, and then install and launch from inside the app, so your pirated library behaves a bit like a Steam list instead of a folder of setup files.
+**Games too.** Game torrents get their cover art too (via IGDB). Search game catalogs, download, and then install and launch from inside the app, so your pirated library behaves a bit like a Steam list instead of a folder of setup files.
 
 **Discover.** A browsable Netflix-style front page (trending posters, a rotating hero) so you can find something to grab without leaving the app.
 
 <p align="center">
-  <img src="src/images/shot-discover.jpg" alt="Discover — a browsable front page of trending posters" width="860">
+  <img src="src/images/shot-discover.jpg" alt="Discover: a browsable front page of trending posters" width="860">
 </p>
 
-**Privacy.** Bind to a specific VPN interface with a kill switch that drops all traffic if the tunnel goes down. Private-tracker mode, a Tor preset, anonymous handshake, and anti-leecher client blocking. There's a built-in IP-leak test to confirm it's working.
+**Privacy.** Bind to a specific VPN interface with a kill switch that drops all traffic if the tunnel goes down. It also has a private-tracker mode, a Tor preset, anonymous handshakes and anti-leecher client blocking. There's a built-in IP-leak test to confirm it's working.
 
 **Finding and adding.** Built-in search (including open CIS/RuTor sources that need no login), Smart Paste that recognises a magnet, `.torrent`, `thunder://` link or info hash on Ctrl+V, RSS auto-download with regex filters, a watch folder, and drag-and-drop.
 
 <p align="center">
-  <img src="src/images/shot-search.jpg" alt="Built-in search — cover art, ratings, and an instant best match" width="860">
+  <img src="src/images/shot-search.jpg" alt="Built-in search: cover art, ratings, and an instant best match" width="860">
 </p>
 
 **Remote control.** A browser WebUI with QR pairing: scan the code from your phone instead of typing IP addresses. The QR is generated on your machine and the address never leaves it.
@@ -147,8 +147,8 @@ Issues and pull requests are welcome. For anything non-trivial, open an issue fi
 
 ## License and trademark
 
-The **code** is [MIT](LICENSE), © 2024–2026 Mateus Cruz. Fork it, build on it, ship it.
+The **code** is [MIT](LICENSE), © 2024-2026 Mateus Cruz. You're free to fork it and ship your own build.
 
-The **name "BATorrent" and the logo** are the project's identity and are not covered by the code license. If you redistribute a fork, please give it its own name so users can tell which build is the official one. The details are in [TRADEMARK.md](TRADEMARK.md). Good-faith forks and contributions are welcome.
+The **name "BATorrent" and the logo** belong to the project and aren't covered by the code license. If you redistribute a fork, please give it its own name so users can tell which build is the official one. The details are in [TRADEMARK.md](TRADEMARK.md). Good-faith forks and contributions are welcome.
 
 Made in Brazil.
