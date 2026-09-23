@@ -110,7 +110,7 @@ BATorrent 是一款桌面 BT 客户端，基于 [libtorrent](https://www.libtorr
 <details>
 <summary><b>从源码构建</b></summary>
 
-**依赖：** C++17、CMake 3.16+、Qt 6（`Widgets`、`Network`、`Svg`、`Multimedia`）、libtorrent-rasterbar 2.0+、Boost，以及可选的 Qt6Keychain。
+**依赖：** C++17、CMake 3.16+、Qt 6（`Widgets`、`Network`、`Svg`、`Multimedia`、`Quick`、`QuickWidgets`、`QuickControls2`）、libtorrent-rasterbar 2.0+、Boost，以及可选的 Qt6Keychain。
 
 ```bash
 # Debian / Ubuntu

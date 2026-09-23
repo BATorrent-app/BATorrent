@@ -110,7 +110,7 @@ Con el programa abierto, arrastra un archivo `.torrent` o un enlace magnet a la 
 <details>
 <summary><b>Compilar desde el código fuente</b></summary>
 
-**Requisitos:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`), libtorrent-rasterbar 2.0+, Boost y, de forma opcional, Qt6Keychain.
+**Requisitos:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`, `Quick`, `QuickWidgets`, `QuickControls2`), libtorrent-rasterbar 2.0+, Boost y, de forma opcional, Qt6Keychain.
 
 ```bash
 # Debian / Ubuntu

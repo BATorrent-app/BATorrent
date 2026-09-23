@@ -110,7 +110,7 @@ BATorrent є десктопним торент-клієнтом на рушії 
 <details>
 <summary><b>Збирання з вихідного коду</b></summary>
 
-**Вимоги:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`), libtorrent-rasterbar 2.0+, Boost і, за бажанням, Qt6Keychain.
+**Вимоги:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`, `Quick`, `QuickWidgets`, `QuickControls2`), libtorrent-rasterbar 2.0+, Boost і, за бажанням, Qt6Keychain.
 
 ```bash
 # Debian / Ubuntu

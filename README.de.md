@@ -110,7 +110,7 @@ Sobald die App läuft, ziehst du eine `.torrent`-Datei oder einen Magnet-Link au
 <details>
 <summary><b>Aus dem Quellcode bauen</b></summary>
 
-**Voraussetzungen:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`), libtorrent-rasterbar 2.0+, Boost und optional Qt6Keychain.
+**Voraussetzungen:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`, `Quick`, `QuickWidgets`, `QuickControls2`), libtorrent-rasterbar 2.0+, Boost und optional Qt6Keychain.
 
 ```bash
 # Debian / Ubuntu

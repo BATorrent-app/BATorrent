@@ -48,7 +48,7 @@ Sou um desenvolvedor sozinho, no Brasil. Eu queria um cliente de torrent que lev
 
 - **Capas automáticas.** Ele identifica o pôster a partir do nome do torrent e o exibe numa grade. Um clique alterna para uma lista densa quando você quer detalhe em vez de decoração.
 - **Seis temas.** Dark, Light, Midnight, Sakura, Dark Star e um tema Custom em que você escolhe o próprio fundo e a cor de destaque. Cada um aceita arte de destaque de anime, opcional.
-- **Paleta de comandos.** O Ctrl/⌘+K abre uma busca rápida por qualquer torrent ou ação: pausar tudo, alternar a velocidade alternativa, ir para qualquer página. Nada disso precisa do mouse.
+- **Paleta de comandos.** O Ctrl/⌘+K abre uma busca rápida por qualquer torrent ou ação: pausar tudo, alternar a velocidade alternativa, ir para qualquer página.
 - **Status ao vivo.** Um gráfico de velocidade em tempo real, barras de progresso coloridas por estado e um popup na bandeja com as velocidades atuais e o tempo restante.
 
 ## O que ele faz
@@ -90,7 +90,7 @@ Prioridade por arquivo, download sequencial, injeção automática de trackers, 
 
 A maioria dos apps de torrent usa o libtorrent de fábrica. O BATorrent traz um pequeno fork com patches dele, o que permite mudar comportamentos do motor que a API pública não alcança:
 
-- **Ramp de pipeline mais rápido.** Num link de banda larga e latência alta, o pipeline de requisições padrão cresce de um em um; o fork cresce de forma geométrica, então enche um "cano gordo" numa fração das idas e voltas. Medido em cerca de +27% num link rápido no benchmark A/B do próprio projeto, sem os travamentos de execução para execução do padrão, e nunca piora.
+- **Ramp de pipeline mais rápido.** Num link de banda larga e latência alta, o pipeline de requisições padrão cresce de um em um; o fork cresce de forma geométrica, então enche um "cano gordo" numa fração das idas e voltas. Medido em cerca de +27% num link rápido no benchmark A/B do próprio projeto, sem os travamentos de execução para execução do padrão, e nunca ficou mais lento que o padrão nessas medições.
 - **Preferência por peers do mesmo país.** Um banco GeoIP offline (db-ip Lite) marca cada peer por país, e o ranqueamento de peers do fork prefere peers do seu próprio país quando pode escolher, o que costuma significar menor latência e menos rotas transfronteiriças estranguladas.
 
 Os dois são recursos de tempo de compilação do fork, desligados num build padrão, e aplicados como patches versionados em [`third_party/patches/`](third_party/patches), em vez de uma cópia vendorizada.
@@ -110,7 +110,7 @@ Com o programa aberto, arraste um arquivo `.torrent` ou um link magnet para a ja
 <details>
 <summary><b>Compilar a partir do código-fonte</b></summary>
 
-**Requisitos:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`), libtorrent-rasterbar 2.0+, Boost e, opcionalmente, Qt6Keychain.
+**Requisitos:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`, `Quick`, `QuickWidgets`, `QuickControls2`), libtorrent-rasterbar 2.0+, Boost e, opcionalmente, Qt6Keychain.
 
 ```bash
 # Debian / Ubuntu
@@ -135,9 +135,9 @@ No Windows: o instalador do Qt mais `vcpkg install libtorrent:x64-windows`.
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
-- Uma suíte de testes Catch2 (unidade, segurança, memória) roda a cada build de CI; todo comportamento novo do backend vem com um teste.
+- Uma suíte de testes Catch2 (unidade, segurança, memória) roda a cada build de CI; a maior parte do código novo do backend vem com testes.
 - O build passa limpo no AddressSanitizer e no UndefinedBehaviorSanitizer.
-- Antes de cada release o código é revisado quanto a segurança de memória e de threads, autenticação da WebUI, injeção, path traversal, validação de entrada e tratamento de segredos. Os segredos ficam no chaveiro do sistema, nunca em texto puro, e a WebUI só se abre para a rede depois que você define uma senha.
+- Antes de cada release eu reviso a WebUI, o tratamento de entrada e tudo que mexe com memória, threads ou segredos. Os segredos ficam no chaveiro do sistema, nunca em texto puro, e a WebUI só se abre para a rede depois que você define uma senha.
 
 </details>
 

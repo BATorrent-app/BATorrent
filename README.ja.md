@@ -110,7 +110,7 @@ BATorrent は [libtorrent](https://www.libtorrent.org/) エンジンで動くデ
 <details>
 <summary><b>ソースからビルド</b></summary>
 
-**必要なもの:** C++17、CMake 3.16+、Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`)、libtorrent-rasterbar 2.0+、Boost、必要に応じて Qt6Keychain。
+**必要なもの:** C++17、CMake 3.16+、Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`, `Quick`, `QuickWidgets`, `QuickControls2`)、libtorrent-rasterbar 2.0+、Boost、必要に応じて Qt6Keychain。
 
 ```bash
 # Debian / Ubuntu

@@ -48,7 +48,7 @@ I'm one developer in Brazil. I wanted a torrent client that took privacy serious
 
 - **Cover art.** It resolves posters from the torrent name and shows them in a grid. One click switches to a dense list when you want detail over decoration.
 - **Six themes.** Dark, Light, Midnight, Sakura, Dark Star, and a Custom theme where you pick your own background and accent colour. Each supports optional anime accent art.
-- **Command palette.** Ctrl/⌘+K opens a fuzzy finder for any torrent or action: pause all, toggle alternate speed, jump to any page. None of it needs the mouse.
+- **Command palette.** Ctrl/⌘+K opens a fuzzy finder for any torrent or action: pause all, toggle alternate speed, jump to any page.
 - **Live status.** A real-time speed graph, state-coloured progress bars, and a tray popup with current speeds and ETA.
 
 ## What it does
@@ -90,7 +90,7 @@ Per-file priority, sequential download, automatic tracker injection, content-lay
 
 Most torrent apps link stock libtorrent. BATorrent ships a small patched fork of it, so it can change engine behaviour the public API can't reach:
 
-- **Faster pipeline ramp.** On a high-bandwidth, high-latency link the stock request pipeline grows one step at a time; the fork grows it geometrically, so it fills a fat pipe in a fraction of the round-trips. Measured at roughly +27% on a fast link in the project's own A/B benchmark, with none of stock's run-to-run stalls, and it never regresses.
+- **Faster pipeline ramp.** On a high-bandwidth, high-latency link the stock request pipeline grows one step at a time; the fork grows it geometrically, so it fills a fat pipe in a fraction of the round-trips. Measured at roughly +27% on a fast link in the project's own A/B benchmark, without stock's run-to-run stalls, and it was never slower than stock in those runs.
 - **Same-country peer bias.** An offline GeoIP database (db-ip Lite) tags each peer by country, and the fork's peer ranking prefers peers in your own country when it has a choice, which tends to mean lower latency and fewer throttled cross-border routes.
 
 Both are compile-time features of the fork, off in a stock build, and are applied as versioned patches under [`third_party/patches/`](third_party/patches) rather than a vendored copy.
@@ -110,7 +110,7 @@ Once it's running, drop a `.torrent` file or a magnet link onto the window.
 <details>
 <summary><b>Build from source</b></summary>
 
-**Requirements:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`), libtorrent-rasterbar 2.0+, Boost, and optionally Qt6Keychain.
+**Requirements:** C++17, CMake 3.16+, Qt 6 (`Widgets`, `Network`, `Svg`, `Multimedia`, `Quick`, `QuickWidgets`, `QuickControls2`), libtorrent-rasterbar 2.0+, Boost, zlib, and optionally Qt6Keychain.
 
 ```bash
 # Debian / Ubuntu
@@ -135,9 +135,9 @@ On Windows: the Qt installer plus `vcpkg install libtorrent:x64-windows`.
   <a href="https://www.bestpractices.dev/projects/13073"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/13073/badge"></a>
 </p>
 
-- A Catch2 test suite (unit, security, memory) runs on every CI build; new backend behaviour ships with a test.
+- A Catch2 test suite (unit, security, memory) runs on every CI build; most new backend code comes with tests.
 - The build passes clean under AddressSanitizer and UndefinedBehaviorSanitizer.
-- Before each release the code is reviewed for memory and thread safety, WebUI authentication, injection, path traversal, input validation, and secret handling. Secrets go in the OS keychain rather than plaintext, and the WebUI only opens to the network after you set a password.
+- Before each release I go over the WebUI, input handling, and anything touching memory, threads or secrets. Secrets go in the OS keychain rather than plaintext, and the WebUI only opens to the network after you set a password.
 
 </details>
 
