@@ -11,8 +11,8 @@
 
 #include "services/metadata/nameparser.h"
 
-// Pure title-similarity / IGDB pick / cache type helpers peeled from
-// MetadataResolver so characterisation tests can pin match behaviour.
+// Pure title-similarity / IGDB pick / cache type helpers split out of
+// MetadataResolver so they can be tested without the network.
 namespace MetadataMatch {
 
 inline constexpr double kMinConfidence = 0.34;

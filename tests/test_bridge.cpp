@@ -442,7 +442,7 @@ TEST_CASE("Settings bridge: UI bool toggles read back as real bool", "[bridge][s
 }
 
 // ============================================================================
-//  playFile / streamUrl / clearResume — past-regression characterization (P0)
+//  playFile / streamUrl / clearResume: behaviour that broke before
 // ============================================================================
 static QString stripIncompleteSuffix(QString path)
 {

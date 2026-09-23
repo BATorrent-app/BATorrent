@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Embedded video player (4.0 step ④). Plays a torrent file streamed from the
+// Embedded video player. Plays a torrent file streamed from the
 // local StreamServer (download-while-watch), with resume per infohash+file and
 // an external-player fallback if the codec isn't supported.
 import QtQuick

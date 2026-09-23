@@ -12,8 +12,8 @@
 #include <utility>
 #include <vector>
 
-// Pure resume / remove / finish-alert policy peeled from SessionManager so
-// characterisation tests can pin behaviour without an lt::session.
+// Pure resume / remove / finish-alert policy split out of SessionManager so
+// it can be tested without an lt::session.
 namespace SessionResume {
 
 inline constexpr char kIncompleteSuffix[] = ".!bt";

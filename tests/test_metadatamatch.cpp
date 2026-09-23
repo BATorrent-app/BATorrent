@@ -176,7 +176,7 @@ TEST_CASE("canonicalInfoHash lowercases hex", "[metadatamatch]") {
             == QStringLiteral("abcd"));
 }
 
-TEST_CASE("legacyAppDataSibling peels nested AppData", "[metadatamatch]") {
+TEST_CASE("legacyAppDataSibling strips nested AppData", "[metadatamatch]") {
     REQUIRE(MetadataMatch::legacyAppDataSibling(
                 QStringLiteral("/Users/x/Library/Application Support/BATorrent/BATorrent"))
             == QStringLiteral("/Users/x/Library/Application Support/BATorrent"));
