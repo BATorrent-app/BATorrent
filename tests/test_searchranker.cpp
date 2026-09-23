@@ -2,7 +2,7 @@
 #include "services/metadata/searchranker.h"
 
 // Characterization tests: these pin the behavior of the search relevance logic
-// that used to live in SearchView.qml (sigWords / relScore), so the C++ port is
+// ported from SearchView.qml (sigWords / relScore), so the C++ port is
 // provably equivalent. Do not "fix" these to a nicer behavior without intent:
 // they encode what the UI already shipped.
 

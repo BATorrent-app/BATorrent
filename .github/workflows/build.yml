@@ -605,8 +605,8 @@ jobs:
           # these into the bundle so the user installs nothing.
           brew install wireguard-tools wireguard-go
 
-      # Crash reporting is opt-in: only activates when the BAT_SENTRY_DSN repo
-      # variable is set. Without it, the build below is byte-identical to before.
+      # Crash reporting is only built when the BAT_SENTRY_DSN repo variable is
+      # set.
       - name: Configure Sentry
         run: |
           if [ -n "${{ vars.BAT_SENTRY_DSN }}" ]; then
@@ -752,9 +752,8 @@ jobs:
     # tag. Manual / PR runs build the artifacts (downloadable from the
     # workflow page) but stop short of cutting a release.
     #
-    # CRITICAL: needs `test` too. Builds used to publish even when Catch2 was
-    # red because release only waited on platform jobs: unit-test failures
-    # never blocked a tag from shipping. qml-smoke is here for the same reason:
+    # Needs `test` too, so a tag with failing Catch2 tests never ships.
+    # qml-smoke is here for the same reason:
     # a build that compiles but fails to load Main.qml must not ship.
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [test, qml-smoke, build-linux, build-windows, build-macos]

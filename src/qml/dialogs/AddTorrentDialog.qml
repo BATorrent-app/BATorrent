@@ -34,7 +34,7 @@ BatDialog {
 
     // disk-fit check against the CURRENT destination: re-run when the path
     // changes and every 2s while open, so switching drives or freeing space
-    // updates the warning live (it used to freeze on the first reading)
+    // updates the warning live
     property double freeBytes: -1
     readonly property bool wontFit: dlg.freeBytes >= 0 && dlg.totalSizeBytes > dlg.freeBytes
     function refreshFit() {

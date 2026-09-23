@@ -232,11 +232,10 @@ QStringList SessionManager::torrentFileNames(int index) const
 
 void SessionManager::checkMagnetTimeouts()
 {
-    // No longer times anything out: a magnet used to be silently deleted
-    // after 5 minutes without metadata, which hit rare-seeder torrents hardest
-    // (exactly the ones that legitimately take longer to find a peer). The
-    // wait is now explained via stateDetail (torrentAt) instead; this pass
-    // just prunes the bookkeeping map so it can't grow unbounded.
+    // Doesn't time anything out: rare-seeder magnets can legitimately take a
+    // long time to find a peer, so the wait is explained via stateDetail
+    // (torrentAt) instead. This pass just prunes the bookkeeping map so it
+    // can't grow unbounded.
     if (m_magnetAddedAt.empty())
         return;
     for (auto it = m_magnetAddedAt.begin(); it != m_magnetAddedAt.end(); ) {

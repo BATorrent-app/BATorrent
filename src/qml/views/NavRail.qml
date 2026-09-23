@@ -38,9 +38,8 @@ Rectangle {
         hovered: dlSlot.slotHovered
         active: rail.showDl
     }
-    // Shown on every page, Downloads included. It used to be gated off page 0
-    // on the theory that the list says it better, but that left the rail with a
-    // hole exactly where users spend their time: and it also meant the
+    // Shown on every page, Downloads included. Hiding it on page 0 would leave
+    // a hole in the rail exactly where users spend their time, and the
     // carousel's resume mode, which only arms on page 0, could never appear.
     readonly property bool showDl: !collapsed && car.dlList.length > 0 && showDownloadChip
     Connections {

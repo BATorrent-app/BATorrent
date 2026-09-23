@@ -271,7 +271,7 @@ public:
     // Recently-removed history: persistent ring buffer of the last N removed
     // torrents' resume snapshots, so the user can re-add even after closing
     // the undo toast. Stored as files under <AppData>/removed/{hash}.resume.
-    QList<RemovedEntry> recentlyRemoved() const;   // RemovedEntry now in types.h (shared with IEngine)
+    QList<RemovedEntry> recentlyRemoved() const;   // RemovedEntry lives in types.h (shared with IEngine)
     bool restoreRemoved(const QString &hash);
     void clearRemovedHistory();
 

@@ -20,9 +20,7 @@ Item {
     property real progress: 0
     property string stateKey: ""
     property color fill: Theme.fillFor(track.stateKey)
-    // A highlight travelling over the fill: "this is moving right now". The
-    // seeding bar used to be a separate 2px line at the poster's edge, which
-    // made seeding and downloading two different shapes for the same fact.
+    // A highlight travelling over the fill: "this is moving right now".
     property bool sheen: false
 
     readonly property bool trouble: Theme.isTroubleState(track.stateKey)

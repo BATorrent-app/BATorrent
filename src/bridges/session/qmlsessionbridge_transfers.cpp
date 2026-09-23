@@ -57,11 +57,9 @@ QVariantList QmlSessionBridge::activeDownloads() const
     const int n = m_session->torrentCount();
     for (int i = 0; i < n; ++i) {   // navigate via hover arrows, so no cap
         const TorrentInfo info = m_session->torrentAt(i);
-        // Actually moving, nothing else. Paused and queued ones used to be kept
-        // here so the card would never empty, but that is what made it lie: it
-        // announced "4/14" while the Downloading chip beside it read 0, because
-        // the two were counting different things under the same word. An empty
-        // card is a true statement: there is nothing in flight.
+        // Actually moving, nothing else. Paused and queued ones stay out so this
+        // card and the Downloading chip beside it count the same thing under the
+        // same word. An empty card is a true statement: nothing is in flight.
         if (info.completed || info.finished || info.paused || info.queued) continue;
         const QString hash = m_session->torrentHashAt(i);
         QString poster;

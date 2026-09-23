@@ -30,7 +30,7 @@ Item {
         anchors.centerIn: parent
         src: btn.src; s: btn.s
         tint: btn.active ? Theme.accent : (bma.containsMouse ? Theme.t1 : Theme.t2)
-        // fade the tint in step with the hover glow (it used to snap)
+        // fade the tint in step with the hover glow
         Behavior on tint { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
     }
     // state dot: "on" reads at a glance without filling the control

@@ -1577,8 +1577,8 @@ TEST_CASE("torrentStateKey trusts libtorrent's finished flag, not the float",
         CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
     }
     SECTION("every file deselected: not finished, and no bytes to seed") {
-        // The case the old totalDone > 0 guard existed for: is_finished is
-        // false here, so it no longer needs a hand-rolled guard.
+        // is_finished is false here, so no hand-rolled totalDone > 0 guard
+        // is needed.
         t.progress = 1.0f;
         t.totalDone = 0;
         t.finished = false; t.seeding = false;

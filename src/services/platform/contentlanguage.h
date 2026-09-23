@@ -10,13 +10,10 @@
 
 // The language the user wants their *content* in: dubs, subtitles, TMDB titles
 // which is not the same question as the language of the app chrome. Someone
-// can read English menus fine and still need Portuguese audio; until these were
-// separated, saying one meant saying the other.
+// can read English menus fine and still need Portuguese audio.
 //
-// Also the single owner of the per-language codes. tmdbLang() used to exist
-// twice (DiscoveryService and MetadataResolver) and the subtitle fallback kept
-// its own eight-entry table for a nine-value enum, which read past the end for
-// Turkish.
+// Also the single owner of the per-language codes (TMDB and subtitles), so no
+// caller keeps its own table that can fall out of step with the enum.
 namespace ContentLanguage {
 
 // The user's choice, or the app language while they haven't made one.

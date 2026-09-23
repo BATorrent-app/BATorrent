@@ -264,9 +264,9 @@ Window {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            // Empty state: must weigh EVERY recorded axis. It used to test only
-            // down + added, so a year of pure seeding (up in the tens of GB, no new
-            // torrents) reported "nothing here" over a history file full of data.
+            // Empty state: must weigh EVERY recorded axis. Testing only down +
+            // added would make a year of pure seeding (up in the tens of GB, no new
+            // torrents) report "nothing here" over a history file full of data.
             Text {
                 Layout.alignment: Qt.AlignHCenter
                 visible: (win.recapData.down || 0) === 0 && (win.recapData.added || 0) === 0

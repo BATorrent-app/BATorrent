@@ -29,7 +29,7 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
     QDir dir(savePath);
 
     // Scope strictly to THIS torrent's own content. Scanning the shared save root
-    // used to pick up every sibling torrent's archives and extract them all at
+    // would pick up every sibling torrent's archives and extract them all at
     // once: a flood of extractor processes that could freeze the machine.
     // ArchiveScan owns the format + multi-part rules (which volume is the first,
     // which are continuation parts) and is unit-tested separately.

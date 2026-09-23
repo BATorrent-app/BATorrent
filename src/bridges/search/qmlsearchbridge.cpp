@@ -237,9 +237,9 @@ QVariantList QmlSearchBridge::categories() const
 
 QVariantList QmlSearchBridge::results() const
 {
-    // Stamp each row's index into the data itself. QML used to add `_idx` by
-    // mutating the map (o._idx = i), but a QVariantMap handed to QML is a copy:
-    // the mutation didn't always stick, leaving srcIndex undefined and breaking
+    // Stamp each row's index into the data itself. Adding `_idx` from QML by
+    // mutating the map (o._idx = i) is unreliable: a QVariantMap handed to QML is
+    // a copy, so srcIndex can end up undefined and break
     // activateResult()/openDetail() ("no source" on every pick).
     QVariantList out;
     out.reserve(m_results.size());

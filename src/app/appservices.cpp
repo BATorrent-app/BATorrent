@@ -182,9 +182,8 @@ AppServices AppServices::create(QApplication &app)
                      svc.sessionBridge, &QmlSessionBridge::onTorrentRemoved);
     QObject::connect(svc.resolver, &MetadataResolver::metadataReady,
                      svc.posterModel, &QmlPosterModel::posterResolved);
-    // "Fix cover" that matched nothing used to be a no-op on screen: the dialog
-    // closed, the tile stayed blank, and there was no way to tell a miss from a
-    // bug. Say so.
+    // Say so when "Fix cover" matches nothing. Otherwise the dialog closes, the
+    // tile stays blank, and there is no way to tell a miss from a bug.
     QObject::connect(svc.resolver, &MetadataResolver::manualResolveFailed,
                      svc.sessionBridge,
                      [bridge = svc.sessionBridge](const QString &, const QString &query) {

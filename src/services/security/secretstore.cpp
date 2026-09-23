@@ -20,9 +20,9 @@ constexpr const char *kServiceName = "BATorrent";
 // Run a heap-allocated QtKeychain job synchronously. Returns true if the job
 // finished before timeoutMs. On timeout we return false but keep the job
 // alive (autoDelete) so its eventual completion doesn't access destroyed
-// memory: this is the bug we used to have: a 1 s timeout on a cold keychain
-// (just-unlocked Keychain on macOS, gnome-keyring spinning up on Linux)
-// could destroy the job while QtKeychain was still in flight.
+// memory. A cold keychain (just-unlocked Keychain on macOS, gnome-keyring
+// spinning up on Linux) can outlast a short timeout while QtKeychain is still
+// in flight.
 bool runJob(QKeychain::Job *job, int timeoutMs = 5000)
 {
     QEventLoop loop;

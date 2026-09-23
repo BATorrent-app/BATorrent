@@ -61,9 +61,9 @@ void SessionManager::onTorrentFinished(const lt::torrent_finished_alert *fa)
         if (m_autoExtract)
             extractArchives(QString::fromStdString(st.save_path), name, QString(), hash);
 
-        // Complete torrents now load in seed_mode (see loadResumeData) so
-        // they no longer re-check/re-download and re-fire this alert on
-        // launch. The remaining guard covers a torrent already persisted
+        // Complete torrents load in seed_mode (see loadResumeData) so they
+        // don't re-check/re-download and re-fire this alert on launch.
+        // This guard covers a torrent already persisted
         // complete that still somehow re-finishes: its storage side
         // effects run, but the user-facing completion (script +
         // notification + media-server webhook) is muted.
@@ -101,7 +101,7 @@ void SessionManager::onTorrentError(const lt::torrent_error_alert *ea)
 
 void SessionManager::onFileError(const lt::file_error_alert *fe)
 {
-    // Surface previously-swallowed alert categories so the user actually
+    // Surface these alert categories so the user actually
     // hears about disk-full, move-storage failures, port collisions, and
     // broken magnets instead of staring at silent empty state.
     // Rate-limit file error emissions to avoid notification storms

@@ -84,11 +84,10 @@ inline QString torrentStateKey(const TorrentInfo &info)
 // libtorrent's own state enum says more than the key does (checking files,
 // fetching metadata: both live under "downloading").
 //
-// stateString and stateKey used to be produced independently: the key from
-// TorrentInfo's flags, the string from the libtorrent enum. The grid renders a
-// label built from the key and the list renders stateString, so the same
-// torrent could read "Seeding" in one view and "Downloading" in the other
-// (reported on 4.8.0). One classification has to feed both.
+// The grid renders a label built from the key and the list renders stateString.
+// Deriving them separately (key from TorrentInfo's flags, string from the
+// libtorrent enum) lets the same torrent read "Seeding" in one view and
+// "Downloading" in the other, so one classification has to feed both.
 inline QString torrentStateLabelKey(const TorrentInfo &info)
 {
     const QString key = torrentStateKey(info);

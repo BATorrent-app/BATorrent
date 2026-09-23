@@ -11,10 +11,8 @@
 // the user recognises. That's the axis people trust ("online-fix works online",
 // "FitGirl compresses hard"); the indexer that happened to list it is not.
 //
-// Single source of truth on purpose: this table used to exist twice, in
-// NameParser and in QmlSearchBridge, and the copies had drifted: one knew
-// Pioneer, the other knew Online-Fix, so a release tagged with either showed no
-// group at all.
+// Single source of truth on purpose: NameParser and QmlSearchBridge both use
+// this table, so they can't drift apart and each miss groups the other knows.
 namespace ReleaseGroup {
 
 // Display name for an already-isolated tag, resolving the abbreviations a user

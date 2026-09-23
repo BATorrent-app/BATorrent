@@ -202,7 +202,7 @@ void SessionManager::scanTorrentForThreats(const lt::torrent_handle &h, const QS
 }
 
 // The schedule*() retry timers die if the app quits inside the backoff window,
-// which used to silently leave the data on disk ("delete doesn't always
+// which would silently leave the data on disk ("delete doesn't always
 // delete"). The pending targets are persisted and retried on the next launch
 // (ctor), when the old session's file locks are guaranteed gone.
 static void addPendingTargets(const char *key, const QStringList &targets)

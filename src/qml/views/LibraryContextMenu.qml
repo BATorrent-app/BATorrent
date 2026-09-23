@@ -258,7 +258,7 @@ Menu {
         CtxItem { iconSrc: "qrc:/icons/bolt.svg"; text: (session.selectedForceStart ? "✓ " : "") + (i18n.language, i18n.t("ctx_force_start_plain")); onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
         // Only offered on a complete seed: libtorrent ignores the flag otherwise
         // ("if the torrent is not a seed, this flag has no effect") but still
-        // reports it set, so the menu used to show a tick over a no-op. CtxItem
+        // reports it set, so the menu would show a tick over a no-op. CtxItem
         // hides itself when disabled, which is the behaviour we want here.
         CtxItem {
             enabled: session.selectedDataDone

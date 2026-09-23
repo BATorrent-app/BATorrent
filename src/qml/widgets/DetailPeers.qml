@@ -81,10 +81,9 @@ ColumnLayout {
                     property string fsrc: pane.flagSrc(modelData.cc)
                     // One treatment per row, identical on every platform: our SVG
                     // when the country is one of the 19 we ship, otherwise a code
-                    // chip of the SAME size. This used to fall back to the emoji
-                    // flag on mac and a bare code on Windows: so the column mixed
-                    // flat 3:2 artwork with rounded emoji, and the same screen
-                    // looked different per OS.
+                    // chip of the SAME size. No emoji flags: they would mix
+                    // rounded emoji with the flat 3:2 artwork and make the same
+                    // screen look different per OS.
                     Image {
                         visible: parent.fsrc !== ""
                         source: parent.fsrc

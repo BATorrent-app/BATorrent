@@ -120,10 +120,8 @@ BatDialog {
         }
     }
 
-    // The per-library version table used to live here. It was four rows of
-    // numbers nobody reads in a dialog people open once. The two jobs it did are
-    // covered elsewhere: attribution lives in THIRD_PARTY.md, and the versions go
-    // to the startup log, where a bug report can actually pick them up.
+    // No per-library version table here: attribution lives in THIRD_PARTY.md,
+    // and the versions go to the startup log, where a bug report can pick them up.
 
     // translation credits: community contributors
     Text {

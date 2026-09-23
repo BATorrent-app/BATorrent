@@ -223,10 +223,10 @@ void QmlSessionBridge::recomputeAggregates()
         // Paused pill/count and the Queued pill don't double-count each other
         if (info.queued) ++m_queuedCount;
         else if (info.paused) ++m_pausedCount;
-        // Count off the same key the tiles colour themselves with. These two
-        // used to re-derive state from `progress` here, so a torrent could be
-        // counted under Downloading while its tile read SEEDING: and a
-        // finished one stuck at 0.99999994 landed in Downloading forever.
+        // Count off the same key the tiles colour themselves with. Deriving
+        // state from `progress` here would count a torrent under Downloading
+        // while its tile reads SEEDING, and keep a finished one stuck at
+        // 0.99999994 in Downloading forever.
         const QString state = torrentStateKey(info);
         if (state == QLatin1String("downloading")) { ++m_downloadingCount; m_anyDownloading = true; }
         else if (state == QLatin1String("seeding")) ++m_seedingCount;

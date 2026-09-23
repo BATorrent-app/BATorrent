@@ -4,9 +4,9 @@
 
 // Who the selected torrent is: cover, title, category, progress, live rates.
 //
-// Pulled out of DetailGeneral so the side inspector can keep it on screen while
-// the tabs below swap. Switching to Peers or Files used to replace the whole
-// pane, poster included, so you lost sight of which torrent you were reading.
+// Separate from DetailGeneral so the side inspector can keep it on screen while
+// the tabs below swap: switching to Peers or Files keeps the poster and title in
+// sight, so you always know which torrent you are reading.
 // The bottom deck is only 270px tall and has no room for a fixed header, so it
 // still renders this inside its General tab.
 import QtQuick

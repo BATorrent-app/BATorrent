@@ -87,9 +87,9 @@ Flickable {
         }
 
 
-        // No identity block here anymore: both hosts keep it outside the tabs,
-        // so which torrent you are reading survives a jump to Peers or Files.
-        // This pane is only the numbers now.
+        // No identity block here: both hosts keep it outside the tabs, so
+        // which torrent you are reading survives a jump to Peers or Files.
+        // This pane is only the numbers.
 
         // .dcols: three KV sections (row in the panel, stacked in the inspector)
         GridLayout {

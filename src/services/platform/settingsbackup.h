@@ -25,7 +25,7 @@ bool isExportSecret(const QString &key);
 QJsonObject settingsObjectFromMap(const QVariantMap &map, bool stripSecrets);
 
 // Pack/unpack the BATBACKUP1 binary format. unpack() rejects truncated or
-// oversized frames the same way fullRestore used to inline.
+// oversized frames.
 QByteArray pack(const QList<QPair<QString, QByteArray>> &entries);
 
 struct UnpackResult {

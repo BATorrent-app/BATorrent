@@ -30,10 +30,9 @@ Window {
                            Screen.desktopAvailableWidth > 0 ? Screen.desktopAvailableWidth : 1288)
     minimumHeight: 640
     color: Theme.bg
-    // Native titlebar in both layouts. Classic used to merge it into the rail's
-    // brand zone, which left the macOS traffic lights floating over the rail
-    // instead of sitting in a titlebar: the horizontal layout never did that,
-    // and it reads better. unifiedChrome stays on for the secondary windows,
+    // Native titlebar in both layouts. Merging it into the classic rail's brand
+    // zone would leave the macOS traffic lights floating over the rail instead
+    // of sitting in a titlebar. unifiedChrome stays on for the secondary windows,
     // which draw their own title and would otherwise show it twice.
     flags: Qt.Window
     title: "BATorrent"
@@ -78,7 +77,7 @@ Window {
     readonly property Item navHost: layoutClassic ? navRailLoader.item : navBarLoader.item
 
     // Selection/filter state lives on library. Leaf chrome takes `controller`
-    // explicitly: no win.* aliases for selection anymore.
+    // explicitly; there are no win.* aliases for selection.
     LibraryController {
         id: library
         onClearFilterFocusRequested: win.clearFilterFocus()
@@ -520,11 +519,10 @@ Window {
                 Layout.fillHeight: true
                 currentIndex: win.currentPage
 
-                // Directional page switch. It used to rise 12px from below no
-                // matter which tab you came from, which says nothing: the tabs
-                // sit in a row, so moving right should enter from the right and
-                // moving left from the left. Now the motion matches the gesture,
-                // and going back reverses it instead of repeating it.
+                // Directional page switch. The tabs sit in a row, so moving
+                // right enters from the right and moving left from the left:
+                // the motion matches the gesture, and going back reverses it
+                // instead of repeating it.
                 transform: Translate { id: pageShift }
                 property int prevPage: 0
                 property real enterFrom: 34

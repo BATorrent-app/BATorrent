@@ -209,9 +209,8 @@ Item {
 
         Rectangle {
             id: progBar
-            // Always on, in every state. Downloading and seeding used to be two
-            // different shapes: a 9px pill versus a 2px line at the poster's
-            // edge: for the same fact. Same height, same width, same place.
+            // Always on, in every state. Downloading and seeding show the same
+            // fact, so they share one shape: same height, same width, same place.
             visible: true
             anchors.left: parent.left
             anchors.right: parent.right

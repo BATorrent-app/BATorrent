@@ -37,7 +37,7 @@ TEST_CASE("derive: live exe path is Ready even while downloading", "[gameinstall
 }
 
 TEST_CASE("derive: never Ready with a dead exe path", "[gameinstall]") {
-    // Regression: completed + stale gameExe/<hash> used to report Ready.
+    // Regression: completed + stale gameExe/<hash> must not report Ready.
     DeriveIn in;
     in.hasExePath = true;
     in.exeExists = false;

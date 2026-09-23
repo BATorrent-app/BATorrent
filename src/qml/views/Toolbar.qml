@@ -114,12 +114,9 @@ Rectangle {
         anchors.rightMargin: Theme.sp4
         spacing: Theme.sp2
 
-        // brand moved to the nav rail; toolbar starts at the actions
+        // brand lives in the nav rail; toolbar starts at the actions
         // G1: the three ways content comes in. Each glyph names its own source:
-        // a file, a magnet, a URL. open.svg used to sit on "Open" wearing an
-        // arrow leaving the document: the export glyph, saying the opposite of
-        // the label: and "Link" wore the download tray while link.svg, an
-        // actual chain, sat unused in the icon set.
+        // a file, a magnet, a URL.
         TBtn { id: tbOpen; label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/file.svg";  onClicked: toolbar.openFile() }
         TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: toolbar.addMagnet() }
         TBtn { label: (i18n.language, i18n.t("tb_link"));    icon: "qrc:/icons/link.svg"; onClicked: toolbar.addLink() }
@@ -130,21 +127,18 @@ Rectangle {
         TBtn { label: (i18n.language, i18n.t("tb_stop"));   icon: "qrc:/icons/stop.svg";  disabled: !win.hasSel; onClicked: session.pauseSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"; spinOnClick: true; onClicked: { if (toolbar.win) toolbar.win.flashRefresh(); if (typeof session !== "undefined") session.refreshAll() } }
         TGrpDiv {}
-        // G3: ações sobre a seleção (tester: copiar magnet e abrir pasta estavam
-        // só no menu de contexto, apesar de anunciadas como estando aqui).
+        // Ações sobre a seleção: copiar magnet e abrir pasta ficam aqui também,
+        // não só no menu de contexto.
         // Copy wears a magnet inside a copy sheet, not the plain copy glyph:
         // it copies the magnet link, and the generic sheet read as "copy path".
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
         TBtn { label: (i18n.language, i18n.t("tb_copy"));   icon: "qrc:/icons/magnet-copy.svg"; disabled: !win.hasSel; onClicked: session.copyMagnetLink() }
         TBtn { label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; disabled: !win.hasSel; onClicked: session.openSaveFolder() }
         TGrpDiv {}
-        // G4: RSS. The "Search" button used to live here and was removed: it
-        // navigated to the Find page, but sat next to the downloads filter
-        // field wearing the same magnifier: two meanings, one icon. Page
-        // switching belongs to the nav rail; this toolbar acts on torrents.
-        // Settings followed Search out of here for the same reason, one release
-        // later: it wore the same gear as the nav bar's own Settings, two steps
-        // away on screen, so the pair read as a bug rather than a shortcut.
+        // G4: RSS. No Search or Settings buttons here: page switching belongs
+        // to the nav rail, and this toolbar acts on torrents. A magnifier next
+        // to the downloads filter field, or a second gear two steps from the
+        // nav bar's Settings, would read as a bug rather than a shortcut.
         TBtn { label: (i18n.language, i18n.t("tb_rss"));     icon: "qrc:/icons/rss.svg";    onClicked: toolbar.openRss() }
 
 

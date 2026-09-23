@@ -66,7 +66,7 @@ TEST_CASE("a bare length prefix is not enough to dispatch", "[ipc]") {
 }
 
 TEST_CASE("hostile length prefix drops the buffer instead of pinning it", "[ipc]") {
-    // 0xFFFFFFF0 used to overflow the int() size check and desync the stream;
+    // 0xFFFFFFF0 must not overflow the int() size check and desync the stream;
     // anything past kMaxFrameBytes must clear the buffer, never accumulate.
     QByteArray buf = lengthPrefix(0xFFFFFFF0u) + QByteArrayLiteral("junk");
     int calls = 0;

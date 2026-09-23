@@ -103,7 +103,7 @@ void QmlSessionBridge::finalizeInstall(const QString &infoHash)
 {
     const QString folder = gameFolder(infoHash);
     // Heavy directory walks belong off the GUI thread: a FitGirl tree on HDD
-    // used to ghost the Get & Install overlay (Windows "Not Responding").
+    // can ghost the Get & Install overlay (Windows "Not Responding").
     auto *thread = QThread::create([this, infoHash, folder]() {
         bool isInstaller = false;
         const QString exe = GameExeDetect::autodetect(folder, &isInstaller);

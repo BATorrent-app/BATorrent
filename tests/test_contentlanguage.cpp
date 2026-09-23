@@ -55,7 +55,7 @@ TEST_CASE("an explicit choice outranks the app language", "[contentlanguage]")
     REQUIRE(ContentLanguage::current() == Translator::English);
 }
 
-// Turkish is the case that used to read one past the end of an eight-entry table
+// Turkish is the ninth language: an eight-entry table would read one past its end
 // and silently degrade to English on the dub/sub axis.
 TEST_CASE("every supported language has a code, Turkish included", "[contentlanguage]")
 {
