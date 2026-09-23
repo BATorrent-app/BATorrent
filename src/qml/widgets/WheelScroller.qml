@@ -1,8 +1,7 @@
-// Drop inside a Flickable to give mouse-wheel notches a usable, momentum-smooth
-// step. A bare Flickable scrolls only a few px per notch on Windows — you had to
-// spin the wheel many times. We reuse the Flickable's own flick() physics so the
-// motion stays smooth (Mateus values that), and only touch real mouse wheels:
-// touchpads keep their native pixel-precise scrolling.
+// Put this inside a Flickable so each mouse-wheel notch scrolls a useful amount.
+// A bare Flickable moves only a few px per notch on Windows. It reuses the
+// Flickable's flick() so the motion stays smooth, and only handles real mouse
+// wheels; touchpads keep their native pixel scrolling.
 import QtQuick
 
 WheelHandler {

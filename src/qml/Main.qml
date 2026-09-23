@@ -181,11 +181,9 @@ Window {
         for (var i = 0; i < 3; ++i) n = n * 100 + (parseInt(p[i]) || 0)
         return n
     }
-    // Everyone arriving at 4.8 meets the wizard, updates included — Mateus's
-    // call, and the reasoning holds: this release rearranged the app again, and
-    // someone coming from months ago has settings describing a shape that no
-    // longer exists. Not a standing rule for every future version: raise this
-    // constant only for a release that earns it.
+    // Installs older than 4.8 get the wizard too, not just new ones. 4.8 moved
+    // the layout around again and old settings describe an app that isn't there
+    // anymore. Only bump this for a release that reshuffles the UI.
     readonly property int kWizardIntroVersion: 40800
     function maybeShowWelcome() {
         if (typeof settings === "undefined") return
