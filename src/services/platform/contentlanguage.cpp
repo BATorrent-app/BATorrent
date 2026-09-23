@@ -8,7 +8,7 @@
 #include <QSettings>
 
 namespace {
-// Absent (or out of range) means "whatever the app is set to" — the behaviour
+// Absent (or out of range) means "whatever the app is set to": the behaviour
 // every existing install had before this setting existed.
 const char *kKey = "contentLanguage";
 

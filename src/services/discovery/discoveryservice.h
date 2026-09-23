@@ -42,9 +42,9 @@ public:
     // On-demand YouTube trailer key for a TMDB title (list endpoints don't carry
     // videos, so the Discover hero fetches it lazily). Emits trailerReady.
     Q_INVOKABLE void fetchTrailer(int tmdbId, const QString &type);
-    // "Because you watched X" — TMDB recommendations for a seed title. Emits recommendationsReady.
+    // "Because you watched X": TMDB recommendations for a seed title. Emits recommendationsReady.
     Q_INVOKABLE void fetchRecommendations(int tmdbId, const QString &type);
-    // "Because you played X" — IGDB similar games for a seed game (by name).
+    // "Because you played X": IGDB similar games for a seed game (by name).
     Q_INVOKABLE void fetchGameRecommendations(const QString &gameName);
     // Episode list (number, name, air date) for a TV season. Emits episodesReady.
     Q_INVOKABLE void fetchEpisodes(int tmdbId, int season);

@@ -19,7 +19,7 @@ Item {
     property var pw
     property var mediaPlayer
     property var formatHelper
-    // Named differently from host ids — same-name bindings self-shadow to undefined.
+    // Named differently from host ids: same-name bindings self-shadow to undefined.
     property var optionsPanel
     property var overflowMenu
 

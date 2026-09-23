@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — speed sampling / aggregate stats / palette. Split out of
+// QmlSessionBridge: speed sampling / aggregate stats / palette. Split out of
 // qmlsessionbridge.cpp verbatim; no behaviour change.
 
 #include "bridges/session/qmlsessionbridge.h"
@@ -225,7 +225,7 @@ void QmlSessionBridge::recomputeAggregates()
         else if (info.paused) ++m_pausedCount;
         // Count off the same key the tiles colour themselves with. These two
         // used to re-derive state from `progress` here, so a torrent could be
-        // counted under Downloading while its tile read SEEDING — and a
+        // counted under Downloading while its tile read SEEDING: and a
         // finished one stuck at 0.99999994 landed in Downloading forever.
         const QString state = torrentStateKey(info);
         if (state == QLatin1String("downloading")) { ++m_downloadingCount; m_anyDownloading = true; }
@@ -243,7 +243,7 @@ void QmlSessionBridge::emitStats()
     // selected* props still refresh via selectionChanged.
     emit selectionChanged();
     // Exception: keep the peer list live (speeds/progress) only while the Peers
-    // tab is actually open — gated so it costs nothing the rest of the time.
+    // tab is actually open: gated so it costs nothing the rest of the time.
     if (m_detailPeersActive) rebuildPeerCache();
 
     // Post-download-action arming: when a non-"do nothing" action is chosen and
@@ -258,7 +258,7 @@ void QmlSessionBridge::emitStats()
     }
 }
 
-// postDownloadAction indices — keep in sync with SettingsSchema.qml's
+// postDownloadAction indices: keep in sync with SettingsSchema.qml's
 // "postDownloadAction" options list.
 namespace {
 enum PostDownloadAction {

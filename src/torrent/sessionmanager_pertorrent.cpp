@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — per-torrent slice. Per-torrent overrides (stop-after-download,
+// SessionManager: per-torrent slice. Per-torrent overrides (stop-after-download,
 // max-seed, rate caps), force-start / super-seeding, the user-marked "completed"
 // state + auto-complete, and the effective-rule resolvers that fold per-torrent
 // overrides over the globals. Split out of sessionmanager.cpp verbatim.
@@ -85,7 +85,7 @@ void SessionManager::setForceStart(int index, bool on)
     if (hash.isEmpty()) return;
     if (on) {
         m_forceStartHashes.insert(hash);
-        // Resume so the user sees immediate effect — force-start that
+        // Resume so the user sees immediate effect: force-start that
         // remains paused would be confusing.
         if (m_torrents[index].is_valid())
             m_torrents[index].resume();
@@ -171,7 +171,7 @@ void SessionManager::markCompleted(int index)
     m_completedTorrents.insert(hash);
     saveCompletedSet();
     // Freeze it completely: priority 0 on every file so libtorrent never re-downloads
-    // anything — even if the user deletes the extracted archives and a recheck later
+    // anything: even if the user deletes the extracted archives and a recheck later
     // finds them missing. Pause alone doesn't stop a fastresume-rejected recheck.
     if (auto ti = h.torrent_file())
         h.prioritize_files(std::vector<lt::download_priority_t>(

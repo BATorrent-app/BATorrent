@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — archive/video probe + extract orchestration.
+// SessionManager: archive/video probe + extract orchestration.
 
 #include "torrent/sessionmanager.h"
 #include "services/security/archivescan.h"

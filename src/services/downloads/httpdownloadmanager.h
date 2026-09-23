@@ -7,7 +7,7 @@
 
 // Owns the set of direct-HTTP(S) downloads: add/pause/resume/remove, and a
 // throttled JSON sidecar so an in-progress download survives a restart (resumed
-// on the user's click, not automatically — no surprise network traffic on boot).
+// on the user's click, not automatically: no surprise network traffic on boot).
 // The engine decorator (HttpMergeEngine) presents these as extra rows so they
 // flow through the whole Downloads UI just like torrents.
 
@@ -56,7 +56,7 @@ public:
     void remove(const QString &id, bool deleteFiles);
 
 signals:
-    void changed();                                // add/remove/progress/state — refresh the list
+    void changed();                                // add/remove/progress/state: refresh the list
     void downloadFinished(const QString &id, const QString &name, bool ok);
 
 private:

@@ -27,7 +27,7 @@ public:
     void up(const QString &confPath, const bat::WgConfig &cfg) override;
     void down() override;
     QString interfaceName() const override { return m_iface; }
-    // Only a real tunnel when the system wg-quick is actually present — otherwise
+    // Only a real tunnel when the system wg-quick is actually present: otherwise
     // the UI should keep showing the "not protecting" banner (honest).
     bool isReal() const override { return !wgQuickPath().isEmpty(); }
     bool adopt(const QString &confPath, const QString &iface) override;

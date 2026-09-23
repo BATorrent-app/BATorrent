@@ -18,7 +18,7 @@
 
 namespace {
 
-// The .app bundle, not the helper inside it — launchd and Explorer both want
+// The .app bundle, not the helper inside it: launchd and Explorer both want
 // the thing a user would double-click.
 QString launchTarget()
 {

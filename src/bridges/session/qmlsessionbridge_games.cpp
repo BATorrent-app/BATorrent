@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — games slice ("Steam dos jogos piratas"). The game
+// QmlSessionBridge: games slice ("Steam dos jogos piratas"). The game
 // library projection, exe/folder resolution, launch + running-game polling,
 // and the install pipeline (extract → detect installer → run/guide → finalize)
 // plus the selected-game QML actions. Split out of qmlsessionbridge.cpp
@@ -128,7 +128,7 @@ void QmlSessionBridge::setGameExe(const QString &infoHash, const QString &fileUr
     const QString path = fileUrl.startsWith(QStringLiteral("file:")) ? QUrl(fileUrl).toLocalFile() : fileUrl;
     if (path.isEmpty()) return;
     QSettings().setValue(QStringLiteral("gameExe/") + infoHash, path);
-    // a manual exe supersedes any stalled install flow — the card flips to Play
+    // a manual exe supersedes any stalled install flow: the card flips to Play
     m_gameInstallState.remove(infoHash);
     emit gamesChanged();
     emit toast(tr_("hub_exe_set"), QFileInfo(path).fileName());
@@ -157,7 +157,7 @@ static bool pidAlive(qint64 pid)
 #endif
 }
 
-// mac games are .app bundles (directories) — QProcess can't exec those, but
+// mac games are .app bundles (directories): QProcess can't exec those, but
 // `open -W` can, and it stays alive until the game quits so playtime tracking
 // via the pid still works.
 static bool startGameProcess(const QString &exe, qint64 *pid)
@@ -170,7 +170,7 @@ static bool startGameProcess(const QString &exe, qint64 *pid)
     if (QProcess::startDetached(exe, {}, QFileInfo(exe).absolutePath(), pid))
         return true;
 #if defined(Q_OS_WIN)
-    // cracked/installer exes commonly require elevation — CreateProcess fails
+    // cracked/installer exes commonly require elevation: CreateProcess fails
     // with ERROR_ELEVATION_REQUIRED, ShellExecute shows the UAC prompt instead
     // (no pid → no playtime tracking for this launch; better than a dead button)
     const QString wd = QFileInfo(exe).absolutePath();
@@ -273,7 +273,7 @@ int QmlSessionBridge::gameInstallState(const QString &infoHash, bool completed) 
     in.hasExePath = !exe.isEmpty();
     in.exeExists = in.hasExePath && QFileInfo::exists(exe);
     in.completed = completed;
-    // Do not mutate QSettings from this getter — QML bindings re-enter it. Stale
+    // Do not mutate QSettings from this getter: QML bindings re-enter it. Stale
     // paths are cleared from pollRunningGames / a deferred slot instead.
     return GameInstall::derive(in);
 }

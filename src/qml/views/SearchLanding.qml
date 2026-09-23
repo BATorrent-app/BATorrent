@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Branding hero of the search landing state (logo + name + prompt). Shown on
-// the cold start — and, once the catalog browse exists, as the store-build
+// the cold start: and, once the catalog browse exists, as the store-build
 // fallback where discovery content is unavailable.
 import QtQuick
 import QtQuick.Layouts

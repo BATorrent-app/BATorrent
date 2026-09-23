@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — selection getters slice. The read-only QML properties that
+// QmlSessionBridge: selection getters slice. The read-only QML properties that
 // project the currently-selected torrent (name/size/hash/speeds/eta/ratio/state
 // + the resolved metadata: poster, description, title, info line). Split out of
 // qmlsessionbridge.cpp verbatim; no behaviour change.
@@ -40,7 +40,7 @@ QString QmlSessionBridge::selectedDownloaded() const
 {
     if (!hasSelection()) return {};
     auto info = m_session->torrentAt(m_selectedIndex);
-    // floor, never round: 99.95% must read 99.9 — "100%" is a promise
+    // floor, never round: 99.95% must read 99.9; "100%" is a promise
     return QString("%1 (%2%)").arg(formatSize(info.totalDone))
                               .arg(std::floor(info.progress * 1000.0) / 10.0, 0, 'f', 1);
 }

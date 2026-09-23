@@ -12,14 +12,14 @@
 //   • Format-information BCH(15,5) with mask 0x5412
 //
 // References:
-//   ISO/IEC 18004:2015 — QR Code Model 2
-//   Thonky.com QR tutorial — for capacity tables + alignment patterns
-//   Nayuki QR-Code-generator — reference implementation, MIT-licensed
+//   ISO/IEC 18004:2015; QR Code Model 2
+//   Thonky.com QR tutorial: for capacity tables + alignment patterns
+//   Nayuki QR-Code-generator: reference implementation, MIT-licensed
 //
 // Limitations vs full spec:
-//   • No alphanumeric / kanji / ECI modes — byte mode handles everything,
+//   • No alphanumeric / kanji / ECI modes: byte mode handles everything,
 //     just less efficiently for digit-only data.
-//   • Versions 11-40 not supported — our use case is LAN URLs (≤ 50 chars)
+//   • Versions 11-40 not supported: our use case is LAN URLs (≤ 50 chars)
 //     which fit comfortably in v3-v4. v10 ceiling (~213 bytes at ECC M) is
 //     2× our worst-case anyway.
 
@@ -426,7 +426,7 @@ void applyMask(Grid &g, int m)
     }
 }
 
-// Spec §8.3.3 penalty rules — lower score = "better" mask.
+// Spec §8.3.3 penalty rules: lower score = "better" mask.
 int penaltyScore(const Grid &g)
 {
     int score = 0;

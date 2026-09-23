@@ -21,8 +21,8 @@ static const QString GITEE_API =
     "https://gitee.com/api/v5/repos/Mateuscruz19/BATorrent/releases/latest";
 
 // Read the configured release-info endpoint. Both GitHub and Gitee expose the
-// same JSON shape — `tag_name`, `assets[].browser_download_url`, `assets[].name`
-// — so parseReleaseInfo doesn't need to branch by provider. The asset
+// same JSON shape: `tag_name`, `assets[].browser_download_url`, `assets[].name`
+// so parseReleaseInfo doesn't need to branch by provider. The asset
 // filename selection in platformAssetName() also stays identical because the
 // CI publishes the same artefact names to both mirrors.
 static QString releaseApiUrl()
@@ -208,7 +208,7 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
 #ifdef Q_OS_WIN
     // On Windows: the installer .exe handles everything. We need to elevate
     // (UAC prompt) because BATorrent is typically installed in Program Files,
-    // which the running app — almost always non-elevated — cannot write to.
+    // which the running app, almost always non-elevated, cannot write to.
     // Using a PowerShell script with Start-Process -Verb RunAs triggers the
     // UAC dialog; the user accepts once and the installer can write.
     QString appExe = QApplication::applicationFilePath();
@@ -226,7 +226,7 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
             out << "$ErrorActionPreference = 'Stop'\r\n";
             out << "try {\r\n";
             // Wait for the app to finish quitting, then force-kill any straggler
-            // (tray instance / child) BEFORE running the installer — otherwise the
+            // (tray instance / child) BEFORE running the installer: otherwise the
             // installer's Restart Manager sees BATorrent.exe alive and pops the
             // native "files in use / close these programs" dialog.
             out << "  $deadline = (Get-Date).AddSeconds(10)\r\n";
@@ -261,7 +261,7 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
     }
     {
         QTextStream out(&script);
-        // Same wait-then-force-kill as the installer path above — a blind sleep
+        // Same wait-then-force-kill as the installer path above: a blind sleep
         // left a straggler process alive long enough to fail the Copy-Item (file
         // still locked) on a slow shutdown (reported by a user: had to fully
         // kill the background process by hand before a paste/DnD fix "took").
@@ -296,7 +296,7 @@ void Updater::launchUpdaterScript(const QString &newFilePath)
     // For AppImage: replace the current AppImage file
     QString appImage = qEnvironmentVariable("APPIMAGE");
     if (appImage.isEmpty()) {
-        // Not running as AppImage — just notify
+        // Not running as AppImage: just notify
         emit errorOccurred("Auto-update only works when running as AppImage.");
         return;
     }

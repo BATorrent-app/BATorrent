@@ -60,7 +60,7 @@ static QByteArray basicAuth(const QString &user, const QString &pass)
 
 // Send raw HTTP request to an in-process server.
 // Both client and server live on the same thread, so we must never block
-// with waitForReadyRead — we pump the event loop manually instead.
+// with waitForReadyRead: we pump the event loop manually instead.
 static QByteArray sendHttp(quint16 port, const QByteArray &request, int timeout = 3000)
 {
     QTcpSocket sock;
@@ -214,7 +214,7 @@ TEST_CASE("Resume data migrates from the pre-3.0 location", "[unit][migration]")
     const QString legacyResume = up.filePath("resume");
 
     // If the platform's layout collapses both to the same dir, the migration is
-    // a no-op by design — skip rather than assert a meaningless copy.
+    // a no-op by design: skip rather than assert a meaningless copy.
     if (QDir::cleanPath(legacyResume) == QDir::cleanPath(newResume))
         return;
 
@@ -233,7 +233,7 @@ TEST_CASE("Resume data migrates from the pre-3.0 location", "[unit][migration]")
 
     // The fixture writes "x", which is not valid bencode, so the load right
     // after the migration quarantines it: dir.rename(f, f + ".corrupt"). The
-    // file surviving under either name is what proves the migration ran — the
+    // file surviving under either name is what proves the migration ran: the
     // original assertion predates quarantine (added in c9f3d68) and had been
     // failing on the name change, not on a lost torrent.
     REQUIRE((QFile::exists(newResume + "/deadbeef.resume")
@@ -693,13 +693,13 @@ TEST_CASE("WebServer: POST magnet without savePath uses default", "[integration]
         "Content-Type: application/json\r\n"
         "Content-Length: " + QByteArray::number(json.size()) + "\r\n\r\n" + json);
 
-    // Magnet was added (200) or libtorrent rejected it (400) — both valid
+    // Magnet was added (200) or libtorrent rejected it (400): both valid
     REQUIRE((!r.isEmpty()));
     REQUIRE((r.contains("200") || r.contains("400")));
 
     server.stop();
 
-    // addMagnet persists the magnet's .resume at add time (crash-safety) —
+    // addMagnet persists the magnet's .resume at add time (crash-safety):
     // wipe it so later fresh-session tests really start empty.
     QDir(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
              .filePath("resume")).removeRecursively();
@@ -937,7 +937,7 @@ TEST_CASE("Updater: signals fire on check", "[integration][updater]")
            && spyError.count() == 0 && timer.elapsed() < 20000)
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 
-    // At least ONE signal must have fired — "nothing happens" is a failure
+    // At least ONE signal must have fired: "nothing happens" is a failure
     int total = spyNoUpdate.count() + spyUpdate.count() + spyError.count();
     REQUIRE(total > 0);
 }
@@ -958,13 +958,13 @@ TEST_CASE("SessionManager: torrentsUpdated signal fires", "[integration][signals
     QCoreApplication::processEvents();
 
     // Signal should have fired at least once (timer-driven)
-    // (may not fire if no torrents — implementation detail)
+    // (may not fire if no torrents: implementation detail)
     // Just verify no crash
     REQUIRE(spy.count() >= 0);
 }
 
 // ============================================================================
-//  STATS HISTORY (daily usage collector — Wrapped seed)
+//  STATS HISTORY (daily usage collector: Wrapped seed)
 // ============================================================================
 
 #include "services/platform/statshistory.h"
@@ -980,7 +980,7 @@ TEST_CASE("StatsHistory: accumulates deltas and persists across sessions", "[sta
 
     {
         StatsHistory h(path);
-        h.recordTransfer(1000, 500);    // baseline only — no delta yet
+        h.recordTransfer(1000, 500);    // baseline only: no delta yet
         h.recordTransfer(3000, 900);    // +2000 down, +400 up
         h.recordAdded();
         h.recordAdded();
@@ -1083,7 +1083,7 @@ TEST_CASE("SubtitleParser: Latin-1 fallback for unlabeled Windows files", "[subs
     {
         QFile f(path);
         REQUIRE(f.open(QIODevice::WriteOnly));
-        // "ação" in Latin-1 — invalid as UTF-8, must fall back
+        // "ação" in Latin-1: invalid as UTF-8, must fall back
         f.write("1\n00:00:01,000 --> 00:00:02,000\n");
         f.write(QByteArray("a\xE7\xE3o\n"));
     }
@@ -1093,7 +1093,7 @@ TEST_CASE("SubtitleParser: Latin-1 fallback for unlabeled Windows files", "[subs
 }
 
 // ============================================================================
-//  SUBTITLE SEARCH (network integration — Gestdown, keyless)
+//  SUBTITLE SEARCH (network integration: Gestdown, keyless)
 // ============================================================================
 
 #include "services/subtitles/subtitlesearch.h"
@@ -1113,7 +1113,7 @@ TEST_CASE("SubtitleSearch: Gestdown end-to-end for a known series episode", "[in
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     REQUIRE(finished.count() > 0);
 
-    // network may legitimately be down — only assert the full chain when the
+    // network may legitimately be down: only assert the full chain when the
     // provider answered (same tolerance as the updater integration test)
     if (search.results().isEmpty()) {
         WARN("Gestdown returned no results (offline or API change?) — chain not exercised");
@@ -1214,7 +1214,7 @@ TEST_CASE("QFile::moveToTrash works in this environment", "[trash-env]")
 #endif
 
 // ============================================================================
-//  ArchiveScan — auto-extract archive discovery (formats + multi-part)
+//  ArchiveScan: auto-extract archive discovery (formats + multi-part)
 // ============================================================================
 #include "services/security/archivescan.h"
 
@@ -1274,7 +1274,7 @@ TEST_CASE("ArchiveScan: a media file that looks like a part is not an archive", 
 }
 
 // ============================================================================
-//  ReleasePick — one-click "best release" auto-pick
+//  ReleasePick: one-click "best release" auto-pick
 // ============================================================================
 #include "services/metadata/releasepick.h"
 using ReleasePick::Candidate;
@@ -1462,7 +1462,7 @@ TEST_CASE("InstallerProfile: scene crack folder detection", "[installer]") {
 }
 
 // ============================================================================
-//  ADDON MANAGER — Torrentio language configuration
+//  ADDON MANAGER: Torrentio language configuration
 // ============================================================================
 
 #include "services/discovery/addonmanager.h"
@@ -1484,7 +1484,7 @@ TEST_CASE("AddonManager: Torrentio language injection", "[addons]") {
 }
 
 // ============================================================================
-//  AUDIO MODE — dub / sub / original relative to the user's language
+//  AUDIO MODE: dub / sub / original relative to the user's language
 // ============================================================================
 
 #include "services/metadata/audiomode.h"
@@ -1539,7 +1539,7 @@ TEST_CASE("AudioMode: key strings are stable", "[audiomode]") {
 // is_finished counts pieces instead, and already excludes priority-0 files.
 // A magnet added seconds ago showed up as SEEDING. libtorrent decides
 // is_finished/is_seeding by comparing wanted-bytes-done against wanted-bytes,
-// and before metadata arrives both are zero — so the answer is yes for a
+// and before metadata arrives both are zero: so the answer is yes for a
 // torrent that has never transferred anything. The queue was innocent; the
 // state was.
 TEST_CASE("torrentHasWork rejects the states libtorrent reports for nothing",
@@ -1577,7 +1577,7 @@ TEST_CASE("torrentStateKey trusts libtorrent's finished flag, not the float",
         CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
     }
     SECTION("every file deselected: not finished, and no bytes to seed") {
-        // The case the old totalDone > 0 guard existed for — is_finished is
+        // The case the old totalDone > 0 guard existed for: is_finished is
         // false here, so it no longer needs a hand-rolled guard.
         t.progress = 1.0f;
         t.totalDone = 0;
@@ -1654,7 +1654,7 @@ TEST_CASE("Autostart writes and removes the real login item", "[.autostartfs]")
 
 // Reported on 4.8.0: the same magnet read "Seeding" in grid view and
 // "Downloading" in classic view. The two views were rendering two independently
-// produced values — the grid built a label from torrentStateKey(), the list
+// produced values: the grid built a label from torrentStateKey(), the list
 // rendered TorrentInfo::stateString, which came straight from libtorrent's
 // state enum. torrentStateLabelKey() is now the single classification both use.
 // Found while writing the label tests below: `TorrentInfo t;` is
@@ -1663,7 +1663,7 @@ TEST_CASE("Autostart writes and removes the real login item", "[.autostartfs]")
 // stopped, and the value is different on every run.
 TEST_CASE("TorrentInfo default-initialises every scalar", "[types][regression]")
 {
-    TorrentInfo t;   // deliberately not {} — that would zero it regardless
+    TorrentInfo t;   // deliberately not {}: that would zero it regardless
     CHECK(t.totalSize == 0);
     CHECK(t.totalDone == 0);
     CHECK(t.progress == 0.0f);
@@ -1724,7 +1724,7 @@ TEST_CASE("torrentStateLabelKey never contradicts torrentStateKey",
 
     SECTION("only plain downloading defers to libtorrent's enum") {
         // Empty is the signal to fall back to stateToString(), which still
-        // distinguishes checking files from fetching metadata — states the key
+        // distinguishes checking files from fetching metadata: states the key
         // deliberately does not model.
         CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
         CHECK(torrentStateLabelKey(t).isEmpty());

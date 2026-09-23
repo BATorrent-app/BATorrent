@@ -53,7 +53,7 @@ struct TorrentSearchResult {
     QString provider;   // display name of the source that returned this row
 };
 
-// Search provider — a named torrent search engine with URL template + JSON mapping.
+// Search provider: a named torrent search engine with URL template + JSON mapping.
 struct SearchProvider {
     QString id;
     QString name;
@@ -81,7 +81,7 @@ struct ProviderPreset {
 };
 
 // A curated Stremio addon we either seed out-of-box or offer as one-tap install.
-// Keys are NEVER shipped — needsConfig addons open configureUrl in the browser;
+// Keys are NEVER shipped: needsConfig addons open configureUrl in the browser;
 // the user pastes the generated manifest URL back into BATorrent.
 struct CuratedAddon {
     QString id;              // stable Stremio id (when known)
@@ -131,13 +131,13 @@ public:
     // Stremio protocol: get streams for a specific item
     void getStreams(const QString &type, const QString &id);
 
-    // Stremio protocol: item meta — the episode list (meta.videos) of a series.
+    // Stremio protocol: item meta; the episode list (meta.videos) of a series.
     // Emits metaVideos(id, [{videoId,season,episode,name,released}]).
     void fetchMeta(const QString &type, const QString &id);
 
     // Pure: base URL for a stream request. For an unconfigured Torrentio addon,
     // injects "/language=<lang>" so releases in the user's language (dubbed
-    // included) rank first — the same knob Torrentio users set by hand.
+    // included) rank first: the same knob Torrentio users set by hand.
     static QString streamBaseUrl(const QString &addonUrl, const QString &torrentioLang);
 
     // Auto tracker list (ngosang/trackerslist)

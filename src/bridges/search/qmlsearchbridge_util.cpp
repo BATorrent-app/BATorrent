@@ -27,7 +27,7 @@ bool sameTitle(const QString &a, const QString &b)
 QString btihFromMagnet(const QString &magnet)
 {
     // Prefer libtorrent's parser so Base32 xt=urn:btih: tokens become the same
-    // hex info-hash SessionManager indexes — otherwise installWhenReady /
+    // hex info-hash SessionManager indexes: otherwise installWhenReady /
     // watchWhenReady poll a hash that never matches and time out.
     lt::error_code ec;
     const lt::add_torrent_params atp = lt::parse_magnet_uri(magnet.toStdString(), ec);

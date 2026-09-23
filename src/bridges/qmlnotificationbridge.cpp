@@ -17,7 +17,7 @@ static void maybeBeep()
         QApplication::beep();
 }
 
-// QApplication::beep() on Windows plays the system's generic alert sound —
+// QApplication::beep() on Windows plays the system's generic alert sound;
 // a user reported it's indistinguishable from an error/warning beep, which
 // reads as "download failed" right after a successful one. Kill-switch and
 // suspicious-file warnings stay on maybeBeep() (an alert IS what those are).
@@ -36,7 +36,7 @@ void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString
 {
     maybeChime();
     // movies are surfaced by QmlSessionBridge::movieReady as an actionable
-    // "Play now" toast — don't double up with the generic one.
+    // "Play now" toast: don't double up with the generic one.
     if (m_session) {
         const int row = m_session->torrentIndexByInfoHash(infoHash);
         if (row >= 0 && m_session->torrentHasVideo(row)) return;

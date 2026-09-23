@@ -153,7 +153,7 @@ Item {
         onClicked: card.activated()
     }
 
-    // synopsis on hover — a fixed-width card beside the poster. The explicit
+    // synopsis on hover: a fixed-width card beside the poster. The explicit
     // width is essential: a bare Text reports its full unwrapped line as
     // implicitWidth, so the tooltip would stretch across the whole window.
     ToolTip {
@@ -176,14 +176,14 @@ Item {
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 9 }
     }
 
-    // ▶ Get & Watch / Get & Install — centered play button on hover
+    // ▶ Get & Watch / Get & Install: centered play button on hover
     Rectangle {
         visible: ma.containsMouse || pbMa.containsMouse
         x: (card.posterW - width) / 2
         y: (card.posterH - height) / 2
         width: 46; height: 46; radius: 23
         // dark glass disc; red only as the hover accent (ring + glyph),
-        // never a filled surface — same language as the grid tiles
+        // never a filled surface: same language as the grid tiles
         color: "#cc101014"
         border.color: pbMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
         border.width: 1
@@ -206,7 +206,7 @@ Item {
         }
     }
 
-    // "My List" toggle — on top of the main MouseArea so it gets the click
+    // "My List" toggle: on top of the main MouseArea so it gets the click
     Rectangle {
         visible: card.watchlistEnabled && (ma.containsMouse || wlMa.containsMouse || card.saved)
         x: 6; y: 6

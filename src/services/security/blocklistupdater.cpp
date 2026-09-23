@@ -17,7 +17,7 @@
 
 namespace {
 // Inflate a gzip stream (16 + MAX_WBITS selects the gzip wrapper). Bounded output
-// growth; returns empty on any zlib error — the caller treats that as a failure.
+// growth; returns empty on any zlib error: the caller treats that as a failure.
 QByteArray gunzip(const QByteArray &in)
 {
     if (in.size() < 2) return {};
@@ -88,7 +88,7 @@ void BlocklistUpdater::update(const QUrl &url)
             return;
         }
         QByteArray body = reply->readAll();
-        // gzip magic (1f 8b) — the default endpoint is gzipped, but a plain-text
+        // gzip magic (1f 8b): the default endpoint is gzipped, but a plain-text
         // URL is passed through untouched.
         if (body.size() >= 2 && static_cast<unsigned char>(body[0]) == 0x1f
                              && static_cast<unsigned char>(body[1]) == 0x8b) {

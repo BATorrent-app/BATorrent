@@ -29,7 +29,7 @@ QtObject {
     }
     readonly property bool empty: (page.library || []).length === 0 && (page.gameItems || []).length === 0
 
-    // newest in your library (movies + games), front and centre — Plex/Netflix style.
+    // newest in your library (movies + games), front and centre: Plex/Netflix style.
     // Runs through applyView like every other shelf (search box must filter this too).
     readonly property var recentlyAdded: {
         var all = applyView((page.library || []).concat(page.gameItems || []))

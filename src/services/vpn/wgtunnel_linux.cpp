@@ -15,7 +15,7 @@
 
 namespace {
 // Linux caps an interface name at IFNAMSIZ-1 (15). wg-quick names the interface
-// after the .conf basename, and our stored id is a UUID — too long — so we bring
+// after the .conf basename, and our stored id is a UUID, too long, so we bring
 // the tunnel up under a fixed short name.
 constexpr auto kIface = "batorrent-wg";
 
@@ -65,7 +65,7 @@ bool WgTunnelLinux::haveWgQuick()
 }
 
 // pkexec strips the environment, so the bundled wg-quick would not find its
-// sibling `wg` — run it through `env` with a PATH that leads with the staged dir.
+// sibling `wg`: run it through `env` with a PATH that leads with the staged dir.
 QStringList WgTunnelLinux::wgQuickArgv(const QString &verb, const QString &target)
 {
     const QString staged = stagedBundledTools();
@@ -97,7 +97,7 @@ void WgTunnelLinux::runElevated(const QStringList &argv, std::function<void(bool
 }
 
 // wg-quick derives the iface from the basename, so stage a short-named copy in
-// a user-private dir (0600 — it holds the private key). Empty on failure.
+// a user-private dir (0600: it holds the private key). Empty on failure.
 static QString stageShortConf(const QString &confPath)
 {
     QString dir = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);

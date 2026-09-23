@@ -36,7 +36,7 @@ struct CrtDebugGuard {
         _CrtMemCheckpoint(&snapAfter);
         if (_CrtMemDifference(&diff, &snapBefore, &snapAfter)) {
             _CrtMemDumpStatistics(&diff);
-            // Don't FAIL here — ASan/DrMem give better diagnostics.
+            // Don't FAIL here: ASan/DrMem give better diagnostics.
             // This just dumps to Output window in MSVC debugger.
         }
     }
@@ -55,7 +55,7 @@ static char  s_arg0[] = "test_memory";
 static char *s_argv[] = { s_arg0, nullptr };
 
 // Heap-allocated and deliberately never freed. Held by value, the QCoreApplication
-// is destroyed during static teardown, after Qt's own global state has gone —
+// is destroyed during static teardown, after Qt's own global state has gone:
 // ~QObject then dereferences a dead signal-slot table and the process segfaults
 // on exit, long after Catch2 has reported every assertion green.
 static QCoreApplication &app() {

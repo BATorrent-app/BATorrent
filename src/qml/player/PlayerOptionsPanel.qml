@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Unified playback options — audio · subtitles · speed in one dark-glass
+// Unified playback options: audio · subtitles · speed in one dark-glass
 // popover above the control bar (streaming-app pattern), replacing the three
 // separate context menus. Color is a signal: the active row/chip wears the
 // accent, surfaces stay dark.
@@ -31,7 +31,7 @@ Item {
     readonly property int panelRows: Math.max(subTrackCount + 3, hasAudioChoice ? mediaPlayer.audioTracks.length : 0)
     readonly property int idealHeight: 100 + Math.min(panelRows, 11) * 36
 
-    // Own UI selection state — OptRow's `checked:` binding was going stale (both
+    // Own UI selection state: OptRow's `checked:` binding was going stale (both
     // "off" and a track could show ✓). Sync from the player, write on click.
     property int uiSubTrack: -1
     property int uiAudioTrack: 0

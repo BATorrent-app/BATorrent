@@ -4,7 +4,7 @@
 //
 // Self-contained QR Code generator. Supports byte-mode (URLs and arbitrary
 // strings), error-correction level M, auto-version (1-10), and full 8-mask
-// scoring per ISO/IEC 18004 §8.3.3. No external dependencies — pure Qt + STL.
+// scoring per ISO/IEC 18004 §8.3.3. No external dependencies: pure Qt + STL.
 //
 // API:
 //   QPixmap qrgen::renderQR(const QString &text, int pixelSize,
@@ -35,7 +35,7 @@ struct Matrix {
 // at ECC M (~213 bytes).
 Matrix encode(const QString &text);
 
-// Convenience renderer — calls encode() then rasterises onto a pixmap of
+// Convenience renderer: calls encode() then rasterises onto a pixmap of
 // approximately pixelSize × pixelSize. Module size is integer-rounded so the
 // QR stays crisp at any zoom level. quietZoneModules is the white border
 // width in modules (spec recommends 4).

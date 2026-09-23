@@ -20,7 +20,7 @@ Window {
     width: 1360
     height: 884
     // floor wide enough that the full toolbar (labels + speed module) always
-    // fits — below this the RowLayout would have to clip, which is what made
+    // fits: below this the RowLayout would have to clip, which is what made
     // the old icon-only "compact" hack feel broken.
     // classic keeps the old +188 rail budget; the top bar frees that width
     // Capped to the screen: on DPI-scaled laptops (150% on 1920 = 1280 logical)
@@ -32,7 +32,7 @@ Window {
     color: Theme.bg
     // Native titlebar in both layouts. Classic used to merge it into the rail's
     // brand zone, which left the macOS traffic lights floating over the rail
-    // instead of sitting in a titlebar — the horizontal layout never did that,
+    // instead of sitting in a titlebar: the horizontal layout never did that,
     // and it reads better. unifiedChrome stays on for the secondary windows,
     // which draw their own title and would otherwise show it twice.
     flags: Qt.Window
@@ -65,11 +65,11 @@ Window {
     property int currentPage: 0
     onCurrentPageChanged: clearFilterFocus()
     // classic layout = the pre-4.5 left nav rail; default is the top bar.
-    // Only one nav component is ever loaded — a hidden rail would keep its
+    // Only one nav component is ever loaded: a hidden rail would keep its
     // carousel timer and ~30 session bindings alive for nothing.
     property bool layoutClassic: false
     // grid-mode detail panel: side inspector (default) or the bottom deck. Both
-    // components already exist; this just picks which one the grid uses — a
+    // components already exist; this just picks which one the grid uses: a
     // side panel suits wide screens, a bottom deck suits narrow ones.
     property bool detailBottom: false
     // the contextual continue/download chip in the top bar (some users find it
@@ -78,7 +78,7 @@ Window {
     readonly property Item navHost: layoutClassic ? navRailLoader.item : navBarLoader.item
 
     // Selection/filter state lives on library. Leaf chrome takes `controller`
-    // explicitly — no win.* aliases for selection anymore.
+    // explicitly: no win.* aliases for selection anymore.
     LibraryController {
         id: library
         onClearFilterFocusRequested: win.clearFilterFocus()
@@ -121,7 +121,7 @@ Window {
         }
     }
 
-    // startup splash — ceremony only when something happened: first run or the
+    // startup splash: ceremony only when something happened: first run or the
     // first launch after an update. A routine (often magnet-click) launch goes
     // straight to the UI. The Settings toggle still kills it entirely.
     property bool showSplash: false
@@ -194,7 +194,7 @@ Window {
             welcomeDlg.open()
         } else if (cur.length > 0 && last !== cur) {
             // No silent undo on dismiss: the point of showing this to existing
-            // users is that they discover settings they never found — content
+            // users is that they discover settings they never found: content
             // language, which side the navigation sits on. A choice made here is
             // a choice, and quietly reverting it on close would undo the reason
             // for showing the wizard at all. Everything stays reachable in
@@ -236,7 +236,7 @@ Window {
         if (typeof settings !== "undefined") settings.set("detailsCollapsed", detailsCollapsed)
     }
     // Missing-files recovery: pick where the files actually live (or a fresh folder
-    // to re-download into) — libtorrent moves storage there, then a recheck picks
+    // to re-download into): libtorrent moves storage there, then a recheck picks
     // up whatever's present. Shared by the context menu and the recovery banner.
     function promptSetLocation() { setLocationDlg.open() }
     property alias setLocationDlg: libraryShortcuts.setLocationDlg
@@ -260,7 +260,7 @@ Window {
         detailsLocked = !detailsLocked
         if (typeof settings !== "undefined") settings.set("detailsLocked", detailsLocked)
     }
-    // The Peers tab pulls every peer from libtorrent — only keep it live while open.
+    // The Peers tab pulls every peer from libtorrent: only keep it live while open.
     readonly property bool peersTabOpen: win.hasSel && win.detailTab === 1
     onPeersTabOpenChanged: if (typeof session !== "undefined") session.setDetailPeersActive(peersTabOpen)
 
@@ -300,8 +300,8 @@ Window {
     }
     function _commitSel() { library.commitSel() }
     // The downloads filter keeps activeFocus (and its accent ring) until
-    // something else claims it. Every gesture that means "I'm done typing" —
-    // picking a torrent, clicking blank space, leaving the page — routes here.
+    // something else claims it. Every gesture that means "I'm done typing":
+    // picking a torrent, clicking blank space, leaving the page: routes here.
     function clearFilterFocus() { if (libraryChrome.filterBar) libraryChrome.filterBar.clearSearchFocus() }
 
     function selectRow(proxyRow, mods) { library.selectRow(proxyRow, mods) }
@@ -330,15 +330,15 @@ Window {
         case "Games":  return i18n.language, i18n.t("cat_games")
         case "Movies": return i18n.language, i18n.t("cat_movies")
         case "Series": return i18n.language, i18n.t("cat_series")
-        // "Apps" stays the stored value on purpose — it is what every existing
+        // "Apps" stays the stored value on purpose: it is what every existing
         // torrent already carries. Only its label became Software, per Sherwan.
         case "Compressed": return i18n.language, i18n.t("cat_compressed")
-        default:       return value   // custom category — show as the user typed it
+        default:       return value   // custom category: show as the user typed it
         }
     }
     function openContext(proxyRow) {
         // right-clicking inside an existing multi-selection must not collapse
-        // it to just this row — that silently turned "remove 3 selected" into
+        // it to just this row: that silently turned "remove 3 selected" into
         // "remove 1" (reported by a user)
         if (!win.isRowSelected(proxyRow)) win.selectRow(proxyRow)
         ctxMenu.popup()
@@ -373,7 +373,7 @@ Window {
         diagnoseDialog: diagnoseDlg
     }
 
-    // Must stay a direct child of Window (not nested under Layout) — macOS menus
+    // Must stay a direct child of Window (not nested under Layout): macOS menus
     // break otherwise.
     AppMenuBar {
         host: win
@@ -522,7 +522,7 @@ Window {
                 currentIndex: win.currentPage
 
                 // Directional page switch. It used to rise 12px from below no
-                // matter which tab you came from, which says nothing — the tabs
+                // matter which tab you came from, which says nothing: the tabs
                 // sit in a row, so moving right should enter from the right and
                 // moving left from the left. Now the motion matches the gesture,
                 // and going back reverses it instead of repeating it.
@@ -576,7 +576,7 @@ Window {
             onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
         }
                 }
-                // ----- page 1: Encontrar (Find) — browse + search -----
+                // ----- page 1: Encontrar (Find); browse + search -----
                 SearchView {
                     id: searchPage
                     Layout.fillWidth: true; Layout.fillHeight: true
@@ -636,7 +636,7 @@ Window {
     property alias tourOverlay: appTour.tourOverlay
 
     // ================== TOP-LEVEL WINDOWS (lazy) ==================
-    // Built on first open via Loader, not at startup — instantiating all of
+    // Built on first open via Loader, not at startup: instantiating all of
     // them eagerly stalled the UI thread for seconds on launch.
     MainWindowLoaders {
         id: windowLoaders

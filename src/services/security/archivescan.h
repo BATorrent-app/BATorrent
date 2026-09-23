@@ -11,8 +11,8 @@
 // Pure archive-discovery logic for the auto-extract feature. Given the file
 // names in a folder it returns just the archives worth handing to an extractor:
 // the FIRST volume of every multi-part set, with continuation parts dropped
-// (the extractor pulls those in itself). Knows the common multi-part styles —
-// .partN.rar, .rNN, split .NNN, split-zip .zNN — and the usual formats.
+// (the extractor pulls those in itself). Knows the common multi-part styles:
+// .partN.rar, .rNN, split .NNN, split-zip .zNN: and the usual formats.
 namespace ArchiveScan {
 
 // Any recognized archive name, first volume OR continuation part.
@@ -23,7 +23,7 @@ bool isArchive(const QString &name);
 bool isContinuationPart(const QString &name);
 
 // The first-volume archives to extract, from a folder's file list (any path
-// form — only the file name matters). De-duplicated, original order preserved.
+// form: only the file name matters). De-duplicated, original order preserved.
 QStringList archivesToExtract(const QStringList &fileNames);
 
 }

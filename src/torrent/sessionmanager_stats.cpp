@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — session/global stats + Wrapped recap. Split out of
+// SessionManager: session/global stats + Wrapped recap. Split out of
 // sessionmanager.cpp verbatim; no behaviour change.
 
 #include "torrent/sessionmanager.h"

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — torrent lifecycle slice (add/remove/pause/resume, magnets,
+// SessionManager: torrent lifecycle slice (add/remove/pause/resume, magnets,
 // incomplete-suffix / storage mode). Split out of sessionmanager.cpp verbatim;
 // no behaviour change.
 
@@ -51,7 +51,7 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         lt::add_torrent_params atp;
         atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
         // Reject duplicates by checking our own list (not m_session.find_torrent,
-        // whose handle lingers after the async remove_torrent — that would wrongly
+        // whose handle lingers after the async remove_torrent: that would wrongly
         // block a legit re-add right after removal). m_torrents is erased
         // synchronously on remove, so it reflects the visible state.
         if (atp.ti && isDuplicate(atp.ti->info_hashes())) {
@@ -82,7 +82,7 @@ void SessionManager::addTorrent(const QString &filePath, const QString &savePath
         m_torrents.push_back(h);
         incrementTorrentCount();
         if (m_autoRecheck && h.is_valid()) h.force_recheck();   // verify pre-existing data on disk
-        stageResumeSave(h);   // persist now — an idle 0%/no-peer torrent never
+        stageResumeSave(h);   // persist now: an idle 0%/no-peer torrent never
 
         emit torrentAdded(static_cast<int>(m_torrents.size()) - 1);
         scanTorrentForThreats(h, QString::fromStdString(h.status().name));   // .torrent: metadata is ready now
@@ -161,7 +161,7 @@ void SessionManager::addMagnet(const QString &uri, const QString &savePath,
         lt::add_torrent_params atp = lt::parse_magnet_uri(uri.toStdString());
 
         // Same guard the .torrent paths have. A magnet carries its info-hash in
-        // the URI, so the duplicate is knowable before any metadata arrives —
+        // the URI, so the duplicate is knowable before any metadata arrives:
         // without this, add_torrent hands back the EXISTING handle and we push
         // it into m_torrents twice: two tiles reading one handle (identical
         // size/speed/progress), only one of which the resolver ever fills in,
@@ -232,7 +232,7 @@ QStringList SessionManager::torrentFileNames(int index) const
 
 void SessionManager::checkMagnetTimeouts()
 {
-    // No longer times anything out — a magnet used to be silently deleted
+    // No longer times anything out: a magnet used to be silently deleted
     // after 5 minutes without metadata, which hit rare-seeder torrents hardest
     // (exactly the ones that legitimately take longer to find a peer). The
     // wait is now explained via stateDetail (torrentAt) instead; this pass
@@ -330,7 +330,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         m_magnetAddedAt.erase(h);
         m_magnetHashes.erase(h);
 
-        // "delete files" sends the data to the OS trash instead of erasing it —
+        // "delete files" sends the data to the OS trash instead of erasing it:
         // recoverable removal is a safety net users expect from a desktop app.
         // The move runs shortly after remove_torrent so libtorrent has released
         // its file handles (Windows can't rename open files). Anything
@@ -379,12 +379,12 @@ void SessionManager::pauseTorrent(int index)
     qDebug() << "[session] pauseTorrent index:" << index;
     if (index < 0 || index >= static_cast<int>(m_torrents.size()))
         return;
-    // is_valid first — pause() on an expired handle throws (std::terminate
+    // is_valid first: pause() on an expired handle throws (std::terminate
     // from the Qt event loop = the whole app closes)
     if (!m_torrents[index].is_valid())
         return;
     m_torrents[index].pause();
-    // persist the pause now — periodic/shutdown saves can run before this and
+    // persist the pause now: periodic/shutdown saves can run before this and
     // otherwise the torrent reloads un-paused (resumes downloading on its own)
     m_torrents[index].save_resume_data(lt::torrent_handle::save_info_dict);
 }
@@ -396,7 +396,7 @@ void SessionManager::resumeTorrent(int index)
         return;
     if (!m_torrents[index].is_valid())
         return;
-    // Resume on a completed torrent un-marks it — the user is explicitly
+    // Resume on a completed torrent un-marks it: the user is explicitly
     // asking it to participate again, so the "frozen" flag has to clear.
     unmarkCompleted(index);
     m_torrents[index].resume();

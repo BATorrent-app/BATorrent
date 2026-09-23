@@ -39,7 +39,7 @@ QString tmdbLang() { return ContentLanguage::tmdb(); }
 
 // Pre-3.0 AppData lived one level up (…/BATorrent vs …/BATorrent/BATorrent).
 // Resume already migrates; covers lived in metadata/ + posters/ and were left
-// behind — library tiles then resolved titles from names but never found art.
+// behind: library tiles then resolved titles from names but never found art.
 void migrateLegacyMetadataDirs(const QString &appData)
 {
     QSettings s;
@@ -152,8 +152,8 @@ MetadataResolver::MetadataResolver(QObject *parent)
     m_rateLimiter.setSingleShot(true);
     connect(&m_rateLimiter, &QTimer::timeout, this, &MetadataResolver::processQueue);
 
-    // A hit clears the pending manual entry, so finishLookup() — which every
-    // lookup ends on — only reports the misses. Wiring it here keeps the
+    // A hit clears the pending manual entry, so finishLookup(): which every
+    // lookup ends on: only reports the misses. Wiring it here keeps the
     // invariant true for any future success path without touching it.
     connect(this, &MetadataResolver::metadataReady, this,
             [this](const QString &infoHash, const MetadataResult &) {
@@ -180,15 +180,15 @@ void MetadataResolver::resolve(const QString &infoHash, const QString &torrentNa
         return;
     if (m_cache.contains(key)) {
         const MetadataResult c = m_cache.value(key);
-        // Have art, or an intentional clearMetadata blank — don't re-hit TMDB/IGDB.
+        // Have art, or an intentional clearMetadata blank: don't re-hit TMDB/IGDB.
         if (!c.posterPath.isEmpty() || (c.valid && c.title.isEmpty()))
             return;
-        // Title cached but poster file gone/stale — fall through to refill art.
+        // Title cached but poster file gone/stale: fall through to refill art.
     }
 
     ParsedName parsed = NameParser::parse(torrentName);
     // The file payload outranks the name for game-vs-movie (a name can lie). Keep
-    // a name-derived Series though — episode markers there are reliable, and a
+    // a name-derived Series though: episode markers there are reliable, and a
     // single-episode torrent looks like a movie by file count alone.
     parsed.contentType = MetadataMatch::applyFileTypeOverride(parsed.contentType, fileNames);
     qDebug() << "[metadata] resolve:" << torrentName << "->" << parsed.cleanTitle
@@ -265,7 +265,7 @@ void MetadataResolver::clearMetadata(const QString &infoHash)
 {
     // "No cover" drops the artwork, not everything we know. A blank entry also
     // wiped contentType, and the tile then had no way to say GAME or MOVIE in
-    // the poster's place — asking for no art is not asking the app to forget
+    // the poster's place: asking for no art is not asking the app to forget
     // what the torrent is. Being cached, it is still never auto-resolved again.
     const QString key = MetadataMatch::canonicalInfoHash(infoHash);
     if (key.isEmpty())
@@ -435,7 +435,7 @@ void MetadataResolver::queryTmdbTv(const QString &infoHash, const ParsedName &pa
 
         const QJsonObject item = results[0].toObject();
 
-        // last stop in the Unknown chain (IGDB → movie → here) — without a
+        // last stop in the Unknown chain (IGDB → movie → here): without a
         // confident title match, leave it coverless rather than guess a show.
         if (parsed.contentType == ContentType::Unknown
             && !MetadataMatch::confidentTitle(parsed.cleanTitle,
@@ -592,7 +592,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
     req.setHeader(QNetworkRequest::ContentTypeHeader, "text/plain");
     req.setTransferTimeout(10000);
 
-    // escape the quoted search term — cleanTitle comes from the torrent name,
+    // escape the quoted search term: cleanTitle comes from the torrent name,
     // so a stray " or \ would break out of the Apicalypse string literal.
     const QString safeTitle = MetadataMatch::escapeApicalypse(queryTitle);
     QString body = QStringLiteral("search \"%1\"; fields name,summary,rating,first_release_date,genres.name,platforms.name,cover.image_id; limit 5;")
@@ -628,7 +628,7 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
         if (!pick.found) {
             // IGDB's search chokes on long subtitled names ("Garfield Kart 2
             // All You Can Drift" finds nothing; "Garfield Kart 2" does). Retry
-            // with the front half of the tokens, down to 3 — scoring above
+            // with the front half of the tokens, down to 3: scoring above
             // still compares against the full title, so a wrong-franchise hit
             // can't sneak in just because the query got shorter.
             const QString shorter = MetadataMatch::shortenedSearchTitle(queryTitle);

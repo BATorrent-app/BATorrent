@@ -8,10 +8,10 @@
 // Turn a file-host *page* URL into the direct-download URL the HTTP engine can
 // fetch. Kept to deterministic, API-free rewrites (no captcha, no wait page) so
 // it stays a pure, unit-tested function: pixeldrain's viewer path maps 1:1 to
-// its file API. An already-direct link — or a host we don't special-case — is
+// its file API. An already-direct link, or a host we don't special-case, is
 // returned unchanged; HttpDownload's probe + integrity gate then either fetch it
 // or reject an HTML error page cleanly. Hosts that need an API token or a wait
-// page (gofile, 1fichier, mediafire) are deliberately out of scope here — a
+// page (gofile, 1fichier, mediafire) are deliberately out of scope here: a
 // future async resolver handles those.
 
 #include <QUrl>
@@ -34,7 +34,7 @@ inline QUrl directDownloadUrl(const QUrl &page)
             return QUrl(QStringLiteral("https://pixeldrain.com/api/file/") + m.captured(1));
     }
 
-    return page;   // already-direct, or a host we don't rewrite — try as-is
+    return page;   // already-direct, or a host we don't rewrite: try as-is
 }
 
 } // namespace bat

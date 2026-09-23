@@ -50,7 +50,7 @@ Item {
     Shortcut { sequence: "Ctrl+Down";  enabled: !library.gridView; onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
     Shortcut { sequence: "Ctrl+Left";  enabled: library.gridView;  onActivated: if (typeof session !== "undefined") session.queueUpSelected() }
     Shortcut { sequence: "Ctrl+Right"; enabled: library.gridView;  onActivated: if (typeof session !== "undefined") session.queueDownSelected() }
-    // navigate selection — suppressed while the command palette owns the keyboard
+    // navigate selection: suppressed while the command palette owns the keyboard
     // (otherwise the arrows scroll the list behind it instead of its results)
     Shortcut { sequence: "Up";    enabled: !(cmdPalette && cmdPalette.opened); onActivated: host.moveSel(library.gridView ? -host.gridCols() : -1) }
     Shortcut { sequence: "Down";  enabled: !(cmdPalette && cmdPalette.opened); onActivated: host.moveSel(library.gridView ?  host.gridCols() :  1) }

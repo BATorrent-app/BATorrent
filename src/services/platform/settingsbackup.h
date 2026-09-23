@@ -13,12 +13,12 @@
 #include <QVariantMap>
 
 // Settings export (JSON, secrets stripped) and full backup archive (BATBACKUP1).
-// Pure format/policy leaves — I/O stays in the settings bridge.
+// Pure format/policy leaves: I/O stays in the settings bridge.
 namespace SettingsBackup {
 
 QString localPath(const QString &pathOrUrl);
 
-// Keys omitted from JSON export (not from full backup — restore needs them).
+// Keys omitted from JSON export (not from full backup: restore needs them).
 QStringList exportSecretKeys();
 bool isExportSecret(const QString &key);
 

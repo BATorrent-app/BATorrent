@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — disk & transfer-projection slice. Free-space queries and
+// QmlSessionBridge: disk & transfer-projection slice. Free-space queries and
 // the per-volume breakdown, plus the QML list models for active downloads,
 // seeding transfers, and resume-me items, and the default save path. Split out
 // of qmlsessionbridge.cpp verbatim; no behaviour change.
@@ -24,7 +24,7 @@
 // Free space on the default save volume, polled at most every 5s (the status bar
 // binds to statsChanged, which ticks every second). Single source of truth for
 // "free disk": one cached read shared by the status bar, search disk-fit,
-// add-guard and auto-pause — so every screen agrees instead of each polling at
+// add-guard and auto-pause: so every screen agrees instead of each polling at
 // its own moment.
 qint64 QmlSessionBridge::freeSaveBytes() const
 {
@@ -46,7 +46,7 @@ QString QmlSessionBridge::freeDiskSpace() const
     return b >= 0 ? formatSize(b) : QString();
 }
 
-// Fraction of the save volume that's used (0..1) — drives the sidebar disk bar.
+// Fraction of the save volume that's used (0..1): drives the sidebar disk bar.
 double QmlSessionBridge::diskUsedFraction() const
 {
     static double cached = 0;
@@ -62,11 +62,11 @@ double QmlSessionBridge::diskUsedFraction() const
     return cached;
 }
 
-// True when a mounted volume is somewhere a user would actually save to —
+// True when a mounted volume is somewhere a user would actually save to:
 // filters out the OS's plumbing mounts (tmpfs, snapshots, synthetic volumes)
 // WITHOUT rejecting the real data volume. macOS keeps user data under
 // /System/Volumes/Data, so a blanket "/System/" block hid every disk and the
-// gauge vanished — that path must stay.
+// gauge vanished: that path must stay.
 static bool isUserVolume(const QStorageInfo &si)
 {
     if (!si.isValid() || !si.isReady() || si.bytesTotal() <= 0)
@@ -77,8 +77,8 @@ static bool isUserVolume(const QStorageInfo &si)
         return false;
     const QString root = si.rootPath();
     // macOS: "/" IS the disk (reported read-only, but it's the real store the
-    // user saves to). The firmlinked /System/Volumes/* mounts — Data and the
-    // synthetic ones — all duplicate it, so drop them and let "/" represent it.
+    // user saves to). The firmlinked /System/Volumes/* mounts: Data and the
+    // synthetic ones: all duplicate it, so drop them and let "/" represent it.
     if (root.startsWith(QLatin1String("/System/Volumes/")))
         return false;
     // read-only mounts are noise (optical media, snaps) EXCEPT the macOS
@@ -186,7 +186,7 @@ QVariantList QmlSessionBridge::favoriteSavePaths() const
     return out;
 }
 
-// Every torrent, for the Make Room panel — the QML view sorts by size or age
+// Every torrent, for the Make Room panel: the QML view sorts by size or age
 // and sums a running "would reclaim" total as the user picks rows to delete.
 QString QmlSessionBridge::defaultSavePath() const
 {

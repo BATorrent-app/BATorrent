@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Ctrl/⌘+K palette: fuzzy-find actions and torrents from one box. Opens with
-// no animation on purpose — it's a frequency-100x feature, motion would only
+// no animation on purpose: it's a frequency-100x feature, motion would only
 // add latency.
 import QtQuick
 import QtQuick.Layouts
@@ -17,7 +17,7 @@ Item {
     visible: opened
     property bool opened: false
 
-    // [{label, hint, run}] supplied by Main — keeps every action next to the
+    // [{label, hint, run}] supplied by Main: keeps every action next to the
     // code that owns it instead of duplicating ids here
     property var actions: []
     property var torrents: []

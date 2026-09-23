@@ -41,7 +41,7 @@ Rectangle {
         color: Theme.accent
     }
 
-    // check (path "M20 6 9 17l-5-5") — desenhamos como duas linhas via Canvas pra ficar fiel
+    // check (path "M20 6 9 17l-5-5"): desenhamos como duas linhas via Canvas pra ficar fiel
     Canvas {
         anchors.fill: parent
         anchors.margins: 3

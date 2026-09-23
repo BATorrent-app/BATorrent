@@ -24,7 +24,7 @@ Rectangle {
     }
 
     // The accent ring means "you're typing here". It has to go the moment
-    // attention moves elsewhere — a TextInput keeps activeFocus until something
+    // attention moves elsewhere: a TextInput keeps activeFocus until something
     // else asks for it, so every interaction that isn't typing calls this.
     function clearSearchFocus() { if (searchInput.activeFocus) searchInput.focus = false }
 
@@ -32,7 +32,7 @@ Rectangle {
         id: pi
         property string label
         property string count
-        property string filterKey: "all"   // NOT `state` — that shadows Item.state
+        property string filterKey: "all"   // NOT `state`: that shadows Item.state
         property bool on: controller.activeFilter === filterKey
         signal clicked()
         radius: 8
@@ -77,7 +77,7 @@ Rectangle {
             Text {
                 // baseline, not verticalCenter: the count is a size smaller, and
                 // centring two different type sizes aligns their line boxes while
-                // leaving the baselines a pixel apart — the number visibly floats
+                // leaving the baselines a pixel apart: the number visibly floats
                 anchors.baseline: pillLabel.baseline
                 text: pi.count
                 color: pi.on ? Theme.accentText : Theme.t4
@@ -155,7 +155,7 @@ Rectangle {
         anchors.rightMargin: Theme.sp4
         spacing: Theme.sp3
 
-        // .search (240×34, padding 0 11, gap 8, bg panel) — the one
+        // .search (240×34, padding 0 11, gap 8, bg panel): the one
         // element that absorbs the shrink: it gives back width down to
         // 150 so the pills/category never have to clip.
         Rectangle {
@@ -208,7 +208,7 @@ Rectangle {
             }
         }
 
-        // .seg (toggle Grade/Lista) — padding 2, bg panel
+        // .seg (toggle Grade/Lista): padding 2, bg panel
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 32
@@ -321,7 +321,7 @@ Rectangle {
                     height: pillsFlick.height
                     spacing: Theme.sp3
 
-                    // .pills (gap 4) — 7 pills, counts from session, click sets filter
+                    // .pills (gap 4): 7 pills, counts from session, click sets filter
                     Row {
                         id: pillsRow
                         anchors.verticalCenter: parent.verticalCenter
@@ -392,7 +392,7 @@ Rectangle {
                             delegate: CatItem {}
                             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
                             // The four built-ins are static; user-created ones are
-                            // appended on open — the same rule the right-click menu
+                            // appended on open: the same rule the right-click menu
                             // follows. This list was hardcoded too, so a category
                             // you created could be assigned but never filtered by.
                             onAboutToShow: catFilterCustoms.model = win.customCategories()
@@ -423,7 +423,7 @@ Rectangle {
             EdgeScroller { rightSide: false; active: pillsFlick.canScrollLeft;  anchors.left: parent.left }
         }
 
-        // donate moved to the nav rail (bottom) — it was cramped here
+        // donate moved to the nav rail (bottom): it was cramped here
         // and got clipped when the filter row filled up.
         // (the port indicator now lives in the status bar: it's status,
         // not a filter, and it was the first thing to clip here)

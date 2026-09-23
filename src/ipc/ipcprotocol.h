@@ -27,7 +27,7 @@ enum class Kind : quint8 {
     Event   = 6,   // engine → UI: name, argsBlob (signals/snapshots)
 };
 
-// A frame beyond this is protocol corruption or a hostile peer — a bogus
+// A frame beyond this is protocol corruption or a hostile peer: a bogus
 // length must not pin memory (the buffer would accumulate forever waiting for
 // bytes that never come) or desync the stream via int overflow in the size check.
 constexpr qsizetype kMaxFrameBytes = 64 * 1024 * 1024;
@@ -60,7 +60,7 @@ inline void drainFrames(QByteArray &buf, const std::function<void(Kind, const QB
             ds >> len;
         }
         if (qsizetype(len) > kMaxFrameBytes) { buf.clear(); return; }
-        if (buf.size() - kHeader < qsizetype(len)) return;   // incomplete — wait for more
+        if (buf.size() - kHeader < qsizetype(len)) return;   // incomplete: wait for more
         const QByteArray body = buf.mid(kHeader, len);
         buf.remove(0, kHeader + qsizetype(len));
         if (body.isEmpty()) continue;

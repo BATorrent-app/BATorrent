@@ -66,7 +66,7 @@ Platform.MenuBar {
         Platform.MenuItem { text: (i18n.language, i18n.t("menu_tour")); onTriggered: tourOverlay.start() }
         // role: NoRole is load-bearing. Qt runs a text heuristic on macOS menu
         // titles and merges anything reading like "setup"/"config" into the
-        // application menu as Preferences — the row simply vanished from Help
+        // application menu as Preferences: the row simply vanished from Help
         // while the text was correct all along. The English name avoids the
         // keyword now, but pt "Assistente de configuração" would still trip it.
         Platform.MenuItem {

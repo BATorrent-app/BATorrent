@@ -14,7 +14,7 @@
 // Pure IGDB response → poster-card mapping (no network).
 namespace IgdbParse {
 
-// IGDB has no free flag — drop obvious F2P / live-service / MMO titles that
+// IGDB has no free flag: drop obvious F2P / live-service / MMO titles that
 // dominate popularity lists but aren't torrentable. Substrings stay specific
 // enough not to wipe paid franchise entries (e.g. "warzone" ≠ "call of duty").
 bool isFreeLiveService(const QString &name);

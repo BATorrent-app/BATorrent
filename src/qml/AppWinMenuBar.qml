@@ -68,7 +68,7 @@ MenuBar {
     component BarMenu: Menu {
         implicitWidth: 240
         // Breathing room so the first/last item don't get clipped by the
-        // rounded (radius 8) background corners — the "cut tail" on the
+        // rounded (radius 8) background corners: the "cut tail" on the
         // last entry.
         topPadding: 6; bottomPadding: 6
         delegate: BarItem {}

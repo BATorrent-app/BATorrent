@@ -58,7 +58,7 @@ Rectangle {
             model: [i18n.t("search_filter_all")].concat(row.sv.sourceOptions)
             onActivated: row.sv.sourceFilter = currentIndex <= 0 ? "" : currentText
         }
-        // who released it — the axis users trust, and the one they asked for
+        // who released it: the axis users trust, and the one they asked for
         TSelect {
             id: repSel
             visible: row.sv.groupOptions.length > 0

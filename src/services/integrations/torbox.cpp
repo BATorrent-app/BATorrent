@@ -168,7 +168,7 @@ void TorBoxClient::onJobInfo(QNetworkReply *r)
     if (m_jobId.isEmpty()) return;   // cancelled mid-flight
     const QJsonObject root = QJsonDocument::fromJson(r->readAll()).object();
     // mylist with id returns the torrent in `data` (object); 404 while it hasn't
-    // registered yet — both are transient, keep polling.
+    // registered yet: both are transient, keep polling.
     if (r->error() != QNetworkReply::NoError
         || !root.value(QStringLiteral("success")).toBool()) {
         m_pollTimer.start();

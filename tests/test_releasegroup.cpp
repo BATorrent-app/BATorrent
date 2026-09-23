@@ -69,7 +69,7 @@ TEST_CASE("canonical() normalises the spellings people actually type", "[release
     }
 }
 
-// Two known groups in one name must resolve the same way on every run — the
+// Two known groups in one name must resolve the same way on every run: the
 // reason the alias table is an ordered list and not a QHash.
 TEST_CASE("detection is deterministic when a name carries two known groups", "[releasegroup]")
 {

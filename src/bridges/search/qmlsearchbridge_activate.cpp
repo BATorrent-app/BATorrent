@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSearchBridge — activateResult / back / catalog+episode row rebuild.
+// QmlSearchBridge: activateResult / back / catalog+episode row rebuild.
 
 #include "bridges/search/qmlsearchbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"
@@ -41,7 +41,7 @@ void QmlSearchBridge::activateResult(int index, bool force)
         m_streamHintType = it.type == QLatin1String("series") ? static_cast<int>(ContentType::Series)
                          : it.type == QLatin1String("movie")  ? static_cast<int>(ContentType::Movie) : -1;
         m_streamHintPoster = it.poster;
-        // Series streams need an "id:season:episode" — a bare series id returns
+        // Series streams need an "id:season:episode"; a bare series id returns
         // nothing from most addons. Route through the episode picker when the
         // addon exposes meta; otherwise keep the old direct lookup.
         if (it.type == QLatin1String("series") && mgr.hasMetaAddon()) {

@@ -17,7 +17,7 @@ QtObject {
     readonly property var seedingList: (typeof session !== "undefined") ? session.seedingTransfers : []
     readonly property var resumeList: (typeof session !== "undefined") ? session.resumeItems : []
     // ON Downloads prefer continue/resume items (the downloads are already on
-    // screen); everywhere — including when there's nothing to resume — fall
+    // screen); everywhere, including when there's nothing to resume, fall
     // back to live downloads, then seeding, so the slot is never empty while
     // anything is transferring.
     readonly property bool slotResume: currentPage === 0 && resumeList.length > 0

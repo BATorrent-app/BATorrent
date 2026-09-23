@@ -14,7 +14,7 @@ class IDebridProvider;
 
 // The single QML-facing debrid object. Owns every provider (Real-Debrid, TorBox),
 // tracks which one is active, and delegates the IDebridProvider contract to it so
-// the UI stays provider-agnostic — one "Stream via debrid" path, one settings row.
+// the UI stays provider-agnostic: one "Stream via debrid" path, one settings row.
 class DebridManager : public QObject
 {
     Q_OBJECT

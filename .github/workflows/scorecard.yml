@@ -1,6 +1,6 @@
 name: Scorecard
 
-# OpenSSF Scorecard — supply-chain posture for the default branch.
+# OpenSSF Scorecard: supply-chain posture for the default branch.
 # Weekly + branch-protection events only (not every push to main).
 
 concurrency:

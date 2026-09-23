@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — selected-torrent actions (pause/remove/queue/limits/…).
+// QmlSessionBridge: selected-torrent actions (pause/remove/queue/limits/…).
 // Split out of qmlsessionbridge.cpp verbatim; no behaviour change.
 
 #include "bridges/session/qmlsessionbridge.h"
@@ -55,7 +55,7 @@ void QmlSessionBridge::removeSelectedRows(bool deleteFiles, bool permanent)
     const int n = rows.size();
     std::sort(rows.begin(), rows.end(), std::greater<int>());
     // A batch fires beginRemoveRows/endRemoveRows back-to-back with no time for
-    // the grid/list's remove+displaced Transition to settle between them —
+    // the grid/list's remove+displaced Transition to settle between them:
     // flagged so the view can skip animating a batch (see LibraryView.qml).
     if (n > 1) { m_bulkRemoveInProgress = true; emit bulkRemoveInProgressChanged(); }
     for (int r : rows) m_session->removeTorrent(r, deleteFiles, permanent);
@@ -104,7 +104,7 @@ bool QmlSessionBridge::selectedHasArchives() const
 
 bool QmlSessionBridge::selectedHasVideo() const
 {
-    // A game that bundles cutscene/intro videos must not offer Play — Install wins.
+    // A game that bundles cutscene/intro videos must not offer Play: Install wins.
     return hasSelection() && m_session->torrentHasVideo(m_selectedIndex)
            && !isGameTorrent(m_selectedIndex);
 }
@@ -179,7 +179,7 @@ void QmlSessionBridge::refreshAll()
 {
     // Manual "Refresh": re-announce every torrent to its trackers (fetch a
     // fresh peer set) and push a stats recompute now. The list already updates
-    // live per tick — this is the on-demand kick some users want.
+    // live per tick: this is the on-demand kick some users want.
     const int n = m_session->torrentCount();
     for (int i = 0; i < n; ++i)
         m_session->forceReannounce(i);

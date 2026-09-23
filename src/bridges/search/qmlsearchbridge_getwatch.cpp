@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSearchBridge — Get & Watch / Install + source summary.
+// QmlSearchBridge: Get & Watch / Install + source summary.
 
 #include "bridges/search/qmlsearchbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"

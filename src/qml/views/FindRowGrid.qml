@@ -6,7 +6,7 @@
 // of a row you have to scroll sideways through.
 //
 // It used to set the page's type filter, which is what the chips at the top
-// already do — so on a page whose shelves are all movies, clicking See all on a
+// already do: so on a page whose shelves are all movies, clicking See all on a
 // movie row changed a chip and nothing else, and read as a dead control.
 import QtQuick
 import QtQuick.Controls.Basic

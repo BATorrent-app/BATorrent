@@ -16,7 +16,7 @@
 namespace {
 
 // A warm two-note "ta-da" chime (G5 -> D6, a rising perfect fifth). The old
-// version was two pure sine beeps in sequence — which is exactly why it read as
+// version was two pure sine beeps in sequence: which is exactly why it read as
 // a BIOS beep. Two things fix that: a struck-bell timbre (fundamental plus a
 // few decaying harmonics) and an exponential decay envelope so each note rings
 // out and rings into the next instead of stopping dead.
@@ -26,7 +26,7 @@ QByteArray synthesizeChime(const QAudioFormat &format)
     if (sampleRate <= 0) return {};
 
     struct Note { double freq; double start; };            // start = onset offset (s)
-    const Note notes[] = { {783.99, 0.0}, {1174.66, 0.13} };  // G5, D6 — overlapping
+    const Note notes[] = { {783.99, 0.0}, {1174.66, 0.13} };  // G5, D6: overlapping
     // harmonic weights: fundamental + octave + fifth + 2nd octave, each softer,
     // give a soft mallet/glass tone rather than a flat sine
     const double harm[] = {1.0, 0.5, 0.28, 0.12};
@@ -85,7 +85,7 @@ void SoundPlayer::playCompletionChime()
 
     QObject::connect(sink, &QAudioSink::stateChanged, sink, [sink](QAudio::State state) {
         if (state == QAudio::IdleState || state == QAudio::StoppedState)
-            sink->deleteLater();   // buf is a child of sink — goes with it
+            sink->deleteLater();   // buf is a child of sink: goes with it
     });
     sink->start(buf);
 }

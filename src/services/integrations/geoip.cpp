@@ -28,7 +28,7 @@ void GeoIpResolver::resolve(const QString &ip)
         return;
     }
 
-    // Already tried and failed — don't re-queue (a churning swarm would otherwise
+    // Already tried and failed: don't re-queue (a churning swarm would otherwise
     // re-resolve every unresolvable IP on each peer-list rebuild, forever).
     if (m_failed.contains(ip))
         return;
@@ -102,7 +102,7 @@ void GeoIpResolver::processQueue()
             emit resolved(ip, countryCode);
         } else {
             // Unresolved (error, rate-limit, or a private/CGNAT IP ipinfo returns
-            // blank for) — negative-cache so it isn't retried every rebuild.
+            // blank for): negative-cache so it isn't retried every rebuild.
             m_failed.insert(ip);
         }
 

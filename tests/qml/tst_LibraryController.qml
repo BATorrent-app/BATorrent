@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Downloads library selection state without a live session/filter model.
-// commitSel no-ops when session is undefined — still pins select/clear contracts.
+// commitSel no-ops when session is undefined: still pins select/clear contracts.
 
 import QtQuick
 import QtTest

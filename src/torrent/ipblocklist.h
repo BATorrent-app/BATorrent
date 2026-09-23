@@ -22,7 +22,7 @@ libtorrent::ip_filter parseP2pBlocklist(const QString &text, int *rulesAdded = n
 
 // Same parser, accumulating into an existing filter so several lists (e.g. a
 // manual file + the auto-updated one) merge into one ip_filter. *rulesAdded is
-// incremented (not reset) by the number of accepted ranges — init it yourself.
+// incremented (not reset) by the number of accepted ranges: init it yourself.
 void parseP2pBlocklistInto(const QString &text, libtorrent::ip_filter &filter,
                            int *rulesAdded = nullptr);
 

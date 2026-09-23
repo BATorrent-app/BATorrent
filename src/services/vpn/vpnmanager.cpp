@@ -30,7 +30,7 @@ VpnManager::VpnManager(WgTunnel *tunnel, QObject *parent)
     connect(m_tunnel, &WgTunnel::connected, this, [this](const QString &iface) {
         if (m_state != State::Connecting) {
             // Stale: the user cancelled mid-connect but the bring-up finished
-            // anyway — tear it down or it lingers invisibly rerouting traffic.
+            // anyway: tear it down or it lingers invisibly rerouting traffic.
             m_tunnel->down();
             return;
         }
@@ -73,7 +73,7 @@ QString VpnManager::confPath(const QString &id) const
 }
 
 // Short basename on purpose: the Windows client names the tunnel after the conf
-// file and caps that name at 32 chars — a full 32-char id + suffix won't fit.
+// file and caps that name at 32 chars: a full 32-char id + suffix won't fit.
 QString VpnManager::splitConfPath(const QString &id) const
 {
     return vpnDir() + QLatin1Char('/') + id.left(12) + QStringLiteral("-split.conf");
@@ -101,7 +101,7 @@ QString VpnManager::importConfig(const QString &name, const QString &confText)
     if (!cfg.valid) { m_error = cfg.error; return QString(); }
 
     const QString id = QUuid::createUuid().toString(QUuid::Id128);
-    // The .conf holds a private key — write it owner-only, like wg-quick does.
+    // The .conf holds a private key: write it owner-only, like wg-quick does.
     QSaveFile f(confPath(id));
     if (!f.open(QIODevice::WriteOnly)) { m_error = QStringLiteral("cannot write config"); return QString(); }
     f.write(confText.toUtf8());
@@ -228,7 +228,7 @@ void VpnManager::connectProfile(const QString &id)
 
     QString tunnelConf = confPath(id);
     // Split tunnel: bring the tunnel up from a Table=off copy so it takes no
-    // default route — only the torrent session (bound to the interface) uses it.
+    // default route: only the torrent session (bound to the interface) uses it.
     if (QSettings().value(QStringLiteral("vpnSplitTunnel"), false).toBool()) {
         const QString staged = splitConfPath(id);
         QSaveFile sf(staged);
@@ -258,7 +258,7 @@ void VpnManager::connectLastUsed()
 }
 
 // The active-tunnel record (iface + conf + profile) is what makes a tunnel
-// that outlived a previous app run adoptable. Real tunnels only — the stub
+// that outlived a previous app run adoptable. Real tunnels only: the stub
 // dies with the process.
 void VpnManager::saveActiveTunnel(const QString &iface) const
 {
@@ -339,7 +339,7 @@ void VpnManager::load()
         const QString id = o.value(QStringLiteral("id")).toString();
         // drop index entries whose .conf vanished, so the list never lies
         if (id.isEmpty() || !QFile::exists(confPath(id))) continue;
-        // endpoint comes from the .conf, not the index — it can't go stale
+        // endpoint comes from the .conf, not the index: it can't go stale
         QString endpoint;
         QFile cf(confPath(id));
         if (cf.open(QIODevice::ReadOnly)) {

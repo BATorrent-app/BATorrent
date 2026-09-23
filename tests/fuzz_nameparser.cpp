@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// libFuzzer harness for the release-name parser — the regex-heavy code that
+// libFuzzer harness for the release-name parser: the regex-heavy code that
 // runs on every (untrusted) torrent name. Build with -DBAT_FUZZ=ON and run:
 //   ./fuzz_nameparser -max_total_time=30
 // Catches crashes and ReDoS-style runaways (pair with -timeout=...).

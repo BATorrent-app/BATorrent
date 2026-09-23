@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Local dev build of the FORK on LINUX — the Homebrew-free mirror of
+# Local dev build of the FORK on LINUX: the Homebrew-free mirror of
 # dev-build-fork.sh. Qt comes from aqt (~/Qt/6.7.*/gcc_64), OpenSSL/boost from
 # the distro. Run it from bash (NOT fish): the `source .env` step needs bash.
 #
 # ALWAYS use this (not a bare `cmake -B build-fork`) so the BAT_*_KEY compile
-# definitions pick up .env — a bare reconfigure re-evaluates $ENV{BAT_TMDB_KEY}
+# definitions pick up .env: a bare reconfigure re-evaluates $ENV{BAT_TMDB_KEY}
 # as empty and silently strips the keys → no posters / "auth required".
 #
 # Usage: bash scripts/dev-build-fork-linux.sh [--bench] [--asan]

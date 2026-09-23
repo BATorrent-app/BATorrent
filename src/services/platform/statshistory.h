@@ -9,7 +9,7 @@
 #include <QJsonObject>
 
 // Local per-day usage history (bytes moved, torrents added/completed, per
-// category). Feeds the future "Year in Torrents" + richer Statistics — data
+// category). Feeds the future "Year in Torrents" + richer Statistics: data
 // not collected can't be shown retroactively, so this starts tiny and early.
 // Plain JSON next to the resume data; a year is a few hundred small entries.
 // Never leaves the machine.
@@ -20,7 +20,7 @@ public:
     ~StatsHistory();
 
     // absolute monotonic session counters (SessionManager::globalDownloaded /
-    // globalUploaded) — deltas are computed and clamped here
+    // globalUploaded): deltas are computed and clamped here
     void recordTransfer(qint64 downAbs, qint64 upAbs);
     void recordAdded();
     void recordCompleted(const QString &category);

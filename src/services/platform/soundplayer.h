@@ -5,7 +5,7 @@
 #ifndef SOUNDPLAYER_H
 #define SOUNDPLAYER_H
 
-// A short, synthesized completion chime — not a licensed audio asset, and not
+// A short, synthesized completion chime: not a licensed audio asset, and not
 // QApplication::beep() (a user reported that on Windows it plays as the
 // system's generic alert sound, indistinguishable from an error beep).
 namespace SoundPlayer {

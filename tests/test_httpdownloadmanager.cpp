@@ -22,7 +22,7 @@ using httptest::RangeServer;
 namespace {
 
 // The sidecar lives in the (test-mode) AppData store and is loaded on every
-// manager construction — wipe it so each case starts from an empty list.
+// manager construction: wipe it so each case starts from an empty list.
 void freshStore()
 {
     httptest::ensureApp();

@@ -16,7 +16,7 @@ int derive(const DeriveIn &in)
     if (in.running) return Playing;
     if (in.overlay >= 0) return in.overlay;
     if (in.hasExePath && in.exeExists) return Ready;
-    // Stale path: never report Ready — ReadyToInstall/Downloading only.
+    // Stale path: never report Ready; ReadyToInstall/Downloading only.
     if (!in.completed) return Downloading;
     return ReadyToInstall;
 }

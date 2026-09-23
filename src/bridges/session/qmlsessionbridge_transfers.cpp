@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — make-room list + active/seeding/resume projections.
+// QmlSessionBridge: make-room list + active/seeding/resume projections.
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
@@ -61,7 +61,7 @@ QVariantList QmlSessionBridge::activeDownloads() const
         // here so the card would never empty, but that is what made it lie: it
         // announced "4/14" while the Downloading chip beside it read 0, because
         // the two were counting different things under the same word. An empty
-        // card is a true statement — there is nothing in flight.
+        // card is a true statement: there is nothing in flight.
         if (info.completed || info.finished || info.paused || info.queued) continue;
         const QString hash = m_session->torrentHashAt(i);
         QString poster;

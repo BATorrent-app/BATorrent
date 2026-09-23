@@ -30,7 +30,7 @@ bool isEpisodic(const QString &name)
 }
 
 // A release that hands out a password is asking the user to visit a site to get
-// it — the classic bait for adware/credential pages. Bounded by separators so a
+// it: the classic bait for adware/credential pages. Bounded by separators so a
 // film actually called "Password" doesn't trip it.
 bool isPasswordBait(const QString &name)
 {
@@ -50,7 +50,7 @@ bool hasSpamPrefix(const QString &name)
     return matches(name, re);
 }
 
-// Floor below which the claimed resolution can't be a real movie encode — set
+// Floor below which the claimed resolution can't be a real movie encode: set
 // well under even aggressive x265 releases so a legitimate small encode is
 // never flagged. 0 = no floor for that quality.
 qint64 sizeFloor(const QString &quality)
@@ -94,7 +94,7 @@ Verdict assess(const Release &r)
         score -= 15;
     }
 
-    // Swarm health feeds the score (for ranking) but never produces a reason —
+    // Swarm health feeds the score (for ranking) but never produces a reason:
     // the row already draws seeders as a coloured bar, and a second badge saying
     // the same thing is noise.
     if (r.seeders <= 0)       score -= 30;

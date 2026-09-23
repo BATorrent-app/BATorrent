@@ -31,7 +31,7 @@ public:
 
 signals:
     // Emitted when a legacy (bare SHA-256) credential authenticates, carrying
-    // its PBKDF2 replacement — the owner persists it so the weak hash dies.
+    // its PBKDF2 replacement: the owner persists it so the weak hash dies.
     void passwordHashUpgraded(const QString &newHash);
 
 private slots:

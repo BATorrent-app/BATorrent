@@ -49,7 +49,7 @@ public:
 
     // Same as addTorrent but with up-front file priorities (0..7 per file).
     // Used by AddTorrentDialog so unchecked files never start downloading
-    // — setting priorities only after add can leak a few KB before libtorrent
+    // setting priorities only after add can leak a few KB before libtorrent
     // applies them.
     void addTorrentWithPriorities(const QString &filePath, const QString &savePath,
                                   const std::vector<int> &filePriorities);
@@ -81,10 +81,10 @@ public:
     // cues) and trailing index data before the bulk download completes.
     void prioritizeFilePieceBoundaries(int torrentIndex, int fileIndex);
 
-    // --- streaming (4.0 embedded player) — read by the local StreamServer ---
+    // --- streaming (4.0 embedded player): read by the local StreamServer ---
     // Index of the torrent with this info-hash, or -1. (reverse of torrentHashAt)
     int torrentIndexByInfoHash(const QString &infoHash) const;
-    // Absolute on-disk path for a file — the finished file or its ".!bt"
+    // Absolute on-disk path for a file: the finished file or its ".!bt"
     // in-progress copy, whichever exists. Empty if unavailable.
     QString streamFilePath(int torrentIndex, int fileIndex) const;
     // Total size of a file in bytes (0 if unavailable).
@@ -111,11 +111,11 @@ public:
     // force_recheck after the move so libtorrent re-verifies pieces.
     void moveStorage(int torrentIndex, const QString &newSavePath);
     // Replace the tracker list with `urls`. Drops any tracker not in the
-    // new list — used by "remove tracker" since libtorrent has no single-
+    // new list: used by "remove tracker" since libtorrent has no single-
     // tracker delete API.
     void replaceTrackers(int torrentIndex, const QStringList &urls);
 
-    // Categories — each can optionally map to a dedicated save path.
+    // Categories: each can optionally map to a dedicated save path.
     // When a torrent is assigned a category that has a save path, new
     // downloads auto-use that path instead of the global default.
     void setTorrentCategory(int index, const QString &category);
@@ -124,7 +124,7 @@ public:
     QString categorySavePath(const QString &category) const;
     QMap<QString, QString> allCategorySavePaths() const;
 
-    // Tags — multiple per torrent, free-form. Persisted under "torrentTags/{hash}"
+    // Tags: multiple per torrent, free-form. Persisted under "torrentTags/{hash}"
     // as a comma-joined list. Used in addition to (not instead of) the single
     // category.
     QStringList torrentTags(int index) const;
@@ -150,7 +150,7 @@ public:
     int encryptionMode() const;
 
     // Transport-layer toggles. uTP is libtorrent's UDP-based reliable
-    // transport — disabling it forces all peer traffic to TCP (useful on
+    // transport: disabling it forces all peer traffic to TCP (useful on
     // misconfigured routers where uTP saturates the link with retransmits).
     // The toggle covers both incoming and outgoing.
     void setUtpEnabled(bool enabled);
@@ -158,7 +158,7 @@ public:
 
     // Anonymous mode hides the client version in the BitTorrent handshake
     // and disables uTP / NAT-PMP / UPnP advertisements. Trades discoverability
-    // for less fingerprintable traffic — useful behind a VPN.
+    // for less fingerprintable traffic: useful behind a VPN.
     void setAnonymousMode(bool enabled);
     bool anonymousMode() const;
 
@@ -214,7 +214,7 @@ public:
     // Force pause regardless of state ("stop seeding now")
     void stopSeedingTorrent(int index);
 
-    // Super seeding mode — only sends each piece once to maximize initial
+    // Super seeding mode: only sends each piece once to maximize initial
     // distribution. Essential for first seeders of new content.
     void setSuperSeeding(int index, bool on);
     bool isSuperSeeding(int index) const;
@@ -232,7 +232,7 @@ public:
     int torrentDownloadLimit(int index) const;
     int torrentUploadLimit(int index) const;
 
-    // "Completed" — user-frozen state for torrents that are done and should
+    // "Completed": user-frozen state for torrents that are done and should
     // stop participating. Marked torrents are paused, persisted across
     // restarts, and surface in the UI with a distinct (green) state. Calling
     // resumeTorrent() on a completed torrent automatically un-marks it.
@@ -268,7 +268,7 @@ public:
     // Returns true on success.
     bool restoreFromResumeData(const QByteArray &data);
 
-    // Recently-removed history — persistent ring buffer of the last N removed
+    // Recently-removed history: persistent ring buffer of the last N removed
     // torrents' resume snapshots, so the user can re-add even after closing
     // the undo toast. Stored as files under <AppData>/removed/{hash}.resume.
     QList<RemovedEntry> recentlyRemoved() const;   // RemovedEntry now in types.h (shared with IEngine)
@@ -280,7 +280,7 @@ public:
     // name, which can drift from disk after rename/sanitization.
     QString torrentRootPath(int index) const;
 
-    // Incomplete downloads path — download to a temp directory, move to the
+    // Incomplete downloads path: download to a temp directory, move to the
     // real save path when the torrent finishes. Avoids media servers scanning
     // half-downloaded files and lets users put temp data on a faster drive.
     void setTempPath(const QString &path);
@@ -317,7 +317,7 @@ public:
     void executeOnComplete(const QString &name, const QString &savePath,
                            const QString &hash, qint64 totalSize);
 
-    // Watch a directory for .torrent files — auto-add when detected.
+    // Watch a directory for .torrent files: auto-add when detected.
     void setWatchedFolder(const QString &path);
     QString watchedFolder() const;
 
@@ -353,7 +353,7 @@ public:
     QString ipFilterPath() const;
     int ipFilterCount() const;
 
-    // Advanced libtorrent tuning — exposed in Settings → Advanced. The struct
+    // Advanced libtorrent tuning: exposed in Settings → Advanced. The struct
     // lives in types.h (so IEngine/IPC can name it). Each setter applies
     // immediately via settings_pack and persists to QSettings.
     AdvancedSettings advancedSettings() const;
@@ -373,7 +373,7 @@ public:
     void setScheduleDays(int daysMask); // bit 0=Mon..6=Sun
     int scheduleDays() const;
     bool altSpeedsActive() const;
-    // Manual "turtle" toggle — flip alt speed limits on/off independent of the
+    // Manual "turtle" toggle: flip alt speed limits on/off independent of the
     // scheduler. Applies the alt (or normal) ceiling to libtorrent immediately.
     void setAltSpeedsActive(bool active);
 
@@ -477,7 +477,7 @@ private:
     // Request an immediate resume-data write for a handle (so a freshly-added,
     // never-downloaded torrent survives a restart). Mirrors the piece_finished path.
     void stageResumeSave(const lt::torrent_handle &h);
-    // Persist a metadata-less magnet's add params as its .resume file —
+    // Persist a metadata-less magnet's add params as its .resume file:
     // saveResumeData() skips torrents without metadata, so without this a
     // crash mid-fetch silently drops the torrent from the list.
     void persistMagnetParams(lt::add_torrent_params atp, const QString &hash,
@@ -498,7 +498,7 @@ private:
     std::vector<lt::torrent_handle> m_torrents;
     // Snapshot of the most recent libtorrent state for each handle. Updated
     // from state_update_alert; consumed by every UI getter so we don't call
-    // handle.status() — a synchronous cross-thread call — once per row per
+    // handle.status(), a synchronous cross-thread call, once per row per
     // tick on top of all the other periodic checks.
     mutable std::map<lt::torrent_handle, lt::torrent_status> m_statusCache;
     QTimer m_updateTimer;
@@ -558,7 +558,7 @@ private:
     // Per-handle epoch-seconds of last "fast" tick (download_rate above
     // kSlowTorrentThresholdBps). Used by enforceDownloadQueue to skip
     // torrents that haven't transferred meaningfully for >60 s when
-    // counting active downloads — a stalled torrent shouldn't permanently
+    // counting active downloads: a stalled torrent shouldn't permanently
     // hog one of the user's queue slots.
     std::map<lt::torrent_handle, qint64> m_lastFastAt;
     // Per-handle "epoch seconds of last resume save" so piece_finished_alert
@@ -576,7 +576,7 @@ private:
 
     // Handles loaded from resume data that still need a deferred ".!bt"
     // strip pass for files already 100% complete. Calling file_progress()
-    // inline right after add_torrent throws "invalid torrent handle" —
+    // inline right after add_torrent throws "invalid torrent handle":
     // libtorrent hasn't bound storage yet. We process them in the alert
     // loop the first time state_update_alert delivers a status with the
     // file storage attached, then drop them from the set.
@@ -590,7 +590,7 @@ private:
     // Hash -> intended final save path (only when temp path is active)
     QMap<QString, QString> m_torrentIntendedPath;
     // Real info-hash (from the magnet URI) for magnets added this session, so a
-    // row has a stable, unique key before metadata arrives — without it,
+    // row has a stable, unique key before metadata arrives: without it,
     // torrentHash() returns empty pre-metadata and the cover/name never resolve.
     std::map<lt::torrent_handle, QString> m_magnetHashes;
     // Hash -> clean-title + type cover hint (game catalog / Stremio), consumed once.
@@ -604,7 +604,7 @@ private:
     QStringList m_excludedFilePatterns;
     void applyExcludedPatterns(lt::add_torrent_params &atp);
 
-    // Torrent export — auto-copy .torrent files to a backup directory
+    // Torrent export: auto-copy .torrent files to a backup directory
     QString m_torrentExportDir;
     // Run on complete
     QString m_runOnComplete;
@@ -652,7 +652,7 @@ private:
     bool m_killSwitchActive = false;
     std::set<lt::torrent_handle> m_killSwitchPaused;
 
-    // Proxy (SOCKS5/HTTP + leak-proof mode) — config + settings-building live here.
+    // Proxy (SOCKS5/HTTP + leak-proof mode): config + settings-building live here.
     bat::ProxyController m_proxy;
 
     // IP filter

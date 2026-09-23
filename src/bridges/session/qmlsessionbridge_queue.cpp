@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — queue reorder for the current selection.
+// QmlSessionBridge: queue reorder for the current selection.
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"

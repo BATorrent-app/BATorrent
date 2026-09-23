@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — torrent list queries (count/at/hash/root/state string).
+// SessionManager: torrent list queries (count/at/hash/root/state string).
 
 #include "torrent/sessionmanager.h"
 #include "services/platform/translator.h"
@@ -71,7 +71,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
         // (handshakes, HAVE, bitfields, keepalives, incoming requests), so a
         // torrent sitting at 100% reported a permanent trickle of "download"
         // and never looked done. It also made every connected torrent count as
-        // active, and skewed ETA — which libtorrent's own docs call out.
+        // active, and skewed ETA: which libtorrent's own docs call out.
         info.downloadRate = st.download_payload_rate;
         info.uploadRate = st.upload_payload_rate;
     }
@@ -82,7 +82,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
     // (tester: a movie sat inactive with no explanation after a manual delete). The
     // errc == enum compare is category-aware, so it matches on every platform.
     // The errc only fires once libtorrent touches the file, which a seeding
-    // torrent nobody requests never does — checkMissingFiles() stats for it
+    // torrent nobody requests never does: checkMissingFiles() stats for it
     // instead, so the state is honest without waiting for a read.
     if (st.errc == boost::system::errc::no_such_file_or_directory
             || (!hash.isEmpty() && m_missingHashes.contains(hash))) {
@@ -107,7 +107,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
     else
         info.stateString = tr_(labelKey);
 
-    // qBittorrent's most-repeated complaint is a silent "stalled" — name the
+    // qBittorrent's most-repeated complaint is a silent "stalled": name the
     // actual blocker so the state cell can explain itself on hover
     if (!info.completed && !info.paused && !info.finished
             && st.state == lt::torrent_status::downloading
@@ -126,7 +126,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
             info.stateDetail = tr_("state_choked");
     } else if (!info.paused && st.state == lt::torrent_status::downloading_metadata) {
         // A rare-seeder magnet can take a long time to find a peer that'll
-        // hand over metadata — we used to give up and silently delete it
+        // hand over metadata: we used to give up and silently delete it
         // after 5 minutes (issue reported by a user: "deleted without
         // warning"). Explain the wait instead; the user decides when to quit.
         auto it = m_magnetAddedAt.find(m_torrents[index]);
@@ -139,7 +139,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
                && info.downloadRate >= 1024 && info.numPeers > 0
                && st.distributed_copies >= 0.0f && st.distributed_copies < 1.0f) {
         // distributed_copies < 1 means some piece of this torrent isn't held by
-        // anyone currently in the swarm — the transfer can look healthy (decent
+        // anyone currently in the swarm: the transfer can look healthy (decent
         // rate, progress moving) right up until it needs that missing piece and
         // stalls for good. Surface it early instead of only once it's stuck.
         info.stateDetail = tr_("state_missing_pieces");
@@ -176,7 +176,7 @@ QString SessionManager::torrentHash(int index) const
     lt::torrent_status st = cachedStatus(m_torrents[index]);
     // Magnet links report an all-zeros hash from get_best() until metadata
     // is downloaded. Returning that string would cause every still-resolving
-    // magnet to share the same key — categories and per-torrent seeding
+    // magnet to share the same key: categories and per-torrent seeding
     // overrides set on one would silently apply to all others. Use the real
     // per-magnet hash captured from the URI at add time instead, so the row has
     // a stable unique key (cover/name resolve without waiting for metadata).
@@ -216,12 +216,12 @@ QString SessionManager::torrentRootPath(int index) const
         return {};
     };
 
-    // Strategy 1: file_path(0) — the most reliable source since it comes
+    // Strategy 1: file_path(0); the most reliable source since it comes
     // from the torrent metadata and matches what libtorrent wrote to disk.
     auto ti = h.torrent_file();
     if (ti && ti->num_files() > 0) {
         // libtorrent's file_path uses the native separator ('\' on Windows),
-        // so normalize to '/' before stripping — otherwise indexOf('/') misses
+        // so normalize to '/' before stripping: otherwise indexOf('/') misses
         // the folder boundary on Windows and we resolve to file index 0 (an
         // arbitrary .dll / .rNN), selecting it instead of opening the folder.
         QString rel = QDir::fromNativeSeparators(QString::fromStdString(
@@ -230,7 +230,7 @@ QString SessionManager::torrentRootPath(int index) const
             const int slash = rel.indexOf(QLatin1Char('/'));
             // Strip to the top-level folder. A multi-file torrent with no
             // common folder (files written straight into save_path) has no
-            // slash — leave rel empty so we fall through to save_path rather
+            // slash: leave rel empty so we fall through to save_path rather
             // than selecting an arbitrary first file.
             rel = slash > 0 ? rel.left(slash) : QString();
         }
@@ -270,9 +270,9 @@ QString SessionManager::torrentRootPath(int index) const
         }
     }
 
-    // All strategies exhausted — fall back to the save directory itself. If
+    // All strategies exhausted: fall back to the save directory itself. If
     // this fires, the torrent's folder/file wasn't found on disk under
-    // save_path — the reveal lands in the (possibly huge) save folder.
+    // save_path: the reveal lands in the (possibly huge) save folder.
     qWarning().noquote() << "[reveal] FELL BACK to save_path:" << save
                          << "| torrent name=" << name;
     return save;

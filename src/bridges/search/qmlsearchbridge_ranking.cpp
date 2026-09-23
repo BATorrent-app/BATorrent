@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSearchBridge — relevance ranking and best-release pick.
+// QmlSearchBridge: relevance ranking and best-release pick.
 
 #include "bridges/search/qmlsearchbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"

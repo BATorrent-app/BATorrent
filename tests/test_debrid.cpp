@@ -33,7 +33,7 @@ TEST_CASE("DebridPick: video extension detection", "[debrid]") {
 }
 
 TEST_CASE("DebridPick: RD index counts only selected files", "[debrid]") {
-    // links == [sample.mkv, Movie.mkv] — the unselected .nfo must not shift it
+    // links == [sample.mkv, Movie.mkv]: the unselected .nfo must not shift it
     QJsonArray files{
         rdFile("/info.nfo",   1000, 0),
         rdFile("/sample.mkv", 5000, 1),

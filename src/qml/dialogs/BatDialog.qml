@@ -62,7 +62,7 @@ Item {
     signal rejected()
 
     // Step flows (onboarding): the footer buttons advance instead of finishing,
-    // so accepted() keeps meaning "the dialog is done" — hosts that start a tour
+    // so accepted() keeps meaning "the dialog is done": hosts that start a tour
     // or write a setting on accepted() would otherwise fire on step one.
     property bool holdOnOk: false
     property bool holdOnCancel: false

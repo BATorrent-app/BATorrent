@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSearchBridge — work context and title→sources drill-down.
+// QmlSearchBridge: work context and title→sources drill-down.
 
 #include "bridges/search/qmlsearchbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"
@@ -110,7 +110,7 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         }
         m_titleCache = m_results;
         setSearching(false);
-        // Stay in the grid even when empty — the page shows an empty state with a
+        // Stay in the grid even when empty: the page shows an empty state with a
         // "raw results" escape, so the flow is consistent (never silently flips).
         setStatus(m_results.isEmpty() ? tr_("search_no_titles")
                                       : tr_("search_titles_n").arg(m_results.size()));
@@ -149,7 +149,7 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     // A work is released under different names per language, and the uploader
     // picks one: a Portuguese dub is "Shang-Chi e a Lenda dos Dez Anéis", the
     // original is "Shang-Chi and the Legend of the Ten Rings". Since our TMDB
-    // requests carry language=, `title` is already localised — so searching it
+    // requests carry language=, `title` is already localised: so searching it
     // alone found the dubs and missed everything published under the original
     // name (usually the majority, and the better-seeded half). Hunt under both.
     //

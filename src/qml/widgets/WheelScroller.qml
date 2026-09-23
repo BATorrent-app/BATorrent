@@ -16,7 +16,7 @@ WheelHandler {
         // Horizontal-wheel / shift-scroll: leave to default.
         if (ev.angleDelta.y === 0) { ev.accepted = false; return }
         // flick() REPLACES the velocity, so spinning fast used to crawl at one
-        // notch's worth — stack onto the current velocity when same-direction.
+        // notch's worth: stack onto the current velocity when same-direction.
         // (verticalVelocity and flick() use opposite sign conventions.)
         const add = ev.angleDelta.y * h.factor
         const cur = -h.flick.verticalVelocity

@@ -14,7 +14,7 @@ BatDialog {
     cardH: dlg.deleteFiles ? 432 : 360
     okText: (i18n.language, i18n.t("addon_remove"))
 
-    // default OFF — "Remove" only un-lists the torrent; deleting the downloaded
+    // default OFF: "Remove" only un-lists the torrent; deleting the downloaded
     // files is an explicit opt-in (matches qBittorrent/Transmission convention).
     property bool deleteFiles: false
     property bool deletePermanently: false
@@ -22,7 +22,7 @@ BatDialog {
     onVisibleChanged: if (visible) { deleteFiles = false; deletePermanently = false }
     onDeleteFilesChanged: if (!deleteFiles) deletePermanently = false
 
-    // .top — warn icon + title + description
+    // .top: warn icon + title + description
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.sp2
@@ -62,7 +62,7 @@ BatDialog {
                 font.pixelSize: 12
                 font.family: Theme.fontSans
                 textFormat: Text.StyledText
-                // escape the torrent name — it's StyledText and the name is
+                // escape the torrent name: it's StyledText and the name is
                 // attacker-controlled (from the .torrent / magnet), so raw
                 // markup would let a crafted name inject into the dialog.
                 text: (i18n.language, i18n.t("remove_confirm_body"))
@@ -74,7 +74,7 @@ BatDialog {
         }
     }
 
-    // .card — .opt clickable
+    // .card: .opt clickable
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 64
@@ -119,7 +119,7 @@ BatDialog {
         }
     }
 
-    // permanent option — only relevant once "delete files" is on
+    // permanent option: only relevant once "delete files" is on
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 56

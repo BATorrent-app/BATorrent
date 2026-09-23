@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSearchBridge — poster/cover resolution against MetadataResolver.
+// QmlSearchBridge: poster/cover resolution against MetadataResolver.
 
 #include "bridges/search/qmlsearchbridge.h"
 #include "services/metadata/metadataresolver.h"

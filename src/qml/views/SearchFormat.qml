@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Shared Find-page formatters (seed health, sizes, file URLs, lang labels).
-// Mirrors HubFormat — keeps SearchView composition-only.
+// Mirrors HubFormat: keeps SearchView composition-only.
 import QtQuick
 import "../theme"
 

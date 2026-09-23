@@ -15,7 +15,7 @@ ColumnLayout {
     spacing: 0
     visible: sv.isTitles && !sv.browse
 
-    // The stage-1 loading and not-found state, centred on this pane — it owns
+    // The stage-1 loading and not-found state, centred on this pane: it owns
     // the whole page while titles are being resolved.
     SearchEmptyState {
         sv: pane.sv
@@ -42,7 +42,7 @@ ColumnLayout {
         }
     }
 
-    // best-match hero — explicitly surfaces the top title (not just first in grid)
+    // best-match hero: explicitly surfaces the top title (not just first in grid)
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 142

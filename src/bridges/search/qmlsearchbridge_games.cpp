@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSearchBridge — game catalog sources and browse.
+// QmlSearchBridge: game catalog sources and browse.
 
 #include "bridges/search/qmlsearchbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"
@@ -142,7 +142,7 @@ QVariantList QmlSearchBridge::gameRepackTabs() const
 
 bool QmlSearchBridge::fitsOnSaveVolume(qint64 needed) const
 {
-    if (needed <= 0) return true;   // unknown size — don't block
+    if (needed <= 0) return true;   // unknown size: don't block
     const QStorageInfo si(m_savePath);
     return !si.isValid() || needed <= si.bytesAvailable();
 }

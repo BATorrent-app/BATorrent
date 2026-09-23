@@ -123,7 +123,7 @@ TEST_CASE("splitTunnelConf: replaces an existing Table and is idempotent", "[wir
 
 TEST_CASE("splitTunnelConf: leaves Peer lines alone even if named like DNS", "[wireguard]")
 {
-    // a hostname endpoint containing "dns" must survive — only Interface keys are filtered
+    // a hostname endpoint containing "dns" must survive: only Interface keys are filtered
     const QString conf = QStringLiteral(
         "[Interface]\nPrivateKey = %1\nAddress = 10.0.0.2/32\n"
         "[Peer]\nPublicKey = %2\nAllowedIPs = 0.0.0.0/0\nEndpoint = dns.example.com:51820\n").arg(KEY_A, KEY_B);

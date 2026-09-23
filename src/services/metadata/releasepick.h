@@ -18,7 +18,7 @@ namespace ReleasePick {
 struct Candidate {
     QString quality;     // "4K" | "1080p" | "720p" | "480p" | "" (unknown)
     bool native = false; // legacy: any match for the user's language (dub or sub)
-    int audioRank = 0;   // 2 = dubbed, 1 = subtitled, 0 = original — preferNative uses this ladder
+    int audioRank = 0;   // 2 = dubbed, 1 = subtitled, 0 = original: preferNative uses this ladder
     int seeders = 0;
     qint64 sizeBytes = 0;
 };

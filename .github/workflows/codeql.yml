@@ -1,6 +1,6 @@
 name: CodeQL
 
-# Security scan of the C++ tree. Full configure+build — not a PR gate.
+# Security scan of the C++ tree. Full configure+build: not a PR gate.
 # Weekly / manual / label `ci-deep`.
 
 concurrency:

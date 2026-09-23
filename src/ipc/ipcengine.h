@@ -7,7 +7,7 @@
 // an in-process SessionManager or this. See internal/ENGINE_SPLIT_PLAN.md.
 //
 // Hot-path reads (torrentAt, counts, globals) are served from a snapshot the
-// engine pushes every tick — no blocking. Per-selection detail (files, peers,
+// engine pushes every tick: no blocking. Per-selection detail (files, peers,
 // pieces, trackers) and mutations go over request→reply. engineMode still
 // defaults to in-process, so this is not yet on the shipping path.
 #ifndef BATORRENT_IPCENGINE_H

@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Theme / custom-theme SettingsRow control Components. Host is SettingsRow
-// (rename/color/bg signals); field + sw are host props — never `field: field`.
+// (rename/color/bg signals); field + sw are host props: never `field: field`.
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic

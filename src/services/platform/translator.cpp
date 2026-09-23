@@ -29,7 +29,7 @@ void Translator::setLanguage(Language lang)
     m_strings.clear();
     loadLanguage(codes[static_cast<int>(lang)], m_strings);
 
-    // installTranslator/removeTranslator are QCoreApplication members — use the
+    // installTranslator/removeTranslator are QCoreApplication members: use the
     // base instance directly so we don't downcast qApp to QApplication (UB when
     // the app is a plain QCoreApplication, e.g. under the test harness).
     QCoreApplication *coreApp = QCoreApplication::instance();

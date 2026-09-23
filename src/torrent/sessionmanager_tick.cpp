@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — periodic tick slice (updateStats, seed limits, disk probe,
+// SessionManager: periodic tick slice (updateStats, seed limits, disk probe,
 // download queue). Split out of sessionmanager.cpp verbatim; no behaviour change.
 
 #include "torrent/sessionmanager.h"
@@ -151,7 +151,7 @@ void SessionManager::updateStats()
 {
     // Ask libtorrent to deliver a state_update_alert with fresh statuses for
     // every torrent. The alert lands inside processAlerts() below; until it
-    // arrives, m_statusCache may be one tick stale — acceptable trade-off
+    // arrives, m_statusCache may be one tick stale: acceptable trade-off
     // for getting rid of dozens of synchronous status() calls per second.
     m_session.post_torrent_updates();
 
@@ -188,7 +188,7 @@ void SessionManager::updateStats()
                                  || st.state == lt::torrent_status::downloading_metadata;
                 if (active && !(st.flags & lt::torrent_flags::paused)) { h.pause(); ++paused; }
             }
-            m_diskAutoPaused = true;   // runtime-only pause (not persisted) — recovers on disk free
+            m_diskAutoPaused = true;   // runtime-only pause (not persisted): recovers on disk free
             qWarning() << "[session] CRITICAL DISK:" << freeB / (1024*1024) << "MB — paused" << paused << "downloads";
             if (paused > 0) emit torrentError(tr_("warn_disk_autopause").arg(paused).arg(freeB / (1024*1024)));
             lastDiskWarn = now;
@@ -227,7 +227,7 @@ void SessionManager::checkSeedRatios()
               / static_cast<float>(st.total_payload_download)
             : 0.0f;
 
-        // reaching the limit is the natural end of the torrent's life —
+        // reaching the limit is the natural end of the torrent's life:
         // mark it completed (freeze + persist), not merely paused
         if (ratio >= m_seedRatioLimit)
             markCompleted(i);
@@ -307,7 +307,7 @@ void SessionManager::enforceDownloadQueue()
         bool isDownloading = (st.state == lt::torrent_status::downloading
                               || st.state == lt::torrent_status::downloading_metadata);
 
-        // Force-start torrents are exempt from the queue entirely — they
+        // Force-start torrents are exempt from the queue entirely: they
         // neither count against the cap nor get auto-paused. Resume them
         // here if they're paused for any reason.
         if (st.has_metadata) {
@@ -332,7 +332,7 @@ void SessionManager::enforceDownloadQueue()
 
             const qint64 lastFast = m_lastFastAt[m_torrents[i]];
             const bool isStalled = (now - lastFast) > kSlowTorrentTimeoutSec;
-            // Stalled torrents stay running (we don't pause them — the
+            // Stalled torrents stay running (we don't pause them: the
             // user can do that), they just don't count against the active
             // limit. New downloads can therefore start in their place.
             if (!isStalled)

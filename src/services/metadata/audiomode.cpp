@@ -13,7 +13,7 @@ struct Tokens { const char *dub; const char *sub; };
 
 // Per-language scene/release vocabulary. `dub` = audio in that language;
 // `sub` = original audio + subtitles in that language. Kept deliberately
-// conservative — a false Dubbed is worse than a missed one (it hands an
+// conservative: a false Dubbed is worse than a missed one (it hands an
 // anti-dub viewer exactly what they filtered out).
 const QHash<QString, Tokens> &tables()
 {
@@ -50,7 +50,7 @@ bool matches(const QString &name, const char *pattern)
     return name.contains(*it);
 }
 
-// A dual/multi-audio release plausibly carries the user's dub — matches the
+// A dual/multi-audio release plausibly carries the user's dub: matches the
 // existing `native` heuristic so we don't classify inconsistently.
 bool multiAudio(const QString &name)
 {

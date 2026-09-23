@@ -1,6 +1,6 @@
 name: OSV-Scanner
 
-# Dependency vulnerability scan. Weekly / manual / label `ci-deep` — not a PR gate.
+# Dependency vulnerability scan. Weekly / manual / label `ci-deep`: not a PR gate.
 # Actions-only Dependabot bumps do not need this on every PR.
 
 concurrency:

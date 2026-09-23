@@ -469,7 +469,7 @@ void DiscoveryService::fetchIgdbTrending(int order, const QString &label)
         // Resolve a torrent-relevant popularity type once. The default primitive
         // (Visits) just ranks perennial free games (LoL/CS/GTA V). Prefer "Global
         // Top Sellers" (paid games selling now), then "Want to Play" (anticipation)
-        // — combined with the recent-release filter below, that's "hot & new".
+        // combined with the recent-release filter below, that's "hot & new".
         QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/popularity_types"))};
         setIgdbHeaders(req);
         QNetworkReply *reply = m_nam->post(req, QByteArray("fields id,name; limit 50;"));
@@ -510,7 +510,7 @@ void DiscoveryService::fetchIgdbGamesByIds(int order, const QString &label, cons
     QStringList idStrs;
     for (qint64 id : ids) idStrs << QString::number(id);
 
-    // Only keep ones released in the last ~10 months (and already out — torrentable),
+    // Only keep ones released in the last ~10 months (and already out: torrentable),
     // so the hype list becomes "hot & new", not perennial anticipated/old titles.
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     const qint64 from = now - qint64(300) * 86400;

@@ -118,12 +118,12 @@ Rectangle {
             }
         }
 
-        // .dbody — stacked panes. Only the open tab gets live data: StackLayout
+        // .dbody: stacked panes. Only the open tab gets live data: StackLayout
         // keeps every child's bindings alive, and selectedPieces alone is one
         // entry per piece (huge torrents froze the GUI thread without the guard).
         // `detailPanel.visible` joins the guard because in grid mode the side
         // inspector shows instead and this panel must go fully inert.
-        // Identity on the left, tabs on the right — the same split the side
+        // Identity on the left, tabs on the right: the same split the side
         // inspector has, laid on its side. Before this the poster left the
         // screen the moment you opened Peers, so you lost track of which
         // torrent the numbers belonged to.

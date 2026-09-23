@@ -36,16 +36,16 @@ lt::settings_pack buildProxySettings(int type, const QString &host, int port,
             pack.set_str(lt::settings_pack::proxy_username, user.toStdString());
             pack.set_str(lt::settings_pack::proxy_password, pass.toStdString());
         }
-        // Route EVERYTHING through the tunnel — peers, trackers, and DNS — so
+        // Route EVERYTHING through the tunnel, peers, trackers, and DNS, so
         // neither the real IP nor lookups leak. For SOCKS5, libtorrent carries
         // uTP/DHT over UDP ASSOCIATE automatically (a TCP-only proxy will drop
-        // those — the leak-proof toggle disables the rest of the leak vectors).
+        // those: the leak-proof toggle disables the rest of the leak vectors).
         pack.set_bool(lt::settings_pack::proxy_peer_connections, true);
         pack.set_bool(lt::settings_pack::proxy_tracker_connections, true);
         pack.set_bool(lt::settings_pack::proxy_hostnames, true);
         if (leakProof) {
             // UPnP/NAT-PMP punch a port map advertising the real WAN IP; LSD
-            // broadcasts it on the LAN — both bypass the proxy. Kill them, and
+            // broadcasts it on the LAN: both bypass the proxy. Kill them, and
             // scrub the client fingerprint while tunneled.
             pack.set_bool(lt::settings_pack::enable_upnp, false);
             pack.set_bool(lt::settings_pack::enable_natpmp, false);

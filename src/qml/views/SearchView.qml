@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Encontrar (Find) page — catalog browse (billboard + shelves via FindBrowse)
+// Encontrar (Find) page: catalog browse (billboard + shelves via FindBrowse)
 // that becomes rich search the moment you type. Owns search chrome state
 // (filters/sort, detail drawer, recents) and composes Search* leaves.
 // Wired to QmlSearchBridge (`search`).
@@ -287,8 +287,8 @@ Rectangle {
         SearchModeBars { sv: page }
         // Hidden during the titles stage instead of merely emptied: both panes
         // ask for fillHeight, so an empty results list still claimed a share of
-        // the page and pushed the loading spinner — which lives in its empty
-        // state — away from the centre.
+        // the page and pushed the loading spinner: which lives in its empty
+        // state: away from the centre.
         SearchListPane { sv: page; visible: !page.isTitles; Layout.fillWidth: true; Layout.fillHeight: true }
         SearchTitlesPane { sv: page; Layout.fillWidth: true; Layout.fillHeight: true }
         SearchResultsFooter { sv: page }

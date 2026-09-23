@@ -30,7 +30,7 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
 
     // Scope strictly to THIS torrent's own content. Scanning the shared save root
     // used to pick up every sibling torrent's archives and extract them all at
-    // once — a flood of extractor processes that could freeze the machine.
+    // once: a flood of extractor processes that could freeze the machine.
     // ArchiveScan owns the format + multi-part rules (which volume is the first,
     // which are continuation parts) and is unit-tested separately.
     QStringList archives;
@@ -186,7 +186,7 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
                     }
                 });
                 // No finished() fires when the tool isn't installed (unrar/7z
-                // absent on a GUI app's PATH) — without this the whole extract
+                // absent on a GUI app's PATH): without this the whole extract
                 // state machine stalls forever and extractionCompleted never
                 // emits. Treat a failure-to-start as "this attempt failed".
                 connect(proc, &QProcess::errorOccurred, this,

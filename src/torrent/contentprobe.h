@@ -19,7 +19,7 @@
 namespace bat {
 
 // On-disk locations where a torrent's content root could be, best first.
-// Empty when metadata gives us nothing to look for — callers must treat that
+// Empty when metadata gives us nothing to look for: callers must treat that
 // as "cannot tell", never as missing.
 QStringList contentRootCandidates(const QString &savePath,
                                   const QString &firstFileRelPath,

@@ -5,7 +5,7 @@
 // Rich tray popup shown on right-click of the system tray icon. Mirrors the
 // legacy TrayPopup: header (logo + name + counts), DOWN/UP speed strip, and a
 // list of menu actions. VPN / auto-shutdown rows from the legacy version are
-// omitted — the QML session bridge doesn't expose those yet.
+// omitted: the QML session bridge doesn't expose those yet.
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
@@ -39,7 +39,7 @@ Window {
         var g = scr ? Qt.rect(scr.virtualX, scr.virtualY, scr.width, scr.height) : Qt.rect(0,0,1920,1080)
         var margin = 6
         // SystemTrayIcon.geometry is unreliable on Windows (often empty or a bogus
-        // rect that lands the popup off-screen — issue #20). Anchor to the tray
+        // rect that lands the popup off-screen: issue #20). Anchor to the tray
         // corner of the screen there; only trust the icon rect on macOS/Linux.
         var useIcon = iconRect && iconRect.width > 0 && Qt.platform.os !== "windows"
         if (useIcon) {
@@ -50,7 +50,7 @@ Window {
             else
                 pop.y = Math.round(iconRect.y - pop.height - margin)
         } else {
-            // anchor at the click itself — centered above the cursor (the
+            // anchor at the click itself: centered above the cursor (the
             // Windows taskbar sits at the bottom); beats any corner guess
             var c = typeof themeBridge !== "undefined" ? themeBridge.cursorPos() : null
             if (c) {

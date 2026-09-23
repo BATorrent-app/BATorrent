@@ -26,7 +26,7 @@ Item {
 
     // Round the STEP, not the max: peak×1.15 gave arbitrary ceilings ("7 KB/s")
     // that no gridline could label sensibly. Snapping the step to 1-2-5×10ⁿ makes
-    // every tick a number a person reads without decoding — 0 5 10 15 20.
+    // every tick a number a person reads without decoding: 0 5 10 15 20.
     readonly property real unitBytes: peak >= 1024 * 1024 ? 1024 * 1024 : 1024
     readonly property real step: {
         var raw = (peak / unitBytes) / divisions
@@ -37,7 +37,7 @@ Item {
     }
     readonly property real scaledMax: step * divisions * unitBytes
 
-    // unit on the top tick only — repeating it down the axis is redundant ink
+    // unit on the top tick only: repeating it down the axis is redundant ink
     function tickText(v, withUnit) {
         var u = v / g.unitBytes
         var s = (g.step < 1 ? u.toFixed(1) : String(Math.round(u)))

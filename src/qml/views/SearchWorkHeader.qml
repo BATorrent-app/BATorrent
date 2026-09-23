@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Picked-work header — which title (and type) these releases belong to.
+// Picked-work header: which title (and type) these releases belong to.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"

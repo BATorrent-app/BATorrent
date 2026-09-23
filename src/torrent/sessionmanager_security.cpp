@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — safety/security slice. The memory guard (private-footprint
+// SessionManager: safety/security slice. The memory guard (private-footprint
 // watchdog), per-torrent fault isolation, warn-only threat scanning, the opt-in
 // Defender exclusion, and the retrying trash/delete helpers. Split out of
 // sessionmanager.cpp verbatim; no behaviour change.
@@ -37,10 +37,10 @@
 #include <sstream>
 
 // Resident set size of this process, in bytes; -1 if it can't be read.
-// The app's PRIVATE memory footprint — deliberately NOT the working/resident set.
+// The app's PRIVATE memory footprint: deliberately NOT the working/resident set.
 // libtorrent 2.x maps the download files (mmap storage), so the working set grows
 // ~1:1 with what's being downloaded as file-cache pages go resident. Those pages
-// are reclaimable by the OS on demand, not a leak — but the old WorkingSetSize /
+// are reclaimable by the OS on demand, not a leak: but the old WorkingSetSize /
 // resident_size readings counted them, so the memory guard false-paused real
 // downloads "every ~1 GB" (Windows user report). Private memory excludes the
 // file-backed mmap cache, so the guard only sees genuine allocation growth.
@@ -81,8 +81,8 @@ static qint64 currentRssBytes()
 }
 
 // Safety valve against a runaway allocation bug eating the user's machine.
-// Stage 1 (over the cap): pause everything — the likeliest growth source is
-// piece/disk buffers — and warn, at most once per 5 min. Recoverable.
+// Stage 1 (over the cap): pause everything; the likeliest growth source is
+// piece/disk buffers: and warn, at most once per 5 min. Recoverable.
 // Stage 2 (2× the cap, i.e. the pause didn't help → genuine runaway): save
 // state and quit gracefully before the OS starts swapping/OOM-killing.
 void SessionManager::checkMemoryGuard()
@@ -234,7 +234,7 @@ void SessionManager::scheduleTrash(const QStringList &targets, int attempt)
     QTimer::singleShot(delay, this, [this, targets, attempt]() {
         QStringList remaining;
         for (const QString &p : SessionResume::existingRemovalTargets(targets)) {
-            if (!QFile::moveToTrash(p)) remaining << p;   // still locked — try again
+            if (!QFile::moveToTrash(p)) remaining << p;   // still locked: try again
         }
         clearDoneTargets("pendingTrashTargets", targets, remaining);
         if (remaining.isEmpty()) return;

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — torrent-info slice. The per-torrent projections the detail
+// SessionManager: torrent-info slice. The per-torrent projections the detail
 // panel reads (peers, files, trackers, pieces) and the file/tracker mutations
 // it triggers (priority, sequential, rename, move-storage, replace-trackers).
 // Split out of sessionmanager.cpp verbatim; no behaviour change.
@@ -30,7 +30,7 @@ std::vector<PeerInfo> SessionManager::peersAt(int index, int maxPeers) const
         m_torrents[index].get_peer_info(peers);
 
         // Cap huge swarms (9k+) to the most active peers before building the
-        // QString-heavy PeerInfo — the long tail isn't worth the work/UI cost.
+        // QString-heavy PeerInfo: the long tail isn't worth the work/UI cost.
         if (maxPeers > 0 && peers.size() > static_cast<std::size_t>(maxPeers)) {
             std::partial_sort(peers.begin(), peers.begin() + maxPeers, peers.end(),
                 [](const lt::peer_info &a, const lt::peer_info &b) {
@@ -120,7 +120,7 @@ std::vector<TrackerInfo> SessionManager::trackersAt(int index) const
             result.push_back(ti);
         }
     } catch (const std::exception &e) {
-        // Torrent may not be valid yet (metadata still downloading) — that's
+        // Torrent may not be valid yet (metadata still downloading): that's
         // expected, but log everything else so unexpected libtorrent
         // exceptions don't disappear.
         qWarning() << "trackersAt:" << e.what();

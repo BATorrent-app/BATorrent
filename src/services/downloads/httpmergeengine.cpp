@@ -64,7 +64,7 @@ TorrentInfo HttpMergeEngine::torrentAt(int index) const
 
     info.name = d->fileName();
     // A plain file has no movie poster to identify it by, so tag the row with its
-    // format (the category chip renders it uppercased: "pdf" → PDF) — tester idea.
+    // format (the category chip renders it uppercased: "pdf" → PDF); tester idea.
     // Skip media/disc-image types: those resolve a TMDB poster from the filename,
     // and a raw "ISO"/"MKV" chip sitting on a movie cover reads as a bug (it did).
     {

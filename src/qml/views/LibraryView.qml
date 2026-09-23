@@ -40,7 +40,7 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: hc.label
-                // anime art sits behind the right columns — lift the weak grey + a contrasting
+                // anime art sits behind the right columns: lift the weak grey + a contrasting
                 // outline so headers stay legible over both dark and bright parts of the art
                 color: controller.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : (Theme.hasAnime ? Theme.t2 : Theme.t4))
                 style: Theme.hasAnime ? Text.Outline : Text.Normal
@@ -118,7 +118,7 @@ Item {
             anchors.fill: parent
             source: Theme.hasAnime ? Theme.animeSource : ""
             fillMode: Image.PreserveAspectFit
-            // list rows put state/peer columns right on top of the art —
+            // list rows put state/peer columns right on top of the art:
             // drop it to a watermark there so data wins the contrast fight
             opacity: controller.gridView ? 0.9 : 0.25
             Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
@@ -132,7 +132,7 @@ Item {
                 GradientStop { position: 0.55; color: "transparent" }
             }
         }
-        // fade bottom (eyes) / top (spider) — mask: linear-gradient(180deg, #000 60%, transparent)
+        // fade bottom (eyes) / top (spider): mask: linear-gradient(180deg, #000 60%, transparent)
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
@@ -151,7 +151,7 @@ Item {
         visible: opacity > 0.01
         // Grid and list are two views of the SAME rows, so the switch should read
         // as one changing form, not two things swapping. The incoming view grows
-        // the last 1.5% into place while the outgoing shrinks away underneath —
+        // the last 1.5% into place while the outgoing shrinks away underneath:
         // a plain cross-fade left both hanging half-visible on top of each other.
         scale: (Theme.reduceMotion || (controller.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
@@ -174,8 +174,8 @@ Item {
             NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: 180; easing.type: Easing.OutCubic }
         }
         // deleting several selected torrents at once fires these back-to-back
-        // with no time to settle between them — a known Qt Quick view-recycling
-        // risk — so a batch removal (bulkRemoveInProgress) skips the animation
+        // with no time to settle between them: a known Qt Quick view-recycling
+        // risk: so a batch removal (bulkRemoveInProgress) skips the animation
         // instead of stacking transitions; a single remove keeps it.
         readonly property bool bulkRemove: typeof session !== "undefined" && session.bulkRemoveInProgress
         remove: Transition {
@@ -296,7 +296,7 @@ Item {
         property real startY: 0
         property int pressRow: -1
 
-        // "stalled why" tooltip over the State cell — owned here because
+        // "stalled why" tooltip over the State cell: owned here because
         // this hover-exclusive MouseArea starves in-delegate handlers
         property string tipText: ""
         property point tipPos: Qt.point(0, 0)
@@ -308,7 +308,7 @@ Item {
         function updateStateTip(mx, my) {
             var row = rowAt(my, mx)
             // itemAtIndex can return null (row not instantiated) or a pooled
-            // delegate mid-teardown — guard stateCell too before mapToItem.
+            // delegate mid-teardown: guard stateCell too before mapToItem.
             var d = row >= 0 ? list.itemAtIndex(row) : null
             if (d && d.stateCell && d.stateDetail !== undefined && d.stateDetail.length > 0 && !dragging) {
                 var p = d.stateCell.mapToItem(listArea, 0, 0)

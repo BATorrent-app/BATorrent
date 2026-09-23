@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 # Build a single-file .torrent for a release asset, web-seeded from the GitHub
-# release URL — the torrent works with zero seeders (HTTP seed serves it), and
+# release URL: the torrent works with zero seeders (HTTP seed serves it), and
 # when github.com is unreachable (e.g. degraded RU routes) any peer keeps the
 # download alive. Pure stdlib: bencode + SHA-1 pieces.
 

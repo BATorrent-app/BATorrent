@@ -64,8 +64,8 @@ void GeoIpProvider::start(const QString &cacheDir)
     QDir().mkpath(cacheDir);
     const QString cache = QDir(cacheDir).filePath(QStringLiteral("dbip-country-lite.csv.gz"));
 
-    // The DB is populated exactly once — before the peer-ranking classifier is
-    // installed — and then never mutated, so libtorrent's compare_peer thread
+    // The DB is populated exactly once: before the peer-ranking classifier is
+    // installed: and then never mutated, so libtorrent's compare_peer thread
     // can read it lock-free. That means: if we have any usable cache, use it and
     // do NOT also download (a second loadCsv would race the reader). Monthly geo
     // drift is immaterial for locality biasing, so stale-but-present is fine.
@@ -81,7 +81,7 @@ void GeoIpProvider::loadFromGzFile(const QString &path)
 {
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly)) return;
-    if (f.size() > kMaxDownload) return;   // corrupt/oversized cache — ignore
+    if (f.size() > kMaxDownload) return;   // corrupt/oversized cache: ignore
     loadFromGzBytes(f.readAll());
 }
 

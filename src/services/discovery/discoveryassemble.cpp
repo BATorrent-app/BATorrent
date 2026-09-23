@@ -29,7 +29,7 @@ QVariantList mergeShelfByPoster(const QVariantList &existing,
 
 QVariantList rowsFromAccum(const QMap<int, QVariantMap> &accum)
 {
-    // Stable canonical genre key per genre-shelf (by fetch order) — lets the HUB
+    // Stable canonical genre key per genre-shelf (by fetch order): lets the HUB
     // match the user's taste to a shelf without depending on the translated label.
     static const QHash<int, QString> orderGenre = {
         {3, QStringLiteral("rpg")},      {4, QStringLiteral("shooter")},

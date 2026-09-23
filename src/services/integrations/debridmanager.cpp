@@ -19,7 +19,7 @@ DebridManager::DebridManager(QObject *parent)
 {
     m_providers = {new RealDebridClient(this), new TorBoxClient(this)};
 
-    // The active provider's signals surface as the manager's own — QML listens once.
+    // The active provider's signals surface as the manager's own: QML listens once.
     for (IDebridProvider *p : m_providers) {
         connect(p, &IDebridProvider::accountChanged, this, [this, p] {
             emit providersChanged();
@@ -53,7 +53,7 @@ void DebridManager::setProviderId(const QString &id)
 {
     for (int i = 0; i < m_providers.size(); ++i) {
         if (m_providers[i]->id() != id || i == m_active) continue;
-        // Switching mid-stream would orphan the running job — stop it cleanly first.
+        // Switching mid-stream would orphan the running job: stop it cleanly first.
         if (active() && active()->busy()) active()->cancelStream();
         m_active = i;
         QSettings().setValue(QString::fromLatin1(kProviderKey), id);

@@ -1,6 +1,6 @@
 name: Semgrep
 
-# SAST upload to code scanning. Weekly / manual / label `ci-deep` — not a PR gate.
+# SAST upload to code scanning. Weekly / manual / label `ci-deep`: not a PR gate.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

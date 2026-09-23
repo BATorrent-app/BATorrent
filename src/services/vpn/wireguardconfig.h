@@ -5,7 +5,7 @@
 #ifndef SERVICES_VPN_WIREGUARDCONFIG_H
 #define SERVICES_VPN_WIREGUARDCONFIG_H
 
-// Parse a WireGuard .conf (the file a VPN provider — IVPN, Mullvad, Proton —
+// Parse a WireGuard .conf (the file a VPN provider, IVPN, Mullvad, Proton,
 // hands the user) into a validated struct. Pure and unit-tested; the actual
 // tunnel bring-up lives elsewhere. Format is the standard wg-quick INI:
 //
@@ -142,7 +142,7 @@ inline WgConfig parseWireguardConfig(const QString &text)
 // Split-tunnel variant of a config. `Table = off` stops wg-quick / the Windows
 // client from installing the default route, so only sockets explicitly bound to
 // the tunnel interface (the torrent session) go through the VPN. DNS lines are
-// dropped too — the provider's resolver sits inside the tunnel and is
+// dropped too: the provider's resolver sits inside the tunnel and is
 // unreachable without that route, and a half-set system DNS would break name
 // resolution for everything else.
 inline QString splitTunnelConf(const QString &text)

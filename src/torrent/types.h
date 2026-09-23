@@ -14,7 +14,7 @@ struct TorrentInfo {
     QString name;
     QString savePath;
     // Every scalar carries a default: `TorrentInfo t;` is default-initialisation,
-    // so anything left out here is read as garbage — an indeterminate `paused`
+    // so anything left out here is read as garbage: an indeterminate `paused`
     // renders a running torrent as stopped.
     qint64 totalSize = 0;
     qint64 totalDone = 0;
@@ -44,7 +44,7 @@ struct TorrentInfo {
     QStringList tags;
 };
 
-// Stable classification key for a torrent's state — the token every UI surface
+// Stable classification key for a torrent's state: the token every UI surface
 // keys its colour off (grid tile, detail bar, status dot). Distinct from
 // TorrentInfo::stateString, which is a *translated label* and therefore useless
 // for comparison. Lives here so the poster model and the selection bridge can't
@@ -72,7 +72,7 @@ inline QString torrentStateKey(const TorrentInfo &info)
     if (info.paused)       return QStringLiteral("paused");
     // Ask libtorrent, don't compare a float. progress is total_wanted_done over
     // total_wanted in floating point, so a finished torrent can sit at
-    // 0.99999994 and never satisfy >= 1.0f — that is a torrent stuck on
+    // 0.99999994 and never satisfy >= 1.0f: that is a torrent stuck on
     // DOWNLOADING for months over a few bytes it already has. is_finished
     // counts pieces, and already excludes priority-0 files, which is what the
     // old totalDone > 0 guard was reaching for.
@@ -82,7 +82,7 @@ inline QString torrentStateKey(const TorrentInfo &info)
 
 // Translation key for the label that goes with torrentStateKey(), or empty when
 // libtorrent's own state enum says more than the key does (checking files,
-// fetching metadata — both live under "downloading").
+// fetching metadata: both live under "downloading").
 //
 // stateString and stateKey used to be produced independently: the key from
 // TorrentInfo's flags, the string from the libtorrent enum. The grid renders a
@@ -98,7 +98,7 @@ inline QString torrentStateLabelKey(const TorrentInfo &info)
     if (key == QLatin1String("queued"))    return QStringLiteral("state_queued");
     if (key == QLatin1String("paused"))
         // "Stop seeding after download" pauses the handle directly, so a
-        // finished torrent otherwise reads as bare "Paused" — ambiguous about
+        // finished torrent otherwise reads as bare "Paused": ambiguous about
         // whether the download itself got done.
         return info.finished ? QStringLiteral("state_paused_done")
                              : QStringLiteral("state_paused");
@@ -128,7 +128,7 @@ struct TrackerInfo {
     QString status;
 };
 
-// Shared so the IEngine interface (and the IPC layer) can name them — moved out
+// Shared so the IEngine interface (and the IPC layer) can name them: moved out
 // of SessionManager's body for the engine/UI split.
 struct RemovedEntry {
     QString hash;
@@ -147,7 +147,7 @@ struct DetailedStats {
     bool hasIncomingConnections = false;
 };
 
-// Advanced libtorrent tuning — exposed in Settings → Advanced. Lives here (not
+// Advanced libtorrent tuning: exposed in Settings → Advanced. Lives here (not
 // nested in SessionManager) so IEngine and the IPC layer can name it.
 struct AdvancedSettings {
     int aioThreads = 10;

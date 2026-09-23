@@ -119,7 +119,7 @@ QString stripExtension(const QString &name)
 }
 
 // A group tag can't be a bare number ("-2160"), a single letter, or a format
-// token. Everything else is taken at face value — the scene invents names
+// token. Everything else is taken at face value: the scene invents names
 // faster than any table can track, and showing "STARCKFILMES" beats showing
 // nothing at all.
 bool looksLikeGroup(const QString &tag)
@@ -137,7 +137,7 @@ bool looksLikeGroup(const QString &tag)
 QString ReleaseGroup::canonical(const QString &tag)
 {
     QString t = tag.trimmed();
-    // "SteamRIP.com(1)" — the copy index a browser appends, and the domain tail
+    // "SteamRIP.com(1)": the copy index a browser appends, and the domain tail
     static const QRegularExpression trailingCopy(QStringLiteral("\\s*\\(\\d+\\)\\s*$"));
     t.remove(trailingCopy);
     static const QRegularExpression edgeJunk(QStringLiteral("^[\\s.\\-_\\[\\]()]+|[\\s.\\-_\\[\\]()]+$"));
@@ -148,7 +148,7 @@ QString ReleaseGroup::canonical(const QString &tag)
     const auto it = aliasIndex().constFind(lower);
     if (it != aliasIndex().cend()) return it.value();
 
-    // "steamrip.com" / "online-fix.me" — the domain form of a known group
+    // "steamrip.com" / "online-fix.me": the domain form of a known group
     const qsizetype dot = lower.indexOf(QLatin1Char('.'));
     if (dot > 0) {
         const auto domainIt = aliasIndex().constFind(lower.left(dot));
@@ -176,7 +176,7 @@ QString ReleaseGroup::detect(const QString &releaseName)
         if (re->match(name).hasMatch()) return entry.second;
     }
 
-    // "… by Pioneer", "… from SomeGroup" — the uploader credit games carry.
+    // "… by Pioneer", "… from SomeGroup": the uploader credit games carry.
     static const QRegularExpression byRe(
         QStringLiteral("[.\\s\\-_]+(?:by|from)[.\\s\\-_]+([\\w.\\-']{2,24})\\s*$"),
         QRegularExpression::CaseInsensitiveOption);

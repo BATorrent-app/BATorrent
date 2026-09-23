@@ -19,7 +19,7 @@ TEST_CASE("directDownloadUrl: pixeldrain viewer maps to the file API", "[filehos
 
 TEST_CASE("directDownloadUrl: non-viewer pixeldrain paths pass through", "[filehost]")
 {
-    // list pages aren't a single file — leave them alone
+    // list pages aren't a single file: leave them alone
     const QUrl list("https://pixeldrain.com/l/somelist");
     CHECK(directDownloadUrl(list) == list);
 }
@@ -29,6 +29,6 @@ TEST_CASE("directDownloadUrl: already-direct and unknown hosts are unchanged", "
     const QUrl direct("https://cdn.example.com/games/setup.zip");
     CHECK(directDownloadUrl(direct) == direct);
 
-    const QUrl gofile("https://gofile.io/d/AbCdE");   // needs an API — out of scope, passthrough
+    const QUrl gofile("https://gofile.io/d/AbCdE");   // needs an API: out of scope, passthrough
     CHECK(directDownloadUrl(gofile) == gofile);
 }

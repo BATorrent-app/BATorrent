@@ -40,7 +40,7 @@ Rectangle {
     }
     // Shown on every page, Downloads included. It used to be gated off page 0
     // on the theory that the list says it better, but that left the rail with a
-    // hole exactly where users spend their time — and it also meant the
+    // hole exactly where users spend their time: and it also meant the
     // carousel's resume mode, which only arms on page 0, could never appear.
     readonly property bool showDl: !collapsed && car.dlList.length > 0 && showDownloadChip
     Connections {
@@ -122,7 +122,7 @@ Rectangle {
                 layer.enabled: Theme.isLight
                 layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
             }
-            // wordmark in New Rocker (OFL) — a real logotype, not a UI font.
+            // wordmark in New Rocker (OFL): a real logotype, not a UI font.
             // Two-tone: BAT in accent (echoes the bat's red), orrent in t1.
             Row {
                 anchors.verticalCenter: parent.verticalCenter
@@ -133,7 +133,7 @@ Rectangle {
                 Text { text: "BAT"; color: Theme.accent; font.family: "New Rocker"; font.pixelSize: 21 }
                 Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 21 }
             }
-            // the whole brand block opens About — the conventional home for a
+            // the whole brand block opens About: the conventional home for a
             // logotype, and the only place version/credits were reachable from
             MouseArea {
                 id: brandMa
@@ -337,7 +337,7 @@ Rectangle {
             ToolTip.delay: 400
         }
 
-        // ----- settings (page 4 — fullscreen tab, not a separate window) -----
+        // ----- settings (page 4: fullscreen tab, not a separate window) -----
         Item {
             id: settingsItem
             readonly property bool active: rail.currentIndex === 3

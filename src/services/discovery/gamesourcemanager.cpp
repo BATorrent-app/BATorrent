@@ -26,7 +26,7 @@
 
 static constexpr qint64 kCacheTtlSecs = 6 * 60 * 60;   // catalog CI refreshes daily; stay under a day
 
-// Several popular catalogs (FitGirl, DODI, …) 403 a non-browser User-Agent —
+// Several popular catalogs (FitGirl, DODI, …) 403 a non-browser User-Agent:
 // this is the wall that makes the feature look "impossible" without it.
 static const char *kBrowserUA =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "

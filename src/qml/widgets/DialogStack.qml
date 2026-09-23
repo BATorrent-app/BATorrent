@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Open BatDialogs register here so Esc/Enter only ever target the topmost one —
+// Open BatDialogs register here so Esc/Enter only ever target the topmost one:
 // two enabled Shortcuts on the same key are "ambiguous" to Qt and neither fires.
 pragma Singleton
 import QtQuick

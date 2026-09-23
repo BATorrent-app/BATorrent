@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — qBittorrent import + .torrent export. Split out of
+// SessionManager: qBittorrent import + .torrent export. Split out of
 // sessionmanager.cpp verbatim; no behaviour change.
 
 #include "torrent/sessionmanager.h"

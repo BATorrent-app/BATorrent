@@ -13,7 +13,7 @@
 #include <QCoreApplication>
 
 // winsock2 must precede windows.h, and its socket-address types must be in scope
-// before iphlpapi.h — otherwise netioapi.h's GetIfTable2 / MIB_IF_ROW2 (which
+// before iphlpapi.h: otherwise netioapi.h's GetIfTable2 / MIB_IF_ROW2 (which
 // reference SOCKADDR_INET) compile out with "undeclared identifier".
 #include <winsock2.h>
 #include <ws2ipdef.h>
@@ -91,7 +91,7 @@ qint64 rxBytesForAlias(const QString &alias)
 void WinWgTunnel::verifyHandshakeThenConnect()
 {
     // WireGuard's own kill-switch (for a 0.0.0.0/0 config) blocks all untunneled
-    // traffic the instant the service installs — so if the handshake never
+    // traffic the instant the service installs: so if the handshake never
     // completes, the machine is offline. Wait for real inbound bytes before
     // declaring success; if none arrive, tear the tunnel back down.
     auto *timer = new QTimer(this);
@@ -134,7 +134,7 @@ void WinWgTunnel::up(const QString &confPath, const bat::WgConfig &)
     m_iface = QFileInfo(confPath).completeBaseName();   // WireGuard names the tunnel after the file
     const QString nativeConf = QDir::toNativeSeparators(confPath);
     // Install the tunnel service via wireguard.exe directly (SW_HIDE keeps it
-    // silent — an earlier cmd.exe wrapper flashed a console window and surfaced a
+    // silent: an earlier cmd.exe wrapper flashed a console window and surfaced a
     // spurious "service does not exist" error). This whole path is dormant in the
     // shipping "light" VPN (bind-to-existing-interface); it stays for a future
     // premium embedded-tunnel mode.
@@ -164,7 +164,7 @@ void WinWgTunnel::down()
     runElevated({QStringLiteral("/uninstalltunnelservice"), m_iface}, [this](bool ok) {
         // Only consider the tunnel gone if the service actually uninstalled. A
         // lingering service keeps its full-tunnel default route installed, which
-        // would black-hole the next connect — report failure so the UI doesn't
+        // would black-hole the next connect: report failure so the UI doesn't
         // claim "disconnected" while traffic is still being rerouted.
         if (!ok) { emit failed(QStringLiteral("could not stop the WireGuard tunnel")); return; }
         m_iface.clear();

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// One-click recent save destinations with their free space — the escape hatch
+// One-click recent save destinations with their free space: the escape hatch
 // when the default disk is full and the right disk is one chip away. Fed by
 // session.favoriteSavePaths() (MRU, learned from every add).
 import QtQuick

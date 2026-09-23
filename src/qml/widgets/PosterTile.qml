@@ -75,7 +75,7 @@ Item {
             visible: tile.posterUrl === ""
             // Last resort only: no usable extension, no resolved type, nothing
             // to say. The bat earns the middle when it is genuinely the only
-            // thing we know — as a permanent backdrop it was just noise.
+            // thing we know: as a permanent backdrop it was just noise.
             Image {
                 anchors.centerIn: parent
                 width: parent.width * 0.5
@@ -210,8 +210,8 @@ Item {
         Rectangle {
             id: progBar
             // Always on, in every state. Downloading and seeding used to be two
-            // different shapes — a 9px pill versus a 2px line at the poster's
-            // edge — for the same fact. Same height, same width, same place.
+            // different shapes: a 9px pill versus a 2px line at the poster's
+            // edge: for the same fact. Same height, same width, same place.
             visible: true
             anchors.left: parent.left
             anchors.right: parent.right

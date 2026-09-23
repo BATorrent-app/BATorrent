@@ -3,7 +3,7 @@
 //
 // Locks in the catalog parsing that powers game search: Hydra-format JSON
 // (downloads[].title/uris/fileSize) → indexed entries, repacker/version tag
-// stripping for cover matching, and local substring search. No network — the
+// stripping for cover matching, and local substring search. No network: the
 // fetch path is exercised separately.
 
 #include <catch2/catch_test_macros.hpp>
@@ -51,7 +51,7 @@ TEST_CASE("indexCatalog parses Hydra format; keeps http-only entries as a fallba
 
     // Both searches live in one SECTION: indexCatalog accumulates into the
     // GameSourceManager singleton (no per-source clear), so only the first-run
-    // leaf is guaranteed a single index pass — later leaves would see duplicates.
+    // leaf is guaranteed a single index pass: later leaves would see duplicates.
     SECTION("resolves magnet rows and keeps http-only rows as a fallback") {
         const auto magnetHit = gsm.search("cyberpunk");
         REQUIRE(magnetHit.size() == 1);

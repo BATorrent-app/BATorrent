@@ -66,7 +66,7 @@ QList<Finding> scan(const QList<ScanFile> &files)
     }
     // "media torrent" = the payload is overwhelmingly video/audio. In a game or
     // app torrent the big .exe/.bin/.pak dominates, so a cutscene .mp4 won't
-    // trip the exe-in-media check below — only the always-on double-ext does.
+    // trip the exe-in-media check below: only the always-on double-ext does.
     const bool mediaDominant = totalBytes > 0 && mediaBytes * 10 >= totalBytes * 6;
 
     for (const auto &f : files) {

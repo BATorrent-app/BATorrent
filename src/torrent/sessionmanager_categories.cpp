@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — categories & tags slice. Category assignment (with the
+// SessionManager: categories & tags slice. Category assignment (with the
 // category-save-path / temp-path move integration) and per-torrent tags. Split
 // out of sessionmanager.cpp verbatim; no behaviour change.
 
@@ -29,7 +29,7 @@ void SessionManager::setTorrentCategory(int index, const QString &category)
         m_categories[hash] = category;
 
     // Persist immediately. The map used to be written only by saveResumeData(),
-    // which runs on quit and a couple of other events — quit through any path
+    // which runs on quit and a couple of other events: quit through any path
     // that skipped it and the user's category was simply gone next launch.
     // setCategorySavePath (below) already wrote through; this now matches it.
     {
@@ -62,7 +62,7 @@ void SessionManager::setTorrentCategory(int index, const QString &category)
 QStringList SessionManager::categories() const
 {
     // Must match the built-ins the UI offers (Main.qml catLabel translates exactly
-    // these four). They used to disagree — the engine advertised Software/Music/
+    // these four). They used to disagree: the engine advertised Software/Music/
     // Other, which the menu never showed and which then looked like stray custom
     // categories to anything listing them.
     QStringList list = {"Apps", "Games", "Movies", "Series"};

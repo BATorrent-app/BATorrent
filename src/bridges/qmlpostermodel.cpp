@@ -121,7 +121,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
             auto meta = m_resolver->cached(hash);
             if (meta.valid && !meta.posterPath.isEmpty()) {
                 // Poster files are keyed by info-hash, so "fix cover" overwrites
-                // the same path — append the file's mtime so the URL changes and
+                // the same path: append the file's mtime so the URL changes and
                 // QML's (cache:true) Image actually reloads the new art.
                 const qint64 mt = QFileInfo(meta.posterPath).lastModified().toMSecsSinceEpoch();
                 return meta.posterPath + QStringLiteral("?v=") + QString::number(mt);
@@ -142,7 +142,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         if (title.isEmpty()) title = pn.cleanTitle.trimmed();
         if (title.isEmpty()) title = info.name;
         // For an episode, append SxxExx so several episodes of the same show are
-        // distinguishable — they share one resolved cover/title otherwise.
+        // distinguishable: they share one resolved cover/title otherwise.
         if (pn.contentType == ContentType::Series && pn.season >= 0 && pn.episode >= 0)
             title += QStringLiteral(" S%1E%2")
                          .arg(pn.season, 2, 10, QLatin1Char('0'))
@@ -157,7 +157,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case CategoryRole:    return info.category;
     case AutoCategoryRole: {
         // Resolver first: a TMDB/IGDB hit is a far better answer than the name.
-        // Deliberately avoids filesAt() — that is a blocking call into the
+        // Deliberately avoids filesAt(): that is a blocking call into the
         // libtorrent thread and this role is read while filtering.
         if (m_resolver && !hash.isEmpty() && m_resolver->hasCached(hash)) {
             const MetadataResult meta = m_resolver->cached(hash);
@@ -185,7 +185,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
                 return *it;
         }
         if (info.totalSize <= 0)
-            return QString();   // magnet without metadata — nothing to name yet
+            return QString();   // magnet without metadata: nothing to name yet
         // Biggest file, not the first: a release folder carries samples, nfos
         // and screenshots, and the payload is the one that matters.
         QString best;
@@ -202,7 +202,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
             bestSize = f.size;
             best = ext.toUpper();
         }
-        // No usable extension — an extension-less payload, or a name whose only
+        // No usable extension: an extension-less payload, or a name whose only
         // dot belongs to the title. Fall back to what the torrent *is*, which
         // the library already works out for the category filter. A tile with
         // nothing but a title reads as broken, and "GAME" still answers the
@@ -355,7 +355,7 @@ void QmlPosterModel::emitRows(bool fullRoles)
     static const QList<int> volatileRoles = {
         ProgressRole, StateKeyRole, StateStringRole, StateDetailRole,
         DownSpeedRole, UpSpeedRole, NumPeersRole, DownRateRole, UpRateRole,
-        // size resolves once a magnet's metadata arrives — without it the grid
+        // size resolves once a magnet's metadata arrives: without it the grid
         // (and list) stay stuck at "0 B" until some full refresh happens.
         SizeRole, SizeBytesRole, DownloadedRole,
         // queue position shifts as items are added / finish / are reordered

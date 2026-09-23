@@ -41,7 +41,7 @@ bool IpcEngine::start()
     spawnEngine();
     m_sock = new QLocalSocket(this);
     connect(m_sock, &QLocalSocket::readyRead, this, &IpcEngine::onSocketReadyRead);
-    // the server needs a moment to come up — retry the connect briefly
+    // the server needs a moment to come up: retry the connect briefly
     QElapsedTimer t; t.start();
     while (t.elapsed() < 5000) {
         m_sock->connectToServer(m_serverName);
@@ -63,7 +63,7 @@ bool IpcEngine::start()
 }
 
 // Signals can't be emitted from const methods, but the IEngine read API is
-// const and must pump the socket while blocking — hence the one const_cast.
+// const and must pump the socket while blocking: hence the one const_cast.
 void IpcEngine::pumpSocket() const
 {
     auto *self = const_cast<IpcEngine *>(this);

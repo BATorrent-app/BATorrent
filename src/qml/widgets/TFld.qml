@@ -18,7 +18,7 @@ Rectangle {
     property bool readonly: false
     property bool password: false
     property bool clearable: false   // shows an ✕ to empty the field when it has text
-    // optional appearance overrides — let a hero/landing field scale up without a
+    // optional appearance overrides: let a hero/landing field scale up without a
     // second component (defaults preserve every existing call site)
     property real fontSize: mono ? 12 : 13
     property real iconSize: 14

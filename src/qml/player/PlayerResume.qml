@@ -4,7 +4,7 @@
 
 // Resume policy + cue pill. Host passes mediaPlayer + identity; cue anchors
 // under the title bar via topInset. Windows FFmpeg often drops the first seek
-// during buffering — retry re-issues until it lands (bounded).
+// during buffering: retry re-issues until it lands (bounded).
 import QtQuick
 import QtMultimedia
 import "../theme"

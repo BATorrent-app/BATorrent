@@ -234,7 +234,7 @@ endif()
 #  Helper: create a test target
 # =============================================================================
 # The app sources every test links are compiled ONCE here instead of once per
-# test target — with 40+ targets that was the same ~107 translation units built
+# test target: with 40+ targets that was the same ~107 translation units built
 # over and over, and it dominated the CI test job.
 #
 # OBJECT, not STATIC: a static archive lets the linker drop translation units
@@ -335,7 +335,7 @@ bat_add_test(test_ipcprotocol test_ipcprotocol.cpp)
 bat_add_test(test_debrid     test_debrid.cpp)
 
 # =============================================================================
-#  QML layer (Qt Quick Test) — drives real .qml components headless (offscreen).
+#  QML layer (Qt Quick Test): drives real .qml components headless (offscreen).
 #  Separate from the Catch2 suites: links the app resources qrc (so
 #  qrc:/src/qml/* + the Theme singleton resolve) instead of COMMON_SOURCES.
 # =============================================================================

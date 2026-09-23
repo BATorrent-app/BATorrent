@@ -15,7 +15,7 @@ MenuItem {
     implicitHeight: !enabled && hideWhenDisabled ? 1 : 30
     visible: enabled || !hideWhenDisabled
     padding: 0
-    indicator: null   // no native checkmark — we render our own in the text
+    indicator: null   // no native checkmark: we render our own in the text
     contentItem: Text {
         leftPadding: 16
         rightPadding: 16

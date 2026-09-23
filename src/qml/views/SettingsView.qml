@@ -19,7 +19,7 @@ Rectangle {
     property bool isCurrent: false   // true when this is the active nav page (gates the Esc/⌘W shortcuts)
     signal closed()                  // wired by Main to jump back to Downloads
 
-    // a stored bool pref, falling back to the field's `on` default when unset —
+    // a stored bool pref, falling back to the field's `on` default when unset:
     // so a default-on toggle reads ON on a fresh profile (matches runtime behavior).
     function boolPref(field) {
         if (typeof settings === "undefined" || field.key === undefined) return field.on === true
@@ -50,7 +50,7 @@ Rectangle {
         return hay.indexOf(q) >= 0
     }
     // Global search: when the box has text, gather matching fields from EVERY
-    // section (not just the open one) — otherwise a search finds nothing useful.
+    // section (not just the open one): otherwise a search finds nothing useful.
     function searchBlocks(q) {
         var matched = []
         for (var s = 0; s < schema.sections.length; s++) {
@@ -64,7 +64,7 @@ Rectangle {
     // ---- reset to defaults ----
     // The schema is the single source of truth for a field's default: a toggle's
     // `on`, a select/segmented/number's `value`, else empty. set() applies live,
-    // exactly like a user edit — so a reset needs no separate defaults table.
+    // exactly like a user edit: so a reset needs no separate defaults table.
     function defaultForField(f) {
         if (!f || f.key === undefined) return undefined      // no key ⇒ not resettable here
         if (f.type === "toggle") return f.on === true
@@ -73,7 +73,7 @@ Rectangle {
     }
     // Keys a reset must NOT slam back to a fixed schema value: the listen port is
     // machine-specific and its schema "6881" is the throttled/colliding port the
-    // app deliberately migrated away from — resetting it there can cripple speed.
+    // app deliberately migrated away from: resetting it there can cripple speed.
     readonly property var resetSkip: ["listenPort"]
     function resetFields(fields) {
         if (typeof settings === "undefined") return
@@ -385,7 +385,7 @@ Rectangle {
                     icon: "qrc:/icons/replay.svg"
                     onClicked: { confirmReset.scope = "all"; confirmReset.open() }
                 }
-                // "Done" (not "Close"): nothing is discarded — every edit is
+                // "Done" (not "Close"): nothing is discarded; every edit is
                 // already saved, so the button just dismisses the window
                 BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_done")); onClicked: win.closed() }
             }
@@ -398,7 +398,7 @@ Rectangle {
         id: colorDlg
         property string targetRole: ""
         // QML color.toString() is "#AARRGGBB" (alpha first); the last 6 hex
-        // digits are RRGGBB — slice(0,7) would wrongly keep '#'+alpha+RR.
+        // digits are RRGGBB: slice(0,7) would wrongly keep '#'+alpha+RR.
         onAccepted: if (typeof themeBridge !== "undefined" && targetRole !== "")
                         themeBridge.setProfileColor(themeBridge.activeProfile, targetRole,
                                                     "#" + selectedColor.toString().slice(-6))

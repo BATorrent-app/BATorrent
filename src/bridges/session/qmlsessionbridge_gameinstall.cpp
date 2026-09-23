@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — game install pipeline (extract → installer → finalize).
+// QmlSessionBridge: game install pipeline (extract → installer → finalize).
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
@@ -58,7 +58,7 @@ void QmlSessionBridge::installGame(const QString &infoHash)
     if (st == GIS_Extracting || st == GIS_Installing) return;   // already in flight
 
     // torrentHasArchives reads the file list, so it stays true even after a prior
-    // extraction — m_extracted guards against unpacking twice.
+    // extraction: m_extracted guards against unpacking twice.
     if (m_session->torrentHasArchives(row) && !m_extracted.contains(infoHash)) {
         m_gameInstallState.insert(infoHash, GIS_Extracting);
         emit gamesChanged();
@@ -102,7 +102,7 @@ static void applyCrackIfPresent(const QString &root, const QString &gameDir)
 void QmlSessionBridge::finalizeInstall(const QString &infoHash)
 {
     const QString folder = gameFolder(infoHash);
-    // Heavy directory walks belong off the GUI thread — a FitGirl tree on HDD
+    // Heavy directory walks belong off the GUI thread: a FitGirl tree on HDD
     // used to ghost the Get & Install overlay (Windows "Not Responding").
     auto *thread = QThread::create([this, infoHash, folder]() {
         bool isInstaller = false;
@@ -137,7 +137,7 @@ void QmlSessionBridge::finalizeInstall(const QString &infoHash)
                 return;
             }
             if (!isInstaller) {
-                // Crack copy is also filesystem-heavy — keep on worker next tick if needed;
+                // Crack copy is also filesystem-heavy: keep on worker next tick if needed;
                 // for now do it here but folder is usually small post-detect.
                 applyCrackIfPresent(folder, QFileInfo(exe).absolutePath());
                 QSettings().setValue(QStringLiteral("gameExe/") + infoHash, exe);
@@ -167,7 +167,7 @@ void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &inst
     emit gamesChanged();
 
 #ifdef Q_OS_WIN
-    // Tier B: a silenceable generic installer (NOT a repack — those need the user's
+    // Tier B: a silenceable generic installer (NOT a repack; those need the user's
     // component/language choices) → drive it unattended into a known dir we can scan.
     const InstallerProfile::SilentInvocation si =
         InstallerProfile::silentInvocation(engine, installerExe, targetDir);
@@ -257,7 +257,7 @@ bool QmlSessionBridge::isGameTorrent(int row) const
     // the name/resolver guess (which can't tell "The Matrix" the movie from the
     // game). Two rules:
     //   * an executable anywhere ⇒ game. Movies never ship a .exe, and games
-    //     routinely bundle cutscene videos with the exe buried in subfolders —
+    //     routinely bundle cutscene videos with the exe buried in subfolders:
     //     so a stray .mp4 must NOT veto a real game.
     //   * videos but no executable ⇒ movie/series, even when the NAME matches a
     //     game ("Super Mario Galaxy the movie"). Without this a movie like

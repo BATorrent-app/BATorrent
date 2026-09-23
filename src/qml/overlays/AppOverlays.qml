@@ -121,7 +121,7 @@ Item {
             if (typeof session === "undefined") return
             if (session.selectByInfoHash(infoHash)) removeDlg.open()
         }
-        // the row list is a snapshot (Q_INVOKABLE, not a bound property) — refresh
+        // the row list is a snapshot (Q_INVOKABLE, not a bound property): refresh
         // it after a delete goes through so the panel doesn't show a stale entry
         Connections {
             target: typeof session !== "undefined" ? session : null

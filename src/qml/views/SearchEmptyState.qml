@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Search page's empty / loading state — a small centered prompt. Three cases:
+// Search page's empty / loading state: a small centered prompt. Three cases:
 //   · searching        → spinner + "searching…"
 //   · searched, 0 hits  → search icon + the bridge's status + "nothing found" hint
 //   · initial (no query)→ search icon + "type something" prompt

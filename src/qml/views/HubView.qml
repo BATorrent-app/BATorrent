@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// HUB page — library of watchable video torrents + games. Thin orchestrator:
+// HUB page: library of watchable video torrents + games. Thin orchestrator:
 // owns search/sort/detail state, composes HubCompute + rails + shelves + drawer.
 import QtQuick
 import QtQuick.Layouts

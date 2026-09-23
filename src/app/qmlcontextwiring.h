@@ -23,7 +23,7 @@ class QmlI18nBridge;
 class QmlUpdaterBridge;
 class VpnManager;
 
-// Objects exposed to QML — names must stay stable (session, settings, …).
+// Objects exposed to QML: names must stay stable (session, settings, …).
 struct QmlContextObjects {
     QmlTorrentFilterProxy *torrentFilter = nullptr;
     QmlThemeBridge *themeBridge = nullptr;

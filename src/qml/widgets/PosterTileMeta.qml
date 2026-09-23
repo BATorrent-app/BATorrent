@@ -20,7 +20,7 @@ Column {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
-            // 7px was too small to read at a glance — the tester could not tell
+            // 7px was too small to read at a glance: the tester could not tell
             // the states apart. Already a solid circle, so the fix is size, not
             // shape.
             Rectangle {
@@ -45,7 +45,7 @@ Column {
                        : (tile.hasBadge && tile.metaLine.length > 0) ? Theme.t4
                        : win.textFor(tile.stateKey)
                 font.pixelSize: 13
-                // Medium is a bundled IBM Plex face, not a synthesised weight —
+                // Medium is a bundled IBM Plex face, not a synthesised weight:
                 // it buys legibility at this size without another pixel of line
                 // height, which the tile has no room for.
                 font.weight: Font.Medium

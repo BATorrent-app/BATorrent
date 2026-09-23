@@ -45,8 +45,8 @@ permissions:
 run-name: ${{ startsWith(github.ref, 'refs/tags/') && format('Release {0}', github.ref_name) || format('CI build ({0})', github.event_name) }}
 
 jobs:
-  # Test suite (Catch2): runs the unit/security/memory tests so regressions —
-  # especially resume-data migration and auto-update version detection — are
+  # Test suite (Catch2): runs the unit/security/memory tests so regressions;
+  # especially resume-data migration and auto-update version detection: are
   # caught in CI instead of by users on upgrade.
   #
   # Keep this list in sync with the pure/metadata suites that Find + Get&Watch /
@@ -70,7 +70,7 @@ jobs:
       - name: i18n parity + key usage
         run: python3 scripts/check-i18n-parity.py
       # This job had no compiler cache at all, so every run rebuilt the whole
-      # test tree from cold — the single biggest reason it ran over an hour.
+      # test tree from cold: the single biggest reason it ran over an hour.
       - name: ccache
         uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
         with:
@@ -79,7 +79,7 @@ jobs:
       - name: Build tests
         run: |
           # Core, metadata and engine policy suites.
-          # Skip network-heavy / platform VPN / local-HTTP integration binaries —
+          # Skip network-heavy / platform VPN / local-HTTP integration binaries:
           # they have their own jobs or local runs.
           TESTS="test_unit test_security test_memory test_nameparser test_bridge test_gamesource test_memguard test_geoipdb test_gamereleasepick test_gameinstallstate test_searchranker test_releasegroup test_contentlanguage test_releasetrust test_episodegroup test_debrid test_magnettrackers test_ipblocklist test_sessionresume test_sessionremove test_metadatamatch test_sessionconfig test_addonparse test_tmdbparse test_igdbparse test_settingshelpers test_discoveryassemble test_discoverysearch test_discoveryfinish test_addonfinish test_hublogic test_bandwidthschedule test_gameexedetect test_mkvchapters test_rangeplan test_proxycontroller test_ipcprotocol test_filehostresolver test_wireguardconfig"
           echo "TESTS=$TESTS" >> "$GITHUB_ENV"
@@ -93,7 +93,7 @@ jobs:
         run: |
           # Success = Catch2 reported all passed. The binary can still segfault
           # in Qt-singleton static teardown (no QCoreApplication in the test
-          # harness) AFTER the run — that's a harness artifact, not an app bug,
+          # harness) AFTER the run: that's a harness artifact, not an app bug,
           # so we gate on the reported result, not the post-run exit code. A
           # real test failure prints the failure summary (no "All tests passed").
           fail=0
@@ -118,7 +118,7 @@ jobs:
       - name: Apply fork patches
         run: ./scripts/apply-fork-patches.sh
 
-      # Qt from aqt (6.7) — Ubuntu's apt Qt (6.2) is too old for the QML
+      # Qt from aqt (6.7): Ubuntu's apt Qt (6.2) is too old for the QML
       # (MultiEffect / QtQuick.Effects needs 6.5+). boost/ssl for the fork stay apt.
       - name: Install Qt
         uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
@@ -186,7 +186,7 @@ jobs:
           [ "$SENTRY_ENABLED" = "1" ] && cp "$BAT_SENTRY_HANDLER" AppDir/usr/bin/crashpad_handler || true
 
           # Bundle the FORK's libtorrent (the one the binary was linked against,
-          # with set_geo_local_fn) into the AppDir so linuxdeploy ships it —
+          # with set_geo_local_fn) into the AppDir so linuxdeploy ships it:
           # NOT some stray system lib. Mirrors the Windows job's fork-DLL guard.
           mkdir -p AppDir/usr/lib
           forkso=$(find build/third_party/libtorrent -maxdepth 1 -name 'libtorrent-rasterbar.so*' | sort | tail -1)
@@ -199,7 +199,7 @@ jobs:
 
           # Integrated VPN: bundle wg + wg-quick (kernel WireGuard does the rest).
           # WgTunnelLinux stages these out of the AppImage's FUSE mount at runtime
-          # and runs them via pkexec — it looks for <app>/wireguard/wg-quick.
+          # and runs them via pkexec: it looks for <app>/wireguard/wg-quick.
           sudo apt-get install -y wireguard-tools
           mkdir -p AppDir/usr/bin/wireguard
           install -m 755 /usr/bin/wg /usr/bin/wg-quick AppDir/usr/bin/wireguard/
@@ -219,7 +219,7 @@ jobs:
           export QMAKE=$(which qmake6 2>/dev/null || which qmake)
           export QML_SOURCES_PATHS=$PWD/src/qml
           # linuxdeploy resolves the binary's libtorrent-rasterbar.so.2.0 soname
-          # via this path — point it at the fork lib (in AppDir + the build dir)
+          # via this path: point it at the fork lib (in AppDir + the build dir)
           # so it never falls back to a stock system libtorrent.
           export LD_LIBRARY_PATH="$PWD/AppDir/usr/lib:$PWD/build/third_party/libtorrent:$LD_LIBRARY_PATH"
           ./linuxdeploy-x86_64.AppImage --appdir AppDir \
@@ -230,7 +230,7 @@ jobs:
             --output appimage
           mv BATorrent-*.AppImage BATorrent-linux-x86_64.AppImage
 
-      # Guard: this exact class of bug (issue #32) must never ship again — the
+      # Guard: this exact class of bug (issue #32) must never ship again; the
       # bundled libtorrent has to export the fork's set_geo_local_fn. Also boot
       # the *packaged* AppImage (ldd + offscreen QML) so a green build/ binary
       # can't hide a broken AppDir layout.
@@ -290,7 +290,7 @@ jobs:
 
       # We build libtorrent from our vendored fork source (BAT_LIBTORRENT_SOURCE),
       # but the vcpkg libtorrent port is still the cleanest way to pull the full
-      # Boost + OpenSSL dependency set into the vcpkg toolchain — our source build
+      # Boost + OpenSSL dependency set into the vcpkg toolchain: our source build
       # links those. The vcpkg-built libtorrent binary itself goes unused.
       - name: Install libtorrent deps via vcpkg
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
@@ -361,7 +361,7 @@ jobs:
           # windeployqt copies the ffmpeg media *plugin* but NOT the ffmpeg DLLs
           # it links against (av*/sw* live in Qt's bin). Without them the plugin
           # fails to load and Qt Multimedia silently falls back to Windows Media
-          # Foundation, which can't play MKV/HEVC — the "format isn't supported
+          # Foundation, which can't play MKV/HEVC: the "format isn't supported
           # by the built-in player" the users hit on the most common movie files.
           $qtBin = Split-Path (Get-Command windeployqt).Source
           $ff = Get-ChildItem "$qtBin" -Filter "*.dll" | Where-Object {
@@ -393,7 +393,7 @@ jobs:
           Write-Host "Bundled MSVC runtime: $(($crt | ForEach-Object Name) -join ', ')"
           $vcpkgBin = "$env:VCPKG_ROOT/installed/x64-windows/bin"
           # vcpkg's libtorrent is only a vehicle to pull Boost/OpenSSL into the
-          # toolchain — its torrent-rasterbar.dll is a DIFFERENT build from our
+          # toolchain: its torrent-rasterbar.dll is a DIFFERENT build from our
           # vendored fork and must NEVER ship. BATorrent.exe is compiled against
           # the fork's headers (libtorrent::session_params, …); shipping vcpkg's
           # DLL makes the loader look for an entry point that build doesn't export
@@ -404,7 +404,7 @@ jobs:
           # Ship the fork's own libtorrent DLL, from its exact add_subdirectory
           # output path. A recursive "first match" is WRONG: vcpkg's applocal step
           # copies its 2.0.11 DLL into build/Release, so the first hit is vcpkg's,
-          # not the fork's 2.0.12 — the exact mismatch that shipped in v4.3.0.
+          # not the fork's 2.0.12: the exact mismatch that shipped in v4.3.0.
           # -Force so it wins over any vcpkg copy already in release/.
           $forkDll = "build/third_party/libtorrent/Release/torrent-rasterbar.dll"
           if (!(Test-Path $forkDll)) {
@@ -414,7 +414,7 @@ jobs:
           Write-Host "Shipped fork libtorrent: $forkDll"
           # The fork PDB (added via /Zi in CMake) is what symbolicates the top
           # Sentry crasher's engine-DLL frames. It's best-effort, NOT a release
-          # gate — warn if it's missing, don't fail the build. Find it wherever
+          # gate: warn if it's missing, don't fail the build. Find it wherever
           # MSVC actually put it so the upload step can grab the real path.
           $forkPdb = Get-ChildItem build/third_party/libtorrent -Recurse -Filter torrent-rasterbar.pdb -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($forkPdb) {
@@ -448,11 +448,11 @@ jobs:
         run: |
           ./scripts/ci/check-windows-bundle.ps1 -Dir release
 
-      # Nothing before this point ever actually LAUNCHES the built app — a
+      # Nothing before this point ever actually LAUNCHES the built app: a
       # silent "doesn't open, no error" failure (QML load failure, a DLL
       # mismatch, ...) has shipped to users twice now (v4.3.0 and v4.4.0 on
       # Windows) with every unit test green. Launch the real packaged exe
-      # and fail the build if it doesn't survive — that's the only check that
+      # and fail the build if it doesn't survive: that's the only check that
       # actually matches "did the app open".
       - name: Smoke test — the packaged app must paint a frame
         shell: pwsh
@@ -462,7 +462,7 @@ jobs:
 
           $env:BAT_QML_STRICT = "warn"
           $env:BAT_SMOKE_EXIT_ON_FRAME = "1"
-          # QT_DEBUG_PLUGINS noise goes to a separate log — do not pattern-match it
+          # QT_DEBUG_PLUGINS noise goes to a separate log: do not pattern-match it
           # for "module could not be found" (optional plugin probes false-positive).
           $env:QT_DEBUG_PLUGINS = "0"
           $outLog = "smoketest_stdout.log"
@@ -538,14 +538,14 @@ jobs:
           name: windows-installer
           path: output/BATorrent-setup-x86_64.exe
 
-      # Symbols, matched to this exact build — keep them so Store/Partner Center
+      # Symbols, matched to this exact build: keep them so Store/Partner Center
       # crash dumps (and our own CaptureStackBackTrace logs) can be symbolicated.
       - name: Upload symbols (PDB)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-symbols
           if-no-files-found: warn
-          # Also keep the fork libtorrent's own PDB — a stack that passes through
+          # Also keep the fork libtorrent's own PDB: a stack that passes through
           # torrent-rasterbar.dll is unsymbolicated without it (Sentry NATIVE-QT-4/5/B).
           # Recursive glob: the fork PDB path varies with the MSVC layout.
           path: |
@@ -563,7 +563,7 @@ jobs:
         run: |
           npm install -g @sentry/cli
           # Recurse the build tree so every PDB/DLL is picked up wherever MSVC
-          # placed it (the fork PDB path varies) — no hardcoded paths to go stale.
+          # placed it (the fork PDB path varies): no hardcoded paths to go stale.
           sentry-cli debug-files upload build/Release build/third_party/libtorrent
 
   build-macos:
@@ -601,7 +601,7 @@ jobs:
         run: |
           brew install libtorrent-rasterbar boost openssl
           brew link --overwrite libtorrent-rasterbar boost openssl
-          # WireGuard CLI for the integrated VPN — the CMake POST_BUILD stages
+          # WireGuard CLI for the integrated VPN: the CMake POST_BUILD stages
           # these into the bundle so the user installs nothing.
           brew install wireguard-tools wireguard-go
 
@@ -642,7 +642,7 @@ jobs:
 
       - name: Create app bundle
         run: |
-          # Source of truth for the version is CMakeLists.txt — that way the
+          # Source of truth for the version is CMakeLists.txt: that way the
           # Info.plist matches what the binary was compiled with, regardless
           # of whether this run came from a tag, a PR, or workflow_dispatch.
           VERSION=$(sed -n 's/.*project(BATorrent VERSION \([0-9.]*\)).*/\1/p' CMakeLists.txt)
@@ -753,7 +753,7 @@ jobs:
     # workflow page) but stop short of cutting a release.
     #
     # CRITICAL: needs `test` too. Builds used to publish even when Catch2 was
-    # red because release only waited on platform jobs — unit-test failures
+    # red because release only waited on platform jobs: unit-test failures
     # never blocked a tag from shipping. qml-smoke is here for the same reason:
     # a build that compiles but fails to load Main.qml must not ship.
     if: startsWith(github.ref, 'refs/tags/v')
@@ -781,7 +781,7 @@ jobs:
           echo "$NOTES" > /tmp/release_notes.md
 
       # Web-seeded .torrent per asset: downloads work even when github.com is
-      # unreachable (degraded RU routes) as long as one peer is around — and
+      # unreachable (degraded RU routes) as long as one peer is around: and
       # with zero peers the GitHub URL itself serves as the HTTP seed.
       - name: Build release .torrents (web-seeded)
         run: |
@@ -798,7 +798,7 @@ jobs:
         with:
           # a hyphenated tag (v4.7.0-rc1) is a pre-release: it does NOT become
           # "latest", so the in-app updater (which reads /releases/latest) never
-          # offers it to normal users — only manual beta testers grab it.
+          # offers it to normal users: only manual beta testers grab it.
           prerelease: ${{ contains(github.ref_name, '-') }}
           make_latest: ${{ !contains(github.ref_name, '-') }}
           files: |

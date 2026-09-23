@@ -10,7 +10,7 @@
 namespace {
 // Strip diacritics: decompose, then drop the combining marks. Without this the
 // [^a-z0-9] split treats an accent as a separator, so "Anéis" becomes "an"+"is"
-// and never matches a release named "Aneis" — releases are routinely typed
+// and never matches a release named "Aneis": releases are routinely typed
 // without accents. Breaks every accented language, i.e. most of the ones this
 // ranking exists to serve.
 QString foldAccents(const QString &s)

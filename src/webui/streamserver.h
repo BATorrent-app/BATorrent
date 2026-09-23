@@ -11,7 +11,7 @@ class IEngine;
 class QTcpServer;
 
 // Local HTTP server (127.0.0.1, ephemeral port) that streams a torrent file
-// with byte-range support — `GET /stream/<infoHash>/<fileIndex>`. Serves bytes
+// with byte-range support: `GET /stream/<infoHash>/<fileIndex>`. Serves bytes
 // straight off disk as pieces complete (download-while-watch), prioritizing the
 // requested window so seeks land fast. Feeds the embedded PlayerWindow.
 class StreamServer : public QObject

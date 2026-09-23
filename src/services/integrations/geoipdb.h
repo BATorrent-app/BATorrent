@@ -10,7 +10,7 @@
 #include <vector>
 
 // Local, offline IP→country lookup over a db-ip.com Lite (CC-BY) IPv4 range
-// table. Loaded once into a start-sorted vector; lookup is a binary search —
+// table. Loaded once into a start-sorted vector; lookup is a binary search:
 // no network, unlike GeoIpResolver which hits ipinfo.io just for peer flags.
 // This is the data foundation for locality-based peer biasing: classifying
 // every peer the tracker/DHT returns as same-country or not, at swarm scale.
@@ -35,7 +35,7 @@ public:
     bool lookup(uint32_t ipv4, char out[2]) const;
 
     // True iff the host-order IPv4 resolves to country code c0c1. No allocation
-    // — called once per peer per connect-candidate ranking.
+    // called once per peer per connect-candidate ranking.
     bool inCountry(uint32_t ipv4, char c0, char c1) const;
 
     // Parse "1.2.3.4" → host-order uint32. Returns false on malformed input

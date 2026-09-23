@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Optional full dump of the Hydra game catalog (repack tabs + pagination).
-// Opened from FindBrowse — does not replace the normal billboard/shelves landing.
+// Opened from FindBrowse: does not replace the normal billboard/shelves landing.
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls

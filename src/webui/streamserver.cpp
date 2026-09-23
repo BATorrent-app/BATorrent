@@ -137,14 +137,14 @@ private:
         if (m_pos > m_end) { finishOk(); return; }
         if (m_sock->bytesToWrite() > kWriteHigh) return;   // let the socket drain first
 
-        // re-resolve the index each tick — it can shift if torrents are
+        // re-resolve the index each tick: it can shift if torrents are
         // removed/reordered mid-stream; the hash is the stable identity
         m_torIdx = m_session->torrentIndexByInfoHash(m_hash);
         if (m_torIdx < 0) { m_sock->disconnectFromHost(); return; }
 
         qint64 avail = m_session->streamContiguousAvailableBytes(m_torIdx, m_fileIdx, m_pos, kChunk);
         if (avail <= 0) {
-            // not downloaded yet — prioritize and wait
+            // not downloaded yet: prioritize and wait
             m_session->streamSetDeadlineWindow(m_torIdx, m_fileIdx, m_pos);
             if (m_noProgress.elapsed() > kGiveUpMs) { m_sock->disconnectFromHost(); return; }
             if (m_retry && !m_retry->isActive()) m_retry->start();
@@ -160,7 +160,7 @@ private:
 
         const qint64 want = qMin(avail, m_end - m_pos + 1);
         QByteArray buf = m_file.read(want);
-        if (buf.isEmpty()) {                 // file lagged / renamed under us — reopen next tick
+        if (buf.isEmpty()) {                 // file lagged / renamed under us: reopen next tick
             m_file.close();
             if (m_retry && !m_retry->isActive()) m_retry->start();
             return;

@@ -2,7 +2,7 @@
 // WebUI pure-helper tests. The WebUI ships as one self-contained index.html, so
 // rather than split the JS out we extract the pure helper block (fmtBytes …
 // progressClass) straight from the file and exercise it with Node's built-in
-// test runner — no npm deps, no DOM. Run: `node --test tests/webui/`.
+// test runner: no npm deps, no DOM. Run: `node --test tests/webui/`.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,7 +22,7 @@ const start = html.indexOf('function fmtBytes');
 const end = html.indexOf('/* ── Filtering ── */');
 assert.ok(start >= 0 && end > start, 'WebUI helper block not found in index.html');
 
-// Write the extracted helper block to a temp ES module and import it — standard
+// Write the extracted helper block to a temp ES module and import it: standard
 // module loading exercises the real shipped code without eval / new Function.
 const tmpModule = join(mkdtempSync(join(tmpdir(), 'batorrent-webui-')), 'helpers.mjs');
 writeFileSync(tmpModule,

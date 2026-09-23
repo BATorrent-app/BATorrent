@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — selected torrent detail panels (peers/files/trackers/pieces).
+// QmlSessionBridge: selected torrent detail panels (peers/files/trackers/pieces).
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
@@ -18,7 +18,7 @@ void QmlSessionBridge::setDetailPeersActive(bool active)
     m_detailPeersActive = active;
     if (active) {
         // Show a placeholder instantly, then build the (heavy) peer list off the
-        // click on the next event-loop turn — opening the tab never blocks.
+        // click on the next event-loop turn: opening the tab never blocks.
         m_peersLoading = true;
         m_peerCache.clear();
         emit selectionListsChanged();
@@ -29,11 +29,11 @@ void QmlSessionBridge::setDetailPeersActive(bool active)
     }
 }
 
-// Cheap getter — the QML binding reads the cache, never touches libtorrent.
+// Cheap getter: the QML binding reads the cache, never touches libtorrent.
 QVariantList QmlSessionBridge::selectedPeerList() const { return m_peerCache; }
 
 // Heavy build (peersAt pulls every peer from libtorrent). Runs deferred / per
-// tick while the Peers tab is open — never on the QML binding path or the click.
+// tick while the Peers tab is open: never on the QML binding path or the click.
 void QmlSessionBridge::rebuildPeerCache()
 {
     if (!m_detailPeersActive || !hasSelection()) {
@@ -59,7 +59,7 @@ void QmlSessionBridge::rebuildPeerCache()
         if (cc.isEmpty())
             m_geoIp->resolve(p.ip);
         // Windows has no color-emoji flag glyphs (regional indicators render as
-        // letter pairs/boxes) — the QML side falls back to this bare code there.
+        // letter pairs/boxes): the QML side falls back to this bare code there.
         m["cc"]   = cc.toUpper();
         m["flag"] = cc.isEmpty() ? QString() : countryCodeToFlag(cc);
         out << m;

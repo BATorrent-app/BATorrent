@@ -13,13 +13,13 @@ EpisodeTag EpisodeGroup::classify(const QString &releaseName)
 
     const ParsedName p = NameParser::parse(releaseName);
     if (p.episode > 0) {
-        // anime absolute numbering has no on-screen season — NameParser pins it to 1
+        // anime absolute numbering has no on-screen season: NameParser pins it to 1
         tag.season = p.season > 0 ? p.season : 1;
         tag.episode = p.episode;
         return tag;
     }
 
-    // "S01 E05" / "S01.E05" — separated forms NameParser's strict SxxExx misses
+    // "S01 E05" / "S01.E05": separated forms NameParser's strict SxxExx misses
     static const QRegularExpression spacedSeRe(
         QStringLiteral("\\bS(\\d{1,2})[ ._-]+E(\\d{1,3})\\b"),
         QRegularExpression::CaseInsensitiveOption);
@@ -39,7 +39,7 @@ EpisodeTag EpisodeGroup::classify(const QString &releaseName)
         return tag;
     }
 
-    // season-only marker → season pack. Checked in priority order — a single
+    // season-only marker → season pack. Checked in priority order: a single
     // alternation would let "Round 6 Temporada 2" resolve to 6 ("6 Temporada"
     // ordinal form) because the leftmost match wins across alternatives.
     static const QRegularExpression wordSeasonRe(

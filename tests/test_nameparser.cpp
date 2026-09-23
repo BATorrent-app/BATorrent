@@ -114,7 +114,7 @@ TEST_CASE("edition/release qualifiers are stripped from the title", "[nameparser
 
 TEST_CASE("a lone [Repack] tag doesn't misclassify a game as a movie", "[nameparser]")
 {
-    // No resolution/codec/year — "Repack" alone must not score video.
+    // No resolution/codec/year: "Repack" alone must not score video.
     CHECK(P("Red Dead Redemption 2 [Repack]").contentType != ContentType::Movie);
     // A real movie repack still has resolution+codec, so it stays a movie.
     CHECK(P("Dune Part Two 2024 1080p REPACK x264").contentType == ContentType::Movie);

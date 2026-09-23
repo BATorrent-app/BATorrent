@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Static lint of the QML sources, tuned as a REGRESSION GATE — not a bug finder.
+# Static lint of the QML sources, tuned as a REGRESSION GATE: not a bug finder.
 #
 # Without project type-info, qmllint can't resolve our C++-registered objects
 # (session, i18n, Theme) or custom widgets (TFld, etc.), so these categories are
 # almost entirely noise HERE and are silenced:
-#   unqualified       — every session./i18n./Theme. access (C++ context props)
-#   comma             — our deliberate `(i18n.language, i18n.t(...))` re-eval idiom
-#   missing-property  — props on custom delegates qmllint sees as plain Item
-#   unused-imports    — informational
+#   unqualified      : every session./i18n./Theme. access (C++ context props)
+#   comma            : our deliberate `(i18n.language, i18n.t(...))` re-eval idiom
+#   missing-property : props on custom delegates qmllint sees as plain Item
+#   unused-imports   : informational
 #
 # What's left fails the build and reliably means a real bug:
 #   duplicate-property-binding, equality-type-coercion (== vs ===),

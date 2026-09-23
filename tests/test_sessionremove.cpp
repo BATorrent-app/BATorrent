@@ -33,7 +33,7 @@ TEST_CASE("removalDisposition: missing disk files still schedule when listed",
           "[sessionremove]")
 {
     // Targets are built from torrent mapping, not from a pre-flight exists()
-    // check — absent paths are skipped later by existingRemovalTargets.
+    // check: absent paths are skipped later by existingRemovalTargets.
     QTemporaryDir tmp;
     REQUIRE(tmp.isValid());
     const QString present = tmp.filePath(QStringLiteral("present.bin"));

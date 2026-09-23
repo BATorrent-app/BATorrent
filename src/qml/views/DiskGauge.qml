@@ -16,7 +16,7 @@ import "../theme"
 Item {
     id: root
 
-    // Raised when the gauge is clicked — the host owns the free-up-space panel.
+    // Raised when the gauge is clicked: the host owns the free-up-space panel.
     signal makeRoomRequested()
 
     readonly property var volumes: (typeof session !== "undefined") ? session.diskVolumes : []

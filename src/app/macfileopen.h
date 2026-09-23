@@ -16,7 +16,7 @@ namespace MacFileOpen {
 // carries magnet: and bittorrent: links handed over by the browser.
 //
 // Routes through SingleInstance::deliver, which queues until the bridge exists
-// — the event often lands before the QML engine is up.
+// the event often lands before the QML engine is up.
 void install(QCoreApplication *app, SingleInstance *single);
 
 } // namespace MacFileOpen

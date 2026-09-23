@@ -14,7 +14,7 @@
 
 // Keeps a GeoIpDb populated from the db-ip.com Lite (CC-BY) IP→country dataset:
 // loads a cached copy on startup, or downloads the current month's gzip once and
-// caches it under the app data dir. No infra of ours — db-ip serves the file.
+// caches it under the app data dir. No infra of ours: db-ip serves the file.
 // The DB is handed out as a shared_ptr so the peer-ranking classifier can hold
 // it alive independently of this provider's lifetime.
 class GeoIpProvider : public QObject

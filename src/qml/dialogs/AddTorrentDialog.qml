@@ -32,7 +32,7 @@ BatDialog {
     readonly property string posterUrl: posterPath && posterPath.length > 0
         ? (Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(posterPath) : ""
 
-    // disk-fit check against the CURRENT destination — re-run when the path
+    // disk-fit check against the CURRENT destination: re-run when the path
     // changes and every 2s while open, so switching drives or freeing space
     // updates the warning live (it used to freeze on the first reading)
     property double freeBytes: -1

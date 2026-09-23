@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — sidecar / file subtitle loading for the player.
+// QmlSessionBridge: sidecar / file subtitle loading for the player.
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"

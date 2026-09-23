@@ -37,7 +37,7 @@ Item {
         id: drawer
         width: 360
         height: parent.height
-        // animate a 0..1 slide, never x (see HubDetailDrawer — resize ghosting)
+        // animate a 0..1 slide, never x (see HubDetailDrawer: resize ghosting)
         property real slide: root.sv.detailOpen ? 1 : 0
         Behavior on slide { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
         x: parent.width - width * slide

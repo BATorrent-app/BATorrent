@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// The Find page's search bar — one input, two skins: a large hero while
+// The Find page's search bar: one input, two skins: a large hero while
 // browsing that shrinks and docks once the user types or scrolls the browse
 // content. Category pills ride along in browse; the source/category selects
 // and manager buttons appear with results. All search state lives in sv.
@@ -45,7 +45,7 @@ Item {
         Behavior on anchors.rightMargin { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
         spacing: Theme.sp3
 
-        // field (+ its hero shadow) — grows tall and round in the hero skin
+        // field (+ its hero shadow): grows tall and round in the hero skin
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: bar.hero ? 54 : 36
@@ -72,7 +72,7 @@ Item {
                 placeholder: (i18n.language, i18n.t("search_input"))
                 Behavior on radius { NumberAnimation { duration: 240 } }
                 onTextChanged: bar.sv.queryEdited(text)
-                // commit on Enter only — committing on focus-out re-ran the search
+                // commit on Enter only: committing on focus-out re-ran the search
                 // when you clicked a filter dropdown, eating the first click
                 Connections {
                     target: queryFld.field
@@ -81,7 +81,7 @@ Item {
             }
         }
 
-        // category pills — browse only (both skins), filtering the catalog
+        // category pills: browse only (both skins), filtering the catalog
         Row {
             visible: bar.sv.browse && bar.sv.catalogAvailable
             Layout.alignment: Qt.AlignVCenter

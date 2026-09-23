@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — watch-when-ready buffering gate for Get & Watch.
+// QmlSessionBridge: watch-when-ready buffering gate for Get & Watch.
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"

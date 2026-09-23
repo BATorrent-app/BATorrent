@@ -19,7 +19,7 @@ Window {
     minimumWidth: 520
     minimumHeight: 480
     color: Theme.bg
-    // unified chrome: the header band below is the only titlebar — the native
+    // unified chrome: the header band below is the only titlebar; the native
     // text would double-draw (and follows the system theme, not the app's)
     title: Theme.unifiedChrome ? "" : (i18n.language, i18n.t("stats_title"))
 
@@ -167,7 +167,7 @@ Window {
                 anchors.leftMargin: Theme.sp5
                 anchors.rightMargin: 20
                 BtnFlat {
-                    // BtnFlat has always taken an icon — the bat was an emoji here,
+                    // BtnFlat has always taken an icon: the bat was an emoji here,
                     // which renders as the OS's glyph, not our mark
                     icon: "qrc:/images/logo.svg"
                     text: (i18n.language, i18n.t("wrapped_title"))

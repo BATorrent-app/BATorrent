@@ -18,7 +18,7 @@ Item {
     readonly property int rasterPx: Math.max(2, Math.ceil(Screen.devicePixelRatio)) * ico.s
     // Dev only: redirect qrc:/icons/x.svg to the working tree so an SVG edit
     // lands like a QML edit. themeBridge.devIconDir is empty in a release build,
-    // and the cache buster is what makes a *re-saved* file actually reload —
+    // and the cache buster is what makes a *re-saved* file actually reload:
     // QQuickImage keys its cache on the URL alone.
     readonly property string devIcons: (typeof themeBridge !== "undefined" && themeBridge.devIconDir)
                                        ? themeBridge.devIconDir : ""

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Qt Quick Test for PathFld: the `text` alias plumbs through to the inner field.
-// (The browse button label binds to i18n, which is absent under test — that
+// (The browse button label binds to i18n, which is absent under test: that
 // binding stays empty here; the path text is what matters and is asserted.)
 
 import QtQuick

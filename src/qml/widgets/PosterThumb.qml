@@ -10,7 +10,7 @@ import "../theme"
 Item {
     id: thumb
     property string posterUrl: ""
-    // title behind the row — drives the generated placeholder (per-title hue +
+    // title behind the row: drives the generated placeholder (per-title hue +
     // initial) so coverless results don't repeat one identical logo down the list
     property string label: ""
     implicitWidth: 30
@@ -66,7 +66,7 @@ Item {
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             cache: true
-            sourceSize: Qt.size(64, 86)   // drawn tiny in list view — don't decode full-res
+            sourceSize: Qt.size(64, 86)   // drawn tiny in list view: don't decode full-res
         }
     }
     Rectangle {

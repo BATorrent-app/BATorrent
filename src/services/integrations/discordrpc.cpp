@@ -33,7 +33,7 @@ DiscordRPC::DiscordRPC(QObject *parent)
         // Discord not running, socket missing, etc. Schedule a retry; the
         // user shouldn't see anything fail.
         if (m_retryTimer->isActive()) return;
-        m_retryTimer->start(30000); // 30s — Discord either started or didn't
+        m_retryTimer->start(30000); // 30s: Discord either started or didn't
     });
     connect(m_retryTimer, &QTimer::timeout, this, &DiscordRPC::tryConnect);
     m_retryTimer->setSingleShot(false);
@@ -44,7 +44,7 @@ void DiscordRPC::setClientId(const QString &id)
     if (id == m_clientId) return;
     m_clientId = id.trimmed();
     if (m_clientId.isEmpty()) {
-        // Feature turned off — disconnect cleanly.
+        // Feature turned off: disconnect cleanly.
         m_retryTimer->stop();
         if (m_socket->state() != QLocalSocket::UnconnectedState)
             m_socket->disconnectFromServer();
@@ -70,7 +70,7 @@ void DiscordRPC::setActivity(const QString &details, const QString &state, qint6
         timestamps.insert("start", startEpoch);
         activity.insert("timestamps", timestamps);
     }
-    // Assets — the "logo" key must match an image uploaded to the Discord
+    // Assets: the "logo" key must match an image uploaded to the Discord
     // Application's Rich Presence Art Assets (discord.com/developers →
     // your app → Rich Presence → Art Assets → upload logo1.png as "logo").
     QJsonObject assets;
@@ -78,7 +78,7 @@ void DiscordRPC::setActivity(const QString &details, const QString &state, qint6
     assets.insert("large_text", QStringLiteral("BATorrent %1").arg(
         QCoreApplication::applicationVersion()));
     activity.insert("assets", assets);
-    // Buttons — up to 2 clickable links shown on the activity card. This
+    // Buttons: up to 2 clickable links shown on the activity card. This
     // is the organic marketing channel: anyone who sees a friend's profile
     // showing BATorrent activity can click straight to the releases page.
     QJsonArray buttons;
@@ -144,7 +144,7 @@ void DiscordRPC::onDisconnected()
 
 void DiscordRPC::onReadyRead()
 {
-    // We mostly don't care what Discord replies with — DISPATCH READY means
+    // We mostly don't care what Discord replies with: DISPATCH READY means
     // handshake succeeded, errors come as opcode=2 (close). Drain the buffer
     // and replay the cached activity on first READY.
     while (m_socket->bytesAvailable() >= 8) {

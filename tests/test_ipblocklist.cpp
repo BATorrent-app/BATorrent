@@ -49,7 +49,7 @@ TEST_CASE("blocklist: malformed lines are skipped, valid ones kept") {
 
 TEST_CASE("blocklist: reversed and mixed-family ranges are rejected (no crash)") {
     int n = -1;
-    // reversed (start > end) — would assert inside libtorrent's add_rule
+    // reversed (start > end): would assert inside libtorrent's add_rule
     bat::parseP2pBlocklist("Bad:1.2.3.10-1.2.3.4", &n);
     REQUIRE(n == 0);
     // mixed IPv4/IPv6
@@ -59,7 +59,7 @@ TEST_CASE("blocklist: reversed and mixed-family ranges are rejected (no crash)")
 
 TEST_CASE("blocklist: a bare IPv6 range parses") {
     // NOTE: the "description:" prefix heuristic is IPv4-centric (it keys off a dot
-    // after the colon), so a *bare* IPv6 range is the supported form — matching the
+    // after the colon), so a *bare* IPv6 range is the supported form: matching the
     // original behavior this was extracted from.
     int n = 0;
     const lt::ip_filter f = bat::parseP2pBlocklist("2001:db8::-2001:db8::ffff", &n);

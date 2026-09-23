@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TRANS = ROOT / "translations"
 SRC = ROOT / "src"
 
-# Keys that are built dynamically (prefix + suffix) — skip exact-match requirement
+# Keys that are built dynamically (prefix + suffix): skip exact-match requirement
 # when the source only has the prefix. Listed explicitly so we still verify the
 # composed forms that are known at check time.
 DYNAMIC_PREFIXES = (

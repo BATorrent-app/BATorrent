@@ -1,7 +1,7 @@
 name: i18n parity
 
 # Required fast gate (see docs/CI.md): locale key parity, duplicate keys, and
-# i18n.t()/tr_() usage. Pure Python — no Qt/build. Also runs inside build.yml
+# i18n.t()/tr_() usage. Pure Python: no Qt/build. Also runs inside build.yml
 # (test job) and qml-smoke.yml; this workflow exists so translation-only PRs
 # fail in seconds without a full rebuild.
 

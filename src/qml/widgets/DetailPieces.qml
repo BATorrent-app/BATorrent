@@ -9,7 +9,7 @@ import "../theme"
 
 ColumnLayout {
     id: pane
-    // { total, done, cells: [0..1] } — bounded/downsampled by the bridge so a
+    // { total, done, cells: [0..1] }; bounded/downsampled by the bridge so a
     // huge torrent doesn't ship tens of thousands of entries (crashed on Windows)
     property var pieces: ({})
     spacing: Theme.sp3

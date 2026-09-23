@@ -24,7 +24,7 @@ struct MetadataResult {
     QStringList genres;
     QStringList platforms;
     ContentType contentType = ContentType::Unknown;
-    int tmdbId = 0;          // TMDB movie/series id (0 if unknown) — for episode lookups
+    int tmdbId = 0;          // TMDB movie/series id (0 if unknown): for episode lookups
     bool valid = false;
 };
 
@@ -84,7 +84,7 @@ private:
     QQueue<QPair<QString, ParsedName>> m_igdbPending;
 
     // Hashes whose in-flight lookup came from resolveManual, with the typed
-    // query — so a miss can report back which title found nothing.
+    // query: so a miss can report back which title found nothing.
     QHash<QString, QString> m_manualQueries;
     // Every lookup ends here: releases the rate limiter for the next queue item
     // and, if this hash was a manual re-link that produced nothing, says so.

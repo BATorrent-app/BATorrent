@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — clipboard / smart-paste helpers. Split out of
+// QmlSessionBridge: clipboard / smart-paste helpers. Split out of
 // qmlsessionbridge.cpp verbatim; no behaviour change.
 
 #include "bridges/session/qmlsessionbridge.h"
@@ -18,7 +18,7 @@
 #include <QDir>
 
 // On Windows another process (a clipboard manager, the OS) can briefly hold the
-// clipboard, and QClipboard::setText then fails silently — reported as "copy
+// clipboard, and QClipboard::setText then fails silently; reported as "copy
 // almost never works". Retry a few times and verify it actually stuck.
 static void setClipboardRobust(const QString &text)
 {

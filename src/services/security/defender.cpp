@@ -16,7 +16,7 @@ bool addExclusion(const QString &path)
 {
 #if defined(Q_OS_WIN) && !defined(BAT_STORE_BUILD)
     // Fire-and-forget elevated PowerShell. The old QProcess::execute path blocked
-    // the GUI thread on UAC (Windows ghosted the window — "tela cinza").
+    // the GUI thread on UAC (Windows ghosted the window: "tela cinza").
     addExclusionAsync(path, {});
     return true;   // queued; actual success is unknown until the process exits
 #else

@@ -4,7 +4,7 @@
 
 // The first-run setup, asked as four short steps instead of one long form:
 // language, theme, library view and layout. Every answer is written immediately, so the app and
-// this very dialog re-dress themselves while the user is still deciding — the
+// this very dialog re-dress themselves while the user is still deciding: the
 // preview IS the product, which no swatch or caption can match.
 import QtQuick
 import QtQuick.Layouts
@@ -30,7 +30,7 @@ GridLayout {
 
     // Mirrors of the two layout settings. A function call inside a binding would
     // not re-run when the setting changes, and these tiles have to restate the
-    // choice the moment it is made — the same reason Main.qml keeps its own
+    // choice the moment it is made: the same reason Main.qml keeps its own
     // copies and refreshes them on settings.changed.
     property bool navLeft: false
     property bool detailBottom: false

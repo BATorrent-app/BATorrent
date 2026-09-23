@@ -16,7 +16,7 @@
 QString QmlPairingBridge::detectLanIp()
 {
     // Score IPv4 addresses by how "real LAN" they look. The old version keyed
-    // off interface *names* ("en"/"wlan"), which don't exist on Windows — there
+    // off interface *names* ("en"/"wlan"), which don't exist on Windows: there
     // it fell through to the first non-primary interface, often a Radmin/Hamachi
     // VPN adapter (26.x / 25.x), so the QR pointed at the wrong network.
     QString best;

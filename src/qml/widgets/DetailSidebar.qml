@@ -27,7 +27,7 @@ Rectangle {
     property bool showInspector: true
     // Pinned means the same here as in the bottom panel: stay open regardless of
     // selection, and ignore a previous dismiss. Without this the pin button would
-    // be decoration — visibility was keyed only on hasSel && !dismissed.
+    // be decoration: visibility was keyed only on hasSel && !dismissed.
     readonly property bool shown: showInspector && controller.gridView
                                   && (win.detailsLocked || (win.hasSel && !dismissed))
 
@@ -45,7 +45,7 @@ Rectangle {
     color: Theme.panel
     Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.hair }
 
-    // collapsed rail — the panel has to be reachable from its own edge
+    // collapsed rail: the panel has to be reachable from its own edge
     ColumnLayout {
         visible: sidebar.collapsed
         width: 46
@@ -177,7 +177,7 @@ Rectangle {
                     width: 34; height: 34; radius: 8
                     color: pinMa.containsMouse ? Theme.hover : "transparent"
                     // The stroked Tabler lock lands near a 1.1px stroke at this
-                    // size — thin and faint at once, which is why the pair read
+                    // size: thin and faint at once, which is why the pair read
                     // as decoration. The solid body holds its weight instead.
                     IconImg {
                         anchors.centerIn: parent
@@ -251,7 +251,7 @@ Rectangle {
             }
             Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
 
-            // panes — same guard discipline as the bottom panel: only the open
+            // panes: same guard discipline as the bottom panel: only the open
             // tab of the VISIBLE surface binds live data
             StackLayout {
                 Layout.fillWidth: true

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — "why is this slow" report for the selected torrent.
+// QmlSessionBridge: "why is this slow" report for the selected torrent.
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"

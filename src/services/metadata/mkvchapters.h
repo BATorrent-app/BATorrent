@@ -8,7 +8,7 @@
 #include <QString>
 #include <QList>
 
-// Self-contained Matroska (.mkv) chapter reader — no external binary, no
+// Self-contained Matroska (.mkv) chapter reader: no external binary, no
 // libav. Walks the EBML tree with hard bounds checks (untrusted input:
 // partial/torn downloads, malformed files) and returns the chapter list.
 // Times are milliseconds. Empty on any parse failure or non-mkv input.
@@ -18,7 +18,7 @@ struct MkvChapter {
     qint64 endMs = -1;      // -1 when the file omits ChapterTimeEnd
     QString name;
     // Classified from the name: "intro" (opening/recap) or "credits"
-    // (ending/outro), else empty — drives the player's skip chip.
+    // (ending/outro), else empty: drives the player's skip chip.
     QString kind;
 };
 

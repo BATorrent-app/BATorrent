@@ -276,7 +276,7 @@ ColumnLayout {
             spacing: Theme.sp4
             Repeater {
                 // the arrow is a fixed legend for the direction, not a live
-                // indicator — it stays red/amber whatever the rate. Dimming it
+                // indicator: it stays red/amber whatever the rate. Dimming it
                 // at low speed made the panel look broken at 2 KB/s.
                 model: [
                     { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: ident.win.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent },
@@ -290,7 +290,7 @@ ColumnLayout {
                     spacing: 3
                     Text { text: modelData.lbl; color: Theme.t4; font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
                     // the arrow carries the direction colour, the number stays
-                    // neutral — a whole reading in red/amber shouts louder than
+                    // neutral: a whole reading in red/amber shouts louder than
                     // a rate deserves
                     Row {
                         spacing: 4

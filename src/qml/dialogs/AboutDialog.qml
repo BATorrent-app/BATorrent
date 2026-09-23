@@ -125,7 +125,7 @@ BatDialog {
     // covered elsewhere: attribution lives in THIRD_PARTY.md, and the versions go
     // to the startup log, where a bug report can actually pick them up.
 
-    // translation credits — community contributors
+    // translation credits: community contributors
     Text {
         text: (i18n.language, i18n.t("about_translations"))
         color: Theme.t4
@@ -138,7 +138,7 @@ BatDialog {
         Layout.fillWidth: true
         Layout.topMargin: 8
         Layout.bottomMargin: 8
-        // SVG flag, not an emoji — flag emojis render as "UA" text on Windows.
+        // SVG flag, not an emoji: flag emojis render as "UA" text on Windows.
         Image {
             source: "qrc:/icons/flags/uk.svg"
             Layout.preferredWidth: 20; Layout.preferredHeight: 14

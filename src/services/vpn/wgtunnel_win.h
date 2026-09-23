@@ -8,7 +8,7 @@
 // Windows WireGuard tunnel: installs the config as a WireGuard tunnel *service*
 // via the official `wireguard.exe` (/installtunnelservice), elevated through UAC
 // (ShellExecuteEx "runas"). wireguard.exe uses the WireGuardNT driver + wintun.
-// Full-tunnel for now. Not compilable or testable off Windows — the CI
+// Full-tunnel for now. Not compilable or testable off Windows: the CI
 // build-windows job compiles it and the tester exercises it.
 
 #include "services/vpn/wgtunnel.h"
@@ -40,7 +40,7 @@ private:
     // After the service installs, poll the tunnel adapter for real inbound
     // traffic (a completed handshake). On success emit connected(); on timeout
     // uninstall the tunnel (removing its black-holing full-tunnel route) and
-    // emit failed() — so a dead tunnel never leaves the machine offline while
+    // emit failed(): so a dead tunnel never leaves the machine offline while
     // the UI claims "protected".
     void verifyHandshakeThenConnect();
 

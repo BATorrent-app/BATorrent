@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSearchBridge — core: ctor, search entry, sources/results getters.
+// QmlSearchBridge: core: ctor, search entry, sources/results getters.
 
 #include "bridges/search/qmlsearchbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"
@@ -238,7 +238,7 @@ QVariantList QmlSearchBridge::categories() const
 QVariantList QmlSearchBridge::results() const
 {
     // Stamp each row's index into the data itself. QML used to add `_idx` by
-    // mutating the map (o._idx = i), but a QVariantMap handed to QML is a copy —
+    // mutating the map (o._idx = i), but a QVariantMap handed to QML is a copy:
     // the mutation didn't always stick, leaving srcIndex undefined and breaking
     // activateResult()/openDetail() ("no source" on every pick).
     QVariantList out;
@@ -287,7 +287,7 @@ void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int
     if (sourceKey == "all") {
         // Title-first: resolve the query to real works (TMDB/IGDB), then let the
         // user drill into one title's torrents. Only when a metadata service with
-        // keys is available — otherwise go straight to the flat aggregate.
+        // keys is available: otherwise go straight to the flat aggregate.
         if (!m_discovery || !m_discovery->hasMetadataKeys()) {
             rawAggregateSearch(q, categoryCode);
             return;

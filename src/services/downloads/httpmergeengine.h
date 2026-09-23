@@ -8,7 +8,7 @@
 // A thin IEngine decorator that presents direct-HTTP downloads as extra rows
 // after the real torrents. The whole UI keys off IEngine::torrentCount/torrentAt
 // + info-hash, so wrapping the real engine here makes HTTP downloads flow through
-// the Downloads grid, completion toast, disk-fit and Play — with zero changes to
+// the Downloads grid, completion toast, disk-fit and Play: with zero changes to
 // SessionManager or the UI. Torrent rows delegate to the inner engine untouched;
 // HTTP rows are served from the HttpDownloadManager and pseudo-hashed "http:<id>".
 
@@ -92,7 +92,7 @@ public:
     qint64 streamContiguousAvailableBytes(int torrentIndex, int fileIndex, qint64 fromByte, qint64 cap = 8 * 1024 * 1024) const override;
 
     // ---------------------------------------------------------------------
-    // Global / session-wide surface — no row involved, pure delegation.
+    // Global / session-wide surface: no row involved, pure delegation.
     // ---------------------------------------------------------------------
     qint64 globalUploaded() const override;
     float globalRatio() const override;

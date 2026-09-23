@@ -143,7 +143,7 @@ QString torrentPathSegment(const QByteArray &path, const QByteArray &suffix)
 }
 
 // Pairing, login and the session/Basic-Auth gate. Returns true if it already
-// answered the request — dispatch() must not route further.
+// answered the request: dispatch() must not route further.
 bool WebServer::handleAuthGates(QTcpSocket *socket, const QByteArray &method,
                                 const QByteArray &path, const QByteArray &query,
                                 const QByteArray &headers, const QString &clientIp)
@@ -345,7 +345,7 @@ void WebServer::sendError(QTcpSocket *socket, int status, const QString &message
 
 QByteArray WebServer::headerValue(const QByteArray &headersOnly, const QByteArray &name)
 {
-    // Search only within the headers region — never within the body — so an
+    // Search only within the headers region, never within the body, so an
     // attacker can't smuggle an Authorization line through, say, a multipart
     // form field. Caller is expected to pass requestData.left(headerEnd+4).
     QByteArray search = "\r\n" + name + ":";
@@ -387,7 +387,7 @@ bool WebServer::checkAuth(const QByteArray &headersOnly, const QString &clientIp
 
     QByteArray authValue = headerValue(headersOnly, "Authorization");
     if (!authValue.startsWith("Basic ")) {
-        // Don't count a missing header as a failed attempt — only count
+        // Don't count a missing header as a failed attempt: only count
         // actual Basic submissions that didn't match.
         return false;
     }

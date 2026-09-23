@@ -5,8 +5,8 @@
 // Optional coach-marks tour. Dims the window and cuts a spotlight around each
 // target, with a callout (title + text + arrow). Step 0 is a richer welcome
 // (logo + wordmark) shown centered with no spotlight. Steps transition with an
-// "iris" cross-fade — the highlight closes, repositions while invisible, then
-// re-opens at the new target — so nothing slides across the screen.
+// "iris" cross-fade: the highlight closes, repositions while invisible, then
+// re-opens at the new target: so nothing slides across the screen.
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
@@ -40,7 +40,7 @@ Item {
     readonly property int pad: 7
     readonly property bool hasSpot: spot.width > 1 && spot.height > 1
 
-    // stable padded highlight rect — callout/arrow placement reads this so they
+    // stable padded highlight rect: callout/arrow placement reads this so they
     // don't jiggle as the iris animates.
     readonly property rect fullHole: hasSpot
         ? Qt.rect(spot.x - pad, spot.y - pad, spot.width + 2 * pad, spot.height + 2 * pad)

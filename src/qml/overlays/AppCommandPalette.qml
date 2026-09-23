@@ -16,11 +16,11 @@ Item {
 
     property alias cmdPalette: cmdPalette
 
-    // Own schema instance so the palette can index individual options — it's
+    // Own schema instance so the palette can index individual options: it's
     // available before SettingsView is built, avoiding a binding-order race.
     SettingsSchema { id: paletteSchema }
 
-    // Ctrl/⌘+K command palette — actions + torrent jump
+    // Ctrl/⌘+K command palette: actions + torrent jump
     CommandPalette {
         id: cmdPalette
         actions: {
@@ -43,7 +43,7 @@ Item {
                 { label: i18n.t("menu_diagnostics"), run: function() { host.showWin(host.diagWinLoader) } },
                 { label: i18n.t("shortcuts_title2"), run: function() { host.showWin(host.shortcutsWinLoader) } }
             ]
-            // settings sections + a few high-value deep links — so "torrent search",
+            // settings sections + a few high-value deep links: so "torrent search",
             // "proxy", "network", etc. are reachable straight from the palette
             var setNav = ["detail_general", "detail_kv_speed", "settings_network", "set_nav_vpn",
                           "set_nav_proxy", "set_nav_webui", "set_nav_notif", "set_nav_addons", "settings_advanced"]
@@ -56,7 +56,7 @@ Item {
             }
             acts.push({ label: i18n.t("set_grp_torrent_search"), hint: i18n.t("tb_settings"),
                         run: function() { settingsPage.sec = 7; host.currentPage = 3 } })
-            // individual settings options — so Ctrl+K finds "Memory guard",
+            // individual settings options: so Ctrl+K finds "Memory guard",
             // "Preallocate", etc., not just the section. Jumps to the option via
             // the Settings search box.
             var secs = paletteSchema.sections

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Search chrome footer — back, status, disk-fit warn, raw-results escape hatch.
+// Search chrome footer: back, status, disk-fit warn, raw-results escape hatch.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"

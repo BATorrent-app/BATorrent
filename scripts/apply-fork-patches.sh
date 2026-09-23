@@ -7,7 +7,7 @@
 # before building with BAT_LIBTORRENT_SOURCE=ON.
 #
 # Idempotent: resets the submodule to its pinned commit, then re-applies every
-# patch — so running it twice is a no-op, not a double-apply failure.
+# patch: so running it twice is a no-op, not a double-apply failure.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

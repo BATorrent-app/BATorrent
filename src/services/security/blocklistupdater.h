@@ -7,7 +7,7 @@
 
 // Downloads a peer blocklist (P2P text format, optionally gzipped) and caches it
 // on disk, so the engine can drop connections to known-bad IP ranges before the
-// handshake — the "block known bad peers" toggle. Opt-in: it fetches an external
+// handshake: the "block known bad peers" toggle. Opt-in: it fetches an external
 // list. The cached file feeds SessionManager::loadAutoBlocklist, which merges it
 // with any manual list into a single ip_filter.
 
@@ -27,7 +27,7 @@ public:
     // (anti-P2P / known-bad orgs), gzipped P2P format. Overridable via settings.
     static QUrl defaultUrl();
     static QString cachePath();
-    // true when the cache is missing or older than `days` — caller decides to refresh.
+    // true when the cache is missing or older than `days`: caller decides to refresh.
     static bool cacheStale(int days = 7);
 
 public slots:

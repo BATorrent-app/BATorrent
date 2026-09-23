@@ -7,7 +7,7 @@ import "player"
 import "windows"
 
 // Lazy top-level utility windows. Instantiated inside Main; callers use
-// showWin(loader) / showWrapped() or the aliased loader ids — no parent walks.
+// showWin(loader) / showWrapped() or the aliased loader ids: no parent walks.
 Item {
     id: root
 
@@ -48,7 +48,7 @@ Item {
         if (!w) return
         // Cascade. Every player opens at the same default geometry, so the
         // second one covered the first pixel for pixel and read as the video
-        // having been replaced — the windows were both there the whole time.
+        // having been replaced: the windows were both there the whole time.
         var step = 34 * (openPlayers.length % 6)
         if (step > 0) { w.x = w.x + step; w.y = w.y + step }
         openPlayers.push(w)
@@ -80,7 +80,7 @@ Item {
         PlayerWindow {
             id: playerWin
             // createObject(null) means nothing owns this window, so it must
-            // destroy itself — and drop out of openPlayers first, or the array
+            // destroy itself: and drop out of openPlayers first, or the array
             // keeps a dangling reference the duplicate check would trip on.
             // The id, not `this`: inside a Qt.callLater callback `this` is not
             // the window, so destroy() would quietly never run and every closed
@@ -106,7 +106,7 @@ Item {
             logWinLoader.active = true
             diagWinLoader.active = true
             // The player is no longer a Loader, so the smoke has to build one
-            // the same way openPlayer does — otherwise PlayerWindow quietly
+            // the same way openPlayer does: otherwise PlayerWindow quietly
             // drops out of the check that every deferred window still loads.
             var w = playerWindowComp.createObject(null)
             if (w) w.destroy()

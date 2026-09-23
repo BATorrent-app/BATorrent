@@ -2,8 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// The one progress bar. Every surface that shows how far a torrent has got —
-// the grid tile, the list row, the detail panel, the rail slot — draws this, so
+// The one progress bar. Every surface that shows how far a torrent has got:
+// the grid tile, the list row, the detail panel, the rail slot: draws this, so
 // the state language cannot drift between them.
 //
 // Two of the five states carry no percentage. A torrent whose files went
@@ -98,8 +98,8 @@ Item {
                         height: stripes.height
                         // 30°, not 45°: on a 9px bar a 45° stripe is too short to
                         // cross the band and reads as a diamond. And a diagonal
-                        // cannot be mistaken for a progress bar — no progress bar
-                        // is diagonal — which is exactly what these states need.
+                        // cannot be mistaken for a progress bar: no progress bar
+                        // is diagonal: which is exactly what these states need.
                         rotation: 30
                         transformOrigin: Item.Center
                         Rectangle {

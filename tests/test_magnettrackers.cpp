@@ -45,7 +45,7 @@ TEST_CASE("magnet trackers: idempotent — a second pass adds nothing") {
 
 TEST_CASE("magnet trackers: a tiers vector out of sync with trackers is repaired first") {
     std::vector<std::string> trackers = {"udp://a/announce", "udp://b/announce"};
-    std::vector<int> tiers;   // parse gave none — lt tolerates it, we normalize
+    std::vector<int> tiers;   // parse gave none: lt tolerates it, we normalize
     appendPublicTrackers(trackers, tiers);
     REQUIRE(tiers.size() == trackers.size());
     REQUIRE(tiers[0] == 0);

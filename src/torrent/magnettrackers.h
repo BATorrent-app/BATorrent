@@ -30,7 +30,7 @@ inline const std::vector<std::string> &publicTrackers()
 }
 
 // parse_magnet_uri puts each URI tracker on its own tier, so the appended ones
-// continue the tier sequence — the magnet's own trackers keep priority.
+// continue the tier sequence: the magnet's own trackers keep priority.
 // Dedup'd and idempotent; repairs a tiers vector that got out of sync.
 inline void appendPublicTrackers(std::vector<std::string> &trackers,
                                  std::vector<int> &tiers)

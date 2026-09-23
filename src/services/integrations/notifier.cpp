@@ -59,7 +59,7 @@ void TelegramNotifier::send(const QString &text)
 
     auto *reply = m_nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
     // Fire-and-forget: only log failures. Telegram returning 4xx is a config
-    // problem the user will discover via the "Test" button — no point in
+    // problem the user will discover via the "Test" button: no point in
     // popping a Toast for every torrent that finishes.
     connect(reply, &QNetworkReply::finished, this, [reply]() {
         if (reply->error() != QNetworkReply::NoError) {

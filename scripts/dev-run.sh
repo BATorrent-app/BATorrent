@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Launch the freshly built dev app the way the project rules require:
-# kill the stale instance first, surface QML errors loudly, and — if the
-# locally built Qt ffmpeg media plugin exists (dev-qt-plugins/) — put it on
+# kill the stale instance first, surface QML errors loudly, and: if the
+# locally built Qt ffmpeg media plugin exists (dev-qt-plugins/): put it on
 # QT_PLUGIN_PATH so the built-in player decodes MKV/AC3 like release builds
 # (homebrew Qt ships only the AVFoundation backend; see internal/REVIEW.md).
 #

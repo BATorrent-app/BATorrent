@@ -15,10 +15,10 @@ struct SubtitleCue {
 };
 
 // SRT/VTT parser for the built-in player's external-subtitle overlay. No
-// QtMultimedia involvement — cues render as a synced Text over the video.
+// QtMultimedia involvement: cues render as a synced Text over the video.
 namespace SubtitleParser {
 
-// Reads the file (UTF-8 with fallback to Latin-1 — .srt in the wild is often
+// Reads the file (UTF-8 with fallback to Latin-1: .srt in the wild is often
 // unlabeled Windows-1252) and parses by extension/content.
 QList<SubtitleCue> parseFile(const QString &path);
 

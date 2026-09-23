@@ -27,7 +27,7 @@ ScoreResult scoreCandidate(const Candidate &c);
 // True when torrent metadata didn't label a game but the file list looks like one.
 bool looksLikeGameFromFiles(bool hasExe, bool hasVideo);
 
-// Manual "completed" OR progress finished — seeding games stay playable.
+// Manual "completed" OR progress finished: seeding games stay playable.
 bool dataComplete(bool completedFlag, float progress);
 
 // Best-guess executable under folder. Sets *isInstaller when returning a setup.exe.

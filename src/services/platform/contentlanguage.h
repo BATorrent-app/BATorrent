@@ -8,8 +8,8 @@
 
 #include <QString>
 
-// The language the user wants their *content* in — dubs, subtitles, TMDB titles
-// — which is not the same question as the language of the app chrome. Someone
+// The language the user wants their *content* in: dubs, subtitles, TMDB titles
+// which is not the same question as the language of the app chrome. Someone
 // can read English menus fine and still need Portuguese audio; until these were
 // separated, saying one meant saying the other.
 //
@@ -25,7 +25,7 @@ void set(Translator::Language lang);
 void followApp();          // clear the explicit choice
 bool followsApp();         // no explicit choice stored
 
-// Release-name tag ("PT", "ES", …) — what AudioMode classifies against.
+// Release-name tag ("PT", "ES", …): what AudioMode classifies against.
 QString releaseTag(Translator::Language lang);
 QString releaseTag();
 

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — key→setter routing for live settings (in-process + IPC).
+// SessionManager: key→setter routing for live settings (in-process + IPC).
 
 #include "torrent/sessionmanager.h"
 #include "torrent/sessionconfig.h"

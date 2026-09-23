@@ -30,7 +30,7 @@ else()
 endif()
 # Optional: QtKeychain stores credentials in the platform keyring (DPAPI on
 # Windows, Keychain on macOS, kwallet/libsecret on Linux). If missing at
-# build time the app falls back to QSettings — secrets stay in plaintext
+# build time the app falls back to QSettings: secrets stay in plaintext
 # but the app still builds and runs.
 find_package(Qt6Keychain QUIET)
 set(CMAKE_AUTOMOC ON)
@@ -199,7 +199,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmlnotificationbridge.cpp
     src/bridges/discordrpcbridge.cpp
     src/bridges/qmlupdaterbridge.cpp
-    # header-only QObject — listed so AUTOMOC builds its metaobject
+    # header-only QObject: listed so AUTOMOC builds its metaobject
     src/bridges/qmli18nbridge.h
     src/webui/webserver.cpp
     src/webui/streamserver.cpp
@@ -282,7 +282,7 @@ find_package(ZLIB REQUIRED)   # subtitle .zip extraction (SubDL)
 target_link_libraries(BATorrent PRIVATE Qt6::Widgets Qt6::Network Qt6::Svg Qt6::Multimedia Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 ZLIB::ZLIB ${BAT_TORRENT_LIB})
 
 # macOS: bundle metadata. Without these keys, NSStatusItem (the tray icon)
-# can fail to allocate a menu-bar slot — Qt reports the item as visible but
+# can fail to allocate a menu-bar slot: Qt reports the item as visible but
 # height 0, off-screen.
 if(APPLE)
     set_target_properties(BATorrent PROPERTIES
@@ -297,7 +297,7 @@ if(APPLE)
     )
     # Dev-only: homebrew Qt ships multimedia without the ffmpeg backend, so MKV/
     # AC3 won't play in dev builds. If the locally built plugin exists (recipe:
-    # internal/build-qt-ffmpeg-plugin.sh), bundle it — Qt searches the bundle's
+    # internal/build-qt-ffmpeg-plugin.sh), bundle it: Qt searches the bundle's
     # Contents/PlugIns on macOS, so any launch method picks it up. Absent on CI.
     if(EXISTS ${CMAKE_SOURCE_DIR}/dev-qt-plugins/multimedia/libffmpegmediaplugin.dylib)
         add_custom_command(TARGET BATorrent POST_BUILD
@@ -322,13 +322,13 @@ if(WIN32)
     target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601 NOMINMAX)
     # shell32/ole32: SHOpenFolderAndSelectItems for "reveal in Explorer"
     # psapi: GetProcessMemoryInfo for the memory guard
-    # iphlpapi: GetIfTable2 — verify a WireGuard tunnel actually passes traffic
+    # iphlpapi: GetIfTable2; verify a WireGuard tunnel actually passes traffic
     target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp iphlpapi)
 
     # Emit a PDB even in Release so Store / Partner Center crash dumps symbolicate.
     # Without symbols every Store crash is reported as "unknown" (we had 314/322
     # like that). /OPT:REF,ICF restore the size optimisations that /DEBUG disables,
-    # so the shipped binary is unchanged in behaviour/size — only a .pdb is added.
+    # so the shipped binary is unchanged in behaviour/size: only a .pdb is added.
     if(MSVC)
         target_compile_options(BATorrent PRIVATE $<$<NOT:$<CONFIG:Debug>>:/Zi>)
         target_link_options(BATorrent PRIVATE
@@ -368,7 +368,7 @@ if(UNIX AND NOT APPLE)
                 COMMENT "Generating ${size}x${size} app icon")
             list(APPEND BAT_ICON_FILES "${generated_icon}")
         else()
-            # No ImageMagick — fall back to copying the 1024px source. The
+            # No ImageMagick: fall back to copying the 1024px source. The
             # icon theme still installs at every size; the desktop will
             # downscale on demand.
             set(generated_icon "${CMAKE_SOURCE_DIR}/src/images/logo1.png")

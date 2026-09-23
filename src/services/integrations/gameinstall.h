@@ -27,7 +27,7 @@ struct DeriveIn {
     bool completed = false;
 };
 
-// Derived display/install state. Does not mutate settings — caller clears orphans.
+// Derived display/install state. Does not mutate settings: caller clears orphans.
 int derive(const DeriveIn &in);
 
 // True when settings hold an exe path that no longer exists on disk.

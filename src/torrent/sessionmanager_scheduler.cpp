@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — bandwidth scheduler + watched-folder slice. Split out of
+// SessionManager: bandwidth scheduler + watched-folder slice. Split out of
 // sessionmanager.cpp verbatim; no behaviour change.
 
 #include "torrent/sessionmanager.h"
@@ -48,7 +48,7 @@ void SessionManager::scanWatchedFolder()
             QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString();
         addTorrent(path, savePath);
         // Move the .torrent to a "processed" subfolder to avoid re-adding.
-        // rename() fails silently if a same-named file was archived before —
+        // rename() fails silently if a same-named file was archived before:
         // the leftover then re-adds the torrent on every scan (reported as
         // removed torrents "coming back"). Clear the slot first.
         QDir processed(dir.filePath(".processed"));
@@ -127,7 +127,7 @@ void SessionManager::checkBandwidthSchedule()
     const bool inSchedule = bat::inBandwidthSchedule(
         dayOfWeek, currentHour, m_scheduleDays, m_scheduleFromHour, m_scheduleToHour);
 
-    // Push values straight to libtorrent — must not go through
+    // Push values straight to libtorrent: must not go through
     // setDownloadLimit/setUploadLimit because those are "the user wants X as
     // their normal limit" and would clobber m_normalDownLimit during alt mode.
     auto applyLimits = [this](int dKbps, int uKbps) {

@@ -40,7 +40,7 @@ Rectangle {
 
     color: controller.isRowSelected(index) ? Theme.sel : (listArea.hoveredRow === index ? Theme.hover : "transparent")
 
-    // .sel inset 2px barra esquerda — t1 (not accent), so it doesn't blend
+    // .sel inset 2px barra esquerda: t1 (not accent), so it doesn't blend
     // into a red downloading progress bar in the same row
     Rectangle {
         visible: controller.isRowSelected(lrow.index)
@@ -139,7 +139,7 @@ Rectangle {
             font.family: Theme.fontSans
             font.features: Theme.tnum
         }
-        // speeds stay neutral — the state column is the one colored cell per
+        // speeds stay neutral: the state column is the one colored cell per
         // row; a red/amber column per direction read as 16 rows of alarm
         Text {
             text: lrow.downRate > 0 ? lrow.downSpeed : "—"
@@ -160,7 +160,7 @@ Rectangle {
             font.features: Theme.tnum
         }
         Text {
-            // ratio: green at/above 1.0 (or ∞) — the seed-health at a glance
+            // ratio: green at/above 1.0 (or ∞); the seed-health at a glance
             text: lrow.ratio < 0 ? "∞" : lrow.ratio.toFixed(2)
             Layout.preferredWidth: 50
             horizontalAlignment: Text.AlignRight

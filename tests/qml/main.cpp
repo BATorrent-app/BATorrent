@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Qt Quick Test runner. Discovers tst_*.qml under QUICK_TEST_SOURCE_DIR and runs
-// them against the app's QML (linked via the resources qrc, so qrc:/src/qml/* —
-// including the Theme singleton and the widgets module — resolves).
+// them against the app's QML (linked via the resources qrc, so qrc:/src/qml/*;
+// including the Theme singleton and the widgets module: resolves).
 //
 // The setup hook injects a minimal `i18n` context object so widgets that bind to
 // i18n.t(...) without a typeof guard (PathFld, ToastHost) render cleanly under

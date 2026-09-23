@@ -7,7 +7,7 @@
 // dev note + this version's highlights + a link to the full release notes.
 //
 // The per-release dev note / highlights are SINGLE-LANGUAGE literals in
-// releaseContent below — auto-translating a personal message reads as fake. Edit
+// releaseContent below: auto-translating a personal message reads as fake. Edit
 // (or add) the entry for each release; everything else (chrome) stays i18n'd.
 import QtQuick
 import QtQuick.Layouts
@@ -30,7 +30,7 @@ BatDialog {
     backdropColor: isWelcome ? "#000000" : standardBackdropColor
 
     // Welcome is a multi-step setup; "update" keeps its single OK. holdOnOk
-    // routes the footer to nextRequested() so accepted() still means "done" —
+    // routes the footer to nextRequested() so accepted() still means "done":
     // the host starts the tour on it.
     property int step: 0
     okText: !isWelcome ? (i18n.language, i18n.t("whatsnew_ok"))
@@ -158,7 +158,7 @@ BatDialog {
         Layout.preferredHeight: visible ? 132 : 0
         clip: true
 
-        // Red bleed behind the numerals. It has to be a Shape/RadialGradient —
+        // Red bleed behind the numerals. It has to be a Shape/RadialGradient:
         // QML's plain Gradient is LINEAR, and using it here painted a hard-edged
         // slab instead of a glow. The falloff still meets the block's top margin
         // before it reaches zero; that edge is acceptable, a flat slab was not.
@@ -249,7 +249,7 @@ BatDialog {
                 text: dlg.noteText
                 // AutoText (the default): plain notes stay plain (their \n\n
                 // survives as real line breaks); a note with a link like 4.4's
-                // gets auto-detected as rich text — which is why THAT entry
+                // gets auto-detected as rich text: which is why THAT entry
                 // uses <br> instead of \n\n for its paragraph breaks.
                 linkColor: dlg.uiPalette.accentText
                 color: dlg.uiPalette.t2; font.pixelSize: 13; font.family: dlg.uiPalette.fontSans
@@ -291,7 +291,7 @@ BatDialog {
                 Text {
                     Layout.fillWidth: true
                     // Shorter measure for the lead. Display type wants FEWER
-                    // characters per line than body copy, not more — at full width
+                    // characters per line than body copy, not more: at full width
                     // it ran past every bullet below and dropped two words onto a
                     // second line, so the two blocks looked unrelated.
                     Layout.rightMargin: hRow.lead ? 64 : 0
@@ -306,7 +306,7 @@ BatDialog {
             }
         }
     }
-    // The wizard is new in 4.8, and someone updating would never meet it — it
+    // The wizard is new in 4.8, and someone updating would never meet it: it
     // only opens on a fresh install. Offered rather than forced: every answer in
     // it applies the moment it is clicked, so dropping an existing user into it
     // would rewrite a layout they already chose, with no way back.

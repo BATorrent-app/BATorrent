@@ -10,7 +10,7 @@
 
 // Contract for a debrid service (Real-Debrid, TorBox, …): hand it a magnet, it
 // caches/downloads on its own servers, then resolves a direct HTTPS link the
-// built-in player streams — no local seeding, no IP exposure.
+// built-in player streams: no local seeding, no IP exposure.
 //
 // Providers are not exposed to QML directly; DebridManager owns them and bridges
 // the active one. So this is a plain C++ interface (signals only, no Q_PROPERTY).

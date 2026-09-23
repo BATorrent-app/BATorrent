@@ -4,7 +4,7 @@
 
 // "Free up space" panel: every torrent, sortable by size or age, one-click
 // into the existing remove flow (deleteRequested → Main.qml opens removeDlg,
-// which already has the delete-files + permanent options). Global overlay —
+// which already has the delete-files + permanent options). Global overlay:
 // opened from the NavRail disk bar, or from Search's "won't fit" dialog with
 // a target (how many bytes still need to be freed).
 import QtQuick

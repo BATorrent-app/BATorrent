@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — playback/streaming slice. Everything behind "watch": the
+// QmlSessionBridge: playback/streaming slice. Everything behind "watch": the
 // local stream-server URLs, external-player handoff, sidecar/loaded subtitles,
 // play-by-selection / play-by-hash, next-episode resolution, and the
 // watch-when-ready polling. Split out of qmlsessionbridge.cpp verbatim.
@@ -64,7 +64,7 @@ void QmlSessionBridge::streamSelected()
         auto files = m_session->filesAt(m_streamIndex);
         if (m_streamFileIdx >= int(files.size())) { m_streamTimer->stop(); return; }
         TorrentInfo cur = m_session->torrentAt(m_streamIndex);
-        // Row may have shifted to a different torrent (list reordered/removed) — bail.
+        // Row may have shifted to a different torrent (list reordered/removed): bail.
         if (stripBt(cur.savePath + "/" + files[m_streamFileIdx].path) != m_streamFilePath) {
             m_streamTimer->stop(); return;
         }
@@ -79,7 +79,7 @@ void QmlSessionBridge::streamSelected()
             const bool opened = launchMediaPlayer(actual);
             emit toast(tr_("ctx_stream"), opened ? tr_("stream_started").arg(cur.name)
                                                  : tr_("stream_no_player"));
-        } else if (++m_streamTries > 300) {   // ~10 min with no buffer (dead torrent) — give up
+        } else if (++m_streamTries > 300) {   // ~10 min with no buffer (dead torrent): give up
             m_streamTimer->stop();
         }
     });
@@ -178,7 +178,7 @@ QVariantMap QmlSessionBridge::streamFileStats(const QString &infoHash, int fileI
 
 QString QmlSessionBridge::streamLocalPath(const QString &infoHash, int fileIndex) const
 {
-    // Absolute on-disk path (possibly still ".!bt") — the seek-preview decoder
+    // Absolute on-disk path (possibly still ".!bt"): the seek-preview decoder
     // reads the file directly instead of opening a second HTTP stream session.
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return {};
@@ -205,7 +205,7 @@ void QmlSessionBridge::playByHash(const QString &infoHash)
     emit openPlayer(url, info.name, infoHash, fileIdx);
 }
 
-// Resume a *specific* file (the episode you were watching) — streamUrl() picks the
+// Resume a *specific* file (the episode you were watching): streamUrl() picks the
 // largest video, which is wrong for a series. The HUB hero passes the resume file.
 void QmlSessionBridge::playByHashFile(const QString &infoHash, int fileIndex)
 {
@@ -258,7 +258,7 @@ QVariantMap QmlSessionBridge::playerTitle(const QString &infoHash, int fileIndex
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return out;
 
-    // Raw leaf name of the playing file — the honest source, kept for the
+    // Raw leaf name of the playing file: the honest source, kept for the
     // info tooltip so nothing is hidden, just de-emphasised.
     const QStringList names = m_session->torrentFileNames(row);
     QString raw = (fileIndex >= 0 && fileIndex < names.size())

@@ -1,7 +1,7 @@
 name: cppcheck
 
 # Fast static analysis, but currently noisy (Qt stream false positives). Not a
-# PR gate — weekly / manual / label `ci-deep` until the suppressions settle.
+# PR gate: weekly / manual / label `ci-deep` until the suppressions settle.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

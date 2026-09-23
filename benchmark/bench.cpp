@@ -7,7 +7,7 @@
 // prove (qBit is also libtorrent), with no network, no infra, and no GUI.
 //
 //   --ab config : stock libtorrent defaults  vs  BATorrent tuned settings_pack
-//   --ab ramp   : same tuned config, piece_request_fast_ramp OFF vs ON — isolates
+//   --ab ramp   : same tuned config, piece_request_fast_ramp OFF vs ON; isolates
 //                 the fork's slow-start patch alone (off == stock behavior).
 //
 // Latency is the variable that exercises the request pipeline. --rtt adds it with
@@ -242,7 +242,7 @@ static double runLeech(const std::shared_ptr<lt::torrent_info> &ti,
     p.set_bool(lt::settings_pack::enable_upnp, false);
     p.set_bool(lt::settings_pack::enable_natpmp, false);
     // All seeders live on 127.0.0.1 (distinct ports); without this libtorrent keeps
-    // only ONE connection per IP and silently drops the rest — a harness artifact,
+    // only ONE connection per IP and silently drops the rest: a harness artifact,
     // not the swarm behavior we want to measure.
     p.set_bool(lt::settings_pack::allow_multiple_connections_per_ip, true);
     applyProfile(p, prof);
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
         sp.set_int(lt::settings_pack::upload_rate_limit, rates[i] * 1024);
         auto s = std::make_unique<lt::session>(sp);
         // localhost peers land in local_peer_class, exempt from the session rate
-        // limit — cap that class directly or the bottleneck won't bind.
+        // limit: cap that class directly or the bottleneck won't bind.
         lt::peer_class_info lpc = s->get_peer_class(lt::session_handle::local_peer_class_id);
         lpc.upload_limit = rates[i] * 1024;
         s->set_peer_class(lt::session_handle::local_peer_class_id, lpc);

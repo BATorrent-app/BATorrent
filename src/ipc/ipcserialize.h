@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // QDataStream wire operators for the engine/UI split. TorrentInfo deliberately
-// skips its lt::torrent_handle — it's not serialisable and means nothing in the
+// skips its lt::torrent_handle; it's not serialisable and means nothing in the
 // UI process, which only ever reads the display fields. See ipcprotocol.h.
 #ifndef BATORRENT_IPCSERIALIZE_H
 #define BATORRENT_IPCSERIALIZE_H
@@ -102,7 +102,7 @@ inline void readBoolVec(QDataStream &s, std::vector<bool> &v)
 { qint32 n = 0; s >> n; v.assign(n, false); for (qint32 i = 0; i < n; ++i) { quint8 b; s >> b; v[i] = b != 0; } }
 
 // The per-tick state the engine pushes to the UI. Everything the main torrent
-// list, stats bar and nav card read comes from here — no blocking round-trips.
+// list, stats bar and nav card read comes from here: no blocking round-trips.
 struct EngineSnapshot {
     QStringList hashes;          // parallel to rows
     QList<TorrentInfo> rows;

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — add torrent/magnet/http + preview.
+// QmlSessionBridge: add torrent/magnet/http + preview.
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"
@@ -42,7 +42,7 @@ void QmlSessionBridge::addMagnetUri(const QString &uri, const QString &savePath)
 {
     if (uri.isEmpty()) return;
     // Any direct add (drag-drop, browser handoff, smart paste) marks the link
-    // as seen — regaining focus right after must not re-offer the same magnet
+    // as seen: regaining focus right after must not re-offer the same magnet
     // in the Add dialog (reported: duplicate dialog after drag & drop).
     const QString normalized = normalizeClipboardMagnet(uri);
     if (!normalized.isEmpty()) m_lastClipboardMagnet = normalized;
@@ -64,7 +64,7 @@ void QmlSessionBridge::addHttpUrl(const QString &url, const QString &savePath)
     }
     if (!savePath.isEmpty()) rememberSavePath(savePath);
     // The new row landing in the Downloads list is the confirmation (like a
-    // torrent add) — no success toast needed.
+    // torrent add): no success toast needed.
     m_httpDownloads->add(qurl, savePath.isEmpty() ? defaultSavePath() : savePath);
 }
 

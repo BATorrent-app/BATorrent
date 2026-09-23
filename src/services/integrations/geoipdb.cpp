@@ -45,7 +45,7 @@ int GeoIpDb::loadCsv(const QString &csv)
     };
 
     for (const QString &line : lines) {
-        // db-ip Lite: startIp,endIp,CC — fields may be quoted. IPv6 rows carry
+        // db-ip Lite: startIp,endIp,CC; fields may be quoted. IPv6 rows carry
         // ':' in the address and are skipped (IPv4 biasing only for now).
         const int c1 = line.indexOf(QChar(','));
         if (c1 < 0) continue;

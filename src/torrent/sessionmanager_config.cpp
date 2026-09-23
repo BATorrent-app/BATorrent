@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — advanced/storage prefs, content layout,
+// SessionManager: advanced/storage prefs, content layout,
 // excluded patterns, auto-move/extract, and on-complete command.
 
 #include "torrent/sessionmanager.h"

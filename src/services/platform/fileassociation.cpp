@@ -12,7 +12,7 @@
 namespace FileAssociation {
 
 #ifdef Q_OS_WIN
-// One association slice — .torrent, magnet: or bittorrent: — written or
+// One association slice, .torrent, magnet: or bittorrent:, written or
 // removed independently. The key layout is the exact set the one-shot
 // "set as default" button proved out in the wild; the "Default Programs"
 // Capabilities plumbing is shared and needed for Windows' per-protocol
@@ -101,7 +101,7 @@ bool apply(const QString &, bool)
 bool setAsDefaultApp()
 {
     // A missing helper (xdg-mime / duti) leaves exitCode() at its default 0,
-    // which would look like success — gate on the process actually finishing.
+    // which would look like success: gate on the process actually finishing.
     auto run = [](const QString &exe, const QStringList &args) {
         QProcess p;
         p.start(exe, args);

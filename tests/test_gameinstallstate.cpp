@@ -137,7 +137,7 @@ TEST_CASE("nextPendingAction: overall timeout only after download completes", "[
     in.state = GameInstall::Downloading;
     in.downloadDone = false;
     in.ageSec = 1801;
-    // Still downloading — do not kill the Get & Install chain on a slow swarm.
+    // Still downloading: do not kill the Get & Install chain on a slow swarm.
     REQUIRE(GameInstall::nextPendingAction(in) == PendingAction::EmitDownloadProgress);
 
     in.downloadDone = true;

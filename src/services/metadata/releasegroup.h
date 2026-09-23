@@ -7,12 +7,12 @@
 #include <QString>
 #include <QStringList>
 
-// Who actually released a torrent — the repacker or scene group — under a name
+// Who actually released a torrent, the repacker or scene group, under a name
 // the user recognises. That's the axis people trust ("online-fix works online",
 // "FitGirl compresses hard"); the indexer that happened to list it is not.
 //
 // Single source of truth on purpose: this table used to exist twice, in
-// NameParser and in QmlSearchBridge, and the copies had drifted — one knew
+// NameParser and in QmlSearchBridge, and the copies had drifted: one knew
 // Pioneer, the other knew Online-Fix, so a release tagged with either showed no
 // group at all.
 namespace ReleaseGroup {

@@ -22,7 +22,7 @@ QStringList contentRootCandidates(const QString &savePath,
                          ? savePath.chopped(1) : savePath;
 
     // libtorrent hands back native separators, so normalise before looking for
-    // the folder boundary — indexOf('/') misses it on Windows otherwise.
+    // the folder boundary: indexOf('/') misses it on Windows otherwise.
     QString rel = QDir::fromNativeSeparators(firstFileRelPath);
     if (multiFile) {
         const int slash = rel.indexOf(QLatin1Char('/'));

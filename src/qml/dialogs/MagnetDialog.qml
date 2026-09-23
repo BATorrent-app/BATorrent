@@ -91,7 +91,7 @@ BatDialog {
             anchors.bottomMargin: 10
             spacing: 10
 
-            // info icon (i circular) — desenhado inline já que não temos info.svg
+            // info icon (i circular): desenhado inline já que não temos info.svg
             Rectangle {
                 Layout.alignment: Qt.AlignTop
                 implicitWidth: 15; implicitHeight: 15

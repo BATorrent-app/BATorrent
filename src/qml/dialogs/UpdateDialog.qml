@@ -11,7 +11,7 @@ import "../widgets"
 
 BatDialog {
     id: dlg
-    cardW: 600   // three action buttons must fit one row (Win native text is wider) — tester: the primary was clipped
+    cardW: 600   // three action buttons must fit one row (Win native text is wider): tester: the primary was clipped
     cardH: 240
     showOk: false
     cancelText: (i18n.language, i18n.t("release_notes_close"))

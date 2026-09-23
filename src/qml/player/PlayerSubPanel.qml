@@ -118,7 +118,7 @@ Item {
                 GradientStop { position: 0.0; color: "#f01a191f" }
                 GradientStop { position: 1.0; color: "#f60d0c10" }
             }
-            // accent hairline on the leading edge — the drawer's "spine"
+            // accent hairline on the leading edge: the drawer's "spine"
             Rectangle { anchors.left: parent.left; width: 2; height: parent.height
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "#00b3001b" }

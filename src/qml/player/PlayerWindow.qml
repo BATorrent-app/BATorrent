@@ -21,7 +21,7 @@ Window {
     minimumWidth: 560; minimumHeight: 360
     color: "#000000"
     title: Theme.unifiedChrome ? "" : (win.mediaTitle.length > 0 ? ("BATorrent — " + win.mediaTitle) : "BATorrent")
-    // standalone, non-transient window — otherwise macOS treats it as an
+    // standalone, non-transient window: otherwise macOS treats it as an
     // auxiliary window and won't enter the native fullscreen space (menu bar +
     // Dock stay on top). Expanded client area (macOS) lets the title band with
     // the quality/audio badges share the strip with the traffic lights.
@@ -47,7 +47,7 @@ Window {
     property real volume: 0.9
     property bool controlsShown: true
 
-    // external subtitles (sidecar .srt/.vtt) — rendered as a synced overlay,
+    // external subtitles (sidecar .srt/.vtt): rendered as a synced overlay,
     // independent of QtMultimedia's embedded-track support
     property var extCues: []
     property int extCueIdx: -1
@@ -220,7 +220,7 @@ Window {
 
     Rectangle { anchors.fill: parent; color: "#000000" }
 
-    // ambient glow — a blurred, upscaled copy of the frame bleeding into the
+    // ambient glow: a blurred, upscaled copy of the frame bleeding into the
     // letterbox bars (Apple TV). One decoder: MultiEffect samples the same
     // VideoOutput, so there's no second stream. Gated behind a setting for
     // weaker GPUs (default on).
@@ -301,7 +301,7 @@ Window {
         }
     }
 
-    // external-subtitle overlay (over the video, above the controls bar) — styled
+    // external-subtitle overlay (over the video, above the controls bar): styled
     // by the user's subtitle settings (size / color / background)
     Item {
         visible: win.extCueText.length > 0
@@ -353,7 +353,7 @@ Window {
     function showControls() { win.controlsShown = true; idle.restart() }
 
     // auto-hide the chrome after inactivity (both windowed and fullscreen, like
-    // Stremio) — but never while paused, hovering the bar, or with a panel open.
+    // Stremio): but never while paused, hovering the bar, or with a panel open.
     Timer {
         id: idle; interval: 3000
         onTriggered: {

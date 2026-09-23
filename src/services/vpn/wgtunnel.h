@@ -7,9 +7,9 @@
 
 // The bring-up boundary for a WireGuard tunnel. VpnManager drives an abstract
 // WgTunnel; the real per-OS implementation (wireguard-go userspace, creating a
-// TUN interface — needs admin) plugs in behind this interface later. StubWgTunnel
+// TUN interface: needs admin) plugs in behind this interface later. StubWgTunnel
 // lets the whole flow (import → connect → connected → disconnect) run and be
-// tested on any platform meanwhile. IT DOES NOT PROTECT TRAFFIC — the UI must
+// tested on any platform meanwhile. IT DOES NOT PROTECT TRAFFIC: the UI must
 // label it a stub until the real tunnel ships.
 
 #include "services/vpn/wireguardconfig.h"
@@ -33,7 +33,7 @@ public:
     virtual QString interfaceName() const = 0;
     // Whether this backend actually protects traffic (false for the stub).
     virtual bool isReal() const = 0;
-    // Re-attach to a tunnel a previous run of the app brought up — tunnels
+    // Re-attach to a tunnel a previous run of the app brought up: tunnels
     // outlive the process on every OS (wireguard-go daemon / wg iface / Windows
     // service). Validates what it can, restores whatever down() needs, and
     // returns whether the tunnel is really still this one. Default: no.

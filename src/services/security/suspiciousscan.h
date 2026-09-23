@@ -9,7 +9,7 @@
 #include <QString>
 
 // Local, dependency-free malware-awareness heuristic. It does NOT decide
-// "safe" — it only flags the file patterns that are overwhelmingly malware in
+// "safe": it only flags the file patterns that are overwhelmingly malware in
 // a media torrent (an executable smuggled into a movie, a double extension
 // like film.mp4.exe). Silent when nothing matches. No engine, no network.
 // Framing rule: this is a "security warning", never an "antivirus".

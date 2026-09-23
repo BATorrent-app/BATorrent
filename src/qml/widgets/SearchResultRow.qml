@@ -113,7 +113,7 @@ Rectangle {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 6
-                // Pre-download warning (ReleaseTrust). Silent on a clean release —
+                // Pre-download warning (ReleaseTrust). Silent on a clean release:
                 // one red intensity, whether it's a caution or a risk.
                 TChip {
                     id: trustChip
@@ -152,7 +152,7 @@ Rectangle {
                     accent: true
                 }
                 MetaTag { text: row.modelData.quality || ""; accent: true }
-                // CAM is shown by the trust chip instead — louder, and in words a
+                // CAM is shown by the trust chip instead: louder, and in words a
                 // non-scene user actually understands.
                 MetaTag { text: row.modelData.source === "CAM" ? "" : (row.modelData.source || "") }
                 MetaTag { text: row.modelData.codec || "" }

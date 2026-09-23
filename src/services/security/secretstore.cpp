@@ -20,7 +20,7 @@ constexpr const char *kServiceName = "BATorrent";
 // Run a heap-allocated QtKeychain job synchronously. Returns true if the job
 // finished before timeoutMs. On timeout we return false but keep the job
 // alive (autoDelete) so its eventual completion doesn't access destroyed
-// memory — this is the bug we used to have: a 1 s timeout on a cold keychain
+// memory: this is the bug we used to have: a 1 s timeout on a cold keychain
 // (just-unlocked Keychain on macOS, gnome-keyring spinning up on Linux)
 // could destroy the job while QtKeychain was still in flight.
 bool runJob(QKeychain::Job *job, int timeoutMs = 5000)
@@ -60,7 +60,7 @@ QString SecretStore::get(const QString &key)
 #ifdef HAVE_QTKEYCHAIN
     auto *job = new QKeychain::ReadPasswordJob(QString::fromLatin1(kServiceName));
     job->setKey(key);
-    if (!runJob(job)) return {};   // timed out — don't cache, retry next time
+    if (!runJob(job)) return {};   // timed out: don't cache, retry next time
     QString value = (job->error() == QKeychain::NoError) ? job->textData() : QString();
 #else
     QString value = QSettings("BATorrent", "BATorrent").value(key).toString();
@@ -71,7 +71,7 @@ QString SecretStore::get(const QString &key)
 
 void SecretStore::set(const QString &key, const QString &value)
 {
-    m_cache.insert(key, value);   // we're the only writer — keep the cache coherent
+    m_cache.insert(key, value);   // we're the only writer: keep the cache coherent
 #ifdef HAVE_QTKEYCHAIN
     if (value.isEmpty()) {
         auto *job = new QKeychain::DeletePasswordJob(QString::fromLatin1(kServiceName));

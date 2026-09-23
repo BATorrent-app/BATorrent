@@ -52,7 +52,7 @@ TEST_CASE("resolution far above the size is flagged as fake") {
 }
 
 TEST_CASE("small-but-plausible encodes are not flagged") {
-    // A 900 MiB x265 1080p movie is a real thing — the floor sits well below it.
+    // A 900 MiB x265 1080p movie is a real thing: the floor sits well below it.
     REQUIRE(assess(movie("Movie 2024 1080p x265-QxR", "1080p", 900 * MiB)).tier == Tier::Ok);
     REQUIRE(assess(movie("Movie 2024 720p", "720p", 700 * MiB)).tier == Tier::Ok);
 }

@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Labeled horizontal poster row (header + "See all" + PosterCards) used by the
-// browse shelves. Sized explicitly for a plain Column host — layout size hints
+// browse shelves. Sized explicitly for a plain Column host: layout size hints
 // proved unreliable for file components in the browse scroll column.
 // Delegates stay unpopulated until the shelf first scrolls into view
 // (flickY/flickH drive the same lazy gate the Discover rows used).

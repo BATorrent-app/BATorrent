@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSearchBridge — release-name attrs + trust fill.
+// QmlSearchBridge: release-name attrs + trust fill.
 
 #include "bridges/search/qmlsearchbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"
@@ -43,7 +43,7 @@ QString QmlSearchBridge::detectReleaseGroup(const QString &name)
 
 void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
 {
-    // ~30 patterns × every result row — cache compiled regexes (keyed by the
+    // ~30 patterns × every result row: cache compiled regexes (keyed by the
     // literal's pointer; main-thread only).
     auto has = [&](const char *pat) {
         static QHash<const char *, QRegularExpression> cache;
@@ -78,7 +78,7 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
 
     // Spoken languages, parsed from the release name's audio tags. A release can
     // carry several (DUAL/MULTI), so we collect a list and let the search filter
-    // match on membership — Torrentio-style. `lang` keeps the primary for the badge.
+    // match on membership: Torrentio-style. `lang` keeps the primary for the badge.
     QStringList langs;
     auto add = [&](const QString &c) { if (!langs.contains(c)) langs << c; };
     const bool dubbed = has("\\bdublado\\b|\\bdubbed\\b|\\bdual[ ._-]?(a|á)udio\\b|\\bnacional\\b|\\bdub\\b");
@@ -110,7 +110,7 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
     const QString contentLang = ContentLanguage::releaseTag();
     m["native"] = langs.contains(contentLang)
                   || (contentLang != QLatin1String("EN") && (multi || langs.contains(QLatin1String("MULTI"))));
-    // Dub/sub/original relative to the user's language — the axis the segmented
+    // Dub/sub/original relative to the user's language: the axis the segmented
     // filter acts on (a dubbed-hater and a dub-lover want opposite results).
     m["audioMode"] = AudioMode::key(AudioMode::classify(name, contentLang));
 }

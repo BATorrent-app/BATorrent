@@ -8,7 +8,7 @@ import QtQuick
 // media-flow Connections clutter; host owns page jumps and notifyUser.
 Item {
     required property var host
-    // Names intentionally differ from Main ids/aliases — `gwOverlay: gwOverlay`
+    // Names intentionally differ from Main ids/aliases: `gwOverlay: gwOverlay`
     // self-shadows to undefined and aborts openPlayer before the window opens.
     required property var watchOverlay
     required property var loaders

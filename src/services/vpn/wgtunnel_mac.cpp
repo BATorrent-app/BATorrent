@@ -65,7 +65,7 @@ void MacWgTunnel::up(const QString &confPath, const bat::WgConfig &)
     }
     m_confPath = confPath;
     // wg-quick shells out to wg + wireguard-go, so give it their bin dir on PATH
-    // (the elevated osascript shell doesn't inherit Homebrew's PATH). Quoted —
+    // (the elevated osascript shell doesn't inherit Homebrew's PATH). Quoted:
     // the bundle path can contain spaces.
     const QString cmd = QStringLiteral("export PATH=\"%1:$PATH\"; '%2' up '%3'")
                             .arg(toolsBinDir(), wgQuick, confPath);
@@ -84,7 +84,7 @@ void MacWgTunnel::up(const QString &confPath, const bat::WgConfig &)
 bool MacWgTunnel::adopt(const QString &confPath, const QString &iface)
 {
     if (iface.isEmpty() || wgQuickPath().isEmpty()) return false;
-    // wg-quick keeps /var/run/wireguard/<name>.name while wireguard-go runs —
+    // wg-quick keeps /var/run/wireguard/<name>.name while wireguard-go runs:
     // if it still maps this config's name to this utun, the tunnel is ours.
     QFile f(QStringLiteral("/var/run/wireguard/%1.name")
                 .arg(QFileInfo(confPath).completeBaseName()));

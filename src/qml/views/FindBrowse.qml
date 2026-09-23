@@ -27,7 +27,7 @@ Item {
     readonly property var rowList: api ? api.rows : []
 
     // global hero is backdrop-gated and games-first, so it can hold zero movies/
-    // series — when a type is filtered and the global hero has none, derive the
+    // series: when a type is filtered and the global hero has none, derive the
     // hero from that type's own rows so every filter gets a banner.
     readonly property var heroFiltered: {
         if (typeFilter === "all") return heroList
@@ -71,7 +71,7 @@ Item {
         // Hidden while the skeleton owns the screen. Without this the column is
         // an empty stack whose only visible child is the red "browse the whole
         // catalogue" line, so it rides at the TOP of the page during the first
-        // fetch and flickers as the game sources resolve — the opposite of the
+        // fetch and flickers as the game sources resolve: the opposite of the
         // bottom-of-the-shelves position it holds once loaded.
         visible: !skeleton.visible
         anchors.fill: parent
@@ -102,7 +102,7 @@ Item {
                     active: browse.active && browse.visible
                     onDetailsRequested: function(title) { browse.findRequested(title) }
                 }
-                // refresh — floats over the billboard's top-right corner
+                // refresh: floats over the billboard's top-right corner
                 Rectangle {
                     anchors.top: parent.top; anchors.right: parent.right
                     anchors.margins: Theme.sp4
@@ -167,7 +167,7 @@ Item {
                 }
             }
 
-            // Entry into the Hydra dump — does not replace the shelves above.
+            // Entry into the Hydra dump: does not replace the shelves above.
             Item {
                 width: col.width
                 height: catEntry.visible ? 44 : 0

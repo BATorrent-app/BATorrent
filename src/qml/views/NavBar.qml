@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Top navigation bar — the nav rail laid horizontally (default layout since
+// Top navigation bar: the nav rail laid horizontally (default layout since
 // 4.5; the rail survives behind the "classic layout" setting). Brand + page
 // tabs on the left; download chip, disk gauge, donate and settings on the
 // right. Same itemRect() contract as NavRail so the tour targets both.
@@ -28,7 +28,7 @@ Rectangle {
     signal aboutRequested()      // the brand mark is the way into About
 
     // responsive degradation: the chip loses its text first, then the disk
-    // gauge loses its labels — nothing ever clips
+    // gauge loses its labels: nothing ever clips
     readonly property bool tightChip: width < 1260
     readonly property bool tightDisk: width < 1140
 
@@ -104,7 +104,7 @@ Rectangle {
         anchors.rightMargin: Theme.sp3
         spacing: 2
 
-        // ----- brand — glyph only; the wordmark lives where the brand
+        // ----- brand: glyph only; the wordmark lives where the brand
         // introduces itself (splash, About, expanded rail) -----
         Image {
             id: brandGlyph
@@ -118,7 +118,7 @@ Rectangle {
             layer.enabled: Theme.isLight
             layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
 
-            // clicking the logotype opens About — the conventional home for it.
+            // clicking the logotype opens About: the conventional home for it.
             // (The rail's brand block does the same; both chromes need it, since
             // only one of the two is on screen at a time.)
             MouseArea {

@@ -24,7 +24,7 @@
 // Open the system's file manager pointed at `path`, with that path
 // highlighted/selected if the platform supports it. If the path itself
 // doesn't exist on disk we walk up to the nearest ancestor that does and
-// open that — crucial because Windows Explorer treats "/select,<missing>"
+// open that: crucial because Windows Explorer treats "/select,<missing>"
 // as "no selection at all" and silently opens the user's Documents folder
 // instead of the intended save path.
 inline void revealInFileManager(const QString &path)
@@ -40,14 +40,14 @@ inline void revealInFileManager(const QString &path)
     if (!exists) {
         QDir parent = info.absoluteDir();
         while (!parent.exists() && parent.cdUp()) {}
-        if (!parent.exists()) return; // give up — nothing to open
+        if (!parent.exists()) return; // give up: nothing to open
         info = QFileInfo(parent.absolutePath());
     }
 
     // qBittorrent's rule, copied faithfully: a folder is *opened* (you land
     // inside it, seeing only that torrent's files), a single file has its
     // parent opened with the file *selected*. Dropping the user into a shared
-    // save folder like Downloads — possibly tens of thousands of files — with
+    // save folder like Downloads, possibly tens of thousands of files, with
     // nothing useful selected is exactly the failure we're avoiding. The
     // walk-up above can also leave `info` at an ancestor directory, which this
     // treats as the folder case.
@@ -130,8 +130,8 @@ inline void revealTorrentRoot(const QString &savePath, const QString &name)
         revealInFileManager(savePath);
 }
 
-// Prefer a content-sniffing player (VLC/mpv/IINA) — they play a still-downloading
-// or ".!bt"-suffixed file that the OS default handler would refuse — then fall back.
+// Prefer a content-sniffing player (VLC/mpv/IINA): they play a still-downloading
+// or ".!bt"-suffixed file that the OS default handler would refuse: then fall back.
 inline bool launchMediaPlayer(const QString &path)
 {
 #if defined(Q_OS_MACOS)
@@ -160,7 +160,7 @@ inline bool launchMediaPlayer(const QString &path)
 }
 
 // Torrent site APIs ship titles with raw HTML entities ("1966&ndash;1968",
-// "Tom &amp; Jerry"). Entity-only decode — no tag interpretation, so a "<"
+// "Tom &amp; Jerry"). Entity-only decode: no tag interpretation, so a "<"
 // in a release name passes through untouched.
 inline QString decodeHtmlEntities(QString s)
 {

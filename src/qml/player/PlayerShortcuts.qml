@@ -11,7 +11,7 @@ Item {
     id: root
 
     property var pw
-    // Named differently from host ids — same-name bindings self-shadow to undefined.
+    // Named differently from host ids: same-name bindings self-shadow to undefined.
     property var optionsPanel
     property var subsPanel
     property bool extSubsActive: false

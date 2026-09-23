@@ -10,13 +10,13 @@
 
 class QNetworkAccessManager;
 
-// Outbound notification mirror — broadcasts the same events the in-app Toast
+// Outbound notification mirror: broadcasts the same events the in-app Toast
 // raises (download finished, kill switch, RSS auto-download, errors) to a
 // Telegram chat via the Bot API.
 //
 // Token + chat ID live in QSettings (token via SecretStore so it doesn't sit
 // in plaintext). All sends are fire-and-forget; failures are logged but never
-// surfaced as UI errors — a broken webhook should never block the app.
+// surfaced as UI errors: a broken webhook should never block the app.
 class TelegramNotifier : public QObject
 {
     Q_OBJECT

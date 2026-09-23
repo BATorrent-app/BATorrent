@@ -89,7 +89,7 @@ Item {
     }
 
     // one-time star ask: only after the app earned it (14+ days and 10+
-    // launches), dismissible, never repeats — converts long-time users, the
+    // launches), dismissible, never repeats: converts long-time users, the
     // segment download counts prove we lose
     Timer {
         interval: 8000

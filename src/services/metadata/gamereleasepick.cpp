@@ -46,7 +46,7 @@ int compareCandidates(const Candidate &a, const Candidate &b)
     if (a.hasUri != b.hasUri)
         return a.hasUri ? 1 : -1;
 
-    // Newer build wins even if it came from a public indexer — catalog-first
+    // Newer build wins even if it came from a public indexer: catalog-first
     // must not hide a strictly fresher BitSearch hit.
     const int ver = compareVersions(a.version, b.version);
     if (ver != 0) return ver;

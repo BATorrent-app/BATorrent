@@ -8,7 +8,7 @@ import QtQuick
 // menus share one implementation without bloating the page root.
 QtObject {
     id: root
-    required property var page   // HubView — needs i18n + api for folder open
+    required property var page   // HubView: needs i18n + api for folder open
 
     function fmtPlaytime(secs) {
         if (!secs || secs <= 0) return ""

@@ -20,7 +20,7 @@ const QStringList &plainExts()
     return s;
 }
 
-// .partN.rar — returns N, or -1 if it isn't that shape.
+// .partN.rar: returns N, or -1 if it isn't that shape.
 int rarPartNumber(const QString &n)
 {
     static const QRegularExpression re(QStringLiteral("\\.part(\\d+)\\.rar$"));
@@ -28,7 +28,7 @@ int rarPartNumber(const QString &n)
     return m.hasMatch() ? m.captured(1).toInt() : -1;
 }
 
-// Generic 3-digit split (.001/.002 …, also .7z.001) — returns the number, or -1.
+// Generic 3-digit split (.001/.002 …, also .7z.001): returns the number, or -1.
 int splitNumber(const QString &n)
 {
     static const QRegularExpression re(QStringLiteral("\\.(\\d{3})$"));

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — network/privacy slice. VPN interface binding + kill switch,
+// SessionManager: network/privacy slice. VPN interface binding + kill switch,
 // proxy (SOCKS5/HTTP, leak-proof mode) and the peer-blocklist IP filter. Split
 // out of sessionmanager.cpp verbatim; no behaviour change.
 
@@ -27,7 +27,7 @@ void SessionManager::setOutgoingInterface(const QString &interfaceName)
     m_outgoingInterface = interfaceName;
     QSettings("BATorrent", "BATorrent").setValue("outgoingInterface", interfaceName);
     m_killSwitchActive = false;
-    // Resume torrents that the killswitch paused — otherwise switching VPNs
+    // Resume torrents that the killswitch paused: otherwise switching VPNs
     // or going back to "any interface" leaves them paused forever.
     for (auto &h : m_killSwitchPaused) {
         if (h.is_valid()) h.resume();
@@ -48,7 +48,7 @@ void SessionManager::setOutgoingInterface(const QString &interfaceName)
         // Resolve the interface IP for listen_interfaces. interfaceFromName matches
         // the adapter's internal name; a WireGuard tunnel is reported by its
         // friendly/service name (its .conf basename), which only matches
-        // humanReadableName — so fall back to a scan or the bind silently no-ops.
+        // humanReadableName: so fall back to a scan or the bind silently no-ops.
         QNetworkInterface ni = QNetworkInterface::interfaceFromName(interfaceName);
         if (!ni.isValid()) {
             for (const QNetworkInterface &cand : QNetworkInterface::allInterfaces()) {
@@ -128,7 +128,7 @@ void SessionManager::checkInterfaceStatus()
     bool interfaceOk = isUp && hasIp;
 
     if (!interfaceOk && !m_killSwitchActive) {
-        // Interface just went down — pause all running torrents
+        // Interface just went down: pause all running torrents
         qDebug() << "[session] KILL SWITCH TRIGGERED — interface" << m_outgoingInterface << "is down";
         m_killSwitchActive = true;
         m_killSwitchPaused.clear();
@@ -142,7 +142,7 @@ void SessionManager::checkInterfaceStatus()
         }
         emit killSwitchTriggered();
     } else if (interfaceOk && m_killSwitchActive) {
-        // Interface came back — re-apply binding and optionally resume
+        // Interface came back: re-apply binding and optionally resume
         m_killSwitchActive = false;
         setOutgoingInterface(m_outgoingInterface);
 
@@ -197,7 +197,7 @@ void SessionManager::loadAutoBlocklist(const QString &filePath)
 }
 
 // Merge whichever lists are set (manual file + auto-updated bad-peer list) into a
-// single ip_filter — libtorrent has one filter slot, so both sources accumulate.
+// single ip_filter: libtorrent has one filter slot, so both sources accumulate.
 void SessionManager::rebuildIpFilter()
 {
     lt::ip_filter filter;

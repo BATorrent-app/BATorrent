@@ -2,9 +2,9 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// The "General" detail pane, shared by the bottom panel (vertical: false —
+// The "General" detail pane, shared by the bottom panel (vertical: false;
 // cover · main · three KV columns in a row) and the 340px side inspector
-// (vertical: true — everything stacked, scrolls when it outgrows the column).
+// (vertical: true; everything stacked, scrolls when it outgrows the column).
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
@@ -29,13 +29,13 @@ Flickable {
         columnSpacing: Theme.sp6
         rowSpacing: Theme.sp4
 
-        // .dcover — only when there's a resolved poster. A generic torrent
+        // .dcover: only when there's a resolved poster. A generic torrent
         // (Ubuntu ISO, a code archive) has no cover; showing a placeholder
         // logo made it look like something failed, so the cover collapses to
         // zero width and the text column takes the whole row instead.
         readonly property bool hasCover: gen.win.hasSel && session.selectedPoster.length > 0
 
-        // recovery banner — the selected download's files were deleted/moved off
+        // recovery banner: the selected download's files were deleted/moved off
         // disk; offer to point it at where they live now (or a fresh folder to
         // re-download into) and re-check, without hunting through the menu.
         Rectangle {
@@ -91,7 +91,7 @@ Flickable {
         // so which torrent you are reading survives a jump to Peers or Files.
         // This pane is only the numbers now.
 
-        // .dcols — three KV sections (row in the panel, stacked in the inspector)
+        // .dcols: three KV sections (row in the panel, stacked in the inspector)
         GridLayout {
             Layout.alignment: Qt.AlignTop
             Layout.fillWidth: gen.vertical

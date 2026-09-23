@@ -90,7 +90,7 @@ void HttpDownload::fail(const QString &why)
 void HttpDownload::abortReplies()
 {
     // abort() emits finished() synchronously, which reenters onSegmentFinished
-    // and clears s.reply — so null the slot *before* aborting, or the next line
+    // and clears s.reply: so null the slot *before* aborting, or the next line
     // would dereference a reply the reentrant call just cleared.
     if (m_probe) { QNetworkReply *p = m_probe; m_probe = nullptr; p->abort(); p->deleteLater(); }
     for (Segment &s : m_segments) {

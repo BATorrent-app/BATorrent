@@ -20,7 +20,7 @@ class QLocalSocket;
 //
 // Requires the user to provide a Discord application ID (free, 2-minute
 // setup at https://discord.com/developers/applications). With an empty
-// client ID this class is a silent no-op — no socket connection, no logs.
+// client ID this class is a silent no-op: no socket connection, no logs.
 //
 // Re-connects automatically with backoff if Discord wasn't running at
 // startup or restarts mid-session.
@@ -34,7 +34,7 @@ public:
     QString clientId() const { return m_clientId; }
 
     // Update the presence. Empty `details` triggers a CLEAR_ACTIVITY frame.
-    // `startEpoch` is unix seconds the activity started — Discord uses it
+    // `startEpoch` is unix seconds the activity started: Discord uses it
     // to render the elapsed timer.
     void setActivity(const QString &details, const QString &state, qint64 startEpoch);
     void clearActivity();
@@ -53,7 +53,7 @@ private:
     QTimer *m_retryTimer;
     QString m_clientId;
     bool m_handshaken = false;
-    // Cached presence — resent after a reconnect so the activity survives a
+    // Cached presence: resent after a reconnect so the activity survives a
     // Discord restart.
     QString m_lastDetails;
     QString m_lastState;

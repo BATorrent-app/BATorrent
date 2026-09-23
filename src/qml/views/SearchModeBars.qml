@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // The mode-specific segmented bars of the search results: audio mode
-// (dub/sub/original — hidden for English UIs), season tabs of a picked
+// (dub/sub/original: hidden for English UIs), season tabs of a picked
 // series (or the episode picker), and the per-season episode tabs.
 import QtQuick
 import QtQuick.Layouts
@@ -45,7 +45,7 @@ ColumnLayout {
         }
     }
 
-    // audio-mode segmented control — the thing a viewer actually chooses on:
+    // audio-mode segmented control: the thing a viewer actually chooses on:
     // dubbed / subtitled / original, in their own language. Prominent, not a
     // dropdown; hidden for games, title-picking, and English UIs.
     Rectangle {
@@ -86,7 +86,7 @@ ColumnLayout {
         }
     }
 
-    // season bar — a picked series' releases grouped by parsed season, or the
+    // season bar: a picked series' releases grouped by parsed season, or the
     // Stremio episode picker's season tabs
     Rectangle {
         Layout.fillWidth: true
@@ -132,7 +132,7 @@ ColumnLayout {
         }
     }
 
-    // episode bar — appears once a season is picked in the series drill-down
+    // episode bar: appears once a season is picked in the series drill-down
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 38

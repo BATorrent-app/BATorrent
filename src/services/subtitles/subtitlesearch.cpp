@@ -24,7 +24,7 @@ namespace {
 
 constexpr int kTimeoutMs = 12000;
 
-// Raw DEFLATE inflate (no zlib header — that's how ZIP stores method-8 data).
+// Raw DEFLATE inflate (no zlib header: that's how ZIP stores method-8 data).
 QByteArray inflateRaw(const char *src, int n, int hint)
 {
     z_stream s{};
@@ -34,7 +34,7 @@ QByteArray inflateRaw(const char *src, int n, int hint)
     QByteArray out;
     // a garbage central-directory size mustn't drive a huge allocation, and the
     // stream itself mustn't inflate past any sane subtitle size (deflate bombs
-    // reach ~1032:1 — mirror blocklistupdater's cap; an .srt is a few MB at most)
+    // reach ~1032:1; mirror blocklistupdater's cap; an .srt is a few MB at most)
     constexpr qsizetype kMaxOut = 16 * 1024 * 1024;
     int start = (hint > 0 && hint < 64 * 1024 * 1024) ? hint : qMax(n * 4, 16384);
     if (start > kMaxOut) start = kMaxOut;   // don't front-load a bogus huge size
@@ -201,7 +201,7 @@ void SubtitleSearch::searchSubDL(const QString &title, int tmdbId, int season, i
     QUrl url(QStringLiteral("https://api.subdl.com/api/v1/subtitles"));
     QUrlQuery q;
     q.addQueryItem(QStringLiteral("api_key"), subdlKey());
-    // tmdb_id pins the exact title — "Michael" otherwise matches a dozen films.
+    // tmdb_id pins the exact title: "Michael" otherwise matches a dozen films.
     if (tmdbId > 0) q.addQueryItem(QStringLiteral("tmdb_id"), QString::number(tmdbId));
     else q.addQueryItem(QStringLiteral("film_name"), title);
     q.addQueryItem(QStringLiteral("languages"), codes.join(QLatin1Char(',')));
@@ -446,7 +446,7 @@ void SubtitleSearch::downloadOpenSubtitles(const SubtitleResult &r, const QStrin
         const auto doc = QJsonDocument::fromJson(reply->readAll());
         const QString link = doc.object().value(QStringLiteral("link")).toString();
         if (link.isEmpty()) {
-            // quota exhausted or API error — surface the message OpenSubtitles sent
+            // quota exhausted or API error: surface the message OpenSubtitles sent
             emit errorOccurred(doc.object().value(QStringLiteral("message")).toString());
             return;
         }

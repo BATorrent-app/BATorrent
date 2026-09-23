@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — streaming slice. Piece-priority/deadline shaping and the
+// SessionManager: streaming slice. Piece-priority/deadline shaping and the
 // byte-availability queries the local StreamServer polls while playing a file
 // mid-download. Split out of sessionmanager.cpp (the engine monolith) verbatim;
 // no behaviour change. The general index/hash helpers stay in the core file.
@@ -38,7 +38,7 @@ void SessionManager::prioritizeFilePieceBoundaries(int torrentIndex, int fileInd
     const int lastPiece  = int((fileOffset + fileSize - 1) / pieceSize);
 
     // Boost 1% of the file's piece count at each end (like qBittorrent),
-    // with a minimum of 1 piece. This adapts to large files — a 96GB game
+    // with a minimum of 1 piece. This adapts to large files: a 96GB game
     // gets ~150 pieces boosted vs the previous fixed 4+2.
     const int filesPieces = lastPiece - firstPiece + 1;
     const int numToBoost = std::max(1, static_cast<int>(std::ceil(filesPieces * 0.01)));
@@ -49,7 +49,7 @@ void SessionManager::prioritizeFilePieceBoundaries(int torrentIndex, int fileInd
     for (int k = 0; k < numToBoost; ++k) boost(firstPiece + k);
     // The tail matters for playback start: an MP4 with its 'moov' atom at EOF is
     // unplayable until the last pieces arrive. Under sequential_download a high
-    // priority alone won't fetch them early — only a deadline jumps the in-order
+    // priority alone won't fetch them early: only a deadline jumps the in-order
     // queue. Give the tail a deadline so the player can start without waiting for
     // the whole file. (The head is covered by sequential + the reactive window.)
     for (int k = 0; k < numToBoost; ++k) {
@@ -98,7 +98,7 @@ QString SessionManager::streamFilePath(int torrentIndex, int fileIndex) const
     QString abs = savePath + QLatin1Char('/') + rel;
 
     if (QFileInfo::exists(abs)) return abs;
-    // toggle the ".!bt" incomplete suffix — the on-disk name may lag the mapping
+    // toggle the ".!bt" incomplete suffix: the on-disk name may lag the mapping
     if (abs.endsWith(QStringLiteral(".!bt"))) {
         const QString plain = abs.chopped(4);
         if (QFileInfo::exists(plain)) return plain;
@@ -186,6 +186,6 @@ void SessionManager::streamSetDeadlineWindow(int torrentIndex, int fileIndex,
         if (p < 0 || p >= numPieces) break;
         if (h.have_piece(lt::piece_index_t(p))) continue;
         h.piece_priority(lt::piece_index_t(p), lt::download_priority_t(7));
-        h.set_piece_deadline(lt::piece_index_t(p), k * 40);   // ms — increasing = playback order
+        h.set_piece_deadline(lt::piece_index_t(p), k * 40);   // ms: increasing = playback order
     }
 }

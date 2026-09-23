@@ -9,7 +9,7 @@ import "../theme"
 // White, not accent: a red box read as permanent chrome (same ink as the
 // brand and selected tiles) instead of a transient "look here".
 //
-// Parenting to the target (not mapToItem) — layout can settle after the first
+// Parenting to the target (not mapToItem): layout can settle after the first
 // map, and a stale point left the callout on the wrong tile ~1 in 5 times.
 Item {
     id: focus

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Local dev build of the FORK (vendored libtorrent in third_party/libtorrent +
-# our engine patches), embedding the metadata API keys from .env — same as
+# our engine patches), embedding the metadata API keys from .env: same as
 # dev-build.sh but with BAT_LIBTORRENT_SOURCE=ON into build-fork/.
 #
 # ALWAYS use this (not a bare `cmake -B build-fork`) so the BAT_*_KEY compile
@@ -61,7 +61,7 @@ fi
 echo "Qt prefix: $QT_PREFIX"
 SSL_PREFIX="$(brew --prefix openssl@3)"
 
-# Apply our engine patches onto the vendored libtorrent (idempotent) — they live
+# Apply our engine patches onto the vendored libtorrent (idempotent): they live
 # as versioned diffs in third_party/patches/, not as working-tree edits.
 if [[ -e third_party/libtorrent/.git ]]; then
   ./scripts/apply-fork-patches.sh

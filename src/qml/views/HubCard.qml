@@ -79,7 +79,7 @@ Item {
         }
 
         // games: state-driven primary action (Install / Extracting / Play / …).
-        // The label IS the differentiation — never a blind double-click.
+        // The label IS the differentiation: never a blind double-click.
         Rectangle {
             id: stateBtn
             visible: card.isGame && card.item.installState !== 0 && card.item.installState !== 5
@@ -117,7 +117,7 @@ Item {
             }
         }
 
-        // "playing now" badge — dark-glass pill with a pulsing red dot: the
+        // "playing now" badge: dark-glass pill with a pulsing red dot: the
         // pulse says "live", the surface stays dark (color as signal)
         Rectangle {
             visible: card.item.playing === true

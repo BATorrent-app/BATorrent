@@ -189,7 +189,7 @@ void armMacDockReopen(QObject *rootObj, QApplication *app)
     QTimer::singleShot(2500, app, [dockArmed]() { *dockArmed = true; });
     // QPointer, not a raw capture: the context object is `app`, which outlives
     // the QML root, so on shutdown (or any engine teardown) this still fires
-    // with a dangling pointer and qobject_cast reads freed memory — SIGSEGV
+    // with a dangling pointer and qobject_cast reads freed memory: SIGSEGV
     // inside setApplicationState, i.e. a crash while the app is being brought
     // to the front.
     QPointer<QObject> root(rootObj);

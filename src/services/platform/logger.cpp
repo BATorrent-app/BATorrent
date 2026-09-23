@@ -22,7 +22,7 @@ void Logger::init()
     const QString lvl = s.value("logLevel", "Info").toString();
     m_level = levelFromName(lvl);
 
-    // Env var override — useful for one-off troubleshooting without touching
+    // Env var override: useful for one-off troubleshooting without touching
     // QSettings or rebuilding.
     QByteArray env = qgetenv("BATORRENT_LOG_LEVEL");
     if (!env.isEmpty())

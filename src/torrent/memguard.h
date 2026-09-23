@@ -2,7 +2,7 @@
 
 // Decision logic for the memory safety-valve, split out as a pure function so it
 // can be unit-tested without a live session. The guard exists to catch a runaway
-// allocation bug — NOT normal operation — so its input must be the app's PRIVATE
+// allocation bug, NOT normal operation, so its input must be the app's PRIVATE
 // memory (see currentRssBytes), never the OS working/resident set: libtorrent 2.x
 // maps the download files, so the working set balloons with reclaimable file-cache
 // pages that are not a leak (this is what false-paused real users' downloads).

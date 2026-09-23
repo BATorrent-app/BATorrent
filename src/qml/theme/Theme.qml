@@ -37,16 +37,16 @@ QtObject {
 
     // ---------- fonts ----------
     // IBM Plex Sans is bundled (added via QFontDatabase in main.cpp) and used on
-    // every platform so the UI is pixel-identical across macOS/Windows/Linux —
+    // every platform so the UI is pixel-identical across macOS/Windows/Linux:
     // the system fonts (SF / Segoe UI) diverge in family and metrics otherwise.
     readonly property string fontSans: "IBM Plex Sans"
     readonly property string fontMono: Qt.platform.os === "windows" ? "Consolas" : (Qt.platform.os === "osx" ? "Menlo" : "monospace")
-    // tabular figures for numeric readouts (font.features: Theme.tnum) — Plex
+    // tabular figures for numeric readouts (font.features: Theme.tnum); Plex
     // aligns digits like a mono font without the terminal texture; mono stays
     // only for raw data (hashes, logs)
     readonly property var tnum: ({ "tnum": true })
 
-    // Preview triplets for a theme you are NOT currently in — the onboarding
+    // Preview triplets for a theme you are NOT currently in: the onboarding
     // shows all six side by side, and bg/panel/accent below can only answer for
     // the active one. Keep in step with the chains right under this.
     readonly property var swatches: [
@@ -61,7 +61,7 @@ QtObject {
     // ---------- state → colour ----------
     // One home for the language, because the dot, the label and the progress
     // bar have to agree: done green, seeding amber, paused grey, trouble red.
-    // Downloading keeps the brand accent — green there would collide with done,
+    // Downloading keeps the brand accent: green there would collide with done,
     // which is what green already means everywhere else in the app.
     function fillFor(k) {
         if (k === "finished" || k === "completed") return grn
@@ -100,7 +100,7 @@ QtObject {
         name === "darkstar" ? "#130b22" :
         name === "matrix"   ? "#0b160d" : "#18181b"
 
-    // top navigation surface — the darkest band of the chrome ladder
+    // top navigation surface: the darkest band of the chrome ladder
     // (nav < bg < panel), so the global bar reads one level below the page
     readonly property color nav:
         name === "custom"   ? Qt.darker(customPanelColor, 1.45) :
@@ -204,7 +204,7 @@ QtObject {
 
 
     // ---------- custom theme (name === "custom"): active profile colors ----------
-    // Six user colors (bg/panel/text + 3 accents). No legibility auto-fixing —
+    // Six user colors (bg/panel/text + 3 accents). No legibility auto-fixing:
     // the user owns the contrast. Secondary text tones (t2-t4) and hairlines are
     // derived from the text/bg colors by opacity so they track the user's palette.
     readonly property color customBgColor:        typeof themeBridge !== "undefined" ? themeBridge.cBg        : "#0e0e10"
@@ -227,7 +227,7 @@ QtObject {
         name === "sakura"   ? "#be185d" :
         name === "darkstar" ? "#7e22ce" :
         name === "matrix"   ? "#18a84c" : "#c01f18"
-    // --red-t (accent text). For custom, just the primary itself — the user
+    // --red-t (accent text). For custom, just the primary itself: the user
     // owns the contrast (no auto legibility fixing).
     readonly property color accentText:
         name === "custom"   ? customPrimaryColor :
@@ -250,7 +250,7 @@ QtObject {
         name === "matrix"   ? "#c2f06a" :
         (name === "light" || name === "sakura") ? "#9a6710" : "#e0b454"
 
-    // .fl-pa (paused fill) — neutral derived from the user's text in custom
+    // .fl-pa (paused fill): neutral derived from the user's text in custom
     readonly property color pausedFill:
         name === "custom" ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.42) :
         isLight ? "#6a6c73" : "#54555c"
@@ -279,7 +279,7 @@ QtObject {
     readonly property int durSlow: 240
 
     // Reduced motion: fewer and gentler animations, NOT zero. Opacity and colour
-    // transitions stay — they explain what changed. What goes is displacement and
+    // transitions stay: they explain what changed. What goes is displacement and
     // scale, which is what actually triggers vestibular discomfort. Qt exposes no
     // OS-level preference, so this has to be our own switch.
     readonly property bool reduceMotion:
@@ -304,7 +304,7 @@ QtObject {
         typeof themeBridge !== "undefined" ? themeBridge.cBgOpacity / 100 : 0.55
     readonly property bool hasBgImage: bgImageSource !== ""
 
-    // troca de tema (chamada pela SettingsWindow — NUNCA por demo control na subbar)
+    // troca de tema (chamada pela SettingsWindow: NUNCA por demo control na subbar)
     function cycle() {
         var order = ["dark", "light", "midnight", "sakura", "darkstar", "custom"]
         setName(order[(order.indexOf(name) + 1) % order.length])

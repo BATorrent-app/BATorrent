@@ -101,7 +101,7 @@ Menu {
         }
     }
     component Sep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-    // submenu title rows are spawned from this delegate — the gutter keeps
+    // submenu title rows are spawned from this delegate: the gutter keeps
     // their text on the same column as the icon rows above
     delegate: CtxItem { gutter: true }
 
@@ -119,7 +119,7 @@ Menu {
 
     // Games lead the menu with an accent button (state-driven, Steam model):
     // Play when ready, else Install. A torrent is a game XOR a video, so only
-    // one of gameCtx/playCtx is ever visible — both sit at the very top.
+    // one of gameCtx/playCtx is ever visible: both sit at the very top.
     MenuItem {
         id: gameCtx
         // depend on selectedHash (NOTIFY selectionChanged), not win.selected:
@@ -198,7 +198,7 @@ Menu {
     // the menu doesn't run the whole height of the screen.
     CtxItem { iconSrc: "qrc:/icons/pause.svg"; text: (i18n.language, i18n.t("ctx_pause_download")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
     CtxItem {
-        // a completed torrent has no download to resume — what this action
+        // a completed torrent has no download to resume: what this action
         // actually does there is put it back to seeding; say so
         readonly property bool seedAgain: session.selectedDataDone || session.selectedCompleted
         iconSrc: seedAgain ? "qrc:/icons/upload.svg" : "qrc:/icons/play.svg"
@@ -207,7 +207,7 @@ Menu {
         onTriggered: session.resumeSelected()
     }
     CtxItem { iconSrc: "qrc:/icons/open.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
-    // promoted out of the Copy submenu — the two most-reached actions (tester, MotrixNext ref)
+    // promoted out of the Copy submenu: the two most-reached actions (tester, MotrixNext ref)
     CtxItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
     CtxItem { iconSrc: "qrc:/icons/copy.svg"; text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
     CtxItem {
@@ -228,7 +228,7 @@ Menu {
     }
     CtxItem { iconSrc: "qrc:/icons/pencil.svg"; text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
     CtxItem {
-        // only once the data is done — marking mid-download freezes the torrent
+        // only once the data is done: marking mid-download freezes the torrent
         visible: session.selectedDataDone || session.selectedCompleted
         height: visible ? implicitHeight : 0
         iconSrc: "qrc:/icons/check.svg"
@@ -274,7 +274,7 @@ Menu {
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
 
         // The built-ins below are static (catLabel translates them).
-        // Anything the user typed via "Other…" is appended here — before this,
+        // Anything the user typed via "Other…" is appended here: before this,
         // a custom category was applied to the torrent but never appeared in
         // the list, so it looked like it hadn't been saved.
         onAboutToShow: customCats.model = host.customCategories()

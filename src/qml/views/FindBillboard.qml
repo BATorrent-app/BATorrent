@@ -98,7 +98,7 @@ Item {
                     : ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true; cache: true
-                // decode small — it's blurred anyway, and blurring a full-res
+                // decode small: it's blurred anyway, and blurring a full-res
                 // backdrop every frame is what made scroll crawl on Windows/D3D
                 sourceSize: Qt.size(640, 360)
                 visible: false
@@ -112,7 +112,7 @@ Item {
                 brightness: -0.25
                 saturation: -0.1
             }
-            // horizontal scrim — heavy on the left for text legibility
+            // horizontal scrim: heavy on the left for text legibility
             Rectangle {
                 anchors.fill: parent
                 gradient: Gradient {
@@ -123,7 +123,7 @@ Item {
                 }
             }
 
-            // left: crisp poster (rounded via mask) — the vertical anchor
+            // left: crisp poster (rounded via mask); the vertical anchor
             Item {
                 id: heroPoster
                 anchors.left: parent.left; anchors.leftMargin: Theme.sp5
@@ -254,7 +254,7 @@ Item {
             }
         }
 
-        // carousel dots — bottom-right, click to jump between featured items
+        // carousel dots: bottom-right, click to jump between featured items
         Row {
             anchors.right: parent.right
             anchors.rightMargin: Theme.sp5

@@ -55,7 +55,7 @@ BatDialog {
     }
     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
 
-    // real changelog (HTML) rendered as rich text — scrolls inside the dialog body
+    // real changelog (HTML) rendered as rich text: scrolls inside the dialog body
     Text {
         Layout.fillWidth: true
         Layout.topMargin: Theme.sp2

@@ -17,7 +17,7 @@ class QmlThemeBridge : public QObject
     // palette (6 colors + bg image + opacity). The active one drives Theme.qml.
     Q_PROPERTY(QVariantList customProfiles READ customProfiles NOTIFY profilesChanged)
     Q_PROPERTY(int activeProfile READ activeProfile WRITE setActiveProfile NOTIFY changed)
-    // Active-profile colors, read by Theme.qml (no per-token signal needed —
+    // Active-profile colors, read by Theme.qml (no per-token signal needed:
     // changed() re-evaluates all of them).
     Q_PROPERTY(QString cBg        READ cBg        NOTIFY changed)
     Q_PROPERTY(QString cPanel     READ cPanel     NOTIFY changed)
@@ -30,12 +30,12 @@ class QmlThemeBridge : public QObject
     // True when the OS taskbar/tray is in light mode (for logo contrast).
     Q_PROPERTY(bool osLight READ osLight NOTIFY osSchemeChanged)
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
-    // App-icon picker — independent of the UI theme (issue #15). Swaps the live
+    // App-icon picker: independent of the UI theme (issue #15). Swaps the live
     // Dock (macOS) / taskbar+window (Windows) icon; does NOT touch the signed
     // bundle's Finder/.exe icon.
     Q_PROPERTY(QString appIconChoice READ appIconChoice WRITE setAppIcon NOTIFY appIconChanged)
     // True when the process is on the Software scene-graph backend (or forced
-    // via settings) — QML can skip MultiEffect / heavy shaders.
+    // via settings): QML can skip MultiEffect / heavy shaders.
     Q_PROPERTY(bool softwareRenderer READ softwareRenderer NOTIFY changed)
     // Dev-only: with BAT_QML_DIR set, icons load from that tree's ../icons
     // instead of the compiled resource, so an SVG edit shows up like a QML one.
@@ -84,7 +84,7 @@ public:
     QString appVersion() const;
     Q_INVOKABLE QString releaseNotes() const;     // changelog HTML (shared with legacy dialog)
     Q_INVOKABLE void markBootHealthy() const;     // UI is up → clear the boot-crash sentinel
-    Q_INVOKABLE QPointF cursorPos() const;        // global cursor — anchors the tray popup at the click
+    Q_INVOKABLE QPointF cursorPos() const;        // global cursor: anchors the tray popup at the click
     QIcon trayIcon() const;   // logo recolored for the current OS scheme
 
     // ---- app-icon picker ----

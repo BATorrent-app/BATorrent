@@ -45,7 +45,7 @@
 #include <libtorrent/aux_/ip_helpers.hpp>   // fork-only geo-locality hook
 #endif
 
-// DHT routing table persisted across runs — a warm table means peer discovery
+// DHT routing table persisted across runs: a warm table means peer discovery
 // (and the download ramp) starts fast instead of re-bootstrapping the DHT from
 // scratch every launch (~30-60s cold). Path sits next to the resume data.
 static QString dhtStatePath()
@@ -57,7 +57,7 @@ static QString dhtStatePath()
 static lt::session_params loadStartupParams()
 {
     // Top Sentry crasher (NATIVE-QT-4) is an AV inside libtorrent during
-    // session construction — a try/catch can't stop an access violation, so
+    // session construction: a try/catch can't stop an access violation, so
     // after a crashed boot the retry starts with fresh params instead of
     // re-feeding whatever state killed the last run.
     if (QSettings().value(QStringLiteral("bootCrashes"), 0).toInt() >= 1)
@@ -70,7 +70,7 @@ static lt::session_params loadStartupParams()
                 return lt::read_session_params(
                     lt::span<const char>(data.constData(), data.size()),
                     lt::session_handle::save_dht_state);
-            } catch (...) { /* corrupt/incompatible state — start fresh */ }
+            } catch (...) { /* corrupt/incompatible state: start fresh */ }
         }
     }
     return lt::session_params();
@@ -99,14 +99,14 @@ SessionManager::SessionManager(QObject *parent)
                  // once per minute per torrent) so a crash mid-download
                  // doesn't force a full re-hash on next launch.
                  | lt::alert_category::piece_progress
-                 // file_progress is required for file_completed_alert —
+                 // file_progress is required for file_completed_alert:
                  // without it the alert is filtered and the .!bt suffix
                  // never gets stripped when a file finishes.
                  | lt::alert_category::file_progress);
 
     // Enable DHT for trackerless torrents / magnet links
     pack.set_bool(lt::settings_pack::enable_dht, true);
-    // libtorrent's default bootstrap is a single host (dht.libtorrent.org) —
+    // libtorrent's default bootstrap is a single host (dht.libtorrent.org):
     // if it's down or ISP-blocked, a fresh install never joins the DHT and
     // trackerless magnets can't fetch metadata. Same router list as qBittorrent.
     pack.set_str(lt::settings_pack::dht_bootstrap_nodes,
@@ -121,7 +121,7 @@ SessionManager::SessionManager(QObject *parent)
     // Transmission; substantially helps home / corporate networks.
     pack.set_bool(lt::settings_pack::enable_lsd, true);
 
-    // Identify ourselves to peers and trackers — private trackers
+    // Identify ourselves to peers and trackers: private trackers
     // sometimes reject "LT" defaults; sending our own user-agent + a "BT"
     // fingerprint avoids that whole class of refusal.
     pack.set_str(lt::settings_pack::peer_fingerprint,
@@ -129,7 +129,7 @@ SessionManager::SessionManager(QObject *parent)
     pack.set_str(lt::settings_pack::user_agent, "BATorrent/" APP_VERSION);
 
     // (.!bt suffix for incomplete files is applied per-file in addTorrent
-    //  and stripped on file_completed_alert below — libtorrent doesn't have
+    //  and stripped on file_completed_alert below: libtorrent doesn't have
     //  a session-wide setting for this.)
 
     // Enable UPnP and NAT-PMP for automatic port forwarding
@@ -147,7 +147,7 @@ SessionManager::SessionManager(QObject *parent)
     pack.set_int(lt::settings_pack::aio_threads, 10);
     pack.set_int(lt::settings_pack::hashing_threads, 2);
     // On libtorrent 2.0's mmap disk backend a large file pool throttles throughput
-    // (upstream #6561 — qBT's 5000 cut NVMe speed to a third); 40 matches our UI default.
+    // (upstream #6561: qBT's 5000 cut NVMe speed to a third); 40 matches our UI default.
     pack.set_int(lt::settings_pack::file_pool_size, 40);
     // The default 1 MiB disk write queue is the most common real-world download
     // stall: when it fills, libtorrent stops requesting blocks. 6 MiB keeps the
@@ -165,14 +165,14 @@ SessionManager::SessionManager(QObject *parent)
     // torrent reaches a healthy peer set in seconds instead of slowly climbing.
     pack.set_int(lt::settings_pack::connections_limit, 500);
     pack.set_int(lt::settings_pack::connection_speed, 150);
-    // Burst of outgoing connections fired the instant a torrent is added — this is
+    // Burst of outgoing connections fired the instant a torrent is added: this is
     // the biggest lever on the slow first-30s ramp (default 30 trickles in). Capped
     // by peers actually available, so it's harmless on small swarms.
     pack.set_int(lt::settings_pack::torrent_connect_boost, 100);
     pack.set_int(lt::settings_pack::unchoke_slots_limit, 20);
     // Announce to every tracker tier at once (qBittorrent default). Magnet
     // trackers each land in their own tier, so without this only the first
-    // responsive tracker is announced — a real peer-discovery deficit.
+    // responsive tracker is announced: a real peer-discovery deficit.
     pack.set_bool(lt::settings_pack::announce_to_all_tiers, true);
     // Opt-in (default off): stop uTP from throttling our own TCP peers. Faster on
     // a dedicated fat link; can add bufferbloat on a shared line, so it's gated.
@@ -180,12 +180,12 @@ SessionManager::SessionManager(QObject *parent)
                  QSettings("BATorrent", "BATorrent").value("preferTcp", false).toBool()
                      ? lt::settings_pack::prefer_tcp
                      : lt::settings_pack::peer_proportional);
-    // Prefer RC4 encryption (like qBittorrent) — some private trackers
+    // Prefer RC4 encryption (like qBittorrent): some private trackers
     // penalize clients that accept plaintext.
     pack.set_int(lt::settings_pack::allowed_enc_level,
                  lt::settings_pack::pe_rc4);
     pack.set_bool(lt::settings_pack::prefer_rc4, true);
-    // Don't fall back to a random port if the configured one is busy —
+    // Don't fall back to a random port if the configured one is busy:
     // the user explicitly set a port for their port-forward rule.
     pack.set_bool(lt::settings_pack::listen_system_port_fallback, false);
 
@@ -310,7 +310,7 @@ SessionManager::SessionManager(QObject *parent)
     {
         int port = settings.value("listenPort", 0).toInt();
         // First run: stable random high port instead of libtorrent's 6881
-        // default — the 688x range is a classic ISP-throttle target and
+        // default: the 688x range is a classic ISP-throttle target and
         // collides with other clients on the same machine (with
         // listen_system_port_fallback off, a busy port = no listen socket
         // at all). Persisted so the user's port forward stays valid.
@@ -335,7 +335,7 @@ SessionManager::SessionManager(QObject *parent)
     // the process is the synchronous parse inside loadResumeData(). So we raise
     // the flag right before it and lower it right after: if the parse crashes,
     // the flag survives to the next launch and we skip resume data once to
-    // recover. Crucially the window is just loadResumeData()'s duration (ms) —
+    // recover. Crucially the window is just loadResumeData()'s duration (ms):
     // an earlier version only cleared the flag after 15s of uptime, so quitting
     // before then looked like a crash and made every torrent vanish for a launch.
     migrateLegacyResumeData();   // pull torrents from the pre-3.0 data dir if needed
@@ -362,7 +362,7 @@ SessionManager::SessionManager(QObject *parent)
         settings.setValue("startupInProgress", true);
         settings.sync();
         loadResumeData();
-        // Survived the parse — clear immediately; not crash-gated on uptime.
+        // Survived the parse: clear immediately; not crash-gated on uptime.
         settings.setValue("startupInProgress", false);
         settings.sync();
     }

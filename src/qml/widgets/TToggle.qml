@@ -16,7 +16,7 @@ Rectangle {
     radius: 999
     // ON is a light track with a dark knob, not a red pill. A Settings page can
     // carry eight of these at once, and filling every one with the accent turned
-    // red into a surface — the opposite of the rule the rest of the app follows,
+    // red into a surface: the opposite of the rule the rest of the app follows,
     // where red means something is happening. Red stays for signals; "this option
     // is on" is a state, and state reads fine in neutral.
     color: on ? Theme.t1 : Theme.field

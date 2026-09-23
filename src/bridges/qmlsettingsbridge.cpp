@@ -105,7 +105,7 @@ QVariant QmlSettingsBridge::get(const QString &key) const
     if (key == QLatin1String("engineSplit"))
         return SettingsPolicy::engineSplitFromMode(
             QSettings().value(QStringLiteral("engineMode")).toString());
-    // IPC engine mode: no in-process session — read the persisted value from the
+    // IPC engine mode: no in-process session; read the persisted value from the
     // shared QSettings store (which is what the engine child applies from).
     if (!m_session) return QSettings().value(key);
     SessionManager *s = m_session;
@@ -218,7 +218,7 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
         emit changed(); return;
     }
     // per-type file/protocol association toggles (Windows registry; a no-op
-    // persist elsewhere — the rows are hidden off-Windows anyway)
+    // persist elsewhere: the rows are hidden off-Windows anyway)
     if (key == QLatin1String("assocTorrent") || key == QLatin1String("assocMagnet")
         || key == QLatin1String("assocBittorrent")) {
         QSettings().setValue(key, v.toBool());
@@ -287,7 +287,7 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
         emit changed(); return;
     }
 
-    // Session-affecting settings live-apply through the engine — in-process AND
+    // Session-affecting settings live-apply through the engine: in-process AND
     // in split mode, where the engine child applies + persists via the applySetting
     // RPC. Unknown keys are UI-only prefs → the shared QSettings store.
     if (m_engine && m_engine->applySetting(key, v)) { emit changed(); return; }
@@ -407,8 +407,8 @@ QString QmlSettingsBridge::fullRestore(const QString &path)
 
 namespace {
 // A tunnel is point-to-point at the OS level, and every VPN client names its
-// device from the same short list. Neither test is conclusive on its own — a
-// mobile-broadband modem is also point-to-point — but the pair is right often
+// device from the same short list. Neither test is conclusive on its own: a
+// mobile-broadband modem is also point-to-point: but the pair is right often
 // enough to label, and the label is a hint, not a claim.
 bool looksLikeTunnel(const QNetworkInterface &iface)
 {

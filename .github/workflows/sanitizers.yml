@@ -1,6 +1,6 @@
 name: Sanitizers
 
-# ASan + UBSan Catch2 — heavy. Weekly / manual / label `ci-deep` only.
+# ASan + UBSan Catch2: heavy. Weekly / manual / label `ci-deep` only.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

@@ -47,7 +47,7 @@ ColumnLayout {
         horizontalAlignment: Text.AlignHCenter
         text: (i18n.language, i18n.t("detailpeers_empty")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans
     }
-    // loading placeholder — skeleton rows while the peer list is being built
+    // loading placeholder: skeleton rows while the peer list is being built
     ColumnLayout {
         visible: pane.loading && pane.peers.length === 0
         Layout.fillWidth: true; Layout.topMargin: 6; spacing: 0
@@ -82,7 +82,7 @@ ColumnLayout {
                     // One treatment per row, identical on every platform: our SVG
                     // when the country is one of the 19 we ship, otherwise a code
                     // chip of the SAME size. This used to fall back to the emoji
-                    // flag on mac and a bare code on Windows — so the column mixed
+                    // flag on mac and a bare code on Windows: so the column mixed
                     // flat 3:2 artwork with rounded emoji, and the same screen
                     // looked different per OS.
                     Image {
@@ -117,7 +117,7 @@ ColumnLayout {
             }
         }
     }
-    // 2 lines: flag + ip ·· progress / client ·· ↓ ↑ — same fields, sidebar width
+    // 2 lines: flag + ip ·· progress / client ·· ↓ ↑; same fields, sidebar width
     Component {
         id: compactRow
         Rectangle {

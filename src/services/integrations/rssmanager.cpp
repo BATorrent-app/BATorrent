@@ -36,7 +36,7 @@ void RssManager::setSession(IEngine *session, const QString &savePath)
     m_session = session;
     m_defaultSavePath = savePath;
 
-    // Items are NOT persisted — only the feed definitions are. So every launch
+    // Items are NOT persisted: only the feed definitions are. So every launch
     // starts with an empty list, and checkAllFeeds() won't refill it because it
     // honours checkIntervalMin and lastChecked was minutes ago: the feed sat at
     // "0 items" for up to half an hour, looking broken. Refetch exactly the feeds
@@ -159,7 +159,7 @@ void RssManager::checkFeed(int index)
     req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
     auto *reply = m_net->get(req);
 
-    // Capture by URL, not index — if the user removes a feed below this one
+    // Capture by URL, not index: if the user removes a feed below this one
     // while the request is in flight, the index would shift and the reply
     // would parse the wrong feed.
     const QString feedUrl = m_feeds[index].url;
@@ -306,7 +306,7 @@ void RssManager::autoDownloadMatching(int feedIndex)
 }
 
 // A feed item's link is one of three things: a magnet, a remote .torrent, or (rarely)
-// a local path. Only magnets can go straight to the engine — SessionManager::addTorrent
+// a local path. Only magnets can go straight to the engine: SessionManager::addTorrent
 // opens its argument as a FILE, so handing it an https URL just throws. The auto-download
 // rules already fetched-then-added; the manual click didn't, so clicking an item on any
 // feed that publishes .torrent links (Nyaa, most trackers) silently did nothing.

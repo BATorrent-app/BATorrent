@@ -5,7 +5,7 @@
 // The session API contract shared by the UI and the engine. SessionManager
 // implements it in-process today; an IpcEngine will implement it over a local
 // socket once the engine runs in its own process, so an engine crash can't take
-// the UI down. The UI talks ONLY to IEngine* — never to SessionManager directly.
+// the UI down. The UI talks ONLY to IEngine*: never to SessionManager directly.
 // See internal/ENGINE_SPLIT_PLAN.md.
 #ifndef BATORRENT_IENGINE_H
 #define BATORRENT_IENGINE_H

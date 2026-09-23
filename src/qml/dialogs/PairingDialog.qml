@@ -26,7 +26,7 @@ BatDialog {
     property var rows: []
 
     // The QR encodes the URL with the credentials baked in (/?pair=base64(user:pass)),
-    // so scanning it logs the phone straight in — no typing the IP or password.
+    // so scanning it logs the phone straight in: no typing the IP or password.
     function pairUrl() {
         if (!api || !api.url || !set) return ""
         return api.url + "?pair=" + encodeURIComponent(Qt.btoa(set.webUiUser() + ":" + dlg.pw))

@@ -24,11 +24,11 @@ enum class Engine {
 };
 
 // How the orchestrator should treat the release once on disk.
-//   PortableA  — no installer; extract then run the game exe directly.
-//   SilentB    — generic installer that honours documented silent switches.
-//   GuidedC    — installer where interaction is the point (FitGirl/DODI repacks):
+//   PortableA : no installer; extract then run the game exe directly.
+//   SilentB   : generic installer that honours documented silent switches.
+//   GuidedC   : installer where interaction is the point (FitGirl/DODI repacks):
 //                open it, let the user finish, then detect the produced exe.
-//   IsoD       — scene ISO; mount, open the inner setup (guided), copy crack.
+//   IsoD      : scene ISO; mount, open the inner setup (guided), copy crack.
 enum class Tier { PortableA, SilentB, GuidedC, IsoD };
 
 struct SilentInvocation {
@@ -53,7 +53,7 @@ SilentInvocation silentInvocation(Engine e, const QString &installerPath, const 
 Tier tierForEngine(Engine e);
 
 // FitGirl/DODI heuristic: an Inno installer shipped next to a FreeArc payload
-// (setup-*.bin / *.arc) — silent mode would install only default components, so
+// (setup-*.bin / *.arc): silent mode would install only default components, so
 // these must go through the guided flow regardless of the engine being silenceable.
 bool isLikelyRepack(const QString &installerPath, const QStringList &siblingFiles);
 

@@ -7,7 +7,7 @@
 
 // Consumes Hydra-Launcher-format game "sources": JSON catalogs of
 //   { "name": "...", "downloads": [ { "title", "uris" (magnets), "fileSize", "uploadDate" } ] }
-// The app never bundles the pirated content — the user adds a source URL, we
+// The app never bundles the pirated content: the user adds a source URL, we
 // fetch + cache the catalog and search it locally. There is no game-search API;
 // these community JSON catalogs are the de-facto standard.
 

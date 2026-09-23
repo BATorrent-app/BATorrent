@@ -121,7 +121,7 @@ Rectangle {
         property bool detailsCollapsed: false
         readonly property bool detailsShownCollapsed: false
 
-        // Delegates like the real window does — the preview must not carry its
+        // Delegates like the real window does: the preview must not carry its
         // own copy of the state language, or the two drift and the wizard shows
         // a colour the app no longer uses.
         function fillFor(key) { return Theme.fillFor(key) }

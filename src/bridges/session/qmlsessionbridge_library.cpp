@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// QmlSessionBridge — library slice. The movie-library poster projection (folds
+// QmlSessionBridge: library slice. The movie-library poster projection (folds
 // the torrent list into resolved cover cards, games filtered out) and the
 // watchlist (persisted in QSettings as JSON). Split out of qmlsessionbridge.cpp
 // verbatim; no behaviour change.

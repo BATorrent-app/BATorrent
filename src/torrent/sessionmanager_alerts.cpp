@@ -2,9 +2,9 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — alert-handling slice. processAlerts() pumps the libtorrent
+// SessionManager: alert-handling slice. processAlerts() pumps the libtorrent
 // alert queue and dispatches one handler per alert type. This is the engine's
-// event core (and historically its crash epicenter — every handler guards its
+// event core (and historically its crash epicenter: every handler guards its
 // libtorrent handle before touching it). Split out of sessionmanager.cpp
 // verbatim; no behaviour change. cachedStatus() stays in core (general helper).
 
@@ -31,7 +31,7 @@
 void SessionManager::processAlerts()
 {
     // Cap work per tick so an alert storm can't freeze the GUI thread. Alerts
-    // stay valid until the *next* pop_alerts — drain the current batch across
+    // stay valid until the *next* pop_alerts: drain the current batch across
     // zero-delay ticks instead of dropping mid-batch.
     if (m_alertDrain.empty())
         m_session.pop_alerts(&m_alertDrain);
@@ -80,7 +80,7 @@ void SessionManager::processAlerts()
     }
     m_alertDrain.erase(m_alertDrain.begin(), m_alertDrain.begin() + static_cast<std::ptrdiff_t>(n));
 
-    // Don't keep pumping after quit was requested — otherwise smoke/exit and a
+    // Don't keep pumping after quit was requested: otherwise smoke/exit and a
     // user close can sit behind thousands of resume/check alerts.
     if (!m_alertDrain.empty() && !m_alertDrainScheduled
             && !QCoreApplication::closingDown()) {
@@ -101,7 +101,7 @@ void SessionManager::onStateUpdate(const lt::state_update_alert *su)
         m_statusCache[st.handle] = st;
         // Deferred .!bt strip for files already 100% on resume.
         // Storage is bound by the time we get here, so file_progress
-        // is safe — gate on metadata + has_storage just in case.
+        // is safe: gate on metadata + has_storage just in case.
         auto it = m_pendingResumeStripCheck.find(st.handle);
         if (it != m_pendingResumeStripCheck.end() && st.has_metadata) {
             try {
@@ -120,7 +120,7 @@ void SessionManager::onStateUpdate(const lt::state_update_alert *su)
                     }
                 }
             } catch (const std::exception &) {
-                // Storage still not ready — retry on next tick.
+                // Storage still not ready: retry on next tick.
                 continue;
             }
             m_pendingResumeStripCheck.erase(it);
@@ -184,7 +184,7 @@ void SessionManager::onResumeDataFailed()
 
 void SessionManager::onPieceFinished(const lt::piece_finished_alert *pf)
 {
-    // Piece just verified — opportunistically save resume data for this
+    // Piece just verified: opportunistically save resume data for this
     // torrent so a crash before the next 5-min tick doesn't force a
     // full re-hash on the next launch. Rate-limited per handle (60 s)
     // so a fast torrent doesn't hammer the disk; with the limit, the
@@ -201,7 +201,7 @@ void SessionManager::onPieceFinished(const lt::piece_finished_alert *pf)
 
 void SessionManager::onAlertsDropped(const lt::alerts_dropped_alert *ad)
 {
-    // Alert queue overflow — critical: alerts were silently dropped.
+    // Alert queue overflow: critical: alerts were silently dropped.
     // Means our alert_queue_size was too small or processing too slow.
     qWarning() << "[session] CRITICAL: alerts were dropped! Bitmask:"
                << QString::number(ad->dropped_alerts.to_ulong(), 16);
@@ -220,7 +220,7 @@ void SessionManager::onFastresumeRejected(const lt::fastresume_rejected_alert *f
 
 void SessionManager::onTorrentChecked(const lt::torrent_checked_alert *tc)
 {
-    // Recheck completed — the torrent is back in a consistent state.
+    // Recheck completed: the torrent is back in a consistent state.
     // Re-populate the status cache so queue/auto-pause logic sees the
     // real state instead of the stale pre-recheck snapshot.
     if (tc->handle.is_valid()) {
@@ -231,7 +231,7 @@ void SessionManager::onTorrentChecked(const lt::torrent_checked_alert *tc)
 
 void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
 {
-    // Magnet just got its metadata — file list is now known, so apply
+    // Magnet just got its metadata: file list is now known, so apply
     // the .!bt suffix to each file.
     if (!mr->handle.is_valid()) return;
     auto ti = mr->handle.torrent_file();
@@ -261,7 +261,7 @@ void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
         }
     }
     // Hybrid magnet: the add-time .resume is keyed by the URI's v1 hash, but
-    // from here on resume data persists under get_best() (v2) — drop the
+    // from here on resume data persists under get_best() (v2): drop the
     // stale file so the next launch doesn't double-load the torrent.
     if (auto mit = m_magnetHashes.find(mr->handle); mit != m_magnetHashes.end()) {
         const QString best = QString::fromStdString(
@@ -291,7 +291,7 @@ void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
 
 void SessionManager::onFileCompleted(const lt::file_completed_alert *fc)
 {
-    // File done — drop the .!bt suffix so the file appears with its
+    // File done: drop the .!bt suffix so the file appears with its
     // final name in the file manager and media server scans. The
     // path libtorrent returns here is the *current* renamed path
     // (still suffixed), so we have to strip the ".!bt" ourselves
@@ -308,7 +308,7 @@ void SessionManager::onFileCompleted(const lt::file_completed_alert *fc)
 #ifdef BAT_LIBTORRENT_FORK
 void SessionManager::onExternalIp(const lt::external_ip_alert *ea)
 {
-    // libtorrent learns our public IP from peers/trackers. IPv4 only — the
+    // libtorrent learns our public IP from peers/trackers. IPv4 only: the
     // GeoIP DB is IPv4, and a v6 self-address can't seed the v4 classifier.
     const lt::address &a = ea->external_address;
     if (!a.is_v4()) return;

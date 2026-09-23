@@ -11,7 +11,7 @@
 
 namespace {
 // "token surrounded by separators" matcher, compiled once per token ever
-// (parse() runs per search row — rebuilding ~70 regexes each call is real cost).
+// (parse() runs per search row: rebuilding ~70 regexes each call is real cost).
 // Main-thread only, like the rest of the parser.
 const QRegularExpression &tokenRe(const QString &token)
 {
@@ -97,7 +97,7 @@ ParsedName NameParser::parse(const QString &rawName)
         }
     }
 
-    // Anime fansub convention: "[Group] Title - NN (...)" — the number after the
+    // Anime fansub convention: "[Group] Title - NN (...)"; the number after the
     // " - " is the absolute episode. Gated on a leading [group] bracket so it
     // never fires on "Adele - 30" (an album) or "Movie - 2" (a sequel).
     if (result.season < 0) {
@@ -181,14 +181,14 @@ ParsedName NameParser::parse(const QString &rawName)
         QStringLiteral("FLAC"), QStringLiteral("MP3"), QStringLiteral("EAC3"),
         QStringLiteral("DD5.1"), QStringLiteral("7.1"),
         QStringLiteral("REMUX"), QStringLiteral("PROPER"),
-        // "REPACK" intentionally NOT here — it's ambiguous (game repack vs movie
+        // "REPACK" intentionally NOT here: it's ambiguous (game repack vs movie
         // re-release). Movie repacks also carry resolution+codec, so dropping it
         // keeps movie detection while stopping "Game [Repack]" from scoring video.
         QStringLiteral("EXTENDED"), QStringLiteral("UNRATED"), QStringLiteral("DIRECTOR"),
         QStringLiteral("IMAX"), QStringLiteral("3D"), QStringLiteral("HDR"),
         QStringLiteral("HDR10"), QStringLiteral("DV"), QStringLiteral("DoVi"),
         QStringLiteral("Dual.Audio"), QStringLiteral("MULTI"),
-        // Portuguese (BR) release tags — otherwise left in the title, which broke
+        // Portuguese (BR) release tags: otherwise left in the title, which broke
         // TMDB matches ("007 - Cassino Royale Dublado"). Kept to the unambiguous
         // ones: "Nacional"/"Dub"/"Leg" can be real title words, so we don't strip them.
         QStringLiteral("Dublado"), QStringLiteral("Legendado"),
@@ -280,7 +280,7 @@ ParsedName NameParser::parse(const QString &rawName)
     static const QRegularExpression romanRe(
         QStringLiteral("^(?=[mdclxvi]+$)m{0,3}(?:cm|cd|d?c{0,3})(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})$"),
         QRegularExpression::CaseInsensitiveOption);
-    // English words that are coincidentally valid roman numerals — don't shout
+    // English words that are coincidentally valid roman numerals: don't shout
     // these to upper-case ("Mix" must not become "MIX").
     static const QSet<QString> romanFalsePositives = {
         QStringLiteral("mix"), QStringLiteral("di"), QStringLiteral("mi"),

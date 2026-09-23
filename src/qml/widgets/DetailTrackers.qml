@@ -63,7 +63,7 @@ ColumnLayout {
             }
         }
     }
-    // 2 lines: url ·· ✕ / tier ·· status — same fields, sidebar width
+    // 2 lines: url ·· ✕ / tier ·· status; same fields, sidebar width
     Component {
         id: compactRow
         Rectangle {

@@ -76,7 +76,7 @@ QList<SubtitleCue> parseBlocks(const QStringList &lines, bool vtt)
             textLines << lines[i++];
 
         if (start < 0 || end < 0 || end <= start) continue;   // malformed: skip cue
-        // clean per line, then join — cleanText would strip the <br/> separators
+        // clean per line, then join: cleanText would strip the <br/> separators
         QStringList cleaned;
         for (const QString &tl : textLines) {
             const QString c = cleanText(tl);

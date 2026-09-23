@@ -45,7 +45,7 @@ static bool pumpUntil(Pred pred, int timeoutMs = 8000)
     return pred();
 }
 
-// Build a real, private (offline — no DHT/LSD/PEX) multi-file .torrent under `dir`
+// Build a real, private (offline: no DHT/LSD/PEX) multi-file .torrent under `dir`
 // and return its path. Mirrors the create flow in qmlposterbridge.cpp. `tag`
 // varies the file content (and thus the info hash) so a test can create several
 // distinct fixture torrents without them colliding as duplicates.
@@ -123,18 +123,18 @@ static QApplication &app()
         // touches (or migrates from) the user's real BATorrent data.
         QStandardPaths::setTestModeEnabled(true);
         // A dedicated org that shares NOTHING with the real app or other test
-        // binaries — so wiping our own data dir can never touch real user data or
+        // binaries: so wiping our own data dir can never touch real user data or
         // another suite's fixtures.
         QCoreApplication::setOrganizationName("BATorrentBridgeTest");
         QCoreApplication::setApplicationName("BATorrentBridgeTest");
         // Clear only OUR own leaf dirs so every run starts with an empty session
-        // and isolated settings (never the parent — that's another suite's space).
+        // and isolated settings (never the parent: that's another suite's space).
         for (auto loc : { QStandardPaths::AppDataLocation, QStandardPaths::AppConfigLocation }) {
             const QString p = QStandardPaths::writableLocation(loc);
             if (!p.isEmpty()) QDir(p).removeRecursively();
         }
         // SessionManager persists to its own explicit org ("BATorrent"), not the
-        // test org above — wipe it too so persisted prefs don't leak across runs.
+        // test org above: wipe it too so persisted prefs don't leak across runs.
         QSettings("BATorrent", "BATorrent").clear();
         return new QApplication(s_argc, s_argv);
     }();
@@ -142,7 +142,7 @@ static QApplication &app()
 }
 
 // ============================================================================
-//  QmlPairingBridge — the pairing QR (pure: qrcodegen, no session/GUI)
+//  QmlPairingBridge: the pairing QR (pure: qrcodegen, no session/GUI)
 // ============================================================================
 TEST_CASE("Pairing: qrRowsForUrl encodes a square binary matrix", "[bridge][pairing]")
 {
@@ -176,7 +176,7 @@ TEST_CASE("Pairing: empty URL yields no QR rows", "[bridge][pairing]")
 }
 
 // ============================================================================
-//  QmlThemeBridge — theme name persistence
+//  QmlThemeBridge: theme name persistence
 // ============================================================================
 TEST_CASE("Theme: themeName round-trips through settings", "[bridge][theme]")
 {
@@ -192,7 +192,7 @@ TEST_CASE("Theme: themeName round-trips through settings", "[bridge][theme]")
 }
 
 // ============================================================================
-//  QmlSessionBridge — selection state with no torrents
+//  QmlSessionBridge: selection state with no torrents
 // ============================================================================
 TEST_CASE("Session bridge: empty session has no selection", "[bridge][session]")
 {
@@ -210,7 +210,7 @@ TEST_CASE("Session bridge: empty session has no selection", "[bridge][session]")
 }
 
 // ============================================================================
-//  QmlSearchBridge — "Tudo" aggregates every source into one flat result list
+//  QmlSearchBridge: "Tudo" aggregates every source into one flat result list
 // ============================================================================
 TEST_CASE("Search bridge: 'Tudo' merges loaded game catalog synchronously", "[bridge][search]")
 {
@@ -236,7 +236,7 @@ TEST_CASE("Search bridge: 'Tudo' merges loaded game catalog synchronously", "[br
 }
 
 // ============================================================================
-//  QmlSettingsBridge — pairing flag derives from QSettings (post-keychain move)
+//  QmlSettingsBridge: pairing flag derives from QSettings (post-keychain move)
 // ============================================================================
 TEST_CASE("Settings bridge: pairingActive reflects settings, not the keychain", "[bridge][settings]")
 {
@@ -244,7 +244,7 @@ TEST_CASE("Settings bridge: pairingActive reflects settings, not the keychain", 
     QSettings st;
     st.setValue("webUiEnabled", false);              // keep the ctor from starting a server
     SessionManager session;
-    QmlSettingsBridge bridge(&session, nullptr);     // no engine — applyWebUi() early-returns
+    QmlSettingsBridge bridge(&session, nullptr);     // no engine: applyWebUi() early-returns
 
     REQUIRE(bridge.webUiUser() == QStringLiteral("admin"));
     REQUIRE_FALSE(bridge.pairingActive());
@@ -262,7 +262,7 @@ TEST_CASE("Settings bridge: pairingActive reflects settings, not the keychain", 
 }
 
 // ============================================================================
-//  QmlPosterModel / QmlTorrentFilterProxy — empty-model contract
+//  QmlPosterModel / QmlTorrentFilterProxy: empty-model contract
 // ============================================================================
 TEST_CASE("Poster model: empty model, roles defined", "[bridge][model]")
 {
@@ -280,7 +280,7 @@ TEST_CASE("Poster model: empty model, roles defined", "[bridge][model]")
 }
 
 // ============================================================================
-//  QmlSessionBridge with a REAL loaded torrent — the methods that need content
+//  QmlSessionBridge with a REAL loaded torrent: the methods that need content
 // ============================================================================
 TEST_CASE("Session bridge: a loaded torrent exposes and mutates files/trackers", "[bridge][session][torrent]")
 {
@@ -369,7 +369,7 @@ TEST_CASE("Session bridge: removeSelected removes every row in a multi-selection
 }
 
 // ============================================================================
-//  SessionManager — speed/queue/network prefs persist across a "restart"
+//  SessionManager: speed/queue/network prefs persist across a "restart"
 //  Regression: the QWidget→QML migration left these setters writing only to the
 //  live libtorrent session (never QSettings) and the ctor never reloaded them,
 //  so every limit reset to 0/default on relaunch ("settings don't save").
@@ -412,7 +412,7 @@ TEST_CASE("Session: speed/queue/network prefs survive a restart", "[bridge][sess
 }
 
 // ============================================================================
-//  QmlSettingsBridge — UI bool toggles coerce to a real bool on read.
+//  QmlSettingsBridge: UI bool toggles coerce to a real bool on read.
 //  Regression: on the Windows registry a bool round-trips as an int (DWORD), so
 //  QML's `settings.get(key) !== false` saw `0 !== false` → true and the splash /
 //  close-to-tray toggles ignored being switched off.
@@ -428,7 +428,7 @@ TEST_CASE("Settings bridge: UI bool toggles read back as real bool", "[bridge][s
     QSettings().sync();
 
     const QVariant v = sb.get(QStringLiteral("showSplash"));
-    REQUIRE(v.typeId() == QMetaType::Bool);          // coerced — not the raw int 0
+    REQUIRE(v.typeId() == QMetaType::Bool);          // coerced: not the raw int 0
     REQUIRE(v.toBool() == false);
     REQUIRE_FALSE(v.toBool() != false);              // the exact compare QML relies on
 
@@ -632,7 +632,7 @@ TEST_CASE("addMagnet rejects a duplicate info-hash", "[session][add][magnet]")
     SessionManager session;
     const int base = session.torrentCount();
 
-    // Same info-hash, different tracker/display-name — the "same content from
+    // Same info-hash, different tracker/display-name: the "same content from
     // two sources" case: one torrent, two magnet links.
     const QString hash = QStringLiteral("85360c42e678d8f814c54b448f9e49b5db93db8f");
     const QString first  = QStringLiteral("magnet:?xt=urn:btih:%1&dn=Source+A").arg(hash);
@@ -656,12 +656,12 @@ TEST_CASE("addMagnet rejects a duplicate info-hash", "[session][add][magnet]")
 }
 
 // ============================================================================
-//  QmlPosterModel — the grid and the list read the same row
+//  QmlPosterModel: the grid and the list read the same row
 // ============================================================================
 
 // Reported on 4.8.0: the same torrent showed "Seeding" in grid view and
-// "Downloading" in classic view. Both views are fed by this one model — the
-// grid off StateKeyRole, the list off StateStringRole — and the two roles were
+// "Downloading" in classic view. Both views are fed by this one model: the
+// grid off StateKeyRole, the list off StateStringRole: and the two roles were
 // produced by independent code paths that could disagree.
 //
 // This is the layer the earlier fix was missing. torrentHasWork() had a unit

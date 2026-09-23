@@ -26,13 +26,13 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString freeDiskSpace READ freeDiskSpace NOTIFY statsChanged)
     Q_PROPERTY(double diskUsedFraction READ diskUsedFraction NOTIFY statsChanged)
     // The distinct volumes torrents actually save to (default + per-category
-    // paths) — each { name, free, usedFraction }. Multi-HD users see all of them.
+    // paths): each { name, free, usedFraction }. Multi-HD users see all of them.
     Q_PROPERTY(QVariantList diskVolumes READ diskVolumes NOTIFY statsChanged)
     // currently-downloading torrents (cover/name/%/speed) for the nav-rail mini card
     Q_PROPERTY(QVariantList activeDownloads READ activeDownloads NOTIFY statsChanged)
-    // seeding torrents (cover/name/↑speed/ratio) — nav-rail card fallback when nothing's downloading
+    // seeding torrents (cover/name/↑speed/ratio): nav-rail card fallback when nothing's downloading
     Q_PROPERTY(QVariantList seedingTransfers READ seedingTransfers NOTIFY statsChanged)
-    // continue watching/playing (resume) — the nav-rail slot's content on the Downloads tab
+    // continue watching/playing (resume): the nav-rail slot's content on the Downloads tab
     Q_PROPERTY(QVariantList resumeItems READ resumeItems NOTIFY statsChanged)
     Q_PROPERTY(QString totalDownloaded READ totalDownloaded NOTIFY statsChanged)
     Q_PROPERTY(QString totalUploaded READ totalUploaded NOTIFY statsChanged)
@@ -40,7 +40,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QVariantList downloadHistory READ downloadHistory NOTIFY historyChanged)
     Q_PROPERTY(QVariantList uploadHistory READ uploadHistory NOTIFY historyChanged)
     // per-torrent speed history for the SELECTED torrent (in-memory, fills over
-    // time) — drives the details-panel background graph.
+    // time): drives the details-panel background graph.
     Q_PROPERTY(QVariantList selectedDownHistory READ selectedDownHistory NOTIFY historyChanged)
     Q_PROPERTY(QVariantList selectedUpHistory READ selectedUpHistory NOTIFY historyChanged)
 
@@ -50,7 +50,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString selectedDownloaded READ selectedDownloaded NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDownSpeed READ selectedDownSpeed NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedUpSpeed READ selectedUpSpeed NOTIFY selectionChanged)
-    // raw rates (bytes/s) — the UI colors transfer numbers only when moving
+    // raw rates (bytes/s): the UI colors transfer numbers only when moving
     Q_PROPERTY(int selectedDownRate READ selectedDownRate NOTIFY selectionChanged)
     Q_PROPERTY(int selectedUpRate READ selectedUpRate NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedEta READ selectedEta NOTIFY selectionChanged)
@@ -63,7 +63,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString selectedAdded READ selectedAdded NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedPath READ selectedPath NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedState READ selectedState NOTIFY selectionChanged)
-    // the untranslated classification key — selectedState is a display label
+    // the untranslated classification key: selectedState is a display label
     Q_PROPERTY(QString selectedStateKey READ selectedStateKey NOTIFY selectionChanged)
     Q_PROPERTY(bool selectedFilesMissing READ selectedFilesMissing NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedPoster READ selectedPoster NOTIFY selectionChanged)
@@ -83,7 +83,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QVariantList selectedTrackers READ selectedTrackers NOTIFY selectionListsChanged)
     Q_PROPERTY(QVariantMap selectedPieces READ selectedPieces NOTIFY selectionListsChanged)
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
-    // true while removeSelectedRows() is removing more than one row at once —
+    // true while removeSelectedRows() is removing more than one row at once:
     // the grid/list transitions check this to skip animating a batch removal
     // (rapid-fire remove/displaced transitions with no time to settle between
     // them is a known Qt Quick view-recycling risk).
@@ -111,10 +111,10 @@ public:
     double diskUsedFraction() const;
     QVariantList diskVolumes() const;
     // Every torrent (hash/name/sizeBytes/size/addedTime/category/paused/seeding),
-    // unsorted — the Make Room panel sorts client-side (by size or by age),
+    // unsorted: the Make Room panel sorts client-side (by size or by age),
     // same pattern as Search's result list.
     Q_INVOKABLE QVariantList makeRoomList() const;
-    // Delete-by-hash so Make Room doesn't have to fight over m_selectedRows —
+    // Delete-by-hash so Make Room doesn't have to fight over m_selectedRows:
     // resolves the hash to its current engine index, then removeTorrent().
     Q_INVOKABLE void removeTorrentByHash(const QString &hash, bool deleteFiles, bool permanent);
     QVariantList activeDownloads() const;
@@ -130,7 +130,7 @@ public:
 
     Q_INVOKABLE void setSelectedRows(const QList<int> &rows);
     // Select a torrent by its info hash (source row). Returns false if it isn't
-    // in the model yet — used to focus a torrent just added from Search.
+    // in the model yet: used to focus a torrent just added from Search.
     Q_INVOKABLE bool selectByInfoHash(const QString &infoHash);
     // Keep the stored selection (source-model indices) in sync when a torrent is
     // removed, so a later batch action doesn't hit a different torrent that
@@ -152,7 +152,7 @@ public:
     Q_INVOKABLE void addMagnetUri(const QString &uri, const QString &savePath = QString());
     // Fetch a .torrent from an http(s) URL, then route it through the add flow.
     Q_INVOKABLE void addTorrentUrl(const QString &url);
-    // Download a direct http(s) file link (not a .torrent) — it appears in the
+    // Download a direct http(s) file link (not a .torrent): it appears in the
     // Downloads list like any other download via the HTTP engine decorator.
     Q_INVOKABLE void addHttpUrl(const QString &url, const QString &savePath = QString());
     void setHttpDownloads(HttpDownloadManager *mgr) { m_httpDownloads = mgr; }
@@ -222,7 +222,7 @@ public:
     Q_INVOKABLE void playByHashFile(const QString &infoHash, int fileIndex);   // resume a specific episode
     // Next episode's file index after fileIndex (season/episode order), or -1.
     Q_INVOKABLE int nextEpisode(const QString &infoHash, int fileIndex) const;
-    // Resolved display title for the player header — {title, subtitle, raw}.
+    // Resolved display title for the player header: {title, subtitle, raw}.
     // title/subtitle come from the metadata cache + name parse; raw is the
     // original filename (shown in the info tooltip). fileIndex disambiguates
     // episodes within a season pack.
@@ -231,7 +231,7 @@ public:
     // player's next-episode end card.
     Q_INVOKABLE QString posterForHash(const QString &infoHash) const;
     // MKV chapters of the playing file → [{startMs, endMs, name, kind}] where
-    // kind is "intro"/"credits"/"" — drives the player's skip chip. Empty for
+    // kind is "intro"/"credits"/"": drives the player's skip chip. Empty for
     // non-mkv or when the chapters element isn't downloaded yet.
     Q_INVOKABLE QVariantList mkvChapters(const QString &infoHash, int fileIndex) const;
     // Play a specific video file (episode) of a torrent in the embedded player.
@@ -243,12 +243,12 @@ public:
     // Raw video file name (has the quality/audio tags the player badges parse).
     Q_INVOKABLE QString streamFileName(const QString &infoHash, int fileIndex) const;
     Q_INVOKABLE QString streamLocalPath(const QString &infoHash, int fileIndex) const;
-    // Watchlist ("My List") — saved titles (not torrents), persisted in QSettings.
+    // Watchlist ("My List"): saved titles (not torrents), persisted in QSettings.
     QVariantList watchlist() const;
     Q_INVOKABLE bool inWatchlist(const QString &title, const QString &type) const;
     Q_INVOKABLE void toggleWatchlist(const QVariantMap &item);   // {title,type,poster,year}
-    // HUB (games) — minimal: list game torrents (cover/progress) and launch them
-    // via a user-set executable (no auto-detection yet — improved gradually).
+    // HUB (games): minimal: list game torrents (cover/progress) and launch them
+    // via a user-set executable (no auto-detection yet: improved gradually).
     Q_INVOKABLE QVariantList gameLibrary() const;
     Q_INVOKABLE QString gameExe(const QString &infoHash) const;        // saved exe path, "" if unset
     Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
@@ -352,7 +352,7 @@ public:
     void emitStats();
 
     // Post-download action: run the user's chosen action (close app / lock /
-    // sleep / hibernate / sign out / shut down / restart — see the
+    // sleep / hibernate / sign out / shut down / restart: see the
     // "postDownloadAction" setting) after all downloads complete. The QML side
     // shows a cancelable countdown, then calls this.
     Q_INVOKABLE void performPostDownloadAction();
@@ -361,7 +361,7 @@ public:
     // player once it's buffered enough. cancelWatch drops a pending request.
     Q_INVOKABLE void watchWhenReady(const QString &infoHash, const QString &title);
     Q_INVOKABLE void cancelWatch(const QString &infoHash);
-    // Get & Install: same idea for games — download → install chain → launch.
+    // Get & Install: same idea for games; download → install chain → launch.
     Q_INVOKABLE void installWhenReady(const QString &infoHash, const QString &title);
     Q_INVOKABLE void cancelInstall(const QString &infoHash);
 
@@ -392,7 +392,7 @@ signals:
     void installFinished(const QString &infoHash, const QString &title); // launched (or ready)
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
-    // the user always picks save path / files — never a silent auto-download.
+    // the user always picks save path / files: never a silent auto-download.
     void openTorrentRequested(const QString &path);
     void altSpeedsActiveChanged();
     void portStatusChanged();
@@ -405,7 +405,7 @@ private slots:
 
 private:
     // States surfaced to the game card as "installState" (int). Values MUST match
-    // GameInstall::* (services/integrations/gameinstall.h) — QML and tests depend on them.
+    // GameInstall::* (services/integrations/gameinstall.h); QML and tests depend on them.
     enum GameInstallState {
         GIS_Downloading    = GameInstall::Downloading,
         GIS_ReadyToInstall = GameInstall::ReadyToInstall,
@@ -423,7 +423,7 @@ private:
     void pollInstallWatch();   // guided installs: watch the folder for a produced exe
     void pollPendingInstall(); // Get & Install: download → installGame → launch
 
-    IEngine *m_session;   // the session API — SessionManager in-process today, IpcEngine after the split
+    IEngine *m_session;   // the session API: SessionManager in-process today, IpcEngine after the split
     HttpDownloadManager *m_httpDownloads = nullptr;   // direct-HTTP downloads (set in main.cpp)
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
     QHash<QString, QPair<QString, qint64>> m_pendingInstall; // Get&Install: infoHash → {title, startedAtSec}

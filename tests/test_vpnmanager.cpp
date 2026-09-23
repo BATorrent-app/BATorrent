@@ -32,7 +32,7 @@ QString validConf()
         .arg(KEY_A, KEY_B);
 }
 
-// VpnManager persists to (test-mode) AppData/vpn — clear it so each case is clean.
+// VpnManager persists to (test-mode) AppData/vpn: clear it so each case is clean.
 void freshStore()
 {
     httptest::ensureApp();
@@ -43,7 +43,7 @@ void freshStore()
         s.remove(QLatin1String(k));
 }
 
-// Captures the conf path the manager hands to the tunnel — the seam for
+// Captures the conf path the manager hands to the tunnel: the seam for
 // asserting on split-tunnel staging without a real bring-up.
 class RecordingTunnel : public WgTunnel
 {
@@ -85,7 +85,7 @@ public:
     bool adopted = false;
 };
 
-// A real, up interface on this machine (loopback usually) — adoption verifies
+// A real, up interface on this machine (loopback usually): adoption verifies
 // the recorded iface still exists, so the fake tunnel must report a real one.
 QString anUpInterface()
 {
@@ -217,7 +217,7 @@ TEST_CASE("VpnManager: adopts a tunnel that outlived the previous run", "[vpn]")
         REQUIRE((upSpy.count() > 0 || upSpy.wait(3000)));
         // real tunnel connected → the adoptable record is persisted
         CHECK(QSettings().value("vpnActiveIface").toString() == realIface);
-    }   // "app quits" — tunnel record stays behind
+    }   // "app quits": tunnel record stays behind
 
     auto *tunnel = new AdoptableTunnel;
     VpnManager restored(tunnel);

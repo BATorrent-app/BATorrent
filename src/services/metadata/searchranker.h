@@ -10,7 +10,7 @@
 #include <QList>
 
 // Pure text-relevance ranking for search results. Given a free-text query and a
-// release/title name, score how well the name matches — used to sort results by
+// release/title name, score how well the name matches: used to sort results by
 // relevance. Whole-word matching only ("blast" must not match "last") and common
 // articles/prepositions are dropped so they don't inflate every score equally.
 namespace SearchRanker {

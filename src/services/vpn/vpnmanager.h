@@ -6,7 +6,7 @@
 #define SERVICES_VPN_VPNMANAGER_H
 
 // Owns imported WireGuard profiles and the connection state machine. Validates
-// a pasted/loaded .conf with the parser, stores it (owner-only perms — it holds
+// a pasted/loaded .conf with the parser, stores it (owner-only perms: it holds
 // a private key), and drives a WgTunnel to connect/disconnect. Split-tunnel is
 // left to the app: on connect it emits the interface name so main() can bind the
 // torrent session to it (reusing the existing outgoing-interface + kill-switch).
@@ -34,7 +34,7 @@ public:
     enum class State { Disconnected, Connecting, Connected, Failed };
     Q_ENUM(State)
 
-    // Takes ownership of `tunnel`. If null, a StubWgTunnel is used — the flow
+    // Takes ownership of `tunnel`. If null, a StubWgTunnel is used: the flow
     // works but traffic is NOT protected (see tunnelIsReal()).
     explicit VpnManager(WgTunnel *tunnel = nullptr, QObject *parent = nullptr);
 
@@ -55,7 +55,7 @@ public:
     Q_INVOKABLE void connectLastUsed();
     // Tunnels outlive the process; if the one we brought up last run is still
     // alive, re-attach to it (state → Connected, interfaceUp re-emitted). Call
-    // AFTER wiring the signals — it emits through them.
+    // AFTER wiring the signals: it emits through them.
     void adoptRunningTunnel();
 
     State state() const { return m_state; }
@@ -76,7 +76,7 @@ signals:
 private:
     struct Profile { QString id; QString name; QString endpoint; QString cc; QString pendingIp; };
 
-    // Which country a profile lands in — Sherwan asked for flags beside the
+    // Which country a profile lands in: Sherwan asked for flags beside the
     // profiles, and the endpoint is the only honest source (a config named
     // "germany" can point anywhere). Resolved lazily, cached in memory only.
     void resolveCountry(const QString &id);

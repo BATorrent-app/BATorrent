@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Desktop toast overlay — a frameless, click-through-elsewhere window pinned to
+// Desktop toast overlay: a frameless, click-through-elsewhere window pinned to
 // the screen's bottom-right (like a native notification), hosting the app's
 // custom toast cards. Sized to the card stack so it only covers the toasts.
 import QtQuick

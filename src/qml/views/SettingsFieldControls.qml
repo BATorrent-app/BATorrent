@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Pref / path / schedule / debrid SettingsRow control Components.
-// field + sw are host props from SettingsRow — never `field: field`.
+// field + sw are host props from SettingsRow: never `field: field`.
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
@@ -44,7 +44,7 @@ Item {
                     horizontalAlignment: TextInput.AlignRight
                     verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: if (typeof settings !== "undefined" && root.field.key !== undefined) settings.set(root.field.key, text)
-                    // Flush on teardown — Windows focus quirk before editingFinished.
+                    // Flush on teardown: Windows focus quirk before editingFinished.
                     Component.onDestruction: if (typeof settings !== "undefined" && root.field.key !== undefined
                         && String(settings.get(root.field.key)) !== text) settings.set(root.field.key, text)
                 }
@@ -220,7 +220,7 @@ Item {
                 id: pathFld
                 implicitWidth: 220; implicitHeight: 30; mono: true
                 placeholder: root.field.placeholder || ""
-                // Imperative text — settings.get() isn't reactive; binding wouldn't refresh on Browse.
+                // Imperative text: settings.get() isn't reactive; binding wouldn't refresh on Browse.
                 Component.onCompleted: text = pathRow.curPath()
                 onEdited: function(t) {
                     if (typeof settings !== "undefined" && root.field.key !== undefined)

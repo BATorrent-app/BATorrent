@@ -159,7 +159,7 @@ void RealDebridClient::onJobInfo(QNetworkReply *r)
     if (m_jobId.isEmpty()) return;   // cancelled mid-flight
     const QJsonObject o = QJsonDocument::fromJson(r->readAll()).object();
     if (r->error() != QNetworkReply::NoError || o.isEmpty()) {
-        m_pollTimer.start();   // transient — retry
+        m_pollTimer.start();   // transient: retry
         return;
     }
 

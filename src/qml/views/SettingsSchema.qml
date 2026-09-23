@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 // Settings schema: the nav metadata + the declarative field list per section.
-// Pure data (only i18n) — separated from SettingsView's rendering. The
+// Pure data (only i18n): separated from SettingsView's rendering. The
 // (i18n.language, …) idiom keeps labels reactive to language changes.
 import QtQuick
 
@@ -153,10 +153,10 @@ QtObject {
             { type: "toggle", key: "ptMode", label: (i18n.language, i18n.t("settings_pt_mode")), note: (i18n.language, i18n.t("set_pt_note")) },
             { type: "toggle", key: "blockLeechers", label: (i18n.language, i18n.t("settings_block_leechers")), on: true }
         ],
-        // 3 VPN — "light" model: BATorrent routes its own traffic through the VPN
+        // 3 VPN: "light" model: BATorrent routes its own traffic through the VPN
         // the user already runs (IVPN/Mullvad/…) by binding to its interface. The
         // embedded-WireGuard cockpit (import .conf, connect in-app) is hidden here
-        // — kept in the codebase for a future premium tier.
+        // kept in the codebase for a future premium tier.
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_iface_bind")) },
             { type: "iface", label: (i18n.language, i18n.t("set_iface2")), note: (i18n.language, i18n.t("set_iface_note")) },

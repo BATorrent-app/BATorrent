@@ -33,7 +33,7 @@ static char  s_arg0[] = "test_security";
 static char *s_argv[] = { s_arg0, nullptr };
 
 // Heap-allocated and deliberately never freed. Held by value, the QCoreApplication
-// is destroyed during static teardown, after Qt's own global state has gone —
+// is destroyed during static teardown, after Qt's own global state has gone:
 // ~QObject then dereferences a dead signal-slot table and the process segfaults
 // on exit, long after Catch2 has reported every assertion green.
 static QCoreApplication &qtApp() {
@@ -392,7 +392,7 @@ TEST_CASE("Security: XSS protection", "[security][xss]")
     SECTION("HTML endpoint has correct content type") {
         auto r = sendRaw(srv.port,
             "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
-        // text/html or 500 (no resource in test) — both are acceptable
+        // text/html or 500 (no resource in test): both are acceptable
         CHECK((r.contains("text/html") || r.contains("500")));
     }
 }
@@ -512,7 +512,7 @@ TEST_CASE("Security: ReDoS resistance in RSS regex", "[security][redos]")
     regex.match(evil);
     qint64 ms = t.elapsed();
 
-    // PCRE2 has backtrack limits — should finish fast. Sanitizers slow
+    // PCRE2 has backtrack limits: should finish fast. Sanitizers slow
     // execution ~10x, so relax the bound there; a catastrophic ReDoS would
     // still take many seconds and trip it.
 #if defined(__SANITIZE_THREAD__) || defined(__SANITIZE_ADDRESS__) || \

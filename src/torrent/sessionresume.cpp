@@ -33,7 +33,7 @@ QString legacyResumeDir(const QString &appDataLocation)
 {
     if (appDataLocation.isEmpty())
         return {};
-    // Path math only — AppData may not exist yet in tests / first run.
+    // Path math only: AppData may not exist yet in tests / first run.
     const QString parent = QFileInfo(QDir::cleanPath(appDataLocation)).path();
     if (parent.isEmpty() || parent == QLatin1String("."))
         return {};

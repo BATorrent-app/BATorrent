@@ -30,7 +30,7 @@ Rectangle {
         property string icon
         property bool disabled: false
         property bool active: false       // toggled-on state (e.g. alt-speed turtle)
-        property bool spinOnClick: false  // spin the icon on click — visible "it happened" feedback (Refresh)
+        property bool spinOnClick: false  // spin the icon on click: visible "it happened" feedback (Refresh)
         signal clicked()
         Layout.preferredWidth: 52
         Layout.minimumWidth: 52          // never let the RowLayout squeeze/clip the button
@@ -40,11 +40,11 @@ Rectangle {
         opacity: disabled ? 0.35 : 1.0
 
         function trigger() { if (tb.spinOnClick) tbSpin.restart(); tb.clicked() }
-        // without these a screen reader reads nothing at all here — the label is
+        // without these a screen reader reads nothing at all here: the label is
         // a plain Text with no semantic tie to the control
         Accessible.role: Accessible.Button
         Accessible.name: tb.label
-        // no Accessible.disabled in QML — hide the control from the tree instead
+        // no Accessible.disabled in QML: hide the control from the tree instead
         // so a reader doesn't offer an action that does nothing
         Accessible.ignored: tb.disabled
         Accessible.onPressAction: if (!tb.disabled) tb.trigger()
@@ -117,8 +117,8 @@ Rectangle {
         // brand moved to the nav rail; toolbar starts at the actions
         // G1: the three ways content comes in. Each glyph names its own source:
         // a file, a magnet, a URL. open.svg used to sit on "Open" wearing an
-        // arrow leaving the document — the export glyph, saying the opposite of
-        // the label — and "Link" wore the download tray while link.svg, an
+        // arrow leaving the document: the export glyph, saying the opposite of
+        // the label: and "Link" wore the download tray while link.svg, an
         // actual chain, sat unused in the icon set.
         TBtn { id: tbOpen; label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/file.svg";  onClicked: toolbar.openFile() }
         TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: toolbar.addMagnet() }
@@ -140,7 +140,7 @@ Rectangle {
         TGrpDiv {}
         // G4: RSS. The "Search" button used to live here and was removed: it
         // navigated to the Find page, but sat next to the downloads filter
-        // field wearing the same magnifier — two meanings, one icon. Page
+        // field wearing the same magnifier: two meanings, one icon. Page
         // switching belongs to the nav rail; this toolbar acts on torrents.
         // Settings followed Search out of here for the same reason, one release
         // later: it wore the same gear as the nav bar's own Settings, two steps
@@ -159,7 +159,7 @@ Rectangle {
         }
         TGrpDiv {}
 
-        // global speed readout — boxless, neutral values; the tinted arrow
+        // global speed readout: boxless, neutral values; the tinted arrow
         // icons carry the down/up semantic without shouting
         Row {
             Layout.alignment: Qt.AlignVCenter
@@ -181,7 +181,7 @@ Rectangle {
                     IconImg {
                         anchors.verticalCenter: parent.verticalCenter
                         src: "qrc:/icons/download.svg"
-                        // same red/amber as the detail panel's arrows — the muted
+                        // same red/amber as the detail panel's arrows: the muted
                         // pair read as a different pair of colours one screen apart
                         tint: Theme.accent
                         s: 12

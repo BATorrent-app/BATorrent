@@ -77,7 +77,7 @@ ProxyPreset proxyPreset(const QString &name)
         p.port = 9050;
         return p;
     }
-    // SOCKS5-capable tunnels without a known local endpoint — type only.
+    // SOCKS5-capable tunnels without a known local endpoint: type only.
     p.known = true;
     p.keepHost = true;
     return p;

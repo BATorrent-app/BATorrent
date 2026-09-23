@@ -96,7 +96,7 @@ TEST_CASE("mkvchapters: hostile / non-mkv input never crashes, returns empty") {
     // valid header, truncated mid-chapters
     QByteArray full = buildMkv();
     const QString p2 = writeTemp(full.left(full.size() / 2));
-    auto ch = readMkvChapters(p2);   // may be empty or partial — must not crash
+    auto ch = readMkvChapters(p2);   // may be empty or partial: must not crash
     REQUIRE(ch.size() <= 2);
     QFile::remove(p2);
 

@@ -1,6 +1,6 @@
 name: clang-tidy
 
-# Deep static analysis — not a PR gate. Noise and build cost dominate Dependabot
+# Deep static analysis: not a PR gate. Noise and build cost dominate Dependabot
 # / routine PRs. Run weekly, from the Actions tab, or by adding label `ci-deep`.
 
 concurrency:
@@ -62,7 +62,7 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          # Active code paths only — the legacy QWidget UI (reachable via
+          # Active code paths only: the legacy QWidget UI (reachable via
           # --legacy) is being phased out and isn't worth linting.
           files=$(git ls-files 'src/app/*.cpp' 'src/torrent/*.cpp' 'src/webui/*.cpp' src/main.cpp)
           run-clang-tidy-17 -p build -quiet $files 2>&1 | tee tidy.log

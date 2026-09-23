@@ -126,7 +126,7 @@ SilentInvocation silentInvocation(Engine e, const QString &installerPath, const 
     case Engine::Nsis:
         s.supported = true;
         s.args = { QStringLiteral("/S") };
-        // /D= must be last and unquoted — carried in rawTail so the runner appends it
+        // /D= must be last and unquoted: carried in rawTail so the runner appends it
         // raw, bypassing QProcess argument quoting.
         if (haveDir)
             s.rawTail = QStringLiteral("/D=%1").arg(targetDir);

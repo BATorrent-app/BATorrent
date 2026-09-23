@@ -15,7 +15,7 @@ ColumnLayout {
     spacing: 10
 
     // Same rule the peers table uses: a crisp SVG for the countries we ship,
-    // the bare code for the long tail. Never the emoji flag — Windows has no
+    // the bare code for the long tail. Never the emoji flag: Windows has no
     // glyphs for regional indicators and renders them as letter boxes.
     readonly property var flagCodes: ["at","be","ch","de","dk","fi","fr","id",
         "ie","it","jp","nl","no","pl","pt","ro","ru","se","ua"]

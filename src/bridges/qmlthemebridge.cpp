@@ -103,7 +103,7 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
 
 namespace {
 // Process-wide: every IconImg reads the same counter, and the hot-reload watcher
-// is the only thing that moves it. Not persisted — it exists for one dev session.
+// is the only thing that moves it. Not persisted: it exists for one dev session.
 int g_iconEpoch = 0;
 }
 
@@ -128,7 +128,7 @@ QString QmlThemeBridge::themeName() const
 }
 void QmlThemeBridge::setThemeName(const QString &n)
 {
-    // Picking a theme by hand turns off "follow system" — otherwise the choice
+    // Picking a theme by hand turns off "follow system": otherwise the choice
     // would be silently overridden on the next OS scheme change.
     if (m_followSystem) {
         m_followSystem = false;

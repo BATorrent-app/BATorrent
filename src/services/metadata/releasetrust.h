@@ -8,14 +8,14 @@
 #include <QString>
 #include <QStringList>
 
-// Pre-download quality/trust heuristic for a search result — the counterpart to
+// Pre-download quality/trust heuristic for a search result: the counterpart to
 // SuspiciousScan, which can only run once the file list exists (i.e. after the
 // torrent is added). Everything here is derived from the release name, its size
 // and its swarm, so it can warn *before* the user commits to a download.
 //
 // Same framing rule as the rest of the safety work: warn only on what we
 // actually found, stay silent otherwise. A clean release gets Tier::Ok and no
-// UI at all — we never claim a release is "safe".
+// UI at all: we never claim a release is "safe".
 namespace ReleaseTrust {
 
 enum class Tier { Ok, Caution, Risky };
@@ -30,13 +30,13 @@ struct Release {
 
 struct Verdict {
     Tier tier = Tier::Ok;
-    int score = 0;          // 0..100, higher is better — for ranking, not display
+    int score = 0;          // 0..100, higher is better: for ranking, not display
     QStringList reasons;    // i18n keys, worst first; empty when Tier::Ok
 };
 
 Verdict assess(const Release &r);
 
-// "ok" | "caution" | "risky" — the string the QML layer switches on.
+// "ok" | "caution" | "risky": the string the QML layer switches on.
 QString tierKey(Tier t);
 
 }

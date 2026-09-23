@@ -32,7 +32,7 @@ void parseP2pBlocklistInto(const QString &text, libtorrent::ip_filter &filter, i
 
         // P2P format: "description:startIP-endIP". Only treat the last colon as
         // the description separator when what follows looks like an IP (has a dot
-        // after it) — otherwise the whole line is the range.
+        // after it): otherwise the whole line is the range.
         const int colonIdx = line.lastIndexOf(':');
         QString range;
         if (colonIdx >= 0 && line.indexOf('.', colonIdx) > 0)

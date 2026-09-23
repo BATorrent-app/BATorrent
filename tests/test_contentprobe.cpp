@@ -67,7 +67,7 @@ bool pumpUntil(const std::function<bool()> &done, int timeoutMs)
 } // namespace
 
 // -----------------------------------------------------------------------------
-//  UNIT — candidate construction
+//  UNIT: candidate construction
 // -----------------------------------------------------------------------------
 
 TEST_CASE("contentRootCandidates prefers metadata, falls back to the name",
@@ -115,7 +115,7 @@ TEST_CASE("contentRootCandidates prefers metadata, falls back to the name",
 
 TEST_CASE("pathVariants covers the in-progress suffix", "[unit][contentprobe]")
 {
-    // A download in flight is on disk as <name>.<ext>.!bt — without this every
+    // A download in flight is on disk as <name>.<ext>.!bt: without this every
     // active torrent would probe as missing.
     const auto v = pathVariants("/data/Movie.mkv");
     CHECK(v.contains(QStringLiteral("/data/Movie.mkv")));
@@ -124,7 +124,7 @@ TEST_CASE("pathVariants covers the in-progress suffix", "[unit][contentprobe]")
 }
 
 // -----------------------------------------------------------------------------
-//  UNIT — presence, with the disk faked out
+//  UNIT: presence, with the disk faked out
 // -----------------------------------------------------------------------------
 
 TEST_CASE("contentPresent never invents a deletion", "[unit][contentprobe]")
@@ -156,7 +156,7 @@ TEST_CASE("contentPresent never invents a deletion", "[unit][contentprobe]")
 }
 
 // -----------------------------------------------------------------------------
-//  INTEGRATION — against a real filesystem
+//  INTEGRATION: against a real filesystem
 // -----------------------------------------------------------------------------
 
 TEST_CASE("contentPresent tracks a real deletion on disk",
@@ -201,12 +201,12 @@ TEST_CASE("contentPresent tracks a real deletion on disk",
 }
 
 // -----------------------------------------------------------------------------
-//  REGRESSION — the 4.8.0 report
+//  REGRESSION: the 4.8.0 report
 // -----------------------------------------------------------------------------
 
 // Reported on 4.8.0: files deleted off disk, yet the torrent kept showing
 // "Seeding" and, after a restart, silently started downloading again. The state
-// was never wrong on purpose — nothing ever set filesMissing, because
+// was never wrong on purpose: nothing ever set filesMissing, because
 // libtorrent only raises ENOENT once it reads the file, which a seeding torrent
 // nobody requests never does. checkMissingFiles() now stats for it.
 TEST_CASE("a seeding torrent whose data is gone reports missing, not seeding",
@@ -260,7 +260,7 @@ TEST_CASE("SessionManager flips a live torrent to missing on its own",
     QTemporaryDir work;
     REQUIRE(work.isValid());
 
-    // Private, v1-only, and a folder — the shape the other session fixtures use.
+    // Private, v1-only, and a folder: the shape the other session fixtures use.
     // v2 pad files make an already-complete torrent fail its initial check.
     const QString content = work.filePath(QStringLiteral("bat_missing"));
     REQUIRE(QDir().mkpath(content));
@@ -287,7 +287,7 @@ TEST_CASE("SessionManager flips a live torrent to missing on its own",
     }
 
     // addTorrent renames every file to <name>.!bt, so complete data has to be
-    // sitting under that name for the initial check to find it — which is
+    // sitting under that name for the initial check to find it: which is
     // exactly the shape a real in-flight download has on disk.
     REQUIRE(QFile::rename(content + "/movie.bin", content + "/movie.bin.!bt"));
 
@@ -302,7 +302,7 @@ TEST_CASE("SessionManager flips a live torrent to missing on its own",
     CHECK(torrentStateKey(session.torrentAt(idx)) == QStringLiteral("seeding"));
 
     // The user deletes it outside the app. Nothing reads the file, so libtorrent
-    // never raises ENOENT — before the probe this stayed "seeding" forever and
+    // never raises ENOENT: before the probe this stayed "seeding" forever and
     // silently re-downloaded on the next launch.
     REQUIRE(QDir(content).removeRecursively());
 
@@ -363,7 +363,7 @@ TEST_CASE("a torrent that comes back between probes is never paused",
     REQUIRE(idx >= 0);
     REQUIRE(pumpUntil([&] { return session.torrentAt(idx).seeding; }, 20000));
 
-    // Gone for less than one probe interval, then back — the blink.
+    // Gone for less than one probe interval, then back: the blink.
     const QString hidden = work.filePath(QStringLiteral("hidden"));
     REQUIRE(QDir().rename(content, hidden));
     pumpUntil([&] { return false; }, 400);          // well under one 1500ms cycle

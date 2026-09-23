@@ -64,7 +64,7 @@ public:
     // Multi-title ranking: a drill-down is searched under the localised name AND
     // the original one, so a result may legitimately match either. Scoring only
     // against the typed query would sink every release named in the other
-    // language to the bottom — found, then hidden.
+    // language to the bottom: found, then hidden.
     Q_INVOKABLE QVariantList queryWordSets() const;                   // one word list per searched title
     Q_INVOKABLE int relevanceMulti(const QString &name, const QVariantList &sets) const;
     Q_INVOKABLE int bestResultIndex() const { return pickBestResult(); }   // best release in the current list, or -1
@@ -74,7 +74,7 @@ public:
     // GameReleasePick's parser so the list can't disagree with "Get the best".
     Q_INVOKABLE int compareBuildVersions(const QString &a, const QString &b) const;
 
-    // Hydra-format game catalogs the user adds (neutral infra — nothing bundled).
+    // Hydra-format game catalogs the user adds (neutral infra: nothing bundled).
     Q_INVOKABLE QVariantList gameSources() const;          // [{name, url}]
     Q_INVOKABLE void addGameSource(const QString &name, const QString &url);
     Q_INVOKABLE void removeGameSource(const QString &url);
@@ -86,7 +86,7 @@ public:
     Q_INVOKABLE QVariantList gameRepackTabs() const;       // [{name, count}]
 
     // Lazily resolve a TMDB cover for a torrent row (by its info hash) as it
-    // scrolls into view — mirrors the Downloads grid's on-demand resolution.
+    // scrolls into view: mirrors the Downloads grid's on-demand resolution.
     void setResolver(MetadataResolver *r);
     void setHttpDownloads(HttpDownloadManager *mgr) { m_httpDownloads = mgr; }
     Q_INVOKABLE void resolveCover(int index);
@@ -145,7 +145,7 @@ private:
     static QString detectReleaseGroup(const QString &name);
     // Parse quality/source/codec/hdr/lang tokens out of a release name for filtering.
     static void fillMediaAttrs(QVariantMap &m, const QString &name);
-    // Pre-download trust verdict — reads the attrs fillMediaAttrs just wrote, so
+    // Pre-download trust verdict: reads the attrs fillMediaAttrs just wrote, so
     // it has to run after it (and after seedsN/sizeBytes are set).
     static void fillTrust(QVariantMap &m, const QString &name);
     // Flat aggregate search over every enabled source (the old "Tudo" behavior).
@@ -153,7 +153,7 @@ private:
     // Type-scoped drill-down for a picked title: games hit game catalogs + the
     // games category; movies/series hit video torrents only (no game catalogs).
     // originalTitle: the work's name in its own language. A work is hunted under
-    // BOTH names when they differ — see the .cpp for why one is never enough.
+    // BOTH names when they differ: see the .cpp for why one is never enough.
     void searchSourcesForWork(const QString &title, const QString &year, const QString &type,
                               const QString &originalTitle = QString());
     // the names the current drill-down was searched under (localised + original)

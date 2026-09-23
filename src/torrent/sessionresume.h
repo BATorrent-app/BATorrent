@@ -87,7 +87,7 @@ RemovalDisposition removalDisposition(bool deleteFiles,
                                       bool permanent,
                                       const QStringList &trashTargets);
 
-// Paths that still exist — scheduleTrash/Delete skip missing entries (already
+// Paths that still exist: scheduleTrash/Delete skip missing entries (already
 // gone, or never created) instead of treating absence as failure.
 QStringList existingRemovalTargets(const QStringList &targets);
 

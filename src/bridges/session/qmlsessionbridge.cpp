@@ -86,7 +86,7 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
     m_geoIp = new GeoIpResolver(this);
     // A big swarm resolves hundreds of peer IPs one-by-one; emitting on each one
     // rebuilt the whole peer list every time, and each rebuild re-queued lookups
-    // — a feedback storm that lagged forever. Coalesce into ≤1 rebuild/sec.
+    // a feedback storm that lagged forever. Coalesce into ≤1 rebuild/sec.
     m_peerListThrottle.setSingleShot(true);
     m_peerListThrottle.setInterval(1000);
     connect(&m_peerListThrottle, &QTimer::timeout, this, [this]() {

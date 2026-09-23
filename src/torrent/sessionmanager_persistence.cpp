@@ -2,11 +2,11 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — persistence slice. Fast-resume data round-trips (save/load/
+// SessionManager: persistence slice. Fast-resume data round-trips (save/load/
 // flush/persist), the resume-data directory, and the pre-3.0 legacy-dir
 // migration. Split out of sessionmanager.cpp verbatim; no behaviour change.
 // The DHT session_params persistence (dhtStatePath/loadStartupParams) stays in
-// the core file — it's wired directly into the ctor/dtor.
+// the core file: it's wired directly into the ctor/dtor.
 
 #include "torrent/sessionmanager.h"
 #include "torrent/sessionresume.h"
@@ -162,7 +162,7 @@ void SessionManager::flushResumeDataBlocking(int timeoutMs)
 
     while (m_resumeOutstanding > 0
            && std::chrono::steady_clock::now() < deadline) {
-        // Finish the current pop batch before waiting on new alerts — otherwise
+        // Finish the current pop batch before waiting on new alerts: otherwise
         // a save_resume_data_alert already in m_alertDrain would never run.
         if (!m_alertDrain.empty()) {
             processAlerts();
@@ -186,7 +186,7 @@ bool SessionManager::persistResumeAlert(const lt::save_resume_data_alert *rd)
     // Read the info-hash from the alert's params, NOT from rd->handle.status().
     // If the torrent was removed between the save_resume_data() request and
     // this alert landing, the handle is invalid and .status() throws
-    // "invalid torrent handle" — which would terminate the app.
+    // "invalid torrent handle": which would terminate the app.
     QString hash = QString::fromStdString(
         (std::ostringstream() << rd->params.info_hashes.get_best()).str());
     if (m_removedHashes.contains(hash))
@@ -221,7 +221,7 @@ void SessionManager::loadResumeData()
             // embedded torrent_info out and re-add as a fresh torrent that
             // will force-recheck against whatever's on disk. Better to lose
             // the user's queue position than to silently drop their torrent
-            // — the pieces themselves are still on disk under save_path.
+            // the pieces themselves are still on disk under save_path.
             qWarning("loadResumeData: %s corrupt, attempting recovery (%s)",
                      qPrintable(fileName), ec.message().c_str());
             if (SessionResume::corruptResumeAction(static_cast<bool>(atp.ti))
@@ -237,7 +237,7 @@ void SessionManager::loadResumeData()
         }
         const bool recoveredFromCorrupt = static_cast<bool>(ec);
 
-        // Manual queue management — never let libtorrent's auto-manager
+        // Manual queue management: never let libtorrent's auto-manager
         // override user pause state on resumed torrents.
         atp.flags &= ~lt::torrent_flags::auto_managed;
         // BEP-27: enforce private flag even on legacy resume data that
@@ -250,7 +250,7 @@ void SessionManager::loadResumeData()
 
         // Reconcile the ".!bt" incomplete-suffix mapping with what's on disk. A
         // resume/strip race can leave the saved mapping pointing at "X.!bt" while
-        // the finished data sits at "X" (or vice-versa) — libtorrent then can't
+        // the finished data sits at "X" (or vice-versa): libtorrent then can't
         // find it and re-downloads a torrent that's already complete. Point each
         // file at whichever variant has full-size data on disk; the recheck still
         // hash-validates, so a wrong guess just re-downloads (no data loss).
@@ -273,7 +273,7 @@ void SessionManager::loadResumeData()
                 const QFileInfo bt(basePath + QLatin1String(SessionResume::kIncompleteSuffix));
                 // Only files the user actually wants count toward completeness.
                 // Stream-while-watch sets every non-video file (e.g. YTS's
-                // .txt/.jpg) to priority 0, so they never hit disk — without
+                // .txt/.jpg) to priority 0, so they never hit disk: without
                 // this guard the torrent looks "incomplete" and re-finishes
                 // (re-firing "download complete") on every launch.
                 const std::size_t idx = static_cast<std::size_t>(static_cast<int>(i));
@@ -330,7 +330,7 @@ void SessionManager::loadResumeData()
         }
         // Mark this handle so the first state_update_alert it generates runs
         // a ".!bt" strip pass for any files already complete on resume. We
-        // can't call file_progress() inline here — the storage isn't bound
+        // can't call file_progress() inline here: the storage isn't bound
         // yet and libtorrent throws invalid_torrent_handle.
         m_pendingResumeStripCheck.insert(h);
     }
@@ -369,7 +369,7 @@ void SessionManager::migrateLegacyResumeData()
     // deletes) the originals.
     QSettings s;
     if (s.value(QStringLiteral("resumeMigrated"), false).toBool())
-        return;   // run exactly once — else removing all torrents would resurrect
+        return;   // run exactly once: else removing all torrents would resurrect
     s.setValue(QStringLiteral("resumeMigrated"), true);
 
     QDir newDir(resumeDataDir());
@@ -424,7 +424,7 @@ bool SessionManager::restoreRemoved(const QString &hash)
     QByteArray bytes = f.readAll();
     f.close();
     if (!restoreFromResumeData(bytes)) return false;
-    // Successful restore — remove the history entry so it doesn't stay
+    // Successful restore: remove the history entry so it doesn't stay
     // there forever after the user re-added.
     QFile::remove(path);
     QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);

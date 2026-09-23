@@ -14,7 +14,7 @@ Item {
     property bool navLeft: false
     property bool detailBottom: false
     property bool classic: false       // list rows instead of poster cards
-    property string asking: "nav"      // "nav" | "detail" | "view" — the live part
+    property string asking: "nav"      // "nav" | "detail" | "view": the live part
     property string label: ""
     property bool selected: false
     property var uiPalette: Theme
@@ -34,7 +34,7 @@ Item {
 
     readonly property real navOp: asking === "nav" ? 1 : 0.28
     readonly property real detOp: asking === "detail" ? 1 : 0.28
-    // Detail only belongs on the detail question — drawing it (even dimmed)
+    // Detail only belongs on the detail question: drawing it (even dimmed)
     // on nav/view tiles muddies what is being chosen.
     readonly property bool showDetail: asking === "detail"
 
@@ -93,7 +93,7 @@ Item {
             }
         }
 
-        // the content area — poster cards or classic rows, whichever this tile
+        // the content area: poster cards or classic rows, whichever this tile
         // is arguing for
         Item {
             id: content

@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — finished / error / file-error alert handlers.
+// SessionManager: finished / error / file-error alert handlers.
 
 #include "torrent/sessionmanager.h"
 #include "torrent/sessionconfig.h"
@@ -26,7 +26,7 @@ void SessionManager::onTorrentFinished(const lt::torrent_finished_alert *fa)
 
     // Safety net: strip any remaining ".!bt" suffixes. Normally
     // file_completed_alert handles this per-file as the download
-    // progresses, but this catches edge cases — torrents that
+    // progresses, but this catches edge cases: torrents that
     // resume already-complete from a previous session, alerts
     // dropped under load, etc.
     if (auto ti = fa->handle.torrent_file()) {
@@ -39,7 +39,7 @@ void SessionManager::onTorrentFinished(const lt::torrent_finished_alert *fa)
     }
 
     // Skip torrents that were already complete when the session
-    // started — libtorrent fires one finish alert per torrent during
+    // started: libtorrent fires one finish alert per torrent during
     // the resume check, even if no bytes were actually downloaded.
     const bool downloadedThisSession =
         SessionResume::downloadedPayloadThisSession(st.total_payload_download);
@@ -64,7 +64,7 @@ void SessionManager::onTorrentFinished(const lt::torrent_finished_alert *fa)
         // Complete torrents now load in seed_mode (see loadResumeData) so
         // they no longer re-check/re-download and re-fire this alert on
         // launch. The remaining guard covers a torrent already persisted
-        // complete that still somehow re-finishes — its storage side
+        // complete that still somehow re-finishes: its storage side
         // effects run, but the user-facing completion (script +
         // notification + media-server webhook) is muted.
         const bool resumeRefinish = m_completedAtStartup.contains(hash);
@@ -105,7 +105,7 @@ void SessionManager::onFileError(const lt::file_error_alert *fe)
     // hears about disk-full, move-storage failures, port collisions, and
     // broken magnets instead of staring at silent empty state.
     // Rate-limit file error emissions to avoid notification storms
-    // when disk fills up — libtorrent fires one alert per failed
+    // when disk fills up: libtorrent fires one alert per failed
     // piece write, which at full speed can be hundreds per second.
     // One notification per 30 s is enough to inform without locking
     // the UI or crashing the notification stack.
@@ -121,7 +121,7 @@ void SessionManager::onFileError(const lt::file_error_alert *fe)
                        || msg.contains("not enough", Qt::CaseInsensitive)
                        || msg.contains("disk full", Qt::CaseInsensitive);
     if (diskFull) {
-        // Pause ALL downloading torrents — continuing just wastes
+        // Pause ALL downloading torrents: continuing just wastes
         // CPU re-trying writes that will fail.
         for (auto &h : m_torrents) {
             if (!h.is_valid()) continue;

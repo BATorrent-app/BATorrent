@@ -4,7 +4,7 @@ name: QML Smoke
 # cannot see: boot the real binary offscreen and fail on engine/QML errors.
 # Also runs Qt Quick Test (tests/qml/tst_*) for Watch/Search/library journeys.
 #
-# PR coverage: called from build.yml (do not add pull_request here — doubles every PR).
+# PR coverage: called from build.yml (do not add pull_request here; doubles every PR).
 # Push to main: path-filtered so docs/Actions-only commits skip this rebuild.
 
 on:
@@ -21,7 +21,7 @@ on:
 
 # Literal name, NOT github.workflow: inside a called workflow that expression
 # resolves to the CALLER's name, so this landed in build.yml's own group and the
-# call collided with its parent — the job was cancelled before it existed and the
+# call collided with its parent: the job was cancelled before it existed and the
 # run went red with no red step.
 concurrency:
   group: qml-smoke-${{ github.event_name }}-${{ github.ref }}

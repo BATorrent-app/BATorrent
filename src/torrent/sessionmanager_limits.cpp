@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 //
-// SessionManager — rate limits, listen/DHT/uTP/anon/PT, encryption, seed-ratio,
+// SessionManager: rate limits, listen/DHT/uTP/anon/PT, encryption, seed-ratio,
 // and leecher-client blocking. Peeled from sessionmanager_config.cpp.
 
 #include "torrent/sessionmanager.h"
@@ -70,7 +70,7 @@ void SessionManager::setListenPort(int port)
             }
         }
     }
-    // Dual-stack unless bound to a specific interface IP or force-v4 is on —
+    // Dual-stack unless bound to a specific interface IP or force-v4 is on:
     // a v4-only listen silently halves reachability on v6-capable swarms.
     const QString iface = SessionConfig::listenInterfaces(listenAddr, port, m_forceIpv4);
     pack.set_str(lt::settings_pack::listen_interfaces, iface.toStdString());
@@ -82,7 +82,7 @@ int SessionManager::listenPort() const
 {
     // Prefer the configured value. m_session.listen_port() reports the live
     // socket, which reads 0 or stale right after a re-bind (libtorrent applies
-    // listen_interfaces asynchronously) — that made the settings field appear
+    // listen_interfaces asynchronously): that made the settings field appear
     // to "reset" to the old port. Fall back to the live port only when unset.
     const int configured = QSettings("BATorrent", "BATorrent").value("listenPort", 0).toInt();
     return configured > 0 ? configured : m_session.listen_port();
@@ -153,7 +153,7 @@ void SessionManager::setForceIpv4(bool enabled)
     lt::settings_pack pack;
     int port = listenPort();
     if (port <= 0) port = 6881;
-    // listen_interfaces format: "ip:port[,ip:port]..." — drop the v6 entry
+    // listen_interfaces format: "ip:port[,ip:port]..."; drop the v6 entry
     // (0.0.0.0 only) when force-v4 is on; otherwise bind both stacks.
     QString iface = enabled
         ? QString("0.0.0.0:%1").arg(port)
@@ -175,7 +175,7 @@ void SessionManager::setPtMode(bool enabled)
     // PEX has no global on/off in libtorrent 2.x; it's disabled per-torrent
     // via the disable_pex flag at add time. Existing torrents stay as-is.
     pack.set_bool(lt::settings_pack::announce_to_all_trackers, enabled);
-    // tiers stays on either way — it's the session default (qBittorrent parity);
+    // tiers stays on either way: it's the session default (qBittorrent parity);
     // toggling PT mode off must not drop it below that baseline.
     pack.set_bool(lt::settings_pack::announce_to_all_tiers, true);
     pack.set_bool(lt::settings_pack::anonymous_mode, enabled || m_anonymousMode);
@@ -216,7 +216,7 @@ void SessionManager::checkAndBlockLeechers()
                         auto addr = p.ip.address();
                         filter.add_rule(addr, addr, lt::ip_filter::blocked);
                         filterChanged = true;
-                    } catch (...) { /* malformed peer address — skip blocking it */ }
+                    } catch (...) { /* malformed peer address: skip blocking it */ }
                     ++m_blockedLeecherCount;
                     qDebug() << "[session] blocked leecher peer:" << QString::fromStdString(p.ip.address().to_string()) << "client:" << pid.left(8);
                     break;
@@ -274,7 +274,7 @@ void SessionManager::setPauseOnMissingData(bool enabled)
 {
     m_pauseOnMissingData = enabled;
     // Turning it back on must not immediately re-pause what the user resumed
-    // while it was off — only a fresh disappearance should act.
+    // while it was off: only a fresh disappearance should act.
     if (!enabled) m_missingPaused.clear();
 }
 
