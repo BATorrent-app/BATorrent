@@ -45,7 +45,6 @@ ignore on routine PRs (especially Dependabot Actions bumps).
 | Sanitizers / TSan / clang-tidy / cppcheck / CodeQL / Semgrep / OSV | Only if label `ci-deep` | Same | — | — | Mon 06:00 UTC | Yes |
 | Scorecard | — | — | — | — | Mon 06:00 UTC | Yes |
 | Microsoft Store | — | — | — | — | — | Yes |
-| Claude Code Review | — | — | — | — | — | Yes (PR # input) |
 
 “Product paths” for Build & Release: `src/`, `tests/`, `translations/`,
 `CMakeLists.txt`, `cmake/`, `scripts/`, `third_party/`, and the
@@ -96,7 +95,6 @@ Do this for engine/threading-sensitive changes, not for copy or workflow pins.
 |----------|-----------|
 | **clang-tidy** | Large warning backlog; fails closed on any warning — weekly burn-down |
 | **cppcheck** | Qt `QDataStream >>` false positives historically; paths updated + suppressions; still not a merge gate |
-| **Claude Code Review** | Was auto-on every PR and failed with nobody watching — manual only |
 
 Fix the debt or keep them gated. Do not re-enable as required PR checks until
 they are reliably green on `main`.
