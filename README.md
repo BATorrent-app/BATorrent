@@ -143,7 +143,7 @@ On Windows: the Qt installer plus `vcpkg install libtorrent:x64-windows`.
 
 ## Contributing
 
-Issues and pull requests are welcome. For anything non-trivial, open an issue first so we can agree on the approach. Bug reports are most useful with your platform and version (from `Help → About`) and the steps to reproduce. Translations are especially appreciated.
+Issues and pull requests are welcome. For anything non-trivial, open an issue first so we can agree on the approach. Bug reports are most useful with your platform and version (from `Help → About`) and the steps to reproduce. Translations are especially appreciated. If you use AI tools, read [how I use AI](USING_AI.md) first.
 
 ## License and trademark
 
