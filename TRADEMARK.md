@@ -1,50 +1,42 @@
-# Trademark & Branding Policy
+# Trademark and branding
 
-BATorrent's **source code** is free and open under the [MIT License](LICENSE) — you may use, modify, distribute, and even sell it, as that license allows.
+BATorrent's source code is under the [MIT License](LICENSE). You can use, modify,
+distribute and sell it as that license allows.
 
-This document covers something the software license does **not**: the project's
-**name, logo, and identity**. The code is open; the brand is not. This is the
-same separation used by most open-source projects (Firefox, Chromium, etc.):
-open code, protected name.
+The MIT license covers the code, not the name or the logo. This page is about
+those. Firefox and Chromium draw the same line.
 
-## What is owned by the project
-The following are the property of the BATorrent project / Mateus Cruz and are
-**not** granted to you by the MIT License:
+## What belongs to the project
+These belong to the BATorrent project / Mateus Cruz and are not granted by the
+MIT License:
 
-- The name **"BATorrent"** (and confusingly similar variants).
-- The bat **logo** and icon set.
-- The visual identity (wordmark, color scheme as a brand).
-- The official domain **batorrent.com** and the official distribution channels
-  (the `BATorrent-app` GitHub organization, the Microsoft Store listing).
+- The name "BATorrent" and names close enough to be confused with it.
+- The bat logo and the icon set.
+- The visual identity (wordmark, colors as a brand).
+- The domain batorrent.com and the official channels: the `BATorrent-app`
+  GitHub organization and the Microsoft Store listing.
 
 ## What you can do
-- ✅ **Fork the code, modify it, redistribute it** — that's MIT, and it's encouraged.
-- ✅ Say truthfully that your project **"is based on"** or **"is a fork of" BATorrent**.
-- ✅ Keep the existing copyright notices (the MIT License requires this).
-- ✅ Contribute back — pull requests to `BATorrent-app/BATorrent` are very welcome.
+- Fork the code, change it and redistribute it. That's what MIT is for.
+- Say your project is based on, or a fork of, BATorrent.
+- Keep the existing copyright notices (MIT requires this).
+- Send pull requests to `BATorrent-app/BATorrent`.
 
-## What you should not do
-- ❌ **Distribute a fork or modified build under the name "BATorrent"** (or a name
-  likely to be confused with it). Please pick your own name for a redistributed build.
-- ❌ Use the BATorrent logo or branding as the identity of your own distribution.
-- ❌ Present your build in a way that implies it is the official one, or point your
-  users at it as if it were BATorrent's official release/update channel.
+## What you shouldn't do
+- Distribute a fork or modified build under the name "BATorrent", or a name
+  likely to be confused with it. Pick your own name for a redistributed build.
+- Use the BATorrent logo or branding as the identity of your distribution.
+- Present your build as the official one, or point users at it as if it were
+  BATorrent's release or update channel.
 
-The goal is simple and friendly: keep your work yours, keep the official build
-recognizable, and make sure users always know which build is the official one and
-where updates really come from.
-
-## Why this exists
-A torrent client is exactly the kind of software that gets repackaged with
-adware or malware under a familiar name. Protecting the name is how we protect
-**users** — so that "BATorrent" always means the clean, no-ads, no-telemetry,
-open-source build. It is not meant to discourage forks or contributions; it's
-meant to keep the name trustworthy.
+## Why
+Torrent clients get repackaged with adware and malware under familiar names all
+the time. I want "BATorrent" to always mean the official build with no ads and no
+telemetry, so people can tell which download to trust. Forks are fine.
 
 ## Questions
-Not sure whether something is okay? Just ask — open a discussion or email
-**contact@batorrent.com**. We're happy to work it out, and genuine good-faith
-forks and contributors are always welcome.
+If you're not sure whether something is okay, open a discussion or email
+contact@batorrent.com.
 
 _This is a project policy, not legal advice. The MIT License governs the code;
-this document covers the name and brand._
+this page covers the name and brand._
