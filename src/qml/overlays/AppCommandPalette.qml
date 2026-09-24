@@ -7,6 +7,10 @@ import "../views"
 
 Item {
     id: root
+    anchors.fill: parent
+    // Declared before the page stack in Main, so without its own z the
+    // pages would draw on top of it.
+    z: 300
     required property var host
     required property var settingsPage
     required property var library

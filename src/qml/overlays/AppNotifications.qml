@@ -8,6 +8,9 @@ import QtQuick
 Item {
     id: root
     anchors.fill: parent
+    // Declared before the page stack in Main, so without its own z the
+    // pages would draw on top of it.
+    z: 350
     required property var host
 
     property alias gwOverlay: gwOverlay
