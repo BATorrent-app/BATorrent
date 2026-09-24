@@ -22,6 +22,19 @@ Item {
     property color fill: Theme.fillFor(track.stateKey)
     // A highlight travelling over the fill: "this is moving right now".
     property bool sheen: false
+    // The percentage belongs to the bar, not to a corner of whatever hosts it.
+    // The list already read it off the middle of the track while the grid put it
+    // in a top-right pill, so the same number lived in two different places
+    // depending on the view. Owned here, both views get it in the same spot.
+    property bool showPercent: false
+    // Derived from the fill, not fixed: a filled bar is the background this
+    // number actually sits on, and it is a different colour in every state and
+    // every theme. Callers whose fill is dimmed (the list row) pass their own.
+    property color percentColor: Theme.inkOn(track.fill)
+    // Dims the fill without dimming the number on top of it. The list row used
+    // to set `opacity` on the whole component to keep its percentage readable,
+    // which only worked while the percentage lived outside the bar.
+    property real fillOpacity: 1.0
 
     readonly property bool trouble: Theme.isTroubleState(track.stateKey)
     implicitHeight: 4
@@ -36,6 +49,7 @@ Item {
         // normal states: a fill you can read a percentage off
         Rectangle {
             visible: !track.trouble
+            opacity: track.fillOpacity
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
@@ -74,6 +88,7 @@ Item {
         Item {
             anchors.fill: parent
             visible: track.trouble
+            opacity: track.fillOpacity
             clip: true
 
             Row {
@@ -127,6 +142,26 @@ Item {
                     easing.type: Easing.Linear
                 }
             }
+        }
+
+        // Sits above both layers, and only where a percentage is honest: the
+        // trouble states deliberately have no number to show.
+        Text {
+            anchors.centerIn: parent
+            visible: track.showPercent && !track.trouble
+            text: Math.floor(Math.max(0, Math.min(1, track.progress)) * 100) + "%"
+            color: track.percentColor
+            // The number is centred in the whole bar, so below ~50% it straddles
+            // the fill and the empty track behind it — two backgrounds no single
+            // ink covers. The halo is the opposite of whatever the ink resolved
+            // to, so the half that leaves the fill still separates.
+            style: Text.Outline
+            styleColor: track.percentColor.hslLightness > 0.5
+                        ? Qt.rgba(0, 0, 0, 0.55) : Qt.rgba(1, 1, 1, 0.45)
+            font.pixelSize: Math.max(9, Math.round(parent.height * 0.62))
+            font.weight: Font.DemiBold
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
         }
     }
 }

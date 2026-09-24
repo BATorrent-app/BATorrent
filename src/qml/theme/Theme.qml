@@ -74,6 +74,28 @@ QtObject {
     // instead of a fill, because a percentage would be a lie.
     function isTroubleState(k) { return k === "missing" || k === "error" }
 
+    // Ink that survives on top of a filled bar or chip of colour c. Relative
+    // luminance (WCAG), not a per-state table: six themes plus a user's custom
+    // accent is more combinations than anyone will keep a list correct for.
+    // White over the seeding amber measures 2.44:1 — under the 3:1 floor, and
+    // 1.55:1 on matrix — which is how a hardcoded white percentage got shipped
+    // into a bar nobody could read it on.
+    //
+    // 0.19 is where the two contrast ratios cross, so either side of it is
+    // genuinely the better of the two rather than a guess.
+    function inkOn(c) {
+        // A string literal is the natural way to call this ("#d99a2b"), and on a
+        // string .r is undefined — the luminance goes NaN, every comparison
+        // against it is false, and the function quietly returns white for
+        // everything. That is precisely the bug it exists to prevent, so it
+        // normalises rather than trusting the caller to pass a color.
+        var col = (typeof c === "string") ? Qt.color(c) : c
+        if (!col || col.r === undefined) return "#ffffff"
+        function lin(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
+        return (0.2126 * lin(col.r) + 0.7152 * lin(col.g) + 0.0722 * lin(col.b)) > 0.19
+               ? "#101014" : "#ffffff"
+    }
+
     // ---------- surfaces ----------
     readonly property color bg:
         name === "custom"   ? customBgColor :

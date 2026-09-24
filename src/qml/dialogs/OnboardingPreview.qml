@@ -73,8 +73,8 @@ Rectangle {
         })
         demoModel.append({
             torrentName: "Hollow.Knight.Soundtrack", metaTitle: "Hollow Knight",
-            stateKey: "finished", progress: 1.0, posterPath: "qrc:/images/hollow.webp",
-            stateString: i18n.t("state_finished"), stateDetail: "", fileKind: "FLAC",
+            stateKey: "completed", progress: 1.0, posterPath: "qrc:/images/hollow.webp",
+            stateString: i18n.t("state_completed"), stateDetail: "", fileKind: "FLAC",
             category: "Audio", size: "1.3 GB", downSpeed: "0 KB/s",
             upSpeed: "0 KB/s", downRate: 0, upRate: 0,
             sizeBytes: 1395864371, infoHash: "demo-hollow", playable: true,
@@ -96,7 +96,7 @@ Rectangle {
         demoModel.append({
             torrentName: "Creative.Tools.Bundle", metaTitle: "Creative Tools",
             stateKey: "missing", progress: 0.54, posterPath: "",
-            stateString: i18n.t("state_paused"), stateDetail: "", fileKind: "ZIP",
+            stateString: i18n.t("state_files_missing"), stateDetail: "", fileKind: "ZIP",
             category: "Apps", size: "4.8 GB", downSpeed: "0 KB/s",
             upSpeed: "0 KB/s", downRate: 0, upRate: 0,
             sizeBytes: 5153960755, infoHash: "demo-tools", playable: false,

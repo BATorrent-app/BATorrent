@@ -2,10 +2,16 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Year/category chip + download/done/seeding/queue badges + seeding sheen
-// for a Library PosterTile face. `tile` is the owning PosterTile.
+// The two things a PosterTile face says over its artwork: what this release is
+// (year/category, top-left) and what it is doing (status, top-right).
+// `tile` is the owning PosterTile.
+//
+// There used to be four near-identical status pills here — downloading, done,
+// seeding, queued — each with its own glyph, its own label and its own idea of
+// what the state was called. That is how the grid ended up disagreeing with the
+// list about the same torrent. One pill now, drawing the engine's own
+// stateString through the shared StatusMark, so there is nothing left to drift.
 import QtQuick
-import QtQuick.Effects
 import "../theme"
 
 Item {
@@ -13,16 +19,80 @@ Item {
     required property var tile
     anchors.fill: parent
 
-    // top-left: year and category in ONE pill
+    // status (top-right) — laid out first because it gets first call on the
+    // width; the year/category pill takes what is left.
+    Rectangle {
+        id: statusPill
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.rightMargin: 8
+        anchors.topMargin: 8
+        radius: 9
+        color: "#cc000000"
+        implicitWidth: Math.min(statusMark.implicitWidth + 14,
+                                Math.round(tile.width * 0.62))
+        implicitHeight: 18
+        // Grows from its right edge so the pill's anchored corner stays put
+        // while the rest of it moves.
+        transformOrigin: Item.Right
+        // The label length changes with the state, and a pill that jumped to
+        // its new width mid-fade read as two different pills.
+        Behavior on implicitWidth {
+            NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut }
+        }
+
+        StatusMark {
+            id: statusMark
+            anchors.centerIn: parent
+            stateKey: tile.stateKey
+            // The engine's label, not one rebuilt from the key: the list row
+            // renders this exact string, so the two views cannot disagree.
+            label: tile.stateString
+            onArtwork: true
+            stalled: tile.isDownloading && tile.stateDetail.length > 0
+            maxLabelWidth: Math.round(tile.width * 0.62) - 14 - symbolSize - spacing
+        }
+
+        // The four badges that used to sit here swapped with a fade and a pop.
+        // There is one pill now, so the swap is its contents changing rather
+        // than one object replacing another — same fade, same pop, nothing to
+        // cross-fade against itself.
+        SequentialAnimation {
+            id: statusSwap
+            NumberAnimation {
+                target: statusMark; property: "opacity"; to: 0
+                duration: Theme.durExit; easing.type: Theme.easeIn
+            }
+            PropertyAction { target: statusPill; property: "scale"; value: Theme.grow(0.72) }
+            ParallelAnimation {
+                NumberAnimation {
+                    target: statusMark; property: "opacity"; to: 1
+                    duration: Theme.durFast
+                }
+                NumberAnimation {
+                    target: statusPill; property: "scale"; to: 1
+                    duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3
+                }
+            }
+        }
+        Connections {
+            target: tile
+            function onStateKeyChanged() { statusSwap.restart() }
+        }
+    }
+
+    // year + category (top-left) in ONE pill
     Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.leftMargin: 8
         anchors.topMargin: 8
-        visible: tile.year > 0 || tile.category.length > 0
+        readonly property int maxW: Math.round(tile.width) - 16 - 6 - statusPill.width
+        // Below this it is a stub with an ellipsis in it, which says less than
+        // showing nothing at all.
+        visible: (tile.year > 0 || tile.category.length > 0) && maxW >= 34
         radius: 9
         color: "#99000000"
-        readonly property int maxW: Math.round(tile.width * 0.62)
         implicitWidth: Math.min(tagRow.implicitWidth + 12, maxW)
         implicitHeight: 18
 
@@ -67,196 +137,6 @@ Item {
                 font.letterSpacing: 1.0
                 font.capitalization: Font.AllUppercase
                 font.family: Theme.fontSans
-            }
-        }
-    }
-
-    // The seeding pulse moved into the progress bar itself: it was a 2px
-    // line at the poster's edge while downloading got a 9px pill, so the two
-    // states drew the same fact at different sizes.
-
-    // The four top-right badges share one spot. On a state change the old
-    // one fades out and the new one scales in, so the change is visible.
-
-    // downloading badge (top-right)
-    Rectangle {
-        readonly property bool on: tile.progress < 0.999 && tile.stateKey !== "queued"
-        opacity: on ? 1 : 0
-        visible: opacity > 0
-        scale: on ? 1 : Theme.grow(0.72)
-        transformOrigin: Item.Right
-        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
-        Behavior on scale { NumberAnimation { duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3 } }
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.rightMargin: 8
-        anchors.topMargin: 8
-        radius: 9
-        color: "#cc000000"
-        implicitWidth: dlRow.implicitWidth + 14
-        implicitHeight: 18
-        Row {
-            id: dlRow
-            anchors.centerIn: parent
-            spacing: 4
-            // A text arrow, the same way the meta line under the tile does it.
-            // The disc-in-a-pill was two nested containers inside 18px, and the
-            // glyph it held was a stroked SVG with no room for its own stroke.
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "\u2193"
-                color: Theme.accent
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                font.family: Theme.fontSans
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: Math.floor(tile.shownProgress * 100) + "%"
-                color: "#ffffff"
-                opacity: 0.92
-                font.pixelSize: 10
-                font.weight: Font.Bold
-                font.family: Theme.fontSans
-                font.features: Theme.tnum
-            }
-        }
-    }
-
-    // done badge (top-right)
-    Rectangle {
-        readonly property bool on: tile.progress >= 0.999 && tile.stateKey !== "seeding"
-        opacity: on ? 1 : 0
-        visible: opacity > 0
-        scale: on ? 1 : Theme.grow(0.72)
-        transformOrigin: Item.Right
-        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
-        Behavior on scale { NumberAnimation { duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3 } }
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.rightMargin: 8
-        anchors.topMargin: 8
-        radius: 9
-        color: "#cc000000"
-        implicitWidth: doneRow.implicitWidth + 14
-        implicitHeight: 18
-        Row {
-            id: doneRow
-            anchors.centerIn: parent
-            spacing: 4
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "✓"
-                color: Theme.grn
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                font.family: Theme.fontSans
-            }
-            Text {
-                text: (i18n.language, i18n.t("state_done_badge"))
-                color: "#ffffff"
-                opacity: 0.92
-                font.pixelSize: 9
-                font.weight: Font.Bold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 0.5
-                font.family: Theme.fontSans
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-    }
-
-    // seeding badge (top-right)
-    Rectangle {
-        readonly property bool on: tile.stateKey === "seeding"
-        opacity: on ? 1 : 0
-        visible: opacity > 0
-        scale: on ? 1 : Theme.grow(0.72)
-        transformOrigin: Item.Right
-        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
-        Behavior on scale { NumberAnimation { duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3 } }
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.rightMargin: 8
-        anchors.topMargin: 8
-        radius: 9
-        color: "#cc000000"
-        implicitWidth: seedRow.implicitWidth + 14
-        implicitHeight: 18
-        Row {
-            id: seedRow
-            anchors.centerIn: parent
-            spacing: 4
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "\u2191"
-                color: Theme.amber
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                font.family: Theme.fontSans
-            }
-            Text {
-                text: (i18n.language, i18n.t("state_seeding"))
-                color: "#ffffff"
-                opacity: 0.92
-                font.pixelSize: 9
-                font.weight: Font.Bold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 0.5
-                font.family: Theme.fontSans
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-    }
-
-    // queue badge (top-right)
-    Rectangle {
-        readonly property bool on: tile.stateKey === "queued"
-        opacity: on ? 1 : 0
-        visible: opacity > 0
-        scale: on ? 1 : Theme.grow(0.72)
-        transformOrigin: Item.Right
-        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
-        Behavior on scale { NumberAnimation { duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3 } }
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.rightMargin: 8
-        anchors.topMargin: 8
-        radius: 9
-        color: "#cc000000"
-        implicitWidth: queueRow.implicitWidth + 14
-        implicitHeight: 18
-        Row {
-            id: queueRow
-            anchors.centerIn: parent
-            spacing: 4
-            Rectangle {
-                width: 13
-                height: 13
-                radius: 6.5
-                color: "transparent"
-                border.color: Theme.t4
-                border.width: 1.5
-                anchors.verticalCenter: parent.verticalCenter
-                Text {
-                    anchors.centerIn: parent
-                    text: "⋯"
-                    color: Theme.t4
-                    font.pixelSize: 10
-                    font.weight: Font.Bold
-                    font.family: Theme.fontSans
-                }
-            }
-            Text {
-                text: (i18n.language, i18n.t("state_queued").arg(tile.queuePos))
-                color: "#ffffff"
-                opacity: 0.92
-                font.pixelSize: 10
-                font.weight: Font.Bold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 0.5
-                font.family: Theme.fontSans
-                anchors.verticalCenter: parent.verticalCenter
             }
         }
     }

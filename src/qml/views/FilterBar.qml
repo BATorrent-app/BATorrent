@@ -269,7 +269,7 @@ Rectangle {
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: (i18n.language, i18n.t("view_classic"))
+                            text: (i18n.language, i18n.t("view_list"))
                             color: parent.parent.on ? Theme.t1 : Theme.t3
                             font.pixelSize: 12
                             font.weight: parent.parent.on ? Font.Medium : Font.Normal

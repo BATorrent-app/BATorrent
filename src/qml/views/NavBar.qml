@@ -200,6 +200,7 @@ Rectangle {
         Item { Layout.fillWidth: true }
 
         NavBarDownloadChip { id: dlChip; bar: bar; car: car }
+        NavBarTurtleChip { bar: bar }
         NavBarVpnChip { bar: bar }
 
         // ----- donate (heart: gray at rest, red on hover) -----

@@ -44,9 +44,6 @@ Item {
     readonly property int etaSec: (downRate > 0 && progress < 1.0 && sizeBytes > 0)
         ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
 
-    readonly property bool hasBadge: stateKey === "seeding" || stateKey === "queued"
-        || progress >= 0.999
-    readonly property string metaLine: genres
     readonly property string posterUrl: win.fileUrl(posterPath)
     readonly property bool hovered: tileMa.containsMouse || ptMa.containsMouse
 
@@ -245,8 +242,8 @@ Item {
             anchors.bottom: parent.bottom
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            // Clears the progress bar's band (8 + 9 high) instead of sitting in it.
-            anchors.bottomMargin: 25
+            // Clears the progress bar's band (8 + 14 high) instead of sitting in it.
+            anchors.bottomMargin: 30
             text: tile.metaTitle || tile.torrentName
             color: "#f5f5f6"
             font.pixelSize: 15
@@ -269,8 +266,10 @@ Item {
             anchors.leftMargin: 8
             anchors.rightMargin: 8
             anchors.bottomMargin: 8
-            height: 9
-            radius: 4.5
+            // 14, not 9: the percentage moved off the top-right corner and into
+            // the bar, and it needs a band it can actually sit in.
+            height: 14
+            radius: 7
             color: Qt.rgba(0, 0, 0, 0.78)
             border.color: Qt.rgba(1, 1, 1, 0.10)
             border.width: 1
@@ -288,6 +287,7 @@ Item {
                 stateKey: tile.stateKey
                 sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
                        || (tile.isDownloading && tile.downRate > 0)
+                showPercent: true
             }
         }
 

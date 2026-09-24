@@ -79,47 +79,36 @@ Rectangle {
             font.family: Theme.fontSans
             font.features: Theme.tnum
         }
-        // progress: field track, state-tinted fill (a solid block screamed
-        // over 16 rows), state-colored integer %
-        Item {
+        // The shared bar, whole: same geometry, same fill, same travelling
+        // indicator for the trouble states, and the same seeding sheen the grid
+        // has always had — the one thing this row used to be missing. The fill
+        // stays at 30% (a solid block screamed over 16 rows) but the percentage
+        // on top of it does not, which is why the dimming is the bar's own.
+        ProgressTrack {
             Layout.preferredWidth: 96
             Layout.preferredHeight: 18
-            Rectangle {
-                id: pbarTrack
-                anchors.fill: parent
-                radius: 9
-                color: Theme.field
-                clip: true
-                // The row's fill is the shared bar at 30% so the percentage text
-                // stays readable on top of it; trouble states switch to the
-                // travelling indicator like everywhere else.
-                ProgressTrack {
-                    anchors.fill: parent
-                    progress: lrow.progress
-                    stateKey: lrow.stateKey
-                    opacity: 0.30
-                }
-                Text {
-                    id: pbarPct
-                    anchors.centerIn: parent
-                    text: Math.floor(lrow.progress * 100) + "%"
-                    color: win.textFor(lrow.stateKey)
-                    font.pixelSize: 9
-                    font.weight: Font.DemiBold
-                    font.family: Theme.fontSans
-                    font.features: Theme.tnum
-                }
-            }
+            Layout.alignment: Qt.AlignVCenter
+            progress: lrow.progress
+            stateKey: lrow.stateKey
+            // Same condition as the grid tile, to the letter. A sheen that ran
+            // on one view and not the other would be the divergence this row
+            // was rewritten to remove.
+            sheen: (lrow.stateKey === "seeding" && lrow.upRate > 0)
+                   || (lrow.stateKey === "downloading" && lrow.downRate > 0)
+            fillOpacity: 0.30
+            showPercent: true
+            percentColor: win.textFor(lrow.stateKey)
         }
-        Text {
+        StatusMark {
             id: lrowStateText
-            text: lrow.stateString
             Layout.preferredWidth: 104
-            color: win.textFor(lrow.stateKey)
-            font.pixelSize: 12
-            font.weight: Theme.hasAnime ? Font.DemiBold : Font.Medium
-            font.family: Theme.fontSans
-            elide: Text.ElideRight
+            Layout.alignment: Qt.AlignVCenter
+            stateKey: lrow.stateKey
+            label: lrow.stateString
+            stalled: lrow.stateKey === "downloading" && lrow.stateDetail.length > 0
+            symbolSize: 14
+            labelSize: 12
+            maxLabelWidth: 104 - symbolSize - spacing
         }
         Text {
             text: lrow.numSeeds

@@ -196,7 +196,16 @@ Menu {
 
     // Common actions stay one click; the rest is grouped into submenus so
     // the menu doesn't run the whole height of the screen.
-    CtxItem { iconSrc: "qrc:/icons/pause.svg"; text: (i18n.language, i18n.t("ctx_pause_download")); enabled: !session.selectedPaused; onTriggered: session.pauseSelected() }
+    CtxItem {
+        // The mirror of the row below: a finished torrent has no download left
+        // to pause, so what this actually stops there is the seeding. Offering
+        // "Pause download" on something that is done was the tester's report.
+        readonly property bool seeding: session.selectedDataDone || session.selectedCompleted
+        iconSrc: "qrc:/icons/pause.svg"
+        text: (i18n.language, seeding ? i18n.t("ctx_pause_seeding") : i18n.t("ctx_pause_download"))
+        enabled: !session.selectedPaused
+        onTriggered: session.pauseSelected()
+    }
     CtxItem {
         // a completed torrent has no download to resume: what this action
         // actually does there is put it back to seeding; say so
@@ -262,6 +271,7 @@ Menu {
         // hides itself when disabled, which is the behaviour we want here.
         CtxItem {
             enabled: session.selectedDataDone
+            iconSrc: "qrc:/icons/share.svg"
             text: (session.selectedSuperSeeding ? "✓ " : "") + (i18n.language, i18n.t("ctx_super_seeding"))
             onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding)
         }

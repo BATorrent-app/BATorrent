@@ -2,7 +2,15 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Meta column under a Library PosterTile: state/speed line + downloaded-of-total.
+// Meta column under a Library PosterTile: what the release is, then how much of
+// it there is. The state used to be repeated here as a dot plus a label while
+// the badge over the artwork said the same thing — one status, one place, so
+// the status now lives only in the badge and this line is free to carry what
+// the tile could not show before.
+//
+// Genres in particular: they were gated behind hasBadge, so a film only
+// admitted to being a thriller once it had finished downloading. They are known
+// the moment metadata resolves and are shown from that moment on.
 import QtQuick
 import "../theme"
 
@@ -16,43 +24,27 @@ Column {
     Item {
         width: root.width
         height: 16
-        Row {
+        Text {
+            id: leftTxt
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 6
-            // 7px was too small to read at a glance: the tester could not tell
-            // the states apart. Already a solid circle, so the fix is size, not
-            // shape.
-            Rectangle {
-                width: 9
-                height: 9
-                radius: 4.5
-                anchors.verticalCenter: parent.verticalCenter
-                color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber : win.dotFor(tile.stateKey)
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                // stateString is the one label the engine produced for this
-                // state; the list renders it too. Building a second one here
-                // from stateKey is what let the grid say "Seeding" while the
-                // list said "Downloading" about the same torrent.
-                text: tile.isDownloading ? ("↓ " + tile.downSpeed)
-                      : (tile.hasBadge && tile.metaLine.length > 0) ? tile.metaLine
-                      : tile.stateKey === "seeding"
-                         ? (tile.stateString + " · ↑ " + tile.upSpeed)
-                         : tile.stateString
-                color: (tile.isDownloading && tile.stateDetail.length > 0) ? Theme.amber
-                       : (tile.hasBadge && tile.metaLine.length > 0) ? Theme.t4
-                       : win.textFor(tile.stateKey)
-                font.pixelSize: 13
-                // Medium is a bundled IBM Plex face, not a synthesised weight:
-                // it buys legibility at this size without another pixel of line
-                // height, which the tile has no room for.
-                font.weight: Font.Medium
-                font.family: Theme.fontSans
-                width: Math.min(implicitWidth, root.width - 12 - rightTxt.width - 10)
-                elide: Text.ElideRight
-            }
+            // Genres when we know them; otherwise the live transfer, which is
+            // the only other thing worth a line here. Never blank while
+            // something is actually moving.
+            readonly property bool hasGenres: tile.genres.length > 0
+            text: hasGenres ? tile.genres
+                  : tile.isDownloading ? ("↓ " + tile.downSpeed)
+                  : tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed)
+                  : ""
+            color: hasGenres ? Theme.t3 : Theme.t4
+            font.pixelSize: 13
+            // Medium is a bundled IBM Plex face, not a synthesised weight —
+            // it buys legibility at this size without another pixel of line
+            // height, which the tile has no room for.
+            font.weight: Font.Medium
+            font.family: Theme.fontSans
+            width: Math.min(implicitWidth, root.width - rightTxt.width - 10)
+            elide: Text.ElideRight
         }
         Text {
             id: rightTxt
