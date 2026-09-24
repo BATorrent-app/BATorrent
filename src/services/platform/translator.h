@@ -16,6 +16,10 @@ public:
     static Translator &instance();
 
     void setLanguage(Language lang);
+    // The language the user picked (QSettings "language"), or the system
+    // locale's when they never picked one. Both processes call this: the UI,
+    // and the engine child, which builds the state labels the UI shows.
+    void applySaved();
     Language language() const { return m_lang; }
     QString tr(const QString &key) const;
 

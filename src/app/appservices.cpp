@@ -28,29 +28,7 @@
 #include <QApplication>
 #include <QCoreApplication>
 #include <QFileInfo>
-#include <QLocale>
 #include <QSettings>
-
-static void applyLanguage()
-{
-    QSettings s;
-    int lang = 0;
-    if (s.contains("language")) {
-        lang = s.value("language").toInt();
-    } else {
-        const QString sys = QLocale::system().name().toLower();
-        if      (sys.startsWith("pt")) lang = 1;
-        else if (sys.startsWith("zh")) lang = 2;
-        else if (sys.startsWith("ja")) lang = 3;
-        else if (sys.startsWith("ru")) lang = 4;
-        else if (sys.startsWith("es")) lang = 5;
-        else if (sys.startsWith("de")) lang = 6;
-        else if (sys.startsWith("uk")) lang = 7;
-        else if (sys.startsWith("tr")) lang = 8;
-        else                           lang = 0;
-    }
-    Translator::instance().setLanguage(static_cast<Translator::Language>(lang));
-}
 
 AppServices AppServices::create(QApplication &app)
 {
@@ -247,7 +225,7 @@ AppServices AppServices::create(QApplication &app)
     svc.filterProxy = new QmlTorrentFilterProxy(&app);
     svc.filterProxy->setSourceModel(svc.posterModel);
 
-    applyLanguage();
+    Translator::instance().applySaved();
     svc.i18nBridge = new QmlI18nBridge(&app);
 
 #ifndef Q_OS_MACOS

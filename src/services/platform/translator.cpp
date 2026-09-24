@@ -8,6 +8,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLibraryInfo>
+#include <QLocale>
+#include <QSettings>
 #include <QTranslator>
 
 Translator &Translator::instance()
@@ -20,6 +22,27 @@ Translator::Translator()
 {
     loadLanguage("en", m_englishFallback);
     m_strings = m_englishFallback;
+}
+
+void Translator::applySaved()
+{
+    QSettings s;
+    int lang = 0;
+    if (s.contains("language")) {
+        lang = s.value("language").toInt();
+    } else {
+        const QString sys = QLocale::system().name().toLower();
+        if      (sys.startsWith("pt")) lang = 1;
+        else if (sys.startsWith("zh")) lang = 2;
+        else if (sys.startsWith("ja")) lang = 3;
+        else if (sys.startsWith("ru")) lang = 4;
+        else if (sys.startsWith("es")) lang = 5;
+        else if (sys.startsWith("de")) lang = 6;
+        else if (sys.startsWith("uk")) lang = 7;
+        else if (sys.startsWith("tr")) lang = 8;
+        else                           lang = 0;
+    }
+    setLanguage(static_cast<Language>(lang));
 }
 
 void Translator::setLanguage(Language lang)

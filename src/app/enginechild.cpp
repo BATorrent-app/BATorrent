@@ -8,6 +8,7 @@
 #include "ipc/enginehost.h"
 #include "ipc/ipcengine.h"
 #include "services/platform/logger.h"
+#include "services/platform/translator.h"
 #include "torrent/sessionmanager.h"
 #include "torrent/types.h"
 
@@ -31,6 +32,10 @@ bool tryRun(int argc, char *argv[], int *exitCode)
 #ifdef BAT_HAVE_SENTRY
             AppRuntime::initSentry(QStringLiteral("engine"));
 #endif
+            // The state labels ("Paused", "Seeding"...) are translated here,
+            // in the engine, and sent to the UI as text. Without this they
+            // always came out in English in split mode.
+            Translator::instance().applySaved();
             SessionManager session;
             EngineHost host(&session, QString::fromLocal8Bit(argv[i + 1]));
             if (!host.listen()) {
