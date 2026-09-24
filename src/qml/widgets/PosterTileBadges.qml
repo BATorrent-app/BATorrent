@@ -75,9 +75,18 @@ Item {
     // line at the poster's edge while downloading got a 9px pill, so the two
     // states drew the same fact at different sizes.
 
+    // The four top-right badges share one spot. On a state change the old
+    // one fades out and the new one scales in, so the change is visible.
+
     // downloading badge (top-right)
     Rectangle {
-        visible: tile.progress < 0.999 && tile.stateKey !== "queued"
+        readonly property bool on: tile.progress < 0.999 && tile.stateKey !== "queued"
+        opacity: on ? 1 : 0
+        visible: opacity > 0
+        scale: on ? 1 : Theme.grow(0.72)
+        transformOrigin: Item.Right
+        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
+        Behavior on scale { NumberAnimation { duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3 } }
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.rightMargin: 8
@@ -103,7 +112,7 @@ Item {
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: Math.floor(tile.progress * 100) + "%"
+                text: Math.floor(tile.shownProgress * 100) + "%"
                 color: "#ffffff"
                 opacity: 0.92
                 font.pixelSize: 10
@@ -116,7 +125,13 @@ Item {
 
     // done badge (top-right)
     Rectangle {
-        visible: tile.progress >= 0.999 && tile.stateKey !== "seeding"
+        readonly property bool on: tile.progress >= 0.999 && tile.stateKey !== "seeding"
+        opacity: on ? 1 : 0
+        visible: opacity > 0
+        scale: on ? 1 : Theme.grow(0.72)
+        transformOrigin: Item.Right
+        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
+        Behavior on scale { NumberAnimation { duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3 } }
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.rightMargin: 8
@@ -153,7 +168,13 @@ Item {
 
     // seeding badge (top-right)
     Rectangle {
-        visible: tile.stateKey === "seeding"
+        readonly property bool on: tile.stateKey === "seeding"
+        opacity: on ? 1 : 0
+        visible: opacity > 0
+        scale: on ? 1 : Theme.grow(0.72)
+        transformOrigin: Item.Right
+        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
+        Behavior on scale { NumberAnimation { duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3 } }
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.rightMargin: 8
@@ -190,7 +211,13 @@ Item {
 
     // queue badge (top-right)
     Rectangle {
-        visible: tile.stateKey === "queued"
+        readonly property bool on: tile.stateKey === "queued"
+        opacity: on ? 1 : 0
+        visible: opacity > 0
+        scale: on ? 1 : Theme.grow(0.72)
+        transformOrigin: Item.Right
+        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
+        Behavior on scale { NumberAnimation { duration: 340; easing.type: Theme.easePop; easing.overshoot: 1.3 } }
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.rightMargin: 8

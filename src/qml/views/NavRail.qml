@@ -100,7 +100,42 @@ Rectangle {
         return Qt.rect(p.x, p.y, it.width, it.height)
     }
 
+    // The active highlight is a single item that slides between entries,
+    // drawn behind them.
+    Rectangle {
+        id: activePill
+        readonly property Item target: {
+            var n = navRepeater.count, c = rail.currentIndex
+            for (var i = 0; i < n; ++i) {
+                var d = navRepeater.itemAt(i)
+                if (d && d.visible && d.modelData.page === c) return d
+            }
+            return null
+        }
+        property bool ready: false
+        Component.onCompleted: Qt.callLater(function() { activePill.ready = true })
+        x: target ? railCol.x + target.x : x
+        y: target ? railCol.y + target.y : y
+        width: target ? target.width : width
+        height: target ? target.height : height
+        radius: 10
+        color: Theme.hover
+        opacity: target ? 1 : 0
+        Behavior on y { enabled: activePill.ready && !Theme.reduceMotion
+            NumberAnimation { duration: 300; easing.type: Theme.easeOut } }
+        Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
+        Rectangle {
+            anchors.left: parent.left; anchors.leftMargin: 3
+            anchors.verticalCenter: parent.verticalCenter
+            width: 3
+            height: 22
+            radius: 2
+            color: Theme.accent
+        }
+    }
+
     ColumnLayout {
+        id: railCol
         anchors.fill: parent
         spacing: 2
 
@@ -164,20 +199,8 @@ Rectangle {
                 Rectangle {
                     anchors.fill: parent
                     radius: 10
-                    color: navItem.active ? Theme.hover
-                         : (itemMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
+                    color: !navItem.active && itemMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
                     Behavior on color { ColorAnimation { duration: 140 } }
-
-                    // animated active accent bar
-                    Rectangle {
-                        anchors.left: parent.left; anchors.leftMargin: 3
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 3
-                        height: navItem.active ? 22 : 0
-                        radius: 2
-                        color: Theme.accent
-                        Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
-                    }
                 }
 
                 RowLayout {

@@ -277,6 +277,15 @@ QtObject {
     readonly property int durFast: 120
     readonly property int durBase: 160
     readonly property int durSlow: 240
+    // Exits run shorter than entrances. durShow is for one-off moments (a
+    // torrent finishing), not for anything that happens often.
+    readonly property int durExit: 100
+    readonly property int durShow: 520
+    readonly property int stagger: 22
+    // Entrances ease out, exits ease in.
+    readonly property int easeIn: Easing.InCubic
+    readonly property int easeOut: Easing.OutQuart
+    readonly property int easePop: Easing.OutBack
 
     // Reduced motion: fewer and gentler animations, NOT zero. Opacity and colour
     // transitions stay: they explain what changed. What goes is displacement and
@@ -284,6 +293,10 @@ QtObject {
     // OS-level preference, so this has to be our own switch.
     readonly property bool reduceMotion:
         typeof settings !== "undefined" && settings.get("reduceMotion") === true
+    // Distance for a slide or lift, 0 under reduced motion.
+    function travel(px) { return reduceMotion ? 0 : px }
+    // Starting scale for a grow-in, 1 under reduced motion.
+    function grow(from) { return reduceMotion ? 1 : from }
 
     // ---------- anime accent art (per theme) ----------
     readonly property string animeSource:

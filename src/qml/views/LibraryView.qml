@@ -197,6 +197,29 @@ Item {
         interactive: true
         z: 1
 
+        // Covers fade in one after another the first time the library is
+        // shown in a session. Only once: re-sorts and filter changes don't
+        // replay it (see the note on populate above).
+        property bool introOn: false
+        property bool introDone: false
+        readonly property bool introReady: count > 0 && visible
+            && libraryView.visible && !(libraryView.win && libraryView.win.showSplash)
+        // Re-checked after a short delay: the rows can arrive before Main
+        // decides whether to show the splash, and the cascade would then play
+        // hidden under it.
+        onIntroReadyChanged: if (introReady && !introDone) introSettle.restart()
+        Timer {
+            id: introSettle
+            interval: 150
+            onTriggered: {
+                if (grid.introReady && !grid.introDone) {
+                    grid.introDone = true
+                    if (!Theme.reduceMotion) { grid.introOn = true; introOff.restart() }
+                }
+            }
+        }
+        Timer { id: introOff; interval: 1400; onTriggered: grid.introOn = false }
+
         delegate: PosterTile { win: libraryView.win; controller: libraryView.controller }
     }
 

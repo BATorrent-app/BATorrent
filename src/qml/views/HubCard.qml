@@ -87,26 +87,59 @@ Item {
             anchors.margins: 6
             height: 26; radius: 7
             readonly property bool actionable: card.host.gameStateActionable(card.item)
-            color: actionable ? (sbma.containsMouse ? Qt.lighter(Theme.accent, 1.12) : Theme.accent)
-                              : "#cc1b1b1f"
+            color: "#cc1b1b1f"
             border.color: actionable ? "transparent" : Theme.hair
-            border.width: actionable ? 0 : 1
+            border.width: 1
+            Behavior on border.color { ColorAnimation { duration: Theme.durBase } }
             opacity: (ma.containsMouse || actionable) ? 1 : 0.92
             Behavior on opacity { NumberAnimation { duration: 140 } }
+            clip: true
+            // When the game becomes playable the accent fills the button from
+            // the left instead of the colour switching in place.
+            Rectangle {
+                height: parent.height
+                radius: parent.radius
+                width: stateBtn.actionable ? parent.width : 0
+                color: sbma.containsMouse ? Qt.lighter(Theme.accent, 1.12) : Theme.accent
+                Behavior on width {
+                    enabled: !Theme.reduceMotion
+                    NumberAnimation { duration: 420; easing.type: Theme.easeOut }
+                }
+                Behavior on color { ColorAnimation { duration: Theme.durFast } }
+            }
             Row {
+                id: sbRow
                 anchors.centerIn: parent; spacing: 5
+                transform: Translate { id: sbShift }
                 Spinner {
                     visible: card.item.installState === 2 || card.item.installState === 3
                     s: 13; tint: "#c7c7cc"
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Text {
-                    text: card.host.gameStateLabel(card.item)
+                    id: sbLabel
+                    readonly property string target: card.host.gameStateLabel(card.item)
+                    text: target
+                    // the old label drops out, the new one comes up from below
+                    onTargetChanged: if (Theme.reduceMotion) text = target; else labelSwap.restart()
                     // fixed light colors: the button sits on the poster/dark chip in
                     // BOTH themes, and accentText is accent-ON-dark, not text-on-accent
                     color: stateBtn.actionable ? "#ffffff" : "#c7c7cc"
                     font.pixelSize: 11; font.weight: Font.Bold; font.family: Theme.fontSans
                     anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+            SequentialAnimation {
+                id: labelSwap
+                ParallelAnimation {
+                    NumberAnimation { target: sbRow; property: "opacity"; to: 0; duration: Theme.durExit; easing.type: Theme.easeIn }
+                    NumberAnimation { target: sbShift; property: "y"; to: -6; duration: Theme.durExit; easing.type: Theme.easeIn }
+                }
+                ScriptAction { script: sbLabel.text = sbLabel.target }
+                PropertyAction { target: sbShift; property: "y"; value: 6 }
+                ParallelAnimation {
+                    NumberAnimation { target: sbRow; property: "opacity"; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut }
+                    NumberAnimation { target: sbShift; property: "y"; to: 0; duration: Theme.durSlow; easing.type: Theme.easeOut }
                 }
             }
             MouseArea {

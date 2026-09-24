@@ -98,17 +98,6 @@ Item {
         Behavior on slide { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
         x: root.width - width * slide
 
-        // soft shadow cast onto the video to the left of the drawer
-        MultiEffect {
-            source: card
-            anchors.fill: card
-            shadowEnabled: true
-            shadowBlur: 1.0
-            blurMax: 46
-            shadowColor: "#cc000000"
-            shadowHorizontalOffset: -10
-        }
-
         Rectangle {
             id: card
             anchors.fill: parent

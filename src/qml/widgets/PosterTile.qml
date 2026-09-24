@@ -48,25 +48,76 @@ Item {
         || progress >= 0.999
     readonly property string metaLine: genres
     readonly property string posterUrl: win.fileUrl(posterPath)
+    readonly property bool hovered: tileMa.containsMouse || ptMa.containsMouse
 
-    Rectangle {
-        z: -1
-        width: 178 * 0.84
-        x: (178 - width) / 2
-        y: 237 - 10
-        height: 22
-        radius: 11
-        color: "#000000"
-        opacity: tileMa.containsMouse ? (Theme.isLight ? 0.22 : 0.5) : 0
-        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-        layer.enabled: true
-        layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 28 }
+    // What the bar and the percentage draw. The engine reports once a second,
+    // so `progress` moves in steps; this follows it linearly over that second.
+    // It animates the value, not the bar width, so resizing the window stays
+    // instant.
+    property real shownProgress: 0
+    property string seenHash: ""
+    property bool wasDone: false
+    Component.onCompleted: {
+        seenHash = infoHash
+        shownProgress = progress
+        wasDone = progress >= 0.999
+        if (GridView.view && GridView.view.introOn) dealIn.restart()
     }
+
+    // first-show cascade, started by the grid (see LibraryView introOn)
+    transform: Translate { id: dealShift }
+    Connections {
+        target: tile.GridView.view
+        ignoreUnknownSignals: true
+        function onIntroOnChanged() { if (tile.GridView.view.introOn) dealIn.restart() }
+    }
+    SequentialAnimation {
+        id: dealIn
+        PropertyAction { target: tile; property: "opacity"; value: 0 }
+        PropertyAction { target: dealShift; property: "y"; value: 22 }
+        PauseAnimation { duration: 60 + Math.min(tile.index, 16) * 34 }
+        ParallelAnimation {
+            NumberAnimation { target: tile; property: "opacity"; to: 1; duration: 260; easing.type: Theme.easeOut }
+            NumberAnimation { target: dealShift; property: "y"; to: 0; duration: 520; easing.type: Easing.OutExpo }
+        }
+    }
+    // callLater: on a re-sort the tile gets another torrent and the roles
+    // change one at a time. Waiting until they all have avoids animating to
+    // the other torrent's progress or playing its finish ring here.
+    onProgressChanged: Qt.callLater(syncProgress)
+    onInfoHashChanged: Qt.callLater(syncProgress)
+    function syncProgress() {
+        var done = progress >= 0.999
+        if (infoHash !== seenHash) {
+            progGlide.stop()
+            seenHash = infoHash
+            shownProgress = progress
+            wasDone = done
+            return
+        }
+        if (done && !wasDone) finishPulse.restart()
+        wasDone = done
+        // backwards (a recheck) or a big leap is a correction, not motion
+        if (Theme.reduceMotion || progress < shownProgress || progress - shownProgress > 0.2) {
+            progGlide.stop()
+            shownProgress = progress
+            return
+        }
+        progGlide.duration = done ? 320 : 1000
+        progGlide.easing.type = done ? Theme.easeOut : Easing.Linear
+        progGlide.to = progress
+        progGlide.restart()
+    }
+    NumberAnimation { id: progGlide; target: tile; property: "shownProgress" }
 
     Item {
         id: posterWrap
         width: 178
         height: 237
+        transform: Translate {
+            y: tile.hovered ? -Theme.travel(4) : 0
+            Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -233,9 +284,10 @@ Item {
                 anchors.leftMargin: 1
                 anchors.rightMargin: 1
                 height: parent.height - 2
-                progress: tile.progress
+                progress: tile.shownProgress
                 stateKey: tile.stateKey
-                sheen: tile.stateKey === "seeding" && tile.upRate > 0
+                sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
+                       || (tile.isDownloading && tile.downRate > 0)
             }
         }
 
@@ -272,21 +324,53 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: -2
-            radius: 12
-            color: "transparent"
-            visible: controller.isRowSelected(tile.index)
-            border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.28)
-            border.width: 4
-        }
-        Rectangle {
-            anchors.fill: parent
             radius: 10
             color: "transparent"
             border.color: controller.isRowSelected(tile.index) ? Theme.accent
                           : (tileMa.containsMouse ? Qt.rgba(1, 1, 1, 0.2) : Theme.hair)
             border.width: controller.isRowSelected(tile.index) ? 2 : 1
             Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
+        }
+
+        // Finished while on screen: the bar fills, then a ring in the done
+        // colour grows off the poster edge and fades. Only on the transition,
+        // never for a tile that loads already complete.
+        Rectangle {
+            id: finishHalo
+            anchors.fill: parent
+            anchors.margins: -3
+            radius: 13
+            color: "transparent"
+            border.color: Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.35)
+            border.width: 8
+            opacity: 0
+            antialiasing: true
+        }
+        Rectangle {
+            id: finishRing
+            anchors.fill: parent
+            radius: 10
+            color: "transparent"
+            border.color: Theme.grn
+            border.width: 2
+            opacity: 0
+            antialiasing: true
+        }
+        SequentialAnimation {
+            id: finishPulse
+            PauseAnimation { duration: 280 }
+            ParallelAnimation {
+                NumberAnimation { target: finishHalo; property: "opacity"; from: 0.9; to: 0
+                    duration: Theme.durShow + 400; easing.type: Easing.OutQuad }
+                NumberAnimation { target: finishHalo; property: "scale"; from: 1; to: Theme.grow(1.12)
+                    duration: Theme.durShow + 400; easing.type: Theme.easeOut }
+                NumberAnimation { target: finishRing; property: "opacity"; from: 0.95; to: 0
+                    duration: Theme.durShow + 200; easing.type: Easing.OutQuad }
+                NumberAnimation { target: finishRing; property: "scale"; from: 1; to: Theme.grow(1.07)
+                    duration: Theme.durShow + 200; easing.type: Theme.easeOut }
+                NumberAnimation { target: finishRing; property: "border.width"; from: 4; to: 1
+                    duration: Theme.durShow + 200; easing.type: Theme.easeOut }
+            }
         }
 
         PosterTileBadges { tile: tile }

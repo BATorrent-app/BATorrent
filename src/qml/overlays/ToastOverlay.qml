@@ -54,7 +54,8 @@ Window {
                 height: mActionId !== "" ? 104 : 86
                 radius: 10
                 color: Theme.panel
-                border.width: 0
+                border.width: 1
+                border.color: Theme.hair
                 opacity: 0
 
                 readonly property color eyebrowColor:
@@ -70,11 +71,6 @@ Window {
                     color: card.eyebrowColor
                 }
 
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true; shadowColor: "#80000000"
-                    shadowBlur: 0.6; shadowVerticalOffset: 2
-                }
 
                 Image {
                     id: tlogo
@@ -179,11 +175,17 @@ Window {
                 }
 
                 Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                Component.onCompleted: opacity = 1
+                // grows in from the corner it is anchored to; no slide, the
+                // window is only as big as the cards and would clip one
+                scale: Theme.grow(0.94)
+                transformOrigin: Item.BottomRight
+                Behavior on scale { NumberAnimation { duration: 280; easing.type: Theme.easeOut } }
+                Component.onCompleted: { opacity = 1; scale = 1 }
 
                 function dismiss() {
                     dismissTimer.stop()
                     opacity = 0
+                    scale = Theme.grow(0.97)
                     removeTimer.start()
                 }
                 Timer {

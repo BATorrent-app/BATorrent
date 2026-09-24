@@ -97,15 +97,7 @@ Item {
             onWheel: function(wheel) { wheel.accepted = true } }
     }
 
-    // shadow behind card
-    MultiEffect {
-        source: card
-        anchors.fill: card
-        shadowEnabled: true
-        shadowBlur: 1.0
-        shadowVerticalOffset: 40
-        shadowColor: Qt.rgba(0, 0, 0, 0.6)
-    }
+    // No drop shadow: the backdrop and the 1px border separate the card.
 
     // .dlg card
     Rectangle {

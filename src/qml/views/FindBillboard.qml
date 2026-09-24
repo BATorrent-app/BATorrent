@@ -63,14 +63,39 @@ Item {
         }
     }
 
-    onHeroIndexChanged: heroFade.restart()
+    // Cross-fade: the old text leaves first, then a still of the backdrop and
+    // poster is put on top, the content underneath switches to the next item
+    // and the still fades out while the new text comes in. Only the still is
+    // a copy; the live hero is never duplicated, and two titles are never on
+    // screen together.
+    onHeroIndexChanged: {
+        heroTimer.restart()
+        if (heroIndex !== shownIndex) heroSwap.restart()
+    }
     SequentialAnimation {
-        id: heroFade
-        NumberAnimation { target: heroContent; property: "opacity"; to: 0; duration: 220; easing.type: Easing.OutCubic }
-        ScriptAction { script: bb.shownIndex = bb.heroIndex }
-        NumberAnimation { target: heroContent; property: "opacity"; to: 1; duration: 420; easing.type: Easing.OutCubic }
+        id: heroSwap
+        ParallelAnimation {
+            NumberAnimation { target: heroTextCol; property: "opacity"; to: 0; duration: 140; easing.type: Theme.easeIn }
+            NumberAnimation { target: heroTextShift; property: "x"; to: -Theme.travel(10); duration: 140; easing.type: Theme.easeIn }
+        }
+        ScriptAction { script: { heroSnap.scheduleUpdate(); heroSnap.opacity = 1 } }
+        // one frame so the still is rendered before the content changes
+        PauseAnimation { duration: 34 }
+        ScriptAction { script: { bb.shownIndex = bb.heroIndex; kenBurns.restart() } }
+        ParallelAnimation {
+            NumberAnimation { target: heroSnap; property: "opacity"; to: 0; duration: 480; easing.type: Easing.InOutQuad }
+            NumberAnimation { target: heroPoster; property: "scale"; from: Theme.grow(1.04); to: 1; duration: 640; easing.type: Theme.easeOut }
+            SequentialAnimation {
+                PauseAnimation { duration: 120 }
+                ParallelAnimation {
+                    NumberAnimation { target: heroTextCol; property: "opacity"; to: 1; duration: 320; easing.type: Theme.easeOut }
+                    NumberAnimation { target: heroTextShift; property: "x"; from: Theme.travel(22); to: 0; duration: 560; easing.type: Theme.easeOut }
+                }
+            }
+        }
     }
     Timer {
+        id: heroTimer
         interval: 7000
         running: bb.active && bb.model.length > 1
         repeat: true
@@ -78,11 +103,22 @@ Item {
     }
 
     Rectangle {
+        id: heroFrame
         anchors.fill: parent
         radius: 16
         color: Theme.elev
         border.color: Theme.hair; border.width: 1
         clip: true
+
+        ShaderEffectSource {
+            id: heroSnap
+            anchors.fill: parent
+            sourceItem: heroContent
+            live: false
+            opacity: 0
+            visible: opacity > 0
+            z: 4
+        }
 
         Item {
             id: heroContent
@@ -104,8 +140,18 @@ Item {
                 visible: false
             }
             MultiEffect {
+                id: heroBlur
                 anchors.fill: heroBg
                 source: heroBg
+                // slow push-in over the time each item is up; scaling the
+                // finished effect doesn't re-run the blur
+                NumberAnimation on scale {
+                    id: kenBurns
+                    running: bb.active && !Theme.reduceMotion
+                    from: 1.0; to: 1.08
+                    duration: heroTimer.interval
+                    easing.type: Easing.Linear
+                }
                 blurEnabled: true
                 blur: 1.0
                 blurMax: 32
@@ -146,12 +192,13 @@ Item {
                 MultiEffect {
                     source: hpImg; anchors.fill: parent
                     maskEnabled: true; maskSource: hpMask
-                    shadowEnabled: true; shadowBlur: 0.7; shadowColor: "#cc000000"; shadowVerticalOffset: 8
                 }
             }
 
             // beside the poster: text + CTAs
             ColumnLayout {
+                id: heroTextCol
+                transform: Translate { id: heroTextShift }
                 anchors.left: heroPoster.visible ? heroPoster.right : parent.left
                 anchors.top: parent.top; anchors.bottom: parent.bottom
                 anchors.right: parent.right
@@ -266,12 +313,35 @@ Item {
             Repeater {
                 model: bb.model.length
                 delegate: Rectangle {
+                    id: dot
                     required property int index
-                    width: index === bb.shownIndex ? 20 : 7
+                    readonly property bool current: index === bb.shownIndex
+                    width: current ? 28 : 7
                     height: 7; radius: 3.5
-                    color: index === bb.shownIndex ? Theme.accent : Qt.rgba(1, 1, 1, 0.35)
-                    Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                    color: current ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.35)
+                    Behavior on width { NumberAnimation { duration: 260; easing.type: Theme.easeOut } }
                     Behavior on color { ColorAnimation { duration: 200 } }
+                    clip: true
+                    // the current dot fills up until the next item comes in
+                    Rectangle {
+                        height: parent.height; radius: parent.radius
+                        color: Theme.accent
+                        visible: dot.current
+                        width: heroTimer.running && !Theme.reduceMotion ? parent.width * dot.fill : parent.width
+                    }
+                    property real fill: 0
+                    NumberAnimation on fill {
+                        id: dotFill
+                        running: false
+                        from: 0; to: 1
+                        duration: heroTimer.interval
+                    }
+                    onCurrentChanged: if (current) dotFill.restart()
+                    Component.onCompleted: if (current) dotFill.restart()
+                    Connections {
+                        target: heroTimer
+                        function onRunningChanged() { if (dot.current && heroTimer.running) dotFill.restart() }
+                    }
                     MouseArea {
                         anchors.fill: parent; anchors.margins: -5
                         cursorShape: Qt.PointingHandCursor

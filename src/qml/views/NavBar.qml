@@ -99,6 +99,7 @@ Rectangle {
     }
 
     RowLayout {
+        id: navRow
         anchors.fill: parent
         anchors.leftMargin: Theme.sp4
         anchors.rightMargin: Theme.sp3
@@ -185,16 +186,6 @@ Rectangle {
                         font.family: Theme.fontSans
                         Behavior on color { ColorAnimation { duration: 140 } }
                     }
-                }
-                // active accent underline
-                Rectangle {
-                    anchors.left: parent.left; anchors.right: parent.right
-                    anchors.leftMargin: 13; anchors.rightMargin: 13
-                    anchors.bottom: parent.bottom
-                    height: navTab.active ? 3 : 0
-                    radius: 3
-                    color: Theme.accent
-                    Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
                 }
                 MouseArea {
                     id: tabMa
@@ -295,5 +286,33 @@ Rectangle {
                 onClicked: bar.settingsClicked()
             }
         }
+    }
+
+    // One underline shared by the tabs; it slides to the active one. Settings
+    // has no tab here, so the underline fades out while it's open.
+    Rectangle {
+        id: tabLine
+        readonly property Item target: {
+            var n = navRepeater.count, c = bar.currentIndex
+            for (var i = 0; i < n; ++i) {
+                var d = navRepeater.itemAt(i)
+                if (d && d.visible && d.modelData.page === c) return d
+            }
+            return null
+        }
+        property bool ready: false
+        Component.onCompleted: Qt.callLater(function() { tabLine.ready = true })
+        x: target ? navRow.x + target.x + 13 : x
+        width: target ? target.width - 26 : width
+        anchors.bottom: parent.bottom
+        height: 3
+        radius: 3
+        color: Theme.accent
+        opacity: target ? 1 : 0
+        Behavior on x { enabled: tabLine.ready && !Theme.reduceMotion
+            NumberAnimation { duration: 300; easing.type: Theme.easeOut } }
+        Behavior on width { enabled: tabLine.ready && !Theme.reduceMotion
+            NumberAnimation { duration: 360; easing.type: Theme.easeOut } }
+        Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
     }
 }

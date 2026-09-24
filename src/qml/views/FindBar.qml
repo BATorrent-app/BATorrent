@@ -45,22 +45,12 @@ Item {
         Behavior on anchors.rightMargin { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
         spacing: Theme.sp3
 
-        // field (+ its hero shadow): grows tall and round in the hero skin
+        // field: grows tall and round in the hero skin
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: bar.hero ? 54 : 36
             Behavior on Layout.preferredHeight { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
 
-            MultiEffect {
-                source: queryFld
-                anchors.fill: queryFld
-                shadowEnabled: true
-                shadowBlur: 1.0
-                blurMax: 36
-                shadowColor: "#73000000"
-                opacity: bar.hero ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 220 } }
-            }
             TFld {
                 id: queryFld
                 anchors.fill: parent
