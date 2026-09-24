@@ -72,7 +72,7 @@ Rectangle {
                 color: pi.on ? Theme.accentText : (piMa.containsMouse ? Theme.t2 : Theme.t3)
                 font.pixelSize: 12
                 font.family: Theme.fontSans
-                font.weight: Font.Medium
+                font.weight: pi.on ? Font.Medium : Font.Normal
             }
             Text {
                 // baseline, not verticalCenter: the count is a size smaller, and
@@ -245,7 +245,7 @@ Rectangle {
                             text: (i18n.language, i18n.t("view_grid"))
                             color: parent.parent.on ? Theme.t1 : Theme.t3
                             font.pixelSize: 12
-                            font.weight: Font.Medium
+                            font.weight: parent.parent.on ? Font.Medium : Font.Normal
                             font.family: Theme.fontSans
                         }
                     }
@@ -272,7 +272,7 @@ Rectangle {
                             text: (i18n.language, i18n.t("view_classic"))
                             color: parent.parent.on ? Theme.t1 : Theme.t3
                             font.pixelSize: 12
-                            font.weight: Font.Medium
+                            font.weight: parent.parent.on ? Font.Medium : Font.Normal
                             font.family: Theme.fontSans
                         }
                     }

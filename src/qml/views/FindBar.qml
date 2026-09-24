@@ -106,7 +106,7 @@ Item {
                         anchors.centerIn: parent
                         text: (i18n.language, parent.modelData.lbl)
                         color: parent.on ? Theme.accentText : (pillMa.containsMouse ? Theme.t2 : Theme.t3)
-                        font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                        font.pixelSize: 13; font.weight: parent.on ? Font.Medium : Font.Normal; font.family: Theme.fontSans
                     }
                     MouseArea {
                         id: pillMa; anchors.fill: parent

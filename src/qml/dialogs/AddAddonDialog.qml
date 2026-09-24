@@ -168,7 +168,7 @@ BatDialog {
                                 }
                                 Text {
                                     visible: modelData.types.length > 0
-                                    text: modelData.types; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontMono
+                                    text: modelData.types; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum
                                 }
                             }
                             TToggle {

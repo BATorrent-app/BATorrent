@@ -89,7 +89,7 @@ Item {
                     anchors.centerIn: parent
                     visible: ov.showPct
                     text: Math.round(ov.percent * 100) + "%"
-                    color: Theme.t1; font.pixelSize: 13; font.weight: Font.Bold; font.family: Theme.fontMono
+                    color: Theme.t1; font.pixelSize: 13; font.weight: Font.Bold; font.family: Theme.fontSans; font.features: Theme.tnum
                 }
             }
 

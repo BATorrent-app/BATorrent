@@ -189,7 +189,7 @@ Item {
             }
             Text {
                 text: ((root.sw.ap && root.sw.ap.opacity !== undefined) ? root.sw.ap.opacity : 55) + "%"
-                color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono
+                color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
                 Layout.preferredWidth: 36
             }
         }

@@ -70,7 +70,7 @@ ColumnLayout {
                     color: Theme.field
                     border.color: Theme.hair
                     border.width: 1
-                    Text { id: bdg; anchors.centerIn: parent; text: field.badge || ""; color: Theme.t3; font.pixelSize: 10; font.family: Theme.fontMono }
+                    Text { id: bdg; anchors.centerIn: parent; text: field.badge || ""; color: Theme.t3; font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum }
                 }
             }
             Text {

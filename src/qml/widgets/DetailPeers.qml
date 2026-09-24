@@ -110,9 +110,9 @@ ColumnLayout {
                 }
                 Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
                 Text { text: modelData.client; Layout.preferredWidth: 150; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
-                Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
-                Text { text: modelData.downSpeed; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.accentText; font.pixelSize: 12; font.family: Theme.fontMono }
-                Text { text: modelData.upSpeed; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.up; font.pixelSize: 12; font.family: Theme.fontMono }
+                Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
+                Text { text: modelData.downSpeed; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.accentText; font.pixelSize: 12; font.family: Theme.fontSans }
+                Text { text: modelData.upSpeed; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.up; font.pixelSize: 12; font.family: Theme.fontSans }
             }
         }
     }
@@ -158,14 +158,14 @@ ColumnLayout {
                         }
                     }
                     Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
-                    Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono }
+                    Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
                 }
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
                     Text { text: modelData.client; Layout.fillWidth: true; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; elide: Text.ElideRight }
-                    Text { text: "↓ " + modelData.downSpeed; color: Theme.accentText; font.pixelSize: 11; font.family: Theme.fontMono }
-                    Text { text: "↑ " + modelData.upSpeed; color: Theme.up; font.pixelSize: 11; font.family: Theme.fontMono }
+                    Text { text: "↓ " + modelData.downSpeed; color: Theme.accentText; font.pixelSize: 11; font.family: Theme.fontSans }
+                    Text { text: "↑ " + modelData.upSpeed; color: Theme.up; font.pixelSize: 11; font.family: Theme.fontSans }
                 }
             }
         }

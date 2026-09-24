@@ -40,7 +40,7 @@ Item {
                     anchors.fill: parent; anchors.rightMargin: 10
                     text: { var v = (typeof settings !== "undefined" && root.field.key !== undefined) ? settings.get(root.field.key) : root.field.value; return (v === undefined || v === null) ? "" : String(v) }
                     color: Theme.t1
-                    font.pixelSize: 12; font.family: Theme.fontMono
+                    font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
                     horizontalAlignment: TextInput.AlignRight
                     verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: if (typeof settings !== "undefined" && root.field.key !== undefined) settings.set(root.field.key, text)
@@ -49,7 +49,7 @@ Item {
                         && String(settings.get(root.field.key)) !== text) settings.set(root.field.key, text)
                 }
             }
-            Text { visible: root.field.suffix !== undefined; text: root.field.suffix || ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
+            Text { visible: root.field.suffix !== undefined; text: root.field.suffix || ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
         }
     }
     Component {
@@ -261,7 +261,7 @@ Item {
                         TextInput {
                             anchors.fill: parent; anchors.margins: 6
                             text: (typeof settings !== "undefined") ? String(settings.get(modelData.k)) : "0"
-                            color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono
+                            color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
                             horizontalAlignment: TextInput.AlignHCenter; verticalAlignment: TextInput.AlignVCenter
                             validator: IntValidator { bottom: 0; top: 23 }
                             onEditingFinished: if (typeof settings !== "undefined") settings.set(modelData.k, Math.max(0, Math.min(23, parseInt(text) || 0)))

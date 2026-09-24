@@ -92,7 +92,7 @@ Item {
                         width: parent.width
                         text: mBody
                         color: Theme.t3
-                        font.pixelSize: 9; font.family: Theme.fontMono
+                        font.pixelSize: 9; font.family: Theme.fontSans; font.features: Theme.tnum
                         elide: Text.ElideRight
                         visible: mBody.length > 0
                     }

@@ -99,7 +99,7 @@ ColumnLayout {
                             if (pane.bestSummary.maxSeeds > 0) s += "    ·    best " + pane.sv.fmtCount(pane.bestSummary.maxSeeds) + " seeds"
                             return s
                         }
-                        color: Theme.grn; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                        color: Theme.grn; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
                     }
                 }
             }

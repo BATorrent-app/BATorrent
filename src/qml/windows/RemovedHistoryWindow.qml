@@ -75,7 +75,7 @@ Window {
                         Layout.fillWidth: true
                         spacing: 2
                         Text { Layout.fillWidth: true; text: modelData.name; color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans; elide: Text.ElideRight }
-                        Text { text: modelData.size + " · " + modelData.when; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
+                        Text { text: modelData.size + " · " + modelData.when; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
                     }
                     BtnFlat {
                         sm: true; text: (i18n.language, i18n.t("removed_history_restore"))

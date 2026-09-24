@@ -21,7 +21,7 @@ Item {
         property color valueColor: Theme.t2
         spacing: 2
         Text { text: stat.label; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.5; font.family: Theme.fontSans }
-        Text { text: stat.value; color: stat.valueColor; font.pixelSize: 13; font.family: Theme.fontMono }
+        Text { text: stat.value; color: stat.valueColor; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum }
     }
 
     Rectangle {

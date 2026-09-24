@@ -28,7 +28,7 @@ RowLayout {
 
     Text {
         text: root.fmt(mediaPlayer ? mediaPlayer.position : 0); color: Theme.t1
-        font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
+        font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
         Layout.minimumWidth: 52; horizontalAlignment: Text.AlignRight
     }
     PlayerSlider {
@@ -94,7 +94,7 @@ RowLayout {
                     anchors.bottomMargin: 5
                     anchors.verticalCenter: parent.showThumb ? undefined : parent.verticalCenter
                     text: root.fmt(seekHover.targetMs)
-                    color: "#fff"; font.pixelSize: 11; font.family: Theme.fontMono
+                    color: "#fff"; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
                 }
             }
         }
@@ -108,6 +108,6 @@ RowLayout {
     }
     Text {
         text: root.fmt(mediaPlayer ? mediaPlayer.duration : 0)
-        color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontMono; Layout.minimumWidth: 52
+        color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum; Layout.minimumWidth: 52
     }
 }

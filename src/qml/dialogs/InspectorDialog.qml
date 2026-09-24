@@ -136,7 +136,7 @@ BatDialog {
                     height: 26
                     spacing: Theme.sp3
                     Text { Layout.fillWidth: true; leftPadding: 6; text: modelData.path; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono; elide: Text.ElideMiddle }
-                    Text { rightPadding: 6; text: modelData.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
+                    Text { rightPadding: 6; text: modelData.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
                 }
             }
             ListView {

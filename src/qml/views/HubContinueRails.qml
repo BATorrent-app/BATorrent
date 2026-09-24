@@ -208,7 +208,8 @@ RowLayout {
                         text: cwHero.it ? (page.fmtTime(cwHero.it.resumeMs) + " / " + page.fmtTime(cwHero.it.durMs)) : ""
                         color: "#c7c7cc"
                         font.pixelSize: 12
-                        font.family: Theme.fontMono
+                        font.family: Theme.fontSans
+                        font.features: Theme.tnum
                     }
                 }
                 RowLayout {

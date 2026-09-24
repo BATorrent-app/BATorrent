@@ -50,7 +50,7 @@ ColumnLayout {
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: Theme.sp5; anchors.rightMargin: Theme.sp5; spacing: 8
                 Text { text: modelData.url; Layout.fillWidth: true; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
-                Text { text: modelData.tier; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
+                Text { text: modelData.tier; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
                 Text { text: modelData.status; Layout.preferredWidth: 200; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
                 Text {
                     text: "✕"; Layout.preferredWidth: 16; horizontalAlignment: Text.AlignHCenter
@@ -92,7 +92,7 @@ ColumnLayout {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-                    Text { text: (i18n.language, i18n.t("detailtrackers_tier")) + " " + modelData.tier; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
+                    Text { text: (i18n.language, i18n.t("detailtrackers_tier")) + " " + modelData.tier; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
                     Item { Layout.fillWidth: true }
                     Text { text: modelData.status; Layout.maximumWidth: 200; color: Theme.t1; font.pixelSize: 11; font.family: Theme.fontSans; elide: Text.ElideRight }
                 }

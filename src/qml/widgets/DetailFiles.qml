@@ -83,9 +83,9 @@ ColumnLayout {
                         Layout.fillWidth: true; Layout.preferredHeight: 5; radius: 3; color: Theme.track; clip: true
                         Rectangle { anchors.left: parent.left; height: parent.height; width: parent.width * (modelData.progress || 0); radius: 3; color: Theme.accent }
                     }
-                    Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 34; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono }
+                    Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 34; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
                 }
-                Text { text: modelData.size; Layout.preferredWidth: 74; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono }
+                Text { text: modelData.size; Layout.preferredWidth: 74; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans }
                 Text {
                     text: pane.priName(modelData.priority); Layout.preferredWidth: 70
                     color: modelData.priority === 0 ? Theme.t4 : modelData.priority === 7 ? Theme.accentText : Theme.t2

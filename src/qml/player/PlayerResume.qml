@@ -97,7 +97,7 @@ Item {
             id: rcLbl
             anchors.centerIn: parent
             text: "↩  " + (formatHelper ? formatHelper.fmt(root.resumeAtMs) : "")
-            color: "white"; font.pixelSize: 13; font.family: Theme.fontMono
+            color: "white"; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
         }
         Timer { id: hideTimer; interval: 3500; onTriggered: cue.opacity = 0 }
     }

@@ -240,7 +240,7 @@ Window {
                                 font.family: Theme.fontSans
                                 elide: Text.ElideRight
                             }
-                            Text { text: modelData.count; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
+                            Text { text: modelData.count; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
                         }
                         MouseArea {
                             id: feedMa; anchors.fill: parent; hoverEnabled: true
@@ -394,7 +394,8 @@ Window {
                                     text: modelData.date || ""
                                     color: Theme.t4
                                     font.pixelSize: 10
-                                    font.family: Theme.fontMono
+                                    font.family: Theme.fontSans
+                                    font.features: Theme.tnum
                                 }
                             }
                             // badge: already downloaded
@@ -408,7 +409,7 @@ Window {
                                 border.width: 1
                                 Text { id: badgeLbl; anchors.centerIn: parent; text: (i18n.language, i18n.t("detail_kv_downloaded")); color: Theme.grn; font.pixelSize: 10; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                             }
-                            Text { text: modelData.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
+                            Text { text: modelData.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
                             // .dl
                             Rectangle {
                                 Layout.preferredWidth: 28; Layout.preferredHeight: 28

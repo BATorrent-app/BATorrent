@@ -44,7 +44,7 @@ BatDialog {
             Layout.alignment: Qt.AlignHCenter
             spacing: 8
             TChip { text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : "" }
-            Text { text: (i18n.language, i18n.t("about_build_stable")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono }
+            Text { text: (i18n.language, i18n.t("about_build_stable")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
         }
         Text {
             Layout.alignment: Qt.AlignHCenter
@@ -148,7 +148,7 @@ BatDialog {
             text: "<a href=\"https://github.com/dkindratyuk-web\">dkindratyuk-web</a>"
             textFormat: Text.RichText
             linkColor: Theme.accentText
-            color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono
+            color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
             onLinkActivated: function(link) { Qt.openUrlExternally(link) }
         }
     }
@@ -166,7 +166,7 @@ BatDialog {
             text: "<a href=\"https://github.com/azizaktas\">azizaktas</a>"
             textFormat: Text.RichText
             linkColor: Theme.accentText
-            color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontMono
+            color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
             onLinkActivated: function(link) { Qt.openUrlExternally(link) }
         }
     }
@@ -177,6 +177,6 @@ BatDialog {
         Layout.topMargin: Theme.sp1
         Text { text: (i18n.language, i18n.t("about_license")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
         Item { Layout.fillWidth: true }
-        Text { text: "MIT"; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
+        Text { text: "MIT"; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
     }
 }

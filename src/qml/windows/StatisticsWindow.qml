@@ -33,7 +33,7 @@ Window {
         Layout.fillWidth: true
         spacing: 12
         Text { Layout.preferredWidth: 110; text: k; color: Theme.t3; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-        Text { text: v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono }
+        Text { text: v; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
         Item { Layout.fillWidth: true }
     }
 
@@ -50,7 +50,7 @@ Window {
         ColumnLayout {
             anchors.centerIn: parent
             spacing: 2
-            Text { Layout.alignment: Qt.AlignHCenter; text: value; color: tint; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontMono }
+            Text { Layout.alignment: Qt.AlignHCenter; text: value; color: tint; font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans; font.features: Theme.tnum }
             Text { Layout.alignment: Qt.AlignHCenter; text: label; color: Theme.t4; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans }
         }
     }
@@ -105,12 +105,12 @@ Window {
                     Row {
                         spacing: 6
                         Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
-                        Text { text: win.sess ? win.sess.totalDownSpeed : ""; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                        Text { text: win.sess ? win.sess.totalDownSpeed : ""; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum; anchors.verticalCenter: parent.verticalCenter }
                     }
                     Row {
                         spacing: 6
                         Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
-                        Text { text: win.sess ? win.sess.totalUpSpeed : ""; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                        Text { text: win.sess ? win.sess.totalUpSpeed : ""; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; anchors.verticalCenter: parent.verticalCenter }
                     }
                 }
             }

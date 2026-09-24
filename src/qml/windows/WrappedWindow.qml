@@ -105,7 +105,7 @@ Window {
                 Text {
                     Layout.alignment: Qt.AlignHCenter
                     text: win.year
-                    color: "#dc2626"; font.pixelSize: 40; font.weight: Font.Black; font.family: Theme.fontMono; font.letterSpacing: 4
+                    color: "#dc2626"; font.pixelSize: 40; font.weight: Font.Black; font.family: Theme.fontSans; font.features: Theme.tnum; font.letterSpacing: 4
                 }
             }
 
@@ -203,7 +203,7 @@ Window {
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: win.monthInitials[index]
-                                color: "#70707a"; font.pixelSize: 9; font.family: Theme.fontMono
+                                color: "#70707a"; font.pixelSize: 9; font.family: Theme.fontSans; font.features: Theme.tnum
                             }
                         }
                     }
@@ -248,7 +248,7 @@ Window {
                         }
                         Text {
                             text: modelData.count
-                            color: "#a8a8b0"; font.pixelSize: 12; font.family: Theme.fontMono
+                            color: "#a8a8b0"; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
                             Layout.preferredWidth: 34; horizontalAlignment: Text.AlignRight
                         }
                     }

@@ -162,7 +162,7 @@ Rectangle {
                         }
                         Text {
                             text: modelData.size
-                            color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                            color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
                         }
                         IconImg {
                             src: "qrc:/icons/trash.svg"; s: 16

@@ -194,7 +194,7 @@ Item {
                     Text {
                         text: (root.pw.extSubOffset >= 0 ? "+" : "") + (root.pw.extSubOffset / 1000).toFixed(1) + "s"
                         color: root.pw.extSubOffset === 0 ? "#77777d" : "#f3f3f4"
-                        font.pixelSize: 12; font.family: Theme.fontMono
+                        font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { root.pw.extSubOffset = 0; root.pw.updateCue(root.mediaPlayer.position) } }
                     }
                     PChip { label: "+0.5s"; onClicked: root.pw.bumpSubOffset(500) }

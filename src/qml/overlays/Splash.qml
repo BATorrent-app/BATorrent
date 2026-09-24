@@ -165,7 +165,7 @@ Item {
             visible: text.length > 0
             text: (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? ("v" + themeBridge.appVersion) : ""
             color: "#5a565c"; font.pixelSize: 11; font.weight: Font.DemiBold
-            font.letterSpacing: 0.5; font.family: Theme.fontMono
+            font.letterSpacing: 0.5; font.family: Theme.fontSans; font.features: Theme.tnum
             opacity: Math.min(1, Math.max(0, root.wordFade - 240) / 500)
         }
     }

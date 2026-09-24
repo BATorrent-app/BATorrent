@@ -181,7 +181,7 @@ Rectangle {
                         text: navTab.modelData.label
                         color: navTab.active ? Theme.t1 : (tabMa.containsMouse ? Theme.t2 : Theme.t3)
                         font.pixelSize: 14
-                        font.weight: navTab.active ? Font.DemiBold : Font.Medium
+                        font.weight: navTab.active ? Font.Medium : Font.Normal
                         font.family: Theme.fontSans
                         Behavior on color { ColorAnimation { duration: 140 } }
                     }
@@ -239,7 +239,7 @@ Rectangle {
                     text: (i18n.language, i18n.t("action_donate"))
                     color: donMa.containsMouse ? Theme.accent : Theme.t3
                     font.pixelSize: 14
-                    font.weight: Font.Medium
+                    font.weight: Font.Normal
                     font.family: Theme.fontSans
                     Behavior on color { ColorAnimation { duration: 140 } }
                 }
@@ -282,7 +282,7 @@ Rectangle {
                     text: (i18n.language, i18n.t("tb_settings"))
                     color: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
                     font.pixelSize: 14
-                    font.weight: settingsBtn.active ? Font.DemiBold : Font.Medium
+                    font.weight: settingsBtn.active ? Font.Medium : Font.Normal
                     font.family: Theme.fontSans
                     Behavior on color { ColorAnimation { duration: 140 } }
                 }

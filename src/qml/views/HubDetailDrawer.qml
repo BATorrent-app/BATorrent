@@ -102,7 +102,7 @@ Item {
                     Layout.fillWidth: true; Layout.alignment: Qt.AlignHCenter
                     visible: text.length > 0
                     color: detailDrawer.it && detailDrawer.it.playing ? Theme.accent : Theme.t4
-                    font.pixelSize: 12; font.family: Theme.fontMono; horizontalAlignment: Text.AlignHCenter
+                    font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum; horizontalAlignment: Text.AlignHCenter
                     text: {
                         var it = detailDrawer.it; if (!it) return ""
                         if (detailDrawer.isGame) return root.hub.cardStatus(it, true)

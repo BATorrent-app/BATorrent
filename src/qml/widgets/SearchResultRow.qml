@@ -175,7 +175,7 @@ Rectangle {
                 Item { Layout.fillWidth: true }
             }
         }
-        Text { text: row.modelData.sizeStr || ""; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono }
+        Text { text: row.modelData.sizeStr || ""; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
         Item {   // fixed-width seeds cell: small bar (fill = health) + number
             Layout.preferredWidth: 100
             Layout.alignment: Qt.AlignVCenter
@@ -199,11 +199,11 @@ Rectangle {
                     text: row.modelData.seeds || ""
                     width: 28; horizontalAlignment: Text.AlignRight
                     color: row.sv.seedColor(row.modelData.seedsN || 0)
-                    font.pixelSize: 12; font.family: Theme.fontMono
+                    font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
                 }
             }
         }
-        Text { visible: (row.modelData.leech || "").length > 0; text: row.modelData.leech || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono }
+        Text { visible: (row.modelData.leech || "").length > 0; text: row.modelData.leech || ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
         Item {
             Layout.preferredWidth: 36
             Rectangle {

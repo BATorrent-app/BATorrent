@@ -139,7 +139,7 @@ BatDialog {
             }
             Text {
                 text: dlg.totalSize + " · " + dlg.fileCount + " itens"
-                color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono
+                color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
             }
         }
     }
@@ -186,7 +186,7 @@ BatDialog {
         Item { Layout.fillWidth: true }
         Text {
             text: dlg.selectedCount + " de " + dlg.fileCount + " · " + dlg.totalSize
-            color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono
+            color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
         }
     }
 
@@ -219,7 +219,7 @@ BatDialog {
                         font.pixelSize: 12; font.weight: model.dir ? Font.DemiBold : Font.Normal
                         font.family: Theme.fontSans; elide: Text.ElideMiddle
                     }
-                    Text { text: model.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontMono; visible: model.size !== "" }
+                    Text { text: model.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum; visible: model.size !== "" }
                 }
             }
         }

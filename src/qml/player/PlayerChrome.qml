@@ -147,13 +147,13 @@ Item {
                 Item { Layout.minimumWidth: 52 }
                 Row { spacing: 6
                     Rectangle { width: 9; height: 3; radius: 2; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "watched"; color: "#9a9aa0"; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "watched"; color: "#9a9aa0"; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum; anchors.verticalCenter: parent.verticalCenter }
                 }
                 Row { spacing: 6
                     Rectangle { width: 9; height: 3; radius: 2; color: "#80ffffff"; anchors.verticalCenter: parent.verticalCenter }
                     Text {
                         text: "downloaded to " + (formatHelper && pw ? formatHelper.fmt(pw.downloadedToMs) : "")
-                        color: "#9a9aa0"; font.pixelSize: 11; font.family: Theme.fontMono; anchors.verticalCenter: parent.verticalCenter
+                        color: "#9a9aa0"; font.pixelSize: 11; font.family: Theme.fontSans; anchors.verticalCenter: parent.verticalCenter
                     }
                 }
                 Item { Layout.fillWidth: true }
@@ -187,7 +187,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "+" + (formatHelper && pw ? formatHelper.fmtRunway(pw.bufferedAheadMs) : "")
                                 color: parent.parent.low ? Theme.amber : Theme.t2
-                                font.pixelSize: 12; font.family: Theme.fontMono
+                                font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
                             }
                         }
                         MouseArea { id: dlMa; anchors.fill: parent; hoverEnabled: true }

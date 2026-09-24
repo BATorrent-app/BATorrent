@@ -29,7 +29,8 @@ Rectangle {
         text: chip.text
         color: chip.red ? Theme.accentText : Theme.t3
         font.pixelSize: 10
-        font.family: Theme.fontMono
+        font.family: Theme.fontSans
+        font.features: Theme.tnum
     }
 
     MouseArea {

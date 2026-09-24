@@ -33,7 +33,7 @@ ColumnLayout {
             anchors.centerIn: parent
             color: chip.on ? "#ffffff" : Theme.t2
             font.pixelSize: 12
-            font.weight: chip.on ? Font.DemiBold : Font.Medium
+            font.weight: chip.on ? Font.Medium : Font.Normal
             font.family: Theme.fontSans
         }
         MouseArea {

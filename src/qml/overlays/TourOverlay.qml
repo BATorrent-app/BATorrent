@@ -168,7 +168,7 @@ Item {
             Text {
                 text: (tour.index + 1) + " / " + tour.steps.length
                 color: Theme.t4; font.pixelSize: 11; font.weight: Font.Medium
-                font.letterSpacing: 0.5; font.family: Theme.fontMono
+                font.letterSpacing: 0.5; font.family: Theme.fontSans; font.features: Theme.tnum
             }
             // ---- title ----
             Text {

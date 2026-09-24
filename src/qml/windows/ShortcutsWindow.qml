@@ -115,7 +115,8 @@ Window {
                                         text: modelData.k
                                         color: Theme.t2
                                         font.pixelSize: 12
-                                        font.family: Theme.fontMono
+                                        font.family: Theme.fontSans
+                                        font.features: Theme.tnum
                                     }
                                 }
                                 Text {

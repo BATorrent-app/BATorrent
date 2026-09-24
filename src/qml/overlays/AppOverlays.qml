@@ -142,7 +142,7 @@ Item {
         Text {
             Layout.fillWidth: true
             text: diagnoseDlg.body
-            color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono
+            color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
             wrapMode: Text.WordWrap; lineHeight: 1.4
         }
     }

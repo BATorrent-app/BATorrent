@@ -121,7 +121,7 @@ Window {
                         Text {
                             text: (pop.sess ? pop.sess.torrentCount : 0) + " torrents · "
                                 + (pop.sess ? pop.sess.activeCount : 0) + " " + (i18n.language, i18n.t("word_active"))
-                            color: Theme.t3; font.pixelSize: 10; font.family: Theme.fontMono
+                            color: Theme.t3; font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum
                         }
                     }
                     Rectangle {
@@ -151,7 +151,7 @@ Window {
                             Layout.fillWidth: true
                             spacing: 2
                             Text { text: modelData.eb; color: modelData.c; font.pixelSize: 8; font.weight: Font.Bold; font.letterSpacing: 1.2; font.family: Theme.fontSans }
-                            Text { text: modelData.val; color: Theme.t1; font.pixelSize: 14; font.weight: Font.Bold; font.family: Theme.fontMono }
+                            Text { text: modelData.val; color: Theme.t1; font.pixelSize: 14; font.weight: Font.Bold; font.family: Theme.fontSans; font.features: Theme.tnum }
                         }
                     }
                 }
@@ -171,7 +171,7 @@ Window {
                     anchors.fill: parent
                     anchors.leftMargin: 14; anchors.rightMargin: 12
                     Text { text: r.label; color: r.danger ? Theme.accentText : Theme.t1; font.pixelSize: 11; font.family: Theme.fontSans; Layout.fillWidth: true }
-                    Text { text: r.shortcut; visible: r.shortcut.length > 0; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontMono }
+                    Text { text: r.shortcut; visible: r.shortcut.length > 0; color: Theme.t4; font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum }
                 }
                 MouseArea { id: rma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { r.clicked(); pop.hide() } }
             }

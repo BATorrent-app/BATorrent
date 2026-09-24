@@ -82,7 +82,7 @@ Rectangle {
                 color: tb.active ? Theme.accent : (!tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3)
                 font.pixelSize: 11
                 font.family: Theme.fontSans
-                font.weight: Font.Medium
+                font.weight: tb.active ? Font.Medium : Font.Normal
             }
         }
         MouseArea {

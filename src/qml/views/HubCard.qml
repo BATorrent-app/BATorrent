@@ -179,7 +179,7 @@ Item {
             Text {
                 id: tlabel; anchors.centerIn: parent
                 text: card.host.fmtTime(card.item.resumeMs) + " / " + card.host.fmtTime(card.item.durMs)
-                color: "#e8e8ec"; font.pixelSize: 9; font.weight: Font.DemiBold; font.family: Theme.fontMono
+                color: "#e8e8ec"; font.pixelSize: 9; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
             }
         }
 

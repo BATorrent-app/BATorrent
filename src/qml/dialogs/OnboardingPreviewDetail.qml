@@ -94,7 +94,7 @@ Rectangle {
                     text: "6.8 MB/s"
                     color: Theme.t2
                     font.pixelSize: 12
-                    font.family: Theme.fontMono
+                    font.family: Theme.fontSans
                     font.features: Theme.tnum
                 }
             }
