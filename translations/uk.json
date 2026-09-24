@@ -1068,7 +1068,6 @@
   "state_choked": "Піри підключені, але зараз ніхто нам не віддає",
   "state_completed": "Завершено",
   "state_connecting": "Піри знайдені — з'єднання…",
-  "state_done_badge": "Готово",
   "state_downloading": "Завантаження",
   "state_failed": "Помилка",
   "state_fetching_metadata": "Шукаємо піра зі списком файлів (%1 хв) — рідкісні торенти можуть шукати довше",

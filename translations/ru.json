@@ -1068,7 +1068,6 @@
   "state_choked": "Пиры подключены, но сейчас никто нам не отдаёт",
   "state_completed": "Завершён",
   "state_connecting": "Пиры найдены — подключение…",
-  "state_done_badge": "Готово",
   "state_downloading": "Загрузка",
   "state_failed": "Ошибка",
   "state_fetching_metadata": "Ищем пира со списком файлов (%1 мин) — редкие торренты могут искать дольше",

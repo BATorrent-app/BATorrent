@@ -75,13 +75,20 @@ MenuBar {
                 font.pixelSize: 12
                 font.family: Theme.fontSans
                 verticalAlignment: Text.AlignVCenter
+                // Like CtxItem: at 264px the longest translated label (German's
+                // "Aus qBittorrent importieren…") only just fits, so a label
+                // that outgrows the menu has to cut cleanly instead of vanish.
+                elide: Text.ElideRight
             }
         }
         background: Rectangle { color: bi.highlighted ? Theme.hover : "transparent"; radius: 5 }
     }
     component BarSep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
     component BarMenu: Menu {
-        implicitWidth: 240
+        // 264, not 240: the icon column moved the text from x:14 to x:38, and
+        // keeping the old width would have spent those 24px out of the label's
+        // budget — which the longest German and Ukrainian entries already fill.
+        implicitWidth: 264
         // Breathing room so the first/last item don't get clipped by the
         // rounded (radius 8) background corners: the "cut tail" on the
         // last entry.

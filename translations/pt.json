@@ -1068,7 +1068,6 @@
   "state_choked": "Peers conectados, mas nenhum está enviando para nós agora",
   "state_completed": "Concluído",
   "state_connecting": "Peers encontrados — conectando…",
-  "state_done_badge": "Concluído",
   "state_downloading": "Baixando",
   "state_failed": "Falhou",
   "state_fetching_metadata": "Procurando um peer com a lista de arquivos (%1min) — torrents raros podem demorar",

@@ -1068,7 +1068,6 @@
   "state_choked": "Eşler bağlı, ancak hiçbiri şu anda bize yükleme yapmıyor",
   "state_completed": "Tamamlandı",
   "state_connecting": "Eşler bulundu — bağlanıyor…",
-  "state_done_badge": "Bitti",
   "state_downloading": "İndiriliyor",
   "state_failed": "Başarısız",
   "state_fetching_metadata": "Dosya listesine sahip bir eş aranıyor (%1dk) — nadir torrentler zaman alabilir",

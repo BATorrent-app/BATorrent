@@ -1068,7 +1068,6 @@
   "state_choked": "Peers connected, but none are uploading to us right now",
   "state_completed": "Completed",
   "state_connecting": "Peers found — connecting…",
-  "state_done_badge": "Done",
   "state_downloading": "Downloading",
   "state_failed": "Failed",
   "state_fetching_metadata": "Looking for a peer with this torrent's file list (%1m) — rare torrents can take a while",

@@ -1068,7 +1068,6 @@
   "state_choked": "ピアは接続中ですが、現在誰もアップロードしていません",
   "state_completed": "完了済み",
   "state_connecting": "ピアを発見 — 接続中…",
-  "state_done_badge": "完了",
   "state_downloading": "ダウンロード中",
   "state_failed": "失敗",
   "state_fetching_metadata": "ファイルリストを持つピアを探しています（%1分）— まれなトレントは時間がかかることがあります",
