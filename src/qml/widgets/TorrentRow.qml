@@ -90,9 +90,6 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             progress: lrow.progress
             stateKey: lrow.stateKey
-            // Same condition as the grid tile, to the letter. A sheen that ran
-            // on one view and not the other would be the divergence this row
-            // was rewritten to remove.
             sheen: (lrow.stateKey === "seeding" && lrow.upRate > 0)
                    || (lrow.stateKey === "downloading" && lrow.downRate > 0)
             fillOpacity: 0.30

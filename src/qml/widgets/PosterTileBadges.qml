@@ -32,11 +32,7 @@ Item {
         implicitWidth: Math.min(statusMark.implicitWidth + 14,
                                 Math.round(tile.width * 0.62))
         implicitHeight: 18
-        // Grows from its right edge so the pill's anchored corner stays put
-        // while the rest of it moves.
         transformOrigin: Item.Right
-        // The label length changes with the state, and a pill that jumped to
-        // its new width mid-fade read as two different pills.
         Behavior on implicitWidth {
             NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut }
         }
@@ -53,10 +49,6 @@ Item {
             maxLabelWidth: Math.round(tile.width * 0.62) - 14 - symbolSize - spacing
         }
 
-        // The four badges that used to sit here swapped with a fade and a pop.
-        // There is one pill now, so the swap is its contents changing rather
-        // than one object replacing another — same fade, same pop, nothing to
-        // cross-fade against itself.
         SequentialAnimation {
             id: statusSwap
             NumberAnimation {

@@ -28,8 +28,26 @@ Rectangle {
     // Pinned means the same here as in the bottom panel: stay open regardless of
     // selection, and ignore a previous dismiss. Without this the pin button would
     // be decoration: visibility was keyed only on hasSel && !dismissed.
-    readonly property bool shown: showInspector && controller.gridView
-                                  && (win.detailsLocked || (win.hasSel && !dismissed))
+    readonly property bool wantShown: showInspector && controller.gridView
+                                      && (win.detailsLocked || (win.hasSel && !dismissed))
+    readonly property bool shown: wantShown || removalHold
+
+    // Collapsing mid-removal changes the grid's column count while its displaced
+    // transition is in flight, and a view transition never retargets.
+    property bool removalHold: false
+    Connections {
+        // aboutToBe: the hold must land before the removal clears the selection.
+        target: (sidebar.win && sidebar.win.model) ? sidebar.win.model : null
+        function onRowsAboutToBeRemoved() {
+            sidebar.removalHold = true
+            removalSettle.restart()
+        }
+    }
+    Timer {
+        id: removalSettle
+        interval: 320
+        onTriggered: sidebar.removalHold = false
+    }
 
     // Same collapse the bottom deck has, and the same state behind it: the two are
     // one feature in two placements, so collapsing one and finding the other open
