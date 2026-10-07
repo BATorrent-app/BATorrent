@@ -31,14 +31,24 @@ Row {
     // so the symbol is; only the colour drops to amber to say "stalled".
     property bool stalled: false
 
+    // Only glyphs the bundled IBM Plex Sans actually carries. ‖ ⋯ ✗ were not
+    // among them, so they were being drawn by whatever fallback each platform
+    // picked — a different typeface per OS inside the same badge.
     readonly property string symbol:
           stateKey === "seeding"   ? "↑"
         : stateKey === "completed" ? "✓"
-        : stateKey === "queued"    ? "⋯"
-        : stateKey === "paused"    ? "‖"
-        : stateKey === "missing"   ? "✗"
+        : stateKey === "queued"    ? "…"
+        : stateKey === "missing"   ? "×"
+        : stateKey === "paused"    ? ""
         : stateKey === "error"     ? "!"
+        : stateKey === "fetching"  ? "?"
         : "↓"
+
+    // Pause is a shape, not a letter: no text glyph gives the two stubby bars,
+    // and pause.svg is solid, so it holds up at this size where a stroked icon
+    // would not.
+    readonly property string symbolIcon:
+        stateKey === "paused" ? "qrc:/icons/pause.svg" : ""
 
     readonly property color symbolColor:
           stalled                  ? Theme.amber
@@ -50,8 +60,17 @@ Row {
 
     spacing: 5
 
-    Text {
+    IconImg {
         anchors.verticalCenter: parent.verticalCenter
+        visible: mark.symbolIcon !== ""
+        src: mark.symbolIcon
+        tint: mark.symbolColor
+        s: mark.symbolSize
+    }
+    Text {
+        objectName: "statusGlyph"
+        anchors.verticalCenter: parent.verticalCenter
+        visible: mark.symbolIcon === ""
         text: mark.symbol
         color: mark.symbolColor
         font.pixelSize: mark.symbolSize
@@ -59,6 +78,7 @@ Row {
         font.family: Theme.fontSans
     }
     Text {
+        objectName: "statusLabel"
         anchors.verticalCenter: parent.verticalCenter
         visible: mark.label.length > 0
         text: mark.label

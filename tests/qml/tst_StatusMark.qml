@@ -34,10 +34,10 @@ Item {
                 { tag: "downloading", key: "downloading", symbol: "↓" },
                 { tag: "seeding",     key: "seeding",     symbol: "↑" },
                 { tag: "completed",   key: "completed",   symbol: "✓" },
-                { tag: "queued",      key: "queued",      symbol: "⋯" },
-                { tag: "paused",      key: "paused",      symbol: "‖" },
-                { tag: "missing",     key: "missing",     symbol: "✗" },
-                { tag: "error",       key: "error",       symbol: "!" }
+                { tag: "queued",      key: "queued",      symbol: "…" },
+                { tag: "missing",     key: "missing",     symbol: "×" },
+                { tag: "error",       key: "error",       symbol: "!" },
+                { tag: "fetching",    key: "fetching",    symbol: "?" }
             ]
         }
 
@@ -85,12 +85,26 @@ Item {
         // untouched, which is what keeps them from disagreeing.
         function test_labelHiddenWhenEmpty() {
             var m = mk({ stateKey: "seeding", label: "" })
-            compare(m.children.length, 2)
-            verify(!m.children[1].visible, "no label, no second glyph")
+            verify(!findChild(m, "statusLabel").visible, "no label, no second glyph")
 
             var l = mk({ stateKey: "seeding", label: "Seeding" })
-            verify(l.children[1].visible)
-            compare(l.children[1].text, "Seeding")
+            var lbl = findChild(l, "statusLabel")
+            verify(lbl.visible)
+            compare(lbl.text, "Seeding")
+        }
+
+        // Pause is the one mark drawn as an icon: no glyph in the bundled font
+        // gives two stubby bars, and ‖ was being resolved by a fallback
+        // typeface that differs per platform.
+        function test_pausedDrawsAnIconAndNoGlyph() {
+            var m = mk({ stateKey: "paused" })
+            verify(m.symbolIcon !== "", "paused has an icon")
+            compare(m.symbol, "")
+            verify(!findChild(m, "statusGlyph").visible, "the glyph stands down")
+
+            var other = mk({ stateKey: "seeding" })
+            compare(other.symbolIcon, "")
+            verify(findChild(other, "statusGlyph").visible)
         }
 
         // The grid badge has to give way to the year/category pill beside it.
@@ -98,8 +112,9 @@ Item {
             var wide = mk({ stateKey: "downloading", label: "Downloading" })
             var clamped = mk({ stateKey: "downloading", label: "Downloading",
                                maxLabelWidth: 20 })
-            verify(wide.children[1].width > clamped.children[1].width)
-            compare(clamped.children[1].width, 20)
+            verify(findChild(wide, "statusLabel").width
+                   > findChild(clamped, "statusLabel").width)
+            compare(findChild(clamped, "statusLabel").width, 20)
         }
     }
 }
