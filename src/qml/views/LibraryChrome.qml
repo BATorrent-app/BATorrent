@@ -37,10 +37,12 @@ ColumnLayout {
             id: libraryView
             win: root.host
             controller: root.controller
+            panelReflowing: detailSidebar.reflowing
             onAddMagnetRequested: root.addMagnetRequested()
             onAddLinkRequested: root.addLinkRequested()
         }
         DetailSidebar {
+            id: detailSidebar
             win: root.host
             controller: root.controller
             showInspector: root.controller.gridView && !root.host.detailBottom

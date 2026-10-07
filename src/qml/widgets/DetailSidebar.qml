@@ -28,25 +28,30 @@ Rectangle {
     // Pinned means the same here as in the bottom panel: stay open regardless of
     // selection, and ignore a previous dismiss. Without this the pin button would
     // be decoration: visibility was keyed only on hasSel && !dismissed.
-    readonly property bool wantShown: showInspector && controller.gridView
-                                      && (win.detailsLocked || (win.hasSel && !dismissed))
-    readonly property bool shown: wantShown || removalHold
+    readonly property bool shown: showInspector && controller.gridView
+                                  && (win.detailsLocked || (win.hasSel && !dismissed))
 
-    // Collapsing mid-removal changes the grid's column count while its displaced
-    // transition is in flight, and a view transition never retargets.
-    property bool removalHold: false
+    // Removing the selected torrent moves every tile twice: once to close the
+    // gap, again when this panel's 340px frees up. The grid drops its displaced
+    // transition for that case and the tiles ride the slide instead, as one
+    // movement. Armed before the removal lands, or the grid is already gone.
+    property bool reflowing: false
     Connections {
-        // aboutToBe: the hold must land before the removal clears the selection.
         target: (sidebar.win && sidebar.win.model) ? sidebar.win.model : null
-        function onRowsAboutToBeRemoved() {
-            sidebar.removalHold = true
-            removalSettle.restart()
+        function onRowsAboutToBeRemoved(parent, first, last) {
+            if (!sidebar.shown || sidebar.win.detailsLocked) return
+            for (var r = first; r <= last; ++r) {
+                if (!sidebar.controller.isRowSelected(r)) continue
+                sidebar.reflowing = true
+                reflowSettle.restart()
+                return
+            }
         }
     }
     Timer {
-        id: removalSettle
-        interval: 320
-        onTriggered: sidebar.removalHold = false
+        id: reflowSettle
+        interval: 260
+        onTriggered: sidebar.reflowing = false
     }
 
     // Same collapse the bottom deck has, and the same state behind it: the two are
