@@ -1070,7 +1070,7 @@
   "state_connecting": "Peers encontrados — conectando…",
   "state_downloading": "Baixando",
   "state_failed": "Falhou",
-  "state_fetching_metadata": "Procurando um peer com a lista de arquivos (%1min) — torrents raros podem demorar",
+  "state_fetching_metadata": "Procurando um peer com a lista de arquivos (%1) — torrents raros podem demorar",
   "state_files_missing": "Arquivos ausentes",
   "state_finished": "Finalizado",
   "state_metadata": "Metadados",

@@ -1070,7 +1070,7 @@
   "state_connecting": "Peers found — connecting…",
   "state_downloading": "Downloading",
   "state_failed": "Failed",
-  "state_fetching_metadata": "Looking for a peer with this torrent's file list (%1m) — rare torrents can take a while",
+  "state_fetching_metadata": "Looking for a peer with this torrent's file list (%1) — rare torrents can take a while",
   "state_files_missing": "Files missing",
   "state_finished": "Finished",
   "state_metadata": "Metadata",

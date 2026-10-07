@@ -34,6 +34,10 @@ struct TorrentInfo {
     bool seeding = false;
     bool filesMissing = false;   // data was deleted/moved off disk under a live torrent
     bool hasError = false;       // libtorrent parked it: disk full, permissions, bad piece storage
+    // From libtorrent's downloading_metadata, never from !hasMetadata: a
+    // default-constructed TorrentInfo must not claim to be fetching.
+    bool fetchingMetadata = false;
+    qint64 fetchingSecs = -1;    // how long it has been looking, -1 when not
     bool queued = false;   // paused by the download-queue cap, not the user
     int queuePos = 0;      // 1-based position among queued torrents
     float ratio = 0.0f;
@@ -59,6 +63,14 @@ inline bool torrentHasWork(bool hasMetadata, long long totalWanted)
     return hasMetadata && totalWanted > 0;
 }
 
+inline QString formatElapsedShort(qint64 secs)
+{
+    if (secs < 0) return {};
+    if (secs < 60)   return QStringLiteral("%1s").arg(secs);
+    if (secs < 3600) return QStringLiteral("%1m %2s").arg(secs / 60).arg(secs % 60);
+    return QStringLiteral("%1h %2m").arg(secs / 3600).arg((secs % 3600) / 60, 2, 10, QLatin1Char('0'));
+}
+
 inline QString torrentStateKey(const TorrentInfo &info)
 {
     // Missing first, then error. filesMissing is itself derived from an errc
@@ -70,6 +82,7 @@ inline QString torrentStateKey(const TorrentInfo &info)
     if (info.completed)    return QStringLiteral("completed");
     if (info.queued)       return QStringLiteral("queued");
     if (info.paused)       return QStringLiteral("paused");
+    if (info.fetchingMetadata) return QStringLiteral("fetching");
     // Ask libtorrent, don't compare a float. progress is total_wanted_done over
     // total_wanted in floating point, so a finished torrent can sit at
     // 0.99999994 and never satisfy >= 1.0f: that is a torrent stuck on
@@ -102,6 +115,7 @@ inline QString torrentStateLabelKey(const TorrentInfo &info)
         return info.finished ? QStringLiteral("state_paused_done")
                              : QStringLiteral("state_paused");
     if (key == QLatin1String("seeding"))   return QStringLiteral("state_seeding");
+    if (key == QLatin1String("fetching"))  return QStringLiteral("state_metadata");
     return {};
 }
 

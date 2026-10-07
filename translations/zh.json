@@ -1070,7 +1070,7 @@
   "state_connecting": "已找到用户 — 连接中…",
   "state_downloading": "下载中",
   "state_failed": "失败",
-  "state_fetching_metadata": "正在寻找拥有文件列表的节点（%1分钟）— 冷门种子可能需要更长时间",
+  "state_fetching_metadata": "正在寻找拥有文件列表的节点（%1）— 冷门种子可能需要更长时间",
   "state_files_missing": "文件缺失",
   "state_finished": "已完成",
   "state_metadata": "获取元数据",

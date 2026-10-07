@@ -1603,6 +1603,18 @@ TEST_CASE("torrentStateKey trusts libtorrent's finished flag, not the float",
         t.finished = torrentHasWork(false, 0) && true;
         t.seeding  = torrentHasWork(false, 0) && true;
         CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
+        // ...and once libtorrent says it is hunting for the file list, it is
+        // not merely "downloading" either: there is nothing to download yet.
+        t.fetchingMetadata = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("fetching"));
+        CHECK(torrentStateLabelKey(t) == QStringLiteral("state_metadata"));
+    }
+    SECTION("a user who stops the hunt sees paused, not fetching") {
+        t.fetchingMetadata = true;
+        t.paused = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("paused"));
+        t.paused = false; t.hasError = true;
+        CHECK(torrentStateKey(t) == QStringLiteral("error"));
     }
     SECTION("paused and missing still outrank finished") {
         t.finished = true;
@@ -1736,4 +1748,17 @@ TEST_CASE("torrentStateLabelKey never contradicts torrentStateKey",
         CHECK(torrentStateKey(t) == QStringLiteral("downloading"));
         CHECK(torrentStateLabelKey(t).isEmpty());
     }
+}
+
+TEST_CASE("formatElapsedShort keeps seconds while they still matter",
+          "[types][state]")
+{
+    CHECK(formatElapsedShort(-1).isEmpty());
+    CHECK(formatElapsedShort(0)    == QStringLiteral("0s"));
+    CHECK(formatElapsedShort(45)   == QStringLiteral("45s"));
+    CHECK(formatElapsedShort(60)   == QStringLiteral("1m 0s"));
+    CHECK(formatElapsedShort(155)  == QStringLiteral("2m 35s"));
+    CHECK(formatElapsedShort(3599) == QStringLiteral("59m 59s"));
+    CHECK(formatElapsedShort(3600) == QStringLiteral("1h 00m"));
+    CHECK(formatElapsedShort(3900) == QStringLiteral("1h 05m"));
 }

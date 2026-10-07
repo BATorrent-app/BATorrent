@@ -128,10 +128,12 @@ TorrentInfo SessionManager::torrentAt(int index) const
         // A rare-seeder magnet can take a long time to find a peer that'll
         // hand over metadata. Explain the wait instead of giving up; the
         // user decides when to quit.
+        info.fetchingMetadata = true;
         auto it = m_magnetAddedAt.find(m_torrents[index]);
         if (it != m_magnetAddedAt.end()) {
-            const qint64 mins = (QDateTime::currentSecsSinceEpoch() - it->second) / 60;
-            info.stateDetail = tr_("state_fetching_metadata").arg(mins);
+            info.fetchingSecs = QDateTime::currentSecsSinceEpoch() - it->second;
+            info.stateDetail = tr_("state_fetching_metadata")
+                                   .arg(formatElapsedShort(info.fetchingSecs));
         }
     } else if (!info.completed && !info.paused && !info.finished
                && st.state == lt::torrent_status::downloading

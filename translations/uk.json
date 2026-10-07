@@ -1070,7 +1070,7 @@
   "state_connecting": "Піри знайдені — з'єднання…",
   "state_downloading": "Завантаження",
   "state_failed": "Помилка",
-  "state_fetching_metadata": "Шукаємо піра зі списком файлів (%1 хв) — рідкісні торенти можуть шукати довше",
+  "state_fetching_metadata": "Шукаємо піра зі списком файлів (%1) — рідкісні торенти можуть шукати довше",
   "state_files_missing": "Файли відсутні",
   "state_finished": "Готово",
   "state_metadata": "Метадані",

@@ -1070,7 +1070,7 @@
   "state_connecting": "Пиры найдены — подключение…",
   "state_downloading": "Загрузка",
   "state_failed": "Ошибка",
-  "state_fetching_metadata": "Ищем пира со списком файлов (%1 мин) — редкие торренты могут искать дольше",
+  "state_fetching_metadata": "Ищем пира со списком файлов (%1) — редкие торренты могут искать дольше",
   "state_files_missing": "Файлы отсутствуют",
   "state_finished": "Готов",
   "state_metadata": "Метаданные",

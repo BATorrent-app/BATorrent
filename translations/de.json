@@ -1070,7 +1070,7 @@
   "state_connecting": "Peers gefunden — verbinde…",
   "state_downloading": "Herunterladen",
   "state_failed": "Fehlgeschlagen",
-  "state_fetching_metadata": "Suche nach einem Peer mit der Dateiliste (%1 Min.) — seltene Torrents können dauern",
+  "state_fetching_metadata": "Suche nach einem Peer mit der Dateiliste (%1) — seltene Torrents können dauern",
   "state_files_missing": "Dateien fehlen",
   "state_finished": "Fertig",
   "state_metadata": "Metadaten",

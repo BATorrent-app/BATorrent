@@ -1070,7 +1070,7 @@
   "state_connecting": "Eşler bulundu — bağlanıyor…",
   "state_downloading": "İndiriliyor",
   "state_failed": "Başarısız",
-  "state_fetching_metadata": "Dosya listesine sahip bir eş aranıyor (%1dk) — nadir torrentler zaman alabilir",
+  "state_fetching_metadata": "Dosya listesine sahip bir eş aranıyor (%1) — nadir torrentler zaman alabilir",
   "state_files_missing": "Dosyalar eksik",
   "state_finished": "Bitti",
   "state_metadata": "Meta veri",

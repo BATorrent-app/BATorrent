@@ -1070,7 +1070,7 @@
   "state_connecting": "ピアを発見 — 接続中…",
   "state_downloading": "ダウンロード中",
   "state_failed": "失敗",
-  "state_fetching_metadata": "ファイルリストを持つピアを探しています（%1分）— まれなトレントは時間がかかることがあります",
+  "state_fetching_metadata": "ファイルリストを持つピアを探しています（%1）— まれなトレントは時間がかかることがあります",
   "state_files_missing": "ファイルがありません",
   "state_finished": "完了",
   "state_metadata": "メタデータ取得中",
