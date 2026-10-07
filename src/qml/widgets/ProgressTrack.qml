@@ -27,10 +27,11 @@ Item {
     // in a top-right pill, so the same number lived in two different places
     // depending on the view. Owned here, both views get it in the same spot.
     property bool showPercent: false
-    // Derived from the fill, not fixed: a filled bar is the background this
-    // number actually sits on, and it is a different colour in every state and
-    // every theme. Callers whose fill is dimmed (the list row) pass their own.
-    property color percentColor: Theme.inkOn(track.fill)
+    // Follows whichever background the number is actually over, which changes
+    // as the fill grows past it. Callers whose fill is dimmed (the list row)
+    // pass their own.
+    property color percentColor: pct.overFill ? Theme.inkOn(track.fill)
+                                              : Theme.inkOn(Theme.track)
     // Dims the fill without dimming the number on top of it. The list row used
     // to set `opacity` on the whole component to keep its percentage readable,
     // which only worked while the percentage lived outside the bar.
@@ -147,15 +148,22 @@ Item {
         // Sits above both layers, and only where a percentage is honest: the
         // trouble states deliberately have no number to show.
         Text {
+            id: pct
             anchors.centerIn: parent
             visible: track.showPercent && !track.trouble
             text: Math.floor(Math.max(0, Math.min(1, track.progress)) * 100) + "%"
             color: track.percentColor
-            // The number is centred in the whole bar, so below ~50% it straddles
-            // the fill and the empty track behind it — two backgrounds no single
-            // ink covers. The halo is the opposite of whatever the ink resolved
-            // to, so the half that leaves the fill still separates.
-            style: Text.Outline
+
+            readonly property real fillEdge:
+                parent.width * Math.max(0, Math.min(1, track.progress))
+            readonly property real leftX: (parent.width - implicitWidth) / 2
+            readonly property real rightX: (parent.width + implicitWidth) / 2
+            readonly property bool overFill: fillEdge >= rightX
+            // Only while the edge actually runs through the digits: a full bar
+            // has nothing to separate, and the halo there is just mud.
+            readonly property bool straddles: fillEdge > leftX && fillEdge < rightX
+
+            style: straddles ? Text.Outline : Text.Normal
             styleColor: track.percentColor.hslLightness > 0.5
                         ? Qt.rgba(0, 0, 0, 0.55) : Qt.rgba(1, 1, 1, 0.45)
             font.pixelSize: Math.max(9, Math.round(parent.height * 0.62))
