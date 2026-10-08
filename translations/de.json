@@ -1081,6 +1081,8 @@
   "state_paused": "Pausiert",
   "state_paused_done": "Abgeschlossen — Seeding pausiert",
   "state_queued": "Warteschlange #%1",
+  "state_seed_idle": "Peers verbunden, aber keiner fordert gerade Teile an",
+  "state_seed_no_peers": "Noch niemand verbunden, um dies zu laden",
   "state_seeding": "Seeden",
   "state_unknown": "Unbekannt",
   "stats_alltime": "Gesamtzeitraum",

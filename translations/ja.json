@@ -1081,6 +1081,8 @@
   "state_paused": "一時停止中",
   "state_paused_done": "ダウンロード完了 — シードは一時停止中",
   "state_queued": "待機 #%1",
+  "state_seed_idle": "ピアは接続中ですが、現在ピースの要求はありません",
+  "state_seed_no_peers": "これをダウンロードする接続先はまだありません",
   "state_seeding": "シード中",
   "state_unknown": "不明",
   "stats_alltime": "全期間",

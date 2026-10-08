@@ -1081,6 +1081,8 @@
   "state_paused": "Duraklatıldı",
   "state_paused_done": "İndirme tamamlandı — tohumlama duraklatıldı",
   "state_queued": "Sıra #%1",
+  "state_seed_idle": "Eşler bağlı, şu anda kimse parça istemiyor",
+  "state_seed_no_peers": "Bunu indirmek için henüz kimse bağlı değil",
   "state_seeding": "Tohumlanıyor",
   "state_unknown": "Bilinmiyor",
   "stats_alltime": "Tüm Zamanlar",

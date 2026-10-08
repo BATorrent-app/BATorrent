@@ -123,6 +123,13 @@ TorrentInfo SessionManager::torrentAt(int index) const
             info.stateDetail = tr_("state_fetching_metadata")
                                    .arg(formatElapsedShort(info.fetchingSecs));
         }
+    } else if (info.seeding && !info.paused && info.uploadRate == 0) {
+        // The download side names its blocker; the seeding side said nothing,
+        // so "seeding to three peers" and "seeding to nobody for two days"
+        // looked identical. The word stays Seeding — that is what it is — and
+        // the detail says whether anyone is actually on the other end.
+        info.stateDetail = info.numPeers == 0 ? tr_("state_seed_no_peers")
+                                              : tr_("state_seed_idle");
     } else if (!info.completed && !info.paused && !info.finished
             && st.state == lt::torrent_status::downloading
             && info.downloadRate < 1024) {

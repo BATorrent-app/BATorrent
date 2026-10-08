@@ -1081,6 +1081,8 @@
   "state_paused": "Пауза",
   "state_paused_done": "Завантаження завершено — роздача на паузі",
   "state_queued": "Черга #%1",
+  "state_seed_idle": "Піри підключені, але зараз ніхто не запитує частини",
+  "state_seed_no_peers": "Поки ніхто не підключився, щоб завантажити це",
   "state_seeding": "Роздача",
   "state_unknown": "Невідомо",
   "stats_alltime": "За весь час",

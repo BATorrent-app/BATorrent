@@ -1081,6 +1081,8 @@
   "state_paused": "Pausado",
   "state_paused_done": "Download concluído — semeadura pausada",
   "state_queued": "Fila #%1",
+  "state_seed_idle": "Peers conectados, nenhum pedindo pedaços no momento",
+  "state_seed_no_peers": "Ninguém conectado para baixar isto ainda",
   "state_seeding": "Semeando",
   "state_unknown": "Desconhecido",
   "stats_alltime": "Todo o Período",

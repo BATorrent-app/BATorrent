@@ -1081,6 +1081,8 @@
   "state_paused": "Pausado",
   "state_paused_done": "Descarga completa — siembra pausada",
   "state_queued": "Cola #%1",
+  "state_seed_idle": "Pares conectados, ninguno solicita piezas ahora mismo",
+  "state_seed_no_peers": "Nadie conectado para descargar esto todavía",
   "state_seeding": "Sembrando",
   "state_unknown": "Desconocido",
   "stats_alltime": "Todo el Tiempo",
