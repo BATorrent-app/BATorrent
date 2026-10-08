@@ -52,7 +52,7 @@ Rectangle {
         demoModel.append({
             torrentName: "Nightfall.2026.1080p", metaTitle: "Nightfall",
             stateKey: "downloading", progress: 0.72, posterPath: "qrc:/images/007.jpg",
-            stateString: i18n.t("state_downloading"), stateDetail: "", fileKind: "MKV",
+            stateString: i18n.t("state_downloading"), stateDetail: "", stateDetailShort: "", fileKind: "MKV",
             category: "Movies", size: "8.4 GB", downSpeed: "6.8 MB/s",
             upSpeed: "420 KB/s", downRate: 7130317, upRate: 430080,
             sizeBytes: 9019431322, infoHash: "demo-nightfall", playable: true,
@@ -63,7 +63,7 @@ Rectangle {
         demoModel.append({
             torrentName: "Forza.Horizon.Collection", metaTitle: "Forza Horizon",
             stateKey: "seeding", progress: 1.0, posterPath: "qrc:/images/forza.png",
-            stateString: i18n.t("state_seeding"), stateDetail: "", fileKind: "EXE",
+            stateString: i18n.t("state_seeding"), stateDetail: "", stateDetailShort: "", fileKind: "EXE",
             category: "Games", size: "67.2 GB", downSpeed: "0 KB/s",
             upSpeed: "860 KB/s", downRate: 0, upRate: 880640,
             sizeBytes: 72155450572, infoHash: "demo-forza", playable: false,
@@ -74,7 +74,7 @@ Rectangle {
         demoModel.append({
             torrentName: "Hollow.Knight.Soundtrack", metaTitle: "Hollow Knight",
             stateKey: "completed", progress: 1.0, posterPath: "qrc:/images/hollow.jpg",
-            stateString: i18n.t("state_completed"), stateDetail: "", fileKind: "FLAC",
+            stateString: i18n.t("state_completed"), stateDetail: "", stateDetailShort: "", fileKind: "FLAC",
             category: "Audio", size: "1.3 GB", downSpeed: "0 KB/s",
             upSpeed: "0 KB/s", downRate: 0, upRate: 0,
             sizeBytes: 1395864371, infoHash: "demo-hollow", playable: true,
@@ -85,7 +85,7 @@ Rectangle {
         demoModel.append({
             torrentName: "Open.Skies.S01E04", metaTitle: "Open Skies",
             stateKey: "downloading", progress: 0.38, posterPath: "",
-            stateString: i18n.t("state_downloading"), stateDetail: "", fileKind: "MP4",
+            stateString: i18n.t("state_downloading"), stateDetail: "", stateDetailShort: "", fileKind: "MP4",
             category: "Series", size: "3.1 GB", downSpeed: "1.4 MB/s",
             upSpeed: "96 KB/s", downRate: 1468006, upRate: 98304,
             sizeBytes: 3328599654, infoHash: "demo-skies", playable: true,
@@ -96,7 +96,7 @@ Rectangle {
         demoModel.append({
             torrentName: "Creative.Tools.Bundle", metaTitle: "Creative Tools",
             stateKey: "missing", progress: 0.54, posterPath: "",
-            stateString: i18n.t("state_files_missing"), stateDetail: "", fileKind: "ZIP",
+            stateString: i18n.t("state_files_missing"), stateDetail: "", stateDetailShort: "", fileKind: "ZIP",
             category: "Apps", size: "4.8 GB", downSpeed: "0 KB/s",
             upSpeed: "0 KB/s", downRate: 0, upRate: 0,
             sizeBytes: 5153960755, infoHash: "demo-tools", playable: false,

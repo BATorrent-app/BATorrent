@@ -21,6 +21,7 @@ Item {
     required property string posterPath
     required property string stateString
     required property string stateDetail
+    required property string stateDetailShort
     required property string fileKind
     required property string category
     required property string size

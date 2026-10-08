@@ -151,6 +151,7 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     }
     case StateStringRole: return info.stateString;
     case StateDetailRole: return info.stateDetail;
+    case StateDetailShortRole: return info.stateDetailShort;
     case DownSpeedRole:   return formatSpeed(info.downloadRate);
     case UpSpeedRole:     return formatSpeed(info.uploadRate);
     case SizeRole:        return formatSize(info.totalSize);
@@ -296,6 +297,7 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {MetaTitleRole,   "metaTitle"},
         {StateStringRole, "stateString"},
         {StateDetailRole, "stateDetail"},
+        {StateDetailShortRole, "stateDetailShort"},
         {DownSpeedRole,   "downSpeed"},
         {UpSpeedRole,     "upSpeed"},
         {CategoryRole,    "category"},
@@ -354,6 +356,7 @@ void QmlPosterModel::emitRows(bool fullRoles)
     // the tick; full edits (rename/category/restore) use fullRoles.
     static const QList<int> volatileRoles = {
         ProgressRole, StateKeyRole, StateStringRole, StateDetailRole,
+        StateDetailShortRole,
         DownSpeedRole, UpSpeedRole, NumPeersRole, DownRateRole, UpRateRole,
         // size resolves once a magnet's metadata arrives: without it the grid
         // (and list) stay stuck at "0 B" until some full refresh happens.

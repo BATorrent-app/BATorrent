@@ -28,15 +28,21 @@ Column {
             id: leftTxt
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            // Genres when we know them; otherwise the live transfer, which is
-            // the only other thing worth a line here. Never blank while
-            // something is actually moving.
+            // A torrent that is stuck says why, in the short form written for
+            // this width; the engine's sentence stays for the tooltip. Genres
+            // are catalogue trivia next to "nobody is connected", so they only
+            // get the line when nothing is wrong.
+            readonly property bool hasTrouble: tile.stateDetailShort.length > 0
             readonly property bool hasGenres: tile.genres.length > 0
-            text: hasGenres ? tile.genres
+            text: hasTrouble ? tile.stateDetailShort
+                  : hasGenres ? tile.genres
                   : tile.isDownloading ? ("↓ " + tile.downSpeed)
                   : tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed)
                   : ""
-            color: hasGenres ? Theme.t3 : Theme.t4
+            // Amber means something is wrong. A magnet counting up while it
+            // looks for the file list is not wrong, just slow.
+            color: hasTrouble ? (tile.stateKey === "fetching" ? Theme.t3 : Theme.amber)
+                   : (hasGenres ? Theme.t3 : Theme.t4)
             font.pixelSize: 13
             // Medium is a bundled IBM Plex face, not a synthesised weight —
             // it buys legibility at this size without another pixel of line

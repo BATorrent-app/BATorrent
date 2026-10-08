@@ -25,6 +25,9 @@ struct TorrentInfo {
     int numSeeds = 0;
     QString stateString;
     QString stateDetail;   // why a downloading torrent isn't moving ("" when fine)
+    // Same fact for a 178px tile, where the sentence above only elides. Always
+    // written next to it so the two cannot say different things.
+    QString stateDetailShort;
     bool paused = false;
     bool completed = false;
     // Straight from libtorrent, which counts pieces instead of comparing a

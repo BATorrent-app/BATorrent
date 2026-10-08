@@ -122,6 +122,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
             info.fetchingSecs = QDateTime::currentSecsSinceEpoch() - it->second;
             info.stateDetail = tr_("state_fetching_metadata")
                                    .arg(formatElapsedShort(info.fetchingSecs));
+            info.stateDetailShort = formatElapsedShort(info.fetchingSecs);
         }
     } else if (info.seeding && !info.paused && info.uploadRate == 0) {
         // The download side names its blocker; the seeding side said nothing,
@@ -130,21 +131,29 @@ TorrentInfo SessionManager::torrentAt(int index) const
         // the detail says whether anyone is actually on the other end.
         info.stateDetail = info.numPeers == 0 ? tr_("state_seed_no_peers")
                                               : tr_("state_seed_idle");
+        info.stateDetailShort = info.numPeers == 0 ? tr_("state_s_seed_no_peers")
+                                                   : tr_("state_s_seed_idle");
     } else if (!info.completed && !info.paused && !info.finished
             && st.state == lt::torrent_status::downloading
             && info.downloadRate < 1024) {
-        if (st.errc)
+        if (st.errc) {
             info.stateDetail = QString::fromStdString(st.errc.message());
-        else if (info.numPeers == 0)
+        } else if (info.numPeers == 0) {
             // candidates known but none connected yet = the "connecting" phase;
             // nothing found at all = still searching the swarm
-            info.stateDetail = st.connect_candidates > 0
+            const bool connecting = st.connect_candidates > 0;
+            info.stateDetail = connecting
                 ? tr_("state_connecting")
                 : (m_dhtEnabled ? tr_("state_no_peers_dht") : tr_("state_no_peers"));
-        else if (info.numSeeds == 0)
+            info.stateDetailShort = connecting ? tr_("state_s_connecting")
+                                               : tr_("state_s_no_peers");
+        } else if (info.numSeeds == 0) {
             info.stateDetail = tr_("state_no_seeds");
-        else
+            info.stateDetailShort = tr_("state_s_no_seeds");
+        } else {
             info.stateDetail = tr_("state_choked");
+            info.stateDetailShort = tr_("state_s_choked");
+        }
     } else if (!info.completed && !info.paused && !info.finished
                && st.state == lt::torrent_status::downloading
                && info.downloadRate >= 1024 && info.numPeers > 0
@@ -154,6 +163,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
         // rate, progress moving) right up until it needs that missing piece and
         // stalls for good. Surface it early instead of only once it's stuck.
         info.stateDetail = tr_("state_missing_pieces");
+        info.stateDetailShort = tr_("state_s_missing_pieces");
     }
 
     qint64 uploaded = st.total_payload_upload;

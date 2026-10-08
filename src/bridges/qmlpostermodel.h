@@ -20,6 +20,7 @@ public:
         MetaTitleRole,
         StateStringRole,
         StateDetailRole,
+        StateDetailShortRole,
         DownSpeedRole,
         UpSpeedRole,
         SizeRole,
