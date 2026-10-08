@@ -263,42 +263,35 @@ Item {
             wrapMode: Text.WordWrap
         }
 
-        Rectangle {
-            id: progBar
-            // Always on, in every state. Downloading and seeding show the same
-            // fact, so they share one shape: same height, same width, same place.
-            visible: true
-            anchors.left: parent.left
+        // No pill behind it: the poster already carries a scrim that reaches
+        // 92% black at this edge, so a second dark plate was black on black
+        // and only added weight.
+        Text {
+            id: pctTxt
+            visible: !Theme.isTroubleState(tile.stateKey) && tile.stateKey !== "fetching"
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
+            anchors.rightMargin: 10
             anchors.bottomMargin: 8
-            // 14, not 9: the percentage moved off the top-right corner and into
-            // the bar, and it needs a band it can actually sit in.
+            text: Math.floor(Math.max(0, Math.min(1, tile.shownProgress)) * 100) + "%"
+            color: "#ffffff"
+            font.pixelSize: 11
+            font.weight: Font.Bold
+            font.family: Theme.fontSans
+            font.features: Theme.tnum
+        }
+        ProgressTrack {
+            anchors.left: parent.left
+            anchors.right: pctTxt.visible ? pctTxt.left : parent.right
+            anchors.bottom: parent.bottom
+            anchors.leftMargin: 10
+            anchors.rightMargin: pctTxt.visible ? 8 : 10
+            anchors.bottomMargin: 8
             height: 14
-            radius: 7
-            color: Qt.rgba(0, 0, 0, 0.78)
-            border.color: Qt.rgba(1, 1, 1, 0.10)
-            border.width: 1
-            // The pill keeps its dark backing (it sits over artwork); the bar
-            // itself is the shared one, so a missing or errored torrent shows
-            // the travelling indicator here too.
-            ProgressTrack {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 1
-                anchors.rightMargin: 1
-                height: parent.height - 2
-                progress: tile.shownProgress
-                stateKey: tile.stateKey
-                sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
-                       || (tile.isDownloading && tile.downRate > 0)
-                showPercent: true
-                // The empty track here is a near-black pill over artwork.
-                emptyInk: "#ffffff"
-            }
+            progress: tile.shownProgress
+            stateKey: tile.stateKey
+            sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
+                   || (tile.isDownloading && tile.downRate > 0)
         }
 
         Rectangle {
