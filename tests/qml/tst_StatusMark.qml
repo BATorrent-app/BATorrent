@@ -33,7 +33,6 @@ Item {
             return [
                 { tag: "downloading", key: "downloading", symbol: "↓" },
                 { tag: "seeding",     key: "seeding",     symbol: "↑" },
-                { tag: "completed",   key: "completed",   symbol: "✓" },
                 { tag: "queued",      key: "queued",      symbol: "…" },
                 { tag: "missing",     key: "missing",     symbol: "×" },
                 { tag: "error",       key: "error",       symbol: "!" }
@@ -74,10 +73,14 @@ Item {
         // quietly resolve to a tick: a phantom state rendering as a confident
         // one is how a wrong status becomes invisible.
         function test_unknownKeyDoesNotClaimCompletion() {
+            var done = mk({ stateKey: "completed" })
+            var tick = done.symbolIcon
+            verify(tick !== "", "completed is drawn by an icon")
+
             var m = mk({ stateKey: "finished" })
-            verify(m.symbol !== "✓", "an unknown key must not read as completed")
+            verify(m.symbolIcon !== tick, "an unknown key must not read as completed")
             var blank = mk({ stateKey: "" })
-            verify(blank.symbol !== "✓", "an empty key must not read as completed")
+            verify(blank.symbolIcon !== tick, "an empty key must not read as completed")
         }
 
         // The label is the engine's own stateString; both views pass it through
@@ -97,8 +100,9 @@ Item {
         // typeface that differs per platform.
         function test_shapeStatesDrawIconsAndNoGlyph_data() {
             return [
-                { tag: "paused",   key: "paused",   spins: false },
-                { tag: "fetching", key: "fetching", spins: true }
+                { tag: "paused",    key: "paused",    spins: false },
+                { tag: "completed", key: "completed", spins: false },
+                { tag: "fetching",  key: "fetching",  spins: true }
             ]
         }
 

@@ -34,7 +34,7 @@ Row {
     // Only glyphs IBM Plex Sans carries: ‖ ⋯ ✗ fell back to a per-OS typeface.
     readonly property string symbol:
           stateKey === "seeding"   ? "↑"
-        : stateKey === "completed" ? "✓"
+        : stateKey === "completed" ? ""
         : stateKey === "queued"    ? "…"
         : stateKey === "missing"   ? "×"
         : stateKey === "paused"    ? ""
@@ -43,9 +43,13 @@ Row {
         : "↓"
 
     // No glyph gives two stubby bars; pause.svg is solid, so it holds at 13px.
+    // Plex draws U+2713 calligraphic, with a varying stroke, next to the flat
+    // geometry of everything else. Pictographs become icons; the arrows and
+    // punctuation stay type.
     readonly property string symbolIcon:
-          stateKey === "paused"   ? "qrc:/icons/pause.svg"
-        : stateKey === "fetching" ? "qrc:/icons/loader.svg" : ""
+          stateKey === "paused"    ? "qrc:/icons/pause.svg"
+        : stateKey === "fetching"  ? "qrc:/icons/loader.svg"
+        : stateKey === "completed" ? "qrc:/icons/check.svg" : ""
     readonly property bool spinning: stateKey === "fetching"
 
     readonly property color symbolColor:
