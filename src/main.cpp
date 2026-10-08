@@ -145,8 +145,12 @@ int main(int argc, char *argv[])
 
     QmlBoot::armMacDockReopen(engine.rootObjects().first(), &app);
 
-    for (int i = 1; i < app.arguments().size(); ++i) {
-        const QString &arg = app.arguments().at(i);
+    // One copy, bound to a named list: arguments() returns by value, so
+    // at(i) on the temporary hands back a reference that dangles the moment
+    // the expression ends.
+    const QStringList launchArgs = app.arguments();
+    for (int i = 1; i < launchArgs.size(); ++i) {
+        const QString &arg = launchArgs.at(i);
         if (arg.endsWith(".torrent")) svc.sessionBridge->requestAddTorrentFile(arg);
         else if (arg.startsWith("magnet:") || arg.startsWith("bittorrent:"))
             svc.sessionBridge->addMagnetUri(arg);
