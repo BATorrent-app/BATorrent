@@ -92,6 +92,43 @@ BatDialog {
     Rectangle {
         Layout.fillWidth: true
         Layout.topMargin: Theme.sp3
+        radius: 12
+        color: Theme.panel
+        border.color: Theme.hair
+        border.width: 1
+        implicitHeight: shareRow.implicitHeight + 26
+
+        ColumnLayout {
+            id: shareRow
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: 13
+            anchors.rightMargin: 13
+            spacing: 5
+            Text {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: (i18n.language, i18n.t("share_notice_title"))
+                color: Theme.t2
+                font.pixelSize: 11; font.weight: Font.DemiBold
+                font.family: Theme.fontSans
+            }
+            Text {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: (i18n.language, i18n.t("share_notice_body"))
+                color: Theme.t3
+                font.pixelSize: 11
+                font.family: Theme.fontSans
+                lineHeight: 1.45
+            }
+        }
+    }
+
+    Rectangle {
+        Layout.fillWidth: true
+        Layout.topMargin: Theme.sp3
         Layout.bottomMargin: Theme.sp3
         radius: 12
         color: Theme.panel

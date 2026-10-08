@@ -26,6 +26,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRandomGenerator>
+#include <QSet>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
@@ -291,7 +292,19 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
     // in split mode, where the engine child applies + persists via the applySetting
     // RPC. Unknown keys are UI-only prefs → the shared QSettings store.
     if (m_engine && m_engine->applySetting(key, v)) { emit changed(); return; }
-    QSettings().setValue(key, v);
+    {
+        QSettings st;
+        st.setValue(key, v);
+        // Gates for a thing that should happen once. QSettings flushes on its
+        // own schedule, so a process that is force-killed or crashes before
+        // then loses the write and the wizard, the tour or the tray hint all
+        // come back. Cheap here: these are written a handful of times ever.
+        static const QSet<QString> once = {
+            QStringLiteral("welcomeShown"), QStringLiteral("lastSeenVersion"),
+            QStringLiteral("tourSeen"),     QStringLiteral("trayHintShown"),
+        };
+        if (once.contains(key)) st.sync();
+    }
     if (key == QLatin1String("contentLanguage"))
         AddonManager::instance().syncCuratedAddons();
     emit changed();

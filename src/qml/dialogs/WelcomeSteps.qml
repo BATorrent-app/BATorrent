@@ -265,6 +265,40 @@ GridLayout {
         }
     }
 
+    // Said once, where someone is actually reading. A notice that never
+    // changes stops being read within a week, so the permanent copy is the
+    // short line in the status strip and this is the part with the detail.
+    Rectangle {
+        visible: steps.step === steps.lastStep
+        Layout.fillWidth: true; Layout.topMargin: Theme.sp2
+        implicitHeight: shareCol.implicitHeight + 2 * Theme.sp3
+        radius: 12
+        color: steps.uiPalette.field
+        border.color: steps.uiPalette.hair; border.width: 1
+
+        ColumnLayout {
+            id: shareCol
+            anchors.fill: parent
+            anchors.margins: Theme.sp3
+            spacing: 6
+            Text {
+                Layout.fillWidth: true
+                text: (i18n.language, i18n.t("share_notice_title"))
+                color: steps.uiPalette.t1
+                font.pixelSize: 13; font.weight: Font.DemiBold
+                font.family: steps.uiPalette.fontSans
+                wrapMode: Text.WordWrap
+            }
+            Text {
+                Layout.fillWidth: true
+                text: (i18n.language, i18n.t("share_notice_body"))
+                color: steps.uiPalette.t2
+                font.pixelSize: 12; font.family: steps.uiPalette.fontSans
+                wrapMode: Text.WordWrap; lineHeight: 1.45
+            }
+        }
+    }
+
     // the tour promise, kept on the last step so it lands right before Start
     RowLayout {
         visible: steps.step === steps.lastStep

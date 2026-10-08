@@ -98,6 +98,23 @@ Rectangle {
                 font.family: Theme.fontSans
             }
         }
+        // Permanent and quiet. The wizard says it properly once; this is what
+        // is always there, on the one page where transfers actually happen.
+        Text {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: Theme.sp2
+            Layout.maximumWidth: 260
+            text: "·  " + (i18n.language, i18n.t("share_notice_short"))
+            color: Theme.t4
+            font.pixelSize: 12
+            font.family: Theme.fontSans
+            elide: Text.ElideRight
+            ToolTip.visible: shareMa.containsMouse
+            ToolTip.delay: 300
+            ToolTip.text: (i18n.language, i18n.t("share_notice_body"))
+            MouseArea { id: shareMa; anchors.fill: parent; hoverEnabled: true }
+        }
+
         Item { Layout.fillWidth: true }
         Text { text: "↓"; color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans }
         Text { text: status.stat("totalDownSpeed", typeof session !== "undefined" ? session.totalDownSpeed : "0 KB/s"); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
