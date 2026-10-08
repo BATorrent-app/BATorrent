@@ -222,4 +222,30 @@ QString locatePosterFile(const QString &storedPath,
     return {};
 }
 
+QStringList orphanCacheFiles(const QStringList &names, const QSet<QString> &keep)
+{
+    QSet<QString> wanted;
+    wanted.reserve(keep.size());
+    for (const QString &h : keep) {
+        const QString c = canonicalInfoHash(h);
+        if (!c.isEmpty()) wanted.insert(c);
+    }
+
+    QStringList out;
+    for (const QString &name : names) {
+        const int dot = name.lastIndexOf(QLatin1Char('.'));
+        if (dot <= 0) continue;                       // no stem, not ours
+        const QString stem = name.left(dot);
+        // A 40-hex v1 hash or a 64-hex v2 one. Anything else was not written
+        // by the cache and is left where it is.
+        if (stem.size() != 40 && stem.size() != 64) continue;
+        bool hex = true;
+        for (const QChar &ch : stem)
+            if (!isxdigit(ch.unicode())) { hex = false; break; }
+        if (!hex) continue;
+        if (!wanted.contains(canonicalInfoHash(stem))) out << name;
+    }
+    return out;
+}
+
 } // namespace MetadataMatch

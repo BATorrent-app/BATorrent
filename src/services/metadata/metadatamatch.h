@@ -6,6 +6,7 @@
 
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 
@@ -51,6 +52,17 @@ QStringList genreNamesFromIds(const QJsonArray &genreIds);
 // Info-hashes are hex; magnets/addons may upper-case them while libtorrent
 // prints lower-case. One canonical form keeps the on-disk cache and lookups aligned.
 inline QString canonicalInfoHash(const QString &hash) { return hash.toLower(); }
+
+// Which cached files belong to nothing any more.
+//
+// `names` are bare file names from the poster or metadata directory; `keep`
+// holds the hashes still worth caching for. Both sides go through
+// canonicalInfoHash, because the cache has files written in both cases and
+// comparing them raw deletes art that is in use.
+//
+// Anything whose stem is not a hash is left alone: this decides what to
+// delete, and a file it does not understand is not its to remove.
+QStringList orphanCacheFiles(const QStringList &names, const QSet<QString> &keep);
 
 // Parent of AppDataLocation (…/BATorrent/BATorrent → …/BATorrent) for pre-3.0
 // metadata/poster dirs. Empty when AppData is already top-level or unset.

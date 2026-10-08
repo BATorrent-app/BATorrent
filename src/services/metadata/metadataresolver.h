@@ -6,6 +6,7 @@
 #define METADATARESOLVER_H
 
 #include <QObject>
+#include <QSet>
 #include <QHash>
 #include <QQueue>
 #include <QPair>
@@ -45,6 +46,11 @@ public:
     // with a user-supplied query + explicit type, or clear it to no cover.
     void resolveManual(const QString &infoHash, const QString &query, ContentType type);
     void clearMetadata(const QString &infoHash);
+
+    // Deletes cached art and metadata for hashes nobody holds any more.
+    // Returns how many files went. Caller supplies everything worth keeping:
+    // live torrents AND the removed history, since those can be restored.
+    int pruneOrphans(const QSet<QString> &keep);
 
 signals:
     void metadataReady(const QString &infoHash, const MetadataResult &result);

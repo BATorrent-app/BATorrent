@@ -23,6 +23,7 @@
 #include "services/platform/utils.h"
 #include "torrent/types.h"
 #include "torrent/filetree.h"
+#include "services/metadata/metadatamatch.h"
 #include "torrent/sessionmanager.h"
 #include "webui/webserver.h"
 #include "services/platform/translator.h"
@@ -1822,5 +1823,42 @@ TEST_CASE("buildFileTree groups files under folders without losing their index",
         int files = 0;
         for (const auto &r : rows) if (!r.isDir) ++files;
         CHECK(files == 2);             // the empty path contributes nothing
+    }
+}
+
+TEST_CASE("orphanCacheFiles only names files nothing refers to", "[metadata][cache]")
+{
+    const QSet<QString> keep = { "ABC123abc123ABC123abc123ABC123abc123ABCD" };
+
+    SECTION("a file whose hash is still live is kept, whatever its case") {
+        // The cache holds both spellings; comparing raw deletes art in use.
+        const QStringList names = { "abc123abc123abc123abc123abc123abc123abcd.jpg",
+                                    "ABC123ABC123ABC123ABC123ABC123ABC123ABCD.jpg" };
+        CHECK(MetadataMatch::orphanCacheFiles(names, keep).isEmpty());
+    }
+
+    SECTION("a hash nobody holds is an orphan") {
+        const QStringList names = { "0000000000000000000000000000000000000000.jpg" };
+        CHECK(MetadataMatch::orphanCacheFiles(names, keep).size() == 1);
+    }
+
+    SECTION("files that are not hashes are never touched") {
+        const QStringList names = { "notes.txt", "poster.jpg", "deadbeef.jpg",
+                                    ".hidden", "no-extension" };
+        CHECK(MetadataMatch::orphanCacheFiles(names, keep).isEmpty());
+    }
+
+    SECTION("a v2 64-hex hash counts too") {
+        QString v2(64, QLatin1Char('a'));
+        CHECK(MetadataMatch::orphanCacheFiles({ v2 + ".json" }, keep).size() == 1);
+        CHECK(MetadataMatch::orphanCacheFiles({ v2 + ".json" }, { v2 }).isEmpty());
+    }
+
+    SECTION("an empty keep set orphans every hash, and nothing else") {
+        const QStringList names = { "0000000000000000000000000000000000000000.jpg",
+                                    "readme.md" };
+        const auto out = MetadataMatch::orphanCacheFiles(names, {});
+        REQUIRE(out.size() == 1);
+        CHECK(out.first().endsWith(".jpg"));
     }
 }

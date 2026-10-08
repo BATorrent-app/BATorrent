@@ -779,6 +779,26 @@ void MetadataResolver::saveToDisk(const QString &infoHash, const MetadataResult 
         qDebug() << "[metadata] saveToDisk failed:" << path;
 }
 
+int MetadataResolver::pruneOrphans(const QSet<QString> &keep)
+{
+    int gone = 0;
+    const QList<QPair<QString, QString>> dirs = {
+        { posterDir(), QStringLiteral("*.jpg") },
+        { cacheDir(),  QStringLiteral("*.json") },
+    };
+    for (const auto &d : dirs) {
+        QDir dir(d.first);
+        if (!dir.exists()) continue;
+        const QStringList names = dir.entryList({ d.second }, QDir::Files);
+        for (const QString &orphan : MetadataMatch::orphanCacheFiles(names, keep)) {
+            // A file already gone is the outcome we wanted, not an error.
+            if (dir.remove(orphan)) ++gone;
+        }
+    }
+    if (gone > 0) qInfo() << "[metadata] pruned" << gone << "orphaned cache files";
+    return gone;
+}
+
 QString MetadataResolver::cacheDir() const
 {
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)

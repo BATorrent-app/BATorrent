@@ -148,6 +148,18 @@ AppServices AppServices::create(QApplication &app)
 #ifndef BAT_STORE_BUILD
     svc.updaterBridge = new QmlUpdaterBridge(&app);
 #endif
+    // Cached art outlives the torrents by default: 123 posters for 17 items on
+    // one machine. Swept once per start rather than on removal, because the
+    // removed history can be restored and would come back without its cover.
+    if (svc.resolver && svc.eng) {
+        QSet<QString> keep;
+        for (int i = 0, n = svc.eng->torrentCount(); i < n; ++i)
+            keep.insert(svc.eng->torrentHashAt(i));
+        for (const RemovedEntry &e : svc.eng->recentlyRemoved())
+            keep.insert(e.hash);
+        svc.resolver->pruneOrphans(keep);
+    }
+
     QObject::connect(svc.eng, &IEngine::torrentsUpdated,
                      svc.sessionBridge, &QmlSessionBridge::emitStats);
     QObject::connect(svc.resolver, &MetadataResolver::metadataReady,
