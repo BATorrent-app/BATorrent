@@ -16,7 +16,7 @@ Rectangle {
     visible: typeof vpn !== "undefined"
     Layout.alignment: Qt.AlignVCenter
     Layout.preferredHeight: 34
-    Layout.preferredWidth: vpnRow.implicitWidth + 22
+    Layout.preferredWidth: 34
     radius: 9
 
     property bool bound: false
@@ -57,12 +57,6 @@ Rectangle {
                     NumberAnimation { from: 0.3; to: 1; duration: 600 }
                 }
             }
-        }
-        Text {
-            visible: !root.bar.tightChip
-            text: "VPN"
-            color: root.st === 2 ? Theme.t2 : Theme.t3
-            font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
         }
     }
     MouseArea {

@@ -207,7 +207,6 @@
 <file>../src/qml/views/NavBar.qml</file>
 <file>../src/qml/views/NavBarDownloadChip.qml</file>
 <file>../src/qml/views/DiskGauge.qml</file>
-<file>../src/qml/views/NavBarTurtleChip.qml</file>
 <file>../src/qml/views/NavBarVpnChip.qml</file>
 <file>../src/qml/views/SearchView.qml</file>
 <file>../src/qml/views/FindBar.qml</file>

@@ -74,7 +74,8 @@ Rectangle {
         var all = [
             { icon: "qrc:/icons/download.svg", label: i18n.t("nav_downloads"), page: 0 },
             { icon: "qrc:/icons/search.svg",   label: i18n.t("nav_find"),      page: 1 },
-            { icon: "qrc:/icons/hub.svg",      label: i18n.t("nav_hub"),       page: 2 }
+            { icon: "qrc:/icons/hub.svg",      label: i18n.t("nav_hub"),       page: 2 },
+            { icon: "qrc:/icons/settings.svg", label: i18n.t("tb_settings"),   page: 3 }
         ]
         return all
     }
@@ -86,12 +87,11 @@ Rectangle {
             var rp = bar.mapToItem(mapTo, 0, 0)
             return Qt.rect(rp.x, rp.y, bar.width, bar.height)
         }
-        var it = (key === "settings") ? settingsBtn : null
-        if (!it) {
-            for (var i = 0; i < navRepeater.count; i++) {
-                var d = navRepeater.itemAt(i)
-                if (d && d.modelData && d.modelData.page === key && d.visible) { it = d; break }
-            }
+        var want = (key === "settings") ? 3 : key
+        var it = null
+        for (var i = 0; i < navRepeater.count; i++) {
+            var d = navRepeater.itemAt(i)
+            if (d && d.modelData && d.modelData.page === want && d.visible) { it = d; break }
         }
         if (!it) return Qt.rect(0, 0, 0, 0)
         var p = it.mapToItem(mapTo, 0, 0)
@@ -200,20 +200,7 @@ Rectangle {
         Item { Layout.fillWidth: true }
 
         NavBarDownloadChip { id: dlChip; bar: bar; car: car }
-        NavBarTurtleChip { bar: bar }
         NavBarVpnChip { bar: bar }
-
-        // Session modes on the left of it, things you click on the right. The
-        // four used to sit in one undifferentiated run while the toolbar below
-        // grouped its peers.
-        Rectangle {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.leftMargin: 6
-            Layout.rightMargin: 6
-            Layout.preferredWidth: 1
-            Layout.preferredHeight: 18
-            color: Theme.hairSoft
-        }
 
         // ----- donate (heart: gray at rest, red on hover) -----
         Item {
@@ -247,44 +234,9 @@ Rectangle {
             Accessible.role: Accessible.Button
             Accessible.name: (i18n.language, i18n.t("action_donate"))
         }
-
-        // ----- settings (page 4) -----
-        Item {
-            id: settingsBtn
-            readonly property bool active: bar.currentIndex === 3
-            Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: 34
-            Layout.preferredHeight: 34
-            Rectangle {
-                anchors.fill: parent
-                radius: 8
-                color: settingsBtn.active ? Theme.hover : (setMa.containsMouse ? Theme.hover : "transparent")
-                Behavior on color { ColorAnimation { duration: 140 } }
-            }
-            IconImg {
-                anchors.centerIn: parent
-                src: "qrc:/icons/settings.svg"
-                tint: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
-                s: 16
-                Behavior on tint { ColorAnimation { duration: 140 } }
-            }
-            ToolTip.visible: setMa.containsMouse
-            ToolTip.delay: 400
-            ToolTip.text: (i18n.language, i18n.t("tb_settings"))
-            Accessible.role: Accessible.Button
-            Accessible.name: (i18n.language, i18n.t("tb_settings"))
-            MouseArea {
-                id: setMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: bar.settingsClicked()
-            }
-        }
     }
 
-    // One underline shared by the tabs; it slides to the active one. Settings
-    // has no tab here, so the underline fades out while it's open.
+    // One underline shared by the tabs; it slides to the active one.
     Rectangle {
         id: tabLine
         readonly property Item target: {
