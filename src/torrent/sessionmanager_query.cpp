@@ -52,6 +52,10 @@ TorrentInfo SessionManager::torrentAt(int index) const
         for (int i = 0; i < index; ++i)
             if (m_queuePaused.count(m_torrents[i])) ++info.queuePos;
     }
+    // has_metadata, not state == downloading_metadata: that state only holds
+    // while a connected peer is actually sending the file list, so a magnet
+    // still hunting the DHT reports plain `downloading` and the state flickered.
+    info.fetchingMetadata = !st.has_metadata && !info.paused;
     QString hash;
     if (st.has_metadata)
         hash = QString::fromStdString(
@@ -109,7 +113,17 @@ TorrentInfo SessionManager::torrentAt(int index) const
 
     // qBittorrent's most-repeated complaint is a silent "stalled": name the
     // actual blocker so the state cell can explain itself on hover
-    if (!info.completed && !info.paused && !info.finished
+    if (info.fetchingMetadata) {
+        // A rare-seeder magnet can take a long time to find a peer that'll
+        // hand over metadata. Explain the wait instead of giving up; the
+        // user decides when to quit.
+        auto it = m_magnetAddedAt.find(m_torrents[index]);
+        if (it != m_magnetAddedAt.end()) {
+            info.fetchingSecs = QDateTime::currentSecsSinceEpoch() - it->second;
+            info.stateDetail = tr_("state_fetching_metadata")
+                                   .arg(formatElapsedShort(info.fetchingSecs));
+        }
+    } else if (!info.completed && !info.paused && !info.finished
             && st.state == lt::torrent_status::downloading
             && info.downloadRate < 1024) {
         if (st.errc)
@@ -124,17 +138,6 @@ TorrentInfo SessionManager::torrentAt(int index) const
             info.stateDetail = tr_("state_no_seeds");
         else
             info.stateDetail = tr_("state_choked");
-    } else if (!info.paused && st.state == lt::torrent_status::downloading_metadata) {
-        // A rare-seeder magnet can take a long time to find a peer that'll
-        // hand over metadata. Explain the wait instead of giving up; the
-        // user decides when to quit.
-        info.fetchingMetadata = true;
-        auto it = m_magnetAddedAt.find(m_torrents[index]);
-        if (it != m_magnetAddedAt.end()) {
-            info.fetchingSecs = QDateTime::currentSecsSinceEpoch() - it->second;
-            info.stateDetail = tr_("state_fetching_metadata")
-                                   .arg(formatElapsedShort(info.fetchingSecs));
-        }
     } else if (!info.completed && !info.paused && !info.finished
                && st.state == lt::torrent_status::downloading
                && info.downloadRate >= 1024 && info.numPeers > 0
