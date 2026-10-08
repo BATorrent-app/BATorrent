@@ -87,30 +87,114 @@ Item {
             }
         }
 
-        Rectangle {
-            id: seekBand
+        // Material's indeterminate linear progress, both bars. The published
+        // keyframes matter more than the look: the leading bar accelerates out
+        // of the left on one bezier while stretching, the trailing one starts
+        // later on another, and the overlap is what reads as work rather than
+        // as an object crossing. A single constant-width band cannot do it.
+        Item {
+            id: seek
+            anchors.fill: parent
             visible: track.indeterminate
-            width: Math.max(28, parent.width * 0.45)
-            height: parent.height
             opacity: track.fillOpacity
-            // Transparent ends, not rounded ones: a hard-edged pill slides
-            // across as an object, where a band that has no edge reads as the
-            // bar being searched. The stops carry the fill's own colour at
-            // zero alpha — plain "transparent" is black and fringes grey.
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Qt.rgba(track.fill.r, track.fill.g, track.fill.b, 0) }
-                GradientStop { position: 0.5; color: track.fill }
-                GradientStop { position: 1.0; color: Qt.rgba(track.fill.r, track.fill.g, track.fill.b, 0) }
+            readonly property real w: Math.max(1, width)
+            readonly property bool animate: visible && !Theme.reduceMotion
+
+            component Band: Rectangle {
+                height: seek.height
+                // Soft ends so the two bars blend where they overlap instead of
+                // stacking two hard edges.
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: Qt.rgba(track.fill.r, track.fill.g, track.fill.b, 0) }
+                    GradientStop { position: 0.35; color: track.fill }
+                    GradientStop { position: 0.65; color: track.fill }
+                    GradientStop { position: 1.0; color: Qt.rgba(track.fill.r, track.fill.g, track.fill.b, 0) }
+                }
             }
-            SequentialAnimation on x {
-                running: seekBand.visible && !Theme.reduceMotion
+
+            Band { id: lead }
+            Band { id: trail }
+
+            // Reduced motion keeps the state readable without the loop: a short
+            // bar parked at the left says "nothing measured" on its own.
+            Rectangle {
+                visible: !seek.animate
+                width: seek.w * 0.18
+                height: parent.height
+                color: track.fill
+            }
+
+            ParallelAnimation {
+                running: seek.animate
                 loops: Animation.Infinite
-                NumberAnimation {
-                    from: -seekBand.width
-                    to: Math.max(1, seekBand.parent.width)
-                    duration: 2000
-                    easing.type: Easing.Linear
+
+                // leading bar — translate 0.00 -> 0.20 -> 0.5915 -> 1.00
+                SequentialAnimation {
+                    NumberAnimation {
+                        target: lead; property: "x"
+                        from: -seek.w * 1.45; to: -seek.w * 1.45; duration: 400
+                    }
+                    NumberAnimation {
+                        target: lead; property: "x"; to: seek.w * 0.536; duration: 783
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: [0.5, 0, 0.701732, 0.495819, 0.84, 1, 1, 1]
+                    }
+                    NumberAnimation {
+                        target: lead; property: "x"; to: seek.w * 2.006; duration: 817
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: [0.302435, 0.381352, 0.55, 0.956352, 0.85, 1, 1, 1]
+                    }
+                }
+                SequentialAnimation {
+                    NumberAnimation {
+                        target: lead; property: "width"
+                        from: seek.w * 0.08; to: seek.w * 0.08; duration: 733
+                    }
+                    NumberAnimation {
+                        target: lead; property: "width"; to: seek.w * 0.661; duration: 650
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: [0.334731, 0.12482, 0.785844, 1, 1, 1]
+                    }
+                    NumberAnimation {
+                        target: lead; property: "width"; to: seek.w * 0.08; duration: 617
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: [0.06, 0.11, 0.6, 1, 1, 1]
+                    }
+                }
+
+                // trailing bar — starts a quarter of the cycle later
+                SequentialAnimation {
+                    NumberAnimation {
+                        target: trail; property: "x"
+                        from: -seek.w * 0.549; to: -seek.w * 0.549; duration: 500
+                    }
+                    NumberAnimation {
+                        target: trail; property: "x"; to: seek.w * 0.844; duration: 467
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: [0.15, 0, 0.515058, 0.409685, 0.6, 0.925, 1, 1]
+                    }
+                    NumberAnimation {
+                        target: trail; property: "x"; to: seek.w * 1.603; duration: 1033
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: [0.31033, 0.284058, 0.8, 0.733712, 1, 1]
+                    }
+                }
+                SequentialAnimation {
+                    NumberAnimation {
+                        target: trail; property: "width"
+                        from: seek.w * 0.08; to: seek.w * 0.08; duration: 383
+                    }
+                    NumberAnimation {
+                        target: trail; property: "width"; to: seek.w * 0.4; duration: 500
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: [0.15, 0, 0.515058, 0.409685, 0.6, 0.925, 1, 1]
+                    }
+                    NumberAnimation {
+                        target: trail; property: "width"; to: seek.w * 0.08; duration: 1117
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: [0.257759, 0.228226, 0.6, 0.925, 1, 1]
+                    }
                 }
             }
         }

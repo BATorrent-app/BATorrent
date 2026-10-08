@@ -26,7 +26,7 @@
   "widgets/PosterCard.qml": 2,
   "widgets/PosterTile.qml": 5,
   "widgets/PosterTileBadges.qml": 1,
-  "widgets/ProgressTrack.qml": 7,
+  "widgets/ProgressTrack.qml": 25,
   "widgets/Spinner.qml": 1,
   "widgets/StatusMark.qml": 1,
   "windows/WrappedWindow.qml": 1
