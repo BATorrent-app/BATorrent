@@ -185,7 +185,9 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.leftMargin: 13
                 anchors.rightMargin: 13
-                anchors.bottomMargin: 15
+                // Same 30 the artwork title uses: the bar's band is 8 + 14
+                // whether or not there is a poster behind it.
+                anchors.bottomMargin: 30
                 text: tile.metaTitle || tile.torrentName
                 color: "#f5f5f6"
                 font.pixelSize: 18

@@ -102,6 +102,9 @@ Item {
 
             component Band: Rectangle {
                 height: seek.height
+                // clip: true recorta pelo retangulo, nao pelos cantos do bed:
+                // sem raio proprio a banda aparece quadrada na ponta da pilula.
+                radius: height / 2
                 // Soft ends so the two bars blend where they overlap instead of
                 // stacking two hard edges.
                 gradient: Gradient {
@@ -122,6 +125,7 @@ Item {
                 visible: !seek.animate
                 width: seek.w * 0.18
                 height: parent.height
+                radius: height / 2
                 color: track.fill
             }
 
