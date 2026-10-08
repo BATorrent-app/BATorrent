@@ -36,8 +36,7 @@ Item {
                 { tag: "completed",   key: "completed",   symbol: "✓" },
                 { tag: "queued",      key: "queued",      symbol: "…" },
                 { tag: "missing",     key: "missing",     symbol: "×" },
-                { tag: "error",       key: "error",       symbol: "!" },
-                { tag: "fetching",    key: "fetching",    symbol: "?" }
+                { tag: "error",       key: "error",       symbol: "!" }
             ]
         }
 
@@ -96,15 +95,26 @@ Item {
         // Pause is the one mark drawn as an icon: no glyph in the bundled font
         // gives two stubby bars, and ‖ was being resolved by a fallback
         // typeface that differs per platform.
-        function test_pausedDrawsAnIconAndNoGlyph() {
-            var m = mk({ stateKey: "paused" })
-            verify(m.symbolIcon !== "", "paused has an icon")
-            compare(m.symbol, "")
-            verify(!findChild(m, "statusGlyph").visible, "the glyph stands down")
+        function test_shapeStatesDrawIconsAndNoGlyph_data() {
+            return [
+                { tag: "paused",   key: "paused",   spins: false },
+                { tag: "fetching", key: "fetching", spins: true }
+            ]
+        }
 
-            var other = mk({ stateKey: "seeding" })
-            compare(other.symbolIcon, "")
-            verify(findChild(other, "statusGlyph").visible)
+        function test_shapeStatesDrawIconsAndNoGlyph(data) {
+            var m = mk({ stateKey: data.key })
+            verify(m.symbolIcon !== "", data.key + " has an icon")
+            compare(m.symbol, "")
+            compare(m.spinning, data.spins)
+            verify(!findChild(m, "statusGlyph").visible, "the glyph stands down")
+        }
+
+        function test_glyphStatesDoNotSpin() {
+            var m = mk({ stateKey: "seeding" })
+            compare(m.symbolIcon, "")
+            verify(!m.spinning)
+            verify(findChild(m, "statusGlyph").visible)
         }
 
         // The grid badge has to give way to the year/category pill beside it.

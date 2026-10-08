@@ -48,6 +48,7 @@
 <file>icons/countryflags/se.svg</file>
 <file>icons/countryflags/ua.svg</file>
 <file>../src/qml/widgets/PIconBtn.qml</file>
+<file>icons/loader.svg</file>
 <file>icons/magnet.svg</file>
 <file>icons/abc.svg</file>
 <file>icons/arrows-sort.svg</file>

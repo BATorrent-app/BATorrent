@@ -6,12 +6,11 @@
 // the grid tile, the list row, the detail panel, the rail slot: draws this, so
 // the state language cannot drift between them.
 //
-// Two of the five states carry no percentage. A torrent whose files went
-// missing, or whose storage failed, still has a progress number, and painting
-// it would say "we are 62% of the way there" about something that has stopped.
-// Those get a band travelling left to right over a dead track instead: stripes
-// for missing, solid for error. Sherwan's proposal, and he is right that a
-// stalled bar and a broken one should not look alike.
+// Three states carry no percentage. Missing and failed still have a progress
+// number, and painting it would say "we are 62% of the way there" about
+// something that has stopped; a magnet without metadata has no number at all.
+// Those get travelling bands over a dead track instead: hazard stripes for
+// missing and error, a single sweep for fetching.
 import QtQuick
 import "../theme"
 
@@ -41,6 +40,9 @@ Item {
     property real fillOpacity: 1.0
 
     readonly property bool trouble: Theme.isTroubleState(track.stateKey)
+    // Nothing has been measured yet, so there is no percentage to be honest
+    // about: the bar says "working" instead of claiming zero.
+    readonly property bool indeterminate: track.stateKey === "fetching"
     implicitHeight: 4
 
     Rectangle {
@@ -52,7 +54,7 @@ Item {
 
         // normal states: a fill you can read a percentage off
         Rectangle {
-            visible: !track.trouble
+            visible: !track.trouble && !track.indeterminate
             opacity: track.fillOpacity
             anchors.left: parent.left
             anchors.top: parent.top
@@ -81,6 +83,26 @@ Item {
                         easing.type: Easing.InOutSine
                     }
                     PauseAnimation { duration: 900 }
+                }
+            }
+        }
+
+        Rectangle {
+            id: seekBand
+            visible: track.indeterminate
+            width: Math.max(20, parent.width * 0.30)
+            height: parent.height
+            radius: parent.radius
+            opacity: track.fillOpacity
+            color: track.fill
+            SequentialAnimation on x {
+                running: seekBand.visible && !Theme.reduceMotion
+                loops: Animation.Infinite
+                NumberAnimation {
+                    from: -seekBand.width
+                    to: Math.max(1, seekBand.parent.width)
+                    duration: 1800
+                    easing.type: Easing.InOutSine
                 }
             }
         }
@@ -153,7 +175,7 @@ Item {
         Text {
             id: pct
             anchors.centerIn: parent
-            visible: track.showPercent && !track.trouble
+            visible: track.showPercent && !track.trouble && !track.indeterminate
             text: Math.floor(Math.max(0, Math.min(1, track.progress)) * 100) + "%"
             color: track.percentColor
 

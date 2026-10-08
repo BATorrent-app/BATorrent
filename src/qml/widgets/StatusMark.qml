@@ -39,12 +39,14 @@ Row {
         : stateKey === "missing"   ? "×"
         : stateKey === "paused"    ? ""
         : stateKey === "error"     ? "!"
-        : stateKey === "fetching"  ? "?"
+        : stateKey === "fetching"  ? ""
         : "↓"
 
     // No glyph gives two stubby bars; pause.svg is solid, so it holds at 13px.
     readonly property string symbolIcon:
-        stateKey === "paused" ? "qrc:/icons/pause.svg" : ""
+          stateKey === "paused"   ? "qrc:/icons/pause.svg"
+        : stateKey === "fetching" ? "qrc:/icons/loader.svg" : ""
+    readonly property bool spinning: stateKey === "fetching"
 
     readonly property color symbolColor:
           stalled                  ? Theme.amber
@@ -57,11 +59,20 @@ Row {
     spacing: 5
 
     IconImg {
+        id: markIcon
         anchors.verticalCenter: parent.verticalCenter
         visible: mark.symbolIcon !== ""
         src: mark.symbolIcon
         tint: mark.symbolColor
         s: mark.symbolSize
+        RotationAnimator {
+            target: markIcon
+            running: mark.spinning && markIcon.visible && !Theme.reduceMotion
+            from: 0; to: 360
+            duration: 1100
+            loops: Animation.Infinite
+            onRunningChanged: if (!running) markIcon.rotation = 0
+        }
     }
     Text {
         objectName: "statusGlyph"
