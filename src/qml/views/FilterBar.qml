@@ -383,7 +383,8 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: catFilterMenu.open()
+                            onClicked: catFilterMenu.opened ? catFilterMenu.close()
+                                                            : catFilterMenu.open()
                         }
                         Menu {
                             id: catFilterMenu
@@ -394,6 +395,22 @@ Rectangle {
                             implicitWidth: Math.max(230, parent.width)
                             topPadding: 6
                             bottomPadding: 6
+                            // Pressing the trigger must reach onClicked and
+                            // toggle; the default also closes on a press over
+                            // the parent, so the menu shut and reopened in one
+                            // click and never looked like it closed at all.
+                            closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+                            transformOrigin: Item.TopLeft
+                            // The same open and close BatMenu uses.
+                            enter: Transition {
+                                ParallelAnimation {
+                                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.durFast; easing.type: Theme.easeOut }
+                                    NumberAnimation { property: "scale"; from: Theme.grow(0.96); to: 1.0; duration: Theme.durBase; easing.type: Theme.easeOut }
+                                }
+                            }
+                            exit: Transition {
+                                NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.durExit; easing.type: Theme.easeIn }
+                            }
                             delegate: CatItem {}
                             // Counted once per opening, from the proxy that does
                             // the filtering, so the number and the list it opens
