@@ -124,6 +124,12 @@ Window {
     // first launch after an update. A routine (often magnet-click) launch goes
     // straight to the UI. The Settings toggle still kills it entirely.
     property bool showSplash: false
+    // Anything covering the library. The grid's first-run cascade waits on it:
+    // played underneath, it is spent without ever being seen.
+    readonly property bool libraryObscured:
+        showSplash
+        || (welcomeDlg && welcomeDlg.opened)
+        || (tourOverlay && tourOverlay.running)
     Component.onCompleted: {
         // restore the last window size (only if it's still sane vs the minimums)
         if (typeof settings !== "undefined") {

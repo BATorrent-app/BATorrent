@@ -205,7 +205,8 @@ Item {
         property bool introOn: false
         property bool introDone: false
         readonly property bool introReady: count > 0 && visible
-            && libraryView.visible && !(libraryView.win && libraryView.win.showSplash)
+            && libraryView.visible
+            && !(libraryView.win && libraryView.win.libraryObscured)
         // Re-checked after a short delay: the rows can arrive before Main
         // decides whether to show the splash, and the cascade would then play
         // hidden under it.
