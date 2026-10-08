@@ -1,0 +1,42 @@
+name: house style
+
+# Fast gate for the conventions that kept rotting because they lived in prose:
+# one icon stroke weight with a declared exception list, and animation values
+# that come from the Theme scale instead of a number picked per file. Pure
+# Python, no Qt, no build — same shape as the i18n parity gate, which is the
+# one rule in this repo that never drifted, for exactly this reason.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/icons/**'
+      - 'src/qml/**'
+      - 'scripts/check-icon-style.py'
+      - 'scripts/check-motion-tokens.py'
+      - 'scripts/motion-baseline.json'
+      - '.github/workflows/house-style.yml'
+  pull_request:
+    paths:
+      - 'src/icons/**'
+      - 'src/qml/**'
+      - 'scripts/check-icon-style.py'
+      - 'scripts/check-motion-tokens.py'
+      - 'scripts/motion-baseline.json'
+      - '.github/workflows/house-style.yml'
+  workflow_dispatch:
+
+jobs:
+  style:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: icon stroke weight + declared solids
+        run: python3 scripts/check-icon-style.py
+      - name: animation durations and curves come from Theme
+        run: python3 scripts/check-motion-tokens.py
