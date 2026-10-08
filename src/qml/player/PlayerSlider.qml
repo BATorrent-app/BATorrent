@@ -17,7 +17,7 @@ Slider {
         width: sl.availableWidth
         height: sl.active ? 7 : 5; radius: height / 2
         color: "#26ffffff"
-        Behavior on height { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
         Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: parent.radius; color: "#4dffffff" }
         Rectangle {
             width: sl.visualPosition * parent.width; height: parent.height; radius: parent.radius
@@ -35,7 +35,7 @@ Slider {
         implicitHeight: implicitWidth
         x: sl.leftPadding + sl.visualPosition * (sl.availableWidth - width)
         y: sl.topPadding + sl.availableHeight / 2 - height / 2
-        Behavior on implicitWidth { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
+        Behavior on implicitWidth { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutBack } }
         MultiEffect {
             source: disc
             anchors.fill: disc

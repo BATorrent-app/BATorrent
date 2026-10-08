@@ -48,7 +48,7 @@ Rectangle {
     }
     SequentialAnimation {
         id: dlFade
-        NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 0; duration: 160; easing.type: Easing.InCubic }
+        NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 0; duration: Theme.durBase; easing.type: Easing.InCubic }
         ScriptAction { script: car.dlShown = car.dlIndex }
         NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
     }
@@ -163,7 +163,7 @@ Rectangle {
                 anchors.left: parent.left; anchors.leftMargin: 52
                 spacing: 0
                 opacity: rail.collapsed ? 0 : 1
-                Behavior on opacity { NumberAnimation { duration: 140 } }
+                Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                 Text { text: "BAT"; color: Theme.accent; font.family: "New Rocker"; font.pixelSize: 21 }
                 Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 21 }
             }
@@ -200,7 +200,7 @@ Rectangle {
                     anchors.fill: parent
                     radius: 10
                     color: !navItem.active && itemMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
-                    Behavior on color { ColorAnimation { duration: 140 } }
+                    Behavior on color { ColorAnimation { duration: Theme.durFast } }
                 }
 
                 RowLayout {
@@ -213,7 +213,7 @@ Rectangle {
                         src: navItem.modelData.icon
                         tint: navItem.active ? Theme.t1 : Theme.t2
                         s: 20
-                        Behavior on tint { ColorAnimation { duration: 140 } }
+                        Behavior on tint { ColorAnimation { duration: Theme.durFast } }
                     }
                     Text {
                         Layout.fillWidth: true
@@ -224,8 +224,8 @@ Rectangle {
                         font.weight: navItem.active ? Font.DemiBold : Font.Medium
                         font.family: Theme.fontSans
                         opacity: rail.collapsed ? 0 : 1
-                        Behavior on color { ColorAnimation { duration: 140 } }
-                        Behavior on opacity { NumberAnimation { duration: 140 } }
+                        Behavior on color { ColorAnimation { duration: Theme.durFast } }
+                        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                     }
                 }
                 MouseArea {
@@ -269,7 +269,7 @@ Rectangle {
                 anchors.fill: parent
                 radius: 10
                 color: vpnMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
-                Behavior on color { ColorAnimation { duration: 140 } }
+                Behavior on color { ColorAnimation { duration: Theme.durFast } }
             }
             RowLayout {
                 anchors.fill: parent
@@ -300,7 +300,7 @@ Rectangle {
                     color: vpnItem.st === 2 ? Theme.t1 : Theme.t2
                     font.pixelSize: 14; font.weight: Font.Medium; font.family: Theme.fontSans
                     opacity: rail.collapsed ? 0 : 1
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                 }
             }
             MouseArea {
@@ -327,7 +327,7 @@ Rectangle {
                 anchors.fill: parent
                 radius: 10
                 color: donMa.containsMouse ? Qt.rgba(229/255, 51/255, 43/255, 0.12) : "transparent"
-                Behavior on color { ColorAnimation { duration: 140 } }
+                Behavior on color { ColorAnimation { duration: Theme.durFast } }
             }
             RowLayout {
                 anchors.fill: parent
@@ -344,7 +344,7 @@ Rectangle {
                     font.weight: Font.Medium
                     font.family: Theme.fontSans
                     opacity: rail.collapsed ? 0 : 1
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                 }
             }
             MouseArea {
@@ -372,7 +372,7 @@ Rectangle {
                 radius: 10
                 color: settingsItem.active ? Theme.hover
                      : (setMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
-                Behavior on color { ColorAnimation { duration: 140 } }
+                Behavior on color { ColorAnimation { duration: Theme.durFast } }
                 Rectangle {
                     anchors.left: parent.left; anchors.leftMargin: 3
                     anchors.verticalCenter: parent.verticalCenter
@@ -388,7 +388,7 @@ Rectangle {
                 anchors.leftMargin: rail.collapsed ? 13 : 17
                 anchors.rightMargin: 12
                 spacing: 13
-                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/settings.svg"; tint: settingsItem.active ? Theme.t1 : Theme.t2; s: 20; Behavior on tint { ColorAnimation { duration: 140 } } }
+                IconImg { Layout.alignment: Qt.AlignVCenter; src: "qrc:/icons/settings.svg"; tint: settingsItem.active ? Theme.t1 : Theme.t2; s: 20; Behavior on tint { ColorAnimation { duration: Theme.durFast } } }
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
@@ -398,8 +398,8 @@ Rectangle {
                     font.weight: settingsItem.active ? Font.DemiBold : Font.Medium
                     font.family: Theme.fontSans
                     opacity: rail.collapsed ? 0 : 1
-                    Behavior on color { ColorAnimation { duration: 140 } }
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on color { ColorAnimation { duration: Theme.durFast } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                 }
             }
             MouseArea {
@@ -424,7 +424,7 @@ Rectangle {
                 anchors.fill: parent
                 radius: 10
                 color: tglMa.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
-                Behavior on color { ColorAnimation { duration: 140 } }
+                Behavior on color { ColorAnimation { duration: Theme.durFast } }
             }
             RowLayout {
                 anchors.fill: parent
@@ -448,7 +448,7 @@ Rectangle {
                     font.weight: Font.Medium
                     font.family: Theme.fontSans
                     opacity: rail.collapsed ? 0 : 1
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                 }
             }
             MouseArea {

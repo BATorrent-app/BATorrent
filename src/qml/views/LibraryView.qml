@@ -157,7 +157,7 @@ Item {
         scale: (Theme.reduceMotion || (controller.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
         Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
         anchors.fill: parent
         topMargin: Theme.sp5
         bottomMargin: Theme.sp5
@@ -171,8 +171,8 @@ Item {
         // as the whole grid flashing. The container's opacity Behavior already
         // covers the initial fade-in. (List view has no populate, never flashed.)
         add: Transition {
-            NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic }
-            NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: 180; easing.type: Easing.OutCubic }
+            NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.durBase; easing.type: Easing.OutCubic }
+            NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: Theme.durBase; easing.type: Easing.OutCubic }
         }
         // deleting several selected torrents at once fires these back-to-back
         // with no time to settle between them: a known Qt Quick view-recycling
@@ -263,7 +263,7 @@ Item {
         scale: (Theme.reduceMotion || (!controller.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
         Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
         anchors.fill: parent
         clip: true
         model: libraryView.modelOverride !== null ? libraryView.modelOverride : win.model
@@ -271,7 +271,7 @@ Item {
         z: 1
         WheelScroller { flick: list }
         readonly property bool bulkRemove: typeof session !== "undefined" && session.bulkRemoveInProgress
-        add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: 160; easing.type: Easing.OutCubic } }
+        add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.durBase; easing.type: Easing.OutCubic } }
         remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: list.bulkRemove ? 0 : 120; easing.type: Easing.OutCubic } }
         displaced: Transition { NumberAnimation { properties: "x,y"; duration: list.bulkRemove ? 0 : 180; easing.type: Easing.OutCubic } }
 

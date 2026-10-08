@@ -23,7 +23,7 @@ Item {
 
     visible: opacity > 0
     opacity: open ? 1 : 0
-    Behavior on opacity { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+    Behavior on opacity { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
 
     readonly property bool hasAudioChoice: mediaPlayer && mediaPlayer.audioTracks.length > 1
     readonly property int subTrackCount: mediaPlayer ? mediaPlayer.subtitleTracks.length : 0
@@ -128,7 +128,7 @@ Item {
         clip: true
         transform: Translate {
             y: opts.open ? 0 : 6
-            Behavior on y { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
         }
 
         MouseArea { anchors.fill: parent }   // swallow click-away inside the card
@@ -247,7 +247,7 @@ Item {
                         radius: 12
                         color: spMa.containsMouse && !cur ? "#14ffffff" : "transparent"
                         border.color: cur ? Theme.accent : Theme.hair; border.width: 1
-                        Behavior on border.color { ColorAnimation { duration: 100 } }
+                        Behavior on border.color { ColorAnimation { duration: Theme.durExit } }
                         Text {
                             id: spT; anchors.centerIn: parent
                             text: modelData + "×"

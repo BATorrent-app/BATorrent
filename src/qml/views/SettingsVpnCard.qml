@@ -74,7 +74,7 @@ ColumnLayout {
                 radius: 12
                 visible: opacity > 0.01
                 opacity: confDrop.containsDrag ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 140 } }
+                Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                 color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.10)
                 border.color: Theme.accent
                 border.width: 2

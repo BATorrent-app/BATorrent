@@ -27,7 +27,7 @@ ColumnLayout {
         color: on ? Theme.accent : (chipMa.containsMouse ? Theme.hover : Theme.field)
         border.color: on ? Theme.accent : Theme.hair
         border.width: 1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: Theme.durFast } }
         Text {
             id: chipTxt
             anchors.centerIn: parent

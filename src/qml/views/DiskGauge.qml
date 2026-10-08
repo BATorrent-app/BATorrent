@@ -43,7 +43,7 @@ Item {
         anchors.fill: parent
         radius: 9
         color: diskMa.containsMouse ? Theme.hover : "transparent"
-        Behavior on color { ColorAnimation { duration: 130 } }
+        Behavior on color { ColorAnimation { duration: Theme.durFast } }
     }
     ColumnLayout {
         id: diskCol
@@ -57,7 +57,7 @@ Item {
         SequentialAnimation {
             id: diskFade
             NumberAnimation { target: diskCol; property: "opacity"; to: 0.25; duration: 110; easing.type: Easing.InCubic }
-            NumberAnimation { target: diskCol; property: "opacity"; to: 1.0; duration: 160; easing.type: Easing.OutCubic }
+            NumberAnimation { target: diskCol; property: "opacity"; to: 1.0; duration: Theme.durBase; easing.type: Easing.OutCubic }
         }
         RowLayout {
             visible: !root.tight

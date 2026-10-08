@@ -44,7 +44,7 @@ Item {
         radius: 8
         color: skMa.containsMouse ? "#ffffff" : "#e6101014"
         border.color: skMa.containsMouse ? "#ffffff" : Theme.hair; border.width: 1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: Theme.durFast } }
         Row {
             id: skipRow; anchors.centerIn: parent; spacing: 8
             IconImg {

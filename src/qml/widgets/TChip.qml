@@ -21,7 +21,7 @@ Rectangle {
     border.color: red ? Qt.rgba(229/255, 51/255, 43/255, 0.3)
                       : (chip.clickable && ma.containsMouse ? Theme.accent : Theme.hair)
     border.width: 1
-    Behavior on border.color { ColorAnimation { duration: 120 } }
+    Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
 
     Text {
         id: lbl

@@ -45,8 +45,8 @@ Rectangle {
         color: tg.on
             ? Theme.panel                                   // dark knob on the light track
             : (Theme.isDark ? "#8c8884" : "#ffffff")
-        Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-        Behavior on color { ColorAnimation { duration: 160 } }
+        Behavior on x { NumberAnimation { duration: Theme.durBase; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: Theme.durBase } }
     }
 
     MouseArea {

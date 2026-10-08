@@ -17,7 +17,7 @@ Rectangle {
     signal renameFileRequested(int idx, string current)
     Layout.fillWidth: true
     Layout.preferredHeight: win.detailsShownCollapsed ? 42 : 270
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
     color: Theme.panel
     clip: true
     Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair; z: 3 }
@@ -45,16 +45,16 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 30; height: 26; radius: 7
                 opacity: actsOnClick ? 1 : 0.4
-                Behavior on opacity { NumberAnimation { duration: 140 } }
+                Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                 color: colMa.containsMouse && actsOnClick ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : Theme.hover
                 border.width: 1; border.color: colMa.containsMouse && actsOnClick ? Theme.accent : Theme.hair
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: Theme.durFast } }
                 IconImg {
                     anchors.centerIn: parent
                     s: 17
                     src: "qrc:/icons/chevron-bold.svg"
                     rotation: detailPanel.win.detailsShownCollapsed ? 180 : 0
-                    Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on rotation { NumberAnimation { duration: Theme.durBase; easing.type: Easing.OutCubic } }
                     tint: colMa.containsMouse && collapseBtn.actsOnClick ? Theme.t1 : Theme.t2
                 }
                 MouseArea {

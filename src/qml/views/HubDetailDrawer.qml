@@ -31,7 +31,7 @@ Item {
         // animate a 0..1 slide, never x: an animated x turns a window resize
         // (maximize/fullscreen) into the parked drawer sliding across the view
         property real slide: root.hub.detailOpen ? 1 : 0
-        Behavior on slide { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on slide { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
         x: parent.width - width * slide
         color: Theme.elev
         Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.hair }

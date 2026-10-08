@@ -31,8 +31,8 @@ ColumnLayout {
     clip: true
     Layout.preferredHeight: active ? implicitHeight : 0
     opacity: active ? 1 : 0
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-    Behavior on opacity { NumberAnimation { duration: 180 } }
+    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+    Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
 
     Rectangle {
         Layout.fillWidth: true; Layout.leftMargin: 18; Layout.rightMargin: 18
@@ -57,7 +57,7 @@ ColumnLayout {
                 posterUrl: cell.item ? (cell.item.poster || "") : ""
                 label: cell.item ? (cell.item.title || "") : ""
                 opacity: cellMa.containsMouse ? 1 : 0.86
-                Behavior on opacity { NumberAnimation { duration: 130 } }
+                Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
             }
             // Same idiom as the grid tile: the bar rides the cover's foot rather
             // than claiming a row of its own, which this column cannot spare.
@@ -74,7 +74,7 @@ ColumnLayout {
                     height: parent.height
                     radius: 2
                     color: (cell.item && cell.item.paused === true) ? Theme.t3 : Theme.accent
-                    Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
                 }
             }
             Rectangle {
@@ -83,7 +83,7 @@ ColumnLayout {
                 color: "transparent"
                 border.width: 1
                 border.color: cellMa.containsMouse ? Theme.accent : "transparent"
-                Behavior on border.color { ColorAnimation { duration: 130 } }
+                Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
             }
             MouseArea {
                 id: cellMa

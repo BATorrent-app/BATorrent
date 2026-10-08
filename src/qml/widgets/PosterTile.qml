@@ -311,8 +311,8 @@ Item {
             border.color: ptMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
             border.width: 1
             scale: ptMa.containsMouse ? 1.08 : 1.0
-            Behavior on border.color { ColorAnimation { duration: 120 } }
-            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+            Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
+            Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
             IconImg {
                 anchors.centerIn: parent
                 anchors.horizontalCenterOffset: 1
@@ -336,7 +336,7 @@ Item {
             border.color: controller.isRowSelected(tile.index) ? Theme.accent
                           : (tileMa.containsMouse ? Qt.rgba(1, 1, 1, 0.2) : Theme.hair)
             border.width: controller.isRowSelected(tile.index) ? 2 : 1
-            Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
+            Behavior on border.color { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
         }
 
         // Finished while on screen: the bar fills, then a ring in the done

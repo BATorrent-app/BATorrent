@@ -45,7 +45,7 @@ Item {
     }
     SequentialAnimation {
         id: anim
-        NumberAnimation { target: root; property: "amt"; to: 1.0; duration: 120; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "amt"; to: 1.0; duration: Theme.durFast; easing.type: Easing.OutCubic }
         PauseAnimation { duration: 300 }
         NumberAnimation { target: root; property: "amt"; to: 0.0; duration: 280; easing.type: Easing.OutCubic }
     }

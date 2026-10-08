@@ -29,7 +29,7 @@ Item {
         visible: root.sv.detailOpen
         color: "#80000000"
         MouseArea { anchors.fill: parent; onClicked: root.sv.detailOpen = false }
-        Behavior on opacity { NumberAnimation { duration: 140 } }
+        Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
         opacity: root.sv.detailOpen ? 1 : 0
     }
 

@@ -28,7 +28,7 @@ Flow {
             radius: 12
             color: favMa.containsMouse && !cur ? Theme.hover : Theme.field
             border.color: cur ? Theme.accent : Theme.hair; border.width: 1
-            Behavior on border.color { ColorAnimation { duration: 100 } }
+            Behavior on border.color { ColorAnimation { duration: Theme.durExit } }
             Text {
                 id: favTxt; anchors.centerIn: parent
                 text: modelData.label + (modelData.free.length > 0 ? " · " + modelData.free : "")

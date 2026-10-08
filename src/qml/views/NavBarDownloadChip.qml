@@ -26,7 +26,7 @@ Rectangle {
     Layout.preferredWidth: chipContent.implicitWidth + 20
     radius: 9
     color: chipHover.hovered ? Theme.hover : "transparent"
-    Behavior on color { ColorAnimation { duration: 130 } }
+    Behavior on color { ColorAnimation { duration: Theme.durFast } }
     HoverHandler { id: chipHover }
 
     RowLayout {

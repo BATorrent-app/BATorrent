@@ -133,7 +133,7 @@ Rectangle {
                 src: "qrc:/icons/heart.svg"
                 tint: donMa.containsMouse ? Theme.accent : Theme.t4
                 s: 14
-                Behavior on tint { ColorAnimation { duration: 140 } }
+                Behavior on tint { ColorAnimation { duration: Theme.durFast } }
             }
             MouseArea {
                 id: donMa

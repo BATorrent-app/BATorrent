@@ -33,7 +33,7 @@ Rectangle {
                                    : st === 1 ? Theme.amber
                                    : st === 3 ? Theme.accent : Theme.t4
     color: vpnMa.containsMouse ? Theme.hover : "transparent"
-    Behavior on color { ColorAnimation { duration: 130 } }
+    Behavior on color { ColorAnimation { duration: Theme.durFast } }
     RowLayout {
         id: vpnRow
         anchors.centerIn: parent
@@ -72,7 +72,7 @@ Rectangle {
                  : i18n.t("vpn_state_off"))
             color: root.stColor
             font.pixelSize: 12; font.family: Theme.fontSans
-            Behavior on color { ColorAnimation { duration: 130 } }
+            Behavior on color { ColorAnimation { duration: Theme.durFast } }
         }
     }
     MouseArea {

@@ -30,7 +30,7 @@ Item {
 
     Layout.fillWidth: true
     Layout.preferredHeight: hero ? 74 : (36 + 2 * Theme.sp4)
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
 
     // bottom hairline only in the docked state
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair; visible: !bar.hero }
@@ -41,15 +41,15 @@ Item {
         anchors.rightMargin: bar.centered ? Math.max(Theme.sp5, (parent.width - 680) / 2) : Theme.sp5
         anchors.topMargin: bar.hero ? 10 : Theme.sp4
         anchors.bottomMargin: bar.hero ? 10 : Theme.sp4
-        Behavior on anchors.leftMargin { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-        Behavior on anchors.rightMargin { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on anchors.leftMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+        Behavior on anchors.rightMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
         spacing: Theme.sp3
 
         // field: grows tall and round in the hero skin
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: bar.hero ? 54 : 36
-            Behavior on Layout.preferredHeight { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
 
             TFld {
                 id: queryFld
@@ -60,7 +60,7 @@ Item {
                 fontSize: bar.hero ? 17 : 13
                 iconSize: bar.hero ? 20 : 14
                 placeholder: (i18n.language, i18n.t("search_input"))
-                Behavior on radius { NumberAnimation { duration: 240 } }
+                Behavior on radius { NumberAnimation { duration: Theme.durSlow } }
                 onTextChanged: bar.sv.queryEdited(text)
                 // commit on Enter only: committing on focus-out re-ran the search
                 // when you clicked a filter dropdown, eating the first click
@@ -90,7 +90,7 @@ Item {
                     implicitHeight: 30
                     implicitWidth: pillTxt.implicitWidth + 26
                     color: on ? Theme.accentTint : (pillMa.containsMouse ? Theme.hover : "transparent")
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: Theme.durFast } }
                     Text {
                         id: pillTxt
                         anchors.centerIn: parent

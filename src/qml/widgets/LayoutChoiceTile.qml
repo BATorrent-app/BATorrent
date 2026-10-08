@@ -61,7 +61,7 @@ Item {
             radius: 4
             color: tile.uiPalette.panel
             opacity: tile.navOp
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
             Row {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left; anchors.leftMargin: 5
@@ -81,7 +81,7 @@ Item {
             radius: 4
             color: tile.uiPalette.panel
             opacity: tile.navOp
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
             Column {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top; anchors.topMargin: 7
@@ -151,7 +151,7 @@ Item {
             border.width: 1
             border.color: tile.uiPalette.hair
             opacity: tile.detOp
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
             Rectangle {
                 x: 4; y: 4
                 width: tile.detailBottom ? 13 : 10

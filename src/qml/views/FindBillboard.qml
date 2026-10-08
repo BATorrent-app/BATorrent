@@ -75,8 +75,8 @@ Item {
     SequentialAnimation {
         id: heroSwap
         ParallelAnimation {
-            NumberAnimation { target: heroTextCol; property: "opacity"; to: 0; duration: 140; easing.type: Theme.easeIn }
-            NumberAnimation { target: heroTextShift; property: "x"; to: -Theme.travel(10); duration: 140; easing.type: Theme.easeIn }
+            NumberAnimation { target: heroTextCol; property: "opacity"; to: 0; duration: Theme.durFast; easing.type: Theme.easeIn }
+            NumberAnimation { target: heroTextShift; property: "x"; to: -Theme.travel(10); duration: Theme.durFast; easing.type: Theme.easeIn }
         }
         ScriptAction { script: { heroSnap.scheduleUpdate(); heroSnap.opacity = 1 } }
         // one frame so the still is rendered before the content changes
@@ -86,7 +86,7 @@ Item {
             NumberAnimation { target: heroSnap; property: "opacity"; to: 0; duration: 480; easing.type: Easing.InOutQuad }
             NumberAnimation { target: heroPoster; property: "scale"; from: Theme.grow(1.04); to: 1; duration: 640; easing.type: Theme.easeOut }
             SequentialAnimation {
-                PauseAnimation { duration: 120 }
+                PauseAnimation { duration: Theme.durFast }
                 ParallelAnimation {
                     NumberAnimation { target: heroTextCol; property: "opacity"; to: 1; duration: 320; easing.type: Theme.easeOut }
                     NumberAnimation { target: heroTextShift; property: "x"; from: Theme.travel(22); to: 0; duration: 560; easing.type: Theme.easeOut }

@@ -174,7 +174,7 @@ Window {
                     onClicked: card.dismiss()
                 }
 
-                Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
                 // grows in from the corner it is anchored to; no slide, the
                 // window is only as big as the cards and would clip one
                 scale: Theme.grow(0.94)

@@ -139,7 +139,7 @@ Item {
                         implicitWidth: 30; implicitHeight: 30; radius: 8
                         color: closeMa.containsMouse ? "#26ffffff" : "#14ffffff"
                         border.color: "#22ffffff"; border.width: 1
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: Theme.durFast } }
                         Text { anchors.centerIn: parent; text: "✕"; color: "#e8e8ea"; font.pixelSize: 14 }
                         MouseArea { id: closeMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.closePanel() }
                     }
@@ -160,7 +160,7 @@ Item {
                             implicitWidth: lc.implicitWidth + 20; implicitHeight: 28; radius: 7
                             color: chip.on ? "#ff2e3d" : (lcMa.containsMouse ? "#26ffffff" : "#16ffffff")
                             border.color: chip.on ? "#ff2e3d" : "#22ffffff"; border.width: 1
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on color { ColorAnimation { duration: Theme.durFast } }
                             Text {
                                 id: lc; anchors.centerIn: parent; text: root.langLabel(chip.modelData)
                                 color: chip.on ? "#ffffff" : "#c6c6cc"
@@ -220,7 +220,7 @@ Item {
                         width: ListView.view.width; height: 50; radius: 9
                         color: rowMa.containsMouse ? "#22ffffff" : "#12ffffff"
                         border.color: rowMa.containsMouse ? "#2effffff" : "transparent"; border.width: 1
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { ColorAnimation { duration: Theme.durExit } }
                         RowLayout {
                             anchors.fill: parent; anchors.leftMargin: 11; anchors.rightMargin: 11; spacing: 9
                             Rectangle {

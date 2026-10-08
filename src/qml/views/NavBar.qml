@@ -44,7 +44,7 @@ Rectangle {
     }
     SequentialAnimation {
         id: chipFade
-        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 0; duration: 160; easing.type: Easing.InCubic }
+        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 0; duration: Theme.durBase; easing.type: Easing.InCubic }
         ScriptAction { script: car.dlShown = car.dlIndex }
         NumberAnimation { target: dlChip; property: "contentOpacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
     }
@@ -175,7 +175,7 @@ Rectangle {
                         src: navTab.modelData.icon
                         tint: navTab.active ? Theme.t1 : Theme.t3
                         s: 16
-                        Behavior on tint { ColorAnimation { duration: 140 } }
+                        Behavior on tint { ColorAnimation { duration: Theme.durFast } }
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -184,7 +184,7 @@ Rectangle {
                         font.pixelSize: 14
                         font.weight: navTab.active ? Font.Medium : Font.Normal
                         font.family: Theme.fontSans
-                        Behavior on color { ColorAnimation { duration: 140 } }
+                        Behavior on color { ColorAnimation { duration: Theme.durFast } }
                     }
                 }
                 MouseArea {

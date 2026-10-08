@@ -88,7 +88,7 @@ Item {
         id: stepAnim
         NumberAnimation { target: tour; property: "contentVis"; to: 0; duration: 150; easing.type: Easing.InCubic }
         ScriptAction { script: { tour.index = tour._pending; tour._switchPage() } }
-        PauseAnimation { duration: 130 }
+        PauseAnimation { duration: Theme.durFast }
         ScriptAction { script: tour._recalc() }
         NumberAnimation { target: tour; property: "contentVis"; to: 1; duration: 280; easing.type: Easing.OutCubic }
     }

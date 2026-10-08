@@ -87,7 +87,7 @@ Item {
             border.color: Theme.accent
             border.width: 2
             scale: dropZone.containsDrag ? 1.0 : 0.95
-            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+            Behavior on scale { NumberAnimation { duration: Theme.durBase; easing.type: Easing.OutBack } }
             ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 12

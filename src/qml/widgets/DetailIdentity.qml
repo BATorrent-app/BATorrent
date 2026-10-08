@@ -195,7 +195,7 @@ ColumnLayout {
                             : Theme.hair
                         border.width: 1
                         scale: ibMa.pressed ? Theme.pressScale : 1
-                        Behavior on color { ColorAnimation { duration: 130 } }
+                        Behavior on color { ColorAnimation { duration: Theme.durFast } }
                         Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
                         IconImg {
                             visible: ib.icon.length > 0

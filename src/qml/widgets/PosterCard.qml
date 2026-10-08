@@ -36,7 +36,7 @@ Item {
         width: card.posterW
         height: card.posterH
         scale: ma.containsMouse ? 1.04 : 1.0
-        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durBase; easing.type: Easing.OutCubic } }
 
         // skeleton placeholder with a shimmer sweep while the cover downloads;
         // crossfades out as the poster fades in.
@@ -50,7 +50,7 @@ Item {
             border.width: 1
             opacity: imgSrc.status === Image.Ready ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: 300 } }
-            Behavior on border.color { ColorAnimation { duration: 140 } }
+            Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
             Image {
                 anchors.centerIn: parent
                 width: parent.width * 0.4
@@ -133,7 +133,7 @@ Item {
         font.pixelSize: 12; font.weight: Font.Medium; font.family: Theme.fontSans
         elide: Text.ElideRight
         maximumLineCount: 1
-        Behavior on color { ColorAnimation { duration: 140 } }
+        Behavior on color { ColorAnimation { duration: Theme.durFast } }
     }
     Text {
         anchors.top: art.bottom; anchors.topMargin: 25
@@ -188,8 +188,8 @@ Item {
         border.color: pbMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
         border.width: 1
         scale: pbMa.containsMouse ? 1.08 : 1.0
-        Behavior on border.color { ColorAnimation { duration: 120 } }
-        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
+        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
         IconImg {
             anchors.centerIn: parent
             anchors.horizontalCenterOffset: 1

@@ -32,14 +32,14 @@ Item {
         id: art
         width: card.cardW; height: card.cardH
         scale: ma.containsMouse ? 1.04 : 1.0
-        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durBase; easing.type: Easing.OutCubic } }
 
         Rectangle {
             anchors.fill: parent; radius: 10; color: "#161618"; clip: true
             border.color: ma.containsMouse ? Theme.accent : Theme.hair; border.width: 1
             opacity: img.status === Image.Ready ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: 250 } }
-            Behavior on border.color { ColorAnimation { duration: 140 } }
+            Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
             Image {
                 anchors.centerIn: parent; width: parent.width * 0.4; height: width
                 source: "qrc:/images/logo.svg"; sourceSize: Qt.size(width * 2, width * 2)
@@ -64,7 +64,7 @@ Item {
         Rectangle {
             anchors.fill: parent; radius: 10; color: "#66000000"
             opacity: ma.containsMouse ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 140 } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
             Rectangle {
                 visible: !card.isGame
                 anchors.centerIn: parent
@@ -92,7 +92,7 @@ Item {
             border.width: 1
             Behavior on border.color { ColorAnimation { duration: Theme.durBase } }
             opacity: (ma.containsMouse || actionable) ? 1 : 0.92
-            Behavior on opacity { NumberAnimation { duration: 140 } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
             clip: true
             // When the game becomes playable the accent fills the button from
             // the left instead of the colour switching in place.
@@ -238,7 +238,7 @@ Item {
         color: ma.containsMouse ? Theme.t1 : Theme.t2
         font.pixelSize: 12; font.weight: Font.Medium; font.family: Theme.fontSans
         elide: Text.ElideRight; maximumLineCount: 1
-        Behavior on color { ColorAnimation { duration: 140 } }
+        Behavior on color { ColorAnimation { duration: Theme.durFast } }
     }
     Text {
         anchors.top: titleLabel.bottom; anchors.topMargin: 2

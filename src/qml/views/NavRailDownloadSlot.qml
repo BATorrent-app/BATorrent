@@ -23,8 +23,8 @@ ColumnLayout {
     clip: true
     Layout.preferredHeight: rail.showDl ? implicitHeight : 0
     opacity: rail.showDl ? 1 : 0
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-    Behavior on opacity { NumberAnimation { duration: 180 } }
+    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+    Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
 
     Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
 
@@ -121,7 +121,7 @@ ColumnLayout {
             color: "#ee15151a"; border.color: Theme.hair; border.width: 1
             visible: root.car.dlList.length > 1
             opacity: dlHov.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 130 } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
             Text { anchors.centerIn: parent; text: "‹"; color: Theme.t1; font.pixelSize: 16; font.family: Theme.fontSans }
             MouseArea {
                 anchors.fill: parent; enabled: dlHov.hovered; cursorShape: Qt.PointingHandCursor
@@ -134,7 +134,7 @@ ColumnLayout {
             color: "#ee15151a"; border.color: Theme.hair; border.width: 1
             visible: root.car.dlList.length > 1
             opacity: dlHov.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 130 } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
             Text { anchors.centerIn: parent; text: "›"; color: Theme.t1; font.pixelSize: 16; font.family: Theme.fontSans }
             MouseArea {
                 anchors.fill: parent; enabled: dlHov.hovered; cursorShape: Qt.PointingHandCursor
