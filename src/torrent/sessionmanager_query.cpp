@@ -70,6 +70,13 @@ TorrentInfo SessionManager::torrentAt(int index) const
     } else if (info.paused) {
         info.downloadRate = 0;
         info.uploadRate = 0;
+    } else if (info.finished || info.seeding) {
+        // download_payload_rate is a moving average, so it decays for a while
+        // after the last byte instead of dropping. A torrent that has every
+        // piece is not downloading at 40 KB/s, however the average feels about
+        // it; the upload is the half that is still real.
+        info.downloadRate = 0;
+        info.uploadRate = st.upload_payload_rate;
     } else {
         // Payload, not the total: download_rate counts protocol chatter
         // (handshakes, HAVE, bitfields, keepalives, incoming requests), so a
