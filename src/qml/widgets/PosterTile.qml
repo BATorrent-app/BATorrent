@@ -78,7 +78,7 @@ Item {
         PropertyAction { target: dealShift; property: "y"; value: 22 }
         PauseAnimation { duration: 60 + Math.min(tile.index, 16) * 34 }
         ParallelAnimation {
-            NumberAnimation { target: tile; property: "opacity"; to: 1; duration: 260; easing.type: Theme.easeOut }
+            NumberAnimation { target: tile; property: "opacity"; to: 1; duration: Theme.durSlower; easing.type: Theme.easeOut }
             NumberAnimation { target: dealShift; property: "y"; to: 0; duration: 520; easing.type: Easing.OutExpo }
         }
     }
@@ -365,7 +365,7 @@ Item {
         }
         SequentialAnimation {
             id: finishPulse
-            PauseAnimation { duration: 280 }
+            PauseAnimation { duration: Theme.durSlower }
             ParallelAnimation {
                 NumberAnimation { target: finishHalo; property: "opacity"; from: 0.9; to: 0
                     duration: Theme.durShow + 400; easing.type: Easing.OutQuad }

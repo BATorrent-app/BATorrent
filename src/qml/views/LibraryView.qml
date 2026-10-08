@@ -189,10 +189,10 @@ Item {
             NumberAnimation { properties: "scale"; to: 1; duration: grid.skipDisplace ? 0 : 280; easing.type: Theme.easeOut }
         }
         move: Transition {
-            NumberAnimation { properties: "x,y"; duration: 300; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+            NumberAnimation { properties: "x,y"; duration: Theme.durSlower; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
         }
         moveDisplaced: Transition {
-            NumberAnimation { properties: "x,y"; duration: 280; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
+            NumberAnimation { properties: "x,y"; duration: Theme.durSlower; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
         }
         clip: true
         model: libraryView.modelOverride !== null ? libraryView.modelOverride : win.model

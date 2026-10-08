@@ -62,7 +62,7 @@ Rectangle {
 
     Layout.fillHeight: true
     Layout.preferredWidth: shown ? (collapsed ? 46 : 340) : 0
-    Behavior on Layout.preferredWidth { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
+    Behavior on Layout.preferredWidth { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
     visible: Layout.preferredWidth > 0
     clip: true
     color: Theme.panel

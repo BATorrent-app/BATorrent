@@ -80,7 +80,7 @@ BatDialog {
                 width: parent.width * (dlg.pct / 100)
                 radius: 4
                 color: Theme.accent
-                Behavior on width { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
+                Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
             }
         }
 

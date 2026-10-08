@@ -543,7 +543,7 @@ Window {
                         NumberAnimation {
                             target: pageShift; property: "x"
                             from: contentStack.enterFrom; to: 0
-                            duration: 260; easing.type: Theme.easeOut
+                            duration: Theme.durSlower; easing.type: Theme.easeOut
                         }
                     }
                 }

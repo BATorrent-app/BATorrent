@@ -39,7 +39,7 @@ Item {
         height: parent.height
         // animate a 0..1 slide, never x (see HubDetailDrawer: resize ghosting)
         property real slide: root.sv.detailOpen ? 1 : 0
-        Behavior on slide { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
+        Behavior on slide { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         x: parent.width - width * slide
         color: Theme.elev
         Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.hair }

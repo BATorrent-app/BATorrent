@@ -136,7 +136,7 @@ Item {
                     height: parent.height; radius: 2
                     width: parent.width * Math.max(0.02, Math.min(1, ov.percent))
                     color: Theme.accent
-                    Behavior on width { NumberAnimation { duration: 300; easing.type: Theme.easeOut } }
+                    Behavior on width { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
                 }
             }
 

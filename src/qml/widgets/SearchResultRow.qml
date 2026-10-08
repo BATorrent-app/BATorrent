@@ -191,7 +191,7 @@ Rectangle {
                         width: parent.width * row.sv.seedFill(row.modelData.seedsN || 0)
                         height: parent.height; radius: 2
                         color: row.sv.seedColor(row.modelData.seedsN || 0)
-                        Behavior on width { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
+                        Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                     }
                 }
                 Text {

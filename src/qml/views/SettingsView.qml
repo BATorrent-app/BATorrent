@@ -357,7 +357,7 @@ Rectangle {
                     tint: Theme.grn
                     transformOrigin: Item.Center
                     opacity: savedFlash.running ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
                     SequentialAnimation {
                         id: savedPop
                         NumberAnimation { target: savedCheck; property: "scale"; from: 0.6; to: 1.4; duration: 150; easing.type: Easing.OutBack }
@@ -372,7 +372,7 @@ Rectangle {
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     font.family: Theme.fontSans
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
                 }
                 Timer { id: savedFlash; interval: 1800 }
                 Connections {

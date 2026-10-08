@@ -312,7 +312,7 @@ Rectangle {
                     id: pillScrollAnim
                     target: pillsFlick
                     property: "contentX"
-                    duration: 280
+                    duration: Theme.durSlower
                     easing.type: Theme.easeOut
                 }
 

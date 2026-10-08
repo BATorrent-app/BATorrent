@@ -92,7 +92,7 @@ Item {
         color: "#cc000000"
         border.color: Theme.accent; border.width: 1
         implicitWidth: rcLbl.implicitWidth + 26; implicitHeight: 30
-        Behavior on opacity { NumberAnimation { duration: 280; easing.type: Theme.easeOut } }
+        Behavior on opacity { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
         Text {
             id: rcLbl
             anchors.centerIn: parent

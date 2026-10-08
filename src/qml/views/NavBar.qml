@@ -46,7 +46,7 @@ Rectangle {
         id: chipFade
         NumberAnimation { target: dlChip; property: "contentOpacity"; to: 0; duration: Theme.durBase; easing.type: Easing.InCubic }
         ScriptAction { script: car.dlShown = car.dlIndex }
-        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 1; duration: 300; easing.type: Theme.easeOut }
+        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 1; duration: Theme.durSlower; easing.type: Theme.easeOut }
     }
 
     readonly property var diskVolumes: (typeof session !== "undefined") ? session.diskVolumes : []
@@ -234,7 +234,7 @@ Rectangle {
         color: Theme.accent
         opacity: target ? 1 : 0
         Behavior on x { enabled: tabLine.ready && !Theme.reduceMotion
-            NumberAnimation { duration: 300; easing.type: Theme.easeOut } }
+            NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
         Behavior on width { enabled: tabLine.ready && !Theme.reduceMotion
             NumberAnimation { duration: 360; easing.type: Theme.easeOut } }
         Behavior on opacity { NumberAnimation { duration: Theme.durBase } }

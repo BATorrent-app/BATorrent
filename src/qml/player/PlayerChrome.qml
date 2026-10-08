@@ -179,7 +179,7 @@ Item {
                         color: dlMa.containsMouse ? "#1affffff" : "transparent"
                         border.color: low ? Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.5) : Theme.hair
                         border.width: 1
-                        Behavior on border.color { ColorAnimation { duration: 200 } }
+                        Behavior on border.color { ColorAnimation { duration: Theme.durBase } }
                         Row {
                             id: dlRow; anchors.centerIn: parent; spacing: 6
                             IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/clock.svg"; tint: parent.parent.low ? Theme.amber : Theme.t3; s: 13 }

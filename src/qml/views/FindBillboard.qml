@@ -319,8 +319,8 @@ Item {
                     width: current ? 28 : 7
                     height: 7; radius: 3.5
                     color: current ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.35)
-                    Behavior on width { NumberAnimation { duration: 260; easing.type: Theme.easeOut } }
-                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on width { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
+                    Behavior on color { ColorAnimation { duration: Theme.durBase } }
                     clip: true
                     // the current dot fills up until the next item comes in
                     Rectangle {

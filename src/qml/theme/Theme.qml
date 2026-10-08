@@ -301,6 +301,9 @@ QtObject {
     readonly property int durFast: 120
     readonly property int durBase: 160
     readonly property int durSlow: 240
+    // Geometry covers distance, so it needs a step above the one a tint uses:
+    // 23 animations had piled up at 260-300 with nowhere on the scale to land.
+    readonly property int durSlower: 300
     // Exits run shorter than entrances. durShow is for one-off moments (a
     // torrent finishing), not for anything that happens often.
     readonly property int durExit: 100

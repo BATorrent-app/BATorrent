@@ -310,7 +310,7 @@ Window {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: videoOut.bottom
         anchors.bottomMargin: (chrome.barVisible ? chrome.barHeight : 0) + 26
-        Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         Rectangle {
             visible: win.subBgOpacity > 0
             anchors.centerIn: subText

@@ -179,7 +179,7 @@ Window {
                 // window is only as big as the cards and would clip one
                 scale: Theme.grow(0.94)
                 transformOrigin: Item.BottomRight
-                Behavior on scale { NumberAnimation { duration: 280; easing.type: Theme.easeOut } }
+                Behavior on scale { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
                 Component.onCompleted: { opacity = 1; scale = 1 }
 
                 function dismiss() {

@@ -46,8 +46,8 @@ Item {
     SequentialAnimation {
         id: anim
         NumberAnimation { target: root; property: "amt"; to: 1.0; duration: Theme.durFast; easing.type: Theme.easeOut }
-        PauseAnimation { duration: 300 }
-        NumberAnimation { target: root; property: "amt"; to: 0.0; duration: 280; easing.type: Theme.easeIn }
+        PauseAnimation { duration: Theme.durSlower }
+        NumberAnimation { target: root; property: "amt"; to: 0.0; duration: Theme.durSlower; easing.type: Theme.easeIn }
     }
     MouseArea { anchors.fill: parent; enabled: root.amt > 0.01 }
 }

@@ -50,10 +50,10 @@ Rectangle {
         id: dlFade
         NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 0; duration: Theme.durBase; easing.type: Easing.InCubic }
         ScriptAction { script: car.dlShown = car.dlIndex }
-        NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 1; duration: 300; easing.type: Theme.easeOut }
+        NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 1; duration: Theme.durSlower; easing.type: Theme.easeOut }
     }
 
-    Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
+    Behavior on implicitWidth { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
 
     // QSettings stores bool differently per platform (macOS plist=bool, Windows
     // registry=int, Linux INI=string), so persist as 0/1 and read all forms.
@@ -122,7 +122,7 @@ Rectangle {
         color: Theme.hover
         opacity: target ? 1 : 0
         Behavior on y { enabled: activePill.ready && !Theme.reduceMotion
-            NumberAnimation { duration: 300; easing.type: Theme.easeOut } }
+            NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
         Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
         Rectangle {
             anchors.left: parent.left; anchors.leftMargin: 3
@@ -380,7 +380,7 @@ Rectangle {
                     height: settingsItem.active ? 22 : 0
                     radius: 2
                     color: Theme.accent
-                    Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                    Behavior on height { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutBack } }
                 }
             }
             RowLayout {
@@ -437,7 +437,7 @@ Rectangle {
                     tint: Theme.t3
                     s: 18
                     rotation: rail.collapsed ? -90 : 90   // down chevron → right (expand) / left (collapse)
-                    Behavior on rotation { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
+                    Behavior on rotation { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                 }
                 Text {
                     Layout.fillWidth: true

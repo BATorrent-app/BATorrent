@@ -87,7 +87,7 @@ ColumnLayout {
             }
         }
         implicitHeight: heroCol.implicitHeight + 32
-        Behavior on color { ColorAnimation { duration: 200 } }
+        Behavior on color { ColorAnimation { duration: Theme.durBase } }
         ColumnLayout {
             id: heroCol
             anchors.left: parent.left; anchors.right: parent.right
@@ -110,7 +110,7 @@ ColumnLayout {
                         visible: hero.st === 1
                         SequentialAnimation on opacity {
                             running: hero.st === 1; loops: Animation.Infinite
-                            NumberAnimation { from: 0.7; to: 0.0; duration: 300; easing.type: Theme.easeIn }
+                            NumberAnimation { from: 0.7; to: 0.0; duration: Theme.durSlower; easing.type: Theme.easeIn }
                         }
                     }
                 }

@@ -49,7 +49,7 @@ Item {
             border.color: ma.containsMouse ? Theme.accent : Theme.hair
             border.width: 1
             opacity: imgSrc.status === Image.Ready ? 0 : 1
-            Behavior on opacity { NumberAnimation { duration: 300 } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durSlower } }
             Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
             Image {
                 anchors.centerIn: parent

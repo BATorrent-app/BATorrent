@@ -56,7 +56,7 @@ Item {
         MultiEffect {
             anchors.fill: parent; source: img; maskEnabled: true; maskSource: mask
             opacity: img.status === Image.Ready ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 300; easing.type: Theme.easeOut } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
         }
 
         // hover play overlay (movies: glass disc, same language as the grid

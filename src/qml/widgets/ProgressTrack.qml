@@ -63,7 +63,7 @@ Item {
             radius: parent.radius
             color: track.fill
             Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { ColorAnimation { duration: Theme.durBase } }
             clip: true
 
             Rectangle {
