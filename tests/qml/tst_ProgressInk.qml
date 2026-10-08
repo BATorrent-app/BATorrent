@@ -87,5 +87,13 @@ Item {
             compare(Theme.inkOn("#d99a2b"), Theme.inkOn(Qt.color("#d99a2b")))
             compare(Theme.inkOn("#54555c"), Theme.inkOn(Qt.color("#54555c")))
         }
-    }
+    
+        // inkOn measures r,g,b and ignores alpha, so a translucent wash reads
+        // as its opaque colour. Theme.track is 9% white: feeding it here
+        // returned black ink and the 0% label vanished into the bar.
+        function test_translucentWashIsNotAValidBackground() {
+            compare(Theme.inkOn(Qt.rgba(1, 1, 1, 0.09)).toString(),
+                    Theme.inkOn("#ffffff").toString())
+        }
+}
 }

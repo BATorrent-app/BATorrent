@@ -27,11 +27,14 @@ Item {
     // in a top-right pill, so the same number lived in two different places
     // depending on the view. Owned here, both views get it in the same spot.
     property bool showPercent: false
+    // Ink for the empty part of the bar. Not derived from Theme.track: that is
+    // a 9%-alpha wash, so whatever sits behind the bar decides this, and only
+    // the caller knows what that is.
+    property color emptyInk: Theme.t1
     // Follows whichever background the number is actually over, which changes
     // as the fill grows past it. Callers whose fill is dimmed (the list row)
     // pass their own.
-    property color percentColor: pct.overFill ? Theme.inkOn(track.fill)
-                                              : Theme.inkOn(Theme.track)
+    property color percentColor: pct.overFill ? Theme.inkOn(track.fill) : track.emptyInk
     // Dims the fill without dimming the number on top of it. The list row used
     // to set `opacity` on the whole component to keep its percentage readable,
     // which only worked while the percentage lived outside the bar.

@@ -288,6 +288,8 @@ Item {
                 sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
                        || (tile.isDownloading && tile.downRate > 0)
                 showPercent: true
+                // The empty track here is a near-black pill over artwork.
+                emptyInk: "#ffffff"
             }
         }
 

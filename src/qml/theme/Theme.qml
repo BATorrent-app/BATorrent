@@ -83,6 +83,8 @@ QtObject {
     //
     // 0.19 is where the two contrast ratios cross, so either side of it is
     // genuinely the better of the two rather than a guess.
+    // Pass an opaque colour: alpha is ignored, so a 9%-white wash measures as
+    // white and comes back with black ink on it.
     function inkOn(c) {
         // A string literal is the natural way to call this ("#d99a2b"), and on a
         // string .r is undefined — the luminance goes NaN, every comparison
