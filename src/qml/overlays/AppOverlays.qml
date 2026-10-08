@@ -192,6 +192,11 @@ Item {
             if (mode === "welcome") host.completeWelcome()
             else host.maybeStartTour()
         }
+        // Closing it counts as having seen it. Every question here has a
+        // sensible default and the whole thing is in Help → Setup wizard, so
+        // reopening it on each launch was the app arguing with a decision the
+        // user already made.
+        onRejected: if (mode === "welcome") host.dismissWelcome()
         onOpenReleaseNotes: releaseNotesDlg.open()
     }
     AboutDialog         { id: aboutDlg }

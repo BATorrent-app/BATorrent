@@ -210,6 +210,13 @@ Window {
         if (cur.length > 0) settings.set("lastSeenVersion", cur)
     }
 
+    // Dismissed, not completed: remember it was offered, but do not start the
+    // tour — that is a reward for finishing, not a consolation for leaving.
+    function dismissWelcome() {
+        if (typeof settings === "undefined") return
+        settings.set("welcomeShown", true)
+    }
+
     function completeWelcome() {
         if (typeof settings === "undefined") return
         settings.set("welcomeShown", true)
