@@ -62,7 +62,7 @@ Item {
             width: parent.width * Math.max(0, Math.min(1, track.progress))
             radius: parent.radius
             color: track.fill
-            Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
             Behavior on color { ColorAnimation { duration: 200 } }
             clip: true
 

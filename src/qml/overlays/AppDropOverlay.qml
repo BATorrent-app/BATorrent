@@ -79,7 +79,7 @@ Item {
         color: Qt.rgba(0, 0, 0, 0.65)
         visible: opacity > 0.01
         opacity: dropZone.containsDrag ? 1 : 0
-        Behavior on opacity { OpacityAnimator { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on opacity { OpacityAnimator { duration: 150; easing.type: Theme.easeOut } }
         Rectangle {
             anchors.centerIn: parent
             width: 360; height: 200; radius: 16

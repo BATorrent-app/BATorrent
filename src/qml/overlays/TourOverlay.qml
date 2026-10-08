@@ -27,7 +27,7 @@ Item {
     // callout visibility (drives the iris and the callout cross-fade).
     property real fade: 0
     property real contentVis: 0
-    Behavior on fade { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+    Behavior on fade { NumberAnimation { duration: 260; easing.type: Theme.easeOut } }
     onRunningChanged: {
         fade = running ? 1 : 0
         if (!running) { stepAnim.stop(); openTimer.stop(); contentVis = 0 }
@@ -81,7 +81,7 @@ Item {
 
     // initial open (no close phase): settle layout, measure, iris open
     Timer { id: openTimer; interval: 90; onTriggered: { tour._recalc(); contentOpen.start() } }
-    NumberAnimation { id: contentOpen; target: tour; property: "contentVis"; from: 0; to: 1; duration: 280; easing.type: Easing.OutCubic }
+    NumberAnimation { id: contentOpen; target: tour; property: "contentVis"; from: 0; to: 1; duration: 280; easing.type: Theme.easeOut }
 
     // step change: iris closed → swap (page + measure, while invisible) → open
     SequentialAnimation {
@@ -90,7 +90,7 @@ Item {
         ScriptAction { script: { tour.index = tour._pending; tour._switchPage() } }
         PauseAnimation { duration: Theme.durFast }
         ScriptAction { script: tour._recalc() }
-        NumberAnimation { target: tour; property: "contentVis"; to: 1; duration: 280; easing.type: Easing.OutCubic }
+        NumberAnimation { target: tour; property: "contentVis"; to: 1; duration: 280; easing.type: Theme.easeOut }
     }
 
     onWidthChanged: if (running) _recalc()

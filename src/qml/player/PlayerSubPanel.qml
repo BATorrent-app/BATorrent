@@ -81,7 +81,7 @@ Item {
         anchors.fill: parent
         color: "#000000"
         opacity: root.open ? 0.5 : 0
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
         MouseArea { anchors.fill: parent; onClicked: root.closePanel() }
     }
 
@@ -95,7 +95,7 @@ Item {
         // resize (fullscreen) dragged the parked drawer visibly across the
         // new, wider window before re-parking it
         property real slide: root.open ? 1 : 0
-        Behavior on slide { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+        Behavior on slide { NumberAnimation { duration: 260; easing.type: Theme.easeOut } }
         x: root.width - width * slide
 
         Rectangle {

@@ -36,7 +36,7 @@ Item {
         height: 52
         opacity: pw && pw.controlsShown ? 1 : 0
         visible: opacity > 0 && !!pw && pw.mediaTitle.length > 0
-        Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
 
         Rectangle {
             anchors.fill: parent
@@ -102,7 +102,7 @@ Item {
         height: 124
         opacity: pw && pw.controlsShown ? 1 : 0
         visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
 
         Rectangle {
             anchors.fill: parent
@@ -211,16 +211,16 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: 34; implicitHeight: 34
                         scale: rwMa.pressed ? 0.9 : 1.0
-                        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         Rectangle {
                             anchors.fill: parent; radius: width / 2
                             color: rwMa.containsMouse ? "#1effffff" : "transparent"
-                            Behavior on color { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         }
                         IconImg {
                             anchors.centerIn: parent; src: "qrc:/icons/skip-back-10.svg"; s: 24
                             tint: rwMa.containsMouse ? Theme.t1 : Theme.t2
-                            Behavior on tint { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                            Behavior on tint { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         }
                         MouseArea { id: rwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (pw) pw.seekBy(-10000) }
                     }
@@ -228,21 +228,21 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: 44; implicitHeight: 44
                         scale: playMa.pressed ? 0.94 : (playMa.containsMouse ? 1.04 : 1.0)
-                        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         Rectangle {
                             anchors.fill: parent; radius: width / 2
                             color: playMa.containsMouse ? "#1effffff" : "transparent"
                             border.color: playMa.containsMouse ? Theme.accent : "transparent"
                             border.width: 1
-                            Behavior on color { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
-                            Behavior on border.color { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
+                            Behavior on border.color { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         }
                         IconImg {
                             anchors.centerIn: parent
                             anchors.horizontalCenterOffset: mediaPlayer && mediaPlayer.playbackState === MediaPlayer.PlayingState ? 0 : 2
                             src: mediaPlayer && mediaPlayer.playbackState === MediaPlayer.PlayingState ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
                             tint: playMa.containsMouse ? Theme.accent : Theme.t1; s: 26
-                            Behavior on tint { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                            Behavior on tint { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         }
                         MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (pw) pw.togglePlay() }
                     }
@@ -250,16 +250,16 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: 34; implicitHeight: 34
                         scale: fwMa.pressed ? 0.9 : 1.0
-                        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         Rectangle {
                             anchors.fill: parent; radius: width / 2
                             color: fwMa.containsMouse ? "#1effffff" : "transparent"
-                            Behavior on color { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         }
                         IconImg {
                             anchors.centerIn: parent; src: "qrc:/icons/skip-fwd-10.svg"; s: 24
                             tint: fwMa.containsMouse ? Theme.t1 : Theme.t2
-                            Behavior on tint { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                            Behavior on tint { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                         }
                         MouseArea { id: fwMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (pw) pw.seekBy(10000) }
                     }
@@ -296,7 +296,7 @@ Item {
                         readonly property bool expanded: volHov.hovered || hsl.pressed
                         implicitHeight: 32
                         implicitWidth: 32 + (expanded ? 78 : 0)
-                        Behavior on implicitWidth { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                        Behavior on implicitWidth { NumberAnimation { duration: 150; easing.type: Theme.easeOut } }
                         clip: true
                         HoverHandler { id: volHov }
                         Row {
@@ -307,7 +307,7 @@ Item {
                                 Rectangle {
                                     anchors.fill: parent; radius: width / 2
                                     color: volMa.containsMouse ? "#1effffff" : "transparent"
-                                    Behavior on color { ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+                                    Behavior on color { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
                                 }
                                 IconImg {
                                     anchors.centerIn: parent

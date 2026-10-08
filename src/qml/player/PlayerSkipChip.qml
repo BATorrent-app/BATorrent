@@ -35,11 +35,11 @@ Item {
         readonly property var sk: root.activeSkip
         visible: opacity > 0
         opacity: (sk && !root.endCardVisible) ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
         anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.rightMargin: 24
         anchors.bottomMargin: root.controlsShown ? 134 : 40
-        Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
         width: skipRow.width + 30; height: 40
         radius: 8
         color: skMa.containsMouse ? "#ffffff" : "#e6101014"

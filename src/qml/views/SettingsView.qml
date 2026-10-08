@@ -361,7 +361,7 @@ Rectangle {
                     SequentialAnimation {
                         id: savedPop
                         NumberAnimation { target: savedCheck; property: "scale"; from: 0.6; to: 1.4; duration: 150; easing.type: Easing.OutBack }
-                        NumberAnimation { target: savedCheck; property: "scale"; to: 1.0; duration: Theme.durBase; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: savedCheck; property: "scale"; to: 1.0; duration: Theme.durBase; easing.type: Theme.easeOut }
                     }
                 }
                 Text {

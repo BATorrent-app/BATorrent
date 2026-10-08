@@ -50,7 +50,7 @@ Rectangle {
         Keys.onReturnPressed: pi.clicked()
         Keys.onSpacePressed: pi.clicked()
         scale: piMa.pressed ? Theme.pressScale : 1
-        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
         Rectangle {
             visible: pi.activeFocus
             anchors.fill: parent
@@ -313,7 +313,7 @@ Rectangle {
                     target: pillsFlick
                     property: "contentX"
                     duration: 280
-                    easing.type: Easing.OutCubic
+                    easing.type: Theme.easeOut
                 }
 
                 Row {

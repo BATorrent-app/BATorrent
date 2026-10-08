@@ -107,7 +107,7 @@ Item {
                     onClicked: card.dismiss()
                 }
 
-                Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                 Component.onCompleted: opacity = 1
 
                 function dismiss() {

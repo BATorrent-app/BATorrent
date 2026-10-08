@@ -57,7 +57,7 @@ Item {
         SequentialAnimation {
             id: diskFade
             NumberAnimation { target: diskCol; property: "opacity"; to: 0.25; duration: 110; easing.type: Easing.InCubic }
-            NumberAnimation { target: diskCol; property: "opacity"; to: 1.0; duration: Theme.durBase; easing.type: Easing.OutCubic }
+            NumberAnimation { target: diskCol; property: "opacity"; to: 1.0; duration: Theme.durBase; easing.type: Theme.easeOut }
         }
         RowLayout {
             visible: !root.tight

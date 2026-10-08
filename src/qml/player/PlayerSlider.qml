@@ -17,7 +17,7 @@ Slider {
         width: sl.availableWidth
         height: sl.active ? 7 : 5; radius: height / 2
         color: "#26ffffff"
-        Behavior on height { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
         Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: parent.radius; color: "#4dffffff" }
         Rectangle {
             width: sl.visualPosition * parent.width; height: parent.height; radius: parent.radius

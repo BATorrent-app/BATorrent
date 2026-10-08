@@ -63,7 +63,7 @@ Item {
     Rectangle {
         visible: opacity > 0
         opacity: root.showEndCard ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.rightMargin: 24; anchors.bottomMargin: 134
         width: 348; height: 116
@@ -72,7 +72,7 @@ Item {
         border.color: Theme.hair; border.width: 1
         transform: Translate {
             y: root.showEndCard ? 0 : 10
-            Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         }
 
         Row {

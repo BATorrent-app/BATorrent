@@ -108,8 +108,8 @@ Menu {
     // gentle pop: fade + 4px rise, matching the app's page transitions
     enter: Transition {
         ParallelAnimation {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.durFast; easing.type: Easing.OutCubic }
-            NumberAnimation { property: "y"; duration: Theme.durFast; easing.type: Easing.OutCubic
+            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.durFast; easing.type: Theme.easeOut }
+            NumberAnimation { property: "y"; duration: Theme.durFast; easing.type: Theme.easeOut
                               from: root.y + 4; to: root.y }
         }
     }

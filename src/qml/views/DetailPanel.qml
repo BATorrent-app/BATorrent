@@ -17,7 +17,7 @@ Rectangle {
     signal renameFileRequested(int idx, string current)
     Layout.fillWidth: true
     Layout.preferredHeight: win.detailsShownCollapsed ? 42 : 270
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
     color: Theme.panel
     clip: true
     Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair; z: 3 }
@@ -54,7 +54,7 @@ Rectangle {
                     s: 17
                     src: "qrc:/icons/chevron-bold.svg"
                     rotation: detailPanel.win.detailsShownCollapsed ? 180 : 0
-                    Behavior on rotation { NumberAnimation { duration: Theme.durBase; easing.type: Easing.OutCubic } }
+                    Behavior on rotation { NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut } }
                     tint: colMa.containsMouse && collapseBtn.actsOnClick ? Theme.t1 : Theme.t2
                 }
                 MouseArea {

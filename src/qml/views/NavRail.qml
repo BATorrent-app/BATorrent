@@ -50,10 +50,10 @@ Rectangle {
         id: dlFade
         NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 0; duration: Theme.durBase; easing.type: Easing.InCubic }
         ScriptAction { script: car.dlShown = car.dlIndex }
-        NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
+        NumberAnimation { target: dlSlot; property: "contentOpacity"; to: 1; duration: 300; easing.type: Theme.easeOut }
     }
 
-    Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+    Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
 
     // QSettings stores bool differently per platform (macOS plist=bool, Windows
     // registry=int, Linux INI=string), so persist as 0/1 and read all forms.
@@ -437,7 +437,7 @@ Rectangle {
                     tint: Theme.t3
                     s: 18
                     rotation: rail.collapsed ? -90 : 90   // down chevron → right (expand) / left (collapse)
-                    Behavior on rotation { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                    Behavior on rotation { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
                 }
                 Text {
                     Layout.fillWidth: true

@@ -26,7 +26,7 @@ Rectangle {
     Keys.onSpacePressed: btn.clicked()
 
     scale: ma.pressed ? uiPalette.pressScale : 1
-    Behavior on scale { NumberAnimation { duration: uiPalette.durFast; easing.type: Easing.OutCubic } }
+    Behavior on scale { NumberAnimation { duration: uiPalette.durFast; easing.type: Theme.easeOut } }
 
     // keyboard-focus ring (Tab reaches here; mouse clicks never move focus)
     Rectangle {

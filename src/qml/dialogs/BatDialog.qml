@@ -20,7 +20,7 @@ Item {
     property var uiPalette: Theme
     // 0..1 drives the entrance/exit (backdrop fade + card scale+fade)
     property real anim: 0
-    Behavior on anim { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+    Behavior on anim { NumberAnimation { duration: 150; easing.type: Theme.easeOut } }
     onOpenedChanged: {
         anim = opened ? 1 : 0
         if (opened) DialogStack.push(dlg)

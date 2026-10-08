@@ -32,7 +32,7 @@ Item {
         id: art
         width: card.cardW; height: card.cardH
         scale: ma.containsMouse ? 1.04 : 1.0
-        Behavior on scale { NumberAnimation { duration: Theme.durBase; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut } }
 
         Rectangle {
             anchors.fill: parent; radius: 10; color: "#161618"; clip: true
@@ -56,7 +56,7 @@ Item {
         MultiEffect {
             anchors.fill: parent; source: img; maskEnabled: true; maskSource: mask
             opacity: img.status === Image.Ready ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 300; easing.type: Theme.easeOut } }
         }
 
         // hover play overlay (movies: glass disc, same language as the grid

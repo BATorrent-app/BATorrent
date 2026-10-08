@@ -52,7 +52,7 @@ Rectangle {
         Keys.onReturnPressed: if (!disabled) tb.trigger()
         Keys.onSpacePressed: if (!disabled) tb.trigger()
         scale: tbMa.pressed && !tb.disabled ? Theme.pressScale : 1
-        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
         Rectangle {
             visible: tb.activeFocus
             anchors.fill: parent
@@ -74,7 +74,7 @@ Rectangle {
                 // than a glyph, so matching colours makes the icon read fainter
                 tint: tb.active ? Theme.accent : (!tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t2)
                 s: 18
-                NumberAnimation { id: tbSpin; target: tbIcon; property: "rotation"; from: 0; to: 360; duration: 380; easing.type: Easing.OutCubic }
+                NumberAnimation { id: tbSpin; target: tbIcon; property: "rotation"; from: 0; to: 360; duration: 380; easing.type: Theme.easeOut }
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter

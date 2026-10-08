@@ -30,7 +30,7 @@ Item {
 
     Layout.fillWidth: true
     Layout.preferredHeight: hero ? 74 : (36 + 2 * Theme.sp4)
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
 
     // bottom hairline only in the docked state
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair; visible: !bar.hero }
@@ -41,15 +41,15 @@ Item {
         anchors.rightMargin: bar.centered ? Math.max(Theme.sp5, (parent.width - 680) / 2) : Theme.sp5
         anchors.topMargin: bar.hero ? 10 : Theme.sp4
         anchors.bottomMargin: bar.hero ? 10 : Theme.sp4
-        Behavior on anchors.leftMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
-        Behavior on anchors.rightMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+        Behavior on anchors.leftMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
+        Behavior on anchors.rightMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         spacing: Theme.sp3
 
         // field: grows tall and round in the hero skin
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: bar.hero ? 54 : 36
-            Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
 
             TFld {
                 id: queryFld

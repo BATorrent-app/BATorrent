@@ -36,7 +36,7 @@ Item {
         width: card.posterW
         height: card.posterH
         scale: ma.containsMouse ? 1.04 : 1.0
-        Behavior on scale { NumberAnimation { duration: Theme.durBase; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut } }
 
         // skeleton placeholder with a shimmer sweep while the cover downloads;
         // crossfades out as the poster fades in.
@@ -102,7 +102,7 @@ Item {
             maskEnabled: true
             maskSource: imgMask
             opacity: imgSrc.status === Image.Ready ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 350; easing.type: Theme.easeOut } }
         }
 
         // rating pill
@@ -189,7 +189,7 @@ Item {
         border.width: 1
         scale: pbMa.containsMouse ? 1.08 : 1.0
         Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
-        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
         IconImg {
             anchors.centerIn: parent
             anchors.horizontalCenterOffset: 1

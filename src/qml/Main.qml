@@ -539,11 +539,11 @@ Window {
                 SequentialAnimation {
                     id: pageSwitchAnim
                     ParallelAnimation {
-                        NumberAnimation { target: contentStack; property: "opacity"; from: 0.0; to: 1.0; duration: 170; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: contentStack; property: "opacity"; from: 0.0; to: 1.0; duration: 170; easing.type: Theme.easeOut }
                         NumberAnimation {
                             target: pageShift; property: "x"
                             from: contentStack.enterFrom; to: 0
-                            duration: 260; easing.type: Easing.OutCubic
+                            duration: 260; easing.type: Theme.easeOut
                         }
                     }
                 }

@@ -46,7 +46,7 @@ Rectangle {
         id: chipFade
         NumberAnimation { target: dlChip; property: "contentOpacity"; to: 0; duration: Theme.durBase; easing.type: Easing.InCubic }
         ScriptAction { script: car.dlShown = car.dlIndex }
-        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
+        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 1; duration: 300; easing.type: Theme.easeOut }
     }
 
     readonly property var diskVolumes: (typeof session !== "undefined") ? session.diskVolumes : []

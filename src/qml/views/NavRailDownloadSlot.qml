@@ -23,7 +23,7 @@ ColumnLayout {
     clip: true
     Layout.preferredHeight: rail.showDl ? implicitHeight : 0
     opacity: rail.showDl ? 1 : 0
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
     Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
 
     Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }

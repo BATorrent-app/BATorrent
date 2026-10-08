@@ -23,7 +23,7 @@ Item {
 
     visible: opacity > 0
     opacity: open ? 1 : 0
-    Behavior on opacity { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+    Behavior on opacity { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
 
     readonly property bool hasAudioChoice: mediaPlayer && mediaPlayer.audioTracks.length > 1
     readonly property int subTrackCount: mediaPlayer ? mediaPlayer.subtitleTracks.length : 0
@@ -128,7 +128,7 @@ Item {
         clip: true
         transform: Translate {
             y: opts.open ? 0 : 6
-            Behavior on y { NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
         }
 
         MouseArea { anchors.fill: parent }   // swallow click-away inside the card

@@ -122,7 +122,7 @@ Item {
             // list rows put state/peer columns right on top of the art:
             // drop it to a watermark there so data wins the contrast fight
             opacity: controller.gridView ? 0.9 : 0.25
-            Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         }
         // fade left edge (mask: linear-gradient(90deg, transparent, #000 55%))
         Rectangle {
@@ -156,8 +156,8 @@ Item {
         // a plain cross-fade left both hanging half-visible on top of each other.
         scale: (Theme.reduceMotion || (controller.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
-        Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: 190; easing.type: Theme.easeOut } }
+        Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         anchors.fill: parent
         topMargin: Theme.sp5
         bottomMargin: Theme.sp5
@@ -171,8 +171,8 @@ Item {
         // as the whole grid flashing. The container's opacity Behavior already
         // covers the initial fade-in. (List view has no populate, never flashed.)
         add: Transition {
-            NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.durBase; easing.type: Easing.OutCubic }
-            NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: Theme.durBase; easing.type: Easing.OutCubic }
+            NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut }
+            NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut }
         }
         // deleting several selected torrents at once fires these back-to-back
         // with no time to settle between them: a known Qt Quick view-recycling
@@ -181,12 +181,12 @@ Item {
         readonly property bool bulkRemove: typeof session !== "undefined" && session.bulkRemoveInProgress
         readonly property bool skipDisplace: bulkRemove || libraryView.panelReflowing
         remove: Transition {
-            NumberAnimation { properties: "opacity"; to: 0; duration: grid.bulkRemove ? 0 : 160; easing.type: Easing.OutCubic }
-            NumberAnimation { properties: "scale"; to: 0.85; duration: grid.bulkRemove ? 0 : 160; easing.type: Easing.OutCubic }
+            NumberAnimation { properties: "opacity"; to: 0; duration: grid.bulkRemove ? 0 : 160; easing.type: Theme.easeIn }
+            NumberAnimation { properties: "scale"; to: 0.85; duration: grid.bulkRemove ? 0 : 160; easing.type: Theme.easeIn }
         }
         displaced: Transition {
             NumberAnimation { properties: "x,y"; duration: grid.skipDisplace ? 0 : 280; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
-            NumberAnimation { properties: "scale"; to: 1; duration: grid.skipDisplace ? 0 : 280; easing.type: Easing.OutCubic }
+            NumberAnimation { properties: "scale"; to: 1; duration: grid.skipDisplace ? 0 : 280; easing.type: Theme.easeOut }
         }
         move: Transition {
             NumberAnimation { properties: "x,y"; duration: 300; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
@@ -262,8 +262,8 @@ Item {
         visible: opacity > 0.01
         scale: (Theme.reduceMotion || (!controller.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
-        Behavior on opacity { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: 190; easing.type: Theme.easeOut } }
+        Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         anchors.fill: parent
         clip: true
         model: libraryView.modelOverride !== null ? libraryView.modelOverride : win.model
@@ -271,9 +271,9 @@ Item {
         z: 1
         WheelScroller { flick: list }
         readonly property bool bulkRemove: typeof session !== "undefined" && session.bulkRemoveInProgress
-        add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.durBase; easing.type: Easing.OutCubic } }
-        remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: list.bulkRemove ? 0 : 120; easing.type: Easing.OutCubic } }
-        displaced: Transition { NumberAnimation { properties: "x,y"; duration: list.bulkRemove ? 0 : 180; easing.type: Easing.OutCubic } }
+        add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut } }
+        remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: list.bulkRemove ? 0 : 120; easing.type: Theme.easeIn } }
+        displaced: Transition { NumberAnimation { properties: "x,y"; duration: list.bulkRemove ? 0 : 180; easing.type: Theme.easeOut } }
 
         header: Rectangle {
             width: ListView.view.width

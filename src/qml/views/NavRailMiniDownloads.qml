@@ -31,7 +31,7 @@ ColumnLayout {
     clip: true
     Layout.preferredHeight: active ? implicitHeight : 0
     opacity: active ? 1 : 0
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+    Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
     Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
 
     Rectangle {
@@ -74,7 +74,7 @@ ColumnLayout {
                     height: parent.height
                     radius: 2
                     color: (cell.item && cell.item.paused === true) ? Theme.t3 : Theme.accent
-                    Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                 }
             }
             Rectangle {

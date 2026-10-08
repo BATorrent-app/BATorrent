@@ -197,7 +197,7 @@ Window {
                                         GradientStop { position: 0.0; color: "#ef4444" }
                                         GradientStop { position: 1.0; color: "#7f1d1d" }
                                     }
-                                    Behavior on height { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+                                    Behavior on height { NumberAnimation { duration: 500; easing.type: Theme.easeOut } }
                                 }
                             }
                             Text {
