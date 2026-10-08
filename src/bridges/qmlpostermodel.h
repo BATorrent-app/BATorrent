@@ -92,9 +92,17 @@ public:
     Q_INVOKABLE void clearSort();
     Q_INVOKABLE int mapToSource(int proxyRow) const;
     Q_INVOKABLE int mapFromSource(int sourceRow) const;
+    // { category -> how many torrents fall under it }, counted with the same
+    // rule the filter uses, so the number in the menu and the list it opens
+    // cannot disagree. Ignores the category filter itself; every other active
+    // filter still applies, because the menu sits inside them.
+    Q_INVOKABLE QVariantMap categoryCounts() const;
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+    // Manual where the user set one, otherwise what the torrent is. One
+    // definition: counting it a second way is how a menu starts lying.
+    QString effectiveCategory(const QModelIndex &idx) const;
     bool lessThan(const QModelIndex &l, const QModelIndex &r) const override;
 
 private:

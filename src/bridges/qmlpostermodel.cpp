@@ -513,6 +513,29 @@ int QmlTorrentFilterProxy::mapFromSource(int sourceRow) const
     return QSortFilterProxyModel::mapFromSource(src).row();
 }
 
+QString QmlTorrentFilterProxy::effectiveCategory(const QModelIndex &idx) const
+{
+    const QAbstractItemModel *src = sourceModel();
+    if (!src) return {};
+    QString cat = src->data(idx, QmlPosterModel::CategoryRole).toString();
+    if (cat.isEmpty())
+        cat = src->data(idx, QmlPosterModel::AutoCategoryRole).toString();
+    return cat;
+}
+
+QVariantMap QmlTorrentFilterProxy::categoryCounts() const
+{
+    QVariantMap out;
+    const QAbstractItemModel *src = sourceModel();
+    if (!src) return out;
+    for (int r = 0, n = src->rowCount(); r < n; ++r) {
+        const QString cat = effectiveCategory(src->index(r, 0));
+        if (cat.isEmpty()) continue;
+        out[cat] = out.value(cat, 0).toInt() + 1;
+    }
+    return out;
+}
+
 bool QmlTorrentFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     const QAbstractItemModel *src = sourceModel();
@@ -531,10 +554,7 @@ bool QmlTorrentFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &s
         // Manual category wins where the user set one; otherwise fall back to
         // what the torrent is. Comparing only against the manual field hid
         // every item, because nothing carries a manual category by default.
-        QString cat = src->data(idx, QmlPosterModel::CategoryRole).toString();
-        if (cat.isEmpty())
-            cat = src->data(idx, QmlPosterModel::AutoCategoryRole).toString();
-        if (cat != m_categoryFilter)
+        if (effectiveCategory(idx) != m_categoryFilter)
             return false;
     }
 

@@ -388,27 +388,48 @@ Rectangle {
                         Menu {
                             id: catFilterMenu
                             y: parent.height + 4
-                            implicitWidth: 200
+                            // Never narrower than the control it drops from: a
+                            // menu that is wider on one side and shorter on the
+                            // other does not read as belonging to it.
+                            implicitWidth: Math.max(230, parent.width)
+                            topPadding: 6
+                            bottomPadding: 6
                             delegate: CatItem {}
+                            // Counted once per opening, from the proxy that does
+                            // the filtering, so the number and the list it opens
+                            // are the same answer.
+                            property var counts: ({})
+                            function countOf(c) { return counts[c] === undefined ? 0 : counts[c] }
                             background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
                             // The four built-ins are static; user-created ones are
                             // appended on open: the same rule the right-click menu
                             // follows. This list was hardcoded too, so a category
                             // you created could be assigned but never filtered by.
-                            onAboutToShow: catFilterCustoms.model = win.customCategories()
-                            CatItem { text: (i18n.language, i18n.t("filter_all_categories")); onTriggered: controller.applyCatFilter("") }
+                            onAboutToShow: {
+                                catFilterMenu.counts = (typeof torrentFilter !== "undefined")
+                                    ? torrentFilter.categoryCounts() : ({})
+                                catFilterCustoms.model = win.customCategories()
+                            }
+                            CatItem {
+                                text: (i18n.language, i18n.t("filter_all_categories"))
+                                count: typeof session !== "undefined" ? session.torrentCount : 0
+                                current: controller.catFilter === ""
+                                onTriggered: controller.applyCatFilter("")
+                            }
                             MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-                            CatItem { text: win.catLabel("Apps");   onTriggered: controller.applyCatFilter("Apps") }
-                            CatItem { text: win.catLabel("Games");  onTriggered: controller.applyCatFilter("Games") }
-                            CatItem { text: win.catLabel("Movies"); onTriggered: controller.applyCatFilter("Movies") }
-                            CatItem { text: win.catLabel("Series"); onTriggered: controller.applyCatFilter("Series") }
-                            CatItem { text: win.catLabel("Compressed"); onTriggered: controller.applyCatFilter("Compressed") }
+                            CatItem { text: win.catLabel("Apps");   count: catFilterMenu.countOf("Apps");   current: controller.catFilter === "Apps";   onTriggered: controller.applyCatFilter("Apps") }
+                            CatItem { text: win.catLabel("Games");  count: catFilterMenu.countOf("Games");  current: controller.catFilter === "Games";  onTriggered: controller.applyCatFilter("Games") }
+                            CatItem { text: win.catLabel("Movies"); count: catFilterMenu.countOf("Movies"); current: controller.catFilter === "Movies"; onTriggered: controller.applyCatFilter("Movies") }
+                            CatItem { text: win.catLabel("Series"); count: catFilterMenu.countOf("Series"); current: controller.catFilter === "Series"; onTriggered: controller.applyCatFilter("Series") }
+                            CatItem { text: win.catLabel("Compressed"); count: catFilterMenu.countOf("Compressed"); current: controller.catFilter === "Compressed"; onTriggered: controller.applyCatFilter("Compressed") }
                             Instantiator {
                                 id: catFilterCustoms
                                 model: []
                                 delegate: CatItem {
                                     required property var modelData
                                     text: modelData
+                                    count: catFilterMenu.countOf(modelData)
+                                    current: controller.catFilter === modelData
                                     onTriggered: controller.applyCatFilter(modelData)
                                 }
                                 onObjectAdded: function(index, object) { catFilterMenu.insertItem(6 + index, object) }
