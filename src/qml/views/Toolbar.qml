@@ -132,7 +132,7 @@ Rectangle {
         // Copy wears a magnet inside a copy sheet, not the plain copy glyph:
         // it copies the magnet link, and the generic sheet read as "copy path".
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
-        TBtn { label: (i18n.language, i18n.t("tb_copy"));   icon: "qrc:/icons/magnet-copy.svg"; disabled: !win.hasSel; onClicked: session.copyMagnetLink() }
+        TBtn { label: (i18n.language, i18n.t("tb_copy"));   icon: "qrc:/icons/copy.svg"; disabled: !win.hasSel; onClicked: session.copyMagnetLink() }
         TBtn { label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; disabled: !win.hasSel; onClicked: session.openSaveFolder() }
         TGrpDiv {}
         // G4: RSS. No Search or Settings buttons here: page switching belongs

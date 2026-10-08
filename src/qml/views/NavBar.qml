@@ -253,7 +253,7 @@ Rectangle {
             id: settingsBtn
             readonly property bool active: bar.currentIndex === 3
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: setRow.implicitWidth + 20
+            Layout.preferredWidth: 34
             Layout.preferredHeight: 34
             Rectangle {
                 anchors.fill: parent
@@ -261,29 +261,18 @@ Rectangle {
                 color: settingsBtn.active ? Theme.hover : (setMa.containsMouse ? Theme.hover : "transparent")
                 Behavior on color { ColorAnimation { duration: 140 } }
             }
-            Row {
-                id: setRow
+            IconImg {
                 anchors.centerIn: parent
-                spacing: 9
-                IconImg {
-                    anchors.verticalCenter: parent.verticalCenter
-                    src: "qrc:/icons/settings.svg"
-                    tint: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
-                    s: 16
-                    Behavior on tint { ColorAnimation { duration: 140 } }
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: (i18n.language, i18n.t("tb_settings"))
-                    color: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
-                    // 12, like the chips beside it: everything on this side is
-                    // subordinate to the page tabs, which keep 14.
-                    font.pixelSize: 12
-                    font.weight: settingsBtn.active ? Font.DemiBold : Font.Normal
-                    font.family: Theme.fontSans
-                    Behavior on color { ColorAnimation { duration: 140 } }
-                }
+                src: "qrc:/icons/settings.svg"
+                tint: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
+                s: 16
+                Behavior on tint { ColorAnimation { duration: 140 } }
             }
+            ToolTip.visible: setMa.containsMouse
+            ToolTip.delay: 400
+            ToolTip.text: (i18n.language, i18n.t("tb_settings"))
+            Accessible.role: Accessible.Button
+            Accessible.name: (i18n.language, i18n.t("tb_settings"))
             MouseArea {
                 id: setMa
                 anchors.fill: parent
