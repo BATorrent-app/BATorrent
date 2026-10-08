@@ -186,9 +186,9 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.leftMargin: 13
                 anchors.rightMargin: 13
-                // Same 30 the artwork title uses: the bar's band is 8 + 14
-                // whether or not there is a poster behind it.
-                anchors.bottomMargin: 30
+                // Same as the artwork title: the bar's band is 8 + 9 whether
+                // or not there is a poster behind it.
+                anchors.bottomMargin: 25
                 text: tile.metaTitle || tile.torrentName
                 color: "#f5f5f6"
                 font.pixelSize: 18
@@ -250,8 +250,8 @@ Item {
             anchors.bottom: parent.bottom
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            // Clears the progress bar's band (8 + 14 high) instead of sitting in it.
-            anchors.bottomMargin: 30
+            // Clears the progress bar's band (8 + 9 high) instead of sitting in it.
+            anchors.bottomMargin: 25
             text: tile.metaTitle || tile.torrentName
             color: "#f5f5f6"
             font.pixelSize: 15
@@ -287,7 +287,9 @@ Item {
             anchors.leftMargin: 10
             anchors.rightMargin: pctTxt.visible ? 8 : 10
             anchors.bottomMargin: 8
-            height: 14
+            // 9, not 14: the extra height only ever existed to seat the
+            // percentage, and that moved out beside it.
+            height: 9
             progress: tile.shownProgress
             stateKey: tile.stateKey
             sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
