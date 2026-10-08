@@ -203,12 +203,24 @@ Rectangle {
         NavBarTurtleChip { bar: bar }
         NavBarVpnChip { bar: bar }
 
+        // Session modes on the left of it, things you click on the right. The
+        // four used to sit in one undifferentiated run while the toolbar below
+        // grouped its peers.
+        Rectangle {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: 6
+            Layout.rightMargin: 6
+            Layout.preferredWidth: 1
+            Layout.preferredHeight: 18
+            color: Theme.hairSoft
+        }
+
         // ----- donate (heart: gray at rest, red on hover) -----
         Item {
             Layout.alignment: Qt.AlignVCenter
-            // Sized off its own content now that it carries a label, using the
-            // same icon+text row the tabs use so the bar reads as one strip.
-            Layout.preferredWidth: donRow.implicitWidth + 20
+            // No label: this is a link out, not a destination, and dressed as a
+            // tab it carried the same weight as Downloads.
+            Layout.preferredWidth: 34
             Layout.preferredHeight: 34
             Rectangle {
                 anchors.fill: parent
@@ -216,25 +228,11 @@ Rectangle {
                 color: donMa.containsMouse ? Theme.accentTint : "transparent"
                 Behavior on color { ColorAnimation { duration: 140 } }
             }
-            Row {
-                id: donRow
+            IconImg {
                 anchors.centerIn: parent
-                spacing: 9
-                IconImg {
-                    anchors.verticalCenter: parent.verticalCenter
-                    src: "qrc:/icons/heart.svg"
-                    tint: donMa.containsMouse ? Theme.accent : Theme.t3
-                    s: 16
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: (i18n.language, i18n.t("action_donate"))
-                    color: donMa.containsMouse ? Theme.accent : Theme.t3
-                    font.pixelSize: 14
-                    font.weight: Font.Normal
-                    font.family: Theme.fontSans
-                    Behavior on color { ColorAnimation { duration: 140 } }
-                }
+                src: "qrc:/icons/heart.svg"
+                tint: donMa.containsMouse ? Theme.accent : Theme.t3
+                s: 16
             }
             MouseArea {
                 id: donMa
@@ -243,6 +241,11 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
             }
+            ToolTip.visible: donMa.containsMouse
+            ToolTip.delay: 400
+            ToolTip.text: (i18n.language, i18n.t("action_donate"))
+            Accessible.role: Accessible.Button
+            Accessible.name: (i18n.language, i18n.t("action_donate"))
         }
 
         // ----- settings (page 4) -----
@@ -273,8 +276,10 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     text: (i18n.language, i18n.t("tb_settings"))
                     color: settingsBtn.active || setMa.containsMouse ? Theme.t1 : Theme.t3
-                    font.pixelSize: 14
-                    font.weight: settingsBtn.active ? Font.Medium : Font.Normal
+                    // 12, like the chips beside it: everything on this side is
+                    // subordinate to the page tabs, which keep 14.
+                    font.pixelSize: 12
+                    font.weight: settingsBtn.active ? Font.DemiBold : Font.Normal
                     font.family: Theme.fontSans
                     Behavior on color { ColorAnimation { duration: 140 } }
                 }
