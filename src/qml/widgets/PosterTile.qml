@@ -45,6 +45,10 @@ Item {
         ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
 
     readonly property string posterUrl: win.fileUrl(posterPath)
+    // A poster that fails to decode is no poster. Treating it as one left a
+    // hole where the artwork should be: a missing image plugin, a truncated
+    // download or a corrupt file all land here.
+    readonly property bool artShown: posterUrl !== "" && posterImg.status !== Image.Error
     readonly property bool hovered: tileMa.containsMouse || ptMa.containsMouse
 
     // What the bar and the percentage draw. The engine reports once a second,
@@ -120,7 +124,7 @@ Item {
             anchors.fill: parent
             radius: 10
             color: "#161618"
-            visible: tile.posterUrl === ""
+            visible: !tile.artShown
             // Last resort only: no usable extension, no resolved type, nothing
             // to say. The bat goes in the middle only when it is the only
             // thing we know; as a permanent backdrop it was just noise.
@@ -201,6 +205,7 @@ Item {
             visible: false
             layer.enabled: true
             Image {
+                id: posterImg
                 anchors.fill: parent
                 source: tile.posterUrl
                 fillMode: Image.PreserveAspectCrop
@@ -233,10 +238,10 @@ Item {
             anchors.fill: parent
             maskEnabled: true
             maskSource: posterMask
-            visible: tile.posterUrl !== ""
+            visible: tile.artShown
         }
         Text {
-            visible: tile.posterUrl !== ""
+            visible: tile.artShown
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
