@@ -278,9 +278,11 @@ Item {
             id: pctTxt
             visible: !Theme.isTroubleState(tile.stateKey) && tile.stateKey !== "fetching"
             anchors.right: parent.right
-            anchors.bottom: parent.bottom
             anchors.rightMargin: 12
-            anchors.bottomMargin: 8
+            // Centred on the bar, not sharing its bottom edge: a text item's
+            // box reserves descender space, so matching bottoms leaves the
+            // glyphs sitting high.
+            anchors.verticalCenter: progTrack.verticalCenter
             width: pctMetrics.width
             horizontalAlignment: Text.AlignRight
             text: Math.floor(Math.max(0, Math.min(1, tile.shownProgress)) * 100) + "%"
@@ -291,6 +293,7 @@ Item {
             font.features: Theme.tnum
         }
         ProgressTrack {
+            id: progTrack
             anchors.left: parent.left
             anchors.right: pctTxt.visible ? pctTxt.left : parent.right
             anchors.bottom: parent.bottom
