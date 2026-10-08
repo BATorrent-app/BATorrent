@@ -69,6 +69,11 @@ void QmlSessionBridge::rebuildPeerCache()
     emit selectionListsChanged();
 }
 
+QString QmlSessionBridge::humanSize(double bytes) const
+{
+    return formatSize(static_cast<qint64>(bytes));
+}
+
 QVariantList QmlSessionBridge::selectedFiles() const
 {
     QVariantList out;

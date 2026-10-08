@@ -104,6 +104,9 @@ public:
     QString totalDownSpeed() const;
     QString totalUpSpeed() const;
     QString freeDiskSpace() const;
+    // The one size formatter. QML needs it for a running total it computes
+    // itself; a second implementation in JS would drift from this one.
+    Q_INVOKABLE QString humanSize(double bytes) const;
     Q_INVOKABLE qint64 freeSaveBytes() const;   // single source of truth: free bytes on the default save volume
     Q_INVOKABLE double freeBytesAt(const QString &path) const;   // free bytes on the volume holding `path` (-1 unknown)
     Q_INVOKABLE void rememberSavePath(const QString &path);      // MRU "favorite folders" for the add dialogs

@@ -16,7 +16,7 @@ BatDialog {
     cardW: 580
     cardH: 632
     okText: (i18n.language, i18n.t("add_torrent_add_btn"))
-    footHint: dlg.selectedCount + " " + (i18n.language, i18n.t("word_of")) + " " + dlg.fileCount + " " + i18n.t("word_files_lc") + " · " + dlg.totalSize
+    footHint: dlg.selectedCount + " " + (i18n.language, i18n.t("word_of")) + " " + dlg.fileCount + " " + i18n.t("word_files_lc") + " · " + dlg.selectedSize
 
     property string torrentPath: ""
     property string torrentName: ""
@@ -58,6 +58,7 @@ BatDialog {
         for (var i = 0; i < fs.length; ++i) {
             fileModel.append({ path: fs[i].path, size: fs[i].size || "", dir: fs[i].dir === true,
                                depth: fs[i].depth || 0, fileIndex: fs[i].fileIndex === undefined ? -1 : fs[i].fileIndex,
+                               sizeBytes: fs[i].sizeBytes || 0,
                                on: true, partial: false })
         }
         recount()
@@ -73,11 +74,21 @@ BatDialog {
             if (hash === dlg.infoHash) dlg.posterPath = poster
         }
     }
+    // The size follows the ticks. It was the torrent's own total, fixed at
+    // preview: untick a folder and the dialog still offered to download all of
+    // it. Hard to notice one file at a time, impossible to miss by the folder.
+    property string selectedSize: dlg.totalSize
     function recount() {
-        var n = 0
-        for (var i = 0; i < fileModel.count; ++i)
-            if (fileModel.get(i).on && !fileModel.get(i).dir) n++
+        var n = 0, bytes = 0
+        for (var i = 0; i < fileModel.count; ++i) {
+            var it = fileModel.get(i)
+            if (it.dir || !it.on) continue
+            ++n
+            bytes += it.sizeBytes
+        }
         dlg.selectedCount = n
+        dlg.selectedSize = (typeof session !== "undefined")
+            ? session.humanSize(bytes) : dlg.totalSize
     }
     // Indexed by the torrent's own file order, because that is how libtorrent
     // reads the array. Pushing in row order was right only while the rows were
@@ -220,7 +231,7 @@ BatDialog {
         }
         Item { Layout.fillWidth: true }
         Text {
-            text: dlg.selectedCount + " de " + dlg.fileCount + " · " + dlg.totalSize
+            text: dlg.selectedCount + " de " + dlg.fileCount + " · " + dlg.selectedSize
             color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
         }
     }
@@ -254,7 +265,7 @@ BatDialog {
                         }
                     }
                     IconImg {
-                        src: model.dir ? "qrc:/icons/open.svg" : "qrc:/icons/file.svg"
+                        src: model.dir ? "qrc:/icons/folder.svg" : "qrc:/icons/file.svg"
                         tint: model.dir ? Theme.amber : Theme.t3; s: 13
                         Layout.alignment: Qt.AlignVCenter
                     }

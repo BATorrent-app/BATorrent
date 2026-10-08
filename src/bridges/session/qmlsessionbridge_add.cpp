@@ -167,8 +167,10 @@ QVariantMap QmlSessionBridge::previewTorrent(const QString &filePath) const
         // The row's position says nothing about which file it is once the
         // list is grouped, and priorities are handed over positionally.
         f["fileIndex"] = r.fileIndex;
-        f["size"] = r.isDir ? QString()
-                            : formatSize(fs.file_size(lt::file_index_t(r.fileIndex)));
+        const qint64 bytes = r.isDir ? 0
+                                     : static_cast<qint64>(fs.file_size(lt::file_index_t(r.fileIndex)));
+        f["size"] = r.isDir ? QString() : formatSize(bytes);
+        f["sizeBytes"] = bytes;
         files << f;
     }
     out["files"] = files;
