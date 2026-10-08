@@ -73,7 +73,7 @@ Rectangle {
         })
         demoModel.append({
             torrentName: "Hollow.Knight.Soundtrack", metaTitle: "Hollow Knight",
-            stateKey: "completed", progress: 1.0, posterPath: "qrc:/images/hollow.webp",
+            stateKey: "completed", progress: 1.0, posterPath: "qrc:/images/hollow.jpg",
             stateString: i18n.t("state_completed"), stateDetail: "", fileKind: "FLAC",
             category: "Audio", size: "1.3 GB", downSpeed: "0 KB/s",
             upSpeed: "0 KB/s", downRate: 0, upRate: 0,
