@@ -200,40 +200,17 @@ Rectangle {
         Item { Layout.fillWidth: true }
 
         NavBarDownloadChip { id: dlChip; bar: bar; car: car }
+
+        Rectangle {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: 8
+            Layout.rightMargin: 4
+            Layout.preferredWidth: 1
+            Layout.preferredHeight: 18
+            color: Theme.hairSoft
+        }
         NavBarVpnChip { bar: bar }
 
-        // ----- donate (heart: gray at rest, red on hover) -----
-        Item {
-            Layout.alignment: Qt.AlignVCenter
-            // No label: this is a link out, not a destination, and dressed as a
-            // tab it carried the same weight as Downloads.
-            Layout.preferredWidth: 34
-            Layout.preferredHeight: 34
-            Rectangle {
-                anchors.fill: parent
-                radius: 8
-                color: donMa.containsMouse ? Theme.accentTint : "transparent"
-                Behavior on color { ColorAnimation { duration: 140 } }
-            }
-            IconImg {
-                anchors.centerIn: parent
-                src: "qrc:/icons/heart.svg"
-                tint: donMa.containsMouse ? Theme.accent : Theme.t3
-                s: 16
-            }
-            MouseArea {
-                id: donMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
-            }
-            ToolTip.visible: donMa.containsMouse
-            ToolTip.delay: 400
-            ToolTip.text: (i18n.language, i18n.t("action_donate"))
-            Accessible.role: Accessible.Button
-            Accessible.name: (i18n.language, i18n.t("action_donate"))
-        }
     }
 
     // One underline shared by the tabs; it slides to the active one.

@@ -31,9 +31,7 @@ Row {
     // so the symbol is; only the colour drops to amber to say "stalled".
     property bool stalled: false
 
-    // Only glyphs the bundled IBM Plex Sans actually carries. ‖ ⋯ ✗ were not
-    // among them, so they were being drawn by whatever fallback each platform
-    // picked — a different typeface per OS inside the same badge.
+    // Only glyphs IBM Plex Sans carries: ‖ ⋯ ✗ fell back to a per-OS typeface.
     readonly property string symbol:
           stateKey === "seeding"   ? "↑"
         : stateKey === "completed" ? "✓"
@@ -44,9 +42,7 @@ Row {
         : stateKey === "fetching"  ? "?"
         : "↓"
 
-    // Pause is a shape, not a letter: no text glyph gives the two stubby bars,
-    // and pause.svg is solid, so it holds up at this size where a stroked icon
-    // would not.
+    // No glyph gives two stubby bars; pause.svg is solid, so it holds at 13px.
     readonly property string symbolIcon:
         stateKey === "paused" ? "qrc:/icons/pause.svg" : ""
 

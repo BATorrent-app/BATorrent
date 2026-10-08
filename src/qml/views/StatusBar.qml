@@ -122,5 +122,31 @@ Rectangle {
             font.pixelSize: 12
             font.family: Theme.fontSans
         }
+
+        Item {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: Theme.sp2
+            Layout.preferredWidth: 22
+            Layout.preferredHeight: 22
+            IconImg {
+                anchors.centerIn: parent
+                src: "qrc:/icons/heart.svg"
+                tint: donMa.containsMouse ? Theme.accent : Theme.t4
+                s: 14
+                Behavior on tint { ColorAnimation { duration: 140 } }
+            }
+            MouseArea {
+                id: donMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: Qt.openUrlExternally("https://github.com/sponsors/Mateuscruz19")
+            }
+            ToolTip.visible: donMa.containsMouse
+            ToolTip.delay: 400
+            ToolTip.text: (i18n.language, i18n.t("action_donate"))
+            Accessible.role: Accessible.Button
+            Accessible.name: (i18n.language, i18n.t("action_donate"))
+        }
     }
 }

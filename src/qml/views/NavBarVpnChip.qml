@@ -16,7 +16,7 @@ Rectangle {
     visible: typeof vpn !== "undefined"
     Layout.alignment: Qt.AlignVCenter
     Layout.preferredHeight: 34
-    Layout.preferredWidth: 34
+    Layout.preferredWidth: vpnRow.implicitWidth + 22
     radius: 9
 
     property bool bound: false
@@ -57,6 +57,22 @@ Rectangle {
                     NumberAnimation { from: 0.3; to: 1; duration: 600 }
                 }
             }
+        }
+        Text {
+            visible: !root.bar.tightChip
+            text: "VPN"
+            color: Theme.t3
+            font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+        }
+        Text {
+            visible: !root.bar.tightChip
+            text: (i18n.language, root.st === 2 ? i18n.t("vpn_state_on")
+                 : root.st === 1 ? i18n.t("vpn_state_connecting")
+                 : root.st === 3 ? i18n.t("vpn_state_failed")
+                 : i18n.t("vpn_state_off"))
+            color: root.stColor
+            font.pixelSize: 12; font.family: Theme.fontSans
+            Behavior on color { ColorAnimation { duration: 130 } }
         }
     }
     MouseArea {
