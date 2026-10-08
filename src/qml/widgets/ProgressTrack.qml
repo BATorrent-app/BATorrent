@@ -90,19 +90,27 @@ Item {
         Rectangle {
             id: seekBand
             visible: track.indeterminate
-            width: Math.max(20, parent.width * 0.30)
+            width: Math.max(28, parent.width * 0.45)
             height: parent.height
-            radius: parent.radius
             opacity: track.fillOpacity
-            color: track.fill
+            // Transparent ends, not rounded ones: a hard-edged pill slides
+            // across as an object, where a band that has no edge reads as the
+            // bar being searched. The stops carry the fill's own colour at
+            // zero alpha — plain "transparent" is black and fringes grey.
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: Qt.rgba(track.fill.r, track.fill.g, track.fill.b, 0) }
+                GradientStop { position: 0.5; color: track.fill }
+                GradientStop { position: 1.0; color: Qt.rgba(track.fill.r, track.fill.g, track.fill.b, 0) }
+            }
             SequentialAnimation on x {
                 running: seekBand.visible && !Theme.reduceMotion
                 loops: Animation.Infinite
                 NumberAnimation {
                     from: -seekBand.width
                     to: Math.max(1, seekBand.parent.width)
-                    duration: 1800
-                    easing.type: Easing.InOutSine
+                    duration: 2000
+                    easing.type: Easing.Linear
                 }
             }
         }
