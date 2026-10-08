@@ -124,7 +124,7 @@ TorrentInfo SessionManager::torrentAt(int index) const
                                    .arg(formatElapsedShort(info.fetchingSecs));
             info.stateDetailShort = formatElapsedShort(info.fetchingSecs);
         }
-    } else if (info.seeding && !info.paused && info.uploadRate == 0) {
+    } else if (info.seeding && !info.paused && !info.completed && info.uploadRate == 0) {
         // The download side names its blocker; the seeding side said nothing,
         // so "seeding to three peers" and "seeding to nobody for two days"
         // looked identical. The word stays Seeding — that is what it is — and

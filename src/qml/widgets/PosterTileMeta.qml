@@ -39,9 +39,10 @@ Column {
                   : tile.isDownloading ? ("↓ " + tile.downSpeed)
                   : tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed)
                   : ""
-            // Amber means something is wrong. A magnet counting up while it
-            // looks for the file list is not wrong, just slow.
-            color: hasTrouble ? (tile.stateKey === "fetching" ? Theme.t3 : Theme.amber)
+            // Amber is for a transfer that wants to move and cannot. Nobody
+            // asking for what you are seeding is a fact, not a fault, and a
+            // magnet still looking is slow rather than broken.
+            color: hasTrouble ? (tile.isDownloading ? Theme.amber : Theme.t3)
                    : (hasGenres ? Theme.t3 : Theme.t4)
             font.pixelSize: 13
             // Medium is a bundled IBM Plex face, not a synthesised weight —

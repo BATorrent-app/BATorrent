@@ -150,8 +150,8 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.leftMargin: 13
-                anchors.rightMargin: 13
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
                 anchors.topMargin: Math.round(parent.height * 0.17)
                 spacing: 7
                 visible: tile.fileKind.length > 0
@@ -266,13 +266,23 @@ Item {
         // No pill behind it: the poster already carries a scrim that reaches
         // 92% black at this edge, so a second dark plate was black on black
         // and only added weight.
+        // Sized for the widest value it can ever hold, so every bar in the
+        // grid ends at the same x: letting the text size itself made a tile
+        // at 100% stop 20px short of one at 0%.
+        TextMetrics {
+            id: pctMetrics
+            font: pctTxt.font
+            text: "100%"
+        }
         Text {
             id: pctTxt
             visible: !Theme.isTroubleState(tile.stateKey) && tile.stateKey !== "fetching"
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.rightMargin: 10
+            anchors.rightMargin: 12
             anchors.bottomMargin: 8
+            width: pctMetrics.width
+            horizontalAlignment: Text.AlignRight
             text: Math.floor(Math.max(0, Math.min(1, tile.shownProgress)) * 100) + "%"
             color: "#ffffff"
             font.pixelSize: 11
@@ -284,8 +294,8 @@ Item {
             anchors.left: parent.left
             anchors.right: pctTxt.visible ? pctTxt.left : parent.right
             anchors.bottom: parent.bottom
-            anchors.leftMargin: 10
-            anchors.rightMargin: pctTxt.visible ? 8 : 10
+            anchors.leftMargin: 12
+            anchors.rightMargin: pctTxt.visible ? 8 : 12
             anchors.bottomMargin: 8
             // 9, not 14: the extra height only ever existed to seat the
             // percentage, and that moved out beside it.
