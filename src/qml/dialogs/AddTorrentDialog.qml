@@ -56,7 +56,9 @@ BatDialog {
         fileModel.clear()
         var fs = p.files || []
         for (var i = 0; i < fs.length; ++i) {
-            fileModel.append({ path: fs[i].path, size: fs[i].size || "", dir: fs[i].dir === true, depth: fs[i].depth || 0, on: true })
+            fileModel.append({ path: fs[i].path, size: fs[i].size || "", dir: fs[i].dir === true,
+                               depth: fs[i].depth || 0, fileIndex: fs[i].fileIndex === undefined ? -1 : fs[i].fileIndex,
+                               on: true, partial: false })
         }
         recount()
         // if no cached poster, ask the resolver to fetch it
@@ -77,13 +79,45 @@ BatDialog {
             if (fileModel.get(i).on && !fileModel.get(i).dir) n++
         dlg.selectedCount = n
     }
+    // Indexed by the torrent's own file order, because that is how libtorrent
+    // reads the array. Pushing in row order was right only while the rows were
+    // flat; grouping moves them, and the mismatch is silent.
     function priorities() {
-        var prios = []
-        for (var i = 0; i < fileModel.count; ++i) {
-            var it = fileModel.get(i)
-            if (!it.dir) prios.push(it.on ? 4 : 0)
+        var prios = new Array(dlg.fileCount)
+        for (var i = 0; i < prios.length; ++i) prios[i] = 0
+        for (var r = 0; r < fileModel.count; ++r) {
+            var it = fileModel.get(r)
+            if (!it.dir && it.fileIndex >= 0) prios[it.fileIndex] = it.on ? 4 : 0
         }
         return prios
+    }
+
+    // A folder owns every row after it until the depth returns to its own.
+    function folderEnd(row) {
+        var d = fileModel.get(row).depth
+        var i = row + 1
+        while (i < fileModel.count && fileModel.get(i).depth > d) ++i
+        return i
+    }
+    function setFolder(row, v) {
+        var end = folderEnd(row)
+        for (var i = row; i < end; ++i) fileModel.setProperty(i, "on", v)
+        dlg.recount()
+        dlg.syncFolders()
+    }
+    // A folder is on when every file under it is, partial when they disagree.
+    function syncFolders() {
+        for (var i = fileModel.count - 1; i >= 0; --i) {
+            if (!fileModel.get(i).dir) continue
+            var end = folderEnd(i), on = 0, total = 0
+            for (var j = i + 1; j < end; ++j) {
+                if (fileModel.get(j).dir) continue
+                ++total
+                if (fileModel.get(j).on) ++on
+            }
+            fileModel.setProperty(i, "on", total > 0 && on === total)
+            fileModel.setProperty(i, "partial", on > 0 && on < total)
+        }
     }
 
     ListModel { id: fileModel }
@@ -180,7 +214,8 @@ BatDialog {
         Layout.fillWidth: true
         RowLayout {
             spacing: 10
-            TChk { id: selAll; on: true; onToggled: function(v) { for (var i=0;i<fileModel.count;i++) fileModel.setProperty(i,"on",v); dlg.recount() } }
+            TChk { id: selAll; on: true; partial: dlg.selectedCount > 0 && dlg.selectedCount < dlg.fileCount
+                   onToggled: function(v) { for (var i=0;i<fileModel.count;i++) { fileModel.setProperty(i,"on",v); fileModel.setProperty(i,"partial",false) } dlg.recount() } }
             Text { text: (i18n.language, i18n.t("addt_select_files")); color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans }
         }
         Item { Layout.fillWidth: true }
@@ -207,7 +242,17 @@ BatDialog {
                     anchors.leftMargin: 14 + model.depth * 18
                     anchors.rightMargin: 14
                     spacing: 10
-                    TChk { Layout.alignment: Qt.AlignVCenter; on: model.on; onToggled: function(v) { fileModel.setProperty(index, "on", v); dlg.recount() } }
+                    TChk {
+                        Layout.alignment: Qt.AlignVCenter
+                        on: model.on
+                        partial: model.partial === true
+                        onToggled: function(v) {
+                            if (model.dir) { dlg.setFolder(index, v); return }
+                            fileModel.setProperty(index, "on", v)
+                            dlg.recount()
+                            dlg.syncFolders()
+                        }
+                    }
                     IconImg {
                         src: model.dir ? "qrc:/icons/open.svg" : "qrc:/icons/file.svg"
                         tint: model.dir ? Theme.amber : Theme.t3; s: 13

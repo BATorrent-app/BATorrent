@@ -22,6 +22,7 @@
 
 #include "services/platform/utils.h"
 #include "torrent/types.h"
+#include "torrent/filetree.h"
 #include "torrent/sessionmanager.h"
 #include "webui/webserver.h"
 #include "services/platform/translator.h"
@@ -1761,4 +1762,65 @@ TEST_CASE("formatElapsedShort keeps seconds while they still matter",
     CHECK(formatElapsedShort(3599) == QStringLiteral("59m 59s"));
     CHECK(formatElapsedShort(3600) == QStringLiteral("1h 00m"));
     CHECK(formatElapsedShort(3900) == QStringLiteral("1h 05m"));
+}
+
+TEST_CASE("buildFileTree groups files under folders without losing their index",
+          "[filetree]")
+{
+    SECTION("a flat single-file torrent gets no folder rows") {
+        const auto rows = buildFileTree({ "movie.mkv" });
+        REQUIRE(rows.size() == 1);
+        CHECK(rows[0].name == "movie.mkv");
+        CHECK(rows[0].depth == 0);
+        CHECK_FALSE(rows[0].isDir);
+        CHECK(rows[0].fileIndex == 0);
+    }
+
+    SECTION("a folder appears once, with its files under it") {
+        const auto rows = buildFileTree({ "Season 1/e01.mkv", "Season 1/e02.mkv" });
+        REQUIRE(rows.size() == 3);
+        CHECK(rows[0].isDir);
+        CHECK(rows[0].name == "Season 1");
+        CHECK(rows[0].fileIndex == -1);
+        CHECK(rows[1].name == "e01.mkv");
+        CHECK(rows[1].depth == 1);
+        CHECK(rows[2].name == "e02.mkv");
+    }
+
+    SECTION("the file index survives grouping, which is the whole point") {
+        // Priorities go to libtorrent positionally, so a row that moved must
+        // still say which file it is. Interleaved on purpose.
+        const auto rows = buildFileTree({ "A/one.mkv", "B/two.mkv", "A/three.mkv" });
+        QList<int> indices;
+        for (const auto &r : rows)
+            if (!r.isDir) indices << r.fileIndex;
+        CHECK(indices == QList<int>{ 0, 2, 1 });
+
+        int folders = 0;
+        for (const auto &r : rows) if (r.isDir) ++folders;
+        CHECK(folders == 2);           // A once, even though it was split
+    }
+
+    SECTION("nesting deepens, and every folder is named by its own segment") {
+        const auto rows = buildFileTree({ "Show/S01/e01.mkv" });
+        REQUIRE(rows.size() == 3);
+        CHECK(rows[0].name == "Show");   CHECK(rows[0].depth == 0);
+        CHECK(rows[1].name == "S01");    CHECK(rows[1].depth == 1);
+        CHECK(rows[2].name == "e01.mkv");CHECK(rows[2].depth == 2);
+    }
+
+    SECTION("two folders that share a leaf name stay separate") {
+        const auto rows = buildFileTree({ "A/sub/x.mkv", "B/sub/y.mkv" });
+        int subs = 0;
+        for (const auto &r : rows) if (r.isDir && r.name == "sub") ++subs;
+        CHECK(subs == 2);
+    }
+
+    SECTION("stray separators do not mint nameless folders") {
+        const auto rows = buildFileTree({ "/lead.mkv", "A//dbl.mkv", "" });
+        for (const auto &r : rows) CHECK_FALSE(r.name.isEmpty());
+        int files = 0;
+        for (const auto &r : rows) if (!r.isDir) ++files;
+        CHECK(files == 2);             // the empty path contributes nothing
+    }
 }

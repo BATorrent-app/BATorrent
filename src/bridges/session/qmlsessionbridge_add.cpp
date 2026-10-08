@@ -5,6 +5,7 @@
 // QmlSessionBridge: add torrent/magnet/http + preview.
 
 #include "bridges/session/qmlsessionbridge.h"
+#include "torrent/filetree.h"
 #include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/downloads/httpdownloadmanager.h"
@@ -149,15 +150,25 @@ QVariantMap QmlSessionBridge::previewTorrent(const QString &filePath) const
         if (meta.valid) out["posterPath"] = meta.posterPath;
     }
 
-    QVariantList files;
     const lt::file_storage &fs = ti->files();
-    for (int i = 0; i < ti->num_files(); ++i) {
-        lt::file_index_t fi(i);
+    QStringList paths;
+    paths.reserve(ti->num_files());
+    for (int i = 0; i < ti->num_files(); ++i)
+        paths << QString::fromStdString(fs.file_path(lt::file_index_t(i)));
+
+    QVariantList files;
+    const auto rows = buildFileTree(paths);
+    files.reserve(rows.size());
+    for (const FileTreeRow &r : rows) {
         QVariantMap f;
-        f["path"] = QString::fromStdString(fs.file_path(fi));
-        f["size"] = formatSize(fs.file_size(fi));
-        f["dir"]  = false;
-        f["depth"] = 0;
+        f["path"]  = r.name;             // the segment, not the whole path
+        f["dir"]   = r.isDir;
+        f["depth"] = r.depth;
+        // The row's position says nothing about which file it is once the
+        // list is grouped, and priorities are handed over positionally.
+        f["fileIndex"] = r.fileIndex;
+        f["size"] = r.isDir ? QString()
+                            : formatSize(fs.file_size(lt::file_index_t(r.fileIndex)));
         files << f;
     }
     out["files"] = files;
