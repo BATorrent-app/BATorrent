@@ -72,11 +72,14 @@ Item {
     Item {
         id: bgImageWrap
         anchors.fill: parent
-        visible: Theme.hasBgImage && !parent.empty
+        // Ready, not merely configured: a path that will not decode left the
+        // scrim dimming the page over nothing at all.
+        visible: bgImg.status === Image.Ready && !parent.empty
         z: -1
         Image {
+            id: bgImg
             anchors.fill: parent
-            source: Theme.bgImageSource
+            source: Theme.hasBgImage ? Theme.bgImageSource : ""
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             sourceSize.width: parent.width
