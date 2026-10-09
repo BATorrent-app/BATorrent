@@ -148,9 +148,13 @@ Rectangle {
             IconImg {
                 anchors.centerIn: parent
                 src: "qrc:/icons/heart.svg"
-                tint: donMa.containsMouse ? Theme.accent : Theme.t4
+                // One red, one intensity: hover lifts it rather than shifting
+                // the hue, so the donate heart stays the same colour as every
+                // other accent in the app.
+                tint: Theme.accent
+                opacity: donMa.containsMouse ? 1 : 0.8
+                Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
                 s: 14
-                Behavior on tint { ColorAnimation { duration: Theme.durFast } }
             }
             MouseArea {
                 id: donMa

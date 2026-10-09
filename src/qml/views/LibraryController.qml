@@ -63,6 +63,18 @@ QtObject {
         root.releaseSearchFocusRequested()
     }
 
+    // Launching into an inspector with nothing in it wastes the panel and
+    // reads as broken. Not selectRow(): that also pulls focus out of the
+    // search field, which at startup would be the app taking focus nobody
+    // gave it.
+    function selectFirstIfNone(rowCount) {
+        if (root.selectedRows.length > 0 || rowCount <= 0) return
+        root.selectedRows = [0]
+        root.selected = 0
+        root.anchorRow = 0
+        root.commitSel()
+    }
+
     function isRowSelected(proxyRow) { return root.selectedRows.indexOf(proxyRow) >= 0 }
 
     function selectAll() {

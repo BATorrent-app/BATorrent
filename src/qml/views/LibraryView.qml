@@ -147,6 +147,17 @@ Item {
         }
     }
 
+    // Torrents arrive after the resume data is read, so the first row only
+    // exists a moment after startup. Once is enough: re-selecting on every
+    // later insert would move the inspector out from under the user.
+    property bool firstSelectionDone: false
+    onCountChanged: if (!firstSelectionDone && count > 0
+                        && typeof controller.selectFirstIfNone === "function") {
+        firstSelectionDone = true
+        controller.selectFirstIfNone(count)
+    }
+    readonly property int count: controller.gridView ? grid.count : list.count
+
     // ----- GRID -----
     GridView {
         id: grid
