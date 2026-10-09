@@ -99,17 +99,62 @@ BatDialog {
                 font.weight: Font.DemiBold
                 font.family: Theme.fontSans
             }
-            BtnFlat {
-                sm: true
-                text: (i18n.language, i18n.t("settings_browse"))
-                onClicked: dlg.browseRequested()
-            }
         }
-        TArea {
-            id: magnetArea
+        // Two ways in, the same size, because they are two gestures people
+        // reach for equally: pasting text and picking a file. Magnet and link
+        // are both the first one, which is why they share a field rather than
+        // getting a button each.
+        RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 88
-            placeholder: "magnet:…   ·   https://…   ·   /caminho/a.torrent"
+            spacing: 10
+            TArea {
+                id: magnetArea
+                Layout.fillWidth: true
+                Layout.preferredHeight: 92
+                placeholder: "magnet:…\nhttps://…"
+            }
+            Rectangle {
+                Layout.preferredWidth: 150
+                Layout.preferredHeight: 92
+                radius: 9
+                color: fileMa.containsMouse ? Theme.hover : Theme.field
+                border.color: fileMa.containsMouse ? Theme.accent : Theme.hair
+                border.width: 1
+                Behavior on color { ColorAnimation { duration: Theme.durFast } }
+                Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 6
+                    IconImg {
+                        Layout.alignment: Qt.AlignHCenter
+                        src: "qrc:/icons/file.svg"
+                        tint: fileMa.containsMouse ? Theme.accent : Theme.t3
+                        s: 20
+                    }
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: (i18n.language, i18n.t("add_any_pick_file"))
+                        color: fileMa.containsMouse ? Theme.t1 : Theme.t2
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        font.family: Theme.fontSans
+                    }
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: ".torrent"
+                        color: Theme.t4
+                        font.pixelSize: 11
+                        font.family: Theme.fontSans
+                    }
+                }
+                MouseArea {
+                    id: fileMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: dlg.browseRequested()
+                }
+            }
         }
     }
 

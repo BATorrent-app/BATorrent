@@ -62,6 +62,7 @@
   "addon_trust_warn": "只安装你信任的插件",
   "addt_confirm": "确认下载",
   "addt_select_files": "选择文件",
+  "add_any_pick_file": "选择文件",
   "add_any_title": "添加",
   "add_any_paste": "粘贴磁力链接、网址或 info-hash — 每行一个",
   "add_any_kind_magnet": "磁力链接",
