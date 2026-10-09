@@ -1301,5 +1301,10 @@
   "settings_pause_missing": "Pausieren, wenn die Dateien fehlen",
   "set_pause_missing_note": "Werden die Daten eines Torrents außerhalb von BATorrent gelöscht, wird pausiert statt alles erneut herunterzuladen.",
   "warn_missing_paused_one": "„%1“ pausiert – die Dateien sind nicht mehr auf der Festplatte.",
-  "warn_missing_paused": "%1 Torrents pausiert – ihre Dateien sind nicht mehr auf der Festplatte."
+  "warn_missing_paused": "%1 Torrents pausiert – ihre Dateien sind nicht mehr auf der Festplatte.",
+  "set_grp_updates": "Updates",
+  "set_update_track": "Update-Kanal",
+  "set_track_stable": "Stabil",
+  "set_track_beta": "Beta",
+  "set_update_track_note": "Beta bietet neue Versionen vor allen anderen an. Sie sind getestet, aber weniger."
 }

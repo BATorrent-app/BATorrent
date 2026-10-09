@@ -1301,5 +1301,10 @@
   "settings_pause_missing": "Pausar cuando los archivos desaparezcan",
   "set_pause_missing_note": "Si los datos de un torrent se borran fuera de BATorrent, se pausa en vez de descargarlo todo de nuevo.",
   "warn_missing_paused_one": "«%1» en pausa: sus archivos ya no están en el disco.",
-  "warn_missing_paused": "%1 torrents en pausa: sus archivos ya no están en el disco."
+  "warn_missing_paused": "%1 torrents en pausa: sus archivos ya no están en el disco.",
+  "set_grp_updates": "Actualizaciones",
+  "set_update_track": "Canal de actualización",
+  "set_track_stable": "Estable",
+  "set_track_beta": "Beta",
+  "set_update_track_note": "La beta ofrece versiones nuevas antes que al resto. Están probadas, pero menos."
 }

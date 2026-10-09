@@ -19,6 +19,22 @@ static const QString GITHUB_API =
     "https://api.github.com/repos/BATorrent-app/BATorrent/releases/latest";
 static const QString GITEE_API =
     "https://gitee.com/api/v5/repos/Mateuscruz19/BATorrent/releases/latest";
+// The beta track has to ask for the list: /releases/latest is defined as the
+// newest release that is NOT a prerelease, so on the stable track the server
+// does the filtering for us and there is nothing to decide locally.
+static const QString GITHUB_API_LIST =
+    "https://api.github.com/repos/BATorrent-app/BATorrent/releases?per_page=20";
+static const QString GITEE_API_LIST =
+    "https://gitee.com/api/v5/repos/Mateuscruz19/BATorrent/releases?per_page=20";
+
+// Index, like every other select in Settings: 0 stable, 1 beta. Separate from
+// updateChannel, which picks the mirror (github/gitee/disabled) and has meant
+// that since long before this.
+static bool betaTrack()
+{
+    return QSettings("BATorrent", "BATorrent")
+               .value(QStringLiteral("updateTrack"), 0).toInt() == 1;
+}
 
 // Read the configured release-info endpoint. Both GitHub and Gitee expose the
 // same JSON shape: `tag_name`, `assets[].browser_download_url`, `assets[].name`
@@ -30,8 +46,9 @@ static QString releaseApiUrl()
     const QString channel =
         QSettings("BATorrent", "BATorrent").value("updateChannel", "github").toString();
     if (channel == "disabled") return "disabled";
-    if (channel == "gitee")    return GITEE_API;
-    return GITHUB_API;
+    const bool beta = betaTrack();
+    if (channel == "gitee")    return beta ? GITEE_API_LIST : GITEE_API;
+    return beta ? GITHUB_API_LIST : GITHUB_API;
 }
 
 static QString platformAssetName()
@@ -109,6 +126,32 @@ int Updater::compareVersions(const QString &a, const QString &b)
     return 0;
 }
 
+QJsonObject Updater::pickRelease(const QJsonDocument &doc, bool allowPrerelease)
+{
+    auto usable = [&](const QJsonObject &o) {
+        if (o.value("tag_name").toString().isEmpty()) return false;
+        if (o.value("draft").toBool()) return false;
+        return allowPrerelease || !o.value("prerelease").toBool();
+    };
+    auto version = [](const QJsonObject &o) {
+        const QString t = o.value("tag_name").toString();
+        return t.startsWith(QLatin1Char('v')) ? t.mid(1) : t;
+    };
+
+    if (doc.isObject()) {
+        const QJsonObject o = doc.object();
+        return usable(o) ? o : QJsonObject();
+    }
+
+    QJsonObject best;
+    for (const QJsonValue &v : doc.array()) {
+        const QJsonObject o = v.toObject();
+        if (!usable(o)) continue;
+        if (best.isEmpty() || compareVersions(version(o), version(best)) > 0) best = o;
+    }
+    return best;
+}
+
 void Updater::parseReleaseInfo(QNetworkReply *reply)
 {
     reply->deleteLater();
@@ -119,7 +162,11 @@ void Updater::parseReleaseInfo(QNetworkReply *reply)
     }
 
     QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-    QJsonObject obj = doc.object();
+    QJsonObject obj = pickRelease(doc, betaTrack());
+    if (obj.isEmpty()) {
+        emit noUpdateAvailable();
+        return;
+    }
     QString tagName = obj.value("tag_name").toString(); // e.g. "v1.4"
 
     // Strip leading 'v' for comparison

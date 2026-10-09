@@ -68,6 +68,10 @@ QtObject {
             { type: "bgimage", label: (i18n.language, i18n.t("set_custom_bgimage")),  customOnly: true },
             { type: "slider",  label: (i18n.language, i18n.t("set_custom_opacity")),  customOnly: true },
             { type: "toggle", key: "reduceMotion", on: false, label: (i18n.language, i18n.t("set_reduce_motion")), note: (i18n.language, i18n.t("set_reduce_motion_note")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_updates")) },
+            { type: "select", key: "updateTrack", label: (i18n.language, i18n.t("set_update_track")),
+              options: [(i18n.language, i18n.t("set_track_stable")), (i18n.language, i18n.t("set_track_beta"))],
+              value: 0, note: (i18n.language, i18n.t("set_update_track_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_downloads")) },
             // Empty here does not mean "no default": it falls back to the OS Downloads
             // folder. Showing that as the placeholder is what makes the default look

@@ -1301,5 +1301,10 @@
   "settings_pause_missing": "ファイルが見つからないときは一時停止",
   "set_pause_missing_note": "BATorrent の外でデータが削除された場合、すべてを再ダウンロードせずに一時停止します。",
   "warn_missing_paused_one": "「%1」を一時停止しました — ファイルがディスク上にありません。",
-  "warn_missing_paused": "%1 件のトレントを一時停止しました — ファイルがディスク上にありません。"
+  "warn_missing_paused": "%1 件のトレントを一時停止しました — ファイルがディスク上にありません。",
+  "set_grp_updates": "アップデート",
+  "set_update_track": "更新チャンネル",
+  "set_track_stable": "安定版",
+  "set_track_beta": "ベータ版",
+  "set_update_track_note": "ベータ版は一般公開前の新しいバージョンを提供します。テスト済みですが、検証は少なめです。"
 }

@@ -1301,5 +1301,10 @@
   "settings_pause_missing": "Pause when the files are gone",
   "set_pause_missing_note": "If a torrent's data is deleted outside BATorrent, pause it instead of downloading it all over again.",
   "warn_missing_paused_one": "Paused “%1” — its files are no longer on disk.",
-  "warn_missing_paused": "Paused %1 torrents — their files are no longer on disk."
+  "warn_missing_paused": "Paused %1 torrents — their files are no longer on disk.",
+  "set_grp_updates": "Updates",
+  "set_update_track": "Update channel",
+  "set_track_stable": "Stable",
+  "set_track_beta": "Beta",
+  "set_update_track_note": "Beta offers new versions before they are released to everyone. They are tested, but less so."
 }

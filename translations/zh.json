@@ -1301,5 +1301,10 @@
   "settings_pause_missing": "文件丢失时暂停",
   "set_pause_missing_note": "如果种子数据在 BATorrent 之外被删除，则暂停而不是重新下载全部内容。",
   "warn_missing_paused_one": "已暂停“%1” — 其文件已不在磁盘上。",
-  "warn_missing_paused": "已暂停 %1 个种子 — 其文件已不在磁盘上。"
+  "warn_missing_paused": "已暂停 %1 个种子 — 其文件已不在磁盘上。",
+  "set_grp_updates": "更新",
+  "set_update_track": "更新通道",
+  "set_track_stable": "稳定版",
+  "set_track_beta": "测试版",
+  "set_update_track_note": "测试版会在正式发布前提供新版本。它们经过测试，但没那么充分。"
 }

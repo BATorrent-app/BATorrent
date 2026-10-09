@@ -1301,5 +1301,10 @@
   "settings_pause_missing": "Dosyalar kaybolduğunda duraklat",
   "set_pause_missing_note": "Bir torrentin verileri BATorrent dışında silinirse, her şeyi yeniden indirmek yerine duraklatılır.",
   "warn_missing_paused_one": "“%1” duraklatıldı — dosyaları artık diskte değil.",
-  "warn_missing_paused": "%1 torrent duraklatıldı — dosyaları artık diskte değil."
+  "warn_missing_paused": "%1 torrent duraklatıldı — dosyaları artık diskte değil.",
+  "set_grp_updates": "Güncellemeler",
+  "set_update_track": "Güncelleme kanalı",
+  "set_track_stable": "Kararlı",
+  "set_track_beta": "Beta",
+  "set_update_track_note": "Beta, yeni sürümleri herkese sunulmadan önce verir. Test edilirler, ama daha az."
 }

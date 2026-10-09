@@ -333,6 +333,7 @@ bat_add_test(test_wireguardconfig test_wireguardconfig.cpp)
 bat_add_test(test_vpnmanager test_vpnmanager.cpp)
 bat_add_test(test_proxycontroller test_proxycontroller.cpp)
 bat_add_test(test_settingshelpers test_settingshelpers.cpp)
+bat_add_test(test_updatetrack test_updatetrack.cpp)
 bat_add_test(test_ipcprotocol test_ipcprotocol.cpp)
 bat_add_test(test_debrid     test_debrid.cpp)
 

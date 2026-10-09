@@ -5,6 +5,8 @@
 #ifndef UPDATER_H
 #define UPDATER_H
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QObject>
 #include <QNetworkAccessManager>
 
@@ -24,6 +26,16 @@ public:
     // Returns -1 if a < b, 0 if equal, 1 if a > b. Compares dot-separated
     // numeric components ("2.10.0" > "2.3.1").
     static int compareVersions(const QString &a, const QString &b);
+
+    // Picks the release to offer out of whatever the endpoint returned: the
+    // stable endpoint answers with one object, the list endpoint with an array.
+    //
+    // Chosen by highest version rather than by position: GitHub returns newest
+    // first, Gitee does not promise an order, and a beta cut from an older
+    // branch would otherwise be offered as an upgrade. Drafts are never
+    // offered, and a prerelease only when the user asked for the beta track.
+    // Returns an empty object when nothing qualifies.
+    static QJsonObject pickRelease(const QJsonDocument &doc, bool allowPrerelease);
 
 signals:
     void updateAvailable(const QString &version, const QString &downloadUrl, const QString &assetName);
