@@ -11,6 +11,23 @@
 
 namespace FileAssociation {
 
+QStringList driftedKinds(const QMap<QString, bool> &wanted,
+                         const QMap<QString, QString> &registered,
+                         const QString &exePath)
+{
+    QStringList out;
+    if (exePath.isEmpty()) return out;
+    for (auto it = wanted.cbegin(); it != wanted.cend(); ++it) {
+        if (!it.value()) continue;
+        // Case-insensitively: the registry hands paths back in whatever case
+        // was written, and Windows does not care which that was.
+        if (!registered.value(it.key()).contains(exePath, Qt::CaseInsensitive))
+            out.append(it.key());
+    }
+    out.sort();
+    return out;
+}
+
 #ifdef Q_OS_WIN
 // One association slice, .torrent, magnet: or bittorrent:, written or
 // removed independently. The key layout is the exact set the one-shot
@@ -46,15 +63,19 @@ bool apply(const QString &kind, bool on)
 
     if (kind == QLatin1String("torrent")) {
         if (on) {
-            reg.setValue(".torrent/.", "BATorrent.torrent");
-            reg.setValue("BATorrent.torrent/.", "BATorrent Torrent File");
-            reg.setValue("BATorrent.torrent/shell/open/command/.", cmd);
-            reg.setValue("BATorrent.torrent/DefaultIcon/.", nativeExe + ",0");
-            caps.setValue("FileAssociations/.torrent", "BATorrent.torrent");
+            reg.setValue(".torrent/.", "BATorrent.Torrent");
+            reg.setValue("BATorrent.Torrent/.", "BATorrent Torrent File");
+            reg.setValue("BATorrent.Torrent/shell/open/command/.", cmd);
+            reg.setValue("BATorrent.Torrent/DefaultIcon/.", nativeExe + ",0");
+            caps.setValue("FileAssociations/.torrent", "BATorrent.Torrent");
         } else {
-            if (reg.value(".torrent/.").toString() == QLatin1String("BATorrent.torrent"))
+            // Case-insensitive: the installer writes this value too, and the
+            // two spellings used to differ, so an exact compare left the
+            // association behind when the user switched it off.
+            if (reg.value(".torrent/.").toString()
+                    .compare(QLatin1String("BATorrent.Torrent"), Qt::CaseInsensitive) == 0)
                 reg.remove(".torrent");
-            reg.remove("BATorrent.torrent");
+            reg.remove("BATorrent.Torrent");
             caps.remove("FileAssociations/.torrent");
         }
     } else if (kind == QLatin1String("magnet")) {
@@ -74,6 +95,31 @@ bool apply(const QString &kind, bool on)
     registered.sync();
     return reg.status() == QSettings::NoError && caps.status() == QSettings::NoError
         && registered.status() == QSettings::NoError;
+}
+
+void reconcile()
+{
+    QSettings prefs;
+    const QMap<QString, bool> wanted {
+        { QStringLiteral("torrent"),    prefs.value(QStringLiteral("assocTorrent")).toBool() },
+        { QStringLiteral("magnet"),     prefs.value(QStringLiteral("assocMagnet")).toBool() },
+        { QStringLiteral("bittorrent"), prefs.value(QStringLiteral("assocBittorrent")).toBool() },
+    };
+
+    QSettings reg("HKEY_CURRENT_USER\\Software\\Classes", QSettings::NativeFormat);
+    const QString progIdCmd = QStringLiteral("BATorrent.Torrent/shell/open/command/.");
+    const QMap<QString, QString> registered {
+        { QStringLiteral("torrent"),
+          reg.value(".torrent/.").toString().compare(QLatin1String("BATorrent.Torrent"),
+                                                     Qt::CaseInsensitive) == 0
+              ? reg.value(progIdCmd).toString() : QString() },
+        { QStringLiteral("magnet"),     reg.value("magnet/shell/open/command/.").toString() },
+        { QStringLiteral("bittorrent"), reg.value("bittorrent/shell/open/command/.").toString() },
+    };
+
+    const QString exe = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
+    for (const QString &kind : driftedKinds(wanted, registered, exe))
+        apply(kind, true);
 }
 
 bool setAsDefaultApp()
@@ -98,6 +144,11 @@ bool apply(const QString &, bool)
     return false;
 }
 
+// Nothing to reconcile: the desktop entry and the bundle's Info.plist travel
+// with the install, and neither xdg-mime nor Launch Services loses the user's
+// choice when the app is updated in place.
+void reconcile() {}
+
 bool setAsDefaultApp()
 {
     // A missing helper (xdg-mime / duti) leaves exitCode() at its default 0,
@@ -121,6 +172,7 @@ bool setAsDefaultApp()
 
 bool apply(const QString &, bool) { return false; }
 bool setAsDefaultApp() { return false; }
+void reconcile() {}
 
 #endif
 

@@ -6,6 +6,7 @@
 #include "app/appruntime.h"
 
 #include "bridges/qmlthemebridge.h"
+#include "services/platform/fileassociation.h"
 #include "services/platform/logger.h"
 #include "services/platform/utils.h"
 
@@ -133,6 +134,12 @@ void runStartupMigrations()
     QSettings st;
     if (!st.contains("postDownloadAction") && st.value("autoShutdown", false).toBool())
         st.setValue("postDownloadAction", 6);
+
+    // A repeat install leaves the association checkboxes unticked and writes
+    // nothing, an uninstall takes the keys with it, and moving the install
+    // directory leaves every command pointing at a path that is gone. The
+    // preference outlives all three, so it is the one to trust.
+    FileAssociation::reconcile();
 }
 
 void loadFonts(QApplication &app)

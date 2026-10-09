@@ -68,9 +68,14 @@ Name: "{autodesktop}\BATorrent"; Filename: "{app}\BATorrent.exe"; Tasks: desktop
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
-Name: "fileassoc"; Description: "Associate .torrent files with BATorrent"; GroupDescription: "File associations:"; Flags: checkedonce
-Name: "magnetassoc"; Description: "Associate magnet links with BATorrent"; GroupDescription: "File associations:"; Flags: checkedonce
-Name: "bittorrentassoc"; Description: "Associate bittorrent: links with BATorrent"; GroupDescription: "File associations:"; Flags: checkedonce
+; No `checkedonce`: that flag unticks these every time Setup runs over an
+; existing install, and since the [Registry] entries below are gated on the
+; tasks, an update silently stopped renewing the associations. Without it Inno
+; restores what the user picked last time, and a first install still arrives
+; with all three ticked and visible to untick.
+Name: "fileassoc"; Description: "Associate .torrent files with BATorrent"; GroupDescription: "File associations:"
+Name: "magnetassoc"; Description: "Associate magnet links with BATorrent"; GroupDescription: "File associations:"
+Name: "bittorrentassoc"; Description: "Associate bittorrent: links with BATorrent"; GroupDescription: "File associations:"
 
 [Registry]
 ; .torrent file association
