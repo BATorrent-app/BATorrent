@@ -15,6 +15,7 @@
 #include <QFileInfo>
 #include <QFont>
 #include <QFontDatabase>
+#include <QMediaFormat>
 #include <QMessageBox>
 #include <QQuickImageProvider>
 #include <QQuickWindow>
@@ -164,6 +165,19 @@ void logDependencyVersions()
                       << " · Qt " << qVersion()
                       << " · libtorrent " << LIBTORRENT_VERSION
                       << " · Boost " << QString::fromLatin1(BOOST_LIB_VERSION).replace('_', '.');
+
+    // Which containers this install can actually open. Qt picks a multimedia
+    // backend at runtime and says nothing about it: when the ffmpeg plugin or
+    // its DLLs fail to load, playback silently drops to the platform backend
+    // and Matroska disappears from this list. "MKV will not play" was a bug
+    // report we had no way to tell apart from an exotic codec inside a file.
+    QStringList formats;
+    for (const QMediaFormat::FileFormat f :
+             QMediaFormat().supportedFileFormats(QMediaFormat::Decode))
+        formats << QMediaFormat::fileFormatName(f);
+    qInfo().nospace().noquote()
+        << "[media] decodes: " << (formats.isEmpty() ? QStringLiteral("nothing — no media backend loaded")
+                                                     : formats.join(QStringLiteral(", ")));
 }
 
 void showQmlLoadFailure(const QString &logHint)

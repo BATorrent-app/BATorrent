@@ -314,7 +314,12 @@ Item {
         }
 
         Rectangle {
-            visible: tile.playable && tile.progress > 0.02
+            // Metadata and a video in it is the whole condition. Playing preps
+            // sequential download and prioritises the head of the file, so
+            // there is nothing to wait for: the old `progress > 0.02` gate
+            // meant 1 GB on a 50 GB torrent and 14 MB on a 700 MB one, and
+            // hid the control exactly while someone wanted to start watching.
+            visible: tile.playable
                      && (tileMa.containsMouse || ptMa.containsMouse || controller.isRowSelected(tile.index))
             x: (parent.width - width) / 2
             y: (parent.height - height) / 2
