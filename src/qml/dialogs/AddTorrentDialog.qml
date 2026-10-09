@@ -59,7 +59,8 @@ BatDialog {
             fileModel.append({ path: fs[i].path, size: fs[i].size || "", dir: fs[i].dir === true,
                                depth: fs[i].depth || 0, fileIndex: fs[i].fileIndex === undefined ? -1 : fs[i].fileIndex,
                                sizeBytes: fs[i].sizeBytes || 0,
-                               on: true, partial: false })
+                               on: true, partial: false,
+                               collapsed: false, hidden: false })
         }
         recount()
         // if no cached poster, ask the resolver to fetch it
@@ -115,6 +116,22 @@ BatDialog {
         for (var i = row; i < end; ++i) fileModel.setProperty(i, "on", v)
         dlg.recount()
         dlg.syncFolders()
+    }
+    function setCollapsed(row, v) {
+        fileModel.setProperty(row, "collapsed", v)
+        dlg.syncHidden()
+    }
+    FileTreeCompute { id: treeCompute }
+    function syncHidden() {
+        var rows = []
+        for (var i = 0; i < fileModel.count; ++i) {
+            var r = fileModel.get(i)
+            rows.push({ depth: r.depth, dir: r.dir, collapsed: r.collapsed })
+        }
+        var flags = treeCompute.hiddenFlags(rows)
+        for (var j = 0; j < flags.length; ++j)
+            if (fileModel.get(j).hidden !== flags[j])
+                fileModel.setProperty(j, "hidden", flags[j])
     }
     // A folder is on when every file under it is, partial when they disagree.
     function syncFolders() {
@@ -246,7 +263,10 @@ BatDialog {
             anchors.fill: parent; anchors.margins: 1; clip: true; model: fileModel
             boundsBehavior: Flickable.StopAtBounds
             delegate: Rectangle {
-                width: ListView.view.width; height: 40; color: "transparent"
+                width: ListView.view.width
+                height: model.hidden ? 0 : 40
+                visible: !model.hidden
+                color: "transparent"
                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
                 RowLayout {
                     anchors.fill: parent
@@ -262,6 +282,30 @@ BatDialog {
                             fileModel.setProperty(index, "on", v)
                             dlg.recount()
                             dlg.syncFolders()
+                        }
+                    }
+                    Item {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredWidth: 14
+                        Layout.preferredHeight: 14
+                        // The slot is kept on files too: a folder and a file at
+                        // the same depth must line their names up.
+                        IconImg {
+                            anchors.centerIn: parent
+                            visible: model.dir
+                            src: "qrc:/icons/chevron.svg"
+                            tint: chevMa.containsMouse ? Theme.t1 : Theme.t3
+                            s: 12
+                            rotation: model.collapsed ? -90 : 0
+                            Behavior on rotation { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
+                        }
+                        MouseArea {
+                            id: chevMa
+                            anchors.fill: parent
+                            enabled: model.dir
+                            hoverEnabled: model.dir
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: dlg.setCollapsed(index, !model.collapsed)
                         }
                     }
                     IconImg {

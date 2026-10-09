@@ -156,6 +156,7 @@
 <file>../src/qml/dialogs/BatDialog.qml</file>
 <file>../src/qml/dialogs/AddInputDialog.qml</file>
 <file>../src/qml/dialogs/RemoveDialog.qml</file>
+<file>../src/qml/dialogs/FileTreeCompute.qml</file>
 <file>../src/qml/dialogs/AddTorrentDialog.qml</file>
 <file>../src/qml/dialogs/CreateTorrentDialog.qml</file>
 <file>../src/qml/dialogs/AddAddonDialog.qml</file>
