@@ -1079,7 +1079,7 @@
   "state_fetching_metadata": "Looking for a peer with this torrent's file list (%1) — rare torrents can take a while",
   "state_files_missing": "Files missing",
   "state_finished": "Finished",
-  "state_metadata": "Metadata",
+  "state_metadata": "Fetching",
   "state_missing_pieces": "Downloading, but some pieces have no seeder anywhere — it may stall before finishing",
   "state_no_peers": "No peers — waiting for tracker responses",
   "state_no_peers_dht": "No peers yet — searching the swarm via DHT and trackers",

@@ -1079,7 +1079,7 @@
   "state_fetching_metadata": "Dosya listesine sahip bir eş aranıyor (%1) — nadir torrentler zaman alabilir",
   "state_files_missing": "Dosyalar eksik",
   "state_finished": "Bitti",
-  "state_metadata": "Meta veri",
+  "state_metadata": "Alınıyor",
   "state_missing_pieces": "İndiriliyor, ancak bazı parçaların hiçbir yerde tohumu yok — bitmeden önce takılabilir",
   "state_no_peers": "Eş yok — izleyici yanıtları bekleniyor",
   "state_no_peers_dht": "Henüz eş yok — sürü DHT ve izleyiciler aracılığıyla taranıyor",

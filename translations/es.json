@@ -1079,7 +1079,7 @@
   "state_fetching_metadata": "Buscando un peer con la lista de archivos (%1) — los torrents raros pueden tardar",
   "state_files_missing": "Archivos ausentes",
   "state_finished": "Finalizado",
-  "state_metadata": "Metadatos",
+  "state_metadata": "Obteniendo",
   "state_missing_pieces": "Descargando, pero algunas partes no tienen semilla en ningún lugar — puede detenerse antes de terminar",
   "state_no_peers": "Sin pares — esperando respuesta de los trackers",
   "state_no_peers_dht": "Aún sin pares — buscando en el enjambre vía DHT y trackers",

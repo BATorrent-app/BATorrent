@@ -1079,7 +1079,7 @@
   "state_fetching_metadata": "正在寻找拥有文件列表的节点（%1）— 冷门种子可能需要更长时间",
   "state_files_missing": "文件缺失",
   "state_finished": "已完成",
-  "state_metadata": "获取元数据",
+  "state_metadata": "获取中",
   "state_missing_pieces": "正在下载，但部分分块在任何地方都没有做种 — 可能在完成前卡住",
   "state_no_peers": "无用户 — 等待 Tracker 响应",
   "state_no_peers_dht": "暂无用户 — 正在通过 DHT 和 Tracker 搜索",
