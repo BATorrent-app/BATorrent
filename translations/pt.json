@@ -471,8 +471,6 @@
   "magnet_link": "Link magnet",
   "magnet_meta_hint": "Os metadados (nome e lista de arquivos) serão baixados da rede após adicionar.",
   "magnet_multi_hint": "Aceita vários links, um por linha",
-  "magnet_paste": "Cole o link magnet",
-  "magnet_title": "Adicionar link magnet",
   "make_room_completed": "Concluído",
   "make_room_days_ago": "há %1 dias",
   "make_room_downloading": "Baixando",

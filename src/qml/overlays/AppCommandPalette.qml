@@ -14,7 +14,7 @@ Item {
     required property var host
     required property var settingsPage
     required property var library
-    required property var magnetDlg
+    required property var addDlg
     required property var openFileDlg
     required property var createDlg
 
@@ -30,7 +30,7 @@ Item {
         actions: {
             var l = i18n.language   // re-evaluate labels on language switch
             var acts = [
-                { label: i18n.t("magnet_title"), run: function() { magnetDlg.open() } },
+                { label: i18n.t("add_any_title"), run: function() { addDlg.open() } },
                 { label: i18n.t("menu_open_torrent"), run: function() { openFileDlg.open() } },
                 { label: i18n.t("menu_create_torrent"), run: function() { createDlg.open() } },
                 { label: i18n.t("menu_pause_all"), run: function() { if (typeof session !== "undefined") session.pauseAll() } },

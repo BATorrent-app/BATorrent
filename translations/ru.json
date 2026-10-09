@@ -471,8 +471,6 @@
   "magnet_link": "Magnet-ссылка",
   "magnet_meta_hint": "Метаданные (имя и список файлов) будут загружены из сети после добавления.",
   "magnet_multi_hint": "Принимает несколько ссылок, по одной в строке",
-  "magnet_paste": "Вставьте magnet-ссылку",
-  "magnet_title": "Добавить magnet-ссылку",
   "make_room_completed": "Завершено",
   "make_room_days_ago": "%1 дн. назад",
   "make_room_downloading": "Загрузка",

@@ -167,9 +167,9 @@ Window {
 
     function checkClipboardMagnet() {
         if (typeof session === "undefined") return
-        if (magnetDlg.opened || addTorrentDlg.opened) return
+        if (addDlg.opened || addTorrentDlg.opened) return
         var m = session.clipboardMagnetIfNew()
-        if (m.length > 0) magnetDlg.openWithMagnet(m)
+        if (m.length > 0) addDlg.openWithText(m)
     }
     // first launch → the interactive tour (opens with a welcome step); an update
     // (version changed) → the what's-new screen. Once each, never both, never on
@@ -388,7 +388,7 @@ Window {
     AppMenuBar {
         host: win
         openFileDialog: openFileDlg
-        magnetDialog: magnetDlg
+        addDialog: addDlg
         inputPrompt: win.inputPrompt
         createDialog: createDlg
         inspectFileDialog: inspectFileDlg
@@ -439,7 +439,7 @@ Window {
         host: win
         settingsPage: settingsPage
         library: library
-        magnetDlg: overlays.magnetDlg
+        addDlg: overlays.addDlg
         openFileDlg: overlays.openFileDlg
         createDlg: overlays.createDlg
     }
@@ -469,7 +469,7 @@ Window {
             Layout.preferredHeight: visible ? implicitHeight : 0
             host: win
             openFileDialog: openFileDlg
-            magnetDialog: magnetDlg
+            addDialog: addDlg
             createDialog: createDlg
             inspectFileDialog: inspectFileDlg
             importQbtDialog: importQbtDlg
@@ -566,7 +566,7 @@ Window {
             id: toolbar
             win: win
             onOpenFile: openFileDlg.open()
-            onAddMagnet: magnetDlg.open()
+            onAddMagnet: addDlg.open()
             onAddLink: promptHttpDownload()
             onRemoveSelected: removeDlg.open()
             onOpenRss: win.showWin(rssWinLoader)
@@ -580,7 +580,7 @@ Window {
             Layout.fillHeight: true
             host: win
             controller: library
-            onAddMagnetRequested: magnetDlg.open()
+            onAddMagnetRequested: addDlg.open()
             onAddLinkRequested: promptHttpDownload()
             onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
         }
@@ -615,7 +615,7 @@ Window {
         host: win
     }
     property alias openFileDlg: overlays.openFileDlg
-    property alias magnetDlg: overlays.magnetDlg
+    property alias addDlg: overlays.addDlg
     property alias addTorrentDlg: overlays.addTorrentDlg
     property alias removeDlg: overlays.removeDlg
     property alias makeRoomPanel: overlays.makeRoomPanel

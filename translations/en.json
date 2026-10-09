@@ -471,8 +471,6 @@
   "magnet_link": "Magnet link",
   "magnet_meta_hint": "Metadata (name and file list) will be downloaded from the network after adding.",
   "magnet_multi_hint": "Accepts multiple links, one per line",
-  "magnet_paste": "Paste the magnet link",
-  "magnet_title": "Add magnet link",
   "make_room_completed": "Completed",
   "make_room_days_ago": "%1 days ago",
   "make_room_downloading": "Downloading",

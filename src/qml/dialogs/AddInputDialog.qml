@@ -47,7 +47,7 @@ BatDialog {
     }
     // clipboard-detected magnet (window regained focus): prefill instead of
     // the usual blank-on-open, so the user only has to confirm or cancel
-    function openWithMagnet(uri) {
+    function openWithText(uri) {
         magnetText = uri
         skipNextClear = true
         open()

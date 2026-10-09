@@ -471,8 +471,6 @@
   "magnet_link": "磁力链接",
   "magnet_meta_hint": "添加后将从网络下载元数据（名称和文件列表）。",
   "magnet_multi_hint": "支持多个链接，每行一个",
-  "magnet_paste": "粘贴磁力链接",
-  "magnet_title": "添加磁力链接",
   "make_room_completed": "已完成",
   "make_room_days_ago": "%1 天前",
   "make_room_downloading": "下载中",

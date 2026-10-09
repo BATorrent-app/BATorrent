@@ -471,8 +471,6 @@
   "magnet_link": "マグネットリンク",
   "magnet_meta_hint": "追加後、メタデータ（名前とファイル一覧）がネットワークから取得されます。",
   "magnet_multi_hint": "複数のリンクに対応、1 行に 1 つ",
-  "magnet_paste": "マグネットリンクを貼り付け",
-  "magnet_title": "マグネットリンクを追加",
   "make_room_completed": "完了",
   "make_room_days_ago": "%1日前",
   "make_room_downloading": "ダウンロード中",

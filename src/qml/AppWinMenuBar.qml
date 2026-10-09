@@ -13,7 +13,7 @@ MenuBar {
     id: root
     required property var host
     required property var openFileDialog
-    required property var magnetDialog
+    required property var addDialog
     required property var createDialog
     required property var inspectFileDialog
     required property var importQbtDialog
@@ -95,7 +95,7 @@ MenuBar {
     BarMenu {
         title: (i18n.language, i18n.t("menu_file_title"))
         BarItem { iconSrc: "qrc:/icons/file.svg"; text: (i18n.language, i18n.t("menu_open_torrent")); onTriggered: openFileDialog.open() }
-        BarItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("menu_add_magnet")); onTriggered: magnetDialog.open() }
+        BarItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("menu_add_magnet")); onTriggered: addDialog.open() }
         BarItem { iconSrc: "qrc:/icons/link.svg"; text: (i18n.language, i18n.t("menu_add_http")); onTriggered: host.promptHttpDownload() }
         BarItem { iconSrc: "qrc:/icons/plus.svg"; text: (i18n.language, i18n.t("menu_create_torrent")); onTriggered: createDialog.open() }
         BarItem { iconSrc: "qrc:/icons/search.svg"; text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: inspectFileDialog.open() }

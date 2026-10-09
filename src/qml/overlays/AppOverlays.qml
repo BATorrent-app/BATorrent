@@ -20,7 +20,7 @@ Item {
     required property var host
 
     property alias openFileDlg: openFileDlg
-    property alias magnetDlg: magnetDlg
+    property alias addDlg: addDlg
     property alias addTorrentDlg: addTorrentDlg
     property alias removeDlg: removeDlg
     property alias makeRoomPanel: makeRoomPanel
@@ -86,8 +86,8 @@ Item {
     }
 
     // ================== OVERLAY DIALOGS (in-app, backdrop covers all) ==================
-    MagnetDialog {
-        id: magnetDlg
+    AddInputDialog {
+        id: addDlg
         // Every line through the one router, so a magnet, a .torrent link and
         // an ordinary download can be pasted together and each still lands in
         // the right place.
@@ -95,7 +95,7 @@ Item {
             if (typeof session === "undefined") return
             for (var i = 0; i < lines.length; ++i) session.addAnything(lines[i].trim(), savePath)
         }
-        onBrowseRequested: { magnetDlg.close(); openFileDlg.open() }
+        onBrowseRequested: { addDlg.close(); openFileDlg.open() }
     }
     Timer { id: queueTimer; interval: 130; onTriggered: root.processTorrentQueue() }
     Connections {

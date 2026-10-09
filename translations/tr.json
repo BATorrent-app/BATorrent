@@ -471,8 +471,6 @@
   "magnet_link": "Mıknatıs bağlantısı",
   "magnet_meta_hint": "Meta veriler (ad ve dosya listesi) eklendikten sonra ağdan indirilecektir.",
   "magnet_multi_hint": "Her satıra bir tane olacak şekilde birden fazla bağlantı kabul eder",
-  "magnet_paste": "Mıknatıs bağlantısını yapıştırın",
-  "magnet_title": "Mıknatıs bağlantısı ekle",
   "make_room_completed": "Tamamlandı",
   "make_room_days_ago": "%1 gün önce",
   "make_room_downloading": "İndiriliyor",

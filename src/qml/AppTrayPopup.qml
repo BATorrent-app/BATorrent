@@ -10,7 +10,7 @@ TrayPopupWindow {
 
     onShowApp:      { host.show(); host.raise(); host.requestActivate() }
     onOpenTorrent:  { host.show(); host.raise(); host.requestActivate(); host.openFileDlg.open() }
-    onOpenMagnet:   { host.show(); host.raise(); host.requestActivate(); host.magnetDlg.open() }
+    onOpenMagnet:   { host.show(); host.raise(); host.requestActivate(); host.addDlg.open() }
     onPauseAll:     if (typeof session !== "undefined") session.pauseAll()
     onResumeAll:    if (typeof session !== "undefined") session.resumeAll()
     onOpenSettings: { host.show(); host.raise(); host.requestActivate(); host.currentPage = 3 }

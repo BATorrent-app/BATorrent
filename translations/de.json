@@ -471,8 +471,6 @@
   "magnet_link": "Magnet-Link",
   "magnet_meta_hint": "Metadaten (Name und Dateiliste) werden nach dem Hinzufügen aus dem Netzwerk geladen.",
   "magnet_multi_hint": "Akzeptiert mehrere Links, einer pro Zeile",
-  "magnet_paste": "Magnet-Link einfügen",
-  "magnet_title": "Magnet-Link hinzufügen",
   "make_room_completed": "Abgeschlossen",
   "make_room_days_ago": "vor %1 Tagen",
   "make_room_downloading": "Lädt herunter",
