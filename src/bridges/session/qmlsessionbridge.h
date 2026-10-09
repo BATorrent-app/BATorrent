@@ -155,6 +155,14 @@ public:
     Q_INVOKABLE void addMagnetUri(const QString &uri, const QString &savePath = QString());
     // Fetch a .torrent from an http(s) URL, then route it through the add flow.
     Q_INVOKABLE void addTorrentUrl(const QString &url);
+    // The one way in. Works out what the text is and sends it down the right
+    // path; returns false when it is nothing we can add. Every entry point —
+    // drop, command line, clipboard, the Add field — goes through here, so
+    // there is one switch rather than one per caller.
+    Q_INVOKABLE bool addAnything(const QString &input, const QString &savePath = QString());
+    // What addAnything would do with it, as a token for the UI to label:
+    // "magnet", "torrentFile", "torrentUrl", "webFile" or "" for nothing.
+    Q_INVOKABLE QString inputKind(const QString &input) const;
     // Download a direct http(s) file link (not a .torrent): it appears in the
     // Downloads list like any other download via the HTTP engine decorator.
     Q_INVOKABLE void addHttpUrl(const QString &url, const QString &savePath = QString());

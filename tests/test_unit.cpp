@@ -23,6 +23,7 @@
 #include "services/platform/utils.h"
 #include "torrent/types.h"
 #include "torrent/filetree.h"
+#include "torrent/addkind.h"
 #include "services/metadata/metadatamatch.h"
 #include "torrent/sessionmanager.h"
 #include "webui/webserver.h"
@@ -1860,5 +1861,62 @@ TEST_CASE("orphanCacheFiles only names files nothing refers to", "[metadata][cac
         const auto out = MetadataMatch::orphanCacheFiles(names, {});
         REQUIRE(out.size() == 1);
         CHECK(out.first().endsWith(".jpg"));
+    }
+}
+
+TEST_CASE("classifyAdd answers for every path that used to answer for itself",
+          "[addkind]")
+{
+    SECTION("magnet, in the spellings people actually paste") {
+        CHECK(classifyAdd("magnet:?xt=urn:btih:abc").kind == AddKind::Magnet);
+        CHECK(classifyAdd("MAGNET:?xt=urn:btih:abc").kind == AddKind::Magnet);
+        CHECK(classifyAdd("bittorrent://x").kind == AddKind::Magnet);
+        CHECK(classifyAdd("   magnet:?xt=urn:btih:abc  ").kind == AddKind::Magnet);
+    }
+
+    SECTION("a bare info-hash becomes a magnet") {
+        const QString v1(40, QLatin1Char('a'));
+        const QString v2(64, QLatin1Char('F'));
+        CHECK(classifyAdd(v1).value == "magnet:?xt=urn:btih:" + v1);
+        CHECK(classifyAdd(v2).kind == AddKind::Magnet);
+        CHECK(classifyAdd(QString(39, QLatin1Char('a'))).kind == AddKind::Unknown);
+    }
+
+    SECTION("an http .torrent goes to the engine, not the file downloader") {
+        // The drop overlay knew this; the command line did not, so the same
+        // link added two different ways landed in two different places.
+        CHECK(classifyAdd("https://x.net/a.torrent").kind == AddKind::TorrentUrl);
+        CHECK(classifyAdd("http://x.net/a.TORRENT").kind == AddKind::TorrentUrl);
+        CHECK(classifyAdd("https://x.net/file.zip").kind == AddKind::WebFile);
+    }
+
+    SECTION("the path decides, not the query string") {
+        // ?ref=x.torrent on an ordinary download is not a torrent, and a
+        // torrent behind a query still is one.
+        CHECK(classifyAdd("https://x.net/get.php?ref=x.torrent").kind == AddKind::WebFile);
+        CHECK(classifyAdd("https://x.net/a.torrent?key=9").kind == AddKind::TorrentUrl);
+    }
+
+    SECTION("a local .torrent, by path or by file URL") {
+        CHECK(classifyAdd("/home/me/a.torrent").kind == AddKind::TorrentFile);
+        const AddTarget t = classifyAdd("file:///home/me/a.torrent");
+        CHECK(t.kind == AddKind::TorrentFile);
+        CHECK(t.value == "/home/me/a.torrent");      // unwrapped for the adder
+        CHECK(classifyAdd("file:///home/me/notes.txt").kind == AddKind::Unknown);
+    }
+
+    SECTION("thunder:// unwraps before anything else looks at it") {
+        // The clipboard knew this one and nothing else did.
+        const QByteArray inner = QByteArray("AAmagnet:?xt=urn:btih:abcZZ").toBase64();
+        const AddTarget t = classifyAdd("thunder://" + QString::fromLatin1(inner));
+        CHECK(t.kind == AddKind::Magnet);
+        CHECK(t.value == "magnet:?xt=urn:btih:abc");
+    }
+
+    SECTION("nothing usable stays Unknown rather than guessing") {
+        CHECK(classifyAdd("").kind == AddKind::Unknown);
+        CHECK(classifyAdd("   ").kind == AddKind::Unknown);
+        CHECK(classifyAdd("just some words").kind == AddKind::Unknown);
+        CHECK(classifyAdd("ftp://x.net/a.torrent").kind == AddKind::TorrentFile);
     }
 }

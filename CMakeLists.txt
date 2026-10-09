@@ -64,6 +64,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/qmlboot.cpp
     src/torrent/iengine.h        # header-only QObject — listed so AUTOMOC builds its metaobject
     src/torrent/sessionmanager.cpp
+    src/torrent/addkind.cpp
     src/torrent/filetree.cpp
     src/torrent/sessionmanager_query.cpp
     src/torrent/sessionmanager_streaming.cpp

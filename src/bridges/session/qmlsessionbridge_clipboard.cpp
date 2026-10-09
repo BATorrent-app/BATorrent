@@ -6,6 +6,7 @@
 // qmlsessionbridge.cpp verbatim; no behaviour change.
 
 #include "bridges/session/qmlsessionbridge.h"
+#include "torrent/addkind.h"
 #include "torrent/sessionmanager.h"
 #include "services/platform/translator.h"
 
@@ -45,25 +46,11 @@ void QmlSessionBridge::copyInfoHash()
 
 QString QmlSessionBridge::normalizeClipboardMagnet(const QString &clip)
 {
-    // Xunlei thunder:// links: base64 of "AA" + the real URL + "ZZ". Decode, then
-    // fall through to the normal handling (it usually wraps a magnet).
-    QString s = clip;
-    if (s.startsWith(QStringLiteral("thunder://"), Qt::CaseInsensitive)) {
-        QString dec = QString::fromUtf8(
-            QByteArray::fromBase64(s.mid(10).toLatin1())).trimmed();
-        if (dec.startsWith(QStringLiteral("AA"), Qt::CaseInsensitive)
-            && dec.endsWith(QStringLiteral("ZZ"), Qt::CaseInsensitive))
-            dec = dec.mid(2, dec.size() - 4);
-        s = dec.trimmed();
-        if (s.isEmpty()) return QString();
-    }
-    if (s.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)
-        || s.startsWith(QStringLiteral("bittorrent:"), Qt::CaseInsensitive))
-        return s;
-    static const QRegularExpression hashRe(QStringLiteral("^[0-9a-fA-F]{40}$"));
-    if (hashRe.match(s).hasMatch())
-        return QStringLiteral("magnet:?xt=urn:btih:") + s;
-    return QString();
+    // Thin over classifyAdd so the clipboard cannot drift from the drop
+    // overlay and the command line, which is what it had done: thunder://
+    // links and bare info-hashes worked here and nowhere else.
+    const AddTarget t = classifyAdd(clip);
+    return t.kind == AddKind::Magnet ? t.value : QString();
 }
 
 void QmlSessionBridge::smartPaste()

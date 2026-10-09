@@ -5,6 +5,7 @@
 // QmlSessionBridge: add torrent/magnet/http + preview.
 
 #include "bridges/session/qmlsessionbridge.h"
+#include "torrent/addkind.h"
 #include "torrent/filetree.h"
 #include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
@@ -49,6 +50,31 @@ void QmlSessionBridge::addMagnetUri(const QString &uri, const QString &savePath)
     if (!normalized.isEmpty()) m_lastClipboardMagnet = normalized;
     if (!savePath.isEmpty()) rememberSavePath(savePath);
     m_session->addMagnet(uri, savePath.isEmpty() ? defaultSavePath() : savePath);
+}
+
+bool QmlSessionBridge::addAnything(const QString &input, const QString &savePath)
+{
+    const AddTarget t = classifyAdd(input);
+    switch (t.kind) {
+    case AddKind::Magnet:      addMagnetUri(t.value, savePath); return true;
+    case AddKind::TorrentFile: requestAddTorrentFile(t.value);  return true;
+    case AddKind::TorrentUrl:  addTorrentUrl(t.value);          return true;
+    case AddKind::WebFile:     addHttpUrl(t.value, savePath);   return true;
+    case AddKind::Unknown:     break;
+    }
+    return false;
+}
+
+QString QmlSessionBridge::inputKind(const QString &input) const
+{
+    switch (classifyAdd(input).kind) {
+    case AddKind::Magnet:      return QStringLiteral("magnet");
+    case AddKind::TorrentFile: return QStringLiteral("torrentFile");
+    case AddKind::TorrentUrl:  return QStringLiteral("torrentUrl");
+    case AddKind::WebFile:     return QStringLiteral("webFile");
+    case AddKind::Unknown:     break;
+    }
+    return QString();
 }
 
 void QmlSessionBridge::addHttpUrl(const QString &url, const QString &savePath)

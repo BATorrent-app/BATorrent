@@ -20,56 +20,35 @@ Item {
     DropArea {
         id: dropZone
         anchors.fill: parent
-        function isMagnetLike(s) {
-            var u = s.toLowerCase()
-            return u.indexOf("magnet:") === 0 || u.indexOf("bittorrent:") === 0
-        }
-        function isWebLink(s) {
-            var u = s.trim().toLowerCase()
-            return u.indexOf("http://") === 0 || u.indexOf("https://") === 0
-        }
+        // What we accept is exactly what we can add, asked of the same
+        // function that will do the adding. Two lists drift: this one used to
+        // take anything ending in .torrent and then hand local files to a
+        // different path than the one that vetted them.
         function accepts(drag) {
+            if (typeof session === "undefined") return false
             if (drag.hasUrls) {
-                for (var i = 0; i < drag.urls.length; ++i) {
-                    var u = drag.urls[i].toString().toLowerCase()
-                    if (u.endsWith(".torrent") || dropZone.isMagnetLike(u)
-                        || dropZone.isWebLink(u)) return true
-                }
+                for (var i = 0; i < drag.urls.length; ++i)
+                    if (session.inputKind(drag.urls[i].toString()) !== "") return true
             }
-            if (drag.hasText && (dropZone.isMagnetLike(drag.text)
-                                 || dropZone.isWebLink(drag.text))) return true
-            return false
+            return drag.hasText && session.inputKind(drag.text) !== ""
         }
         onEntered: function(drag) { drag.accepted = accepts(drag) }
         onDropped: function(drop) {
             if (typeof session === "undefined") return
-            var torrentUrls = []
+            // session.addAnything works out magnet vs .torrent vs an http
+            // .torrent vs an ordinary download. This used to decide for
+            // itself, and knew things the command line did not.
+            var torrentFiles = []
             var handled = false
             if (drop.hasUrls) {
                 for (var i = 0; i < drop.urls.length; ++i) {
                     var u = drop.urls[i].toString()
-                    if (dropZone.isMagnetLike(u)) { session.addMagnetUri(u); handled = true }
-                    // A web link ending in .torrent is still a torrent: hand it to
-                    // the engine's fetch-then-add path, not to the file downloader,
-                    // which would leave a .torrent sitting in Downloads.
-                    else if (dropZone.isWebLink(u)) {
-                        if (u.toLowerCase().indexOf(".torrent") >= 0) session.addTorrentUrl(u)
-                        else session.addHttpUrl(u)
-                        handled = true
-                    }
-                    else torrentUrls.push(u)
+                    if (session.inputKind(u) === "torrentFile") { torrentFiles.push(u); handled = true }
+                    else if (session.addAnything(u)) handled = true
                 }
             }
-            if (torrentUrls.length > 0) root.torrentUrlsDropped(torrentUrls)
-            if (!handled && drop.hasText) {
-                var t = drop.text.trim()
-                if (dropZone.isMagnetLike(t)) session.addMagnetUri(t)
-                else if (dropZone.isWebLink(t)) {
-                    if (t.toLowerCase().indexOf(".torrent") >= 0) session.addTorrentUrl(t)
-                    else session.addHttpUrl(t)
-                }
-            }
-            drop.accept()
+            if (torrentFiles.length > 0) root.torrentUrlsDropped(torrentFiles)
+            if (!handled && drop.hasText) session.addAnything(drop.text)
         }
     }
 
