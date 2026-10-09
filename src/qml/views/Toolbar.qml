@@ -8,6 +8,7 @@
 // nav), and exposes the Open button via `tbOpen` for the onboarding tour.
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import "../theme"
 import "../widgets"
 
@@ -28,12 +29,20 @@ Rectangle {
         id: tb
         property string label
         property string icon
+        // The label has 52px and some of these actions need more words than
+        // that. Where the short label is ambiguous, the hint carries the full
+        // sentence to the tooltip and to the accessibility tree.
+        property string hint
         property bool disabled: false
         property bool active: false       // toggled-on state (e.g. alt-speed turtle)
         property bool spinOnClick: false  // spin the icon on click: visible "it happened" feedback (Refresh)
         signal clicked()
-        Layout.preferredWidth: 52
-        Layout.minimumWidth: 52          // never let the RowLayout squeeze/clip the button
+        // 52 is the grid every button sits on; a label that needs more than
+        // that widens its own button rather than being shortened into
+        // something ambiguous. "Copy" did not say what it copied, and a tester
+        // read it as the feature having been removed.
+        Layout.preferredWidth: Math.max(52, tbLabel.implicitWidth + 16)
+        Layout.minimumWidth: Layout.preferredWidth   // the RowLayout must not squeeze it
         Layout.preferredHeight: 54
         color: !disabled && tbMa.containsMouse ? Theme.hover : "transparent"
         radius: 8
@@ -43,11 +52,14 @@ Rectangle {
         // without these a screen reader reads nothing at all here: the label is
         // a plain Text with no semantic tie to the control
         Accessible.role: Accessible.Button
-        Accessible.name: tb.label
+        Accessible.name: tb.hint.length > 0 ? tb.hint : tb.label
         // no Accessible.disabled in QML: hide the control from the tree instead
         // so a reader doesn't offer an action that does nothing
         Accessible.ignored: tb.disabled
         Accessible.onPressAction: if (!tb.disabled) tb.trigger()
+        ToolTip.visible: tb.hint.length > 0 && tbMa.containsMouse && !tb.disabled
+        ToolTip.text: tb.hint
+        ToolTip.delay: 400
         activeFocusOnTab: !disabled
         Keys.onReturnPressed: if (!disabled) tb.trigger()
         Keys.onSpacePressed: if (!disabled) tb.trigger()
@@ -77,6 +89,7 @@ Rectangle {
                 NumberAnimation { id: tbSpin; target: tbIcon; property: "rotation"; from: 0; to: 360; duration: 380; easing.type: Theme.easeOut }
             }
             Text {
+                id: tbLabel
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: tb.label
                 color: tb.active ? Theme.accent : (!tb.disabled && tbMa.containsMouse ? Theme.t1 : Theme.t3)
@@ -134,8 +147,8 @@ Rectangle {
         // Copy wears a magnet inside a copy sheet, not the plain copy glyph:
         // it copies the magnet link, and the generic sheet read as "copy path".
         TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !win.hasSel; onClicked: toolbar.removeSelected() }
-        TBtn { label: (i18n.language, i18n.t("tb_copy"));   icon: "qrc:/icons/copy.svg"; disabled: !win.hasSel; onClicked: session.copyMagnetLink() }
-        TBtn { label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; disabled: !win.hasSel; onClicked: session.openSaveFolder() }
+        TBtn { label: (i18n.language, i18n.t("tb_copy"));   icon: "qrc:/icons/copy.svg"; hint: (i18n.language, i18n.t("ctx_copy_magnet")); disabled: !win.hasSel; onClicked: session.copyMagnetLink() }
+        TBtn { label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; hint: (i18n.language, i18n.t("ctx_open_folder")); disabled: !win.hasSel; onClicked: session.openSaveFolder() }
         TGrpDiv {}
         // G4: RSS. No Search or Settings buttons here: page switching belongs
         // to the nav rail, and this toolbar acts on torrents. A magnifier next

@@ -215,7 +215,7 @@ Menu {
         enabled: session.selectedPaused
         onTriggered: session.resumeSelected()
     }
-    CtxItem { iconSrc: "qrc:/icons/open.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
+    CtxItem { iconSrc: "qrc:/icons/folder.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
     // promoted out of the Copy submenu: the two most-reached actions (tester, MotrixNext ref)
     CtxItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
     CtxItem { iconSrc: "qrc:/icons/copy.svg"; text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
