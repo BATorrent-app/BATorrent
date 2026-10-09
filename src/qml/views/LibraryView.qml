@@ -17,7 +17,6 @@ Item {
     property var win
     property var controller
     property var modelOverride: null
-    property bool panelReflowing: false
     property alias grid: grid
     property alias list: list
     signal addMagnetRequested()
@@ -182,7 +181,7 @@ Item {
         // risk: so a batch removal (bulkRemoveInProgress) skips the animation
         // instead of stacking transitions; a single remove keeps it.
         readonly property bool bulkRemove: typeof session !== "undefined" && session.bulkRemoveInProgress
-        readonly property bool skipDisplace: bulkRemove || libraryView.panelReflowing
+        readonly property bool skipDisplace: bulkRemove
         remove: Transition {
             NumberAnimation { properties: "opacity"; to: 0; duration: grid.bulkRemove ? 0 : 160; easing.type: Theme.easeIn }
             NumberAnimation { properties: "scale"; to: 0.85; duration: grid.bulkRemove ? 0 : 160; easing.type: Theme.easeIn }

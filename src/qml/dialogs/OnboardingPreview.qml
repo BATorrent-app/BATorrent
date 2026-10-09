@@ -117,7 +117,6 @@ Rectangle {
         readonly property bool hasSel: true
         readonly property bool detailBottom: preview.detailBottom
         property int detailTab: 0
-        property bool detailsLocked: false
         property bool detailsCollapsed: false
         readonly property bool detailsShownCollapsed: false
 

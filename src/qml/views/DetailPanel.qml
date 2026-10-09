@@ -36,18 +36,11 @@ Rectangle {
             // collapse / expand the whole detail panel (state persists)
             Rectangle {
                 id: collapseBtn
-                // With nothing selected the panel is forced collapsed regardless
-                // of detailsCollapsed, so toggling here changed nothing and the
-                // button read as broken. The lock overrides that force, so it
-                // stays live while locked.
-                readonly property bool actsOnClick: detailPanel.win.hasSel || detailPanel.win.detailsLocked
                 anchors.right: parent.right; anchors.rightMargin: Theme.sp4
                 anchors.verticalCenter: parent.verticalCenter
                 width: 30; height: 26; radius: 7
-                opacity: actsOnClick ? 1 : 0.4
-                Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
-                color: colMa.containsMouse && actsOnClick ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : Theme.hover
-                border.width: 1; border.color: colMa.containsMouse && actsOnClick ? Theme.accent : Theme.hair
+                color: colMa.containsMouse ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : Theme.hover
+                border.width: 1; border.color: colMa.containsMouse ? Theme.accent : Theme.hair
                 Behavior on color { ColorAnimation { duration: Theme.durFast } }
                 IconImg {
                     anchors.centerIn: parent
@@ -55,53 +48,25 @@ Rectangle {
                     src: "qrc:/icons/chevron-bold.svg"
                     rotation: detailPanel.win.detailsShownCollapsed ? 180 : 0
                     Behavior on rotation { NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut } }
-                    tint: colMa.containsMouse && collapseBtn.actsOnClick ? Theme.t1 : Theme.t2
+                    tint: colMa.containsMouse ? Theme.t1 : Theme.t2
                 }
                 MouseArea {
                     id: colMa
                     anchors.fill: parent
-                    // Not `enabled: false`: that kills hover too, and then the
-                    // tooltip explaining why the button is inert never shows.
-                    acceptedButtons: collapseBtn.actsOnClick ? Qt.LeftButton : Qt.NoButton
                     hoverEnabled: true
-                    cursorShape: collapseBtn.actsOnClick ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    cursorShape: Qt.PointingHandCursor
                     onClicked: detailPanel.win.toggleDetailsCollapsed()
                 }
                 ToolTip.visible: colMa.containsMouse
-                ToolTip.text: !collapseBtn.actsOnClick
-                    ? (i18n.language, i18n.t("detail_expand_needs_selection"))
-                    : (detailPanel.win.detailsShownCollapsed ? i18n.t("detail_expand") : i18n.t("detail_collapse"))
-                ToolTip.delay: 400
-            }
-
-            // lock: pin the panel open/closed, ignoring auto-collapse on deselect
-            Item {
-                id: lockBtn
-                anchors.right: collapseBtn.left; anchors.rightMargin: 2
-                anchors.verticalCenter: parent.verticalCenter
-                width: 28; height: 28; z: 5
-                readonly property color tint: lockMa.containsMouse ? Theme.t1 : (detailPanel.win.detailsLocked ? Theme.accent : Theme.t3)
-                IconImg {
-                    anchors.centerIn: parent
-                    s: 17
-                    src: detailPanel.win.detailsLocked ? "qrc:/icons/lock-solid.svg" : "qrc:/icons/lock-open-solid.svg"
-                    tint: lockBtn.tint
-                }
-                MouseArea {
-                    id: lockMa
-                    anchors.fill: parent; anchors.margins: -4
-                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: detailPanel.win.toggleDetailsLocked()
-                }
-                ToolTip.visible: lockMa.containsMouse
-                ToolTip.text: detailPanel.win.detailsLocked ? i18n.t("detail_pinned") : i18n.t("detail_pin")
+                ToolTip.text: (i18n.language, detailPanel.win.detailsShownCollapsed
+                    ? i18n.t("detail_expand") : i18n.t("detail_collapse"))
                 ToolTip.delay: 400
             }
 
             DetailTabs {
                 anchors.left: parent.left
                 anchors.leftMargin: Theme.sp5
-                anchors.right: lockBtn.left
+                anchors.right: collapseBtn.left
                 anchors.rightMargin: Theme.sp3
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom

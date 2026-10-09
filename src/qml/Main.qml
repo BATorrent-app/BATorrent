@@ -262,12 +262,6 @@ Window {
         return i18n.t(key)
     }
 
-    // lock pins the panel to its current open/closed state, overriding auto-collapse
-    property bool detailsLocked: typeof settings !== "undefined" && settings.getBool("detailsLocked")
-    function toggleDetailsLocked() {
-        detailsLocked = !detailsLocked
-        if (typeof settings !== "undefined") settings.set("detailsLocked", detailsLocked)
-    }
     // The Peers tab pulls every peer from libtorrent: only keep it live while open.
     readonly property bool peersTabOpen: win.hasSel && win.detailTab === 1
     onPeersTabOpenChanged: if (typeof session !== "undefined") session.setDetailPeersActive(peersTabOpen)
@@ -277,8 +271,9 @@ Window {
     // downSpeed, upSpeed, category, numPeers, downRate, upRate, size, infoHash.
     readonly property var model: typeof torrentModel !== "undefined" ? torrentModel : null
     readonly property bool hasSel: typeof session !== "undefined" && session.hasSelection
-    // auto-collapse when there's nothing to show, unless the user locked the panel's state
-    readonly property bool detailsShownCollapsed: win.detailsLocked ? win.detailsCollapsed : (win.detailsCollapsed || !win.hasSel)
+    // Only the user's own choice. Folding on an empty selection meant the next
+    // click unfolded it again, and the grid reflowed on both.
+    readonly property bool detailsShownCollapsed: win.detailsCollapsed
 
     // ----- state→color helpers (keyed by real stateKey) -----
     // The mapping lives in Theme so the progress bar can reach it without a

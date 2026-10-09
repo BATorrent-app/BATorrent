@@ -37,7 +37,6 @@ ColumnLayout {
             id: libraryView
             win: root.host
             controller: root.controller
-            panelReflowing: detailSidebar.reflowing
             onAddMagnetRequested: root.addMagnetRequested()
             onAddLinkRequested: root.addLinkRequested()
         }
