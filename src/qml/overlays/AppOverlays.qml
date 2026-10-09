@@ -88,7 +88,14 @@ Item {
     // ================== OVERLAY DIALOGS (in-app, backdrop covers all) ==================
     MagnetDialog {
         id: magnetDlg
-        onAccepted: if (magnetText.length > 0 && typeof session !== "undefined") session.addMagnetUri(magnetText, savePath)
+        // Every line through the one router, so a magnet, a .torrent link and
+        // an ordinary download can be pasted together and each still lands in
+        // the right place.
+        onAccepted: {
+            if (typeof session === "undefined") return
+            for (var i = 0; i < lines.length; ++i) session.addAnything(lines[i].trim(), savePath)
+        }
+        onBrowseRequested: { magnetDlg.close(); openFileDlg.open() }
     }
     Timer { id: queueTimer; interval: 130; onTriggered: root.processTorrentQueue() }
     Connections {

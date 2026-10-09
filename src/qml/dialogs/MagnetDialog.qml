@@ -10,7 +10,7 @@ import "../widgets"
 
 BatDialog {
     id: dlg
-    title: (i18n.language, i18n.t("magnet_title"))
+    title: (i18n.language, i18n.t("add_any_title"))
     cardW: 480
     cardH: 470
     acceptOnReturn: false
@@ -20,6 +20,25 @@ BatDialog {
     property alias magnetText: magnetArea.text
     property alias savePath: pathFld.text
     property bool skipNextClear: false
+    signal browseRequested()
+
+    // One label for one line, a count for several: a wall of per-line types
+    // says less than the number of things about to be added.
+    readonly property var lines: magnetArea.text.split("\n").filter(function (l) {
+        return l.trim().length > 0
+    })
+    readonly property var kinds: (typeof session === "undefined") ? [] : lines.map(function (l) {
+        return session.inputKind(l.trim())
+    }).filter(function (k) { return k !== "" })
+    readonly property string kindLabel: {
+        if (kinds.length === 0) return ""
+        if (kinds.length > 1) return (i18n.language, i18n.t("add_any_count")).arg(kinds.length)
+        var k = kinds[0]
+        return (i18n.language, i18n.t(k === "magnet" ? "add_any_kind_magnet"
+                                    : k === "torrentFile" ? "add_any_kind_file"
+                                    : k === "torrentUrl" ? "add_any_kind_url"
+                                                         : "add_any_kind_web"))
+    }
     onOpenedChanged: if (opened) {
         if (!skipNextClear) magnetArea.text = ""
         skipNextClear = false
@@ -59,18 +78,38 @@ BatDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 7
-        Text {
-            text: (i18n.language, i18n.t("magnet_paste"))
-            color: Theme.t3
-            font.pixelSize: 11
-            font.weight: Font.DemiBold
-            font.family: Theme.fontSans
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+            Text {
+                text: (i18n.language, i18n.t("add_any_paste"))
+                color: Theme.t3
+                font.pixelSize: 11
+                font.weight: Font.DemiBold
+                font.family: Theme.fontSans
+            }
+            Item { Layout.fillWidth: true }
+            // Says what it understood, as it is typed. The routing is the part
+            // a pasted link cannot show you, so the field admits it instead of
+            // asking for trust.
+            Text {
+                text: dlg.kindLabel
+                color: dlg.kindLabel.length > 0 ? Theme.grn : Theme.t4
+                font.pixelSize: 11
+                font.weight: Font.DemiBold
+                font.family: Theme.fontSans
+            }
+            BtnFlat {
+                sm: true
+                text: (i18n.language, i18n.t("settings_browse"))
+                onClicked: dlg.browseRequested()
+            }
         }
         TArea {
             id: magnetArea
             Layout.fillWidth: true
             Layout.preferredHeight: 88
-            placeholder: "magnet:?xt=urn:btih:..."
+            placeholder: "magnet:…   ·   https://…   ·   /caminho/a.torrent"
         }
     }
 

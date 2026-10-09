@@ -117,9 +117,11 @@ Rectangle {
         // brand lives in the nav rail; toolbar starts at the actions
         // G1: the three ways content comes in. Each glyph names its own source:
         // a file, a magnet, a URL.
-        TBtn { id: tbOpen; label: (i18n.language, i18n.t("tb_open"));   icon: "qrc:/icons/file.svg";  onClicked: toolbar.openFile() }
-        TBtn { label: (i18n.language, i18n.t("tb_magnet"));  icon: "qrc:/icons/magnet.svg"; onClicked: toolbar.addMagnet() }
-        TBtn { label: (i18n.language, i18n.t("tb_link"));    icon: "qrc:/icons/link.svg"; onClicked: toolbar.addLink() }
+        // One button, because the three were asking the same question —
+        // what do you want to add — and making the user answer it twice, once
+        // by picking a button and again by pasting. The field works the type
+        // out, and the file picker is one click inside it.
+        TBtn { id: tbOpen; label: (i18n.language, i18n.t("add_any_title")); icon: "qrc:/icons/plus.svg"; onClicked: toolbar.addMagnet() }
         TGrpDiv {}
         // G2: Pausar, Retomar, Parar, Atualizar (tester: keep transport controls together)
         TBtn { label: (i18n.language, i18n.t("tb_pause"));  icon: "qrc:/icons/pause.svg"; disabled: !win.hasSel; onClicked: session.pauseSelected() }
