@@ -158,7 +158,36 @@ Rectangle {
                 color: Theme.hair
             }
 
+            // Nothing selected: an empty state, not the tabs with every field
+            // blank. A panel that is always there has to say something when
+            // there is nothing to say.
+            Item {
+                visible: !sidebar.win.hasSel
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width - Theme.sp5 * 2, 260)
+                    spacing: Theme.sp3
+                    IconImg {
+                        Layout.alignment: Qt.AlignHCenter
+                        src: "qrc:/icons/list.svg"
+                        tint: Theme.t4
+                        s: 24
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        text: (i18n.language, i18n.t("detail_expand_needs_selection"))
+                        color: Theme.t4
+                        font.pixelSize: 12
+                        font.family: Theme.fontSans
+                    }
+                }
+            }
             DetailTabs {
+                visible: sidebar.win.hasSel
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
                 Layout.leftMargin: Theme.sp4
@@ -167,11 +196,12 @@ Rectangle {
                 current: sidebar.win.detailTab
                 onSelect: function(idx) { sidebar.win.detailTab = idx }
             }
-            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
+            Rectangle { visible: sidebar.win.hasSel; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
 
             // panes: same guard discipline as the bottom panel: only the open
             // tab of the VISIBLE surface binds live data
             StackLayout {
+                visible: sidebar.win.hasSel
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: sidebar.win.detailTab
