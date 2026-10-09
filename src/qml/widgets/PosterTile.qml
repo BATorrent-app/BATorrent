@@ -42,6 +42,10 @@ Item {
     // download speed) and still named "finished", which torrentStateKey has
     // never produced. Any state added later would leak through too.
     readonly property bool isDownloading: stateKey === "downloading"
+    // Incomplete, not just actively moving. A paused or stalled torrent is the
+    // case where Windows already shows the file at its final size, so hiding
+    // how much is really on disk is exactly when it misleads most.
+    readonly property bool isIncomplete: progress < 1.0 && stateKey !== "fetching"
     readonly property int etaSec: (downRate > 0 && progress < 1.0 && sizeBytes > 0)
         ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
 

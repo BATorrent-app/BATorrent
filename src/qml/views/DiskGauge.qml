@@ -21,13 +21,18 @@ Item {
 
     readonly property var volumes: (typeof session !== "undefined") ? session.diskVolumes : []
     property int idx: 0
+    // What is drawn lags idx by half a transition: the figures must not change
+    // while the old volume is still on screen, or the gauge reads as one disk
+    // losing space instead of a different disk arriving.
+    property int shownIdx: 0
     readonly property var shown: volumes.length > 0
-        ? volumes[Math.min(idx, volumes.length - 1)] : null
+        ? volumes[Math.min(shownIdx, volumes.length - 1)] : null
     // Drops the volume name and the free figure, keeping just the bar, when the
     // row runs out of width.
     readonly property bool tight: parent ? parent.width < 1040 : false
 
     visible: shown !== null
+    clip: true
     Layout.alignment: Qt.AlignVCenter
     Layout.preferredHeight: 40
     Layout.preferredWidth: tight ? 76 : diskCol.implicitWidth + 24
@@ -50,14 +55,22 @@ Item {
         anchors.centerIn: parent
         spacing: 5
         opacity: 1
+        transform: Translate { id: diskSlide }
         Connections {
             target: root
-            function onIdxChanged() { diskFade.restart() }
+            function onIdxChanged() { diskRoll.restart() }
         }
         SequentialAnimation {
-            id: diskFade
-            NumberAnimation { target: diskCol; property: "opacity"; to: 0.25; duration: 110; easing.type: Easing.InCubic }
-            NumberAnimation { target: diskCol; property: "opacity"; to: 1.0; duration: Theme.durBase; easing.type: Theme.easeOut }
+            id: diskRoll
+            ParallelAnimation {
+                NumberAnimation { target: diskCol; property: "opacity"; to: 0; duration: Theme.durFast; easing.type: Easing.InCubic }
+                NumberAnimation { target: diskSlide; property: "y"; to: -Theme.travel(10); duration: Theme.durFast; easing.type: Easing.InCubic }
+            }
+            ScriptAction { script: { root.shownIdx = root.idx; diskSlide.y = Theme.travel(10) } }
+            ParallelAnimation {
+                NumberAnimation { target: diskCol; property: "opacity"; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut }
+                NumberAnimation { target: diskSlide; property: "y"; to: 0; duration: Theme.durBase; easing.type: Theme.easeOut }
+            }
         }
         RowLayout {
             visible: !root.tight
