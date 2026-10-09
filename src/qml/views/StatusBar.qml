@@ -143,18 +143,33 @@ Rectangle {
         Item {
             Layout.alignment: Qt.AlignVCenter
             Layout.leftMargin: Theme.sp2
-            Layout.preferredWidth: 22
+            Layout.preferredWidth: donRow.implicitWidth + 12
             Layout.preferredHeight: 22
-            IconImg {
+            // A heart on its own is not a word. Next to the label it is the
+            // donate button; without one it is an ornament, and an ornament in
+            // the corner of a status bar reads as decoration nobody can click.
+            Row {
+                id: donRow
                 anchors.centerIn: parent
-                src: "qrc:/icons/heart.svg"
-                // One red, one intensity: hover lifts it rather than shifting
-                // the hue, so the donate heart stays the same colour as every
-                // other accent in the app.
-                tint: Theme.accent
+                spacing: 5
                 opacity: donMa.containsMouse ? 1 : 0.8
                 Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
-                s: 14
+                IconImg {
+                    anchors.verticalCenter: parent.verticalCenter
+                    src: "qrc:/icons/heart.svg"
+                    // One red, one intensity: hover lifts it rather than
+                    // shifting the hue, so this stays the same colour as every
+                    // other accent in the app.
+                    tint: Theme.accent
+                    s: 14
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, i18n.t("action_donate"))
+                    color: Theme.accent
+                    font.pixelSize: 12
+                    font.family: Theme.fontSans
+                }
             }
             MouseArea {
                 id: donMa
