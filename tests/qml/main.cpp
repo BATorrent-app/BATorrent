@@ -7,6 +7,8 @@
 // i18n.t(...) without a typeof guard (PathFld, ToastHost) render cleanly under
 // test instead of logging ReferenceErrors. t() echoes the key back.
 #include <QtQuickTest/quicktest.h>
+#include <QFontDatabase>
+#include <QGuiApplication>
 #include <QObject>
 #include <QQmlEngine>
 #include <QQmlContext>
@@ -31,6 +33,19 @@ public:
 public slots:
     void qmlEngineAvailable(QQmlEngine *engine)
     {
+        // Same faces the app registers. Without them every Theme.fontSans
+        // binding misses and Qt rescans the system font families to resolve
+        // it, which on a cold macOS font cache turned a two-second run into
+        // seventeen minutes — passing, but indistinguishable from a hang.
+        for (const char *face : { ":/fonts/IBMPlexSans-Regular.ttf",
+                                  ":/fonts/IBMPlexSans-Medium.ttf",
+                                  ":/fonts/IBMPlexSans-SemiBold.ttf",
+                                  ":/fonts/IBMPlexSans-Bold.ttf",
+                                  ":/fonts/NewRocker-Regular.ttf" })
+            QFontDatabase::addApplicationFont(QString::fromLatin1(face));
+        // Anything that does not name a family asks for "Sans Serif", which is
+        // a generic Qt does not have either, and the same rescan follows.
+        QGuiApplication::setFont(QFont(QStringLiteral("IBM Plex Sans")));
         engine->rootContext()->setContextProperty(
             QStringLiteral("i18n"), new I18nStub(engine));
     }
