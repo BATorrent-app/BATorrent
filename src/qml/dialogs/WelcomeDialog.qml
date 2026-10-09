@@ -57,6 +57,19 @@ BatDialog {
     // Key by "major.minor" so hotfix bumps (4.3.0 → 4.3.1) keep the release's
     // message; an exact-version key still wins when a patch needs its own note.
     readonly property var releaseContent: ({
+        "4.9": {
+            note: "Adding things is one button now. Paste a magnet, a link, an info-hash or a path — several at once if you like — and it works out what each one is. Choosing a .torrent sits right beside it, same size, because that is how most people arrive.<br>When you add one, folders are folders: untick a folder and everything inside it goes with it, and the size follows what you actually chose.<br>A magnet looking for its file list finally says so instead of pretending to be a download stuck at 0%, and a torrent that is not moving tells you why on the tile.<br>Underneath: an old bug where opening a magnet from your browser could do nothing at all — or close the app — is gone, and crash reports from Windows finally arrive with something in them.<br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
+            , highlights: [
+                "One Add button: magnet, link, info-hash or file, several at a time",
+                "Folders in the file list, with a checkbox that takes its contents",
+                "A magnet hunting for its file list says so, and for how long",
+                "Tiles say why a torrent is stalled: no peers, no seeds, choked",
+                "The category menu counts what is in each one",
+                "Fixed: opening a magnet from the browser could do nothing, or crash",
+                "Fixed: the setup wizard coming back on every launch",
+                "Motion throughout, and a design pass over bars, icons and the top bar"
+            ]
+        },
         "4.8": {
             note: "You can now point BATorrent at your own VPN. Set it up in Settings and only this app goes through it, and if the tunnel drops transfers stop instead of falling back to your normal connection.<br>It also downloads any direct link now, not just torrents. Paste it or drop it on the window.<br>First run has a wizard, so the app looks the way you want from the start. There is a new typeface, and a long list of design fixes throughout.<br>A hug to <a href=\"https://github.com/teoveo\">@teoveo</a>, who is where most of the ideas in this version came from.<br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
             , highlights: [

@@ -1,5 +1,80 @@
 # Changelog
 
+## v4.9.0
+
+### Added
+- One **Add** button where there were three. Paste a magnet, a link, an
+  info-hash or a path — several at once, one per line — and the field says what
+  it worked out as you type, because routing is the part a pasted link cannot
+  show you. Choosing a `.torrent` sits beside it at the same size, since most
+  people arrive with a file.
+- Folders in the file list when you add a torrent. Unticking one unticks
+  everything inside it, and a folder shows half-ticked when its files disagree.
+  The size follows what is ticked instead of staying at the torrent's total.
+- A magnet looking for its file list now says so, with the time it has been
+  looking, a turning marker and a bar that admits it has no percentage yet.
+  Before, it read as a download sitting at 0%.
+- Tiles say why a torrent is not moving: no peers, no seeds, stalled, an
+  incomplete swarm. The app worked these out already and only showed them on
+  hover, in list view.
+- Seeding says whether anyone is actually on the other end. "Seeding" to three
+  people and to nobody for two days used to look the same.
+- The category menu counts what is in each one and marks the one you are in,
+  which matters most for the categories you made yourself.
+- A short, permanent line about what sharing means, with the longer version in
+  the setup wizard and in About.
+
+### Changed
+- Motion throughout: the command palette fades and grows, rows deal in once per
+  session, progress and the percentage glide between the engine's once-a-second
+  reports, a torrent finishing on screen gets a ring, and tabs share one sliding
+  underline. Static drop shadows are gone; borders do that work. Everything
+  respects reduced motion.
+- The progress bar lost its dark plate and its inner percentage. The poster
+  already darkens at that edge, so the plate was black on black; the number sits
+  beside a thinner bar and is legible whatever colour the fill is.
+- Settings moved in with Downloads, Find and HUB, because it is a page like they
+  are. What is left on the right is the VPN, which now says its state in words.
+  Donate moved to the footer: a link out is not navigation.
+- Monospace is for raw data only — hashes, paths, logs. Sizes, speeds and times
+  are set in the interface typeface with tabular figures.
+- One stroke weight across every icon, and one rule: solid means transport,
+  everything else is drawn in outline. Enforced by a check now, not by memory.
+- Cached covers and metadata are swept at startup once the torrents they belong
+  to are gone, including anything still in the removed history, which can be
+  restored.
+- Dismissing the setup wizard counts as having seen it. It was only recorded on
+  completion, so closing it once brought it back on every launch, for good.
+
+### Fixed
+- Opening a magnet or a `.torrent` from the browser, a file association or the
+  command line read freed memory: sometimes it added, sometimes it did nothing,
+  sometimes it took the app down with it.
+- Windows crash reports arrived with no backtrace. An uncaught C++ exception,
+  an abort, and two of the C runtime's own failure paths never reached the
+  handler, which is the kind of crash most likely to be worth reporting.
+- Settings written just before a crash or a force-quit could be lost, which is
+  one way the setup wizard came back.
+- Torrent states showed in English whatever the language was set to, when the
+  engine runs as a separate process.
+- A finished torrent kept showing a download speed for several seconds, because
+  the figure is a rolling average that fades rather than stops.
+- A torrent marked completed said nobody was connected to download it. It is an
+  archive; nothing is being offered.
+- A cover or a custom background that fails to decode now falls back instead of
+  leaving a hole or dimming the page over nothing.
+- Deleting the selected torrent left a gap in the grid: the side panel collapsed
+  while the tiles were still animating into a layout that no longer existed.
+- The first-run cover cascade played behind the wizard and was spent before
+  anyone saw it.
+- The percentage was hard to read on the amber and green bars, and invisible at
+  0%.
+- The category dropdown would not close by clicking it again, and appeared
+  without any animation.
+- Ctrl+K and the Get & Watch overlay drew underneath the pages.
+
+---
+
 ## v4.8.0
 
 ### Added
