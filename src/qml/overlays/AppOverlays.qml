@@ -52,7 +52,7 @@ Item {
     function processTorrentQueue() {
         if (typeof session === "undefined") { root.torrentQueue = []; return }
         if (addTorrentDlg.opened) return
-        var useDefault = settings.get("useDefaultPath") === true
+        var useDefault = settings.getBool("useDefaultPath")
         while (root.torrentQueue.length > 0) {
             var u = root.torrentQueue.shift()
             var p = session.previewTorrent(u)

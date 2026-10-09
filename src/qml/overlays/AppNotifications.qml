@@ -100,7 +100,7 @@ Item {
         repeat: false
         onTriggered: {
             if (typeof settings === "undefined") return
-            if (settings.get("starAskShown") === true) return
+            if (settings.getBool("starAskShown")) return
             var first = Number(settings.get("firstLaunchAt") || 0)
             var count = Number(settings.get("launchCount") || 0) + 1
             if (first === 0) { settings.set("firstLaunchAt", Date.now()); settings.set("launchCount", 1); return }

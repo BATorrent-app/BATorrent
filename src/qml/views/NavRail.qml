@@ -55,12 +55,9 @@ Rectangle {
 
     Behavior on implicitWidth { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
 
-    // QSettings stores bool differently per platform (macOS plist=bool, Windows
-    // registry=int, Linux INI=string), so persist as 0/1 and read all forms.
     Component.onCompleted: {
         if (!persistCollapsedState || typeof settings === "undefined") return
-        var v = settings.get("navRailCollapsed")
-        collapsed = (v === true || v === 1 || v === "1" || v === "true")
+        collapsed = settings.getBool("navRailCollapsed")
     }
     function toggleCollapsed() {
         collapsed = !collapsed

@@ -141,7 +141,7 @@ QtObject {
                 })
             } else {
                 var nativeFirst = sv.api && sv.api.singleTitleView
-                                  && (typeof settings === "undefined" || settings.get("preferNativeLang") !== false)
+                                  && (typeof settings === "undefined" || settings.getBool("preferNativeLang", true))
                 function langRank(r) {
                     switch (r.audioMode) {
                     case "dub": return 2

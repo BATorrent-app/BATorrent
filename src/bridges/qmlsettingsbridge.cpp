@@ -99,6 +99,11 @@ QString QmlSettingsBridge::webUiPassword() const
     return SecretStore::instance().get("webUiPassword");
 }
 
+bool QmlSettingsBridge::getBool(const QString &key, bool def) const
+{
+    return SettingsPolicy::boolFromStored(get(key), def);
+}
+
 QVariant QmlSettingsBridge::get(const QString &key) const
 {
     // Engine mode is a meta-setting (which engine to run), not a session value;

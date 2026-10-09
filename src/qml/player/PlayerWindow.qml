@@ -31,7 +31,7 @@ Window {
 
     property string streamUrl: ""
     property string localFile: ""   // on-disk path of the playing file (seek previews decode this, not the HTTP stream)
-    readonly property bool ambientGlow: (typeof settings === "undefined") || settings.get("ambientGlow") !== false
+    readonly property bool ambientGlow: (typeof settings === "undefined") || settings.getBool("ambientGlow", true)
     property string mediaTitle: ""
     property string mediaFileName: ""
     // resolved display title (metadata) + "S4 · E10"/year; raw name lives in
@@ -151,7 +151,7 @@ Window {
     function fileUrl(p) { return playerFmt.fileUrl(p) }
 
     property int nextIdx: -1
-    property bool autoplayNext: (typeof settings === "undefined") || settings.get("autoplayNext") !== false
+    property bool autoplayNext: (typeof settings === "undefined") || settings.getBool("autoplayNext", true)
     property var chapters: []
     property string nextPoster: ""
     property string nextTitle: ""

@@ -156,3 +156,30 @@ TEST_CASE("adv choking UI maps libtorrent rate_based", "[settingspolicy]")
     REQUIRE(SettingsPolicy::advChokingUiIndex(0) == 0);
     REQUIRE(SettingsPolicy::advChokingUiIndex(1) == 0);
 }
+
+// Every store hands a bool back as a different type. These are the shapes the
+// three platforms actually produce; the Windows int is the one that shipped a
+// bug — a saved "on" read as off, and a saved "off" read as on wherever the
+// default was on, so the user could not turn the setting off at all.
+TEST_CASE("boolFromStored survives every QSettings backend", "[settingspolicy]")
+{
+    SECTION("macOS plist keeps a real bool") {
+        REQUIRE(SettingsPolicy::boolFromStored(QVariant(true), false));
+        REQUIRE_FALSE(SettingsPolicy::boolFromStored(QVariant(false), true));
+    }
+    SECTION("Windows registry returns a DWORD") {
+        REQUIRE(SettingsPolicy::boolFromStored(QVariant(1), false));
+        REQUIRE_FALSE(SettingsPolicy::boolFromStored(QVariant(0), true));
+    }
+    SECTION("Linux INI returns a string") {
+        REQUIRE(SettingsPolicy::boolFromStored(QVariant(QStringLiteral("true")), false));
+        REQUIRE(SettingsPolicy::boolFromStored(QVariant(QStringLiteral("1")), false));
+        REQUIRE_FALSE(SettingsPolicy::boolFromStored(QVariant(QStringLiteral("false")), true));
+        REQUIRE_FALSE(SettingsPolicy::boolFromStored(QVariant(QStringLiteral("0")), true));
+    }
+    SECTION("never chosen falls back to the default, either way") {
+        REQUIRE(SettingsPolicy::boolFromStored(QVariant(), true));
+        REQUIRE_FALSE(SettingsPolicy::boolFromStored(QVariant(), false));
+        REQUIRE(SettingsPolicy::boolFromStored(QVariant(QString()), true));
+    }
+}

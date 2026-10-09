@@ -18,6 +18,11 @@ public:
     // WebUI server so it works in split mode too.
     explicit QmlSettingsBridge(SessionManager *session, IEngine *engine, QObject *parent = nullptr);
     Q_INVOKABLE QVariant get(const QString &key) const;
+    // The only correct way to read a stored toggle. QSettings keeps a bool as
+    // a DWORD on Windows and hands it back as an int, so `get(k) === true` in
+    // QML reads every saved toggle as off, and `get(k) !== false` reads a
+    // saved off as on — which made default-on settings impossible to turn off.
+    Q_INVOKABLE bool getBool(const QString &key, bool def = false) const;
     Q_INVOKABLE void set(const QString &key, const QVariant &v);
     // Register BATorrent as the default .torrent / magnet handler. Returns success.
     Q_INVOKABLE bool setAsDefaultApp();

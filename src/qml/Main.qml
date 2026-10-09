@@ -41,7 +41,7 @@ Window {
     // is false). If no tray is available, really quit so the app can't get stuck
     // running with no window. Real quit otherwise goes through the tray/app menu.
     onClosing: function(close) {
-        var toTray = (typeof settings === "undefined") || settings.get("closeToTray") !== false
+        var toTray = (typeof settings === "undefined") || settings.getBool("closeToTray", true)
         if (trayIcon.available && toTray) {
             close.accepted = false
             win.hide()
@@ -105,13 +105,12 @@ Window {
     Connections {
         target: typeof settings !== "undefined" ? settings : null
         function onChanged() {
-            var v = settings.get("layoutClassic")
-            win.layoutClassic = (v === true || v === 1 || v === "1" || v === "true")
-            win.detailBottom = settings.get("detailBottom") === true
-            win.showDownloadChip = settings.get("showDownloadChip") !== false
+            win.layoutClassic = settings.getBool("layoutClassic")
+            win.detailBottom = settings.getBool("detailBottom")
+            win.showDownloadChip = settings.getBool("showDownloadChip", true)
             // Read here too, not only at startup: the setup wizard writes this
             // one like the other three and promises the app follows along.
-            var cm = settings.get("classicMode") === true
+            var cm = settings.getBool("classicMode")
             if (cm !== library.classicMode) {
                 library.classicMode = cm
                 if (cm) library.gridView = false
@@ -137,13 +136,12 @@ Window {
             if (sw >= win.minimumWidth && sw <= Screen.desktopAvailableWidth) win.width = sw
             if (sh >= win.minimumHeight && sh <= Screen.desktopAvailableHeight) win.height = sh
         }
-        if (typeof settings !== "undefined") library.classicMode = settings.get("classicMode") === true
+        if (typeof settings !== "undefined") library.classicMode = settings.getBool("classicMode")
         if (library.classicMode) library.gridView = false   // classic is a list layout
         if (typeof settings !== "undefined") {
-            var lc = settings.get("layoutClassic")
-            win.layoutClassic = (lc === true || lc === 1 || lc === "1" || lc === "true")
-            win.detailBottom = settings.get("detailBottom") === true
-            win.showDownloadChip = settings.get("showDownloadChip") !== false
+            win.layoutClassic = settings.getBool("layoutClassic")
+            win.detailBottom = settings.getBool("detailBottom")
+            win.showDownloadChip = settings.getBool("showDownloadChip", true)
         }
         if (typeof settings === "undefined") {
             showSplash = true
@@ -152,13 +150,13 @@ Window {
             var curVer = (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? themeBridge.appVersion : ""
             var isFirstRun = settings.get("welcomeShown") !== true
             var isUpdate = curVer.length > 0 && settings.get("lastSeenVersion") !== curVer
-            showSplash = settings.get("showSplash") !== false && (isFirstRun || isUpdate)
+            showSplash = settings.getBool("showSplash", true) && (isFirstRun || isUpdate)
         }
         // Start hidden only when the login item launched us. Applying this to a
         // deliberate launch made the app look like it had failed to open: you
         // double-click the icon and nothing appears (tester report, beta7 #12).
         if (typeof launchedBySystem !== "undefined" && launchedBySystem
-                && typeof settings !== "undefined" && settings.get("startTray") === true
+                && typeof settings !== "undefined" && settings.getBool("startTray")
                 && trayIcon.available)
             win.visible = false
         if (!showSplash) win.maybeShowWelcome()
@@ -240,7 +238,7 @@ Window {
     }
     readonly property var presetCats: ["Apps", "Games", "Movies", "Series", "Compressed"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
-    property bool detailsCollapsed: typeof settings !== "undefined" && settings.get("detailsCollapsed") === true
+    property bool detailsCollapsed: typeof settings !== "undefined" && settings.getBool("detailsCollapsed")
     function toggleDetailsCollapsed() {
         detailsCollapsed = !detailsCollapsed
         if (typeof settings !== "undefined") settings.set("detailsCollapsed", detailsCollapsed)
@@ -265,7 +263,7 @@ Window {
     }
 
     // lock pins the panel to its current open/closed state, overriding auto-collapse
-    property bool detailsLocked: typeof settings !== "undefined" && settings.get("detailsLocked") === true
+    property bool detailsLocked: typeof settings !== "undefined" && settings.getBool("detailsLocked")
     function toggleDetailsLocked() {
         detailsLocked = !detailsLocked
         if (typeof settings !== "undefined") settings.set("detailsLocked", detailsLocked)

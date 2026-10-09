@@ -319,7 +319,7 @@ QtObject {
     // scale, which is what actually triggers vestibular discomfort. Qt exposes no
     // OS-level preference, so this has to be our own switch.
     readonly property bool reduceMotion:
-        typeof settings !== "undefined" && settings.get("reduceMotion") === true
+        typeof settings !== "undefined" && settings.getBool("reduceMotion")
     // Distance for a slide or lift, 0 under reduced motion.
     function travel(px) { return reduceMotion ? 0 : px }
     // Starting scale for a grow-in, 1 under reduced motion.

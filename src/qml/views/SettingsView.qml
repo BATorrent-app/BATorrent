@@ -23,8 +23,7 @@ Rectangle {
     // so a default-on toggle reads ON on a fresh profile (matches runtime behavior).
     function boolPref(field) {
         if (typeof settings === "undefined" || field.key === undefined) return field.on === true
-        var v = settings.get(field.key)
-        return (v === undefined || v === null || v === "") ? (field.on === true) : (v === true)
+        return settings.getBool(field.key, field.on === true)
     }
 
     // active custom-theme profile map; re-read on any profile data change

@@ -22,6 +22,14 @@ int applyTelegramEventMask(int mask, int bit, bool on)
     return on ? (mask | bit) : (mask & ~bit);
 }
 
+bool boolFromStored(const QVariant &v, bool def)
+{
+    // An empty string is how an unset key comes back from the INI store, so it
+    // means "never chosen", not "off".
+    if (!v.isValid() || v.isNull() || v.toString().isEmpty()) return def;
+    return v.toBool();
+}
+
 bool isUiBoolKey(const QString &key)
 {
     // Force a real bool: Windows registry stores bool as DWORD and reads it

@@ -36,9 +36,7 @@ GridLayout {
     property bool detailBottom: false
     property bool classicView: false
     function boolPref(key) {
-        if (typeof settings === "undefined") return false
-        var v = settings.get(key)
-        return v === true || v === 1 || v === "1" || v === "true"
+        return typeof settings !== "undefined" && settings.getBool(key)
     }
     function refreshLayout() {
         navLeft = boolPref("layoutClassic")
