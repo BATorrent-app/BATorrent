@@ -1374,10 +1374,10 @@
   "game_ach_unlocked_n": "Открыто: %1",
   "game_ach_all": "Все достижения (%1)",
   "game_ach_less": "Свернуть",
-  "game_ach_hidden": "Скрытое достижение",
   "game_ach_hidden_desc": "Продолжайте играть, чтобы узнать",
   "game_ach_locked": "Не открыто",
   "game_ach_unlocked": "Открыто",
   "game_ach_players": "%1% игроков",
-  "hub_ach_short": "Достижения: %1 из %2"
+  "hub_ach_short": "Достижения: %1 из %2",
+  "game_ach_secrets_left": "Осталось скрытых достижений: %1"
 }

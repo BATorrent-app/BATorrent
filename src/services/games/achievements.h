@@ -33,7 +33,8 @@ QList<Achievement> parseSchema(const QByteArray &json);
 // Steam has sent the percent both as a number and as a string.
 QHash<QString, double> parsePercentages(const QByteArray &json);
 
-// Schema order is kept for locked ones; unlocked come first, newest first.
+// Unlocked come first, newest first; then the locked ones in schema order,
+// with the locked hidden ones at the very end.
 // `unlocked` maps apiName → unlock time (0 = unlocked, time unknown).
 QList<Achievement> merge(QList<Achievement> schema, const QHash<QString, double> &percent,
                          const QHash<QString, qint64> &unlocked);

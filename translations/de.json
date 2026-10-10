@@ -1374,10 +1374,10 @@
   "game_ach_unlocked_n": "%1 freigeschaltet",
   "game_ach_all": "Alle %1 Erfolge",
   "game_ach_less": "Weniger anzeigen",
-  "game_ach_hidden": "Versteckter Erfolg",
   "game_ach_hidden_desc": "Spiel weiter, um ihn aufzudecken",
   "game_ach_locked": "Gesperrt",
   "game_ach_unlocked": "Freigeschaltet",
   "game_ach_players": "%1% der Spieler",
-  "hub_ach_short": "%1 von %2 Erfolgen"
+  "hub_ach_short": "%1 von %2 Erfolgen",
+  "game_ach_secrets_left": "%1 versteckte Erfolge übrig"
 }

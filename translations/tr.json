@@ -1374,10 +1374,10 @@
   "game_ach_unlocked_n": "%1 açıldı",
   "game_ach_all": "Tüm başarımlar (%1)",
   "game_ach_less": "Daha az göster",
-  "game_ach_hidden": "Gizli başarım",
   "game_ach_hidden_desc": "Ortaya çıkarmak için oynamaya devam et",
   "game_ach_locked": "Kilitli",
   "game_ach_unlocked": "Açıldı",
   "game_ach_players": "Oyuncuların %%1'i",
-  "hub_ach_short": "%2 başarımdan %1"
+  "hub_ach_short": "%2 başarımdan %1",
+  "game_ach_secrets_left": "%1 gizli başarım kaldı"
 }

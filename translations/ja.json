@@ -1374,10 +1374,10 @@
   "game_ach_unlocked_n": "%1 件解除",
   "game_ach_all": "全 %1 件の実績",
   "game_ach_less": "表示を減らす",
-  "game_ach_hidden": "隠し実績",
   "game_ach_hidden_desc": "プレイを続けると明らかになります",
   "game_ach_locked": "未解除",
   "game_ach_unlocked": "解除済み",
   "game_ach_players": "プレイヤーの %1%",
-  "hub_ach_short": "実績 %1 / %2"
+  "hub_ach_short": "実績 %1 / %2",
+  "game_ach_secrets_left": "残りの隠し実績: %1"
 }

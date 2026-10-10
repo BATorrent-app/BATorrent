@@ -204,13 +204,18 @@ Item {
             verify(findByText(p, "game_ach_unlocked") !== null, "an unlock with no time says so")
         }
 
-        function test_aHiddenAchievementStaysHiddenUntilEarned() {
+        function test_lockedSecretsAreOneLineNotARowEach() {
             var p = createTemporaryObject(pageComp, root)
             mockHub.gameHash = "played"
             mockHub.gameOpen = true
-            mockApi.achievementsReady("played", 1, achList(3), 2, 3)
-            verify(findByText(p, "Ach 2") === null)
-            verify(findByText(p, "game_ach_hidden") !== null)
+            var list = achList(3)
+            list.push({ apiName: "S2", name: "Secret two", description: "", icon: "", iconGray: "",
+                        hidden: true, percent: 5, unlocked: false, unlockedAt: 0 })
+            mockApi.achievementsReady("played", 1, list, 2, 4)
+            verify(findByText(p, "Ach 2") === null, "a locked secret keeps its name")
+            verify(findByText(p, "Secret two") === null)
+            verify(findByText(p, "+2") !== null, "both secrets counted on one line")
+            verify(findByText(p, "game_ach_secrets_left") !== null)
         }
 
         function test_heroWaitsForDetailsInsteadOfStretchingTheCover() {

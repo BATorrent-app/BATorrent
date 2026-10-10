@@ -3,8 +3,8 @@
 // See LICENSE file for details
 
 // A game's achievements: the newest unlocks first, the rest greyed in Steam's
-// order, five at a time until asked for all. A hidden one stays hidden until
-// it is earned, as it does on Steam.
+// order, five at a time until asked for all. Locked secrets are one line at
+// the end, as on Steam: a row each would only repeat that they are secret.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
@@ -20,7 +20,10 @@ Column {
     visible: list.length > 0
     spacing: 16
 
-    readonly property var shown: showAll ? list : list.slice(0, 5)
+    readonly property var readable: list.filter(function (a) { return a.unlocked || !a.hidden })
+    readonly property int secretsLeft: list.length - readable.length
+    readonly property var shown: showAll ? readable : readable.slice(0, 5)
+    readonly property bool showSecrets: secretsLeft > 0 && (showAll || readable.length <= 5)
 
     function rarity(p) {
         if (p < 0) return ""
@@ -52,7 +55,7 @@ Column {
         Text {
             anchors.right: parent.right
             anchors.baseline: head.baseline
-            visible: root.list.length > 5
+            visible: root.readable.length > 5
             text: root.showAll ? (i18n.language, i18n.t("game_ach_less"))
                                : (i18n.language, i18n.t("game_ach_all")).arg(root.list.length)
             color: moreMa.containsMouse ? Theme.t1 : Theme.t2
@@ -76,7 +79,6 @@ Column {
             delegate: Rectangle {
                 id: row
                 required property var modelData
-                readonly property bool secret: modelData.hidden && !modelData.unlocked
                 width: root.width
                 height: 68
                 radius: 6
@@ -107,7 +109,7 @@ Column {
                         spacing: 3
                         Text {
                             width: parent.width
-                            text: row.secret ? (i18n.language, i18n.t("game_ach_hidden")) : row.modelData.name
+                            text: row.modelData.name
                             color: Theme.t1
                             font.pixelSize: 14
                             font.weight: Font.Medium
@@ -117,7 +119,7 @@ Column {
                         Text {
                             width: parent.width
                             visible: text.length > 0
-                            text: row.secret ? (i18n.language, i18n.t("game_ach_hidden_desc")) : row.modelData.description
+                            text: row.modelData.description
                             color: Theme.stageMuted
                             font.pixelSize: 12
                             font.family: Theme.fontSans
@@ -144,6 +146,53 @@ Column {
                             font.family: Theme.fontSans
                             font.features: Theme.tnum
                         }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            visible: root.showSecrets
+            width: root.width
+            height: 68
+            radius: 6
+            color: "transparent"
+            opacity: 0.5
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                spacing: 16
+                Rectangle {
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    radius: 6
+                    color: "#1a1a1d"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "+" + root.secretsLeft
+                        color: Theme.t2
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        font.family: Theme.fontSans
+                        font.features: Theme.tnum
+                    }
+                }
+                Column {
+                    Layout.fillWidth: true
+                    spacing: 3
+                    Text {
+                        text: (i18n.language, i18n.t("game_ach_secrets_left")).arg(root.secretsLeft)
+                        color: Theme.t1
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
+                        font.family: Theme.fontSans
+                    }
+                    Text {
+                        text: (i18n.language, i18n.t("game_ach_hidden_desc"))
+                        color: Theme.stageMuted
+                        font.pixelSize: 12
+                        font.family: Theme.fontSans
                     }
                 }
             }

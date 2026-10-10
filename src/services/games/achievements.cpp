@@ -63,7 +63,9 @@ QList<Achievement> merge(QList<Achievement> schema, const QHash<QString, double>
     }
     std::stable_sort(schema.begin(), schema.end(), [](const Achievement &x, const Achievement &y) {
         if (x.unlocked != y.unlocked) return x.unlocked;
-        return x.unlocked && x.unlockedAt > y.unlockedAt;
+        if (x.unlocked) return x.unlockedAt > y.unlockedAt;
+        // Locked secrets go last: the screen leads with what can be read.
+        return !x.hidden && y.hidden;
     });
     return schema;
 }

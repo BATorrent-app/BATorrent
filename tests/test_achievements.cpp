@@ -155,6 +155,17 @@ TEST_CASE("the store match is the game, never the first hit", "[achievements][st
     REQUIRE(SteamStore::logoUrl(0).isEmpty());
 }
 
+TEST_CASE("locked secrets sink below the locked ones that can be read", "[achievements]") {
+    // REQUIEM is hidden and sits before PAPER_TRAIL in the schema.
+    auto locked = Achievements::merge(Achievements::parseSchema(kSchema), {}, {});
+    REQUIRE(locked[0].apiName == QLatin1String("NIGHT_SHIFT"));
+    REQUIRE(locked[1].apiName == QLatin1String("PAPER_TRAIL"));
+    REQUIRE(locked[2].apiName == QLatin1String("REQUIEM"));
+    // Earned, a secret is just an unlock and leads like any other.
+    auto earned = Achievements::merge(Achievements::parseSchema(kSchema), {}, { { "REQUIEM", 50 } });
+    REQUIRE(earned[0].apiName == QLatin1String("REQUIEM"));
+}
+
 TEST_CASE("an unlock with no time still counts, and a negative time reads as unknown", "[achievements]") {
     const auto merged = Achievements::merge(Achievements::parseSchema(kSchema), {},
                                             { { "REQUIEM", 0 }, { "NIGHT_SHIFT", -7 } });

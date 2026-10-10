@@ -1374,10 +1374,10 @@
   "game_ach_unlocked_n": "%1 desbloqueados",
   "game_ach_all": "Los %1 logros",
   "game_ach_less": "Mostrar menos",
-  "game_ach_hidden": "Logro oculto",
   "game_ach_hidden_desc": "Sigue jugando para descubrirlo",
   "game_ach_locked": "Bloqueado",
   "game_ach_unlocked": "Desbloqueado",
   "game_ach_players": "%1% de los jugadores",
-  "hub_ach_short": "%1 de %2 logros"
+  "hub_ach_short": "%1 de %2 logros",
+  "game_ach_secrets_left": "%1 logros ocultos restantes"
 }
