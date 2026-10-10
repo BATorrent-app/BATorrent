@@ -37,7 +37,9 @@ public:
     bool recordSession(const QString &hash, qint64 startMs, qint64 secs);
 
     Summary summary(const QString &hash) const;
-    QList<Session> recentSessions(const QString &hash, int limit) const;   // newest first
+    // Seconds played on each of the last `days` local calendar days, oldest
+    // first and today last. A session counts on the day it started.
+    QList<qint64> dailySecs(const QString &hash, int days, qint64 nowMs) const;
     bool contains(const QString &hash) const { return m_games.contains(hash); }
 
     // Totals kept before sessions were recorded. Only applies to a game the

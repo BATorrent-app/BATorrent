@@ -1357,12 +1357,15 @@
   "find_no_releases": "Keine Releases gefunden",
   "game_playtime": "Spielzeit",
   "game_last_played": "Zuletzt gespielt",
-  "game_never_played": "Noch nicht gespielt",
-  "game_media": "Medien",
   "game_files": "Dateien",
   "game_folder": "Ordner",
   "game_exe": "Programmdatei",
   "game_exe_auto": "Wird beim Start erkannt",
-  "game_size": "Größe",
-  "game_activity": "Letzte Aktivität"
+  "game_activity": "Aktivität",
+  "game_activity_window": "letzte 14 Tage · %1",
+  "game_two_weeks_ago": "Vor 2 Wochen",
+  "game_on_disk": "Auf der Platte",
+  "game_screenshots": "Screenshots",
+  "game_build": "Build",
+  "game_installed": "Installiert"
 }

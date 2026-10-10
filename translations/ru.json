@@ -1357,12 +1357,15 @@
   "find_no_releases": "Релизы не найдены",
   "game_playtime": "Время в игре",
   "game_last_played": "Последний запуск",
-  "game_never_played": "Ещё не запускалась",
-  "game_media": "Медиа",
   "game_files": "Файлы",
   "game_folder": "Папка",
   "game_exe": "Исполняемый файл",
   "game_exe_auto": "Определяется при запуске",
-  "game_size": "Размер",
-  "game_activity": "Недавняя активность"
+  "game_activity": "Активность",
+  "game_activity_window": "последние 14 дней · %1",
+  "game_two_weeks_ago": "2 недели назад",
+  "game_on_disk": "На диске",
+  "game_screenshots": "Скриншоты",
+  "game_build": "Сборка",
+  "game_installed": "Установлено"
 }

@@ -4,6 +4,7 @@
 
 #include "services/games/playlog.h"
 
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -104,13 +105,17 @@ PlayLog::Summary PlayLog::summary(const QString &hash) const
     return s;
 }
 
-QList<PlayLog::Session> PlayLog::recentSessions(const QString &hash, int limit) const
+QList<qint64> PlayLog::dailySecs(const QString &hash, int days, qint64 nowMs) const
 {
-    QList<Session> out;
+    days = qBound(0, days, 366);
+    QList<qint64> out(days, 0);
     const auto it = m_games.constFind(hash);
-    if (it == m_games.constEnd()) return out;
-    for (int i = int(it->sessions.size()) - 1; i >= 0 && out.size() < limit; --i)
-        out.append(it->sessions.at(i));
+    if (it == m_games.constEnd() || out.isEmpty()) return out;
+    const QDate today = QDateTime::fromMSecsSinceEpoch(nowMs).date();
+    for (const Session &s : it->sessions) {
+        const qint64 back = QDateTime::fromMSecsSinceEpoch(s.startMs).date().daysTo(today);
+        if (back >= 0 && back < days) out[int(days - 1 - back)] += s.secs;
+    }
     return out;
 }
 

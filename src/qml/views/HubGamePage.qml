@@ -2,8 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Full-surface screen for one owned game: the art and identity on top, what
-// you can do and how much you have played right under it, then the media and
+// Full-surface screen for one owned game: the banner, the band with what to
+// do next and how much you have played, then activity and screenshots beside
 // the files. The item is looked up live by hash so playtime and install state
 // keep moving while the page is open.
 import QtQuick
@@ -49,7 +49,7 @@ Item {
     Flickable {
         id: flick
         anchors.fill: parent
-        contentHeight: col.height + Theme.sp6
+        contentHeight: col.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         WheelScroller { flick: flick }
@@ -57,54 +57,71 @@ Item {
         Column {
             id: col
             width: flick.width
-            spacing: Theme.sp5
 
-            WorkHero {
+            HubGameHero {
                 width: col.width
-                height: Math.max(340, root.height * 0.52)
+                height: 400
                 title: root.gameTitle
-                artUrl: root.details.backdrop || (root.game ? root.hub.fileUrl(root.game.poster) : "")
-                subtitle: {
-                    var parts = []
+                steamAppId: root.details.steamAppId || 0
+                fallbackArt: root.details.backdrop || (root.game ? root.hub.fileUrl(root.game.poster) : "")
+                facts: {
+                    var out = []
                     var year = root.details.year || (root.game ? root.game.year : "")
-                    if (year) parts.push(year)
-                    if (root.details.maker) parts.push(root.details.maker)
-                    var r = root.game && root.game.rating > 0 ? root.game.rating : (root.details.rating || 0)
-                    if (r > 0) parts.push("★ " + Number(r).toFixed(1))
-                    return parts.join("  ·  ")
+                    if (year) out.push(year)
+                    if (root.details.maker) out.push(root.details.maker)
+                    var genres = root.game && root.game.genres && root.game.genres.length > 0
+                                 ? root.game.genres : (root.details.genres || [])
+                    if (genres.length > 0) out.push(genres[0])
+                    return out
                 }
-                genres: root.game && root.game.genres && root.game.genres.length > 0
-                        ? root.game.genres : (root.details.genres || [])
-                summary: (root.game && root.game.description) || root.details.overview || ""
                 onBackRequested: root.hub.gameOpen = false
             }
 
             HubGameActions {
-                x: Theme.sp5
-                width: col.width - 2 * Theme.sp5
+                width: col.width
                 hub: root.hub
                 game: root.game
+                onSettingsRequested: if (root.game) root.hub.gameMenu.openFor(root.game.infoHash)
             }
 
-            HubGameActivity {
-                x: Theme.sp5
-                width: col.width - 2 * Theme.sp5
-                hub: root.hub
-                game: root.game
-            }
+            Item {
+                id: body
+                width: col.width
+                // Side by side when there is room for both; the files go under otherwise.
+                readonly property bool wide: width >= 960
+                readonly property real sideW: 360
+                readonly property real mainW: wide ? width - 96 - 48 - sideW : width - 96
+                height: 32 + 48 + (wide ? Math.max(mainCol.height, side.height)
+                                        : mainCol.height + 40 + side.height)
 
-            HubGameStills {
-                x: Theme.sp5
-                width: col.width - 2 * Theme.sp5
-                stills: root.details.stills || []
-                onStillPicked: function (url) { root.stillOpen = url }
-            }
+                Column {
+                    id: mainCol
+                    x: 48
+                    y: 32
+                    width: body.mainW
+                    spacing: 40
 
-            HubGameFiles {
-                x: Theme.sp5
-                width: col.width - 2 * Theme.sp5
-                hub: root.hub
-                game: root.game
+                    HubGameActivity {
+                        width: mainCol.width
+                        hub: root.hub
+                        game: root.game
+                    }
+
+                    HubGameStills {
+                        width: mainCol.width
+                        stills: root.details.stills || []
+                        onStillPicked: function (url) { root.stillOpen = url }
+                    }
+                }
+
+                HubGameFiles {
+                    id: side
+                    x: body.wide ? body.width - 48 - body.sideW : 48
+                    y: body.wide ? 32 : 32 + mainCol.height + 40
+                    width: body.wide ? body.sideW : body.mainW
+                    hub: root.hub
+                    game: root.game
+                }
             }
         }
     }

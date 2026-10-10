@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "services/games/playlog.h"
 
+#include <QDateTime>
 #include <QFile>
 #include <QTemporaryDir>
 
@@ -26,26 +27,43 @@ TEST_CASE("sessions of 30s or less are a launcher handing off, not play", "[play
     REQUIRE_FALSE(log.recordSession("h", 0, 600));
     REQUIRE(log.recordSession("h", 1000, 31));
     REQUIRE(log.summary("h").totalSecs == 31);
-    REQUIRE(log.recentSessions("h", 10).size() == 1);
 }
 
-TEST_CASE("recent sessions come newest first and respect the limit", "[playlog]") {
+TEST_CASE("daily seconds bucket sessions by the local day they started", "[playlog]") {
     QTemporaryDir dir;
     PlayLog log(dir.filePath("playlog.json"));
-    for (int i = 1; i <= 5; ++i) log.recordSession("h", i * 1000, 100 * i);
-    const auto recent = log.recentSessions("h", 3);
-    REQUIRE(recent.size() == 3);
-    REQUIRE(recent.at(0).startMs == 5000);
-    REQUIRE(recent.at(2).startMs == 3000);
-    REQUIRE(log.recentSessions("unknown", 3).isEmpty());
+    const QDateTime now(QDate(2026, 10, 10), QTime(20, 0));
+    const auto at = [](int y, int m, int d, int h) {
+        return QDateTime(QDate(y, m, d), QTime(h, 0)).toMSecsSinceEpoch();
+    };
+    log.recordSession("h", at(2026, 10, 10, 9), 600);    // today
+    log.recordSession("h", at(2026, 10, 10, 18), 300);   // today again
+    log.recordSession("h", at(2026, 10, 9, 23), 7200);   // yesterday, ran past midnight
+    log.recordSession("h", at(2026, 9, 27, 12), 120);    // 13 days back: the first bar
+    log.recordSession("h", at(2026, 9, 26, 12), 999);    // 14 days back: outside the window
+
+    const auto days = log.dailySecs("h", 14, now.toMSecsSinceEpoch());
+    REQUIRE(days.size() == 14);
+    REQUIRE(days.at(13) == 900);
+    REQUIRE(days.at(12) == 7200);
+    REQUIRE(days.at(0) == 120);
+    qint64 sum = 0;
+    for (qint64 d : days) sum += d;
+    REQUIRE(sum == 900 + 7200 + 120);
+
+    REQUIRE(log.dailySecs("unknown", 14, now.toMSecsSinceEpoch()) == QList<qint64>(14, 0));
+    REQUIRE(log.dailySecs("h", -3, now.toMSecsSinceEpoch()).isEmpty());
+    REQUIRE(log.dailySecs("h", 1 << 30, now.toMSecsSinceEpoch()).size() == 366);
 }
 
 TEST_CASE("sessions past the cap fold into the total instead of vanishing", "[playlog]") {
     QTemporaryDir dir;
     PlayLog log(dir.filePath("playlog.json"));
     for (int i = 1; i <= PlayLog::kMaxSessions + 5; ++i) log.recordSession("h", i, 60);
-    REQUIRE(log.recentSessions("h", 1000).size() == PlayLog::kMaxSessions);
     REQUIRE(log.summary("h").totalSecs == qint64(PlayLog::kMaxSessions + 5) * 60);
+    REQUIRE(log.save());
+    REQUIRE(PlayLog(dir.filePath("playlog.json")).summary("h").totalSecs
+            == qint64(PlayLog::kMaxSessions + 5) * 60);
 }
 
 TEST_CASE("the log survives a reload", "[playlog]") {
@@ -62,7 +80,6 @@ TEST_CASE("the log survives a reload", "[playlog]") {
     REQUIRE(again.summary("a").totalSecs == 120);
     REQUIRE(again.summary("a").lastPlayedMs == 9000);
     REQUIRE(again.summary("a").launches == 1);
-    REQUIRE(again.recentSessions("a", 5).at(0).secs == 120);
     REQUIRE(again.summary("b").totalSecs == 7200);
     REQUIRE(again.summary("b").launches == 3);
 }
@@ -89,7 +106,6 @@ TEST_CASE("a corrupt or hostile file loads as empty or skips the bad rows", "[pl
     PlayLog log(path);
     REQUIRE(log.summary("h").launches == 0);
     REQUIRE(log.summary("h").totalSecs == 150);
-    REQUIRE(log.recentSessions("h", 10).size() == 2);
 
     {
         QFile f(path);

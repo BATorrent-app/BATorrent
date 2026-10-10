@@ -1357,12 +1357,15 @@
   "find_no_releases": "Sürüm bulunamadı",
   "game_playtime": "Oynama süresi",
   "game_last_played": "Son oynama",
-  "game_never_played": "Henüz oynanmadı",
-  "game_media": "Medya",
   "game_files": "Dosyalar",
   "game_folder": "Klasör",
   "game_exe": "Çalıştırılabilir dosya",
   "game_exe_auto": "Açılışta algılanır",
-  "game_size": "Boyut",
-  "game_activity": "Son etkinlik"
+  "game_activity": "Etkinlik",
+  "game_activity_window": "son 14 gün · %1",
+  "game_two_weeks_ago": "2 hafta önce",
+  "game_on_disk": "Diskte",
+  "game_screenshots": "Ekran görüntüleri",
+  "game_build": "Sürüm",
+  "game_installed": "Kuruldu"
 }

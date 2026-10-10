@@ -14,6 +14,7 @@
 #include "services/integrations/gameinstall.h"
 #include "services/integrations/gameexedetect.h"
 #include "services/metadata/nameparser.h"
+#include "services/metadata/releasegroup.h"
 #include "services/integrations/installerprofile.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/platform/logger.h"
@@ -114,6 +115,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["playSeconds"] = played.totalSecs;
         m["launches"]   = played.launches;
         m["playing"]    = m_runningGames.contains(hash);
+        m["group"]      = ReleaseGroup::detect(info.name);
         m["installState"] = gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));
         out << m;
     }
@@ -257,11 +259,11 @@ void QmlSessionBridge::pollRunningGames()
     if (changed) emit gamesChanged();
 }
 
-QVariantList QmlSessionBridge::gameSessions(const QString &infoHash, int limit) const
+QVariantList QmlSessionBridge::gameActivity(const QString &infoHash, int days) const
 {
     QVariantList out;
-    for (const PlayLog::Session &s : m_playLog->recentSessions(infoHash, limit))
-        out << QVariantMap{ { QStringLiteral("startMs"), s.startMs }, { QStringLiteral("secs"), s.secs } };
+    for (const qint64 secs : m_playLog->dailySecs(infoHash, days, QDateTime::currentMSecsSinceEpoch()))
+        out << secs;
     return out;
 }
 

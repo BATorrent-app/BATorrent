@@ -1355,14 +1355,17 @@
   "find_starring": "Starring",
   "find_genres": "Genres",
   "find_no_releases": "No releases found",
-  "game_playtime": "Time played",
+  "game_playtime": "Play time",
   "game_last_played": "Last played",
-  "game_never_played": "Not played yet",
-  "game_media": "Media",
   "game_files": "Files",
   "game_folder": "Folder",
   "game_exe": "Executable",
   "game_exe_auto": "Detected on launch",
-  "game_size": "Size",
-  "game_activity": "Recent activity"
+  "game_activity": "Activity",
+  "game_activity_window": "last 14 days · %1",
+  "game_two_weeks_ago": "2 weeks ago",
+  "game_on_disk": "On disk",
+  "game_screenshots": "Screenshots",
+  "game_build": "Build",
+  "game_installed": "Installed"
 }

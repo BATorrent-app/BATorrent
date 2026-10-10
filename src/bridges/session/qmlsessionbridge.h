@@ -267,7 +267,7 @@ public:
     // via a user-set executable (no auto-detection yet: improved gradually).
     Q_INVOKABLE QVariantList gameLibrary() const;
     Q_INVOKABLE QString gameExe(const QString &infoHash) const;        // saved exe path, "" if unset
-    Q_INVOKABLE QVariantList gameSessions(const QString &infoHash, int limit = 8) const;   // [{startMs, secs}] newest first
+    Q_INVOKABLE QVariantList gameActivity(const QString &infoHash, int days = 14) const;   // secs per day, today last
     Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder

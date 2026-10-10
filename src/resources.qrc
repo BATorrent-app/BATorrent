@@ -249,6 +249,7 @@
 <file>../src/qml/views/HubContinueRails.qml</file>
 <file>../src/qml/views/HubSeriesPage.qml</file>
 <file>../src/qml/views/HubGamePage.qml</file>
+<file>../src/qml/views/HubGameHero.qml</file>
 <file>../src/qml/views/HubGameActions.qml</file>
 <file>../src/qml/views/HubGameActivity.qml</file>
 <file>../src/qml/views/HubGameStills.qml</file>

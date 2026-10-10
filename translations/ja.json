@@ -1357,12 +1357,15 @@
   "find_no_releases": "リリースが見つかりません",
   "game_playtime": "プレイ時間",
   "game_last_played": "最終プレイ",
-  "game_never_played": "まだプレイしていません",
-  "game_media": "メディア",
   "game_files": "ファイル",
   "game_folder": "フォルダー",
   "game_exe": "実行ファイル",
   "game_exe_auto": "起動時に自動検出",
-  "game_size": "サイズ",
-  "game_activity": "最近のアクティビティ"
+  "game_activity": "アクティビティ",
+  "game_activity_window": "過去14日間 · %1",
+  "game_two_weeks_ago": "2週間前",
+  "game_on_disk": "ディスク使用量",
+  "game_screenshots": "スクリーンショット",
+  "game_build": "ビルド",
+  "game_installed": "インストール日"
 }

@@ -2,8 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// The band under a game's hero: the one thing to do next, then how much of
-// it you have already done.
+// The band under a game's banner: the one thing to do next, how much of it
+// you have already done, and the folder and settings at the far end.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
@@ -13,37 +13,72 @@ Item {
     id: root
     property var hub
     property var game
-    implicitHeight: row.implicitHeight
-    height: implicitHeight
+    signal settingsRequested()
+    implicitHeight: 84
 
-    readonly property bool busy: !root.hub.gameStateActionable(root.game)
+    readonly property bool actionable: root.hub.gameStateActionable(root.game)
     readonly property bool played: !!root.game && (root.game.lastPlayed || 0) > 0
 
-    RowLayout {
-        id: row
-        width: parent.width
-        spacing: Theme.sp6
+    function hours(secs) { return (secs > 0 ? (secs / 3600).toFixed(1) : "0") + " h" }
 
-        BtnFlat {
-            Layout.preferredWidth: 180
-            enabled: !root.busy
-            primary: !root.busy
-            icon: "qrc:/icons/play.svg"
-            text: root.hub.gameStateLabel(root.game)
-            onClicked: if (root.game) root.hub.gamePrimary(root.game)
+    RowLayout {
+        anchors.fill: parent
+        anchors.leftMargin: 48
+        anchors.rightMargin: 48
+        spacing: 40
+
+        Rectangle {
+            id: play
+            Layout.preferredHeight: 48
+            Layout.preferredWidth: Math.max(150, playRow.implicitWidth + 52)
+            radius: 6
+            color: root.actionable ? (playMa.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent)
+                                   : "#2b2b30"
+            Behavior on color { ColorAnimation { duration: Theme.durFast } }
+            scale: playMa.pressed ? Theme.pressScale : 1
+            Behavior on scale { NumberAnimation { duration: Theme.durFast } }
+            Row {
+                id: playRow
+                anchors.centerIn: parent
+                spacing: 10
+                IconImg {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.actionable
+                    src: "qrc:/icons/play.svg"
+                    tint: "#ffffff"
+                    s: 15
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.hub.gameStateLabel(root.game)
+                    color: "#ffffff"
+                    font.pixelSize: 15
+                    font.weight: Font.DemiBold
+                    font.family: Theme.fontSans
+                    font.features: Theme.tnum
+                }
+            }
+            MouseArea {
+                id: playMa
+                anchors.fill: parent
+                enabled: root.actionable
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: if (root.game) root.hub.gamePrimary(root.game)
+            }
         }
 
         Repeater {
-            model: root.played
-                ? [ { label: "game_playtime",
-                      value: root.hub.fmtPlaytime(root.game.playSeconds) || "—" },
-                    { label: "game_last_played",
-                      value: root.game.playing ? i18n.t("hub_playing_now")
-                                               : root.hub.fmtAgo(root.game.lastPlayed) } ]
-                : []
+            model: [
+                { label: "game_playtime", value: root.played ? root.hours(root.game.playSeconds) : "—" },
+                { label: "game_last_played",
+                  value: !root.played ? "—"
+                         : (root.game.playing ? i18n.t("hub_playing_now") : root.hub.fmtAgo(root.game.lastPlayed)) },
+                { label: "game_on_disk", value: root.game ? (root.hub.fmtSize(root.game.size) || "—") : "—" }
+            ]
             delegate: Column {
                 required property var modelData
-                spacing: 2
+                spacing: 4
                 Text {
                     text: (i18n.language, i18n.t(modelData.label))
                     color: Theme.t4
@@ -57,21 +92,30 @@ Item {
                     text: modelData.value
                     color: Theme.t1
                     font.pixelSize: 15
-                    font.weight: Font.DemiBold
                     font.family: Theme.fontSans
                     font.features: Theme.tnum
                 }
             }
         }
 
-        Text {
-            visible: !root.played
-            text: (i18n.language, i18n.t("game_never_played"))
-            color: Theme.t3
-            font.pixelSize: 13
-            font.family: Theme.fontSans
-        }
-
         Item { Layout.fillWidth: true }
+
+        StageRoundButton {
+            size: 40
+            icon: "qrc:/icons/folder.svg"
+            onClicked: if (root.game) root.hub.gameMenuOpenFolder(root.game.infoHash)
+        }
+        StageRoundButton {
+            size: 40
+            icon: "qrc:/icons/settings.svg"
+            onClicked: root.settingsRequested()
+        }
+    }
+
+    Rectangle {
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: 1
+        color: Qt.rgba(1, 1, 1, 0.06)
     }
 }

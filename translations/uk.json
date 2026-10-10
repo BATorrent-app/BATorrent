@@ -1357,12 +1357,15 @@
   "find_no_releases": "Релізів не знайдено",
   "game_playtime": "Час у грі",
   "game_last_played": "Останній запуск",
-  "game_never_played": "Ще не запускалася",
-  "game_media": "Медіа",
   "game_files": "Файли",
   "game_folder": "Тека",
   "game_exe": "Виконуваний файл",
   "game_exe_auto": "Визначається під час запуску",
-  "game_size": "Розмір",
-  "game_activity": "Нещодавня активність"
+  "game_activity": "Активність",
+  "game_activity_window": "останні 14 днів · %1",
+  "game_two_weeks_ago": "2 тижні тому",
+  "game_on_disk": "На диску",
+  "game_screenshots": "Знімки екрана",
+  "game_build": "Збірка",
+  "game_installed": "Встановлено"
 }

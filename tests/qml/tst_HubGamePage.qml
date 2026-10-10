@@ -25,9 +25,10 @@ Item {
         function gameFolder(h) { return "/games/" + h }
         function gameExe(h) { return h === "played" ? "/games/played/game.exe" : "" }
         function launchGame(h) { launched.push(h) }
-        function gameSessions(h, limit) {
-            return h === "played" ? [ { startMs: Date.now() - 7200000, secs: 5400 },
-                                      { startMs: Date.now() - 90000000, secs: 1980 } ] : []
+        function gameActivity(h, days) {
+            var out = []
+            for (var i = 0; i < days; i++) out.push(h === "played" && i >= days - 2 ? 4500 : 0)
+            return out
         }
     }
 
@@ -41,8 +42,8 @@ Item {
             { infoHash: "fresh", title: "Hades", poster: "", size: 1073741824,
               lastPlayed: 0, playSeconds: 0, installState: 4, genres: [] },
             { infoHash: "played", title: "Elden Ring", poster: "", size: 2147483648,
-              lastPlayed: Date.now() - 2 * 3600000, playSeconds: 7380, installState: 4,
-              genres: ["RPG"] }
+              lastPlayed: Date.now() - 2 * 3600000, playSeconds: 9000, installState: 4,
+              genres: ["RPG"], group: "FitGirl", addedTime: 1760000000 }
         ]
         function fileUrl(p) { return p ? "file://" + p : "" }
         function fmtPlaytime(s) { return s > 0 ? Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m" : "" }
@@ -53,6 +54,10 @@ Item {
         function gamePrimary(it) { mockApi.launchGame(it.infoHash) }
         function gameMenuOpenFolder(h) {}
         function openExePicker(h, launch) {}
+        property QtObject gameMenu: QtObject {
+            property string opened: ""
+            function openFor(h) { opened = h }
+        }
     }
 
     Component {
@@ -118,14 +123,55 @@ Item {
             var p = createTemporaryObject(pageComp, root)
             mockHub.gameHash = "fresh"
             mockHub.gameOpen = true
-            verify(findByText(p, "game_never_played") !== null)
-            verify(findByText(p, "game_playtime") === null)
+            verify(findByText(p, "game_playtime") !== null)
+            verify(findByText(p, "—") !== null)
+            verify(findByText(p, "game_activity") === null)
+            verify(findByText(p, "game_build") === null)
             mockHub.gameHash = "played"
-            verify(findByText(p, "game_never_played") === null)
-            verify(findByText(p, "2h 3m") !== null)
-            verify(findByText(p, "/games/played/game.exe") !== null)
+            verify(findByText(p, "2.5 h") !== null)
+            verify(findByText(p, "2.0 GB") !== null)
             verify(findByText(p, "game_activity") !== null)
-            verify(findByText(p, "1h 30m") !== null)
+            verify(findByText(p, "game_activity_window") !== null)
+            verify(findByText(p, "FitGirl") !== null)
+            verify(findByText(p, "game.exe") !== null)
+        }
+
+        function test_settingsOpensTheGameMenu() {
+            var p = createTemporaryObject(pageComp, root)
+            mockHub.gameHash = "played"
+            mockHub.gameOpen = true
+            var actions = null
+            var stack = [p]
+            while (stack.length && !actions) {
+                var it = stack.pop()
+                if (it.settingsRequested !== undefined) actions = it
+                for (var i = 0; i < it.children.length; i++) stack.push(it.children[i])
+                if (it.contentItem) stack.push(it.contentItem)
+            }
+            verify(actions !== null)
+            actions.settingsRequested()
+            compare(mockHub.gameMenu.opened, "played")
+        }
+
+        function test_heroPrefersSteamArtWhenTheAppIdIsKnown() {
+            var p = createTemporaryObject(pageComp, root)
+            mockHub.gameHash = "played"
+            mockHub.gameOpen = true
+            mockDisco.gameDetailsReady("Elden Ring", { steamAppId: 1245620, backdrop: "https://x/art.jpg" })
+            var hero = null
+            var stack = [p]
+            while (stack.length && !hero) {
+                var it = stack.pop()
+                if (it.artChain !== undefined) hero = it
+                for (var i = 0; i < it.children.length; i++) stack.push(it.children[i])
+                if (it.contentItem) stack.push(it.contentItem)
+            }
+            verify(hero !== null)
+            compare(hero.artChain.length, 2)
+            verify(hero.artChain[0].indexOf("/1245620/library_hero.jpg") > 0)
+            compare(hero.artChain[1], "https://x/art.jpg")
+            mockDisco.gameDetailsReady("Elden Ring", { backdrop: "https://x/art.jpg" })
+            compare(hero.artChain, ["https://x/art.jpg"])
         }
 
         function test_unsavedExeReadsAsAutodetected() {
@@ -133,7 +179,6 @@ Item {
             mockHub.gameHash = "fresh"
             mockHub.gameOpen = true
             verify(findByText(p, "game_exe_auto") !== null)
-            verify(findByText(p, "game_activity") === null)
             verify(findByText(p, "/games/fresh") !== null)
         }
 

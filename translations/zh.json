@@ -1357,12 +1357,15 @@
   "find_no_releases": "未找到资源",
   "game_playtime": "游戏时长",
   "game_last_played": "上次游玩",
-  "game_never_played": "尚未游玩",
-  "game_media": "媒体",
   "game_files": "文件",
   "game_folder": "文件夹",
   "game_exe": "可执行文件",
   "game_exe_auto": "启动时自动检测",
-  "game_size": "大小",
-  "game_activity": "最近动态"
+  "game_activity": "动态",
+  "game_activity_window": "最近 14 天 · %1",
+  "game_two_weeks_ago": "2 周前",
+  "game_on_disk": "占用空间",
+  "game_screenshots": "截图",
+  "game_build": "版本",
+  "game_installed": "安装于"
 }
