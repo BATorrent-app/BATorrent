@@ -42,6 +42,17 @@ Item {
     readonly property var suggestedGame: logic.suggestedGame
     readonly property bool empty: logic.empty
     readonly property var recentlyAdded: logic.recentlyAdded
+    readonly property var seriesShelf: logic.seriesGroups(library)
+    // Everything the series shelf did not take. A show that resolved is one
+    // card up there, so repeating its three season packs down here would be
+    // the duplication the grouping exists to remove.
+    readonly property var movieShelf: {
+        var grouped = ({})
+        for (var g = 0; g < seriesShelf.length; g++)
+            for (var m = 0; m < seriesShelf[g].members.length; m++)
+                grouped[seriesShelf[g].members[m]] = true
+        return (library || []).filter(function (i) { return !grouped[i.infoHash] })
+    }
     readonly property string topGenre: logic.topGenre
     readonly property var recommendations: logic.recommendations
     readonly property var recSeed: logic.recSeed

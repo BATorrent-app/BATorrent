@@ -257,6 +257,41 @@ ColumnLayout {
     }
 
     // Your movies
+    // One card per show, however many torrents hold it (Sherwan #21).
+    ColumnLayout {
+        Layout.fillWidth: true
+        Layout.leftMargin: Theme.sp5
+        Layout.rightMargin: Theme.sp5
+        Layout.bottomMargin: Theme.sp5
+        spacing: 12
+        visible: page.seriesShelf.length > 0
+        Text {
+            text: (i18n.language, i18n.t("hub_series"))
+            color: Theme.t1
+            font.pixelSize: 17
+            font.weight: Font.Bold
+            font.family: Theme.fontSans
+        }
+        GridLayout {
+            Layout.fillWidth: true
+            columnSpacing: 18
+            rowSpacing: 20
+            columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
+            Repeater {
+                model: page.applyView(page.seriesShelf)
+                delegate: HubCard {
+                    host: page
+                    item: modelData
+                    onShowDetail: page.openDetail(modelData, false)
+                    // Always the episode list: a show is a thing you pick an
+                    // episode from, even when one torrent holds all of them.
+                    onPlay: page.episodeMenu.openFor(modelData)
+                    onContext: page.episodeMenu.openFor(modelData)
+                }
+            }
+        }
+    }
+
     ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: Theme.sp5
@@ -277,7 +312,7 @@ ColumnLayout {
             rowSpacing: 20
             columns: Math.max(1, Math.floor((page.width - 2 * Theme.sp5 + columnSpacing) / (150 + columnSpacing)))
             Repeater {
-                model: page.applyView(page.library)
+                model: page.applyView(page.movieShelf)
                 delegate: HubCard {
                     host: page
                     item: modelData

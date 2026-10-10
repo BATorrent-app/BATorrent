@@ -110,7 +110,11 @@ Item {
                     return check + m.name
                 }
                 elideMode: Text.ElideMiddle
-                onTriggered: if (page.api) page.api.playFile(episodeMenu.hash, epItem.modelData.idx)
+                // Its own torrent, not the menu's: a series card spans every
+                // release that holds part of the show, so S01E01 and S02E01
+                // can live in different ones.
+                onTriggered: if (page.api) page.api.playFile(
+                    epItem.modelData.hash || episodeMenu.hash, epItem.modelData.idx)
             }
         }
     }
