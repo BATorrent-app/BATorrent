@@ -52,6 +52,7 @@ endif()
 add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/main.cpp
     src/app/enginechild.cpp
+    src/app/mediachild.cpp
     src/app/singleinstance.cpp
     src/app/macfileopen.cpp
     src/app/boothealth.cpp
@@ -92,6 +93,10 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/proxycontroller.cpp
     src/ipc/enginehost.cpp
     src/ipc/ipcengine.cpp
+    src/ipc/mediaframe.cpp
+    src/ipc/mediahost.cpp
+    src/ipc/sharedsegment.cpp
+    src/ipc/mediasandbox.cpp
     src/services/platform/translator.cpp
     src/services/platform/statshistory.cpp
     src/services/platform/soundplayer.cpp
@@ -203,6 +208,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmlsubtitlebridge.cpp
     src/bridges/qmllogbridge.cpp
     src/bridges/qmlnotificationbridge.cpp
+    src/bridges/isolatedmediaplayer.cpp
     src/bridges/discordrpcbridge.cpp
     src/bridges/qmlupdaterbridge.cpp
     # header-only QObject: listed so AUTOMOC builds its metaobject

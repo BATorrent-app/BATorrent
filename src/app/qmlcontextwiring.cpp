@@ -4,12 +4,14 @@
 
 #include "app/qmlcontextwiring.h"
 
+#include "bridges/isolatedmediaplayer.h"
 #include "bridges/qmlposterbridge.h"
 #include "services/discovery/discoveryservice.h"
 #include "services/integrations/debridmanager.h"
 #include "services/vpn/vpnmanager.h"
 
 #include <QQmlContext>
+#include <QQmlEngine>
 #include <cstdlib>
 
 #include "services/platform/autostart.h"
@@ -19,6 +21,7 @@ namespace QmlContextWiring {
 
 void registerProperties(QQmlContext *ctx, const QmlContextObjects &o)
 {
+    qmlRegisterType<IsolatedMediaPlayer>("BATorrent.Media", 1, 0, "IsolatedMediaPlayer");
     ctx->setContextProperty("torrentModel", o.torrentFilter);
     ctx->setContextProperty("torrentFilter", o.torrentFilter);
     ctx->setContextProperty("themeBridge", o.themeBridge);

@@ -1376,5 +1376,8 @@
   "guard_l_next": "Burada her zamanki gibi izleyebilirsiniz: BATorrent her şeyi kendisi oynatır ve sizden asla bir şey indirmenizi istemez. Başka bir oynatıcı isterse indirmeyin. Video oynamazsa başka bir sürüm arayın.",
   "guard_l_ok": "Anladım",
   "guard_next": "En iyisi",
-  "guard_search": "Başka sürüm ara"
+  "guard_search": "Başka sürüm ara",
+  "set_isolated_player": "Videoları yalıtılmış bir süreçte oynat (deneysel)",
+  "set_isolated_player_note": "Video ayrı bir süreçte çözülür: bir dosya kod çözücüyü çökertirse uygulamanın geri kalanı çalışmaya devam eder. Bundan sonra açtığınız videolara uygulanır.",
+  "player_decoder_crashed": "Bu dosya video kod çözücüsünü çökertti. BATorrent normal şekilde çalışmaya devam ediyor: başka bir sürüm deneyin."
 }

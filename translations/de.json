@@ -1376,5 +1376,8 @@
   "guard_l_next": "Du kannst es hier ganz normal ansehen: BATorrent spielt alles selbst ab und fordert dich nie auf, etwas herunterzuladen. Wenn ein anderer Player danach fragt, lade nichts herunter. Spielt das Video nicht, such ein anderes Release.",
   "guard_l_ok": "Verstanden",
   "guard_next": "Am besten jetzt",
-  "guard_search": "Anderes Release suchen"
+  "guard_search": "Anderes Release suchen",
+  "set_isolated_player": "Videos in einem isolierten Prozess abspielen (experimentell)",
+  "set_isolated_player_note": "Videos werden in einem eigenen Prozess dekodiert: Bringt eine Datei den Decoder zum Absturz, läuft der Rest der App weiter. Gilt für die nächsten Videos, die du öffnest.",
+  "player_decoder_crashed": "Diese Datei hat den Videodecoder zum Absturz gebracht. BATorrent läuft ganz normal weiter: versuch ein anderes Release."
 }

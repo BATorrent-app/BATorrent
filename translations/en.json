@@ -1376,5 +1376,8 @@
   "guard_l_next": "You can watch it here as usual: BATorrent plays everything on its own and will never ask you to download anything. If another player asks, don't. If the video won't play, look for another release.",
   "guard_l_ok": "Got it",
   "guard_next": "Best next step",
-  "guard_search": "Find another release"
+  "guard_search": "Find another release",
+  "set_isolated_player": "Play videos in an isolated process (experimental)",
+  "set_isolated_player_note": "Videos are decoded in a separate process: if a file brings the decoder down, the rest of the app keeps working. Applies to the next videos you open.",
+  "player_decoder_crashed": "This file brought the video decoder down. BATorrent is still running normally: try another release."
 }
