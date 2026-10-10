@@ -34,8 +34,9 @@ QString profile(const Grant &grant)
         "(import \"system.sb\")\n"
         "(allow file-read-metadata)\n"
         "(allow sysctl-read)\n"
-        "(allow ipc-posix-shm-read* ipc-posix-shm-write-create ipc-posix-shm-write-data"
-        " ipc-posix-shm-write-unlink (ipc-posix-name-regex #\"^/batm[0-9a-f]+$\"))\n"
+        // The UI creates the frame ring; the child only maps it.
+        "(allow ipc-posix-shm-read* ipc-posix-shm-write-data"
+        " (ipc-posix-name-regex #\"^/batm[0-9a-f]+$\"))\n"
         // VideoToolbox decodes in Apple's own XPC service; the child only maps
         // the IOSurfaces it hands back. The GPU driver (AGX*) stays closed.
         "(allow iokit-open (iokit-user-client-class \"IOSurfaceRootUserClient\"))\n");
@@ -49,13 +50,6 @@ QString profile(const Grant &grant)
     if (!trees.isEmpty())
         p += QStringLiteral("(allow file-read* %1)\n").arg(trees.join(QLatin1Char(' ')));
 
-    if (!grant.readFile.isEmpty()) {
-        const QString lit = literal(grant.readFile);
-        if (lit.isEmpty()) return {};
-        p += QStringLiteral("(allow file-read* (literal %1))\n").arg(lit);
-    }
-    if (grant.localPort > 0 && grant.localPort < 65536)
-        p += QStringLiteral("(allow network-outbound (remote ip \"localhost:%1\"))\n").arg(grant.localPort);
     return p;
 }
 

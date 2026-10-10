@@ -67,6 +67,9 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/ipc/mediahost.cpp
     ${CMAKE_SOURCE_DIR}/src/ipc/sharedsegment.cpp
     ${CMAKE_SOURCE_DIR}/src/ipc/mediasandbox.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/remotesource.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/mediafeed.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/mediachannel.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/isolatedmediaplayer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archiveextractor.cpp
@@ -173,7 +176,8 @@ set(COMMON_LIBS
     ZLIB::ZLIB
 )
 if(WIN32)
-    list(APPEND COMMON_LIBS shell32 ole32)   # shell ops pulled in via the bridge deps
+    list(APPEND COMMON_LIBS shell32 ole32 userenv)   # shell ops via the bridge deps; AppContainer
+    list(APPEND COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/ipc/appcontainer_win.cpp)
 endif()
 
 set(COMMON_DEFS APP_VERSION="test")
@@ -379,11 +383,17 @@ if(Qt6Quick_FOUND AND Qt6QuickTest_FOUND)
     qt_add_executable(test_qml ${CMAKE_CURRENT_SOURCE_DIR}/qml/main.cpp ${QML_TEST_RES}
         ${CMAKE_SOURCE_DIR}/src/bridges/isolatedmediaplayer.cpp
         ${CMAKE_SOURCE_DIR}/src/ipc/mediaframe.cpp
-        ${CMAKE_SOURCE_DIR}/src/ipc/sharedsegment.cpp)
+        ${CMAKE_SOURCE_DIR}/src/ipc/sharedsegment.cpp
+        ${CMAKE_SOURCE_DIR}/src/ipc/mediafeed.cpp
+        ${CMAKE_SOURCE_DIR}/src/ipc/mediachannel.cpp)
+    if(WIN32)
+        target_sources(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src/ipc/appcontainer_win.cpp)
+        target_link_libraries(test_qml PRIVATE userenv)
+    endif()
     target_compile_definitions(test_qml PRIVATE
         QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
     target_include_directories(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src)
-    target_link_libraries(test_qml PRIVATE Qt6::Quick Qt6::QuickTest Qt6::Qml Qt6::Gui Qt6::Multimedia)
+    target_link_libraries(test_qml PRIVATE Qt6::Quick Qt6::QuickTest Qt6::Qml Qt6::Gui Qt6::Multimedia Qt6::Network)
     add_test(NAME test_qml COMMAND test_qml)
     # Offscreen QPA so it runs in CI / over SSH with no display.
     set_tests_properties(test_qml PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

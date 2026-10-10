@@ -14,9 +14,11 @@
 #include "ipc/mediaprotocol.h"
 #include "ipc/sharedsegment.h"
 
+class ContainedLaunch;
+class MediaChannel;
+class MediaFeed;
 class QLocalSocket;
 class QProcess;
-class QTimer;
 class QVideoSink;
 
 // Drop-in for QML's MediaPlayer whose decoder runs in a `--media` child
@@ -77,8 +79,9 @@ public:
     Q_INVOKABLE void pause();
     Q_INVOKABLE void stop();
 
-    // Test seam: talk to an already-listening MediaHost instead of spawning one.
-    void attachTo(const QString &serverName);
+    // Test seam: open the channel but start no child; a MediaHost in the same
+    // process connects to the returned name instead.
+    QString listenWithoutChild();
 
 signals:
     void sourceChanged();
@@ -99,14 +102,17 @@ signals:
     void decoderCrashed();
 
 private:
-    void ensureChild();
-    void tryConnect();
+    bool ensureChild();
+    bool openChannel(const QString &peerSid);
+    void adopt(QLocalSocket *socket);
+    void startFeed();
     void onReadyRead();
     void onEvent(const QString &name, const QByteArray &args);
     void applyState(const media::State &s);
     void applyTracks(const media::Tracks &t);
-    void attachRing(qint32 generation, qint64 slotBytes);
+    void shareRing(qint64 slotBytes);
     void showFrame(qint32 generation, const media::FrameHeader &hdr);
+    void failWith(int error, const QString &why);
     void onChildLost();
     void teardown();
     void send(const QString &method, const QByteArray &args = {});
@@ -123,14 +129,24 @@ private:
     int m_activeSubtitle = -1;
 
     QString m_serverName;
+    MediaChannel *m_channel = nullptr;
     QProcess *m_proc = nullptr;
+    std::unique_ptr<ContainedLaunch> m_launch;
+    qint64 m_childPid = 0;
     QLocalSocket *m_sock = nullptr;
-    QTimer *m_connectTimer = nullptr;
-    int m_connectTries = 0;
     bool m_ready = false;
     bool m_tearingDown = false;
     QList<QByteArray> m_pending;
     QByteArray m_buf;
+
+    MediaFeed *m_feed = nullptr;
+    qint32 m_sourceGen = 0;
+    // What the QML asked for before the child had a source to apply it to:
+    // a stream's size is learned asynchronously, so "open" can trail "play".
+    bool m_opened = false;
+    int m_wantState = 0;          // QMediaPlayer::PlaybackState
+    qint64 m_pendingSeek = -1;
+
     std::unique_ptr<SharedSegment> m_ring;
     qint32 m_generation = 0;
     qint64 m_slotBytes = 0;

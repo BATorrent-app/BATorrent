@@ -9,23 +9,28 @@
 #include <QtGlobal>
 #include <memory>
 
-// A named shared-memory segment for the media child's frame ring. Not
-// QSharedMemory: its POSIX backend refuses every name on macOS, and the SysV
-// fallback there caps a segment at 4 MB, under three 1080p frames.
+// The media child's frame ring. The UI owns it: it creates the segment, keeps
+// a read-only view and hands the child a token to map it writable, so a
+// sandboxed child never needs the right to create shared memory itself.
+// Not QSharedMemory: its POSIX backend refuses every name on macOS, and the
+// SysV fallback there caps a segment at 4 MB, under three 1080p frames.
 class SharedSegment
 {
 public:
-    // Short, platform-legal name derived from `seed` (macOS allows 31 chars).
-    static QString nameFor(const QString &seed);
-
-    static std::unique_ptr<SharedSegment> create(const QString &name, qint64 size);
-    // Read-only. The name is released right after, so nothing else can open it.
-    static std::unique_ptr<SharedSegment> openReadOnly(const QString &name);
-    static void release(const QString &name);
+    // Owner side. `seed` names the segment where the platform needs a name.
+    static std::unique_ptr<SharedSegment> create(const QString &seed, qint64 size);
+    // Peer side, from the token shareWith() produced.
+    static std::unique_ptr<SharedSegment> openWritable(const QString &token);
 
     ~SharedSegment();
     SharedSegment(const SharedSegment &) = delete;
     SharedSegment &operator=(const SharedSegment &) = delete;
+
+    // What the peer needs to map this: a name on POSIX, a handle duplicated
+    // into `peerPid` on Windows. Empty on failure.
+    QString shareWith(qint64 peerPid);
+    // Drop the name once the peer has mapped it, so nothing else can.
+    void unpublish();
 
     uchar *data() { return m_data; }
     const uchar *constData() const { return m_data; }
@@ -36,9 +41,8 @@ private:
 
     uchar *m_data = nullptr;
     qint64 m_size = 0;
-#ifdef Q_OS_WIN
+    QString m_name;
     void *m_handle = nullptr;
-#endif
 };
 
 #endif
