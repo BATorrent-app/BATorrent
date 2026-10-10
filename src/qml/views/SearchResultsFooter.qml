@@ -24,8 +24,13 @@ Rectangle {
         spacing: Theme.sp2
         BtnFlat {
             visible: root.sv.api && root.sv.api.canGoBack
+            primary: true
             text: (i18n.language, i18n.t("search_back2"))
-            onClicked: if (root.sv.api) root.sv.api.back()
+            // From the full table, back is the title's own page, not the grid.
+            onClicked: {
+                if (root.sv.showAdvanced && root.sv.titlePicked) root.sv.showAdvanced = false
+                else if (root.sv.api) root.sv.leaveTitle()
+            }
         }
         Text {
             text: root.sv.api ? root.sv.api.statusText : ""
@@ -36,14 +41,14 @@ Rectangle {
             spacing: 7
             visible: root.sv.isFlatList && root.sv.wontFit > 0 && root.sv.saveFree >= 0
             Rectangle {
-                width: 7; height: 7; radius: 4; color: "#e0a533"
+                width: 7; height: 7; radius: 4; color: Theme.warn
                 anchors.verticalCenter: parent.verticalCenter
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: (i18n.language, i18n.t("search_disk_warn"))
                     .arg(root.sv.fmtSize(root.sv.saveFree)).arg(root.sv.wontFit)
-                color: "#e0a533"; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                color: Theme.warn; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
             }
         }
         BtnFlat {

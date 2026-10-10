@@ -151,6 +151,10 @@ Window {
     function fileUrl(p) { return playerFmt.fileUrl(p) }
 
     property int nextIdx: -1
+    // The next episode when it is another torrent: { season, episode, release }.
+    property var nextProvider: null
+    property var externalNext: null
+    readonly property bool hasNext: nextIdx >= 0 || externalNext !== null
     property bool autoplayNext: (typeof settings === "undefined") || settings.getBool("autoplayNext", true)
     property var chapters: []
     property string nextPoster: ""
@@ -177,8 +181,11 @@ Window {
         win.resolvedSubtitle = pt.subtitle || ""
         resume.prepareOpen()
         runway.reset()
+        retry.reset()
         win.chapters = (typeof session !== "undefined") ? session.mkvChapters(hash, fileIdx) : []
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
+        win.externalNext = (win.nextIdx < 0 && win.nextProvider)
+                           ? win.nextProvider.nextEpisodeFor(hash, fileIdx) : null
         endCard.reset()
         if (win.nextIdx >= 0 && typeof session !== "undefined") {
             var np = session.playerTitle(hash, win.nextIdx)
@@ -196,6 +203,19 @@ Window {
         player.play()
     }
 
+    function playNext() {
+        if (win.nextIdx >= 0) {
+            if (typeof session !== "undefined") session.playFile(win.infoHash, win.nextIdx)
+            return
+        }
+        var next = win.externalNext
+        if (!next || !win.nextProvider) return
+        var provider = win.nextProvider
+        resume.save()
+        win.close()
+        provider.playNextEpisode(next)
+    }
+
     MediaPlayer {
         id: player
         source: win.streamUrl
@@ -210,9 +230,25 @@ Window {
         }
         onMediaStatusChanged: {
             if (mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) resume.tryApply()
-            else if (mediaStatus === MediaPlayer.EndOfMedia) { resume.save(); endCard.maybePlayNext() }
+            else if (mediaStatus === MediaPlayer.EndOfMedia) {
+                resume.save()
+                if (win.nextIdx < 0 && win.externalNext && win.autoplayNext) win.playNext()
+                else endCard.maybePlayNext()
+            }
         }
         onTracksChanged: win.restoreTracks()
+    }
+
+    PlayerRetry {
+        id: retry
+        mediaPlayer: player
+        stillDownloading: win.stillDownloading
+        // Rebound, not assigned: the next episode still has to reach the player.
+        onReloadRequested: {
+            player.source = ""
+            player.source = Qt.binding(function () { return win.streamUrl })
+            player.play()
+        }
     }
 
     signal closed()
@@ -284,20 +320,29 @@ Window {
                  || win.starved
                  || player.error !== MediaPlayer.NoError
         spacing: 12
-        BusyIndicator { Layout.alignment: Qt.AlignHCenter; running: player.error === MediaPlayer.NoError }
+        BusyIndicator { Layout.alignment: Qt.AlignHCenter; running: !retry.failed }
         Text {
             Layout.alignment: Qt.AlignHCenter
             color: "#e8e8ea"; font.pixelSize: 14; font.family: Theme.fontSans
-            text: player.error !== MediaPlayer.NoError
-                  ? (i18n.language, i18n.t("player_error"))
-                  : (i18n.language, i18n.t("player_buffering"))
+            text: !retry.failed ? (i18n.language, i18n.t("player_buffering"))
+                  : retry.formatProblem ? (i18n.language, i18n.t("player_error"))
+                  : (i18n.language, i18n.t("player_stream_failed"))
         }
-        BtnFlat {
+        RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            visible: player.error !== MediaPlayer.NoError
-            primary: true
-            text: (i18n.language, i18n.t("player_open_external"))
-            onClicked: { resume.save(); win.openExternal(); win.close() }
+            visible: retry.failed
+            spacing: 10
+            BtnFlat {
+                visible: !retry.formatProblem
+                primary: true
+                text: (i18n.language, i18n.t("player_try_again"))
+                onClicked: retry.retryNow()
+            }
+            BtnFlat {
+                primary: retry.formatProblem
+                text: (i18n.language, i18n.t("player_open_external"))
+                onClicked: { resume.save(); win.openExternal(); win.close() }
+            }
         }
     }
 

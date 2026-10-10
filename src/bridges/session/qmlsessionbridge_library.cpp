@@ -25,6 +25,11 @@ QVariantList QmlSessionBridge::movieLibrary() const
     static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
     auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
     QSettings s;
+    auto watchedPct = [&s](const QString &resumeKey) {
+        const qint64 at = s.value(resumeKey, 0).toLongLong();
+        const qint64 dur = s.value(resumeKey + QStringLiteral("_dur"), 0).toLongLong();
+        return (dur > 0 && at > 0) ? double(at) / double(dur) : 0.0;
+    };
     QVariantList out;
     const int n = m_session->torrentCount();
     for (int row = 0; row < n; ++row) {
@@ -72,6 +77,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
             vf["season"] = v.season;
             vf["episode"] = v.episode;
             vf["watched"] = s.value(vrk + QStringLiteral("_watched"), false).toBool();
+            vf["watchedPct"] = watchedPct(vrk);
             // Its own file, not the torrent's: in a season pack episode 1 can
             // be finished while episode 8 has not started, and a series screen
             // that shows one number for both is lying about seven of them.
@@ -106,7 +112,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["year"]       = year > 0 ? QString::number(year) : QString();
         m["poster"]     = poster;
         m["fileIndex"]  = bestIdx;
-        m["videos"]     = videos;                         // [{idx,name,season,episode,watched,progress}] sorted
+        m["videos"]     = videos;                         // [{idx,name,season,episode,watched,watchedPct,progress}] sorted
         m["isSeries"]   = isSeries;                       // has SxxExx markers → group by season
         m["tmdbId"]     = tmdbId;                          // for TMDB episode-title lookup
         m["genres"]     = genres;                          // taste signal for HUB recommendations
@@ -118,7 +124,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["resumeMs"]   = resumeMs;
         m["durMs"]      = durMs;
         m["resumeAt"]   = resumeAt;                       // last-watched timestamp (ms)
-        m["watchedPct"] = (durMs > 0 && resumeMs > 0) ? double(resumeMs) / double(durMs) : 0.0;
+        m["watchedPct"] = watchedPct(rk);
         out << m;
     }
     return out;

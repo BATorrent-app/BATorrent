@@ -71,6 +71,7 @@ Item {
                 else session.cancelWatch(hash)
             }
         }
+        onAnotherRequested: if (hash !== "" && typeof session !== "undefined") session.abandonWatch(hash)
     }
 
     // custom toast cards, pinned to the screen's bottom-right (native-like)

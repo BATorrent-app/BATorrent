@@ -149,6 +149,13 @@ Item {
             compare(v[1].hash, "h2"); compare(v[1].idx, 7)
         }
 
+        function test_howFarIntoAnEpisodeSurvivesTheGrouping() {
+            var c = mk()
+            var e = ep(0, 1, 1); e.watchedPct = 0.42
+            var g = c.seriesGroups([ show("h1", 1399, "Show", [e]) ])
+            compare(g[0].videos[0].watchedPct, 0.42)
+        }
+
         function test_anUnresolvedShowIsNeverMergedIntoAnother() {
             var c = mk()
             var g = c.seriesGroups([

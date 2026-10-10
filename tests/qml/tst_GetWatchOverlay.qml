@@ -59,6 +59,28 @@ Item {
             compare(ov.visible, false)
         }
 
+        function test_aSlowSourceIsOfferedAnotherOnlyAfterAWhile() {
+            var ov = createTemporaryObject(overlayComp, root)
+            ov.show("buffering", "Film")
+            ov.downBps = 50 * 1024; ov.peers = 12; ov.waited = 5
+            compare(ov.slow, false)                 // too early to judge
+            ov.waited = 20
+            compare(ov.slow, true)                  // crawling
+            ov.downBps = 3 * 1024 * 1024
+            compare(ov.slow, false)                 // fast and well-peered
+            ov.peers = 1
+            compare(ov.slow, true)                  // fast now, but one peer away from stalling
+            ov.hide()
+            compare(ov.waited, 0)
+            compare(ov.slow, false)
+        }
+
+        function test_rateReadsLikeTheRestOfTheApp() {
+            var ov = createTemporaryObject(overlayComp, root)
+            compare(ov.fmtRate(512 * 1024), "512 KB/s")
+            compare(ov.fmtRate(2.1 * 1024 * 1024), "2.1 MB/s")
+        }
+
         function test_cancelEmitsAndHides() {
             var ov = createTemporaryObject(overlayComp, root)
             verify(!!ov, "Object exists")

@@ -52,11 +52,24 @@ Rectangle {
     // search bridge.
     readonly property var disco: typeof discovery !== "undefined" ? discovery : null
     readonly property bool isSeriesDrill: api && api.singleTitleView && !isEpisodes
-    // The series screen owns the page. singleTitleView is already true while
-    // the grid of candidate titles is still up, so the stage has to be ruled
-    // out as well or the pane takes the height and shows nothing.
-    readonly property bool seriesScreen: isSeriesDrill && !isTitles
-                                          && api.workType === "series"
+    // A picked title opens on its own page. singleTitleView is already true
+    // while the grid of candidate titles is still up, so that stage has to be
+    // ruled out as well or the page takes the height and shows nothing.
+    readonly property bool titlePicked: isSeriesDrill && !isTitles && !browse
+                                        && (api.workTitle || "").length > 0
+                                        && ["series", "movie", "game"].indexOf(api.workType) >= 0
+    // "All releases": the flat table with every filter, for the same title.
+    property bool showAdvanced: false
+    readonly property bool titleStage: titlePicked && !showAdvanced
+
+    // Hashes added from this page, so a release says so after it is taken.
+    property var addedHashes: ({})
+    // Something to watch: a film or an episode, as a torrent the player can stream.
+    function canWatch(r) {
+        return !!r && !!api && !isCatalog && api.workType !== "game" && api.mode !== "games"
+               && r.fromCatalog !== true && r.isTitle !== true
+    }
+    function wasAdded(r) { return !!addedHashes[(r.coverHash || "").toLowerCase()] }
     readonly property bool showAudioModes: typeof i18n !== "undefined" && i18n.language !== 0
 
     readonly property bool catalogAvailable: !(typeof isStoreBuild !== "undefined" && isStoreBuild)
@@ -162,7 +175,12 @@ Rectangle {
             if (page.isEpisodes && page.seasonFilter === -2 && page.seasonTabs.length > 0)
                 page.seasonFilter = page.seasonTabs[0]
         }
-        function onWorkChanged() { page.seasonFilter = -2; page.episodeFilter = -1 }
+        function onWorkChanged() { page.seasonFilter = -2; page.episodeFilter = -1; page.showAdvanced = false }
+        function onAddedTorrent(hash) {
+            var m = Object.assign({}, page.addedHashes)
+            m[(hash || "").toLowerCase()] = true
+            page.addedHashes = m
+        }
         function onModeChanged() {
             if (page.api.mode === "catalog" || page.api.mode === "titles") {
                 page.seasonFilter = -2; page.episodeFilter = -1
@@ -203,6 +221,7 @@ Rectangle {
 
     function runSearch() {
         if (!api) return
+        openedFromBrowse = false
         clearFilters()
         var cat = (isLegacy && findBar.catIndex >= 0) ? api.categories[findBar.catIndex].code : 0
         api.search(page.sourceKey, findBar.text, cat)
@@ -225,6 +244,25 @@ Rectangle {
         if (i >= 0) api.activateResult(i)
     }
 
+    // Next episode for a player showing something taken from this page.
+    function nextEpisodeFor(hash, fileIdx) { return titlePicked ? titleStagePane.nextFor(hash, fileIdx) : null }
+    function playNextEpisode(next) { titleStagePane.playNext(next) }
+
+    // A title browse already knows: its page directly, no search to pick it from.
+    property bool openedFromBrowse: false
+    function openTitle(item) {
+        if (!api || !item) return
+        findBar.setText(item.title || "")
+        searchDebounce.stop()
+        clearFilters()
+        openedFromBrowse = true
+        api.openTitle(item)
+    }
+    function leaveTitle() {
+        api.back()
+        if (openedFromBrowse) { openedFromBrowse = false; findBar.setText("") }
+    }
+
     function runQuery(text) {
         findBar.setText(text)
         findBar.resetSource()
@@ -232,6 +270,10 @@ Rectangle {
     }
 
     signal freeSpaceRequested(double targetBytes)
+
+    // Explicit, not fillHeight: a fillHeight child of this StackLayout page kept
+    // geometry from before it was shown and took half the page.
+    readonly property real bodyHeight: mainCol.height - findBar.height - footer.Layout.preferredHeight
 
     ColumnLayout {
         id: mainCol
@@ -263,7 +305,7 @@ Rectangle {
                 var _ = page.gameCatalogGen
                 return page.api && page.api.gameSources().length > 0
             }
-            onFindRequested: function(title) { page.runQuery(title) }
+            onTitleRequested: function(item) { page.openTitle(item) }
             onRowGridRequested: function(l, it) { page.openRowGrid(l, it) }
             onCatalogBrowseRequested: function(group) { page.openCatalogBrowse(group || "") }
         }
@@ -277,8 +319,7 @@ Rectangle {
             label: page.rowGridLabel
             items: page.rowGridItems
             onBackRequested: page.closeRowGrid()
-            onActivated: function(item) { page.runQuery(item.title) }
-            onGetWatch: function(item) { browsePane.getWatch(item) }
+            onActivated: function(item) { page.openTitle(item) }
         }
 
         FindCatalogBrowse {
@@ -290,26 +331,20 @@ Rectangle {
             onBackRequested: page.closeCatalogBrowse()
         }
 
-        SearchSeriesPane {
+        SearchTitleStage {
+            id: titleStagePane
             sv: page
-            // Not during the titles stage: singleTitleView is already true
-            // while the grid of candidates is up, and an invisible-but-filling
-            // pane left a black band where the results should be.
-            visible: page.seriesScreen
+            visible: page.titleStage
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: page.bodyHeight
         }
 
-        SearchWorkHeader { sv: page; visible: !page.seriesScreen }
-        SearchFiltersRow { id: filtersRow; sv: page; visible: !page.seriesScreen }
-        SearchModeBars { sv: page; visible: !page.seriesScreen }
-        // Hidden during the titles stage instead of merely emptied: both panes
-        // ask for fillHeight, so an empty results list still claimed a share of
-        // the page and pushed the loading spinner: which lives in its empty
-        // state: away from the centre.
-        SearchListPane { sv: page; visible: !page.isTitles && !page.seriesScreen; Layout.fillWidth: true; Layout.fillHeight: true }
-        SearchTitlesPane { sv: page; Layout.fillWidth: true; Layout.fillHeight: true }
-        SearchResultsFooter { sv: page }
+        SearchWorkHeader { sv: page }
+        SearchFiltersRow { id: filtersRow; sv: page }
+        SearchModeBars { sv: page }
+        SearchListPane { sv: page; Layout.fillWidth: true; Layout.fillHeight: true }
+        SearchTitlesPane { sv: page; Layout.fillWidth: true; Layout.preferredHeight: page.bodyHeight }
+        SearchResultsFooter { id: footer; sv: page }
     }
 
     SearchDetailDrawer { anchors.fill: parent; sv: page }

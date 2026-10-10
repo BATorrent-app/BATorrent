@@ -18,6 +18,7 @@ Item {
     property string type: ""
     signal activated()
     signal getWatch()       // ▶ one-click Get & Watch (movie/series)
+    property bool showPlay: true
 
     property int posterW: 150
     readonly property int posterH: Math.round(posterW * 1.5)
@@ -176,54 +177,14 @@ Item {
         background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 9 }
     }
 
-    // ▶ Get & Watch / Get & Install: centered play button on hover
-    Rectangle {
-        visible: ma.containsMouse || pbMa.containsMouse
-        x: (card.posterW - width) / 2
-        y: (card.posterH - height) / 2
-        width: 46; height: 46; radius: 23
-        // dark glass disc; red only as the hover accent (ring + glyph),
-        // never a filled surface: same language as the grid tiles
-        color: "#cc101014"
-        border.color: pbMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
-        border.width: 1
-        scale: pbMa.containsMouse ? 1.08 : 1.0
-        Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
-        Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
-        IconImg {
-            anchors.centerIn: parent
-            anchors.horizontalCenterOffset: 1
-            src: "qrc:/icons/play.svg"
-            tint: pbMa.containsMouse ? Theme.accent : "#ffffff"
-            s: 18
-        }
-        MouseArea {
-            id: pbMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: card.getWatch()
-        }
-    }
-
-    // "My List" toggle: on top of the main MouseArea so it gets the click
-    Rectangle {
-        visible: card.watchlistEnabled && (ma.containsMouse || wlMa.containsMouse || card.saved)
-        x: 6; y: 6
-        width: 26; height: 26; radius: 13
-        color: wlMa.containsMouse ? "#cc000000" : "#99000000"
-        IconImg {
-            anchors.centerIn: parent
-            src: "qrc:/icons/heart.svg"
-            tint: card.saved ? Theme.accent : "#ffffff"
-            s: 14
-        }
-        MouseArea {
-            id: wlMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: card.watchlistToggle()
-        }
+    CardActions {
+        width: card.posterW
+        height: card.posterH
+        hovered: ma.containsMouse
+        showPlay: card.showPlay
+        watchlistEnabled: card.watchlistEnabled
+        saved: card.saved
+        onGetWatch: card.getWatch()
+        onWatchlistToggle: card.watchlistToggle()
     }
 }

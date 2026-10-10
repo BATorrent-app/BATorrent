@@ -22,11 +22,27 @@ Item {
     property real percent: 0          // 0..1
     property string failMessage: ""
     property bool forGame: false      // picks gi_* phase copy when true
+    // how the buffering is going, for the "this source is slow" offer
+    property int downBps: 0
+    property int peers: 0
+    property int waited: 0
 
     signal canceled()
+    signal anotherRequested()
 
-    function show(p, t) { phase = p; title = t; hash = ""; percent = 0; failMessage = "" }
-    function hide() { phase = ""; hash = ""; percent = 0; failMessage = ""; forGame = false; autoHide.stop() }
+    // Slow enough that another release is the better bet: a quarter-minute in
+    // and still crawling, or barely anyone to fetch from.
+    function isSlow(waitedSec, bps, peerCount) {
+        return waitedSec >= 15 && (bps < 300 * 1024 || peerCount < 3)
+    }
+    function fmtRate(bps) {
+        return bps >= 1024 * 1024 ? (bps / (1024 * 1024)).toFixed(1) + " MB/s"
+                                  : Math.round(bps / 1024) + " KB/s"
+    }
+    readonly property bool slow: phase === "buffering" && isSlow(waited, downBps, peers)
+
+    function show(p, t) { phase = p; title = t; hash = ""; percent = 0; failMessage = ""; downBps = 0; peers = 0; waited = 0 }
+    function hide() { phase = ""; hash = ""; percent = 0; failMessage = ""; forGame = false; downBps = 0; peers = 0; waited = 0; autoHide.stop() }
     function fail(msg) { phase = "failed"; failMessage = msg; autoHide.restart() }
 
     readonly property bool showSpinner: phase === "searching" || phase === "installing"
@@ -140,11 +156,39 @@ Item {
                 }
             }
 
-            BtnFlat {
+            Text {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                visible: ov.phase === "buffering" && ov.waited >= 5
+                text: "↓ " + ov.fmtRate(ov.downBps) + "  ·  "
+                      + (i18n.language, i18n.t("gw_n_peers")).arg(ov.peers)
+                color: ov.slow ? Theme.warn : Theme.t4
+                font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+            }
+            Text {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                visible: ov.slow
+                wrapMode: Text.WordWrap
+                text: (i18n.language, i18n.t("gw_slow_hint"))
+                color: Theme.t2
+                font.pixelSize: 12; font.family: Theme.fontSans
+            }
+
+            RowLayout {
                 Layout.alignment: Qt.AlignHCenter
                 visible: ov.phase !== "failed"
-                text: (i18n.language, i18n.t("gw_cancel"))
-                onClicked: { ov.canceled(); ov.hide() }
+                spacing: 10
+                BtnFlat {
+                    visible: ov.slow && !ov.forGame
+                    primary: true
+                    text: (i18n.language, i18n.t("gw_try_another"))
+                    onClicked: { ov.anotherRequested(); ov.hide() }
+                }
+                BtnFlat {
+                    text: (i18n.language, i18n.t("gw_cancel"))
+                    onClicked: { ov.canceled(); ov.hide() }
+                }
             }
         }
     }

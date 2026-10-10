@@ -58,4 +58,27 @@ GameReleasePick::Candidate gameCandFromRow(const QVariantMap &m, bool hasUri)
              hasUri };
 }
 
+QVariantMap titleRowFromWork(const QVariantMap &w)
+{
+    QVariantMap row;
+    row["name"]    = w.value(QStringLiteral("title"));
+    row["title"]   = w.value(QStringLiteral("title"));
+    row["originalTitle"] = w.value(QStringLiteral("originalTitle"));
+    row["sub"]     = w.value(QStringLiteral("type"));
+    row["sizeStr"] = w.value(QStringLiteral("year"));
+    row["year"]    = w.value(QStringLiteral("year"));
+    row["type"]    = w.value(QStringLiteral("type"));
+    row["poster"]  = w.value(QStringLiteral("poster"));
+    row["backdrop"] = w.value(QStringLiteral("backdrop"));
+    row["rating"]  = w.value(QStringLiteral("rating"));
+    row["overview"] = w.value(QStringLiteral("overview"));
+    row["tmdbId"]  = w.value(QStringLiteral("tmdbId"));
+    row["stills"]  = w.value(QStringLiteral("stills"));
+    row["genres"]  = w.value(QStringLiteral("genres"));
+    row["maker"]   = w.value(QStringLiteral("maker"));
+    row["coverHash"] = QString();
+    row["isTitle"] = true;
+    return row;
+}
+
 } // namespace SearchBridgeUtil

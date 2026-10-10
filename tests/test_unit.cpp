@@ -3,6 +3,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include "services/platform/autostart.h"
+#include "torrent/streamgate.h"
 #include <catch2/catch_approx.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
@@ -1918,5 +1919,40 @@ TEST_CASE("classifyAdd answers for every path that used to answer for itself",
         CHECK(classifyAdd("   ").kind == AddKind::Unknown);
         CHECK(classifyAdd("just some words").kind == AddKind::Unknown);
         CHECK(classifyAdd("ftp://x.net/a.torrent").kind == AddKind::TorrentFile);
+    }
+}
+
+TEST_CASE("StreamGate: a file opens once its head and its last piece are here", "[unit][stream]")
+{
+    const qint64 MB = 1024 * 1024;
+    SECTION("the head scales with the file, within bounds") {
+        CHECK(StreamGate::headBytes(0) == 0);
+        CHECK(StreamGate::headBytes(2 * MB) == 2 * MB);              // a tiny file: all of it
+        CHECK(StreamGate::headBytes(700 * MB) == 4 * MB);            // floor
+        CHECK(StreamGate::headBytes(2000 * MB) == 10 * MB);          // 0.5%
+        CHECK(StreamGate::headBytes(60000 * MB) == 16 * MB);         // ceiling
+    }
+    SECTION("5 MB of anything is not ready: the head has to be contiguous, and the tail there") {
+        const qint64 size = 2000 * MB;
+        CHECK_FALSE(StreamGate::ready(5 * MB, size, true));
+        CHECK_FALSE(StreamGate::ready(10 * MB, size, false));
+        CHECK(StreamGate::ready(10 * MB, size, true));
+        CHECK_FALSE(StreamGate::ready(10 * MB, 0, true));
+    }
+    SECTION("only an MP4 waits for its last piece") {
+        const qint64 size = 2000 * MB;
+        CHECK(StreamGate::needsTail("Movie.2026.1080p.mp4"));
+        CHECK(StreamGate::needsTail("movie.M4V.!bt"));
+        CHECK_FALSE(StreamGate::needsTail("Doing.Life.2026.1080p.mkv"));
+        CHECK(StreamGate::ready(10 * MB, size, false, false));
+        CHECK_FALSE(StreamGate::ready(10 * MB, size, false, true));
+        CHECK(StreamGate::progress(5 * MB, size, false, false) == Catch::Approx(0.5));
+    }
+    SECTION("progress for the overlay") {
+        const qint64 size = 2000 * MB;
+        CHECK(StreamGate::progress(0, size, false) == 0.0);
+        CHECK(StreamGate::progress(5 * MB, size, false) == Catch::Approx(0.45));
+        CHECK(StreamGate::progress(10 * MB, size, true) == Catch::Approx(1.0));
+        CHECK(StreamGate::progress(99 * MB, size, false) == Catch::Approx(0.9));
     }
 }

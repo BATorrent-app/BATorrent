@@ -175,6 +175,30 @@ QVariantList titleSearchRows(const QByteArray &jsonArray)
             if (stills.size() >= 10) break;
         }
         m.insert(QStringLiteral("stills"), stills);
+        // Key art is composed to sit behind text; a gameplay screenshot is the
+        // fallback because it is still wide, unlike the cover.
+        const QJsonArray arts = o.value(QLatin1String("artworks")).toArray();
+        const QString artId = arts.isEmpty() ? QString()
+            : arts.at(0).toObject().value(QLatin1String("image_id")).toString();
+        m.insert(QStringLiteral("backdrop"), !artId.isEmpty()
+                 ? QStringLiteral("https://images.igdb.com/igdb/image/upload/t_1080p/%1.jpg").arg(artId)
+                 : stills.value(0));
+        QStringList genres;
+        for (const QJsonValue &g : o.value(QLatin1String("genres")).toArray()) {
+            const QString n = g.toObject().value(QLatin1String("name")).toString();
+            if (!n.isEmpty()) genres << n;
+        }
+        m.insert(QStringLiteral("genres"), genres);
+        QString maker;
+        for (const QJsonValue &c : o.value(QLatin1String("involved_companies")).toArray()) {
+            const QJsonObject co = c.toObject();
+            const QString n = co.value(QLatin1String("company")).toObject()
+                                  .value(QLatin1String("name")).toString();
+            if (n.isEmpty()) continue;
+            if (maker.isEmpty()) maker = n;
+            if (co.value(QLatin1String("developer")).toBool()) { maker = n; break; }
+        }
+        m.insert(QStringLiteral("maker"), maker);
         out.append(m);
     }
     return out;

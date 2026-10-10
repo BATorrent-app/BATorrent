@@ -155,6 +155,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/vpn/vpnmanager.h
     src/services/vpn/vpnmanager.cpp
     src/services/discovery/discoveryservice.cpp
+    src/services/discovery/discoveryservice_title.cpp
     src/services/discovery/discoveryassemble.cpp
     src/services/discovery/discoverysearch.cpp
     src/services/discovery/discoveryfinish.cpp

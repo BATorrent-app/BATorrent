@@ -4,6 +4,7 @@
 
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Controls.Basic
 import "../theme"
 
 Item {
@@ -311,6 +312,16 @@ Item {
             stateKey: tile.stateKey
             sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
                    || (tile.isDownloading && tile.downRate > 0)
+            MouseArea {
+                id: barMa
+                anchors.fill: parent
+                anchors.margins: -6
+                acceptedButtons: Qt.NoButton
+                hoverEnabled: tile.isIncomplete
+            }
+            ToolTip.visible: barMa.containsMouse
+            ToolTip.delay: 250
+            ToolTip.text: tile.downloaded + " " + (i18n.language, i18n.t("word_of")) + " " + tile.size
         }
 
         Rectangle {

@@ -184,9 +184,24 @@ Item {
 
                 BtnFlat {
                     Layout.fillWidth: true
+                    visible: root.sv.canWatch(root.sv.selected)
                     primary: true
+                    icon: "qrc:/icons/play.svg"
+                    text: (i18n.language, i18n.t("find_add_watch"))
+                    onClicked: {
+                        if (!root.sv.api || root.sv.selectedIdx < 0) return
+                        root.sv.api.addAndWatch(root.sv.selectedIdx)
+                        root.sv.detailOpen = false
+                    }
+                }
+                BtnFlat {
+                    Layout.fillWidth: true
+                    readonly property bool secondary: root.sv.canWatch(root.sv.selected)
+                    primary: !secondary
+                    icon: secondary ? "qrc:/icons/download.svg" : ""
                     text: root.sv.isCatalog ? (i18n.language, i18n.t("search_view_streams"))
-                                            : (i18n.language, i18n.t("search_add"))
+                          : secondary ? (i18n.language, i18n.t("find_only_add"))
+                          : (i18n.language, i18n.t("search_add"))
                     onClicked: {
                         if (!root.sv.api || root.sv.selectedIdx < 0) return
                         root.sv.api.activateResult(root.sv.selectedIdx)

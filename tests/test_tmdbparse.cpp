@@ -179,3 +179,45 @@ TEST_CASE("logoUrl falls back and gives up cleanly", "[tmdbparse]") {
         REQUIRE(TmdbParse::logoUrl(QByteArrayLiteral("nope"), QStringLiteral("x")).isEmpty());
     }
 }
+
+TEST_CASE("workDetails reads genres, billed cast and season count", "[tmdbparse]") {
+    const QByteArray json = QByteArrayLiteral(R"({
+      "genres": [ { "id": 80, "name": "Crime" }, { "id": 18, "name": "Drama" }, { "id": 9648, "name": "" } ],
+      "number_of_seasons": 4,
+      "credits": { "cast": [
+        { "name": "Michelle Monaghan", "order": 2 },
+        { "name": "Matthew McConaughey", "order": 0 },
+        { "name": "", "order": 1 },
+        { "name": "Woody Harrelson", "order": 1 },
+        { "name": "Extra", "order": 9 }
+      ] }
+    })");
+    const QVariantMap d = TmdbParse::workDetails(json);
+    REQUIRE(d.value("genres").toStringList() == QStringList{ "Crime", "Drama" });
+    REQUIRE(d.value("cast").toStringList()
+            == QStringList{ "Matthew McConaughey", "Woody Harrelson", "Michelle Monaghan" });
+    REQUIRE(d.value("seasons").toInt() == 4);
+}
+
+TEST_CASE("workDetails survives a film and garbage", "[tmdbparse]") {
+    SECTION("a film has no seasons and may have no credits block") {
+        const QVariantMap d = TmdbParse::workDetails(
+            QByteArrayLiteral(R"({"genres":[{"name":"Action"}],"runtime":120})"));
+        REQUIRE(d.value("genres").toStringList() == QStringList{ "Action" });
+        REQUIRE(d.value("cast").toStringList().isEmpty());
+        REQUIRE(d.value("seasons").toInt() == 0);
+    }
+    SECTION("an unparseable body is an empty map, not a crash") {
+        REQUIRE(TmdbParse::workDetails(QByteArrayLiteral("<html>")).isEmpty());
+        REQUIRE(TmdbParse::workDetails(QByteArray()).isEmpty());
+    }
+}
+
+TEST_CASE("workDetails reads a season payload's own cast", "[tmdbparse]") {
+    // The season endpoint carries credits in the same shape, and no genres.
+    const QVariantMap d = TmdbParse::workDetails(QByteArrayLiteral(R"({
+      "episodes": [], "credits": { "cast": [ { "name": "Woody Harrelson", "order": 9 },
+                                             { "name": "Matthew McConaughey", "order": 0 } ] } })"));
+    REQUIRE(d.value("cast").toStringList()
+            == QStringList{ "Matthew McConaughey", "Woody Harrelson" });
+}

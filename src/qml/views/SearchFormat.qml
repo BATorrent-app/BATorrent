@@ -43,7 +43,7 @@ QtObject {
     }
 
     function seedColor(n) {
-        return n >= 50 ? Theme.grn : (n >= 10 ? "#e0a533" : (n >= 1 ? "#d97640" : Theme.t4))
+        return n >= 50 ? Theme.grn : (n >= 10 ? Theme.warn : (n >= 1 ? Theme.seedLow : Theme.t4))
     }
     function seedFill(n) {
         return n <= 0 ? 0 : Math.min(1, Math.log(n + 1) / Math.log(500))

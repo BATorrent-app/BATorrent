@@ -185,7 +185,7 @@ Item {
             implicitWidth: dlRow.width + 12; implicitHeight: 18
             Row {
                 id: dlRow; anchors.centerIn: parent; spacing: 5
-                Rectangle { visible: card.item.completed; width: 6; height: 6; radius: 3; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
+                Rectangle { visible: card.item.completed === true; width: 6; height: 6; radius: 3; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: {

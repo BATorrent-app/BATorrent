@@ -19,7 +19,7 @@ WorkHero {
 
     Layout.fillWidth: true
     Layout.preferredHeight: 230
-    visible: !sv.browse && sv.api && sv.api.singleTitleView && !sv.isEpisodes
+    visible: !sv.browse && sv.api && sv.api.singleTitleView && !sv.isEpisodes && !sv.titleStage
              && (sv.api.workTitle || "").length > 0
 
     title: sv.api ? (sv.api.workTitle || "") : ""

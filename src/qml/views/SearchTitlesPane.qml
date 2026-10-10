@@ -2,31 +2,24 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Title-disambiguation surface: the best-match hero + the covers grid where
-// the user picks the actual movie/series/game before drilling into releases.
+// Title-disambiguation surface: the best match as a wide banner, the other
+// candidates as tiles, before drilling into one title's releases.
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import "../theme"
 import "../widgets"
 
-ColumnLayout {
+Item {
     id: pane
     property var sv
-    spacing: 0
     visible: sv.isTitles && !sv.browse
 
-    // The stage-1 loading and not-found state, centred on this pane: it owns
-    // the whole page while titles are being resolved.
-    SearchEmptyState {
-        sv: pane.sv
-        visible: !pane.sv.api || pane.sv.api.results.length === 0
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-    }
+    readonly property var titles: sv.api && sv.isTitles ? sv.api.results : []
+    readonly property bool showBest: titles.length > 0 && sv.api && !sv.api.searching
+    readonly property var bestItem: showBest ? titles[0] : null
+    readonly property var others: showBest ? titles.slice(1) : titles
 
-    // ---- best-match hero state ----
-    readonly property bool showBestMatch: sv.isTitles && sv.api && sv.api.results.length > 0 && !sv.api.searching
-    readonly property var bestItem: showBestMatch ? sv.api.results[0] : null
     property var bestSummary: null   // {count, bestSize, maxSeeds} for bestItem
     onBestItemChanged: {
         bestSummary = null
@@ -42,137 +35,112 @@ ColumnLayout {
         }
     }
 
-    // best-match hero: explicitly surfaces the top title (not just first in grid)
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 142
-        Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5; Layout.topMargin: Theme.sp4
-        visible: pane.showBestMatch
-        radius: 14
-        color: Theme.elev
-        border.color: Theme.hair; border.width: 1
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: 16
-            spacing: 16
-            PosterThumb {
-                Layout.alignment: Qt.AlignVCenter
-                implicitWidth: 82; implicitHeight: 110
-                posterUrl: pane.bestItem ? (pane.bestItem.poster || "") : ""
-                label: pane.bestItem ? (pane.bestItem.name || "") : ""
-            }
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                spacing: 5
-                Text {
-                    text: (i18n.language, i18n.t("search_best_match"))
-                    color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
-                    font.letterSpacing: 1.2; font.family: Theme.fontSans
-                }
-                Text {
-                    text: pane.bestItem ? (pane.bestItem.name || "") : ""
-                    color: Theme.t1; font.pixelSize: 22; font.weight: Font.Bold; font.family: Theme.fontSans
-                    Layout.fillWidth: true; elide: Text.ElideRight
-                }
-                Text {
-                    text: {
-                        if (!pane.bestItem) return ""
-                        var parts = []
-                        var t = pane.sv.typeLabel(pane.bestItem.type || "")
-                        if ((pane.bestItem.year || "").length > 0) parts.push(pane.bestItem.year)
-                        if (t.length > 0) parts.push(t)
-                        if ((pane.bestItem.rating || 0) > 0) parts.push("★ " + pane.bestItem.rating.toFixed(1))
-                        return parts.join("    ·    ")
-                    }
-                    color: Theme.t3; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                }
-                Row {
-                    spacing: 7
-                    visible: pane.bestSummary && pane.bestSummary.count > 0
-                    Rectangle { width: 7; height: 7; radius: 4; color: Theme.grn; anchors.verticalCenter: parent.verticalCenter }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: {
-                            if (!pane.bestSummary) return ""
-                            var s = pane.bestSummary.count + " torrents"
-                            if (pane.bestSummary.maxSeeds > 0) s += "    ·    best " + pane.sv.fmtCount(pane.bestSummary.maxSeeds) + " seeds"
-                            return s
-                        }
-                        color: Theme.grn; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
-                    }
-                }
-            }
-            BtnFlat {
-                Layout.alignment: Qt.AlignVCenter
-                primary: true
-                text: (i18n.language, i18n.t("search_see_torrents"))
-                onClicked: if (pane.sv.api) pane.sv.api.activateResult(0)
-            }
-        }
+    function savedOf(it) {
+        return typeof session !== "undefined"
+               && (session.watchlist, session.inWatchlist(it.name || "", it.type || ""))
     }
-    Text {
-        visible: pane.showBestMatch && pane.sv.api && pane.sv.api.results.length > 1
-        text: (i18n.language, i18n.t("search_other_matches"))
-        Layout.leftMargin: Theme.sp5; Layout.topMargin: 8
-        color: Theme.t4; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 0.8; font.family: Theme.fontSans
+    function toggleSaved(it) {
+        if (typeof session !== "undefined") session.toggleWatchlist({
+            title: it.name || "", type: it.type || "", poster: it.poster || "", year: it.year || "" })
     }
 
-    // titles grid (step 1: pick the actual movie/series/game, one cover each)
-    GridView {
-        id: titlesView
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        clip: true
-        model: pane.sv.isTitles ? (pane.showBestMatch ? pane.sv.api.results.slice(1) : (pane.sv.api ? pane.sv.api.results : [])) : []
-        cellWidth: 174
-        cellHeight: 286
-        leftMargin: Theme.sp5; rightMargin: Theme.sp5; topMargin: Theme.sp4; bottomMargin: Theme.sp4
+    // loading and not-found, centred: this pane owns the page while titles resolve
+    SearchEmptyState {
+        anchors.fill: parent
+        sv: pane.sv
+        visible: pane.titles.length === 0
+    }
+
+    Flickable {
+        id: flick
+        anchors.fill: parent
+        visible: pane.titles.length > 0
+        contentHeight: col.height + 32
         boundsBehavior: Flickable.StopAtBounds
-        cacheBuffer: 600
+        clip: true
+        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        WheelScroller { flick: flick }
 
-        SearchEmptyState {
-            anchors.fill: parent
-            sv: pane.sv
-            visible: titlesView.count === 0 && !pane.showBestMatch
-        }
+        Column {
+            id: col
+            x: Theme.sp5
+            y: 20
+            width: flick.width - 2 * Theme.sp5
+            spacing: 32
 
-        delegate: Item {
-            required property var modelData
-            required property int index
-            width: titlesView.cellWidth
-            height: titlesView.cellHeight
-            PosterCard {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                posterW: 150
-                title: modelData.name || ""
-                poster: modelData.poster || ""
-                year: {
-                    var y = modelData.year || ""
-                    var t = pane.sv.typeLabel(modelData.type || "")
-                    var base = t.length > 0 ? (y.length > 0 ? y + "  ·  " + t : t) : y
-                    // Show the original name when it differs from the localised
-                    // one: it confirms the right work, and explains why results
-                    // come back under a name the user never typed.
-                    var orig = modelData.originalTitle || ""
-                    if (orig.length > 0 && orig !== (modelData.name || ""))
-                        base = base.length > 0 ? base + "  ·  " + orig : orig
-                    return base
+            Rectangle {
+                width: col.width
+                height: 300
+                radius: 8
+                color: Theme.stageBg
+                clip: true
+                visible: pane.bestItem !== null
+                TitleBanner {
+                    anchors.fill: parent
+                    item: pane.bestItem
+                    centered: true
+                    showRating: false
+                    textWidth: 480
+                    logoWidth: 300
+                    logoHeight: 96
+                    kicker: (i18n.language, i18n.t("search_best_match"))
+                    kickerColor: Theme.accentText
+                    extraFacts: pane.bestItem && (pane.bestItem.maker || "").length > 0 ? [pane.bestItem.maker] : []
+                    status: pane.bestSummary && pane.bestSummary.count > 0
+                            ? (i18n.language, i18n.t("find_n_releases_best"))
+                                  .arg(pane.bestSummary.count).arg(pane.sv.fmtCount(pane.bestSummary.maxSeeds))
+                            : ""
+                    primaryLabel: (i18n.language, i18n.t("find_see_releases"))
+                    onPrimaryClicked: if (pane.sv.api) pane.sv.api.activateResult(0)
                 }
-                rating: modelData.rating || 0
-                type: modelData.type || ""
-                synopsis: modelData.overview || ""
-                watchlistEnabled: typeof session !== "undefined"
-                saved: typeof session !== "undefined"
-                       && (session.watchlist, session.inWatchlist(modelData.name || "", modelData.type || ""))
-                onWatchlistToggle: if (typeof session !== "undefined") session.toggleWatchlist({
-                    title: modelData.name || "", type: modelData.type || "",
-                    poster: modelData.poster || "", year: modelData.year || "" })
-                onActivated: if (pane.sv.api) pane.sv.api.activateResult(pane.showBestMatch ? index + 1 : index)
-                onGetWatch: if (pane.sv.api) pane.sv.api.getAndWatch(modelData.name || "",
-                                                                     modelData.year || "",
-                                                                     modelData.type || "movie")
+                MouseArea {
+                    anchors.fill: parent
+                    z: -1
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: if (pane.sv.api) pane.sv.api.activateResult(0)
+                }
+            }
+
+            Column {
+                width: col.width
+                spacing: 14
+                visible: pane.others.length > 0
+                Row {
+                    spacing: 12
+                    Text {
+                        id: othersTitle
+                        text: (i18n.language, i18n.t("find_other_matches"))
+                        color: Theme.t1
+                        font.pixelSize: 18; font.weight: Font.DemiBold
+                        font.letterSpacing: -0.2; font.family: Theme.fontSans
+                    }
+                    Text {
+                        anchors.baseline: othersTitle.baseline
+                        text: (i18n.language, i18n.t("search_titles_n")).arg(pane.others.length)
+                        color: Theme.t4
+                        font.pixelSize: 12; font.family: Theme.fontSans
+                    }
+                }
+                Grid {
+                    id: grid
+                    readonly property int cols: Math.max(2, Math.min(6, Math.floor((col.width + 10) / 250)))
+                    readonly property real cellW: (col.width - (cols - 1) * columnSpacing) / cols
+                    columns: cols
+                    columnSpacing: 10
+                    rowSpacing: 24
+                    Repeater {
+                        model: pane.others
+                        TitleTile {
+                            required property var modelData
+                            required property int index
+                            width: grid.cellW
+                            item: modelData
+                            saved: pane.savedOf(modelData)
+                            onWatchlistToggle: pane.toggleSaved(modelData)
+                            onActivated: if (pane.sv.api) pane.sv.api.activateResult(pane.showBest ? index + 1 : index)
+                        }
+                    }
+                }
             }
         }
     }

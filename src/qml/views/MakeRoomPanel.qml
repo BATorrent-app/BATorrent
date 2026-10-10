@@ -79,7 +79,7 @@ Rectangle {
                                 return (i18n.language, i18n.t("make_room_need_more")).arg(free).arg(root.fmtSize(root.targetBytes))
                             return (i18n.language, i18n.t("make_room_free_now")).arg(free)
                         }
-                        color: root.targetBytes > 0 ? "#e0a533" : Theme.t4
+                        color: root.targetBytes > 0 ? Theme.warn : Theme.t4
                         font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
                     }
                 }

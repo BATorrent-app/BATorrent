@@ -265,10 +265,10 @@ Item {
                     }
                     PIconBtn {
                         Layout.alignment: Qt.AlignVCenter
-                        visible: !!pw && pw.nextIdx >= 0
+                        visible: !!pw && pw.hasNext
                         src: "qrc:/icons/skip-forward.svg"
                         tip: (i18n.language, i18n.t("player_next"))
-                        onClicked: if (pw && typeof session !== "undefined") session.playFile(pw.infoHash, pw.nextIdx)
+                        onClicked: if (pw) pw.playNext()
                     }
                 }
 

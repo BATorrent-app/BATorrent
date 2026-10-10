@@ -47,3 +47,14 @@ WorkHero 1.0 WorkHero.qml
 SeriesLogic 1.0 SeriesLogic.qml
 EpisodeRow 1.0 EpisodeRow.qml
 SeasonPicker 1.0 SeasonPicker.qml
+TitleStage 1.0 TitleStage.qml
+StageSelect 1.0 StageSelect.qml
+StageReleaseRow 1.0 StageReleaseRow.qml
+StageRoundButton 1.0 StageRoundButton.qml
+StageEpisodeRow 1.0 StageEpisodeRow.qml
+StageHeading 1.0 StageHeading.qml
+StageFilterBar 1.0 StageFilterBar.qml
+TitleMark 1.0 TitleMark.qml
+CardActions 1.0 CardActions.qml
+TitleTile 1.0 TitleTile.qml
+TitleBanner 1.0 TitleBanner.qml

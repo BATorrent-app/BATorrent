@@ -30,28 +30,13 @@
 void QmlSessionBridge::streamSelected()
 {
     if (!hasSelection()) return;
-    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
     const int row = m_selectedIndex;
     auto files = m_session->filesAt(row);
     TorrentInfo info = m_session->torrentAt(row);
-    int bestIdx = -1; qint64 bestSize = 0;
     auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
-    for (int i = 0; i < int(files.size()); ++i) {
-        const QString mp = stripBt(files[i].path);
-        for (const auto &ext : videoExts)
-            if (mp.endsWith(ext, Qt::CaseInsensitive)) {
-                if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
-                break;
-            }
-    }
+    const int bestIdx = bestVideoFile(row);
     if (bestIdx < 0) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
-
-    m_session->resumeTorrent(row);   // a paused torrent would never buffer
-    m_session->setSequentialDownload(row, true);
-    for (int i = 0; i < int(files.size()); ++i)
-        if (i != bestIdx) m_session->setFilePriority(row, i, 0);
-    m_session->setFilePriority(row, bestIdx, 7);
-    m_session->prioritizeFilePieceBoundaries(row, bestIdx);
+    prepStream(row, bestIdx);
 
     m_streamIndex = row; m_streamFileIdx = bestIdx;
     m_streamFilePath = stripBt(info.savePath + "/" + files[bestIdx].path);   // nice name, no ".!bt"
@@ -87,35 +72,43 @@ void QmlSessionBridge::streamSelected()
     emit toast(tr_("ctx_stream"), tr_("stream_started").arg(info.name));
 }
 
-QString QmlSessionBridge::streamUrl(int row)
+int QmlSessionBridge::bestVideoFile(int row) const
 {
-    if (m_streamPort == 0) return {};
-    if (row < 0 || row >= m_session->torrentCount()) return {};
+    if (row < 0 || row >= m_session->torrentCount()) return -1;
     static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
-    auto files = m_session->filesAt(row);
-    auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
+    const auto files = m_session->filesAt(row);
     int bestIdx = -1; qint64 bestSize = 0;
     for (int i = 0; i < int(files.size()); ++i) {
-        const QString mp = stripBt(files[i].path);
+        QString mp = files[i].path;
+        if (mp.endsWith(QStringLiteral(".!bt"))) mp.chop(4);
         for (const auto &ext : videoExts)
             if (mp.endsWith(ext, Qt::CaseInsensitive)) {
                 if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
                 break;
             }
     }
+    return bestIdx;
+}
+
+void QmlSessionBridge::prepStream(int row, int fileIndex)
+{
+    const auto files = m_session->filesAt(row);
+    if (fileIndex < 0 || fileIndex >= int(files.size())) return;
+    m_session->resumeTorrent(row);   // a paused torrent would never buffer
+    m_session->setSequentialDownload(row, true);
+    for (int i = 0; i < int(files.size()); ++i)
+        m_session->setFilePriority(row, i, i == fileIndex ? 7 : 0);
+    m_session->prioritizeFilePieceBoundaries(row, fileIndex);
+}
+
+QString QmlSessionBridge::streamUrl(int row)
+{
+    if (m_streamPort == 0) return {};
+    const int bestIdx = bestVideoFile(row);
     if (bestIdx < 0) return {};
     const QString hash = m_session->torrentHashAt(row);
     if (hash.isEmpty()) return {};
-
-    // same prep as the external stream: resume, sequential, only the video
-    // file at full priority, and boost the header/index pieces.
-    m_session->resumeTorrent(row);
-    m_session->setSequentialDownload(row, true);
-    for (int i = 0; i < int(files.size()); ++i)
-        if (i != bestIdx) m_session->setFilePriority(row, i, 0);
-    m_session->setFilePriority(row, bestIdx, 7);
-    m_session->prioritizeFilePieceBoundaries(row, bestIdx);
-
+    prepStream(row, bestIdx);
     return QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(bestIdx);
 }
 
@@ -149,11 +142,7 @@ void QmlSessionBridge::playFile(const QString &infoHash, int fileIndex)
     if (row < 0 || m_streamPort == 0) return;
     auto files = m_session->filesAt(row);
     if (fileIndex < 0 || fileIndex >= int(files.size())) return;
-    m_session->resumeTorrent(row);
-    m_session->setSequentialDownload(row, true);
-    for (int i = 0; i < int(files.size()); ++i)
-        m_session->setFilePriority(row, i, i == fileIndex ? 7 : 0);
-    m_session->prioritizeFilePieceBoundaries(row, fileIndex);
+    prepStream(row, fileIndex);
     const QString hash = m_session->torrentHashAt(row);
     const TorrentInfo info = m_session->torrentAt(row);
     emit openPlayer(QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(fileIndex),
@@ -213,15 +202,26 @@ void QmlSessionBridge::playByHashFile(const QString &infoHash, int fileIndex)
     if (row < 0 || m_streamPort == 0) { playByHash(infoHash); return; }
     auto files = m_session->filesAt(row);
     if (fileIndex < 0 || fileIndex >= int(files.size())) { playByHash(infoHash); return; }
-    m_session->resumeTorrent(row);
-    m_session->setSequentialDownload(row, true);
-    for (int i = 0; i < int(files.size()); ++i)
-        m_session->setFilePriority(row, i, i == fileIndex ? 7 : 0);
-    m_session->prioritizeFilePieceBoundaries(row, fileIndex);
+    prepStream(row, fileIndex);
     const QString hash = m_session->torrentHashAt(row);
     const QString url = QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(fileIndex);
     const TorrentInfo info = m_session->torrentAt(row);
     emit openPlayer(url, info.name, infoHash, fileIndex);
+}
+
+QVariantMap QmlSessionBridge::episodeOf(const QString &infoHash, int fileIndex) const
+{
+    QVariantMap out{ { QStringLiteral("season"), -1 }, { QStringLiteral("episode"), -1 } };
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return out;
+    const auto files = m_session->filesAt(row);
+    if (fileIndex < 0 || fileIndex >= int(files.size())) return out;
+    QString name = QFileInfo(files[fileIndex].path).fileName();
+    if (name.endsWith(QStringLiteral(".!bt"))) name.chop(4);
+    const ParsedName pn = NameParser::parse(name);
+    out[QStringLiteral("season")] = pn.season;
+    out[QStringLiteral("episode")] = pn.episode;
+    return out;
 }
 
 int QmlSessionBridge::nextEpisode(const QString &infoHash, int fileIndex) const

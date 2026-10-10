@@ -14,6 +14,7 @@ ColumnLayout {
     property var sv
     spacing: 0
     Layout.fillWidth: true
+    visible: !sv.titleStage && !sv.isTitles
 
     // segmented-control chip (audio mode, season and episode bars)
     component SegChip: Rectangle {

@@ -31,6 +31,7 @@
 #include "services/platform/translator.h"
 #include "torrent/types.h"
 #include "bridges/qmlposterbridge.h"
+#include "bridges/search/qmlsearchbridge_util.h"
 
 namespace lt = libtorrent;
 
@@ -233,6 +234,94 @@ TEST_CASE("Search bridge: 'Tudo' merges loaded game catalog synchronously", "[br
     REQUIRE(results.size() == 1);
     CHECK(results[0].toMap().value("name").toString() == "Cyberpunk 2077");
     CHECK(results[0].toMap().value("sub").toString() == "Test");
+}
+
+TEST_CASE("Search bridge: addAndWatch watches only what it was asked to", "[bridge][search]")
+{
+    app();
+    // The disk-fit check needs a real save volume; the sandbox does not create one.
+    QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
+    SessionManager session;
+    QmlSearchBridge bridge(&session);
+    const QByteArray cat = R"({"name":"W","downloads":[
+        {"title":"Watchgame Small","uris":["magnet:?xt=urn:btih:1111111111111111111111111111111111111111"],"fileSize":"1 MB"},
+        {"title":"Watchgame Other","uris":["magnet:?xt=urn:btih:2222222222222222222222222222222222222222"],"fileSize":"1 MB"},
+        {"title":"Watchgame Huge","uris":["magnet:?xt=urn:btih:3333333333333333333333333333333333333333"],"fileSize":"900000 GB"}]})";
+    REQUIRE(GameSourceManager::instance().indexCatalog("W", cat) == 3);
+    bridge.search("all", "watchgame", 0);
+    const QVariantList rows = bridge.results();
+    REQUIRE(rows.size() == 3);
+    auto at = [&](const char *name) {
+        for (int i = 0; i < rows.size(); ++i)
+            if (rows[i].toMap().value("name").toString().endsWith(name)) return i;
+        return -1;
+    };
+    const int small = at("Small"), other = at("Other"), huge = at("Huge");
+
+    QSignalSpy watched(&bridge, &QmlSearchBridge::prepareAndWatch);
+    QSignalSpy wontFit(&bridge, &QmlSearchBridge::addWontFit);
+
+    bridge.addAndWatch(small);
+    CHECK(watched.count() == 1);
+    bridge.activateResult(other);
+    CHECK(watched.count() == 1);               // a plain add stays a plain add
+
+    bridge.addAndWatch(huge);
+    CHECK(wontFit.count() == 1);
+    CHECK(watched.count() == 1);
+    bridge.activateResult(huge, true);         // the disk prompt's "add anyway"
+    CHECK(watched.count() == 2);
+
+    bridge.addAndWatch(huge);                  // prompt shown, then dismissed...
+    bridge.activateResult(other);              // ...and something else added instead
+    bridge.activateResult(huge, true);
+    CHECK(watched.count() == 2);
+
+    // The adds are real: leave the sandbox session empty for the suites after.
+    for (int i = session.torrentCount() - 1; i >= 0; --i)
+        session.removeTorrent(i, false, true);
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == 0; }));
+}
+
+TEST_CASE("Search bridge: openTitle goes straight to one work's releases", "[bridge][search]")
+{
+    app();
+    SessionManager session;
+    QmlSearchBridge bridge(&session);
+
+    bridge.openTitle({ { "title", "Dune: Part Two" }, { "type", "movie" }, { "year", "2024" },
+                       { "tmdbId", 693134 }, { "backdrop", "b.jpg" } });
+    CHECK(bridge.workTitle() == "Dune: Part Two");
+    CHECK(bridge.workType() == "movie");
+    CHECK(bridge.workBackdrop() == "b.jpg");
+    CHECK(bridge.singleTitleView());
+    CHECK(bridge.canGoBack());
+
+    // Back has no grid to show: an empty titles stage, and no work left.
+    bridge.back();
+    CHECK(bridge.mode() == "titles");
+    CHECK_FALSE(bridge.singleTitleView());      // the grid is many titles again
+    CHECK(bridge.results().isEmpty());
+    CHECK(bridge.workTitle().isEmpty());
+
+    bridge.openTitle({ { "type", "movie" } });     // nothing to search for
+    CHECK(bridge.workTitle().isEmpty());
+}
+
+TEST_CASE("Search bridge: a title row carries everything the hero reads", "[bridge][search]")
+{
+    const QVariantMap work{
+        { "title", "Resident Evil Requiem" }, { "type", "game" }, { "year", "2026" },
+        { "poster", "p.jpg" }, { "backdrop", "b.jpg" }, { "tmdbId", 0 },
+        { "genres", QStringList{ "Shooter" } }, { "maker", "Capcom" } };
+    const QVariantMap row = SearchBridgeUtil::titleRowFromWork(work);
+    // The backdrop was once dropped here, so every picked title opened on its
+    // poster stretched across the hero.
+    CHECK(row.value("backdrop").toString() == "b.jpg");
+    CHECK(row.value("genres").toStringList() == QStringList{ "Shooter" });
+    CHECK(row.value("maker").toString() == "Capcom");
+    CHECK(row.value("name").toString() == "Resident Evil Requiem");
+    CHECK(row.value("isTitle").toBool());
 }
 
 // ============================================================================

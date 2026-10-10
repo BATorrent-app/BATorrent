@@ -55,6 +55,7 @@ QtObject {
                 g.videos.push({ hash: it.infoHash, idx: src.idx, name: src.name,
                                 season: src.season, episode: src.episode,
                                 watched: src.watched === true,
+                                watchedPct: src.watchedPct || 0,
                                 // the file's own progress, not the torrent's
                                 progress: src.progress || 0 })
             }

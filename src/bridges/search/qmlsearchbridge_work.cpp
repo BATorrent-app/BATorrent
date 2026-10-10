@@ -50,9 +50,15 @@ void QmlSearchBridge::setWorkContext(const QVariantMap &work)
     m_workRating = work.value(QStringLiteral("rating")).toDouble();
     m_workStillsRequested = false;
     m_workLogo.clear();
+    // IGDB answers these inline with the title; TMDB fills them on fetchWorkStills.
+    m_workGenres = work.value(QStringLiteral("genres")).toStringList();
+    m_workCast.clear();
+    m_workSeasonCount = 0;
+    m_workMaker = work.value(QStringLiteral("maker")).toString();
     emit workChanged();
     emit workStillsChanged();
     emit workLogoChanged();
+    emit workDetailsChanged();
 }
 
 void QmlSearchBridge::clearWorkContext()
@@ -65,8 +71,13 @@ void QmlSearchBridge::clearWorkContext()
     m_workTmdbId = 0;
     m_workStills.clear();
     m_workStillsRequested = false;
+    m_workGenres.clear();
+    m_workCast.clear();
+    m_workSeasonCount = 0;
+    m_workMaker.clear();
     emit workChanged();
     emit workStillsChanged();
+    emit workDetailsChanged();
 }
 
 void QmlSearchBridge::fetchWorkStills()
@@ -75,6 +86,7 @@ void QmlSearchBridge::fetchWorkStills()
     if (m_workTmdbId <= 0 || !m_discovery) return;
     m_workStillsRequested = true;
     m_discovery->fetchBackdrops(m_workTmdbId, m_workType);
+    m_discovery->fetchWorkDetails(m_workTmdbId, m_workType);
 }
 
 void QmlSearchBridge::setDiscovery(DiscoveryService *d)
@@ -86,6 +98,14 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         if (tmdbId != m_workTmdbId) return;        // stale reply for a former title
         m_workLogo = url;
         emit workLogoChanged();
+    });
+    connect(m_discovery, &DiscoveryService::workDetailsReady, this,
+            [this](int tmdbId, const QVariantMap &d) {
+        if (tmdbId != m_workTmdbId || d.isEmpty()) return;   // stale reply for a former title
+        m_workGenres = d.value(QStringLiteral("genres")).toStringList();
+        m_workCast = d.value(QStringLiteral("cast")).toStringList();
+        m_workSeasonCount = d.value(QStringLiteral("seasons")).toInt();
+        emit workDetailsChanged();
     });
     connect(m_discovery, &DiscoveryService::backdropsReady, this,
             [this](int tmdbId, const QStringList &urls) {
@@ -99,26 +119,9 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         m_results.clear();
         m_resultMagnets.clear();
         m_resultTitles.clear();
-    m_resultHttp.clear();
-        for (const QVariant &v : works) {
-            const QVariantMap w = v.toMap();
-            QVariantMap row;
-            row["name"]    = w.value(QStringLiteral("title"));
-            row["title"]   = w.value(QStringLiteral("title"));
-            row["originalTitle"] = w.value(QStringLiteral("originalTitle"));
-            row["sub"]     = w.value(QStringLiteral("type"));
-            row["sizeStr"] = w.value(QStringLiteral("year"));
-            row["year"]    = w.value(QStringLiteral("year"));
-            row["type"]    = w.value(QStringLiteral("type"));
-            row["poster"]  = w.value(QStringLiteral("poster"));
-            row["rating"]  = w.value(QStringLiteral("rating"));
-            row["overview"] = w.value(QStringLiteral("overview"));
-            row["tmdbId"]  = w.value(QStringLiteral("tmdbId"));
-            row["stills"]  = w.value(QStringLiteral("stills"));
-            row["coverHash"] = QString();
-            row["isTitle"] = true;
-            m_results << row;
-        }
+        m_resultHttp.clear();
+        for (const QVariant &v : works)
+            m_results << SearchBridgeUtil::titleRowFromWork(v.toMap());
         m_titleCache = m_results;
         setSearching(false);
         // Stay in the grid even when empty: the page shows an empty state with a
@@ -127,6 +130,22 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
                                       : tr_("search_titles_n").arg(m_results.size()));
         emit resultsChanged();
     });
+}
+
+void QmlSearchBridge::openTitle(const QVariantMap &work)
+{
+    const QString title = work.value(QStringLiteral("title")).toString();
+    if (title.isEmpty()) return;
+    // No grid to return to: back() lands on an empty titles stage and the
+    // page takes the user home from there.
+    m_titleCache.clear();
+    m_titleQuery.clear();
+    m_fromTitles = true;
+    setWorkContext(work);
+    searchSourcesForWork(title,
+                         work.value(QStringLiteral("year")).toString(),
+                         work.value(QStringLiteral("type")).toString(),
+                         work.value(QStringLiteral("originalTitle")).toString());
 }
 
 void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &year,

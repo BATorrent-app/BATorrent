@@ -12,6 +12,7 @@ Item {
     id: root
 
     property var hubPage: null
+    property var searchPage: null     // answers "what comes after this episode" for a player
 
     property alias rssWinLoader: rssWinLoader
     property alias shortcutsWinLoader: shortcutsWinLoader
@@ -52,8 +53,14 @@ Item {
         var step = 34 * (openPlayers.length % 6)
         if (step > 0) { w.x = w.x + step; w.y = w.y + step }
         openPlayers.push(w)
+        w.nextProvider = root.searchPage
         w.show(); w.raise(); w.requestActivate()
         w.openMedia(url, title, hash, fileIndex)
+    }
+
+    function closePlayersFor(infoHash) {
+        for (var i = openPlayers.length - 1; i >= 0; --i)
+            if (openPlayers[i] && openPlayers[i].infoHash === infoHash) openPlayers[i].close()
     }
 
     function forgetPlayer(w) {

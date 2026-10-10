@@ -64,14 +64,4 @@ Column {
             font.features: Theme.tnum
         }
     }
-    Text {
-        width: root.width
-        horizontalAlignment: Text.AlignRight
-        visible: tile.isIncomplete
-        text: tile.downloaded + " " + (i18n.language, i18n.t("word_of")) + " " + tile.size
-        color: Theme.t4
-        font.pixelSize: 11
-        font.family: Theme.fontSans
-        font.features: Theme.tnum
-    }
 }

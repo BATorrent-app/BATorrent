@@ -5,7 +5,7 @@
 // The browse surface of the Find page: featured billboard + poster shelves
 // (catalog rows, the watchlist, game rows) in one scroll, with the loading
 // skeleton and the keyless empty state. Type-filtered from outside; poster
-// clicks surface as findRequested(title).
+// clicks surface as titleRequested(item).
 import QtQuick
 import QtQuick.Controls
 import "../theme"
@@ -16,7 +16,7 @@ Item {
     property string typeFilter: "all"   // all | game | movie | series
     property bool active: true          // gates the billboard rotation
     property bool showCatalogEntry: false
-    signal findRequested(string title)
+    signal titleRequested(var item)     // a known title: straight to its page
     signal rowGridRequested(string rowLabel, var rowItems)
     signal catalogBrowseRequested(string group)   // "" = all catalogs; else release group
 
@@ -91,8 +91,8 @@ Item {
             // ---------- featured billboard (+ floating refresh) ----------
             Item {
                 x: Theme.sp5
-                width: col.width - Theme.sp5 - Theme.sp4
-                height: 320
+                width: col.width - 2 * Theme.sp5
+                height: 440
                 visible: browse.heroFiltered.length > 0
 
                 FindBillboard {
@@ -100,7 +100,8 @@ Item {
                     anchors.fill: parent
                     model: browse.heroFiltered
                     active: browse.active && browse.visible
-                    onDetailsRequested: function(title) { browse.findRequested(title) }
+                    onOpenRequested: function(item) { browse.titleRequested(item) }
+                    onGetWatchRequested: function(item) { browse.getWatch(item) }
                 }
                 // refresh: floats over the billboard's top-right corner
                 Rectangle {
@@ -133,36 +134,36 @@ Item {
                 model: browse.videoRows
                 delegate: PosterShelf {
                     required property var modelData
+                    landscape: true
                     label: modelData.label
                     items: modelData.items
                     flickY: flick.contentY
                     flickH: flick.height
-                    onActivated: function(item) { browse.findRequested(item.title) }
-                    onGetWatch: function(item) { browse.getWatch(item) }
+                    onActivated: function(item) { browse.titleRequested(item) }
                     onSeeAllRequested: function(l, it) { browse.rowGridRequested(l, it) }
                 }
             }
 
             PosterShelf {
+                landscape: true
                 label: (i18n.language, i18n.t("hub_mylist"))
                 items: browse.watchlistItems
                 showSeeAll: false
                 flickY: flick.contentY
                 flickH: flick.height
-                onActivated: function(item) { browse.findRequested(item.title) }
-                onGetWatch: function(item) { browse.getWatch(item) }
+                onActivated: function(item) { browse.titleRequested(item) }
             }
 
             Repeater {
                 model: browse.gameRows
                 delegate: PosterShelf {
                     required property var modelData
+                    landscape: true
                     label: modelData.label
                     items: modelData.items
                     flickY: flick.contentY
                     flickH: flick.height
-                    onActivated: function(item) { browse.findRequested(item.title) }
-                    onGetWatch: function(item) { browse.getWatch(item) }
+                    onActivated: function(item) { browse.titleRequested(item) }
                     onSeeAllRequested: function(l, it) { browse.rowGridRequested(l, it) }
                 }
             }
@@ -214,8 +215,8 @@ Item {
         }
         Rectangle {
             x: Theme.sp5
-            width: skeleton.width - Theme.sp5 - Theme.sp4
-            height: 320; radius: 16; color: Theme.elev
+            width: skeleton.width - 2 * Theme.sp5
+            height: 440; radius: 8; color: Theme.elev
         }
         Repeater {
             model: 2
@@ -224,10 +225,10 @@ Item {
                 spacing: 10
                 Rectangle { width: 150; height: 16; radius: 4; color: Theme.track }
                 Row {
-                    spacing: 16
+                    spacing: 10
                     Repeater {
-                        model: 7
-                        Rectangle { width: 150; height: 225; radius: 10; color: Theme.elev; border.color: Theme.hair; border.width: 1 }
+                        model: 6
+                        Rectangle { width: 252; height: 142; radius: 4; color: Theme.elev }
                     }
                 }
             }

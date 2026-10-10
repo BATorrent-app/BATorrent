@@ -8,6 +8,7 @@
 #include <QString>
 #include <QStringList>
 #include <QVariantList>
+#include <QVariantMap>
 
 // Pure TMDB response parsers (no network). DiscoveryService stays fetch + emit.
 namespace TmdbParse {
@@ -33,6 +34,10 @@ QString youtubeTrailerKey(const QByteArray &videosJson);
 // title did — reading only the title was leaving a screen's worth of material
 // on the floor.
 QVariantList episodeRows(const QByteArray &seasonJson, const QString &stillBase = QString());
+
+// /{movie|tv}/{id}?append_to_response=credits → {genres, cast, seasons}.
+// Cast is billing order, capped: the hero names three people, not thirty.
+QVariantMap workDetails(const QByteArray &detailsJson, int castLimit = 3);
 
 // /recommendations results → poster cards (cap applies).
 QVariantList recommendationRows(const QByteArray &json,

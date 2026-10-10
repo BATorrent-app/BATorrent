@@ -233,6 +233,7 @@ public:
     Q_INVOKABLE void playByHashFile(const QString &infoHash, int fileIndex);   // resume a specific episode
     // Next episode's file index after fileIndex (season/episode order), or -1.
     Q_INVOKABLE int nextEpisode(const QString &infoHash, int fileIndex) const;
+    Q_INVOKABLE QVariantMap episodeOf(const QString &infoHash, int fileIndex) const;   // {season, episode}, -1 when not an episode
     // Resolved display title for the player header: {title, subtitle, raw}.
     // title/subtitle come from the metadata cache + name parse; raw is the
     // original filename (shown in the info tooltip). fileIndex disambiguates
@@ -372,6 +373,8 @@ public:
     // player once it's buffered enough. cancelWatch drops a pending request.
     Q_INVOKABLE void watchWhenReady(const QString &infoHash, const QString &title);
     Q_INVOKABLE void cancelWatch(const QString &infoHash);
+    // Give up on this release for another: stop waiting and drop what it fetched (to the Trash).
+    Q_INVOKABLE void abandonWatch(const QString &infoHash);
     // Get & Install: same idea for games; download → install chain → launch.
     Q_INVOKABLE void installWhenReady(const QString &infoHash, const QString &title);
     Q_INVOKABLE void cancelInstall(const QString &infoHash);
@@ -395,6 +398,7 @@ signals:
     void watchBuffering(const QString &title);   // Get&Watch: added, downloading until playable
     void watchProgress(const QString &infoHash, double percent);   // 0..1, each tick while pending
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
+    void watchHealth(const QString &infoHash, int downBps, int peers, int waitedSec);   // each tick while pending
     void gamesChanged();   // a game started/stopped → refresh the game library
     void movieReady(const QString &infoHash, const QString &name);   // a movie/series finished → offer Play now
     void gameReady(const QString &infoHash, const QString &name);    // game download done → offer Install
@@ -411,6 +415,8 @@ signals:
 private slots:
     void sampleSpeeds();
     void onWatchTick();   // poll pending Get&Watch hashes; open the player when buffered
+    int bestVideoFile(int row) const;          // the largest video file, or -1
+    void prepStream(int row, int fileIndex);   // resume, sequential, only this file, head + tail first
     void onExtractionCompleted(const QString &infoHash, bool success);  // chain → detect/install
     void onGameTorrentFinished(const QString &name, const QString &infoHash);  // auto-install hook
 
@@ -437,6 +443,7 @@ private:
     IEngine *m_session;   // the session API: SessionManager in-process today, IpcEngine after the split
     HttpDownloadManager *m_httpDownloads = nullptr;   // direct-HTTP downloads (set in main.cpp)
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
+    QSet<QString> m_watchPrepped;   // pending watches whose file is already being fetched for playback
     QHash<QString, QPair<QString, qint64>> m_pendingInstall; // Get&Install: infoHash → {title, startedAtSec}
     QSet<QString> m_installStarted;   // hashes where installGame was already kicked for pending install
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game

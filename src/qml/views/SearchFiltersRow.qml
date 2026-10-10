@@ -21,7 +21,7 @@ Rectangle {
 
     Layout.fillWidth: true
     Layout.preferredHeight: 44
-    visible: sv.isFlatList && sv.api && sv.api.results.length > 0
+    visible: sv.isFlatList && sv.api && sv.api.results.length > 0 && !sv.titleStage
     color: "transparent"
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
 

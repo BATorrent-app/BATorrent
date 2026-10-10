@@ -37,6 +37,10 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(double workRating READ workRating NOTIFY workChanged)
     Q_PROPERTY(int workTmdbId READ workTmdbId NOTIFY workChanged)
     Q_PROPERTY(QString workLogo READ workLogo NOTIFY workLogoChanged)
+    Q_PROPERTY(QStringList workGenres READ workGenres NOTIFY workDetailsChanged)
+    Q_PROPERTY(QStringList workCast READ workCast NOTIFY workDetailsChanged)
+    Q_PROPERTY(int workSeasonCount READ workSeasonCount NOTIFY workDetailsChanged)
+    Q_PROPERTY(QString workMaker READ workMaker NOTIFY workDetailsChanged)   // a game's developer
     // "movie"|"series"|"game" while a Get & Watch / Install flow is active (else "").
     Q_PROPERTY(QString getFlowType READ getFlowType NOTIFY getFlowChanged)
 public:
@@ -62,13 +66,21 @@ public:
     double workRating() const { return m_workRating; }
     int workTmdbId() const { return m_workTmdbId; }
     QString workLogo() const { return m_workLogo; }
+    QStringList workGenres() const { return m_workGenres; }
+    QStringList workCast() const { return m_workCast; }
+    int workSeasonCount() const { return m_workSeasonCount; }
+    QString workMaker() const { return m_workMaker; }
     QString getFlowType() const { return m_gwActive ? m_gwType : QString(); }
-    Q_INVOKABLE void fetchWorkStills();   // lazy TMDB backdrops for the picked title
+    Q_INVOKABLE void fetchWorkStills();   // lazy TMDB backdrops, logo and details for the picked title
 
     Q_INVOKABLE void refreshSources();
     Q_INVOKABLE void search(const QString &sourceKey, const QString &query, int categoryCode = 0);
-    Q_INVOKABLE void activateResult(int index, bool force = false);   // catalog→streams; else add magnet (force skips the disk-fit guard)
+    Q_INVOKABLE void activateResult(int index, bool force = false);
+    // The same add, then the player once enough of it is here (the Get & Watch overlay).
+    Q_INVOKABLE void addAndWatch(int index, bool force = false);   // catalog→streams; else add magnet (force skips the disk-fit guard)
     Q_INVOKABLE void back();                       // streams → catalog
+    // A title browse already knows (a tile, the billboard): straight to its releases.
+    Q_INVOKABLE void openTitle(const QVariantMap &work);
 
     // Relevance ranking (backed by the tested SearchRanker service) so the view
     // sorts by relevance without reimplementing the scoring in QML/JS.
@@ -126,6 +138,7 @@ signals:
     void workChanged();
     void workStillsChanged();
     void workLogoChanged();
+    void workDetailsChanged();
     void gameSourcesChanged();
     void coverReady(const QString &infoHash, const QString &posterPath);
     void addedTorrent(const QString &infoHash);   // a magnet was added from Search
@@ -186,12 +199,18 @@ private:
     int m_workTmdbId = 0;
     QStringList m_workStills;
     QString m_workLogo;
+    QStringList m_workGenres;
+    QStringList m_workCast;
+    int m_workSeasonCount = 0;
+    QString m_workMaker;
     bool m_workStillsRequested = false;
 
     QVariantList m_episodeCache;      // series episode rows (videoId per row) for mode "episodes"
     QString m_epType, m_epId;         // the catalog item behind the episode list
     bool m_fromEpisodes = false;      // current streams view was entered from an episode row
 
+    bool m_watchRequest = false;      // the current activateResult came from addAndWatch
+    int m_watchIdx = -1;              // a watch held across the disk-fit prompt
     bool m_gwActive = false;          // a Get&Watch search is in flight
     bool m_gwCancelled = false;       // user cancelled mid-search → don't add
     QString m_gwTitle, m_gwType;

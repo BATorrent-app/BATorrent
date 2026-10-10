@@ -10,6 +10,10 @@
 #include <QJsonValue>
 #include <QVariantMap>
 
+#include <algorithm>
+#include <climits>
+#include <vector>
+
 namespace TmdbParse {
 
 static void appendBackdrops(QStringList &urls,
@@ -172,6 +176,43 @@ QVariantList episodeRows(const QByteArray &seasonJson, const QString &stillBase)
         eps << m;
     }
     return eps;
+}
+
+QVariantMap workDetails(const QByteArray &detailsJson, int castLimit)
+{
+    QVariantMap m;
+    const QJsonObject root = QJsonDocument::fromJson(detailsJson).object();
+    if (root.isEmpty())
+        return m;
+
+    QStringList genres;
+    for (const QJsonValue &v : root.value(QLatin1String("genres")).toArray()) {
+        const QString name = v.toObject().value(QLatin1String("name")).toString();
+        if (!name.isEmpty()) genres << name;
+    }
+
+    struct Billed { int order; QString name; };
+    std::vector<Billed> billed;
+    const QJsonArray cast = root.value(QLatin1String("credits")).toObject()
+                                .value(QLatin1String("cast")).toArray();
+    for (const QJsonValue &v : cast) {
+        const QJsonObject o = v.toObject();
+        const QString name = o.value(QLatin1String("name")).toString();
+        if (name.isEmpty()) continue;
+        billed.push_back({ o.value(QLatin1String("order")).toInt(INT_MAX), name });
+    }
+    std::stable_sort(billed.begin(), billed.end(),
+                     [](const Billed &a, const Billed &b) { return a.order < b.order; });
+    QStringList names;
+    for (const Billed &b : billed) {
+        if (names.size() >= castLimit) break;
+        names << b.name;
+    }
+
+    m.insert(QStringLiteral("genres"), genres);
+    m.insert(QStringLiteral("cast"), names);
+    m.insert(QStringLiteral("seasons"), root.value(QLatin1String("number_of_seasons")).toInt());
+    return m;
 }
 
 QVariantList recommendationRows(const QByteArray &json,

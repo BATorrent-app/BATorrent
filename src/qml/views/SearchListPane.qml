@@ -13,7 +13,7 @@ ColumnLayout {
     id: pane
     property var sv
     spacing: 0
-    visible: !sv.isTitles && !sv.browse
+    visible: !sv.isTitles && !sv.browse && !sv.titleStage
 
     // results header (columns adapt to mode)
     Rectangle {

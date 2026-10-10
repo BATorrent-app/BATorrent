@@ -19,9 +19,19 @@ Item {
             if (watchOverlay) watchOverlay.hide()
             loaders.openPlayer(url, title, hash, fileIndex)
         }
+        function onMediaQuarantined(hash) {
+            if (watchOverlay && watchOverlay.hash === hash) watchOverlay.hide()
+            loaders.closePlayersFor(hash)
+        }
         function onWatchProgress(hash, percent) {
             if (watchOverlay && watchOverlay.phase === "buffering" && hash === watchOverlay.hash)
                 watchOverlay.percent = percent
+        }
+        function onWatchHealth(hash, downBps, peers, waited) {
+            if (!watchOverlay || hash !== watchOverlay.hash) return
+            watchOverlay.downBps = downBps
+            watchOverlay.peers = peers
+            watchOverlay.waited = waited
         }
         function onWatchFailed(title) {
             if (watchOverlay) watchOverlay.fail(i18n.t("gw_failed").arg(title))
@@ -52,13 +62,13 @@ Item {
         }
     }
 
-    // Adding a torrent from Search jumps to Downloads and selects it once it lands
-    // (the add is async, so retry briefly until the torrent shows up in the model).
+    // Adding from Search stays in Search (the next episode or another release is
+    // usually the next click); the torrent is selected for when Downloads opens.
+    // The add is async, so retry briefly until it shows up in the model.
     Connections {
         target: typeof search !== "undefined" ? search : null
         ignoreUnknownSignals: true
         function onAddedTorrent(infoHash) {
-            host.currentPage = 0
             selectAddedTimer.hash = infoHash || ""
             selectAddedTimer.tries = 0
             selectAddedTimer.restart()
@@ -78,6 +88,7 @@ Item {
             if (!watchOverlay) return
             watchOverlay.forGame = false
             watchOverlay.hash = infoHash
+            watchOverlay.title = title
             watchOverlay.phase = "buffering"
             if (typeof session !== "undefined") session.watchWhenReady(infoHash, title)
         }

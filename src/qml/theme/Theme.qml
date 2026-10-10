@@ -227,6 +227,44 @@ QtObject {
         name === "matrix"   ? "#458a59" : "#7d7e87"
 
 
+    // ---------- stage (a title's page: art behind, release list beside it) ----------
+    // Stays dark on every theme, light ones included: the text sits on a
+    // backdrop, and a white page around a film still reads as a broken image.
+    // Dark themes keep their own ink; light and custom fall back to the dark set.
+    readonly property bool stageOwnInk: isDark && name !== "custom" && name !== "dark"
+    readonly property color stageBg:
+        name === "midnight" ? "#03050a" :
+        name === "darkstar" ? "#07040c" :
+        name === "matrix"   ? "#020403" : "#0a0a0b"
+    readonly property color stagePanel:
+        name === "midnight" ? "#0b1222" :
+        name === "darkstar" ? "#120a1f" :
+        name === "matrix"   ? "#07100a" : "#141416"
+    readonly property color stageField:
+        name === "midnight" ? "#0f1830" :
+        name === "darkstar" ? "#190f2e" :
+        name === "matrix"   ? "#0d1a11" : "#1a1a1d"
+    readonly property color stageT1:    stageOwnInk ? t1 : "#f3f3f4"
+    readonly property color stageInk:   stageOwnInk ? t1 : "#d9dade"   // hero body copy
+    readonly property color stageRaw:   stageOwnInk ? t2 : "#c9cace"   // a release's raw name
+    readonly property color stageT2:    stageOwnInk ? t2 : "#b4b5ba"
+    readonly property color stageMuted: stageOwnInk ? t3 : "#8c8d93"
+    readonly property color stageT4:    stageOwnInk ? t4 : "#7d7e87"
+    readonly property color stageDim:   stageOwnInk ? Qt.darker(t4, 1.3) : "#5f6068"
+    readonly property color stageHair:  Qt.rgba(1, 1, 1, 0.06)
+    readonly property color stageEdge:  Qt.rgba(1, 1, 1, 0.14)   // field outline
+    readonly property color stageHover: Qt.rgba(1, 1, 1, 0.045)
+    readonly property color stageGhost: Qt.rgba(1, 1, 1, 0.4)    // round icon button outline
+    // the backdrop's fade into the panel, as alpha over stageBg
+    function stageWash(a) { return Qt.rgba(stageBg.r, stageBg.g, stageBg.b, a) }
+
+    // ---------- signal colours that are not theme accents ----------
+    readonly property color star: up                 // a rating
+    readonly property color warn:
+        name === "matrix" ? "#e6d84a" : (isLight ? "#b07a12" : "#e0a533")   // won't fit, slow
+    readonly property color seedLow:
+        name === "matrix" ? "#d6a24a" : (isLight ? "#b4562a" : "#d97640")   // 1–9 seeds
+
     // ---------- custom theme (name === "custom"): active profile colors ----------
     // Six user colors (bg/panel/text + 3 accents). No legibility auto-fixing:
     // the user owns the contrast. Secondary text tones (t2-t4) and hairlines are

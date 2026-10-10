@@ -20,7 +20,6 @@ Item {
     property var items: []
     signal backRequested()
     signal activated(var item)
-    signal getWatch(var item)
 
     Item {
         id: header
@@ -86,6 +85,7 @@ Item {
             id: pcard
             required property var modelData
             posterW: 150
+            showPlay: false
             title: pcard.modelData.title || ""
             poster: pcard.modelData.poster || ""
             year: pcard.modelData.year || ""
@@ -99,7 +99,6 @@ Item {
                 title: pcard.modelData.title || "", type: pcard.modelData.type || "",
                 poster: pcard.modelData.poster || "", year: pcard.modelData.year || "" })
             onActivated: rowGrid.activated(pcard.modelData)
-            onGetWatch: rowGrid.getWatch(pcard.modelData)
         }
     }
 }

@@ -7,10 +7,15 @@
 
 #include <QObject>
 #include <QVariantList>
+#include <QHash>
 #include <QMap>
+#include <QSet>
+#include <QPair>
+#include <QVariantMap>
 #include <functional>
 
 class QNetworkAccessManager;
+class QNetworkReply;
 class QNetworkRequest;
 
 // Feeds the Discover page: TMDB trending/popular + IGDB popular, assembled into
@@ -50,6 +55,11 @@ public:
     Q_INVOKABLE void fetchEpisodes(int tmdbId, int season);
     // Backdrop/still URLs for a title (text-free ones first). Emits backdropsReady.
     Q_INVOKABLE void fetchBackdrops(int tmdbId, const QString &type);
+    // Genres, billed cast and season count for a picked title. Emits workDetailsReady.
+    Q_INVOKABLE void fetchWorkDetails(int tmdbId, const QString &type);
+    // The title's lettering for a browse tile. Cached per session, one request
+    // per title however many tiles ask. Emits titleLogoReady ("" = none).
+    Q_INVOKABLE void fetchLogo(int tmdbId, const QString &type);
 
     // Hub library helpers (pure; also covered by test_hublogic).
     Q_INVOKABLE QString genreKey(const QString &name) const;
@@ -74,12 +84,17 @@ signals:
     void episodesReady(int tmdbId, int season, const QVariantList &episodes);   // [{episode,name,air_date}]
     void backdropsReady(int tmdbId, const QStringList &urls);
     void logoReady(int tmdbId, const QString &url);   // the title's own lettering, same reply
+    void workDetailsReady(int tmdbId, const QVariantMap &details);   // {genres, cast, seasons}
+    void seasonCastReady(int tmdbId, int season, const QStringList &cast);
+    void titleLogoReady(int tmdbId, const QString &type, const QString &url);
 
 private:
     void searchTmdbTitles(const QString &query);
     void searchIgdbTitles(const QString &query);
     void maybeFinishSearch();
 
+    QNetworkReply *tmdbGet(const QString &path, const QList<QPair<QString, QString>> &extra = {},
+                           int timeoutMs = 10000);
     void fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
                    const QList<QPair<QString, QString>> &extra = {}, int page = 1);
     void fetchIgdbTrending(int order, const QString &label);   // hot + recent games (hype-typed)
@@ -113,6 +128,9 @@ private:
     int m_searchPending = 0;
     QString m_searchQuery;
     QVariantList m_searchWorks;
+
+    QHash<QString, QString> m_logoCache;   // "type:id" → logo url, "" when the title has none
+    QSet<QString> m_logoPending;
 };
 
 #endif

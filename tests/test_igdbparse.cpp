@@ -86,3 +86,31 @@ TEST_CASE("orderedGameIds dedupes and sortObjectsByIdRank reorders", "[igdbparse
     REQUIRE(sorted[0].value(QLatin1String("id")).toInt() == 10);
     REQUIRE(sorted[1].value(QLatin1String("id")).toInt() == 20);
 }
+
+TEST_CASE("titleSearchRows carries what a game hero shows", "[igdbparse]") {
+    SECTION("key art, genres and the developer over the publisher") {
+        const QByteArray json = QByteArrayLiteral(R"([
+          { "name": "Resident Evil Requiem", "cover": { "image_id": "c" },
+            "artworks": [ { "image_id": "art1" } ],
+            "screenshots": [ { "image_id": "s1" } ],
+            "genres": [ { "name": "Shooter" }, { "name": "Adventure" } ],
+            "involved_companies": [
+              { "company": { "name": "Publisher Co" }, "developer": false },
+              { "company": { "name": "Capcom" }, "developer": true } ] }
+        ])");
+        const auto m = IgdbParse::titleSearchRows(json).value(0).toMap();
+        REQUIRE(m.value("backdrop").toString().endsWith("/t_1080p/art1.jpg"));
+        REQUIRE(m.value("genres").toStringList() == QStringList{ "Shooter", "Adventure" });
+        REQUIRE(m.value("maker").toString() == QLatin1String("Capcom"));
+    }
+    SECTION("no artwork falls back to a screenshot, no companies to nothing") {
+        const QByteArray json = QByteArrayLiteral(R"([
+          { "name": "Hades", "cover": { "image_id": "c" },
+            "screenshots": [ { "image_id": "s1" } ] }
+        ])");
+        const auto m = IgdbParse::titleSearchRows(json).value(0).toMap();
+        REQUIRE(m.value("backdrop").toString().endsWith("/s1.jpg"));
+        REQUIRE(m.value("maker").toString().isEmpty());
+        REQUIRE(m.value("genres").toStringList().isEmpty());
+    }
+}

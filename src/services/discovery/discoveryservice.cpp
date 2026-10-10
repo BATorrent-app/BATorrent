@@ -4,6 +4,7 @@
 
 #include "services/discovery/discoveryservice.h"
 #include "services/discovery/discoveryfinish.h"
+#include "services/discovery/discoveryservice_keys.h"
 #include "services/discovery/hublogic.h"
 #include "services/discovery/igdbparse.h"
 #include "services/discovery/tmdbparse.h"
@@ -26,44 +27,9 @@
 #include <QUrl>
 #include <QUrlQuery>
 
+using namespace DiscoveryKeys;
+
 namespace {
-
-QString tmdbApiKey()
-{
-    QString key = QSettings("BATorrent", "BATorrent").value("tmdbApiKey").toString();
-#ifdef BAT_TMDB_KEY
-    if (key.isEmpty()) key = QStringLiteral(BAT_TMDB_KEY);
-#endif
-    return key;
-}
-QString igdbClientId()
-{
-    QString id = QSettings("BATorrent", "BATorrent").value("igdbClientId").toString();
-#ifdef BAT_IGDB_CLIENT_ID
-    if (id.isEmpty()) id = QStringLiteral(BAT_IGDB_CLIENT_ID);
-#endif
-    return id;
-}
-QString igdbClientSecret()
-{
-    QString s = QSettings("BATorrent", "BATorrent").value("igdbClientSecret").toString();
-#ifdef BAT_IGDB_CLIENT_SECRET
-    if (s.isEmpty()) s = QStringLiteral(BAT_IGDB_CLIENT_SECRET);
-#endif
-    return s;
-}
-
-const QString TmdbBaseUrl    = QStringLiteral("https://api.themoviedb.org/3");
-const QString TmdbPosterBase = QStringLiteral("https://image.tmdb.org/t/p/w342");
-const QString TmdbBackdrop   = QStringLiteral("https://image.tmdb.org/t/p/w1280");
-// Episode thumbnails sit at list size, not hero size: w300 is the smallest
-// TMDB still that does not look soft at the width a row gives them.
-const QString TmdbStillBase  = QStringLiteral("https://image.tmdb.org/t/p/w300");
-// Wide enough for a title treatment at hero size, and transparent PNGs
-// stay transparent at any width.
-const QString TmdbLogoBase   = QStringLiteral("https://image.tmdb.org/t/p/w500");
-
-QString tmdbLang() { return ContentLanguage::tmdb(); }
 
 QString cacheFile()
 {
@@ -213,20 +179,12 @@ void DiscoveryService::searchTmdbTitles(const QString &query)
 {
     ++m_searchPending;
 
-    QUrl url(TmdbBaseUrl + QStringLiteral("/search/multi"));
-    QUrlQuery q;
-    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
-    q.addQueryItem(QStringLiteral("language"), tmdbLang());
-    q.addQueryItem(QStringLiteral("query"), query);
-    q.addQueryItem(QStringLiteral("include_adult"), QStringLiteral("false"));
-    q.addQueryItem(QStringLiteral("page"), QStringLiteral("1"));
-    url.setQuery(q);
-
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
-    req.setTransferTimeout(12000);
-
-    QNetworkReply *reply = m_nam->get(req);
+    QNetworkReply *reply = tmdbGet(QStringLiteral("/search/multi"),
+                                   { { QStringLiteral("language"), tmdbLang() },
+                                     { QStringLiteral("query"), query },
+                                     { QStringLiteral("include_adult"), QStringLiteral("false") },
+                                     { QStringLiteral("page"), QStringLiteral("1") } },
+                                   12000);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         // With a backdrop base too: a picked title now opens on a full-width
@@ -253,7 +211,9 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
         // was hiding legitimate matches. Relevance from `search` is enough.
         const QByteArray body = QStringLiteral(
             "search \"%1\"; fields name,cover.image_id,first_release_date,total_rating,summary,"
-            "screenshots.image_id; where cover != null; limit 20;").arg(safe).toUtf8();
+            "screenshots.image_id,artworks.image_id,genres.name,"
+            "involved_companies.company.name,involved_companies.developer;"
+            " where cover != null; limit 20;").arg(safe).toUtf8();
 
         QNetworkReply *reply = m_nam->post(req, body);
         connect(reply, &QNetworkReply::finished, this, [this, reply]() {
@@ -280,50 +240,6 @@ bool DiscoveryService::hasMetadataKeys() const
     const bool haveTmdb = !tmdbApiKey().isEmpty();
     const bool haveIgdb = !igdbClientId().isEmpty() && !igdbClientSecret().isEmpty();
     return haveTmdb || haveIgdb;
-}
-
-void DiscoveryService::fetchTrailer(int tmdbId, const QString &type)
-{
-    if (tmdbId <= 0 || tmdbApiKey().isEmpty()) { emit trailerReady(tmdbId, QString()); return; }
-    const QString kind = (type == QLatin1String("series")) ? QStringLiteral("tv") : QStringLiteral("movie");
-    QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2/videos").arg(kind).arg(tmdbId));
-    QUrlQuery q;
-    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
-    url.setQuery(q);
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
-    req.setTransferTimeout(10000);
-    QNetworkReply *reply = m_nam->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
-        reply->deleteLater();
-        const QString key = (reply->error() == QNetworkReply::NoError)
-            ? TmdbParse::youtubeTrailerKey(reply->readAll())
-            : QString{};
-        emit trailerReady(tmdbId, key);
-    });
-}
-
-void DiscoveryService::fetchRecommendations(int tmdbId, const QString &type)
-{
-    if (tmdbId <= 0 || tmdbApiKey().isEmpty()) { emit recommendationsReady(tmdbId, {}); return; }
-    const bool isTv = (type == QLatin1String("series"));
-    const QString kind = isTv ? QStringLiteral("tv") : QStringLiteral("movie");
-    QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2/recommendations").arg(kind).arg(tmdbId));
-    QUrlQuery q;
-    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
-    q.addQueryItem(QStringLiteral("language"), tmdbLang());
-    url.setQuery(q);
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
-    req.setTransferTimeout(10000);
-    QNetworkReply *reply = m_nam->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId, isTv]() {
-        reply->deleteLater();
-        const QVariantList items = (reply->error() == QNetworkReply::NoError)
-            ? TmdbParse::recommendationRows(reply->readAll(), isTv, TmdbPosterBase)
-            : QVariantList{};
-        emit recommendationsReady(tmdbId, items);
-    });
 }
 
 void DiscoveryService::fetchGameRecommendations(const QString &gameName)
@@ -357,68 +273,15 @@ void DiscoveryService::fetchGameRecommendations(const QString &gameName)
     });
 }
 
-void DiscoveryService::fetchEpisodes(int tmdbId, int season)
-{
-    if (tmdbId <= 0 || season < 0 || tmdbApiKey().isEmpty()) { emit episodesReady(tmdbId, season, {}); return; }
-    QUrl url(TmdbBaseUrl + QStringLiteral("/tv/%1/season/%2").arg(tmdbId).arg(season));
-    QUrlQuery q;
-    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
-    q.addQueryItem(QStringLiteral("language"), tmdbLang());
-    url.setQuery(q);
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
-    req.setTransferTimeout(10000);
-    QNetworkReply *reply = m_nam->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId, season]() {
-        reply->deleteLater();
-        const QVariantList eps = (reply->error() == QNetworkReply::NoError)
-            ? TmdbParse::episodeRows(reply->readAll(), TmdbStillBase)
-            : QVariantList{};
-        emit episodesReady(tmdbId, season, eps);
-    });
-}
-
-void DiscoveryService::fetchBackdrops(int tmdbId, const QString &type)
-{
-    if (tmdbId <= 0 || tmdbApiKey().isEmpty()) { emit backdropsReady(tmdbId, {}); return; }
-    const QString kind = (type == QLatin1String("series")) ? QStringLiteral("tv") : QStringLiteral("movie");
-    QUrl url(TmdbBaseUrl + QStringLiteral("/%1/%2/images").arg(kind).arg(tmdbId));
-    QUrlQuery q;
-    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
-    url.setQuery(q);
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
-    req.setTransferTimeout(10000);
-    QNetworkReply *reply = m_nam->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
-        reply->deleteLater();
-        // One read: readAll() empties the device, and the logos ride in the
-        // same payload as the backdrops.
-        const QByteArray body = (reply->error() == QNetworkReply::NoError)
-            ? reply->readAll() : QByteArray{};
-        emit backdropsReady(tmdbId, TmdbParse::backdropUrls(body, TmdbBackdrop));
-        emit logoReady(tmdbId, TmdbParse::logoUrl(body, TmdbLogoBase));
-    });
-}
-
 void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
                                  const QList<QPair<QString, QString>> &extra, int page)
 {
     ++m_pending;
 
-    QUrl url(TmdbBaseUrl + path);
-    QUrlQuery q;
-    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
-    q.addQueryItem(QStringLiteral("language"), tmdbLang());
-    q.addQueryItem(QStringLiteral("page"), QString::number(page));
-    for (const auto &kv : extra) q.addQueryItem(kv.first, kv.second);
-    url.setQuery(q);
-
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
-    req.setTransferTimeout(12000);
-
-    QNetworkReply *reply = m_nam->get(req);
+    QList<QPair<QString, QString>> query = { { QStringLiteral("language"), tmdbLang() },
+                                             { QStringLiteral("page"), QString::number(page) } };
+    query += extra;
+    QNetworkReply *reply = tmdbGet(path, query, 12000);
     connect(reply, &QNetworkReply::finished, this, [this, reply, order, label, type]() {
         reply->deleteLater();
         DiscoveryFinish::ingestTmdbShelf(

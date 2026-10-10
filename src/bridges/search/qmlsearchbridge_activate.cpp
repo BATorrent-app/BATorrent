@@ -18,8 +18,19 @@
 #include <QStorageInfo>
 #include <QUrl>
 
+void QmlSearchBridge::addAndWatch(int index, bool force)
+{
+    m_watchRequest = true;
+    activateResult(index, force);
+}
+
 void QmlSearchBridge::activateResult(int index, bool force)
 {
+    // The disk-fit prompt re-calls plain activateResult with force; the watch
+    // has to survive that round trip and nothing else.
+    const bool watch = m_watchRequest || (force && index == m_watchIdx);
+    m_watchRequest = false;
+    m_watchIdx = -1;
     auto &mgr = AddonManager::instance();
     if (m_mode == "titles") {
         if (index < 0 || index >= m_results.size()) return;
@@ -95,6 +106,7 @@ void QmlSearchBridge::activateResult(int index, bool force)
         const qint64 needed = rm.value(QStringLiteral("sizeBytes")).toLongLong();
         if (!force && !fitsOnSaveVolume(needed)) {
             const QStorageInfo si(m_savePath);
+            if (watch) m_watchIdx = index;
             emit addWontFit(index, name, needed, si.isValid() ? si.bytesAvailable() : 0);
             return;   // QML asks the user, then re-calls with force = true
         }
@@ -118,6 +130,9 @@ void QmlSearchBridge::activateResult(int index, bool force)
         QString hash = rm.value(QStringLiteral("coverHash")).toString();   // torrent rows carry the hash
         if (hash.isEmpty()) hash = SearchBridgeUtil::btihFromMagnet(magnet);
         emit addedTorrent(hash);
+        if (watch) {
+            emit prepareAndWatch(hash, m_workTitle.isEmpty() ? name : m_workTitle);
+        }
     }
 }
 
@@ -126,6 +141,7 @@ void QmlSearchBridge::back()
     if (m_fromTitles && m_mode != "streams" && m_mode != "episodes") {   // sources view → back to the titles grid
         m_fromTitles = false;
         m_aggregate = false;
+        m_titleSources = false;
         clearWorkContext();
         m_results = m_titleCache;
         m_resultMagnets.clear();
