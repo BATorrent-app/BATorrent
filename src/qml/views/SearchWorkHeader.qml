@@ -36,6 +36,12 @@ WorkHero {
         return parts.join("  ·  ")
     }
     logoUrl: sv.api ? (sv.api.workLogo || "") : ""
+    // A film gets its lettering the same way a series does.
+    Connections {
+        target: root.sv.api
+        ignoreUnknownSignals: true
+        function onWorkChanged() { if (root.sv.api) root.sv.api.fetchWorkStills() }
+    }
     summary: sv.api ? (sv.api.workOverview || "") : ""
     showBack: false
 }

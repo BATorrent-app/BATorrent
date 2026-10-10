@@ -52,6 +52,10 @@ Rectangle {
     // search bridge.
     readonly property var disco: typeof discovery !== "undefined" ? discovery : null
     readonly property bool isSeriesDrill: api && api.singleTitleView && !isEpisodes
+    // The series screen owns the page. singleTitleView is already true while
+    // the grid of candidate titles is still up, so the stage has to be ruled
+    // out as well or the pane takes the height and shows nothing.
+    readonly property bool seriesScreen: isSeriesDrill && !isTitles
                                           && api.workType === "series"
     readonly property bool showAudioModes: typeof i18n !== "undefined" && i18n.language !== 0
 
@@ -288,19 +292,22 @@ Rectangle {
 
         SearchSeriesPane {
             sv: page
-            visible: page.isSeriesDrill
+            // Not during the titles stage: singleTitleView is already true
+            // while the grid of candidates is up, and an invisible-but-filling
+            // pane left a black band where the results should be.
+            visible: page.seriesScreen
             Layout.fillWidth: true
             Layout.fillHeight: true
         }
 
-        SearchWorkHeader { sv: page; visible: !page.isSeriesDrill }
-        SearchFiltersRow { id: filtersRow; sv: page; visible: !page.isSeriesDrill }
-        SearchModeBars { sv: page; visible: !page.isSeriesDrill }
+        SearchWorkHeader { sv: page; visible: !page.seriesScreen }
+        SearchFiltersRow { id: filtersRow; sv: page; visible: !page.seriesScreen }
+        SearchModeBars { sv: page; visible: !page.seriesScreen }
         // Hidden during the titles stage instead of merely emptied: both panes
         // ask for fillHeight, so an empty results list still claimed a share of
         // the page and pushed the loading spinner: which lives in its empty
         // state: away from the centre.
-        SearchListPane { sv: page; visible: !page.isTitles && !page.isSeriesDrill; Layout.fillWidth: true; Layout.fillHeight: true }
+        SearchListPane { sv: page; visible: !page.isTitles && !page.seriesScreen; Layout.fillWidth: true; Layout.fillHeight: true }
         SearchTitlesPane { sv: page; Layout.fillWidth: true; Layout.fillHeight: true }
         SearchResultsFooter { sv: page }
     }

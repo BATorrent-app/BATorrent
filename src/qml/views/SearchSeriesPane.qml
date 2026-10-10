@@ -29,31 +29,46 @@ Item {
 
     SeriesLogic { id: logic }
 
-    // Every release that names a season and an episode, shaped like the videos
-    // the library screen takes, so the same merge serves both.
+    // What can actually be got for the season on screen, shaped like the videos
+    // the library screen takes so the same merge serves both.
+    //
+    // A season pack is the reason this is not just "results that name an
+    // episode". Most of a season arrives inside one, so counting only the
+    // releases with SxxExx in the name marked six of seven episodes as having
+    // no source while a pack holding all of them sat in the same result list.
     readonly property var offered: {
         var out = []
+        var direct = ({})
+        var covered = false
         var res = (sv.api && sv.api.results) ? sv.api.results : []
         for (var i = 0; i < res.length; i++) {
             var r = res[i]
-            if (!(r.season > 0 && r.episode > 0)) continue
-            out.push({ hash: "", idx: -1, name: r.name,
-                       season: r.season, episode: r.episode,
-                       watched: false, progress: 1 })
+            if (r.season !== root.season) continue
+            if (r.episode > 0) {
+                if (direct[r.episode]) continue
+                direct[r.episode] = true
+                out.push({ hash: "", idx: -1, name: r.name,
+                           season: r.season, episode: r.episode,
+                           watched: false, progress: 1 })
+            } else {
+                covered = true          // a pack: every episode of the season
+            }
+        }
+        if (covered) {
+            for (var t = 0; t < tmdbRows.length; t++) {
+                var ep = tmdbRows[t].episode
+                if (ep > 0 && !direct[ep])
+                    out.push({ hash: "", idx: -1, name: "", season: root.season,
+                               episode: ep, watched: false, progress: 1 })
+            }
         }
         return out
     }
     readonly property var episodes: logic.mergeSeasonEpisodes(tmdbRows, offered, season)
-    readonly property var seasonCounts: {
-        var out = ({})
-        for (var i = 0; i < seasons.length; i++) {
-            var sn = seasons[i], total = 0
-            for (var v = 0; v < offered.length; v++) if (offered[v].season === sn) ++total
-            out[sn] = { have: total, total: total }
-        }
-        return out
-    }
 
+    // Asking once at creation was asking before a title had been picked: the
+    // pane outlives the work, so the trigger is the work arriving.
+    onTmdbIdChanged: if (tmdbId > 0 && sv.api) sv.api.fetchWorkStills()
     onSeasonsChanged: if (season < 0 && seasons.length > 0) season = seasons[0]
     onSeasonChanged: { episode = -1; requestSeason() }
     function requestSeason() {
@@ -87,7 +102,10 @@ Item {
                 visible: root.episode < 0
                 seasons: root.seasons
                 season: root.season
-                counts: root.seasonCounts
+                // No tally here. In the library the denominator is the number
+                // of episodes a season has; in a search it would be the number
+                // of releases that happen to mention it, and "Season 8 95/95"
+                // is a number that means nothing.
                 onSeasonPicked: function (s) { root.season = s }
             }
 
@@ -143,7 +161,6 @@ Item {
             return parts.join("  ·  ")
         }
         logoUrl: root.sv.api ? (root.sv.api.workLogo || "") : ""
-        Component.onCompleted: if (root.sv.api) root.sv.api.fetchWorkStills()
         summary: root.sv.api ? (root.sv.api.workOverview || "") : ""
         showBack: root.episode >= 0
         onBackRequested: { root.episode = -1; root.sv.episodeFilter = -1 }
