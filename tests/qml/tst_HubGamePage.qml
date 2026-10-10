@@ -153,6 +153,29 @@ Item {
             compare(mockHub.gameMenu.opened, "played")
         }
 
+        function findHero(p) {
+            var stack = [p]
+            while (stack.length) {
+                var it = stack.pop()
+                if (it.artChain !== undefined) return it
+                for (var i = 0; i < it.children.length; i++) stack.push(it.children[i])
+                if (it.contentItem) stack.push(it.contentItem)
+            }
+            return null
+        }
+
+        function test_heroWaitsForDetailsInsteadOfStretchingTheCover() {
+            var p = createTemporaryObject(pageComp, root)
+            mockHub.gameItems[1].poster = "/covers/elden.jpg"
+            mockHub.gameHash = "played"
+            mockHub.gameOpen = true
+            var hero = findHero(p)
+            compare(hero.artChain, [])
+            mockDisco.gameDetailsReady("Elden Ring", {})
+            compare(hero.artChain, ["file:///covers/elden.jpg"])
+            mockHub.gameItems[1].poster = ""
+        }
+
         function test_heroPrefersSteamArtWhenTheAppIdIsKnown() {
             var p = createTemporaryObject(pageComp, root)
             mockHub.gameHash = "played"

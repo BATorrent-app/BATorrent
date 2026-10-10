@@ -20,6 +20,7 @@ Item {
         return null
     }
     property var details: ({})
+    property bool detailsReady: false
     property string stillOpen: ""
     // Held past the close so the image fades with the scrim instead of vanishing first.
     property string stillShown: ""
@@ -33,6 +34,7 @@ Item {
     readonly property string gameTitle: game ? (game.title || "") : ""
     onGameTitleChanged: {
         details = ({})
+        detailsReady = false
         stillOpen = ""
         flick.contentY = 0
         if (gameTitle.length > 0 && hub.disco) hub.disco.fetchGameDetails(gameTitle)
@@ -40,7 +42,11 @@ Item {
     Connections {
         target: root.hub.disco
         ignoreUnknownSignals: true
-        function onGameDetailsReady(name, d) { if (name === root.gameTitle) root.details = d }
+        function onGameDetailsReady(name, d) {
+            if (name !== root.gameTitle) return
+            root.details = d
+            root.detailsReady = true
+        }
     }
 
     Rectangle { anchors.fill: parent; color: Theme.bg }
@@ -63,7 +69,10 @@ Item {
                 height: 400
                 title: root.gameTitle
                 steamAppId: root.details.steamAppId || 0
-                fallbackArt: root.details.backdrop || (root.game ? root.hub.fileUrl(root.game.poster) : "")
+                // Nothing until IGDB answers: the portrait cover cropped to a banner is
+                // a blown-up blur, and it flashed for the second before the real art.
+                fallbackArt: !root.detailsReady ? ""
+                             : (root.details.backdrop || (root.game ? root.hub.fileUrl(root.game.poster) : ""))
                 facts: {
                     var out = []
                     var year = root.details.year || (root.game ? root.game.year : "")
