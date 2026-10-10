@@ -23,7 +23,13 @@ bool isStreamServer(const QUrl &u)
 
 }
 
-MediaFeed::MediaFeed(const QUrl &source, QObject *parent) : QObject(parent), m_source(source) {}
+MediaFeed::MediaFeed(const QUrl &source, QObject *parent) : QObject(parent), m_source(source)
+{
+    // readyRead is not a promise under a capped read buffer (Qt 6.7 went
+    // quiet with bytes still due), so a waiting request also polls.
+    m_pull.setInterval(20);
+    connect(&m_pull, &QTimer::timeout, this, &MediaFeed::onHttpData);
+}
 
 MediaFeed::~MediaFeed()
 {
@@ -91,6 +97,7 @@ void MediaFeed::streamFrom(qint64 offset)
     if (m_reply) { m_reply->disconnect(this); m_reply->abort(); m_reply->deleteLater(); }
     m_buf.clear();
     m_bufStart = offset;
+    m_readerAt = offset;
     m_replyChecked = false;
     QNetworkRequest req(m_source);
     req.setRawHeader("Range", "bytes=" + QByteArray::number(offset) + "-");
@@ -144,24 +151,37 @@ void MediaFeed::servePending()
             const qint64 n = std::min<qint64>(p.length, bufEnd - p.offset);
             if (n >= std::min(p.length, kMinAnswer) || drained || p.offset + n >= m_size) {
                 m_pending.removeAt(i);
+                m_retriedAt = -1;
+                m_readerAt = p.offset + n;
                 emit data(p.id, p.offset, m_buf.mid(int(p.offset - m_bufStart), int(n)));
                 continue;
             }
         } else if (drained) {
+            // The server closed early or the reply ended before reaching this
+            // offset: ask again from here once before giving up on it.
+            if (m_retriedAt != p.offset) {
+                m_retriedAt = p.offset;
+                streamFrom(p.offset);
+                return;
+            }
             m_pending.removeAt(i);
             emit refused(p.id);
             continue;
         }
         ++i;
     }
+    if (m_reply && !m_pending.isEmpty()) { if (!m_pull.isActive()) m_pull.start(); }
+    else m_pull.stop();
     trimBuffer();
     if (m_reply && m_reply->bytesAvailable() > 0 && m_buf.size() < kWindow)
         QMetaObject::invokeMethod(this, &MediaFeed::onHttpData, Qt::QueuedConnection);
 }
 
+// Only what the reader has already consumed may go: trimming by the buffer's
+// own end let the window run through the file throwing unread bytes away.
 void MediaFeed::trimBuffer()
 {
-    qint64 keepFrom = m_bufStart + m_buf.size() - kKeepBehind;
+    qint64 keepFrom = m_readerAt - kKeepBehind;
     for (const Pending &p : m_pending) keepFrom = std::min(keepFrom, p.offset);
     const qint64 drop = std::clamp<qint64>(keepFrom - m_bufStart, 0, m_buf.size());
     if (drop < kWindow / 4) return;   // trimming is a copy: do it in big steps
