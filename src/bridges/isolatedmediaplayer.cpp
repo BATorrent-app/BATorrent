@@ -4,6 +4,8 @@
 
 #include "bridges/isolatedmediaplayer.h"
 #include "ipc/ipcprotocol.h"
+#include "ipc/mediachannel.h"
+#include "ipc/mediafeed.h"
 #include "ipc/mediaframe.h"
 
 #include <QCoreApplication>
@@ -12,16 +14,22 @@
 #include <QLocale>
 #include <QMediaPlayer>
 #include <QProcess>
-#include <QTimer>
+#include <QUuid>
 #include <QVideoSink>
 #include <algorithm>
+#include <utility>
+
+#ifdef Q_OS_WIN
+#  include "ipc/appcontainer_win.h"
+#else
+class ContainedLaunch {};
+#endif
 
 namespace {
 
-constexpr int kConnectIntervalMs = 50;
-constexpr int kConnectTries = 100;
 constexpr int kMaxTracks = 64;
 constexpr int kMaxText = 4096;
+constexpr qint64 kMaxSlotBytes = 64LL * 1024 * 1024;   // a 4K 16-bit frame is ~25 MB
 
 QList<QMediaMetaData> toMetaData(const QList<media::Track> &tracks)
 {
@@ -35,6 +43,8 @@ QList<QMediaMetaData> toMetaData(const QList<media::Track> &tracks)
     }
     return out;
 }
+
+bool sandboxWanted() { return !qEnvironmentVariableIsSet("BAT_MEDIA_NO_SANDBOX"); }
 
 }
 
@@ -64,10 +74,7 @@ void IsolatedMediaPlayer::setSource(const QUrl &source)
         if (QVideoSink *s = sink()) s->setVideoFrame({});
         return;
     }
-    // A sandboxed child is bound to the source it opened: a new one gets a new child.
-    if (m_proc) teardown();
-    ensureChild();
-    send(QStringLiteral("source"), media::encode(source));
+    if (ensureChild()) startFeed();
 }
 
 void IsolatedMediaPlayer::setVideoOutput(QObject *output)
@@ -83,7 +90,7 @@ void IsolatedMediaPlayer::setVolume(float volume)
     if (qFuzzyCompare(volume, m_volume)) return;
     m_volume = volume;
     emit volumeChanged();
-    if (m_proc || m_sock) send(QStringLiteral("volume"), media::encode(m_volume));
+    send(QStringLiteral("volume"), media::encode(m_volume));
 }
 
 void IsolatedMediaPlayer::setMuted(bool muted)
@@ -91,13 +98,14 @@ void IsolatedMediaPlayer::setMuted(bool muted)
     if (muted == m_muted) return;
     m_muted = muted;
     emit mutedChanged();
-    if (m_proc || m_sock) send(QStringLiteral("muted"), media::encode(m_muted));
+    send(QStringLiteral("muted"), media::encode(m_muted));
 }
 
 void IsolatedMediaPlayer::setPosition(qint64 ms)
 {
     ms = std::max<qint64>(0, ms);
-    send(QStringLiteral("seek"), media::encode(ms));
+    if (m_opened) send(QStringLiteral("seek"), media::encode(ms));
+    else m_pendingSeek = ms;
     // Show the target now: waiting a round trip makes the scrubber snap back.
     if (m_state.position != ms) { m_state.position = ms; emit positionChanged(ms); }
 }
@@ -120,75 +128,135 @@ void IsolatedMediaPlayer::setActiveSubtitleTrack(int index)
 void IsolatedMediaPlayer::play()
 {
     if (m_source.isEmpty()) return;
-    if (!m_proc && !m_sock) {
-        ensureChild();
-        send(QStringLiteral("source"), media::encode(m_source));
+    m_wantState = QMediaPlayer::PlayingState;
+    if (!m_channel) {   // the decoder died: a fresh one for the same source
+        if (!ensureChild()) return;
+        startFeed();
     }
-    send(QStringLiteral("play"));
+    if (m_opened) send(QStringLiteral("play"));
 }
 
-void IsolatedMediaPlayer::pause() { send(QStringLiteral("pause")); }
-void IsolatedMediaPlayer::stop() { send(QStringLiteral("stop")); }
-
-void IsolatedMediaPlayer::ensureChild()
+void IsolatedMediaPlayer::pause()
 {
-    if (m_proc || m_sock) return;
-    static int counter = 0;
+    m_wantState = QMediaPlayer::PausedState;
+    if (m_opened) send(QStringLiteral("pause"));
+}
+
+void IsolatedMediaPlayer::stop()
+{
+    m_wantState = QMediaPlayer::StoppedState;
+    if (m_opened) send(QStringLiteral("stop"));
+}
+
+bool IsolatedMediaPlayer::openChannel(const QString &peerSid)
+{
     m_serverName = QStringLiteral("batorrent-media-%1-%2")
-                       .arg(QCoreApplication::applicationPid()).arg(++counter);
+                       .arg(QCoreApplication::applicationPid())
+                       .arg(QUuid::createUuid().toString(QUuid::Id128).left(12));
+    m_channel = new MediaChannel(this);
+    connect(m_channel, &MediaChannel::connected, this, &IsolatedMediaPlayer::adopt);
+    if (m_channel->listen(m_serverName, peerSid)) return true;
+    qWarning() << "[media] cannot open the decoder channel";
+    delete m_channel;
+    m_channel = nullptr;
+    return false;
+}
+
+QString IsolatedMediaPlayer::listenWithoutChild()
+{
+    if (!m_channel && !openChannel({})) return {};
+    m_childPid = QCoreApplication::applicationPid();
+    return m_serverName;
+}
+
+bool IsolatedMediaPlayer::ensureChild()
+{
+    if (m_channel) return true;
+    QString peerSid;
+#ifdef Q_OS_WIN
+    if (sandboxWanted()) {
+        auto launch = std::make_unique<ContainedLaunch>();
+        QString error;
+        // Fail closed: no container, no decoder.
+        if (!launch->prepare(QCoreApplication::applicationDirPath(), &error)) {
+            qWarning() << "[media] sandbox:" << error;
+            failWith(QMediaPlayer::AccessDeniedError, QStringLiteral("sandbox unavailable"));
+            return false;
+        }
+        peerSid = launch->sid();
+        m_launch = std::move(launch);
+    }
+#endif
+    if (!openChannel(peerSid)) {
+        failWith(QMediaPlayer::ResourceError, QStringLiteral("decoder unavailable"));
+        return false;
+    }
     m_proc = new QProcess(this);
     m_proc->setProcessChannelMode(QProcess::ForwardedChannels);
+#ifdef Q_OS_WIN
+    if (m_launch) m_proc->setCreateProcessArgumentsModifier(m_launch->modifier());
+#endif
     connect(m_proc, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
         if (m_tearingDown) return;
         qWarning() << "[media] decoder exited" << code << (status == QProcess::CrashExit ? "(crash)" : "");
         onChildLost();
     });
     m_proc->start(QCoreApplication::applicationFilePath(), { QStringLiteral("--media"), m_serverName });
-    attachTo(m_serverName);
+    if (!m_proc->waitForStarted(5000)) {
+        qWarning() << "[media] decoder did not start:" << m_proc->errorString();
+        teardown();
+        failWith(QMediaPlayer::ResourceError, QStringLiteral("decoder unavailable"));
+        return false;
+    }
+    m_childPid = m_proc->processId();
     send(QStringLiteral("volume"), media::encode(m_volume));
     send(QStringLiteral("muted"), media::encode(m_muted));
+    return true;
 }
 
-void IsolatedMediaPlayer::attachTo(const QString &serverName)
+void IsolatedMediaPlayer::adopt(QLocalSocket *socket)
 {
-    m_serverName = serverName;
-    m_ready = false;
-    m_sock = new QLocalSocket(this);
+    if (m_sock) { socket->deleteLater(); return; }
+    m_sock = socket;
+    m_sock->setParent(this);
     connect(m_sock, &QLocalSocket::readyRead, this, &IsolatedMediaPlayer::onReadyRead);
-    connect(m_sock, &QLocalSocket::connected, this, [this] { m_connectTimer->stop(); });
     connect(m_sock, &QLocalSocket::disconnected, this, [this] {
-        if (!m_tearingDown && m_ready) onChildLost();
+        if (!m_tearingDown) onChildLost();
     });
-    m_connectTries = 0;
-    if (!m_connectTimer) {
-        m_connectTimer = new QTimer(this);
-        m_connectTimer->setInterval(kConnectIntervalMs);
-        connect(m_connectTimer, &QTimer::timeout, this, &IsolatedMediaPlayer::tryConnect);
-    }
-    m_connectTimer->start();
-    tryConnect();
+    if (m_sock->bytesAvailable() > 0) onReadyRead();
 }
 
-void IsolatedMediaPlayer::tryConnect()
+// Bytes for the child come from here: it can read no file and reach no port.
+void IsolatedMediaPlayer::startFeed()
 {
-    // The child needs a moment to listen; a refused connect drops the socket
-    // back to Unconnected and the next tick tries again.
-    if (!m_sock) { m_connectTimer->stop(); return; }
-    if (m_sock->state() != QLocalSocket::UnconnectedState) return;
-    if (++m_connectTries > kConnectTries) {
-        m_connectTimer->stop();
-        qWarning() << "[media] could not reach decoder" << m_serverName;
-        onChildLost();
-        return;
-    }
-    m_sock->connectToServer(m_serverName);
+    if (m_feed) { m_feed->disconnect(this); m_feed->deleteLater(); }
+    const qint32 gen = ++m_sourceGen;
+    m_opened = false;
+    m_feed = new MediaFeed(m_source, this);
+    connect(m_feed, &MediaFeed::ready, this, [this, gen](qint64 size) {
+        send(QStringLiteral("open"), media::encode(gen, size, m_source.fileName()));
+        m_opened = true;
+        if (m_pendingSeek >= 0) send(QStringLiteral("seek"), media::encode(std::exchange(m_pendingSeek, -1)));
+        if (m_wantState == QMediaPlayer::PlayingState) send(QStringLiteral("play"));
+        else if (m_wantState == QMediaPlayer::PausedState) send(QStringLiteral("pause"));
+    });
+    connect(m_feed, &MediaFeed::failed, this, [this](const QString &why) {
+        failWith(QMediaPlayer::ResourceError, why);
+    });
+    connect(m_feed, &MediaFeed::data, this, [this, gen](quint32 id, qint64 offset, const QByteArray &bytes) {
+        send(QStringLiteral("data"), media::encode(gen, id, offset, bytes));
+    });
+    connect(m_feed, &MediaFeed::refused, this, [this, gen](quint32 id) {
+        send(QStringLiteral("dataError"), media::encode(gen, id));
+    });
+    m_feed->start();
 }
 
 void IsolatedMediaPlayer::send(const QString &method, const QByteArray &args)
 {
     const QByteArray payload = media::encode(quint32(0), method, args);
     if (m_ready && m_sock) ipc::writeFrame(m_sock, ipc::Kind::Request, payload);
-    else if (m_proc || m_sock) m_pending.append(payload);
+    else if (m_channel) m_pending.append(payload);
 }
 
 void IsolatedMediaPlayer::onReadyRead()
@@ -220,9 +288,16 @@ void IsolatedMediaPlayer::onEvent(const QString &name, const QByteArray &args)
     } else if (name == QLatin1String("tracks")) {
         media::Tracks t; in >> t;
         if (in.status() == QDataStream::Ok) applyTracks(t);
-    } else if (name == QLatin1String("ring")) {
-        qint32 gen = 0; qint64 bytes = 0; in >> gen >> bytes;
-        if (in.status() == QDataStream::Ok) attachRing(gen, bytes);
+    } else if (name == QLatin1String("read")) {
+        qint32 gen = 0; quint32 id = 0; qint64 offset = 0; qint32 length = 0;
+        in >> gen >> id >> offset >> length;
+        if (in.status() == QDataStream::Ok && gen == m_sourceGen && m_feed) m_feed->request(id, offset, length);
+    } else if (name == QLatin1String("needRing")) {
+        qint64 bytes = 0; in >> bytes;
+        if (in.status() == QDataStream::Ok) shareRing(bytes);
+    } else if (name == QLatin1String("ringReady")) {
+        qint32 gen = 0; in >> gen;
+        if (gen == m_generation && m_ring) m_ring->unpublish();
     } else if (name == QLatin1String("frame")) {
         qint32 gen = 0; media::FrameHeader hdr; in >> gen >> hdr;
         if (in.status() == QDataStream::Ok) showFrame(gen, hdr);
@@ -273,21 +348,22 @@ void IsolatedMediaPlayer::applyTracks(const media::Tracks &t)
     }
 }
 
-void IsolatedMediaPlayer::attachRing(qint32 generation, qint64 slotBytes)
+// The UI makes the ring and keeps a read-only view; the child only gets to map
+// it for writing, so the sandbox never needs the right to create memory.
+void IsolatedMediaPlayer::shareRing(qint64 slotBytes)
 {
-    m_ring.reset();
-    m_slotBytes = 0;
-    m_generation = generation;
-    if (slotBytes <= 0 || slotBytes > qint64(media::kMaxDimension) * media::kMaxDimension * 8) return;
-    auto ring = SharedSegment::openReadOnly(SharedSegment::nameFor(
-        m_serverName + QStringLiteral("-ring-") + QString::number(generation)));
-    if (!ring) {
-        qWarning() << "[media] could not open the frame ring";
-        return;
-    }
-    if (ring->size() < slotBytes * media::kSlots) return;   // the child lied about its own segment
+    if (slotBytes <= m_slotBytes || slotBytes <= 0 || slotBytes > kMaxSlotBytes) return;
+    const qint64 size = slotBytes + slotBytes / 4;
+    const qint32 gen = m_generation + 1;
+    auto ring = SharedSegment::create(m_serverName + QStringLiteral("-ring-") + QString::number(gen),
+                                      size * media::kSlots);
+    if (!ring) { qWarning() << "[media] could not create the frame ring"; return; }
+    const QString token = ring->shareWith(m_childPid);
+    if (token.isEmpty()) { qWarning() << "[media] could not share the frame ring"; return; }
     m_ring = std::move(ring);
-    m_slotBytes = slotBytes;
+    m_slotBytes = size;
+    m_generation = gen;
+    send(QStringLiteral("ring"), media::encode(gen, size, token));
 }
 
 void IsolatedMediaPlayer::showFrame(qint32 generation, const media::FrameHeader &hdr)
@@ -304,31 +380,40 @@ void IsolatedMediaPlayer::showFrame(qint32 generation, const media::FrameHeader 
         if (QVideoSink *s = sink()) s->setVideoFrame(frame);
 }
 
-void IsolatedMediaPlayer::onChildLost()
+void IsolatedMediaPlayer::failWith(int error, const QString &why)
 {
-    teardown();
     media::State s = m_state;
     s.playbackState = QMediaPlayer::StoppedState;
     s.mediaStatus = QMediaPlayer::InvalidMedia;
-    s.error = QMediaPlayer::ResourceError;
-    s.errorString = QStringLiteral("decoder stopped");
+    s.error = error;
+    s.errorString = why;
     applyState(s);
+}
+
+void IsolatedMediaPlayer::onChildLost()
+{
+    teardown();
+    failWith(QMediaPlayer::ResourceError, QStringLiteral("decoder stopped"));
     emit decoderCrashed();
 }
 
 void IsolatedMediaPlayer::teardown()
 {
     m_tearingDown = true;
-    if (m_connectTimer) m_connectTimer->stop();
-    if (m_sock) { m_sock->abort(); m_sock->deleteLater(); m_sock = nullptr; }
+    if (m_feed) { m_feed->disconnect(this); m_feed->deleteLater(); m_feed = nullptr; }
+    if (m_sock) { m_sock->disconnect(this); m_sock->abort(); m_sock->deleteLater(); m_sock = nullptr; }
     if (m_proc) {
         m_proc->kill();
         m_proc->waitForFinished(500);
         m_proc->deleteLater();
         m_proc = nullptr;
     }
+    if (m_channel) { m_channel->deleteLater(); m_channel = nullptr; }
+    m_launch.reset();
     m_ring.reset();
     m_slotBytes = 0;
+    m_childPid = 0;
+    m_opened = false;
     m_ready = false;
     m_pending.clear();
     m_buf.clear();

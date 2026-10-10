@@ -6,18 +6,18 @@
 #include "ipc/ipcprotocol.h"
 #include "ipc/mediaframe.h"
 #include "ipc/mediasandbox.h"
+#include "ipc/remotesource.h"
 
 #include <QCoreApplication>
 #include <QDebug>
-#include <QLocalServer>
+#include <QDir>
+#include <QFileInfo>
 #include <QLocalSocket>
 #include <QLocale>
 #include <QMediaMetaData>
+#include <QSet>
 #include <QTimer>
 #include <QUrl>
-#include <QDir>
-#include <QFileInfo>
-#include <QSet>
 
 #ifdef Q_OS_MACOS
 #  include <mach-o/dyld.h>
@@ -32,14 +32,6 @@ QList<media::Track> tracksOf(const QList<QMediaMetaData> &list)
         out.append({ qint32(m.value(QMediaMetaData::Language).value<QLocale::Language>()),
                      m.stringValue(QMediaMetaData::Title) });
     return out;
-}
-
-// The child only ever plays what the UI's own stream server or the local disk
-// hands it: anything else is a confused or hostile caller.
-bool acceptableSource(const QUrl &url)
-{
-    if (url.isEmpty() || url.isLocalFile()) return true;
-    return url.scheme() == QLatin1String("http") && url.host() == QLatin1String("127.0.0.1");
 }
 
 // Where the decoder's code lives: plugins and codecs load after the sandbox is
@@ -87,42 +79,45 @@ MediaHost::MediaHost(const QString &serverName, bool sandboxed, QObject *parent)
 
 MediaHost::~MediaHost()
 {
-    m_player.stop();
-    if (!m_ringName.isEmpty()) SharedSegment::release(m_ringName);
+    closeSource();
 }
 
-bool MediaHost::listen()
+// Connect first: once confined the child can open nothing new, socket included.
+bool MediaHost::start(int timeoutMs)
 {
-    m_server = new QLocalServer(this);
-    m_server->setSocketOptions(QLocalServer::UserAccessOption);
-    QLocalServer::removeServer(m_serverName);
-    if (!m_server->listen(m_serverName)) {
-        qWarning() << "[media] listen failed:" << m_server->errorString();
+    m_sock = new QLocalSocket(this);
+    m_sock->connectToServer(m_serverName);
+    if (!m_sock->waitForConnected(timeoutMs)) {
+        qWarning() << "[media] cannot reach the UI:" << m_sock->errorString();
         return false;
     }
-    connect(m_server, &QLocalServer::newConnection, this, &MediaHost::onNewConnection);
-    return true;
-}
-
-void MediaHost::onNewConnection()
-{
-    QLocalSocket *sock = m_server->nextPendingConnection();
-    if (!sock) return;
-    if (m_client) { sock->disconnectFromServer(); sock->deleteLater(); return; }
-    m_client = sock;
-    m_server->close();
-    connect(sock, &QLocalSocket::readyRead, this, &MediaHost::onReadyRead);
+    connect(m_sock, &QLocalSocket::readyRead, this, &MediaHost::onReadyRead);
     // The UI is the only reason to exist: an orphaned decoder would keep
     // playing audio with no window.
-    connect(sock, &QLocalSocket::disconnected, qApp, &QCoreApplication::quit);
-    ipc::writeFrame(sock, ipc::Kind::Hello, {});
+    connect(m_sock, &QLocalSocket::disconnected, qApp, &QCoreApplication::quit);
+
+    if (m_wantSandbox && MediaSandbox::supported()) {
+        MediaSandbox::Grant grant;
+        grant.readTrees = codeTrees();
+        QString error;
+        if (!MediaSandbox::enter(grant, &error)) {
+            qWarning() << "[media] sandbox:" << error;
+            refuse(QStringLiteral("sandbox unavailable"));
+            m_sock->flush();
+            return false;
+        }
+        qInfo() << "[media] sandboxed";
+    }
+    ipc::writeFrame(m_sock, ipc::Kind::Hello, {});
+    if (m_sock->bytesAvailable() > 0) onReadyRead();
+    return true;
 }
 
 void MediaHost::onReadyRead()
 {
-    m_buf.append(m_client->readAll());
+    m_buf.append(m_sock->readAll());
     ipc::drainFrames(m_buf, [this](ipc::Kind kind, const QByteArray &payload) {
-        if (kind == ipc::Kind::Ping) { ipc::writeFrame(m_client, ipc::Kind::Pong, {}); return; }
+        if (kind == ipc::Kind::Ping) { ipc::writeFrame(m_sock, ipc::Kind::Pong, {}); return; }
         if (kind != ipc::Kind::Request) return;
         QDataStream in(payload);
         in.setVersion(ipc::kStreamVersion);
@@ -136,11 +131,25 @@ void MediaHost::dispatch(const QString &method, const QByteArray &args)
 {
     QDataStream in(args);
     in.setVersion(ipc::kStreamVersion);
-    if (method == QLatin1String("source")) {
-        QUrl url; in >> url;
-        if (!acceptableSource(url)) { refuse(QStringLiteral("source not allowed")); return; }
-        if (!confineFor(url)) return;
-        m_player.setSource(url);
+    if (method == QLatin1String("open")) {
+        qint32 gen = 0; qint64 size = 0; QString hint;
+        in >> gen >> size >> hint;
+        if (in.status() == QDataStream::Ok) openSource(gen, size, hint);
+    } else if (method == QLatin1String("close")) {
+        closeSource();
+    } else if (method == QLatin1String("data")) {
+        qint32 gen = 0; quint32 id = 0; qint64 offset = 0; QByteArray bytes;
+        in >> gen >> id >> offset >> bytes;
+        if (in.status() == QDataStream::Ok && gen == m_sourceGen && m_source)
+            m_source->deliver(id, offset, bytes);
+    } else if (method == QLatin1String("dataError")) {
+        qint32 gen = 0; quint32 id = 0;
+        in >> gen >> id;
+        if (gen == m_sourceGen && m_source) m_source->fail(id);
+    } else if (method == QLatin1String("ring")) {
+        qint32 gen = 0; qint64 bytes = 0; QString token;
+        in >> gen >> bytes >> token;
+        if (in.status() == QDataStream::Ok) attachRing(gen, bytes, token);
     } else if (method == QLatin1String("play")) {
         m_player.play();
     } else if (method == QLatin1String("pause")) {
@@ -165,83 +174,70 @@ void MediaHost::dispatch(const QString &method, const QByteArray &args)
     }
 }
 
-// Fail closed: a decoder that could not be confined never opens the file.
-bool MediaHost::confineFor(const QUrl &url)
+void MediaHost::openSource(qint32 generation, qint64 size, const QString &hint)
 {
-    if (!m_wantSandbox || url.isEmpty()) return true;
-    if (m_confined) {
-        if (url == m_confinedTo) return true;
-        refuse(QStringLiteral("sandbox is bound to another source"));
-        return false;
-    }
-    if (!MediaSandbox::supported()) return true;
-    MediaSandbox::Grant grant;
-    grant.readTrees = codeTrees();
-    if (url.isLocalFile()) grant.readFile = QFileInfo(url.toLocalFile()).canonicalFilePath();
-    else grant.localPort = url.port();
-    QString error;
-    if (!MediaSandbox::enter(grant, &error)) {
-        qWarning() << "[media] sandbox:" << error;
-        refuse(QStringLiteral("sandbox unavailable"));
-        return false;
-    }
-    m_confined = true;
-    m_confinedTo = url;
-    qInfo() << "[media] sandboxed for" << (url.isLocalFile() ? QStringLiteral("a local file")
-                                                             : QStringLiteral("port %1").arg(url.port()));
-    return true;
+    closeSource();
+    if (size <= 0) { refuse(QStringLiteral("empty source")); return; }
+    m_sourceGen = generation;
+    auto *src = new RemoteSource(size, 120000, this);
+    connect(src, &RemoteSource::readRequested, this, [this, generation](quint32 id, qint64 offset, qint32 length) {
+        sendEvent(QStringLiteral("read"), media::encode(generation, id, offset, length));
+    }, Qt::QueuedConnection);
+    m_source = src;
+    // The hint only names the container; the bytes come from RemoteSource.
+    m_player.setSourceDevice(src, QUrl(QStringLiteral("media.") + QFileInfo(hint).suffix()));
 }
 
-void MediaHost::refuse(const QString &why)
+// Unblock a demuxer waiting on bytes before the player joins its thread.
+void MediaHost::closeSource()
 {
-    qWarning() << "[media] refused source:" << why;
-    media::State s;
-    s.mediaStatus = qint32(QMediaPlayer::InvalidMedia);
-    s.error = qint32(QMediaPlayer::AccessDeniedError);
-    s.errorString = why;
-    sendEvent(QStringLiteral("state"), media::encode(s));
+    if (!m_source) return;
+    RemoteSource *old = m_source;
+    old->abort();
+    m_player.setSource(QUrl());
+    m_source = nullptr;
+    old->deleteLater();
 }
 
-bool MediaHost::ensureRing(qint64 slotBytes)
+void MediaHost::attachRing(qint32 generation, qint64 slotBytes, const QString &token)
 {
-    if (m_ring && slotBytes <= m_slotBytes) return true;
-    const qint64 size = slotBytes + slotBytes / 4;
-    const QString name = SharedSegment::nameFor(
-        m_serverName + QStringLiteral("-ring-") + QString::number(m_generation + 1));
-    auto ring = SharedSegment::create(name, size * media::kSlots);
-    if (!ring) {
-        qWarning() << "[media] could not create the frame ring";
-        return false;
+    auto ring = SharedSegment::openWritable(token);
+    if (!ring || slotBytes <= 0 || ring->size() < slotBytes * media::kSlots) {
+        qWarning() << "[media] could not map the frame ring";
+        return;
     }
-    if (!m_ringName.isEmpty()) SharedSegment::release(m_ringName);
     m_ring = std::move(ring);
-    m_ringName = name;
-    m_slotBytes = size;
-    ++m_generation;
+    m_slotBytes = slotBytes;
+    m_generation = generation;
     m_busy.fill(false);
-    sendEvent(QStringLiteral("ring"), media::encode(m_generation, m_slotBytes));
-    return true;
+    sendEvent(QStringLiteral("ringReady"), media::encode(generation));
 }
 
 void MediaHost::onFrame(const QVideoFrame &frame)
 {
-    if (!m_client || !frame.isValid()) return;
+    if (!m_sock || !frame.isValid()) return;
+    QVideoFrame f = frame;
+    if (!f.map(QVideoFrame::ReadOnly)) return;
+    const qint64 need = media::packedSize(f);
+    if (!m_ring || need > m_slotBytes) {
+        // Ask once per size; frames are dropped until the UI shares a ring.
+        if (need > m_ringAsked) {
+            m_ringAsked = need;
+            sendEvent(QStringLiteral("needRing"), media::encode(need));
+        }
+        f.unmap();
+        return;
+    }
     int slot = -1;
     for (int i = 0; i < media::kSlots; ++i)
         if (!m_busy[size_t(i)]) { slot = i; break; }
-    if (slot < 0 && m_ring) return;   // UI is behind: drop, the next frame supersedes this one
+    if (slot < 0) { f.unmap(); return; }   // UI is behind: the next frame supersedes this one
 
-    QVideoFrame f = frame;
-    if (!f.map(QVideoFrame::ReadOnly)) return;
     media::FrameHeader hdr;
-    const qint64 need = media::packedSize(f);
-    if (!ensureRing(need)) { f.unmap(); return; }
-    if (slot < 0) slot = 0;
     uchar *base = m_ring->data() + qint64(slot) * m_slotBytes;
     const bool packed = media::pack(f, base, m_slotBytes, hdr);
     f.unmap();
     if (!packed) return;
-
     hdr.slot = slot;
     m_busy[size_t(slot)] = true;
     sendEvent(QStringLiteral("frame"), media::encode(m_generation, hdr));
@@ -280,8 +276,18 @@ void MediaHost::sendTracks()
     sendEvent(QStringLiteral("tracks"), media::encode(t));
 }
 
+void MediaHost::refuse(const QString &why)
+{
+    qWarning() << "[media] refused:" << why;
+    media::State s;
+    s.mediaStatus = qint32(QMediaPlayer::InvalidMedia);
+    s.error = qint32(QMediaPlayer::AccessDeniedError);
+    s.errorString = why;
+    sendEvent(QStringLiteral("state"), media::encode(s));
+}
+
 void MediaHost::sendEvent(const QString &name, const QByteArray &args)
 {
-    if (!m_client) return;
-    ipc::writeFrame(m_client, ipc::Kind::Event, media::encode(name, args));
+    if (!m_sock) return;
+    ipc::writeFrame(m_sock, ipc::Kind::Event, media::encode(name, args));
 }

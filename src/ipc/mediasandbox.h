@@ -9,18 +9,18 @@
 #include <QStringList>
 
 // The media child's sandbox (internal/ISOLATED_DECODER_PLAN.md, phase 2).
-// Entered once, right before the first source opens, and never widened: a
-// source that needs more than the grant gets a fresh child instead.
+// Entered once the child is connected to the UI, before any media byte
+// arrives. Media comes over the socket (RemoteSource), so the grant has no
+// file or network in it at all.
 namespace MediaSandbox {
 
 struct Grant {
     QStringList readTrees;   // code the decoder may still load: bundle, Qt, system
-    QString readFile;        // the one media file, for file:// sources
-    int localPort = 0;       // the stream server, for http://127.0.0.1 sources
 };
 
 // SBPL for `grant`, or empty when any path can't be expressed safely: a path is
 // spliced into the profile text, so it must never be able to close a string.
+// Install paths are the user's to choose, so this still matters.
 QString profile(const Grant &grant);
 
 bool supported();

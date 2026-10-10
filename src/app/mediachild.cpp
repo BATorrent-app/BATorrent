@@ -72,7 +72,7 @@ bool tryRun(int argc, char *argv[], int *exitCode)
 #endif
         MediaHost host(QString::fromLocal8Bit(argv[i + 1]),
                        !qEnvironmentVariableIsSet("BAT_MEDIA_NO_SANDBOX"));
-        *exitCode = host.listen() ? mapp.exec() : 1;
+        *exitCode = host.start() ? mapp.exec() : 1;
         return true;
     }
     return false;

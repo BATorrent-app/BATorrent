@@ -97,6 +97,9 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/ipc/mediahost.cpp
     src/ipc/sharedsegment.cpp
     src/ipc/mediasandbox.cpp
+    src/ipc/remotesource.cpp
+    src/ipc/mediafeed.cpp
+    src/ipc/mediachannel.cpp
     src/services/platform/translator.cpp
     src/services/platform/statshistory.cpp
     src/services/platform/soundplayer.cpp
@@ -335,6 +338,9 @@ if(WIN32)
     # psapi: GetProcessMemoryInfo for the memory guard
     # iphlpapi: GetIfTable2; verify a WireGuard tunnel actually passes traffic
     target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp iphlpapi)
+    # userenv: AppContainer profiles for the sandboxed media child
+    target_sources(BATorrent PRIVATE src/ipc/appcontainer_win.cpp)
+    target_link_libraries(BATorrent PRIVATE userenv)
 
     # Emit a PDB even in Release so Store / Partner Center crash dumps symbolicate.
     # Without symbols every Store crash is reported as "unknown" (we had 314/322
