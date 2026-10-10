@@ -10,6 +10,7 @@
 #include <QList>
 #include <QObject>
 #include <QPointer>
+#include <QTimer>
 #include <QUrl>
 
 class QNetworkAccessManager;
@@ -55,8 +56,11 @@ private:
     QNetworkAccessManager *m_nam = nullptr;
     QPointer<QNetworkReply> m_reply;
     bool m_replyChecked = false;
+    qint64 m_retriedAt = -1;   // a reply that ended short is retried once from there
+    QTimer m_pull;
     QByteArray m_buf;          // bytes [m_bufStart, m_bufStart + m_buf.size())
     qint64 m_bufStart = 0;
+    qint64 m_readerAt = 0;     // where the child's last answer ended
     QList<Pending> m_pending;
 };
 
