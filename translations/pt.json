@@ -1354,5 +1354,14 @@
   "find_ep_no_sources": "Ainda sem fontes",
   "find_starring": "Elenco",
   "find_genres": "Gêneros",
-  "find_no_releases": "Nenhum lançamento encontrado"
+  "find_no_releases": "Nenhum lançamento encontrado",
+  "game_playtime": "Tempo jogado",
+  "game_last_played": "Última sessão",
+  "game_never_played": "Ainda não jogado",
+  "game_media": "Mídia",
+  "game_files": "Arquivos",
+  "game_folder": "Pasta",
+  "game_exe": "Executável",
+  "game_exe_auto": "Detectado ao abrir",
+  "game_size": "Tamanho"
 }

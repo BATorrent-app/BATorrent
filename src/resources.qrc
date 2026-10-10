@@ -248,6 +248,10 @@
 <file>../src/qml/views/HubCompute.qml</file>
 <file>../src/qml/views/HubContinueRails.qml</file>
 <file>../src/qml/views/HubSeriesPage.qml</file>
+<file>../src/qml/views/HubGamePage.qml</file>
+<file>../src/qml/views/HubGameActions.qml</file>
+<file>../src/qml/views/HubGameStills.qml</file>
+<file>../src/qml/views/HubGameFiles.qml</file>
 <file>../src/qml/views/HubShelves.qml</file>
 <file>../src/qml/views/HubDetailDrawer.qml</file>
 <file>../src/qml/views/HubCard.qml</file>

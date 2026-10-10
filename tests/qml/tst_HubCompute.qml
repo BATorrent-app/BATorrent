@@ -43,8 +43,9 @@ Item {
         property string librarySearch: ""
         property string librarySort: "added"
         property var detailItem: null
-        property bool detailIsGame: false
         property bool detailOpen: false
+        property string gameHash: ""
+        property bool gameOpen: false
         property var exePicker: null
         function fileUrl(p) { return "file://" + p }
     }
@@ -72,6 +73,21 @@ Item {
             compare(c.continueItems[0].infoHash, "bbb")
             compare(c.continueItems[1].infoHash, "aaa")
             compare(c.empty, false)
+        }
+
+        function test_openDetailRoutesGamesToTheirPage() {
+            mockPage.detailOpen = false
+            mockPage.gameOpen = false
+            var c = createTemporaryObject(computeComp, root)
+            c.openDetail({ infoHash: "g1", title: "Hades" }, true)
+            compare(mockPage.gameOpen, true)
+            compare(mockPage.gameHash, "g1")
+            compare(mockPage.detailOpen, false)
+            c.openDetail({ infoHash: "aaa", title: "Old" }, false)
+            compare(mockPage.detailOpen, true)
+            compare(mockPage.detailItem.infoHash, "aaa")
+            mockPage.gameOpen = false
+            mockPage.detailOpen = false
         }
 
         function test_playMovieCallsPlayByHash() {

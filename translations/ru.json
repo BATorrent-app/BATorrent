@@ -1354,5 +1354,14 @@
   "find_ep_no_sources": "Пока нет источников",
   "find_starring": "В ролях",
   "find_genres": "Жанры",
-  "find_no_releases": "Релизы не найдены"
+  "find_no_releases": "Релизы не найдены",
+  "game_playtime": "Время в игре",
+  "game_last_played": "Последний запуск",
+  "game_never_played": "Ещё не запускалась",
+  "game_media": "Медиа",
+  "game_files": "Файлы",
+  "game_folder": "Папка",
+  "game_exe": "Исполняемый файл",
+  "game_exe_auto": "Определяется при запуске",
+  "game_size": "Размер"
 }

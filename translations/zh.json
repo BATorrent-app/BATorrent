@@ -1354,5 +1354,14 @@
   "find_ep_no_sources": "暂无资源",
   "find_starring": "主演",
   "find_genres": "类型",
-  "find_no_releases": "未找到资源"
+  "find_no_releases": "未找到资源",
+  "game_playtime": "游戏时长",
+  "game_last_played": "上次游玩",
+  "game_never_played": "尚未游玩",
+  "game_media": "媒体",
+  "game_files": "文件",
+  "game_folder": "文件夹",
+  "game_exe": "可执行文件",
+  "game_exe_auto": "启动时自动检测",
+  "game_size": "大小"
 }

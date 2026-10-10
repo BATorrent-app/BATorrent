@@ -143,6 +143,57 @@ QVariantList gameCardsFromJson(const QByteArray &jsonArray, int cap)
     return gameCards(objectsFromJson(jsonArray), cap);
 }
 
+static QVariantMap titleRow(const QJsonObject &o)
+{
+    const QString imageId = o.value(QLatin1String("cover")).toObject()
+                                .value(QLatin1String("image_id")).toString();
+    const QString name = o.value(QLatin1String("name")).toString();
+    const qint64 rel = qint64(o.value(QLatin1String("first_release_date")).toDouble());
+    QVariantMap m;
+    m.insert(QStringLiteral("title"), name);
+    m.insert(QStringLiteral("poster"), imageId.isEmpty() ? QString()
+             : QStringLiteral("https://images.igdb.com/igdb/image/upload/t_cover_big/%1.jpg").arg(imageId));
+    m.insert(QStringLiteral("year"), rel > 0
+             ? QString::number(QDateTime::fromSecsSinceEpoch(rel).date().year()) : QString());
+    m.insert(QStringLiteral("rating"), o.value(QLatin1String("total_rating")).toDouble() / 10.0);
+    m.insert(QStringLiteral("overview"), o.value(QLatin1String("summary")).toString());
+    m.insert(QStringLiteral("type"), QStringLiteral("game"));
+    QStringList stills;
+    const QJsonArray shots = o.value(QLatin1String("screenshots")).toArray();
+    for (const QJsonValue &sv : shots) {
+        const QString sid = sv.toObject().value(QLatin1String("image_id")).toString();
+        if (!sid.isEmpty())
+            stills << QStringLiteral("https://images.igdb.com/igdb/image/upload/t_screenshot_huge/%1.jpg").arg(sid);
+        if (stills.size() >= 10) break;
+    }
+    m.insert(QStringLiteral("stills"), stills);
+    // Key art is composed to sit behind text; a gameplay screenshot is the
+    // fallback because it is still wide, unlike the cover.
+    const QJsonArray arts = o.value(QLatin1String("artworks")).toArray();
+    const QString artId = arts.isEmpty() ? QString()
+        : arts.at(0).toObject().value(QLatin1String("image_id")).toString();
+    m.insert(QStringLiteral("backdrop"), !artId.isEmpty()
+             ? QStringLiteral("https://images.igdb.com/igdb/image/upload/t_1080p/%1.jpg").arg(artId)
+             : stills.value(0));
+    QStringList genres;
+    for (const QJsonValue &g : o.value(QLatin1String("genres")).toArray()) {
+        const QString n = g.toObject().value(QLatin1String("name")).toString();
+        if (!n.isEmpty()) genres << n;
+    }
+    m.insert(QStringLiteral("genres"), genres);
+    QString maker;
+    for (const QJsonValue &c : o.value(QLatin1String("involved_companies")).toArray()) {
+        const QJsonObject co = c.toObject();
+        const QString n = co.value(QLatin1String("company")).toObject()
+                              .value(QLatin1String("name")).toString();
+        if (n.isEmpty()) continue;
+        if (maker.isEmpty()) maker = n;
+        if (co.value(QLatin1String("developer")).toBool()) { maker = n; break; }
+    }
+    m.insert(QStringLiteral("maker"), maker);
+    return m;
+}
+
 QVariantList titleSearchRows(const QByteArray &jsonArray)
 {
     QVariantList out;
@@ -151,57 +202,40 @@ QVariantList titleSearchRows(const QByteArray &jsonArray)
     const QJsonArray arr = QJsonDocument::fromJson(jsonArray).array();
     for (const QJsonValue &v : arr) {
         const QJsonObject o = v.toObject();
-        const QString imageId = o.value(QLatin1String("cover")).toObject()
-                                    .value(QLatin1String("image_id")).toString();
-        if (imageId.isEmpty()) continue;
-        const QString name = o.value(QLatin1String("name")).toString();
-        if (name.isEmpty()) continue;
-        const qint64 rel = qint64(o.value(QLatin1String("first_release_date")).toDouble());
-        QVariantMap m;
-        m.insert(QStringLiteral("title"), name);
-        m.insert(QStringLiteral("poster"),
-                 QStringLiteral("https://images.igdb.com/igdb/image/upload/t_cover_big/%1.jpg").arg(imageId));
-        m.insert(QStringLiteral("year"), rel > 0
-                 ? QString::number(QDateTime::fromSecsSinceEpoch(rel).date().year()) : QString());
-        m.insert(QStringLiteral("rating"), o.value(QLatin1String("total_rating")).toDouble() / 10.0);
-        m.insert(QStringLiteral("overview"), o.value(QLatin1String("summary")).toString());
-        m.insert(QStringLiteral("type"), QStringLiteral("game"));
-        QStringList stills;
-        const QJsonArray shots = o.value(QLatin1String("screenshots")).toArray();
-        for (const QJsonValue &sv : shots) {
-            const QString sid = sv.toObject().value(QLatin1String("image_id")).toString();
-            if (!sid.isEmpty())
-                stills << QStringLiteral("https://images.igdb.com/igdb/image/upload/t_screenshot_huge/%1.jpg").arg(sid);
-            if (stills.size() >= 10) break;
-        }
-        m.insert(QStringLiteral("stills"), stills);
-        // Key art is composed to sit behind text; a gameplay screenshot is the
-        // fallback because it is still wide, unlike the cover.
-        const QJsonArray arts = o.value(QLatin1String("artworks")).toArray();
-        const QString artId = arts.isEmpty() ? QString()
-            : arts.at(0).toObject().value(QLatin1String("image_id")).toString();
-        m.insert(QStringLiteral("backdrop"), !artId.isEmpty()
-                 ? QStringLiteral("https://images.igdb.com/igdb/image/upload/t_1080p/%1.jpg").arg(artId)
-                 : stills.value(0));
-        QStringList genres;
-        for (const QJsonValue &g : o.value(QLatin1String("genres")).toArray()) {
-            const QString n = g.toObject().value(QLatin1String("name")).toString();
-            if (!n.isEmpty()) genres << n;
-        }
-        m.insert(QStringLiteral("genres"), genres);
-        QString maker;
-        for (const QJsonValue &c : o.value(QLatin1String("involved_companies")).toArray()) {
-            const QJsonObject co = c.toObject();
-            const QString n = co.value(QLatin1String("company")).toObject()
-                                  .value(QLatin1String("name")).toString();
-            if (n.isEmpty()) continue;
-            if (maker.isEmpty()) maker = n;
-            if (co.value(QLatin1String("developer")).toBool()) { maker = n; break; }
-        }
-        m.insert(QStringLiteral("maker"), maker);
-        out.append(m);
+        if (o.value(QLatin1String("cover")).toObject().value(QLatin1String("image_id")).toString().isEmpty()
+            || o.value(QLatin1String("name")).toString().isEmpty())
+            continue;
+        out.append(titleRow(o));
     }
     return out;
+}
+
+int steamAppId(const QJsonObject &game)
+{
+    for (const QJsonValue &v : game.value(QLatin1String("external_games")).toArray()) {
+        const QJsonObject e = v.toObject();
+        // `category` is deprecated in favour of `external_game_source`; IGDB still
+        // serves either depending on the record, and 1 means Steam in both.
+        const int src = e.contains(QLatin1String("external_game_source"))
+            ? e.value(QLatin1String("external_game_source")).toInt()
+            : e.value(QLatin1String("category")).toInt();
+        if (src != 1) continue;
+        bool ok = false;
+        const int id = e.value(QLatin1String("uid")).toString().toInt(&ok);
+        if (ok && id > 0) return id;
+    }
+    return 0;
+}
+
+QVariantMap gameDetails(const QByteArray &jsonArray)
+{
+    for (const QJsonObject &o : objectsFromJson(jsonArray)) {
+        if (o.value(QLatin1String("name")).toString().isEmpty()) continue;
+        QVariantMap m = titleRow(o);
+        m.insert(QStringLiteral("steamAppId"), steamAppId(o));
+        return m;
+    }
+    return {};
 }
 
 int pickHypeTypeId(const QByteArray &popularityTypesJson, int fallback)

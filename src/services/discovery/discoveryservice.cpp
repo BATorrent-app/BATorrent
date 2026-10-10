@@ -242,37 +242,6 @@ bool DiscoveryService::hasMetadataKeys() const
     return haveTmdb || haveIgdb;
 }
 
-void DiscoveryService::fetchGameRecommendations(const QString &gameName)
-{
-    if (gameName.trimmed().isEmpty()) { emit gameRecommendationsReady(gameName, {}); return; }
-    ensureIgdbToken([this, gameName]() {
-        if (m_igdbToken.isEmpty()) { emit gameRecommendationsReady(gameName, {}); return; }
-        QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
-        setIgdbHeaders(req);
-        QString safe = gameName; safe.replace(QLatin1Char('"'), QLatin1Char(' '));
-        const QByteArray body = QStringLiteral(
-            "search \"%1\"; fields similar_games.name, similar_games.cover.image_id,"
-            " similar_games.first_release_date, similar_games.rating, similar_games.summary; limit 1;")
-            .arg(safe).toUtf8();
-        QNetworkReply *reply = m_nam->post(req, body);
-        connect(reply, &QNetworkReply::finished, this, [this, reply, gameName]() {
-            reply->deleteLater();
-            QVariantList items;
-            if (reply->error() == QNetworkReply::NoError) {
-                const QJsonArray arr = QJsonDocument::fromJson(reply->readAll()).array();
-                if (!arr.isEmpty()) {
-                    const QJsonArray sims = arr.first().toObject()
-                                                .value(QLatin1String("similar_games")).toArray();
-                    items = IgdbParse::gameCards(IgdbParse::objectsFromArray(sims), 16);
-                }
-            } else {
-                qDebug() << "[discover] IGDB similar-games error:" << reply->errorString();
-            }
-            emit gameRecommendationsReady(gameName, items);
-        });
-    });
-}
-
 void DiscoveryService::fetchTmdb(int order, const QString &path, const QString &label, const QString &type,
                                  const QList<QPair<QString, QString>> &extra, int page)
 {

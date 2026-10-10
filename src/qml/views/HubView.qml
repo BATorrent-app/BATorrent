@@ -111,8 +111,10 @@ Item {
     function openExePicker(hash, launchAfter) { logic.openExePicker(hash, launchAfter) }
     function genreKey(name) { return logic.genreKey(name) }
 
+    property string gameHash: ""
+    property bool gameOpen: false
+
     property var detailItem: null
-    property bool detailIsGame: false
     property bool detailOpen: false
     function openDetail(item, isGame) { logic.openDetail(item, isGame) }
 
@@ -220,5 +222,6 @@ Item {
     }
 
     HubSeriesPage { anchors.fill: parent; hub: page }
+    HubGamePage { anchors.fill: parent; hub: page }
     HubDetailDrawer { anchors.fill: parent; hub: page }
 }

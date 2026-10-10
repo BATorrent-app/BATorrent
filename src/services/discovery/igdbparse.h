@@ -10,6 +10,7 @@
 #include <QList>
 #include <QString>
 #include <QVariantList>
+#include <QVariantMap>
 
 // Pure IGDB response → poster-card mapping (no network).
 namespace IgdbParse {
@@ -28,6 +29,12 @@ QVariantList gameCardsFromJson(const QByteArray &jsonArray, int cap);
 
 // /games search → title-search cards (cover + stills, total_rating /10).
 QVariantList titleSearchRows(const QByteArray &jsonArray);
+
+// Steam appid from a game's external_games (0 when IGDB has no Steam record).
+int steamAppId(const QJsonObject &game);
+// /games lookup for one owned game → first named record as a title row plus
+// steamAppId. Cover is not required: the page can stand on art alone.
+QVariantMap gameDetails(const QByteArray &jsonArray);
 
 // popularity_types: prefer Global Top Sellers → Want to Play → Playing → fallback.
 int pickHypeTypeId(const QByteArray &popularityTypesJson, int fallback = 9);

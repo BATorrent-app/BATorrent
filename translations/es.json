@@ -1354,5 +1354,14 @@
   "find_ep_no_sources": "Aún sin fuentes",
   "find_starring": "Reparto",
   "find_genres": "Géneros",
-  "find_no_releases": "No se encontraron lanzamientos"
+  "find_no_releases": "No se encontraron lanzamientos",
+  "game_playtime": "Tiempo jugado",
+  "game_last_played": "Última sesión",
+  "game_never_played": "Aún sin jugar",
+  "game_media": "Multimedia",
+  "game_files": "Archivos",
+  "game_folder": "Carpeta",
+  "game_exe": "Ejecutable",
+  "game_exe_auto": "Se detecta al abrir",
+  "game_size": "Tamaño"
 }

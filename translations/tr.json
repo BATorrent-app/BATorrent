@@ -1354,5 +1354,14 @@
   "find_ep_no_sources": "Henüz kaynak yok",
   "find_starring": "Oyuncular",
   "find_genres": "Türler",
-  "find_no_releases": "Sürüm bulunamadı"
+  "find_no_releases": "Sürüm bulunamadı",
+  "game_playtime": "Oynama süresi",
+  "game_last_played": "Son oynama",
+  "game_never_played": "Henüz oynanmadı",
+  "game_media": "Medya",
+  "game_files": "Dosyalar",
+  "game_folder": "Klasör",
+  "game_exe": "Çalıştırılabilir dosya",
+  "game_exe_auto": "Açılışta algılanır",
+  "game_size": "Boyut"
 }

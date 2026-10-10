@@ -1354,5 +1354,14 @@
   "find_ep_no_sources": "Noch keine Quellen",
   "find_starring": "Mit",
   "find_genres": "Genres",
-  "find_no_releases": "Keine Releases gefunden"
+  "find_no_releases": "Keine Releases gefunden",
+  "game_playtime": "Spielzeit",
+  "game_last_played": "Zuletzt gespielt",
+  "game_never_played": "Noch nicht gespielt",
+  "game_media": "Medien",
+  "game_files": "Dateien",
+  "game_folder": "Ordner",
+  "game_exe": "Programmdatei",
+  "game_exe_auto": "Wird beim Start erkannt",
+  "game_size": "Größe"
 }

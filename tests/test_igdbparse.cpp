@@ -114,3 +114,42 @@ TEST_CASE("titleSearchRows carries what a game hero shows", "[igdbparse]") {
         REQUIRE(m.value("genres").toStringList().isEmpty());
     }
 }
+
+TEST_CASE("steamAppId reads both the current and the deprecated source field", "[igdbparse]") {
+    const auto objs = IgdbParse::objectsFromJson(QByteArrayLiteral(R"([
+      { "external_games": [ { "external_game_source": 5, "uid": "gog1" },
+                            { "external_game_source": 1, "uid": "1245620" } ] },
+      { "external_games": [ { "category": 1, "uid": "292030" } ] },
+      { "external_games": [ { "category": 1, "uid": "not-a-number" },
+                            { "external_game_source": 14, "uid": "77" } ] },
+      { "name": "no externals" }
+    ])"));
+    REQUIRE(objs.size() == 4);
+    REQUIRE(IgdbParse::steamAppId(objs.at(0)) == 1245620);
+    REQUIRE(IgdbParse::steamAppId(objs.at(1)) == 292030);
+    REQUIRE(IgdbParse::steamAppId(objs.at(2)) == 0);
+    REQUIRE(IgdbParse::steamAppId(objs.at(3)) == 0);
+}
+
+TEST_CASE("gameDetails takes the first named record and keeps art without a cover", "[igdbparse]") {
+    const QVariantMap m = IgdbParse::gameDetails(QByteArrayLiteral(R"([
+      { "summary": "nameless" },
+      { "name": "Elden Ring", "total_rating": 94.0, "first_release_date": 1645747200,
+        "artworks": [ { "image_id": "art1" } ],
+        "screenshots": [ { "image_id": "s1" }, { "image_id": "s2" } ],
+        "involved_companies": [ { "company": { "name": "Bandai" }, "developer": false },
+                                { "company": { "name": "FromSoftware" }, "developer": true } ],
+        "external_games": [ { "external_game_source": 1, "uid": "1245620" } ] }
+    ])"));
+    REQUIRE(m.value("title").toString() == QLatin1String("Elden Ring"));
+    REQUIRE(m.value("poster").toString().isEmpty());
+    REQUIRE(m.value("backdrop").toString().endsWith("/art1.jpg"));
+    REQUIRE(m.value("stills").toStringList().size() == 2);
+    REQUIRE(m.value("maker").toString() == QLatin1String("FromSoftware"));
+    REQUIRE(m.value("year").toString() == QLatin1String("2022"));
+    REQUIRE(m.value("steamAppId").toInt() == 1245620);
+
+    REQUIRE(IgdbParse::gameDetails(QByteArray()).isEmpty());
+    REQUIRE(IgdbParse::gameDetails(QByteArrayLiteral("{not json")).isEmpty());
+    REQUIRE(IgdbParse::gameDetails(QByteArrayLiteral(R"([{"summary":"x"}])")).isEmpty());
+}

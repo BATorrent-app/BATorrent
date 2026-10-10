@@ -141,6 +141,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/metadata/metadatamatch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice_title.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice_game.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryassemble.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoverysearch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryfinish.cpp

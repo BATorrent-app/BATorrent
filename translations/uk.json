@@ -1354,5 +1354,14 @@
   "find_ep_no_sources": "Поки немає джерел",
   "find_starring": "У ролях",
   "find_genres": "Жанри",
-  "find_no_releases": "Релізів не знайдено"
+  "find_no_releases": "Релізів не знайдено",
+  "game_playtime": "Час у грі",
+  "game_last_played": "Останній запуск",
+  "game_never_played": "Ще не запускалася",
+  "game_media": "Медіа",
+  "game_files": "Файли",
+  "game_folder": "Тека",
+  "game_exe": "Виконуваний файл",
+  "game_exe_auto": "Визначається під час запуску",
+  "game_size": "Розмір"
 }

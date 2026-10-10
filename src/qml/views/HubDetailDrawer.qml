@@ -2,9 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Slide-in detail drawer for a clicked library card (movie or game): cover,
-// meta lines, play/open/set-exe actions, synopsis. `hub` is the owning
-// HubView (detail state + the game-state helpers).
+// Slide-in detail drawer for a clicked library movie: cover, meta lines,
+// play/open actions, synopsis. Games open HubGamePage instead.
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Effects
@@ -38,7 +37,6 @@ Item {
         MouseArea { anchors.fill: parent }   // swallow clicks so the scrim doesn't close it
 
         readonly property var it: root.hub.detailItem
-        readonly property bool isGame: root.hub.detailIsGame
 
         Flickable {
             id: detailFlick
@@ -105,7 +103,6 @@ Item {
                     font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum; horizontalAlignment: Text.AlignHCenter
                     text: {
                         var it = detailDrawer.it; if (!it) return ""
-                        if (detailDrawer.isGame) return root.hub.cardStatus(it, true)
                         var p = []
                         if ((it.watchedPct || 0) > 0) p.push(Math.round(it.watchedPct * 100) + "% " + i18n.t("hub_watched"))
                         if ((it.durMs || 0) > 0) p.push(root.hub.fmtTime(it.durMs))
@@ -117,18 +114,12 @@ Item {
                 // actions
                 BtnFlat {
                     Layout.fillWidth: true; Layout.topMargin: 4
-                    // busy game states (downloading/extracting/playing) show the
-                    // live state and don't pretend to be clickable
-                    readonly property bool busy: detailDrawer.isGame && !root.hub.gameStateActionable(detailDrawer.it)
-                    enabled: !busy
-                    primary: !busy
+                    primary: true
                     icon: "qrc:/icons/play.svg"
-                    text: detailDrawer.isGame ? root.hub.gameStateLabel(detailDrawer.it)
-                          : ((detailDrawer.it && (detailDrawer.it.watchedPct || 0) > 0) ? i18n.t("hub_resume") : i18n.t("hub_gs_play"))
+                    text: (detailDrawer.it && (detailDrawer.it.watchedPct || 0) > 0) ? i18n.t("hub_resume") : i18n.t("hub_gs_play")
                     onClicked: {
                         if (!detailDrawer.it) return
-                        if (detailDrawer.isGame) root.hub.gamePrimary(detailDrawer.it)
-                        else if (root.hub.api) root.hub.api.playByHashFile(detailDrawer.it.infoHash, detailDrawer.it.fileIndex)
+                        if (root.hub.api) root.hub.api.playByHashFile(detailDrawer.it.infoHash, detailDrawer.it.fileIndex)
                         root.hub.detailOpen = false
                     }
                 }
@@ -141,14 +132,6 @@ Item {
                         if (f && f.length > 0) Qt.openUrlExternally(root.hub.fileUrl(f))
                     }
                 }
-                BtnFlat {
-                    Layout.fillWidth: true
-                    visible: detailDrawer.isGame
-                    icon: "qrc:/icons/settings.svg"
-                    text: (i18n.language, i18n.t("hub_set_exe"))
-                    onClicked: if (detailDrawer.it) { root.hub.openExePicker(detailDrawer.it.infoHash, false); root.hub.detailOpen = false }
-                }
-
                 Text {
                     Layout.fillWidth: true; Layout.topMargin: 4
                     visible: !!detailDrawer.it && (detailDrawer.it.description || detailDrawer.it.overview || "").length > 0

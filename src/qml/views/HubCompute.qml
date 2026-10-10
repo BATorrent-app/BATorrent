@@ -142,8 +142,12 @@ QtObject {
         page.exePicker.open()
     }
     function openDetail(item, isGame) {
+        if (isGame === true) {
+            page.gameHash = item.infoHash
+            page.gameOpen = true
+            return
+        }
         page.detailItem = item
-        page.detailIsGame = isGame === true
         page.detailOpen = true
     }
     function refresh() {

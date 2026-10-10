@@ -1354,5 +1354,14 @@
   "find_ep_no_sources": "まだソースがありません",
   "find_starring": "出演",
   "find_genres": "ジャンル",
-  "find_no_releases": "リリースが見つかりません"
+  "find_no_releases": "リリースが見つかりません",
+  "game_playtime": "プレイ時間",
+  "game_last_played": "最終プレイ",
+  "game_never_played": "まだプレイしていません",
+  "game_media": "メディア",
+  "game_files": "ファイル",
+  "game_folder": "フォルダー",
+  "game_exe": "実行ファイル",
+  "game_exe_auto": "起動時に自動検出",
+  "game_size": "サイズ"
 }

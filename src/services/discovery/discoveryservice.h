@@ -51,6 +51,9 @@ public:
     Q_INVOKABLE void fetchRecommendations(int tmdbId, const QString &type);
     // "Because you played X": IGDB similar games for a seed game (by name).
     Q_INVOKABLE void fetchGameRecommendations(const QString &gameName);
+    // Art, stills, maker and Steam appid for an owned game, by name. Cached per
+    // session. Emits gameDetailsReady ({} when IGDB has no match).
+    Q_INVOKABLE void fetchGameDetails(const QString &gameName);
     // Episode list (number, name, air date) for a TV season. Emits episodesReady.
     Q_INVOKABLE void fetchEpisodes(int tmdbId, int season);
     // Backdrop/still URLs for a title (text-free ones first). Emits backdropsReady.
@@ -81,6 +84,7 @@ signals:
     void trailerReady(int tmdbId, const QString &youtubeKey);   // "" if none
     void recommendationsReady(int tmdbId, const QVariantList &items);
     void gameRecommendationsReady(const QString &gameName, const QVariantList &items);
+    void gameDetailsReady(const QString &gameName, const QVariantMap &details);
     void episodesReady(int tmdbId, int season, const QVariantList &episodes);   // [{episode,name,air_date}]
     void backdropsReady(int tmdbId, const QStringList &urls);
     void logoReady(int tmdbId, const QString &url);   // the title's own lettering, same reply
@@ -131,6 +135,7 @@ private:
 
     QHash<QString, QString> m_logoCache;   // "type:id" → logo url, "" when the title has none
     QSet<QString> m_logoPending;
+    QHash<QString, QVariantMap> m_gameDetails;   // game name → IGDB details, {} when unmatched
 };
 
 #endif
