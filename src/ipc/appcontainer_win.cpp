@@ -69,7 +69,7 @@ struct ContainedLaunch::Native {
     PSID sid = nullptr;
     SECURITY_CAPABILITIES caps{};
     HANDLE job = nullptr;
-    DWORD64 childPolicy = PROCESS_CREATION_CHILD_PROCESS_RESTRICTED;
+    DWORD childPolicy = PROCESS_CREATION_CHILD_PROCESS_RESTRICTED;   // a DWORD, not a DWORD64
     LPPROC_THREAD_ATTRIBUTE_LIST list = nullptr;
     STARTUPINFOEXW siex{};
 };
@@ -85,7 +85,10 @@ ContainedLaunch::~ContainedLaunch()
 
 bool ContainedLaunch::prepare(const QString &codeDir, QString *error)
 {
-    auto fail = [error](const char *why) { if (error) *error = QString::fromLatin1(why); return false; };
+    auto fail = [error](const char *why) {
+        if (error) *error = QStringLiteral("%1 (error %2)").arg(QLatin1String(why)).arg(GetLastError());
+        return false;
+    };
 
     HRESULT hr = CreateAppContainerProfile(kProfile, kProfile, L"BATorrent video decoder", nullptr, 0, &d->sid);
     if (hr == HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS))
