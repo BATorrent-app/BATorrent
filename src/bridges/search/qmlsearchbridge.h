@@ -29,6 +29,12 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QString workPoster READ workPoster NOTIFY workChanged)
     Q_PROPERTY(QString workYear READ workYear NOTIFY workChanged)
     Q_PROPERTY(QStringList workStills READ workStills NOTIFY workStillsChanged)
+    // Already in the row TMDB answered with; the header simply never read
+    // them, so a drill-down showed a title and a year where it could have
+    // shown the work.
+    Q_PROPERTY(QString workBackdrop READ workBackdrop NOTIFY workChanged)
+    Q_PROPERTY(QString workOverview READ workOverview NOTIFY workChanged)
+    Q_PROPERTY(double workRating READ workRating NOTIFY workChanged)
     // "movie"|"series"|"game" while a Get & Watch / Install flow is active (else "").
     Q_PROPERTY(QString getFlowType READ getFlowType NOTIFY getFlowChanged)
 public:
@@ -49,6 +55,9 @@ public:
     QString workPoster() const { return m_workPoster; }
     QString workYear() const { return m_workYear; }
     QStringList workStills() const { return m_workStills; }
+    QString workBackdrop() const { return m_workBackdrop; }
+    QString workOverview() const { return m_workOverview; }
+    double workRating() const { return m_workRating; }
     QString getFlowType() const { return m_gwActive ? m_gwType : QString(); }
     Q_INVOKABLE void fetchWorkStills();   // lazy TMDB backdrops for the picked title
 
@@ -167,7 +176,8 @@ private:
     void rebuildCatalogRows();        // m_catalogCache → m_results (mode "catalog")
 
     QString m_workType;               // picked title's type; "" outside a drill-down
-    QString m_workTitle, m_workPoster, m_workYear;
+    QString m_workTitle, m_workPoster, m_workYear, m_workBackdrop, m_workOverview;
+    double m_workRating = 0.0;
     int m_workTmdbId = 0;
     QStringList m_workStills;
     bool m_workStillsRequested = false;

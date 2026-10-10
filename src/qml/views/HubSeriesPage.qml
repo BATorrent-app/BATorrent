@@ -53,15 +53,25 @@ Item {
     Rectangle { anchors.fill: parent; color: Theme.bg }
     MouseArea { anchors.fill: parent }   // the page owns its clicks
 
-    HubSeriesHero {
+    WorkHero {
         id: hero
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.right: panel.left
-        hub: root.hub
-        show: root.show
-        onCloseRequested: root.hub.seriesOpen = false
+        title: root.show ? (root.show.title || "") : ""
+        artUrl: root.show && root.show.poster ? root.hub.fileUrl(root.show.poster) : ""
+        subtitle: {
+            if (!root.show) return ""
+            var parts = []
+            if (root.show.year) parts.push(root.show.year)
+            var n = root.show.seasons ? root.show.seasons.length : 0
+            if (n > 0) parts.push((i18n.language, i18n.t(n === 1 ? "hub_n_season" : "hub_n_seasons")).arg(n))
+            return parts.join("  ·  ")
+        }
+        genres: root.show && root.show.genres ? root.show.genres : []
+        summary: root.show ? (root.show.description || "") : ""
+        onBackRequested: root.hub.seriesOpen = false
     }
 
     Rectangle {

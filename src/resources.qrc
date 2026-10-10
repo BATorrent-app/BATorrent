@@ -240,7 +240,6 @@
 <file>../src/qml/views/HubCompute.qml</file>
 <file>../src/qml/views/HubContinueRails.qml</file>
 <file>../src/qml/views/HubSeriesPage.qml</file>
-<file>../src/qml/views/HubSeriesHero.qml</file>
 <file>../src/qml/views/HubSeasonPicker.qml</file>
 <file>../src/qml/views/HubEpisodeRow.qml</file>
 <file>../src/qml/views/HubShelves.qml</file>
@@ -250,6 +249,7 @@
 <file>../src/qml/theme/Theme.qml</file>
 <file>../src/qml/theme/WizardPalette.qml</file>
 <file>../src/qml/theme/qmldir</file>
+<file>../src/qml/widgets/WorkHero.qml</file>
 <file>../src/qml/widgets/qmldir</file>
 <file>../src/qml/widgets/IconImg.qml</file>
 <file>../src/qml/widgets/CatItem.qml</file>

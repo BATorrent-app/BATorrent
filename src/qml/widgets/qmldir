@@ -43,3 +43,4 @@ BatMenuSep 1.0 BatMenuSep.qml
 singleton DialogStack 1.0 DialogStack.qml
 SpeedGraph 1.0 SpeedGraph.qml
 WheelScroller 1.0 WheelScroller.qml
+WorkHero 1.0 WorkHero.qml

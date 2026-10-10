@@ -45,6 +45,9 @@ void QmlSearchBridge::setWorkContext(const QVariantMap &work)
     m_workYear = work.value(QStringLiteral("year")).toString();
     m_workTmdbId = work.value(QStringLiteral("tmdbId")).toInt();
     m_workStills = work.value(QStringLiteral("stills")).toStringList();
+    m_workBackdrop = work.value(QStringLiteral("backdrop")).toString();
+    m_workOverview = work.value(QStringLiteral("overview")).toString();
+    m_workRating = work.value(QStringLiteral("rating")).toDouble();
     m_workStillsRequested = false;
     emit workChanged();
     emit workStillsChanged();
