@@ -22,11 +22,12 @@ Item {
     property var details: ({})
     property bool detailsReady: false
     property var achievements: []
+    property var steamArt: ({})
     property int achUnlocked: 0
     property int achTotal: 0
     function askAchievements() {
         if (root.game && root.hub.api)
-            root.hub.api.requestAchievements(root.game.infoHash, root.details.steamAppId || 0)
+            root.hub.api.requestAchievements(root.game.infoHash, root.details.steamAppId || 0, root.gameTitle)
     }
     property string stillOpen: ""
     // Held past the close so the image fades with the scrim instead of vanishing first.
@@ -43,6 +44,7 @@ Item {
         details = ({})
         detailsReady = false
         achievements = []
+        steamArt = ({})
         achUnlocked = 0
         achTotal = 0
         stillOpen = ""
@@ -63,8 +65,10 @@ Item {
     Connections {
         target: root.hub.api
         ignoreUnknownSignals: true
-        function onAchievementsReady(hash, list, unlocked, total) {
+        function onAchievementsReady(hash, appId, list, unlocked, total) {
             if (!root.game || hash !== root.game.infoHash) return
+            // IGDB had no Steam record but the store search found one: its art too.
+            if (appId > 0 && !root.details.steamHero) root.steamArt = root.hub.api.steamArt(appId)
             root.achievements = list
             root.achUnlocked = unlocked
             root.achTotal = total
@@ -93,8 +97,8 @@ Item {
                 width: col.width
                 height: 400
                 title: root.gameTitle
-                steamHero: root.details.steamHero || ""
-                steamLogo: root.details.steamLogo || ""
+                steamHero: root.details.steamHero || root.steamArt.hero || ""
+                steamLogo: root.details.steamLogo || root.steamArt.logo || ""
                 // Nothing until IGDB answers: the portrait cover cropped to a banner is
                 // a blown-up blur, and it flashed for the second before the real art.
                 fallbackArt: !root.detailsReady ? ""

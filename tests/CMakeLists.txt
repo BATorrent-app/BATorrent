@@ -75,6 +75,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/games/achievementformats.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/achievementfiles.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/achievementservice.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/games/steamstore.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/gameexedetect.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp

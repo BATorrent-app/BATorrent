@@ -20,7 +20,8 @@ public:
     explicit AchievementService(const QString &cacheDir, QObject *parent = nullptr);
 
     // `key` comes back on the signal so the caller can tell its games apart.
-    void request(const QString &key, int appId, const QString &gameDir);
+    // Without an appid, Steam's store is searched for `title`.
+    void request(const QString &key, int appId, const QString &gameDir, const QString &title = {});
 
     static QString steamApiKey();
 
@@ -31,6 +32,7 @@ signals:
 
 private:
     struct Waiting { QString key; QString gameDir; };
+    void lookUp(const QString &key, const QString &gameDir, const QString &title);
     void fetch(int appId);
     void finish(int appId, const QByteArray &schema, const QByteArray &percent);
     QString cachePath(int appId) const;
@@ -38,4 +40,5 @@ private:
     QNetworkAccessManager m_nam;
     QString m_cacheDir;
     QHash<int, QList<Waiting>> m_waiting;
+    QHash<QString, int> m_appIdByTitle;   // store-search answers for the session, 0 = not on Steam
 };

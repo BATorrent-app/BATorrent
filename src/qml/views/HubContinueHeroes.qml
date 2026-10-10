@@ -18,6 +18,7 @@ Item {
     readonly property string watchType: watch && watch.isSeries ? "series" : "movie"
     property string watchArt
     property var playDetails: ({})
+    property var playArt: ({})
     property int playAchUnlocked: 0
     property int playAchTotal: 0
     onWatchChanged: {
@@ -27,6 +28,7 @@ Item {
     readonly property string playTitle: play ? (play.title || "").trim() : ""
     onPlayTitleChanged: {
         playDetails = ({})
+        playArt = ({})
         playAchUnlocked = 0
         playAchTotal = 0
         if (playTitle && hub.disco) hub.disco.fetchGameDetails(playTitle)
@@ -40,14 +42,15 @@ Item {
         function onGameDetailsReady(name, d) {
             if (name !== root.playTitle) return
             root.playDetails = d
-            if (root.hub.api) root.hub.api.requestAchievements(root.play.infoHash, d.steamAppId || 0)
+            if (root.hub.api) root.hub.api.requestAchievements(root.play.infoHash, d.steamAppId || 0, root.playTitle)
         }
     }
     Connections {
         target: root.hub.api
         ignoreUnknownSignals: true
-        function onAchievementsReady(hash, list, unlocked, total) {
+        function onAchievementsReady(hash, appId, list, unlocked, total) {
             if (!root.play || hash !== root.play.infoHash) return
+            if (appId > 0 && !root.playDetails.steamHero && root.hub.api) root.playArt = root.hub.api.steamArt(appId)
             root.playAchUnlocked = unlocked
             root.playAchTotal = total
         }
@@ -87,8 +90,9 @@ Item {
         width: root.watch ? root.inner - root.watchW - root.gap : root.inner
         logoWidth: 200
         kicker: (i18n.language, i18n.t("hub_continue_playing"))
-        artSources: [root.playDetails.steamHero, root.playDetails.backdrop].filter(function (u) { return !!u })
-        fixedLogo: root.playDetails.steamLogo || ""
+        artSources: [root.playDetails.steamHero || root.playArt.hero, root.playDetails.backdrop]
+                    .filter(function (u) { return !!u })
+        fixedLogo: root.playDetails.steamLogo || root.playArt.logo || ""
         title: root.playTitle
         line: {
             if (!root.play) return ""

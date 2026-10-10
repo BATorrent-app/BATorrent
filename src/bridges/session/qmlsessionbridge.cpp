@@ -128,8 +128,8 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
         QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
             .filePath(QStringLiteral("achievements")));
     connect(m_achievements.get(), &AchievementService::ready, this,
-            [this](const QString &key, int, const QVariantList &list, int unlocked, int total) {
-        emit achievementsReady(key, list, unlocked, total);
+            [this](const QString &key, int appId, const QVariantList &list, int unlocked, int total) {
+        emit achievementsReady(key, appId, list, unlocked, total);
     });
 }
 

@@ -8,10 +8,11 @@
 #include "bridges/session/qmlsessionbridge.h"
 #include "services/games/achievementfiles.h"
 #include "services/games/achievementservice.h"
+#include "services/games/steamstore.h"
 
 #include <QFileInfo>
 
-void QmlSessionBridge::requestAchievements(const QString &infoHash, int steamAppIdHint)
+void QmlSessionBridge::requestAchievements(const QString &infoHash, int steamAppIdHint, const QString &title)
 {
     if (!m_achievements) return;
     // A repack installs somewhere else: the chosen exe's folder is the game.
@@ -22,9 +23,12 @@ void QmlSessionBridge::requestAchievements(const QString &infoHash, int steamApp
     // id is a match by title and only a fallback.
     int appId = AchievementFiles::appIdFromGameDir(dir);
     if (appId <= 0) appId = steamAppIdHint;
-    if (appId <= 0) {
-        emit achievementsReady(infoHash, {}, 0, 0);
-        return;
-    }
-    m_achievements->request(infoHash, appId, dir);
+    m_achievements->request(infoHash, appId, dir, title);
+}
+
+QVariantMap QmlSessionBridge::steamArt(int appId) const
+{
+    if (appId <= 0) return {};
+    return { { QStringLiteral("hero"), SteamStore::heroUrl(appId) },
+             { QStringLiteral("logo"), SteamStore::logoUrl(appId) } };
 }

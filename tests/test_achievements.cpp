@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "services/games/achievements.h"
 #include "services/games/achievementservice.h"
+#include "services/games/steamstore.h"
 #include "services/platform/contentlanguage.h"
 
 #include <QCoreApplication>
@@ -118,7 +119,40 @@ TEST_CASE("a fresh cached schema answers without the network, crossed with the e
 
     gotKey.clear();
     svc.request(QStringLiteral("nothing"), 0, game.path());
-    REQUIRE(gotKey.isEmpty());   // no appid, no request
+    // No appid and no title to search for: an empty answer, so the caller stops waiting.
+    REQUIRE(gotKey == QLatin1String("nothing"));
+    REQUIRE(got.isEmpty());
+    REQUIRE(total == 0);
+}
+
+TEST_CASE("the store search term drops the edition tail Steam can't find", "[achievements][steamstore]") {
+    REQUIRE(SteamStore::searchTerm("The Witcher 3: Wild Hunt - Complete Edition") == QLatin1String("the witcher 3 wild hunt"));
+    REQUIRE(SteamStore::searchTerm("Dishonored Definitive Edition") == QLatin1String("dishonored"));
+    REQUIRE(SteamStore::searchTerm("Batman: Arkham City - Game of the Year Edition") == QLatin1String("batman arkham city"));
+    REQUIRE(SteamStore::searchTerm("Gold") == QLatin1String("gold"));   // a one-word title keeps its word
+    REQUIRE(SteamStore::searchTerm("Kingdom Come: Deliverance II") == QLatin1String("kingdom come deliverance ii"));
+}
+
+TEST_CASE("the store match is the game, never the first hit", "[achievements][steamstore]") {
+    // What the store returned for "the witcher 3 wild hunt": a DLC first, and
+    // the game renamed "— Remastered".
+    const QByteArray witcher = R"({"total":5,"items":[
+      {"type":"app","name":"The Witcher 3: Wild Hunt — Songs of the Past","id":5006530},
+      {"type":"app","name":"The Witcher 3: Wild Hunt — Remastered","id":292030},
+      {"type":"app","name":"The Witcher 3: Wild Hunt — Remastered Soundtrack","id":1229320}]})";
+    REQUIRE(SteamStore::bestAppId(witcher, "The Witcher 3: Wild Hunt - Complete Edition") == 292030);
+
+    const QByteArray re = R"({"items":[
+      {"type":"app","name":"Resident Evil Requiem - Deluxe Kit","id":3990820},
+      {"type":"app","name":"Resident Evil Requiem","id":3764200}]})";
+    REQUIRE(SteamStore::bestAppId(re, "Resident Evil Requiem") == 3764200);
+
+    REQUIRE(SteamStore::bestAppId(R"({"items":[{"type":"app","name":"ELDEN RING NIGHTREIGN","id":2}]})", "Elden Ring") == 0);
+    REQUIRE(SteamStore::bestAppId(R"({"items":[{"type":"sub","name":"Elden Ring","id":9}]})", "Elden Ring") == 0);
+    REQUIRE(SteamStore::bestAppId("{broken", "Elden Ring") == 0);
+    REQUIRE(SteamStore::bestAppId(re, "") == 0);
+    REQUIRE(SteamStore::heroUrl(292030).endsWith("/apps/292030/library_hero.jpg"));
+    REQUIRE(SteamStore::logoUrl(0).isEmpty());
 }
 
 TEST_CASE("an unlock with no time still counts, and a negative time reads as unknown", "[achievements]") {

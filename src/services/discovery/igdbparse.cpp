@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "services/discovery/igdbparse.h"
+#include "services/games/steamstore.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -235,10 +236,8 @@ QVariantMap gameDetails(const QByteArray &jsonArray)
         const int appId = steamAppId(o);
         m.insert(QStringLiteral("steamAppId"), appId);
         if (appId > 0) {
-            // Steam's public CDN: the library hero is composed to sit behind the logo.
-            const QString base = QStringLiteral("https://cdn.cloudflare.steamstatic.com/steam/apps/%1/").arg(appId);
-            m.insert(QStringLiteral("steamHero"), base + QStringLiteral("library_hero.jpg"));
-            m.insert(QStringLiteral("steamLogo"), base + QStringLiteral("logo.png"));
+            m.insert(QStringLiteral("steamHero"), SteamStore::heroUrl(appId));
+            m.insert(QStringLiteral("steamLogo"), SteamStore::logoUrl(appId));
         }
         return m;
     }

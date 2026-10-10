@@ -5,6 +5,7 @@
 #include "services/games/achievementservice.h"
 #include "services/games/achievementfiles.h"
 #include "services/games/achievements.h"
+#include "services/games/steamstore.h"
 #include "services/platform/contentlanguage.h"
 
 #include <QDateTime>
@@ -57,9 +58,15 @@ QString AchievementService::cachePath(int appId) const
     return QDir(m_cacheDir).filePath(QStringLiteral("%1_%2.json").arg(appId).arg(ContentLanguage::steam()));
 }
 
-void AchievementService::request(const QString &key, int appId, const QString &gameDir)
+void AchievementService::request(const QString &key, int appId, const QString &gameDir, const QString &title)
 {
-    if (appId <= 0) return;
+    if (appId <= 0) {
+        const QString term = SteamStore::searchTerm(title);
+        const auto known = m_appIdByTitle.constFind(term);
+        if (known != m_appIdByTitle.constEnd()) appId = *known;
+        else if (!term.isEmpty()) { lookUp(key, gameDir, title); return; }
+    }
+    if (appId <= 0) { emit ready(key, 0, {}, 0, 0); return; }
     const bool inFlight = m_waiting.contains(appId);
     m_waiting[appId].append({ key, gameDir });
     if (inFlight) return;
@@ -75,6 +82,24 @@ void AchievementService::request(const QString &key, int appId, const QString &g
         }
     }
     fetch(appId);
+}
+
+void AchievementService::lookUp(const QString &key, const QString &gameDir, const QString &title)
+{
+    const QString term = SteamStore::searchTerm(title);
+    QUrl url(QStringLiteral("https://store.steampowered.com/api/storesearch/"));
+    url.setQuery(QUrlQuery{ { QStringLiteral("term"), term }, { QStringLiteral("cc"), QStringLiteral("us") },
+                            { QStringLiteral("l"), QStringLiteral("english") } });
+    QNetworkReply *r = m_nam.get(QNetworkRequest(url));
+    connect(r, &QNetworkReply::finished, this, [this, r, key, gameDir, title, term]() {
+        r->deleteLater();
+        const bool ok = r->error() == QNetworkReply::NoError;
+        const int appId = ok ? SteamStore::bestAppId(r->read(kMaxBody), title) : 0;
+        // A failed request is not an answer: the next open asks again.
+        if (ok) m_appIdByTitle.insert(term, appId);
+        if (appId > 0) request(key, appId, gameDir);
+        else emit ready(key, 0, {}, 0, 0);
+    });
 }
 
 void AchievementService::fetch(int appId)

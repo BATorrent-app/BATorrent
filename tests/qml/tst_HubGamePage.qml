@@ -21,9 +21,10 @@ Item {
 
     QtObject {
         id: mockApi
-        signal achievementsReady(string hash, var list, int unlocked, int total)
+        signal achievementsReady(string hash, int appId, var list, int unlocked, int total)
         property var askedAch: []
-        function requestAchievements(h, hint) { askedAch.push(h + ":" + hint) }
+        function requestAchievements(h, hint, title) { askedAch.push(h + ":" + hint + ":" + title) }
+        function steamArt(id) { return { hero: "https://cdn/" + id + "/hero.jpg", logo: "https://cdn/" + id + "/logo.png" } }
         property var launched: []
         function gameFolder(h) { return "/games/" + h }
         function gameExe(h) { return h === "played" ? "/games/played/game.exe" : "" }
@@ -184,7 +185,7 @@ Item {
             mockHub.gameOpen = true
             compare(mockApi.askedAch.length, 0, "not before IGDB has answered")
             mockDisco.gameDetailsReady("Elden Ring", { steamAppId: 1245620 })
-            compare(mockApi.askedAch, ["played:1245620"])
+            compare(mockApi.askedAch, ["played:1245620:Elden Ring"])
         }
 
         function test_achievementsFillTheBandAndTheList() {
@@ -192,9 +193,9 @@ Item {
             mockHub.gameHash = "played"
             mockHub.gameOpen = true
             mockDisco.gameDetailsReady("Elden Ring", { steamAppId: 1 })
-            mockApi.achievementsReady("someone-else", achList(3), 3, 3)
+            mockApi.achievementsReady("someone-else", 0, achList(3), 3, 3)
             verify(findByText(p, "game_achievements") === null, "another game's answer is ignored")
-            mockApi.achievementsReady("played", achList(7), 2, 7)
+            mockApi.achievementsReady("played", 1, achList(7), 2, 7)
             verify(findByText(p, "2 / 7") !== null)
             verify(findByText(p, "Ach 0") !== null)
             verify(findByText(p, "Ach 5") === null, "five until asked for all")
@@ -207,7 +208,7 @@ Item {
             var p = createTemporaryObject(pageComp, root)
             mockHub.gameHash = "played"
             mockHub.gameOpen = true
-            mockApi.achievementsReady("played", achList(3), 2, 3)
+            mockApi.achievementsReady("played", 1, achList(3), 2, 3)
             verify(findByText(p, "Ach 2") === null)
             verify(findByText(p, "game_ach_hidden") !== null)
         }
