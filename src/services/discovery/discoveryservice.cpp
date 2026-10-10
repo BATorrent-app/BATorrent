@@ -59,6 +59,9 @@ const QString TmdbBackdrop   = QStringLiteral("https://image.tmdb.org/t/p/w1280"
 // Episode thumbnails sit at list size, not hero size: w300 is the smallest
 // TMDB still that does not look soft at the width a row gives them.
 const QString TmdbStillBase  = QStringLiteral("https://image.tmdb.org/t/p/w300");
+// Wide enough for a title treatment at hero size, and transparent PNGs
+// stay transparent at any width.
+const QString TmdbLogoBase   = QStringLiteral("https://image.tmdb.org/t/p/w500");
 
 QString tmdbLang() { return ContentLanguage::tmdb(); }
 
@@ -226,9 +229,12 @@ void DiscoveryService::searchTmdbTitles(const QString &query)
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
+        // With a backdrop base too: a picked title now opens on a full-width
+        // hero, and a 342px poster stretched across it is the soft, smeared
+        // band that stood in for art.
         DiscoveryFinish::ingestTmdbSearch(
             m_searchWorks, reply->error() == QNetworkReply::NoError, reply->readAll(),
-            TmdbPosterBase);
+            TmdbPosterBase, TmdbBackdrop);
         maybeFinishSearch();
     });
 }
@@ -386,10 +392,12 @@ void DiscoveryService::fetchBackdrops(int tmdbId, const QString &type)
     QNetworkReply *reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
         reply->deleteLater();
-        const QStringList urls = (reply->error() == QNetworkReply::NoError)
-            ? TmdbParse::backdropUrls(reply->readAll(), TmdbBackdrop)
-            : QStringList{};
-        emit backdropsReady(tmdbId, urls);
+        // One read: readAll() empties the device, and the logos ride in the
+        // same payload as the backdrops.
+        const QByteArray body = (reply->error() == QNetworkReply::NoError)
+            ? reply->readAll() : QByteArray{};
+        emit backdropsReady(tmdbId, TmdbParse::backdropUrls(body, TmdbBackdrop));
+        emit logoReady(tmdbId, TmdbParse::logoUrl(body, TmdbLogoBase));
     });
 }
 

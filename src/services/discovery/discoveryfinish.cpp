@@ -35,10 +35,11 @@ void ingestTmdbShelf(QMap<int, QVariantMap> &accum,
 void ingestTmdbSearch(QVariantList &works,
                       bool ok,
                       const QByteArray &body,
-                      const QString &posterBase)
+                      const QString &posterBase,
+                      const QString &backdropBase)
 {
     if (ok)
-        works += TmdbParse::multiSearchRows(body, posterBase);
+        works += TmdbParse::multiSearchRows(body, posterBase, backdropBase);
 }
 
 void ingestIgdbSearch(QVariantList &works, bool ok, const QByteArray &body)

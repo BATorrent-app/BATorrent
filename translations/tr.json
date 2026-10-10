@@ -1315,5 +1315,7 @@
   "hub_ep_missing": "İndirilmedi",
   "hub_specials": "Özel bölümler",
   "hub_ep_ready": "İzlemeye hazır",
-  "hub_ep_coming": "%1% indirildi"
+  "hub_ep_coming": "%1% indirildi",
+  "find_ep_available": "Kaynak var",
+  "find_ep_no_source": "Kaynak bulunamadı"
 }

@@ -1315,5 +1315,7 @@
   "hub_ep_missing": "未ダウンロード",
   "hub_specials": "スペシャル",
   "hub_ep_ready": "再生できます",
-  "hub_ep_coming": "%1% 取得済み"
+  "hub_ep_coming": "%1% 取得済み",
+  "find_ep_available": "入手可能",
+  "find_ep_no_source": "見つかりません"
 }

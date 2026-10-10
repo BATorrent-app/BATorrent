@@ -143,3 +143,39 @@ TEST_CASE("multiSearchRows keeps originalTitle for tracker queries", "[tmdbparse
     REQUIRE(m.value(QStringLiteral("originalTitle")).toString() == QLatin1String("Original"));
     REQUIRE(m.value(QStringLiteral("tmdbId")).toInt() == 7);
 }
+
+TEST_CASE("logoUrl picks the lettering a hero can use", "[tmdbparse]") {
+    const QByteArray json = QByteArrayLiteral(R"({
+      "logos": [
+        { "file_path": "/pt.png", "iso_639_1": "pt", "vote_average": 9.9 },
+        { "file_path": "/en.png", "iso_639_1": "en", "vote_average": 1.0 },
+        { "file_path": "/none.png", "iso_639_1": null, "vote_average": 5.0 }
+      ]
+    })");
+    // English beats a higher-scoring Portuguese one: the app is read in nine
+    // languages and the lettering is usually the show's own wordmark anyway.
+    REQUIRE(TmdbParse::logoUrl(json, QStringLiteral("https://img")) == "https://img/en.png");
+}
+
+TEST_CASE("logoUrl falls back and gives up cleanly", "[tmdbparse]") {
+    SECTION("no English one, so the language-less wordmark wins") {
+        const QByteArray json = QByteArrayLiteral(R"({
+          "logos": [ { "file_path": "/a.png", "iso_639_1": "de", "vote_average": 9.0 },
+                     { "file_path": "/b.png", "iso_639_1": "", "vote_average": 1.0 } ]
+        })");
+        REQUIRE(TmdbParse::logoUrl(json, QStringLiteral("x")) == "x/b.png");
+    }
+    SECTION("an SVG is skipped: Qt will not draw every one TMDB holds") {
+        const QByteArray json = QByteArrayLiteral(R"({
+          "logos": [ { "file_path": "/a.svg", "iso_639_1": "en", "vote_average": 9.0 } ]
+        })");
+        REQUIRE(TmdbParse::logoUrl(json, QStringLiteral("x")).isEmpty());
+    }
+    SECTION("a title with no lettering at all") {
+        REQUIRE(TmdbParse::logoUrl(QByteArrayLiteral(R"({"backdrops":[]})"),
+                                   QStringLiteral("x")).isEmpty());
+    }
+    SECTION("a malformed body") {
+        REQUIRE(TmdbParse::logoUrl(QByteArrayLiteral("nope"), QStringLiteral("x")).isEmpty());
+    }
+}

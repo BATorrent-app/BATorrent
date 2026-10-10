@@ -27,7 +27,8 @@ void ingestTmdbShelf(QMap<int, QVariantMap> &accum,
 void ingestTmdbSearch(QVariantList &works,
                       bool ok,
                       const QByteArray &body,
-                      const QString &posterBase);
+                      const QString &posterBase,
+                      const QString &backdropBase = QString());
 
 void ingestIgdbSearch(QVariantList &works, bool ok, const QByteArray &body);
 

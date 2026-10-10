@@ -25,11 +25,7 @@ WorkHero {
     title: sv.api ? (sv.api.workTitle || "") : ""
     // The backdrop when TMDB had one, the poster when it did not. Cropped
     // either way, so a portrait poster fills the band instead of sitting in it.
-    artUrl: {
-        if (!sv.api) return ""
-        var b = sv.api.workBackdrop || ""
-        return b.length > 0 ? b : sv.fileUrl(sv.api.workPoster || "")
-    }
+    artUrl: sv.api ? sv.heroArt(sv.api.workBackdrop, sv.api.workPoster) : ""
     subtitle: {
         if (!sv.api) return ""
         var parts = []
@@ -39,6 +35,7 @@ WorkHero {
         if (sv.api.workRating > 0) parts.push(sv.api.workRating.toFixed(1))
         return parts.join("  ·  ")
     }
+    logoUrl: sv.api ? (sv.api.workLogo || "") : ""
     summary: sv.api ? (sv.api.workOverview || "") : ""
     showBack: false
 }

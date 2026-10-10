@@ -93,6 +93,7 @@ Rectangle {
 
     function typeLabel(t) { return fmt.typeLabel(t) }
     function fileUrl(p) { return fmt.fileUrl(p) }
+    function heroArt(b, p) { return fmt.heroArt(b, p) }
     function langName(c) { return fmt.langName(c) }
     function seedColor(n) { return fmt.seedColor(n) }
     function seedFill(n) { return fmt.seedFill(n) }

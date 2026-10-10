@@ -82,6 +82,28 @@ static QJsonArray resultsArray(const QByteArray &json)
     return QJsonDocument::fromJson(json).object().value(QLatin1String("results")).toArray();
 }
 
+QString logoUrl(const QByteArray &imagesJson, const QString &imageBaseUrl)
+{
+    const QJsonArray arr = QJsonDocument::fromJson(imagesJson)
+                               .object().value(QLatin1String("logos")).toArray();
+    QString best;
+    double bestScore = -1.0;
+    for (const QJsonValue &v : arr) {
+        const QJsonObject o = v.toObject();
+        const QString path = o.value(QLatin1String("file_path")).toString();
+        if (path.isEmpty()) continue;
+        // A PNG keeps its transparency; an SVG does too but Qt will not draw
+        // every one TMDB holds, and a logo in a box is worse than no logo.
+        if (!path.endsWith(QLatin1String(".png"), Qt::CaseInsensitive)) continue;
+        const QString lang = o.value(QLatin1String("iso_639_1")).toString();
+        double score = o.value(QLatin1String("vote_average")).toDouble();
+        if (lang == QLatin1String("en")) score += 100.0;
+        else if (lang.isEmpty())         score += 50.0;
+        if (score > bestScore) { bestScore = score; best = path; }
+    }
+    return best.isEmpty() ? QString() : imageBaseUrl + best;
+}
+
 QStringList backdropUrls(const QByteArray &imagesJson,
                          const QString &imageBaseUrl,
                          int limit)
@@ -185,7 +207,8 @@ QVariantList shelfRows(const QByteArray &json,
     return items;
 }
 
-QVariantList multiSearchRows(const QByteArray &json, const QString &posterBase)
+QVariantList multiSearchRows(const QByteArray &json, const QString &posterBase,
+                             const QString &backdropBase)
 {
     QVariantList items;
     for (const QJsonValue &v : resultsArray(json)) {
@@ -194,7 +217,7 @@ QVariantList multiSearchRows(const QByteArray &json, const QString &posterBase)
         if (mt != QLatin1String("movie") && mt != QLatin1String("tv"))
             continue;
         const bool isTv = mt == QLatin1String("tv");
-        const QVariantMap m = catalogCard(o, isTv, posterBase, {}, true, true);
+        const QVariantMap m = catalogCard(o, isTv, posterBase, backdropBase, true, true);
         if (!m.isEmpty())
             items.append(m);
     }

@@ -1315,5 +1315,7 @@
   "hub_ep_missing": "未下载",
   "hub_specials": "特别篇",
   "hub_ep_ready": "可以播放",
-  "hub_ep_coming": "已下载 %1%"
+  "hub_ep_coming": "已下载 %1%",
+  "find_ep_available": "有资源",
+  "find_ep_no_source": "未找到资源"
 }

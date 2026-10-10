@@ -18,6 +18,11 @@ Rectangle {
     id: row
     property var ep
     property bool isNext: false
+    // What having an episode means depends on who is asking: on this disk in
+    // the library, offered by an indexer in a search. The row should not have
+    // an opinion about which.
+    property string haveLabel: (i18n.language, i18n.t("hub_ep_ready"))
+    property string missingLabel: (i18n.language, i18n.t("hub_ep_missing"))
     signal playRequested()
 
     readonly property bool ready: ep.have && (ep.progress || 0) >= 1
@@ -123,10 +128,10 @@ Rectangle {
                     if (rowMa.containsMouse && (row.ep.overview || "").length > 0)
                         return row.ep.overview
                     var bits = []
-                    if (row.ready)       bits.push((i18n.language, i18n.t("hub_ep_ready")))
+                    if (row.ready)       bits.push(row.haveLabel)
                     else if (row.coming) bits.push((i18n.language, i18n.t("hub_ep_coming"))
                                                    .arg(Math.floor((row.ep.progress || 0) * 100)))
-                    else                 bits.push((i18n.language, i18n.t("hub_ep_missing")))
+                    else                 bits.push(row.missingLabel)
                     if (row.ep.runtime > 0)
                         bits.push((i18n.language, i18n.t("hub_ep_minutes")).arg(row.ep.runtime))
                     if (row.ep.airDate.length >= 4) bits.push(row.ep.airDate.substring(0, 4))

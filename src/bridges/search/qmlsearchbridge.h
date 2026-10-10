@@ -36,6 +36,7 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QString workOverview READ workOverview NOTIFY workChanged)
     Q_PROPERTY(double workRating READ workRating NOTIFY workChanged)
     Q_PROPERTY(int workTmdbId READ workTmdbId NOTIFY workChanged)
+    Q_PROPERTY(QString workLogo READ workLogo NOTIFY workLogoChanged)
     // "movie"|"series"|"game" while a Get & Watch / Install flow is active (else "").
     Q_PROPERTY(QString getFlowType READ getFlowType NOTIFY getFlowChanged)
 public:
@@ -60,6 +61,7 @@ public:
     QString workOverview() const { return m_workOverview; }
     double workRating() const { return m_workRating; }
     int workTmdbId() const { return m_workTmdbId; }
+    QString workLogo() const { return m_workLogo; }
     QString getFlowType() const { return m_gwActive ? m_gwType : QString(); }
     Q_INVOKABLE void fetchWorkStills();   // lazy TMDB backdrops for the picked title
 
@@ -123,6 +125,7 @@ signals:
     void statusChanged();
     void workChanged();
     void workStillsChanged();
+    void workLogoChanged();
     void gameSourcesChanged();
     void coverReady(const QString &infoHash, const QString &posterPath);
     void addedTorrent(const QString &infoHash);   // a magnet was added from Search
@@ -182,6 +185,7 @@ private:
     double m_workRating = 0.0;
     int m_workTmdbId = 0;
     QStringList m_workStills;
+    QString m_workLogo;
     bool m_workStillsRequested = false;
 
     QVariantList m_episodeCache;      // series episode rows (videoId per row) for mode "episodes"

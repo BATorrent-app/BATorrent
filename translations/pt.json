@@ -1315,5 +1315,7 @@
   "hub_ep_missing": "Não baixado",
   "hub_specials": "Especiais",
   "hub_ep_ready": "Pronto para assistir",
-  "hub_ep_coming": "%1% baixado"
+  "hub_ep_coming": "%1% baixado",
+  "find_ep_available": "Fontes disponíveis",
+  "find_ep_no_source": "Nenhuma fonte encontrada"
 }

@@ -20,6 +20,9 @@ Item {
     property string title
     property string artUrl          // backdrop when there is one, poster otherwise
     property string posterUrl
+    // The title's own lettering when TMDB has it. Most of what makes a page
+    // feel like the show rather than a record about the show.
+    property string logoUrl
     property string subtitle        // year · type · rating, composed by the caller
     property var genres: []
     property var cast: []
@@ -80,8 +83,25 @@ Item {
         anchors.rightMargin: Theme.sp5 * 2
         spacing: Theme.sp2
 
+        Image {
+            id: logo
+            Layout.maximumWidth: Math.min(hero.width * 0.5, 320)
+            Layout.preferredWidth: Math.min(implicitWidth, Layout.maximumWidth)
+            Layout.preferredHeight: implicitWidth > 0
+                ? Layout.preferredWidth * (implicitHeight / implicitWidth) : 0
+            Layout.maximumHeight: 110
+            source: hero.logoUrl
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            cache: true
+            smooth: true
+            visible: status === Image.Ready
+        }
         Text {
             Layout.fillWidth: true
+            // Only when there is no lettering to use: both at once reads as
+            // the title having been printed twice.
+            visible: !logo.visible
             text: hero.title
             color: "#ffffff"
             font.pixelSize: 30

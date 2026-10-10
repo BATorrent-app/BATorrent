@@ -53,7 +53,9 @@ Item {
             IconImg {
                 anchors.centerIn: parent
                 src: "qrc:/icons/chevron-bold.svg"
-                rotation: parent.glyph === "prev" ? 180 : 0
+                // chevron-bold points up at rest, so left and right are 270
+                // and 90 — not 180 and 0, which gave up and down.
+                rotation: parent.glyph === "prev" ? 270 : 90
                 tint: arrowMa.containsMouse && parent.canGo ? Theme.t1 : Theme.t3
                 s: 16
             }
@@ -94,7 +96,7 @@ Item {
                 }
                 IconImg {
                     src: "qrc:/icons/chevron-bold.svg"
-                    rotation: 90
+                    rotation: 180          // down: it opens a menu below
                     tint: Theme.t3
                     s: 13
                 }

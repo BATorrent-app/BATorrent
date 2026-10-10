@@ -73,6 +73,7 @@ signals:
     void gameRecommendationsReady(const QString &gameName, const QVariantList &items);
     void episodesReady(int tmdbId, int season, const QVariantList &episodes);   // [{episode,name,air_date}]
     void backdropsReady(int tmdbId, const QStringList &urls);
+    void logoReady(int tmdbId, const QString &url);   // the title's own lettering, same reply
 
 private:
     void searchTmdbTitles(const QString &query);

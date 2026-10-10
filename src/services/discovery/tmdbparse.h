@@ -13,6 +13,12 @@
 namespace TmdbParse {
 
 // Prefer language-untagged backdrops (no burned-in title text), then the rest.
+// The title treatment: the show's own lettering, which TMDB returns in the
+// same /images payload the backdrops come from. English first, then one with
+// no language at all (most logos are wordmarks and carry none), then whatever
+// scored best. Empty when the title has none, which is common and fine.
+QString logoUrl(const QByteArray &imagesJson, const QString &imageBaseUrl);
+
 QStringList backdropUrls(const QByteArray &imagesJson,
                          const QString &imageBaseUrl,
                          int limit = 10);
@@ -41,6 +47,7 @@ QVariantList shelfRows(const QByteArray &json,
                        const QString &backdropBase);
 
 // /search/multi → movie/tv works including originalTitle (for tracker queries).
-QVariantList multiSearchRows(const QByteArray &json, const QString &posterBase);
+QVariantList multiSearchRows(const QByteArray &json, const QString &posterBase,
+                             const QString &backdropBase = QString());
 
 } // namespace TmdbParse

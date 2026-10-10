@@ -104,6 +104,8 @@ Item {
                     required property var modelData
                     width: epList.width
                     ep: modelData
+                    haveLabel: (i18n.language, i18n.t("find_ep_available"))
+                    missingLabel: (i18n.language, i18n.t("find_ep_no_source"))
                     onPlayRequested: {
                         root.episode = modelData.episode
                         root.sv.episodeFilter = modelData.episode
@@ -130,11 +132,8 @@ Item {
         anchors.bottom: parent.bottom
         anchors.right: panel.left
         title: root.sv.api ? (root.sv.api.workTitle || "") : ""
-        artUrl: {
-            if (!root.sv.api) return ""
-            var b = root.sv.api.workBackdrop || ""
-            return b.length > 0 ? b : root.sv.fileUrl(root.sv.api.workPoster || "")
-        }
+        artUrl: root.sv.api
+            ? root.sv.heroArt(root.sv.api.workBackdrop, root.sv.api.workPoster) : ""
         subtitle: {
             if (!root.sv.api) return ""
             var parts = []
@@ -143,6 +142,8 @@ Item {
             if (root.season >= 0) parts.push((i18n.language, i18n.t("hub_season_n")).arg(root.season))
             return parts.join("  ·  ")
         }
+        logoUrl: root.sv.api ? (root.sv.api.workLogo || "") : ""
+        Component.onCompleted: if (root.sv.api) root.sv.api.fetchWorkStills()
         summary: root.sv.api ? (root.sv.api.workOverview || "") : ""
         showBack: root.episode >= 0
         onBackRequested: { root.episode = -1; root.sv.episodeFilter = -1 }

@@ -49,8 +49,10 @@ void QmlSearchBridge::setWorkContext(const QVariantMap &work)
     m_workOverview = work.value(QStringLiteral("overview")).toString();
     m_workRating = work.value(QStringLiteral("rating")).toDouble();
     m_workStillsRequested = false;
+    m_workLogo.clear();
     emit workChanged();
     emit workStillsChanged();
+    emit workLogoChanged();
 }
 
 void QmlSearchBridge::clearWorkContext()
@@ -79,6 +81,12 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
 {
     m_discovery = d;
     if (!m_discovery) return;
+    connect(m_discovery, &DiscoveryService::logoReady, this,
+            [this](int tmdbId, const QString &url) {
+        if (tmdbId != m_workTmdbId) return;        // stale reply for a former title
+        m_workLogo = url;
+        emit workLogoChanged();
+    });
     connect(m_discovery, &DiscoveryService::backdropsReady, this,
             [this](int tmdbId, const QStringList &urls) {
         if (tmdbId != m_workTmdbId || urls.isEmpty()) return;   // stale reply for a former title

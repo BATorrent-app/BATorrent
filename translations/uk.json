@@ -1315,5 +1315,7 @@
   "hub_ep_missing": "Не завантажено",
   "hub_specials": "Спецвипуски",
   "hub_ep_ready": "Можна дивитися",
-  "hub_ep_coming": "%1% завантажено"
+  "hub_ep_coming": "%1% завантажено",
+  "find_ep_available": "Є роздачі",
+  "find_ep_no_source": "Роздач не знайдено"
 }

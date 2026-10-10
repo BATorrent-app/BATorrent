@@ -1315,5 +1315,7 @@
   "hub_ep_missing": "Not downloaded",
   "hub_specials": "Specials",
   "hub_ep_ready": "Ready to play",
-  "hub_ep_coming": "%1% downloaded"
+  "hub_ep_coming": "%1% downloaded",
+  "find_ep_available": "Sources available",
+  "find_ep_no_source": "No source found"
 }

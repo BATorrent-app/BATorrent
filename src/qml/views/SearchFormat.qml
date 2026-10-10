@@ -18,6 +18,16 @@ QtObject {
 
     function langName(c) { return langNames[c] || c }
 
+    // Art for a full-width hero. The backdrop when TMDB has one; otherwise the
+    // poster, asked for at a size that survives being stretched across the
+    // screen — the card-sized w342 is what made that band look smeared.
+    function heroArt(backdrop, poster) {
+        if ((backdrop || "").length > 0) return backdrop
+        var p = poster || ""
+        if (p.indexOf("image.tmdb.org") >= 0) return p.replace("/w342/", "/w780/")
+        return fileUrl(p)
+    }
+
     function typeLabel(t) {
         if (t === "movie") return i18n.t("search_type_movie")
         if (t === "series") return i18n.t("search_type_series")

@@ -1315,5 +1315,7 @@
   "hub_ep_missing": "Nicht heruntergeladen",
   "hub_specials": "Specials",
   "hub_ep_ready": "Bereit",
-  "hub_ep_coming": "%1 % geladen"
+  "hub_ep_coming": "%1 % geladen",
+  "find_ep_available": "Quellen vorhanden",
+  "find_ep_no_source": "Keine Quelle gefunden"
 }
