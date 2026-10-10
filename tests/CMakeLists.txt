@@ -337,6 +337,7 @@ bat_add_test(test_updatetrack test_updatetrack.cpp)
 bat_add_test(test_fileassoc test_fileassoc.cpp)
 bat_add_test(test_ipcprotocol test_ipcprotocol.cpp)
 bat_add_test(test_debrid     test_debrid.cpp)
+bat_add_test(test_streamorder test_streamorder.cpp)
 
 # =============================================================================
 #  QML layer (Qt Quick Test): drives real .qml components headless (offscreen).

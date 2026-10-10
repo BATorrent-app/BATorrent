@@ -1,0 +1,58 @@
+diff --git a/include/libtorrent/settings_pack.hpp b/include/libtorrent/settings_pack.hpp
+index 94ff04645..1eb72fd38 100644
+--- a/include/libtorrent/settings_pack.hpp
++++ b/include/libtorrent/settings_pack.hpp
+@@ -1054,6 +1054,14 @@ namespace aux {
+ 			// links. Off by default = stock behavior.
+ 			piece_request_fast_ramp,
+ 
++			// BATorrent fork: while a torrent has deadline (time-critical) pieces,
++			// cap each peer's ordinary requests to about one second of its rate.
++			// Otherwise every queue sits past the 2 s horizon the deadline picker
++			// refuses to exceed, so deadline blocks are never requested and a slow
++			// peer keeps the ones it already holds. Torrents without deadlines are
++			// unaffected. Off by default = stock behavior.
++			streaming_request_cap,
++
+ 			max_bool_setting_internal
+ 		};
+ 
+diff --git a/src/request_blocks.cpp b/src/request_blocks.cpp
+index 4aa78cf1b..957b97432 100644
+--- a/src/request_blocks.cpp
++++ b/src/request_blocks.cpp
+@@ -42,6 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
+ #include "libtorrent/aux_/has_block.hpp"
+ 
+ #include <vector>
++#include <algorithm>
+ 
+ namespace libtorrent {
+ 
+@@ -85,7 +86,13 @@ namespace libtorrent {
+ 
+ 		// in time critical mode, only have 1 outstanding request at a time
+ 		// via normal requests
+-		int const desired_queue_size = c.desired_queue_size();
++		int desired_queue_size = c.desired_queue_size();
++		if (time_critical_mode
++			&& t.settings().get_bool(settings_pack::streaming_request_cap))
++		{
++			int const one_second = c.statistics().download_payload_rate() / t.block_size();
++			desired_queue_size = std::max(2, std::min(desired_queue_size, one_second));
++		}
+ 
+ 		int num_requests = desired_queue_size
+ 			- int(c.download_queue().size())
+diff --git a/src/settings_pack.cpp b/src/settings_pack.cpp
+index e0676eb52..d3cb50b95 100644
+--- a/src/settings_pack.cpp
++++ b/src/settings_pack.cpp
+@@ -243,6 +243,7 @@ constexpr int DISK_WRITE_MODE = settings_pack::enable_os_cache;
+ 		SET(proxy_send_host_in_connect, false, nullptr),
+ 		SET(disk_disable_copy_on_write, false, nullptr),
+ 		SET(piece_request_fast_ramp, false, nullptr),
++		SET(streaming_request_cap, false, nullptr),
+ 	}});
+ 
+ 	CONSTEXPR_SETTINGS

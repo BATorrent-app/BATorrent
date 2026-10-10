@@ -1,0 +1,104 @@
+diff --git a/include/libtorrent/piece_picker.hpp b/include/libtorrent/piece_picker.hpp
+index 761a297f8..2b296285f 100644
+--- a/include/libtorrent/piece_picker.hpp
++++ b/include/libtorrent/piece_picker.hpp
+@@ -156,7 +156,9 @@ namespace libtorrent {
+ 		// pick pieces in sequential order
+ 		static constexpr picker_options_t sequential = 4_bit;
+ 
+-		// 5_bit is available
++		// BATorrent fork: with sequential, take the top-priority pieces in index
++		// order too, instead of in the shuffled order of their priority bucket
++		static constexpr picker_options_t sequential_in_order = 5_bit;
+ 
+ 		// only expands pieces (when prefer contiguous blocks is set)
+ 		// within properly aligned ranges, not the largest possible
+diff --git a/include/libtorrent/settings_pack.hpp b/include/libtorrent/settings_pack.hpp
+index 1eb72fd38..a55a6f40d 100644
+--- a/include/libtorrent/settings_pack.hpp
++++ b/include/libtorrent/settings_pack.hpp
+@@ -1062,6 +1062,13 @@ namespace aux {
+ 			// unaffected. Off by default = stock behavior.
+ 			streaming_request_cap,
+ 
++			// BATorrent fork: under sequential_download, fetch top-priority pieces
++			// in index order. Stock shuffles them, so a file set to top priority
++			// (or a window of deadline pieces, which set_piece_deadline raises to
++			// top) downloads in random order and the head arrives last. Off by
++			// default = stock behavior.
++			sequential_piece_order,
++
+ 			max_bool_setting_internal
+ 		};
+ 
+diff --git a/src/peer_connection.cpp b/src/peer_connection.cpp
+index 10c5005b3..3abb1c8a0 100644
+--- a/src/peer_connection.cpp
++++ b/src/peer_connection.cpp
+@@ -920,6 +920,8 @@ namespace libtorrent {
+ 		if (t->is_sequential_download())
+ 		{
+ 			ret |= piece_picker::sequential;
++			if (m_settings.get_bool(settings_pack::sequential_piece_order))
++				ret |= piece_picker::sequential_in_order;
+ 		}
+ 		else if (t->num_have() < m_settings.get_int(settings_pack::initial_picker_threshold))
+ 		{
+diff --git a/src/piece_picker.cpp b/src/piece_picker.cpp
+index 2a1828b67..186686463 100644
+--- a/src/piece_picker.cpp
++++ b/src/piece_picker.cpp
+@@ -130,6 +130,7 @@ namespace libtorrent {
+ 	constexpr picker_options_t piece_picker::on_parole;
+ 	constexpr picker_options_t piece_picker::prioritize_partials;
+ 	constexpr picker_options_t piece_picker::sequential;
++	constexpr picker_options_t piece_picker::sequential_in_order;
+ 	constexpr picker_options_t piece_picker::align_expanded_pieces;
+ 	constexpr picker_options_t piece_picker::piece_extent_affinity;
+ 
+@@ -2120,7 +2121,32 @@ namespace {
+ 			if (m_dirty) update_pieces();
+ 			TORRENT_ASSERT(!m_dirty);
+ 
+-			for (auto i = m_pieces.begin();
++			if (options & sequential_in_order)
++			{
++				std::vector<piece_index_t> top;
++				for (auto i = m_pieces.begin();
++					i != m_pieces.end() && piece_priority(*i) == top_priority; ++i)
++				{
++					if (is_piece_free(*i, pieces)) top.push_back(*i);
++				}
++				// a whole file at top priority makes this bucket huge: order only
++				// the front, which is all a single pick ever reaches
++				auto const mid = top.begin() + std::min(std::ptrdiff_t(64)
++					, std::ptrdiff_t(top.size()));
++				std::partial_sort(top.begin(), mid, top.end());
++				for (piece_index_t const i : top)
++				{
++					ret |= picker_log_alert::prio_sequential_pieces;
++
++					num_blocks = add_blocks(i, pieces
++						, interesting_blocks, backup_blocks
++						, backup_blocks2, num_blocks
++						, prefer_contiguous_blocks, peer, ignored_pieces
++						, options);
++					if (num_blocks <= 0) return ret;
++				}
++			}
++			else for (auto i = m_pieces.begin();
+ 				i != m_pieces.end() && piece_priority(*i) == top_priority; ++i)
+ 			{
+ 				if (!is_piece_free(*i, pieces)) continue;
+diff --git a/src/settings_pack.cpp b/src/settings_pack.cpp
+index d3cb50b95..17df6041a 100644
+--- a/src/settings_pack.cpp
++++ b/src/settings_pack.cpp
+@@ -244,6 +244,7 @@ constexpr int DISK_WRITE_MODE = settings_pack::enable_os_cache;
+ 		SET(disk_disable_copy_on_write, false, nullptr),
+ 		SET(piece_request_fast_ramp, false, nullptr),
+ 		SET(streaming_request_cap, false, nullptr),
++		SET(sequential_piece_order, false, nullptr),
+ 	}});
+ 
+ 	CONSTEXPR_SETTINGS

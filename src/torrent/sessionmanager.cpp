@@ -160,6 +160,10 @@ SessionManager::SessionManager(QObject *parent)
     // one block per received piece. Measured +9-27% on pipeline-bound transfers
     // (fat link or high-RTT head) and neutral on bandwidth-capped swarms.
     pack.set_bool(lt::settings_pack::piece_request_fast_ramp, true);
+    // Both only touch a torrent being streamed (sequential / with deadlines), so
+    // bulk downloads keep the benchmarked behaviour.
+    pack.set_bool(lt::settings_pack::sequential_piece_order, true);
+    pack.set_bool(lt::settings_pack::streaming_request_cap, true);
 #endif
     // Connection tuning: qBT defaults, with a much faster connect ramp so a fresh
     // torrent reaches a healthy peer set in seconds instead of slowly climbing.

@@ -9,6 +9,16 @@
 //   --ab config : stock libtorrent defaults  vs  BATorrent tuned settings_pack
 //   --ab ramp   : same tuned config, piece_request_fast_ramp OFF vs ON; isolates
 //                 the fork's slow-start patch alone (off == stock behavior).
+//   --ab stream : time-to-first-N-MB contiguous from the file start, with the app's
+//                 streaming setup (sequential, boundary priorities, tail + head
+//                 deadlines, the file at priority 7). A = the app as it ships,
+//                 B = with the fork's streaming_request_cap + sequential_piece_order.
+//                 --head sets N (default 8 MB); --tail also waits for the last piece.
+//   --ab stream-{cap,order,prio4,ramp,nodl} : the same measurement isolating one
+//                 lever: each fork toggle alone, file priority 4, fast ramp, deadlines.
+//   --ab stream-cap-on-order : what the request cap adds once the order is fixed.
+//   --ab bulk-stream-toggles : a plain (non-streamed) download with both streaming
+//                 toggles off vs on; they must not move it.
 //
 // Latency is the variable that exercises the request pipeline. --rtt adds it with
 // an in-process TCP delay relay between leecher and seeder (no sudo, deterministic)
@@ -29,7 +39,9 @@
 #include <libtorrent/peer_class_type_filter.hpp>
 #include <libtorrent/peer_info.hpp>
 #include <map>
+#include <cmath>
 
+#include <csignal>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -61,6 +73,10 @@ struct Profile {
     std::string name;
     bool tuned;       // apply BATorrent's settings_pack tuning
     bool fastRamp;    // fork: piece_request_fast_ramp
+    bool deadlines = true;    // stream mode: the app's head/tail piece deadlines
+    bool streamCap = false;   // fork: streaming_request_cap
+    bool inOrder = false;     // fork: sequential_piece_order
+    int filePrio = 7;         // stream mode: the watched file's priority
 };
 
 struct Args {
@@ -73,6 +89,8 @@ struct Args {
     std::string ab = "ramp";
     std::string seeders;    // comma list of per-seeder caps KB/s (empty = one --seed-rate seeder)
     std::string seederRtt;  // comma list of per-seeder RTT ms (empty = all --rtt)
+    int headMB = 8;         // stream mode: contiguous head that counts as "playable"
+    bool tail = false;      // stream mode: also wait for the last piece (an MP4's moov)
 };
 
 static std::vector<int> parseInts(const std::string &csv)
@@ -211,6 +229,8 @@ static void applyProfile(lt::settings_pack &p, const Profile &prof)
         p.set_int(lt::settings_pack::aio_threads, 10);
     }
     p.set_bool(lt::settings_pack::piece_request_fast_ramp, prof.fastRamp);
+    p.set_bool(lt::settings_pack::streaming_request_cap, prof.streamCap);
+    p.set_bool(lt::settings_pack::sequential_piece_order, prof.inOrder);
 }
 
 static lt::add_torrent_params makeTorrent(const fs::path &dir, const Args &a)
@@ -226,14 +246,8 @@ static lt::add_torrent_params makeTorrent(const fs::path &dir, const Args &a)
     return atp;
 }
 
-// Returns seconds to reach 100% (or -1 on timeout).
-static double runLeech(const std::shared_ptr<lt::torrent_info> &ti,
-                       const std::vector<int> &peerPorts,
-                       const Profile &prof, const fs::path &saveDir)
+static lt::settings_pack leechSettings(const Profile &prof)
 {
-    fs::remove_all(saveDir);
-    fs::create_directories(saveDir);
-
     lt::settings_pack p;
     p.set_str(lt::settings_pack::listen_interfaces, "127.0.0.1:0");
     p.set_int(lt::settings_pack::alert_mask, lt::alert_category::status);
@@ -246,15 +260,30 @@ static double runLeech(const std::shared_ptr<lt::torrent_info> &ti,
     // not the swarm behavior we want to measure.
     p.set_bool(lt::settings_pack::allow_multiple_connections_per_ip, true);
     applyProfile(p, prof);
-    lt::session s(p);
+    return p;
+}
+
+static void connectAll(lt::torrent_handle &h, const std::vector<int> &peerPorts)
+{
+    for (int port : peerPorts)
+        h.connect_peer(lt::tcp::endpoint(lt::make_address("127.0.0.1"),
+                                         std::uint16_t(port)));
+}
+
+// Returns seconds to reach 100% (or -1 on timeout).
+static double runLeech(const std::shared_ptr<lt::torrent_info> &ti,
+                       const std::vector<int> &peerPorts,
+                       const Profile &prof, const fs::path &saveDir)
+{
+    fs::remove_all(saveDir);
+    fs::create_directories(saveDir);
+    lt::session s(leechSettings(prof));
 
     lt::add_torrent_params atp;
     atp.ti = ti;
     atp.save_path = saveDir.string();
     lt::torrent_handle h = s.add_torrent(atp);
-    for (int port : peerPorts)
-        h.connect_peer(lt::tcp::endpoint(lt::make_address("127.0.0.1"),
-                                         std::uint16_t(port)));
+    connectAll(h, peerPorts);
 
     const auto start = clk::now();
     const auto deadline = start + std::chrono::minutes(10);
@@ -278,8 +307,77 @@ static double runLeech(const std::shared_ptr<lt::torrent_info> &ti,
     }
 }
 
+static int contiguousHeadPieces(const lt::torrent_handle &h, int numPieces)
+{
+    int n = 0;
+    while (n < numPieces && h.have_piece(lt::piece_index_t(n))) ++n;
+    return n;
+}
+
+// Mirrors SessionManager::prioritizeFilePieceBoundaries + streamSetDeadlineWindow
+// (single-file torrent, so file offset 0) and the watch gate's 1 s re-arm.
+// Returns seconds until `headMB` contiguous bytes from the start are on disk.
+static double runStream(const std::shared_ptr<lt::torrent_info> &ti,
+                        const std::vector<int> &peerPorts,
+                        const Profile &prof, const fs::path &saveDir, int headMB, bool tail)
+{
+    fs::remove_all(saveDir);
+    fs::create_directories(saveDir);
+    lt::session s(leechSettings(prof));
+
+    lt::add_torrent_params atp;
+    atp.ti = ti;
+    atp.save_path = saveDir.string();
+    atp.flags |= lt::torrent_flags::sequential_download;
+    atp.file_priorities = {lt::download_priority_t(std::uint8_t(prof.filePrio))};
+    lt::torrent_handle h = s.add_torrent(atp);
+
+    const int numPieces = ti->num_pieces();
+    const int pieceLen = ti->piece_length();
+    const int boost = std::max(1, int(std::ceil(numPieces * 0.01)));
+    for (int k = 0; k < boost; ++k) {
+        h.piece_priority(lt::piece_index_t(k), lt::top_priority);
+        h.piece_priority(lt::piece_index_t(numPieces - 1 - k), lt::top_priority);
+        if (prof.deadlines) h.set_piece_deadline(lt::piece_index_t(numPieces - 1 - k), 2000);
+    }
+    auto armHead = [&](int from) {
+        if (!prof.deadlines) return;
+        for (int k = 0; k < 24 && from + k < numPieces; ++k) {
+            if (h.have_piece(lt::piece_index_t(from + k))) continue;
+            h.piece_priority(lt::piece_index_t(from + k), lt::top_priority);
+            h.set_piece_deadline(lt::piece_index_t(from + k), k * 40);
+        }
+    };
+    connectAll(h, peerPorts);
+
+    const int wantPieces = int((std::int64_t(headMB) * 1048576 + pieceLen - 1) / pieceLen);
+    const auto start = clk::now();
+    const auto deadline = start + std::chrono::minutes(5);
+    auto lastArm = start - std::chrono::seconds(1);
+    int lastHead = -1;
+    for (;;) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        const int head = contiguousHeadPieces(h, numPieces);
+        const double t = std::chrono::duration<double>(clk::now() - start).count();
+        if (head != lastHead) {
+            std::fprintf(stderr, "    %6.2fs head %.1f MB\n", t, double(head) * pieceLen / 1048576.0);
+            lastHead = head;
+        }
+        if (head >= wantPieces && (!tail || h.have_piece(lt::piece_index_t(numPieces - 1)))) {
+            const lt::torrent_status st = h.status();
+            std::fprintf(stderr, "    total on disk at gate: %.1f MB\n", st.total_wanted_done / 1048576.0);
+            return t;
+        }
+        if (clk::now() - lastArm >= std::chrono::seconds(1)) { armHead(head); lastArm = clk::now(); }
+        if (clk::now() > deadline) return -1.0;
+    }
+}
+
 int main(int argc, char **argv)
 {
+    // the relay writes into sockets a leecher may already have closed; that's
+    // a dropped peer, not a reason to kill the run
+    std::signal(SIGPIPE, SIG_IGN);
     Args a;
     for (int i = 1; i < argc; ++i) {
         auto num = [&]() { return i + 1 < argc ? std::atoi(argv[++i]) : 0; };
@@ -293,12 +391,39 @@ int main(int argc, char **argv)
         else if (!std::strcmp(argv[i], "--ab")) a.ab = str();
         else if (!std::strcmp(argv[i], "--seeders")) a.seeders = str();
         else if (!std::strcmp(argv[i], "--seeder-rtt")) a.seederRtt = str();
+        else if (!std::strcmp(argv[i], "--head")) a.headMB = num();
+        else if (!std::strcmp(argv[i], "--tail")) a.tail = true;
     }
 
     Profile A, B;
+    const bool stream = a.ab.rfind("stream", 0) == 0;
     if (a.ab == "config") {
         A = {"stock", false, false};
         B = {"batorrent", true, true};
+    } else if (a.ab == "bulk-stream-toggles") {
+        A = {"ramp-on", true, true};
+        B = {"+stream-tgl", true, true, true, true, true};
+    } else if (a.ab == "stream") {
+        A = {"app", true, true};
+        B = {"app+fork", true, true, true, true, true};
+    } else if (a.ab == "stream-cap") {
+        A = {"app", true, true};
+        B = {"app+cap", true, true, true, true};
+    } else if (a.ab == "stream-order") {
+        A = {"app", true, true};
+        B = {"app+order", true, true, true, false, true};
+    } else if (a.ab == "stream-cap-on-order") {
+        A = {"app+order", true, true, true, false, true};
+        B = {"app+fork", true, true, true, true, true};
+    } else if (a.ab == "stream-prio4") {
+        A = {"app", true, true};
+        B = {"file-prio4", true, true, true, false, false, 4};
+    } else if (a.ab == "stream-ramp") {
+        A = {"ramp-off", true, false};
+        B = {"ramp-on", true, true};
+    } else if (a.ab == "stream-nodl") {
+        A = {"no-deadline", true, true, false};
+        B = {"deadlines", true, true};
     } else {
         A = {"ramp-off", true, false};
         B = {"ramp-on", true, true};
@@ -374,8 +499,10 @@ int main(int argc, char **argv)
     int okA = 0, okB = 0;
     for (const Profile *prof : {&A, &B}) {
         for (int t = 1; t <= a.trials; ++t) {
-            const double secs = runLeech(ti, peerPorts, *prof, root / ("leech-" + prof->name));
-            const double mbps = secs > 0 ? double(a.sizeMB) / secs : 0;
+            const fs::path dir = root / ("leech-" + prof->name);
+            const double secs = stream ? runStream(ti, peerPorts, *prof, dir, a.headMB, a.tail)
+                                       : runLeech(ti, peerPorts, *prof, dir);
+            const double mbps = secs > 0 ? double(stream ? a.headMB : a.sizeMB) / secs : 0;
             std::printf("%-12s %8d %8.2f %12.2f\n", prof->name.c_str(), t, secs, mbps);
             if (secs > 0) {
                 if (prof == &A) { sumA += secs; ++okA; }

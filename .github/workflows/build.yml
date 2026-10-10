@@ -114,7 +114,7 @@ jobs:
         with:
           submodules: recursive   # the vendored libtorrent fork
 
-      # Apply our engine patches (fast_ramp + geo-locality) onto the submodule.
+      # Apply our engine patches (third_party/patches/) onto the submodule.
       - name: Apply fork patches
         run: ./scripts/apply-fork-patches.sh
 
@@ -263,7 +263,7 @@ jobs:
         with:
           submodules: recursive   # the vendored libtorrent fork
 
-      # Apply our engine patches (fast_ramp + geo-locality) onto the submodule.
+      # Apply our engine patches (third_party/patches/) onto the submodule.
       # git-bash ships on windows-latest, so the same shell script works here.
       - name: Apply fork patches
         shell: bash
@@ -575,7 +575,7 @@ jobs:
         with:
           submodules: recursive   # the vendored libtorrent fork
 
-      # Apply our engine patches (fast_ramp + geo-locality) onto the submodule.
+      # Apply our engine patches (third_party/patches/) onto the submodule.
       - name: Apply fork patches
         run: ./scripts/apply-fork-patches.sh
 
