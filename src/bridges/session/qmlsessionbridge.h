@@ -9,6 +9,7 @@
 #include "services/integrations/gameinstall.h"
 
 class HttpDownloadManager;
+class MediaGuard;
 
 class QmlSessionBridge : public QObject
 {
@@ -276,6 +277,7 @@ public:
     Q_INVOKABLE void installSelectedGame();
     Q_INVOKABLE void playSelectedGame();
     void setStreamPort(quint16 port) { m_streamPort = port; }
+    void setMediaGuard(MediaGuard *guard);
     Q_INVOKABLE void setSelectedCategory(const QString &category);
     Q_INVOKABLE void setSelectedTags(const QStringList &tags);
     Q_INVOKABLE void addTrackerToSelected(const QString &url);
@@ -399,6 +401,9 @@ signals:
     void watchProgress(const QString &infoHash, double percent);   // 0..1, each tick while pending
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
     void watchHealth(const QString &infoHash, int downBps, int peers, int waitedSec);   // each tick while pending
+    void mediaQuarantined(const QString &infoHash, const QString &fileName,
+                          const QString &kindKey, const QString &searchQuery);
+    void mediaLure(const QString &infoHash, const QString &fileName, const QString &searchQuery);
     void gamesChanged();   // a game started/stopped → refresh the game library
     void movieReady(const QString &infoHash, const QString &name);   // a movie/series finished → offer Play now
     void gameReady(const QString &infoHash, const QString &name);    // game download done → offer Install
@@ -442,6 +447,9 @@ private:
 
     IEngine *m_session;   // the session API: SessionManager in-process today, IpcEngine after the split
     HttpDownloadManager *m_httpDownloads = nullptr;   // direct-HTTP downloads (set in main.cpp)
+    MediaGuard *m_guard = nullptr;
+    bool guardRefuses(const QString &infoHash, int fileIndex);
+    QString searchQueryFor(const QString &infoHash) const;
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
     QSet<QString> m_watchPrepped;   // pending watches whose file is already being fetched for playback
     QHash<QString, QPair<QString, qint64>> m_pendingInstall; // Get&Install: infoHash → {title, startedAtSec}
