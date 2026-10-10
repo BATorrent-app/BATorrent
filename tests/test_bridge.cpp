@@ -27,6 +27,7 @@
 
 #include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
+#include "services/games/playlog.h"
 #include "services/discovery/gamesourcemanager.h"
 #include "services/platform/translator.h"
 #include "torrent/types.h"
@@ -208,6 +209,35 @@ TEST_CASE("Session bridge: empty session has no selection", "[bridge][session]")
     REQUIRE(bridge.selectedFiles().isEmpty());
     REQUIRE(bridge.selectedPeerList().isEmpty());
     REQUIRE(bridge.selectedTrackers().isEmpty());
+}
+
+TEST_CASE("Session bridge: playtime kept in settings moves into the play log", "[bridge][session][games]")
+{
+    app();
+    const QString logPath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+                                .filePath(QStringLiteral("playlog.json"));
+    QFile::remove(logPath);
+    {
+        QSettings s;
+        s.setValue(QStringLiteral("gameSeconds/abc"), 5400);
+        s.setValue(QStringLiteral("gamePlayed/abc"), 1700000000000LL);
+        s.setValue(QStringLiteral("gameLaunches/abc"), 4);
+        s.setValue(QStringLiteral("gameLaunches/onlylaunched"), 1);
+    }
+    // Twice: the second start must not add the old totals on top again.
+    for (int run = 0; run < 2; ++run) {
+        SessionManager session;
+        MetadataResolver resolver;
+        QmlSessionBridge bridge(&session, &resolver);
+    }
+    // Kept for a build that predates the log.
+    REQUIRE(QSettings().contains(QStringLiteral("gameSeconds/abc")));
+
+    const PlayLog log(logPath);
+    REQUIRE(log.summary(QStringLiteral("abc")).totalSecs == 5400);
+    REQUIRE(log.summary(QStringLiteral("abc")).lastPlayedMs == 1700000000000LL);
+    REQUIRE(log.summary(QStringLiteral("abc")).launches == 4);
+    REQUIRE(log.summary(QStringLiteral("onlylaunched")).launches == 1);
 }
 
 // ============================================================================

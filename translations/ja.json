@@ -1363,5 +1363,6 @@
   "game_folder": "フォルダー",
   "game_exe": "実行ファイル",
   "game_exe_auto": "起動時に自動検出",
-  "game_size": "サイズ"
+  "game_size": "サイズ",
+  "game_activity": "最近のアクティビティ"
 }

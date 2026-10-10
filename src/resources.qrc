@@ -250,6 +250,7 @@
 <file>../src/qml/views/HubSeriesPage.qml</file>
 <file>../src/qml/views/HubGamePage.qml</file>
 <file>../src/qml/views/HubGameActions.qml</file>
+<file>../src/qml/views/HubGameActivity.qml</file>
 <file>../src/qml/views/HubGameStills.qml</file>
 <file>../src/qml/views/HubGameFiles.qml</file>
 <file>../src/qml/views/HubShelves.qml</file>

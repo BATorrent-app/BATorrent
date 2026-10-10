@@ -1363,5 +1363,6 @@
   "game_folder": "文件夹",
   "game_exe": "可执行文件",
   "game_exe_auto": "启动时自动检测",
-  "game_size": "大小"
+  "game_size": "大小",
+  "game_activity": "最近动态"
 }

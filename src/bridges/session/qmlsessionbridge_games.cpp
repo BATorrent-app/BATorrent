@@ -10,6 +10,7 @@
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "torrent/sessionmanager.h"   // full IEngine + TorrentInfo (m_session calls)
+#include "services/games/playlog.h"
 #include "services/integrations/gameinstall.h"
 #include "services/integrations/gameexedetect.h"
 #include "services/metadata/nameparser.h"
@@ -104,13 +105,14 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["size"]       = info.totalSize;
         m["addedTime"]  = qint64(info.addedTime);
         m["hasExe"]     = !gameExe(hash).isEmpty();
-        m["lastPlayed"] = QSettings().value(QStringLiteral("gamePlayed/") + hash, 0).toLongLong();
+        const PlayLog::Summary played = m_playLog->summary(hash);
+        m["lastPlayed"] = played.lastPlayedMs;
         m["description"] = description;
         m["genres"]     = genres;
         m["rating"]     = rating;
         m["year"]       = gyear > 0 ? QString::number(gyear) : QString();
-        m["playSeconds"] = QSettings().value(QStringLiteral("gameSeconds/") + hash, 0).toLongLong();
-        m["launches"]   = QSettings().value(QStringLiteral("gameLaunches/") + hash, 0).toLongLong();
+        m["playSeconds"] = played.totalSecs;
+        m["launches"]   = played.launches;
         m["playing"]    = m_runningGames.contains(hash);
         m["installState"] = gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));
         out << m;
@@ -197,10 +199,7 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
         // us poll for exit and credit playtime.
         if (startGameProcess(exe, &pid)) {
             const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-            QSettings s;
-            s.setValue(QStringLiteral("gamePlayed/") + infoHash, nowMs);
-            s.setValue(QStringLiteral("gameLaunches/") + infoHash,
-                       s.value(QStringLiteral("gameLaunches/") + infoHash, 0).toLongLong() + 1);
+            m_playLog->recordLaunch(infoHash, nowMs);
             if (!isInstaller && pid > 0 && !m_runningGames.contains(infoHash)) {
                 m_runningGames.insert(infoHash, pid);
                 m_gameStartMs.insert(infoHash, nowMs);
@@ -249,17 +248,42 @@ void QmlSessionBridge::pollRunningGames()
     bool changed = false;
     for (const QString &hash : m_runningGames.keys()) {
         if (pidAlive(m_runningGames.value(hash))) continue;
-        const qint64 secs = (QDateTime::currentMSecsSinceEpoch() - m_gameStartMs.value(hash)) / 1000;
-        if (secs > 30) {                       // ignore quick bounces / launchers handing off
-            QSettings s;
-            s.setValue(QStringLiteral("gameSeconds/") + hash,
-                       s.value(QStringLiteral("gameSeconds/") + hash, 0).toLongLong() + secs);
-        }
+        const qint64 startMs = m_gameStartMs.value(hash);
+        m_playLog->recordSession(hash, startMs, (QDateTime::currentMSecsSinceEpoch() - startMs) / 1000);
         m_runningGames.remove(hash);
         m_gameStartMs.remove(hash);
         changed = true;
     }
     if (changed) emit gamesChanged();
+}
+
+QVariantList QmlSessionBridge::gameSessions(const QString &infoHash, int limit) const
+{
+    QVariantList out;
+    for (const PlayLog::Session &s : m_playLog->recentSessions(infoHash, limit))
+        out << QVariantMap{ { QStringLiteral("startMs"), s.startMs }, { QStringLiteral("secs"), s.secs } };
+    return out;
+}
+
+void QmlSessionBridge::importLegacyPlaytime()
+{
+    QSettings s;
+    const QStringList groups = { QStringLiteral("gameSeconds"), QStringLiteral("gamePlayed"),
+                                 QStringLiteral("gameLaunches") };
+    QSet<QString> hashes;
+    for (const QString &g : groups) {
+        s.beginGroup(g);
+        for (const QString &k : s.childKeys()) hashes.insert(k);
+        s.endGroup();
+    }
+    if (hashes.isEmpty()) return;
+    for (const QString &h : hashes)
+        m_playLog->importTotals(h, s.value(QStringLiteral("gameSeconds/") + h).toLongLong(),
+                                s.value(QStringLiteral("gamePlayed/") + h).toLongLong(),
+                                s.value(QStringLiteral("gameLaunches/") + h).toLongLong());
+    // The old keys stay: a build from before the log still reads them, and
+    // importTotals ignores a game the log already has, so nothing doubles.
+    m_playLog->save();
 }
 
 // ---- Game install orchestrator (the "Steam pirata" one-click chain) --------

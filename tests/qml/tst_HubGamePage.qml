@@ -25,6 +25,10 @@ Item {
         function gameFolder(h) { return "/games/" + h }
         function gameExe(h) { return h === "played" ? "/games/played/game.exe" : "" }
         function launchGame(h) { launched.push(h) }
+        function gameSessions(h, limit) {
+            return h === "played" ? [ { startMs: Date.now() - 7200000, secs: 5400 },
+                                      { startMs: Date.now() - 90000000, secs: 1980 } ] : []
+        }
     }
 
     QtObject {
@@ -120,6 +124,8 @@ Item {
             verify(findByText(p, "game_never_played") === null)
             verify(findByText(p, "2h 3m") !== null)
             verify(findByText(p, "/games/played/game.exe") !== null)
+            verify(findByText(p, "game_activity") !== null)
+            verify(findByText(p, "1h 30m") !== null)
         }
 
         function test_unsavedExeReadsAsAutodetected() {
@@ -127,6 +133,7 @@ Item {
             mockHub.gameHash = "fresh"
             mockHub.gameOpen = true
             verify(findByText(p, "game_exe_auto") !== null)
+            verify(findByText(p, "game_activity") === null)
             verify(findByText(p, "/games/fresh") !== null)
         }
 

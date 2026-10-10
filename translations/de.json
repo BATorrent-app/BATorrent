@@ -1363,5 +1363,6 @@
   "game_folder": "Ordner",
   "game_exe": "Programmdatei",
   "game_exe_auto": "Wird beim Start erkannt",
-  "game_size": "Größe"
+  "game_size": "Größe",
+  "game_activity": "Letzte Aktivität"
 }

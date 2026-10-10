@@ -1363,5 +1363,6 @@
   "game_folder": "Pasta",
   "game_exe": "Executável",
   "game_exe_auto": "Detectado ao abrir",
-  "game_size": "Tamanho"
+  "game_size": "Tamanho",
+  "game_activity": "Atividade recente"
 }

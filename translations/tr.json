@@ -1363,5 +1363,6 @@
   "game_folder": "Klasör",
   "game_exe": "Çalıştırılabilir dosya",
   "game_exe_auto": "Açılışta algılanır",
-  "game_size": "Boyut"
+  "game_size": "Boyut",
+  "game_activity": "Son etkinlik"
 }

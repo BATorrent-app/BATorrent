@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "bridges/session/qmlsessionbridge.h"
+#include "services/games/playlog.h"
 #include "torrent/iengine.h"
 #include "services/downloads/httpdownloadmanager.h"
 #include <QThread>
@@ -116,7 +117,14 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
             this, &QmlSessionBridge::onExtractionCompleted);
     connect(m_session, &IEngine::torrentFinished,
             this, &QmlSessionBridge::onGameTorrentFinished);
+
+    m_playLog = std::make_unique<PlayLog>(
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+            .filePath(QStringLiteral("playlog.json")));
+    importLegacyPlaytime();
 }
+
+QmlSessionBridge::~QmlSessionBridge() = default;
 
 bool QmlSessionBridge::altSpeedsActive() const { return m_session->altSpeedsActive(); }
 int QmlSessionBridge::portStatus() const { return m_session->portStatus(); }

@@ -86,6 +86,13 @@ Item {
                 game: root.game
             }
 
+            HubGameActivity {
+                x: Theme.sp5
+                width: col.width - 2 * Theme.sp5
+                hub: root.hub
+                game: root.game
+            }
+
             HubGameStills {
                 x: Theme.sp5
                 width: col.width - 2 * Theme.sp5

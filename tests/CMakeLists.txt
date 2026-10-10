@@ -70,6 +70,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/integrations/debridpick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/gameinstall.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/games/playlog.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/gameexedetect.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/defender.cpp
     ${CMAKE_SOURCE_DIR}/src/webui/webserver.cpp
@@ -306,6 +307,7 @@ bat_add_test(test_geoipdb    test_geoipdb.cpp)
 bat_add_test(test_searchranker test_searchranker.cpp)
 bat_add_test(test_gamereleasepick test_gamereleasepick.cpp)
 bat_add_test(test_gameinstallstate test_gameinstallstate.cpp)
+bat_add_test(test_playlog test_playlog.cpp)
 bat_add_test(test_hublogic test_hublogic.cpp)
 bat_add_test(test_tmdbparse test_tmdbparse.cpp)
 bat_add_test(test_igdbparse test_igdbparse.cpp)
@@ -368,7 +370,7 @@ endif()
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
     DEPENDS test_security test_memory test_unit test_nameparser test_bridge test_gamesource
-            test_gamereleasepick test_gameinstallstate test_searchranker test_releasegroup
+            test_gamereleasepick test_gameinstallstate test_playlog test_searchranker test_releasegroup
             test_contentlanguage test_releasetrust
             test_sessionresume test_sessionremove test_metadatamatch test_sessionconfig
             test_addonparse test_tmdbparse test_igdbparse test_settingshelpers

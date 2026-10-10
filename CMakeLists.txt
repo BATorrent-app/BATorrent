@@ -111,6 +111,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/debridpick.cpp
     src/services/integrations/installerprofile.cpp
     src/services/integrations/gameinstall.cpp
+    src/services/games/playlog.cpp
     src/services/integrations/gameexedetect.cpp
     src/services/security/defender.cpp
     src/services/platform/logger.cpp

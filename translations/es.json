@@ -1363,5 +1363,6 @@
   "game_folder": "Carpeta",
   "game_exe": "Ejecutable",
   "game_exe_auto": "Se detecta al abrir",
-  "game_size": "Tamaño"
+  "game_size": "Tamaño",
+  "game_activity": "Actividad reciente"
 }

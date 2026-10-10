@@ -1363,5 +1363,6 @@
   "game_folder": "Folder",
   "game_exe": "Executable",
   "game_exe_auto": "Detected on launch",
-  "game_size": "Size"
+  "game_size": "Size",
+  "game_activity": "Recent activity"
 }

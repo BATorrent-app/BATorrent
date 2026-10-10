@@ -8,7 +8,10 @@
 #include "bridges/bridgecommon.h"
 #include "services/integrations/gameinstall.h"
 
+#include <memory>
+
 class HttpDownloadManager;
+class PlayLog;
 
 class QmlSessionBridge : public QObject
 {
@@ -93,6 +96,7 @@ class QmlSessionBridge : public QObject
 
 public:
     explicit QmlSessionBridge(IEngine *session, MetadataResolver *resolver, QObject *parent = nullptr);
+    ~QmlSessionBridge() override;
 
     int torrentCount() const;
     int activeCount() const;
@@ -263,6 +267,7 @@ public:
     // via a user-set executable (no auto-detection yet: improved gradually).
     Q_INVOKABLE QVariantList gameLibrary() const;
     Q_INVOKABLE QString gameExe(const QString &infoHash) const;        // saved exe path, "" if unset
+    Q_INVOKABLE QVariantList gameSessions(const QString &infoHash, int limit = 8) const;   // [{startMs, secs}] newest first
     Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
@@ -452,6 +457,8 @@ private:
     QHash<QString, qint64> m_installWatch;   // infoHash → pid of a guided installer being watched
     QSet<QString> m_extracted;               // infoHashes already extracted (avoid re-extracting)
     void pollRunningGames();   // detect game exit → record playtime
+    void importLegacyPlaytime();
+    std::unique_ptr<PlayLog> m_playLog;
     MetadataResolver *m_resolver;
     quint16 m_streamPort = 0;
     int m_selectedIndex = -1;
