@@ -239,6 +239,9 @@
 <file>../src/qml/views/HubFormat.qml</file>
 <file>../src/qml/views/HubCompute.qml</file>
 <file>../src/qml/views/HubContinueRails.qml</file>
+<file>../src/qml/views/HubSeriesPage.qml</file>
+<file>../src/qml/views/HubSeriesHero.qml</file>
+<file>../src/qml/views/HubEpisodeRow.qml</file>
 <file>../src/qml/views/HubShelves.qml</file>
 <file>../src/qml/views/HubDetailDrawer.qml</file>
 <file>../src/qml/views/HubCard.qml</file>

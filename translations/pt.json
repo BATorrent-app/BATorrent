@@ -1306,5 +1306,11 @@
   "set_update_track": "Canal de atualização",
   "set_track_stable": "Estável",
   "set_track_beta": "Beta",
-  "set_update_track_note": "A beta oferece versões novas antes de todo mundo. Elas são testadas, mas menos."
+  "set_update_track_note": "A beta oferece versões novas antes de todo mundo. Elas são testadas, mas menos.",
+  "hub_season_n": "Temporada %1",
+  "hub_n_season": "%1 temporada",
+  "hub_n_seasons": "%1 temporadas",
+  "hub_ep_n": "Episódio %1",
+  "hub_ep_minutes": "%1 min",
+  "hub_ep_missing": "Não baixado"
 }

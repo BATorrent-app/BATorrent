@@ -1306,5 +1306,11 @@
   "set_update_track": "Канал оновлень",
   "set_track_stable": "Стабільний",
   "set_track_beta": "Бета",
-  "set_update_track_note": "Бета пропонує нові версії раніше за інших. Вони протестовані, але менше."
+  "set_update_track_note": "Бета пропонує нові версії раніше за інших. Вони протестовані, але менше.",
+  "hub_season_n": "Сезон %1",
+  "hub_n_season": "%1 сезон",
+  "hub_n_seasons": "%1 сезони",
+  "hub_ep_n": "Серія %1",
+  "hub_ep_minutes": "%1 хв",
+  "hub_ep_missing": "Не завантажено"
 }

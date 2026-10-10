@@ -21,7 +21,12 @@ QStringList backdropUrls(const QByteArray &imagesJson,
 QString youtubeTrailerKey(const QByteArray &videosJson);
 
 // Season payload → [{episode, name, air_date}, ...]
-QVariantList episodeRows(const QByteArray &seasonJson);
+// One row per episode of a season. stillBase is prefixed onto still_path, so
+// an episode with no image comes back with an empty "still" rather than a URL
+// that 404s. The synopsis and the thumbnail ride in the same response as the
+// title did — reading only the title was leaving a screen's worth of material
+// on the floor.
+QVariantList episodeRows(const QByteArray &seasonJson, const QString &stillBase = QString());
 
 // /recommendations results → poster cards (cap applies).
 QVariantList recommendationRows(const QByteArray &json,

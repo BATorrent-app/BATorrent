@@ -91,6 +91,50 @@ QtObject {
         return out
     }
 
+    // The season as TMDB knows it, crossed with what is actually on disk.
+    //
+    // Both halves matter: listing only what was downloaded hides that episode 4
+    // is missing from the middle of a pack, and listing only TMDB turns a
+    // library screen into a catalogue of things you cannot watch. Every row
+    // says which it is, and carries the torrent to play when it is here.
+    //
+    // Episodes we hold that TMDB does not list (a special, a renumbered
+    // release) are kept at the end rather than dropped: the file exists, and
+    // not showing it is how a download becomes invisible.
+    function mergeSeasonEpisodes(tmdbEpisodes, groupVideos, season) {
+        var have = ({})
+        var vids = groupVideos || []
+        for (var i = 0; i < vids.length; i++)
+            if (vids[i].season === season && vids[i].episode >= 0)
+                have[vids[i].episode] = vids[i]
+
+        var rows = []
+        var listed = ({})
+        var eps = tmdbEpisodes || []
+        for (var e = 0; e < eps.length; e++) {
+            var t = eps[e]
+            var v = have[t.episode]
+            listed[t.episode] = true
+            rows.push({ season: season, episode: t.episode,
+                        title: t.name || "", overview: t.overview || "",
+                        still: t.still || "", runtime: t.runtime || 0,
+                        airDate: t.air_date || "",
+                        have: v !== undefined,
+                        hash: v ? v.hash : "", idx: v ? v.idx : -1,
+                        watched: v ? v.watched === true : false })
+        }
+        for (var k in have) {
+            if (listed[k]) continue
+            var o = have[k]
+            rows.push({ season: season, episode: o.episode,
+                        title: o.name || "", overview: "", still: "", runtime: 0,
+                        airDate: "", have: true, hash: o.hash, idx: o.idx,
+                        watched: o.watched === true })
+        }
+        rows.sort(function (a, b) { return a.episode - b.episode })
+        return rows
+    }
+
     // The same episode in two releases (a season pack and a single) is one
     // episode to watch. The copy that is further along wins: offering the one
     // at 0% when a finished file sits right beside it is the wrong answer.

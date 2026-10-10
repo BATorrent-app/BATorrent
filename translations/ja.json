@@ -1306,5 +1306,11 @@
   "set_update_track": "更新チャンネル",
   "set_track_stable": "安定版",
   "set_track_beta": "ベータ版",
-  "set_update_track_note": "ベータ版は一般公開前の新しいバージョンを提供します。テスト済みですが、検証は少なめです。"
+  "set_update_track_note": "ベータ版は一般公開前の新しいバージョンを提供します。テスト済みですが、検証は少なめです。",
+  "hub_season_n": "シーズン%1",
+  "hub_n_season": "%1シーズン",
+  "hub_n_seasons": "%1シーズン",
+  "hub_ep_n": "第%1話",
+  "hub_ep_minutes": "%1分",
+  "hub_ep_missing": "未ダウンロード"
 }

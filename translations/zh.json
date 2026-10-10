@@ -1306,5 +1306,11 @@
   "set_update_track": "更新通道",
   "set_track_stable": "稳定版",
   "set_track_beta": "测试版",
-  "set_update_track_note": "测试版会在正式发布前提供新版本。它们经过测试，但没那么充分。"
+  "set_update_track_note": "测试版会在正式发布前提供新版本。它们经过测试，但没那么充分。",
+  "hub_season_n": "第 %1 季",
+  "hub_n_season": "%1 季",
+  "hub_n_seasons": "%1 季",
+  "hub_ep_n": "第 %1 集",
+  "hub_ep_minutes": "%1 分钟",
+  "hub_ep_missing": "未下载"
 }

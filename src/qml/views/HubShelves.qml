@@ -282,10 +282,10 @@ ColumnLayout {
                 delegate: HubCard {
                     host: page
                     item: modelData
-                    onShowDetail: page.openDetail(modelData, false)
-                    // Always the episode list: a show is a thing you pick an
-                    // episode from, even when one torrent holds all of them.
-                    onPlay: page.episodeMenu.openFor(modelData)
+                    // A show opens its own screen, not the movie drawer: the
+                    // thing you came for is the episode list.
+                    onShowDetail: page.openSeries(modelData)
+                    onPlay: page.openSeries(modelData)
                     onContext: page.episodeMenu.openFor(modelData)
                 }
             }

@@ -68,6 +68,28 @@ TEST_CASE("episodeRows maps season payload fields", "[tmdbparse]") {
     REQUIRE(TmdbParse::episodeRows({}).isEmpty());
 }
 
+TEST_CASE("episodeRows carries what a series screen needs", "[tmdbparse]") {
+    const QByteArray json = QByteArrayLiteral(R"({
+      "episodes": [
+        { "episode_number": 1, "name": "Chapter 1", "overview": "A bounty hunter.",
+          "still_path": "/abc.jpg", "runtime": 39, "vote_average": 7.9 },
+        { "episode_number": 2, "name": "No image", "overview": "", "still_path": null }
+      ]
+    })");
+    const auto eps = TmdbParse::episodeRows(json, QStringLiteral("https://img/w300"));
+    REQUIRE(eps.size() == 2);
+
+    const QVariantMap first = eps.at(0).toMap();
+    REQUIRE(first.value(QStringLiteral("overview")).toString() == QLatin1String("A bounty hunter."));
+    REQUIRE(first.value(QStringLiteral("runtime")).toInt() == 39);
+    REQUIRE(first.value(QStringLiteral("rating")).toDouble() == 7.9);
+    REQUIRE(first.value(QStringLiteral("still")).toString() == QLatin1String("https://img/w300/abc.jpg"));
+
+    // An episode with no image must come back with nothing, not with a base
+    // URL that resolves to a 404 and draws a broken thumbnail.
+    REQUIRE(eps.at(1).toMap().value(QStringLiteral("still")).toString().isEmpty());
+}
+
 TEST_CASE("recommendationRows skips missing posters and respects limit", "[tmdbparse]") {
     const QByteArray json = QByteArrayLiteral(R"({
       "results": [

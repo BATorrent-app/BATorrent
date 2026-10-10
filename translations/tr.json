@@ -1306,5 +1306,11 @@
   "set_update_track": "Güncelleme kanalı",
   "set_track_stable": "Kararlı",
   "set_track_beta": "Beta",
-  "set_update_track_note": "Beta, yeni sürümleri herkese sunulmadan önce verir. Test edilirler, ama daha az."
+  "set_update_track_note": "Beta, yeni sürümleri herkese sunulmadan önce verir. Test edilirler, ama daha az.",
+  "hub_season_n": "%1. Sezon",
+  "hub_n_season": "%1 sezon",
+  "hub_n_seasons": "%1 sezon",
+  "hub_ep_n": "%1. Bölüm",
+  "hub_ep_minutes": "%1 dk",
+  "hub_ep_missing": "İndirilmedi"
 }

@@ -206,6 +206,69 @@ Item {
             compare(g[0].title, "The Mandalorian", "and the readable title comes with it")
         }
 
+        // --- the season screen: TMDB's list crossed with what is on disk ---
+        function test_everyListedEpisodeSaysWhetherWeHaveIt() {
+            var c = mk()
+            var rows = c.mergeSeasonEpisodes(
+                [ { episode: 1, name: "Chapter 1", overview: "o1", still: "s1.jpg", runtime: 39 },
+                  { episode: 2, name: "Chapter 2" },
+                  { episode: 3, name: "Chapter 3" } ],
+                [ { season: 1, episode: 1, hash: "h1", idx: 4, name: "f" },
+                  { season: 1, episode: 3, hash: "h2", idx: 0, name: "f" } ],
+                1)
+            compare(rows.length, 3)
+            compare(rows[0].have, true);  compare(rows[0].hash, "h1"); compare(rows[0].idx, 4)
+            compare(rows[1].have, false, "the gap in the middle is shown, not hidden")
+            compare(rows[1].hash, "")
+            compare(rows[2].have, true);  compare(rows[2].hash, "h2")
+            compare(rows[0].overview, "o1")
+            compare(rows[0].still, "s1.jpg")
+        }
+
+        function test_otherSeasonsDoNotLeakIn() {
+            var c = mk()
+            var rows = c.mergeSeasonEpisodes(
+                [ { episode: 1, name: "S2E1" } ],
+                [ { season: 1, episode: 1, hash: "wrong", idx: 0 },
+                  { season: 2, episode: 1, hash: "right", idx: 0 } ],
+                2)
+            compare(rows[0].hash, "right")
+        }
+
+        function test_aFileTmdbDoesNotListIsStillShown() {
+            // A special, or a release that numbers episodes its own way. The
+            // file is there; leaving it out makes a download invisible.
+            var c = mk()
+            var rows = c.mergeSeasonEpisodes(
+                [ { episode: 1, name: "Chapter 1" } ],
+                [ { season: 1, episode: 1, hash: "h1", idx: 0 },
+                  { season: 1, episode: 9, hash: "h9", idx: 2, name: "bonus.mkv" } ],
+                1)
+            compare(rows.length, 2)
+            compare(rows[1].episode, 9)
+            compare(rows[1].have, true)
+            compare(rows[1].title, "bonus.mkv", "with the filename, since TMDB has no title for it")
+        }
+
+        function test_aSeasonWeHaveNothingOfStillLists() {
+            var c = mk()
+            var rows = c.mergeSeasonEpisodes([ { episode: 1, name: "A" } ], [], 1)
+            compare(rows.length, 1)
+            compare(rows[0].have, false)
+        }
+
+        function test_withoutTmdbTheFilesCarryTheScreen() {
+            // No network, or a show TMDB never answered for: the screen must
+            // still list what can actually be played.
+            var c = mk()
+            var rows = c.mergeSeasonEpisodes(null,
+                [ { season: 1, episode: 2, hash: "h", idx: 1, name: "e2.mkv" },
+                  { season: 1, episode: 1, hash: "h", idx: 0, name: "e1.mkv" } ], 1)
+            compare(rows.length, 2)
+            compare(rows[0].episode, 1, "still in episode order")
+            compare(rows[1].episode, 2)
+        }
+
         function test_nothingInNothingOut() {
             var c = mk()
             compare(c.seriesGroups([]).length, 0)

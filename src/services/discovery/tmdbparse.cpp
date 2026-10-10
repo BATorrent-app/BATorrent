@@ -125,7 +125,7 @@ QString youtubeTrailerKey(const QByteArray &videosJson)
     return teaser;
 }
 
-QVariantList episodeRows(const QByteArray &seasonJson)
+QVariantList episodeRows(const QByteArray &seasonJson, const QString &stillBase)
 {
     QVariantList eps;
     if (seasonJson.isEmpty())
@@ -142,6 +142,11 @@ QVariantList episodeRows(const QByteArray &seasonJson)
         m.insert(QStringLiteral("episode"), o.value(QLatin1String("episode_number")).toInt());
         m.insert(QStringLiteral("name"), o.value(QLatin1String("name")).toString());
         m.insert(QStringLiteral("air_date"), o.value(QLatin1String("air_date")).toString());
+        m.insert(QStringLiteral("overview"), o.value(QLatin1String("overview")).toString());
+        m.insert(QStringLiteral("runtime"), o.value(QLatin1String("runtime")).toInt());
+        m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
+        const QString still = o.value(QLatin1String("still_path")).toString();
+        m.insert(QStringLiteral("still"), still.isEmpty() ? QString() : stillBase + still);
         eps << m;
     }
     return eps;

@@ -736,6 +736,8 @@ void MetadataResolver::loadFromDisk(const QString &infoHash)
     result.rating = obj.value(QLatin1String("rating")).toDouble();
     result.year = obj.value(QLatin1String("year")).toInt();
     result.tmdbId = obj.value(QLatin1String("tmdbId")).toInt();
+    result.collectionId = obj.value(QLatin1String("collectionId")).toInt();
+    result.collectionName = obj.value(QLatin1String("collectionName")).toString();
     result.contentType = MetadataMatch::contentTypeFromString(
         obj.value(QLatin1String("contentType")).toString());
 
@@ -764,6 +766,8 @@ void MetadataResolver::saveToDisk(const QString &infoHash, const MetadataResult 
     obj.insert(QLatin1String("rating"), result.rating);
     obj.insert(QLatin1String("year"), result.year);
     obj.insert(QLatin1String("tmdbId"), result.tmdbId);
+    obj.insert(QLatin1String("collectionId"), result.collectionId);
+    obj.insert(QLatin1String("collectionName"), result.collectionName);
     obj.insert(QLatin1String("genres"), QJsonArray::fromStringList(result.genres));
     obj.insert(QLatin1String("platforms"), QJsonArray::fromStringList(result.platforms));
     obj.insert(QLatin1String("posterFile"), result.posterPath);

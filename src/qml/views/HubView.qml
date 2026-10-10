@@ -43,6 +43,12 @@ Item {
     readonly property bool empty: logic.empty
     readonly property var recentlyAdded: logic.recentlyAdded
     readonly property var seriesShelf: logic.seriesGroups(library)
+    property var seriesItem: null
+    property bool seriesOpen: false
+    function openSeries(group) { seriesItem = group; seriesOpen = true }
+    function mergeSeasonEpisodes(eps, videos, season) {
+        return logic.mergeSeasonEpisodes(eps, videos, season)
+    }
     // Everything the series shelf did not take. A show that resolved is one
     // card up there, so repeating its three season packs down here would be
     // the duplication the grouping exists to remove.
@@ -212,5 +218,6 @@ Item {
         }
     }
 
+    HubSeriesPage { anchors.fill: parent; hub: page }
     HubDetailDrawer { anchors.fill: parent; hub: page }
 }

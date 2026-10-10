@@ -56,6 +56,9 @@ QString igdbClientSecret()
 const QString TmdbBaseUrl    = QStringLiteral("https://api.themoviedb.org/3");
 const QString TmdbPosterBase = QStringLiteral("https://image.tmdb.org/t/p/w342");
 const QString TmdbBackdrop   = QStringLiteral("https://image.tmdb.org/t/p/w1280");
+// Episode thumbnails sit at list size, not hero size: w300 is the smallest
+// TMDB still that does not look soft at the width a row gives them.
+const QString TmdbStillBase  = QStringLiteral("https://image.tmdb.org/t/p/w300");
 
 QString tmdbLang() { return ContentLanguage::tmdb(); }
 
@@ -363,7 +366,7 @@ void DiscoveryService::fetchEpisodes(int tmdbId, int season)
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId, season]() {
         reply->deleteLater();
         const QVariantList eps = (reply->error() == QNetworkReply::NoError)
-            ? TmdbParse::episodeRows(reply->readAll())
+            ? TmdbParse::episodeRows(reply->readAll(), TmdbStillBase)
             : QVariantList{};
         emit episodesReady(tmdbId, season, eps);
     });
