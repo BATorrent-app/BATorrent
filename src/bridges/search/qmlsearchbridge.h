@@ -35,6 +35,7 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QString workBackdrop READ workBackdrop NOTIFY workChanged)
     Q_PROPERTY(QString workOverview READ workOverview NOTIFY workChanged)
     Q_PROPERTY(double workRating READ workRating NOTIFY workChanged)
+    Q_PROPERTY(int workTmdbId READ workTmdbId NOTIFY workChanged)
     // "movie"|"series"|"game" while a Get & Watch / Install flow is active (else "").
     Q_PROPERTY(QString getFlowType READ getFlowType NOTIFY getFlowChanged)
 public:
@@ -58,6 +59,7 @@ public:
     QString workBackdrop() const { return m_workBackdrop; }
     QString workOverview() const { return m_workOverview; }
     double workRating() const { return m_workRating; }
+    int workTmdbId() const { return m_workTmdbId; }
     QString getFlowType() const { return m_gwActive ? m_gwType : QString(); }
     Q_INVOKABLE void fetchWorkStills();   // lazy TMDB backdrops for the picked title
 

@@ -74,18 +74,20 @@ Item {
             videos = item.videos || []
             tmdbId = item.tmdbId || 0
             titles = ({})
-            if (tmdbId > 0 && page.api) {
+            if (tmdbId > 0 && page.disco) {
                 var seen = ({})
                 for (var i = 0; i < videos.length; i++) {
                     var sn = videos[i].season
-                    if (sn >= 0 && !seen[sn]) { seen[sn] = true; page.api.fetchEpisodes(tmdbId, sn) }
+                    if (sn >= 0 && !seen[sn]) { seen[sn] = true; page.disco.fetchEpisodes(tmdbId, sn) }
                 }
             }
             popup()
         }
         implicitWidth: 380
         Connections {
-            target: page.api
+            // episodesReady comes from the discovery service, not the session:
+            // this listened to the wrong object, so the TMDB titles never arrived.
+            target: page.disco
             ignoreUnknownSignals: true
             function onEpisodesReady(tmdbId, season, episodes) {
                 if (tmdbId !== episodeMenu.tmdbId) return

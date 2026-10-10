@@ -34,15 +34,18 @@ Item {
     onSeasonChanged: requestSeason()
     function requestSeason() {
         episodes = rebuild([])
-        if (show && show.tmdbId > 0 && hub.api && season >= 0)
-            hub.api.fetchEpisodes(show.tmdbId, season)
+        // discovery, not session: fetchEpisodes and episodesReady both live on
+        // the discovery service, and asking the session for them is why the
+        // episode titles never showed up anywhere.
+        if (show && show.tmdbId > 0 && hub.disco && season >= 0)
+            hub.disco.fetchEpisodes(show.tmdbId, season)
     }
     function rebuild(tmdbRows) {
         if (!show) return []
         return hub.mergeSeasonEpisodes(tmdbRows, show.videos, season)
     }
     Connections {
-        target: hub.api
+        target: hub.disco
         ignoreUnknownSignals: true
         function onEpisodesReady(tmdbId, s, eps) {
             if (!root.show || tmdbId !== root.show.tmdbId || s !== root.season) return
@@ -88,11 +91,11 @@ Item {
             anchors.fill: parent
             spacing: 0
 
-            HubSeasonPicker {
+            SeasonPicker {
                 Layout.fillWidth: true
-                hub: root.hub
-                show: root.show
+                seasons: root.show && root.show.seasons ? root.show.seasons : []
                 season: root.season
+                counts: root.seasonCounts
                 onSeasonPicked: function (s) { root.season = s }
             }
 
@@ -105,7 +108,7 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 spacing: 0
                 WheelScroller { flick: epList }
-                delegate: HubEpisodeRow {
+                delegate: EpisodeRow {
                     required property var modelData
                     width: epList.width
                     ep: modelData
@@ -119,6 +122,19 @@ Item {
                 }
             }
         }
+    }
+
+    // How much of each season is on disk, for the picker.
+    readonly property var seasonCounts: {
+        var out = ({})
+        if (!show || !show.seasons) return out
+        var vids = show.videos || []
+        for (var i = 0; i < show.seasons.length; i++) {
+            var sn = show.seasons[i], total = 0
+            for (var v = 0; v < vids.length; v++) if (vids[v].season === sn) ++total
+            out[sn] = { have: hub.seasonHave(vids, sn), total: total }
+        }
+        return out
     }
 
     readonly property int nextEpisode: {

@@ -11,16 +11,16 @@
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
-import "../widgets"
 
 Item {
     id: picker
-    property var hub
-    property var show
+    property var seasons: []
     property int season: -1
+    // season -> { have, total }. What "have" means is the caller's business:
+    // on disk in the library, offered by an indexer in a search.
+    property var counts: ({})
     signal seasonPicked(int season)
 
-    readonly property var seasons: show && show.seasons ? show.seasons : []
     readonly property int pos: seasons.indexOf(season)
     implicitHeight: 54
 
@@ -30,15 +30,9 @@ Item {
         return s === 0 ? (i18n.language, i18n.t("hub_specials"))
                        : (i18n.language, i18n.t("hub_season_n")).arg(s)
     }
-    function haveIn(s) {
-        return picker.hub && picker.show
-            ? picker.hub.seasonHave(picker.show.videos, s) : 0
-    }
-    function countIn(s) {
-        var n = 0
-        var v = picker.show && picker.show.videos ? picker.show.videos : []
-        for (var i = 0; i < v.length; i++) if (v[i].season === s) n++
-        return n
+    function tally(s) {
+        var c = picker.counts[s]
+        return c ? (c.have + "/" + c.total) : ""
     }
 
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
@@ -128,8 +122,7 @@ Item {
             model: picker.seasons
             BatMenuItem {
                 required property var modelData
-                text: picker.label(modelData) + "   "
-                      + picker.haveIn(modelData) + "/" + picker.countIn(modelData)
+                text: picker.label(modelData) + "   " + picker.tally(modelData)
                 onTriggered: picker.seasonPicked(modelData)
             }
         }

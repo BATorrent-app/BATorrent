@@ -13,7 +13,6 @@
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
-import "../widgets"
 
 Rectangle {
     id: row

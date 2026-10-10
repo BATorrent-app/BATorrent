@@ -216,6 +216,7 @@
 <file>../src/qml/views/SearchFormat.qml</file>
 <file>../src/qml/views/SearchCompute.qml</file>
 <file>../src/qml/views/SearchRecents.qml</file>
+<file>../src/qml/views/SearchSeriesPane.qml</file>
 <file>../src/qml/views/SearchWorkHeader.qml</file>
 <file>../src/qml/views/SearchFiltersRow.qml</file>
 <file>../src/qml/views/SearchModeBars.qml</file>
@@ -240,8 +241,6 @@
 <file>../src/qml/views/HubCompute.qml</file>
 <file>../src/qml/views/HubContinueRails.qml</file>
 <file>../src/qml/views/HubSeriesPage.qml</file>
-<file>../src/qml/views/HubSeasonPicker.qml</file>
-<file>../src/qml/views/HubEpisodeRow.qml</file>
 <file>../src/qml/views/HubShelves.qml</file>
 <file>../src/qml/views/HubDetailDrawer.qml</file>
 <file>../src/qml/views/HubCard.qml</file>
@@ -251,6 +250,8 @@
 <file>../src/qml/theme/qmldir</file>
 <file>../src/qml/widgets/WorkHero.qml</file>
 <file>../src/qml/widgets/SeriesLogic.qml</file>
+<file>../src/qml/widgets/EpisodeRow.qml</file>
+<file>../src/qml/widgets/SeasonPicker.qml</file>
 <file>../src/qml/widgets/qmldir</file>
 <file>../src/qml/widgets/IconImg.qml</file>
 <file>../src/qml/widgets/CatItem.qml</file>

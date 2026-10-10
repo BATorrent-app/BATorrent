@@ -48,6 +48,9 @@ Rectangle {
 
     property int seasonFilter: -2
     property int episodeFilter: -1
+    // episodesReady/fetchEpisodes live on the discovery service, not on the
+    // search bridge.
+    readonly property var disco: typeof discovery !== "undefined" ? discovery : null
     readonly property bool isSeriesDrill: api && api.singleTitleView && !isEpisodes
                                           && api.workType === "series"
     readonly property bool showAudioModes: typeof i18n !== "undefined" && i18n.language !== 0
@@ -282,14 +285,21 @@ Rectangle {
             onBackRequested: page.closeCatalogBrowse()
         }
 
-        SearchWorkHeader { sv: page }
-        SearchFiltersRow { id: filtersRow; sv: page }
-        SearchModeBars { sv: page }
+        SearchSeriesPane {
+            sv: page
+            visible: page.isSeriesDrill
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+        }
+
+        SearchWorkHeader { sv: page; visible: !page.isSeriesDrill }
+        SearchFiltersRow { id: filtersRow; sv: page; visible: !page.isSeriesDrill }
+        SearchModeBars { sv: page; visible: !page.isSeriesDrill }
         // Hidden during the titles stage instead of merely emptied: both panes
         // ask for fillHeight, so an empty results list still claimed a share of
         // the page and pushed the loading spinner: which lives in its empty
         // state: away from the centre.
-        SearchListPane { sv: page; visible: !page.isTitles; Layout.fillWidth: true; Layout.fillHeight: true }
+        SearchListPane { sv: page; visible: !page.isTitles && !page.isSeriesDrill; Layout.fillWidth: true; Layout.fillHeight: true }
         SearchTitlesPane { sv: page; Layout.fillWidth: true; Layout.fillHeight: true }
         SearchResultsFooter { sv: page }
     }
