@@ -72,7 +72,8 @@ QtObject {
                 g.videos.push({ hash: it.infoHash, idx: src.idx, name: src.name,
                                 season: src.season, episode: src.episode,
                                 watched: src.watched === true,
-                                progress: it.progress || 0 })
+                                // the file's own progress, not the torrent's
+                                progress: src.progress || 0 })
             }
         }
 
@@ -89,6 +90,17 @@ QtObject {
             out.push(grp)
         }
         return out
+    }
+
+    // How much of each season is on disk, for the season picker. Stremio marks
+    // a season with a dot you have to guess at; a count says which season is
+    // worth opening before you open it.
+    function seasonHave(groupVideos, season) {
+        var n = 0
+        var v = groupVideos || []
+        for (var i = 0; i < v.length; i++)
+            if (v[i].season === season && v[i].episode >= 0 && (v[i].progress || 0) >= 1) n++
+        return n
     }
 
     // The season as TMDB knows it, crossed with what is actually on disk.
@@ -121,7 +133,8 @@ QtObject {
                         airDate: t.air_date || "",
                         have: v !== undefined,
                         hash: v ? v.hash : "", idx: v ? v.idx : -1,
-                        watched: v ? v.watched === true : false })
+                        watched: v ? v.watched === true : false,
+                        progress: v ? (v.progress || 0) : 0 })
         }
         for (var k in have) {
             if (listed[k]) continue
@@ -129,7 +142,7 @@ QtObject {
             rows.push({ season: season, episode: o.episode,
                         title: o.name || "", overview: "", still: "", runtime: 0,
                         airDate: "", have: true, hash: o.hash, idx: o.idx,
-                        watched: o.watched === true })
+                        watched: o.watched === true, progress: o.progress || 0 })
         }
         rows.sort(function (a, b) { return a.episode - b.episode })
         return rows

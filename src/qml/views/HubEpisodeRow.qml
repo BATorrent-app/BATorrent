@@ -2,10 +2,14 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// One episode on the series screen: thumbnail, number and title, synopsis, and
-// whether it is actually downloaded. An episode we do not hold is drawn dim
-// and does not offer Play — it is listed so a gap in the middle of a season is
-// visible, not so it can be clicked into a dead end.
+// One episode on the series screen.
+//
+// The second line is the point. Stremio can only show an air date there, since
+// it has no library and every episode is equally hypothetical until you click.
+// We know which ones are on this disk, so the row says whether it plays right
+// now, is still coming down, or is not here at all — and the synopsis takes
+// that line on hover, so the information is reachable without turning the list
+// into a wall of text.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
@@ -14,22 +18,36 @@ import "../widgets"
 Rectangle {
     id: row
     property var ep
+    property bool isNext: false
     signal playRequested()
 
-    implicitHeight: 96
-    radius: 10
+    readonly property bool ready: ep.have && (ep.progress || 0) >= 1
+    readonly property bool coming: ep.have && (ep.progress || 0) < 1
+
+    implicitHeight: 92
     color: rowMa.containsMouse && row.ep.have ? Theme.hover : "transparent"
     Behavior on color { ColorAnimation { duration: Theme.durFast } }
-    opacity: row.ep.have ? 1 : 0.45
+    opacity: row.ep.have ? 1 : 0.42
+
+    // Where you left off. The show should say that without being asked.
+    Rectangle {
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: 2
+        visible: row.isNext
+        color: Theme.accent
+    }
 
     RowLayout {
         anchors.fill: parent
         anchors.margins: 10
-        spacing: 14
+        anchors.leftMargin: 14
+        spacing: 12
 
         Rectangle {
-            Layout.preferredWidth: 132
-            Layout.preferredHeight: 74
+            Layout.preferredWidth: 124
+            Layout.preferredHeight: 70
             radius: 7
             color: Theme.track
             clip: true
@@ -41,75 +59,86 @@ Rectangle {
                 asynchronous: true
                 cache: true
                 visible: status === Image.Ready
+                opacity: row.ep.watched ? 0.55 : 1
             }
             IconImg {
                 anchors.centerIn: parent
                 visible: still.status !== Image.Ready
                 src: "qrc:/icons/play.svg"
                 tint: Theme.t4
-                s: 18
+                s: 17
             }
             Rectangle {
                 anchors.centerIn: parent
                 visible: row.ep.have && rowMa.containsMouse
-                width: 34; height: 34; radius: 17
+                width: 32; height: 32; radius: 16
                 color: "#cc101014"
                 border.width: 1
                 border.color: Theme.accent
                 IconImg {
                     anchors.centerIn: parent
                     anchors.horizontalCenterOffset: 1
-                    src: "qrc:/icons/play.svg"; tint: "#ffffff"; s: 15
+                    src: "qrc:/icons/play.svg"; tint: "#ffffff"; s: 14
+                }
+            }
+            // A partial episode shows how partial, on the thumbnail itself.
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 3
+                visible: row.coming
+                color: Qt.rgba(1, 1, 1, 0.18)
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    width: parent.width * Math.max(0.02, row.ep.progress || 0)
+                    color: Theme.accent
                 }
             }
         }
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 3
+            spacing: 4
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 8
-                Text {
-                    text: (row.ep.watched ? "✓  " : "")
-                          + (i18n.language, i18n.t("hub_ep_n")).arg(row.ep.episode)
-                          + (row.ep.title.length > 0 ? ("  ·  " + row.ep.title) : "")
-                    Layout.fillWidth: true
-                    color: Theme.t1
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
-                    font.family: Theme.fontSans
-                    elide: Text.ElideRight
-                }
-                Text {
-                    visible: row.ep.runtime > 0
-                    text: (i18n.language, i18n.t("hub_ep_minutes")).arg(row.ep.runtime)
-                    color: Theme.t4
-                    font.pixelSize: 11
-                    font.family: Theme.fontSans
-                    font.features: Theme.tnum
-                }
-            }
             Text {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                visible: text.length > 0
-                text: row.ep.overview || ""
-                color: Theme.t3
+                text: (row.ep.watched ? "✓  " : "") + row.ep.episode + ". "
+                      + (row.ep.title.length > 0 ? row.ep.title
+                         : (i18n.language, i18n.t("hub_ep_n")).arg(row.ep.episode))
+                color: Theme.t1
+                font.pixelSize: 13
+                font.weight: row.isNext ? Font.DemiBold : Font.Medium
+                font.family: Theme.fontSans
+                elide: Text.ElideRight
+            }
+
+            // One line, two jobs: what you can do with this episode, and —
+            // while the cursor is on it — what it is about.
+            Text {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 32
+                text: {
+                    if (rowMa.containsMouse && (row.ep.overview || "").length > 0)
+                        return row.ep.overview
+                    var bits = []
+                    if (row.ready)       bits.push((i18n.language, i18n.t("hub_ep_ready")))
+                    else if (row.coming) bits.push((i18n.language, i18n.t("hub_ep_coming"))
+                                                   .arg(Math.floor((row.ep.progress || 0) * 100)))
+                    else                 bits.push((i18n.language, i18n.t("hub_ep_missing")))
+                    if (row.ep.runtime > 0)
+                        bits.push((i18n.language, i18n.t("hub_ep_minutes")).arg(row.ep.runtime))
+                    if (row.ep.airDate.length >= 4) bits.push(row.ep.airDate.substring(0, 4))
+                    return bits.join("  ·  ")
+                }
+                color: row.ready && !rowMa.containsMouse ? Theme.t2 : Theme.t3
                 font.pixelSize: 12
                 font.family: Theme.fontSans
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
                 maximumLineCount: 2
-            }
-            Text {
-                visible: !row.ep.have
-                text: (i18n.language, i18n.t("hub_ep_missing"))
-                color: Theme.t4
-                font.pixelSize: 11
-                font.family: Theme.fontSans
             }
         }
     }
@@ -120,8 +149,7 @@ Rectangle {
         id: rowMa
         anchors.fill: parent
         hoverEnabled: true
-        enabled: row.ep.have
-        cursorShape: Qt.PointingHandCursor
-        onClicked: row.playRequested()
+        cursorShape: row.ep.have ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onClicked: if (row.ep.have) row.playRequested()
     }
 }

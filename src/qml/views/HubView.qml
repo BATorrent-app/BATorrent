@@ -49,6 +49,7 @@ Item {
     function mergeSeasonEpisodes(eps, videos, season) {
         return logic.mergeSeasonEpisodes(eps, videos, season)
     }
+    function seasonHave(videos, season) { return logic.seasonHave(videos, season) }
     // Everything the series shelf did not take. A show that resolved is one
     // card up there, so repeating its three season packs down here would be
     // the duplication the grouping exists to remove.

@@ -2,14 +2,13 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Full-surface screen for one series: backdrop, synopsis, a season picker and
-// the episodes of the chosen season. Not the 420px detail drawer — a show is
-// the thing you browse, and browsing it inside a side panel is what made the
-// episode popup feel like a file list instead of a library.
+// Full-surface screen for one series. Two columns on purpose: the art holds
+// the left for the whole height while the episodes scroll on the right, so
+// browsing a show never scrolls its own identity off the screen.
 //
-// Episodes come from HubCompute.mergeSeasonEpisodes: TMDB's list of the season
-// crossed with what is on disk, so a missing middle episode is visible as
-// missing rather than silently absent.
+// Episodes come from HubCompute.mergeSeasonEpisodes — TMDB's list of the
+// season crossed with what is on disk — so a gap in the middle of a season is
+// visible as a gap, and every row says whether it can be played right now.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
@@ -27,7 +26,6 @@ Item {
     Behavior on slide { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
     opacity: slide
 
-    // Opening on whichever season the show starts with, and asking TMDB for it.
     onShowChanged: {
         if (!show) { episodes = []; return }
         season = (show.seasons && show.seasons.length > 0) ? show.seasons[0] : -1
@@ -55,43 +53,67 @@ Item {
     Rectangle { anchors.fill: parent; color: Theme.bg }
     MouseArea { anchors.fill: parent }   // the page owns its clicks
 
-    Flickable {
-        id: flick
-        anchors.fill: parent
-        contentWidth: width
-        contentHeight: col.implicitHeight
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-        WheelScroller { flick: flick }
+    HubSeriesHero {
+        id: hero
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: panel.left
+        hub: root.hub
+        show: root.show
+        onCloseRequested: root.hub.seriesOpen = false
+    }
+
+    Rectangle {
+        id: panel
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: Math.min(440, Math.max(320, root.width * 0.38))
+        color: Qt.rgba(0, 0, 0, 0.55)
+
+        Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.hair }
 
         ColumnLayout {
-            id: col
-            width: flick.width
+            anchors.fill: parent
             spacing: 0
 
-            HubSeriesHero {
+            HubSeasonPicker {
                 Layout.fillWidth: true
                 hub: root.hub
                 show: root.show
                 season: root.season
                 onSeasonPicked: function (s) { root.season = s }
-                onCloseRequested: root.hub.seriesOpen = false
             }
 
-            Repeater {
+            ListView {
+                id: epList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
                 model: root.episodes
+                boundsBehavior: Flickable.StopAtBounds
+                spacing: 0
+                WheelScroller { flick: epList }
                 delegate: HubEpisodeRow {
                     required property var modelData
-                    Layout.fillWidth: true
-                    Layout.leftMargin: Theme.sp5
-                    Layout.rightMargin: Theme.sp5
+                    width: epList.width
                     ep: modelData
+                    // The one to come back to: the first episode that is here
+                    // and has not been watched. A show should say where you
+                    // left off without being asked.
+                    isNext: modelData.have && !modelData.watched
+                            && modelData.episode === root.nextEpisode
                     onPlayRequested: if (root.hub.api && modelData.have)
                         root.hub.api.playFile(modelData.hash, modelData.idx)
                 }
             }
-
-            Item { Layout.fillWidth: true; Layout.preferredHeight: Theme.sp5 }
         }
+    }
+
+    readonly property int nextEpisode: {
+        for (var i = 0; i < episodes.length; i++)
+            if (episodes[i].have && !episodes[i].watched) return episodes[i].episode
+        return -1
     }
 }

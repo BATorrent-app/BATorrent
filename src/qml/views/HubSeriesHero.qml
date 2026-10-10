@@ -14,11 +14,7 @@ Item {
     id: hero
     property var hub
     property var show
-    property int season: -1
-    signal seasonPicked(int season)
     signal closeRequested()
-
-    implicitHeight: 300
 
     // The poster, blurred and dimmed, standing in for a backdrop we have not
     // fetched. Cheap, always available, and it carries the show's own colour.
@@ -32,28 +28,45 @@ Item {
         opacity: status === Image.Ready ? 0.22 : 0
         Behavior on opacity { NumberAnimation { duration: Theme.durSlower } }
     }
+    // Dark enough to read white text over any poster, and darkest at the
+    // bottom where the summary sits.
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.25) }
-            GradientStop { position: 1.0; color: Theme.bg }
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
+            GradientStop { position: 0.55; color: Qt.rgba(0, 0, 0, 0.6) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.88) }
+        }
+    }
+
+    Item {
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.margins: Theme.sp4
+        width: 34
+        height: 34
+        z: 2
+        IconImg {
+            anchors.centerIn: parent
+            src: "qrc:/icons/chevron-bold.svg"
+            rotation: 180
+            tint: backMa.containsMouse ? Theme.t1 : Theme.t2
+            s: 18
+        }
+        MouseArea {
+            id: backMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: hero.closeRequested()
         }
     }
 
     RowLayout {
         anchors.fill: parent
         anchors.margins: Theme.sp5
+        anchors.topMargin: 64
         spacing: Theme.sp5
-
-        Image {
-            Layout.preferredWidth: 150
-            Layout.preferredHeight: 225
-            Layout.alignment: Qt.AlignVCenter
-            source: hero.show && hero.show.poster ? hero.hub.fileUrl(hero.show.poster) : ""
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-            visible: status === Image.Ready
-        }
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -100,57 +113,7 @@ Item {
                 elide: Text.ElideRight
             }
 
-            Flow {
-                Layout.fillWidth: true
-                Layout.topMargin: Theme.sp2
-                spacing: 8
-                Repeater {
-                    model: hero.show ? hero.show.seasons : []
-                    delegate: Rectangle {
-                        required property var modelData
-                        readonly property bool on: modelData === hero.season
-                        height: 30
-                        width: snLabel.implicitWidth + 24
-                        radius: 8
-                        color: on ? Theme.accent : "transparent"
-                        border.width: 1
-                        border.color: on ? Theme.accent : Theme.hair
-                        Behavior on color { ColorAnimation { duration: Theme.durFast } }
-                        Text {
-                            id: snLabel
-                            anchors.centerIn: parent
-                            text: (i18n.language, i18n.t("hub_season_n")).arg(parent.modelData)
-                            color: parent.on ? Theme.accentText : Theme.t2
-                            font.pixelSize: 12
-                            font.family: Theme.fontSans
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: hero.seasonPicked(parent.modelData)
-                        }
-                    }
-                }
-            }
         }
 
-        Item {
-            Layout.alignment: Qt.AlignTop
-            Layout.preferredWidth: 32
-            Layout.preferredHeight: 32
-            IconImg {
-                anchors.centerIn: parent
-                src: "qrc:/icons/close-bold.svg"
-                tint: closeMa.containsMouse ? Theme.t1 : Theme.t3
-                s: 18
-            }
-            MouseArea {
-                id: closeMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: hero.closeRequested()
-            }
-        }
     }
 }

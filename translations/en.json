@@ -1312,5 +1312,8 @@
   "hub_n_seasons": "%1 seasons",
   "hub_ep_n": "Episode %1",
   "hub_ep_minutes": "%1 min",
-  "hub_ep_missing": "Not downloaded"
+  "hub_ep_missing": "Not downloaded",
+  "hub_specials": "Specials",
+  "hub_ep_ready": "Ready to play",
+  "hub_ep_coming": "%1% downloaded"
 }

@@ -31,7 +31,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         if (isGameTorrent(row)) continue;                // a game's bundled .mp4 isn't a movie
         auto files = m_session->filesAt(row);
         int bestIdx = -1; qint64 bestSize = 0;
-        struct Vid { int idx; QString name; int season; int episode; };
+        struct Vid { int idx; QString name; int season; int episode; float progress; };
         std::vector<Vid> vids;                           // all video files (for episode picking)
         for (int i = 0; i < int(files.size()); ++i) {
             const QString mp = stripBt(files[i].path);
@@ -40,7 +40,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
                     if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
                     const QString fname = QFileInfo(mp).fileName();
                     const ParsedName pn = NameParser::parse(fname);
-                    vids.push_back({ i, fname, pn.season, pn.episode });
+                    vids.push_back({ i, fname, pn.season, pn.episode, files[i].progress });
                     break;
                 }
         }
@@ -72,6 +72,10 @@ QVariantList QmlSessionBridge::movieLibrary() const
             vf["season"] = v.season;
             vf["episode"] = v.episode;
             vf["watched"] = s.value(vrk + QStringLiteral("_watched"), false).toBool();
+            // Its own file, not the torrent's: in a season pack episode 1 can
+            // be finished while episode 8 has not started, and a series screen
+            // that shows one number for both is lying about seven of them.
+            vf["progress"] = double(v.progress);
             videos << vf;
             if (v.season >= 0 && v.episode >= 0) isSeries = true;
         }
@@ -102,7 +106,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["year"]       = year > 0 ? QString::number(year) : QString();
         m["poster"]     = poster;
         m["fileIndex"]  = bestIdx;
-        m["videos"]     = videos;                         // [{idx,name,season,episode,watched}] sorted
+        m["videos"]     = videos;                         // [{idx,name,season,episode,watched,progress}] sorted
         m["isSeries"]   = isSeries;                       // has SxxExx markers → group by season
         m["tmdbId"]     = tmdbId;                          // for TMDB episode-title lookup
         m["genres"]     = genres;                          // taste signal for HUB recommendations

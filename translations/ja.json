@@ -1312,5 +1312,8 @@
   "hub_n_seasons": "%1シーズン",
   "hub_ep_n": "第%1話",
   "hub_ep_minutes": "%1分",
-  "hub_ep_missing": "未ダウンロード"
+  "hub_ep_missing": "未ダウンロード",
+  "hub_specials": "スペシャル",
+  "hub_ep_ready": "再生できます",
+  "hub_ep_coming": "%1% 取得済み"
 }

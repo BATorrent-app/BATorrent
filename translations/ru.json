@@ -1312,5 +1312,8 @@
   "hub_n_seasons": "%1 сезона",
   "hub_ep_n": "Серия %1",
   "hub_ep_minutes": "%1 мин",
-  "hub_ep_missing": "Не загружено"
+  "hub_ep_missing": "Не загружено",
+  "hub_specials": "Спецвыпуски",
+  "hub_ep_ready": "Можно смотреть",
+  "hub_ep_coming": "%1% загружено"
 }

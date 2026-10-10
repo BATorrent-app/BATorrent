@@ -1312,5 +1312,8 @@
   "hub_n_seasons": "%1 季",
   "hub_ep_n": "第 %1 集",
   "hub_ep_minutes": "%1 分钟",
-  "hub_ep_missing": "未下载"
+  "hub_ep_missing": "未下载",
+  "hub_specials": "特别篇",
+  "hub_ep_ready": "可以播放",
+  "hub_ep_coming": "已下载 %1%"
 }

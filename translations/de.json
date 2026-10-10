@@ -1312,5 +1312,8 @@
   "hub_n_seasons": "%1 Staffeln",
   "hub_ep_n": "Folge %1",
   "hub_ep_minutes": "%1 Min.",
-  "hub_ep_missing": "Nicht heruntergeladen"
+  "hub_ep_missing": "Nicht heruntergeladen",
+  "hub_specials": "Specials",
+  "hub_ep_ready": "Bereit",
+  "hub_ep_coming": "%1 % geladen"
 }

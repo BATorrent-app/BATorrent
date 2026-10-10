@@ -1312,5 +1312,8 @@
   "hub_n_seasons": "%1 sezon",
   "hub_ep_n": "%1. Bölüm",
   "hub_ep_minutes": "%1 dk",
-  "hub_ep_missing": "İndirilmedi"
+  "hub_ep_missing": "İndirilmedi",
+  "hub_specials": "Özel bölümler",
+  "hub_ep_ready": "İzlemeye hazır",
+  "hub_ep_coming": "%1% indirildi"
 }
