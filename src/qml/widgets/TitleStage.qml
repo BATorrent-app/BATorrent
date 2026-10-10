@@ -41,6 +41,9 @@ Item {
         width: stage.panelX + 30
         source: stage.artUrl
         fillMode: Image.PreserveAspectCrop
+        // Backdrops are composed with the subject right and room for a title
+        // left; centred, the subject landed under the episodes panel.
+        horizontalAlignment: Image.AlignRight
         verticalAlignment: Image.AlignTop
         asynchronous: true
         cache: true
