@@ -19,6 +19,10 @@ Item {
             if (watchOverlay) watchOverlay.hide()
             loaders.openPlayer(url, title, hash, fileIndex)
         }
+        function onMediaQuarantined(hash) {
+            if (watchOverlay && watchOverlay.hash === hash) watchOverlay.hide()
+            loaders.closePlayersFor(hash)
+        }
         function onWatchProgress(hash, percent) {
             if (watchOverlay && watchOverlay.phase === "buffering" && hash === watchOverlay.hash)
                 watchOverlay.percent = percent

@@ -247,6 +247,7 @@ Window {
     // to re-download into): libtorrent moves storage there, then a recheck picks
     // up whatever's present. Shared by the context menu and the recovery banner.
     function promptSetLocation() { setLocationDlg.open() }
+    function openSearch(query) { win.currentPage = 1; searchPage.runQuery(query) }
     property alias setLocationDlg: libraryShortcuts.setLocationDlg
     // Full-screen visual acknowledgement for a manual Refresh.
     function flashRefresh() { refreshFlash.flash() }
@@ -587,7 +588,7 @@ Window {
                 // ----- page 2: HUB -----
                 HubView {
                     id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
-                    onOpenSearch: function(q) { win.currentPage = 1; searchPage.runQuery(q) }
+                    onOpenSearch: function(q) { win.openSearch(q) }
                 }
                 // ----- page 3: Settings (fullscreen tab, was a top-level window) -----
                 SettingsView {

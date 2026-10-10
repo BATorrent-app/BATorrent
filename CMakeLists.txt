@@ -102,6 +102,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/torbox.cpp
     src/services/integrations/debridmanager.cpp
     src/services/security/suspiciousscan.cpp
+    src/services/security/mediasniff.cpp
+    src/services/security/mediaguard.cpp
     src/services/security/archivescan.cpp
     src/services/security/archiveextractor.cpp
     src/services/metadata/releasepick.cpp
@@ -171,6 +173,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/session/qmlsessionbridge_gameinstall.cpp
     src/bridges/session/qmlsessionbridge_library.cpp
     src/bridges/session/qmlsessionbridge_playback.cpp
+    src/bridges/session/qmlsessionbridge_guard.cpp
     src/bridges/session/qmlsessionbridge_subtitles.cpp
     src/bridges/session/qmlsessionbridge_watch.cpp
     src/bridges/session/qmlsessionbridge_selection.cpp

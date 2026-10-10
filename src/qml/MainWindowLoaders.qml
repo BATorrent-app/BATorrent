@@ -56,6 +56,11 @@ Item {
         w.openMedia(url, title, hash, fileIndex)
     }
 
+    function closePlayersFor(infoHash) {
+        for (var i = openPlayers.length - 1; i >= 0; --i)
+            if (openPlayers[i] && openPlayers[i].infoHash === infoHash) openPlayers[i].close()
+    }
+
     function forgetPlayer(w) {
         var out = []
         for (var i = 0; i < openPlayers.length; ++i)

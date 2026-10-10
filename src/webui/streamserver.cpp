@@ -4,6 +4,7 @@
 
 #include "webui/streamserver.h"
 #include "torrent/iengine.h"
+#include "services/security/mediaguard.h"
 
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -42,8 +43,8 @@ QByteArray contentType(const QString &path)
 class StreamConnection : public QObject
 {
 public:
-    StreamConnection(QTcpSocket *sock, IEngine *session)
-        : QObject(sock), m_sock(sock), m_session(session)
+    StreamConnection(QTcpSocket *sock, IEngine *session, MediaGuard *guard)
+        : QObject(sock), m_sock(sock), m_session(session), m_guard(guard)
     {
         connect(m_sock, &QTcpSocket::readyRead, this, &StreamConnection::onReadyRead);
         connect(m_sock, &QTcpSocket::disconnected, m_sock, &QObject::deleteLater);
@@ -83,6 +84,7 @@ private:
         m_size = (m_torIdx >= 0) ? m_session->streamFileSize(m_torIdx, m_fileIdx) : 0;
         const QString fp = (m_torIdx >= 0) ? m_session->streamFilePath(m_torIdx, m_fileIdx) : QString();
         if (m_torIdx < 0 || m_size <= 0 || fp.isEmpty()) { fail(404); return; }
+        if (m_guard && m_guard->isQuarantined(m_hash, m_fileIdx)) { fail(403); return; }
 
         // Range: bytes=start-end (end optional)
         qint64 start = 0, end = m_size - 1;
@@ -146,17 +148,23 @@ private:
         if (avail <= 0) {
             // not downloaded yet: prioritize and wait
             m_session->streamSetDeadlineWindow(m_torIdx, m_fileIdx, m_pos);
-            if (m_noProgress.elapsed() > kGiveUpMs) { m_sock->disconnectFromHost(); return; }
-            if (m_retry && !m_retry->isActive()) m_retry->start();
+            waitOrGiveUp();
             return;
+        }
+        if (!m_admitted && m_guard) {
+            const MediaGuard::Gate gate = m_guard->admit(m_hash, m_fileIdx);
+            if (gate == MediaGuard::Gate::Block) { m_sock->disconnectFromHost(); return; }
+            if (gate == MediaGuard::Gate::Wait) {
+                // a seek can start past the head the guard has to read first
+                m_session->streamSetDeadlineWindow(m_torIdx, m_fileIdx, 0);
+                waitOrGiveUp();
+                return;
+            }
+            m_admitted = true;
         }
         if (m_retry && m_retry->isActive()) m_retry->stop();
 
-        if (!ensureOpen()) {
-            if (m_noProgress.elapsed() > kGiveUpMs) { m_sock->disconnectFromHost(); return; }
-            if (m_retry && !m_retry->isActive()) m_retry->start();
-            return;
-        }
+        if (!ensureOpen()) { waitOrGiveUp(); return; }
 
         const qint64 want = qMin(avail, m_end - m_pos + 1);
         QByteArray buf = m_file.read(want);
@@ -171,6 +179,12 @@ private:
         if (m_pos > m_end) { finishOk(); return; }
         // keep going this tick while data is ready and the buffer has room
         if (m_sock->bytesToWrite() <= kWriteHigh) QTimer::singleShot(0, this, &StreamConnection::pump);
+    }
+
+    void waitOrGiveUp()
+    {
+        if (m_noProgress.elapsed() > kGiveUpMs) { m_sock->disconnectFromHost(); return; }
+        if (m_retry && !m_retry->isActive()) m_retry->start();
     }
 
     bool ensureOpen()
@@ -194,7 +208,7 @@ private:
 
     void fail(int code)
     {
-        const char *txt = code == 404 ? "Not Found" : code == 416 ? "Range Not Satisfiable"
+        const char *txt = code == 404 ? "Not Found" : code == 403 ? "Forbidden" : code == 416 ? "Range Not Satisfiable"
                         : code == 405 ? "Method Not Allowed" : "Bad Request";
         QByteArray r = "HTTP/1.1 " + QByteArray::number(code) + " " + txt + "\r\n"
                        "Content-Length: 0\r\nConnection: close\r\n\r\n";
@@ -205,6 +219,8 @@ private:
 
     QTcpSocket *m_sock;
     IEngine *m_session;
+    MediaGuard *m_guard;
+    bool m_admitted = false;
     QByteArray m_req;
     bool m_started = false;
     QString m_hash;
@@ -217,8 +233,8 @@ private:
 
 } // namespace
 
-StreamServer::StreamServer(IEngine *session, QObject *parent)
-    : QObject(parent), m_session(session) {}
+StreamServer::StreamServer(IEngine *session, MediaGuard *guard, QObject *parent)
+    : QObject(parent), m_session(session), m_guard(guard) {}
 
 StreamServer::~StreamServer() { stop(); }
 
@@ -247,6 +263,6 @@ void StreamServer::onNewConnection()
 {
     while (m_server && m_server->hasPendingConnections()) {
         QTcpSocket *sock = m_server->nextPendingConnection();
-        new StreamConnection(sock, m_session);   // self-owned (parented to sock), self-deletes
+        new StreamConnection(sock, m_session, m_guard);   // self-owned (parented to sock), self-deletes
     }
 }

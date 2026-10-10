@@ -120,6 +120,23 @@ Item {
             } else session.removeSelected()
         }
     }
+    MediaGuardDialog {
+        id: mediaGuardDlg
+        onSearchRequested: function (query) { root.host.openSearch(query) }
+        onTrashRequested: function (infoHash) {
+            if (typeof session !== "undefined") session.removeTorrentByHash(infoHash, true, false)
+        }
+        Connections {
+            target: typeof session !== "undefined" ? session : null
+            ignoreUnknownSignals: true
+            function onMediaQuarantined(infoHash, fileName, kindKey, searchQuery) {
+                mediaGuardDlg.show("quarantine", infoHash, fileName, kindKey, searchQuery)
+            }
+            function onMediaLure(infoHash, fileName, searchQuery) {
+                mediaGuardDlg.show("lure", infoHash, fileName, "", searchQuery)
+            }
+        }
+    }
     RefreshFlash { id: refreshFlash }
 
     MakeRoomPanel {

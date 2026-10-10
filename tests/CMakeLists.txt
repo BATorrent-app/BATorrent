@@ -61,6 +61,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitleparser.cpp
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitlesearch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/mediasniff.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/mediaguard.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archiveextractor.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasepick.cpp
@@ -106,6 +108,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_gameinstall.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_library.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_playback.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_guard.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_subtitles.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_watch.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_selection.cpp
@@ -284,11 +287,19 @@ if(BAT_FUZZ)
         ${CMAKE_CURRENT_SOURCE_DIR}/fuzz_nameparser.cpp
         ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
         ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
+        ${CMAKE_SOURCE_DIR}/src/services/security/mediasniff.cpp
         ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp)
     target_compile_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined -g)
     target_link_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined)
     target_link_libraries(fuzz_nameparser PRIVATE Qt6::Core)
     target_include_directories(fuzz_nameparser PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    add_executable(fuzz_mediasniff
+        ${CMAKE_CURRENT_SOURCE_DIR}/fuzz_mediasniff.cpp
+        ${CMAKE_SOURCE_DIR}/src/services/security/mediasniff.cpp)
+    target_compile_options(fuzz_mediasniff PRIVATE -fsanitize=fuzzer,address,undefined -g)
+    target_link_options(fuzz_mediasniff PRIVATE -fsanitize=fuzzer,address,undefined)
+    target_link_libraries(fuzz_mediasniff PRIVATE Qt6::Core)
+    target_include_directories(fuzz_mediasniff PRIVATE ${CMAKE_SOURCE_DIR}/src)
     message(STATUS "[BAT] Fuzz harnesses ENABLED")
 endif()
 
@@ -322,6 +333,7 @@ bat_add_test(test_contentlanguage test_contentlanguage.cpp)
 bat_add_test(test_releasetrust test_releasetrust.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_contentprobe test_contentprobe.cpp)
+bat_add_test(test_mediasniff test_mediasniff.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_magnettrackers test_magnettrackers.cpp)
 bat_add_test(test_mkvchapters test_mkvchapters.cpp)

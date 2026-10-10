@@ -19,6 +19,7 @@
 #include "services/platform/translator.h"
 #include "services/platform/utils.h"
 #include "services/security/blocklistupdater.h"
+#include "services/security/mediaguard.h"
 #include "services/vpn/vpnmanager.h"
 #include "services/vpn/wgtunnelfactory.h"
 #include "ipc/ipcengine.h"
@@ -65,7 +66,9 @@ AppServices AppServices::create(QApplication &app)
     svc.sessionBridge->setHttpDownloads(svc.httpDownloads);
     svc.httpDownloads->setDefaultDir(svc.sessionBridge->defaultSavePath());
 
-    auto *streamServer = new StreamServer(svc.eng, &app);
+    auto *mediaGuard = new MediaGuard(svc.eng, &app);
+    svc.sessionBridge->setMediaGuard(mediaGuard);
+    auto *streamServer = new StreamServer(svc.eng, mediaGuard, &app);
     if (streamServer->start()) {
         svc.sessionBridge->setStreamPort(streamServer->port());
         qInfo() << "[stream] listening on 127.0.0.1:" << streamServer->port();
