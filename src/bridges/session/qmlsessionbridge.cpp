@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "bridges/session/qmlsessionbridge.h"
+#include "services/games/achievementservice.h"
 #include "services/games/playlog.h"
 #include "torrent/iengine.h"
 #include "services/downloads/httpdownloadmanager.h"
@@ -122,6 +123,14 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
         QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
             .filePath(QStringLiteral("playlog.json")));
     importLegacyPlaytime();
+
+    m_achievements = std::make_unique<AchievementService>(
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+            .filePath(QStringLiteral("achievements")));
+    connect(m_achievements.get(), &AchievementService::ready, this,
+            [this](const QString &key, int, const QVariantList &list, int unlocked, int total) {
+        emit achievementsReady(key, list, unlocked, total);
+    });
 }
 
 QmlSessionBridge::~QmlSessionBridge() = default;

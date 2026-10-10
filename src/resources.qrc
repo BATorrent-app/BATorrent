@@ -254,6 +254,7 @@
 <file>../src/qml/views/HubLibraryBar.qml</file>
 <file>../src/qml/views/HubGameHero.qml</file>
 <file>../src/qml/views/HubGameActions.qml</file>
+<file>../src/qml/views/HubGameAchievements.qml</file>
 <file>../src/qml/views/HubGameActivity.qml</file>
 <file>../src/qml/views/HubGameStills.qml</file>
 <file>../src/qml/views/HubGameFiles.qml</file>

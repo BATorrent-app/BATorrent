@@ -21,6 +21,13 @@ Item {
     }
     property var details: ({})
     property bool detailsReady: false
+    property var achievements: []
+    property int achUnlocked: 0
+    property int achTotal: 0
+    function askAchievements() {
+        if (root.game && root.hub.api)
+            root.hub.api.requestAchievements(root.game.infoHash, root.details.steamAppId || 0)
+    }
     property string stillOpen: ""
     // Held past the close so the image fades with the scrim instead of vanishing first.
     property string stillShown: ""
@@ -35,6 +42,9 @@ Item {
     onGameTitleChanged: {
         details = ({})
         detailsReady = false
+        achievements = []
+        achUnlocked = 0
+        achTotal = 0
         stillOpen = ""
         flick.contentY = 0
         if (gameTitle.length > 0 && hub.disco) hub.disco.fetchGameDetails(gameTitle)
@@ -46,8 +56,23 @@ Item {
             if (name !== root.gameTitle.trim()) return
             root.details = d
             root.detailsReady = true
+            root.askAchievements()
         }
     }
+
+    Connections {
+        target: root.hub.api
+        ignoreUnknownSignals: true
+        function onAchievementsReady(hash, list, unlocked, total) {
+            if (!root.game || hash !== root.game.infoHash) return
+            root.achievements = list
+            root.achUnlocked = unlocked
+            root.achTotal = total
+        }
+    }
+    // A session that just ended may have unlocked something.
+    readonly property bool playing: !!game && game.playing === true
+    onPlayingChanged: if (!playing && detailsReady) askAchievements()
 
     Rectangle { anchors.fill: parent; color: Theme.bg }
     MouseArea { anchors.fill: parent }   // the page owns its clicks
@@ -91,6 +116,8 @@ Item {
                 width: col.width
                 hub: root.hub
                 game: root.game
+                achUnlocked: root.achUnlocked
+                achTotal: root.achTotal
                 onSettingsRequested: if (root.game) root.hub.gameMenu.openFor(root.game.infoHash)
             }
 
@@ -110,6 +137,14 @@ Item {
                     y: 32
                     width: body.mainW
                     spacing: 40
+
+                    HubGameAchievements {
+                        width: mainCol.width
+                        hub: root.hub
+                        list: root.achievements
+                        unlocked: root.achUnlocked
+                        total: root.achTotal
+                    }
 
                     HubGameActivity {
                         width: mainCol.width

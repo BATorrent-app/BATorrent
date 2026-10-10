@@ -1368,5 +1368,16 @@
   "hub_tile_played": "Зіграно: %1",
   "hub_tile_not_installed": "Не встановлено",
   "hub_tile_in_library": "У бібліотеці",
-  "hub_tile_watched": "Переглянуто"
+  "hub_tile_watched": "Переглянуто",
+  "game_achievements": "Досягнення",
+  "game_ach_of": "Відкрито %1 з %2",
+  "game_ach_unlocked_n": "Відкрито: %1",
+  "game_ach_all": "Усі досягнення (%1)",
+  "game_ach_less": "Згорнути",
+  "game_ach_hidden": "Приховане досягнення",
+  "game_ach_hidden_desc": "Грайте далі, щоб дізнатися",
+  "game_ach_locked": "Не відкрито",
+  "game_ach_unlocked": "Відкрито",
+  "game_ach_players": "%1% гравців",
+  "hub_ach_short": "Досягнення: %1 з %2"
 }

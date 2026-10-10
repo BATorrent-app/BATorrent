@@ -12,6 +12,7 @@
 
 class HttpDownloadManager;
 class PlayLog;
+class AchievementService;
 
 class QmlSessionBridge : public QObject
 {
@@ -268,6 +269,8 @@ public:
     Q_INVOKABLE QVariantList gameLibrary() const;
     Q_INVOKABLE QString gameExe(const QString &infoHash) const;        // saved exe path, "" if unset
     Q_INVOKABLE QVariantList gameActivity(const QString &infoHash, int days = 14) const;   // secs per day, today last
+    // Answers on achievementsReady; the hint is IGDB's appid, used only when the game's files name none.
+    Q_INVOKABLE void requestAchievements(const QString &infoHash, int steamAppIdHint);
     Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
@@ -405,6 +408,7 @@ signals:
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
     void watchHealth(const QString &infoHash, int downBps, int peers, int waitedSec);   // each tick while pending
     void gamesChanged();   // a game started/stopped → refresh the game library
+    void achievementsReady(const QString &infoHash, const QVariantList &achievements, int unlocked, int total);
     void movieReady(const QString &infoHash, const QString &name);   // a movie/series finished → offer Play now
     void gameReady(const QString &infoHash, const QString &name);    // game download done → offer Install
     void installProgress(const QString &infoHash, double percent);  // Get&Install download/install progress
@@ -459,6 +463,7 @@ private:
     void pollRunningGames();   // detect game exit → record playtime
     void importLegacyPlaytime();
     std::unique_ptr<PlayLog> m_playLog;
+    std::unique_ptr<AchievementService> m_achievements;
     MetadataResolver *m_resolver;
     quint16 m_streamPort = 0;
     int m_selectedIndex = -1;

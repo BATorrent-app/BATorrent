@@ -38,4 +38,8 @@ QString region();
 QString subtitleCode(Translator::Language lang);
 QString subtitleCode();
 
+// Steam Web API `l=` value ("brazilian"): the language achievement text comes in.
+QString steam(Translator::Language lang);
+QString steam();
+
 }

@@ -18,6 +18,8 @@ Item {
     readonly property string watchType: watch && watch.isSeries ? "series" : "movie"
     property string watchArt
     property var playDetails: ({})
+    property int playAchUnlocked: 0
+    property int playAchTotal: 0
     onWatchChanged: {
         watchArt = ""
         if (watch && (watch.tmdbId || 0) > 0 && hub.disco) hub.disco.fetchLogo(watch.tmdbId, watchType)
@@ -25,6 +27,8 @@ Item {
     readonly property string playTitle: play ? (play.title || "").trim() : ""
     onPlayTitleChanged: {
         playDetails = ({})
+        playAchUnlocked = 0
+        playAchTotal = 0
         if (playTitle && hub.disco) hub.disco.fetchGameDetails(playTitle)
     }
     Connections {
@@ -33,7 +37,20 @@ Item {
         function onTitleBackdropReady(id, type, url) {
             if (root.watch && id === root.watch.tmdbId && type === root.watchType) root.watchArt = url
         }
-        function onGameDetailsReady(name, d) { if (name === root.playTitle) root.playDetails = d }
+        function onGameDetailsReady(name, d) {
+            if (name !== root.playTitle) return
+            root.playDetails = d
+            if (root.hub.api) root.hub.api.requestAchievements(root.play.infoHash, d.steamAppId || 0)
+        }
+    }
+    Connections {
+        target: root.hub.api
+        ignoreUnknownSignals: true
+        function onAchievementsReady(hash, list, unlocked, total) {
+            if (!root.play || hash !== root.play.infoHash) return
+            root.playAchUnlocked = unlocked
+            root.playAchTotal = total
+        }
     }
 
     readonly property real gap: 12
@@ -73,8 +90,15 @@ Item {
         artSources: [root.playDetails.steamHero, root.playDetails.backdrop].filter(function (u) { return !!u })
         fixedLogo: root.playDetails.steamLogo || ""
         title: root.playTitle
-        line: root.play && (root.play.playSeconds || 0) > 0
-              ? (i18n.language, i18n.t("hub_tile_played")).arg(root.hub.hours(root.play.playSeconds)) : ""
+        line: {
+            if (!root.play) return ""
+            var parts = []
+            if ((root.play.playSeconds || 0) > 0)
+                parts.push((i18n.language, i18n.t("hub_tile_played")).arg(root.hub.hours(root.play.playSeconds)))
+            if (root.playAchTotal > 0)
+                parts.push((i18n.language, i18n.t("hub_ach_short")).arg(root.playAchUnlocked).arg(root.playAchTotal))
+            return parts.join("  ·  ")
+        }
         buttonText: root.play ? root.hub.gameStateLabel(root.play) : ""
         buttonEnabled: root.hub.gameStateActionable(root.play)
         note: {

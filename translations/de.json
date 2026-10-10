@@ -1368,5 +1368,16 @@
   "hub_tile_played": "%1 gespielt",
   "hub_tile_not_installed": "Nicht installiert",
   "hub_tile_in_library": "In der Bibliothek",
-  "hub_tile_watched": "Gesehen"
+  "hub_tile_watched": "Gesehen",
+  "game_achievements": "Erfolge",
+  "game_ach_of": "%1 von %2 freigeschaltet",
+  "game_ach_unlocked_n": "%1 freigeschaltet",
+  "game_ach_all": "Alle %1 Erfolge",
+  "game_ach_less": "Weniger anzeigen",
+  "game_ach_hidden": "Versteckter Erfolg",
+  "game_ach_hidden_desc": "Spiel weiter, um ihn aufzudecken",
+  "game_ach_locked": "Gesperrt",
+  "game_ach_unlocked": "Freigeschaltet",
+  "game_ach_players": "%1% der Spieler",
+  "hub_ach_short": "%1 von %2 Erfolgen"
 }

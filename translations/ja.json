@@ -1368,5 +1368,16 @@
   "hub_tile_played": "%1 プレイ",
   "hub_tile_not_installed": "未インストール",
   "hub_tile_in_library": "ライブラリ内",
-  "hub_tile_watched": "視聴済み"
+  "hub_tile_watched": "視聴済み",
+  "game_achievements": "実績",
+  "game_ach_of": "%2 件中 %1 件解除",
+  "game_ach_unlocked_n": "%1 件解除",
+  "game_ach_all": "全 %1 件の実績",
+  "game_ach_less": "表示を減らす",
+  "game_ach_hidden": "隠し実績",
+  "game_ach_hidden_desc": "プレイを続けると明らかになります",
+  "game_ach_locked": "未解除",
+  "game_ach_unlocked": "解除済み",
+  "game_ach_players": "プレイヤーの %1%",
+  "hub_ach_short": "実績 %1 / %2"
 }

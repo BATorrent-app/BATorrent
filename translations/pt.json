@@ -1368,5 +1368,16 @@
   "hub_tile_played": "%1 jogadas",
   "hub_tile_not_installed": "Não instalado",
   "hub_tile_in_library": "Na biblioteca",
-  "hub_tile_watched": "Assistido"
+  "hub_tile_watched": "Assistido",
+  "game_achievements": "Conquistas",
+  "game_ach_of": "%1 de %2 desbloqueadas",
+  "game_ach_unlocked_n": "%1 desbloqueadas",
+  "game_ach_all": "Todas as %1 conquistas",
+  "game_ach_less": "Mostrar menos",
+  "game_ach_hidden": "Conquista secreta",
+  "game_ach_hidden_desc": "Continue jogando para revelar",
+  "game_ach_locked": "Bloqueada",
+  "game_ach_unlocked": "Desbloqueada",
+  "game_ach_players": "%1% dos jogadores",
+  "hub_ach_short": "%1 de %2 conquistas"
 }

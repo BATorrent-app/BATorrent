@@ -112,6 +112,10 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/installerprofile.cpp
     src/services/integrations/gameinstall.cpp
     src/services/games/playlog.cpp
+    src/services/games/achievements.cpp
+    src/services/games/achievementformats.cpp
+    src/services/games/achievementfiles.cpp
+    src/services/games/achievementservice.cpp
     src/services/integrations/gameexedetect.cpp
     src/services/security/defender.cpp
     src/services/platform/logger.cpp
@@ -172,6 +176,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/session/qmlsessionbridge_create.cpp
     src/bridges/session/qmlsessionbridge_games.cpp
     src/bridges/session/qmlsessionbridge_gameinstall.cpp
+    src/bridges/session/qmlsessionbridge_achievements.cpp
     src/bridges/session/qmlsessionbridge_library.cpp
     src/bridges/session/qmlsessionbridge_playback.cpp
     src/bridges/session/qmlsessionbridge_subtitles.cpp
@@ -244,6 +249,9 @@ if(DEFINED ENV{BAT_IGDB_ID})
 endif()
 if(DEFINED ENV{BAT_IGDB_SECRET})
     target_compile_definitions(BATorrent PRIVATE BAT_IGDB_CLIENT_SECRET="$ENV{BAT_IGDB_SECRET}")
+endif()
+if(DEFINED ENV{BAT_STEAM_KEY})
+    target_compile_definitions(BATorrent PRIVATE BAT_STEAM_KEY="$ENV{BAT_STEAM_KEY}")
 endif()
 if(DEFINED ENV{BAT_OS_KEY})
     target_compile_definitions(BATorrent PRIVATE BAT_OS_KEY="$ENV{BAT_OS_KEY}")

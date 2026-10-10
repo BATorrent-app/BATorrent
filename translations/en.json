@@ -1368,5 +1368,16 @@
   "hub_tile_played": "%1 played",
   "hub_tile_not_installed": "Not installed",
   "hub_tile_in_library": "In library",
-  "hub_tile_watched": "Watched"
+  "hub_tile_watched": "Watched",
+  "game_achievements": "Achievements",
+  "game_ach_of": "%1 of %2 unlocked",
+  "game_ach_unlocked_n": "%1 unlocked",
+  "game_ach_all": "All %1 achievements",
+  "game_ach_less": "Show less",
+  "game_ach_hidden": "Hidden achievement",
+  "game_ach_hidden_desc": "Keep playing to reveal it",
+  "game_ach_locked": "Locked",
+  "game_ach_unlocked": "Unlocked",
+  "game_ach_players": "%1% of players",
+  "hub_ach_short": "%1 of %2 achievements"
 }

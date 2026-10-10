@@ -93,9 +93,26 @@ QString ContentLanguage::subtitleCode(Translator::Language lang)
     return QStringLiteral("en");
 }
 
+QString ContentLanguage::steam(Translator::Language lang)
+{
+    switch (lang) {
+    case Translator::Portuguese: return QStringLiteral("brazilian");
+    case Translator::Chinese:    return QStringLiteral("schinese");
+    case Translator::Japanese:   return QStringLiteral("japanese");
+    case Translator::Russian:    return QStringLiteral("russian");
+    case Translator::Spanish:    return QStringLiteral("spanish");
+    case Translator::German:     return QStringLiteral("german");
+    case Translator::Ukrainian:  return QStringLiteral("ukrainian");
+    case Translator::Turkish:    return QStringLiteral("turkish");
+    case Translator::English:    break;
+    }
+    return QStringLiteral("english");
+}
+
 QString ContentLanguage::releaseTag()   { return releaseTag(current()); }
 QString ContentLanguage::tmdb()         { return tmdb(current()); }
 QString ContentLanguage::subtitleCode() { return subtitleCode(current()); }
+QString ContentLanguage::steam()        { return steam(current()); }
 
 QString ContentLanguage::region()
 {

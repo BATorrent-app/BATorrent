@@ -1368,5 +1368,16 @@
   "hub_tile_played": "已玩 %1",
   "hub_tile_not_installed": "未安装",
   "hub_tile_in_library": "已在库中",
-  "hub_tile_watched": "已看完"
+  "hub_tile_watched": "已看完",
+  "game_achievements": "成就",
+  "game_ach_of": "已解锁 %1 / %2",
+  "game_ach_unlocked_n": "已解锁 %1",
+  "game_ach_all": "全部 %1 项成就",
+  "game_ach_less": "收起",
+  "game_ach_hidden": "隐藏成就",
+  "game_ach_hidden_desc": "继续游玩以揭晓",
+  "game_ach_locked": "未解锁",
+  "game_ach_unlocked": "已解锁",
+  "game_ach_players": "%1% 的玩家",
+  "hub_ach_short": "成就 %1 / %2"
 }

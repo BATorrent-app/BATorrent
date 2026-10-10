@@ -71,7 +71,10 @@ TEST_CASE("every supported language has a code, Turkish included", "[contentlang
         REQUIRE_FALSE(ContentLanguage::subtitleCode(l).isEmpty());
         REQUIRE(ContentLanguage::tmdb(l).contains('-'));
         REQUIRE(ContentLanguage::subtitleCode(l).size() == 2);
+        REQUIRE_FALSE(ContentLanguage::steam(l).isEmpty());
     }
+    REQUIRE(ContentLanguage::steam(Translator::Portuguese) == "brazilian");
+    REQUIRE(ContentLanguage::steam(Translator::Chinese) == "schinese");
 
     REQUIRE(ContentLanguage::releaseTag(Translator::Turkish) == "TR");
     REQUIRE(ContentLanguage::tmdb(Translator::Turkish) == "tr-TR");
@@ -82,6 +85,7 @@ TEST_CASE("every supported language has a code, Turkish included", "[contentlang
             if (l == Translator::English) continue;
             REQUIRE(ContentLanguage::releaseTag(l) != "EN");
             REQUIRE(ContentLanguage::tmdb(l) != "en-US");
+            REQUIRE(ContentLanguage::steam(l) != "english");
         }
     }
 }

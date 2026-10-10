@@ -21,6 +21,9 @@ Item {
 
     QtObject {
         id: mockApi
+        signal achievementsReady(string hash, var list, int unlocked, int total)
+        property var askedAch: []
+        function requestAchievements(h, hint) { askedAch.push(h + ":" + hint) }
         property var launched: []
         function gameFolder(h) { return "/games/" + h }
         function gameExe(h) { return h === "played" ? "/games/played/game.exe" : "" }
@@ -73,6 +76,7 @@ Item {
         function init() {
             mockDisco.asked = []
             mockApi.launched = []
+            mockApi.askedAch = []
             mockHub.gameOpen = false
             mockHub.gameHash = ""
         }
@@ -163,6 +167,49 @@ Item {
                 if (it.contentItem) stack.push(it.contentItem)
             }
             return null
+        }
+
+        function achList(n) {
+            var out = []
+            for (var i = 0; i < n; i++)
+                out.push({ apiName: "A" + i, name: "Ach " + i, description: "d" + i, icon: "", iconGray: "",
+                           hidden: i === n - 1, percent: i === 0 ? 0.4 : 41, unlocked: i < 2,
+                           unlockedAt: i === 0 ? 1700000000 : 0 })
+            return out
+        }
+
+        function test_achievementsAreAskedForOnceTheDetailsKnowTheAppid() {
+            var p = createTemporaryObject(pageComp, root)
+            mockHub.gameHash = "played"
+            mockHub.gameOpen = true
+            compare(mockApi.askedAch.length, 0, "not before IGDB has answered")
+            mockDisco.gameDetailsReady("Elden Ring", { steamAppId: 1245620 })
+            compare(mockApi.askedAch, ["played:1245620"])
+        }
+
+        function test_achievementsFillTheBandAndTheList() {
+            var p = createTemporaryObject(pageComp, root)
+            mockHub.gameHash = "played"
+            mockHub.gameOpen = true
+            mockDisco.gameDetailsReady("Elden Ring", { steamAppId: 1 })
+            mockApi.achievementsReady("someone-else", achList(3), 3, 3)
+            verify(findByText(p, "game_achievements") === null, "another game's answer is ignored")
+            mockApi.achievementsReady("played", achList(7), 2, 7)
+            verify(findByText(p, "2 / 7") !== null)
+            verify(findByText(p, "Ach 0") !== null)
+            verify(findByText(p, "Ach 5") === null, "five until asked for all")
+            verify(findByText(p, "game_ach_all") !== null)
+            verify(findByText(p, "game_ach_locked") !== null)
+            verify(findByText(p, "game_ach_unlocked") !== null, "an unlock with no time says so")
+        }
+
+        function test_aHiddenAchievementStaysHiddenUntilEarned() {
+            var p = createTemporaryObject(pageComp, root)
+            mockHub.gameHash = "played"
+            mockHub.gameOpen = true
+            mockApi.achievementsReady("played", achList(3), 2, 3)
+            verify(findByText(p, "Ach 2") === null)
+            verify(findByText(p, "game_ach_hidden") !== null)
         }
 
         function test_heroWaitsForDetailsInsteadOfStretchingTheCover() {

@@ -13,6 +13,8 @@ Item {
     id: root
     property var hub
     property var game
+    property int achUnlocked: 0
+    property int achTotal: 0
     signal settingsRequested()
     implicitHeight: 84
 
@@ -68,13 +70,20 @@ Item {
         }
 
         Repeater {
-            model: [
-                { label: "game_playtime", value: root.played ? root.hub.hours(root.game.playSeconds) : "—" },
-                { label: "game_last_played",
-                  value: !root.played ? "—"
-                         : (root.game.playing ? i18n.t("hub_playing_now") : root.hub.fmtAgo(root.game.lastPlayed)) },
-                { label: "game_on_disk", value: root.game ? (root.hub.fmtSize(root.game.size) || "—") : "—" }
-            ]
+            model: {
+                var out = [
+                    { label: "game_playtime", value: root.played ? root.hub.hours(root.game.playSeconds) : "—" },
+                    { label: "game_last_played",
+                      value: !root.played ? "—"
+                             : (root.game.playing ? i18n.t("hub_playing_now") : root.hub.fmtAgo(root.game.lastPlayed)) }
+                ]
+                if (root.achTotal > 0 || root.achUnlocked > 0)
+                    out.push({ label: "game_achievements",
+                               value: root.achTotal > 0 ? root.achUnlocked + " / " + root.achTotal : String(root.achUnlocked),
+                               bar: root.achTotal > 0 ? root.achUnlocked / root.achTotal : -1 })
+                out.push({ label: "game_on_disk", value: root.game ? (root.hub.fmtSize(root.game.size) || "—") : "—" })
+                return out
+            }
             delegate: Column {
                 required property var modelData
                 spacing: 4
@@ -93,6 +102,20 @@ Item {
                     font.pixelSize: 15
                     font.family: Theme.fontSans
                     font.features: Theme.tnum
+                }
+                Rectangle {
+                    visible: modelData.bar !== undefined && modelData.bar >= 0
+                    width: 120
+                    height: 3
+                    radius: 2
+                    color: Qt.rgba(1, 1, 1, 0.1)
+                    Rectangle {
+                        width: parent.width * Math.max(0, Math.min(1, modelData.bar || 0))
+                        height: parent.height
+                        radius: 2
+                        color: Theme.accent
+                        Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
+                    }
                 }
             }
         }

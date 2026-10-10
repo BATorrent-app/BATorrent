@@ -48,6 +48,7 @@ fi
 
 [[ -n "${BAT_TMDB_KEY:-}" ]] && echo "TMDB key:  present" || echo "TMDB key:  (empty — posters will fail)"
 [[ -n "${BAT_IGDB_ID:-}" ]]  && echo "IGDB id:   present" || echo "IGDB id:   (empty — game art disabled)"
+[[ -n "${BAT_STEAM_KEY:-}" ]] && echo "Steam key: present" || echo "Steam key: (empty — achievements show ids, no names/icons)"
 
 # Prefer official Qt 6.7 (ships the FFmpeg media backend → built-in player decodes
 # MKV/AVI/WebM, matching the release). Homebrew Qt only builds the AVFoundation
