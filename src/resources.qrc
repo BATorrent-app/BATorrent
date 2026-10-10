@@ -250,6 +250,7 @@
 <file>../src/qml/theme/WizardPalette.qml</file>
 <file>../src/qml/theme/qmldir</file>
 <file>../src/qml/widgets/WorkHero.qml</file>
+<file>../src/qml/widgets/SeriesLogic.qml</file>
 <file>../src/qml/widgets/qmldir</file>
 <file>../src/qml/widgets/IconImg.qml</file>
 <file>../src/qml/widgets/CatItem.qml</file>

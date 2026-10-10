@@ -115,8 +115,9 @@ Item {
 
         function mk() { return createTemporaryObject(computeComp, root) }
 
-        function ep(idx, season, episode, name) {
-            return { idx: idx, season: season, episode: episode, name: name || ("f" + idx) }
+        function ep(idx, season, episode, name, progress) {
+            return { idx: idx, season: season, episode: episode, name: name || ("f" + idx),
+                     progress: progress === undefined ? 1 : progress }
         }
         function show(hash, tmdbId, title, vids, extra) {
             var o = { infoHash: hash, tmdbId: tmdbId, title: title, isSeries: true,
@@ -176,13 +177,25 @@ Item {
         }
 
         function test_theSameEpisodeTwiceKeepsTheFurtherCopy() {
+            // The file's progress decides, not the torrent's: in a season pack
+            // episode 1 can be done while the pack sits at 10%, and judging by
+            // the pack would throw away the copy that is ready to watch.
             var c = mk()
             var g = c.seriesGroups([
-                show("pack", 1399, "Show", [ep(3, 1, 1)], { progress: 0.1 }),
-                show("single", 1399, "Show", [ep(0, 1, 1)], { progress: 1 })
+                show("pack",   1399, "Show", [ep(3, 1, 1, "e1", 0.1)]),
+                show("single", 1399, "Show", [ep(0, 1, 1, "e1", 1.0)])
             ])
             compare(g[0].videos.length, 1, "one episode, not two")
             compare(g[0].videos[0].hash, "single", "the finished copy wins over the 10% one")
+        }
+
+        function test_aFinishedEpisodeInsideAnUnfinishedPackStillCounts() {
+            var c = mk()
+            var g = c.seriesGroups([
+                show("pack", 1399, "Show", [ep(0, 1, 1, "e1", 1.0), ep(1, 1, 2, "e2", 0.0)])
+            ])
+            compare(c.seasonHave(g[0].videos, 1), 1,
+                    "one episode is here even though the torrent is half-done")
         }
 
         function test_episodesComeBackInWatchingOrder() {
