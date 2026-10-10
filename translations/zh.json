@@ -1339,5 +1339,8 @@
   "guard_l_next": "可以在这里正常观看：BATorrent 能自行播放所有内容，绝不会要求你下载任何东西。如果其他播放器要求下载，请不要下载。如果视频无法播放，请寻找其他版本。",
   "guard_l_ok": "知道了",
   "guard_next": "建议的下一步",
-  "guard_search": "寻找其他版本"
+  "guard_search": "寻找其他版本",
+  "set_isolated_player": "在隔离进程中播放视频（实验性）",
+  "set_isolated_player_note": "视频在独立进程中解码：即使某个文件导致解码器崩溃，应用的其余部分仍可正常运行。对之后打开的视频生效。",
+  "player_decoder_crashed": "此文件导致视频解码器崩溃。BATorrent 仍在正常运行：请尝试其他版本。"
 }

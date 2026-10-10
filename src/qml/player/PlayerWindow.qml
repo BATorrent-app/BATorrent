@@ -196,23 +196,37 @@ Window {
         player.play()
     }
 
-    MediaPlayer {
-        id: player
+    PlayerBackend {
+        id: backend
         source: win.streamUrl
         videoOutput: videoOut
-        audioOutput: AudioOutput { id: audio; volume: win.volume; muted: win.muted }
-        onPositionChanged: win.updateCue(player.position)
-        onDurationChanged: resume.tryApply()
-        onSeekableChanged: resume.tryApply()
-        onPlaybackStateChanged: {
-            if (playbackState === MediaPlayer.PlayingState) resume.tryApply()
+        volume: win.volume
+        muted: win.muted
+    }
+    readonly property var player: backend.player
+    property bool decoderCrashed: false
+
+    Connections {
+        target: win.player
+        function onPositionChanged() { win.updateCue(win.player.position) }
+        function onDurationChanged() { resume.tryApply() }
+        function onSeekableChanged() { resume.tryApply() }
+        function onPlaybackStateChanged() {
+            if (win.player.playbackState === MediaPlayer.PlayingState) resume.tryApply()
             else win.showControls()
         }
-        onMediaStatusChanged: {
-            if (mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) resume.tryApply()
-            else if (mediaStatus === MediaPlayer.EndOfMedia) { resume.save(); endCard.maybePlayNext() }
+        function onMediaStatusChanged() {
+            var st = win.player.mediaStatus
+            if (st === MediaPlayer.LoadedMedia || st === MediaPlayer.BufferedMedia) resume.tryApply()
+            else if (st === MediaPlayer.EndOfMedia) { resume.save(); endCard.maybePlayNext() }
         }
-        onTracksChanged: win.restoreTracks()
+        function onTracksChanged() { win.restoreTracks() }
+    }
+    Connections {
+        target: win.player
+        ignoreUnknownSignals: true   // only the isolated player has it
+        function onDecoderCrashed() { win.decoderCrashed = true }
+        function onSourceChanged() { win.decoderCrashed = false }
     }
 
     signal closed()
@@ -288,8 +302,8 @@ Window {
         Text {
             Layout.alignment: Qt.AlignHCenter
             color: "#e8e8ea"; font.pixelSize: 14; font.family: Theme.fontSans
-            text: player.error !== MediaPlayer.NoError
-                  ? (i18n.language, i18n.t("player_error"))
+            text: win.decoderCrashed ? (i18n.language, i18n.t("player_decoder_crashed"))
+                  : player.error !== MediaPlayer.NoError ? (i18n.language, i18n.t("player_error"))
                   : (i18n.language, i18n.t("player_buffering"))
         }
         BtnFlat {

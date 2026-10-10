@@ -1339,5 +1339,8 @@
   "guard_l_next": "Puedes verlo aquí con normalidad: BATorrent lo reproduce todo por sí mismo y nunca te pedirá descargar nada. Si otro reproductor lo pide, no descargues. Si el vídeo no se reproduce, busca otra versión.",
   "guard_l_ok": "Entendido",
   "guard_next": "Lo mejor que puedes hacer",
-  "guard_search": "Buscar otra versión"
+  "guard_search": "Buscar otra versión",
+  "set_isolated_player": "Abrir vídeos en un proceso aislado (experimental)",
+  "set_isolated_player_note": "El vídeo se decodifica en un proceso aparte: si un archivo tumba el decodificador, el resto de la app sigue funcionando. Se aplica a los próximos vídeos que abras.",
+  "player_decoder_crashed": "Este archivo tumbó el decodificador de vídeo. BATorrent sigue funcionando con normalidad: prueba otra versión."
 }
