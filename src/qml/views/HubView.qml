@@ -109,6 +109,18 @@ Item {
 
     property string gameHash: ""
     property bool gameOpen: false
+    // Set when Downloads opened the game page: closing it goes back there.
+    property int gameReturnPage: -1
+    signal returnTo(int page)
+    function openGame(hash, fromPage) {
+        gameReturnPage = fromPage === undefined ? -1 : fromPage
+        gameHash = hash
+        gameOpen = true
+    }
+    function closeGame() {
+        gameOpen = false
+        if (gameReturnPage >= 0) { var p = gameReturnPage; gameReturnPage = -1; returnTo(p) }
+    }
 
     property var detailItem: null
     property bool detailOpen: false

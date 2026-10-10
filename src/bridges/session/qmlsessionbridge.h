@@ -233,6 +233,9 @@ public:
     // enough buffered to start), each with its best video file, cover, download
     // progress and resume/watched position.
     Q_INVOKABLE QVariantList movieLibrary() const;
+    // The page a torrent has: {kind: "game"} or {kind: "movie"|"series", title,
+    // year, type, tmdbId, poster}; {} when it is neither (nothing to open but the file).
+    Q_INVOKABLE QVariantMap torrentPage(const QString &infoHash) const;
     // Open a library item in the embedded player (resolves row from info hash).
     Q_INVOKABLE void playByHash(const QString &infoHash);
     Q_INVOKABLE void playByHashFile(const QString &infoHash, int fileIndex);   // resume a specific episode

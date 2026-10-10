@@ -169,3 +169,24 @@ void QmlSessionBridge::toggleWatchlist(const QVariantMap &item)
     emit watchlistChanged();
 }
 
+QVariantMap QmlSessionBridge::torrentPage(const QString &infoHash) const
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return {};
+    if (isGameTorrent(row)) return { { QStringLiteral("kind"), QStringLiteral("game") } };
+    // Only a title TMDB matched has a page to open: a guess from the file name
+    // would land on somebody else's film.
+    if (!m_resolver || !m_resolver->hasCached(infoHash)) return {};
+    const auto meta = m_resolver->cached(infoHash);
+    if (!meta.valid || meta.tmdbId <= 0
+        || (meta.contentType != ContentType::Movie && meta.contentType != ContentType::Series))
+        return {};
+    const QString kind = meta.contentType == ContentType::Series ? QStringLiteral("series") : QStringLiteral("movie");
+    return { { QStringLiteral("kind"), kind },
+             { QStringLiteral("type"), kind },
+             { QStringLiteral("title"), meta.title },
+             { QStringLiteral("year"), meta.year > 0 ? QString::number(meta.year) : QString() },
+             { QStringLiteral("tmdbId"), meta.tmdbId },
+             { QStringLiteral("poster"), meta.posterPath.isEmpty() ? QString()
+                                         : QUrl::fromLocalFile(meta.posterPath).toString() } };
+}

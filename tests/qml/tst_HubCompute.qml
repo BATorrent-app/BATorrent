@@ -46,6 +46,7 @@ Item {
         property bool detailOpen: false
         property string gameHash: ""
         property bool gameOpen: false
+        function openGame(h) { gameHash = h; gameOpen = true }
         property var exePicker: null
         function fileUrl(p) { return "file://" + p }
     }

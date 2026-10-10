@@ -427,10 +427,12 @@ Item {
                     controller.selectRow(tile.index, mouse.modifiers)
                 }
             }
+            // The grid is the media view: a film, show or game opens on its own
+            // page. The list keeps the manager's double-click (open the file).
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.RightButton) {
                     controller.selectRow(tile.index, 0)
-                    session.openSelectedFile()
+                    if (!win.openTorrentPage(session.selectedHash)) session.openSelectedFile()
                 }
             }
         }

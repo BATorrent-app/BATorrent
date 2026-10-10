@@ -248,6 +248,22 @@ Window {
     // up whatever's present. Shared by the context menu and the recovery banner.
     function promptSetLocation() { setLocationDlg.open() }
     function openSearch(query) { win.currentPage = 1; searchPage.runQuery(query) }
+    // A torrent's own page, from Downloads. False when it has none.
+    function openTorrentPage(hash) {
+        if (typeof session === "undefined" || !hash) return false
+        var page = session.torrentPage(hash)
+        if (page.kind === "game") {
+            win.currentPage = 2
+            hubPage.openGame(hash, 0)
+            return true
+        }
+        if (page.kind === "movie" || page.kind === "series") {
+            win.currentPage = 1
+            searchPage.openTitle(page, 0)
+            return true
+        }
+        return false
+    }
     property alias setLocationDlg: libraryShortcuts.setLocationDlg
     // Full-screen visual acknowledgement for a manual Refresh.
     function flashRefresh() { refreshFlash.flash() }
@@ -584,13 +600,14 @@ Window {
                     id: searchPage
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
-                    onBackToHub: win.currentPage = 2
+                    onBackTo: function (page) { win.currentPage = page }
                 }
                 // ----- page 2: HUB -----
                 HubView {
                     id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
                     onOpenSearch: function(q) { win.openSearch(q) }
-                    onOpenTitle: function (work) { win.currentPage = 1; searchPage.openTitle(work, true) }
+                    onOpenTitle: function (work) { win.currentPage = 1; searchPage.openTitle(work, 2) }
+                    onReturnTo: function (page) { win.currentPage = page }
                 }
                 // ----- page 3: Settings (fullscreen tab, was a top-level window) -----
                 SettingsView {

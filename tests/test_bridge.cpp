@@ -211,6 +211,16 @@ TEST_CASE("Session bridge: empty session has no selection", "[bridge][session]")
     REQUIRE(bridge.selectedTrackers().isEmpty());
 }
 
+TEST_CASE("Session bridge: a torrent with no page says so, so the file opens instead", "[bridge][session]")
+{
+    app();
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+    REQUIRE(bridge.torrentPage(QStringLiteral("0000000000000000000000000000000000000000")).isEmpty());
+    REQUIRE(bridge.torrentPage(QString()).isEmpty());
+}
+
 TEST_CASE("Session bridge: playtime kept in settings moves into the play log", "[bridge][session][games]")
 {
     app();

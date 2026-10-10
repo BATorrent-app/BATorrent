@@ -123,8 +123,7 @@ QtObject {
     }
     function openDetail(item, isGame) {
         if (isGame === true) {
-            page.gameHash = item.infoHash
-            page.gameOpen = true
+            page.openGame(item.infoHash)
             return
         }
         page.detailItem = item

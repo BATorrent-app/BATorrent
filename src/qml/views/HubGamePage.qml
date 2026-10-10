@@ -113,7 +113,7 @@ Item {
                     if (genres.length > 0) out.push(genres[0])
                     return out
                 }
-                onBackRequested: root.hub.gameOpen = false
+                onBackRequested: root.hub.closeGame()
             }
 
             HubGameActions {
