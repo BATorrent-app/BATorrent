@@ -45,6 +45,7 @@ SpeedGraph 1.0 SpeedGraph.qml
 WheelScroller 1.0 WheelScroller.qml
 WorkHero 1.0 WorkHero.qml
 ChainImage 1.0 ChainImage.qml
+LogoImage 1.0 LogoImage.qml
 SeriesLogic 1.0 SeriesLogic.qml
 TitleStage 1.0 TitleStage.qml
 StageSelect 1.0 StageSelect.qml

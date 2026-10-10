@@ -163,6 +163,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/discovery/discoveryservice.cpp
     src/services/discovery/discoveryservice_title.cpp
     src/services/discovery/discoveryservice_game.cpp
+    src/services/discovery/discoveryservice_art.cpp
+    src/services/discovery/logotone.cpp
     src/services/discovery/discoveryassemble.cpp
     src/services/discovery/discoverysearch.cpp
     src/services/discovery/discoveryfinish.cpp

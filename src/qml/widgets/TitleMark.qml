@@ -38,22 +38,16 @@ Item {
         }
     }
 
-    Image {
+    LogoImage {
         id: img
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         width: mark.maxWidth
         height: mark.maxHeight
         source: mark.fixedLogo || mark.logo
-        fillMode: Image.PreserveAspectFit
         horizontalAlignment: Image.AlignLeft
         verticalAlignment: Image.AlignBottom
-        asynchronous: true
-        cache: true
-        smooth: true
         visible: status === Image.Ready
-        opacity: visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.durSlow } }
     }
     Text {
         id: name

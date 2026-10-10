@@ -83,7 +83,7 @@ Item {
         anchors.rightMargin: Theme.sp5 * 2
         spacing: Theme.sp2
 
-        Image {
+        LogoImage {
             id: logo
             Layout.maximumWidth: Math.min(hero.width * 0.5, 320)
             Layout.preferredWidth: Math.min(implicitWidth, Layout.maximumWidth)
@@ -91,10 +91,6 @@ Item {
                 ? Layout.preferredWidth * (implicitHeight / implicitWidth) : 0
             Layout.maximumHeight: 110
             source: hero.logoUrl
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true
-            cache: true
-            smooth: true
             visible: status === Image.Ready
         }
         Text {

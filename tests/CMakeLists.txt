@@ -149,6 +149,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice_title.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice_game.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryservice_art.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/logotone.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryassemble.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoverysearch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/discoveryfinish.cpp
@@ -316,6 +318,7 @@ bat_add_test(test_gameinstallstate test_gameinstallstate.cpp)
 bat_add_test(test_playlog test_playlog.cpp)
 bat_add_test(test_achievements test_achievements.cpp)
 bat_add_test(test_achievementfiles test_achievementfiles.cpp)
+bat_add_test(test_logotone test_logotone.cpp)
 bat_add_test(test_hublogic test_hublogic.cpp)
 bat_add_test(test_tmdbparse test_tmdbparse.cpp)
 bat_add_test(test_igdbparse test_igdbparse.cpp)
@@ -378,7 +381,7 @@ endif()
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
     DEPENDS test_security test_memory test_unit test_nameparser test_bridge test_gamesource
-            test_gamereleasepick test_gameinstallstate test_playlog test_achievements test_achievementfiles test_searchranker test_releasegroup
+            test_gamereleasepick test_gameinstallstate test_playlog test_achievements test_achievementfiles test_logotone test_searchranker test_releasegroup
             test_contentlanguage test_releasetrust
             test_sessionresume test_sessionremove test_metadatamatch test_sessionconfig
             test_addonparse test_tmdbparse test_igdbparse test_settingshelpers

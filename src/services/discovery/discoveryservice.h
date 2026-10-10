@@ -64,6 +64,9 @@ public:
     // per title however many tiles ask. Emits titleLogoReady ("" = none), and
     // titleBackdropReady with the first textless backdrop from the same reply.
     Q_INVOKABLE void fetchLogo(int tmdbId, const QString &type);
+    // Whether a logo is dark enough to vanish on dark art. Cached per url.
+    // Emits logoToneReady.
+    Q_INVOKABLE void fetchLogoTone(const QString &url);
 
     // Hub library helpers (pure; also covered by test_hublogic).
     Q_INVOKABLE QString genreKey(const QString &name) const;
@@ -93,6 +96,7 @@ signals:
     void seasonCastReady(int tmdbId, int season, const QStringList &cast);
     void titleLogoReady(int tmdbId, const QString &type, const QString &url);
     void titleBackdropReady(int tmdbId, const QString &type, const QString &url);
+    void logoToneReady(const QString &url, bool dark);
 
 private:
     void searchTmdbTitles(const QString &query);
@@ -137,6 +141,8 @@ private:
 
     QHash<QString, QString> m_logoCache;   // "type:id" → logo url, "" when the title has none
     QHash<QString, QString> m_backdropCache;   // same key → first textless backdrop, "" when none
+    QHash<QString, bool> m_logoTone;            // logo url → dark
+    QSet<QString> m_logoTonePending;
     QSet<QString> m_logoPending;
     QHash<QString, QVariantMap> m_gameDetails;   // game name → IGDB details, {} when unmatched
     QStringList m_gameDetailsQueue;   // names waiting their turn: IGDB allows ~4 requests/s

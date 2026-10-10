@@ -63,17 +63,13 @@ Item {
         width: Math.min(hero.width - 96, 560)
         spacing: 14
 
-        Image {
+        LogoImage {
             id: logo
             width: 340
             height: 140
             source: hero.steamLogo
-            fillMode: Image.PreserveAspectFit
             horizontalAlignment: Image.AlignLeft
             verticalAlignment: Image.AlignBottom
-            asynchronous: true
-            cache: true
-            smooth: true
             visible: status === Image.Ready
         }
         Text {

@@ -77,18 +77,14 @@ Item {
         width: Math.min(520, stage.panelX - 96)
         spacing: 18
 
-        Image {
+        LogoImage {
             id: logo
             Layout.preferredWidth: Math.min(420, parent.width)
             Layout.preferredHeight: implicitWidth > 0
                 ? Layout.preferredWidth * (implicitHeight / implicitWidth) : 0
             Layout.maximumHeight: 190
             source: stage.logoUrl
-            fillMode: Image.PreserveAspectFit
             horizontalAlignment: Image.AlignLeft
-            asynchronous: true
-            cache: true
-            smooth: true
             visible: status === Image.Ready
         }
         Text {
