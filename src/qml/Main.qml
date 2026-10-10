@@ -584,11 +584,13 @@ Window {
                     id: searchPage
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
+                    onBackToHub: win.currentPage = 2
                 }
                 // ----- page 2: HUB -----
                 HubView {
                     id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
                     onOpenSearch: function(q) { win.openSearch(q) }
+                    onOpenTitle: function (work) { win.currentPage = 1; searchPage.openTitle(work, true) }
                 }
                 // ----- page 3: Settings (fullscreen tab, was a top-level window) -----
                 SettingsView {

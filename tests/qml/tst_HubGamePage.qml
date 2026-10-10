@@ -48,6 +48,7 @@ Item {
         function fileUrl(p) { return p ? "file://" + p : "" }
         function fmtPlaytime(s) { return s > 0 ? Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m" : "" }
         function fmtAgo(ms) { return ms > 0 ? "2h" : "" }
+        function hours(s) { return (s > 0 ? (s / 3600).toFixed(1) : "0") + " h" }
         function fmtSize(b) { return b > 0 ? (b / 1073741824).toFixed(1) + " GB" : "" }
         function gameStateLabel(it) { return it ? "hub_gs_play" : "" }
         function gameStateActionable(it) { return !!it && it.installState === 4 }
@@ -180,7 +181,8 @@ Item {
             var p = createTemporaryObject(pageComp, root)
             mockHub.gameHash = "played"
             mockHub.gameOpen = true
-            mockDisco.gameDetailsReady("Elden Ring", { steamAppId: 1245620, backdrop: "https://x/art.jpg" })
+            mockDisco.gameDetailsReady("Elden Ring", { steamHero: "https://cdn/1245620/library_hero.jpg",
+                                                       backdrop: "https://x/art.jpg" })
             var hero = null
             var stack = [p]
             while (stack.length && !hero) {

@@ -19,7 +19,6 @@ Item {
     readonly property bool actionable: root.hub.gameStateActionable(root.game)
     readonly property bool played: !!root.game && (root.game.lastPlayed || 0) > 0
 
-    function hours(secs) { return (secs > 0 ? (secs / 3600).toFixed(1) : "0") + " h" }
 
     RowLayout {
         anchors.fill: parent
@@ -70,7 +69,7 @@ Item {
 
         Repeater {
             model: [
-                { label: "game_playtime", value: root.played ? root.hours(root.game.playSeconds) : "—" },
+                { label: "game_playtime", value: root.played ? root.hub.hours(root.game.playSeconds) : "—" },
                 { label: "game_last_played",
                   value: !root.played ? "—"
                          : (root.game.playing ? i18n.t("hub_playing_now") : root.hub.fmtAgo(root.game.lastPlayed)) },

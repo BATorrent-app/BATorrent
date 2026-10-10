@@ -22,31 +22,11 @@ QtObject {
         return games.filter(function (i) { return (i.lastPlayed || 0) > 0 })
             .sort(function (a, b) { return (b.lastPlayed || 0) - (a.lastPlayed || 0) }).slice(0, 3)
     }
-    readonly property var suggestedGame: {
-        var games = page.gameItems || []
-        for (var i = 0; i < games.length; i++)
-            if (games[i].installState === 4) return games[i]
-        return null
-    }
     readonly property bool empty: (page.library || []).length === 0 && (page.gameItems || []).length === 0
 
-    // newest in your library (movies + games), front and centre: Plex/Netflix style.
-    // Runs through applyView like every other shelf (search box must filter this too).
     // The series questions live in SeriesLogic so a search can ask them too.
     readonly property var series: SeriesLogic {}
     function seriesGroups(items) { return series.seriesGroups(items) }
-    function dedupeEpisodes(videos) { return series.dedupeEpisodes(videos) }
-    function seasonHave(groupVideos, season) { return series.seasonHave(groupVideos, season) }
-    function mergeSeasonEpisodes(tmdbEpisodes, groupVideos, season) {
-        return series.mergeSeasonEpisodes(tmdbEpisodes, groupVideos, season)
-    }
-
-    readonly property var recentlyAdded: {
-        var all = applyView((page.library || []).concat(page.gameItems || []))
-        if (page.librarySort !== "name")
-            all.sort(function (a, b) { return (b.addedTime || 0) - (a.addedTime || 0) })
-        return all.slice(0, 12)
-    }
 
     function genreKey(name) {
         return page.disco ? page.disco.genreKey(name) : ""

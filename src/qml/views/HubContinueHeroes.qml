@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
+// The top of the HUB: what you were watching and what you were playing, side
+// by side. Either one alone takes the whole row.
+import QtQuick
+import "../theme"
+
+Item {
+    id: root
+    property var hub
+    readonly property var watch: hub.continueItems.length > 0 ? hub.continueItems[0] : null
+    readonly property var play: hub.continuePlaying.length > 0 ? hub.continuePlaying[0] : null
+    visible: !!watch || !!play
+    height: visible ? 300 + 24 : 0
+
+    readonly property string watchType: watch && watch.isSeries ? "series" : "movie"
+    property string watchArt
+    property var playDetails: ({})
+    onWatchChanged: {
+        watchArt = ""
+        if (watch && (watch.tmdbId || 0) > 0 && hub.disco) hub.disco.fetchLogo(watch.tmdbId, watchType)
+    }
+    readonly property string playTitle: play ? (play.title || "").trim() : ""
+    onPlayTitleChanged: {
+        playDetails = ({})
+        if (playTitle && hub.disco) hub.disco.fetchGameDetails(playTitle)
+    }
+    Connections {
+        target: root.hub.disco
+        ignoreUnknownSignals: true
+        function onTitleBackdropReady(id, type, url) {
+            if (root.watch && id === root.watch.tmdbId && type === root.watchType) root.watchArt = url
+        }
+        function onGameDetailsReady(name, d) { if (name === root.playTitle) root.playDetails = d }
+    }
+
+    readonly property real gap: 12
+    readonly property real inner: width - 48
+    // 1.35fr / 1fr, as the design has it.
+    readonly property real watchW: !play ? inner : (!watch ? 0 : (inner - gap) * 1.35 / 2.35)
+
+    HubContinueCard {
+        visible: !!root.watch
+        x: 24
+        y: 24
+        width: root.watchW
+        kicker: (i18n.language, i18n.t("hub_continue_watching"))
+        artSources: root.watchArt ? [root.watchArt] : []
+        tmdbId: root.watch ? (root.watch.tmdbId || 0) : 0
+        tmdbType: root.watchType
+        title: root.watch ? (root.watch.title || "") : ""
+        line: root.watch ? (root.watch.isSeries ? root.hub.episodeLabel(root.watch)
+                                                : [root.watch.year].concat((root.watch.genres || []).slice(0, 1))
+                                                      .filter(function (s) { return !!s }).join("  ·  ")) : ""
+        buttonText: (i18n.language, i18n.t("hub_resume"))
+        buttonLight: true
+        progress: root.watch ? (root.watch.watchedPct || 0) : -1
+        note: root.watch ? root.hub.fmtLeft((root.watch.durMs || 0) - (root.watch.resumeMs || 0)) : ""
+        onPressed: if (root.hub.api && root.watch)
+            root.hub.api.playByHashFile(root.watch.infoHash, root.watch.fileIndex)
+        onOpened: if (root.watch) root.hub.openItem(root.watch, root.watch.isSeries ? "series" : "movie")
+    }
+
+    HubContinueCard {
+        visible: !!root.play
+        x: root.watch ? 24 + root.watchW + root.gap : 24
+        y: 24
+        width: root.watch ? root.inner - root.watchW - root.gap : root.inner
+        logoWidth: 200
+        kicker: (i18n.language, i18n.t("hub_continue_playing"))
+        artSources: [root.playDetails.steamHero, root.playDetails.backdrop].filter(function (u) { return !!u })
+        fixedLogo: root.playDetails.steamLogo || ""
+        title: root.playTitle
+        line: root.play && (root.play.playSeconds || 0) > 0
+              ? (i18n.language, i18n.t("hub_tile_played")).arg(root.hub.hours(root.play.playSeconds)) : ""
+        buttonText: root.play ? root.hub.gameStateLabel(root.play) : ""
+        buttonEnabled: root.hub.gameStateActionable(root.play)
+        note: {
+            if (!root.play || !(root.play.lastPlayed > 0)) return ""
+            var ago = root.hub.fmtAgo(root.play.lastPlayed)
+            // "Yesterday" alone, "last played yesterday" mid-sentence.
+            return (i18n.language, i18n.t("hub_last_played_ago")).arg(ago.charAt(0).toLowerCase() + ago.slice(1))
+        }
+        onPressed: if (root.play) root.hub.gamePrimary(root.play)
+        onOpened: if (root.play) root.hub.openItem(root.play, "game")
+    }
+}

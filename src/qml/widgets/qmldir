@@ -44,9 +44,8 @@ singleton DialogStack 1.0 DialogStack.qml
 SpeedGraph 1.0 SpeedGraph.qml
 WheelScroller 1.0 WheelScroller.qml
 WorkHero 1.0 WorkHero.qml
+ChainImage 1.0 ChainImage.qml
 SeriesLogic 1.0 SeriesLogic.qml
-EpisodeRow 1.0 EpisodeRow.qml
-SeasonPicker 1.0 SeasonPicker.qml
 TitleStage 1.0 TitleStage.qml
 StageSelect 1.0 StageSelect.qml
 StageReleaseRow 1.0 StageReleaseRow.qml

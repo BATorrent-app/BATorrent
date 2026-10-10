@@ -43,7 +43,7 @@ Item {
         target: root.hub.disco
         ignoreUnknownSignals: true
         function onGameDetailsReady(name, d) {
-            if (name !== root.gameTitle) return
+            if (name !== root.gameTitle.trim()) return
             root.details = d
             root.detailsReady = true
         }
@@ -68,7 +68,8 @@ Item {
                 width: col.width
                 height: 400
                 title: root.gameTitle
-                steamAppId: root.details.steamAppId || 0
+                steamHero: root.details.steamHero || ""
+                steamLogo: root.details.steamLogo || ""
                 // Nothing until IGDB answers: the portrait cover cropped to a banner is
                 // a blown-up blur, and it flashed for the second before the real art.
                 fallbackArt: !root.detailsReady ? ""

@@ -86,10 +86,21 @@ QVariantList applyView(const QVariantList &list,
         if (title.contains(q))
             arr << v;
     }
+    const auto num = [](const QVariant &v, const char *key) {
+        return v.toMap().value(QLatin1String(key)).toDouble();
+    };
     if (sort == QLatin1String("name")) {
         std::sort(arr.begin(), arr.end(), [](const QVariant &a, const QVariant &b) {
             return a.toMap().value(QStringLiteral("title")).toString()
                 .localeAwareCompare(b.toMap().value(QStringLiteral("title")).toString()) < 0;
+        });
+    } else if (sort == QLatin1String("size")) {
+        std::stable_sort(arr.begin(), arr.end(), [&num](const QVariant &a, const QVariant &b) {
+            return num(a, "size") > num(b, "size");
+        });
+    } else if (sort == QLatin1String("recent")) {
+        std::stable_sort(arr.begin(), arr.end(), [&num](const QVariant &a, const QVariant &b) {
+            return num(a, "addedTime") > num(b, "addedTime");
         });
     }
     return arr;

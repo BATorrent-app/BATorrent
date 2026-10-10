@@ -222,6 +222,7 @@ Rectangle {
     function runSearch() {
         if (!api) return
         openedFromBrowse = false
+        openedFromHub = false
         clearFilters()
         var cat = (isLegacy && findBar.catIndex >= 0) ? api.categories[findBar.catIndex].code : 0
         api.search(page.sourceKey, findBar.text, cat)
@@ -250,17 +251,22 @@ Rectangle {
 
     // A title browse already knows: its page directly, no search to pick it from.
     property bool openedFromBrowse: false
-    function openTitle(item) {
+    // Opened from the HUB: going back goes back there, not to an empty Find.
+    property bool openedFromHub: false
+    signal backToHub()
+    function openTitle(item, fromHub) {
         if (!api || !item) return
         findBar.setText(item.title || "")
         searchDebounce.stop()
         clearFilters()
         openedFromBrowse = true
+        openedFromHub = fromHub === true
         api.openTitle(item)
     }
     function leaveTitle() {
         api.back()
         if (openedFromBrowse) { openedFromBrowse = false; findBar.setText("") }
+        if (openedFromHub) { openedFromHub = false; backToHub() }
     }
 
     function runQuery(text) {

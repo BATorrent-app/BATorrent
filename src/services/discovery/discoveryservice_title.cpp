@@ -124,8 +124,12 @@ void DiscoveryService::fetchLogo(int tmdbId, const QString &type)
     const auto hit = m_logoCache.constFind(key);
     if (hit != m_logoCache.constEnd()) {
         const QString url = *hit;
+        const QString backdrop = m_backdropCache.value(key);
         // Queued, so a tile that asks while it is being created can still hear it.
-        QTimer::singleShot(0, this, [this, tmdbId, type, url]() { emit titleLogoReady(tmdbId, type, url); });
+        QTimer::singleShot(0, this, [this, tmdbId, type, url, backdrop]() {
+            emit titleLogoReady(tmdbId, type, url);
+            emit titleBackdropReady(tmdbId, type, backdrop);
+        });
         return;
     }
     if (m_logoPending.contains(key) || tmdbApiKey().isEmpty()) return;
@@ -136,8 +140,12 @@ void DiscoveryService::fetchLogo(int tmdbId, const QString &type)
         reply->deleteLater();
         m_logoPending.remove(key);
         if (reply->error() != QNetworkReply::NoError) return;   // not cached: a later tile retries
-        const QString url = TmdbParse::logoUrl(reply->readAll(), TmdbLogoBase);
+        const QByteArray body = reply->readAll();
+        const QString url = TmdbParse::logoUrl(body, TmdbLogoBase);
+        const QString backdrop = TmdbParse::backdropUrls(body, TmdbBackdrop).value(0);
         m_logoCache.insert(key, url);
+        m_backdropCache.insert(key, backdrop);
         emit titleLogoReady(tmdbId, type, url);
+        emit titleBackdropReady(tmdbId, type, backdrop);
     });
 }

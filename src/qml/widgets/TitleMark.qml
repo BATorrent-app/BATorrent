@@ -16,6 +16,8 @@ Item {
     property real maxHeight: 120
     property int fontSize: 15
     property string logo
+    // Lettering the caller already has (a game's, from Steam): wins over TMDB's.
+    property string fixedLogo
 
     implicitWidth: img.visible ? img.paintedWidth : Math.min(maxWidth, name.implicitWidth)
     implicitHeight: img.visible ? img.paintedHeight : name.implicitHeight
@@ -42,7 +44,7 @@ Item {
         anchors.bottom: parent.bottom
         width: mark.maxWidth
         height: mark.maxHeight
-        source: mark.logo
+        source: mark.fixedLogo || mark.logo
         fillMode: Image.PreserveAspectFit
         horizontalAlignment: Image.AlignLeft
         verticalAlignment: Image.AlignBottom

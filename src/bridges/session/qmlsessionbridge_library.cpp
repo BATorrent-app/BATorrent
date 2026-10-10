@@ -119,6 +119,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
         m["description"] = description;                    // synopsis for the HUB detail drawer
         m["progress"]   = double(fprog);                 // download progress 0..1
         m["completed"]  = info.completed;
+        m["paused"]     = info.paused && !info.queued;
         m["size"]       = info.totalSize;
         m["addedTime"]  = qint64(info.addedTime);
         m["resumeMs"]   = resumeMs;

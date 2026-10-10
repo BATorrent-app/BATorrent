@@ -37,11 +37,21 @@ QtObject {
                 byId[k] = { infoHash: it.infoHash, tmdbId: it.tmdbId, title: it.title,
                             poster: it.poster, year: it.year, genres: it.genres,
                             description: it.description, isSeries: true, isGroup: true,
-                            members: [], videos: [], seasons: [] }
+                            members: [], videos: [], seasons: [],
+                            size: 0, addedTime: 0, completed: true, paused: false, progress: 1 }
                 order.push(k)
             }
             var g = byId[k]
             g.members.push(it.infoHash)
+            // The group reads as its least finished member: one season still
+            // downloading means the show is still downloading.
+            g.size += it.size || 0
+            g.addedTime = Math.max(g.addedTime, it.addedTime || 0)
+            if (!it.completed) {
+                g.completed = false
+                g.progress = Math.min(g.progress, it.progress || 0)
+                if (it.paused) g.paused = true
+            }
             // The member that actually has art names the group: a season pack
             // that never resolved a poster would otherwise leave the card blank.
             if (!g.poster && it.poster) {
@@ -74,62 +84,6 @@ QtObject {
             out.push(grp)
         }
         return out
-    }
-
-    // How much of each season is on disk, for the season picker. Stremio marks
-    // a season with a dot you have to guess at; a count says which season is
-    // worth opening before you open it.
-    function seasonHave(groupVideos, season) {
-        var n = 0
-        var v = groupVideos || []
-        for (var i = 0; i < v.length; i++)
-            if (v[i].season === season && v[i].episode >= 0 && (v[i].progress || 0) >= 1) n++
-        return n
-    }
-
-    // The season as TMDB knows it, crossed with what is actually on disk.
-    //
-    // Both halves matter: listing only what was downloaded hides that episode 4
-    // is missing from the middle of a pack, and listing only TMDB turns a
-    // library screen into a catalogue of things you cannot watch. Every row
-    // says which it is, and carries the torrent to play when it is here.
-    //
-    // Episodes we hold that TMDB does not list (a special, a renumbered
-    // release) are kept at the end rather than dropped: the file exists, and
-    // not showing it is how a download becomes invisible.
-    function mergeSeasonEpisodes(tmdbEpisodes, groupVideos, season) {
-        var have = ({})
-        var vids = groupVideos || []
-        for (var i = 0; i < vids.length; i++)
-            if (vids[i].season === season && vids[i].episode >= 0)
-                have[vids[i].episode] = vids[i]
-
-        var rows = []
-        var listed = ({})
-        var eps = tmdbEpisodes || []
-        for (var e = 0; e < eps.length; e++) {
-            var t = eps[e]
-            var v = have[t.episode]
-            listed[t.episode] = true
-            rows.push({ season: season, episode: t.episode,
-                        title: t.name || "", overview: t.overview || "",
-                        still: t.still || "", runtime: t.runtime || 0,
-                        airDate: t.air_date || "",
-                        have: v !== undefined,
-                        hash: v ? v.hash : "", idx: v ? v.idx : -1,
-                        watched: v ? v.watched === true : false,
-                        progress: v ? (v.progress || 0) : 0 })
-        }
-        for (var k in have) {
-            if (listed[k]) continue
-            var o = have[k]
-            rows.push({ season: season, episode: o.episode,
-                        title: o.name || "", overview: "", still: "", runtime: 0,
-                        airDate: "", have: true, hash: o.hash, idx: o.idx,
-                        watched: o.watched === true, progress: o.progress || 0 })
-        }
-        rows.sort(function (a, b) { return a.episode - b.episode })
-        return rows
     }
 
     // The same episode in two releases (a season pack and a single) is one

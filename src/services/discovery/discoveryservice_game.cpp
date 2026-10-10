@@ -15,6 +15,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QTimer>
 #include <QUrl>
 
 namespace {
@@ -62,10 +63,26 @@ void DiscoveryService::fetchGameDetails(const QString &gameName)
     const QString key = gameName.trimmed();
     if (key.isEmpty()) { emit gameDetailsReady(gameName, {}); return; }
     const auto hit = m_gameDetails.constFind(key);
-    if (hit != m_gameDetails.constEnd()) { emit gameDetailsReady(gameName, hit.value()); return; }
+    if (hit != m_gameDetails.constEnd()) {
+        const QVariantMap details = hit.value();
+        // Queued, so a tile that asks while it is being created can still hear it.
+        QTimer::singleShot(0, this, [this, gameName, details]() { emit gameDetailsReady(gameName, details); });
+        return;
+    }
+    if (!m_gameDetailsQueue.contains(key)) m_gameDetailsQueue.append(key);
+    runGameDetailsQueue();
+}
 
-    ensureIgdbToken([this, gameName, key]() {
-        if (m_igdbToken.isEmpty()) { emit gameDetailsReady(gameName, {}); return; }
+void DiscoveryService::runGameDetailsQueue()
+{
+    if (m_gameDetailsBusy || m_gameDetailsQueue.isEmpty()) return;
+    m_gameDetailsBusy = true;
+    const QString key = m_gameDetailsQueue.takeFirst();
+    const auto next = [this]() {
+        QTimer::singleShot(260, this, [this]() { m_gameDetailsBusy = false; runGameDetailsQueue(); });
+    };
+    ensureIgdbToken([this, key, next]() {
+        if (m_igdbToken.isEmpty()) { emit gameDetailsReady(key, {}); next(); return; }
         QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
         setIgdbHeaders(req);
         req.setTransferTimeout(12000);
@@ -76,17 +93,18 @@ void DiscoveryService::fetchGameDetails(const QString &gameName)
             "external_games.uid,external_games.category,external_games.external_game_source;"
             " limit 1;").arg(igdbQuoted(key)).toUtf8();
         QNetworkReply *reply = m_nam->post(req, body);
-        connect(reply, &QNetworkReply::finished, this, [this, reply, gameName, key]() {
+        connect(reply, &QNetworkReply::finished, this, [this, reply, key, next]() {
             reply->deleteLater();
             if (reply->error() != QNetworkReply::NoError) {
                 // Not cached: a dropped connection shouldn't blank the page for the session.
                 qDebug() << "[discover] IGDB game details error:" << reply->errorString();
-                emit gameDetailsReady(gameName, {});
-                return;
+                emit gameDetailsReady(key, {});
+            } else {
+                const QVariantMap details = IgdbParse::gameDetails(reply->readAll());
+                m_gameDetails.insert(key, details);
+                emit gameDetailsReady(key, details);
             }
-            const QVariantMap details = IgdbParse::gameDetails(reply->readAll());
-            m_gameDetails.insert(key, details);
-            emit gameDetailsReady(gameName, details);
+            next();
         });
     });
 }

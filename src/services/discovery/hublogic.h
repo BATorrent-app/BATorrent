@@ -24,8 +24,8 @@ QVariantList excludeOwnedTitles(const QVariantList &candidates,
                                 const QSet<QString> &ownedLower,
                                 int limit = 12);
 
-// Filter by title substring + optional name sort. `sort` is "name" or anything else
-// (caller sorts by recency for non-name).
+// Filter by title substring, then sort: "name", "size" (largest first) or
+// "recent" (newest addedTime first). Anything else keeps the input order.
 QVariantList applyView(const QVariantList &list,
                        const QString &search,
                        const QString &sort);

@@ -61,7 +61,8 @@ public:
     // Genres, billed cast and season count for a picked title. Emits workDetailsReady.
     Q_INVOKABLE void fetchWorkDetails(int tmdbId, const QString &type);
     // The title's lettering for a browse tile. Cached per session, one request
-    // per title however many tiles ask. Emits titleLogoReady ("" = none).
+    // per title however many tiles ask. Emits titleLogoReady ("" = none), and
+    // titleBackdropReady with the first textless backdrop from the same reply.
     Q_INVOKABLE void fetchLogo(int tmdbId, const QString &type);
 
     // Hub library helpers (pure; also covered by test_hublogic).
@@ -91,6 +92,7 @@ signals:
     void workDetailsReady(int tmdbId, const QVariantMap &details);   // {genres, cast, seasons}
     void seasonCastReady(int tmdbId, int season, const QStringList &cast);
     void titleLogoReady(int tmdbId, const QString &type, const QString &url);
+    void titleBackdropReady(int tmdbId, const QString &type, const QString &url);
 
 private:
     void searchTmdbTitles(const QString &query);
@@ -134,8 +136,12 @@ private:
     QVariantList m_searchWorks;
 
     QHash<QString, QString> m_logoCache;   // "type:id" → logo url, "" when the title has none
+    QHash<QString, QString> m_backdropCache;   // same key → first textless backdrop, "" when none
     QSet<QString> m_logoPending;
     QHash<QString, QVariantMap> m_gameDetails;   // game name → IGDB details, {} when unmatched
+    QStringList m_gameDetailsQueue;   // names waiting their turn: IGDB allows ~4 requests/s
+    bool m_gameDetailsBusy = false;
+    void runGameDetailsQueue();
 };
 
 #endif

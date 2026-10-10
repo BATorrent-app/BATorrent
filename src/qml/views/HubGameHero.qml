@@ -3,9 +3,8 @@
 // See LICENSE file for details
 
 // A game's banner: key art behind, the game's own logo and a one-line
-// identity in front. Art and logo come from Steam's public CDN when the game
-// has a Steam appid, IGDB's art otherwise; the title is set in type only when
-// no logo loads.
+// identity in front. Steam's art and logo when the game has them, IGDB's art
+// otherwise; the title is set in type only when no logo loads.
 import QtQuick
 import "../theme"
 import "../widgets"
@@ -13,32 +12,20 @@ import "../widgets"
 Item {
     id: hero
     property string title
-    property int steamAppId: 0
+    property string steamHero
+    property string steamLogo
     property string fallbackArt      // IGDB key art, then the poster
     property var facts: []           // year, maker, genre: in that order
     signal backRequested()
 
-    readonly property string steamBase: steamAppId > 0
-        ? "https://cdn.cloudflare.steamstatic.com/steam/apps/" + steamAppId + "/" : ""
-    // Steam's library hero is composed to sit behind a logo, so it wins.
-    readonly property var artChain: (steamBase ? [steamBase + "library_hero.jpg"] : [])
-                                    .concat(fallbackArt ? [fallbackArt] : [])
-    property int artIdx: 0
-    onArtChainChanged: artIdx = 0
+    readonly property var artChain: (steamHero ? [steamHero] : []).concat(fallbackArt ? [fallbackArt] : [])
 
     clip: true
     Rectangle { anchors.fill: parent; color: "#0a0a0b" }
 
-    Image {
-        id: art
+    ChainImage {
         anchors.fill: parent
-        source: hero.artChain[hero.artIdx] || ""
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        cache: true
-        onStatusChanged: if (status === Image.Error && hero.artIdx < hero.artChain.length - 1) hero.artIdx++
-        opacity: status === Image.Ready ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.durSlower } }
+        sources: hero.artChain
     }
     Rectangle {
         anchors.fill: parent
@@ -80,7 +67,7 @@ Item {
             id: logo
             width: 340
             height: 140
-            source: hero.steamBase ? hero.steamBase + "logo.png" : ""
+            source: hero.steamLogo
             fillMode: Image.PreserveAspectFit
             horizontalAlignment: Image.AlignLeft
             verticalAlignment: Image.AlignBottom

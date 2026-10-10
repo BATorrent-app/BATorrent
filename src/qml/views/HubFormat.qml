@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
+import "../theme"
 
 // Pure-ish Hub formatting / state labels. Lives next to HubView so cards and
 // menus share one implementation without bloating the page root.
@@ -89,5 +90,73 @@ QtObject {
         }
         return item.completed ? (i18n.t("hub_installed") + dot)
                               : ("↓ " + Math.floor((item.progress || 0) * 100) + "%" + dot)
+    }
+
+    function hours(secs) { return (secs > 0 ? (secs / 3600).toFixed(1) : "0") + " h" }
+
+    // What a library tile says under its art: a state in its own colour, a
+    // quieter fact beside it, and the bar along the art's bottom edge (-1 = none).
+    // `kind` is "game", "series" or "movie".
+    function tileState(item, kind) {
+        var out = { state: "", ink: Theme.t2, meta: "", bar: -1, barColor: Theme.accent, dim: false }
+        if (!item) return out
+        var size = root.fmtSize(item.size || 0)
+        var pct = Math.floor((item.progress || 0) * 100)
+        var downloading = kind === "game" ? item.installState === 0 : !item.completed
+        if (downloading) {
+            out.bar = item.progress || 0
+            out.meta = size
+            if (item.paused) {
+                out.state = i18n.t("hub_tile_paused").arg(pct)
+                out.ink = Theme.t4
+                out.barColor = Theme.t4
+            } else {
+                out.state = i18n.t("hub_tile_downloading").arg(pct)
+                out.ink = Theme.accentText
+            }
+            return out
+        }
+        if (kind === "game") {
+            out.meta = size
+            if (item.playing) { out.state = i18n.t("hub_playing_now"); out.ink = Theme.accentText }
+            else if (item.installState === 4) {
+                out.state = i18n.t("hub_installed")
+                if ((item.playSeconds || 0) > 0) out.meta = i18n.t("hub_tile_played").arg(root.hours(item.playSeconds))
+            } else if (item.installState === 1) {
+                out.state = i18n.t("hub_tile_not_installed")
+                out.ink = Theme.t4
+                out.dim = true
+            } else out.state = root.gameStateLabel(item)
+            return out
+        }
+        if (kind === "series") {
+            var n = (item.seasons || []).length
+            out.meta = n > 0 ? i18n.t(n === 1 ? "hub_n_season" : "hub_n_seasons").arg(n) : size
+            // A show is a group of torrents: the episode under way is in its videos.
+            var vids = item.videos || []
+            var cur = null
+            for (var i = 0; i < vids.length; i++) {
+                var w = vids[i].watchedPct || 0
+                if (w > 0 && w < 0.9 && !vids[i].watched) { cur = vids[i]; break }
+            }
+            if (cur) {
+                out.state = "S" + cur.season + "E" + (cur.episode < 10 ? "0" : "") + cur.episode
+                          + " · " + Math.round(cur.watchedPct * 100) + "%"
+                out.bar = cur.watchedPct
+            } else out.state = i18n.t("hub_tile_in_library")
+            return out
+        }
+        out.meta = size
+        var watched = item.watchedPct || 0
+        if (watched >= 0.9) {
+            out.state = i18n.t("hub_tile_watched")
+            out.ink = Theme.t4
+            out.bar = 1
+            out.barColor = Qt.rgba(1, 1, 1, 0.5)
+        } else if (watched > 0) {
+            out.state = root.fmtLeft((item.durMs || 0) - (item.resumeMs || 0)) || (Math.round(watched * 100) + "%")
+            out.bar = watched
+        } else out.state = i18n.t("hub_tile_in_library")
+        return out
     }
 }

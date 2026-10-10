@@ -103,6 +103,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["poster"]    = poster;
         m["progress"]   = double(info.progress);
         m["completed"]  = info.completed;
+        m["paused"]     = info.paused && !info.queued;
         m["size"]       = info.totalSize;
         m["addedTime"]  = qint64(info.addedTime);
         m["hasExe"]     = !gameExe(hash).isEmpty();

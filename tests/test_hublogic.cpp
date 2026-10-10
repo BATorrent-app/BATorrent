@@ -45,3 +45,27 @@ TEST_CASE("applyView filters and sorts by name", "[hublogic]") {
     REQUIRE(named.size() == 3);
     REQUIRE(named[0].toMap().value(QStringLiteral("title")).toString() == QStringLiteral("Alpha"));
 }
+
+TEST_CASE("applyView sorts by size and by recency, keeping ties in order", "[hublogic]") {
+    QVariantList list;
+    const struct { const char *t; double size; double added; } rows[] = {
+        { "Small old", 1, 100 }, { "Big new", 50, 300 }, { "Mid tie A", 10, 200 }, { "Mid tie B", 10, 200 } };
+    for (const auto &r : rows) {
+        QVariantMap m;
+        m.insert(QStringLiteral("title"), QString::fromUtf8(r.t));
+        m.insert(QStringLiteral("size"), r.size);
+        m.insert(QStringLiteral("addedTime"), r.added);
+        list << m;
+    }
+    const auto title = [](const QVariantList &l, int i) { return l[i].toMap().value(QStringLiteral("title")).toString(); };
+    const auto bySize = HubLogic::applyView(list, QString(), QStringLiteral("size"));
+    REQUIRE(title(bySize, 0) == QStringLiteral("Big new"));
+    REQUIRE(title(bySize, 1) == QStringLiteral("Mid tie A"));
+    REQUIRE(title(bySize, 2) == QStringLiteral("Mid tie B"));
+    REQUIRE(title(bySize, 3) == QStringLiteral("Small old"));
+    const auto byRecent = HubLogic::applyView(list, QString(), QStringLiteral("recent"));
+    REQUIRE(title(byRecent, 0) == QStringLiteral("Big new"));
+    REQUIRE(title(byRecent, 3) == QStringLiteral("Small old"));
+    const auto asIs = HubLogic::applyView(list, QString(), QStringLiteral("whatever"));
+    REQUIRE(title(asIs, 0) == QStringLiteral("Small old"));
+}

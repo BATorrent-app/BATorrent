@@ -2,28 +2,27 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// HUB page: library of watchable video torrents + games. Thin orchestrator:
-// owns search/sort/detail state, composes HubCompute + rails + shelves + drawer.
+// HUB page: what you were in the middle of on top, then your library as one
+// rail per kind (games, series, films), then what to get next. A thin
+// composer: the derived lists live in HubCompute, the wording in HubFormat.
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls.Basic
 import "../theme"
 import "../widgets"
 
 Item {
     id: page
     signal openSearch(string query)
+    // A title's page in Find: where a series opens, and every recommendation.
+    signal openTitle(var work)
     property var api: typeof session !== "undefined" ? session : null
     property var library: []
     property var gameItems: []
 
     property string librarySearch: ""
-    property string librarySort: "recent"   // recent | name
+    property string librarySort: "recent"   // recent | name | size
+    property string libraryFilter: "all"    // all | game | series | movie
     readonly property var disco: typeof discovery !== "undefined" ? discovery : null
-
-    readonly property int railCardW: 134
-    readonly property int railSpacing: 16
-    readonly property int railW: 3 * railCardW + 2 * railSpacing
 
     HubFormat { id: fmt; page: page }
     HubMenus {
@@ -39,28 +38,23 @@ Item {
 
     readonly property var continueItems: logic.continueItems
     readonly property var continuePlaying: logic.continuePlaying
-    readonly property var suggestedGame: logic.suggestedGame
     readonly property bool empty: logic.empty
-    readonly property var recentlyAdded: logic.recentlyAdded
     readonly property var seriesShelf: logic.seriesGroups(library)
-    property var seriesItem: null
-    property bool seriesOpen: false
-    function openSeries(group) { seriesItem = group; seriesOpen = true }
-    function mergeSeasonEpisodes(eps, videos, season) {
-        return logic.mergeSeasonEpisodes(eps, videos, season)
-    }
-    function seasonHave(videos, season) { return logic.seasonHave(videos, season) }
-    // Everything the series shelf did not take. A show that resolved is one
-    // card up there, so repeating its three season packs down here would be
-    // the duplication the grouping exists to remove.
-    readonly property var movieShelf: {
+    // A show that resolved is one card in the series rail, however many
+    // torrents hold it; one that did not still belongs there, alone.
+    readonly property var seriesRail: {
         var grouped = ({})
         for (var g = 0; g < seriesShelf.length; g++)
             for (var m = 0; m < seriesShelf[g].members.length; m++)
                 grouped[seriesShelf[g].members[m]] = true
-        return (library || []).filter(function (i) { return !grouped[i.infoHash] })
+        var loose = (library || []).filter(function (i) { return i.isSeries && !grouped[i.infoHash] })
+        return applyView(seriesShelf.concat(loose))
     }
-    readonly property string topGenre: logic.topGenre
+    readonly property var movieRail: applyView((library || []).filter(function (i) { return !i.isSeries }))
+    readonly property var gameRail: applyView(gameItems || [])
+    readonly property var counts: ({ all: gameRail.length + seriesRail.length + movieRail.length,
+                                     game: gameRail.length, series: seriesRail.length, movie: movieRail.length })
+
     readonly property var recommendations: logic.recommendations
     readonly property var recSeed: logic.recSeed
     property alias perTitleRecs: logic.perTitleRecs
@@ -94,6 +88,7 @@ Item {
     }
 
     function fmtPlaytime(secs) { return fmt.fmtPlaytime(secs) }
+    function hours(secs) { return fmt.hours(secs) }
     function fmtLeft(ms) { return fmt.fmtLeft(ms) }
     function episodeLabel(item) { return fmt.episodeLabel(item) }
     function fmtSize(b) { return fmt.fmtSize(b) }
@@ -106,6 +101,7 @@ Item {
     function gameStateLabel(item) { return fmt.gameStateLabel(item) }
     function gameStateActionable(item) { return fmt.gameStateActionable(item) }
     function cardStatus(item, isGame) { return fmt.cardStatus(item, isGame) }
+    function tileState(item, kind) { return fmt.tileState(item, kind) }
     function gameMenuOpenFolder(hash) { logic.gameMenuOpenFolder(hash) }
     function fmtAgo(ms) { return fmt.fmtAgo(ms) }
     function openExePicker(hash, launchAfter) { logic.openExePicker(hash, launchAfter) }
@@ -117,48 +113,50 @@ Item {
     property var detailItem: null
     property bool detailOpen: false
     function openDetail(item, isGame) { logic.openDetail(item, isGame) }
+    function openItem(item, kind) {
+        if (!item) return
+        if (kind === "series")
+            openTitle({ title: item.title || "", year: item.year || "", type: "series",
+                        tmdbId: item.tmdbId || 0, poster: item.poster || "" })
+        else openDetail(item, kind === "game")
+    }
+    function openRec(item) {
+        if (item) openTitle(item)
+    }
 
     Rectangle { anchors.fill: parent; color: Theme.bg }
 
     Flickable {
         id: hubFlick
         anchors.fill: parent
-        contentHeight: col.implicitHeight + 32
+        contentHeight: col.height + 32
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         WheelScroller { flick: hubFlick }
 
-        ColumnLayout {
+        Column {
             id: col
-            width: parent.width
-            spacing: 22
+            width: hubFlick.width
 
-            Text {
-                Layout.fillWidth: true
-                Layout.leftMargin: Theme.sp5
-                Layout.rightMargin: Theme.sp5
-                Layout.topMargin: Theme.sp5 + 4
-                text: (i18n.language, i18n.t("hub_greeting"))
-                color: Theme.t1
-                font.pixelSize: 25
-                font.weight: Font.Bold
-                font.family: Theme.fontSans
+            HubContinueHeroes {
+                width: col.width
+                hub: page
             }
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 48
+            Column {
+                width: col.width
+                topPadding: 48
                 spacing: 14
                 visible: page.empty
                 IconImg {
-                    Layout.alignment: Qt.AlignHCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
                     src: "qrc:/icons/hub.svg"
                     tint: Theme.t4
                     s: 46
                     opacity: 0.7
                 }
                 Text {
-                    Layout.alignment: Qt.AlignHCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
                     text: (i18n.language, i18n.t("hub_empty_title"))
                     color: Theme.t1
                     font.pixelSize: 18
@@ -166,62 +164,100 @@ Item {
                     font.family: Theme.fontSans
                 }
                 Text {
-                    Layout.alignment: Qt.AlignHCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
                     text: (i18n.language, i18n.t("hub_empty_sub"))
                     color: Theme.t3
                     font.pixelSize: 13
                     font.family: Theme.fontSans
                 }
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: 4
-                    spacing: 12
-                    BtnFlat {
-                        primary: true
-                        icon: "qrc:/icons/search.svg"
-                        text: (i18n.language, i18n.t("nav_find"))
-                        onClicked: page.openSearch("")
-                    }
-                }
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.leftMargin: Theme.sp5
-                Layout.rightMargin: Theme.sp5
-                spacing: Theme.sp3
-                visible: page.library.length > 0 || page.gameItems.length > 0
-                TFld {
-                    Layout.preferredWidth: 260
-                    Layout.preferredHeight: 32
+                BtnFlat {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    primary: true
                     icon: "qrc:/icons/search.svg"
-                    clearable: true
-                    placeholder: (i18n.language, i18n.t("hub_search_lib"))
-                    onTextChanged: page.librarySearch = text
-                }
-                Item { Layout.fillWidth: true }
-                TSelect {
-                    Layout.preferredWidth: 150
-                    Layout.preferredHeight: 32
-                    property var keys: ["recent", "name"]
-                    model: [i18n.t("hub_sort_recent"), i18n.t("hub_sort_name")]
-                    onActivated: page.librarySort = keys[currentIndex]
+                    text: (i18n.language, i18n.t("nav_find"))
+                    onClicked: page.openSearch("")
                 }
             }
 
-            HubContinueRails {
-                Layout.fillWidth: true
-                page: page
+            HubLibraryBar {
+                width: col.width
+                visible: !page.empty
+                hub: page
+                counts: page.counts
             }
 
-            HubShelves {
-                Layout.fillWidth: true
-                page: page
+            HubRail {
+                width: col.width
+                visible: items.length > 0 && (page.libraryFilter === "all" || page.libraryFilter === "game")
+                hub: page
+                kind: "game"
+                title: (i18n.language, i18n.t("hub_kind_games"))
+                items: page.gameRail
+                onActivated: function (it) { page.openItem(it, "game") }
+                onContext: function (it) { page.gameMenu.openFor(it.infoHash) }
+            }
+            HubRail {
+                width: col.width
+                visible: items.length > 0 && (page.libraryFilter === "all" || page.libraryFilter === "series")
+                hub: page
+                kind: "series"
+                title: (i18n.language, i18n.t("hub_kind_series"))
+                items: page.seriesRail
+                onActivated: function (it) { page.openItem(it, "series") }
+                onContext: function (it) { if (!it.isGroup) page.continueMenu.openFor(it.infoHash, it.fileIndex) }
+            }
+            HubRail {
+                width: col.width
+                visible: items.length > 0 && (page.libraryFilter === "all" || page.libraryFilter === "movie")
+                hub: page
+                kind: "movie"
+                title: (i18n.language, i18n.t("hub_kind_movies"))
+                items: page.movieRail
+                onActivated: function (it) { page.openItem(it, "movie") }
+                onContext: function (it) { page.continueMenu.openFor(it.infoHash, it.fileIndex) }
+            }
+
+            Item { width: 1; height: 16; visible: !page.empty }
+
+            PosterShelf {
+                landscape: true
+                showSeeAll: false
+                label: (i18n.language, i18n.t("hub_mylist"))
+                items: page.api ? page.api.watchlist : []
+                flickY: hubFlick.contentY
+                flickH: hubFlick.height
+                onActivated: function (it) { page.openRec(it) }
+            }
+            PosterShelf {
+                landscape: true
+                showSeeAll: false
+                label: (i18n.language, i18n.t("hub_because_watched")).arg(page.recSeed ? (page.recSeed.title || "") : "")
+                items: page.recSeed ? page.perTitleRecs : []
+                flickY: hubFlick.contentY
+                flickH: hubFlick.height
+                onActivated: function (it) { page.openRec(it) }
+            }
+            PosterShelf {
+                landscape: true
+                showSeeAll: false
+                label: (i18n.language, i18n.t("hub_because_played")).arg(page.gameSeed ? (page.gameSeed.title || "") : "")
+                items: page.gameSeed ? page.gameRecs : []
+                flickY: hubFlick.contentY
+                flickH: hubFlick.height
+                onActivated: function (it) { page.openRec(it) }
+            }
+            PosterShelf {
+                landscape: true
+                showSeeAll: false
+                label: (i18n.language, i18n.t("hub_recommended"))
+                items: page.recommendations
+                flickY: hubFlick.contentY
+                flickH: hubFlick.height
+                onActivated: function (it) { page.openRec(it) }
             }
         }
     }
 
-    HubSeriesPage { anchors.fill: parent; hub: page }
     HubGamePage { anchors.fill: parent; hub: page }
     HubDetailDrawer { anchors.fill: parent; hub: page }
 }

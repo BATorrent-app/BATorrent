@@ -18,8 +18,6 @@ Column {
     visible: !!game && (game.lastPlayed || 0) > 0
     spacing: 16
 
-    function hours(secs) { return (secs / 3600).toFixed(1) + " h" }
-
     Item {
         width: root.width
         height: head.implicitHeight
@@ -35,7 +33,7 @@ Column {
             anchors.left: head.right
             anchors.leftMargin: 12
             anchors.baseline: head.baseline
-            text: (i18n.language, i18n.t("game_activity_window")).arg(root.hours(root.totalSecs))
+            text: (i18n.language, i18n.t("game_activity_window")).arg(root.hub.hours(root.totalSecs))
             color: Theme.t4
             font.pixelSize: 13
             font.family: Theme.fontSans
@@ -68,7 +66,7 @@ Column {
                 }
                 MouseArea { id: tipMa; anchors.fill: parent; hoverEnabled: true }
                 ToolTip.visible: tipMa.containsMouse && modelData > 0
-                ToolTip.text: root.hours(modelData)
+                ToolTip.text: root.hub.hours(modelData)
                 ToolTip.delay: 300
             }
         }

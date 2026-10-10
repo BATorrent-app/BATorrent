@@ -232,7 +232,14 @@ QVariantMap gameDetails(const QByteArray &jsonArray)
     for (const QJsonObject &o : objectsFromJson(jsonArray)) {
         if (o.value(QLatin1String("name")).toString().isEmpty()) continue;
         QVariantMap m = titleRow(o);
-        m.insert(QStringLiteral("steamAppId"), steamAppId(o));
+        const int appId = steamAppId(o);
+        m.insert(QStringLiteral("steamAppId"), appId);
+        if (appId > 0) {
+            // Steam's public CDN: the library hero is composed to sit behind the logo.
+            const QString base = QStringLiteral("https://cdn.cloudflare.steamstatic.com/steam/apps/%1/").arg(appId);
+            m.insert(QStringLiteral("steamHero"), base + QStringLiteral("library_hero.jpg"));
+            m.insert(QStringLiteral("steamLogo"), base + QStringLiteral("logo.png"));
+        }
         return m;
     }
     return {};
