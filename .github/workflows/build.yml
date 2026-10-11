@@ -173,7 +173,7 @@ jobs:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
-          BAT_STEAM_KEY: ${{ secrets.STEAM_API_KEY }}
+          BAT_STEAM_KEY: ${{ secrets.BAT_STEAM_KEY }}
           BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBAT_LIBTORRENT_SOURCE=ON \
@@ -343,7 +343,7 @@ jobs:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
-          BAT_STEAM_KEY: ${{ secrets.STEAM_API_KEY }}
+          BAT_STEAM_KEY: ${{ secrets.BAT_STEAM_KEY }}
           BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
           $sentryArgs = @()
@@ -633,7 +633,7 @@ jobs:
           BAT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
           BAT_IGDB_ID: ${{ secrets.IGDB_CLIENT_ID }}
           BAT_IGDB_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
-          BAT_STEAM_KEY: ${{ secrets.STEAM_API_KEY }}
+          BAT_STEAM_KEY: ${{ secrets.BAT_STEAM_KEY }}
           BAT_SUBDL_KEY: ${{ secrets.BAT_SUBDL_KEY }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
