@@ -47,6 +47,9 @@ Item {
             settings.set(resumeKey + "_watched", true)
         } else if (mediaPlayer.position > 5000) {
             settings.set(resumeKey, Math.floor(mediaPlayer.position))
+            // Back in the middle of it, so no longer watched: left set, Find
+            // said "Watched" while the HUB offered to resume the same episode.
+            settings.set(resumeKey + "_watched", false)
         }
     }
 
