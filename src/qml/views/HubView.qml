@@ -129,9 +129,12 @@ Item {
     function openDetail(item, isGame) { logic.openDetail(item, isGame) }
     function openItem(item, kind) {
         if (!item) return
-        if (kind === "series")
+        if (kind === "series") {
+            var ep = logic.series.resumeEpisode(item.videos)
             openTitle({ title: item.title || "", year: item.year || "", type: "series",
-                        tmdbId: item.tmdbId || 0, poster: item.poster || "" })
+                        tmdbId: item.tmdbId || 0, poster: item.poster || "",
+                        season: ep ? ep.season : -1, episode: ep ? ep.episode : -1 })
+        }
         else openDetail(item, kind === "game")
     }
     function openRec(item) {

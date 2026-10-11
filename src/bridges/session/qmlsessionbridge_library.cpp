@@ -78,6 +78,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
             vf["episode"] = v.episode;
             vf["watched"] = s.value(vrk + QStringLiteral("_watched"), false).toBool();
             vf["watchedPct"] = watchedPct(vrk);
+            vf["resumeAt"] = s.value(vrk + QStringLiteral("_at"), 0).toLongLong();   // when last played
             // Its own file, not the torrent's: in a season pack episode 1 can
             // be finished while episode 8 has not started, and a series screen
             // that shows one number for both is lying about seven of them.

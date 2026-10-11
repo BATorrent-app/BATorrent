@@ -223,6 +223,7 @@ Rectangle {
         if (!api) return
         openedFromBrowse = false
         returnPage = -1
+        pendingEpisode = null
         clearFilters()
         var cat = (isLegacy && findBar.catIndex >= 0) ? api.categories[findBar.catIndex].code : 0
         api.search(page.sourceKey, findBar.text, cat)
@@ -255,8 +256,12 @@ Rectangle {
     // not to an empty Find.
     property int returnPage: -1
     signal backTo(int page)
+    // { tmdbId, season, episode } a show opens on (the HUB sends where you are in it).
+    property var pendingEpisode: null
     function openTitle(item, fromPage) {
         if (!api || !item) return
+        pendingEpisode = (item.season >= 0 && item.episode > 0)
+            ? { tmdbId: item.tmdbId || 0, season: item.season, episode: item.episode } : null
         findBar.setText(item.title || "")
         searchDebounce.stop()
         clearFilters()

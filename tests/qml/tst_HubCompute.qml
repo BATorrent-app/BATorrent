@@ -281,6 +281,21 @@ Item {
             compare(done[0].paused, false)
         }
 
+        function test_aShowPicksUpWhereItWasLeft() {
+            var c = mk()
+            var v = function (s, e, at, watched) { return { season: s, episode: e, resumeAt: at, watched: watched === true } }
+            compare(c.series.resumeEpisode([v(1, 2, 0), v(1, 1, 0)]).episode, 1, "nothing played: the first on disk")
+            var mid = c.series.resumeEpisode([v(1, 1, 100, true), v(1, 2, 300), v(1, 3, 200)])
+            compare(mid.episode, 2, "the one played last, not the furthest")
+            var done = c.series.resumeEpisode([v(1, 1, 100, true), v(1, 2, 500, true), v(2, 1, 0)])
+            compare(done.season, 2, "finished: on to the next one on disk")
+            compare(done.episode, 1)
+            var end = c.series.resumeEpisode([v(1, 1, 0), v(1, 2, 900, true)])
+            compare(end.episode, 2, "the last one finished stays put")
+            compare(c.series.resumeEpisode([]), null)
+            compare(c.series.resumeEpisode([{ season: -1, episode: -1 }]), null, "loose files aren't episodes")
+        }
+
         function test_nothingInNothingOut() {
             var c = mk()
             compare(c.seriesGroups([]).length, 0)

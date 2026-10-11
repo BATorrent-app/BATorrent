@@ -18,6 +18,21 @@ Item {
         when: windowShown
 
         SignalSpy { id: spy; signalName: "returnTo" }
+        SignalSpy { id: titles; signalName: "openTitle" }
+
+        function test_aShowOpensOnTheEpisodeYouAreIn() {
+            var h = createTemporaryObject(hubComp, root)
+            titles.target = h
+            titles.clear()
+            h.openItem({ title: "Breaking Bad", tmdbId: 1396, isSeries: true, isGroup: true,
+                         videos: [ { season: 1, episode: 1, resumeAt: 10, watched: true },
+                                   { season: 1, episode: 2, resumeAt: 0 } ] }, "series")
+            compare(titles.count, 1)
+            var work = titles.signalArguments[0][0]
+            compare(work.type, "series")
+            compare(work.season, 1)
+            compare(work.episode, 2, "episode 1 was finished, so episode 2")
+        }
 
         function test_aGameOpenedFromDownloadsReturnsThere() {
             var h = createTemporaryObject(hubComp, root)

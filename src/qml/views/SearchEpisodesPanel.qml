@@ -46,10 +46,32 @@ Item {
         library = logic.libraryEpisodes(groups, tmdbId)
     }
 
-    onTmdbIdChanged: { season = -1; episode = -1; allReleases = false; refreshLibrary() }
+    onTmdbIdChanged: { season = -1; episode = -1; allReleases = false; refreshLibrary(); takePending() }
     onSeasonsChanged: if (season < 0 && seasons.length > 0) season = seasons[0]
+    // Opened from the HUB: the season you are in, scrolled to the episode.
+    property int focusEpisode: -1
+    function takePending() {
+        var p = sv.pendingEpisode
+        if (!p || tmdbId <= 0 || p.tmdbId !== tmdbId) return
+        sv.pendingEpisode = null
+        season = p.season
+        focusEpisode = p.episode
+    }
+    onEpisodesChanged: if (focusEpisode > 0) Qt.callLater(scrollToFocus)
+    function scrollToFocus() {
+        for (var i = 0; i < episodes.length; i++) {
+            if (episodes[i].episode !== focusEpisode) continue
+            epList.positionViewAtIndex(i, ListView.Center)
+            focusEpisode = -1
+            return
+        }
+    }
     // The page can open on a title that was already picked; no change signal then.
-    Component.onCompleted: { refreshLibrary(); if (season < 0 && seasons.length > 0) season = seasons[0] }
+    Component.onCompleted: {
+        refreshLibrary()
+        takePending()
+        if (season < 0 && seasons.length > 0) season = seasons[0]
+    }
     onSeasonChanged: { episode = -1; requestSeason() }
     onVisibleChanged: if (visible) refreshLibrary()
     function requestSeason() {

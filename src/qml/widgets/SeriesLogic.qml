@@ -66,6 +66,7 @@ QtObject {
                                 season: src.season, episode: src.episode,
                                 watched: src.watched === true,
                                 watchedPct: src.watchedPct || 0,
+                                resumeAt: src.resumeAt || 0,
                                 // the file's own progress, not the torrent's
                                 progress: src.progress || 0 })
             }
@@ -84,6 +85,21 @@ QtObject {
             out.push(grp)
         }
         return out
+    }
+
+    // Where a show picks up: the episode last played, the next one on disk if
+    // that was finished, the first on disk if nothing was played. null if none.
+    function resumeEpisode(groupVideos) {
+        var vids = (groupVideos || []).filter(function (v) { return v.season >= 0 && v.episode >= 0 })
+        if (vids.length === 0) return null
+        vids.sort(function (a, b) { return a.season !== b.season ? a.season - b.season : a.episode - b.episode })
+        var last = null
+        for (var i = 0; i < vids.length; i++)
+            if ((vids[i].resumeAt || 0) > 0 && (!last || vids[i].resumeAt > last.resumeAt)) last = vids[i]
+        if (!last) return vids[0]
+        if (last.watched !== true) return last
+        var at = vids.indexOf(last)
+        return at + 1 < vids.length ? vids[at + 1] : last
     }
 
     // The same episode in two releases (a season pack and a single) is one
