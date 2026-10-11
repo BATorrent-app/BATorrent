@@ -28,16 +28,21 @@ Rectangle {
 
     implicitHeight: 106
     radius: 6
-    color: ma.containsMouse && row.offered ? Theme.stageHover : "transparent"
+    color: ma.containsMouse && (row.offered || row.playable) ? Theme.stageHover : "transparent"
     Behavior on color { ColorAnimation { duration: Theme.durFast } }
     opacity: row.offered || row.playable ? 1 : 0.55
 
+    // An episode already on disk plays; the list of torrents is for one you
+    // don't have yet ("All releases" still reaches it for one you do).
     MouseArea {
         id: ma
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: row.offered ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: if (row.offered) row.openRequested()
+        cursorShape: row.offered || row.playable ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onClicked: {
+            if (row.playable) row.playRequested()
+            else if (row.offered) row.openRequested()
+        }
     }
 
     RowLayout {
