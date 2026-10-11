@@ -1381,5 +1381,8 @@
   "hub_ach_short": "成就 %1 / %2",
   "game_ach_secrets_left": "剩余 %1 项隐藏成就",
   "hub_ready_to_watch": "可以观看",
-  "hub_ready_to_install": "可以安装"
+  "hub_ready_to_install": "可以安装",
+  "toast_achievement": "成就解锁：%1",
+  "set_notify_achievements": "解锁成就时通知",
+  "set_notify_achievements_note": "在从 BATorrent 启动的游戏运行时"
 }

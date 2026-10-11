@@ -1381,5 +1381,8 @@
   "hub_ach_short": "%1 von %2 Erfolgen",
   "game_ach_secrets_left": "%1 versteckte Erfolge übrig",
   "hub_ready_to_watch": "Bereit zum Ansehen",
-  "hub_ready_to_install": "Bereit zur Installation"
+  "hub_ready_to_install": "Bereit zur Installation",
+  "toast_achievement": "Erfolg freigeschaltet: %1",
+  "set_notify_achievements": "Benachrichtigen, wenn ein Erfolg freigeschaltet wird",
+  "set_notify_achievements_note": "Während ein aus BATorrent gestartetes Spiel läuft"
 }

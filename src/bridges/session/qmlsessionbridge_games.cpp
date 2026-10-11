@@ -208,6 +208,7 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
             if (!isInstaller && pid > 0 && !m_runningGames.contains(infoHash)) {
                 m_runningGames.insert(infoHash, pid);
                 m_gameStartMs.insert(infoHash, nowMs);
+                startAchievementWatch(infoHash);
                 emit gamesChanged();   // "playing now"
             }
             emit toast(isInstaller ? tr_("hub_game_installing") : tr_("hub_game_launch"),
@@ -257,6 +258,7 @@ void QmlSessionBridge::pollRunningGames()
         m_playLog->recordSession(hash, startMs, (QDateTime::currentMSecsSinceEpoch() - startMs) / 1000);
         m_runningGames.remove(hash);
         m_gameStartMs.remove(hash);
+        stopAchievementWatch(hash);
         changed = true;
     }
     if (changed) emit gamesChanged();

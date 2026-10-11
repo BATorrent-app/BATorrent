@@ -1381,5 +1381,8 @@
   "hub_ach_short": "Достижения: %1 из %2",
   "game_ach_secrets_left": "Осталось скрытых достижений: %1",
   "hub_ready_to_watch": "Можно смотреть",
-  "hub_ready_to_install": "Можно установить"
+  "hub_ready_to_install": "Можно установить",
+  "toast_achievement": "Достижение получено: %1",
+  "set_notify_achievements": "Уведомлять о новых достижениях",
+  "set_notify_achievements_note": "Пока запущена игра, открытая из BATorrent"
 }

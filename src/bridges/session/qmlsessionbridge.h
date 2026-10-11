@@ -13,6 +13,7 @@
 class HttpDownloadManager;
 class PlayLog;
 class AchievementService;
+class AchievementWatch;
 
 class QmlSessionBridge : public QObject
 {
@@ -415,6 +416,8 @@ signals:
     void gamesChanged();   // a game started/stopped → refresh the game library
     void achievementsReady(const QString &infoHash, int steamAppId, const QVariantList &achievements,
                            int unlocked, int total);
+    // Raised while the game runs, one per achievement, as the emulator writes it.
+    void achievementUnlocked(const QString &gameTitle, const QString &name, const QString &icon);
     void movieReady(const QString &infoHash, const QString &name);   // a movie/series finished → offer Play now
     void gameReady(const QString &infoHash, const QString &name);    // game download done → offer Install
     void installProgress(const QString &infoHash, double percent);  // Get&Install download/install progress
@@ -470,6 +473,14 @@ private:
     void importLegacyPlaytime();
     std::unique_ptr<PlayLog> m_playLog;
     std::unique_ptr<AchievementService> m_achievements;
+    std::unique_ptr<AchievementWatch> m_achWatch;
+    QHash<QString, int> m_achAppId;            // infoHash → the appid its lookups resolved to
+    QHash<QString, QString> m_achTitle;        // infoHash → the title to name in the notice
+    QHash<QString, QStringList> m_achAnnounce; // infoHash → unlocks waiting for their names
+    QString achievementDir(const QString &infoHash) const;
+    void onAchievementsLookedUp(const QString &key, int appId, const QVariantList &list);
+    void startAchievementWatch(const QString &infoHash);
+    void stopAchievementWatch(const QString &infoHash);
     MetadataResolver *m_resolver;
     quint16 m_streamPort = 0;
     int m_selectedIndex = -1;

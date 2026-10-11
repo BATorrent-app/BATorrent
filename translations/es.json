@@ -1381,5 +1381,8 @@
   "hub_ach_short": "%1 de %2 logros",
   "game_ach_secrets_left": "%1 logros ocultos restantes",
   "hub_ready_to_watch": "Listo para ver",
-  "hub_ready_to_install": "Listo para instalar"
+  "hub_ready_to_install": "Listo para instalar",
+  "toast_achievement": "Logro desbloqueado: %1",
+  "set_notify_achievements": "Avisar al desbloquear un logro",
+  "set_notify_achievements_note": "Mientras se ejecuta un juego abierto desde BATorrent"
 }

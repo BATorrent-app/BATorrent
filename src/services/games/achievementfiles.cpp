@@ -10,6 +10,7 @@
 #include <QQueue>
 #include <QStandardPaths>
 #include <QStringList>
+#include <algorithm>
 
 using AchievementFormats::Format;
 using AchievementFormats::Unlocks;
@@ -164,11 +165,15 @@ QList<Candidate> gameDirCandidates(int appId, const QString &gameDir)
     return out;
 }
 
-Unlocks readUnlocks(int appId, const QString &gameDir, const Roots &roots)
+QList<Candidate> candidates(int appId, const QString &gameDir, const Roots &roots)
+{
+    return systemCandidates(appId, roots) + gameDirCandidates(appId, gameDir);
+}
+
+Unlocks readUnlocks(const QList<Candidate> &files)
 {
     Unlocks out;
-    const QList<Candidate> all = systemCandidates(appId, roots) + gameDirCandidates(appId, gameDir);
-    for (const Candidate &c : all) {
+    for (const Candidate &c : files) {
         const QByteArray bytes = readCapped(c.path);
         if (bytes.isEmpty()) continue;
         const Unlocks got = AchievementFormats::parse(c.format, bytes);
@@ -181,9 +186,25 @@ Unlocks readUnlocks(int appId, const QString &gameDir, const Roots &roots)
     return out;
 }
 
+Unlocks readUnlocks(int appId, const QString &gameDir, const Roots &roots)
+{
+    return readUnlocks(candidates(appId, gameDir, roots));
+}
+
 Unlocks readUnlocks(int appId, const QString &gameDir)
 {
     return readUnlocks(appId, gameDir, systemRoots());
+}
+
+QStringList newlyUnlocked(const Unlocks &before, const Unlocks &now)
+{
+    QList<QPair<qint64, QString>> fresh;
+    for (auto it = now.cbegin(); it != now.cend(); ++it)
+        if (!before.contains(it.key())) fresh.append({ it.value(), it.key() });
+    std::sort(fresh.begin(), fresh.end());
+    QStringList out;
+    for (const auto &f : fresh) out << f.second;
+    return out;
 }
 
 int appIdFromGameDir(const QString &gameDir)

@@ -7,6 +7,7 @@
 #include "services/games/achievementformats.h"
 
 #include <QList>
+#include <QStringList>
 #include <QString>
 
 // Where a cracked game's emulator keeps its unlocks, and which Steam appid the
@@ -36,10 +37,18 @@ QList<Candidate> systemCandidates(int appId, const Roots &roots);
 // ALI213, and gbe's local_save_path when the game sets one).
 QList<Candidate> gameDirCandidates(int appId, const QString &gameDir);
 
+// Both lists together: worked out once and reread while a game runs, so the
+// game folder is walked once rather than on every check.
+QList<Candidate> candidates(int appId, const QString &gameDir, const Roots &roots);
+
 // Every unlock any of those files records. The earliest time wins when two
 // files name the same achievement.
+AchievementFormats::Unlocks readUnlocks(const QList<Candidate> &files);
 AchievementFormats::Unlocks readUnlocks(int appId, const QString &gameDir, const Roots &roots);
 AchievementFormats::Unlocks readUnlocks(int appId, const QString &gameDir);
+
+// What `now` holds that `before` did not, oldest unlock first.
+QStringList newlyUnlocked(const AchievementFormats::Unlocks &before, const AchievementFormats::Unlocks &now);
 
 // steam_appid.txt, or an AppId= in an emulator's ini, near the game's exe. 0 if none.
 int appIdFromGameDir(const QString &gameDir);

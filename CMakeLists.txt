@@ -116,6 +116,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/games/achievementformats.cpp
     src/services/games/achievementfiles.cpp
     src/services/games/achievementservice.cpp
+    src/services/games/achievementwatch.cpp
     src/services/games/steamstore.cpp
     src/services/integrations/gameexedetect.cpp
     src/services/security/defender.cpp

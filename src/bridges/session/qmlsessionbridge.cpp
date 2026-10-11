@@ -4,7 +4,9 @@
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "services/games/achievementservice.h"
+#include "services/games/achievementwatch.h"
 #include "services/games/playlog.h"
+#include "services/games/achievementfiles.h"
 #include "torrent/iengine.h"
 #include "services/downloads/httpdownloadmanager.h"
 #include <QThread>
@@ -129,7 +131,15 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
             .filePath(QStringLiteral("achievements")));
     connect(m_achievements.get(), &AchievementService::ready, this,
             [this](const QString &key, int appId, const QVariantList &list, int unlocked, int total) {
+        onAchievementsLookedUp(key, appId, list);
         emit achievementsReady(key, appId, list, unlocked, total);
+    });
+    m_achWatch = std::make_unique<AchievementWatch>(AchievementFiles::systemRoots());
+    connect(m_achWatch.get(), &AchievementWatch::unlocked, this,
+            [this](const QString &key, int appId, const QString &dir, const QStringList &names) {
+        // Named once the list comes back: the emulator only knows the ids.
+        m_achAnnounce[key] += names;
+        m_achievements->request(key, appId, dir);
     });
 }
 

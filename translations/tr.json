@@ -1381,5 +1381,8 @@
   "hub_ach_short": "%2 başarımdan %1",
   "game_ach_secrets_left": "%1 gizli başarım kaldı",
   "hub_ready_to_watch": "İzlemeye hazır",
-  "hub_ready_to_install": "Kurulmaya hazır"
+  "hub_ready_to_install": "Kurulmaya hazır",
+  "toast_achievement": "Başarım açıldı: %1",
+  "set_notify_achievements": "Başarım açıldığında bildir",
+  "set_notify_achievements_note": "BATorrent'tan açılan bir oyun çalışırken"
 }

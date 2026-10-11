@@ -1381,5 +1381,8 @@
   "hub_ach_short": "%1 de %2 conquistas",
   "game_ach_secrets_left": "%1 conquistas secretas restantes",
   "hub_ready_to_watch": "Pronto para assistir",
-  "hub_ready_to_install": "Pronto para instalar"
+  "hub_ready_to_install": "Pronto para instalar",
+  "toast_achievement": "Conquista desbloqueada: %1",
+  "set_notify_achievements": "Avisar quando desbloquear uma conquista",
+  "set_notify_achievements_note": "Enquanto um jogo aberto pelo BATorrent estiver rodando"
 }

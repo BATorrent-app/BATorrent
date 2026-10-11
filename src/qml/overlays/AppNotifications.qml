@@ -28,6 +28,10 @@ Item {
         target: typeof session !== "undefined" ? session : null
         ignoreUnknownSignals: true
         function onToast(title, body) { host.notifyUser(title, body, 0) }
+        // The game is in front: the OS notification is the one that can be seen.
+        function onAchievementUnlocked(game, name, icon) {
+            host.notifyNative(i18n.t("toast_achievement").arg(name), game)
+        }
         // a movie/series finished downloading → actionable "Play now" toast
         function onMovieReady(infoHash, name) {
             if (host.visible && host.visibility !== Window.Minimized && host.visibility !== Window.Hidden)

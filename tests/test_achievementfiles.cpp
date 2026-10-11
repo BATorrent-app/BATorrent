@@ -108,6 +108,24 @@ TEST_CASE("gbe's local_save_path is followed relative to the game", "[achievemen
     REQUIRE(AchievementFiles::readUnlocks(99, game, {}).value("L") == 1);
 }
 
+TEST_CASE("only what is new since the last read counts as just unlocked", "[achievementfiles]") {
+    const AchievementFormats::Unlocks before{ { "A", 100 } };
+    const AchievementFormats::Unlocks now{ { "A", 100 }, { "C", 300 }, { "B", 200 }, { "D", 0 } };
+    REQUIRE(AchievementFiles::newlyUnlocked(before, now) == QStringList{ "D", "B", "C" });
+    REQUIRE(AchievementFiles::newlyUnlocked(now, now).isEmpty());
+    REQUIRE(AchievementFiles::newlyUnlocked(now, before).isEmpty());   // a reset is not an unlock
+}
+
+TEST_CASE("a file that appears after the game starts is still read", "[achievementfiles]") {
+    QTemporaryDir root;
+    AchievementFiles::Roots r;
+    r.appData = root.filePath("appdata");
+    const auto files = AchievementFiles::candidates(77, root.filePath("nogame"), r);
+    REQUIRE(AchievementFiles::readUnlocks(files).isEmpty());
+    write(r.appData + "/GSE Saves/77/achievements.json", R"({"FIRST":{"earned":true,"earned_time":5}})");
+    REQUIRE(AchievementFiles::readUnlocks(files).value("FIRST") == 5);
+}
+
 TEST_CASE("the appid comes from steam_appid.txt, else from an emulator ini", "[achievementfiles]") {
     QTemporaryDir root;
     const QString a = root.filePath("a");

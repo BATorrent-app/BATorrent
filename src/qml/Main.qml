@@ -444,6 +444,13 @@ Window {
         }
     }
 
+    // For what happens while another app is in front (a game running): the
+    // in-app toast would sit behind it, so the OS notification goes first.
+    function notifyNative(title, body) {
+        if (trayIcon.available) trayIcon.showMessage(title, body, Platform.SystemTrayIcon.Information, 5000)
+        else toastHost.show(title, body, 0)
+    }
+
     AppCommandPalette {
         id: appCmdPalette
         host: win
