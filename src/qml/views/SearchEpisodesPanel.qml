@@ -135,9 +135,11 @@ Item {
                 watched: modelData.lib !== null && modelData.lib.watched === true
                 watchedPct: modelData.lib !== null ? (modelData.lib.watchedPct || 0) : 0
                 canDownload: modelData.lib === null && pick !== null
-                subLine: status.key.length > 0
-                         ? (i18n.language, i18n.t(status.key)).arg(status.arg)
-                         : modelData.main.quality + "  ·  " + (modelData.main.sizeStr || "")
+                subLine: {
+                    if (status.key.length === 0) return modelData.main.quality + "  ·  " + (modelData.main.sizeStr || "")
+                    var line = (i18n.language, i18n.t(status.key))
+                    return status.arg === "" ? line : line.arg(status.arg)
+                }
                 subColor: status.tone === "dim" ? Qt.rgba(1, 1, 1, 0.3) : Theme.stageMuted
                 slowText: modelData.lib === null && panel.logic.isSlow(modelData.main)
                           ? (i18n.language, i18n.t("find_slow")) : ""
