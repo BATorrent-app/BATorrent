@@ -131,7 +131,59 @@ Unlocks creamApi(const Ini &ini)
     return out;
 }
 
+void keep(Progress &out, const QString &id, qint64 cur, qint64 max)
+{
+    if (!id.isEmpty() && max > 0 && cur >= 0) out.insert(id, { qMin(cur, max), max });
+}
+
+Progress goldbergProgress(const QByteArray &bytes)
+{
+    Progress out;
+    const QJsonDocument doc = QJsonDocument::fromJson(bytes);
+    const auto take = [&out](const QString &id, const QJsonObject &o) {
+        keep(out, id, qint64(o.value(QLatin1String("progress")).toDouble()),
+             qint64(o.value(QLatin1String("max_progress")).toDouble()));
+    };
+    if (doc.isArray()) {
+        for (const QJsonValue &v : doc.array())
+            take(v.toObject().value(QLatin1String("name")).toString(), v.toObject());
+    } else {
+        const QJsonObject root = doc.object();
+        for (auto it = root.begin(); it != root.end(); ++it) take(it.key(), it.value().toObject());
+    }
+    return out;
+}
+
+Progress codexProgress(const Ini &ini)
+{
+    Progress out;
+    for (auto s = ini.cbegin(); s != ini.cend(); ++s)
+        keep(out, s.key(), value(s.value(), { "CurProgress" }).toLongLong(),
+             value(s.value(), { "MaxProgress" }).toLongLong());
+    return out;
+}
+
+Progress rldProgress(const Ini &ini)
+{
+    Progress out;
+    for (auto s = ini.cbegin(); s != ini.cend(); ++s) {
+        if (s.key().compare(QLatin1String("Steam"), Qt::CaseInsensitive) == 0) continue;
+        keep(out, s.key(), hexLe32(value(s.value(), { "CurProgress" })), hexLe32(value(s.value(), { "MaxProgress" })));
+    }
+    return out;
+}
+
 } // namespace
+
+Progress parseProgress(Format format, const QByteArray &bytes)
+{
+    switch (format) {
+    case Format::GoldbergJson: return goldbergProgress(bytes);
+    case Format::CodexIni:     return codexProgress(parseIni(bytes));
+    case Format::RldIni:       return rldProgress(parseIni(bytes));
+    default:                   return {};
+    }
+}
 
 qint64 normalizeTime(qint64 t)
 {

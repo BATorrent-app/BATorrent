@@ -204,6 +204,19 @@ Item {
             verify(findByText(p, "game_ach_unlocked") !== null, "an unlock with no time says so")
         }
 
+        function test_aCountingAchievementShowsHowFarAlong() {
+            var p = createTemporaryObject(pageComp, root)
+            mockHub.gameHash = "played"
+            mockHub.gameOpen = true
+            var list = [ { apiName: "C", name: "Collector", description: "Find 10", icon: "", iconGray: "",
+                           hidden: false, percent: 10, unlocked: false, unlockedAt: 0, progress: 3, progressMax: 10 },
+                         { apiName: "D", name: "Done", description: "", icon: "", iconGray: "",
+                           hidden: false, percent: 50, unlocked: true, unlockedAt: 5, progress: 10, progressMax: 10 } ]
+            mockApi.achievementsReady("played", 1, list, 1, 2)
+            verify(findByText(p, "3 / 10") !== null)
+            verify(findByText(p, "10 / 10") === null, "an earned one needs no bar")
+        }
+
         function test_lockedSecretsAreOneLineNotARowEach() {
             var p = createTemporaryObject(pageComp, root)
             mockHub.gameHash = "played"

@@ -108,6 +108,21 @@ TEST_CASE("gbe's local_save_path is followed relative to the game", "[achievemen
     REQUIRE(AchievementFiles::readUnlocks(99, game, {}).value("L") == 1);
 }
 
+TEST_CASE("progress toward a counting achievement is read where emulators keep it", "[achievementfiles]") {
+    using AchievementFormats::parseProgress;
+    const auto gbe = parseProgress(Format::GoldbergJson,
+        R"({"COLLECT":{"earned":false,"progress":3,"max_progress":10},"PLAIN":{"earned":false},"OVER":{"progress":12,"max_progress":10}})");
+    REQUIRE(gbe.size() == 2);
+    REQUIRE(gbe.value("COLLECT") == qMakePair(qint64(3), qint64(10)));
+    REQUIRE(gbe.value("OVER").first == 10);   // never past the goal
+    const auto codex = parseProgress(Format::CodexIni, "[A]\nAchieved=0\nCurProgress=4\nMaxProgress=25\n[B]\nAchieved=1\n");
+    REQUIRE(codex.size() == 1);
+    REQUIRE(codex.value("A") == qMakePair(qint64(4), qint64(25)));
+    const auto rld = parseProgress(Format::RldIni, "[A]\nState=00000000\nCurProgress=05000000\nMaxProgress=14000000\n");
+    REQUIRE(rld.value("A") == qMakePair(qint64(5), qint64(20)));
+    REQUIRE(parseProgress(Format::SkidrowIni, "[Achievements]\nA=1@0@0@1\n").isEmpty());
+}
+
 TEST_CASE("only what is new since the last read counts as just unlocked", "[achievementfiles]") {
     const AchievementFormats::Unlocks before{ { "A", 100 } };
     const AchievementFormats::Unlocks now{ { "A", 100 }, { "C", 300 }, { "B", 200 }, { "D", 0 } };

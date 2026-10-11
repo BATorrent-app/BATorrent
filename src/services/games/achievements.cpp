@@ -53,9 +53,12 @@ QHash<QString, double> parsePercentages(const QByteArray &json)
 }
 
 QList<Achievement> merge(QList<Achievement> schema, const QHash<QString, double> &percent,
-                         const QHash<QString, qint64> &unlocked)
+                         const QHash<QString, qint64> &unlocked,
+                         const QHash<QString, QPair<qint64, qint64>> &progress)
 {
     for (Achievement &a : schema) {
+        const auto p = progress.constFind(a.apiName);
+        if (p != progress.constEnd()) { a.progress = p->first; a.progressMax = p->second; }
         a.percent = percent.value(a.apiName, -1);
         const auto it = unlocked.constFind(a.apiName);
         a.unlocked = it != unlocked.constEnd();
@@ -90,6 +93,8 @@ QVariantList toVariant(const QList<Achievement> &list)
             { QStringLiteral("percent"), a.percent },
             { QStringLiteral("unlocked"), a.unlocked },
             { QStringLiteral("unlockedAt"), a.unlockedAt },
+            { QStringLiteral("progress"), a.progress },
+            { QStringLiteral("progressMax"), a.progressMax },
         };
     }
     return out;

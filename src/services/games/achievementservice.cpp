@@ -165,7 +165,9 @@ void AchievementService::finish(int appId, const QByteArray &schema, const QByte
     const QList<Achievement> known = Achievements::parseSchema(schema);
     const QHash<QString, double> pct = Achievements::parsePercentages(percent);
     for (const Waiting &w : waiting) {
-        const QHash<QString, qint64> unlocks = AchievementFiles::readUnlocks(appId, w.gameDir);
+        const auto files = AchievementFiles::candidates(appId, w.gameDir, AchievementFiles::systemRoots());
+        const QHash<QString, qint64> unlocks = AchievementFiles::readUnlocks(files);
+        const auto progress = AchievementFiles::readProgress(files);
         QList<Achievement> list = known;
         if (list.isEmpty()) {
             for (auto it = unlocks.cbegin(); it != unlocks.cend(); ++it) {
@@ -175,7 +177,7 @@ void AchievementService::finish(int appId, const QByteArray &schema, const QByte
                 list.append(a);
             }
         }
-        list = Achievements::merge(list, pct, unlocks);
+        list = Achievements::merge(list, pct, unlocks, progress);
         emit ready(w.key, appId, Achievements::toVariant(list), Achievements::unlockedCount(list),
                    int(known.size()));
     }

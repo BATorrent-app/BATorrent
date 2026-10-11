@@ -125,6 +125,32 @@ Column {
                             font.family: Theme.fontSans
                             elide: Text.ElideRight
                         }
+                        Row {
+                            // A counting achievement shows how far along it is.
+                            visible: !row.modelData.unlocked && (row.modelData.progressMax || 0) > 0
+                            spacing: 10
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 140
+                                height: 3
+                                radius: 2
+                                color: Qt.rgba(1, 1, 1, 0.12)
+                                Rectangle {
+                                    width: parent.width * Math.min(1, (row.modelData.progress || 0)
+                                                                      / Math.max(1, row.modelData.progressMax || 1))
+                                    height: parent.height
+                                    radius: 2
+                                    color: Theme.t2
+                                }
+                            }
+                            Text {
+                                text: (row.modelData.progress || 0) + " / " + (row.modelData.progressMax || 0)
+                                color: Theme.stageMuted
+                                font.pixelSize: 11
+                                font.family: Theme.fontSans
+                                font.features: Theme.tnum
+                            }
+                        }
                     }
                     Column {
                         spacing: 3

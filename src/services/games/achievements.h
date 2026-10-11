@@ -6,6 +6,7 @@
 
 #include <QByteArray>
 #include <QHash>
+#include <QPair>
 #include <QList>
 #include <QString>
 #include <QVariantList>
@@ -22,6 +23,8 @@ struct Achievement {
     double percent = -1;  // share of Steam players who have it, -1 unknown
     bool unlocked = false;
     qint64 unlockedAt = 0;   // unix seconds, 0 when the emulator kept no time
+    qint64 progress = 0;     // toward progressMax, for an achievement that counts
+    qint64 progressMax = 0;  // 0 = not a counting achievement
 };
 
 namespace Achievements {
@@ -37,7 +40,8 @@ QHash<QString, double> parsePercentages(const QByteArray &json);
 // with the locked hidden ones at the very end.
 // `unlocked` maps apiName → unlock time (0 = unlocked, time unknown).
 QList<Achievement> merge(QList<Achievement> schema, const QHash<QString, double> &percent,
-                         const QHash<QString, qint64> &unlocked);
+                         const QHash<QString, qint64> &unlocked,
+                         const QHash<QString, QPair<qint64, qint64>> &progress = {});
 
 int unlockedCount(const QList<Achievement> &list);
 QVariantList toVariant(const QList<Achievement> &list);

@@ -155,6 +155,21 @@ TEST_CASE("the store match is the game, never the first hit", "[achievements][st
     REQUIRE(SteamStore::logoUrl(0).isEmpty());
 }
 
+TEST_CASE("progress rides along with the achievement it belongs to", "[achievements]") {
+    const auto merged = Achievements::merge(Achievements::parseSchema(kSchema), {}, {},
+                                            { { "PAPER_TRAIL", { 3, 10 } }, { "UNKNOWN", { 1, 2 } } });
+    for (const auto &a : merged) {
+        if (a.apiName == QLatin1String("PAPER_TRAIL")) {
+            REQUIRE(a.progress == 3);
+            REQUIRE(a.progressMax == 10);
+        } else {
+            REQUIRE(a.progressMax == 0);
+        }
+    }
+    const QVariantMap v = Achievements::toVariant(merged).value(1).toMap();
+    REQUIRE(v.contains("progressMax"));
+}
+
 TEST_CASE("locked secrets sink below the locked ones that can be read", "[achievements]") {
     // REQUIEM is hidden and sits before PAPER_TRAIL in the schema.
     auto locked = Achievements::merge(Achievements::parseSchema(kSchema), {}, {});

@@ -6,6 +6,7 @@
 
 #include <QByteArray>
 #include <QHash>
+#include <QPair>
 #include <QString>
 
 // What each Steam emulator writes when an achievement unlocks, read back as
@@ -14,6 +15,8 @@
 namespace AchievementFormats {
 
 using Unlocks = QHash<QString, qint64>;
+// apiName → {current, maximum} for the achievements that count toward a goal.
+using Progress = QHash<QString, QPair<qint64, qint64>>;
 using Ini = QHash<QString, QHash<QString, QString>>;   // section → key → value
 
 enum class Format {
@@ -30,6 +33,8 @@ enum class Format {
 Ini parseIni(const QByteArray &bytes);
 
 Unlocks parse(Format format, const QByteArray &bytes);
+// Only Goldberg/gbe/EMPRESS, CODEX-style and RLD! files keep progress.
+Progress parseProgress(Format format, const QByteArray &bytes);
 
 // Some emulators write milliseconds where others write seconds.
 qint64 normalizeTime(qint64 t);

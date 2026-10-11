@@ -196,6 +196,20 @@ Unlocks readUnlocks(int appId, const QString &gameDir)
     return readUnlocks(appId, gameDir, systemRoots());
 }
 
+AchievementFormats::Progress readProgress(const QList<Candidate> &files)
+{
+    AchievementFormats::Progress out;
+    for (const Candidate &c : files) {
+        const QByteArray bytes = readCapped(c.path);
+        if (bytes.isEmpty()) continue;
+        const auto got = AchievementFormats::parseProgress(c.format, bytes);
+        for (auto it = got.cbegin(); it != got.cend(); ++it)
+            if (!out.contains(it.key()) || it.value().first > out.value(it.key()).first)
+                out.insert(it.key(), it.value());
+    }
+    return out;
+}
+
 QStringList newlyUnlocked(const Unlocks &before, const Unlocks &now)
 {
     QList<QPair<qint64, QString>> fresh;
