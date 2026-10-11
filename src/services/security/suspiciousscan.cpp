@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "services/security/suspiciousscan.h"
+#include "services/security/mediasniff.h"
 #include <QFileInfo>
 #include <QSet>
 
@@ -14,14 +15,6 @@ const QSet<QString> &execExts()
     static const QSet<QString> s = {
         "exe","scr","bat","cmd","com","pif","lnk","js","vbs",
         "hta","wsf","ps1","jar","apk","msi"
-    };
-    return s;
-}
-
-const QSet<QString> &videoExts()
-{
-    static const QSet<QString> s = {
-        "mkv","mp4","avi","mov","wmv","m4v","ts","flv","webm","m2ts","mpg","mpeg"
     };
     return s;
 }
@@ -61,7 +54,7 @@ QList<Finding> scan(const QList<ScanFile> &files)
     for (const auto &f : files) {
         totalBytes += f.size;
         const QString ext = lower(QFileInfo(f.path).suffix());
-        if (videoExts().contains(ext) || audioExts().contains(ext))
+        if (MediaSniff::isVideoName(f.path) || audioExts().contains(ext))
             mediaBytes += f.size;
     }
     // "media torrent" = the payload is overwhelmingly video/audio. In a game or

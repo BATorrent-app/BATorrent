@@ -62,6 +62,16 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitleparser.cpp
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitlesearch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/mediasniff.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/security/mediaguard.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/mediaframe.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/mediahost.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/sharedsegment.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/mediasandbox.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/remotesource.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/mediafeed.cpp
+    ${CMAKE_SOURCE_DIR}/src/ipc/mediachannel.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/isolatedmediaplayer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/archiveextractor.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasepick.cpp
@@ -115,6 +125,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_achievements.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_library.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_playback.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_guard.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_subtitles.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_watch.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_selection.cpp
@@ -177,7 +188,8 @@ set(COMMON_LIBS
     ZLIB::ZLIB
 )
 if(WIN32)
-    list(APPEND COMMON_LIBS shell32 ole32)   # shell ops pulled in via the bridge deps
+    list(APPEND COMMON_LIBS shell32 ole32 userenv)   # shell ops via the bridge deps; AppContainer
+    list(APPEND COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/ipc/appcontainer_win.cpp)
 endif()
 
 set(COMMON_DEFS APP_VERSION="test")
@@ -297,11 +309,26 @@ if(BAT_FUZZ)
         ${CMAKE_CURRENT_SOURCE_DIR}/fuzz_nameparser.cpp
         ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
         ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
+        ${CMAKE_SOURCE_DIR}/src/services/security/mediasniff.cpp
         ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp)
     target_compile_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined -g)
     target_link_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined)
     target_link_libraries(fuzz_nameparser PRIVATE Qt6::Core)
     target_include_directories(fuzz_nameparser PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    add_executable(fuzz_mediasniff
+        ${CMAKE_CURRENT_SOURCE_DIR}/fuzz_mediasniff.cpp
+        ${CMAKE_SOURCE_DIR}/src/services/security/mediasniff.cpp)
+    target_compile_options(fuzz_mediasniff PRIVATE -fsanitize=fuzzer,address,undefined -g)
+    target_link_options(fuzz_mediasniff PRIVATE -fsanitize=fuzzer,address,undefined)
+    target_link_libraries(fuzz_mediasniff PRIVATE Qt6::Core)
+    target_include_directories(fuzz_mediasniff PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    add_executable(fuzz_mediaframe
+        ${CMAKE_CURRENT_SOURCE_DIR}/fuzz_mediaframe.cpp
+        ${CMAKE_SOURCE_DIR}/src/ipc/mediaframe.cpp)
+    target_compile_options(fuzz_mediaframe PRIVATE -fsanitize=fuzzer,address,undefined -g)
+    target_link_options(fuzz_mediaframe PRIVATE -fsanitize=fuzzer,address,undefined)
+    target_link_libraries(fuzz_mediaframe PRIVATE Qt6::Core Qt6::Multimedia)
+    target_include_directories(fuzz_mediaframe PRIVATE ${CMAKE_SOURCE_DIR}/src)
     message(STATUS "[BAT] Fuzz harnesses ENABLED")
 endif()
 
@@ -341,6 +368,10 @@ bat_add_test(test_contentlanguage test_contentlanguage.cpp)
 bat_add_test(test_releasetrust test_releasetrust.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_contentprobe test_contentprobe.cpp)
+bat_add_test(test_mediasniff test_mediasniff.cpp)
+bat_add_test(test_mediaipc test_mediaipc.cpp)
+target_compile_definitions(test_mediaipc PRIVATE BAT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+bat_add_test(test_mediasandbox test_mediasandbox.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_magnettrackers test_magnettrackers.cpp)
 bat_add_test(test_mkvchapters test_mkvchapters.cpp)
@@ -367,10 +398,20 @@ find_package(Qt6 QUIET COMPONENTS Quick QuickTest Qml)
 if(Qt6Quick_FOUND AND Qt6QuickTest_FOUND)
     set(CMAKE_AUTOMOC ON)
     qt_add_resources(QML_TEST_RES ${CMAKE_SOURCE_DIR}/src/resources.qrc)
-    qt_add_executable(test_qml ${CMAKE_CURRENT_SOURCE_DIR}/qml/main.cpp ${QML_TEST_RES})
+    qt_add_executable(test_qml ${CMAKE_CURRENT_SOURCE_DIR}/qml/main.cpp ${QML_TEST_RES}
+        ${CMAKE_SOURCE_DIR}/src/bridges/isolatedmediaplayer.cpp
+        ${CMAKE_SOURCE_DIR}/src/ipc/mediaframe.cpp
+        ${CMAKE_SOURCE_DIR}/src/ipc/sharedsegment.cpp
+        ${CMAKE_SOURCE_DIR}/src/ipc/mediafeed.cpp
+        ${CMAKE_SOURCE_DIR}/src/ipc/mediachannel.cpp)
+    if(WIN32)
+        target_sources(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src/ipc/appcontainer_win.cpp)
+        target_link_libraries(test_qml PRIVATE userenv)
+    endif()
     target_compile_definitions(test_qml PRIVATE
         QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
-    target_link_libraries(test_qml PRIVATE Qt6::Quick Qt6::QuickTest Qt6::Qml Qt6::Gui)
+    target_include_directories(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(test_qml PRIVATE Qt6::Quick Qt6::QuickTest Qt6::Qml Qt6::Gui Qt6::Multimedia Qt6::Network)
     add_test(NAME test_qml COMMAND test_qml)
     # Offscreen QPA so it runs in CI / over SSH with no display.
     set_tests_properties(test_qml PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

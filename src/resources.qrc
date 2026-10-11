@@ -157,6 +157,7 @@
 <file>../src/qml/dialogs/BatDialog.qml</file>
 <file>../src/qml/dialogs/AddInputDialog.qml</file>
 <file>../src/qml/dialogs/RemoveDialog.qml</file>
+<file>../src/qml/dialogs/MediaGuardDialog.qml</file>
 <file>../src/qml/dialogs/FileTreeCompute.qml</file>
 <file>../src/qml/dialogs/AddTorrentDialog.qml</file>
 <file>../src/qml/dialogs/CreateTorrentDialog.qml</file>
@@ -173,6 +174,7 @@
 <file>../src/qml/overlays/TourOverlay.qml</file>
 <file>../src/qml/dialogs/AboutDialog.qml</file>
     <file>../src/qml/player/PlayerWindow.qml</file>
+<file>../src/qml/player/PlayerBackend.qml</file>
 <file>../src/qml/player/PlayerRetry.qml</file>
     <file>../src/qml/player/PlayerFormat.qml</file>
     <file>../src/qml/player/PlayerSlider.qml</file>

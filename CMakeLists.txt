@@ -52,6 +52,7 @@ endif()
 add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/main.cpp
     src/app/enginechild.cpp
+    src/app/mediachild.cpp
     src/app/singleinstance.cpp
     src/app/macfileopen.cpp
     src/app/boothealth.cpp
@@ -92,6 +93,13 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/proxycontroller.cpp
     src/ipc/enginehost.cpp
     src/ipc/ipcengine.cpp
+    src/ipc/mediaframe.cpp
+    src/ipc/mediahost.cpp
+    src/ipc/sharedsegment.cpp
+    src/ipc/mediasandbox.cpp
+    src/ipc/remotesource.cpp
+    src/ipc/mediafeed.cpp
+    src/ipc/mediachannel.cpp
     src/services/platform/translator.cpp
     src/services/platform/statshistory.cpp
     src/services/platform/soundplayer.cpp
@@ -103,6 +111,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/torbox.cpp
     src/services/integrations/debridmanager.cpp
     src/services/security/suspiciousscan.cpp
+    src/services/security/mediasniff.cpp
+    src/services/security/mediaguard.cpp
     src/services/security/archivescan.cpp
     src/services/security/archiveextractor.cpp
     src/services/metadata/releasepick.cpp
@@ -184,6 +194,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/session/qmlsessionbridge_achievements.cpp
     src/bridges/session/qmlsessionbridge_library.cpp
     src/bridges/session/qmlsessionbridge_playback.cpp
+    src/bridges/session/qmlsessionbridge_guard.cpp
     src/bridges/session/qmlsessionbridge_subtitles.cpp
     src/bridges/session/qmlsessionbridge_watch.cpp
     src/bridges/session/qmlsessionbridge_selection.cpp
@@ -212,6 +223,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmlsubtitlebridge.cpp
     src/bridges/qmllogbridge.cpp
     src/bridges/qmlnotificationbridge.cpp
+    src/bridges/isolatedmediaplayer.cpp
     src/bridges/discordrpcbridge.cpp
     src/bridges/qmlupdaterbridge.cpp
     # header-only QObject: listed so AUTOMOC builds its metaobject
@@ -342,6 +354,9 @@ if(WIN32)
     # psapi: GetProcessMemoryInfo for the memory guard
     # iphlpapi: GetIfTable2; verify a WireGuard tunnel actually passes traffic
     target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp iphlpapi)
+    # userenv: AppContainer profiles for the sandboxed media child
+    target_sources(BATorrent PRIVATE src/ipc/appcontainer_win.cpp)
+    target_link_libraries(BATorrent PRIVATE userenv)
 
     # Emit a PDB even in Release so Store / Partner Center crash dumps symbolicate.
     # Without symbols every Store crash is reported as "unknown" (we had 314/322

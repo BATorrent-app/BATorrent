@@ -35,6 +35,7 @@ void QmlSessionBridge::streamSelected()
     TorrentInfo info = m_session->torrentAt(row);
     auto stripBt = [](const QString &p){ return p.endsWith(QStringLiteral(".!bt")) ? p.chopped(4) : p; };
     const int bestIdx = bestVideoFile(row);
+    if (guardRefuses(m_session->torrentHashAt(row), bestIdx)) return;
     if (bestIdx < 0) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
     prepStream(row, bestIdx);
 
@@ -61,6 +62,7 @@ void QmlSessionBridge::streamSelected()
         const qint64 done = qint64(prog * files[m_streamFileIdx].size);
         if (QFile::exists(actual) && (prog >= 0.02f || done > 5*1024*1024)) {
             m_streamTimer->stop();
+            if (guardRefuses(m_session->torrentHashAt(m_streamIndex), m_streamFileIdx)) return;
             const bool opened = launchMediaPlayer(actual);
             emit toast(tr_("ctx_stream"), opened ? tr_("stream_started").arg(cur.name)
                                                  : tr_("stream_no_player"));
@@ -117,7 +119,7 @@ void QmlSessionBridge::openExternalForHash(const QString &infoHash, int fileInde
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return;
     const QString path = m_session->streamFilePath(row, fileIndex);
-    if (path.isEmpty()) return;
+    if (path.isEmpty() || guardRefuses(infoHash, fileIndex)) return;
     if (!launchMediaPlayer(path))
         emit toast(tr_("ctx_stream"), tr_("stream_no_player"));
 }
@@ -128,10 +130,11 @@ void QmlSessionBridge::playSelected()
 {
     if (!hasSelection()) return;
     const int row = m_selectedIndex;
+    const QString hash = m_session->torrentHashAt(row);
+    if (guardRefuses(hash, bestVideoFile(row))) return;   // before streamUrl() resumes the torrent
     const QString url = streamUrl(row);
     if (url.isEmpty()) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
     const TorrentInfo info = m_session->torrentAt(row);
-    const QString hash = m_session->torrentHashAt(row);
     const int fileIdx = url.section('/', -1).toInt();
     emit openPlayer(url, info.name, hash, fileIdx);
 }
@@ -141,7 +144,7 @@ void QmlSessionBridge::playFile(const QString &infoHash, int fileIndex)
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0 || m_streamPort == 0) return;
     auto files = m_session->filesAt(row);
-    if (fileIndex < 0 || fileIndex >= int(files.size())) return;
+    if (fileIndex < 0 || fileIndex >= int(files.size()) || guardRefuses(infoHash, fileIndex)) return;
     prepStream(row, fileIndex);
     const QString hash = m_session->torrentHashAt(row);
     const TorrentInfo info = m_session->torrentAt(row);
@@ -186,7 +189,7 @@ QString QmlSessionBridge::streamFileName(const QString &infoHash, int fileIndex)
 void QmlSessionBridge::playByHash(const QString &infoHash)
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);
-    if (row < 0) return;
+    if (row < 0 || guardRefuses(infoHash, bestVideoFile(row))) return;
     const QString url = streamUrl(row);                  // preps priorities + picks the best video
     if (url.isEmpty()) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
     const TorrentInfo info = m_session->torrentAt(row);
@@ -202,6 +205,7 @@ void QmlSessionBridge::playByHashFile(const QString &infoHash, int fileIndex)
     if (row < 0 || m_streamPort == 0) { playByHash(infoHash); return; }
     auto files = m_session->filesAt(row);
     if (fileIndex < 0 || fileIndex >= int(files.size())) { playByHash(infoHash); return; }
+    if (guardRefuses(infoHash, fileIndex)) return;
     prepStream(row, fileIndex);
     const QString hash = m_session->torrentHashAt(row);
     const QString url = QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(fileIndex);

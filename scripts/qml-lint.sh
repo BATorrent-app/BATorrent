@@ -45,6 +45,9 @@ OUT=$("$QMLLINT" -I src/qml \
   --missing-property disable \
   --unused-imports disable \
   "${FILES[@]}" 2>&1)
+# BATorrent.Media is registered from C++ (qmlRegisterType), so qmllint has no
+# type info for it; its import is unresolvable here by construction.
+OUT=$(printf '%s\n' "$OUT" | grep -vE '^Warning: .*(BATorrent\.Media|IsolatedMediaPlayer was not found)')
 printf '%s\n' "$OUT"
 
 # qmllint's own exit code ignores plain warnings, so gate on the count ourselves.

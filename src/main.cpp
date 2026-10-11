@@ -19,6 +19,7 @@
 #include "app/appservices.h"
 #include "app/boothealth.h"
 #include "app/enginechild.h"
+#include "app/mediachild.h"
 #include "app/qmlboot.h"
 #include "app/qmlcontextwiring.h"
 #include "app/singleinstance.h"
@@ -32,6 +33,8 @@ int main(int argc, char *argv[])
 {
     int childExit = 0;
     if (EngineChild::tryRun(argc, argv, &childExit))
+        return childExit;
+    if (MediaChild::tryRun(argc, argv, &childExit))
         return childExit;
 
     AppRuntime::applyGraphicsApiPreference();

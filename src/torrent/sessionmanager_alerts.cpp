@@ -23,6 +23,7 @@
 #include <QDir>
 #include <QFile>
 #include <algorithm>
+#include <set>
 #include <sstream>
 #ifdef BAT_LIBTORRENT_FORK
 #include <libtorrent/aux_/ip_helpers.hpp>   // fork-only geo-locality hook
@@ -48,6 +49,9 @@ void SessionManager::processAlerts()
     }
 
     const size_t n = std::min(m_alertDrain.size(), kMaxPerTick);
+    // A rename lives only in resume data, so a crash before the next save puts
+    // the old name back. Coalesced: a finished pack renames every file at once.
+    std::set<lt::torrent_handle> renamed;
     for (size_t i = 0; i < n; ++i) {
       auto *a = m_alertDrain[i];
       try {
@@ -69,6 +73,7 @@ void SessionManager::processAlerts()
         if (auto *tc = lt::alert_cast<lt::torrent_checked_alert>(a)) onTorrentChecked(tc);
         if (auto *mr = lt::alert_cast<lt::metadata_received_alert>(a)) onMetadataReceived(mr);
         if (auto *fc = lt::alert_cast<lt::file_completed_alert>(a)) onFileCompleted(fc);
+        if (auto *rn = lt::alert_cast<lt::file_renamed_alert>(a)) renamed.insert(rn->handle);
 #ifdef BAT_LIBTORRENT_FORK
         if (auto *xi = lt::alert_cast<lt::external_ip_alert>(a)) onExternalIp(xi);
 #endif
@@ -79,6 +84,7 @@ void SessionManager::processAlerts()
       }
     }
     m_alertDrain.erase(m_alertDrain.begin(), m_alertDrain.begin() + static_cast<std::ptrdiff_t>(n));
+    for (const auto &h : renamed) stageResumeSave(h);
 
     // Don't keep pumping after quit was requested: otherwise smoke/exit and a
     // user close can sit behind thousands of resume/check alerts.

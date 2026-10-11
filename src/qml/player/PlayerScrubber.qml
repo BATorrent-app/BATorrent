@@ -49,22 +49,29 @@ RowLayout {
             readonly property bool canThumb: !!(mediaPlayer && mediaPlayer.duration > 0
                 && (!root.stillDownloading || targetMs <= root.downloadedToMs))
 
-            MediaPlayer {
-                id: thumbPlayer
+            PlayerBackend {
+                id: thumbBackend
                 source: root.controlsShown && root.localFile.length > 0
                         ? ((Qt.platform.os === "windows" ? "file:///" : "file://") + encodeURI(root.localFile))
                         : ""
                 videoOutput: thumbOut
-                onMediaStatusChanged: if (mediaStatus === MediaPlayer.LoadedMedia) {
-                    play(); pause()
+                audible: false
+            }
+            readonly property var thumbPlayer: thumbBackend.player
+            Connections {
+                target: seekHover.thumbPlayer
+                function onMediaStatusChanged() {
+                    if (seekHover.thumbPlayer.mediaStatus !== MediaPlayer.LoadedMedia) return
+                    seekHover.thumbPlayer.play()
+                    seekHover.thumbPlayer.pause()
                     thumbSeek.restart()
                 }
             }
             Timer {
                 id: thumbSeek
                 interval: 60
-                onTriggered: if (thumbPlayer.seekable && (seekHover.containsMouse || seek.pressed))
-                    thumbPlayer.position = seekHover.targetMs
+                onTriggered: if (seekHover.thumbPlayer.seekable && (seekHover.containsMouse || seek.pressed))
+                    seekHover.thumbPlayer.position = seekHover.targetMs
             }
             onMouseXChanged: if (containsMouse || seek.pressed) thumbSeek.restart()
             onContainsMouseChanged: if (containsMouse) root.localPathRefreshRequested()

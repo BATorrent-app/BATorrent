@@ -13,6 +13,9 @@
 #include <QQmlEngine>
 #include <QQmlContext>
 #include <QString>
+#include <QtQml/qqml.h>
+
+#include "bridges/isolatedmediaplayer.h"
 
 class I18nStub : public QObject
 {
@@ -48,6 +51,7 @@ public slots:
         QGuiApplication::setFont(QFont(QStringLiteral("IBM Plex Sans")));
         engine->rootContext()->setContextProperty(
             QStringLiteral("i18n"), new I18nStub(engine));
+        qmlRegisterType<IsolatedMediaPlayer>("BATorrent.Media", 1, 0, "IsolatedMediaPlayer");
     }
 };
 
