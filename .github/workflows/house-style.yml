@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: icon stroke weight + declared solids
         run: python3 scripts/check-icon-style.py
       - name: animation durations and curves come from Theme
