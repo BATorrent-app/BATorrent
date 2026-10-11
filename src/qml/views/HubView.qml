@@ -38,6 +38,8 @@ Item {
 
     readonly property var continueItems: logic.continueItems
     readonly property var continuePlaying: logic.continuePlaying
+    readonly property var suggestedWatch: logic.suggestedWatch
+    readonly property var suggestedGame: logic.suggestedGame
     readonly property bool empty: logic.empty
     readonly property var seriesShelf: logic.seriesGroups(library)
     // A show that resolved is one card in the series rail, however many

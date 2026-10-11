@@ -1379,5 +1379,7 @@
   "game_ach_unlocked": "已解锁",
   "game_ach_players": "%1% 的玩家",
   "hub_ach_short": "成就 %1 / %2",
-  "game_ach_secrets_left": "剩余 %1 项隐藏成就"
+  "game_ach_secrets_left": "剩余 %1 项隐藏成就",
+  "hub_ready_to_watch": "可以观看",
+  "hub_ready_to_install": "可以安装"
 }

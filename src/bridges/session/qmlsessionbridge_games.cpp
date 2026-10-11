@@ -102,7 +102,9 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["title"]     = title.isEmpty() ? info.name : title;
         m["poster"]    = poster;
         m["progress"]   = double(info.progress);
-        m["completed"]  = info.completed;
+        // A torrent paused or finished in an earlier session never fired the
+        // finish this flag remembers; libtorrent's piece count still knows.
+        m["completed"]  = info.completed || info.finished;
         m["paused"]     = info.paused && !info.queued;
         m["size"]       = info.totalSize;
         m["addedTime"]  = qint64(info.addedTime);

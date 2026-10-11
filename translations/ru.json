@@ -1379,5 +1379,7 @@
   "game_ach_unlocked": "Открыто",
   "game_ach_players": "%1% игроков",
   "hub_ach_short": "Достижения: %1 из %2",
-  "game_ach_secrets_left": "Осталось скрытых достижений: %1"
+  "game_ach_secrets_left": "Осталось скрытых достижений: %1",
+  "hub_ready_to_watch": "Можно смотреть",
+  "hub_ready_to_install": "Можно установить"
 }

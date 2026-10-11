@@ -1379,5 +1379,7 @@
   "game_ach_unlocked": "Desbloqueado",
   "game_ach_players": "%1% de los jugadores",
   "hub_ach_short": "%1 de %2 logros",
-  "game_ach_secrets_left": "%1 logros ocultos restantes"
+  "game_ach_secrets_left": "%1 logros ocultos restantes",
+  "hub_ready_to_watch": "Listo para ver",
+  "hub_ready_to_install": "Listo para instalar"
 }

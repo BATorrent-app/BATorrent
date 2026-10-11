@@ -76,6 +76,33 @@ Item {
             compare(c.empty, false)
         }
 
+        function test_withNothingUnderWayTheTopSuggestsWhatIsReady() {
+            var lib = mockPage.library
+            var games = mockPage.gameItems
+            mockPage.library = [
+                { title: "Seen", infoHash: "s", completed: true, watchedPct: 0.95, addedTime: 9 },
+                { title: "Half", infoHash: "h", completed: true, resumeMs: 500, addedTime: 8 },
+                { title: "Coming", infoHash: "c", completed: false, addedTime: 7 },
+                { title: "Older", infoHash: "o", completed: true, addedTime: 2 },
+                { title: "Newer", infoHash: "n", completed: true, addedTime: 5 }
+            ]
+            mockPage.gameItems = [
+                { title: "Repack", infoHash: "r", installState: 1, addedTime: 9 },
+                { title: "Ready", infoHash: "y", installState: 4, addedTime: 3 },
+                { title: "Down", infoHash: "d", installState: 0, addedTime: 10 }
+            ]
+            var c = createTemporaryObject(computeComp, root)
+            compare(c.suggestedWatch.infoHash, "n", "newest finished, unwatched, not already being resumed")
+            compare(c.suggestedGame.infoHash, "y", "a game ready to play beats one to install")
+            mockPage.gameItems = [ { title: "Repack", infoHash: "r", installState: 1 },
+                                   { title: "Down", infoHash: "d", installState: 0 } ]
+            compare(c.suggestedGame.infoHash, "r", "then the one ready to install")
+            mockPage.gameItems = [ { title: "Down", infoHash: "d", installState: 0 } ]
+            compare(c.suggestedGame, null, "a download is nothing to play yet")
+            mockPage.library = lib
+            mockPage.gameItems = games
+        }
+
         function test_openDetailRoutesGamesToTheirPage() {
             mockPage.detailOpen = false
             mockPage.gameOpen = false

@@ -1379,5 +1379,7 @@
   "game_ach_unlocked": "Unlocked",
   "game_ach_players": "%1% of players",
   "hub_ach_short": "%1 of %2 achievements",
-  "game_ach_secrets_left": "%1 hidden achievements remaining"
+  "game_ach_secrets_left": "%1 hidden achievements remaining",
+  "hub_ready_to_watch": "Ready to watch",
+  "hub_ready_to_install": "Ready to install"
 }

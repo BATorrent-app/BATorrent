@@ -22,6 +22,23 @@ QtObject {
         return games.filter(function (i) { return (i.lastPlayed || 0) > 0 })
             .sort(function (a, b) { return (b.lastPlayed || 0) - (a.lastPlayed || 0) }).slice(0, 3)
     }
+    // With nothing under way, the top of the HUB still offers the next thing:
+    // the newest finished video not yet watched, the game ready to play (or
+    // to install).
+    readonly property var suggestedWatch: {
+        var lib = (page.library || []).filter(function (i) {
+            return i.completed && (i.watchedPct || 0) < 0.9 && !((i.resumeMs || 0) > 0)
+        })
+        lib.sort(function (a, b) { return (b.addedTime || 0) - (a.addedTime || 0) })
+        return lib.length > 0 ? lib[0] : null
+    }
+    readonly property var suggestedGame: {
+        var games = (page.gameItems || []).slice()
+        games.sort(function (a, b) { return (b.addedTime || 0) - (a.addedTime || 0) })
+        for (var i = 0; i < games.length; i++) if (games[i].installState === 4) return games[i]
+        for (var j = 0; j < games.length; j++) if (games[j].installState === 1) return games[j]
+        return null
+    }
     readonly property bool empty: (page.library || []).length === 0 && (page.gameItems || []).length === 0
 
     // The series questions live in SeriesLogic so a search can ask them too.

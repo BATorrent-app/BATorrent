@@ -1379,5 +1379,7 @@
   "game_ach_unlocked": "解除済み",
   "game_ach_players": "プレイヤーの %1%",
   "hub_ach_short": "実績 %1 / %2",
-  "game_ach_secrets_left": "残りの隠し実績: %1"
+  "game_ach_secrets_left": "残りの隠し実績: %1",
+  "hub_ready_to_watch": "すぐに視聴できます",
+  "hub_ready_to_install": "インストールできます"
 }
