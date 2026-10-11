@@ -141,6 +141,34 @@ TEST_CASE("a file that appears after the game starts is still read", "[achieveme
     REQUIRE(AchievementFiles::readUnlocks(files).value("FIRST") == 5);
 }
 
+TEST_CASE("a game inside a Wine prefix is traced back to the prefix", "[achievementfiles]") {
+    REQUIRE(AchievementFiles::prefixOf("/Users/m/Library/Application Support/CrossOver/Bottles/Steam/drive_c/Games/RE/re.exe")
+            == QLatin1String("/Users/m/Library/Application Support/CrossOver/Bottles/Steam"));
+    REQUIRE(AchievementFiles::prefixOf("/home/m/.wine/drive_c/Games/X") == QLatin1String("/home/m/.wine"));
+    REQUIRE(AchievementFiles::prefixOf("/home/m/Downloads/Game").isEmpty());
+    REQUIRE(AchievementFiles::prefixOf("/home/m/drive_ctl/x").isEmpty());   // only a whole drive_c folder
+}
+
+TEST_CASE("unlocks written inside a prefix are found for a game installed there", "[achievementfiles]") {
+    QTemporaryDir root;
+    const QString prefix = root.filePath("Bottles/Steam");
+    const QString game = prefix + "/drive_c/Games/RE";
+    write(game + "/re.exe", "x");
+    write(prefix + "/drive_c/users/crossover/AppData/Roaming/GSE Saves/55/achievements.json",
+          R"({"WINE":{"earned":true,"earned_time":7}})");
+    write(prefix + "/drive_c/users/Public/Documents/Steam/CODEX/55/achievements.ini",
+          "[CODEXED]\nAchieved=1\nUnlockTime=8\n");
+
+    const auto roots = AchievementFiles::prefixRoots(prefix);
+    REQUIRE(roots.size() == 1);   // Public is shared, not a user
+    REQUIRE(roots[0].appData.endsWith("/users/crossover/AppData/Roaming"));
+    const auto u = AchievementFiles::readUnlocks(AchievementFiles::candidates(55, game, roots));
+    REQUIRE(u.value("WINE") == 7);
+    REQUIRE(u.value("CODEXED") == 8);
+    REQUIRE(AchievementFiles::prefixesFor(55, game).value(0) == QDir::cleanPath(prefix));
+    REQUIRE(AchievementFiles::prefixRoots(QString()).isEmpty());
+}
+
 TEST_CASE("the appid comes from steam_appid.txt, else from an emulator ini", "[achievementfiles]") {
     QTemporaryDir root;
     const QString a = root.filePath("a");

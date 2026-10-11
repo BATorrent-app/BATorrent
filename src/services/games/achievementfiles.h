@@ -26,6 +26,19 @@ struct Roots {
 };
 Roots systemRoots();
 
+// On macOS and Linux a cracked game runs inside a Wine prefix, and its
+// emulator writes to that prefix's own Windows folders.
+// The prefix a path lives in (the folder holding drive_c), "" when none.
+QString prefixOf(const QString &path);
+// One Roots per user folder inside a prefix's drive_c/users.
+QList<Roots> prefixRoots(const QString &prefix);
+// The prefixes worth looking in for a game: the one it is installed in, then
+// the usual bottle homes (CrossOver, Whisky, ~/.wine, Bottles, Heroic, and
+// Proton's compatdata for this appid).
+QStringList prefixesFor(int appId, const QString &gameDir);
+// Every set of roots to search for a game: this machine's, then its prefixes'.
+QList<Roots> rootsFor(int appId, const QString &gameDir);
+
 struct Candidate {
     QString path;
     AchievementFormats::Format format;
@@ -40,6 +53,7 @@ QList<Candidate> gameDirCandidates(int appId, const QString &gameDir);
 // Both lists together: worked out once and reread while a game runs, so the
 // game folder is walked once rather than on every check.
 QList<Candidate> candidates(int appId, const QString &gameDir, const Roots &roots);
+QList<Candidate> candidates(int appId, const QString &gameDir, const QList<Roots> &roots);
 
 // Every unlock any of those files records. The earliest time wins when two
 // files name the same achievement.

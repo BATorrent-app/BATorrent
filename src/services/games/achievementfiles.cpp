@@ -106,6 +106,84 @@ Roots systemRoots()
     return r;
 }
 
+QString prefixOf(const QString &path)
+{
+    const QString clean = QDir::cleanPath(path);
+    const int at = clean.indexOf(QLatin1String("/drive_c"), 0, Qt::CaseInsensitive);
+    if (at <= 0) return {};
+    const int end = at + int(qstrlen("/drive_c"));
+    if (end < clean.size() && clean.at(end) != QLatin1Char('/')) return {};
+    return clean.left(at);
+}
+
+QList<Roots> prefixRoots(const QString &prefix)
+{
+    QList<Roots> out;
+    if (prefix.isEmpty()) return out;
+    const QString users = join(prefix, QStringLiteral("drive_c/users"));
+    const QString pub = join(users, QStringLiteral("Public/Documents"));
+    const QString programData = join(prefix, QStringLiteral("drive_c/ProgramData"));
+    for (const QString &user : subdirs(users)) {
+        const QString name = QFileInfo(user).fileName();
+        if (name.compare(QLatin1String("Public"), Qt::CaseInsensitive) == 0) continue;
+        Roots r;
+        r.appData = join(user, QStringLiteral("AppData/Roaming"));
+        r.localAppData = join(user, QStringLiteral("AppData/Local"));
+        r.documents = join(user, QStringLiteral("Documents"));
+        r.publicDocs = pub;
+        r.programData = programData;
+        out.append(r);
+    }
+    if (out.isEmpty() && QFileInfo(join(prefix, QStringLiteral("drive_c"))).isDir()) {
+        Roots r;   // no user folder yet: the shared ones still apply
+        r.publicDocs = pub;
+        r.programData = programData;
+        out.append(r);
+    }
+    return out;
+}
+
+QStringList prefixesFor(int appId, const QString &gameDir)
+{
+    QStringList out;
+    const QString own = prefixOf(gameDir);
+    if (!own.isEmpty()) out << own;
+#if !defined(Q_OS_WIN)
+    const QString home = QDir::homePath();
+    const auto bottlesIn = [&out](const QString &dir) {
+        for (const QString &b : subdirs(dir))
+            if (QFileInfo(join(b, QStringLiteral("drive_c"))).isDir() && !out.contains(b)) out << b;
+    };
+    const auto prefix = [&out](const QString &p) {
+        if (QFileInfo(join(p, QStringLiteral("drive_c"))).isDir() && !out.contains(p)) out << p;
+    };
+    prefix(join(home, QStringLiteral(".wine")));
+#if defined(Q_OS_MACOS)
+    bottlesIn(join(home, QStringLiteral("Library/Application Support/CrossOver/Bottles")));
+    bottlesIn(join(home, QStringLiteral("Library/Containers/com.isaacmarovitz.Whisky/Bottles")));
+#else
+    bottlesIn(join(home, QStringLiteral(".local/share/bottles/bottles")));
+    bottlesIn(join(home, QStringLiteral(".var/app/com.usebottles.bottles/data/bottles/bottles")));
+    bottlesIn(join(home, QStringLiteral("Games/Heroic/Prefixes/default")));
+    if (appId > 0) {
+        const QString id = QString::number(appId);
+        prefix(join(home, QStringLiteral(".steam/steam/steamapps/compatdata/") + id + QStringLiteral("/pfx")));
+        prefix(join(home, QStringLiteral(".local/share/Steam/steamapps/compatdata/") + id + QStringLiteral("/pfx")));
+    }
+#endif
+#else
+    Q_UNUSED(appId);
+#endif
+    return out;
+}
+
+QList<Roots> rootsFor(int appId, const QString &gameDir)
+{
+    QList<Roots> out{ systemRoots() };
+    for (const QString &p : prefixesFor(appId, gameDir)) out += prefixRoots(p);
+    return out;
+}
+
 QList<Candidate> systemCandidates(int appId, const Roots &r)
 {
     if (appId <= 0) return {};
@@ -170,6 +248,13 @@ QList<Candidate> candidates(int appId, const QString &gameDir, const Roots &root
     return systemCandidates(appId, roots) + gameDirCandidates(appId, gameDir);
 }
 
+QList<Candidate> candidates(int appId, const QString &gameDir, const QList<Roots> &roots)
+{
+    QList<Candidate> out;
+    for (const Roots &r : roots) out += systemCandidates(appId, r);
+    return out + gameDirCandidates(appId, gameDir);
+}
+
 Unlocks readUnlocks(const QList<Candidate> &files)
 {
     Unlocks out;
@@ -193,7 +278,7 @@ Unlocks readUnlocks(int appId, const QString &gameDir, const Roots &roots)
 
 Unlocks readUnlocks(int appId, const QString &gameDir)
 {
-    return readUnlocks(appId, gameDir, systemRoots());
+    return readUnlocks(candidates(appId, gameDir, rootsFor(appId, gameDir)));
 }
 
 AchievementFormats::Progress readProgress(const QList<Candidate> &files)

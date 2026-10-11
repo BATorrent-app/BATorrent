@@ -165,7 +165,7 @@ void AchievementService::finish(int appId, const QByteArray &schema, const QByte
     const QList<Achievement> known = Achievements::parseSchema(schema);
     const QHash<QString, double> pct = Achievements::parsePercentages(percent);
     for (const Waiting &w : waiting) {
-        const auto files = AchievementFiles::candidates(appId, w.gameDir, AchievementFiles::systemRoots());
+        const auto files = AchievementFiles::candidates(appId, w.gameDir, AchievementFiles::rootsFor(appId, w.gameDir));
         const QHash<QString, qint64> unlocks = AchievementFiles::readUnlocks(files);
         const auto progress = AchievementFiles::readProgress(files);
         QList<Achievement> list = known;

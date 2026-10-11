@@ -5,7 +5,12 @@
 #include "services/games/achievementwatch.h"
 
 AchievementWatch::AchievementWatch(const AchievementFiles::Roots &roots, QObject *parent)
-    : QObject(parent), m_roots(roots)
+    : AchievementWatch([roots](int, const QString &) { return QList<AchievementFiles::Roots>{ roots }; }, parent)
+{
+}
+
+AchievementWatch::AchievementWatch(RootsFor rootsFor, QObject *parent)
+    : QObject(parent), m_rootsFor(std::move(rootsFor))
 {
     m_timer.setInterval(kIntervalMs);
     connect(&m_timer, &QTimer::timeout, this, &AchievementWatch::checkNow);
@@ -17,7 +22,7 @@ void AchievementWatch::start(const QString &key, int appId, const QString &gameD
     Game g;
     g.appId = appId;
     g.dir = gameDir;
-    g.files = AchievementFiles::candidates(appId, gameDir, m_roots);
+    g.files = AchievementFiles::candidates(appId, gameDir, m_rootsFor(appId, gameDir));
     g.seen = AchievementFiles::readUnlocks(g.files);
     m_games.insert(key, g);
     if (!m_timer.isActive()) m_timer.start();

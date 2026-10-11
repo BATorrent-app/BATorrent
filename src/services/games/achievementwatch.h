@@ -10,6 +10,7 @@
 #include <QObject>
 #include <QStringList>
 #include <QTimer>
+#include <functional>
 
 // Watches a running game's emulator files and says when something new is
 // unlocked. Polled, not QFileSystemWatcher: emulators rewrite the whole file,
@@ -18,6 +19,9 @@ class AchievementWatch : public QObject
 {
     Q_OBJECT
 public:
+    using RootsFor = std::function<QList<AchievementFiles::Roots>(int appId, const QString &gameDir)>;
+    // Defaults to AchievementFiles::rootsFor; a test hands in its own folders.
+    explicit AchievementWatch(RootsFor rootsFor = AchievementFiles::rootsFor, QObject *parent = nullptr);
     explicit AchievementWatch(const AchievementFiles::Roots &roots, QObject *parent = nullptr);
 
     // What is already unlocked when watching starts is the baseline, never news.
@@ -42,7 +46,7 @@ private:
     };
     void check(const QString &key, Game &g);
 
-    AchievementFiles::Roots m_roots;
+    RootsFor m_rootsFor;
     QHash<QString, Game> m_games;
     QTimer m_timer;
 };

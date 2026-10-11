@@ -134,7 +134,7 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
         onAchievementsLookedUp(key, appId, list);
         emit achievementsReady(key, appId, list, unlocked, total);
     });
-    m_achWatch = std::make_unique<AchievementWatch>(AchievementFiles::systemRoots());
+    m_achWatch = std::make_unique<AchievementWatch>();
     connect(m_achWatch.get(), &AchievementWatch::unlocked, this,
             [this](const QString &key, int appId, const QString &dir, const QStringList &names) {
         // Named once the list comes back: the emulator only knows the ids.
