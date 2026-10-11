@@ -10,6 +10,7 @@
 #include "services/games/achievementservice.h"
 #include "services/games/achievementwatch.h"
 #include "services/games/steamstore.h"
+#include "services/platform/soundplayer.h"
 
 #include <QFileInfo>
 #include <QSettings>
@@ -48,8 +49,13 @@ void QmlSessionBridge::onAchievementsLookedUp(const QString &key, int appId, con
         for (const QVariant &v : list) {
             const QVariantMap a = v.toMap();
             if (a.value(QStringLiteral("apiName")).toString() != api) continue;
+            const double pct = a.value(QStringLiteral("percent")).toDouble();
+            // At or below a tenth of players an unlock is rare, and sounds it.
+            if (QSettings().value(QStringLiteral("notifSound"), true).toBool())
+                SoundPlayer::play(pct >= 0 && pct <= 10 ? SoundSynth::Sound::AchievementRare
+                                                        : SoundSynth::Sound::Achievement);
             emit achievementUnlocked(m_achTitle.value(key), a.value(QStringLiteral("name")).toString(),
-                                     a.value(QStringLiteral("icon")).toString());
+                                     a.value(QStringLiteral("icon")).toString(), pct);
             break;
         }
     }

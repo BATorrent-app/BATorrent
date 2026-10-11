@@ -1384,5 +1384,9 @@
   "hub_ready_to_install": "インストールできます",
   "toast_achievement": "実績解除: %1",
   "set_notify_achievements": "実績解除時に通知する",
-  "set_notify_achievements_note": "BATorrent から起動したゲームの実行中"
+  "set_notify_achievements_note": "BATorrent から起動したゲームの実行中",
+  "toast_achievement_kicker": "実績解除",
+  "toast_achievement_rare": "レア",
+  "set_notify_achievements_system": "代わりにシステム通知を使う",
+  "set_notify_achievements_system_note": "BATorrent のカードが隠れる排他的フルスクリーンのゲーム向け"
 }

@@ -417,7 +417,7 @@ signals:
     void achievementsReady(const QString &infoHash, int steamAppId, const QVariantList &achievements,
                            int unlocked, int total);
     // Raised while the game runs, one per achievement, as the emulator writes it.
-    void achievementUnlocked(const QString &gameTitle, const QString &name, const QString &icon);
+    void achievementUnlocked(const QString &gameTitle, const QString &name, const QString &icon, double percent);
     void movieReady(const QString &infoHash, const QString &name);   // a movie/series finished → offer Play now
     void gameReady(const QString &infoHash, const QString &name);    // game download done → offer Install
     void installProgress(const QString &infoHash, double percent);  // Get&Install download/install progress

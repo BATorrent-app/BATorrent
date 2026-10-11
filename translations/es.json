@@ -1384,5 +1384,9 @@
   "hub_ready_to_install": "Listo para instalar",
   "toast_achievement": "Logro desbloqueado: %1",
   "set_notify_achievements": "Avisar al desbloquear un logro",
-  "set_notify_achievements_note": "Mientras se ejecuta un juego abierto desde BATorrent"
+  "set_notify_achievements_note": "Mientras se ejecuta un juego abierto desde BATorrent",
+  "toast_achievement_kicker": "Logro desbloqueado",
+  "toast_achievement_rare": "Raro",
+  "set_notify_achievements_system": "Usar la notificación del sistema",
+  "set_notify_achievements_system_note": "Para juegos en pantalla completa exclusiva, que ocultan la tarjeta de BATorrent"
 }

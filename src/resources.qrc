@@ -151,6 +151,7 @@
 <file>../src/qml/overlays/AppTour.qml</file>
 <file>../src/qml/overlays/Splash.qml</file>
         <file>../src/qml/windows/TrayPopupWindow.qml</file>
+        <file>../src/qml/windows/AchievementToast.qml</file>
         <file>../src/qml/dialogs/UpdateDialog.qml</file>
         <file>../src/qml/dialogs/InputPromptDialog.qml</file>
 <file>../src/qml/dialogs/BatDialog.qml</file>

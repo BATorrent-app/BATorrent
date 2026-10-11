@@ -1384,5 +1384,9 @@
   "hub_ready_to_install": "Ready to install",
   "toast_achievement": "Achievement unlocked: %1",
   "set_notify_achievements": "Notify when an achievement unlocks",
-  "set_notify_achievements_note": "While a game launched from BATorrent is running"
+  "set_notify_achievements_note": "While a game launched from BATorrent is running",
+  "toast_achievement_kicker": "Achievement unlocked",
+  "toast_achievement_rare": "Rare",
+  "set_notify_achievements_system": "Use the system notification instead",
+  "set_notify_achievements_system_note": "For games in exclusive fullscreen, which hide BATorrent's own card"
 }

@@ -1384,5 +1384,9 @@
   "hub_ready_to_install": "Bereit zur Installation",
   "toast_achievement": "Erfolg freigeschaltet: %1",
   "set_notify_achievements": "Benachrichtigen, wenn ein Erfolg freigeschaltet wird",
-  "set_notify_achievements_note": "Während ein aus BATorrent gestartetes Spiel läuft"
+  "set_notify_achievements_note": "Während ein aus BATorrent gestartetes Spiel läuft",
+  "toast_achievement_kicker": "Erfolg freigeschaltet",
+  "toast_achievement_rare": "Selten",
+  "set_notify_achievements_system": "Stattdessen die Systembenachrichtigung verwenden",
+  "set_notify_achievements_system_note": "Für Spiele im exklusiven Vollbild, die BATorrents Karte verdecken"
 }

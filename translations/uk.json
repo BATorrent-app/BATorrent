@@ -1384,5 +1384,9 @@
   "hub_ready_to_install": "Можна встановити",
   "toast_achievement": "Досягнення отримано: %1",
   "set_notify_achievements": "Сповіщати про нові досягнення",
-  "set_notify_achievements_note": "Поки працює гра, запущена з BATorrent"
+  "set_notify_achievements_note": "Поки працює гра, запущена з BATorrent",
+  "toast_achievement_kicker": "Досягнення отримано",
+  "toast_achievement_rare": "Рідкісне",
+  "set_notify_achievements_system": "Використовувати системне сповіщення",
+  "set_notify_achievements_system_note": "Для ігор в ексклюзивному повноекранному режимі, які ховають картку BATorrent"
 }

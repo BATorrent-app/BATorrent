@@ -1,0 +1,164 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2024-2026 Mateus Cruz
+// See LICENSE file for details
+
+// The card that slides in at the corner of the screen when an achievement
+// unlocks, over the game being played. Its own window, on top, that never
+// takes focus or clicks: a notice must not cost the player a keystroke. One at
+// a time; a burst of unlocks waits its turn.
+import QtQuick
+import QtQuick.Window
+import QtQuick.Effects
+import "../theme"
+import "../widgets"
+
+Window {
+    id: toast
+    width: 380
+    height: 104
+    color: "transparent"
+    flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+           | Qt.WindowDoesNotAcceptFocus | Qt.WindowTransparentForInput
+    visible: false
+
+    // At or below this share of players an unlock is rare, and says so (the
+    // bridge picks the rare sound by the same line).
+    readonly property real rareAt: 10
+    property var queue: []
+    property var current: null
+    readonly property bool rare: !!current && current.percent >= 0 && current.percent <= rareAt
+
+    function push(game, name, icon, percent) {
+        var q = queue
+        q.push({ game: game, name: name, icon: icon, percent: percent })
+        queue = q
+        if (!current) next()
+    }
+    function next() {
+        if (queue.length === 0) { current = null; card.shown = false; hideTimer.restart(); return }
+        var q = queue
+        current = q.shift()
+        queue = q
+        x = Screen.virtualX + Screen.desktopAvailableWidth - width - 24
+        y = Screen.virtualY + Screen.desktopAvailableHeight - height - 24
+        visible = true
+        card.shown = true
+        holdTimer.restart()
+    }
+
+    Timer { id: holdTimer; interval: 5000; onTriggered: { card.shown = false; gapTimer.restart() } }
+    Timer { id: gapTimer; interval: 320; onTriggered: toast.next() }
+    Timer { id: hideTimer; interval: 320; onTriggered: if (!toast.current) toast.visible = false }
+
+    Rectangle {
+        id: card
+        property bool shown: false
+        width: parent.width
+        height: parent.height
+        radius: 10
+        color: "#141416"
+        border.width: 1
+        border.color: toast.rare ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.55)
+                                 : Qt.rgba(1, 1, 1, 0.09)
+        opacity: shown ? 1 : 0
+        x: shown ? 0 : 28
+        Behavior on opacity { NumberAnimation { duration: card.shown ? Theme.durSlow : Theme.durBase } }
+        Behavior on x { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
+
+        Rectangle {
+            visible: toast.rare
+            x: 0; y: 10
+            width: 3
+            height: parent.height - 20
+            radius: 2
+            color: Theme.accent
+        }
+
+        Row {
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 14
+
+            Item {
+                width: 72
+                height: 72
+                Rectangle {
+                    id: iconBox
+                    anchors.fill: parent
+                    color: "#1d1d20"
+                    visible: false
+                    layer.enabled: true
+                    ChainImage {
+                        anchors.fill: parent
+                        sourceSize.width: 144
+                        sources: toast.current && toast.current.icon ? [toast.current.icon] : []
+                    }
+                }
+                Rectangle { id: iconMask; anchors.fill: parent; radius: 8; visible: false; layer.enabled: true }
+                MultiEffect { source: iconBox; anchors.fill: parent; maskEnabled: true; maskSource: iconMask }
+            }
+
+            Column {
+                width: parent.width - 72 - 14
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
+                Row {
+                    spacing: 8
+                    Text {
+                        text: (i18n.language, i18n.t("toast_achievement_kicker"))
+                        color: toast.rare ? Theme.accentText : Theme.t4
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 1.1
+                        font.capitalization: Font.AllUppercase
+                        font.family: Theme.fontSans
+                    }
+                    Rectangle {
+                        visible: toast.rare
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: rareTxt.implicitWidth + 12
+                        height: 16
+                        radius: 8
+                        color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.16)
+                        Text {
+                            id: rareTxt
+                            anchors.centerIn: parent
+                            text: (i18n.language, i18n.t("toast_achievement_rare"))
+                            color: Theme.accentText
+                            font.pixelSize: 10
+                            font.weight: Font.DemiBold
+                            font.family: Theme.fontSans
+                        }
+                    }
+                }
+                Text {
+                    width: parent.width
+                    text: toast.current ? toast.current.name : ""
+                    color: Theme.t1
+                    font.pixelSize: 15
+                    font.weight: Font.DemiBold
+                    font.family: Theme.fontSans
+                    elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width
+                    text: {
+                        if (!toast.current) return ""
+                        var parts = []
+                        if (toast.current.game) parts.push(toast.current.game)
+                        if (toast.current.percent >= 0)
+                            parts.push((i18n.language, i18n.t("game_ach_players"))
+                                       .arg(toast.current.percent < 1 ? toast.current.percent.toFixed(1)
+                                                                      : Math.round(toast.current.percent)))
+                        return parts.join("  ·  ")
+                    }
+                    color: Theme.t3
+                    font.pixelSize: 12
+                    font.family: Theme.fontSans
+                    font.features: Theme.tnum
+                    elide: Text.ElideRight
+                }
+            }
+        }
+    }
+}

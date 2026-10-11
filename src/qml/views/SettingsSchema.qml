@@ -222,7 +222,9 @@ QtObject {
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
             { type: "toggle", key: "notifSound", label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
             { type: "toggle", key: "notifyAchievements", label: (i18n.language, i18n.t("set_notify_achievements")), on: true,
-              note: (i18n.language, i18n.t("set_notify_achievements_note")) }
+              note: (i18n.language, i18n.t("set_notify_achievements_note")) },
+            { type: "toggle", key: "notifyAchievementsSystem", label: (i18n.language, i18n.t("set_notify_achievements_system")),
+              note: (i18n.language, i18n.t("set_notify_achievements_system_note")) }
         ],
         // 7 Addons
         [

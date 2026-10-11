@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
+import "../windows"
 
 // Get&Watch overlay + toast host + one-shot star/crash asks.
 Item {
@@ -28,9 +29,13 @@ Item {
         target: typeof session !== "undefined" ? session : null
         ignoreUnknownSignals: true
         function onToast(title, body) { host.notifyUser(title, body, 0) }
-        // The game is in front: the OS notification is the one that can be seen.
-        function onAchievementUnlocked(game, name, icon) {
-            host.notifyNative(i18n.t("toast_achievement").arg(name), game)
+        // The game is in front: our own card over it, or, when asked for (or
+        // a game in exclusive fullscreen hides it), the OS notification.
+        function onAchievementUnlocked(game, name, icon, percent) {
+            if (typeof settings !== "undefined" && settings.getBool("notifyAchievementsSystem"))
+                host.notifyNative(i18n.t("toast_achievement").arg(name), game)
+            else
+                achievementToast.push(game, name, icon, percent)
         }
         // a movie/series finished downloading → actionable "Play now" toast
         function onMovieReady(infoHash, name) {
@@ -132,4 +137,5 @@ Item {
         }
     }
 
+    AchievementToast { id: achievementToast }
 }

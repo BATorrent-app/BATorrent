@@ -1384,5 +1384,9 @@
   "hub_ready_to_install": "Pronto para instalar",
   "toast_achievement": "Conquista desbloqueada: %1",
   "set_notify_achievements": "Avisar quando desbloquear uma conquista",
-  "set_notify_achievements_note": "Enquanto um jogo aberto pelo BATorrent estiver rodando"
+  "set_notify_achievements_note": "Enquanto um jogo aberto pelo BATorrent estiver rodando",
+  "toast_achievement_kicker": "Conquista desbloqueada",
+  "toast_achievement_rare": "Rara",
+  "set_notify_achievements_system": "Usar a notificação do sistema",
+  "set_notify_achievements_system_note": "Para jogos em tela cheia exclusiva, que escondem o card do BATorrent"
 }

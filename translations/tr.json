@@ -1384,5 +1384,9 @@
   "hub_ready_to_install": "Kurulmaya hazır",
   "toast_achievement": "Başarım açıldı: %1",
   "set_notify_achievements": "Başarım açıldığında bildir",
-  "set_notify_achievements_note": "BATorrent'tan açılan bir oyun çalışırken"
+  "set_notify_achievements_note": "BATorrent'tan açılan bir oyun çalışırken",
+  "toast_achievement_kicker": "Başarım açıldı",
+  "toast_achievement_rare": "Nadir",
+  "set_notify_achievements_system": "Bunun yerine sistem bildirimini kullan",
+  "set_notify_achievements_system_note": "BATorrent kartını gizleyen özel tam ekran oyunlar için"
 }

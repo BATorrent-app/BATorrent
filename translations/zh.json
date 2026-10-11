@@ -1384,5 +1384,9 @@
   "hub_ready_to_install": "可以安装",
   "toast_achievement": "成就解锁：%1",
   "set_notify_achievements": "解锁成就时通知",
-  "set_notify_achievements_note": "在从 BATorrent 启动的游戏运行时"
+  "set_notify_achievements_note": "在从 BATorrent 启动的游戏运行时",
+  "toast_achievement_kicker": "成就解锁",
+  "toast_achievement_rare": "稀有",
+  "set_notify_achievements_system": "改用系统通知",
+  "set_notify_achievements_system_note": "适用于独占全屏、会遮住 BATorrent 卡片的游戏"
 }
