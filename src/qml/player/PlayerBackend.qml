@@ -11,7 +11,7 @@ import BATorrent.Media
 // same API. Read once per window: switching mid-playback would drop the stream.
 Item {
     id: root
-    property bool isolated: (typeof settings !== "undefined") && settings.getBool("isolatedPlayer", false)
+    property bool isolated: (typeof settings !== "undefined") && settings.getBool("isolatedPlayer", true)
     property url source
     property var videoOutput: null
     property real volume: 1.0
