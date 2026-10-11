@@ -5,12 +5,13 @@
 #ifndef SOUNDPLAYER_H
 #define SOUNDPLAYER_H
 
-// A short, synthesized completion chime: not a licensed audio asset, and not
-// QApplication::beep() (a user reported that on Windows it plays as the
-// system's generic alert sound, indistinguishable from an error beep).
+#include "services/platform/soundsynth.h"
+
+// Plays the app's synthesized sounds on the default output, fire and forget.
 namespace SoundPlayer {
 
-void playCompletionChime();
+void play(SoundSynth::Sound sound);
+inline void playCompletionChime() { play(SoundSynth::Sound::Completion); }
 
 } // namespace SoundPlayer
 
