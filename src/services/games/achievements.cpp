@@ -91,6 +91,11 @@ QVariantList toVariant(const QList<Achievement> &list)
             { QStringLiteral("iconGray"), a.iconGray },
             { QStringLiteral("hidden"), a.hidden },
             { QStringLiteral("percent"), a.percent },
+            // The share as a person reads it: one decimal under 1%, whole above.
+            { QStringLiteral("percentLabel"), a.percent < 0 ? QString()
+                                              : a.percent < 1 ? QString::number(a.percent, 'f', 1)
+                                                              : QString::number(qRound(a.percent)) },
+            { QStringLiteral("rare"), a.rare() },
             { QStringLiteral("unlocked"), a.unlocked },
             { QStringLiteral("unlockedAt"), a.unlockedAt },
             { QStringLiteral("progress"), a.progress },

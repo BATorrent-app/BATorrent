@@ -267,6 +267,7 @@
 <file>../src/qml/widgets/WorkHero.qml</file>
 <file>../src/qml/widgets/ChainImage.qml</file>
 <file>../src/qml/widgets/LogoImage.qml</file>
+<file>../src/qml/widgets/RoundedImage.qml</file>
 <file>../src/qml/widgets/SeriesLogic.qml</file>
 <file>../src/qml/widgets/TitleStage.qml</file>
 <file>../src/qml/widgets/StageSelect.qml</file>

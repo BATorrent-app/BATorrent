@@ -145,6 +145,7 @@ private:
     QSet<QString> m_logoTonePending;
     QSet<QString> m_logoPending;
     QHash<QString, QVariantMap> m_gameDetails;   // game name → IGDB details, {} when unmatched
+    QHash<QString, qint64> m_gameDetailsFailedAt;   // name → when IGDB last couldn't be reached
     QStringList m_gameDetailsQueue;   // names waiting their turn: IGDB allows ~4 requests/s
     bool m_gameDetailsBusy = false;
     void runGameDetailsQueue();

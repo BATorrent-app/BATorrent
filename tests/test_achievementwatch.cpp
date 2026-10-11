@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QTemporaryDir>
+#include <QThread>
 
 namespace {
 
@@ -64,6 +65,22 @@ TEST_CASE("the unlock that lands as the game quits is still caught", "[achieveme
     w.stop("g");
     REQUIRE(got == QStringList{ "LAST" });
     REQUIRE_FALSE(w.watching("g"));
+}
+
+TEST_CASE("a profile folder the emulator makes mid-session is found", "[achievementwatch]") {
+    QTemporaryDir root;
+    const QString game = root.filePath("game");
+    write(game + "/steam_api64.dll", "x");
+    AchievementWatch w(AchievementFiles::Roots{});
+    QStringList got;
+    QObject::connect(&w, &AchievementWatch::unlocked,
+                     [&got](const QString &, int, const QString &, const QStringList &names) { got += names; });
+    w.start("g", 30, game);
+    write(game + "/3DMGAME/Player/stats/achievements.ini", "[State]\nFIRST=0101\n[Time]\nFIRST=00000000\n");
+    // The walk is shared for a few seconds; the rescan after that sees the new folder.
+    QThread::msleep(5200);
+    for (int i = 0; i < AchievementWatch::kRescanEvery; ++i) w.checkNow();
+    REQUIRE(got == QStringList{ "FIRST" });
 }
 
 TEST_CASE("no appid, nothing to watch", "[achievementwatch]") {

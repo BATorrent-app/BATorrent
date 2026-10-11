@@ -32,6 +32,7 @@ void AchievementWatch::stop(const QString &key)
 {
     auto it = m_games.find(key);
     if (it == m_games.end()) return;
+    it->checks = kRescanEvery - 1;   // the last look also picks up folders made mid-session
     check(key, *it);
     m_games.erase(it);
     if (m_games.isEmpty()) m_timer.stop();
@@ -44,6 +45,8 @@ void AchievementWatch::checkNow()
 
 void AchievementWatch::check(const QString &key, Game &g)
 {
+    if (++g.checks % kRescanEvery == 0)
+        g.files = AchievementFiles::candidates(g.appId, g.dir, m_rootsFor(g.appId, g.dir));
     const AchievementFormats::Unlocks now = AchievementFiles::readUnlocks(g.files);
     const QStringList fresh = AchievementFiles::newlyUnlocked(g.seen, now);
     g.seen = now;

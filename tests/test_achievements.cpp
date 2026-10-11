@@ -170,6 +170,21 @@ TEST_CASE("progress rides along with the achievement it belongs to", "[achieveme
     REQUIRE(v.contains("progressMax"));
 }
 
+TEST_CASE("rarity and its label are decided once, on the achievement", "[achievements]") {
+    const auto merged = Achievements::merge(Achievements::parseSchema(kSchema),
+                                            { { "NIGHT_SHIFT", 41.4 }, { "PAPER_TRAIL", 0.42 }, { "REQUIEM", 10.0 } }, {});
+    QHash<QString, QVariantMap> by;
+    for (const QVariant &v : Achievements::toVariant(merged)) by.insert(v.toMap().value("apiName").toString(), v.toMap());
+    REQUIRE(by["NIGHT_SHIFT"].value("percentLabel").toString() == QLatin1String("41"));
+    REQUIRE_FALSE(by["NIGHT_SHIFT"].value("rare").toBool());
+    REQUIRE(by["PAPER_TRAIL"].value("percentLabel").toString() == QLatin1String("0.4"));
+    REQUIRE(by["PAPER_TRAIL"].value("rare").toBool());
+    REQUIRE(by["REQUIEM"].value("rare").toBool());   // the line itself counts as rare
+    const auto unknown = Achievements::toVariant(Achievements::merge(Achievements::parseSchema(kSchema), {}, {}));
+    REQUIRE(unknown.value(0).toMap().value("percentLabel").toString().isEmpty());
+    REQUIRE_FALSE(unknown.value(0).toMap().value("rare").toBool());
+}
+
 TEST_CASE("locked secrets sink below the locked ones that can be read", "[achievements]") {
     // REQUIEM is hidden and sits before PAPER_TRAIL in the schema.
     auto locked = Achievements::merge(Achievements::parseSchema(kSchema), {}, {});

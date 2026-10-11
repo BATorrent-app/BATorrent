@@ -12,9 +12,7 @@
 #include <QTimer>
 #include <functional>
 
-// Watches a running game's emulator files and says when something new is
-// unlocked. Polled, not QFileSystemWatcher: emulators rewrite the whole file,
-// and a replaced file drops out of a watcher without a word.
+// Polled, not QFileSystemWatcher: emulators rewrite the whole file, and a replaced file drops out of a watcher.
 class AchievementWatch : public QObject
 {
     Q_OBJECT
@@ -33,6 +31,9 @@ public:
     void checkNow();
 
     static constexpr int kIntervalMs = 4000;
+    // Every this many checks the file list is worked out again: a profile
+    // folder some emulators create on the first unlock wasn't there at launch.
+    static constexpr int kRescanEvery = 8;
 
 signals:
     void unlocked(const QString &key, int appId, const QString &gameDir, const QStringList &apiNames);
@@ -43,6 +44,7 @@ private:
         QString dir;
         QList<AchievementFiles::Candidate> files;
         AchievementFormats::Unlocks seen;
+        int checks = 0;
     };
     void check(const QString &key, Game &g);
 

@@ -64,6 +64,13 @@ AchievementFormats::Unlocks readUnlocks(int appId, const QString &gameDir);
 // Progress toward the counting achievements; the furthest reading wins.
 AchievementFormats::Progress readProgress(const QList<Candidate> &files);
 
+// Both from a single read of each file.
+struct State {
+    AchievementFormats::Unlocks unlocked;
+    AchievementFormats::Progress progress;
+};
+State readState(const QList<Candidate> &files);
+
 // What `now` holds that `before` did not, oldest unlock first.
 QStringList newlyUnlocked(const AchievementFormats::Unlocks &before, const AchievementFormats::Unlocks &now);
 

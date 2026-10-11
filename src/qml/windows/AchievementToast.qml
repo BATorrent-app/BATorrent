@@ -2,13 +2,9 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// The card that slides in at the corner of the screen when an achievement
-// unlocks, over the game being played. Its own window, on top, that never
-// takes focus or clicks: a notice must not cost the player a keystroke. One at
-// a time; a burst of unlocks waits its turn.
+// The unlock card over the game: its own window, never taking focus or clicks, one notice at a time.
 import QtQuick
 import QtQuick.Window
-import QtQuick.Effects
 import "../theme"
 import "../widgets"
 
@@ -17,20 +13,18 @@ Window {
     width: 380
     height: 104
     color: "transparent"
-    flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+    // Not a Tool window on macOS: that is an NSPanel, hidden whenever another app (the game) is in front.
+    flags: (Qt.platform.os === "osx" ? Qt.Window : Qt.Tool) | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
            | Qt.WindowDoesNotAcceptFocus | Qt.WindowTransparentForInput
     visible: false
 
-    // At or below this share of players an unlock is rare, and says so (the
-    // bridge picks the rare sound by the same line).
-    readonly property real rareAt: 10
     property var queue: []
     property var current: null
-    readonly property bool rare: !!current && current.percent >= 0 && current.percent <= rareAt
+    readonly property bool rare: !!current && current.rare === true
 
-    function push(game, name, icon, percent) {
+    function push(game, name, icon, percentLabel, rare) {
         var q = queue
-        q.push({ game: game, name: name, icon: icon, percent: percent })
+        q.push({ game: game, name: name, icon: icon, percentLabel: percentLabel || "", rare: rare === true })
         queue = q
         if (!current) next()
     }
@@ -79,23 +73,13 @@ Window {
             anchors.margins: 16
             spacing: 14
 
-            Item {
+            RoundedImage {
                 width: 72
                 height: 72
-                Rectangle {
-                    id: iconBox
-                    anchors.fill: parent
-                    color: "#1d1d20"
-                    visible: false
-                    layer.enabled: true
-                    ChainImage {
-                        anchors.fill: parent
-                        sourceSize.width: 144
-                        sources: toast.current && toast.current.icon ? [toast.current.icon] : []
-                    }
-                }
-                Rectangle { id: iconMask; anchors.fill: parent; radius: 8; visible: false; layer.enabled: true }
-                MultiEffect { source: iconBox; anchors.fill: parent; maskEnabled: true; maskSource: iconMask }
+                radius: 8
+                fill: "#1d1d20"
+                sourceWidth: 144
+                sources: toast.current && toast.current.icon ? [toast.current.icon] : []
             }
 
             Column {
@@ -146,10 +130,8 @@ Window {
                         if (!toast.current) return ""
                         var parts = []
                         if (toast.current.game) parts.push(toast.current.game)
-                        if (toast.current.percent >= 0)
-                            parts.push((i18n.language, i18n.t("game_ach_players"))
-                                       .arg(toast.current.percent < 1 ? toast.current.percent.toFixed(1)
-                                                                      : Math.round(toast.current.percent)))
+                        if (toast.current.percentLabel)
+                            parts.push((i18n.language, i18n.t("game_ach_players")).arg(toast.current.percentLabel))
                         return parts.join("  ·  ")
                     }
                     color: Theme.t3

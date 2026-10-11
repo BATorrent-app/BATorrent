@@ -25,9 +25,8 @@ Column {
     readonly property var shown: showAll ? readable : readable.slice(0, 5)
     readonly property bool showSecrets: secretsLeft > 0 && (showAll || readable.length <= 5)
 
-    function rarity(p) {
-        if (p < 0) return ""
-        return (i18n.language, i18n.t("game_ach_players")).arg(p < 1 ? p.toFixed(1) : Math.round(p))
+    function rarity(label) {
+        return label ? (i18n.language, i18n.t("game_ach_players")).arg(label) : ""
     }
 
     Item {
@@ -166,7 +165,7 @@ Column {
                         Text {
                             anchors.right: parent.right
                             visible: text.length > 0
-                            text: root.rarity(row.modelData.percent)
+                            text: root.rarity(row.modelData.percentLabel)
                             color: Theme.stageDim
                             font.pixelSize: 11
                             font.family: Theme.fontSans

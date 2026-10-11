@@ -3,7 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
-import QtQuick.Effects
+import "../widgets"
 import "../theme"
 
 Column {
@@ -34,27 +34,13 @@ Column {
                 required property string modelData
                 width: grid.tileW
                 height: Math.round(grid.tileW * 9 / 16)
-                Rectangle {
-                    id: shot
+                RoundedImage {
                     anchors.fill: parent
-                    color: Theme.elev
-                    visible: false
-                    layer.enabled: true
-                    Image {
-                        anchors.fill: parent
-                        source: still.modelData
-                        sourceSize.width: 640
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        cache: true
-                        scale: ma.containsMouse ? 1.04 : 1
-                        Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
-                        opacity: status === Image.Ready ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: Theme.durSlower } }
-                    }
+                    radius: 4
+                    sourceWidth: 640
+                    sources: [still.modelData]
+                    imageScale: ma.containsMouse ? 1.04 : 1
                 }
-                Rectangle { id: shotMask; anchors.fill: parent; radius: 4; color: "white"; visible: false; layer.enabled: true }
-                MultiEffect { source: shot; anchors.fill: parent; maskEnabled: true; maskSource: shotMask }
                 MouseArea {
                     id: ma
                     anchors.fill: parent

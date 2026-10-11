@@ -174,7 +174,7 @@ Item {
             var out = []
             for (var i = 0; i < n; i++)
                 out.push({ apiName: "A" + i, name: "Ach " + i, description: "d" + i, icon: "", iconGray: "",
-                           hidden: i === n - 1, percent: i === 0 ? 0.4 : 41, unlocked: i < 2,
+                           hidden: i === n - 1, percent: i === 0 ? 0.4 : 41, percentLabel: i === 0 ? "0.4" : "41", unlocked: i < 2,
                            unlockedAt: i === 0 ? 1700000000 : 0 })
             return out
         }

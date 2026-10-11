@@ -8,6 +8,7 @@
 #include "services/discovery/discoveryservice.h"
 #include "services/discovery/igdbparse.h"
 
+#include <QDateTime>
 #include <QDebug>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -69,6 +70,12 @@ void DiscoveryService::fetchGameDetails(const QString &gameName)
         QTimer::singleShot(0, this, [this, gameName, details]() { emit gameDetailsReady(gameName, details); });
         return;
     }
+    // Every tile asks as it is created; while IGDB is unreachable that would
+    // be a token request and a search per tile, forever.
+    if (QDateTime::currentMSecsSinceEpoch() - m_gameDetailsFailedAt.value(key, 0) < 60000) {
+        QTimer::singleShot(0, this, [this, gameName]() { emit gameDetailsReady(gameName, {}); });
+        return;
+    }
     if (!m_gameDetailsQueue.contains(key)) m_gameDetailsQueue.append(key);
     runGameDetailsQueue();
 }
@@ -82,7 +89,12 @@ void DiscoveryService::runGameDetailsQueue()
         QTimer::singleShot(260, this, [this]() { m_gameDetailsBusy = false; runGameDetailsQueue(); });
     };
     ensureIgdbToken([this, key, next]() {
-        if (m_igdbToken.isEmpty()) { emit gameDetailsReady(key, {}); next(); return; }
+        if (m_igdbToken.isEmpty()) {
+            m_gameDetailsFailedAt.insert(key, QDateTime::currentMSecsSinceEpoch());
+            emit gameDetailsReady(key, {});
+            next();
+            return;
+        }
         QNetworkRequest req{QUrl(QStringLiteral("https://api.igdb.com/v4/games"))};
         setIgdbHeaders(req);
         req.setTransferTimeout(12000);
@@ -96,8 +108,9 @@ void DiscoveryService::runGameDetailsQueue()
         connect(reply, &QNetworkReply::finished, this, [this, reply, key, next]() {
             reply->deleteLater();
             if (reply->error() != QNetworkReply::NoError) {
-                // Not cached: a dropped connection shouldn't blank the page for the session.
+                // Not cached as an answer: a dropped connection shouldn't blank the page for the session.
                 qDebug() << "[discover] IGDB game details error:" << reply->errorString();
+                m_gameDetailsFailedAt.insert(key, QDateTime::currentMSecsSinceEpoch());
                 emit gameDetailsReady(key, {});
             } else {
                 const QVariantMap details = IgdbParse::gameDetails(reply->readAll());

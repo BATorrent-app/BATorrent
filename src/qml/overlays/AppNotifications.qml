@@ -31,11 +31,11 @@ Item {
         function onToast(title, body) { host.notifyUser(title, body, 0) }
         // The game is in front: our own card over it, or, when asked for (or
         // a game in exclusive fullscreen hides it), the OS notification.
-        function onAchievementUnlocked(game, name, icon, percent) {
+        function onAchievementUnlocked(game, name, icon, percentLabel, rare) {
             if (typeof settings !== "undefined" && settings.getBool("notifyAchievementsSystem"))
                 host.notifyNative(i18n.t("toast_achievement").arg(name), game)
             else
-                achievementToast.push(game, name, icon, percent)
+                achievementToast.push(game, name, icon, percentLabel, rare)
         }
         // a movie/series finished downloading → actionable "Play now" toast
         function onMovieReady(infoHash, name) {

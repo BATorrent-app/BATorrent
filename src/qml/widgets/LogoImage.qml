@@ -2,10 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// A title's lettering, drawn white when it is mostly dark (The Witcher's, most
-// black logos): on the app's dark art it would otherwise disappear. Light and
-// coloured logos are left as they are. Held back until the tone is known so a
-// dark logo never flashes before it turns light.
+// A title's logo, drawn white only when it is mostly dark; hidden until its tone is known so it never flashes.
 import QtQuick
 import QtQuick.Effects
 import "../theme"

@@ -2,9 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// A game's banner: key art behind, the game's own logo and a one-line
-// identity in front. Steam's art and logo when the game has them, IGDB's art
-// otherwise; the title is set in type only when no logo loads.
+// A game's banner: Steam's art and logo when it has them, IGDB's art and the title in type otherwise.
 import QtQuick
 import "../theme"
 import "../widgets"

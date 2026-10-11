@@ -4,7 +4,9 @@
 
 #include "services/games/achievementfiles.h"
 
+#include <QDateTime>
 #include <QDir>
+#include <QHash>
 #include <QFile>
 #include <QFileInfo>
 #include <QQueue>
@@ -42,7 +44,7 @@ struct Scan {
     QStringList steamSettings;
 };
 
-Scan scan(const QString &gameDir)
+Scan walk(const QString &gameDir)
 {
     Scan out;
     if (gameDir.isEmpty() || !QFileInfo(gameDir).isDir()) return out;
@@ -69,6 +71,21 @@ Scan scan(const QString &gameDir)
         if (isBase && !out.bases.contains(dir)) out.bases << dir;
     }
     return out;
+}
+
+// The appid lookup, the candidate list and the watch all want the same walk
+// moments apart; done once, it is reused for a few seconds.
+Scan scan(const QString &gameDir)
+{
+    struct Cached { qint64 at; Scan scan; };
+    static QHash<QString, Cached> cache;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const auto hit = cache.constFind(gameDir);
+    if (hit != cache.constEnd() && now - hit->at < 5000) return hit->scan;
+    if (cache.size() > 32) cache.clear();
+    const Scan s = walk(gameDir);
+    cache.insert(gameDir, { now, s });
+    return s;
 }
 
 QStringList subdirs(const QString &dir)
@@ -255,20 +272,29 @@ QList<Candidate> candidates(int appId, const QString &gameDir, const QList<Roots
     return out + gameDirCandidates(appId, gameDir);
 }
 
-Unlocks readUnlocks(const QList<Candidate> &files)
+State readState(const QList<Candidate> &files)
 {
-    Unlocks out;
+    State out;
     for (const Candidate &c : files) {
         const QByteArray bytes = readCapped(c.path);
         if (bytes.isEmpty()) continue;
         const Unlocks got = AchievementFormats::parse(c.format, bytes);
         for (auto it = got.cbegin(); it != got.cend(); ++it) {
-            const auto have = out.find(it.key());
-            if (have == out.end()) out.insert(it.key(), it.value());
+            const auto have = out.unlocked.find(it.key());
+            if (have == out.unlocked.end()) out.unlocked.insert(it.key(), it.value());
             else if (it.value() > 0 && (*have == 0 || it.value() < *have)) *have = it.value();
         }
+        const auto prog = AchievementFormats::parseProgress(c.format, bytes);
+        for (auto it = prog.cbegin(); it != prog.cend(); ++it)
+            if (!out.progress.contains(it.key()) || it.value().first > out.progress.value(it.key()).first)
+                out.progress.insert(it.key(), it.value());
     }
     return out;
+}
+
+Unlocks readUnlocks(const QList<Candidate> &files)
+{
+    return readState(files).unlocked;
 }
 
 Unlocks readUnlocks(int appId, const QString &gameDir, const Roots &roots)
@@ -283,16 +309,7 @@ Unlocks readUnlocks(int appId, const QString &gameDir)
 
 AchievementFormats::Progress readProgress(const QList<Candidate> &files)
 {
-    AchievementFormats::Progress out;
-    for (const Candidate &c : files) {
-        const QByteArray bytes = readCapped(c.path);
-        if (bytes.isEmpty()) continue;
-        const auto got = AchievementFormats::parseProgress(c.format, bytes);
-        for (auto it = got.cbegin(); it != got.cend(); ++it)
-            if (!out.contains(it.key()) || it.value().first > out.value(it.key()).first)
-                out.insert(it.key(), it.value());
-    }
-    return out;
+    return readState(files).progress;
 }
 
 QStringList newlyUnlocked(const Unlocks &before, const Unlocks &now)

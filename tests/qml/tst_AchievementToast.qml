@@ -16,22 +16,22 @@ Item {
 
         function test_unlocksShowOneAtATimeInOrder() {
             var t = createTemporaryObject(toastComp, root)
-            t.push("Elden Ring", "First", "", 41)
-            t.push("Elden Ring", "Second", "", 4)
+            t.push("Elden Ring", "First", "", "41", false)
+            t.push("Elden Ring", "Second", "", "4", true)
             compare(t.current.name, "First")
             compare(t.queue.length, 1)
             verify(t.visible)
-            verify(!t.rare, "41% of players is not rare")
+            verify(!t.rare, "the service said it wasn't rare")
             t.next()
             compare(t.current.name, "Second")
-            verify(t.rare, "4% is")
+            verify(t.rare, "and that this one is")
             t.next()
             compare(t.current, null)
         }
 
         function test_anUnknownShareIsNeverRare() {
             var t = createTemporaryObject(toastComp, root)
-            t.push("X", "No data", "", -1)
+            t.push("X", "No data", "", "")
             verify(!t.rare)
         }
 

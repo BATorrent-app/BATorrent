@@ -62,7 +62,11 @@ Window {
     // 3 HUB · 4 Settings). Owned by the window so navigation works whichever
     // nav component (rail or top bar) is loaded.
     property int currentPage: 0
-    onCurrentPageChanged: clearFilterFocus()
+    onCurrentPageChanged: {
+        clearFilterFocus()
+        if (currentPage !== 1) searchPage.returnPage = -1
+        if (currentPage !== 2) hubPage.gameReturnPage = -1
+    }
     // classic layout = the pre-4.5 left nav rail; default is the top bar.
     // Only one nav component is ever loaded: a hidden rail would keep its
     // carousel timer and ~30 session bindings alive for nothing.

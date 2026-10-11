@@ -13,6 +13,9 @@
 
 // A game's achievements as Steam describes them, crossed with what the
 // game's emulator wrote to disk. Pure: no network, no files.
+// At or below this share of Steam players an unlock is rare.
+constexpr double kRarePercent = 10.0;
+
 struct Achievement {
     QString apiName;      // the id Steam and every emulator key on
     QString name;
@@ -25,6 +28,7 @@ struct Achievement {
     qint64 unlockedAt = 0;   // unix seconds, 0 when the emulator kept no time
     qint64 progress = 0;     // toward progressMax, for an achievement that counts
     qint64 progressMax = 0;  // 0 = not a counting achievement
+    bool rare() const { return percent >= 0 && percent <= kRarePercent; }
 };
 
 namespace Achievements {
