@@ -448,12 +448,14 @@ Item {
                 var again = mouse.modifiers === Qt.NoModifier && controller.isRowSelected(clickRow)
                             && controller.selectedRows.length <= 1
                 controller.selectRow(clickRow, mouse.modifiers)
-                if (again) win.openTorrentPage(session.selectedInfoHash)
+                if (again && win.openTorrentPage(session.selectedInfoHash)) pageOpenedMs = Date.now()
             }
         }
         // doubleClicked lands between the second press and its release, so the
         // release must not act on the same click again.
         property bool doubleHandled: false
+        // A double-click on the selected row: its first click already opened the page.
+        property real pageOpenedMs: 0
         onDoubleClicked: function(mouse) {
             var r = rowAt(mouse.y, mouse.x)
             // select the clicked row first so we act on *that* torrent, not
@@ -461,6 +463,7 @@ Item {
             // anything else reveals its file.
             if (r >= 0) {
                 doubleHandled = true
+                if (Date.now() - pageOpenedMs < 800) return
                 controller.selectRow(r, 0)
                 if (!win.openTorrentPage(session.selectedInfoHash)) session.openSelectedFile()
             }

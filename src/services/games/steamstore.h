@@ -19,11 +19,8 @@ QString searchTerm(const QString &title);
 // as often a soundtrack or a DLC. 0 when nothing matches.
 int bestAppId(const QByteArray &searchJson, const QString &title);
 
-// A game's library art, as an image://steamart/<kind>/<appid> URL that the
-// steamart provider resolves. Steam moved store art to hashed paths
-// (store_item_assets/steam/apps/<id>/<hash>/library_hero.jpg); the bare
-// /steam/apps/<id>/library_hero.jpg only exists for games from before, so
-// any newer game showed no art at all.
+// A game's library art as image://steamart/<kind>/<appid>, for the steamart
+// provider: newer games only have it under hashed paths the store API names.
 QString heroUrl(int appId);   // library_hero.jpg, composed to sit behind the logo
 QString logoUrl(int appId);
 

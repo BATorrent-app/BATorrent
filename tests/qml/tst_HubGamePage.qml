@@ -270,7 +270,8 @@ Item {
             mockHub.gameHash = "fresh"
             mockHub.gameOpen = true
             verify(findByText(p, "game_exe_auto") !== null)
-            verify(findByText(p, "/games/fresh") !== null)
+            // Shown the way the system writes paths.
+            verify(findByText(p, Qt.platform.os === "windows" ? "\\games\\fresh" : "/games/fresh") !== null)
         }
 
         function test_pickedStillOpensAndClosesTheLightbox() {

@@ -68,16 +68,6 @@ void tameExtractor(qint64 pid)
 }
 #endif
 
-// The last "NN%" the extractor printed: UnRAR's counts the whole archive, 7-Zip's (-bsp1) too.
-int lastPercent(const QByteArray &out)
-{
-    static const QRegularExpression re(QStringLiteral("(\\d{1,3})%"));
-    int pct = -1;
-    auto it = re.globalMatch(QString::fromLatin1(out));
-    while (it.hasNext()) pct = it.next().captured(1).toInt();
-    return pct > 100 ? -1 : pct;
-}
-
 }
 
 ArchiveExtractor::ArchiveExtractor(QObject *parent)
@@ -101,6 +91,7 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
     // ArchiveScan owns the format + multi-part rules (which volume is the first,
     // which are continuation parts) and is unit-tested separately.
     QStringList archives;
+    QString unpackDir;                                  // where every archive of it unpacks
     const QString content = dir.filePath(torrentName);
     const QFileInfo contentInfo(content);
     if (contentInfo.isDir()) {                          // multi-file torrent → its own folder
@@ -109,22 +100,25 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
             names << fi.fileName();
         for (const QString &n : ArchiveScan::archivesToExtract(names))
             archives << QDir(content).filePath(n);
+        unpackDir = content;
     } else if (contentInfo.isFile()) {                  // single-file torrent that is an archive
         if (!ArchiveScan::archivesToExtract({contentInfo.fileName()}).isEmpty())
             archives << content;
+        unpackDir = dir.filePath(ArchiveScan::unpackFolderName(contentInfo.fileName()));
     }
 
     if (archives.isEmpty()) return;
+    QDir().mkpath(unpackDir);
 
     if (!infoHash.isEmpty()) emit extractionStarted(infoHash);
     auto allOk = std::make_shared<bool>(true);
-    const QString marker = inProgressMarker(QFileInfo(archives.first()).absolutePath());
+    const QString marker = inProgressMarker(unpackDir);
     { QFile m(marker); if (m.open(QIODevice::WriteOnly)) m.close(); }
 
     // Serialize: one archive at a time so a multi-archive torrent never opens a
     // swarm of extractor windows. Each archive still retries every password first.
     auto processArchive = std::make_shared<std::function<void(int)>>();
-    *processArchive = [this, archives, processArchive, priorityPassword, infoHash, allOk, marker](int ai) {
+    *processArchive = [this, archives, processArchive, priorityPassword, infoHash, allOk, marker, unpackDir](int ai) {
         if (ai >= archives.size()) {
             // A failed unpack keeps the marker: what it left is not a game.
             if (*allOk) QFile::remove(marker);
@@ -133,7 +127,7 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
         }
         const QString archive = archives.at(ai);
         QFileInfo fi(archive);
-        QString extractDir = fi.absolutePath();
+        const QString extractDir = unpackDir;
 
         // A user-typed password (manual extract) is tried first, then the
         // group's own when the name says whose release it is (OnlineFix's
@@ -242,7 +236,7 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
                 // Overall progress: this archive's share of the torrent's archives.
                 auto lastPct = std::make_shared<int>(-1);
                 connect(proc, &QProcess::readyReadStandardOutput, this, [this, proc, infoHash, ai, total, lastPct]() {
-                    const int pct = lastPercent(proc->readAllStandardOutput());
+                    const int pct = ArchiveScan::progressPercent(proc->readAllStandardOutput());
                     if (pct < 0 || infoHash.isEmpty()) return;
                     const int overall = (ai * 100 + pct) / total;
                     if (overall == *lastPct) return;

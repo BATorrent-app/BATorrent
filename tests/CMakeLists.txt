@@ -323,7 +323,8 @@ if(BAT_FUZZ)
         ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
         ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
         ${CMAKE_SOURCE_DIR}/src/services/security/mediasniff.cpp
-        ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp)
+        ${CMAKE_SOURCE_DIR}/src/services/security/archivescan.cpp
+        ${CMAKE_SOURCE_DIR}/src/services/metadata/releasegroup.cpp)   # archivescan asks it whose release an archive is
     target_compile_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined -g)
     target_link_options(fuzz_nameparser PRIVATE -fsanitize=fuzzer,address,undefined)
     target_link_libraries(fuzz_nameparser PRIVATE Qt6::Core)
@@ -378,6 +379,8 @@ bat_add_test(test_metadatamatch test_metadatamatch.cpp)
 bat_add_test(test_gameexedetect test_gameexedetect.cpp)
 bat_add_test(test_releasegroup test_releasegroup.cpp)
 bat_add_test(test_contentlanguage test_contentlanguage.cpp)
+bat_add_test(test_archivescan test_archivescan.cpp)
+bat_add_test(test_logger test_logger.cpp)
 bat_add_test(test_releasetrust test_releasetrust.cpp)
 bat_add_test(test_ipblocklist  test_ipblocklist.cpp)
 bat_add_test(test_contentprobe test_contentprobe.cpp)
@@ -440,7 +443,7 @@ add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
     DEPENDS test_security test_memory test_unit test_nameparser test_bridge test_gamesource
             test_gamereleasepick test_gameinstallstate test_playlog test_achievements test_achievementfiles test_achievementwatch test_logotone test_soundsynth test_searchranker test_releasegroup
-            test_contentlanguage test_releasetrust
+            test_contentlanguage test_releasetrust test_archivescan test_logger
             test_sessionresume test_sessionremove test_metadatamatch test_sessionconfig
             test_addonparse test_tmdbparse test_igdbparse test_settingshelpers
             test_discoveryassemble test_discoverysearch test_discoveryfinish

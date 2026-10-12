@@ -42,6 +42,7 @@
 #ifdef Q_OS_WIN
 #  include <windows.h>
 #  include <dwmapi.h>
+#  include <shellapi.h>
 #  ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #    define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #  endif
@@ -372,6 +373,16 @@ QRect QmlThemeBridge::noticeArea() const
     }
 #endif
     return screen ? screen->availableGeometry() : QRect();
+}
+
+bool QmlThemeBridge::exclusiveFullscreenInFront() const
+{
+#ifdef Q_OS_WIN
+    QUERY_USER_NOTIFICATION_STATE state = QUNS_ACCEPTS_NOTIFICATIONS;
+    return SUCCEEDED(SHQueryUserNotificationState(&state)) && state == QUNS_RUNNING_D3D_FULL_SCREEN;
+#else
+    return false;
+#endif
 }
 
 void QmlThemeBridge::markBootHealthy() const

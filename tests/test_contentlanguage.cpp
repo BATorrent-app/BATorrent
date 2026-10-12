@@ -5,6 +5,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "services/platform/contentlanguage.h"
+#include "services/platform/translator.h"
+
+#include <QDate>
 
 #include <QCoreApplication>
 #include <QSettings>
@@ -103,4 +106,18 @@ TEST_CASE("a corrupt stored value falls back instead of crashing", "[contentlang
 
     QSettings().setValue(QStringLiteral("contentLanguage"), QStringLiteral("nonsense"));
     REQUIRE(ContentLanguage::current() == Translator::German);
+}
+
+// Dates follow the language picked in the app, not Windows': an English
+// system with a Portuguese UI showed "28 Sep 2026" on a game page.
+TEST_CASE("the app language maps to a locale for dates", "[contentlang]")
+{
+    auto &tr = Translator::instance();
+    const auto before = tr.language();
+    tr.setLanguage(Translator::Portuguese);
+    REQUIRE(tr.locale().name() == QLatin1String("pt_BR"));
+    REQUIRE(tr.locale().toString(QDate(2026, 9, 28), QStringLiteral("d MMM yyyy")).contains(QStringLiteral("set")));
+    tr.setLanguage(Translator::German);
+    REQUIRE(tr.locale().name() == QLatin1String("de_DE"));
+    tr.setLanguage(before);
 }

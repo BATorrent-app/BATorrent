@@ -65,12 +65,10 @@ void QmlSessionBridge::installGame(const QString &infoHash)
     if (m_session->torrentHasArchives(row)) {
         m_gameInstallState.insert(infoHash, GIS_Extracting);
         emit gamesChanged();
-        // Already unpacked (by hand, or by a run that was closed before it could
-        // record it): the exe is there and no unpack was left half-way, so there
-        // is nothing to extract. Re-unpacking a 15 GB game would be the cost.
-        // An installer only counts once this session unpacked it (a repack's
-        // setup.exe can ship outside its archives). The walk is heavy, so it
-        // runs off the GUI thread like finalizeInstall's.
+        // A game exe there with no half-done unpack means it is already
+        // unpacked, by hand or by a run closed before it could say so. An
+        // installer only counts once this session unpacked it: a repack's
+        // setup.exe can ship outside its archives.
         const QString folder = gameFolder(infoHash);
         auto *thread = QThread::create([this, infoHash, folder]() {
             bool isInstaller = false;
@@ -109,13 +107,14 @@ void QmlSessionBridge::installGameExcluded(const QString &infoHash)
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return;
     const TorrentInfo info = m_session->torrentAt(row);
-    // A single-file torrent has no folder of its own: excluding its save path
-    // would cover the whole Downloads folder.
-    const QString folder = info.savePath + QStringLiteral("/") + info.name;
-    if (!QFileInfo(folder).isDir()) {
+    // The game's own folder, made ahead of the unpack for a lone archive. Never
+    // the save folder itself: that would exclude every other download with it.
+    const QString folder = gameFolder(infoHash);
+    if (QDir::cleanPath(folder) == QDir::cleanPath(info.savePath)) {
         emit toast(tr_("hub_defender_no_folder"), QString());
         return;
     }
+    QDir().mkpath(folder);
     const QString native = QDir::toNativeSeparators(QDir::cleanPath(folder));
     QString quoted = native;
     quoted.replace(QLatin1Char('\''), QStringLiteral("''"));   // PowerShell single-quoted literal

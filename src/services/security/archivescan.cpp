@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "services/security/archivescan.h"
+#include "services/metadata/releasegroup.h"
 #include <QFileInfo>
 #include <QRegularExpression>
 
@@ -36,16 +37,12 @@ int splitNumber(const QString &n)
     return m.hasMatch() ? m.captured(1).toInt() : -1;
 }
 
-// A group's fixed archive password and the name tags its releases carry.
-struct GroupPassword {
-    const char *password;
-    QStringList tags;   // lowercase substrings of the archive name
-};
-
-const QList<GroupPassword> &groupPasswords()
+// The groups that put one fixed password on every archive, by the name
+// ReleaseGroup gives them: it already knows every way a release spells them.
+const QList<QPair<QString, QString>> &groupPasswords()
 {
-    static const QList<GroupPassword> s = {
-        { "online-fix.me", { QStringLiteral("-ofme"), QStringLiteral("online-fix"), QStringLiteral("onlinefix") } },
+    static const QList<QPair<QString, QString>> s = {
+        { QStringLiteral("Online-Fix"), QStringLiteral("online-fix.me") },
     };
     return s;
 }
@@ -56,21 +53,17 @@ namespace ArchiveScan {
 
 QStringList taggedPasswords(const QString &archiveName)
 {
-    const QString n = baseName(archiveName);
-    QStringList out;
-    for (const GroupPassword &g : groupPasswords())
-        for (const QString &tag : g.tags)
-            if (n.contains(tag)) { out << QString::fromLatin1(g.password); break; }
-    return out;
+    const QString group = ReleaseGroup::detect(QFileInfo(archiveName).fileName());
+    for (const auto &g : groupPasswords())
+        if (g.first == group) return { g.second };
+    return {};
 }
 
 QStringList knownPasswords(const QString &archiveName)
 {
     QStringList out = taggedPasswords(archiveName);
-    for (const GroupPassword &g : groupPasswords()) {
-        const QString p = QString::fromLatin1(g.password);
-        if (!out.contains(p)) out << p;
-    }
+    for (const auto &g : groupPasswords())
+        if (!out.contains(g.second)) out << g.second;
     return out;
 }
 
@@ -96,6 +89,27 @@ bool isArchive(const QString &name)
     for (const auto &ext : plainExts())
         if (n.endsWith(ext)) return true;
     return false;
+}
+
+QString unpackFolderName(const QString &archiveName)
+{
+    QString n = QFileInfo(archiveName).fileName();
+    static const QRegularExpression volume(
+        QStringLiteral("\\.(?:part\\d+\\.rar|r\\d{2}|z\\d{2}|\\d{3})$"), QRegularExpression::CaseInsensitiveOption);
+    n.remove(volume);
+    const QString lower = n.toLower();
+    for (const QString &ext : plainExts())
+        if (lower.endsWith(ext)) { n.chop(ext.size()); break; }
+    return n.isEmpty() ? QFileInfo(archiveName).completeBaseName() : n;
+}
+
+int progressPercent(const QByteArray &output)
+{
+    static const QRegularExpression re(QStringLiteral("(\\d{1,3})%"));
+    int pct = -1;
+    auto it = re.globalMatch(QString::fromLatin1(output));
+    while (it.hasNext()) pct = it.next().captured(1).toInt();
+    return pct > 100 ? -1 : pct;
 }
 
 QStringList archivesToExtract(const QStringList &fileNames)

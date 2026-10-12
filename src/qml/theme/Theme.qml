@@ -255,6 +255,10 @@ QtObject {
     readonly property color stageEdge:  Qt.rgba(1, 1, 1, 0.14)   // field outline
     readonly property color stageHover: Qt.rgba(1, 1, 1, 0.045)
     readonly property color stageGhost: Qt.rgba(1, 1, 1, 0.4)    // round icon button outline
+    // A filled action button with nothing to do yet (Extracting…), and its hover.
+    readonly property color stageIdleFill:      "#2b2b30"
+    readonly property color stageIdleFillHover: "#35353b"
+    readonly property color inkOnAccent: "#ffffff"   // ink on an accent-filled button
     // the backdrop's fade into the panel, as alpha over stageBg
     function stageWash(a) { return Qt.rgba(stageBg.r, stageBg.g, stageBg.b, a) }
 

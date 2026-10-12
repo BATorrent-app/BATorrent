@@ -59,8 +59,8 @@ Item {
             id: split
             readonly property real playW: Math.max(150, playRow.implicitWidth + 52)
             readonly property real chevronW: 42
-            readonly property color base: root.actionable ? Theme.accent : "#2b2b30"
-            readonly property color lit: root.actionable ? Qt.lighter(Theme.accent, 1.08) : "#35353b"
+            readonly property color base: root.actionable ? Theme.accent : Theme.stageIdleFill
+            readonly property color lit: root.actionable ? Qt.lighter(Theme.accent, 1.08) : Theme.stageIdleFillHover
             readonly property bool menuOpen: !!root.hub.gameMenu && root.hub.gameMenu.opened
             Layout.preferredHeight: 48
             Layout.preferredWidth: playW + chevronW
@@ -96,13 +96,13 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: root.actionable
                     src: "qrc:/icons/play.svg"
-                    tint: "#ffffff"
+                    tint: Theme.inkOnAccent
                     s: 15
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.hub.gameStateLabel(root.game)
-                    color: "#ffffff"
+                    color: Theme.inkOnAccent
                     font.pixelSize: 15
                     font.weight: Font.DemiBold
                     font.family: Theme.fontSans
@@ -113,7 +113,7 @@ Item {
                 x: split.playW + (split.chevronW - width) / 2
                 anchors.verticalCenter: parent.verticalCenter
                 src: "qrc:/icons/chevron.svg"
-                tint: "#ffffff"
+                tint: Theme.inkOnAccent
                 s: 16
                 rotation: split.menuOpen ? 180 : 0
                 Behavior on rotation { NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut } }

@@ -11,23 +11,16 @@
 #include "services/games/achievementservice.h"
 #include "services/games/achievementwatch.h"
 #include "services/games/steamstore.h"
+#include "services/platform/settingsbackup.h"
 #include "services/platform/soundplayer.h"
 #include "services/platform/translator.h"
 
 #include <QFileInfo>
 #include <QSettings>
-#include <QUrl>
-
-namespace {
-QString localPath(const QString &fileUrl)
-{
-    return fileUrl.startsWith(QLatin1String("file:")) ? QUrl(fileUrl).toLocalFile() : fileUrl;
-}
-} // namespace
 
 bool QmlSessionBridge::exportAchievements(const QString &fileUrl)
 {
-    const QString path = localPath(fileUrl);
+    const QString path = SettingsBackup::localPath(fileUrl);
     const bool ok = !path.isEmpty() && m_achLedger && m_achLedger->exportTo(path);
     qInfo().noquote() << "[achievements] export to" << path << (ok ? "done" : "failed");
     emit toast(ok ? tr_("ach_export_done") : tr_("ach_export_failed"), QFileInfo(path).fileName());
@@ -36,7 +29,7 @@ bool QmlSessionBridge::exportAchievements(const QString &fileUrl)
 
 void QmlSessionBridge::importAchievements(const QString &fileUrl)
 {
-    const QString path = localPath(fileUrl);
+    const QString path = SettingsBackup::localPath(fileUrl);
     const int added = m_achLedger && !path.isEmpty() ? m_achLedger->importFrom(path) : -1;
     qInfo().noquote() << "[achievements] import from" << path << "added" << added;
     if (added < 0) emit toast(tr_("ach_import_failed"), QFileInfo(path).fileName());

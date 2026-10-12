@@ -62,6 +62,22 @@ TestCase {
         compare(c, [ { value: "", count: 4 }, { value: "4K", count: 1 }, { value: "1080p", count: 2 } ])
     }
 
+    // A game's chips are its release groups: known ones first, the unnamed last.
+    function test_groupChipsCountWhoMadeEachRelease() {
+        var rows = [rel({ name: "a", releaseGroup: "RUNE" }), rel({ name: "b", releaseGroup: "KaOs" }),
+                    rel({ name: "c", releaseGroup: "FitGirl" }), rel({ name: "d", releaseGroup: "FitGirl" }),
+                    rel({ name: "e" })]
+        function known(g) { return g === "FitGirl" || g === "RUNE" }
+        var chips = logic.groupCounts(rows, known, "Other")
+        compare(chips.map(function (c) { return c.value }), ["", "FitGirl", "RUNE", "KaOs", "?"])
+        compare(chips[0].count, 5)
+        compare(chips[1].count, 2)
+        compare(chips[4].label, "Other")
+        var picked = logic.applyFilters(rows, { quality: "FitGirl", isGame: true }).map(function (r) { return r.name })
+        compare(picked, ["c", "d"])
+        compare(logic.applyFilters(rows, { quality: "?", isGame: true }).length, 1)
+    }
+
     function test_metaLineNamesSourceAndLanguage() {
         compare(logic.metaLine(rel({ provider: "YTS", langs: ["EN"] }), tr), "YTS  ·  EN")
         compare(logic.metaLine(rel({ provider: "BitSearch", audioMode: "dub", langs: ["PT", "EN"] }), tr),
@@ -124,7 +140,9 @@ TestCase {
     function test_bigLabelAndPreference() {
         compare(logic.bigLabel(rel({ quality: "4K" }), false), "4K")
         compare(logic.bigLabel(rel({ quality: "1080p", source: "CAM" }), false), "CAM")
-        compare(logic.bigLabel(rel({ version: "1.0.3" }), true), "v1.0.3")
+        // A game's pill is who released it; the version moved to the meta line.
+        compare(logic.bigLabel(rel({ version: "1.0.3", releaseGroup: "FitGirl" }), true), "FitGirl")
+        compare(logic.bigLabel(rel({ version: "1.0.3" }), true), "?")
         compare(logic.preferredQuality(3), "4K")
         compare(logic.preferredQuality(0), "1080p")
     }

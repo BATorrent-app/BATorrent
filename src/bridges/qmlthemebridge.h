@@ -92,6 +92,9 @@ public:
     // QML's Screen.desktopAvailableWidth spans every monitor, not one: with two
     // of them a corner computed from it lands off all screens.
     Q_INVOKABLE QRect noticeArea() const;
+    // A Direct3D game holds the screen in exclusive fullscreen: no window, ours
+    // included, can draw over it, so a notice has to go through the system.
+    Q_INVOKABLE bool exclusiveFullscreenInFront() const;
     QIcon trayIcon() const;   // logo recolored for the current OS scheme
 
     // ---- app-icon picker ----

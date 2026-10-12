@@ -24,20 +24,15 @@ Window {
     height: Math.max(1, stack.implicitHeight)
     visible: toastModel.count > 0
 
-    // The app's window, while it is the one in use: the toast sits in its
-    // bottom-right corner. On a wide monitor the screen's corner can be far from
-    // a windowed app, and a notice about what you just clicked went unseen
-    // there. Behind other windows it is not in use, and a toast pinned to it
-    // floated over whatever was in front.
+    // While the app's window is the one in use, the toast sits in its corner:
+    // on a wide monitor the screen's corner is far from a windowed app.
     property var anchorWindow: null
     readonly property bool anchored: !!anchorWindow && anchorWindow.visible && anchorWindow.active
                                      && anchorWindow.visibility !== Window.Minimized
                                      && anchorWindow.visibility !== Window.Hidden
 
-    // otherwise bottom-right of the usable area (taskbar excluded) of the monitor
-    // in front, read when a toast arrives. Not the Screen attached property:
-    // its desktopAvailable* span every monitor, and binding to the window's own
-    // screen looped (moving the window changes its screen changes its x).
+    // Otherwise the usable area of the monitor in front, read when a toast
+    // arrives: Screen.desktopAvailable* spans every monitor.
     property rect area: Qt.rect(0, 0, 0, 0)
     x: anchored ? anchorWindow.x + anchorWindow.width - width - edge
                 : area.x + area.width - width - edge

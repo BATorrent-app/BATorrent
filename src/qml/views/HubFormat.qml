@@ -97,10 +97,10 @@ QtObject {
     // Playtime. Hours with one decimal read "0.0 h" for anything under three
     // minutes, which looked like nothing was counted: minutes until the first hour.
     function hours(secs) {
-        if (!(secs > 0)) return "0 min"
-        if (secs < 60) return "< 1 min"
-        if (secs < 3600) return Math.floor(secs / 60) + " min"
-        return (secs / 3600).toFixed(1) + " h"
+        if (!(secs > 0)) return i18n.t("hub_play_minutes").arg(0)
+        if (secs < 60) return i18n.t("hub_play_under_minute")
+        if (secs < 3600) return i18n.t("hub_play_minutes").arg(Math.floor(secs / 60))
+        return i18n.t("hub_play_hours").arg((secs / 3600).toFixed(1))
     }
 
     // What a library tile says under its art: a state in its own colour, a

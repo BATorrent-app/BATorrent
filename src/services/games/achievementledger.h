@@ -46,6 +46,7 @@ public:
 private:
     void load() const;   // on first use: the file is only read when a game asks
     bool save() const;
+    bool writeTo(const QString &path) const;   // the whole record, atomically
 
     QString m_path;
     mutable bool m_loaded = false;

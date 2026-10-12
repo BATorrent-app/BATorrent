@@ -90,13 +90,18 @@ void AchievementLedger::load() const
         fromJson(f.readAll(), &m_games);
 }
 
-bool AchievementLedger::save() const
+bool AchievementLedger::writeTo(const QString &path) const
 {
-    QDir().mkpath(QFileInfo(m_path).absolutePath());
-    QSaveFile out(m_path);
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QSaveFile out(path);
     if (!out.open(QIODevice::WriteOnly)) return false;
     out.write(toJson(m_games));
     return out.commit();
+}
+
+bool AchievementLedger::save() const
+{
+    return writeTo(m_path);
 }
 
 AchievementFormats::Unlocks AchievementLedger::merged(int appId, const QString &title,
@@ -117,10 +122,7 @@ AchievementFormats::Unlocks AchievementLedger::merged(int appId, const QString &
 bool AchievementLedger::exportTo(const QString &path) const
 {
     load();
-    QSaveFile out(path);
-    if (!out.open(QIODevice::WriteOnly)) return false;
-    out.write(toJson(m_games));
-    return out.commit();
+    return writeTo(path);
 }
 
 int AchievementLedger::importFrom(const QString &path)

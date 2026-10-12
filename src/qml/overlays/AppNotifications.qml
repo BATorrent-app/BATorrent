@@ -32,7 +32,8 @@ Item {
         // The game is in front: our own card over it, or, when asked for (or
         // a game in exclusive fullscreen hides it), the OS notification.
         function onAchievementUnlocked(game, name, icon, percentLabel, rare) {
-            if (typeof settings !== "undefined" && settings.getBool("notifyAchievementsSystem"))
+            if ((typeof settings !== "undefined" && settings.getBool("notifyAchievementsSystem"))
+                    || (typeof themeBridge !== "undefined" && themeBridge.exclusiveFullscreenInFront()))
                 host.notifyNative(i18n.t("toast_achievement").arg(name), game)
             else
                 achievementToast.push(game, name, icon, percentLabel, rare)

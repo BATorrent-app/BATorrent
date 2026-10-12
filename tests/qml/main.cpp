@@ -7,6 +7,7 @@
 // i18n.t(...) without a typeof guard (PathFld, ToastHost) render cleanly under
 // test instead of logging ReferenceErrors. t() echoes the key back.
 #include <QtQuickTest/quicktest.h>
+#include <QDateTime>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QObject>
@@ -24,6 +25,10 @@ class I18nStub : public QObject
 public:
     using QObject::QObject;
     Q_INVOKABLE QString t(const QString &key) const { return key; }
+    // The real bridge formats in the app's language; a fixed ISO date is enough here.
+    Q_INVOKABLE QString date(qint64 secs) const {
+        return QDateTime::fromSecsSinceEpoch(secs).date().toString(Qt::ISODate);
+    }
 private:
     int m_language = 0;
 };

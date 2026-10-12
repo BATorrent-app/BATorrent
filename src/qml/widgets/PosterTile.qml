@@ -429,13 +429,15 @@ Item {
                     const again = mouse.modifiers === Qt.NoModifier && controller.isRowSelected(tile.index)
                                   && controller.selectedRows.length <= 1
                     controller.selectRow(tile.index, mouse.modifiers)
-                    if (again) win.openTorrentPage(tile.infoHash)
+                    if (again && win.openTorrentPage(tile.infoHash)) tileMa.pageOpenedMs = Date.now()
                 }
             }
             // A film, show or game opens on its own page, as in the list; with
             // no page to open, the file is revealed.
+            // A double-click on the selected tile: its first click already opened the page.
+            property real pageOpenedMs: 0
             onDoubleClicked: function(mouse) {
-                if (mouse.button !== Qt.RightButton) {
+                if (mouse.button !== Qt.RightButton && Date.now() - pageOpenedMs >= 800) {
                     controller.selectRow(tile.index, 0)
                     if (!win.openTorrentPage(tile.infoHash)) session.openSelectedFile()
                 }

@@ -1247,22 +1247,6 @@ TEST_CASE("ArchiveScan: old .rNN rar split keeps the .rar, drops .r00..", "[arch
     REQUIRE(ArchiveScan::isContinuationPart("rls.r00"));
 }
 
-TEST_CASE("ArchiveScan: an OnlineFix release gets its password first", "[archive]") {
-    // The real names: single rar, multi-part, and the "Fix Repair" add-on.
-    for (const QString &n : {"BOMBANANA!.v1.0.0-OFME.rar", "Restaurats.v0.19.1.16-OFME.part1.rar",
-                             "D:/Downloads/X/x.OFME.Online-Fix.rar", "Game_OnlineFix.rar"}) {
-        REQUIRE(ArchiveScan::taggedPasswords(n) == QStringList{"online-fix.me"});
-        REQUIRE(ArchiveScan::knownPasswords(n).value(0) == "online-fix.me");
-    }
-}
-
-TEST_CASE("ArchiveScan: an untagged archive still gets the known passwords, none first", "[archive]") {
-    REQUIRE(ArchiveScan::taggedPasswords("Some.Game-RUNE.rar").isEmpty());
-    REQUIRE(ArchiveScan::knownPasswords("Some.Game-RUNE.rar").contains("online-fix.me"));
-    // "ofme" alone inside a word is not the tag.
-    REQUIRE(ArchiveScan::taggedPasswords("softmesh.rar").isEmpty());
-}
-
 TEST_CASE("ArchiveScan: generic .NNN split keeps .001 only", "[archive]") {
     QStringList files = {"big.7z.001","big.7z.002","big.7z.003"};
     REQUIRE(ArchiveScan::archivesToExtract(files) == QStringList{"big.7z.001"});
@@ -1971,24 +1955,4 @@ TEST_CASE("StreamGate: a file opens once its head and its last piece are here", 
         CHECK(StreamGate::progress(10 * MB, size, true) == Catch::Approx(1.0));
         CHECK(StreamGate::progress(99 * MB, size, false) == Catch::Approx(0.9));
     }
-}
-
-// ============================================================================
-//  Logger: how the last session ended
-// ============================================================================
-#include "services/platform/logger.h"
-
-TEST_CASE("Logger: a session with no close marker after its opening was cut short", "[logger]") {
-    const QByteArray open = "T [INFO] --- log opened ---\n";
-    const QByteArray closed = "T [INFO] --- log closed ---\n";
-    const QByteArray line = "T [INFO] [session] saving resume data\n";
-    REQUIRE(Logger::sessionLeftOpen(open + line));                      // killed mid-session
-    REQUIRE_FALSE(Logger::sessionLeftOpen(open + line + closed));       // clean exit
-    // Shutdown lines after the marker (the engine child exits after the app)
-    // used to push it out of the last 200 bytes and read as a crash.
-    REQUIRE_FALSE(Logger::sessionLeftOpen(open + closed + line + line + line + line + line));
-    // Only the last session counts: an old crash followed by a clean run is clean.
-    REQUIRE_FALSE(Logger::sessionLeftOpen(open + line + open + closed));
-    REQUIRE(Logger::sessionLeftOpen(open + closed + open + line));
-    REQUIRE_FALSE(Logger::sessionLeftOpen(QByteArray()));               // first run, empty log
 }

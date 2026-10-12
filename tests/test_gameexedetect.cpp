@@ -94,3 +94,21 @@ TEST_CASE("autodetect: a Unity game's exe wins over a bigger exe beside it", "[g
     REQUIRE(GameExeDetect::autodetect(tmp.path(), &installer) == game + QStringLiteral("/BOMBANANA.exe"));
     REQUIRE_FALSE(installer);
 }
+
+TEST_CASE("scoreCandidate: an exe with a <name>_Data folder beside it is the Unity game", "[gameexedetect]") {
+    // Same folder, same size: only the Unity data folder tells the game apart.
+    GameExeDetect::Candidate game;
+    game.fileNameLower = QStringLiteral("bombanana.exe");
+    game.relativePath = QStringLiteral("/BOMBANANA!/BOMBANANA.exe");
+    game.sizeBytes = 667'648;
+    game.hasUnityData = true;
+    GameExeDetect::Candidate other = game;
+    other.fileNameLower = QStringLiteral("helper.exe");
+    other.sizeBytes = 3'000'000;
+    other.hasUnityData = false;
+    REQUIRE(GameExeDetect::scoreCandidate(game).score > GameExeDetect::scoreCandidate(other).score);
+    // Backslashes and a leading separator count the same as slashes for depth.
+    GameExeDetect::Candidate win = other;
+    win.relativePath = QStringLiteral("\\BOMBANANA!\\helper.exe");
+    REQUIRE(GameExeDetect::scoreCandidate(win).score == GameExeDetect::scoreCandidate(other).score);
+}

@@ -26,6 +26,17 @@ bool isContinuationPart(const QString &name);
 // form: only the file name matters). De-duplicated, original order preserved.
 QStringList archivesToExtract(const QStringList &fileNames);
 
+// The folder a lone archive unpacks into, beside it: its name without the
+// archive and volume suffixes ("Game-OFME.part1.rar" → "Game-OFME"). A torrent
+// that is just an archive has no folder of its own, and unpacking it straight
+// into the save folder mixed the game with every other download.
+QString unpackFolderName(const QString &archiveName);
+
+// How far an extractor is, from the last "NN%" in a chunk of its output:
+// UnRAR's figure covers the whole archive, as does 7-Zip's with -bsp1.
+// -1 when the chunk has none.
+int progressPercent(const QByteArray &output);
+
 // Passwords a release group puts on every archive it ships (OnlineFix:
 // "online-fix.me"), so a game installs without the user knowing them. The ones
 // whose group tag is in this archive's name come first; the rest follow.

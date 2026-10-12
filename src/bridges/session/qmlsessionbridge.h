@@ -486,6 +486,7 @@ private:
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game
     QHash<QString, qint64> m_gameStartMs;    // infoHash → launch timestamp (ms)
     QHash<QString, QString> m_runningExe;    // infoHash → the exe launched, for the early-exit notice
+    QHash<QString, quintptr> m_runningHandle; // infoHash → handle held to read the exit code (Windows)
     bool m_runningRestored = false;          // games still running from before this start, picked up once
     qint64 m_runningSavedMs = 0;             // last "seen alive" write to settings
     void persistRunningGame(const QString &hash, qint64 nowMs);
