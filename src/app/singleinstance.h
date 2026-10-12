@@ -20,6 +20,8 @@ public:
     static QString serverName();
     static QString collectTorrentArgs(const QStringList &args);
     static bool forwardToRunning(const QString &message);
+    // What `--quit` sends: never a path, magnet or .torrent, so it can't be mistaken for one.
+    static QString quitMessage() { return QStringLiteral("batorrent:quit"); }
 
     // Claim the socket before SessionManager/resume so a second launch during
     // boot forwards here instead of fighting the same resume dir.

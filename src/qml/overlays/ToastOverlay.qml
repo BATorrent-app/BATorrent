@@ -3,8 +3,9 @@
 // See LICENSE file for details
 
 // Desktop toast overlay: a frameless, click-through-elsewhere window pinned to
-// the screen's bottom-right (like a native notification), hosting the app's
-// custom toast cards. Sized to the card stack so it only covers the toasts.
+// the app window's bottom-right while it is on screen, else the screen's (like
+// a native notification), hosting the app's custom toast cards. Sized to the
+// card stack so it only covers the toasts.
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
@@ -23,9 +24,25 @@ Window {
     height: Math.max(1, stack.implicitHeight)
     visible: toastModel.count > 0
 
-    // bottom-right of the available screen area (excludes taskbar/dock)
-    x: Screen.virtualX + Screen.desktopAvailableWidth - width - edge
-    y: Screen.virtualY + Screen.desktopAvailableHeight - height - edge
+    // The app's window, while it is the one in use: the toast sits in its
+    // bottom-right corner. On a wide monitor the screen's corner can be far from
+    // a windowed app, and a notice about what you just clicked went unseen
+    // there. Behind other windows it is not in use, and a toast pinned to it
+    // floated over whatever was in front.
+    property var anchorWindow: null
+    readonly property bool anchored: !!anchorWindow && anchorWindow.visible && anchorWindow.active
+                                     && anchorWindow.visibility !== Window.Minimized
+                                     && anchorWindow.visibility !== Window.Hidden
+
+    // otherwise bottom-right of the usable area (taskbar excluded) of the monitor
+    // in front, read when a toast arrives. Not the Screen attached property:
+    // its desktopAvailable* span every monitor, and binding to the window's own
+    // screen looped (moving the window changes its screen changes its x).
+    property rect area: Qt.rect(0, 0, 0, 0)
+    x: anchored ? anchorWindow.x + anchorWindow.width - width - edge
+                : area.x + area.width - width - edge
+    y: anchored ? anchorWindow.y + anchorWindow.height - height - edge
+                : area.y + area.height - height - edge
 
     // a card's action button was clicked (actionId set via show())
     signal actionTriggered(string actionId)
@@ -34,6 +51,7 @@ Window {
     function show(title, body, level, actionId, actionText) {
         var kind = level === 3 ? "success" : level === 2 ? "error"
                  : level === 1 ? "warning" : "info"
+        if (typeof themeBridge !== "undefined") area = themeBridge.noticeArea()
         toastModel.insert(0, { mTitle: title || "", mBody: body || "", mKind: kind,
                                mActionId: actionId || "", mActionText: actionText || "" })
     }

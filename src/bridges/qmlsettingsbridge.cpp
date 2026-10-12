@@ -113,7 +113,9 @@ QVariant QmlSettingsBridge::get(const QString &key) const
             QSettings().value(QStringLiteral("engineMode")).toString());
     // IPC engine mode: no in-process session; read the persisted value from the
     // shared QSettings store (which is what the engine child applies from).
-    if (!m_session) return QSettings().value(key);
+    // Still through uiValue: read raw, the registry hands booleans back as the
+    // string "true", and `welcomeShown !== true` reopened the wizard every start.
+    if (!m_session) return uiValue(key);
     SessionManager *s = m_session;
     // speed
     if (key == "downloadLimit")       return s->downloadLimit();
@@ -185,6 +187,13 @@ QVariant QmlSettingsBridge::get(const QString &key) const
         if (key == "advRateOverhead")   return a.rateLimitIpOverhead;
         if (key == "advIgnoreLan")      return a.ignoreLimitsOnLAN;
     }
+    return uiValue(key);
+}
+
+// The keys only the UI reads, the same whether the session runs here or in the
+// engine child: the keychain, bitmasks, defaults and bool coercion.
+QVariant QmlSettingsBridge::uiValue(const QString &key) const
+{
     // telegram (token lives in the keychain; events are a bitmask)
     if (key == "telegramToken")   return SecretStore::instance().get("telegramBotToken");
     if (int bit = SettingsPolicy::telegramEventBit(key)) {
@@ -377,6 +386,12 @@ QString QmlSettingsBridge::importSettings(const QString &path)
     return tr_("import_success") + "\n" + tr_("import_restart");
 }
 
+namespace {
+// Files in the app's data folder that hold the user's history; a full backup
+// carries them and a restore puts them back. Names only: never a path.
+const QStringList kHistoryFiles = { QStringLiteral("achievements.json"), QStringLiteral("playlog.json") };
+}
+
 QString QmlSettingsBridge::fullBackup(const QString &path)
 {
     QFile f(SettingsBackup::localPath(path));
@@ -395,6 +410,12 @@ QString QmlSettingsBridge::fullBackup(const QString &path)
             if (rf.open(QIODevice::ReadOnly))
                 entries.append({QStringLiteral("resume/") + name, rf.readAll()});
         }
+    // The history a reinstall of Windows would otherwise take: unlocked
+    // achievements and time played.
+    for (const QString &name : kHistoryFiles) {
+        QFile hf(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + name);
+        if (hf.open(QIODevice::ReadOnly)) entries.append({name, hf.readAll()});
+    }
     f.write(SettingsBackup::pack(entries));
     return tr_("full_backup_done");
 }
@@ -415,7 +436,7 @@ QString QmlSettingsBridge::fullRestore(const QString &path)
             for (auto it = obj.begin(); it != obj.end(); ++it)
                 s.setValue(it.key(), it.value().toVariant());
             ++restored;
-        } else if (e.first.startsWith(QLatin1String("resume/"))) {
+        } else if (e.first.startsWith(QLatin1String("resume/")) || kHistoryFiles.contains(e.first)) {
             QFile rf(base + "/" + e.first);
             if (rf.open(QIODevice::WriteOnly)) { rf.write(e.second); ++restored; }
         }

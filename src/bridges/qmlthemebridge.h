@@ -7,6 +7,8 @@
 
 #include "bridges/bridgecommon.h"
 
+#include <QRect>
+
 class QmlThemeBridge : public QObject
 {
     Q_OBJECT
@@ -85,6 +87,11 @@ public:
     Q_INVOKABLE QString releaseNotes() const;     // changelog HTML (shared with legacy dialog)
     Q_INVOKABLE void markBootHealthy() const;     // UI is up → clear the boot-crash sentinel
     Q_INVOKABLE QPointF cursorPos() const;        // global cursor: anchors the tray popup at the click
+    // Where a notice can sit: the usable area (taskbar excluded) of the monitor
+    // holding the window in front, a game while one runs, else the primary.
+    // QML's Screen.desktopAvailableWidth spans every monitor, not one: with two
+    // of them a corner computed from it lands off all screens.
+    Q_INVOKABLE QRect noticeArea() const;
     QIcon trayIcon() const;   // logo recolored for the current OS scheme
 
     // ---- app-icon picker ----

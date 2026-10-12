@@ -6,6 +6,7 @@
 #define TRANSLATOR_H
 
 #include <QString>
+#include <QLocale>
 #include <QMap>
 
 class Translator
@@ -16,6 +17,9 @@ public:
     static Translator &instance();
 
     void setLanguage(Language lang);
+    // The app's language as a locale, for dates and numbers: the system's
+    // locale is not the one the user picked (an English Windows, a Portuguese UI).
+    QLocale locale() const;
     // The language the user picked (QSettings "language"), or the system
     // locale's when they never picked one. Both processes call this: the UI,
     // and the engine child, which builds the state labels the UI shows.

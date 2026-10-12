@@ -17,8 +17,17 @@ public:
     static Logger &instance();
 
     // Configuration. setLevel persists to QSettings under "logLevel"; load on
-    // next startup via init().
-    void init();
+    // next startup via init(). Only the app's own process owns the session: it
+    // checks how the last one ended and marks this one open and, via close(),
+    // closed. The engine and media children share the file but not the
+    // session; had they checked, they would find the app's fresh "log opened"
+    // and call every start a crash.
+    void init(bool ownsSession = true);
+    // A clean exit: the marker the next start looks for. Never reached by a
+    // crash or a kill, which is the point.
+    void close();
+    // A log tail whose last session was opened and never closed.
+    static bool sessionLeftOpen(const QByteArray &tail);
     void setLevel(Level l);
     Level level() const { return m_level; }
 
@@ -46,6 +55,7 @@ public:
 
 private:
     bool m_prevCrashed = false;
+    bool m_ownsSession = false;
     QString m_crashTail;
     Logger() = default;
     void rotateIfNeeded();

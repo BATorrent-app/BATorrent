@@ -86,6 +86,7 @@ Item {
     // custom toast cards, pinned to the screen's bottom-right (native-like)
     ToastOverlay {
         id: toastHost
+        anchorWindow: host
         onActionTriggered: function(actionId) {
             if (actionId === "logs") host.showWin(host.logWinLoader)
             else if (actionId === "crashreport" && typeof logs !== "undefined")

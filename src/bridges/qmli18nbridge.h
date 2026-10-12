@@ -7,6 +7,8 @@
 
 #include "bridges/bridgecommon.h"
 
+#include <QDateTime>
+
 class QmlI18nBridge : public QObject
 {
     Q_OBJECT
@@ -14,6 +16,12 @@ class QmlI18nBridge : public QObject
 public:
     explicit QmlI18nBridge(QObject *parent = nullptr) : QObject(parent) {}
     Q_INVOKABLE QString t(const QString &key) const { return tr_(key); }
+    // A day in the app's language ("28 set. 2026"). Qt.formatDate in QML uses
+    // the system's locale, so a Portuguese UI showed "28 Sep 2026".
+    Q_INVOKABLE QString date(qint64 secsSinceEpoch) const {
+        return Translator::instance().locale().toString(
+            QDateTime::fromSecsSinceEpoch(secsSinceEpoch).date(), QStringLiteral("d MMM yyyy"));
+    }
     int language() const { return static_cast<int>(Translator::instance().language()); }
     Q_INVOKABLE void setLanguage(int lang) {
         if (lang == language()) return;

@@ -16,8 +16,23 @@ Logger &Logger::instance()
     return inst;
 }
 
-void Logger::init()
+bool Logger::sessionLeftOpen(const QByteArray &tail)
 {
+    // The last session's opening has no closing after it. Looking for the
+    // close marker after the last open (not just near the end) keeps lines
+    // written while shutting down from hiding a clean exit.
+    const qsizetype opened = tail.lastIndexOf("--- log opened ---");
+    return opened >= 0 && tail.indexOf("--- log closed ---", opened) < 0;
+}
+
+void Logger::close()
+{
+    if (m_ownsSession) writeLine(Info, QStringLiteral("--- log closed ---"));
+}
+
+void Logger::init(bool ownsSession)
+{
+    m_ownsSession = ownsSession;
     QSettings s("BATorrent", "BATorrent");
     const QString lvl = s.value("logLevel", "Info").toString();
     m_level = levelFromName(lvl);
@@ -34,15 +49,16 @@ void Logger::init()
     m_file.setFileName(currentLogPath());
     (void)m_file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
 
+    if (!ownsSession) return;
+
     // Detect unclean shutdown: if the previous session didn't write
-    // "--- log closed ---" before the file ended, it crashed.
+    // "--- log closed ---" after it opened, it crashed or was killed.
     {
         QFile readCheck(currentLogPath());
         if (readCheck.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QByteArray tail = readCheck.readAll().right(4000);
+            QByteArray tail = readCheck.readAll().right(64 * 1024);
             readCheck.close();
-            if (!tail.isEmpty() && !tail.right(200).contains("--- log closed ---")
-                && tail.contains("--- log opened ---")) {
+            if (sessionLeftOpen(tail)) {
                 m_prevCrashed = true;
                 m_crashTail = QString::fromUtf8(tail.right(1800));
                 writeLine(Warning, QStringLiteral("--- previous session ended abnormally (crash or force-kill) ---"));

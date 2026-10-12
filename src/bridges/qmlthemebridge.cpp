@@ -36,6 +36,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QApplication>
+#include <QScreen>
 #include <QWindow>
 #include <QEvent>
 #ifdef Q_OS_WIN
@@ -351,6 +352,26 @@ QString QmlThemeBridge::appVersion() const { return QCoreApplication::applicatio
 QPointF QmlThemeBridge::cursorPos() const
 {
     return QCursor::pos();
+}
+
+QRect QmlThemeBridge::noticeArea() const
+{
+    QScreen *screen = QGuiApplication::primaryScreen();
+#ifdef Q_OS_WIN
+    // The monitor is matched by its device name ("\\.\DISPLAY2"), which QScreen
+    // reports too: Win32 rectangles are physical pixels and Qt's are scaled
+    // per monitor, so comparing coordinates would go wrong on mixed DPI.
+    if (HWND fg = GetForegroundWindow()) {
+        MONITORINFOEXW mi = {};
+        mi.cbSize = sizeof(mi);
+        if (GetMonitorInfoW(MonitorFromWindow(fg, MONITOR_DEFAULTTOPRIMARY), &mi)) {
+            const QString device = QString::fromWCharArray(mi.szDevice);
+            for (QScreen *s : QGuiApplication::screens())
+                if (s->name().compare(device, Qt::CaseInsensitive) == 0) { screen = s; break; }
+        }
+    }
+#endif
+    return screen ? screen->availableGeometry() : QRect();
 }
 
 void QmlThemeBridge::markBootHealthy() const

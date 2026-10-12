@@ -66,7 +66,7 @@ bool tryRun(int argc, char *argv[], int *exitCode)
         mapp.setOrganizationName("BATorrent");
         mapp.setApplicationName("BATorrent");
         mapp.setApplicationVersion(APP_VERSION);
-        Logger::instance().init();
+        Logger::instance().init(false);   // the app's process owns the session markers
 #ifdef BAT_HAVE_SENTRY
         AppRuntime::initSentry(QStringLiteral("media"));
 #endif

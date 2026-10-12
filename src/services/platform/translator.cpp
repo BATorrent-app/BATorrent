@@ -45,6 +45,12 @@ void Translator::applySaved()
     setLanguage(static_cast<Language>(lang));
 }
 
+QLocale Translator::locale() const
+{
+    static const char *names[] = {"en_US", "pt_BR", "zh_CN", "ja_JP", "ru_RU", "es_ES", "de_DE", "uk_UA", "tr_TR"};
+    return QLocale(QString::fromLatin1(names[static_cast<int>(m_lang)]));
+}
+
 void Translator::setLanguage(Language lang)
 {
     m_lang = lang;

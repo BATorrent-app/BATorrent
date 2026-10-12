@@ -33,8 +33,13 @@ Window {
         var q = queue
         current = q.shift()
         queue = q
-        x = Screen.virtualX + Screen.desktopAvailableWidth - width - 24
-        y = Screen.virtualY + Screen.desktopAvailableHeight - height - 24
+        // The corner of the monitor the game is on, asked for each card: the
+        // Screen attached property spans every monitor and put the card off
+        // screen on a two-monitor desk.
+        var area = typeof themeBridge !== "undefined" ? themeBridge.noticeArea()
+                                                       : Qt.rect(0, 0, Screen.width, Screen.height)
+        x = area.x + area.width - width - 24
+        y = area.y + area.height - height - 24
         visible = true
         card.shown = true
         holdTimer.restart()

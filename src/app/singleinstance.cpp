@@ -6,6 +6,7 @@
 
 #include "bridges/session/qmlsessionbridge.h"
 
+#include <QCoreApplication>
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QWindow>
@@ -53,21 +54,33 @@ void SingleInstance::claim(QObject *parent)
                      [this]() {
         QLocalSocket *client = m_server->nextPendingConnection();
         if (!client) return;
-        if (auto *w = qobject_cast<QWindow *>(*m_root)) {
-            if (w->visibility() == QWindow::Hidden) w->show();
-            else if (w->windowStates() & Qt::WindowMinimized)
-                w->setWindowStates(w->windowStates() & ~Qt::WindowMinimized);
-            w->raise();
-            w->requestActivate();
-        }
-        QObject::connect(client, &QLocalSocket::readyRead, client,
-                         [this, client]() {
+        // A second launch brings the window forward. A quit request must not,
+        // and neither has written anything yet: wait for the message, or for
+        // the disconnect of a launch that had no files to pass on.
+        auto handled = std::make_shared<bool>(false);
+        auto handle = [this, client, handled]() {
+            if (*handled) return;
+            *handled = true;
             const QStringList lines = QString::fromUtf8(client->readAll())
                                           .split('\n', Qt::SkipEmptyParts);
+            client->deleteLater();
+            if (lines == QStringList{ quitMessage() }) {
+                qInfo() << "[instance] quit requested by another launch";
+                QCoreApplication::quit();
+                return;
+            }
+            if (auto *w = qobject_cast<QWindow *>(*m_root)) {
+                if (w->visibility() == QWindow::Hidden) w->show();
+                else if (w->windowStates() & Qt::WindowMinimized)
+                    w->setWindowStates(w->windowStates() & ~Qt::WindowMinimized);
+                w->raise();
+                w->requestActivate();
+            }
             for (const QString &line : lines)
                 deliver(line);
-            client->deleteLater();
-        });
+        };
+        QObject::connect(client, &QLocalSocket::readyRead, client, handle);
+        QObject::connect(client, &QLocalSocket::disconnected, client, handle);
     });
 }
 

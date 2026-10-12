@@ -28,7 +28,10 @@ bool tryRun(int argc, char *argv[], int *exitCode)
             eapp.setOrganizationName("BATorrent");
             eapp.setApplicationName("BATorrent");
             eapp.setApplicationVersion(APP_VERSION);
-            Logger::instance().init();
+            Logger::instance().init(false);   // the app's process owns the session markers
+            // Without it the engine's qDebug only reaches stderr, which nobody
+            // reads in a GUI app: extraction and session lines never hit the log.
+            AppRuntime::installQtMessageHandler();
 #ifdef BAT_HAVE_SENTRY
             AppRuntime::initSentry(QStringLiteral("engine"));
 #endif
@@ -49,7 +52,7 @@ bool tryRun(int argc, char *argv[], int *exitCode)
             QCoreApplication eapp(argc, argv);
             eapp.setOrganizationName("BATorrent");
             eapp.setApplicationName("BATorrent");
-            Logger::instance().init();
+            Logger::instance().init(false);   // the app's process owns the session markers
             IpcEngine engine(QCoreApplication::applicationFilePath());
             QObject::connect(&engine, &IpcEngine::engineStatusChanged, [](bool up) {
                 qInfo() << "[selftest] engine status:" << (up ? "UP" : "DOWN");

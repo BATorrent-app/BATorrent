@@ -23,6 +23,7 @@
 #include "app/qmlboot.h"
 #include "app/qmlcontextwiring.h"
 #include "app/singleinstance.h"
+#include "app/steamartprovider.h"
 #include "app/macfileopen.h"
 #include "bridges/session/qmlsessionbridge.h"
 #include "bridges/qmlupdaterbridge.h"
@@ -47,6 +48,16 @@ int main(int argc, char *argv[])
     app.setWindowIcon(QIcon(":/images/logo1.png"));
 #endif
     app.setQuitOnLastWindowClosed(false);
+
+    // `--quit` asks a running instance to quit the way the tray's Quit does
+    // (session saved, no "ended abnormally" next start). The installer and dev
+    // rebuilds need the exe closed; force-killing it is what this replaces.
+    // Checked before the log opens and the session sentinels are touched: this
+    // process only passes a message on, and must leave no trace of a session.
+    if (app.arguments().contains(QStringLiteral("--quit"))) {
+        SingleInstance::forwardToRunning(SingleInstance::quitMessage());
+        return 0;
+    }
 
     const bool debugFlag = app.arguments().contains("--debug")
                         || app.arguments().contains("-d");
@@ -102,6 +113,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     engine.addImageProvider(QStringLiteral("applogo"), AppRuntime::createAppLogoProvider());
+    engine.addImageProvider(QStringLiteral("steamart"), new SteamArtProvider);
 
     QmlContextObjects ctx;
     ctx.torrentFilter = svc.filterProxy;
@@ -157,6 +169,9 @@ int main(int argc, char *argv[])
     }
 
     const int rc = app.exec();
+    // The event loop ended because the app quit, not because it died. With the
+    // engine in a child process this is the only place that sees that.
+    Logger::instance().close();
     qInstallMessageHandler(nullptr);
     return rc;
 }

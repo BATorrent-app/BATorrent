@@ -60,6 +60,7 @@ signals:
     void proxyLeakTestResult(bool ok, const QString &message);
 private:
     void applyWebUi();                                  // (re)start the WebUI server from settings
+    QVariant uiValue(const QString &key) const;         // UI-only keys, in-process and split alike
     SessionManager *m_session;
     IEngine *m_engine;                                  // always valid; drives the WebUI in split mode
     TelegramNotifier *m_telegram = nullptr;
