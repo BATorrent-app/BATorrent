@@ -58,8 +58,10 @@ TEST_CASE("confidentTitle: exact fold or Jaccard bar", "[metadatamatch]") {
 }
 
 TEST_CASE("escapeApicalypse doubles backslash and quote", "[metadatamatch]") {
-    REQUIRE(MetadataMatch::escapeApicalypse(QStringLiteral(R"(foo"bar\baz)"))
-            == QStringLiteral(R"(foo\"bar\\baz)"));
+    // Plain escapes, not R"(...)": MSVC's preprocessor can't take a raw string
+    // inside a macro argument like QStringLiteral.
+    REQUIRE(MetadataMatch::escapeApicalypse(QStringLiteral("foo\"bar\\baz"))
+            == QStringLiteral("foo\\\"bar\\\\baz"));
     REQUIRE(MetadataMatch::escapeApicalypse(QStringLiteral("plain"))
             == QStringLiteral("plain"));
 }
@@ -105,7 +107,7 @@ TEST_CASE("pickBestIgdbResult: highest overlap wins; year bonus",
     REQUIRE(pick.bestScore >= MetadataMatch::kMinConfidence);
 }
 
-TEST_CASE("pickBestIgdbResult: below bar and no fold match → not found",
+TEST_CASE("pickBestIgdbResult: below bar and no fold match -> not found",
           "[metadatamatch]") {
     QJsonArray results;
     QJsonObject weak;
@@ -117,7 +119,7 @@ TEST_CASE("pickBestIgdbResult: below bar and no fold match → not found",
     REQUIRE_FALSE(pick.found);
 }
 
-TEST_CASE("pickBestIgdbResult: empty results → not found", "[metadatamatch]") {
+TEST_CASE("pickBestIgdbResult: empty results -> not found", "[metadatamatch]") {
     const auto pick = MetadataMatch::pickBestIgdbResult(
         QJsonArray{}, QStringLiteral("Anything"), 0);
     REQUIRE_FALSE(pick.found);

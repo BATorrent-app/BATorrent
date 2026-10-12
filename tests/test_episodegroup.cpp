@@ -77,7 +77,7 @@ TEST_CASE("multi-season ranges and complete keywords are whole-series packs", "[
     CHECK(todas.pack);
 }
 
-TEST_CASE("no series marker → unknown, not a pack", "[episodegroup]")
+TEST_CASE("no series marker -> unknown, not a pack", "[episodegroup]")
 {
     auto m = T("Oppenheimer.2023.2160p.UHD.BluRay.x265");
     CHECK(m.season == -1);

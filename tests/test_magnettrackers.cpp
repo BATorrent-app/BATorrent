@@ -14,7 +14,7 @@ TEST_CASE("magnet trackers: bare magnet gets the full public list, tiers 0..n-1"
         REQUIRE(tiers[i] == int(i));
 }
 
-TEST_CASE("magnet trackers: URI trackers keep priority — appended ones continue the tier sequence") {
+TEST_CASE("magnet trackers: URI trackers keep priority, appended ones continue the tier sequence") {
     std::vector<std::string> trackers = {"udp://a/announce", "udp://b/announce"};
     std::vector<int> tiers = {0, 1};
     appendPublicTrackers(trackers, tiers);
@@ -33,7 +33,7 @@ TEST_CASE("magnet trackers: a public tracker already in the URI is not duplicate
     REQUIRE(std::count(trackers.begin(), trackers.end(), publicTrackers().front()) == 1);
 }
 
-TEST_CASE("magnet trackers: idempotent — a second pass adds nothing") {
+TEST_CASE("magnet trackers: idempotent: a second pass adds nothing") {
     std::vector<std::string> trackers;
     std::vector<int> tiers;
     appendPublicTrackers(trackers, tiers);

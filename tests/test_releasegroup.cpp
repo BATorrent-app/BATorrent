@@ -79,3 +79,20 @@ TEST_CASE("detection is deterministic when a name carries two known groups", "[r
     for (int i = 0; i < 20; ++i)
         REQUIRE(ReleaseGroup::detect(name) == first);
 }
+
+// The Silent Hill: Townfall list, where FitGirl, RUNE and KaOs were buried in
+// the names and SeleZen and KaOs were not recognised at all.
+TEST_CASE("a game's release list names every repacker people pick by", "[releasegroup]")
+{
+    using ReleaseGroup::detect;
+    REQUIRE(detect(QStringLiteral("SILENT HILL - Townfall [FitGirl Repack]")) == QLatin1String("FitGirl"));
+    REQUIRE(detect(QStringLiteral("SILENT HILL Townfall-RUNE")) == QLatin1String("RUNE"));
+    REQUIRE(detect(QStringLiteral("SILENT.HILL.Townfall.REPACK-KaOs")) == QLatin1String("KaOsKrew"));
+    REQUIRE(detect(QStringLiteral("SILENT HILL Townfall [Repack by SeleZen]")) == QLatin1String("SeleZen"));
+    REQUIRE(detect(QStringLiteral("Silent Hill Townfall Igruha")) == QLatin1String("Igruha"));
+    REQUIRE(detect(QStringLiteral("SILENT HILL Townfall (2026)")).isEmpty());   // no group: say so
+    REQUIRE(ReleaseGroup::isKnown(QStringLiteral("KaOsKrew")));
+    REQUIRE(ReleaseGroup::isKnown(QStringLiteral("Online-Fix")));
+    REQUIRE_FALSE(ReleaseGroup::isKnown(QStringLiteral("STARCKFILMES")));     // a name tail, not a repacker
+    REQUIRE_FALSE(ReleaseGroup::isKnown(QString()));
+}

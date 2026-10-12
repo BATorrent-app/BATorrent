@@ -8,7 +8,7 @@
 
 using SessionResume::RemovalDisposition;
 
-TEST_CASE("removalDisposition: deleteFiles × permanent × targets",
+TEST_CASE("removalDisposition: deleteFiles x permanent x targets",
           "[sessionremove]")
 {
     const QStringList targets{QStringLiteral("/dl/a"), QStringLiteral("/dl/a.!bt")};

@@ -148,8 +148,8 @@ TEST_CASE("gameDetails takes the first named record and keeps art without a cove
     REQUIRE(m.value("maker").toString() == QLatin1String("FromSoftware"));
     REQUIRE(m.value("year").toString() == QLatin1String("2022"));
     REQUIRE(m.value("steamAppId").toInt() == 1245620);
-    REQUIRE(m.value("steamHero").toString().endsWith("/apps/1245620/library_hero.jpg"));
-    REQUIRE(m.value("steamLogo").toString().endsWith("/apps/1245620/logo.png"));
+    REQUIRE(m.value("steamHero").toString() == QLatin1String("image://steamart/hero/1245620"));
+    REQUIRE(m.value("steamLogo").toString() == QLatin1String("image://steamart/logo/1245620"));
     REQUIRE_FALSE(IgdbParse::gameDetails(QByteArrayLiteral(R"([{"name":"No Steam"}])")).contains("steamHero"));
 
     REQUIRE(IgdbParse::gameDetails(QByteArray()).isEmpty());

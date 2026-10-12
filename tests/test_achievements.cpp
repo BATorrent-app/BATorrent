@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include "services/games/achievementledger.h"
 #include "services/games/achievements.h"
 #include "services/games/achievementservice.h"
 #include "services/games/steamstore.h"
@@ -37,6 +38,19 @@ TEST_CASE("the schema keeps every named achievement and its art", "[achievements
     REQUIRE(list[1].hidden);
     REQUIRE(list[1].description.isEmpty());
     REQUIRE(list[2].name == QLatin1String("PAPER_TRAIL"));   // no display name: the id stands in
+}
+
+TEST_CASE("an icon on Steam's retired community CDN moves to the live one", "[achievements]") {
+    // BOMBANANA! (4656000): the schema's URL 404s, the rewritten one serves it.
+    const QString hash = QStringLiteral("4656000/71559d12168d32f8dbd70e4356012bc20b45ecb8.jpg");
+    const QString live = QStringLiteral("https://shared.cloudflare.steamstatic.com/community_assets/images/apps/") + hash;
+    for (const QString &host : { QStringLiteral("https://steamcdn-a.akamaihd.net"),
+                                 QStringLiteral("https://cdn.cloudflare.steamstatic.com"),
+                                 QStringLiteral("https://cdn.akamai.steamstatic.com") })
+        REQUIRE(Achievements::liveIconUrl(host + QStringLiteral("/steamcommunity/public/images/apps/") + hash) == live);
+    // Not a Steam community icon: untouched.
+    REQUIRE(Achievements::liveIconUrl(QStringLiteral("https://cdn/a.jpg")) == QLatin1String("https://cdn/a.jpg"));
+    REQUIRE(Achievements::liveIconUrl(QString()).isEmpty());
 }
 
 TEST_CASE("a schema that is not one is empty, not a crash", "[achievements]") {
@@ -151,8 +165,27 @@ TEST_CASE("the store match is the game, never the first hit", "[achievements][st
     REQUIRE(SteamStore::bestAppId(R"({"items":[{"type":"sub","name":"Elden Ring","id":9}]})", "Elden Ring") == 0);
     REQUIRE(SteamStore::bestAppId("{broken", "Elden Ring") == 0);
     REQUIRE(SteamStore::bestAppId(re, "") == 0);
-    REQUIRE(SteamStore::heroUrl(292030).endsWith("/apps/292030/library_hero.jpg"));
+    REQUIRE(SteamStore::heroUrl(292030) == QLatin1String("image://steamart/hero/292030"));
+    REQUIRE(SteamStore::logoUrl(292030) == QLatin1String("image://steamart/logo/292030"));
     REQUIRE(SteamStore::logoUrl(0).isEmpty());
+}
+
+TEST_CASE("store art comes from the hashed path the store API names", "[achievements]") {
+    // GetItems for BOMBANANA! (4656000), trimmed: a hero, and no logo at all.
+    const QByteArray store = QByteArrayLiteral(
+        "{\"response\":{\"store_items\":[{\"appid\":4656000,\"assets\":{"
+        "\"asset_url_format\":\"steam/apps/4656000/${FILENAME}?t=1791542068\","
+        "\"library_hero\":\"6432b9026df018c6db23dd752352a79faf880ebc/library_hero.jpg\","
+        "\"header\":\"99c086faba625a8d3bc459bab444087d257ccbe1/header.jpg\"}}]}}");
+    REQUIRE(SteamStore::assetUrl(store, "hero") == QLatin1String(
+        "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/4656000/"
+        "6432b9026df018c6db23dd752352a79faf880ebc/library_hero.jpg?t=1791542068"));
+    REQUIRE(SteamStore::assetUrl(store, "logo").isEmpty());   // no logo: the title in text instead
+    REQUIRE(SteamStore::assetUrl("{broken", "hero").isEmpty());
+    REQUIRE(SteamStore::assetUrl("{\"response\":{}}", "hero").isEmpty());
+    REQUIRE(SteamStore::storeItemsUrl(4656000).contains("IStoreBrowseService/GetItems"));
+    REQUIRE(SteamStore::legacyArtUrl(292030, "hero").endsWith("/apps/292030/library_hero.jpg"));
+    REQUIRE(SteamStore::legacyArtUrl(292030, "logo").endsWith("/apps/292030/logo.png"));
 }
 
 TEST_CASE("progress rides along with the achievement it belongs to", "[achievements]") {
@@ -202,4 +235,70 @@ TEST_CASE("an unlock with no time still counts, and a negative time reads as unk
     REQUIRE(Achievements::unlockedCount(merged) == 2);
     for (const auto &a : merged)
         if (a.unlocked) REQUIRE(a.unlockedAt == 0);
+}
+
+// ============================================================================
+//  AchievementLedger: unlocks outlive the emulator's files
+// ============================================================================
+TEST_CASE("ledger: an unlock seen once survives the emulator's file going away", "[achievements][ledger]") {
+    QTemporaryDir dir;
+    REQUIRE(dir.isValid());
+    const QString path = dir.filePath("achievements.json");
+    {
+        AchievementLedger ledger(path);
+        const auto now = ledger.merged(4656000, "BOMBANANA!", {{"BOOM", 1790643287}, {"FirstJob", 1790643381}});
+        REQUIRE(now.size() == 2);
+    }
+    // A new run, the game deleted: the files have nothing, the ledger still does.
+    AchievementLedger again(path);
+    const auto kept = again.merged(4656000, "BOMBANANA!", {});
+    REQUIRE(kept.size() == 2);
+    REQUIRE(kept.value("BOOM") == 1790643287);
+    // A game it never saw stays empty, and no entry is written for it.
+    REQUIRE(again.merged(292030, "The Witcher 3", {}).isEmpty());
+}
+
+TEST_CASE("ledger: the earliest time wins, and a known time beats an unknown one", "[achievements][ledger]") {
+    AchievementLedger::Games mine, theirs;
+    mine[1].unlocks = {{"A", 200}, {"B", 0}};
+    theirs[1].unlocks = {{"A", 100}, {"B", 300}, {"C", 50}};
+    theirs[1].title = "Game";
+    REQUIRE(AchievementLedger::fold(mine, theirs) == 1);   // only C is new
+    REQUIRE(mine[1].unlocks.value("A") == 100);
+    REQUIRE(mine[1].unlocks.value("B") == 300);             // 0 was "unknown"
+    REQUIRE(mine[1].unlocks.value("C") == 50);
+    REQUIRE(mine[1].title == "Game");
+}
+
+TEST_CASE("ledger: export and import round-trip, and import never removes", "[achievements][ledger]") {
+    QTemporaryDir dir;
+    REQUIRE(dir.isValid());
+    AchievementLedger before(dir.filePath("old-pc.json"));
+    before.merged(4656000, "BOMBANANA!", {{"BOOM", 10}, {"Basket", 20}});
+    before.merged(1159690, "Other", {{"X", 30}});
+    const QString backup = dir.filePath("batorrent-achievements.json");
+    REQUIRE(before.exportTo(backup));
+
+    // A fresh install that already unlocked something new before the restore.
+    AchievementLedger after(dir.filePath("new-pc.json"));
+    after.merged(4656000, "BOMBANANA!", {{"Endless", 40}});
+    REQUIRE(after.importFrom(backup) == 3);
+    const auto bomb = after.merged(4656000, "BOMBANANA!", {});
+    REQUIRE(bomb.size() == 3);                 // Endless stayed, BOOM and Basket came in
+    REQUIRE(after.merged(1159690, "Other", {}).value("X") == 30);
+    REQUIRE(after.importFrom(backup) == 0);    // a second import adds nothing
+}
+
+TEST_CASE("ledger: a file that is not a backup is refused, not merged", "[achievements][ledger]") {
+    AchievementLedger::Games out;
+    REQUIRE_FALSE(AchievementLedger::fromJson("{broken", &out));
+    REQUIRE_FALSE(AchievementLedger::fromJson("{\"settings\":{}}", &out));
+    REQUIRE(AchievementLedger::fromJson(AchievementLedger::toJson({}), &out));
+    QTemporaryDir dir;
+    QFile junk(dir.filePath("junk.json"));
+    REQUIRE(junk.open(QIODevice::WriteOnly));
+    junk.write("{\"settings\":{\"a\":1}}");
+    junk.close();
+    AchievementLedger ledger(dir.filePath("achievements.json"));
+    REQUIRE(ledger.importFrom(junk.fileName()) == -1);
 }

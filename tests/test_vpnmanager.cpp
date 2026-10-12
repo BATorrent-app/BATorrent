@@ -10,6 +10,7 @@
 
 #include "services/vpn/vpnmanager.h"
 #include "httptestserver.h"   // ensureApp() (event loop + test-mode AppData)
+#include "nointernet.h"
 
 #include <QSignalSpy>
 #include <QStandardPaths>
@@ -36,6 +37,11 @@ QString validConf()
 void freshStore()
 {
     httptest::ensureApp();
+    nointernet::install();   // profiles() kicks off a GeoIP lookup per endpoint
+    // QSettings() needs an organization: without one the Windows registry
+    // backend stores nothing, and the split/adopt cases read back defaults.
+    QCoreApplication::setOrganizationName(QStringLiteral("BATorrentVpnTest"));
+    QCoreApplication::setApplicationName(QStringLiteral("BATorrentVpnTest"));
     QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/vpn").removeRecursively();
     QSettings s;
     for (const char *k : {"vpnSplitTunnel", "vpnLastProfileId",
@@ -114,7 +120,7 @@ TEST_CASE("VpnManager: imports a valid config and rejects a bad one", "[vpn]")
     CHECK(mgr.profileCount() == 0);
 }
 
-TEST_CASE("VpnManager: connect → connected → disconnect over the stub tunnel", "[vpn]")
+TEST_CASE("VpnManager: connect -> connected -> disconnect over the stub tunnel", "[vpn]")
 {
     freshStore();
     VpnManager mgr;

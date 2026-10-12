@@ -78,3 +78,17 @@ TEST_CASE("Get & Install pick prefers catalog over sparse BitSearch swarm", "[ga
     Candidate deadHttp{true, "9.0.0", "2026-07-21T00:00:00Z", 0, false};
     REQUIRE(best({sparse, deadHttp, catalog}) == 2);
 }
+
+// The best pick for Silent Hill: Townfall went to an unknown upload with
+// "v1.4.1" in its name and 6 seeds, over FitGirl, RUNE and KaOs releases.
+TEST_CASE("a known group's release beats an unknown one with a version number", "[gamerelease]") {
+    Candidate unknownWithVersion{false, "1.4.1", "", 6, true, false};
+    Candidate fitgirl{false, "", "", 19, true, true};
+    REQUIRE(GameReleasePick::compareCandidates(fitgirl, unknownWithVersion) > 0);
+    // Between two known groups the version still decides.
+    Candidate runeNew{false, "1.4.1", "", 7, true, true};
+    REQUIRE(GameReleasePick::compareCandidates(runeNew, fitgirl) > 0);
+    // And a link still beats everything.
+    Candidate noLink{false, "", "", 99, false, true};
+    REQUIRE(GameReleasePick::compareCandidates(unknownWithVersion, noLink) > 0);
+}

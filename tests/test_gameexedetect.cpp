@@ -1,6 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include "services/integrations/gameexedetect.h"
 
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
+
 TEST_CASE("dataComplete: progress or manual flag", "[gameexedetect]") {
     REQUIRE(GameExeDetect::dataComplete(true, 0.1f));
     REQUIRE(GameExeDetect::dataComplete(false, 1.0f));
@@ -38,4 +42,55 @@ TEST_CASE("scoreCandidate skips redists and marks installers", "[gameexedetect]"
     deep.sizeBytes = 1'000'000;
     REQUIRE(GameExeDetect::scoreCandidate(root).score
             > GameExeDetect::scoreCandidate(deep).score);
+}
+
+TEST_CASE("scoreCandidate: crash handlers are never the game", "[gameexedetect]") {
+    for (const char *n : {"unitycrashhandler64.exe", "unitycrashhandler32.exe", "crash_handler.exe",
+                          "crashpad_handler.exe"}) {
+        GameExeDetect::Candidate c;
+        c.fileNameLower = QString::fromLatin1(n);
+        c.sizeBytes = 1'600'000;
+        REQUIRE(GameExeDetect::scoreCandidate(c).skip);
+    }
+}
+
+TEST_CASE("neverTheGame: a saved crash handler is dropped, a game named like a tool is not", "[gameexedetect]") {
+    REQUIRE(GameExeDetect::neverTheGame(QStringLiteral("unitycrashhandler64.exe")));
+    REQUIRE(GameExeDetect::neverTheGame(QStringLiteral("unins000.exe")));
+    // In the skip list (so never auto-picked) but fine when the user chose it.
+    REQUIRE_FALSE(GameExeDetect::neverTheGame(QStringLiteral("settings.exe")));
+    REQUIRE_FALSE(GameExeDetect::neverTheGame(QStringLiteral("bombanana.exe")));
+}
+
+TEST_CASE("scoreCandidate: one folder down still counts as the game's root", "[gameexedetect]") {
+    // An extracted archive puts the game in its own folder: "Game/Game.exe".
+    GameExeDetect::Candidate inFolder;
+    inFolder.fileNameLower = QStringLiteral("game.exe");
+    inFolder.relativePath = QStringLiteral("/Game/Game.exe");
+    inFolder.sizeBytes = 1'000'000;
+    GameExeDetect::Candidate tool;
+    tool.fileNameLower = QStringLiteral("tool.exe");
+    tool.relativePath = QStringLiteral("/Game/Engine/Binaries/tool.exe");
+    tool.sizeBytes = 50'000'000;
+    REQUIRE(GameExeDetect::scoreCandidate(inFolder).score > GameExeDetect::scoreCandidate(tool).score);
+}
+
+TEST_CASE("autodetect: a Unity game's exe wins over a bigger exe beside it", "[gameexedetect]") {
+    // BOMBANANA!'s shape: Game.exe 667 KB next to Game_Data/, plus a 1.6 MB
+    // crash handler. Another big helper stands in for anything not on the skip list.
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    const QString game = tmp.path() + QStringLiteral("/BOMBANANA!");
+    REQUIRE(QDir().mkpath(game + QStringLiteral("/BOMBANANA_Data")));
+    auto write = [](const QString &path, int bytes) {
+        QFile f(path);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write(QByteArray(bytes, 'x'));
+    };
+    write(game + QStringLiteral("/BOMBANANA.exe"), 667'648);
+    write(game + QStringLiteral("/UnityCrashHandler64.exe"), 1'609'640);
+    write(game + QStringLiteral("/helper.exe"), 3'000'000);
+    bool installer = true;
+    REQUIRE(GameExeDetect::autodetect(tmp.path(), &installer) == game + QStringLiteral("/BOMBANANA.exe"));
+    REQUIRE_FALSE(installer);
 }

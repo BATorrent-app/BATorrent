@@ -85,6 +85,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/games/achievements.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/achievementformats.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/achievementfiles.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/games/achievementledger.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/achievementservice.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/achievementwatch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/steamstore.cpp
@@ -189,12 +190,14 @@ set(COMMON_LIBS
 )
 if(WIN32)
     list(APPEND COMMON_LIBS shell32 ole32 userenv)   # shell ops via the bridge deps; AppContainer
+    list(APPEND COMMON_LIBS dwmapi psapi dbghelp iphlpapi)   # the rest of the app's Win32 set
     list(APPEND COMMON_SOURCES ${CMAKE_SOURCE_DIR}/src/ipc/appcontainer_win.cpp)
 endif()
 
 set(COMMON_DEFS APP_VERSION="test")
 if(WIN32)
-    list(APPEND COMMON_DEFS _WIN32_WINNT=0x0601)
+    # NOMINMAX as in the app: windows.h's max() macro breaks libtorrent's aux::max.
+    list(APPEND COMMON_DEFS _WIN32_WINNT=0x0601 NOMINMAX)
 endif()
 
 # =============================================================================
@@ -276,8 +279,18 @@ function(bat_add_test NAME SOURCE)
     # Qt MOC needs AUTOMOC
     set(CMAKE_AUTOMOC ON)
     qt_add_executable(${NAME} ${SOURCE})
+    if(WIN32)
+        # Keeps QSettings off the real HKCU\Software\BATorrent (see the file).
+        target_sources(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/winregsandbox.cpp)
+    endif()
     target_link_libraries(${NAME} PRIVATE bat_test_core)
-    catch_discover_tests(${NAME})
+    # Test names stay ASCII: ctest hands each one to the exe as a filter, and on
+    # Windows Catch2 reads argv in the ANSI codepage, so a name with an arrow or
+    # an em dash matches nothing and the case fails with "No tests ran".
+    # ctest runs every case as its own process, and the cases of one exe share
+    # its test-mode AppData and settings (each one wipes them on start), so
+    # under --parallel they serialize on a lock named after the exe.
+    catch_discover_tests(${NAME} PROPERTIES RESOURCE_LOCK ${NAME})
 
     # --- Dr. Memory wrapper target ---
     if(BAT_DRMEMORY AND WIN32)

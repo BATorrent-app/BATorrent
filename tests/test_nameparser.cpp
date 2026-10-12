@@ -59,6 +59,16 @@ TEST_CASE("games: repacker tag detected", "[nameparser]")
     CHECK(g.repackerTag == "FitGirl");
 }
 
+TEST_CASE("games: an OnlineFix archive name reads as a game", "[nameparser]")
+{
+    // The torrent is only this .rar; its name is the one game signal there is.
+    auto a = P("BOMBANANA!.v1.0.0-OFME");
+    CHECK(a.contentType == ContentType::Game);
+    CHECK(a.repackerTag == "OFME");
+    CHECK(P("Sons.Of.The.Forest.Build.21012025-OFME").contentType == ContentType::Game);
+    CHECK(P("Restaurats.v0.19.1.16-OFME.part1").contentType == ContentType::Game);
+}
+
 TEST_CASE("roman numerals stay upper-case", "[nameparser]")
 {
     CHECK(P("Final Fantasy VII Remake").cleanTitle == "Final Fantasy VII Remake");
@@ -75,6 +85,21 @@ TEST_CASE("Portuguese (BR) release tags are stripped from the title", "[namepars
     CHECK(P("007 - Cassino Royale Dublado").cleanTitle == "007 - Cassino Royale");
     CHECK(P("Duna.Parte.2.2024.1080p.Legendado").cleanTitle == "Duna Parte 2");
     CHECK(P("Oppenheimer 2023 Dual.Áudio 1080p").cleanTitle == "Oppenheimer");
+}
+
+TEST_CASE("a Brazilian audio tag at the end of the title is not part of it", "[nameparser]")
+{
+    // The real name: "-Dub" stayed in ("Homem-aranha Um Novo Dia-dub"), TMDB
+    // found nothing, and the lookup tried IGDB first.
+    auto s = P("Homem-Aranha Um Novo Dia-Dub-2026");
+    CHECK(s.cleanTitle.toLower() == "homem-aranha um novo dia");
+    CHECK(s.year == 2026);
+    CHECK(s.contentType == ContentType::Movie);
+    CHECK(P("Duna Parte 2 Leg 2024").cleanTitle == "Duna Parte 2");
+    CHECK(P("Tropa de Elite Nacional").cleanTitle == "Tropa De Elite");
+    // Mid-title the same words stay: only the tail is a tag.
+    CHECK(P("Dub Club 2010").cleanTitle == "Dub Club");
+    CHECK(P("Spider-Man 2002").cleanTitle == "Spider-man");
 }
 
 TEST_CASE("anime fansub naming: [Group] Title - NN is an episode", "[nameparser]")

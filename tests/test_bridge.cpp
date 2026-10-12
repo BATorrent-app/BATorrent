@@ -33,6 +33,7 @@
 #include "torrent/types.h"
 #include "bridges/qmlposterbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"
+#include "nointernet.h"
 
 namespace lt = libtorrent;
 
@@ -138,7 +139,10 @@ static QApplication &app()
         // SessionManager persists to its own explicit org ("BATorrent"), not the
         // test org above: wipe it too so persisted prefs don't leak across runs.
         QSettings("BATorrent", "BATorrent").clear();
-        return new QApplication(s_argc, s_argv);
+        auto *inst = new QApplication(s_argc, s_argv);
+        // "all" searches also query the torrent providers over the network.
+        nointernet::install();
+        return inst;
     }();
     return *a;
 }
@@ -568,6 +572,30 @@ TEST_CASE("Settings bridge: UI bool toggles read back as real bool", "[bridge][s
     QSettings().remove(QStringLiteral("randomPort"));
     QSettings().sync();
     REQUIRE_FALSE(sb.get(QStringLiteral("randomPort")).isValid());
+}
+
+// Regression: with the engine in a child process the bridge has no session and
+// returned every key raw. The registry hands a bool back as the string "true",
+// so `welcomeShown !== true` held and the setup wizard opened on every start.
+TEST_CASE("Settings bridge: split mode coerces UI bools too", "[bridge][settings][persist]")
+{
+    app();
+    QmlSettingsBridge sb(nullptr, nullptr);   // split engine: no in-process session
+
+    QSettings().setValue(QStringLiteral("welcomeShown"), QStringLiteral("true"));
+    QSettings().setValue(QStringLiteral("showSplash"), QStringLiteral("false"));
+    QSettings().sync();
+
+    const QVariant w = sb.get(QStringLiteral("welcomeShown"));
+    REQUIRE(w.typeId() == QMetaType::Bool);
+    REQUIRE(w.toBool() == true);
+    const QVariant sp = sb.get(QStringLiteral("showSplash"));
+    REQUIRE(sp.typeId() == QMetaType::Bool);
+    REQUIRE(sp.toBool() == false);
+
+    QSettings().remove(QStringLiteral("welcomeShown"));
+    QSettings().remove(QStringLiteral("showSplash"));
+    QSettings().sync();
 }
 
 // ============================================================================
