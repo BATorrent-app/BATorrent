@@ -3,7 +3,9 @@
 // See LICENSE file for details
 
 import QtQuick
+import QtQuick.Controls.Basic
 import QtQuick.Dialogs
+import "../theme"
 import "../widgets"
 
 // Hub context menus + exe picker. `page` is the HubView host.
@@ -15,6 +17,12 @@ Item {
     property alias gameMenu: gameMenu
     property alias continueMenu: continueMenu
     property alias episodeMenu: episodeMenu
+
+    // gameMenu's rows: a touch taller than a context menu's, squarer highlight.
+    component GameItem: BatMenuItem {
+        rowHeight: 34
+        highlightRadius: 4
+    }
 
     FileDialog {
         id: exePicker
@@ -29,21 +37,52 @@ Item {
         }
     }
 
+    // The game's other actions. From a card's context or the gear it opens at
+    // the cursor; from the split button's chevron it drops under the button,
+    // at least as wide, with the button's squarer corners.
     BatMenu {
         id: gameMenu
         property string hash: ""
-        function openFor(h) { hash = h; popup() }
-        implicitWidth: 200
-        BatMenuItem {
+        function openFor(h) { hash = h; width = 260; popup() }
+        function dropFrom(h, anchorItem) {
+            hash = h
+            width = Math.max(260, anchorItem.width)
+            popup(anchorItem, 0, anchorItem.height + 6)
+        }
+        implicitWidth: 260
+        topPadding: 5
+        bottomPadding: 5
+        background: Rectangle {
+            color: Theme.panel
+            border.color: Theme.hair
+            border.width: 1
+            radius: 6
+        }
+        GameItem {
             text: (i18n.language, i18n.t("hub_gs_install"))
+            iconSrc: "qrc:/icons/download.svg"
             onTriggered: if (page.api) page.api.installGame(gameMenu.hash)
         }
-        BatMenuItem {
+        GameItem {
+            text: (i18n.language, i18n.t("hub_install_defender"))
+            iconSrc: "qrc:/icons/shield-check.svg"
+            enabled: Qt.platform.os === "windows"
+            hideWhenDisabled: true
+            onTriggered: if (page.api) page.api.installGameExcluded(gameMenu.hash)
+        }
+        GameItem {
             text: (i18n.language, i18n.t("hub_set_exe"))
+            iconSrc: "qrc:/icons/file.svg"
             onTriggered: page.openExePicker(gameMenu.hash, false)
         }
-        BatMenuItem {
+        MenuSeparator {
+            topPadding: 4
+            bottomPadding: 4
+            contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft }
+        }
+        GameItem {
             text: (i18n.language, i18n.t("hub_open_folder"))
+            iconSrc: "qrc:/icons/folder-open.svg"
             onTriggered: if (page.api) Qt.openUrlExternally(page.fileUrl(page.api.gameFolder(gameMenu.hash)))
         }
     }

@@ -143,6 +143,8 @@ void IpcEngine::dispatchEvent(const QString &name, const QByteArray &args)
         QString n, h; in >> n >> h; emit torrentFinished(n, h);
     } else if (name == QLatin1String("extractionCompleted")) {
         QString h; bool ok; in >> h >> ok; emit extractionCompleted(h, ok);
+    } else if (name == QLatin1String("extractionProgress")) {
+        QString h; qint32 pct; in >> h >> pct; emit extractionProgress(h, pct);
     } else if (name == QLatin1String("altSpeedsActiveChanged")) {
         bool a; in >> a; m_snap.altSpeedsActive = a; emit altSpeedsActiveChanged(a);
     } else if (name == QLatin1String("portStatusChanged")) {

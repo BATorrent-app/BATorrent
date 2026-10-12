@@ -126,6 +126,7 @@ signals:
     void torrentsUpdated();
     void torrentFinished(const QString &name, const QString &infoHash);
     void extractionCompleted(const QString &infoHash, bool success);
+    void extractionProgress(const QString &infoHash, int percent);   // 0-100
     void altSpeedsActiveChanged(bool active);
     void portStatusChanged(int status);
     // Reactive surface forwarded over IPC in split mode (hoisted from

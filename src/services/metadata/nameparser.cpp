@@ -121,7 +121,8 @@ ParsedName NameParser::parse(const QString &rawName)
         QStringLiteral("TENOKE"), QStringLiteral("SiMPLEX"), QStringLiteral("RAZOR1911"),
         QStringLiteral("CPY"), QStringLiteral("STEAMPUNKS"), QStringLiteral("3DM"),
         QStringLiteral("ALI213"), QStringLiteral("PROPHET"), QStringLiteral("Igruha"),
-        QStringLiteral("KaOsKrew"), QStringLiteral("Chovka"), QStringLiteral("Pioneer")
+        QStringLiteral("KaOsKrew"), QStringLiteral("Chovka"), QStringLiteral("Pioneer"),
+        QStringLiteral("OFME"), QStringLiteral("Online-Fix"), QStringLiteral("OnlineFix")
     };
 
     for (const QString &repacker : repackers) {
@@ -212,6 +213,20 @@ ParsedName NameParser::parse(const QString &rawName)
         QStringLiteral("[.\\s\\-](?:DDPA|DDP|DD\\+|TrueHD|Atmos|EAC3|AC3|DTS(?:-?HD)?|AAC|FLAC|DD)?[ .]?\\d\\.\\d(?=[.\\s\\-\\[\\]()]|$)"),
         QRegularExpression::CaseInsensitiveOption);
     if (mediaTagFound) work.remove(audioRe);
+
+    // Brazilian uploads end the title with the audio: "Homem-Aranha Um Novo
+    // Dia-Dub-2026", "Duna Leg 2024". "Dub"/"Leg"/"Nacional" are only stripped
+    // there, at the tail (a year may follow), where they are never part of the
+    // title; mid-title they can be real words. A dubbed or subtitled release is
+    // a film or a show, which also keeps it from being looked up as a game.
+    static const QRegularExpression ptAudioTailRe(
+        QStringLiteral("[\\s.\\-_]+(?:dub|dual|leg|nacional)(?=[\\s.\\-_]*(?:(?:19|20)\\d\\d)?[\\s.\\-_]*$)"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpressionMatch ptAudio = ptAudioTailRe.match(work);
+    if (ptAudio.hasMatch()) {
+        work.remove(ptAudio.capturedStart(), ptAudio.capturedLength());
+        videoScore += 1;
+    }
 
     // Type by score (Series was already decided by SxxExx/anime markers above).
     if (result.contentType == ContentType::Series) {

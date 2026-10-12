@@ -11,6 +11,8 @@
 #include "services/integrations/installerprofile.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/metadata/nameparser.h"
+#include "services/security/archiveextractor.h"
+#include "services/security/archivescan.h"
 #include "services/platform/logger.h"
 #include "services/platform/translator.h"
 #include "services/platform/utils.h"
@@ -57,19 +59,108 @@ void QmlSessionBridge::installGame(const QString &infoHash)
     const int st = m_gameInstallState.value(infoHash, -1);
     if (st == GIS_Extracting || st == GIS_Installing) return;   // already in flight
 
-    // torrentHasArchives reads the file list, so it stays true even after a prior
-    // extraction: m_extracted guards against unpacking twice.
-    if (m_session->torrentHasArchives(row) && !m_extracted.contains(infoHash)) {
+    // torrentHasArchives reads the file list, so it stays true after extraction.
+    // What is on disk decides whether to unpack, not a memory of having done it:
+    // the user may have deleted the extracted folder since.
+    if (m_session->torrentHasArchives(row)) {
         m_gameInstallState.insert(infoHash, GIS_Extracting);
         emit gamesChanged();
-        m_session->extractTorrent(row, QString());   // → extractionCompleted → onExtractionCompleted
+        // Already unpacked (by hand, or by a run that was closed before it could
+        // record it): the exe is there and no unpack was left half-way, so there
+        // is nothing to extract. Re-unpacking a 15 GB game would be the cost.
+        // An installer only counts once this session unpacked it (a repack's
+        // setup.exe can ship outside its archives). The walk is heavy, so it
+        // runs off the GUI thread like finalizeInstall's.
+        const QString folder = gameFolder(infoHash);
+        auto *thread = QThread::create([this, infoHash, folder]() {
+            bool isInstaller = false;
+            const bool halfDone = QFileInfo::exists(ArchiveExtractor::inProgressMarker(folder));
+            const QString exe = halfDone ? QString() : GameExeDetect::autodetect(folder, &isInstaller);
+            QMetaObject::invokeMethod(this, [this, infoHash, exe, isInstaller]() {
+                if (!exe.isEmpty() && (!isInstaller || m_extracted.contains(infoHash))) {
+                    m_extracted.insert(infoHash);
+                    finalizeInstall(infoHash);
+                    return;
+                }
+                const int r = m_session->torrentIndexByInfoHash(infoHash);
+                if (r < 0) {
+                    m_gameInstallState.remove(infoHash);
+                    emit gamesChanged();
+                    return;
+                }
+                m_extractProgress.insert(infoHash, 0);
+                m_session->extractTorrent(r, QString());   // → extractionCompleted → onExtractionCompleted
+            });
+        });
+        connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+        thread->start();
         return;
     }
     finalizeInstall(infoHash);
 }
 
+// Cracked files are what Defender quarantines first, often mid-extraction,
+// leaving a game that will not start. Excluding the folder before unpacking
+// avoids that; it is the user's call from the menu, never automatic, and it
+// covers only this torrent's own folder.
+void QmlSessionBridge::installGameExcluded(const QString &infoHash)
+{
+#ifdef Q_OS_WIN
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return;
+    const TorrentInfo info = m_session->torrentAt(row);
+    // A single-file torrent has no folder of its own: excluding its save path
+    // would cover the whole Downloads folder.
+    const QString folder = info.savePath + QStringLiteral("/") + info.name;
+    if (!QFileInfo(folder).isDir()) {
+        emit toast(tr_("hub_defender_no_folder"), QString());
+        return;
+    }
+    const QString native = QDir::toNativeSeparators(QDir::cleanPath(folder));
+    QString quoted = native;
+    quoted.replace(QLatin1Char('\''), QStringLiteral("''"));   // PowerShell single-quoted literal
+    const QString params = QStringLiteral("-NoProfile -NonInteractive -WindowStyle Hidden -Command "
+                                          "\"Add-MpPreference -ExclusionPath '%1' -ErrorAction Stop\"").arg(quoted);
+    // The UAC prompt and the cmdlet block: wait off the GUI thread.
+    auto *thread = QThread::create([this, infoHash, native, params]() {
+        SHELLEXECUTEINFOW sei = {};
+        sei.cbSize = sizeof(sei);
+        sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+        sei.lpVerb = L"runas";
+        sei.lpFile = L"powershell.exe";
+        sei.lpParameters = reinterpret_cast<const wchar_t *>(params.utf16());
+        sei.nShow = SW_HIDE;
+        DWORD code = 1;
+        if (ShellExecuteExW(&sei) && sei.hProcess) {
+            WaitForSingleObject(sei.hProcess, 60000);
+            GetExitCodeProcess(sei.hProcess, &code);
+            CloseHandle(sei.hProcess);
+        }
+        QMetaObject::invokeMethod(this, [this, infoHash, native, code]() {
+            const bool ok = code == 0;
+            qInfo().noquote() << "[defender] exclusion for" << native << (ok ? "added" : "not added")
+                              << "exit" << code;
+            emit toast(ok ? tr_("hub_defender_added") : tr_("hub_defender_not_added"), native);
+            installGame(infoHash);   // declined or refused, the install still goes ahead
+        });
+    });
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
+#else
+    installGame(infoHash);
+#endif
+}
+
+void QmlSessionBridge::onExtractionProgress(const QString &infoHash, int percent)
+{
+    if (m_extractProgress.value(infoHash, -1) == percent) return;
+    m_extractProgress.insert(infoHash, percent);
+    emit gamesChanged();
+}
+
 void QmlSessionBridge::onExtractionCompleted(const QString &infoHash, bool success)
 {
+    m_extractProgress.remove(infoHash);
     if (success) m_extracted.insert(infoHash);
     if (m_gameInstallState.value(infoHash, -1) != GIS_Extracting) return;   // not our install flow
     if (!success) {
@@ -262,11 +353,16 @@ bool QmlSessionBridge::isGameTorrent(int row) const
     //   * videos but no executable ⇒ movie/series, even when the NAME matches a
     //     game ("Super Mario Galaxy the movie"). Without this a movie like
     //     "The Matrix" wrongly got an Install action.
+    //   * an archive whose name reads as a game release counts as an exe: an
+    //     OnlineFix torrent is just "Game.Build.123-OFME.rar", the exe inside it.
     bool hasExe = false, hasVideo = false;
     for (const auto &f : m_session->filesAt(row)) {
         QString p = f.path.toLower();
         if (p.endsWith(QStringLiteral(".!bt"))) p.chop(4);   // in-progress: "movie.mkv.!bt"
         if (p.endsWith(QStringLiteral(".exe"))) hasExe = true;
+        else if (ArchiveScan::isArchive(p)
+                 && NameParser::parse(QFileInfo(f.path).completeBaseName()).contentType == ContentType::Game)
+            hasExe = true;
         else if (p.endsWith(QStringLiteral(".mkv")) || p.endsWith(QStringLiteral(".mp4"))
                  || p.endsWith(QStringLiteral(".avi")) || p.endsWith(QStringLiteral(".mov"))
                  || p.endsWith(QStringLiteral(".m4v")) || p.endsWith(QStringLiteral(".webm")))

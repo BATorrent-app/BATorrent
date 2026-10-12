@@ -61,7 +61,9 @@ QtObject {
         switch (item.installState) {
         case 0: return "↓ " + Math.floor((item.progress || 0) * 100) + "%"
         case 1: return i18n.t("hub_gs_install")
-        case 2: return i18n.t("hub_gs_extracting")
+        case 2: return (item.extractProgress >= 0)
+                       ? i18n.t("hub_gs_extracting") + " " + item.extractProgress + "%"
+                       : i18n.t("hub_gs_extracting")
         case 3: return i18n.t("hub_gs_finish_setup")
         case 4: return i18n.t("hub_gs_play")
         case 5: return i18n.t("hub_gs_playing")
@@ -92,7 +94,14 @@ QtObject {
                               : ("↓ " + Math.floor((item.progress || 0) * 100) + "%" + dot)
     }
 
-    function hours(secs) { return (secs > 0 ? (secs / 3600).toFixed(1) : "0") + " h" }
+    // Playtime. Hours with one decimal read "0.0 h" for anything under three
+    // minutes, which looked like nothing was counted: minutes until the first hour.
+    function hours(secs) {
+        if (!(secs > 0)) return "0 min"
+        if (secs < 60) return "< 1 min"
+        if (secs < 3600) return Math.floor(secs / 60) + " min"
+        return (secs / 3600).toFixed(1) + " h"
+    }
 
     // What a library tile says under its art: a state in its own colour, a
     // quieter fact beside it, and the bar along the art's bottom edge (-1 = none).
@@ -126,7 +135,13 @@ QtObject {
                 out.state = i18n.t("hub_tile_not_installed")
                 out.ink = Theme.t4
                 out.dim = true
-            } else out.state = root.gameStateLabel(item)
+            } else {
+                out.state = root.gameStateLabel(item)
+                if (item.installState === 2 && item.extractProgress >= 0) {
+                    out.bar = item.extractProgress / 100
+                    out.ink = Theme.accentText
+                }
+            }
             return out
         }
         if (kind === "series") {

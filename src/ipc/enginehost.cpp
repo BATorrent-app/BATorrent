@@ -26,6 +26,10 @@ EngineHost::EngineHost(SessionManager *session, const QString &serverName, QObje
         QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
         o << hash << ok; sendEvent(QStringLiteral("extractionCompleted"), a);
     });
+    connect(m_session, &SessionManager::extractionProgress, this, [this](const QString &hash, int pct) {
+        QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+        o << hash << qint32(pct); sendEvent(QStringLiteral("extractionProgress"), a);
+    });
     connect(m_session, &SessionManager::altSpeedsActiveChanged, this, [this](bool active) {
         QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
         o << active; sendEvent(QStringLiteral("altSpeedsActiveChanged"), a);

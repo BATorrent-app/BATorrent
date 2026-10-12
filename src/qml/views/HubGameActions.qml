@@ -16,7 +16,30 @@ Item {
     property int achUnlocked: 0
     property int achTotal: 0
     signal settingsRequested()
+    signal moreRequested(var anchor)   // the split button's chevron: drop the game menu under it
     implicitHeight: 84
+
+    // One half of the split button. Each half paints its own fill, round on the
+    // outside and square at the seam, so a hover lights only its half (clip
+    // would not round the corners).
+    component Half: Item {
+        id: half
+        property color fill
+        property bool leftSide: true
+        Rectangle {
+            anchors.fill: parent
+            radius: 6
+            color: half.fill
+            Behavior on color { ColorAnimation { duration: Theme.durFast } }
+        }
+        Rectangle {
+            x: half.leftSide ? half.width - 6 : 0
+            width: 6
+            height: half.height
+            color: half.fill
+            Behavior on color { ColorAnimation { duration: Theme.durFast } }
+        }
+    }
 
     readonly property bool actionable: root.hub.gameStateActionable(root.game)
     readonly property bool played: !!root.game && (root.game.lastPlayed || 0) > 0
@@ -28,19 +51,46 @@ Item {
         anchors.rightMargin: 48
         spacing: 40
 
-        Rectangle {
-            id: play
+        // A split button: the one next step, and behind the chevron every other
+        // way in (install with a Defender exclusion, pick the exe, open the
+        // folder). The chevron stays live when the main action is not, so a
+        // game stuck on a state still has a way out.
+        Item {
+            id: split
+            readonly property real playW: Math.max(150, playRow.implicitWidth + 52)
+            readonly property real chevronW: 42
+            readonly property color base: root.actionable ? Theme.accent : "#2b2b30"
+            readonly property color lit: root.actionable ? Qt.lighter(Theme.accent, 1.08) : "#35353b"
+            readonly property bool menuOpen: !!root.hub.gameMenu && root.hub.gameMenu.opened
             Layout.preferredHeight: 48
-            Layout.preferredWidth: Math.max(150, playRow.implicitWidth + 52)
-            radius: 6
-            color: root.actionable ? (playMa.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent)
-                                   : "#2b2b30"
-            Behavior on color { ColorAnimation { duration: Theme.durFast } }
-            scale: playMa.pressed ? Theme.pressScale : 1
+            Layout.preferredWidth: playW + chevronW
+            scale: playMa.pressed || moreMa.pressed ? Theme.pressScale : 1
             Behavior on scale { NumberAnimation { duration: Theme.durFast } }
+
+            Half {
+                width: split.playW
+                height: split.height
+                fill: playMa.containsMouse && root.actionable ? split.lit : split.base
+            }
+            Half {
+                x: split.playW
+                width: split.chevronW
+                height: split.height
+                leftSide: false
+                fill: moreMa.containsMouse || split.menuOpen ? split.lit : split.base
+            }
+            Rectangle {   // the seam
+                x: split.playW
+                y: 12
+                width: 1
+                height: split.height - 24
+                color: Qt.rgba(1, 1, 1, 0.28)
+            }
+
             Row {
                 id: playRow
-                anchors.centerIn: parent
+                x: (split.playW - width) / 2
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 10
                 IconImg {
                     anchors.verticalCenter: parent.verticalCenter
@@ -59,13 +109,34 @@ Item {
                     font.features: Theme.tnum
                 }
             }
+            IconImg {
+                x: split.playW + (split.chevronW - width) / 2
+                anchors.verticalCenter: parent.verticalCenter
+                src: "qrc:/icons/chevron.svg"
+                tint: "#ffffff"
+                s: 16
+                rotation: split.menuOpen ? 180 : 0
+                Behavior on rotation { NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut } }
+            }
+
             MouseArea {
                 id: playMa
-                anchors.fill: parent
+                width: split.playW
+                height: split.height
                 enabled: root.actionable
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: if (root.game) root.hub.gamePrimary(root.game)
+            }
+            MouseArea {
+                id: moreMa
+                x: split.playW
+                width: split.chevronW
+                height: split.height
+                enabled: !!root.game
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.moreRequested(split)
             }
         }
 

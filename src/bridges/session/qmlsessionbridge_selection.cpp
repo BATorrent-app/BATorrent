@@ -36,6 +36,11 @@ QString QmlSessionBridge::selectedHash() const
     return h;
 }
 
+QString QmlSessionBridge::selectedInfoHash() const
+{
+    return hasSelection() ? m_session->torrentHashAt(m_selectedIndex) : QString();
+}
+
 QString QmlSessionBridge::selectedDownloaded() const
 {
     if (!hasSelection()) return {};

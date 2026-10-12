@@ -424,15 +424,20 @@ Item {
                     if (!controller.isRowSelected(tile.index)) controller.selectRow(tile.index, 0)
                     win.openContext(tile.index)
                 } else {
+                    // A plain click on the tile that is already the only one
+                    // selected opens its page; the first click just selects it.
+                    const again = mouse.modifiers === Qt.NoModifier && controller.isRowSelected(tile.index)
+                                  && controller.selectedRows.length <= 1
                     controller.selectRow(tile.index, mouse.modifiers)
+                    if (again) win.openTorrentPage(tile.infoHash)
                 }
             }
-            // The grid is the media view: a film, show or game opens on its own
-            // page. The list keeps the manager's double-click (open the file).
+            // A film, show or game opens on its own page, as in the list; with
+            // no page to open, the file is revealed.
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.RightButton) {
                     controller.selectRow(tile.index, 0)
-                    if (!win.openTorrentPage(session.selectedHash)) session.openSelectedFile()
+                    if (!win.openTorrentPage(tile.infoHash)) session.openSelectedFile()
                 }
             }
         }

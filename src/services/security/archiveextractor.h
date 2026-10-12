@@ -28,8 +28,15 @@ public:
     void extract(const QString &savePath, const QString &torrentName,
                  const QString &priorityPassword, const QString &infoHash);
 
+    // Left in the folder while an archive is being unpacked and removed once it
+    // finishes: a folder that still has it holds a half-extracted game (the app
+    // closed mid-way), so finding its exe does not mean it is installed.
+    static QString inProgressMarker(const QString &dir);
+
 signals:
     void extractionStarted(const QString &infoHash);
+    // 0-100 across every archive of the torrent, from the extractor's own output.
+    void extractionProgress(const QString &infoHash, int percent);
     void extractionCompleted(const QString &infoHash, bool success);
     void extractError(const QString &message);
 

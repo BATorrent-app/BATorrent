@@ -84,6 +84,8 @@ SessionManager::SessionManager(QObject *parent)
             this, &SessionManager::extractionStarted);
     connect(m_extractor, &ArchiveExtractor::extractionCompleted,
             this, &SessionManager::extractionCompleted);
+    connect(m_extractor, &ArchiveExtractor::extractionProgress,
+            this, &SessionManager::extractionProgress);
     connect(m_extractor, &ArchiveExtractor::extractError,
             this, &SessionManager::torrentError);
 
@@ -407,7 +409,6 @@ SessionManager::~SessionManager()
         if (f.open(QIODevice::WriteOnly))
             f.write(buf.data(), static_cast<qint64>(buf.size()));
     } catch (...) {}
-    Logger::instance().log(Logger::Info, QStringLiteral("--- log closed ---"));
 }
 
 

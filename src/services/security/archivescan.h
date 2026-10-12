@@ -26,6 +26,14 @@ bool isContinuationPart(const QString &name);
 // form: only the file name matters). De-duplicated, original order preserved.
 QStringList archivesToExtract(const QStringList &fileNames);
 
+// Passwords a release group puts on every archive it ships (OnlineFix:
+// "online-fix.me"), so a game installs without the user knowing them. The ones
+// whose group tag is in this archive's name come first; the rest follow.
+QStringList knownPasswords(const QString &archiveName);
+// Only the passwords whose group tag is in the name: worth trying before an
+// empty password, since a wrong guess on a big archive can take minutes.
+QStringList taggedPasswords(const QString &archiveName);
+
 }
 
 #endif

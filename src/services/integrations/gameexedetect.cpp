@@ -19,6 +19,7 @@ ScoreResult scoreCandidate(const Candidate &c)
         QStringLiteral("vc_redist"), QStringLiteral("directx"), QStringLiteral("dxsetup"),
         QStringLiteral("dotnet"), QStringLiteral("dotnetfx"), QStringLiteral("_commonredist"),
         QStringLiteral("prereq"), QStringLiteral("crashreport"), QStringLiteral("crashpad"),
+        QStringLiteral("crashhandler"), QStringLiteral("crash_handler"),
         QStringLiteral("python"), QStringLiteral("benchmark"), QStringLiteral("config"),
         QStringLiteral("settings"), QStringLiteral("cleanup") };
     static const QStringList installerHints = {
@@ -37,14 +38,30 @@ ScoreResult scoreCandidate(const Candidate &c)
         }
     }
 
-    const int depth = c.relativePath.count(QLatin1Char('/'));
+    // Folders between the game folder and the exe: 0 at the root, 1 in the one
+    // folder an extracted archive usually makes ("Game/Game.exe").
+    QString rel = c.relativePath;
+    while (rel.startsWith(QLatin1Char('/')) || rel.startsWith(QLatin1Char('\\'))) rel.remove(0, 1);
+    const int depth = rel.count(QLatin1Char('/')) + rel.count(QLatin1Char('\\'));
     qint64 score = c.sizeBytes;
     if (depth <= 1)
         score += qint64(800) * 1024 * 1024;
+    if (c.hasUnityData)
+        score += qint64(2000) * 1024 * 1024;
     if (c.fileNameLower.contains(QLatin1String("launcher")))
         score -= qint64(300) * 1024 * 1024;
     r.score = score;
     return r;
+}
+
+bool neverTheGame(const QString &fileNameLower)
+{
+    static const QStringList never = {
+        QStringLiteral("crashhandler"), QStringLiteral("crash_handler"), QStringLiteral("crashpad"),
+        QStringLiteral("crashreport"), QStringLiteral("unins") };
+    for (const auto &n : never)
+        if (fileNameLower.contains(n)) return true;
+    return false;
 }
 
 bool looksLikeGameFromFiles(bool hasExe, bool hasVideo)
@@ -75,6 +92,9 @@ QString autodetect(const QString &folder, bool *isInstaller)
         c.fileNameLower = QFileInfo(path).fileName().toLower();
         c.relativePath = path.mid(folder.size());
         c.sizeBytes = QFileInfo(path).size();
+        const QFileInfo exeInfo(path);
+        c.hasUnityData = QFileInfo(exeInfo.absolutePath() + QLatin1Char('/')
+                                   + exeInfo.completeBaseName() + QStringLiteral("_Data")).isDir();
         const ScoreResult r = scoreCandidate(c);
         if (r.skip)
             continue;

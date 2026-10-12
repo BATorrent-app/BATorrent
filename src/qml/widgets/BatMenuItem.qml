@@ -12,12 +12,15 @@ MenuItem {
     id: mi
     property bool hideWhenDisabled: false
     property int elideMode: Text.ElideRight
-    implicitHeight: !enabled && hideWhenDisabled ? 1 : 30
+    property string iconSrc: ""        // optional leading icon
+    property int highlightRadius: 6
+    property int rowHeight: 30
+    implicitHeight: !enabled && hideWhenDisabled ? 1 : rowHeight
     visible: enabled || !hideWhenDisabled
     padding: 0
     indicator: null   // no native checkmark: we render our own in the text
     contentItem: Text {
-        leftPadding: 16
+        leftPadding: mi.iconSrc !== "" ? 42 : 16
         rightPadding: 16
         text: (mi.checkable && mi.checked ? "✓  " : "") + mi.text
         color: !mi.enabled ? Theme.t4 : (mi.highlighted ? Theme.t1 : Theme.t2)
@@ -25,11 +28,19 @@ MenuItem {
         font.family: Theme.fontSans
         verticalAlignment: Text.AlignVCenter
         elide: mi.elideMode
+        IconImg {
+            visible: mi.iconSrc !== ""
+            x: 16
+            anchors.verticalCenter: parent.verticalCenter
+            src: mi.iconSrc
+            s: 15
+            tint: mi.highlighted ? Theme.t1 : Theme.t3
+        }
     }
     background: Rectangle {
         x: 6; width: mi.width - 12
         color: mi.highlighted ? Theme.hover : "transparent"
-        radius: 6
+        radius: mi.highlightRadius
     }
     arrow: Text {
         visible: mi.subMenu

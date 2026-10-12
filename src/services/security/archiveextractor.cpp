@@ -18,9 +18,76 @@
 #include <functional>
 #include <memory>
 
+#ifdef Q_OS_WIN
+#  include <windows.h>
+#endif
+
+namespace {
+
+#ifdef Q_OS_WIN
+// Ties the extractor to this process and keeps it out of the user's way. A
+// 15 GB unpack at full priority, reading and writing the same disk, made the
+// whole PC lag; and when the app was closed mid-way the extractor kept going
+// on its own. In a job that kills on close it dies with the engine, and at
+// background CPU, I/O and memory priority it yields to whatever the user does.
+void tameExtractor(qint64 pid)
+{
+    static HANDLE job = [] {
+        HANDLE j = CreateJobObjectW(nullptr, nullptr);
+        if (j) {
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = {};
+            info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            SetInformationJobObject(j, JobObjectExtendedLimitInformation, &info, sizeof(info));
+        }
+        return j;
+    }();
+    HANDLE h = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE | PROCESS_SET_INFORMATION,
+                           FALSE, DWORD(pid));
+    if (!h) return;
+    if (job) AssignProcessToJobObject(job, h);
+    SetPriorityClass(h, BELOW_NORMAL_PRIORITY_CLASS);
+    // I/O priority has no documented per-process setter for another process;
+    // ntdll's ProcessIoPriority (class 33) is what Task Manager-style tools use.
+    using NtSetInfo = LONG(NTAPI *)(HANDLE, ULONG, PVOID, ULONG);
+    static const auto ntSet = reinterpret_cast<NtSetInfo>(
+        GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtSetInformationProcess"));
+    if (ntSet) {
+        ULONG ioVeryLow = 0;
+        ntSet(h, 33, &ioVeryLow, sizeof(ioVeryLow));
+    }
+    // SetProcessInformation is Windows 8+ and the build targets 7 (0x0601), so
+    // it is looked up; class 0 is ProcessMemoryPriority, 2 is MEMORY_PRIORITY_LOW.
+    using SetProcInfo = BOOL(WINAPI *)(HANDLE, int, LPVOID, DWORD);
+    static const auto setInfo = reinterpret_cast<SetProcInfo>(
+        GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetProcessInformation"));
+    if (setInfo) {
+        ULONG memLow = 2;
+        setInfo(h, 0, &memLow, sizeof(memLow));
+    }
+    CloseHandle(h);
+}
+#endif
+
+// The last "NN%" the extractor printed: UnRAR's counts the whole archive, 7-Zip's (-bsp1) too.
+int lastPercent(const QByteArray &out)
+{
+    static const QRegularExpression re(QStringLiteral("(\\d{1,3})%"));
+    int pct = -1;
+    auto it = re.globalMatch(QString::fromLatin1(out));
+    while (it.hasNext()) pct = it.next().captured(1).toInt();
+    return pct > 100 ? -1 : pct;
+}
+
+}
+
 ArchiveExtractor::ArchiveExtractor(QObject *parent)
     : QObject(parent)
 {
+}
+
+QString ArchiveExtractor::inProgressMarker(const QString &dir)
+{
+    return QDir(dir).filePath(QStringLiteral(".batorrent-extracting"));
 }
 
 void ArchiveExtractor::extract(const QString &savePath, const QString &torrentName,
@@ -51,12 +118,16 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
 
     if (!infoHash.isEmpty()) emit extractionStarted(infoHash);
     auto allOk = std::make_shared<bool>(true);
+    const QString marker = inProgressMarker(QFileInfo(archives.first()).absolutePath());
+    { QFile m(marker); if (m.open(QIODevice::WriteOnly)) m.close(); }
 
     // Serialize: one archive at a time so a multi-archive torrent never opens a
     // swarm of extractor windows. Each archive still retries every password first.
     auto processArchive = std::make_shared<std::function<void(int)>>();
-    *processArchive = [this, archives, processArchive, priorityPassword, infoHash, allOk](int ai) {
+    *processArchive = [this, archives, processArchive, priorityPassword, infoHash, allOk, marker](int ai) {
         if (ai >= archives.size()) {
+            // A failed unpack keeps the marker: what it left is not a game.
+            if (*allOk) QFile::remove(marker);
             if (!infoHash.isEmpty()) emit extractionCompleted(infoHash, *allOk);
             return;
         }
@@ -64,18 +135,23 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
         QFileInfo fi(archive);
         QString extractDir = fi.absolutePath();
 
-        // A user-typed password (manual extract) is tried first, then no
-        // password, then each saved default.
+        // A user-typed password (manual extract) is tried first, then the
+        // group's own when the name says whose release it is (OnlineFix's
+        // -OFME), then no password, the saved ones, and the other known groups'.
         QStringList attempts;
-        if (!priorityPassword.isEmpty()) attempts << priorityPassword;
-        attempts << QString();
-        attempts << m_passwords;
+        auto add = [&attempts](const QString &p) { if (!attempts.contains(p)) attempts << p; };
+        if (!priorityPassword.isEmpty()) add(priorityPassword);
+        for (const QString &p : ArchiveScan::taggedPasswords(fi.fileName())) add(p);
+        add(QString());
+        for (const QString &p : m_passwords) add(p);
+        for (const QString &p : ArchiveScan::knownPasswords(fi.fileName())) add(p);
 
-        auto tryExtract = [this, archive, extractDir, attempts, processArchive, ai, allOk](int attemptIdx) {
+        const int total = archives.size();
+        auto tryExtract = [this, archive, extractDir, attempts, processArchive, ai, allOk, infoHash, total](int attemptIdx) {
             auto self = std::make_shared<std::function<void(int)>>();
-            *self = [this, archive, extractDir, attempts, self, processArchive, ai, allOk](int idx) {
+            *self = [this, archive, extractDir, attempts, self, processArchive, ai, allOk, infoHash, total](int idx) {
                 if (idx >= attempts.size()) {
-                    qDebug() << "[extract] extraction failed (all passwords tried):" << archive;
+                    qInfo() << "[extract] extraction failed (all passwords tried):" << archive;
                     *allOk = false;
                     emit extractError(tr_("extract_failed").arg(QFileInfo(archive).fileName()));
                     (*processArchive)(ai + 1);          // move on to the next archive
@@ -109,7 +185,8 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
                     program = sevenZip;
                     args << QStringLiteral("x") << archive
                          << QStringLiteral("-o") + extractDir
-                         << QStringLiteral("-y") << QStringLiteral("-aoa");
+                         << QStringLiteral("-y") << QStringLiteral("-aoa")
+                         << QStringLiteral("-bsp1");   // progress percentages on stdout
                     if (!password.isEmpty())
                         args << QStringLiteral("-p") + password;
                 } else if (isRar && !winrarDir.isEmpty()
@@ -157,15 +234,29 @@ void ArchiveExtractor::extract(const QString &savePath, const QString &torrentNa
                 }
 #endif
 
-                qDebug() << "[extract] auto-extract attempt" << idx << ":" << program
-                         << (password.isEmpty() ? "(no password)" : "(with password)");
+                qInfo() << "[extract] auto-extract attempt" << idx << ":" << program
+                        << (password.isEmpty() ? "(no password)" : "(with password)") << archive;
 
                 auto *proc = new QProcess(this);
+                proc->setProcessChannelMode(QProcess::MergedChannels);
+                // Overall progress: this archive's share of the torrent's archives.
+                auto lastPct = std::make_shared<int>(-1);
+                connect(proc, &QProcess::readyReadStandardOutput, this, [this, proc, infoHash, ai, total, lastPct]() {
+                    const int pct = lastPercent(proc->readAllStandardOutput());
+                    if (pct < 0 || infoHash.isEmpty()) return;
+                    const int overall = (ai * 100 + pct) / total;
+                    if (overall == *lastPct) return;
+                    *lastPct = overall;
+                    emit extractionProgress(infoHash, overall);
+                });
+#ifdef Q_OS_WIN
+                connect(proc, &QProcess::started, this, [proc]() { tameExtractor(proc->processId()); });
+#endif
                 connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
                         this, [this, proc, archive, idx, self, processArchive, ai](int exitCode, QProcess::ExitStatus) {
                     proc->deleteLater();
                     if (exitCode == 0) {
-                        qDebug() << "[extract] extraction complete:" << archive;
+                        qInfo() << "[extract] extraction complete:" << archive;
                         if (m_deleteAfter) {
                             QFile::remove(archive);
                             QFileInfo fi(archive);

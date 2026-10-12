@@ -31,6 +31,7 @@ HttpMergeEngine::HttpMergeEngine(IEngine *inner, HttpDownloadManager *http, QObj
     connect(m_inner, &IEngine::torrentsUpdated,       this, &IEngine::torrentsUpdated);
     connect(m_inner, &IEngine::torrentFinished,       this, &IEngine::torrentFinished);
     connect(m_inner, &IEngine::extractionCompleted,   this, &IEngine::extractionCompleted);
+    connect(m_inner, &IEngine::extractionProgress,    this, &IEngine::extractionProgress);
     connect(m_inner, &IEngine::altSpeedsActiveChanged,this, &IEngine::altSpeedsActiveChanged);
     connect(m_inner, &IEngine::portStatusChanged,     this, &IEngine::portStatusChanged);
     connect(m_inner, &IEngine::torrentRemoved,        this, &IEngine::torrentRemoved);

@@ -34,6 +34,7 @@
 #if defined(Q_OS_WIN)
 #include <windows.h>
 #include <shellapi.h>
+#include <tlhelp32.h>
 #else
 #include <csignal>
 #include <cerrno>
@@ -120,6 +121,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["playing"]    = m_runningGames.contains(hash);
         m["group"]      = ReleaseGroup::detect(info.name);
         m["installState"] = gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));
+        m["extractProgress"] = m_extractProgress.value(hash, -1);   // 0-100 while unpacking, else -1
         out << m;
     }
     return out;
@@ -164,6 +166,102 @@ static bool pidAlive(qint64 pid)
 #endif
 }
 
+// A running process whose exe lives under folder, 0 if none. A launcher that
+// starts the real game and exits (Unreal's bootstrap, many repacks) hands off to
+// it; following that pid keeps "playing" and the playtime honest.
+static qint64 processUnder(const QString &folder)
+{
+#if defined(Q_OS_WIN)
+    if (folder.isEmpty()) return 0;
+    const QString root = QDir::toNativeSeparators(QDir::cleanPath(folder)) + QLatin1Char('\\');
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snap == INVALID_HANDLE_VALUE) return 0;
+    qint64 found = 0;
+    PROCESSENTRY32W pe = {};
+    pe.dwSize = sizeof(pe);
+    for (BOOL ok = Process32FirstW(snap, &pe); ok && !found; ok = Process32NextW(snap, &pe)) {
+        HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pe.th32ProcessID);
+        if (!h) continue;
+        wchar_t buf[MAX_PATH * 2];
+        DWORD len = DWORD(sizeof(buf) / sizeof(buf[0]));
+        if (QueryFullProcessImageNameW(h, 0, buf, &len)) {
+            const QString path = QString::fromWCharArray(buf, int(len));
+            if (path.startsWith(root, Qt::CaseInsensitive)) found = pe.th32ProcessID;
+        }
+        CloseHandle(h);
+    }
+    CloseHandle(snap);
+    return found;
+#else
+    Q_UNUSED(folder);
+    return 0;
+#endif
+}
+
+// pid is alive and runs an exe from under folder. A pid saved across an app
+// restart may since belong to something else entirely: Windows reuses them.
+static bool pidUnder(qint64 pid, const QString &folder)
+{
+    if (!pidAlive(pid)) return false;
+#if defined(Q_OS_WIN)
+    const QString root = QDir::toNativeSeparators(QDir::cleanPath(folder)) + QLatin1Char('\\');
+    HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, DWORD(pid));
+    if (!h) return false;
+    wchar_t buf[MAX_PATH * 2];
+    DWORD len = DWORD(sizeof(buf) / sizeof(buf[0]));
+    const bool ok = QueryFullProcessImageNameW(h, 0, buf, &len)
+                    && QString::fromWCharArray(buf, int(len)).startsWith(root, Qt::CaseInsensitive);
+    CloseHandle(h);
+    return ok;
+#else
+    Q_UNUSED(folder);
+    return true;
+#endif
+}
+
+// A game that is running is remembered in settings, so closing or restarting
+// BATorrent mid-game (an update, a crash, Quit from the tray) does not throw
+// the session away: the next start picks the game back up, or credits it up to
+// the last time it was seen alive. Stored as "pid;startMs;lastAliveMs;exe".
+void QmlSessionBridge::persistRunningGame(const QString &hash, qint64 nowMs)
+{
+    QSettings().setValue(QStringLiteral("runningGames/") + hash,
+                         QStringLiteral("%1;%2;%3;%4").arg(m_runningGames.value(hash))
+                             .arg(m_gameStartMs.value(hash)).arg(nowMs)
+                             .arg(m_runningExe.value(hash)));
+}
+
+void QmlSessionBridge::restoreRunningGames()
+{
+    QSettings s;
+    s.beginGroup(QStringLiteral("runningGames"));
+    const QStringList hashes = s.childKeys();
+    s.endGroup();
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    for (const QString &hash : hashes) {
+        const QString key = QStringLiteral("runningGames/") + hash;
+        const QStringList f = s.value(key).toString().split(QLatin1Char(';'));
+        s.remove(key);
+        if (f.size() < 4) continue;
+        const qint64 pid = f[0].toLongLong(), startMs = f[1].toLongLong(), lastAlive = f[2].toLongLong();
+        const QString exe = f.mid(3).join(QLatin1Char(';'));   // a path may hold ';'
+        if (startMs <= 0 || exe.isEmpty()) continue;
+        if (pidUnder(pid, QFileInfo(exe).absolutePath())) {
+            qInfo().noquote() << "[game] still running from before, following pid" << pid << exe;
+            m_runningGames.insert(hash, pid);
+            m_gameStartMs.insert(hash, startMs);
+            m_runningExe.insert(hash, exe);
+            persistRunningGame(hash, nowMs);
+            startAchievementWatch(hash);
+        } else if (lastAlive > startMs) {
+            const qint64 secs = (lastAlive - startMs) / 1000;
+            qInfo().noquote() << "[game] ended while closed, credited" << secs << "s:" << exe;
+            m_playLog->recordSession(hash, startMs, secs);
+        }
+    }
+    if (!m_runningGames.isEmpty()) emit gamesChanged();
+}
+
 // mac games are .app bundles (directories): QProcess can't exec those, but
 // `open -W` can, and it stays alive until the game quits so playtime tracking
 // via the pid still works.
@@ -194,6 +292,13 @@ static bool startGameProcess(const QString &exe, qint64 *pid)
 void QmlSessionBridge::launchGame(const QString &infoHash)
 {
     QString exe = gameExe(infoHash);              // a manual override always wins
+    // ...unless it is never a game: an older build saved Unity's crash handler
+    // as the exe, and the game then "started" and closed at once, every time.
+    if (!exe.isEmpty() && GameExeDetect::neverTheGame(QFileInfo(exe).fileName().toLower())) {
+        qInfo().noquote() << "[game] ignoring saved exe" << exe;
+        QSettings().remove(QStringLiteral("gameExe/") + infoHash);
+        exe.clear();
+    }
     bool isInstaller = false;
     if (exe.isEmpty() || !QFile::exists(exe))
         exe = GameExeDetect::autodetect(gameFolder(infoHash), &isInstaller);
@@ -203,11 +308,15 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
         // Detached so the game survives BATorrent closing; the returned pid lets
         // us poll for exit and credit playtime.
         if (startGameProcess(exe, &pid)) {
+            qInfo().noquote() << "[game] launched" << exe << "pid" << pid
+                              << (isInstaller ? "(installer)" : "");
             const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
             m_playLog->recordLaunch(infoHash, nowMs);
             if (!isInstaller && pid > 0 && !m_runningGames.contains(infoHash)) {
                 m_runningGames.insert(infoHash, pid);
                 m_gameStartMs.insert(infoHash, nowMs);
+                m_runningExe.insert(infoHash, exe);
+                persistRunningGame(infoHash, nowMs);
                 startAchievementWatch(infoHash);
                 emit gamesChanged();   // "playing now"
             }
@@ -215,7 +324,10 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
                        QFileInfo(exe).completeBaseName());
             return;
         }
+        qWarning().noquote() << "[game] could not start" << exe;
         emit toast(tr_("hub_launch_failed"), QFileInfo(exe).fileName());
+    } else {
+        qInfo().noquote() << "[game] no exe found under" << gameFolder(infoHash);
     }
     // nothing runnable (or the exe wouldn't start) → open the folder so the
     // user can run it by hand or set the right executable
@@ -250,12 +362,42 @@ void QmlSessionBridge::pollRunningGames()
         if (cleared) emit gamesChanged();
     }
 
+    if (!m_runningRestored) {
+        m_runningRestored = true;
+        restoreRunningGames();
+    }
     if (m_runningGames.isEmpty()) return;
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    // Once a minute is enough for "last seen alive": it bounds what a session
+    // that ends while the app is closed can be credited.
+    const bool saveAlive = nowMs - m_runningSavedMs >= 60 * 1000;
+    if (saveAlive) m_runningSavedMs = nowMs;
     bool changed = false;
     for (const QString &hash : m_runningGames.keys()) {
-        if (pidAlive(m_runningGames.value(hash))) continue;
+        if (pidAlive(m_runningGames.value(hash))) {
+            if (saveAlive) persistRunningGame(hash, nowMs);
+            continue;
+        }
+        // The launcher handed off to the game proper: follow that one instead.
+        // Searched under the launched exe's own folder, never the torrent's save
+        // path, which for a single-file torrent is the whole Downloads folder.
+        const QString exe = m_runningExe.value(hash);
+        if (const qint64 next = exe.isEmpty() ? 0 : processUnder(QFileInfo(exe).absolutePath())) {
+            qInfo() << "[game] launcher exited, following pid" << next;
+            m_runningGames.insert(hash, next);
+            persistRunningGame(hash, nowMs);
+            continue;
+        }
+        QSettings().remove(QStringLiteral("runningGames/") + hash);
+        m_runningExe.remove(hash);
         const qint64 startMs = m_gameStartMs.value(hash);
-        m_playLog->recordSession(hash, startMs, (QDateTime::currentMSecsSinceEpoch() - startMs) / 1000);
+        const qint64 secs = (QDateTime::currentMSecsSinceEpoch() - startMs) / 1000;
+        m_playLog->recordSession(hash, startMs, secs);
+        qInfo().noquote() << "[game] exited after" << secs << "s:" << exe;
+        // Gone within seconds with nothing of it left running: it did not really
+        // start (wrong exe, missing runtime, a crash on boot). Say so instead of
+        // just flipping back to Play.
+        if (secs < 10) emit toast(tr_("hub_game_quit_early"), QFileInfo(exe).fileName());
         m_runningGames.remove(hash);
         m_gameStartMs.remove(hash);
         stopAchievementWatch(hash);

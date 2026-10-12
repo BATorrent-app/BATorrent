@@ -36,9 +36,43 @@ int splitNumber(const QString &n)
     return m.hasMatch() ? m.captured(1).toInt() : -1;
 }
 
+// A group's fixed archive password and the name tags its releases carry.
+struct GroupPassword {
+    const char *password;
+    QStringList tags;   // lowercase substrings of the archive name
+};
+
+const QList<GroupPassword> &groupPasswords()
+{
+    static const QList<GroupPassword> s = {
+        { "online-fix.me", { QStringLiteral("-ofme"), QStringLiteral("online-fix"), QStringLiteral("onlinefix") } },
+    };
+    return s;
+}
+
 }
 
 namespace ArchiveScan {
+
+QStringList taggedPasswords(const QString &archiveName)
+{
+    const QString n = baseName(archiveName);
+    QStringList out;
+    for (const GroupPassword &g : groupPasswords())
+        for (const QString &tag : g.tags)
+            if (n.contains(tag)) { out << QString::fromLatin1(g.password); break; }
+    return out;
+}
+
+QStringList knownPasswords(const QString &archiveName)
+{
+    QStringList out = taggedPasswords(archiveName);
+    for (const GroupPassword &g : groupPasswords()) {
+        const QString p = QString::fromLatin1(g.password);
+        if (!out.contains(p)) out << p;
+    }
+    return out;
+}
 
 bool isContinuationPart(const QString &name)
 {

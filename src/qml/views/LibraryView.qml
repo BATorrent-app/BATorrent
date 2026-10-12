@@ -439,16 +439,31 @@ Item {
             if (mouse.button === Qt.RightButton) {
                 if (!controller.isRowSelected(clickRow)) controller.selectRow(clickRow, 0)
                 win.openContext(clickRow)
+            } else if (doubleHandled) {
+                doubleHandled = false   // this release ends a double-click that already acted
             } else {
+                // A plain click on the row that is already the only one
+                // selected opens its page (a game or a title); the first click
+                // just selects it.
+                var again = mouse.modifiers === Qt.NoModifier && controller.isRowSelected(clickRow)
+                            && controller.selectedRows.length <= 1
                 controller.selectRow(clickRow, mouse.modifiers)
+                if (again) win.openTorrentPage(session.selectedInfoHash)
             }
         }
+        // doubleClicked lands between the second press and its release, so the
+        // release must not act on the same click again.
+        property bool doubleHandled: false
         onDoubleClicked: function(mouse) {
             var r = rowAt(mouse.y, mouse.x)
-            // select the clicked row first so we reveal *that* torrent,
-            // not whatever was selected before, then open its folder
-            // with the file highlighted.
-            if (r >= 0) { controller.selectRow(r, 0); session.openSelectedFile() }
+            // select the clicked row first so we act on *that* torrent, not
+            // whatever was selected before. A game or a title opens its page;
+            // anything else reveals its file.
+            if (r >= 0) {
+                doubleHandled = true
+                controller.selectRow(r, 0)
+                if (!win.openTorrentPage(session.selectedInfoHash)) session.openSelectedFile()
+            }
         }
 
         Rectangle {
