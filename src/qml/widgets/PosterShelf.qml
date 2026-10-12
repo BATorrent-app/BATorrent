@@ -27,7 +27,11 @@ Item {
 
     width: parent ? parent.width : 0
     readonly property int rowH: landscape ? 172 : 252
-    height: header.height + (landscape ? 14 : 10) + rowH
+    // Room under a landscape row before the next shelf's title. Its tiles end
+    // on a meta line ("★ 7.0  2018  Game") five pixels short of rowH, and the
+    // hub's column has no spacing of its own, so the next title sat on it.
+    readonly property int gapBelow: landscape ? 28 : 0
+    height: header.height + (landscape ? 14 : 10) + rowH + gapBelow
     visible: items && items.length > 0
 
     readonly property bool inView: (y + height) > (flickY - 400) && y < (flickY + flickH + 400)

@@ -7,13 +7,42 @@
 
 #include "bridges/session/qmlsessionbridge.h"
 #include "services/games/achievementfiles.h"
+#include "services/games/achievementledger.h"
 #include "services/games/achievementservice.h"
 #include "services/games/achievementwatch.h"
 #include "services/games/steamstore.h"
 #include "services/platform/soundplayer.h"
+#include "services/platform/translator.h"
 
 #include <QFileInfo>
 #include <QSettings>
+#include <QUrl>
+
+namespace {
+QString localPath(const QString &fileUrl)
+{
+    return fileUrl.startsWith(QLatin1String("file:")) ? QUrl(fileUrl).toLocalFile() : fileUrl;
+}
+} // namespace
+
+bool QmlSessionBridge::exportAchievements(const QString &fileUrl)
+{
+    const QString path = localPath(fileUrl);
+    const bool ok = !path.isEmpty() && m_achLedger && m_achLedger->exportTo(path);
+    qInfo().noquote() << "[achievements] export to" << path << (ok ? "done" : "failed");
+    emit toast(ok ? tr_("ach_export_done") : tr_("ach_export_failed"), QFileInfo(path).fileName());
+    return ok;
+}
+
+void QmlSessionBridge::importAchievements(const QString &fileUrl)
+{
+    const QString path = localPath(fileUrl);
+    const int added = m_achLedger && !path.isEmpty() ? m_achLedger->importFrom(path) : -1;
+    qInfo().noquote() << "[achievements] import from" << path << "added" << added;
+    if (added < 0) emit toast(tr_("ach_import_failed"), QFileInfo(path).fileName());
+    else emit toast(tr_("ach_import_done").arg(added), QFileInfo(path).fileName());
+    if (added > 0) emit gamesChanged();   // open game pages ask for their list again
+}
 
 QString QmlSessionBridge::achievementDir(const QString &infoHash) const
 {

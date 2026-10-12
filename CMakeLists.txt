@@ -57,6 +57,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/macfileopen.cpp
     src/app/boothealth.cpp
     src/app/appruntime.cpp
+    src/app/steamartprovider.cpp
     src/app/appservices.cpp
     src/app/vpnwiring.cpp
     src/app/mediarefresh.cpp
@@ -126,6 +127,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/games/achievements.cpp
     src/services/games/achievementformats.cpp
     src/services/games/achievementfiles.cpp
+    src/services/games/achievementledger.cpp
     src/services/games/achievementservice.cpp
     src/services/games/achievementwatch.cpp
     src/services/games/steamstore.cpp

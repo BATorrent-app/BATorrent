@@ -36,6 +36,13 @@ namespace Achievements {
 // ISteamUserStats/GetSchemaForGame/v2 → game.availableGameStats.achievements.
 QList<Achievement> parseSchema(const QByteArray &json);
 
+// Steam's schema still names icons on its retired community CDN
+// (steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/...), which
+// 404s for every game released since the move; the same file lives under
+// shared.cloudflare.steamstatic.com/community_assets/images/apps/..., old
+// games included. Anything else comes back unchanged.
+QString liveIconUrl(const QString &url);
+
 // ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2 → apiName → percent.
 // Steam has sent the percent both as a number and as a string.
 QHash<QString, double> parsePercentages(const QByteArray &json);

@@ -225,7 +225,12 @@ QtObject {
             { type: "toggle", key: "notifyAchievements", label: (i18n.language, i18n.t("set_notify_achievements")), on: true,
               note: (i18n.language, i18n.t("set_notify_achievements_note")) },
             { type: "toggle", key: "notifyAchievementsSystem", label: (i18n.language, i18n.t("set_notify_achievements_system")),
-              note: (i18n.language, i18n.t("set_notify_achievements_system_note")) }
+              note: (i18n.language, i18n.t("set_notify_achievements_system_note")) },
+            { type: "group", label: (i18n.language, i18n.t("set_grp_achievements")) },
+            { type: "button", action: "achExport", label: (i18n.language, i18n.t("set_ach_export")),
+              btn: (i18n.language, i18n.t("set_ach_export_btn")), note: (i18n.language, i18n.t("set_ach_export_note")) },
+            { type: "button", action: "achImport", label: (i18n.language, i18n.t("set_ach_import")),
+              btn: (i18n.language, i18n.t("set_ach_import_btn")), note: (i18n.language, i18n.t("set_ach_import_note")) }
         ],
         // 7 Addons
         [

@@ -18,7 +18,11 @@ Image {
     cache: true
     smooth: true
     opacity: status === Image.Ready && toneKnown ? 1 : 0
-    Behavior on opacity { NumberAnimation { duration: Theme.durSlow } }
+    // Fade in only, as ChainImage: a slow fade-out left the last title's logo showing.
+    Behavior on opacity {
+        enabled: logo.status === Image.Ready && logo.toneKnown
+        NumberAnimation { duration: Theme.durSlow }
+    }
 
     function ask() {
         dark = false

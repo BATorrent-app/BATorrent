@@ -13,6 +13,8 @@
 // A game's achievements: Steam's schema and global percentages (cached on disk
 // for a week, a stale copy used when Steam can't be reached), crossed with the
 // unlocks the game's emulator wrote. One request in flight per appid.
+class AchievementLedger;
+
 class AchievementService : public QObject
 {
     Q_OBJECT
@@ -24,6 +26,9 @@ public:
     void request(const QString &key, int appId, const QString &gameDir, const QString &title = {});
 
     static QString steamApiKey();
+
+    // Where unlocks outlive the emulator's own files. Not owned; may be null.
+    void setLedger(AchievementLedger *ledger) { m_ledger = ledger; }
 
 signals:
     // total is 0 when no schema could be had: the list then holds only what is
@@ -41,4 +46,5 @@ private:
     QString m_cacheDir;
     QHash<int, QList<Waiting>> m_waiting;
     QHash<QString, int> m_appIdByTitle;   // store-search answers for the session, 0 = not on Steam
+    AchievementLedger *m_ledger = nullptr;
 };

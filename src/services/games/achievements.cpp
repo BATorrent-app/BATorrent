@@ -12,6 +12,15 @@
 
 namespace Achievements {
 
+QString liveIconUrl(const QString &url)
+{
+    static const QString oldPath = QStringLiteral("/steamcommunity/public/images/apps/");
+    const qsizetype at = url.indexOf(oldPath);
+    if (at < 0 || !url.startsWith(QLatin1String("http"))) return url;
+    return QStringLiteral("https://shared.cloudflare.steamstatic.com/community_assets/images/apps/")
+           + url.mid(at + oldPath.size());
+}
+
 QList<Achievement> parseSchema(const QByteArray &json)
 {
     QList<Achievement> out;
@@ -27,8 +36,8 @@ QList<Achievement> parseSchema(const QByteArray &json)
         a.name = o.value(QLatin1String("displayName")).toString();
         if (a.name.isEmpty()) a.name = a.apiName;
         a.description = o.value(QLatin1String("description")).toString();
-        a.icon = o.value(QLatin1String("icon")).toString();
-        a.iconGray = o.value(QLatin1String("icongray")).toString();
+        a.icon = liveIconUrl(o.value(QLatin1String("icon")).toString());
+        a.iconGray = liveIconUrl(o.value(QLatin1String("icongray")).toString());
         a.hidden = o.value(QLatin1String("hidden")).toInt() != 0;
         out.append(a);
     }

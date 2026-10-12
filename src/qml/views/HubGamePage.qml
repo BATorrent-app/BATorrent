@@ -37,7 +37,29 @@ Item {
     visible: hub.gameOpen || slide > 0.001
     property real slide: hub.gameOpen ? 1 : 0
     Behavior on slide { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
-    opacity: slide
+    // Opaque at once when opening, faded only when closing. Fading the whole
+    // page in let the hub's home show through, with its Continue card holding
+    // the last game, while the page switch from Downloads was still running.
+    opacity: hub.gameOpen ? 1 : slide
+
+    // The content rises in on every open and every switch to another game, so
+    // the swap of one game's data for the next happens out of sight.
+    property real enter: 1
+    NumberAnimation {
+        id: enterAnim
+        target: root
+        property: "enter"
+        from: 0
+        to: 1
+        duration: Theme.durSlower
+        easing.type: Theme.easeOut
+    }
+    function playEnter() { enter = 0; enterAnim.restart() }
+    Connections {
+        target: root.hub
+        function onGameOpenChanged() { if (root.hub.gameOpen) root.playEnter() }
+        function onGameHashChanged() { if (root.hub.gameOpen) root.playEnter() }
+    }
 
     readonly property string gameTitle: game ? (game.title || "") : ""
     onGameTitleChanged: {
@@ -84,6 +106,8 @@ Item {
     Flickable {
         id: flick
         anchors.fill: parent
+        opacity: root.enter
+        transform: Translate { y: (1 - root.enter) * 18 }
         contentHeight: col.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -123,6 +147,9 @@ Item {
                 achUnlocked: root.achUnlocked
                 achTotal: root.achTotal
                 onSettingsRequested: if (root.game) root.hub.gameMenu.openFor(root.game.infoHash)
+                onMoreRequested: function (anchor) {
+                    if (root.game) root.hub.gameMenu.dropFrom(root.game.infoHash, anchor)
+                }
             }
 
             Item {

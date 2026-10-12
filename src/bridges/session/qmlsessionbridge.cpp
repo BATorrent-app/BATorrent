@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "bridges/session/qmlsessionbridge.h"
+#include "services/games/achievementledger.h"
 #include "services/games/achievementservice.h"
 #include "services/games/achievementwatch.h"
 #include "services/games/playlog.h"
@@ -118,6 +119,8 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
             this, &QmlSessionBridge::onWatchTick);
     connect(m_session, &IEngine::extractionCompleted,
             this, &QmlSessionBridge::onExtractionCompleted);
+    connect(m_session, &IEngine::extractionProgress,
+            this, &QmlSessionBridge::onExtractionProgress);
     connect(m_session, &IEngine::torrentFinished,
             this, &QmlSessionBridge::onGameTorrentFinished);
 
@@ -126,9 +129,13 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
             .filePath(QStringLiteral("playlog.json")));
     importLegacyPlaytime();
 
+    m_achLedger = std::make_unique<AchievementLedger>(
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+            .filePath(QStringLiteral("achievements.json")));
     m_achievements = std::make_unique<AchievementService>(
         QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
             .filePath(QStringLiteral("achievements")));
+    m_achievements->setLedger(m_achLedger.get());
     connect(m_achievements.get(), &AchievementService::ready, this,
             [this](const QString &key, int appId, const QVariantList &list, int unlocked, int total) {
         onAchievementsLookedUp(key, appId, list);

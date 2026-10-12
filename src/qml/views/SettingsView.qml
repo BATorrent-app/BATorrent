@@ -441,6 +441,8 @@ Rectangle {
         else if (a === "fullBackup")      { backupSaveDlg.mode = "backup"; backupSaveDlg.currentFile = "batorrent-backup.bat"; backupSaveDlg.open() }
         else if (a === "importSettings")  { backupOpenDlg.mode = "import"; backupOpenDlg.open() }
         else if (a === "fullRestore")     { backupOpenDlg.mode = "restore"; backupOpenDlg.open() }
+        else if (a === "achExport")       { backupSaveDlg.mode = "achievements"; backupSaveDlg.currentFile = "batorrent-achievements.json"; backupSaveDlg.open() }
+        else if (a === "achImport")       { backupOpenDlg.mode = "achievements"; backupOpenDlg.open() }
     }
     function showInfo(title, msg) { infoDlg.title = title; infoDlg.message = msg; infoDlg.open() }
     FileDialog {
@@ -448,9 +450,12 @@ Rectangle {
         property string mode: ""
         fileMode: FileDialog.SaveFile
         nameFilters: mode === "backup" ? ["BATorrent backup (*.bat)"] : ["JSON (*.json)"]
-        onAccepted: if (typeof settings !== "undefined") {
+        onAccepted: {
             var p = selectedFile.toString()
-            win.showInfo(i18n.t("settings_advanced"), mode === "backup" ? settings.fullBackup(p) : settings.exportSettings(p))
+            // Achievements report through the session's toast, not a dialog.
+            if (mode === "achievements") { if (typeof session !== "undefined") session.exportAchievements(p); return }
+            if (typeof settings !== "undefined")
+                win.showInfo(i18n.t("settings_advanced"), mode === "backup" ? settings.fullBackup(p) : settings.exportSettings(p))
         }
     }
     FileDialog {
@@ -458,9 +463,11 @@ Rectangle {
         property string mode: ""
         fileMode: FileDialog.OpenFile
         nameFilters: mode === "restore" ? ["BATorrent backup (*.bat)"] : ["JSON (*.json)"]
-        onAccepted: if (typeof settings !== "undefined") {
+        onAccepted: {
             var p = selectedFile.toString()
-            win.showInfo(i18n.t("settings_advanced"), mode === "restore" ? settings.fullRestore(p) : settings.importSettings(p))
+            if (mode === "achievements") { if (typeof session !== "undefined") session.importAchievements(p); return }
+            if (typeof settings !== "undefined")
+                win.showInfo(i18n.t("settings_advanced"), mode === "restore" ? settings.fullRestore(p) : settings.importSettings(p))
         }
     }
 

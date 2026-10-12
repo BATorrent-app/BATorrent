@@ -20,9 +20,11 @@ Column {
         var out = []
         if (game.group) out.push({ label: "game_build", value: game.group })
         if (game.addedTime > 0)
-            out.push({ label: "game_installed",
-                       value: Qt.formatDate(new Date(game.addedTime * 1000), "dd MMM yyyy") })
-        out.push({ label: "game_folder", value: folder })
+            out.push({ label: "game_installed", value: (i18n.language, i18n.date(game.addedTime)) })
+        // Shown the way the system writes it (D:\Downloads\...); the path
+        // itself keeps Qt's slashes for opening the folder.
+        out.push({ label: "game_folder",
+                   value: Qt.platform.os === "windows" ? folder.replace(/\//g, "\\") : folder })
         // No saved exe means launch autodetects one each time.
         out.push({ label: "game_exe",
                    value: exe.length > 0 ? exe.split(/[\\/]/).pop() : (i18n.language, i18n.t("game_exe_auto")) })

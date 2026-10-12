@@ -19,5 +19,10 @@ Image {
     cache: true
     onStatusChanged: if (status === Image.Error && at < sources.length - 1) at++
     opacity: status === Image.Ready ? 1 : 0
-    Behavior on opacity { NumberAnimation { duration: Theme.durSlower } }
+    // Fade in only. A reused view (the game page opening another game) swaps the
+    // source: fading the old art out slowly showed it under the new title.
+    Behavior on opacity {
+        enabled: img.status === Image.Ready
+        NumberAnimation { duration: Theme.durSlower }
+    }
 }

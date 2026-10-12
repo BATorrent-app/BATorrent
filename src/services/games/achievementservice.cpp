@@ -4,6 +4,7 @@
 
 #include "services/games/achievementservice.h"
 #include "services/games/achievementfiles.h"
+#include "services/games/achievementledger.h"
 #include "services/games/achievements.h"
 #include "services/games/steamstore.h"
 #include "services/platform/contentlanguage.h"
@@ -164,9 +165,14 @@ void AchievementService::finish(int appId, const QByteArray &schema, const QByte
     const QList<Waiting> waiting = m_waiting.take(appId);
     const QList<Achievement> known = Achievements::parseSchema(schema);
     const QHash<QString, double> pct = Achievements::parsePercentages(percent);
+    const QString gameName = QJsonDocument::fromJson(schema).object()
+        .value(QLatin1String("game")).toObject().value(QLatin1String("gameName")).toString();
     for (const Waiting &w : waiting) {
         const auto files = AchievementFiles::candidates(appId, w.gameDir, AchievementFiles::rootsFor(appId, w.gameDir));
-        const AchievementFiles::State state = AchievementFiles::readState(files);
+        AchievementFiles::State state = AchievementFiles::readState(files);
+        // What the emulator shows now, plus what this app saw before: a game
+        // reinstalled or swapped for another release keeps its unlocks.
+        if (m_ledger) state.unlocked = m_ledger->merged(appId, gameName, state.unlocked);
         QList<Achievement> list = known;
         if (list.isEmpty()) {
             for (auto it = state.unlocked.cbegin(); it != state.unlocked.cend(); ++it) {

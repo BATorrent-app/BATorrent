@@ -12,6 +12,7 @@
 
 class HttpDownloadManager;
 class PlayLog;
+class AchievementLedger;
 class AchievementService;
 class AchievementWatch;
 class MediaGuard;
@@ -52,7 +53,8 @@ class QmlSessionBridge : public QObject
 
     Q_PROPERTY(QString selectedName READ selectedName NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedSize READ selectedSize NOTIFY selectionChanged)
-    Q_PROPERTY(QString selectedHash READ selectedHash NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedHash READ selectedHash NOTIFY selectionChanged)   // abbreviated, for display
+    Q_PROPERTY(QString selectedInfoHash READ selectedInfoHash NOTIFY selectionChanged)   // full, for lookups
     Q_PROPERTY(QString selectedDownloaded READ selectedDownloaded NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDownSpeed READ selectedDownSpeed NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedUpSpeed READ selectedUpSpeed NOTIFY selectionChanged)
@@ -277,10 +279,16 @@ public:
     // Answers on achievementsReady. The appid comes from the game's files, else
     // the hint (IGDB's), else a Steam store search for the title.
     Q_INVOKABLE void requestAchievements(const QString &infoHash, int steamAppIdHint, const QString &title);
+    // The app's record of unlocks, to a file of the user's choosing and back
+    // (a backup before formatting). Both take the file dialog's URL.
+    Q_INVOKABLE bool exportAchievements(const QString &fileUrl);
+    Q_INVOKABLE void importAchievements(const QString &fileUrl);
     Q_INVOKABLE QVariantMap steamArt(int appId) const;   // {hero, logo} on Steam's CDN
     Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
+    // Windows: exclude the game's own folder from Defender (UAC prompt), then install.
+    Q_INVOKABLE void installGameExcluded(const QString &infoHash);
     // One-click install: extract (if needed) → detect exe → register, or drive the
     // installer (silent where the engine allows, guided otherwise). Drives the
     // card's install-state machine surfaced via gameLibrary()'s "installState".
@@ -337,6 +345,7 @@ public:
     QString selectedName() const;
     QString selectedSize() const;
     QString selectedHash() const;
+    QString selectedInfoHash() const;
     QString selectedDownloaded() const;
     QString selectedDownSpeed() const;
     QString selectedUpSpeed() const;
@@ -442,6 +451,7 @@ private slots:
     int bestVideoFile(int row) const;          // the largest video file, or -1
     void prepStream(int row, int fileIndex);   // resume, sequential, only this file, head + tail first
     void onExtractionCompleted(const QString &infoHash, bool success);  // chain → detect/install
+    void onExtractionProgress(const QString &infoHash, int percent);
     void onGameTorrentFinished(const QString &name, const QString &infoHash);  // auto-install hook
 
 private:
@@ -475,12 +485,19 @@ private:
     QSet<QString> m_installStarted;   // hashes where installGame was already kicked for pending install
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game
     QHash<QString, qint64> m_gameStartMs;    // infoHash → launch timestamp (ms)
+    QHash<QString, QString> m_runningExe;    // infoHash → the exe launched, for the early-exit notice
+    bool m_runningRestored = false;          // games still running from before this start, picked up once
+    qint64 m_runningSavedMs = 0;             // last "seen alive" write to settings
+    void persistRunningGame(const QString &hash, qint64 nowMs);
+    void restoreRunningGames();
     QHash<QString, int> m_gameInstallState;  // infoHash → transient GameInstallState overlay
     QHash<QString, qint64> m_installWatch;   // infoHash → pid of a guided installer being watched
     QSet<QString> m_extracted;               // infoHashes already extracted (avoid re-extracting)
+    QHash<QString, int> m_extractProgress;   // infoHash → 0-100 while its archives unpack
     void pollRunningGames();   // detect game exit → record playtime
     void importLegacyPlaytime();
     std::unique_ptr<PlayLog> m_playLog;
+    std::unique_ptr<AchievementLedger> m_achLedger;   // before the service, which points at it
     std::unique_ptr<AchievementService> m_achievements;
     std::unique_ptr<AchievementWatch> m_achWatch;
     QHash<QString, int> m_achAppId;            // infoHash → the appid its lookups resolved to

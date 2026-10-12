@@ -63,14 +63,45 @@ int bestAppId(const QByteArray &searchJson, const QString &title)
 
 QString heroUrl(int appId)
 {
-    return appId > 0 ? QStringLiteral("https://cdn.cloudflare.steamstatic.com/steam/apps/%1/library_hero.jpg").arg(appId)
-                     : QString();
+    return appId > 0 ? QStringLiteral("image://steamart/hero/%1").arg(appId) : QString();
 }
 
 QString logoUrl(int appId)
 {
-    return appId > 0 ? QStringLiteral("https://cdn.cloudflare.steamstatic.com/steam/apps/%1/logo.png").arg(appId)
-                     : QString();
+    return appId > 0 ? QStringLiteral("image://steamart/logo/%1").arg(appId) : QString();
+}
+
+QString storeItemsUrl(int appId)
+{
+    // Plain escapes: MSVC can't take a raw string inside QStringLiteral.
+    const QByteArray input = QStringLiteral(
+        "{\"ids\":[{\"appid\":%1}],\"context\":{\"language\":\"english\",\"country_code\":\"US\"},"
+        "\"data_request\":{\"include_assets\":true}}").arg(appId).toUtf8();
+    return QStringLiteral("https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json=")
+           + QString::fromLatin1(input.toPercentEncoding());
+}
+
+QString assetUrl(const QByteArray &storeItemsJson, const QString &kind)
+{
+    const QJsonArray items = QJsonDocument::fromJson(storeItemsJson).object()
+        .value(QLatin1String("response")).toObject()
+        .value(QLatin1String("store_items")).toArray();
+    if (items.isEmpty()) return {};
+    const QJsonObject assets = items.first().toObject().value(QLatin1String("assets")).toObject();
+    // "steam/apps/<id>/${FILENAME}?t=<stamp>", the file named "<hash>/library_hero.jpg"
+    const QString format = assets.value(QLatin1String("asset_url_format")).toString();
+    const QString file = assets.value(kind == QLatin1String("logo") ? QLatin1String("library_logo")
+                                                                    : QLatin1String("library_hero")).toString();
+    if (format.isEmpty() || file.isEmpty()) return {};
+    return QStringLiteral("https://shared.cloudflare.steamstatic.com/store_item_assets/")
+           + QString(format).replace(QLatin1String("${FILENAME}"), file);
+}
+
+QString legacyArtUrl(int appId, const QString &kind)
+{
+    if (appId <= 0) return {};
+    return QStringLiteral("https://cdn.cloudflare.steamstatic.com/steam/apps/%1/%2").arg(appId)
+        .arg(kind == QLatin1String("logo") ? QStringLiteral("logo.png") : QStringLiteral("library_hero.jpg"));
 }
 
 } // namespace SteamStore
