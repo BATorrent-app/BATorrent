@@ -10,7 +10,7 @@ import "../theme"
 
 Flow {
     id: bar
-    property var qualities: []      // [{ value, count }], value "" = all
+    property var qualities: []      // [{ value, count, label? }], value "" = all: qualities, or a game's release groups
     property string quality: ""
     property bool showCam: false
     property bool hideCam: true
@@ -54,7 +54,8 @@ Flow {
                         spacing: 5
                         Text {
                             id: chipLabel
-                            text: chip.modelData.value === "" ? (i18n.language, i18n.t("find_all")) : chip.modelData.value
+                            text: chip.modelData.value === "" ? (i18n.language, i18n.t("find_all"))
+                                  : (chip.modelData.label || chip.modelData.value)
                             color: chip.on ? Theme.accentText : Theme.stageT2
                             font.pixelSize: 12
                             font.weight: chip.on ? Font.Medium : Font.Normal

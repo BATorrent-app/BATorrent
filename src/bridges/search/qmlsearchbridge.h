@@ -93,6 +93,8 @@ public:
     Q_INVOKABLE QVariantList queryWordSets() const;                   // one word list per searched title
     Q_INVOKABLE int relevanceMulti(const QString &name, const QVariantList &sets) const;
     Q_INVOKABLE int bestResultIndex() const { return pickBestResult(); }   // best release in the current list, or -1
+    // A group from the known table (FitGirl, RUNE…), not just any name tail.
+    Q_INVOKABLE bool isKnownGroup(const QString &group) const;
     // Game list sort: >0 means a ranks above b (catalog/version/date/seeds).
     Q_INVOKABLE int compareGameReleases(const QVariantMap &a, const QVariantMap &b) const;
     // Build-version order alone, for the explicit "newest version" sort. Shares

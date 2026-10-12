@@ -12,8 +12,9 @@ import "../theme"
 
 Rectangle {
     id: row
-    property string pill            // 4K, 1080p, CAM, v1.0.3
-    property string pillTone        // "hi" (4K), "cam", ""
+    property string pill            // 4K, 1080p, CAM, or a game's release group
+    property string pillTone        // "hi" (4K), "cam", "group" (a known group), "muted" (unknown), ""
+    property int pillWidth: 56      // a group's name needs more room than "1080p"
     property string raw
     property string meta
     property string warnBadge       // a trust warning, already translated
@@ -50,21 +51,24 @@ Rectangle {
         spacing: 12
 
         Rectangle {
-            Layout.preferredWidth: 56
-            Layout.minimumWidth: 56
+            Layout.preferredWidth: row.pillWidth
+            Layout.minimumWidth: row.pillWidth
             Layout.preferredHeight: 20
             radius: 5
             color: row.pillTone === "cam" ? Theme.sel
+                 : row.pillTone === "group" ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14)
                  : row.pillTone === "hi" ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
             border.width: 1
-            border.color: row.pillTone === "cam" ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.3)
-                                                 : Theme.stageHair
+            border.color: row.pillTone === "cam" || row.pillTone === "group"
+                          ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.3)
+                          : Theme.stageHair
             Text {
                 anchors.centerIn: parent
                 width: parent.width - 6
                 horizontalAlignment: Text.AlignHCenter
                 text: row.pill
-                color: row.pillTone === "cam" ? Theme.accentText : Theme.stageT1
+                color: row.pillTone === "cam" || row.pillTone === "group" ? Theme.accentText
+                     : row.pillTone === "muted" ? Theme.stageT4 : Theme.stageT1
                 font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
                 elide: Text.ElideRight
             }

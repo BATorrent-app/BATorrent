@@ -25,10 +25,35 @@ QtObject {
 
     function isCam(r) { return (r.source || "") === "CAM" }
 
+    // The pill at the head of a row. For a game it is who released it, the
+    // thing people choose a game torrent by; "?" when the name doesn't say.
     function bigLabel(r, isGame) {
-        if (isGame) return (r.version || "").length > 0 ? "v" + r.version : (r.quality || "—")
+        if (isGame) return groupKey(r)
         if (isCam(r)) return "CAM"
         return r.quality || "—"
+    }
+    function groupKey(r) { return (r.releaseGroup || "").length > 0 ? r.releaseGroup : "?" }
+
+    // The group chips: every group present with its count, the ones people
+    // know first (most releases first), then the rest, then the unnamed ones.
+    // known: the bridge's isKnownGroup, passed in so this stays plain JS.
+    function groupCounts(rows, known, unknownLabel) {
+        var counts = ({})
+        for (var i = 0; i < rows.length; i++) {
+            var g = groupKey(rows[i])
+            counts[g] = (counts[g] || 0) + 1
+        }
+        var named = Object.keys(counts).filter(function (g) { return g !== "?" })
+        named.sort(function (a, b) {
+            var ka = known(a) ? 0 : 1, kb = known(b) ? 0 : 1
+            if (ka !== kb) return ka - kb
+            if (counts[a] !== counts[b]) return counts[b] - counts[a]
+            return a.localeCompare(b)
+        })
+        var out = [{ value: "", count: rows.length }]
+        for (var j = 0; j < named.length; j++) out.push({ value: named[j], count: counts[named[j]] })
+        if (counts["?"]) out.push({ value: "?", label: unknownLabel, count: counts["?"] })
+        return out
     }
 
     function tagged(results) {
@@ -74,7 +99,8 @@ QtObject {
     // f: { quality, hideCam, myLang, fits, free } — free < 0 when unknown.
     function applyFilters(rows, f) {
         return rows.filter(function (r) {
-            if (f.quality && r.quality !== f.quality) return false
+            // For a game the chips are release groups, for the rest qualities.
+            if (f.quality && (f.isGame ? groupKey(r) : r.quality) !== f.quality) return false
             if (f.hideCam && isCam(r)) return false
             if (f.myLang && r.native !== true && r.audioMode !== "dub") return false
             if (f.fits && f.free >= 0 && (r.sizeBytes || 0) > f.free) return false

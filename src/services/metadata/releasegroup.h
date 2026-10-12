@@ -24,6 +24,11 @@ QString canonical(const QString &tag);
 // scene tail ("…x264-STARCKFILMES", "… by Pioneer"). "" when there's none.
 QString detect(const QString &releaseName);
 
+// A group from the table (FitGirl, RUNE, Online-Fix…), as detect() returns it,
+// rather than whatever word a release happened to end in. The ones people
+// pick a game release by.
+bool isKnown(const QString &group);
+
 // Groups whose presence is a strong "this is a game" signal. Deliberately
 // narrower than the display table: "Masquerade 2021" is a film, and a repacker
 // sharing the word must not drag it into the Games bucket.

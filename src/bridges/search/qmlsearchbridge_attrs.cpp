@@ -41,6 +41,11 @@ QString QmlSearchBridge::detectReleaseGroup(const QString &name)
     return ReleaseGroup::detect(name);
 }
 
+bool QmlSearchBridge::isKnownGroup(const QString &group) const
+{
+    return ReleaseGroup::isKnown(group);
+}
+
 void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
 {
     // ~30 patterns × every result row: cache compiled regexes (keyed by the

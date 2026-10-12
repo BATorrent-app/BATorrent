@@ -18,6 +18,10 @@ struct Candidate {
     QString uploadDate;   // ISO-8601 or ""
     int seeders = 0;
     bool hasUri = true;   // magnet or direct http
+    // Released by a group people pick games by (FitGirl, RUNE, Online-Fix…).
+    // Outranks a version number: anyone can put "v1.4.1" in a name, and an
+    // unknown uploader's newer build is how fakes get to the top.
+    bool knownGroup = false;
 };
 
 // Parse a game build version out of a release title ("v3.2.2", "3.2.2").

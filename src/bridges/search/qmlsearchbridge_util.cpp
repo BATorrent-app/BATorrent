@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "bridges/search/qmlsearchbridge_util.h"
+#include "services/metadata/releasegroup.h"
 
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/error_code.hpp>
@@ -55,7 +56,8 @@ GameReleasePick::Candidate gameCandFromRow(const QVariantMap &m, bool hasUri)
              m.value(QStringLiteral("version")).toString(),
              m.value(QStringLiteral("uploadDate")).toString(),
              m.value(QStringLiteral("seedsN")).toInt(),
-             hasUri };
+             hasUri,
+             ReleaseGroup::isKnown(m.value(QStringLiteral("releaseGroup")).toString()) };
 }
 
 QVariantMap titleRowFromWork(const QVariantMap &w)

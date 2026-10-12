@@ -35,6 +35,9 @@ const AliasTable &aliases()
         { QStringLiteral("rgmechanics"), QStringLiteral("R.G. Mechanics") },
         { QStringLiteral("r.g.mechanics"), QStringLiteral("R.G. Mechanics") },
         { QStringLiteral("kaoskrew"), QStringLiteral("KaOsKrew") },
+        { QStringLiteral("kaos"), QStringLiteral("KaOsKrew") },          // their tag: "REPACK-KaOs"
+        { QStringLiteral("selezen"), QStringLiteral("SeleZen") },
+        { QStringLiteral("decepticon"), QStringLiteral("Decepticon") },
         { QStringLiteral("tinyrepacks"), QStringLiteral("Tiny Repacks") },
         { QStringLiteral("0xdeadc0de"), QStringLiteral("0xdeadc0de") },
         { QStringLiteral("0xdeadcode"), QStringLiteral("0xdeadc0de") },
@@ -194,6 +197,14 @@ QString ReleaseGroup::detect(const QString &releaseName)
     if (tm.hasMatch()) return canonical(tm.captured(1));
 
     return QString();
+}
+
+bool ReleaseGroup::isKnown(const QString &group)
+{
+    if (group.isEmpty()) return false;
+    for (const auto &entry : aliases())
+        if (entry.second == group) return true;
+    return false;
 }
 
 const QStringList &ReleaseGroup::gameSignals()

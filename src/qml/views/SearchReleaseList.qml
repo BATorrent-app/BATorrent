@@ -27,20 +27,24 @@ ColumnLayout {
     spacing: 0
 
     readonly property var shown: logic.sortRows(
-        logic.applyFilters(rows, { quality: quality, hideCam: hideCam, myLang: myLang,
+        logic.applyFilters(rows, { quality: quality, isGame: isGame, hideCam: hideCam, myLang: myLang,
                                    fits: fits, free: sv.saveFree }),
         sortKey, sv.api ? function (a, b) { return sv.api.compareBuildVersions(a, b) } : null)
     // results is read so the pick follows a new batch of releases
     readonly property int bestIdx: sv.api && sv.api.results.length >= 0 ? sv.api.bestResultIndex() : -1
 
     function tr(k) { return i18n.t(k) }
+    function knownGroup(g) { return !!sv.api && sv.api.isKnownGroup(g) }
 
     StageFilterBar {
         Layout.fillWidth: true
         Layout.leftMargin: 8
         Layout.rightMargin: 8
         Layout.bottomMargin: 10
-        qualities: list.isGame ? [] : list.logic.qualityCounts(list.rows)
+        // A game's releases are told apart by who made them, not by a resolution.
+        qualities: list.isGame
+                   ? list.logic.groupCounts(list.rows, list.knownGroup, (i18n.language, i18n.t("find_group_unknown")))
+                   : list.logic.qualityCounts(list.rows)
         quality: list.quality
         showCam: list.logic.hasCam(list.rows)
         hideCam: list.hideCam
@@ -97,9 +101,14 @@ ColumnLayout {
             required property var modelData
             width: view.width
             pill: list.logic.bigLabel(modelData, list.isGame)
-            pillTone: list.logic.isCam(modelData) ? "cam" : (modelData.quality === "4K" ? "hi" : "")
+            pillWidth: list.isGame ? 96 : 56
+            pillTone: list.isGame ? (list.knownGroup(modelData.releaseGroup || "") ? "group" : "muted")
+                      : list.logic.isCam(modelData) ? "cam" : (modelData.quality === "4K" ? "hi" : "")
             raw: modelData.name || ""
-            meta: (i18n.language, list.logic.metaLine(modelData, list.tr))
+            // A game's build moves here from the pill, ahead of where it was listed.
+            meta: (i18n.language, (list.isGame && (modelData.version || "").length > 0
+                                   ? "v" + modelData.version + "  ·  " : "")
+                                  + list.logic.metaLine(modelData, list.tr))
                   + (list.forEpisode && !((modelData.episode || 0) > 0)
                      ? "  ·  " + i18n.t("find_season_pack") : "")
             warnBadge: (modelData.trustWhy || "").length > 0
