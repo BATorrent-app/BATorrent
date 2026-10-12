@@ -557,6 +557,10 @@ Window {
                 // the motion matches the gesture, and going back reverses it
                 // instead of repeating it.
                 transform: Translate { id: pageShift }
+                // Faded as one picture while it runs. Opacity on a parent applies
+                // to each child on its own, so a page over another (a game's page
+                // over the hub) went see-through and showed what lay beneath.
+                layer.enabled: pageSwitchAnim.running
                 property int prevPage: 0
                 property real enterFrom: 34
                 onCurrentIndexChanged: {
