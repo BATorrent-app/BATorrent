@@ -230,6 +230,9 @@ private:
     // Six addons answer one episode over a few seconds, and every resultsChanged
     // re-derives the whole page: replies landing close together share one.
     QTimer *m_addonRowsFlush = nullptr;
+    // resultsChanged with the time QML's bindings took to follow it (they run
+    // inside the emit), at debug level: the page's cost per batch of releases.
+    void notifyResults(const char *why);
     QVariantMap fileTargetFor(const QVariantMap &row) const;
     int m_watchIdx = -1;              // a watch held across the disk-fit prompt
     bool m_gwActive = false;          // a Get&Watch search is in flight

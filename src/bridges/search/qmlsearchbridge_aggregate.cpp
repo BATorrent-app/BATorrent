@@ -132,7 +132,7 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         m_resultTitles << QString();        // torrent rows have no game cover hint
     }
     mergeCatalogSwarms();
-    emit resultsChanged();
+    notifyResults("indexer rows");
 }
 
 void QmlSearchBridge::finishAggregateSource()

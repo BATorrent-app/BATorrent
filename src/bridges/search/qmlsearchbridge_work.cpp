@@ -34,6 +34,7 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStorageInfo>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QUrl>
 #include <algorithm>
@@ -246,8 +247,19 @@ void QmlSearchBridge::fetchEpisodeStreams(int season, int episode)
     mgr.getStreamsFor(QStringLiteral("series"), m_workImdbId + QLatin1Char(':') + key);
 }
 
+void QmlSearchBridge::notifyResults(const char *why)
+{
+    QElapsedTimer t;
+    t.start();
+    emit resultsChanged();
+    qDebug().noquote() << "[find]" << why << "update:" << m_results.size() << "rows,"
+                       << t.elapsed() << "ms in bindings";
+}
+
 void QmlSearchBridge::appendAddonEpisodeRows(const QString &videoId, const QList<StreamResult> &streams)
 {
+    QElapsedTimer merge;
+    merge.start();
     const QStringList parts = videoId.split(QLatin1Char(':'));
     if (parts.size() != 3 || parts.at(0) != m_workImdbId) return;   // another title
     if (m_mode != QLatin1String("all") || !m_titleSources) return;
@@ -315,13 +327,14 @@ void QmlSearchBridge::appendAddonEpisodeRows(const QString &videoId, const QList
         m_resultTitles << QString();
         ++added;
     }
-    qInfo().noquote() << "[addon]" << videoId << "rows added" << added << "of" << streams.size();
+    qInfo().noquote() << "[addon]" << videoId << "rows added" << added << "of" << streams.size()
+                      << "in" << merge.elapsed() << "ms";
     if (added == 0) return;
     if (!m_addonRowsFlush) {
         m_addonRowsFlush = new QTimer(this);
         m_addonRowsFlush->setSingleShot(true);
         m_addonRowsFlush->setInterval(400);
-        connect(m_addonRowsFlush, &QTimer::timeout, this, &QmlSearchBridge::resultsChanged);
+        connect(m_addonRowsFlush, &QTimer::timeout, this, [this]() { notifyResults("addon rows"); });
     }
     if (!m_addonRowsFlush->isActive()) m_addonRowsFlush->start();
 }

@@ -36,7 +36,7 @@ ListView {
     }
 
     model: {
-        if (!index) return []
+        if (!index || !visible) return []   // built when opened, not on every reply
         var out = index.packs.slice()
         var eps = Object.keys(index.byEp).map(Number).sort(function (a, b) { return a - b })
         for (var i = 0; i < eps.length; i++) out = out.concat(index.byEp[eps[i]])

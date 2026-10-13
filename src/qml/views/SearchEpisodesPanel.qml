@@ -33,8 +33,28 @@ Item {
         for (var i = 0; i < tabs.length; i++) if (!seen[tabs[i]]) out.push(tabs[i])
         return out.sort(function (a, b) { return a - b })
     }
-    readonly property var index: logic.seasonIndex(sv.results, season)
-    readonly property var episodes: logic.episodeRows(tmdbRows, index, library, season, pref)
+    readonly property var index: {
+        var t0 = Date.now()
+        var idx = logic.seasonIndex(sv.results, season)
+        console.debug("[find] seasonIndex " + sv.results.length + " rows " + (Date.now() - t0) + " ms")
+        return idx
+    }
+    // The list only takes new rows while it is the one on screen: a new array
+    // rebuilds every delegate, stills included, and with an episode's sources
+    // open each addon reply did that to all of a season's rows unseen.
+    property var episodes: []
+    Binding {
+        target: panel
+        property: "episodes"
+        when: panel.episode < 0
+        restoreMode: Binding.RestoreNone
+        value: {
+            var t0 = Date.now()
+            var rows = panel.logic.episodeRows(panel.tmdbRows, panel.index, panel.library, panel.season, panel.pref)
+            console.debug("[find] episodeRows " + rows.length + " episodes " + (Date.now() - t0) + " ms")
+            return rows
+        }
+    }
 
     SeriesLogic { id: series }
     function seasonLabel(s) {
@@ -195,10 +215,11 @@ Item {
         season: panel.season
         episode: panel.episode
         title: {
-            for (var i = 0; i < panel.episodes.length; i++)
-                if (panel.episodes[i].episode === panel.episode) return panel.episodes[i].title
+            for (var i = 0; i < panel.tmdbRows.length; i++)
+                if (panel.tmdbRows[i].episode === panel.episode) return panel.tmdbRows[i].name || ""
             return ""
         }
-        onBackRequested: panel.episode = -1
+        // back where it was: the list may have been rebuilt meanwhile
+        onBackRequested: { panel.focusEpisode = panel.episode; panel.episode = -1 }
     }
 }

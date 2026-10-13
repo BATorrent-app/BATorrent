@@ -166,5 +166,11 @@ QtObject {
     // re-evaluates when computeView() reads sv.results / filter props. The flat
     // list sits hidden under a picked title's page; ranking every row for it
     // there only stalled each new batch of releases.
-    property var viewModel: sv && sv.titleStage ? [] : computeView()
+    property var viewModel: {
+        if (sv && sv.titleStage) return []
+        var t0 = Date.now()
+        var v = computeView()
+        console.debug("[find] computeView " + v.length + " rows " + (Date.now() - t0) + " ms")
+        return v
+    }
 }

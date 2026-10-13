@@ -6,6 +6,7 @@
 #include "torrent/sessionmanager.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/discovery/discoveryservice.h"
+#include "services/metadata/episodegroup.h"
 #include "services/metadata/nameparser.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
@@ -142,11 +143,13 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         if (title.isEmpty()) title = pn.cleanTitle.trimmed();
         if (title.isEmpty()) title = info.name;
         // For an episode, append SxxExx so several episodes of the same show are
-        // distinguishable: they share one resolved cover/title otherwise.
-        if (pn.contentType == ContentType::Series && pn.season >= 0 && pn.episode >= 0)
+        // distinguishable: they share one resolved cover/title otherwise. Not
+        // for a pack: "Bleach - 001 ~ 366" read as S01E01 under 366 episodes.
+        const EpisodeTag tag = EpisodeGroup::classify(info.name);
+        if (pn.contentType == ContentType::Series && !tag.pack && tag.season >= 0 && tag.episode >= 0)
             title += QStringLiteral(" S%1E%2")
-                         .arg(pn.season, 2, 10, QLatin1Char('0'))
-                         .arg(pn.episode, 2, 10, QLatin1Char('0'));
+                         .arg(tag.season, 2, 10, QLatin1Char('0'))
+                         .arg(tag.episode, 2, 10, QLatin1Char('0'));
         return title;
     }
     case StateStringRole: return info.stateString;
