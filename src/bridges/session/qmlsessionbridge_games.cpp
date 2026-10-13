@@ -349,6 +349,16 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
     bool isInstaller = false;
     if (exe.isEmpty() || !QFile::exists(exe))
         exe = GameExeDetect::autodetect(gameFolder(infoHash), &isInstaller);
+    // Only a setup in the torrent: the game may already be installed elsewhere,
+    // by a run of it this app lost track of, or by hand.
+    if (isInstaller) {
+        const QString installed = installedGameExe(infoHash, 0);
+        if (!installed.isEmpty()) {
+            exe = installed;
+            isInstaller = false;
+            QSettings().setValue(QStringLiteral("gameExe/") + infoHash, exe);
+        }
+    }
 
     if (!exe.isEmpty() && QFile::exists(exe)) {
         qint64 pid = 0;

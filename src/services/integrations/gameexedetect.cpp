@@ -43,6 +43,13 @@ ScoreResult scoreCandidate(const Candidate &c)
     QString rel = c.relativePath;
     while (rel.startsWith(QLatin1Char('/')) || rel.startsWith(QLatin1Char('\\'))) rel.remove(0, 1);
     const int depth = rel.count(QLatin1Char('/')) + rel.count(QLatin1Char('\\'));
+    // A repack's _Redist / _CommonRedist folder holds DirectX, VC++ and tools
+    // like QuickSFV, none of them the game.
+    const int lastSep = qMax(rel.lastIndexOf(QLatin1Char('/')), rel.lastIndexOf(QLatin1Char('\\')));
+    if (lastSep > 0 && rel.left(lastSep).toLower().contains(QLatin1String("redist"))) {
+        r.skip = true;
+        return r;
+    }
     qint64 score = c.sizeBytes;
     if (depth <= 1)
         score += qint64(800) * 1024 * 1024;

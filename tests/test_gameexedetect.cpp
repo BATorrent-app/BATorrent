@@ -112,3 +112,17 @@ TEST_CASE("scoreCandidate: an exe with a <name>_Data folder beside it is the Uni
     win.relativePath = QStringLiteral("\\BOMBANANA!\\helper.exe");
     REQUIRE(GameExeDetect::scoreCandidate(win).score == GameExeDetect::scoreCandidate(other).score);
 }
+
+TEST_CASE("scoreCandidate: nothing in a repack's redist folder is the game", "[gameexedetect]") {
+    // FitGirl's layout after install: Retail\007FirstLight.exe beside _Redist\QuickSFV.EXE.
+    GameExeDetect::Candidate tool;
+    tool.fileNameLower = QStringLiteral("quicksfv.exe");
+    tool.relativePath = QStringLiteral("\\_Redist\\QuickSFV.EXE");
+    tool.sizeBytes = 103'424;
+    REQUIRE(GameExeDetect::scoreCandidate(tool).skip);
+    GameExeDetect::Candidate game;
+    game.fileNameLower = QStringLiteral("007firstlight.exe");
+    game.relativePath = QStringLiteral("\\Retail\\007FirstLight.exe");
+    game.sizeBytes = 64'228'744;
+    REQUIRE_FALSE(GameExeDetect::scoreCandidate(game).skip);
+}

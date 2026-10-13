@@ -1456,6 +1456,36 @@ TEST_CASE("InstallerProfile: FitGirl/DODI repacks flagged for guided install", "
     REQUIRE(InstallerProfile::isLikelyRepack("setup.exe", { "setup-1.bin", "setup-2.bin" }));
     REQUIRE(InstallerProfile::isLikelyRepack("setup.exe", { "data.arc" }));
     REQUIRE_FALSE(InstallerProfile::isLikelyRepack("setup.exe", { "game.exe", "data.pak" }));
+    // FitGirl's own layout: setup.exe beside fg-NN.bin, in a folder named for it.
+    REQUIRE(InstallerProfile::isLikelyRepack("D:/Downloads/Game/setup.exe", { "fg-01.bin", "fg-02.bin" }));
+    REQUIRE(InstallerProfile::isLikelyRepack("D:/Downloads/Game/setup.exe",
+                                             { "Verify BIN files before installation.bat" }));
+    REQUIRE(InstallerProfile::isLikelyRepack("D:/Downloads/007 First Light [FitGirl HV Repack]/setup.exe", {}));
+    // A GOG installer is not a repack: it may run silent.
+    REQUIRE_FALSE(InstallerProfile::isLikelyRepack("D:/Downloads/LEGO [GOG]/setup_lego.exe",
+                                                   { "setup_lego-1.bin", "setup_lego-2.bin" }));
+}
+
+TEST_CASE("InstallerProfile: where a guided install put the game", "[installer]") {
+    using E = InstallerProfile::UninstallEntry;
+    const QList<E> entries = {
+        { "Google Chrome", "C:/Program Files/Google/Chrome/Application", 5000 },
+        { "007 First Light", "C:/Games/007 First Light", 4000 },
+        { "Shady Job", "D:/Jogos/Shady Job", 100 },
+    };
+    // Written since the installer opened and named for the game: Chrome updating
+    // itself meanwhile does not win.
+    REQUIRE(InstallerProfile::installDirFor(entries, 3000, "007 First Light") == QString("C:/Games/007 First Light"));
+    // Installed long ago, found by name.
+    REQUIRE(InstallerProfile::installDirFor(entries, 0, "Shady Job") == QString("D:/Jogos/Shady Job"));
+    // Punctuation and a version tail on the listed name still match.
+    REQUIRE(InstallerProfile::installDirFor({ { "007: First Light, v1.0.2", "C:/G", 1 } }, 0, "007 First Light")
+            == QString("C:/G"));
+    // Named its own way: a lone new entry is taken, two are not.
+    REQUIRE(InstallerProfile::installDirFor({ { "Repack", "C:/R", 9000 } }, 3000, "007 First Light") == QString("C:/R"));
+    REQUIRE(InstallerProfile::installDirFor(entries, 3000, "Something Else").isEmpty());
+    // Too short a title matches nothing by name.
+    REQUIRE(InstallerProfile::installDirFor({ { "Ori and the Blind Forest", "C:/O", 1 } }, 0, "Ori").isEmpty());
 }
 
 TEST_CASE("InstallerProfile: scene crack folder detection", "[installer]") {

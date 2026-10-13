@@ -5,6 +5,7 @@
 #pragma once
 
 #include <QByteArray>
+#include <QList>
 #include <QString>
 #include <QStringList>
 
@@ -52,10 +53,26 @@ SilentInvocation silentInvocation(Engine e, const QString &installerPath, const 
 
 Tier tierForEngine(Engine e);
 
-// FitGirl/DODI heuristic: an Inno installer shipped next to a FreeArc payload
-// (setup-*.bin / *.arc): silent mode would install only default components, so
-// these must go through the guided flow regardless of the engine being silenceable.
+// FitGirl/DODI heuristic: an installer shipped next to a FreeArc payload
+// (fg-01.bin, setup-1.bin, *.arc) or in a folder named after the repacker. Silent
+// mode would install only default components into a folder the user never chose,
+// so these go through the guided flow even when the engine could run silent.
 bool isLikelyRepack(const QString &installerPath, const QStringList &siblingFiles);
+
+// A program as Windows lists it under Installed apps (the Uninstall keys).
+struct UninstallEntry {
+    QString displayName;
+    QString installLocation;
+    qint64 writtenMs = 0;   // when the key was last written
+};
+
+// Every entry that names a folder. Empty off Windows.
+QList<UninstallEntry> uninstallEntries();
+
+// Where a guided installer put the game. An entry written since the installer
+// started wins (a repack lets the user pick any folder); otherwise one whose
+// name is the game's title, for an install done earlier or by hand. "" if none.
+QString installDirFor(const QList<UninstallEntry> &entries, qint64 sinceMs, const QString &title);
 
 // Scene crack convention: the cracked binaries sit in a folder named after the
 // group (CODEX, PLAZA, RUNE…) or literally "Crack". Returns the matching subdir

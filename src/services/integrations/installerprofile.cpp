@@ -4,10 +4,15 @@
 
 #include "services/integrations/installerprofile.h"
 
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 
 #include <cstring>
+
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#endif
 
 namespace {
 
@@ -179,19 +184,109 @@ Tier tierForEngine(Engine e)
 
 bool isLikelyRepack(const QString &installerPath, const QStringList &siblingFiles)
 {
-    const QString name = QFileInfo(installerPath).fileName().toLower();
-    if (name.contains(QStringLiteral("fitgirl")) || name.contains(QStringLiteral("dodi")))
-        return true;
+    // The installer's own name, or the folder it came in ("Game [FitGirl Repack]").
+    const QFileInfo fi(installerPath);
+    for (const QString &n : { fi.fileName().toLower(), fi.dir().dirName().toLower() }) {
+        if (n.contains(QStringLiteral("fitgirl")) || n.contains(QStringLiteral("dodi")))
+            return true;
+    }
 
-    // FreeArc payload alongside the installer is the repack tell: setup-*.bin / *.arc.
+    // FreeArc payload alongside the installer is the repack tell: fg-01.bin,
+    // setup-1.bin, *.arc; FitGirl also ships a script to check the .bin files.
     for (const QString &f : siblingFiles) {
         const QString lf = QFileInfo(f).fileName().toLower();
         if (lf.endsWith(QStringLiteral(".arc")))
             return true;
-        if (lf.startsWith(QStringLiteral("setup-")) && lf.endsWith(QStringLiteral(".bin")))
+        if ((lf.startsWith(QStringLiteral("setup-")) || lf.startsWith(QStringLiteral("fg-")))
+            && lf.endsWith(QStringLiteral(".bin")))
+            return true;
+        if (lf.startsWith(QStringLiteral("verify bin files")))
             return true;
     }
     return false;
+}
+
+QList<UninstallEntry> uninstallEntries()
+{
+    QList<UninstallEntry> out;
+#if defined(Q_OS_WIN)
+    const wchar_t *path = L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
+    const struct { HKEY root; REGSAM view; } hives[] = {
+        { HKEY_LOCAL_MACHINE, KEY_WOW64_64KEY },
+        { HKEY_LOCAL_MACHINE, KEY_WOW64_32KEY },
+        { HKEY_CURRENT_USER, 0 },
+    };
+    auto readString = [](HKEY key, const wchar_t *name) {
+        wchar_t buf[1024];
+        DWORD size = sizeof(buf);
+        DWORD type = 0;
+        if (RegQueryValueExW(key, name, nullptr, &type, reinterpret_cast<BYTE *>(buf), &size) != ERROR_SUCCESS
+            || (type != REG_SZ && type != REG_EXPAND_SZ))
+            return QString();
+        return QString::fromWCharArray(buf, int(size / sizeof(wchar_t))).section(QChar(0), 0, 0).trimmed();
+    };
+    for (const auto &h : hives) {
+        HKEY list = nullptr;
+        if (RegOpenKeyExW(h.root, path, 0, KEY_READ | h.view, &list) != ERROR_SUCCESS)
+            continue;
+        for (DWORD i = 0;; ++i) {
+            wchar_t sub[256];
+            DWORD subLen = 256;
+            FILETIME written = {};
+            const LONG r = RegEnumKeyExW(list, i, sub, &subLen, nullptr, nullptr, nullptr, &written);
+            if (r == ERROR_NO_MORE_ITEMS) break;
+            if (r != ERROR_SUCCESS) continue;
+            HKEY app = nullptr;
+            if (RegOpenKeyExW(list, sub, 0, KEY_READ | h.view, &app) != ERROR_SUCCESS)
+                continue;
+            UninstallEntry e;
+            e.displayName = readString(app, L"DisplayName");
+            e.installLocation = readString(app, L"InstallLocation");
+            if (e.installLocation.isEmpty())   // Inno keeps it here as well
+                e.installLocation = readString(app, L"Inno Setup: App Path");
+            RegCloseKey(app);
+            // FILETIME counts 100 ns from 1601; the Unix epoch is 11644473600 s later.
+            const qint64 ticks = (qint64(written.dwHighDateTime) << 32) | written.dwLowDateTime;
+            e.writtenMs = ticks / 10000 - 11644473600000LL;
+            e.installLocation.remove(QLatin1Char('"'));
+            if (!e.installLocation.isEmpty())
+                out << e;
+        }
+        RegCloseKey(list);
+    }
+#endif
+    return out;
+}
+
+// Letters and digits only, lower case: "007 First Light, v1.0" → "007firstlightv10".
+static QString squash(const QString &s)
+{
+    QString out;
+    for (const QChar c : s.toLower())
+        if (c.isLetterOrNumber()) out += c;
+    return out;
+}
+
+QString installDirFor(const QList<UninstallEntry> &entries, qint64 sinceMs, const QString &title)
+{
+    // A short title ("Ori") would match far too much.
+    const QString want = squash(title);
+    auto named = [&want](const UninstallEntry &e) {
+        if (want.size() < 4) return false;
+        const QString have = squash(e.displayName);
+        return have == want || (have.startsWith(want) && have.size() - want.size() <= 12);
+    };
+    QList<const UninstallEntry *> fresh;
+    if (sinceMs > 0)
+        for (const UninstallEntry &e : entries)
+            if (e.writtenMs >= sinceMs) fresh << &e;
+    for (const UninstallEntry *e : fresh)
+        if (named(*e)) return e->installLocation;
+    for (const UninstallEntry &e : entries)
+        if (named(e)) return e.installLocation;
+    // The repack named the game its own way. Trust a new entry only when it is
+    // the only one: browsers and launchers rewrite theirs while they update.
+    return fresh.size() == 1 ? fresh.first()->installLocation : QString();
 }
 
 QString crackDir(const QStringList &subdirNames)

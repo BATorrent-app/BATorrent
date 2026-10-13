@@ -472,6 +472,8 @@ private:
     void finalizeInstall(const QString &infoHash);   // post-extract: detect exe or run installer
     void runInstaller(const QString &infoHash, const QString &installerExe, const QString &folder);
     void pollInstallWatch();   // guided installs: watch the folder for a produced exe
+    // The game's exe in the folder Windows lists it installed in, "" if none.
+    QString installedGameExe(const QString &infoHash, qint64 sinceMs) const;
     void pollPendingInstall(); // Get & Install: download → installGame → launch
 
     IEngine *m_session;   // the session API: SessionManager in-process today, IpcEngine after the split
@@ -493,6 +495,7 @@ private:
     void restoreRunningGames();
     QHash<QString, int> m_gameInstallState;  // infoHash → transient GameInstallState overlay
     QHash<QString, qint64> m_installWatch;   // infoHash → pid of a guided installer being watched
+    QHash<QString, qint64> m_installSince;   // infoHash → ms the guided installer was opened
     QSet<QString> m_extracted;               // infoHashes already extracted (avoid re-extracting)
     QHash<QString, int> m_extractProgress;   // infoHash → 0-100 while its archives unpack
     void pollRunningGames();   // detect game exit → record playtime

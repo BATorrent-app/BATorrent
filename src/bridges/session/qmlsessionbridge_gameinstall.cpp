@@ -303,6 +303,7 @@ void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &inst
     if (QProcess::startDetached(installerExe, {}, QFileInfo(installerExe).absolutePath(), &pid)
         && pid > 0) {
         m_installWatch.insert(infoHash, pid);
+        m_installSince.insert(infoHash, QDateTime::currentMSecsSinceEpoch());
         emit toast(tr_("hub_game_installing"), QFileInfo(installerExe).completeBaseName());
     } else {
         const int row = m_session->torrentIndexByInfoHash(infoHash);
@@ -324,7 +325,10 @@ void QmlSessionBridge::pollInstallWatch()
         m_installWatch.remove(hash);
         bool inst = false;
         const QString folder = gameFolder(hash);
-        const QString exe = GameExeDetect::autodetect(folder, &inst);
+        // A repack installs wherever the user pointed it, not beside the torrent.
+        QString exe = installedGameExe(hash, m_installSince.take(hash));
+        if (exe.isEmpty())
+            exe = GameExeDetect::autodetect(folder, &inst);
         if (!exe.isEmpty() && !inst) {
             applyCrackIfPresent(folder, QFileInfo(exe).absolutePath());
             QSettings().setValue(QStringLiteral("gameExe/") + hash, exe);
@@ -337,6 +341,19 @@ void QmlSessionBridge::pollInstallWatch()
         changed = true;
     }
     if (changed) emit gamesChanged();
+}
+
+QString QmlSessionBridge::installedGameExe(const QString &infoHash, qint64 sinceMs) const
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return {};
+    const QString title = NameParser::parse(m_session->torrentAt(row).name).cleanTitle;
+    const QString dir = InstallerProfile::installDirFor(InstallerProfile::uninstallEntries(), sinceMs, title);
+    if (dir.isEmpty() || !QFileInfo(dir).isDir()) return {};
+    bool inst = false;
+    const QString exe = GameExeDetect::autodetect(dir, &inst);
+    qInfo().noquote() << "[install]" << title << "is installed in" << dir << "exe" << exe;
+    return inst ? QString() : exe;
 }
 
 bool QmlSessionBridge::isGameTorrent(int row) const
