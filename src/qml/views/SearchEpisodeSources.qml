@@ -78,6 +78,8 @@ ColumnLayout {
         sv: src.sv
         logic: src.logic
         forEpisode: true
+        season: src.season
+        episode: src.episode
         sortKey: ""
         rows: src.index ? src.logic.episodeReleases(src.index, src.episode) : []
     }

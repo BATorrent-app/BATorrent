@@ -55,6 +55,8 @@ void QmlSearchBridge::setWorkContext(const QVariantMap &work)
     m_workCast.clear();
     m_workSeasonCount = 0;
     m_workMaker = work.value(QStringLiteral("maker")).toString();
+    m_workImdbId.clear();
+    m_addonEpisodesWaiting.clear();
     emit workChanged();
     emit workStillsChanged();
     emit workLogoChanged();
@@ -75,6 +77,8 @@ void QmlSearchBridge::clearWorkContext()
     m_workCast.clear();
     m_workSeasonCount = 0;
     m_workMaker.clear();
+    m_workImdbId.clear();
+    m_addonEpisodesWaiting.clear();
     emit workChanged();
     emit workStillsChanged();
     emit workDetailsChanged();
@@ -105,7 +109,10 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         m_workGenres = d.value(QStringLiteral("genres")).toStringList();
         m_workCast = d.value(QStringLiteral("cast")).toStringList();
         m_workSeasonCount = d.value(QStringLiteral("seasons")).toInt();
+        m_workImdbId = d.value(QStringLiteral("imdbId")).toString();
         emit workDetailsChanged();
+        const auto waiting = std::exchange(m_addonEpisodesWaiting, {});
+        for (const auto &se : waiting) fetchEpisodeStreams(se.first, se.second);
     });
     connect(m_discovery, &DiscoveryService::backdropsReady, this,
             [this](int tmdbId, const QStringList &urls) {
@@ -158,6 +165,7 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     m_torrentCache.clear();
     m_gameCache.clear();
     m_pendingGameQuery.clear();
+    m_addonEpisodesAsked.clear();
     emit resultsChanged();
 
     m_activeQuery = title;
@@ -208,3 +216,111 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
 }
 
 
+// Stremio asks Torrentio for "tt0434665:1:3" and gets every torrent that holds
+// that episode, season and series packs included, each with the file inside it.
+// The indexers above only know release names, so a 366-episode batch with 561
+// seeders never reached an episode page. Ask the addons too.
+void QmlSearchBridge::fetchEpisodeStreams(int season, int episode)
+{
+    if (m_workType != QLatin1String("series") || !m_titleSources || season < 0 || episode <= 0) return;
+    auto &mgr = AddonManager::instance();
+    if (!mgr.hasStreamAddon()) return;
+    if (m_workImdbId.isEmpty()) {
+        // the title's details (and its IMDb id) are still on the way
+        const QPair<int, int> se(season, episode);
+        if (!m_addonEpisodesWaiting.contains(se)) m_addonEpisodesWaiting << se;
+        return;
+    }
+    const QString key = QStringLiteral("%1:%2").arg(season).arg(episode);
+    if (m_addonEpisodesAsked.contains(key)) return;
+    m_addonEpisodesAsked.insert(key);
+    mgr.getStreamsFor(QStringLiteral("series"), m_workImdbId + QLatin1Char(':') + key);
+}
+
+void QmlSearchBridge::appendAddonEpisodeRows(const QString &videoId, const QList<StreamResult> &streams)
+{
+    const QStringList parts = videoId.split(QLatin1Char(':'));
+    if (parts.size() != 3 || parts.at(0) != m_workImdbId) return;   // another title
+    if (m_mode != QLatin1String("all") || !m_titleSources) return;
+    if (!m_addonEpisodesAsked.contains(parts.at(1) + QLatin1Char(':') + parts.at(2))) return;   // list was reset since
+    const int season = parts.at(1).toInt();
+    const int episode = parts.at(2).toInt();
+
+    // One row per torrent per episode: two addons often answer with the same one.
+    QSet<QString> seen;
+    for (const QVariant &v : std::as_const(m_results)) {
+        const QVariantMap r = v.toMap();
+        if (!r.value(QStringLiteral("fromAddon")).toBool()) continue;
+        seen.insert(r.value(QStringLiteral("coverHash")).toString() + QLatin1Char(':')
+                    + r.value(QStringLiteral("season")).toString() + QLatin1Char(':')
+                    + r.value(QStringLiteral("episode")).toString());
+    }
+    int added = 0;
+    for (const StreamResult &s : streams) {
+        const QString hash = SearchBridgeUtil::btihFromMagnet(s.magnet).toLower();
+        if (hash.isEmpty()) continue;
+        const QString key = hash + QLatin1Char(':') + QString::number(season) + QLatin1Char(':')
+                          + QString::number(episode);
+        if (seen.contains(key)) continue;
+        seen.insert(key);
+        const QString name = s.torrentName.isEmpty() ? s.title : s.torrentName;
+        // Torrentio maps by IMDb, which files Thousand-Year Blood War as Bleach
+        // season 17: its "S17E03" came back for 1:3. A file that names another
+        // season, or another show's numbering, is not this episode.
+        const QString file = (s.fileName.isEmpty() ? name : s.fileName).section(QLatin1Char('/'), -1);
+        const EpisodeTag fileTag = EpisodeGroup::classify(file, m_activeTitles);
+        if (fileTag.season > 1 && fileTag.season != season) continue;
+        if (fileTag.episode < 0 && EpisodeGroup::classify(file).episode > 0) continue;
+        const int seeds = qMax(0, s.seeders);
+        QVariantMap m;
+        m["name"] = name;
+        // Listed as the episode it was asked for, whatever the torrent's size:
+        // only that file is fetched when it is played.
+        m["season"] = season;
+        m["episode"] = episode;
+        m["pack"] = false;
+        m["inPack"] = s.inPack;
+        m["fileIdx"] = s.fileIdx;
+        m["fileName"] = s.fileName;
+        m["fromAddon"] = true;
+        m["sub"] = s.source.isEmpty() ? s.addonName : s.addonName + QStringLiteral(" / ") + s.source;
+        m["provider"] = s.addonName;
+        m["sizeStr"] = s.size > 0 ? formatSize(s.size) : QString();
+        m["seeds"] = s.seeders >= 0 ? QString::number(s.seeders) : QString();
+        m["leech"] = QString();
+        m["hasSeeds"] = seeds > 0;
+        m["releaseGroup"] = detectReleaseGroup(name);
+        m["poster"] = ""; m["coverHash"] = hash;
+        m["seedsN"] = seeds; m["sizeBytes"] = static_cast<qlonglong>(s.size);
+        m["fromCatalog"] = false;
+        m["uploadDate"] = QString();
+        m["hasUri"] = true;
+        fillMediaAttrs(m, name);
+        fillTrust(m, name);
+        QString magnet = s.magnet;
+        if (!magnet.contains(QStringLiteral("&dn=")))
+            magnet += QStringLiteral("&dn=") + QString::fromLatin1(QUrl::toPercentEncoding(name));
+        m_results << m;
+        m_resultMagnets << magnet;
+        m_resultHttp << QString();
+        m_resultTitles << QString();
+        ++added;
+    }
+    if (added > 0) emit resultsChanged();
+}
+
+// What to play out of the torrent a row adds: the addon's file, else the
+// episode the page is on.
+QVariantMap QmlSearchBridge::fileTargetFor(const QVariantMap &row) const
+{
+    int season = m_watchSeason, episode = m_watchEpisode;
+    if (row.value(QStringLiteral("episode")).toInt() > 0) {
+        season = row.value(QStringLiteral("season")).toInt();
+        episode = row.value(QStringLiteral("episode")).toInt();
+    }
+    const int fileIdx = row.value(QStringLiteral("fileIdx"), -1).toInt();
+    const QString fileName = row.value(QStringLiteral("fileName")).toString();
+    if (episode <= 0 && fileIdx < 0 && fileName.isEmpty()) return {};
+    return { { QStringLiteral("season"), season }, { QStringLiteral("episode"), episode },
+             { QStringLiteral("fileIdx"), fileIdx }, { QStringLiteral("fileName"), fileName } };
+}

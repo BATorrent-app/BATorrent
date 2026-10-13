@@ -11,6 +11,7 @@
 #include "torrent/sessionmanager.h"   // full IEngine + TorrentInfo
 #include "services/subtitles/subtitleparser.h"
 #include "services/metadata/metadataresolver.h"
+#include "services/metadata/episodegroup.h"
 #include "services/metadata/nameparser.h"
 #include "services/metadata/mkvchapters.h"
 #include "services/platform/translator.h"
@@ -26,6 +27,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QDebug>
 
 void QmlSessionBridge::streamSelected()
 {
@@ -90,6 +92,71 @@ int QmlSessionBridge::bestVideoFile(int row) const
             }
     }
     return bestIdx;
+}
+
+namespace {
+
+EpisodeFile pickTargetFile(IEngine *session, int row, const QVariantMap &target)
+{
+    QStringList paths;
+    QList<qint64> sizes;
+    for (const auto &f : session->filesAt(row)) { paths << f.path; sizes << f.size; }
+    return EpisodeGroup::pickFile(paths, sizes,
+                                  target.value(QStringLiteral("fileIdx"), -1).toInt(),
+                                  target.value(QStringLiteral("fileName")).toString(),
+                                  target.value(QStringLiteral("season"), -1).toInt(),
+                                  target.value(QStringLiteral("episode"), -1).toInt());
+}
+
+} // namespace
+
+// A season or series pack holds many videos and the largest is rarely the
+// episode asked for. The first answer is kept: the file list never changes.
+int QmlSessionBridge::watchFile(int row, const QString &infoHash)
+{
+    auto it = m_watchTargets.find(infoHash);
+    if (it == m_watchTargets.end()) return bestVideoFile(row);
+    if (it->contains(QStringLiteral("picked"))) return it->value(QStringLiteral("picked")).toInt();
+    if (m_session->filesAt(row).empty()) return -1;   // no metadata yet
+    const EpisodeFile pick = pickTargetFile(m_session, row, *it);
+    qInfo().noquote() << "[watch]" << infoHash.left(8) << "file" << pick.index << "by" << pick.how
+                      << "(want S" << it->value(QStringLiteral("season")).toInt()
+                      << "E" << it->value(QStringLiteral("episode")).toInt()
+                      << "idx" << it->value(QStringLiteral("fileIdx"), -1).toInt() << ")"
+                      << streamFileName(infoHash, pick.index);
+    it->insert(QStringLiteral("picked"), pick.index);
+    return pick.index;
+}
+
+void QmlSessionBridge::pickFileWhenReady(const QString &infoHash, const QVariantMap &target)
+{
+    if (infoHash.isEmpty() || target.isEmpty()) return;
+    // already here in full (the whole pack was added before): leave it whole
+    if (target.value(QStringLiteral("hadTorrent")).toBool() && !m_pickedFiles.contains(infoHash)) return;
+    m_pendingFilePick.insert(infoHash, qMakePair(target, QDateTime::currentSecsSinceEpoch()));
+}
+
+void QmlSessionBridge::pollPendingFilePick()
+{
+    if (m_pendingFilePick.isEmpty()) return;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    for (const QString &hash : m_pendingFilePick.keys()) {
+        const int row = m_session->torrentIndexByInfoHash(hash);
+        const std::vector<FileInfo> files = row >= 0 ? m_session->filesAt(row) : std::vector<FileInfo>{};
+        if (files.empty()) {
+            if (now - m_pendingFilePick.value(hash).second > 600) m_pendingFilePick.remove(hash);
+            continue;
+        }
+        const EpisodeFile pick = pickTargetFile(m_session, row, m_pendingFilePick.take(hash).first);
+        if (pick.index < 0) continue;
+        // E4 taken from the same pack after E3 keeps E3 coming
+        QSet<int> &picked = m_pickedFiles[hash];
+        picked.insert(pick.index);
+        for (int i = 0; i < int(files.size()); ++i)
+            m_session->setFilePriority(row, i, picked.contains(i) ? 4 : 0);
+        qInfo().noquote() << "[add]" << hash.left(8) << "only file" << pick.index << "by" << pick.how
+                          << streamFileName(hash, pick.index);
+    }
 }
 
 void QmlSessionBridge::prepStream(int row, int fileIndex)

@@ -48,6 +48,9 @@ QSet<QString> QmlSearchBridge::currentResultKeys() const
     seen.reserve(m_results.size());
     for (int i = 0; i < m_results.size() && i < m_resultMagnets.size(); ++i) {
         const auto rm = m_results[i].toMap();
+        // an addon row is one episode of a torrent; the indexer's row for the
+        // same torrent still belongs in the list as the pack it is
+        if (rm.value(QStringLiteral("fromAddon")).toBool()) continue;
         seen.insert(SearchBridgeUtil::resultDedupeKey(
             m_resultMagnets[i], rm.value(QStringLiteral("name")).toString(),
             rm.value(QStringLiteral("sizeBytes")).toLongLong()));
@@ -101,7 +104,7 @@ void QmlSearchBridge::appendTorrentRows(const QList<TorrentSearchResult> &result
         QVariantMap m;
         m["name"] = r.name;
         if (groupEpisodes) {
-            const EpisodeTag tag = EpisodeGroup::classify(r.name);
+            const EpisodeTag tag = EpisodeGroup::classify(r.name, m_activeTitles);
             m["season"] = tag.season;
             m["episode"] = tag.episode;
             m["pack"] = tag.pack;

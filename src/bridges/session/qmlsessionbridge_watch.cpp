@@ -10,10 +10,13 @@
 
 #include <QDebug>
 
-void QmlSessionBridge::watchWhenReady(const QString &infoHash, const QString &title)
+void QmlSessionBridge::watchWhenReady(const QString &infoHash, const QString &title,
+                                      const QVariantMap &target)
 {
     if (infoHash.isEmpty()) return;
     m_pendingWatch.insert(infoHash, qMakePair(title, QDateTime::currentSecsSinceEpoch()));
+    if (target.isEmpty()) m_watchTargets.remove(infoHash);
+    else m_watchTargets.insert(infoHash, target);
     emit watchBuffering(title);
 }
 
@@ -21,6 +24,7 @@ void QmlSessionBridge::cancelWatch(const QString &infoHash)
 {
     m_pendingWatch.remove(infoHash);
     m_watchPrepped.remove(infoHash);
+    m_watchTargets.remove(infoHash);
 }
 
 void QmlSessionBridge::abandonWatch(const QString &infoHash)
@@ -36,11 +40,12 @@ void QmlSessionBridge::onWatchTick()
     pollRunningGames();
     pollInstallWatch();
     pollPendingInstall();
+    pollPendingFilePick();
     if (m_pendingWatch.isEmpty()) return;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     for (const QString &hash : m_pendingWatch.keys()) {
         const int idx = m_session->torrentIndexByInfoHash(hash);
-        const int file = idx >= 0 ? bestVideoFile(idx) : -1;
+        const int file = idx >= 0 ? watchFile(idx, hash) : -1;
         if (file >= 0) {
             // Until the player opens the torrent is rarest-first: fetch it the player's way now.
             if (!m_watchPrepped.contains(hash)) { prepStream(idx, file); m_watchPrepped.insert(hash); }

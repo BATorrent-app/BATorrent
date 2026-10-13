@@ -200,6 +200,60 @@ TEST_CASE("parseCatalogMetas and parseStreamResults", "[addonparse]") {
     REQUIRE(rows.at(0).size == 999);
     REQUIRE(rows.at(0).magnet.contains(QLatin1String("&tr=")));
     REQUIRE(rows.at(1).magnet.startsWith(QLatin1String("magnet:")));
+    REQUIRE(rows.at(0).fileIdx == -1);
+    REQUIRE(rows.at(0).seeders == -1);
+    REQUIRE_FALSE(rows.at(0).inPack);
+}
+
+TEST_CASE("parseStreamResults keeps Torrentio's file, seeders and size", "[addonparse]") {
+    // Torrentio's answer for tt0434665:1:3 (Bleach S1E3): the Erai-raws batch,
+    // pointing at episode 003 inside it, and a single-episode release.
+    const QByteArray streams = QByteArrayLiteral(R"({
+      "streams": [
+        {
+          "name": "Torrentio\n1080p",
+          "title": "[Erai-raws] Bleach - 001 ~ 366 [1080p][Multiple Subtitle]\n[Erai-raws] Bleach - 003 [1080p][Multiple Subtitle].mkv\n👤 561 💾 1.29 GB ⚙️ Nyaa\nMulti Subs",
+          "infoHash": "0123456789abcdef0123456789abcdef01234567",
+          "fileIdx": 2,
+          "behaviorHints": { "bingeGroup": "torrentio|1080p", "filename": "[Erai-raws] Bleach - 003 [1080p][Multiple Subtitle].mkv" }
+        },
+        {
+          "name": "Torrentio\n720p",
+          "title": "Bleach.S01E03.720p.WEB.x264\n👤 1 💾 350 MB ⚙️ ThePirateBay",
+          "infoHash": "89abcdef0123456789abcdef0123456789abcdef",
+          "fileIdx": 0,
+          "behaviorHints": { "videoSize": 367001600, "filename": "Bleach.S01E03.720p.WEB.x264.mkv" }
+        }
+      ]
+    })");
+    const auto rows = AddonParse::parseStreamResults(streams, QStringLiteral("Torrentio"));
+    REQUIRE(rows.size() == 2);
+
+    const StreamResult &pack = rows.at(0);
+    CHECK(pack.torrentName == QLatin1String("[Erai-raws] Bleach - 001 ~ 366 [1080p][Multiple Subtitle]"));
+    CHECK(pack.fileName == QLatin1String("[Erai-raws] Bleach - 003 [1080p][Multiple Subtitle].mkv"));
+    CHECK(pack.fileIdx == 2);
+    CHECK(pack.seeders == 561);
+    CHECK(pack.source == QLatin1String("Nyaa"));
+    CHECK(pack.size == qint64(1.29 * 1024 * 1024 * 1024));   // the episode's file, not the 321 GB batch
+    CHECK(pack.inPack);
+
+    const StreamResult &single = rows.at(1);
+    CHECK(single.torrentName == QLatin1String("Bleach.S01E03.720p.WEB.x264"));
+    CHECK(single.seeders == 1);
+    CHECK(single.size == 367001600);   // behaviorHints.videoSize wins over the title's rounded size
+    CHECK(single.fileIdx == 0);
+    CHECK_FALSE(single.inPack);
+}
+
+TEST_CASE("readStreamTitle: a title without stats keeps its first line as the name", "[addonparse]") {
+    StreamResult r;
+    r.title = QStringLiteral("Some.Show.S02E01.1080p");
+    AddonParse::readStreamTitle(r);
+    CHECK(r.torrentName == QLatin1String("Some.Show.S02E01.1080p"));
+    CHECK(r.seeders == -1);
+    CHECK(r.fileName.isEmpty());
+    CHECK_FALSE(r.inPack);
 }
 
 TEST_CASE("curatedCatalog seedDefault non-empty and ids unique when set", "[addoncatalog]") {

@@ -126,6 +126,31 @@ TestCase {
         compare(logic.episodeReleases(idx, 3)[0].name, "4k")
     }
 
+    function test_anAddonRowStandsForItsPackOnThatEpisode() {
+        var GB = 1000 * 1000 * 1000
+        // Torrentio's row for E3 of a 321 GB batch, and the same batch as the
+        // season pack an indexer found: one row, the one that knows the file.
+        var idx = logic.seasonIndex([
+            rel({ name: "batch e3", season: 1, episode: 3, sizeBytes: 1.3 * GB, seedsN: 561,
+                  fromAddon: true, inPack: true, fileIdx: 2, coverHash: "aa" }),
+            rel({ name: "batch", season: 1, episode: -1, sizeBytes: 321 * GB, seedsN: 400, coverHash: "aa" }),
+            rel({ name: "other pack", season: 1, episode: -1, sizeBytes: 30 * GB, seedsN: 20, coverHash: "bb" }),
+            rel({ name: "single e3", season: 1, episode: 3, sizeBytes: 0.4 * GB, seedsN: 1, coverHash: "cc" }) ], 1)
+        compare(logic.episodeReleases(idx, 3).map(function (r) { return r.name }),
+                ["batch e3", "single e3", "other pack"])
+        // on another episode the indexer's pack row is still offered
+        compare(logic.episodeReleases(idx, 4).map(function (r) { return r.name }), ["batch", "other pack"])
+    }
+
+    function test_anAddonRowIsNeverMovedToThePacks() {
+        var GB = 1000 * 1000 * 1000
+        var idx = logic.seasonIndex([
+            rel({ name: "addon e1", season: 1, episode: 1, sizeBytes: 40 * GB, fromAddon: true, coverHash: "aa" }),
+            rel({ name: "pack", season: 1, episode: -1, sizeBytes: 27 * GB, coverHash: "bb" }) ], 1)
+        compare(idx.byEp["1"].map(function (r) { return r.name }), ["addon e1"])
+        compare(idx.packs.length, 1)
+    }
+
     function test_mainReleaseHonoursThePreferenceThenFallsBackToBest() {
         var rows = [ rel({ name: "4k", quality: "4K", seedsN: 5 }),
                      rel({ name: "hd", quality: "1080p", seedsN: 1 }),

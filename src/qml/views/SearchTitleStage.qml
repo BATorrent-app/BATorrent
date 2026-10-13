@@ -63,7 +63,7 @@ TitleStage {
     }
     function playNext(next) {
         if (!next || !api) return
-        if (next.release) { api.addAndWatch(next.release._idx); return }
+        if (next.release) { api.addAndWatchEpisode(next.release._idx, next.season, next.episode); return }
         episodes.season = next.season
         episodes.episode = next.episode
     }

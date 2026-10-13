@@ -17,6 +17,8 @@ ColumnLayout {
     property string sortKey: "seeds"
     property bool isGame: false
     property bool forEpisode: false    // a season pack among one episode's sources says so
+    property int season: -1            // the episode a watch is for, so a pack plays that file
+    property int episode: -1
 
     property string quality: ""
     property bool hideCam: true
@@ -111,6 +113,8 @@ ColumnLayout {
                                   + list.logic.metaLine(modelData, list.tr))
                   + (list.forEpisode && !((modelData.episode || 0) > 0)
                      ? "  ·  " + i18n.t("find_season_pack") : "")
+                  + (list.forEpisode && modelData.inPack === true
+                     ? "  ·  " + i18n.t("find_from_pack") : "")
             warnBadge: (modelData.trustWhy || "").length > 0
                        ? (i18n.language, i18n.t(modelData.trustWhy)) : ""
             best: modelData._idx === list.bestIdx
@@ -122,7 +126,11 @@ ColumnLayout {
             added: list.sv.wasAdded(modelData)
             canWatch: list.sv.canWatch(modelData)
             onAddRequested: if (list.sv.api) list.sv.api.activateResult(modelData._idx)
-            onWatchRequested: if (list.sv.api) list.sv.api.addAndWatch(modelData._idx)
+            onWatchRequested: {
+                if (!list.sv.api) return
+                if (list.forEpisode) list.sv.api.addAndWatchEpisode(modelData._idx, list.season, list.episode)
+                else list.sv.api.addAndWatch(modelData._idx)
+            }
             onOpenRequested: list.sv.openDetail(modelData)
         }
     }

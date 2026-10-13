@@ -188,6 +188,49 @@ QList<CatalogItem> parseCatalogMetas(const QByteArray &data)
     return items;
 }
 
+void readStreamTitle(StreamResult &r)
+{
+    // Torrentio writes the torrent name, then the file when the torrent holds
+    // more than one, then "👤 561 💾 1.29 GB ⚙️ Nyaa", then language flags.
+    static const QString seedMark = QString::fromUtf8("\xF0\x9F\x91\xA4");   // 👤
+    static const QString sizeMark = QString::fromUtf8("\xF0\x9F\x92\xBE");   // 💾
+    static const QString siteMark = QString::fromUtf8("\xE2\x9A\x99");       // ⚙ (the FE0F after it is optional)
+    QStringList names;
+    for (const QString &raw : r.title.split(QLatin1Char('\n'))) {
+        const QString line = raw.trimmed();
+        if (line.isEmpty()) continue;
+        if (line.contains(seedMark) || line.contains(sizeMark) || line.contains(siteMark)) {
+            static const QRegularExpression seedRe(seedMark + QStringLiteral("\\s*(\\d+)"));
+            static const QRegularExpression sizeRe(sizeMark + QStringLiteral("\\s*([\\d.,]+\\s*[KMGT]?i?B)"),
+                                                   QRegularExpression::CaseInsensitiveOption);
+            static const QRegularExpression siteRe(siteMark + QStringLiteral("\\x{FE0F}?\\s*(\\S+)"));
+            const auto seeds = seedRe.match(line);
+            if (seeds.hasMatch()) r.seeders = seeds.captured(1).toInt();
+            const auto size = sizeRe.match(line);
+            if (size.hasMatch() && r.size <= 0) r.size = parseSizeValue(size.captured(1));
+            const auto site = siteRe.match(line);
+            if (site.hasMatch()) r.source = site.captured(1);
+            break;
+        }
+        names << line;
+    }
+    r.torrentName = names.value(0);
+    const QString fileLine = names.value(1);
+    if (r.fileName.isEmpty()) r.fileName = fileLine;
+    const auto stem = [](QString s) {
+        s = s.section(QLatin1Char('/'), -1);
+        const int dot = s.lastIndexOf(QLatin1Char('.'));
+        if (dot > 0 && s.size() - dot <= 5) s.truncate(dot);
+        return s.trimmed();
+    };
+    // "Show.S01E03.720p.WEB.x264" is a name with no extension, ".x264" and all
+    const QString file = stem(r.fileName);
+    r.inPack = !fileLine.isEmpty()
+            || (!file.isEmpty() && !r.torrentName.isEmpty()
+                && file.compare(r.torrentName, Qt::CaseInsensitive) != 0
+                && file.compare(stem(r.torrentName), Qt::CaseInsensitive) != 0);
+}
+
 QList<StreamResult> parseStreamResults(const QByteArray &data, const QString &addonName)
 {
     QList<StreamResult> out;
@@ -210,11 +253,16 @@ QList<StreamResult> parseStreamResults(const QByteArray &data, const QString &ad
         }
 
         r.title = decodeHtmlEntities(s.value(QStringLiteral("title")).toString());
+        if (r.title.isEmpty())   // newer addons moved the text to "description"
+            r.title = decodeHtmlEntities(s.value(QStringLiteral("description")).toString());
         if (r.title.isEmpty())
             r.title = decodeHtmlEntities(s.value(QStringLiteral("name")).toString());
 
-        r.size = s.value(QStringLiteral("behaviorHints")).toObject()
-                   .value(QStringLiteral("videoSize")).toVariant().toLongLong();
+        const QJsonObject hints = s.value(QStringLiteral("behaviorHints")).toObject();
+        r.size = hints.value(QStringLiteral("videoSize")).toVariant().toLongLong();
+        r.fileIdx = s.contains(QStringLiteral("fileIdx")) ? s.value(QStringLiteral("fileIdx")).toInt(-1) : -1;
+        r.fileName = hints.value(QStringLiteral("filename")).toString();
+        readStreamTitle(r);
 
         if (!r.magnet.isEmpty() && r.magnet.startsWith(QLatin1String("magnet:")))
             out.append(r);

@@ -21,7 +21,16 @@
 void QmlSearchBridge::addAndWatch(int index, bool force)
 {
     m_watchRequest = true;
+    m_watchSeason = m_watchEpisode = -1;
     activateResult(index, force);
+}
+
+void QmlSearchBridge::addAndWatchEpisode(int index, int season, int episode)
+{
+    m_watchRequest = true;
+    m_watchSeason = season;
+    m_watchEpisode = episode;
+    activateResult(index);
 }
 
 void QmlSearchBridge::activateResult(int index, bool force)
@@ -125,13 +134,20 @@ void QmlSearchBridge::activateResult(int index, bool force)
             setStatus(name.isEmpty() ? tr_("search_added") : tr_("search_added_name").arg(name));
             return;
         }
-        m_session->addMagnet(magnet, m_savePath, hint, type);   // hint = clean game title, "" for torrents
-        setStatus(name.isEmpty() ? tr_("search_added") : tr_("search_added_name").arg(name));
         QString hash = rm.value(QStringLiteral("coverHash")).toString();   // torrent rows carry the hash
         if (hash.isEmpty()) hash = SearchBridgeUtil::btihFromMagnet(magnet);
+        const bool hadIt = !hash.isEmpty() && m_session->torrentIndexByInfoHash(hash) >= 0;
+        m_session->addMagnet(magnet, m_savePath, hint, type);   // hint = clean game title, "" for torrents
+        setStatus(name.isEmpty() ? tr_("search_added") : tr_("search_added_name").arg(name));
         emit addedTorrent(hash);
+        QVariantMap target = fileTargetFor(rm);
         if (watch) {
-            emit prepareAndWatch(hash, m_workTitle.isEmpty() ? name : m_workTitle);
+            emit prepareAndWatch(hash, m_workTitle.isEmpty() ? name : m_workTitle, target);
+            m_watchSeason = m_watchEpisode = -1;
+        } else if (rm.value(QStringLiteral("inPack")).toBool() && !target.isEmpty()) {
+            // an addon row stands for one episode, not the whole pack it sits in
+            target.insert(QStringLiteral("hadTorrent"), hadIt);
+            emit pickFileWhenReady(hash, target);
         }
     }
 }

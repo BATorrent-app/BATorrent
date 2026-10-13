@@ -107,7 +107,7 @@ void DiscoveryService::fetchWorkDetails(int tmdbId, const QString &type)
     if (tmdbId <= 0 || tmdbApiKey().isEmpty()) { emit workDetailsReady(tmdbId, {}); return; }
     QNetworkReply *reply = tmdbGet(QStringLiteral("/%1/%2").arg(tmdbKind(type)).arg(tmdbId),
                                    { { QStringLiteral("language"), tmdbLang() },
-                                     { QStringLiteral("append_to_response"), QStringLiteral("credits") } });
+                                     { QStringLiteral("append_to_response"), QStringLiteral("credits,external_ids") } });
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId]() {
         reply->deleteLater();
         const QVariantMap details = (reply->error() == QNetworkReply::NoError)

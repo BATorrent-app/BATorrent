@@ -73,6 +73,9 @@ Item {
         if (season < 0 && seasons.length > 0) season = seasons[0]
     }
     onSeasonChanged: { episode = -1; requestSeason() }
+    // The stream addons answer per episode (what Stremio asks), so they are
+    // asked when one is opened, not for the whole season.
+    onEpisodeChanged: if (episode > 0 && sv.api) sv.api.fetchEpisodeStreams(season, episode)
     onVisibleChanged: if (visible) refreshLibrary()
     function requestSeason() {
         tmdbRows = []

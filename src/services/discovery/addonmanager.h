@@ -39,6 +39,14 @@ struct StreamResult {
     QString magnet;
     QString quality;  // "1080p", "4K", etc.
     qint64 size = 0;
+    // Torrentio and friends point at one file of the torrent: a season or
+    // series pack answers an episode with the file that holds it.
+    QString torrentName;   // first line of the title
+    QString fileName;      // behaviorHints.filename, or the title's file line
+    int fileIdx = -1;
+    int seeders = -1;      // the title's 👤 count, -1 when it has none
+    QString source;        // the title's ⚙️ tracker/site
+    bool inPack = false;   // the file is one of several in the torrent
 };
 
 // Torrent search result from a compatible API
@@ -130,6 +138,9 @@ public:
 
     // Stremio protocol: get streams for a specific item
     void getStreams(const QString &type, const QString &id);
+    // The same request on its own track, for a page that is not the streams
+    // list (a series episode's sources). Emits streamsFor once per addon.
+    void getStreamsFor(const QString &type, const QString &id);
 
     // Stremio protocol: item meta; the episode list (meta.videos) of a series.
     // Emits metaVideos(id, [{videoId,season,episode,name,released}]).
@@ -175,6 +186,7 @@ signals:
     void catalogFinished();
     void streamResults(const QList<StreamResult> &streams);
     void streamFinished();
+    void streamsFor(const QString &id, const QList<StreamResult> &streams);
     void metaVideos(const QString &id, const QVariantList &videos);
     void trackerListUpdated();
     void torrentSearchResults(const QList<TorrentSearchResult> &results);

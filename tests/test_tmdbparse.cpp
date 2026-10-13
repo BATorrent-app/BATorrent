@@ -197,6 +197,16 @@ TEST_CASE("workDetails reads genres, billed cast and season count", "[tmdbparse]
     REQUIRE(d.value("cast").toStringList()
             == QStringList{ "Matthew McConaughey", "Woody Harrelson", "Michelle Monaghan" });
     REQUIRE(d.value("seasons").toInt() == 4);
+    REQUIRE(d.value("imdbId").toString().isEmpty());
+}
+
+TEST_CASE("workDetails reads the IMDb id of a show and of a film", "[tmdbparse]") {
+    // a show only has it under external_ids (append_to_response=external_ids)
+    const QVariantMap show = TmdbParse::workDetails(QByteArrayLiteral(
+        R"({"number_of_seasons":2,"external_ids":{"imdb_id":"tt0434665","tvdb_id":74796}})"));
+    REQUIRE(show.value("imdbId").toString() == QLatin1String("tt0434665"));
+    const QVariantMap film = TmdbParse::workDetails(QByteArrayLiteral(R"({"imdb_id":"tt0111161"})"));
+    REQUIRE(film.value("imdbId").toString() == QLatin1String("tt0111161"));
 }
 
 TEST_CASE("workDetails survives a film and garbage", "[tmdbparse]") {
