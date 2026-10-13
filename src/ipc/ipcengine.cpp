@@ -3,6 +3,8 @@
 // See LICENSE file for details
 
 #include "ipc/ipcengine.h"
+#include "torrent/sessionconfig.h"
+#include <QSettings>
 #include <QLocalSocket>
 #include <QCoreApplication>
 #include <QElapsedTimer>
@@ -356,7 +358,14 @@ QString IpcEngine::proxyUser() const
 QString IpcEngine::proxyPass() const
 { QDataStream in(request(QStringLiteral("proxyPass"))); in.setVersion(ipc::kStreamVersion); QString s; in >> s; return s; }
 AdvancedSettings IpcEngine::advancedSettings() const
-{ QDataStream in(request(QStringLiteral("advancedSettings"))); in.setVersion(ipc::kStreamVersion); AdvancedSettings a; in >> a; return a; }
+{
+    // A reply that never came reads as all zeros; the saved values are what
+    // the engine runs with anyway.
+    const QByteArray reply = request(QStringLiteral("advancedSettings"));
+    if (reply.isEmpty())
+        return SessionConfig::loadAdvanced(QSettings(QStringLiteral("BATorrent"), QStringLiteral("BATorrent")));
+    QDataStream in(reply); in.setVersion(ipc::kStreamVersion); AdvancedSettings a; in >> a; return a;
+}
 void IpcEngine::setAdvancedSettings(const AdvancedSettings &a)
 { QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << a; call(QStringLiteral("setAdvancedSettings"), d); }
 bool IpcEngine::applySetting(const QString &key, const QVariant &v)

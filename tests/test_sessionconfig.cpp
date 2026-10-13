@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "torrent/sessionconfig.h"
 #include "torrent/types.h"
+#include <QSettings>
 
 TEST_CASE("listenInterfaces: dual-stack by default", "[sessionconfig]") {
     REQUIRE(SessionConfig::listenInterfaces(QStringLiteral("0.0.0.0"), 6881, false)
@@ -87,4 +88,26 @@ TEST_CASE("excludedFileIndexes matches case-insensitive regexes", "[sessionconfi
         paths);
     REQUIRE(hit == std::vector<int>({1, 2}));
     REQUIRE(SessionConfig::excludedFileIndexes({}, paths).empty());
+}
+
+TEST_CASE("loadAdvanced: a zeroed block falls back to the defaults", "[sessionconfig]") {
+    // What was in a user's registry: every number 0. libtorrent took the 0
+    // connection speed as "never dial out", and a torrent sat at three peers.
+    QSettings s(QStringLiteral("BATorrentTests"), QStringLiteral("loadAdvanced"));
+    s.clear();
+    for (const char *k : { "aioThreads", "hashingThreads", "filePoolSize", "checkingMemUsage", "connectionsLimit",
+                           "connectionSpeed", "maxUploadsPerTorrent", "maxConnectionsPerTorrent",
+                           "unchokeSlotsLimit", "sendBufferWatermark", "diskIOWriteMode" })
+        s.setValue(QStringLiteral("adv/") + QLatin1String(k), 0);
+    s.setValue(QStringLiteral("adv/maxUploadsPerTorrent"), -1);   // unlimited is a real choice
+    const AdvancedSettings a = SessionConfig::loadAdvanced(s);
+    const AdvancedSettings def;
+    REQUIRE(a.connectionSpeed == def.connectionSpeed);
+    REQUIRE(a.unchokeSlotsLimit == def.unchokeSlotsLimit);
+    REQUIRE(a.aioThreads == def.aioThreads);
+    REQUIRE(a.connectionsLimit == def.connectionsLimit);
+    REQUIRE(a.maxConnectionsPerTorrent == def.maxConnectionsPerTorrent);
+    REQUIRE(a.maxUploadsPerTorrent == -1);
+    REQUIRE(a.diskIOWriteMode == 0);   // 0 is a real mode here
+    s.clear();
 }

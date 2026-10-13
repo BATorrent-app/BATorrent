@@ -125,6 +125,24 @@ AdvancedSettings loadAdvanced(const QSettings &s)
     a.outgoingPortMax = s.value(QStringLiteral("adv/outgoingPortMax"), 0).toInt();
     a.rateLimitIpOverhead = s.value(QStringLiteral("adv/rateLimitIpOverhead"), false).toBool();
     a.ignoreLimitsOnLAN = s.value(QStringLiteral("adv/ignoreLimitsOnLAN"), true).toBool();
+
+    // Zero is never a setting anyone chose for these: libtorrent reads a
+    // connection speed of 0 as "never dial a peer" and 0 unchoke slots as
+    // "upload to nobody", so a torrent with a hundred seeders sat at three
+    // peers. A zeroed block (a failed read written back) falls back to the
+    // defaults; -1, libtorrent's "unlimited", stays.
+    const AdvancedSettings def;
+    auto atLeastOne = [](int &v, int fallback) { if (v < 1) v = fallback; };
+    atLeastOne(a.aioThreads, def.aioThreads);
+    atLeastOne(a.hashingThreads, def.hashingThreads);
+    atLeastOne(a.filePoolSize, def.filePoolSize);
+    atLeastOne(a.checkingMemUsage, def.checkingMemUsage);
+    atLeastOne(a.connectionSpeed, def.connectionSpeed);
+    atLeastOne(a.sendBufferWatermark, def.sendBufferWatermark);
+    if (a.connectionsLimit == 0) a.connectionsLimit = def.connectionsLimit;
+    if (a.maxUploadsPerTorrent == 0) a.maxUploadsPerTorrent = def.maxUploadsPerTorrent;
+    if (a.maxConnectionsPerTorrent == 0) a.maxConnectionsPerTorrent = def.maxConnectionsPerTorrent;
+    if (a.unchokeSlotsLimit == 0) a.unchokeSlotsLimit = def.unchokeSlotsLimit;
     return a;
 }
 
