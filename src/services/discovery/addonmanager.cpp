@@ -378,15 +378,17 @@ void AddonManager::getStreamsFor(const QString &type, const QString &id)
         QNetworkRequest req{QUrl(streamUrl)};
         req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
         req.setTransferTimeout(15000);
+        qInfo().noquote() << "[addon]" << addon.name << "GET" << streamUrl;
         auto *reply = m_net->get(req);
         connect(reply, &QNetworkReply::finished, this, [this, reply, id, addonName = addon.name]() {
             reply->deleteLater();
+            const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             if (reply->error() != QNetworkReply::NoError) {
-                qWarning().noquote() << "[addon]" << addonName << id << reply->errorString();
+                qWarning().noquote() << "[addon]" << addonName << id << "HTTP" << status << reply->errorString();
                 return;
             }
             const auto streams = AddonParse::parseStreamResults(reply->readAll(), addonName);
-            qInfo().noquote() << "[addon]" << addonName << id << streams.size() << "streams";
+            qInfo().noquote() << "[addon]" << addonName << id << "HTTP" << status << streams.size() << "streams";
             emit streamsFor(id, streams);
         });
     }

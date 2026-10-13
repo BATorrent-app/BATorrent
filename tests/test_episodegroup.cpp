@@ -128,6 +128,14 @@ TEST_CASE("an anime sequel numbered from 1 stays off the show's season 1", "[epi
     CHECK(tybw.episode == -1);
     CHECK_FALSE(tybw.pack);
 
+    // the batch is a whole-series pack, not its first episode
+    auto batch = W("[Erai-raws] Bleach - 001 ~ 366 [1080p DSNP WEB-DL AVC AAC][MultiSub] [BATCH]", bleach);
+    CHECK(batch.pack);
+    CHECK(batch.season == 1);
+    CHECK(batch.episode == -1);
+    auto arcBatch = W("[Erai-raws] Bleach - Sennen Kessen-hen - 01 ~ 13 [1080p][Multiple Subtitle]", bleach);
+    CHECK(arcBatch.season == -1);
+
     auto own = W("[Erai-raws] Bleach - 004 [1080p][Multiple Subtitle]", bleach);
     CHECK(own.season == 1);
     CHECK(own.episode == 4);

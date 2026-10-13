@@ -87,6 +87,22 @@ EpisodeTag EpisodeGroup::classify(const QString &releaseName, const QStringList 
         return tag;
     }
 
+    // "[Erai-raws] Bleach - 001 ~ 366": an anime batch, not episode 1 of it.
+    // Numbered from 1 like its episodes, so it sits on season 1 with them.
+    static const QRegularExpression animeRangeRe(
+        QStringLiteral(R"(^\s*\[[^\]]+\]\s*.+?\s+-\s+(\d{1,4})\s*(?:~|-|to)\s*(\d{1,4})(?=\s|\[|\(|$))"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpressionMatch ar = animeRangeRe.match(releaseName);
+    if (ar.hasMatch() && ar.captured(2).toInt() > ar.captured(1).toInt()) {
+        // the batch's first episode answers whose numbering it is
+        const int season = absoluteSeason(releaseName.left(ar.capturedStart(2)).trimmed()
+                                              .chopped(1).trimmed(), workTitles);
+        if (season < 0) return tag;   // a sequel's or arc's batch
+        tag.season = season > 0 ? season : 1;
+        tag.pack = true;
+        return tag;
+    }
+
     const ParsedName p = NameParser::parse(releaseName);
     if (p.episode > 0) {
         // anime absolute numbering has no on-screen season: NameParser pins it

@@ -112,7 +112,23 @@ void QmlSearchBridge::activateResult(int index, bool force)
         if (magnet.isEmpty() && httpUrl.isEmpty()) return;
         const QVariantMap rm = index < m_results.size() ? m_results[index].toMap() : QVariantMap();
         const QString name = rm.value(QStringLiteral("name")).toString();
-        const qint64 needed = rm.value(QStringLiteral("sizeBytes")).toLongLong();
+        qint64 needed = rm.value(QStringLiteral("sizeBytes")).toLongLong();
+        // Watching one episode of a pack fetches that file, not the 321 GB
+        // around it: weigh it as the addon's row for the same torrent says,
+        // or not at all when no addon knows the file's size.
+        if (watch && m_watchEpisode > 0 && rm.value(QStringLiteral("episode")).toInt() <= 0) {
+            needed = 0;
+            const QString h = rm.value(QStringLiteral("coverHash")).toString();
+            for (const QVariant &v : std::as_const(m_results)) {
+                const QVariantMap a = v.toMap();
+                if (a.value(QStringLiteral("fromAddon")).toBool() && a.value(QStringLiteral("coverHash")).toString() == h
+                    && a.value(QStringLiteral("season")).toInt() == m_watchSeason
+                    && a.value(QStringLiteral("episode")).toInt() == m_watchEpisode) {
+                    needed = a.value(QStringLiteral("sizeBytes")).toLongLong();
+                    break;
+                }
+            }
+        }
         if (!force && !fitsOnSaveVolume(needed)) {
             const QStorageInfo si(m_savePath);
             if (watch) m_watchIdx = index;

@@ -26,6 +26,7 @@
 #include "services/platform/translator.h"
 
 #include <QClipboard>
+#include <QDebug>
 #include <QGuiApplication>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -110,6 +111,7 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         m_workCast = d.value(QStringLiteral("cast")).toStringList();
         m_workSeasonCount = d.value(QStringLiteral("seasons")).toInt();
         m_workImdbId = d.value(QStringLiteral("imdbId")).toString();
+        qInfo().noquote() << "[addon] tmdb" << tmdbId << "imdb" << (m_workImdbId.isEmpty() ? QStringLiteral("none") : m_workImdbId);
         emit workDetailsChanged();
         const auto waiting = std::exchange(m_addonEpisodesWaiting, {});
         for (const auto &se : waiting) fetchEpisodeStreams(se.first, se.second);
@@ -222,10 +224,16 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
 // seeders never reached an episode page. Ask the addons too.
 void QmlSearchBridge::fetchEpisodeStreams(int season, int episode)
 {
-    if (m_workType != QLatin1String("series") || !m_titleSources || season < 0 || episode <= 0) return;
+    if (m_workType != QLatin1String("series") || !m_titleSources || season < 0 || episode <= 0) {
+        qInfo().noquote() << "[addon] episode streams skipped: type" << m_workType
+                          << "titleSources" << m_titleSources << "S" << season << "E" << episode;
+        return;
+    }
     auto &mgr = AddonManager::instance();
-    if (!mgr.hasStreamAddon()) return;
+    if (!mgr.hasStreamAddon()) { qInfo() << "[addon] episode streams skipped: no stream addon enabled"; return; }
     if (m_workImdbId.isEmpty()) {
+        qInfo().noquote() << "[addon] episode streams wait for the IMDb id: tmdb" << m_workTmdbId
+                          << "S" << season << "E" << episode;
         // the title's details (and its IMDb id) are still on the way
         const QPair<int, int> se(season, episode);
         if (!m_addonEpisodesWaiting.contains(se)) m_addonEpisodesWaiting << se;
@@ -306,6 +314,7 @@ void QmlSearchBridge::appendAddonEpisodeRows(const QString &videoId, const QList
         m_resultTitles << QString();
         ++added;
     }
+    qInfo().noquote() << "[addon]" << videoId << "rows added" << added << "of" << streams.size();
     if (added > 0) emit resultsChanged();
 }
 
