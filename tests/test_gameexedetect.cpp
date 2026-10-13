@@ -146,3 +146,27 @@ TEST_CASE("autodetect: a FitGirl folder gives its setup, not the checksum tool",
     REQUIRE(installer);
     REQUIRE(GameExeDetect::neverTheGame(QStringLiteral("quicksfv.exe")));
 }
+
+TEST_CASE("autodetect: Portal 2's exe at the root, not the map compiler in bin", "[gameexedetect]") {
+    // DODI's Portal 2 as installed: vbsp.exe (1.5 MB) was taken for the game.
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    REQUIRE(QDir().mkpath(tmp.path() + QStringLiteral("/bin")));
+    REQUIRE(QDir().mkpath(tmp.path() + QStringLiteral("/_Cracks/Crack [CODEX]/bin")));
+    REQUIRE(QDir().mkpath(tmp.path() + QStringLiteral("/Uninstall")));
+    auto write = [](const QString &path, int bytes) {
+        QFile f(path);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write(QByteArray(bytes, 'x'));
+    };
+    write(tmp.path() + QStringLiteral("/portal2.exe"), 358'912);
+    write(tmp.path() + QStringLiteral("/bin/vbsp.exe"), 1'499'040);
+    write(tmp.path() + QStringLiteral("/bin/vrad.exe"), 91'040);
+    write(tmp.path() + QStringLiteral("/bin/Language Selector.exe"), 36'864);
+    write(tmp.path() + QStringLiteral("/_Cracks/Crack [CODEX]/bin/Language Selector.exe"), 36'864);
+    write(tmp.path() + QStringLiteral("/Uninstall/unins000.exe"), 1'602'929);
+    bool installer = true;
+    REQUIRE(GameExeDetect::autodetect(tmp.path(), &installer) == tmp.path() + QStringLiteral("/portal2.exe"));
+    REQUIRE_FALSE(installer);
+    REQUIRE(GameExeDetect::neverTheGame(QStringLiteral("vbsp.exe")));   // a saved one is dropped
+}

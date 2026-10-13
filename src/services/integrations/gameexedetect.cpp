@@ -22,7 +22,8 @@ ScoreResult scoreCandidate(const Candidate &c)
         QStringLiteral("prereq"), QStringLiteral("crashreport"), QStringLiteral("crashpad"),
         QStringLiteral("crashhandler"), QStringLiteral("crash_handler"),
         QStringLiteral("python"), QStringLiteral("benchmark"), QStringLiteral("config"),
-        QStringLiteral("settings"), QStringLiteral("cleanup"), QStringLiteral("quicksfv") };
+        QStringLiteral("settings"), QStringLiteral("cleanup"), QStringLiteral("quicksfv"),
+        QStringLiteral("language selector"), QStringLiteral("languageselector") };
     static const QStringList installerHints = {
         QStringLiteral("setup"), QStringLiteral("install") };
 
@@ -31,6 +32,10 @@ ScoreResult scoreCandidate(const Candidate &c)
             r.skip = true;
             return r;
         }
+    }
+    if (neverTheGame(c.fileNameLower)) {
+        r.skip = true;
+        return r;
     }
     for (const auto &s : installerHints) {
         if (c.fileNameLower.contains(s)) {
@@ -45,14 +50,20 @@ ScoreResult scoreCandidate(const Candidate &c)
     while (rel.startsWith(QLatin1Char('/')) || rel.startsWith(QLatin1Char('\\'))) rel.remove(0, 1);
     const int depth = rel.count(QLatin1Char('/')) + rel.count(QLatin1Char('\\'));
     // A repack's _Redist / _CommonRedist folder holds DirectX, VC++ and tools
-    // like QuickSFV, none of them the game.
+    // like QuickSFV, none of them the game...
     const int lastSep = qMax(rel.lastIndexOf(QLatin1Char('/')), rel.lastIndexOf(QLatin1Char('\\')));
-    if (lastSep > 0 && rel.left(lastSep).toLower().contains(QLatin1String("redist"))) {
+    const QString folders = lastSep > 0 ? rel.left(lastSep).toLower() : QString();
+    // ...and a repack's _Cracks folder holds copies of the crack to apply by hand.
+    if (folders.contains(QLatin1String("redist")) || folders.contains(QLatin1String("_crack"))) {
         r.skip = true;
         return r;
     }
     qint64 score = c.sizeBytes;
-    if (depth <= 1)
+    // The root beats one folder down: Portal 2 keeps portal2.exe at the root
+    // and a bigger map compiler in bin\.
+    if (depth == 0)
+        score += qint64(1000) * 1024 * 1024;
+    else if (depth == 1)
         score += qint64(800) * 1024 * 1024;
     if (c.hasUnityData)
         score += qint64(2000) * 1024 * 1024;
@@ -67,7 +78,11 @@ bool neverTheGame(const QString &fileNameLower)
     static const QStringList never = {
         QStringLiteral("crashhandler"), QStringLiteral("crash_handler"), QStringLiteral("crashpad"),
         QStringLiteral("crashreport"), QStringLiteral("unins"),
-        QStringLiteral("quicksfv") };   // FitGirl's checksum tool, saved as the game by one build
+        QStringLiteral("quicksfv"),   // FitGirl's checksum tool, saved as the game by one build
+        // Source engine tools in bin\ (Portal 2's vbsp.exe was taken for the game)
+        QStringLiteral("vbsp.exe"), QStringLiteral("vvis.exe"), QStringLiteral("vrad.exe"),
+        QStringLiteral("hammer.exe"), QStringLiteral("studiomdl.exe"), QStringLiteral("hlmv.exe"),
+        QStringLiteral("hlfaceposer.exe") };
     for (const auto &n : never)
         if (fileNameLower.contains(n)) return true;
     return false;

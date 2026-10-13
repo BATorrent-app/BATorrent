@@ -236,6 +236,16 @@ void QmlSessionBridge::finalizeInstall(const QString &infoHash)
                 emit toast(tr_("hub_install_ready"), QFileInfo(exe).completeBaseName());
                 return;
             }
+            // Installed already (an earlier run, by hand, or a wrong exe saved
+            // and since dropped): no reason to put the user through setup again.
+            const QString installed = installedGameExe(infoHash, 0);
+            if (!installed.isEmpty()) {
+                QSettings().setValue(QStringLiteral("gameExe/") + infoHash, installed);
+                m_gameInstallState.remove(infoHash);
+                emit gamesChanged();
+                emit toast(tr_("hub_install_ready"), QFileInfo(installed).completeBaseName());
+                return;
+            }
             runInstaller(infoHash, exe, folder);
         }, Qt::QueuedConnection);
     });
