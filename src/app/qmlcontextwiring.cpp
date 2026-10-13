@@ -6,6 +6,7 @@
 
 #include "bridges/isolatedmediaplayer.h"
 #include "bridges/qmlposterbridge.h"
+#include "bridges/qmllibrarymodel.h"
 #include "services/discovery/discoveryservice.h"
 #include "services/integrations/debridmanager.h"
 #include "services/vpn/vpnmanager.h"

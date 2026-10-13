@@ -188,6 +188,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/discovery/igdbparse.cpp
     src/services/discovery/gamesourcemanager.cpp
     src/bridges/qmlpostermodel.cpp
+    src/bridges/librarygroups.cpp
+    src/bridges/qmllibrarymodel.cpp
     src/bridges/session/qmlsessionbridge.cpp
     src/bridges/session/qmlsessionbridge_add.cpp
     src/bridges/session/qmlsessionbridge_details.cpp

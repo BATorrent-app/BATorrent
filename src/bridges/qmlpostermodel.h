@@ -46,7 +46,15 @@ public:
         // Uppercase extension of the biggest file ("ISO", "MKV", "ZIP"), for the
         // typographic cover a torrent with no artwork gets. Empty while a magnet
         // still has no file list.
-        FileKindRole
+        FileKindRole,
+        // What the library groups a series by (see LibraryGroups). The TMDB id
+        // when the resolver knows the show, the parsed show name otherwise; both
+        // empty for anything that is not an episode or a pack of one.
+        ShowTmdbRole,
+        ShowKeyRole,
+        ShowTitleRole,
+        SeasonRole,
+        EpisodeRole
     };
 
     explicit QmlPosterModel(IEngine *session, MetadataResolver *resolver,
@@ -78,6 +86,20 @@ private:
     // Same reason as above: the file list costs a blocking hop into the
     // libtorrent thread, and it stops changing once metadata lands.
     mutable QHash<QString, QString> m_fileKindCache;
+    // The show a torrent belongs to costs a NameParser pass, and the library
+    // asks for it on every regroup. It only changes with the name (a magnet's
+    // hint gives way to the real name) or with the resolver's answer, which
+    // posterResolved() drops from here.
+    struct ShowInfo {
+        QString forName;
+        int tmdbId = 0;
+        QString key;
+        QString title;
+        int season = -1;
+        int episode = -1;
+    };
+    ShowInfo showInfo(const QString &hash, const QString &name) const;
+    mutable QHash<QString, ShowInfo> m_showCache;
 };
 class QmlTorrentFilterProxy : public QSortFilterProxyModel
 {

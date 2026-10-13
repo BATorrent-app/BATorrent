@@ -7,6 +7,7 @@
 
 class QQmlContext;
 class QmlTorrentFilterProxy;
+class QmlLibraryModel;
 class QmlThemeBridge;
 class QmlSessionBridge;
 class QmlRssBridge;
@@ -25,7 +26,7 @@ class VpnManager;
 
 // Objects exposed to QML: names must stay stable (session, settings, …).
 struct QmlContextObjects {
-    QmlTorrentFilterProxy *torrentFilter = nullptr;
+    QmlLibraryModel *torrentFilter = nullptr;
     QmlThemeBridge *themeBridge = nullptr;
     QmlSessionBridge *session = nullptr;
     QmlRssBridge *rss = nullptr;

@@ -1434,5 +1434,7 @@
   "guard_search": "Anderes Release suchen",
   "set_isolated_player": "Videos in einem isolierten Prozess abspielen (experimentell)",
   "set_isolated_player_note": "Videos werden in einem eigenen Prozess dekodiert: Bringt eine Datei den Decoder zum Absturz, läuft der Rest der App weiter. Gilt für die nächsten Videos, die du öffnest.",
-  "player_decoder_crashed": "Diese Datei hat den Videodecoder zum Absturz gebracht. BATorrent läuft ganz normal weiter: versuch ein anderes Release."
+  "player_decoder_crashed": "Diese Datei hat den Videodecoder zum Absturz gebracht. BATorrent läuft ganz normal weiter: versuch ein anderes Release.",
+  "lib_group_open": "Episoden anzeigen",
+  "lib_group_close": "Episoden ausblenden"
 }

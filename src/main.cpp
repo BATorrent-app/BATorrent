@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
     engine.addImageProvider(QStringLiteral("steamart"), new SteamArtProvider);
 
     QmlContextObjects ctx;
-    ctx.torrentFilter = svc.filterProxy;
+    ctx.torrentFilter = svc.libraryModel;
     ctx.themeBridge = svc.themeBridge;
     ctx.session = svc.sessionBridge;
     ctx.rss = svc.rssBridge;

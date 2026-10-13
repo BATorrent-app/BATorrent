@@ -80,8 +80,13 @@ Item {
         onTorrentPicked: function(src) {
             host.currentPage = 0
             if (typeof torrentFilter === "undefined") return
-            var p = torrentFilter.mapFromSource(src)
-            if (p < 0) { library.setFilter("all"); p = torrentFilter.mapFromSource(src) }
+            // revealSource opens the series group the torrent sits in
+            var reveal = function(s) {
+                return typeof torrentFilter.revealSource === "function"
+                    ? torrentFilter.revealSource(s) : torrentFilter.mapFromSource(s)
+            }
+            var p = reveal(src)
+            if (p < 0) { library.setFilter("all"); p = reveal(src) }
             if (p >= 0) host.selectRow(p)
         }
     }
