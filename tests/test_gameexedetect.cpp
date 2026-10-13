@@ -126,3 +126,23 @@ TEST_CASE("scoreCandidate: nothing in a repack's redist folder is the game", "[g
     game.sizeBytes = 64'228'744;
     REQUIRE_FALSE(GameExeDetect::scoreCandidate(game).skip);
 }
+
+TEST_CASE("autodetect: a FitGirl folder gives its setup, not the checksum tool", "[gameexedetect]") {
+    // DELTARUNE [FitGirl Repack] as downloaded: QuickSFV was taken for the game.
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    REQUIRE(QDir().mkpath(tmp.path() + QStringLiteral("/MD5")));
+    auto write = [](const QString &path, int bytes) {
+        QFile f(path);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write(QByteArray(bytes, 'x'));
+    };
+    write(tmp.path() + QStringLiteral("/setup.exe"), 3000);
+    write(tmp.path() + QStringLiteral("/fg-01.bin"), 100);
+    write(tmp.path() + QStringLiteral("/MD5/QuickSFV.EXE"), 2000);
+    write(tmp.path() + QStringLiteral("/MD5/helper.exe"), 5000);   // anything else a repack might carry
+    bool installer = false;
+    REQUIRE(GameExeDetect::autodetect(tmp.path(), &installer) == tmp.path() + QStringLiteral("/setup.exe"));
+    REQUIRE(installer);
+    REQUIRE(GameExeDetect::neverTheGame(QStringLiteral("quicksfv.exe")));
+}

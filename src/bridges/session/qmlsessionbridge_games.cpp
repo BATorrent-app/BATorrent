@@ -502,7 +502,11 @@ void QmlSessionBridge::importLegacyPlaytime()
 
 int QmlSessionBridge::gameInstallState(const QString &infoHash, bool completed) const
 {
-    const QString exe = gameExe(infoHash);
+    QString exe = gameExe(infoHash);
+    // One a build saved by mistake (a crash handler, FitGirl's QuickSFV) is no
+    // install: the card offers Install again rather than Play.
+    if (!exe.isEmpty() && GameExeDetect::neverTheGame(QFileInfo(exe).fileName().toLower()))
+        exe.clear();
     GameInstall::DeriveIn in;
     in.running = m_runningGames.contains(infoHash);
     in.overlay = m_gameInstallState.value(infoHash, -1);

@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "services/integrations/gameexedetect.h"
+#include "services/integrations/installerprofile.h"
 
 #include <QDir>
 #include <QDirIterator>
@@ -21,7 +22,7 @@ ScoreResult scoreCandidate(const Candidate &c)
         QStringLiteral("prereq"), QStringLiteral("crashreport"), QStringLiteral("crashpad"),
         QStringLiteral("crashhandler"), QStringLiteral("crash_handler"),
         QStringLiteral("python"), QStringLiteral("benchmark"), QStringLiteral("config"),
-        QStringLiteral("settings"), QStringLiteral("cleanup") };
+        QStringLiteral("settings"), QStringLiteral("cleanup"), QStringLiteral("quicksfv") };
     static const QStringList installerHints = {
         QStringLiteral("setup"), QStringLiteral("install") };
 
@@ -65,7 +66,8 @@ bool neverTheGame(const QString &fileNameLower)
 {
     static const QStringList never = {
         QStringLiteral("crashhandler"), QStringLiteral("crash_handler"), QStringLiteral("crashpad"),
-        QStringLiteral("crashreport"), QStringLiteral("unins") };
+        QStringLiteral("crashreport"), QStringLiteral("unins"),
+        QStringLiteral("quicksfv") };   // FitGirl's checksum tool, saved as the game by one build
     for (const auto &n : never)
         if (fileNameLower.contains(n)) return true;
     return false;
@@ -113,6 +115,18 @@ QString autodetect(const QString &folder, bool *isInstaller)
         if (r.score > bestScore) {
             bestScore = r.score;
             bestGame = path;
+        }
+    }
+    // A repack's folder holds the installer and its payload; the game exists
+    // only once that runs, so a stray tool exe beside them is never it.
+    if (!installer.isEmpty()) {
+        QStringList siblings;
+        for (const QFileInfo &fi : QFileInfo(installer).dir().entryInfoList(QDir::Files))
+            siblings << fi.fileName();
+        if (InstallerProfile::isLikelyRepack(installer, siblings)) {
+            if (isInstaller)
+                *isInstaller = true;
+            return installer;
         }
     }
     if (!bestGame.isEmpty())
