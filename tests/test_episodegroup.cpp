@@ -84,3 +84,34 @@ TEST_CASE("no series marker -> unknown, not a pack", "[episodegroup]")
     CHECK(m.episode == -1);
     CHECK_FALSE(m.pack);
 }
+
+TEST_CASE("Reacher S01 season packs around 27 GB are packs, not episode 1", "[episodegroup]")
+{
+    // Real names from a search: one of them sat on episode 1 as a 27 GB
+    // "episode", while episodes 2-8 read "in a season pack".
+    const char *names[] = {
+        "Reacher.S01.1080p.AMZN.WEBRip.DDP5.1.x264-NTb[rartv]",
+        "Reacher.S01.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb",
+        "Jack Reacher (S01)(2022)(Complete)(FHD)(1080p)(x264)(WebDL)(Multi 11 Lang)(MultiSUB) PHDTeam",
+        "Reacher.S01.1080p.AMZN.WEB-DL.DDP5.1.x264-NTb_RUTOR",
+        "Reacher.2022.S01.WEB-DL.1080p",
+        "Reacher.S01.WEBDL.1080p.Rus.Eng.HDRezka",
+        "[ 高清剧集网 www.BTHDTV.com ]侠探杰克[第01-08集][中文字幕].Reacher.S01.1080p.AMZN.WEB-DL.DDP5.1.H.264-CatWEB",
+        "Reacher.S01.PL.1080p.AMZN.WEB-DL.x264-666",
+        "Reacher.S01.MULTi.1080p.AMZN.WEB-DL.DDP5.1.H264-TV4TG",
+        "Reacher.S01.MULTi.VF2.1080p.WEB.H264-FW",
+        "Reacher.S01.MULTi.1080p.AMZN.WEB-DL.DDP5.1.H.264.PACK-PSiG",
+        "Reacher.2022.S01.1080p",
+        "Reacher.S01.iTALiAN.MULTi.1080p.AMZN.WEB-DL.DDP5.1.H.264-MeM.GP",
+        "Reacher.S01.1080p.Rus.Eng",
+        "Reacher.S01E01-E08.1080p.WEB",
+        "Reacher.S01E01-08.1080p.WEB",
+    };
+    for (const char *n : names) {
+        const EpisodeTag t = EpisodeGroup::classify(QString::fromUtf8(n));
+        INFO(n);
+        CHECK(t.episode == -1);
+        CHECK(t.pack);
+        CHECK(t.season == 1);
+    }
+}

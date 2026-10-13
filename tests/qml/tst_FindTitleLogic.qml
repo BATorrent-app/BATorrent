@@ -97,6 +97,29 @@ TestCase {
         compare(logic.episodeReleases(idx, 4).map(function (r) { return r.name }), ["pack"])
     }
 
+    function test_aSeasonSizedEpisodeIsOfferedAsAPack() {
+        var GB = 1000 * 1000 * 1000
+        // Next to a 27 GB pack, a 27 GB "episode 1" is the season under an episode's name.
+        var idx = logic.seasonIndex([ rel({ name: "fake e1", season: 1, episode: 1, sizeBytes: 27 * GB }),
+                                      rel({ name: "e1", season: 1, episode: 1, sizeBytes: 3 * GB }),
+                                      rel({ name: "pack", season: 1, episode: -1, sizeBytes: 27 * GB }) ], 1)
+        compare(idx.byEp["1"].map(function (r) { return r.name }), ["e1"])
+        compare(idx.packs.length, 2)
+        // No pack listed: many times the usual episode gives it away.
+        idx = logic.seasonIndex([ rel({ name: "fake e1", season: 1, episode: 1, sizeBytes: 27 * GB }),
+                                  rel({ name: "e2", season: 1, episode: 2, sizeBytes: 3 * GB }),
+                                  rel({ name: "e3", season: 1, episode: 3, sizeBytes: 3 * GB }),
+                                  rel({ name: "e4", season: 1, episode: 4, sizeBytes: 3 * GB }) ], 1)
+        verify(idx.byEp["1"] === undefined)
+        compare(idx.packs.map(function (r) { return r.name }), ["fake e1"])
+        // A 4K episode beside 1080p ones is just a bigger episode.
+        idx = logic.seasonIndex([ rel({ name: "4k e1", season: 1, episode: 1, sizeBytes: 9 * GB }),
+                                  rel({ name: "e2", season: 1, episode: 2, sizeBytes: 3 * GB }),
+                                  rel({ name: "e3", season: 1, episode: 3, sizeBytes: 3 * GB }) ], 1)
+        compare(idx.byEp["1"][0].name, "4k e1")
+        compare(idx.packs.length, 0)
+    }
+
     function test_episodeSourcesAreBestQualityFirst() {
         var idx = logic.seasonIndex([ rel({ name: "720", season: 1, episode: 3, quality: "720p", seedsN: 999 }),
                                   rel({ name: "4k", season: 1, episode: 3, quality: "4K", seedsN: 10 }) ], 1)

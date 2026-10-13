@@ -11,6 +11,19 @@ EpisodeTag EpisodeGroup::classify(const QString &releaseName)
 {
     EpisodeTag tag;
 
+    // A run of episodes is the season, not its first episode: "S01E01-E08",
+    // "S01E01-08", "S01E01 to E08". Read as SxxExx it sat a whole 27 GB
+    // season on episode 1.
+    static const QRegularExpression epRangeRe(
+        QStringLiteral("\\bS(\\d{1,2})[ ._]?E(\\d{1,3})[ ._]?(?:-|~|to)[ ._]?(?:S\\d{1,2}[ ._]?)?E?(\\d{1,3})\\b"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpressionMatch range = epRangeRe.match(releaseName);
+    if (range.hasMatch() && range.captured(3).toInt() > range.captured(2).toInt()) {
+        tag.season = range.captured(1).toInt();
+        tag.pack = true;
+        return tag;
+    }
+
     const ParsedName p = NameParser::parse(releaseName);
     if (p.episode > 0) {
         // anime absolute numbering has no on-screen season: NameParser pins it to 1

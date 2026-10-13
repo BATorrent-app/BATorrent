@@ -160,6 +160,29 @@ QtObject {
                 packs.push(r)
             }
         }
+        // A name can claim one episode while the size says season: a 27 GB
+        // "episode 1" next to 2 GB episodes. One that weighs most of a pack,
+        // or several times the usual episode, is offered as a pack instead.
+        var smallestPack = 0
+        for (var p = 0; p < packs.length; p++) {
+            var ps = packs[p].sizeBytes || 0
+            if (ps > 0 && (smallestPack === 0 || ps < smallestPack)) smallestPack = ps
+        }
+        var sizes = []
+        for (var e in byEp)
+            for (var j = 0; j < byEp[e].length; j++)
+                if ((byEp[e][j].sizeBytes || 0) > 0) sizes.push(byEp[e][j].sizeBytes)
+        sizes.sort(function (a, b) { return a - b })
+        var median = sizes.length >= 3 ? sizes[Math.floor(sizes.length / 2)] : 0
+        for (var ep in byEp) {
+            byEp[ep] = byEp[ep].filter(function (x) {
+                var s = x.sizeBytes || 0
+                var seasonSized = (smallestPack > 0 && s >= smallestPack * 0.6) || (median > 0 && s > median * 5)
+                if (seasonSized) packs.push(x)
+                return !seasonSized
+            })
+            if (byEp[ep].length === 0) delete byEp[ep]
+        }
         for (var k in byEp) byEp[k].sort(bySeeds)
         packs.sort(bySeeds)
         return { byEp: byEp, packs: packs }
