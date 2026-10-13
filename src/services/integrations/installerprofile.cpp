@@ -5,6 +5,8 @@
 #include "services/integrations/installerprofile.h"
 
 #include <QDir>
+#include <QDirIterator>
+#include <QStandardPaths>
 #include <QFile>
 #include <QFileInfo>
 
@@ -244,6 +246,12 @@ QList<UninstallEntry> uninstallEntries()
             e.installLocation = readString(app, L"InstallLocation");
             if (e.installLocation.isEmpty())   // Inno keeps it here as well
                 e.installLocation = readString(app, L"Inno Setup: App Path");
+            // "C:/Game/game.exe,0": the icon index goes.
+            e.displayIcon = readString(app, L"DisplayIcon").remove(QLatin1Char('"'));
+            const int comma = e.displayIcon.lastIndexOf(QLatin1Char(','));
+            bool isIndex = false;
+            if (comma > 0) e.displayIcon.mid(comma + 1).trimmed().toInt(&isIndex);
+            if (isIndex) e.displayIcon.truncate(comma);
             RegCloseKey(app);
             // FILETIME counts 100 ns from 1601; the Unix epoch is 11644473600 s later.
             const qint64 ticks = (qint64(written.dwHighDateTime) << 32) | written.dwLowDateTime;
@@ -269,6 +277,11 @@ static QString squash(const QString &s)
 
 QString installDirFor(const QList<UninstallEntry> &entries, qint64 sinceMs, const QString &title)
 {
+    return installEntryFor(entries, sinceMs, title).installLocation;
+}
+
+UninstallEntry installEntryFor(const QList<UninstallEntry> &entries, qint64 sinceMs, const QString &title)
+{
     // A short title ("Ori") would match far too much.
     const QString want = squash(title);
     auto named = [&want](const UninstallEntry &e) {
@@ -281,12 +294,35 @@ QString installDirFor(const QList<UninstallEntry> &entries, qint64 sinceMs, cons
         for (const UninstallEntry &e : entries)
             if (e.writtenMs >= sinceMs) fresh << &e;
     for (const UninstallEntry *e : fresh)
-        if (named(*e)) return e->installLocation;
+        if (named(*e)) return *e;
     for (const UninstallEntry &e : entries)
-        if (named(e)) return e.installLocation;
+        if (named(e)) return e;
     // The repack named the game its own way. Trust a new entry only when it is
     // the only one: browsers and launchers rewrite theirs while they update.
-    return fresh.size() == 1 ? fresh.first()->installLocation : QString();
+    return fresh.size() == 1 ? *fresh.first() : UninstallEntry{};
+}
+
+QStringList shortcutTargets()
+{
+    QStringList out;
+#if defined(Q_OS_WIN)
+    const QStringList roots = {
+        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation),
+        QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
+        qEnvironmentVariable("ProgramData") + QStringLiteral("/Microsoft/Windows/Start Menu/Programs"),
+        qEnvironmentVariable("PUBLIC") + QStringLiteral("/Desktop"),
+    };
+    for (const QString &root : roots) {
+        if (root.isEmpty()) continue;
+        QDirIterator it(root, { QStringLiteral("*.lnk") }, QDir::Files, QDirIterator::Subdirectories);
+        int seen = 0;
+        while (it.hasNext() && seen++ < 2000) {
+            const QString target = QFileInfo(it.next()).symLinkTarget();   // Qt resolves .lnk on Windows
+            if (!target.isEmpty()) out << target;
+        }
+    }
+#endif
+    return out;
 }
 
 QString crackDir(const QStringList &subdirNames)

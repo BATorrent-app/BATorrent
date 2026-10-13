@@ -1485,6 +1485,9 @@ TEST_CASE("InstallerProfile: where a guided install put the game", "[installer]"
     // Named its own way: a lone new entry is taken, two are not.
     REQUIRE(InstallerProfile::installDirFor({ { "Repack", "C:/R", 9000 } }, 3000, "007 First Light") == QString("C:/R"));
     REQUIRE(InstallerProfile::installDirFor(entries, 3000, "Something Else").isEmpty());
+    // The entry comes with the exe its icon names.
+    REQUIRE(InstallerProfile::installEntryFor({ { "Portal 2", "D:/Games/Portal 2", 1, "D:/Games/Portal 2/portal2.exe" } },
+                                              0, "Portal 2").displayIcon == QString("D:/Games/Portal 2/portal2.exe"));
     // Too short a title matches nothing by name.
     REQUIRE(InstallerProfile::installDirFor({ { "Ori and the Blind Forest", "C:/O", 1 } }, 0, "Ori").isEmpty());
 }

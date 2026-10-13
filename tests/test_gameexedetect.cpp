@@ -170,3 +170,56 @@ TEST_CASE("autodetect: Portal 2's exe at the root, not the map compiler in bin",
     REQUIRE_FALSE(installer);
     REQUIRE(GameExeDetect::neverTheGame(QStringLiteral("vbsp.exe")));   // a saved one is dropped
 }
+
+// A minimal PE file: just enough header for the subsystem to be read.
+static QByteArray fakePe(quint16 subsystem, int padTo)
+{
+    QByteArray b(padTo, '\0');
+    b[0] = 'M'; b[1] = 'Z';
+    b[0x3C] = 0x40;                      // e_lfanew
+    b[0x40] = 'P'; b[0x41] = 'E';        // "PE" and two zero bytes
+    const int sub = 0x40 + 24 + 68;      // optional header + 68
+    b[sub] = char(subsystem & 0xff);
+    b[sub + 1] = char(subsystem >> 8);
+    return b;
+}
+
+TEST_CASE("namedFor: the exe named for the game", "[gameexedetect]") {
+    REQUIRE(GameExeDetect::namedFor("portal2.exe", "Portal 2"));
+    REQUIRE(GameExeDetect::namedFor("007firstlight.exe", "007 First Light"));
+    REQUIRE(GameExeDetect::namedFor("sexnatural milfs must be filled.exe", "Sexnatural: Milfs Must Be Filled"));
+    REQUIRE_FALSE(GameExeDetect::namedFor("vbsp.exe", "Portal 2"));
+    REQUIRE_FALSE(GameExeDetect::namedFor("ori.exe", "Ori"));   // too short to trust
+}
+
+TEST_CASE("pickInstalled: the installer's shortcut wins, a console tool never does", "[gameexedetect]") {
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    REQUIRE(QDir().mkpath(tmp.path() + QStringLiteral("/bin")));
+    auto write = [](const QString &path, const QByteArray &bytes) {
+        QFile f(path);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write(bytes);
+    };
+    const QString game = tmp.path() + QStringLiteral("/Launcher.exe");      // small, not named for the title
+    const QString tool = tmp.path() + QStringLiteral("/bin/compiler.exe");  // big console tool
+    const QString big = tmp.path() + QStringLiteral("/bin/Engine.exe");     // big window exe
+    write(game, fakePe(2, 4096));
+    write(tool, fakePe(3, 3'000'000));
+    write(big, fakePe(2, 2'000'000));
+    REQUIRE(GameExeDetect::isConsoleExe(tool));
+    REQUIRE_FALSE(GameExeDetect::isConsoleExe(game));
+
+    // The shortcut names the small exe: it wins over the bigger one.
+    REQUIRE(GameExeDetect::pickInstalled(tmp.path(), { QDir::toNativeSeparators(game) }, "Some Game") == game);
+    // A shortcut to a console tool, or to somewhere else entirely, is passed over.
+    REQUIRE(GameExeDetect::pickInstalled(tmp.path(), { tool, "C:/Windows/notepad.exe" }, "Some Game") == big);
+    // Nothing pointed at: the console tool still never wins on size.
+    REQUIRE(GameExeDetect::pickInstalled(tmp.path(), {}, "Some Game") == big);
+    // A name matching the title outweighs a bigger exe.
+    REQUIRE(GameExeDetect::pickInstalled(tmp.path(), {}, "Launcher Game") == big);
+    REQUIRE(GameExeDetect::pickInstalled(tmp.path(), {}, "Launcher") == game);
+    // Two shortcuts into the folder: the one named for the game.
+    REQUIRE(GameExeDetect::pickInstalled(tmp.path(), { big, game }, "Launcher") == game);
+    REQUIRE(GameExeDetect::pickInstalled(tmp.path(), { big, game }, "Other") == big);
+}

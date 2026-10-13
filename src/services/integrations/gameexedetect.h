@@ -17,6 +17,10 @@ struct Candidate {
     // A "<name>_Data" folder sits next to it: Unity's mark of the game's own exe,
     // which is often smaller than the crash handler beside it.
     bool hasUnityData = false;
+    // A console program (vbsp.exe, a server, a CLI tool): a game never is one.
+    bool console = false;
+    // Its name is the game's title ("portal2.exe" for "Portal 2").
+    bool namedForTitle = false;
 };
 
 struct ScoreResult {
@@ -39,8 +43,22 @@ bool looksLikeGameFromFiles(bool hasExe, bool hasVideo);
 // Manual "completed" OR progress finished: seeding games stay playable.
 bool dataComplete(bool completedFlag, float progress);
 
+// The exe's name, without ".exe", is the title once both keep only letters
+// and digits: "portal2.exe" for "Portal 2", "007FirstLight.exe" for
+// "007 First Light". Titles under four characters never match.
+bool namedFor(const QString &fileNameLower, const QString &title);
+
+// The PE header says the exe runs in a console window. False when unreadable.
+bool isConsoleExe(const QString &path);
+
 // Best-guess executable under folder. Sets *isInstaller when returning a setup.exe.
-// Returns empty if nothing runnable.
-QString autodetect(const QString &folder, bool *isInstaller = nullptr);
+// Returns empty if nothing runnable. title, when known, favours an exe named for it.
+QString autodetect(const QString &folder, bool *isInstaller = nullptr, const QString &title = {});
+
+// The game's exe in an installed folder. The installer's own word comes first:
+// pointed are the exes its shortcuts and its Installed apps icon name, taken
+// in order when one is under folder and could be the game. Only without one
+// does it fall back to autodetect.
+QString pickInstalled(const QString &folder, const QStringList &pointed, const QString &title);
 
 } // namespace GameExeDetect

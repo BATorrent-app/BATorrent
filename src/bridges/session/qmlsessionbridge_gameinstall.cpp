@@ -192,11 +192,13 @@ static void applyCrackIfPresent(const QString &root, const QString &gameDir)
 void QmlSessionBridge::finalizeInstall(const QString &infoHash)
 {
     const QString folder = gameFolder(infoHash);
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    const QString title = row < 0 ? QString() : NameParser::parse(m_session->torrentAt(row).name).cleanTitle;
     // Heavy directory walks belong off the GUI thread: a FitGirl tree on HDD
     // can ghost the Get & Install overlay (Windows "Not Responding").
-    auto *thread = QThread::create([this, infoHash, folder]() {
+    auto *thread = QThread::create([this, infoHash, folder, title]() {
         bool isInstaller = false;
-        const QString exe = GameExeDetect::autodetect(folder, &isInstaller);
+        const QString exe = GameExeDetect::autodetect(folder, &isInstaller, title);
         QString iso;
         if (exe.isEmpty()) {
             for (const QFileInfo &fi : QDir(folder).entryInfoList({QStringLiteral("*.iso")}, QDir::Files)) {
@@ -358,12 +360,18 @@ QString QmlSessionBridge::installedGameExe(const QString &infoHash, qint64 since
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return {};
     const QString title = NameParser::parse(m_session->torrentAt(row).name).cleanTitle;
-    const QString dir = InstallerProfile::installDirFor(InstallerProfile::uninstallEntries(), sinceMs, title);
+    const InstallerProfile::UninstallEntry entry =
+        InstallerProfile::installEntryFor(InstallerProfile::uninstallEntries(), sinceMs, title);
+    const QString dir = entry.installLocation;
     if (dir.isEmpty() || !QFileInfo(dir).isDir()) return {};
-    bool inst = false;
-    const QString exe = GameExeDetect::autodetect(dir, &inst);
+    // What the installer itself points at, its icon first: a guess from file
+    // sizes only when it points at nothing that could be the game.
+    QStringList pointed;
+    if (!entry.displayIcon.isEmpty()) pointed << entry.displayIcon;
+    pointed << InstallerProfile::shortcutTargets();
+    const QString exe = GameExeDetect::pickInstalled(dir, pointed, title);
     qInfo().noquote() << "[install]" << title << "is installed in" << dir << "exe" << exe;
-    return inst ? QString() : exe;
+    return exe;
 }
 
 bool QmlSessionBridge::isGameTorrent(int row) const

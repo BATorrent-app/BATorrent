@@ -64,6 +64,9 @@ struct UninstallEntry {
     QString displayName;
     QString installLocation;
     qint64 writtenMs = 0;   // when the key was last written
+    // The exe Installed apps shows the icon of: Inno sets it to the game's own
+    // exe more often than not. Path only, the ",0" icon index dropped.
+    QString displayIcon;
 };
 
 // Every entry that names a folder. Empty off Windows.
@@ -72,7 +75,12 @@ QList<UninstallEntry> uninstallEntries();
 // Where a guided installer put the game. An entry written since the installer
 // started wins (a repack lets the user pick any folder); otherwise one whose
 // name is the game's title, for an install done earlier or by hand. "" if none.
+UninstallEntry installEntryFor(const QList<UninstallEntry> &entries, qint64 sinceMs, const QString &title);
 QString installDirFor(const QList<UninstallEntry> &entries, qint64 sinceMs, const QString &title);
+
+// What every Start menu and desktop shortcut points at, for the user and for
+// all users. An installer's shortcut names the game's exe outright. Empty off Windows.
+QStringList shortcutTargets();
 
 // Scene crack convention: the cracked binaries sit in a folder named after the
 // group (CODEX, PLAZA, RUNE…) or literally "Crack". Returns the matching subdir
