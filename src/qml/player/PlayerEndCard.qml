@@ -30,10 +30,11 @@ Item {
     readonly property bool showEndCard: root.nextIdx >= 0 && !root.endCardDismissed
         && root.autoplayNext && (root.inLeadWindow || root.countdownSec > 0)
 
+    // The window loads it in place; a playFile here opened a second player.
+    signal playNextRequested()
     function playNextNow() {
         countdown.stop(); root.countdownSec = 0
-        if (typeof session !== "undefined" && root.nextIdx >= 0)
-            session.playFile(root.infoHash, root.nextIdx)
+        if (root.nextIdx >= 0) root.playNextRequested()
     }
 
     function maybePlayNext() {

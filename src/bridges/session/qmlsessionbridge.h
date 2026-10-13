@@ -260,6 +260,9 @@ public:
     Q_INVOKABLE QVariantList mkvChapters(const QString &infoHash, int fileIndex) const;
     // Play a specific video file (episode) of a torrent in the embedded player.
     Q_INVOKABLE void playFile(const QString &infoHash, int fileIndex);
+    // playFile's prep (only this file wanted, fetched in order) without opening
+    // a window: the open player loads the next episode itself. "" when refused.
+    Q_INVOKABLE QString fileStreamUrl(const QString &infoHash, int fileIndex);
     // Forget a movie's resume position (drops it from HUB "Continue watching").
     Q_INVOKABLE void clearResume(const QString &infoHash, int fileIndex);
     // Player buffer bar + download badge: { totalBytes, downloadedBytes, progress, buffered }.

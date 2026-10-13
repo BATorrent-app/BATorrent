@@ -209,3 +209,13 @@ TEST_CASE("pickFile: the episode's file out of a pack", "[episodegroup]")
 
     CHECK(EpisodeGroup::pickFile({}, {}, 0, QString(), 1, 1).index == -1);
 }
+
+TEST_CASE("real pack file names read as their own episode", "[episodegroup]")
+{
+    // The Erai-raws batch's files, as the player names them.
+    auto e4 = T("[Erai-raws] Bleach - 004 [1080p DSNP WEB-DL AVC AAC][MultiSub][C0FFC48A].mkv");
+    CHECK(e4.season == 1);
+    CHECK(e4.episode == 4);
+    auto judas = T("[Judas] Bleach - 003.mkv");
+    CHECK(judas.episode == 3);
+}

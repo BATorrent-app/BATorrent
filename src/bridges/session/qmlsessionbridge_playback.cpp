@@ -208,15 +208,22 @@ void QmlSessionBridge::playSelected()
 
 void QmlSessionBridge::playFile(const QString &infoHash, int fileIndex)
 {
+    const QString url = fileStreamUrl(infoHash, fileIndex);
+    if (url.isEmpty()) return;
     const int row = m_session->torrentIndexByInfoHash(infoHash);
-    if (row < 0 || m_streamPort == 0) return;
+    qInfo().noquote() << "[play] playFile" << infoHash.left(8) << "file" << fileIndex;
+    emit openPlayer(url, m_session->torrentAt(row).name, m_session->torrentHashAt(row), fileIndex);
+}
+
+QString QmlSessionBridge::fileStreamUrl(const QString &infoHash, int fileIndex)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0 || m_streamPort == 0) return {};
     auto files = m_session->filesAt(row);
-    if (fileIndex < 0 || fileIndex >= int(files.size()) || guardRefuses(infoHash, fileIndex)) return;
+    if (fileIndex < 0 || fileIndex >= int(files.size()) || guardRefuses(infoHash, fileIndex)) return {};
     prepStream(row, fileIndex);
-    const QString hash = m_session->torrentHashAt(row);
-    const TorrentInfo info = m_session->torrentAt(row);
-    emit openPlayer(QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(fileIndex),
-                    info.name, hash, fileIndex);
+    return QStringLiteral("http://127.0.0.1:%1/stream/%2/%3")
+        .arg(m_streamPort).arg(m_session->torrentHashAt(row)).arg(fileIndex);
 }
 
 void QmlSessionBridge::clearResume(const QString &infoHash, int fileIndex)
@@ -250,7 +257,8 @@ QString QmlSessionBridge::streamFileName(const QString &infoHash, int fileIndex)
     if (row < 0) return {};
     const QStringList names = m_session->torrentFileNames(row);
     if (fileIndex < 0 || fileIndex >= names.size()) return {};
-    return names.at(fileIndex).section('/', -1);   // leaf name
+    return QString(names.at(fileIndex)).replace(QLatin1Char('\\'), QLatin1Char('/'))
+        .section('/', -1);   // leaf name, whichever separator the engine used
 }
 
 void QmlSessionBridge::playByHash(const QString &infoHash)
@@ -261,6 +269,7 @@ void QmlSessionBridge::playByHash(const QString &infoHash)
     if (url.isEmpty()) { emit toast(tr_("ctx_stream"), tr_("stream_no_video")); return; }
     const TorrentInfo info = m_session->torrentAt(row);
     const int fileIdx = url.section('/', -1).toInt();
+    qInfo().noquote() << "[play] playByHash" << infoHash.left(8) << "file" << fileIdx;
     emit openPlayer(url, info.name, infoHash, fileIdx);
 }
 
@@ -277,6 +286,7 @@ void QmlSessionBridge::playByHashFile(const QString &infoHash, int fileIndex)
     const QString hash = m_session->torrentHashAt(row);
     const QString url = QStringLiteral("http://127.0.0.1:%1/stream/%2/%3").arg(m_streamPort).arg(hash).arg(fileIndex);
     const TorrentInfo info = m_session->torrentAt(row);
+    qInfo().noquote() << "[play] playByHashFile" << infoHash.left(8) << "file" << fileIndex;
     emit openPlayer(url, info.name, infoHash, fileIndex);
 }
 
@@ -287,7 +297,7 @@ QVariantMap QmlSessionBridge::episodeOf(const QString &infoHash, int fileIndex) 
     if (row < 0) return out;
     const auto files = m_session->filesAt(row);
     if (fileIndex < 0 || fileIndex >= int(files.size())) return out;
-    QString name = QFileInfo(files[fileIndex].path).fileName();
+    QString name = QFileInfo(QDir::fromNativeSeparators(files[fileIndex].path)).fileName();
     if (name.endsWith(QStringLiteral(".!bt"))) name.chop(4);
     const ParsedName pn = NameParser::parse(name);
     out[QStringLiteral("season")] = pn.season;
@@ -308,7 +318,7 @@ int QmlSessionBridge::nextEpisode(const QString &infoHash, int fileIndex) const
         if (mp.endsWith(QStringLiteral(".!bt"))) mp.chop(4);
         for (const auto &ext : videoExts)
             if (mp.endsWith(ext, Qt::CaseInsensitive)) {
-                const ParsedName pn = NameParser::parse(QFileInfo(mp).fileName());
+                const ParsedName pn = NameParser::parse(QFileInfo(QDir::fromNativeSeparators(mp)).fileName());
                 vids.push_back({ i, pn.season, pn.episode });
                 break;
             }
@@ -332,8 +342,10 @@ QVariantMap QmlSessionBridge::playerTitle(const QString &infoHash, int fileIndex
     // Raw leaf name of the playing file: the honest source, kept for the
     // info tooltip so nothing is hidden, just de-emphasised.
     const QStringList names = m_session->torrentFileNames(row);
+    // libtorrent joins a pack's folder and file with '\' on Windows; cut at
+    // either, or the folder ("Bleach - 001 ~ 366") is parsed as the episode
     QString raw = (fileIndex >= 0 && fileIndex < names.size())
-        ? names.at(fileIndex).section('/', -1)
+        ? QString(names.at(fileIndex)).replace(QLatin1Char('\\'), QLatin1Char('/')).section('/', -1)
         : QString::fromStdString(m_session->torrentAt(row).name.toStdString());
     if (raw.endsWith(QLatin1String(".!bt"))) raw.chop(4);
     out["raw"] = raw;

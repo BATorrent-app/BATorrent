@@ -39,11 +39,15 @@ Item {
     property var openPlayers: []
 
     function openPlayer(url, title, hash, fileIndex) {
+        console.info("[player] open " + (hash || "").substring(0, 8) + " file " + fileIndex
+                     + " (" + openPlayers.length + " open)")
         // Same file twice: raise the window that already has it rather than
         // opening a duplicate that fights the first one for the same pieces.
         for (var i = 0; i < openPlayers.length; ++i) {
             var e = openPlayers[i]
             if (e && e.streamUrl === url) { e.show(); e.raise(); e.requestActivate(); return }
+            // a second window on the same torrent: say who asked for it
+            if (e && e.infoHash === hash) console.trace()
         }
         var w = playerWindowComp.createObject(null)
         if (!w) return
