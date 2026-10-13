@@ -34,6 +34,7 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStorageInfo>
+#include <QTimer>
 #include <QUrl>
 #include <algorithm>
 
@@ -315,7 +316,14 @@ void QmlSearchBridge::appendAddonEpisodeRows(const QString &videoId, const QList
         ++added;
     }
     qInfo().noquote() << "[addon]" << videoId << "rows added" << added << "of" << streams.size();
-    if (added > 0) emit resultsChanged();
+    if (added == 0) return;
+    if (!m_addonRowsFlush) {
+        m_addonRowsFlush = new QTimer(this);
+        m_addonRowsFlush->setSingleShot(true);
+        m_addonRowsFlush->setInterval(400);
+        connect(m_addonRowsFlush, &QTimer::timeout, this, &QmlSearchBridge::resultsChanged);
+    }
+    if (!m_addonRowsFlush->isActive()) m_addonRowsFlush->start();
 }
 
 // What to play out of the torrent a row adds: the addon's file, else the

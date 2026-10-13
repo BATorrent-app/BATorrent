@@ -19,7 +19,7 @@ Item {
     readonly property var api: sv ? sv.api : null
     readonly property bool searching: api && api.searching
     readonly property bool notFound: !searching && api && api.statusText.length > 0
-                                     && api.results.length === 0
+                                     && sv.results.length === 0
 
     ColumnLayout {
         anchors.centerIn: parent

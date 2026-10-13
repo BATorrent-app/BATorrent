@@ -227,6 +227,9 @@ private:
     QSet<QString> m_addonEpisodesAsked;   // "season:episode" already asked this drill-down
     QList<QPair<int, int>> m_addonEpisodesWaiting;   // asked before the IMDb id arrived
     void appendAddonEpisodeRows(const QString &videoId, const QList<StreamResult> &streams);
+    // Six addons answer one episode over a few seconds, and every resultsChanged
+    // re-derives the whole page: replies landing close together share one.
+    QTimer *m_addonRowsFlush = nullptr;
     QVariantMap fileTargetFor(const QVariantMap &row) const;
     int m_watchIdx = -1;              // a watch held across the disk-fit prompt
     bool m_gwActive = false;          // a Get&Watch search is in flight

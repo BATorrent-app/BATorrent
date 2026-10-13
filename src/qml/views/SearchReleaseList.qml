@@ -33,7 +33,7 @@ ColumnLayout {
                                    fits: fits, free: sv.saveFree }),
         sortKey, sv.api ? function (a, b) { return sv.api.compareBuildVersions(a, b) } : null)
     // results is read so the pick follows a new batch of releases
-    readonly property int bestIdx: sv.api && sv.api.results.length >= 0 ? sv.api.bestResultIndex() : -1
+    readonly property int bestIdx: sv.api && sv.results.length >= 0 ? sv.api.bestResultIndex() : -1
 
     function tr(k) { return i18n.t(k) }
     function knownGroup(g) { return !!sv.api && sv.api.isKnownGroup(g) }

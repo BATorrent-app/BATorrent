@@ -15,7 +15,7 @@ Item {
     property var sv
     visible: sv.isTitles && !sv.browse
 
-    readonly property var titles: sv.api && sv.isTitles ? sv.api.results : []
+    readonly property var titles: sv.api && sv.isTitles ? sv.results : []
     readonly property bool showBest: titles.length > 0 && sv.api && !sv.api.searching
     readonly property var bestItem: showBest ? titles[0] : null
     readonly property var others: showBest ? titles.slice(1) : titles

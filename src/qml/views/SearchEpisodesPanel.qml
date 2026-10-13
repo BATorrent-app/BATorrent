@@ -33,7 +33,7 @@ Item {
         for (var i = 0; i < tabs.length; i++) if (!seen[tabs[i]]) out.push(tabs[i])
         return out.sort(function (a, b) { return a - b })
     }
-    readonly property var index: logic.seasonIndex(sv.api ? sv.api.results : [], season)
+    readonly property var index: logic.seasonIndex(sv.results, season)
     readonly property var episodes: logic.episodeRows(tmdbRows, index, library, season, pref)
 
     SeriesLogic { id: series }
