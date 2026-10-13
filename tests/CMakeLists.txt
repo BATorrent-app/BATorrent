@@ -80,6 +80,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasetrust.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/debridpick.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/installerprofile.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/trackerscrape.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/gameinstall.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/playlog.cpp
     ${CMAKE_SOURCE_DIR}/src/services/games/achievements.cpp

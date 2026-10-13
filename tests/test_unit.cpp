@@ -1374,6 +1374,7 @@ TEST_CASE("ReleasePick: empty list returns -1", "[release]") {
 
 // ---- InstallerProfile: engine detection + silent recipes -------------------
 #include "services/integrations/installerprofile.h"
+#include "services/discovery/trackerscrape.h"
 using IP = InstallerProfile::Engine;
 
 TEST_CASE("InstallerProfile: detects Inno Setup by magic at 0x30", "[installer]") {
@@ -1486,6 +1487,33 @@ TEST_CASE("InstallerProfile: where a guided install put the game", "[installer]"
     REQUIRE(InstallerProfile::installDirFor(entries, 3000, "Something Else").isEmpty());
     // Too short a title matches nothing by name.
     REQUIRE(InstallerProfile::installDirFor({ { "Ori and the Blind Forest", "C:/O", 1 } }, 0, "Ori").isEmpty());
+}
+
+TEST_CASE("TrackerScrape: udp trackers from a magnet, and the BEP 15 packets", "[scrape]") {
+    const QString magnet = "magnet:?xt=urn:btih:5EA0F2BB95A2F71F1F7B433045BCB43D3EF7CD4B&dn=x"
+                           "&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
+                           "&tr=https%3A%2F%2Ftracker.example.com%3A443%2Fannounce"
+                           "&tr=udp%3A%2F%2FOpenTor.net%3A6969%2Fannounce"
+                           "&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce";
+    REQUIRE(TrackerScrape::udpTrackers(magnet) == QStringList{ "tracker.opentrackr.org:1337", "opentor.net:6969" });
+
+    const QByteArray conn = TrackerScrape::connectRequest(0x01020304);
+    REQUIRE(conn.toHex() == QByteArray("0000041727101980" "00000000" "01020304"));
+    quint64 cid = 0;
+    REQUIRE(TrackerScrape::parseConnect(QByteArray::fromHex("00000000" "01020304" "1122334455667788"), 0x01020304, &cid));
+    REQUIRE(cid == 0x1122334455667788ULL);
+    REQUIRE_FALSE(TrackerScrape::parseConnect(QByteArray::fromHex("00000000" "09090909" "1122334455667788"), 0x01020304, &cid));
+
+    const QByteArray hash = QByteArray::fromHex("5EA0F2BB95A2F71F1F7B433045BCB43D3EF7CD4B");
+    const QByteArray req = TrackerScrape::scrapeRequest(cid, 7, { hash, hash });
+    REQUIRE(req.size() == 16 + 40);
+    REQUIRE(req.mid(8, 8).toHex() == QByteArray("00000002" "00000007"));
+    // seeders 686, completed 9321, leechers 212 for one hash
+    const auto got = TrackerScrape::parseScrape(QByteArray::fromHex("00000002" "00000007" "000002AE" "00002469" "000000D4"), 7, 1);
+    REQUIRE(got.size() == 1);
+    REQUIRE(got[0].seeders == 686);
+    REQUIRE(got[0].leechers == 212);
+    REQUIRE(TrackerScrape::parseScrape(QByteArray::fromHex("00000002" "00000007"), 7, 1).isEmpty());   // short
 }
 
 TEST_CASE("InstallerProfile: scene crack folder detection", "[installer]") {

@@ -21,6 +21,7 @@
 #include "services/metadata/releasetrust.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
+#include "services/discovery/trackerscrape.h"
 #include "services/platform/utils.h"
 #include "services/platform/contentlanguage.h"
 #include "services/platform/translator.h"
@@ -266,6 +267,27 @@ void QmlSearchBridge::mergeCatalogSwarms()
 
 void QmlSearchBridge::requestCatalogSeedEnrichment()
 {
+    // The catalogs carry no swarm counts and BitSearch misses new uploads (a
+    // FitGirl update sat at 0 seeders with hundreds on its trackers), so the
+    // trackers in each catalog magnet are asked first.
+    QHash<QString, QStringList> trackersByHash;
+    for (int i = 0; i < m_results.size() && i < m_resultMagnets.size() && trackersByHash.size() < 210; ++i) {
+        if (!m_results[i].toMap().value(QStringLiteral("fromCatalog")).toBool()) continue;
+        const QString h = infoHashFromMagnet(m_resultMagnets[i]);
+        const QStringList trackers = TrackerScrape::udpTrackers(m_resultMagnets[i]);
+        if (h.size() == 40 && !trackers.isEmpty())
+            trackersByHash.insert(h, trackers);
+    }
+    const int gen = ++m_seedEnrichGen;
+    if (!trackersByHash.isEmpty()) {
+        auto *scraper = new TrackerScraper(this);
+        connect(scraper, &TrackerScraper::counts, this, [this, gen](const QHash<QString, QPair<int, int>> &hits) {
+            if (gen == m_seedEnrichGen) applySeedHits(hits);
+        });
+        connect(scraper, &TrackerScraper::finished, scraper, &QObject::deleteLater);
+        scraper->scrape(trackersByHash);
+    }
+
     QStringList queries;
     const QString titled = !m_workTitle.trimmed().isEmpty() ? m_workTitle.trimmed()
                          : m_activeQuery.trimmed();
@@ -300,7 +322,6 @@ void QmlSearchBridge::requestCatalogSeedEnrichment()
     }
     if (!need) return;
 
-    const int gen = ++m_seedEnrichGen;
     auto *nam = new QNetworkAccessManager(this);
     int *pending = new int(queries.size());
     for (const QString &q : queries) {
