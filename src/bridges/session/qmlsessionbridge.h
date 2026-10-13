@@ -471,6 +471,10 @@ private:
     bool isGameTorrent(int row) const;               // game detection (metadata → parser → exe/no-video)
     void finalizeInstall(const QString &infoHash);   // post-extract: detect exe or run installer
     void runInstaller(const QString &infoHash, const QString &installerExe, const QString &folder);
+    // Starts following a running game: playtime, "playing now", achievements.
+    void followRunningGame(const QString &hash, qint64 pid, const QString &exe, qint64 nowMs);
+    // Games started without us (an installer's "launch" box, a shortcut).
+    void noticeOutsideLaunches(qint64 nowMs);
     void pollInstallWatch();   // guided installs: watch the folder for a produced exe
     // The game's exe in the folder Windows lists it installed in, "" if none.
     QString installedGameExe(const QString &infoHash, qint64 sinceMs) const;
@@ -491,6 +495,7 @@ private:
     QHash<QString, quintptr> m_runningHandle; // infoHash → handle held to read the exit code (Windows)
     bool m_runningRestored = false;          // games still running from before this start, picked up once
     qint64 m_runningSavedMs = 0;             // last "seen alive" write to settings
+    qint64 m_outsideScanMs = 0;              // last look for games started outside the app
     void persistRunningGame(const QString &hash, qint64 nowMs);
     void restoreRunningGames();
     QHash<QString, int> m_gameInstallState;  // infoHash → transient GameInstallState overlay

@@ -370,15 +370,8 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
                               << (isInstaller ? "(installer)" : "");
             const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
             m_playLog->recordLaunch(infoHash, nowMs);
-            if (!isInstaller && pid > 0 && !m_runningGames.contains(infoHash)) {
-                m_runningGames.insert(infoHash, pid);
-                m_gameStartMs.insert(infoHash, nowMs);
-                m_runningExe.insert(infoHash, exe);
-                m_runningHandle.insert(infoHash, holdProcess(pid));
-                persistRunningGame(infoHash, nowMs);
-                startAchievementWatch(infoHash);
-                emit gamesChanged();   // "playing now"
-            }
+            if (!isInstaller && pid > 0 && !m_runningGames.contains(infoHash))
+                followRunningGame(infoHash, pid, exe, nowMs);
             emit toast(isInstaller ? tr_("hub_game_installing") : tr_("hub_game_launch"),
                        QFileInfo(exe).completeBaseName());
             return;
@@ -394,6 +387,64 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
     if (row < 0) return;
     const TorrentInfo info = m_session->torrentAt(row);
     revealTorrentRoot(info.savePath, info.name);
+}
+
+void QmlSessionBridge::followRunningGame(const QString &hash, qint64 pid, const QString &exe, qint64 nowMs)
+{
+    m_runningGames.insert(hash, pid);
+    m_gameStartMs.insert(hash, nowMs);
+    m_runningExe.insert(hash, exe);
+    m_runningHandle.insert(hash, holdProcess(pid));
+    persistRunningGame(hash, nowMs);
+    startAchievementWatch(hash);
+    emit gamesChanged();   // "playing now"
+}
+
+void QmlSessionBridge::noticeOutsideLaunches(qint64 nowMs)
+{
+#if defined(Q_OS_WIN)
+    // One walk of the process list every few seconds covers every game.
+    if (nowMs - m_outsideScanMs < 5000) return;
+    m_outsideScanMs = nowMs;
+
+    QHash<QString, QString> folderOf;   // hash → folder its saved exe lives in
+    QSettings s;
+    s.beginGroup(QStringLiteral("gameExe"));
+    const QStringList keys = s.childKeys();
+    s.endGroup();
+    for (const QString &hash : keys) {
+        if (m_runningGames.contains(hash) || m_installWatch.contains(hash)) continue;
+        const QString exe = s.value(QStringLiteral("gameExe/") + hash).toString();
+        if (exe.isEmpty() || GameExeDetect::neverTheGame(QFileInfo(exe).fileName().toLower())) continue;
+        const int row = m_session->torrentIndexByInfoHash(hash);
+        if (row < 0) continue;
+        const QString folder = QFileInfo(exe).absolutePath();
+        // An exe loose in the save folder would claim everything run from Downloads.
+        if (QDir::cleanPath(folder) == QDir::cleanPath(m_session->torrentAt(row).savePath)) continue;
+        folderOf.insert(hash, folder);
+    }
+    if (folderOf.isEmpty()) return;
+
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snap == INVALID_HANDLE_VALUE) return;
+    PROCESSENTRY32W pe = {};
+    pe.dwSize = sizeof(pe);
+    for (BOOL ok = Process32FirstW(snap, &pe); ok && !folderOf.isEmpty(); ok = Process32NextW(snap, &pe)) {
+        const QString path = imageOf(pe.th32ProcessID);
+        if (path.isEmpty() || GameExeDetect::neverTheGame(QFileInfo(path).fileName().toLower())) continue;
+        for (auto it = folderOf.begin(); it != folderOf.end(); ++it) {
+            if (!isUnder(path, it.value())) continue;
+            qInfo().noquote() << "[game] noticed running outside the app:" << path << "pid" << pe.th32ProcessID;
+            m_playLog->recordLaunch(it.key(), nowMs);
+            followRunningGame(it.key(), pe.th32ProcessID, path, nowMs);
+            folderOf.erase(it);
+            break;
+        }
+    }
+    CloseHandle(snap);
+#else
+    Q_UNUSED(nowMs);
+#endif
 }
 
 // Poll launched games for exit; credit elapsed time to the per-game total.
@@ -425,8 +476,9 @@ void QmlSessionBridge::pollRunningGames()
         m_runningRestored = true;
         restoreRunningGames();
     }
-    if (m_runningGames.isEmpty()) return;
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    noticeOutsideLaunches(nowMs);
+    if (m_runningGames.isEmpty()) return;
     // Once a minute is enough for "last seen alive": it bounds what a session
     // that ends while the app is closed can be credited.
     const bool saveAlive = nowMs - m_runningSavedMs >= 60 * 1000;
