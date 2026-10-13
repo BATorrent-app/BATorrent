@@ -26,9 +26,20 @@ QString logoUrl(int appId);
 
 // IStoreBrowseService/GetItems for one app, with its asset paths. No key needed.
 QString storeItemsUrl(int appId);
-// The full URL of an asset from that answer: kind "hero" or "logo". Empty when
+// The full URL of an asset from that answer: kind "hero", "logo" or "poster"
+// (the 600x900 library capsule). Empty when
 // the game has no such art (many have no logo) or the answer is not one.
 QString assetUrl(const QByteArray &storeItemsJson, const QString &kind);
+// What a game page shows when IGDB has no record of the game (adult games,
+// small releases): from the same GetItems answer.
+struct StoreDetails {
+    QString name;
+    QString description;
+    int year = 0;
+    QString posterUrl;
+};
+StoreDetails details(const QByteArray &storeItemsJson);
+
 // The old unhashed path, for when the store answer could not be had at all.
 QString legacyArtUrl(int appId, const QString &kind);
 

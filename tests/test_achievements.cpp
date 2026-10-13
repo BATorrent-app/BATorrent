@@ -302,3 +302,29 @@ TEST_CASE("ledger: a file that is not a backup is refused, not merged", "[achiev
     AchievementLedger ledger(dir.filePath("achievements.json"));
     REQUIRE(ledger.importFrom(junk.fileName()) == -1);
 }
+
+TEST_CASE("a game IGDB lacks gets its page from the Steam store answer", "[achievements]") {
+    // GetItems for SEXNATURAL (3920160), trimmed: name, blurb, release, capsules.
+    const QByteArray store = QByteArrayLiteral(
+        "{\"response\":{\"store_items\":[{\"appid\":3920160,\"name\":\"SEXNATURAL: MILFs Must Be Filled\","
+        "\"basic_info\":{\"short_description\":\"Exorcism has never been this hot.\"},"
+        "\"release\":{\"steam_release_date\":1788616851},\"assets\":{"
+        "\"asset_url_format\":\"steam/apps/3920160/${FILENAME}?t=1788783754\","
+        "\"library_capsule\":\"fc68/library_capsule.jpg\","
+        "\"library_capsule_2x\":\"fc68/library_capsule_2x.jpg\"}}]}}");
+    const SteamStore::StoreDetails d = SteamStore::details(store);
+    REQUIRE(d.name == QLatin1String("SEXNATURAL: MILFs Must Be Filled"));
+    REQUIRE(d.description == QLatin1String("Exorcism has never been this hot."));
+    REQUIRE(d.year == 2026);
+    REQUIRE(d.posterUrl.endsWith(QLatin1String("/apps/3920160/fc68/library_capsule_2x.jpg?t=1788783754")));
+    REQUIRE(SteamStore::details("{broken").name.isEmpty());
+    REQUIRE(SteamStore::details(QString::fromUtf8(
+                "{\"response\":{\"store_items\":[{\"name\":\"SEXNATURAL: MILFs Must Be Filled \xF0\x9F\x98\x88\xF0\x9F\x92\xA6\"}]}}")
+                .toUtf8()).name == QLatin1String("SEXNATURAL: MILFs Must Be Filled"));
+    // The folder name lost the subtitle; an exact name still wins over it.
+    REQUIRE(SteamStore::bestAppId(R"({"items":[{"type":"app","name":"SEXNATURAL: MILFs Must Be Filled","id":3920160}]})",
+                                  "Sexnatural") == 3920160);
+    REQUIRE(SteamStore::bestAppId(R"({"items":[{"type":"app","name":"Portal: Prelude","id":1},
+                                               {"type":"app","name":"Portal","id":400}]})", "Portal") == 400);
+    REQUIRE(SteamStore::storeItemsUrl(1).contains(QLatin1String("include_basic_info")));
+}

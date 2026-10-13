@@ -184,3 +184,16 @@ TEST_CASE("parsed content type backs the category fallback", "[nameparser][categ
     CHECK(cat("Cyberpunk.2077.v2.1-RUNE") == QStringLiteral("Games"));
     CHECK(cat("Hogwarts Legacy Deluxe Edition [FitGirl Repack]") == QStringLiteral("Games"));
 }
+
+TEST_CASE("what a repack bundles with the game is not its title", "[nameparser]")
+{
+    CHECK(P("DELTARUNE: Game + Soundtrack Bundle (v14/Chapters 1-4, ENG/JAP) [FitGirl Repack, Selective Download - from 275 MB]")
+              .cleanTitle == "Deltarune");
+    CHECK(P("Hollow Knight + 4 DLCs [FitGirl Repack]").cleanTitle == "Hollow Knight");
+    CHECK(P("Celeste + Bonus Content [FitGirl Repack]").cleanTitle == "Celeste");
+    CHECK(P("SEXNATURAL: MILFs Must Be Filled (Build 25166686 + Wallpapers 18+, MULTi30) [FitGirl Repack]")
+              .cleanTitle == "Sexnatural: Milfs Must Be Filled");
+    // Punctuation left at the end once an edition is gone.
+    CHECK(P("Silent Hill: Townfall \u2013 Digital Deluxe Edition, v1.0 [FitGirl Repack]").cleanTitle
+          == "Silent Hill: Townfall");
+}

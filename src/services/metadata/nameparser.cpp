@@ -65,11 +65,20 @@ ParsedName NameParser::parse(const QString &rawName)
     // "... Complete Edition" is noise). Both the "<X> Edition" forms and the
     // common standalone qualifiers.
     static const QRegularExpression editionRe(QStringLiteral(
-        "\\b(?:(?:Deluxe|Complete|Definitive|Ultimate|Standard|Gold|Premium|Collector'?s|"
+        "\\b(?:(?:Digital[ .])?(?:Deluxe|Complete|Definitive|Ultimate|Standard|Gold|Premium|Collector'?s|"
         "Anniversary|Enhanced|Legacy|Day[ .]One|Special|Limited|Digital|Game[ .]of[ .]the[ .]Year)"
         "[ .]Edition|Early[ .]Access|Game[ .]of[ .]the[ .]Year|GOTY|Anthology)\\b"),
         QRegularExpression::CaseInsensitiveOption);
     work.remove(editionRe);
+
+    // FitGirl lists what ships with the game: "Game + Soundtrack Bundle",
+    // "+ 5 DLCs", "+ Bonus Content". None of it is the title, and IGDB finds
+    // nothing for "Deltarune: Game + Soundtrack Bundle".
+    static const QRegularExpression extrasRe(QStringLiteral(
+        "\\s*(?:\\bGame\\s*)?\\+\\s*(?:\\d+\\s+)?(?:Bonus\\s+)?"
+        "(?:DLCs?|Soundtracks?|OSTs?|Content|Artbooks?|Wallpapers?|Bonus(?:es)?)\\b(?:\\s+Bundle\\b)?"),
+        QRegularExpression::CaseInsensitiveOption);
+    work.remove(extrasRe);
 
     static const QRegularExpression seRe(
         QStringLiteral("S(\\d{1,2})E(\\d{1,3})"),
@@ -285,8 +294,10 @@ ParsedName NameParser::parse(const QString &rawName)
     static const QRegularExpression multiSpace(QStringLiteral("\\s{2,}"));
     work.replace(multiSpace, QStringLiteral(" "));
     // strip leftover separators stranded at the edges after tag removal
-    // (e.g. "Hades II-" once the -DODI repacker is gone)
-    static const QRegularExpression edgeJunk(QStringLiteral("^[\\s.\\-_]+|[\\s.\\-_]+$"));
+    // (e.g. "Hades II-" once the -DODI repacker is gone, "Silent Hill: Townfall – ,"
+    // once the edition after the dash is). A colon only at the end: a lead one is rare.
+    static const QRegularExpression edgeJunk(
+        QStringLiteral("^[\\s.\\-_]+|[\\s.\\-_:,+\\x{2013}\\x{2014}]+$"));
     work.remove(edgeJunk);
     work = work.trimmed();
 

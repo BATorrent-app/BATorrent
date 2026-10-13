@@ -71,6 +71,8 @@ private:
     // searchOverride: shortened re-query when the full title finds nothing
     // ("Garfield Kart 2 All You Can Drift" → "Garfield Kart 2"); scoring still
     // runs against the full parsed title.
+    // A game IGDB has no record of: the Steam store has nearly every PC game.
+    void querySteam(const QString &infoHash, const ParsedName &parsed);
     void queryIgdb(const QString &infoHash, const ParsedName &parsed,
                    const QString &searchOverride = QString());
     void ensureIgdbToken();

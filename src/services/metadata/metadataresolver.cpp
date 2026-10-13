@@ -20,6 +20,7 @@
 #include <QUrlQuery>
 
 #include "services/metadata/metadatamatch.h"
+#include "services/games/steamstore.h"
 #include "services/platform/contentlanguage.h"
 
 namespace {
@@ -572,6 +573,8 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
     if (clientId.isEmpty() || igdbClientSecret().isEmpty()) {
         if (parsed.contentType == ContentType::Unknown)
             queryTmdbMovie(infoHash, parsed);
+        else if (parsed.contentType == ContentType::Game)
+            querySteam(infoHash, parsed);
         else
             finishLookup(infoHash);
         return;
@@ -609,6 +612,8 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
             qDebug() << "[metadata] IGDB error:" << reply->errorString();
             if (parsed.contentType == ContentType::Unknown)
                 queryTmdbMovie(infoHash, parsed);
+            else if (parsed.contentType == ContentType::Game)
+                querySteam(infoHash, parsed);
             else
                 finishLookup(infoHash);
             return;
@@ -640,6 +645,8 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
             qDebug() << "[metadata] IGDB: no confident match for" << parsed.cleanTitle;
             if (parsed.contentType == ContentType::Unknown)
                 queryTmdbMovie(infoHash, parsed);
+            else if (parsed.contentType == ContentType::Game)
+                querySteam(infoHash, parsed);
             else
                 finishLookup(infoHash);
             return;
@@ -675,6 +682,59 @@ void MetadataResolver::queryIgdb(const QString &infoHash, const ParsedName &pars
             emit metadataReady(infoHash, result);
             finishLookup(infoHash);
         }
+    });
+}
+
+void MetadataResolver::querySteam(const QString &infoHash, const ParsedName &parsed)
+{
+    QUrl url(QStringLiteral("https://store.steampowered.com/api/storesearch/"));
+    url.setQuery(QUrlQuery{ { QStringLiteral("term"), SteamStore::searchTerm(parsed.cleanTitle) },
+                            { QStringLiteral("cc"), QStringLiteral("us") },
+                            { QStringLiteral("l"), QStringLiteral("english") } });
+    QNetworkRequest req{url};
+    req.setTransferTimeout(10000);
+    m_requestInFlight = true;
+    QNetworkReply *search = m_nam->get(req);
+    connect(search, &QNetworkReply::finished, this, [this, search, infoHash, parsed]() {
+        search->deleteLater();
+        const int appId = search->error() == QNetworkReply::NoError
+            ? SteamStore::bestAppId(search->readAll(), parsed.cleanTitle) : 0;
+        if (appId <= 0) {
+            qDebug() << "[metadata] Steam: no match for" << parsed.cleanTitle;
+            m_requestInFlight = false;
+            finishLookup(infoHash);
+            return;
+        }
+        QNetworkRequest itemsReq{QUrl(SteamStore::storeItemsUrl(appId))};
+        itemsReq.setTransferTimeout(10000);
+        QNetworkReply *items = m_nam->get(itemsReq);
+        connect(items, &QNetworkReply::finished, this, [this, items, infoHash, appId]() {
+            items->deleteLater();
+            m_requestInFlight = false;
+            const SteamStore::StoreDetails d = items->error() == QNetworkReply::NoError
+                ? SteamStore::details(items->readAll()) : SteamStore::StoreDetails{};
+            if (d.name.isEmpty()) {
+                finishLookup(infoHash);
+                return;
+            }
+            qDebug() << "[metadata] Steam: app" << appId << d.name;
+            MetadataResult result;
+            result.valid = true;
+            result.title = d.name;
+            result.description = d.description;
+            result.year = d.year;
+            result.contentType = ContentType::Game;
+            result.platforms << QStringLiteral("PC (Microsoft Windows)");
+            if (!d.posterUrl.isEmpty()) {
+                downloadPoster(infoHash, d.posterUrl, result);
+                return;
+            }
+            const QString key = MetadataMatch::canonicalInfoHash(infoHash);
+            m_cache.insert(key, result);
+            saveToDisk(key, result);
+            emit metadataReady(key, result);
+            finishLookup(key);
+        });
     });
 }
 

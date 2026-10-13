@@ -4,12 +4,14 @@
 
 #include "services/games/steamstore.h"
 
+#include <QDateTime>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
 #include <QSet>
 #include <QStringList>
+#include <QTimeZone>
 
 namespace SteamStore {
 
@@ -52,13 +54,21 @@ int bestAppId(const QByteArray &searchJson, const QString &title)
     if (want.isEmpty()) return 0;
     const QJsonArray items = QJsonDocument::fromJson(searchJson).object()
                                  .value(QLatin1String("items")).toArray();
+    // A torrent named for its folder drops the subtitle ("SEXNATURAL [FitGirl
+    // Repack]" for "SEXNATURAL: MILFs Must Be Filled"): the name before the
+    // colon counts too, once no exact match turned up.
+    int bySeries = 0;
     for (const QJsonValue &v : items) {
         const QJsonObject o = v.toObject();
         if (o.value(QLatin1String("type")).toString() != QLatin1String("app")) continue;
         const int id = o.value(QLatin1String("id")).toInt();
-        if (id > 0 && dropEdition(words(o.value(QLatin1String("name")).toString())) == want) return id;
+        const QString name = o.value(QLatin1String("name")).toString();
+        if (id <= 0) continue;
+        if (dropEdition(words(name)) == want) return id;
+        if (!bySeries && name.contains(QLatin1Char(':')) && words(name.section(QLatin1Char(':'), 0, 0)) == want)
+            bySeries = id;
     }
-    return 0;
+    return bySeries;
 }
 
 QString heroUrl(int appId)
@@ -76,25 +86,51 @@ QString storeItemsUrl(int appId)
     // Plain escapes: MSVC can't take a raw string inside QStringLiteral.
     const QByteArray input = QStringLiteral(
         "{\"ids\":[{\"appid\":%1}],\"context\":{\"language\":\"english\",\"country_code\":\"US\"},"
-        "\"data_request\":{\"include_assets\":true}}").arg(appId).toUtf8();
+        "\"data_request\":{\"include_assets\":true,\"include_basic_info\":true,\"include_release\":true}}").arg(appId).toUtf8();
     return QStringLiteral("https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json=")
            + QString::fromLatin1(input.toPercentEncoding());
 }
 
+static QJsonObject firstStoreItem(const QByteArray &storeItemsJson)
+{
+    return QJsonDocument::fromJson(storeItemsJson).object()
+        .value(QLatin1String("response")).toObject()
+        .value(QLatin1String("store_items")).toArray().first().toObject();
+}
+
 QString assetUrl(const QByteArray &storeItemsJson, const QString &kind)
 {
-    const QJsonArray items = QJsonDocument::fromJson(storeItemsJson).object()
-        .value(QLatin1String("response")).toObject()
-        .value(QLatin1String("store_items")).toArray();
-    if (items.isEmpty()) return {};
-    const QJsonObject assets = items.first().toObject().value(QLatin1String("assets")).toObject();
+    const QJsonObject assets = firstStoreItem(storeItemsJson).value(QLatin1String("assets")).toObject();
     // "steam/apps/<id>/${FILENAME}?t=<stamp>", the file named "<hash>/library_hero.jpg"
     const QString format = assets.value(QLatin1String("asset_url_format")).toString();
-    const QString file = assets.value(kind == QLatin1String("logo") ? QLatin1String("library_logo")
-                                                                    : QLatin1String("library_hero")).toString();
+    QString file;
+    if (kind == QLatin1String("logo"))
+        file = assets.value(QLatin1String("library_logo")).toString();
+    else if (kind == QLatin1String("poster"))
+        file = assets.value(QLatin1String("library_capsule_2x")).toString(
+            assets.value(QLatin1String("library_capsule")).toString());
+    else
+        file = assets.value(QLatin1String("library_hero")).toString();
     if (format.isEmpty() || file.isEmpty()) return {};
     return QStringLiteral("https://shared.cloudflare.steamstatic.com/store_item_assets/")
            + QString(format).replace(QLatin1String("${FILENAME}"), file);
+}
+
+StoreDetails details(const QByteArray &storeItemsJson)
+{
+    const QJsonObject item = firstStoreItem(storeItemsJson);
+    StoreDetails d;
+    // Store names carry emoji ("… Must Be Filled 😈💦"); a page title should not.
+    static const QRegularExpression emoji(QStringLiteral("[\\p{So}\\x{FE0F}\\x{200D}]+"));
+    d.name = item.value(QLatin1String("name")).toString().remove(emoji).simplified();
+    d.description = item.value(QLatin1String("basic_info")).toObject()
+                        .value(QLatin1String("short_description")).toString();
+    const qint64 released = item.value(QLatin1String("release")).toObject()
+                                .value(QLatin1String("steam_release_date")).toVariant().toLongLong();
+    if (released > 0)
+        d.year = QDateTime::fromSecsSinceEpoch(released, QTimeZone::UTC).date().year();
+    d.posterUrl = assetUrl(storeItemsJson, QStringLiteral("poster"));
+    return d;
 }
 
 QString legacyArtUrl(int appId, const QString &kind)
