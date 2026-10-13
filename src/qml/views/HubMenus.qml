@@ -43,9 +43,12 @@ Item {
     BatMenu {
         id: gameMenu
         property string hash: ""
-        function openFor(h) { hash = h; width = 260; popup() }
+        // Its torrent is gone and it stays as an installed game: nothing to install.
+        property bool torrentless: false
+        function openFor(h) { hash = h; torrentless = !!page.api && page.api.gameTorrentless(h); width = 260; popup() }
         function dropFrom(h, anchorItem) {
             hash = h
+            torrentless = !!page.api && page.api.gameTorrentless(h)
             width = Math.max(260, anchorItem.width)
             popup(anchorItem, 0, anchorItem.height + 6)
         }
@@ -61,12 +64,14 @@ Item {
         GameItem {
             text: (i18n.language, i18n.t("hub_gs_install"))
             iconSrc: "qrc:/icons/download.svg"
+            enabled: !gameMenu.torrentless
+            hideWhenDisabled: true
             onTriggered: if (page.api) page.api.installGame(gameMenu.hash)
         }
         GameItem {
             text: (i18n.language, i18n.t("hub_install_defender"))
             iconSrc: "qrc:/icons/shield-check.svg"
-            enabled: Qt.platform.os === "windows"
+            enabled: Qt.platform.os === "windows" && !gameMenu.torrentless
             hideWhenDisabled: true
             onTriggered: if (page.api) page.api.installGameExcluded(gameMenu.hash)
         }
@@ -84,6 +89,13 @@ Item {
             text: (i18n.language, i18n.t("hub_open_folder"))
             iconSrc: "qrc:/icons/folder-open.svg"
             onTriggered: if (page.api) Qt.openUrlExternally(page.fileUrl(page.api.gameFolder(gameMenu.hash)))
+        }
+        GameItem {
+            text: (i18n.language, i18n.t("hub_forget_game"))
+            iconSrc: "qrc:/icons/trash.svg"
+            enabled: gameMenu.torrentless
+            hideWhenDisabled: true
+            onTriggered: if (page.api) page.api.forgetGame(gameMenu.hash)
         }
     }
 

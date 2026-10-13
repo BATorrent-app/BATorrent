@@ -434,6 +434,7 @@
   "hub_resume": "Resume",
   "hub_search_lib": "Search your library",
   "hub_set_exe": "Set executable…",
+  "hub_forget_game": "Remove from library",
   "hub_sort_name": "Name",
   "hub_sort_recent": "Recent",
   "hub_time_left": "%1 left",

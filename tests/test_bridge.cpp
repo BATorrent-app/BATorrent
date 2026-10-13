@@ -254,6 +254,50 @@ TEST_CASE("Session bridge: playtime kept in settings moves into the play log", "
     REQUIRE(log.summary(QStringLiteral("onlylaunched")).launches == 1);
 }
 
+TEST_CASE("Session bridge: an installed game stays in the library after its torrent goes", "[bridge][session][games]")
+{
+    app();
+    QTemporaryDir dir;
+    REQUIRE(dir.isValid());
+    const QString exe = dir.filePath(QStringLiteral("007FirstLight.exe"));
+    { QFile f(exe); REQUIRE(f.open(QIODevice::WriteOnly)); f.write("MZ"); }
+    const QString hash = QStringLiteral("5ea0f2bb95a2f71f1f7b433045bcb43d3ef7cd4b");
+    {
+        QSettings s;
+        s.setValue(QStringLiteral("keptGames/") + hash + QStringLiteral("/name"),
+                   QStringLiteral("007 First Light [FitGirl Repack]"));
+        s.setValue(QStringLiteral("keptGames/") + hash + QStringLiteral("/size"), 38151060554LL);
+        s.setValue(QStringLiteral("gameExe/") + hash, exe);
+    }
+    SessionManager session;   // no torrents: the repack was removed
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    auto find = [&]() {
+        for (const QVariant &v : bridge.gameLibrary())
+            if (v.toMap().value(QStringLiteral("infoHash")).toString() == hash) return v.toMap();
+        return QVariantMap();
+    };
+    const QVariantMap g = find();
+    REQUIRE(g.value(QStringLiteral("torrentless")).toBool());
+    REQUIRE(g.value(QStringLiteral("title")).toString() == QLatin1String("007 First Light"));
+    REQUIRE(g.value(QStringLiteral("group")).toString() == QLatin1String("FitGirl"));
+    REQUIRE(g.value(QStringLiteral("installState")).toInt() == 4);   // Ready: Play
+    REQUIRE(bridge.gameTorrentless(hash));
+    REQUIRE(QDir(bridge.gameFolder(hash)) == QDir(dir.path()));
+
+    // Uninstalled: it drops out on its own.
+    QFile::remove(exe);
+    REQUIRE(find().isEmpty());
+    { QFile f(exe); REQUIRE(f.open(QIODevice::WriteOnly)); f.write("MZ"); }
+    REQUIRE_FALSE(find().isEmpty());
+
+    // Removed from the library by the user.
+    bridge.forgetGame(hash);
+    REQUIRE(find().isEmpty());
+    REQUIRE_FALSE(QSettings().contains(QStringLiteral("gameExe/") + hash));
+}
+
 // ============================================================================
 //  QmlSearchBridge: "Tudo" aggregates every source into one flat result list
 // ============================================================================

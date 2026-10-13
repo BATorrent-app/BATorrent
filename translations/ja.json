@@ -434,6 +434,7 @@
   "hub_resume": "再開",
   "hub_search_lib": "ライブラリを検索",
   "hub_set_exe": "実行ファイルを設定…",
+  "hub_forget_game": "ライブラリから削除",
   "hub_sort_name": "名前",
   "hub_sort_recent": "最近",
   "hub_time_left": "残り %1",

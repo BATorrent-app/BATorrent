@@ -239,6 +239,7 @@ void QmlSessionBridge::onTorrentRemoved(int index)
     if (m_selectedIndex == index)      { m_selectedIndex = -1; changed = true; }
     else if (m_selectedIndex > index)  { --m_selectedIndex;    changed = true; }
     if (changed) { emit selectionChanged(); emit selectionListsChanged(); }
+    emit gamesChanged();   // an installed game stays in the HUB, a downloading one goes
 }
 
 bool QmlSessionBridge::hasSelection() const

@@ -434,6 +434,7 @@
   "hub_resume": "Fortsetzen",
   "hub_search_lib": "Bibliothek durchsuchen",
   "hub_set_exe": "Programm festlegen…",
+  "hub_forget_game": "Aus der Bibliothek entfernen",
   "hub_sort_name": "Name",
   "hub_sort_recent": "Zuletzt",
   "hub_time_left": "noch %1",

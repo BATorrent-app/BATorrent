@@ -160,6 +160,11 @@ AppServices AppServices::create(QApplication &app)
             keep.insert(svc.eng->torrentHashAt(i));
         for (const RemovedEntry &e : svc.eng->recentlyRemoved())
             keep.insert(e.hash);
+        // A game kept in the HUB after its torrent went keeps its cover.
+        QSettings kept;
+        kept.beginGroup(QStringLiteral("keptGames"));
+        for (const QString &hash : kept.childGroups())
+            keep.insert(hash);
         svc.resolver->pruneOrphans(keep);
     }
 

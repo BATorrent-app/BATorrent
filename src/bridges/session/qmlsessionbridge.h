@@ -285,6 +285,10 @@ public:
     Q_INVOKABLE void importAchievements(const QString &fileUrl);
     Q_INVOKABLE QVariantMap steamArt(int appId) const;   // {hero, logo} on Steam's CDN
     Q_INVOKABLE void setGameExe(const QString &infoHash, const QString &fileUrl);
+    // A game whose torrent was removed but which is still installed stays in
+    // the library; these tell such a game apart and let the user drop it.
+    Q_INVOKABLE bool gameTorrentless(const QString &infoHash) const;
+    Q_INVOKABLE void forgetGame(const QString &infoHash);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
     // Windows: exclude the game's own folder from Defender (UAC prompt), then install.

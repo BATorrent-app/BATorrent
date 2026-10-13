@@ -434,6 +434,7 @@
   "hub_resume": "继续",
   "hub_search_lib": "搜索你的库",
   "hub_set_exe": "设置可执行文件…",
+  "hub_forget_game": "从库中移除",
   "hub_sort_name": "名称",
   "hub_sort_recent": "最近",
   "hub_time_left": "剩余 %1",

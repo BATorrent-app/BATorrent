@@ -51,9 +51,16 @@ static_assert(GameInstall::Downloading == 0
            && GameInstall::Failed == 7);
 
 
+static QString keptKey(const QString &hash) { return QStringLiteral("keptGames/") + hash; }
+static QString keptName(const QString &hash)
+{
+    return QSettings().value(keptKey(hash) + QStringLiteral("/name")).toString();
+}
+
 QVariantList QmlSessionBridge::gameLibrary() const
 {
     QVariantList out;
+    QSet<QString> present;
     const int n = m_session->torrentCount();
     for (int row = 0; row < n; ++row) {
         const TorrentInfo info = m_session->torrentAt(row);
@@ -124,8 +131,76 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["installState"] = gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));
         m["extractProgress"] = m_extractProgress.value(hash, -1);   // 0-100 while unpacking, else -1
         out << m;
+        // Remembered while the torrent is here, so the game outlives it.
+        if (m["hasExe"].toBool() && keptName(hash) != info.name) {
+            QSettings s;
+            s.setValue(keptKey(hash) + QStringLiteral("/name"), info.name);
+            s.setValue(keptKey(hash) + QStringLiteral("/size"), info.totalSize);
+            s.setValue(keptKey(hash) + QStringLiteral("/added"), qint64(info.addedTime));
+        }
+        present.insert(hash);
+    }
+
+    // Games whose torrent is gone but which are still installed: the repack
+    // was 60 GB of dead weight once the game sat in its own folder, and its
+    // playtime and achievements should not go with it. Shown while the exe
+    // is there; uninstalled, or deleted along with the torrent, they drop out.
+    QSettings s;
+    s.beginGroup(QStringLiteral("keptGames"));
+    const QStringList kept = s.childGroups();
+    s.endGroup();
+    for (const QString &hash : kept) {
+        if (present.contains(hash)) continue;
+        const QString exe = gameExe(hash);
+        if (exe.isEmpty() || !QFileInfo::exists(exe)) continue;
+        const QString name = keptName(hash);
+        QVariantMap m;
+        QString title = NameParser::parse(name).cleanTitle;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const auto meta = m_resolver->cached(hash);
+            if (meta.valid) {
+                if (!meta.title.isEmpty()) title = meta.title;
+                if (!meta.posterPath.isEmpty()) m["poster"] = QUrl::fromLocalFile(meta.posterPath).toString();
+                m["description"] = meta.description;
+                m["genres"] = meta.genres;
+                m["rating"] = meta.rating;
+                m["year"] = meta.year > 0 ? QString::number(meta.year) : QString();
+            }
+        }
+        const PlayLog::Summary played = m_playLog->summary(hash);
+        m["infoHash"] = hash;
+        m["title"] = title.isEmpty() ? name : title;
+        m["progress"] = 1.0;
+        m["completed"] = true;
+        m["paused"] = false;
+        m["size"] = s.value(keptKey(hash) + QStringLiteral("/size")).toLongLong();
+        m["addedTime"] = s.value(keptKey(hash) + QStringLiteral("/added")).toLongLong();
+        m["hasExe"] = true;
+        m["lastPlayed"] = played.lastPlayedMs;
+        m["playSeconds"] = played.totalSecs;
+        m["launches"] = played.launches;
+        m["playing"] = m_runningGames.contains(hash);
+        m["group"] = ReleaseGroup::detect(name);
+        m["installState"] = gameInstallState(hash, true);
+        m["extractProgress"] = -1;
+        m["torrentless"] = true;
+        out << m;
     }
     return out;
+}
+
+bool QmlSessionBridge::gameTorrentless(const QString &infoHash) const
+{
+    return m_session->torrentIndexByInfoHash(infoHash) < 0 && QSettings().contains(keptKey(infoHash) + QStringLiteral("/name"));
+}
+
+void QmlSessionBridge::forgetGame(const QString &infoHash)
+{
+    if (m_session->torrentIndexByInfoHash(infoHash) >= 0) return;   // only a game whose torrent is gone
+    QSettings s;
+    s.remove(keptKey(infoHash));
+    s.remove(QStringLiteral("gameExe/") + infoHash);
+    emit gamesChanged();
 }
 
 QString QmlSessionBridge::gameExe(const QString &infoHash) const
@@ -147,7 +222,11 @@ void QmlSessionBridge::setGameExe(const QString &infoHash, const QString &fileUr
 QString QmlSessionBridge::gameFolder(const QString &infoHash) const
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);
-    if (row < 0) return {};
+    if (row < 0) {
+        // A game kept after its torrent went: the folder its exe is in.
+        const QString exe = gameExe(infoHash);
+        return exe.isEmpty() ? QString() : QFileInfo(exe).absolutePath();
+    }
     const TorrentInfo info = m_session->torrentAt(row);
     const QString root = info.savePath + QStringLiteral("/") + info.name;
     if (QFileInfo(root).isDir()) return root;
@@ -347,8 +426,11 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
         exe.clear();
     }
     bool isInstaller = false;
-    if (exe.isEmpty() || !QFile::exists(exe))
-        exe = GameExeDetect::autodetect(gameFolder(infoHash), &isInstaller);
+    if (exe.isEmpty() || !QFile::exists(exe)) {
+        const int row = m_session->torrentIndexByInfoHash(infoHash);
+        const QString title = row < 0 ? QString() : NameParser::parse(m_session->torrentAt(row).name).cleanTitle;
+        exe = GameExeDetect::autodetect(gameFolder(infoHash), &isInstaller, title);
+    }
     // Only a setup in the torrent: the game may already be installed elsewhere,
     // by a run of it this app lost track of, or by hand.
     if (isInstaller) {
@@ -417,10 +499,10 @@ void QmlSessionBridge::noticeOutsideLaunches(qint64 nowMs)
         const QString exe = s.value(QStringLiteral("gameExe/") + hash).toString();
         if (exe.isEmpty() || GameExeDetect::neverTheGame(QFileInfo(exe).fileName().toLower())) continue;
         const int row = m_session->torrentIndexByInfoHash(hash);
-        if (row < 0) continue;
+        if (row < 0 && !gameTorrentless(hash)) continue;
         const QString folder = QFileInfo(exe).absolutePath();
         // An exe loose in the save folder would claim everything run from Downloads.
-        if (QDir::cleanPath(folder) == QDir::cleanPath(m_session->torrentAt(row).savePath)) continue;
+        if (row >= 0 && QDir::cleanPath(folder) == QDir::cleanPath(m_session->torrentAt(row).savePath)) continue;
         folderOf.insert(hash, folder);
     }
     if (folderOf.isEmpty()) return;

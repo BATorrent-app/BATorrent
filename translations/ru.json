@@ -434,6 +434,7 @@
   "hub_resume": "Продолжить",
   "hub_search_lib": "Поиск в библиотеке",
   "hub_set_exe": "Указать программу…",
+  "hub_forget_game": "Удалить из библиотеки",
   "hub_sort_name": "Имя",
   "hub_sort_recent": "Недавние",
   "hub_time_left": "осталось %1",
