@@ -319,8 +319,10 @@ void QmlSettingsBridge::set(const QString &key, const QVariant &v)
         };
         if (once.contains(key)) st.sync();
     }
-    if (key == QLatin1String("contentLanguage"))
+    if (key == QLatin1String("contentLanguage")) {
         AddonManager::instance().syncCuratedAddons();
+        emit contentLanguageChanged();
+    }
     emit changed();
 }
 

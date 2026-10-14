@@ -461,6 +461,15 @@ void DiscoveryService::maybeFinish()
     if (m_rows.isEmpty()) setStatus(tr_("discover_empty"));
 }
 
+void DiscoveryService::reloadForLanguage()
+{
+    m_logoCache.clear();
+    m_backdropCache.clear();
+    m_logoPending.clear();
+    refresh();
+    emit languageReloaded();
+}
+
 bool DiscoveryService::loadFromCache()
 {
     QFile f(cacheFile());
@@ -468,6 +477,7 @@ bool DiscoveryService::loadFromCache()
     const QJsonObject o = QJsonDocument::fromJson(f.readAll()).object();
     if (o.value(QLatin1String("v")).toInt() != CacheVersion) return false;
     if (o.value(QLatin1String("region")).toString() != discoverRegion()) return false;  // region changed → refetch
+    if (o.value(QLatin1String("lang")).toString() != tmdbLang()) return false;          // so did the language
     const QDateTime savedAt = QDateTime::fromString(o.value(QLatin1String("savedAt")).toString(), Qt::ISODate);
     if (!savedAt.isValid()) return false;
     if (savedAt.secsTo(QDateTime::currentDateTimeUtc()) > CacheTtlSecs) return false;
@@ -488,6 +498,7 @@ void DiscoveryService::saveToCache()
     QJsonObject o;
     o.insert(QStringLiteral("v"), CacheVersion);
     o.insert(QStringLiteral("region"), discoverRegion());
+    o.insert(QStringLiteral("lang"), tmdbLang());
     o.insert(QStringLiteral("savedAt"), QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
     o.insert(QStringLiteral("rows"), QJsonArray::fromVariantList(m_rows));
     o.insert(QStringLiteral("hero"), QJsonArray::fromVariantList(m_hero));

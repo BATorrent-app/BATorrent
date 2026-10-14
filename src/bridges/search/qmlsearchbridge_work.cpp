@@ -106,6 +106,16 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         m_workLogo = url;
         emit workLogoChanged();
     });
+    // the open title, again in the new language
+    connect(m_discovery, &DiscoveryService::languageReloaded, this, [this] {
+        if (m_workTmdbId <= 0) return;
+        m_workStillsRequested = false;
+        m_workStills.clear();
+        m_workLogo.clear();
+        emit workLogoChanged();
+        m_discovery->fetchLogo(m_workTmdbId, m_workType);
+        fetchWorkStills();
+    });
     connect(m_discovery, &DiscoveryService::workDetailsReady, this,
             [this](int tmdbId, const QVariantMap &d) {
         if (tmdbId != m_workTmdbId || d.isEmpty()) return;   // stale reply for a former title

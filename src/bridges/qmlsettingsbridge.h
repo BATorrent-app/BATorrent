@@ -54,6 +54,7 @@ public:
     Q_INVOKABLE void proxyLeakTest();
     void setTelegramNotifier(TelegramNotifier *n) { m_telegram = n; }
 signals:
+    void contentLanguageChanged();   // the setting itself, not the UI language it may follow
     void changed();
     void blockBadPeersToggled(bool on);   // main.cpp drives the blocklist fetch/apply
     void telegramTestResult(bool ok, const QString &message);

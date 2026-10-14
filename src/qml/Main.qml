@@ -106,6 +106,22 @@ Window {
         inputPrompt.openWith(i18n.t("menu_add_http"), i18n.t("prompt_http_url"), "", "https://…/file.zip",
             function(t){ if (t.length > 0) session.addHttpUrl(t) })
     }
+    // What Find and HUB show is per language: a change has to fetch it again,
+    // not leave the old language on screen until the cache runs out.
+    function contentLanguageFollowsApp() {
+        var cv = typeof settings !== "undefined" ? settings.get("contentLanguage") : undefined
+        return cv === undefined || cv === null || cv === "" || Number(cv) < 0
+    }
+    Connections {
+        target: typeof i18n !== "undefined" ? i18n : null
+        function onLanguageChanged() {
+            if (win.contentLanguageFollowsApp() && typeof discovery !== "undefined") discovery.reloadForLanguage()
+        }
+    }
+    Connections {
+        target: typeof settings !== "undefined" ? settings : null
+        function onContentLanguageChanged() { if (typeof discovery !== "undefined") discovery.reloadForLanguage() }
+    }
     Connections {
         target: typeof settings !== "undefined" ? settings : null
         function onChanged() {

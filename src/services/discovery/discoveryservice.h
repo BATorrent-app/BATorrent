@@ -38,6 +38,10 @@ public:
 
     Q_INVOKABLE void load();      // serve fresh cache if any, else fetch
     Q_INVOKABLE void refresh();   // force a network fetch
+    // The content language changed: titles, overviews, logos and episode names
+    // are all per language, so drop what was fetched and fetch it again.
+    // Pages showing a title hear languageReloaded and ask for theirs.
+    Q_INVOKABLE void reloadForLanguage();
 
     // Title-first search: resolve a free-text query to real works (movies,
     // series, games) before any torrent lookup. Emits titleResults().
@@ -79,6 +83,7 @@ public:
                                          int limit = 12) const;
 
 signals:
+    void languageReloaded();
     void rowsChanged();
     void heroChanged();
     void loadingChanged();

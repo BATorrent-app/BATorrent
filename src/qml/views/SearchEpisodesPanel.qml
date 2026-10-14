@@ -108,6 +108,7 @@ Item {
         function onEpisodesReady(id, s, eps) {
             if (id === panel.tmdbId && s === panel.season) panel.tmdbRows = eps
         }
+        function onLanguageReloaded() { panel.requestSeason() }   // episode names, again in the new language
         function onSeasonCastReady(id, s, cast) {
             if (id === panel.tmdbId && s === panel.season) panel.seasonCast = cast
         }
