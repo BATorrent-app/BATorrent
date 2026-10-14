@@ -103,14 +103,25 @@ Rectangle {
         property string icon
         property string tip
         signal clicked()
-        width: 30; height: 26
+        // icon and name: an icon-only toggle was easy to miss
+        width: scRow.implicitWidth + 20; height: 26
         radius: 6
         color: on ? Theme.hover2 : (scMa.containsMouse ? Theme.hover : "transparent")
-        IconImg { anchors.centerIn: parent; src: sc.icon; tint: sc.on ? Theme.t1 : Theme.t3; s: 14 }
+        Row {
+            id: scRow
+            anchors.centerIn: parent
+            spacing: 6
+            IconImg { anchors.verticalCenter: parent.verticalCenter; src: sc.icon; tint: sc.on ? Theme.t1 : Theme.t3; s: 14 }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: sc.tip
+                color: sc.on ? Theme.t1 : (scMa.containsMouse ? Theme.t2 : Theme.t3)
+                font.pixelSize: 13
+                font.weight: sc.on ? Font.Medium : Font.Normal
+                font.family: Theme.fontSans
+            }
+        }
         MouseArea { id: scMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: sc.clicked() }
-        ToolTip.visible: scMa.containsMouse
-        ToolTip.text: sc.tip
-        ToolTip.delay: 500
         Accessible.role: Accessible.RadioButton
         Accessible.name: sc.tip
         Accessible.checked: sc.on
@@ -230,7 +241,7 @@ Rectangle {
             }
         }
 
-        // Grid / List: icon-only cells, the name in the tooltip
+        // Grid / List
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 32
