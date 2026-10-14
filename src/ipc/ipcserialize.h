@@ -23,7 +23,11 @@ inline QDataStream &operator<<(QDataStream &s, const TorrentInfo &t)
       << t.queued << qint32(t.queuePos) << t.filesMissing
       // Appended: without these the split-engine UI derives every state from a
       // default-false pair and shows DOWNLOADING for everything.
-      << t.finished << t.seeding;
+      << t.finished << t.seeding
+      // Appended again: without these the split-engine UI never showed a magnet
+      // as looking for metadata, an errored torrent as errored, or the short
+      // reason a download is stuck; it fell back to plain downloading.
+      << t.fetchingMetadata << qint64(t.fetchingSecs) << t.hasError << t.stateDetailShort;
     return s;
 }
 inline QDataStream &operator>>(QDataStream &s, TorrentInfo &t)
@@ -34,7 +38,8 @@ inline QDataStream &operator>>(QDataStream &s, TorrentInfo &t)
       >> t.paused >> t.completed >> t.ratio >> t.availability
       >> t.totalUploaded >> t.addedTime >> t.category >> t.tags
       >> t.queued >> qp >> t.filesMissing
-      >> t.finished >> t.seeding;
+      >> t.finished >> t.seeding
+      >> t.fetchingMetadata >> t.fetchingSecs >> t.hasError >> t.stateDetailShort;
     t.downloadRate = dr; t.uploadRate = ur; t.numPeers = np; t.numSeeds = ns;
     t.queuePos = qp;
     return s;

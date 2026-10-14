@@ -98,3 +98,34 @@ TEST_CASE("zero-length body is skipped without stalling the stream", "[ipc]") {
     REQUIRE(kinds == QList<ipc::Kind>({ipc::Kind::Ping}));
     REQUIRE(buf.isEmpty());
 }
+
+#include "ipc/ipcserialize.h"
+
+// The split engine sends each torrent's state over the wire; every flag the
+// UI classifies on has to make the trip, or the UI falls back to downloading.
+TEST_CASE("ipc: a torrent's state flags survive the wire", "[ipc]")
+{
+    TorrentInfo in;
+    in.name = QStringLiteral("magnet");
+    in.fetchingMetadata = true;
+    in.fetchingSecs = 155;
+    in.hasError = true;
+    in.stateDetailShort = QStringLiteral("No seeds");
+    in.finished = false;
+    in.seeding = false;
+
+    QByteArray buf;
+    {
+        QDataStream w(&buf, QIODevice::WriteOnly);
+        w << in;
+    }
+    TorrentInfo out;
+    QDataStream r(&buf, QIODevice::ReadOnly);
+    r >> out;
+    REQUIRE(r.status() == QDataStream::Ok);
+    CHECK(out.fetchingMetadata);
+    CHECK(out.fetchingSecs == 155);
+    CHECK(out.hasError);
+    CHECK(out.stateDetailShort == QStringLiteral("No seeds"));
+    CHECK(torrentStateKey(out) == QStringLiteral("error"));
+}

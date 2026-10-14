@@ -259,6 +259,7 @@ void SessionManager::loadResumeData()
             const auto &fs = atp.ti->files();
             const auto &prio = atp.file_priorities;
             bool allWantedFullSize = fs.num_files() > 0;
+            bool wantedAbsent = false;   // a wanted file with nothing on disk at all
             for (lt::file_index_t i(0); i < fs.end_file(); ++i) {
                 std::string eff = atp.renamed_files.count(i) ? atp.renamed_files[i]
                                                              : fs.file_path(i);
@@ -283,6 +284,14 @@ void SessionManager::loadResumeData()
                     {plain.isFile(), plain.size(), bt.isFile(), bt.size()});
                 if (!pick.wantedFullSize)
                     allWantedFullSize = false;
+                // Only a file that had data counts: in a half-done pack the
+                // episodes not started yet have no file, and that is fine. The
+                // piece in the middle of the file says whether it had any.
+                if (wanted && wantSize > 0 && !plain.isFile() && !bt.isFile()) {
+                    const lt::piece_index_t mid = fs.map_file(i, wantSize / 2, 1).piece;
+                    if (mid < atp.have_pieces.end_index() && atp.have_pieces[mid])
+                        wantedAbsent = true;
+                }
                 if (pick.chosen != eff)
                     atp.renamed_files[i] = pick.chosen;
             }
@@ -303,6 +312,21 @@ void SessionManager::loadResumeData()
                 const QString hash = QString::fromStdString(
                     (std::ostringstream() << atp.ti->info_hashes().get_best()).str());
                 m_completedAtStartup.insert(hash);
+            }
+            // Data that was downloaded and is gone now (deleted or moved while
+            // the app was closed): libtorrent would re-check, find nothing and
+            // quietly download it all again. It loads paused and reads as
+            // missing straight away; the user decides (locate it, or resume to
+            // download again). The probe keeps the flag honest after that.
+            const int had = atp.have_pieces.count();
+            if (m_pauseOnMissingData && wantedAbsent && had > 0 && !recoveredFromCorrupt) {
+                const QString hash = QString::fromStdString(
+                    (std::ostringstream() << atp.ti->info_hashes().get_best()).str());
+                atp.flags |= lt::torrent_flags::paused;
+                m_missingHashes.insert(hash);
+                m_missingSeen.insert(hash);
+                m_missingPaused.insert(hash);
+                qWarning().noquote() << "[session] data gone from disk at startup, loaded paused:" << hash;
             }
         }
 

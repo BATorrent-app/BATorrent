@@ -53,6 +53,16 @@ Column {
         if (tile.genres.length > 0) parts.push(tile.genres)
         return parts.join(" · ")
     }
+    // with no catalogue entry, what kind of file it is ("Disk image")
+    function kindLabel(ext) {
+        var e = (ext || "").toLowerCase()
+        if (["iso", "img", "dmg", "bin", "cue", "nrg", "vhd", "vhdx"].indexOf(e) >= 0) return i18n.t("kind_disk_image")
+        if (["zip", "rar", "7z", "tar", "gz", "xz", "bz2", "zst"].indexOf(e) >= 0) return i18n.t("kind_archive")
+        if (["mkv", "mp4", "avi", "mov", "wmv", "webm", "m4v", "ts", "m2ts"].indexOf(e) >= 0) return i18n.t("kind_video")
+        if (["mp3", "flac", "wav", "ogg", "m4a", "aac", "opus"].indexOf(e) >= 0) return i18n.t("kind_audio")
+        if (["exe", "msi"].indexOf(e) >= 0) return i18n.t("kind_program")
+        return ""
+    }
     readonly property string line: (i18n.language,
           tile.isGroup ? tile.groupCaption
         : k === "missing" ? i18n.t("tile_missing")
@@ -66,6 +76,7 @@ Column {
         : k === "checking" ? i18n.t("state_checking")
         : k === "seeding" && tile.upRate > 0 ? i18n.t("tile_uploading").arg(tile.upSpeed)
         : catalogue.length > 0 ? catalogue
+        : kindLabel(tile.fileKind).length > 0 ? kindLabel(tile.fileKind)
         : i18n.t("state_completed"))
     readonly property string rightText:
           tile.isGroup ? tile.size

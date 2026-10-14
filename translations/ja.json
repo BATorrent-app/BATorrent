@@ -1597,5 +1597,10 @@
   "vpn_ifaces_available": "利用可能なインターフェース",
   "vpn_iface_not_protecting": "トレントは保護されません",
   "vpn_advanced": "詳細",
-  "vpn_advanced_hint": "Tor / SOCKS5"
+  "vpn_advanced_hint": "Tor / SOCKS5",
+  "kind_disk_image": "ディスクイメージ",
+  "kind_archive": "圧縮ファイル",
+  "kind_video": "動画ファイル",
+  "kind_audio": "オーディオ",
+  "kind_program": "プログラム"
 }

@@ -1597,5 +1597,10 @@
   "vpn_ifaces_available": "Доступные интерфейсы",
   "vpn_iface_not_protecting": "не защищает торренты",
   "vpn_advanced": "Дополнительно",
-  "vpn_advanced_hint": "Tor / SOCKS5"
+  "vpn_advanced_hint": "Tor / SOCKS5",
+  "kind_disk_image": "Образ диска",
+  "kind_archive": "Архив",
+  "kind_video": "Видеофайл",
+  "kind_audio": "Аудио",
+  "kind_program": "Программа"
 }

@@ -1597,5 +1597,10 @@
   "vpn_ifaces_available": "Interfaces disponíveis",
   "vpn_iface_not_protecting": "não protege seus torrents",
   "vpn_advanced": "Avançado",
-  "vpn_advanced_hint": "Tor / SOCKS5"
+  "vpn_advanced_hint": "Tor / SOCKS5",
+  "kind_disk_image": "Imagem de disco",
+  "kind_archive": "Arquivo compactado",
+  "kind_video": "Arquivo de vídeo",
+  "kind_audio": "Áudio",
+  "kind_program": "Programa"
 }

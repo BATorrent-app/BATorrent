@@ -173,6 +173,10 @@ AppServices AppServices::create(QApplication &app)
                      svc.sessionBridge, &QmlSessionBridge::emitStats);
     QObject::connect(svc.resolver, &MetadataResolver::metadataReady,
                      svc.sessionBridge, &QmlSessionBridge::emitStats);
+    // The counts behind the filter pills move on a removal too: with the last
+    // torrent gone no update tick comes, and "All" kept its old count.
+    QObject::connect(svc.eng, &IEngine::torrentRemoved, svc.sessionBridge,
+                     [b = svc.sessionBridge](int) { QMetaObject::invokeMethod(b, &QmlSessionBridge::emitStats, Qt::QueuedConnection); });
     QObject::connect(svc.eng, &IEngine::torrentsUpdated,
                      svc.posterModel, &QmlPosterModel::refresh);
     QObject::connect(svc.eng, &IEngine::torrentRemoved,

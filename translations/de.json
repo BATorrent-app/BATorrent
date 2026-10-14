@@ -1597,5 +1597,10 @@
   "vpn_ifaces_available": "Verfügbare Schnittstellen",
   "vpn_iface_not_protecting": "schützt deine Torrents nicht",
   "vpn_advanced": "Erweitert",
-  "vpn_advanced_hint": "Tor / SOCKS5"
+  "vpn_advanced_hint": "Tor / SOCKS5",
+  "kind_disk_image": "Disk-Image",
+  "kind_archive": "Archiv",
+  "kind_video": "Videodatei",
+  "kind_audio": "Audio",
+  "kind_program": "Programm"
 }

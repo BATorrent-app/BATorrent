@@ -257,6 +257,14 @@ begin
   VersionLabel.AutoSize := True;
 end;
 
+// An update keeps the choices made at install (Inno restores the previous
+// tasks on its own). Showing the shortcut and association boxes again on every
+// update read as Setup asking for the associations over and over.
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := (PageID = wpSelectTasks) and (WizardForm.PrevAppDir <> '');
+end;
+
 procedure CurPageChanged(CurPageID: Integer);
 begin
   // Walk the ENTIRE form each time: task checkboxes and the welcome/finish

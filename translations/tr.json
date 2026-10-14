@@ -1597,5 +1597,10 @@
   "vpn_ifaces_available": "Kullanılabilir arayüzler",
   "vpn_iface_not_protecting": "torrentlerinizi korumaz",
   "vpn_advanced": "Gelişmiş",
-  "vpn_advanced_hint": "Tor / SOCKS5"
+  "vpn_advanced_hint": "Tor / SOCKS5",
+  "kind_disk_image": "Disk görüntüsü",
+  "kind_archive": "Arşiv",
+  "kind_video": "Video dosyası",
+  "kind_audio": "Ses",
+  "kind_program": "Program"
 }

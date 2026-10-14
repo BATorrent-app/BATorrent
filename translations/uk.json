@@ -1597,5 +1597,10 @@
   "vpn_ifaces_available": "Доступні інтерфейси",
   "vpn_iface_not_protecting": "не захищає торенти",
   "vpn_advanced": "Додатково",
-  "vpn_advanced_hint": "Tor / SOCKS5"
+  "vpn_advanced_hint": "Tor / SOCKS5",
+  "kind_disk_image": "Образ диска",
+  "kind_archive": "Архів",
+  "kind_video": "Відеофайл",
+  "kind_audio": "Аудіо",
+  "kind_program": "Програма"
 }

@@ -1597,5 +1597,10 @@
   "vpn_ifaces_available": "可用接口",
   "vpn_iface_not_protecting": "无法保护你的种子",
   "vpn_advanced": "高级",
-  "vpn_advanced_hint": "Tor / SOCKS5"
+  "vpn_advanced_hint": "Tor / SOCKS5",
+  "kind_disk_image": "磁盘映像",
+  "kind_archive": "压缩包",
+  "kind_video": "视频文件",
+  "kind_audio": "音频",
+  "kind_program": "程序"
 }
