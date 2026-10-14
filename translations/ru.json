@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "Скорость и загрузка",
   "ctx_grp_category_tags": "Категория и теги",
   "ctx_grp_advanced": "Дополнительно",
-  "ctx_remove_short": "Удалить…"
+  "ctx_remove_short": "Удалить…",
+  "player_rest_downloading": "Загружается остальное · %1%",
+  "player_subs_off_short": "Выкл",
+  "player_next_label": "Далее: %1",
+  "player_back10": "Назад на 10 с",
+  "player_fwd10": "Вперёд на 10 с",
+  "player_play_pause": "Воспроизведение / пауза",
+  "player_volume": "Громкость",
+  "player_subs_audio": "Субтитры и звук",
+  "player_subs_tab": "Субтитры",
+  "player_search_online": "Найти в сети…",
+  "player_search_online_title": "Поиск в сети",
+  "player_sub_use": "Выбрать",
+  "player_up_next_in": "Далее · через %1 с",
+  "btn_back": "Назад"
 }

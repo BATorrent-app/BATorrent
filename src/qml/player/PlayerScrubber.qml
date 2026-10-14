@@ -2,7 +2,7 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Scrubber row: position · seek bar with hover thumb preview · duration.
+// Scrubber row: position · seek bar with hover thumb preview · time left.
 // Thumb decoder reads the on-disk file (not the HTTP stream) to avoid ffmpeg
 // resync noise from a second stream client.
 import QtQuick
@@ -12,7 +12,7 @@ import "../theme"
 
 RowLayout {
     id: root
-    spacing: 12
+    spacing: 14
 
     property var mediaPlayer
     property var formatHelper
@@ -37,9 +37,8 @@ RowLayout {
     function fmt(ms) { return formatHelper ? formatHelper.fmt(ms) : "" }
 
     Text {
-        text: root.fmt(mediaPlayer ? mediaPlayer.position : 0); color: Theme.t1
-        font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
-        Layout.minimumWidth: 52; horizontalAlignment: Text.AlignRight
+        text: root.fmt(mediaPlayer ? mediaPlayer.position : 0); color: "#ffffff"
+        font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
     }
     PlayerSlider {
         id: seek
@@ -48,12 +47,27 @@ RowLayout {
         value: mediaPlayer ? mediaPlayer.position : 0
         buffered: root.buffered
         bufferedFrom: root.bufferedFrom
+        // plain chapters are notches; the opening and the ending are brackets
         marks: {
             var d = mediaPlayer ? mediaPlayer.duration : 0
             if (d <= 0) return []
             var out = []
-            for (var i = 0; i < root.chapters.length; i++)
-                if (root.chapters[i].startMs > 0 && root.chapters[i].startMs < d) out.push(root.chapters[i].startMs / d)
+            for (var i = 0; i < root.chapters.length; i++) {
+                var c = root.chapters[i]
+                if (!c.kind && c.startMs > 0 && c.startMs < d) out.push(c.startMs / d)
+            }
+            return out
+        }
+        spans: {
+            var d = mediaPlayer ? mediaPlayer.duration : 0
+            if (d <= 0) return []
+            var out = []
+            for (var i = 0; i < root.chapters.length; i++) {
+                var c = root.chapters[i]
+                if (!c.kind || c.startMs >= d) continue
+                var end = c.endMs > 0 ? Math.min(c.endMs, d) : d
+                out.push({ from: c.startMs / d, to: end / d, open: c.kind !== "credits" })
+            }
             return out
         }
         enabled: !!(mediaPlayer && mediaPlayer.seekable)
@@ -134,7 +148,7 @@ RowLayout {
         }
     }
     Text {
-        text: root.fmt(mediaPlayer ? mediaPlayer.duration : 0)
-        color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum; Layout.minimumWidth: 52
+        text: "−" + root.fmt(mediaPlayer ? Math.max(0, mediaPlayer.duration - mediaPlayer.position) : 0)
+        color: Theme.stageT2; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
     }
 }

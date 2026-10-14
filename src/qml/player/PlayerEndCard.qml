@@ -63,16 +63,19 @@ Item {
         onTriggered: { root.countdownSec -= 1; if (root.countdownSec <= 0) root.playNextNow() }
     }
 
+    // "Up next · in 8 s": the episode's name, the show and how long it is,
+    // and Watch now filling up as the countdown runs out.
+    property string nextMeta: ""
     Rectangle {
         visible: opacity > 0
         opacity: root.showEndCard ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         anchors.right: parent.right; anchors.bottom: parent.bottom
-        anchors.rightMargin: 24; anchors.bottomMargin: 134
-        width: 348; height: 116
+        anchors.rightMargin: 24; anchors.bottomMargin: 120
+        width: 360; height: 114
         radius: 12
-        color: "#f2101014"
-        border.color: Theme.hair; border.width: 1
+        color: Qt.rgba(18 / 255, 18 / 255, 20 / 255, 0.92)
+        border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
         transform: Translate {
             y: root.showEndCard ? 0 : 10
             Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
@@ -81,97 +84,72 @@ Item {
         Row {
             anchors.fill: parent; anchors.margins: 12; spacing: 12
 
-            Item {
-                width: 62; height: 92; anchors.verticalCenter: parent.verticalCenter
-                Rectangle {
-                    anchors.fill: parent; radius: 7; clip: true
-                    color: "#1c1c20"; border.color: Theme.hairSoft; border.width: 1
-                    Image {
-                        anchors.fill: parent
-                        source: root.nextPoster.length > 0 && formatHelper
-                                ? formatHelper.fileUrl(root.nextPoster) : ""
-                        fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true
-                    }
-                }
-                Canvas {
-                    id: ring
-                    anchors.centerIn: parent; width: 40; height: 40
-                    visible: root.countdownSec > 0
-                    property real frac: root.countdownSec / 8
-                    onFracChanged: requestPaint()
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.reset()
-                        var cx = width / 2, cy = height / 2, r = 17
-                        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2)
-                        ctx.lineWidth = 3; ctx.strokeStyle = "#40000000"; ctx.stroke()
-                        ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac)
-                        ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.strokeStyle = "#e5332b"; ctx.stroke()
-                    }
-                    Text {
-                        anchors.centerIn: parent; text: root.countdownSec
-                        color: "#fff"; font.pixelSize: 15; font.weight: Font.Bold; font.family: Theme.fontSans
-                    }
+            Rectangle {
+                width: 64; height: 90; radius: 6; clip: true
+                color: "#1c1c20"; border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+                Image {
+                    anchors.fill: parent
+                    source: root.nextPoster.length > 0 && formatHelper ? formatHelper.fileUrl(root.nextPoster) : ""
+                    fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true
                 }
             }
-
             Column {
-                width: parent.width - 62 - 12
-                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - 64 - 12
+                height: parent.height
                 spacing: 3
                 Text {
-                    text: (root.countdownSec > 0)
-                          ? ((i18n.language, i18n.t("player_next_ep")) + " · " + root.countdownSec + "s")
-                          : (i18n.language, i18n.t("player_up_next"))
-                    color: Theme.accent; font.pixelSize: 10; font.weight: Font.Bold
-                    font.letterSpacing: 0.6; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
+                    text: (i18n.language, root.countdownSec > 0
+                           ? i18n.t("player_up_next_in").arg(root.countdownSec)
+                           : i18n.t("player_up_next"))
+                    color: Theme.accentText; font.pixelSize: 11; font.weight: Font.Bold
+                    font.letterSpacing: 1.0; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
                 }
                 Text {
-                    width: parent.width; text: root.nextTitle
-                    color: "#f3f3f4"; font.pixelSize: 14; font.weight: Font.DemiBold
+                    width: parent.width
+                    text: root.nextSubtitle.length > 0 ? root.nextSubtitle : root.nextTitle
+                    color: "#ffffff"; font.pixelSize: 15; font.weight: Font.DemiBold
                     font.family: Theme.fontSans; elide: Text.ElideRight
                 }
                 Text {
-                    width: parent.width; visible: root.nextSubtitle.length > 0
-                    text: root.nextSubtitle
-                    color: "#8a8b90"; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
+                    width: parent.width
+                    visible: text.length > 0
+                    text: root.nextMeta.length > 0 ? root.nextMeta : (root.nextSubtitle.length > 0 ? root.nextTitle : "")
+                    color: Theme.stageMuted; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
                 }
-                Row {
-                    spacing: 8; topPadding: 4
-                    Rectangle {
-                        width: playNowRow.width + 22; height: 28; radius: 7
-                        color: pnMa.containsMouse ? "#ff2e37" : Theme.accent
-                        Behavior on color { ColorAnimation { duration: Theme.durExit } }
-                        Row {
-                            id: playNowRow; anchors.centerIn: parent; spacing: 6
-                            IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/play.svg"; tint: "#fff"; s: 13 }
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: (i18n.language, i18n.t("player_watch_now"))
-                                color: "#fff"; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                            }
-                        }
-                        MouseArea {
-                            id: pnMa; anchors.fill: parent
-                            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: root.playNextNow()
-                        }
-                    }
-                    Rectangle {
-                        width: cancelTxt.width + 22; height: 28; radius: 7
-                        color: cnMa.containsMouse ? "#1affffff" : "transparent"
-                        border.color: Theme.hair; border.width: 1
-                        Text {
-                            id: cancelTxt; anchors.centerIn: parent
-                            text: (i18n.language, i18n.t("btn_cancel"))
-                            color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans
-                        }
-                        MouseArea {
-                            id: cnMa; anchors.fill: parent
-                            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: root.dismiss()
-                        }
-                    }
+            }
+        }
+        Row {
+            anchors.left: parent.left; anchors.leftMargin: 12 + 64 + 12
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 12
+            spacing: 6
+            Rectangle {
+                width: playNowTxt.width + 24; height: 30; radius: 7
+                clip: true
+                color: "#3a1514"
+                // the countdown, as the button filling up
+                Rectangle {
+                    anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                    width: parent.width * (root.countdownSec > 0 ? 1 - (root.countdownSec - 1) / 8 : 1)
+                    color: pnMa.containsMouse ? Qt.lighter(Theme.accent, 1.1) : Theme.accent
+                    Behavior on width { NumberAnimation { duration: 950; easing.type: Easing.Linear } }
                 }
+                Text {
+                    id: playNowTxt; anchors.centerIn: parent
+                    text: (i18n.language, i18n.t("player_watch_now"))
+                    color: "#ffffff"; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                }
+                MouseArea { id: pnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.playNextNow() }
+            }
+            Rectangle {
+                width: cancelTxt.width + 24; height: 30; radius: 7
+                color: cnMa.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
+                border.color: Qt.rgba(1, 1, 1, 0.15); border.width: 1
+                Text {
+                    id: cancelTxt; anchors.centerIn: parent
+                    text: (i18n.language, i18n.t("btn_cancel"))
+                    color: "#ffffff"; font.pixelSize: 13; font.family: Theme.fontSans
+                }
+                MouseArea { id: cnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.dismiss() }
             }
         }
     }

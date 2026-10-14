@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "Velocidad y descarga",
   "ctx_grp_category_tags": "Categoría y etiquetas",
   "ctx_grp_advanced": "Avanzado",
-  "ctx_remove_short": "Eliminar…"
+  "ctx_remove_short": "Eliminar…",
+  "player_rest_downloading": "Descargando el resto · %1%",
+  "player_subs_off_short": "No",
+  "player_next_label": "Siguiente: %1",
+  "player_back10": "Atrás 10 s",
+  "player_fwd10": "Adelante 10 s",
+  "player_play_pause": "Reproducir / pausar",
+  "player_volume": "Volumen",
+  "player_subs_audio": "Subtítulos y audio",
+  "player_subs_tab": "Subtítulo",
+  "player_search_online": "Buscar en línea…",
+  "player_search_online_title": "Buscar en línea",
+  "player_sub_use": "Usar",
+  "player_up_next_in": "A continuación · en %1 s",
+  "btn_back": "Volver"
 }

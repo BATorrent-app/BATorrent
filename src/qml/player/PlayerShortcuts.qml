@@ -14,7 +14,7 @@ Item {
     // Named differently from host ids: same-name bindings self-shadow to undefined.
     property var optionsPanel
     property var morePanel
-    property var subsPanel
+    property var skipChip
     property bool extSubsActive: false
 
     Shortcut { sequence: "["; enabled: root.extSubsActive; onActivated: if (pw) pw.bumpSubOffset(-500) }
@@ -51,6 +51,8 @@ Item {
     Shortcut {
         sequence: "S"
         onActivated: {
+            // over an opening or ending, S skips it (the chip says so)
+            if (skipChip && skipChip.skipNow()) return
             if (!pw || !optionsPanel) return
             var n = pw.subtitleTrackCount(), cur = pw.activeSubtitle()
             if (n === 0) return
@@ -74,8 +76,11 @@ Item {
         onActivated: {
             if (pw && pw.helpOpen) { pw.helpOpen = false; return }
             if (morePanel && morePanel.open) { morePanel.closePanel(); return }
-            if (optionsPanel && optionsPanel.open) { optionsPanel.closePanel(); return }
-            if (subsPanel && subsPanel.open) { subsPanel.closePanel(); return }
+            if (optionsPanel && optionsPanel.open) {
+                if (optionsPanel.online) optionsPanel.online = false
+                else optionsPanel.closePanel()
+                return
+            }
             if (!pw) return
             if (pw.pipMode) { pw.togglePip(); return }
             if (pw.visibility === Window.FullScreen) pw.visibility = Window.Windowed

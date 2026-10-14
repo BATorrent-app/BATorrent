@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "Geschwindigkeit und Download",
   "ctx_grp_category_tags": "Kategorie und Tags",
   "ctx_grp_advanced": "Erweitert",
-  "ctx_remove_short": "Entfernen…"
+  "ctx_remove_short": "Entfernen…",
+  "player_rest_downloading": "Rest wird geladen · %1%",
+  "player_subs_off_short": "Aus",
+  "player_next_label": "Weiter: %1",
+  "player_back10": "10 s zurück",
+  "player_fwd10": "10 s vor",
+  "player_play_pause": "Wiedergabe / Pause",
+  "player_volume": "Lautstärke",
+  "player_subs_audio": "Untertitel und Audio",
+  "player_subs_tab": "Untertitel",
+  "player_search_online": "Online suchen…",
+  "player_search_online_title": "Online suchen",
+  "player_sub_use": "Nutzen",
+  "player_up_next_in": "Als Nächstes · in %1 s",
+  "btn_back": "Zurück"
 }

@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "Швидкість і завантаження",
   "ctx_grp_category_tags": "Категорія і теги",
   "ctx_grp_advanced": "Додатково",
-  "ctx_remove_short": "Видалити…"
+  "ctx_remove_short": "Видалити…",
+  "player_rest_downloading": "Завантажується решта · %1%",
+  "player_subs_off_short": "Вимк",
+  "player_next_label": "Далі: %1",
+  "player_back10": "Назад на 10 с",
+  "player_fwd10": "Вперед на 10 с",
+  "player_play_pause": "Відтворення / пауза",
+  "player_volume": "Гучність",
+  "player_subs_audio": "Субтитри і звук",
+  "player_subs_tab": "Субтитри",
+  "player_search_online": "Шукати в мережі…",
+  "player_search_online_title": "Пошук у мережі",
+  "player_sub_use": "Вибрати",
+  "player_up_next_in": "Далі · за %1 с",
+  "btn_back": "Назад"
 }

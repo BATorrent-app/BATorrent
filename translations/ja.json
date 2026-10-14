@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "速度とダウンロード",
   "ctx_grp_category_tags": "カテゴリとタグ",
   "ctx_grp_advanced": "詳細",
-  "ctx_remove_short": "削除…"
+  "ctx_remove_short": "削除…",
+  "player_rest_downloading": "残りをダウンロード中 · %1%",
+  "player_subs_off_short": "オフ",
+  "player_next_label": "次: %1",
+  "player_back10": "10秒戻る",
+  "player_fwd10": "10秒進む",
+  "player_play_pause": "再生 / 一時停止",
+  "player_volume": "音量",
+  "player_subs_audio": "字幕と音声",
+  "player_subs_tab": "字幕",
+  "player_search_online": "オンラインで検索…",
+  "player_search_online_title": "オンラインで検索",
+  "player_sub_use": "使う",
+  "player_up_next_in": "次の再生まで %1 秒",
+  "btn_back": "戻る"
 }

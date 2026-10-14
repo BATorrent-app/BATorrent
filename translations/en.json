@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "Speed and download",
   "ctx_grp_category_tags": "Category and tags",
   "ctx_grp_advanced": "Advanced",
-  "ctx_remove_short": "Remove…"
+  "ctx_remove_short": "Remove…",
+  "player_rest_downloading": "Downloading the rest · %1%",
+  "player_subs_off_short": "Off",
+  "player_next_label": "Next: %1",
+  "player_back10": "Back 10 s",
+  "player_fwd10": "Forward 10 s",
+  "player_play_pause": "Play / pause",
+  "player_volume": "Volume",
+  "player_subs_audio": "Subtitles and audio",
+  "player_subs_tab": "Subtitle",
+  "player_search_online": "Search online…",
+  "player_search_online_title": "Search online",
+  "player_sub_use": "Use",
+  "player_up_next_in": "Up next · in %1 s",
+  "btn_back": "Back"
 }

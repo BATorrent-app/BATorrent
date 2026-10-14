@@ -25,10 +25,21 @@ Item {
     Layout.fillHeight: false
     implicitHeight: vertical ? vCol.implicitHeight : 142
 
+    // Read when the selection changes, not inside the bindings: the call can
+    // reach into the engine process, and a binding that re-enters itself
+    // while it waits reports a loop.
+    property string selCat: ""
+    function readCat() { selCat = hasSel ? session.selectedCategory() : "" }
+    Component.onCompleted: readCat()
+    onHasSelChanged: readCat()
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        function onSelectionChanged() { ident.readCat() }
+    }
     // "Mark as watched / played / done", by what the item is
     readonly property string markKey: {
         if (!hasSel) return "ctx_mark_completed_plain"
-        var c = session.selectedCategory()
+        var c = selCat
         if (c === "Games") return "mark_played"
         if (c === "Movies" || c === "Series" || session.selectedHasVideo) return "mark_watched"
         return "ctx_mark_completed_plain"
@@ -37,8 +48,7 @@ Item {
         if (!hasSel) return ""
         var parts = []
         if (session.selectedMetaInfo.length > 0) parts.push(session.selectedMetaInfo)
-        var c = session.selectedCategory()
-        if (c.length > 0) parts.push(ident.win.catLabel(c))
+        if (selCat.length > 0) parts.push(ident.win.catLabel(selCat))
         return parts.join(" · ")
     }
 

@@ -56,6 +56,7 @@ Item {
         if (step > 0) { w.x = w.x + step; w.y = w.y + step }
         openPlayers.push(w)
         w.nextProvider = root.searchPage
+        w.prepareFrame()
         w.show(); w.raise(); w.requestActivate()
         w.openMedia(url, title, hash, fileIndex)
     }

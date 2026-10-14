@@ -23,6 +23,7 @@
 #include <QFile>
 #include <QUrl>
 #include <QSettings>
+#include <QRegularExpression>
 #include <QDesktopServices>
 #include <QDateTime>
 #include <QJsonDocument>
@@ -409,23 +410,37 @@ QVariantMap QmlSessionBridge::playerTitle(const QString &infoHash, int fileIndex
     // Prefer the resolver's clean title (TMDB/IGDB) when we have it; fall back
     // to the parsed title, then the raw name.
     QString title;
+    int showTmdb = 0;
     if (m_resolver && m_resolver->hasCached(infoHash)) {
         const MetadataResult meta = m_resolver->cached(infoHash);
         if (meta.valid && !meta.title.isEmpty()) title = meta.title;
+        if (meta.valid) showTmdb = meta.tmdbId;
     }
     if (title.isEmpty()) title = pn.cleanTitle.trimmed();
     if (title.isEmpty()) title = raw;
 
     // Subtitle: series → "S4 · E10"; movie → the year. Season/episode come
     // from the per-file parse (a season pack shares one resolved title).
+    // A fansub's "[Group] Show - 353" is the absolute episode, not season 1:
+    // the player maps it to the real season from TMDB (PlayerWindow) and
+    // shows "Ep 353" until then, never "S1 · E353".
+    static const QRegularExpression explicitSe(QStringLiteral("[Ss]\\d{1,2}\\s*[EeXx]\\d{1,4}|\\b\\d{1,2}x\\d{1,3}\\b"));
+    const bool absolute = pn.season == 1 && pn.episode > 0 && !explicitSe.match(raw).hasMatch()
+                          && raw.trimmed().startsWith(QLatin1Char('['));
     QString subtitle;
-    if (pn.season >= 0 && pn.episode >= 0)
-        subtitle = QStringLiteral("S%1 · E%2").arg(pn.season).arg(pn.episode);
+    if (absolute)
+        subtitle = QStringLiteral("Ep %1").arg(pn.episode);
+    else if (pn.season >= 0 && pn.episode >= 0)
+        subtitle = QStringLiteral("S%1E%2").arg(pn.season, 2, 10, QLatin1Char('0')).arg(pn.episode, 2, 10, QLatin1Char('0'));
     else if (pn.year > 0)
         subtitle = QString::number(pn.year);
 
     out["title"] = title;
     out["subtitle"] = subtitle;
+    out["season"] = pn.season;
+    out["episode"] = pn.episode;
+    out["absolute"] = absolute;
+    out["showTmdb"] = (pn.episode > 0) ? showTmdb : 0;
     return out;
 }
 

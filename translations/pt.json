@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "Velocidade e download",
   "ctx_grp_category_tags": "Categoria e tags",
   "ctx_grp_advanced": "Avançado",
-  "ctx_remove_short": "Remover…"
+  "ctx_remove_short": "Remover…",
+  "player_rest_downloading": "Baixando o resto · %1%",
+  "player_subs_off_short": "Desl.",
+  "player_next_label": "Próximo: %1",
+  "player_back10": "Voltar 10 s",
+  "player_fwd10": "Avançar 10 s",
+  "player_play_pause": "Reproduzir / pausar",
+  "player_volume": "Volume",
+  "player_subs_audio": "Legendas e áudio",
+  "player_subs_tab": "Legenda",
+  "player_search_online": "Buscar online…",
+  "player_search_online_title": "Buscar online",
+  "player_sub_use": "Usar",
+  "player_up_next_in": "A seguir · em %1 s",
+  "btn_back": "Voltar"
 }

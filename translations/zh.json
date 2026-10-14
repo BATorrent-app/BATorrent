@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "速度与下载",
   "ctx_grp_category_tags": "分类与标签",
   "ctx_grp_advanced": "高级",
-  "ctx_remove_short": "删除…"
+  "ctx_remove_short": "删除…",
+  "player_rest_downloading": "正在下载剩余部分 · %1%",
+  "player_subs_off_short": "关",
+  "player_next_label": "下一集：%1",
+  "player_back10": "后退 10 秒",
+  "player_fwd10": "前进 10 秒",
+  "player_play_pause": "播放 / 暂停",
+  "player_volume": "音量",
+  "player_subs_audio": "字幕与音频",
+  "player_subs_tab": "字幕",
+  "player_search_online": "在线搜索…",
+  "player_search_online_title": "在线搜索",
+  "player_sub_use": "使用",
+  "player_up_next_in": "接下来 · %1 秒后",
+  "btn_back": "返回"
 }

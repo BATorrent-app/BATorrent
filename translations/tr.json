@@ -1551,5 +1551,19 @@
   "ctx_grp_speed": "Hız ve indirme",
   "ctx_grp_category_tags": "Kategori ve etiketler",
   "ctx_grp_advanced": "Gelişmiş",
-  "ctx_remove_short": "Kaldır…"
+  "ctx_remove_short": "Kaldır…",
+  "player_rest_downloading": "Kalanı indiriliyor · %%1",
+  "player_subs_off_short": "Kapalı",
+  "player_next_label": "Sonraki: %1",
+  "player_back10": "10 sn geri",
+  "player_fwd10": "10 sn ileri",
+  "player_play_pause": "Oynat / duraklat",
+  "player_volume": "Ses",
+  "player_subs_audio": "Altyazı ve ses",
+  "player_subs_tab": "Altyazı",
+  "player_search_online": "Çevrim içi ara…",
+  "player_search_online_title": "Çevrim içi ara",
+  "player_sub_use": "Kullan",
+  "player_up_next_in": "Sıradaki · %1 sn içinde",
+  "btn_back": "Geri"
 }

@@ -184,8 +184,7 @@
 <file>../src/qml/player/PlayerRetry.qml</file>
     <file>../src/qml/player/PlayerFormat.qml</file>
     <file>../src/qml/player/PlayerSlider.qml</file>
-    <file>../src/qml/player/PlayerSubPanel.qml</file>
-    <file>../src/qml/player/PlayerOptionsPanel.qml</file>
+    <file>../src/qml/player/PlayerSubsPopover.qml</file>
     <file>../src/qml/player/PlayerMorePanel.qml</file>
     <file>../src/qml/player/PlayerResume.qml</file>
     <file>../src/qml/player/PlayerEndCard.qml</file>

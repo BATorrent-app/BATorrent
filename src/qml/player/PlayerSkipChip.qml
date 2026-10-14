@@ -44,6 +44,15 @@ Item {
         return null
     }
 
+    // "Skip opening  S": the words and the key, on a band of its own above
+    // the controls (or near the bottom when they are hidden)
+    function skipNow() {
+        var sk = root.activeSkip
+        if (!sk || !mediaPlayer || root.endCardVisible) return false
+        mediaPlayer.position = sk.endMs
+        root.skipped()
+        return true
+    }
     Rectangle {
         id: chip
         readonly property var sk: root.activeSkip
@@ -52,37 +61,34 @@ Item {
         Behavior on opacity { NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut } }
         anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.rightMargin: 24
-        anchors.bottomMargin: root.controlsShown ? 134 : 40
+        anchors.bottomMargin: root.controlsShown ? 184 : 40
         Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
-        width: skipRow.width + 30; height: 40
+        width: skipRow.width + 32; height: 40
         radius: 8
-        color: skMa.containsMouse ? "#ffffff" : "#e6101014"
-        border.color: skMa.containsMouse ? "#ffffff" : Theme.hair; border.width: 1
+        color: skMa.containsMouse ? "#ffffff" : Qt.rgba(20 / 255, 20 / 255, 22 / 255, 0.85)
+        border.color: skMa.containsMouse ? "#ffffff" : Qt.rgba(1, 1, 1, 0.18); border.width: 1
         Behavior on color { ColorAnimation { duration: Theme.durFast } }
         Row {
             id: skipRow; anchors.centerIn: parent; spacing: 8
-            IconImg {
-                anchors.verticalCenter: parent.verticalCenter
-                src: "qrc:/icons/skip-forward.svg"; s: 15
-                tint: skMa.containsMouse ? "#0a0a0c" : Theme.t1
-            }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: chip.sk ? (chip.sk.kind === "credits"
                         ? (i18n.language, i18n.t("player_skip_credits"))
                         : (i18n.language, i18n.t("player_skip_intro"))) : ""
-                color: skMa.containsMouse ? "#0a0a0c" : Theme.t1
-                font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                color: skMa.containsMouse ? "#0a0a0c" : "#ffffff"
+                font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "S"
+                color: skMa.containsMouse ? "#55555c" : Theme.stageMuted
+                font.pixelSize: 12; font.family: Theme.fontSans
             }
         }
         MouseArea {
             id: skMa; anchors.fill: parent
             hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (!chip.sk || !mediaPlayer) return
-                mediaPlayer.position = chip.sk.endMs
-                root.skipped()
-            }
+            onClicked: root.skipNow()
         }
     }
 }

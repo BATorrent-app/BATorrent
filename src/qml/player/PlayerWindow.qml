@@ -30,6 +30,24 @@ Window {
     flags: baseFlags
     transientParent: null
 
+    // Windows builds with QWindowKit: no system title bar. The window buttons
+    // sit at the top right over the picture and fade with the controls; the
+    // strip along the top drags the window.
+    readonly property bool frameless: typeof framelessWindow !== "undefined" && framelessWindow === true
+    Loader {
+        id: framelessLoader
+        active: win.frameless
+        source: win.frameless ? "../AppFramelessAgent.qml" : ""
+        onLoaded: { item.window = win; item.navBar = chrome }
+    }
+    // Called before the first show (MainWindowLoaders), so the frame never flashes.
+    function prepareFrame() { if (framelessLoader.item) framelessLoader.item.attach() }
+    function toggleMaximized() {
+        if (win.visibility === Window.FullScreen) return
+        if (win.visibility === Window.Maximized) win.showNormal()
+        else win.showMaximized()
+    }
+
     property string streamUrl: ""
     property string localFile: ""   // on-disk path of the playing file (seek previews decode this, not the HTTP stream)
     readonly property bool ambientGlow: (typeof settings === "undefined") || settings.getBool("ambientGlow", true)
@@ -40,6 +58,13 @@ Window {
     property string resolvedTitle: ""
     property string resolvedSubtitle: ""
     readonly property string headerTitle: resolvedTitle.length > 0 ? resolvedTitle : mediaTitle
+    // "S01E01", for the subtitle search header
+    readonly property string episodeCode: {
+        var m = /S(\d+)E(\d+)/i.exec(resolvedSubtitle) || /S(\d+)\s*·\s*E(\d+)/i.exec(resolvedSubtitle)
+        if (!m) return ""
+        var se = Number(m[1]), ep = Number(m[2])
+        return "S" + (se < 10 ? "0" : "") + se + "E" + (ep < 10 ? "0" : "") + ep
+    }
     readonly property string mediaQuality: playerFmt.qualityFromName(mediaFileName)
     readonly property string mediaAudio: playerFmt.audioFromName(mediaFileName)
     property string infoHash: ""
@@ -54,6 +79,7 @@ Window {
     property int extCueIdx: -1
     property string extCueText: ""
     property string extSubName: ""
+    property string extSubLang: ""        // the language it was fetched in, for the CC button
     property int extSubOffset: 0          // ms; positive shows subtitles later
     readonly property bool extSubsActive: extCues.length > 0
 
@@ -156,6 +182,7 @@ Window {
         if (settings.getBool("autoSubs", true) && typeof subsearch !== "undefined" && !win.extSubsActive) {
             console.info("[player] no embedded " + subs[0] + " subtitle, searching online")
             win.autoSubPending = true
+            win.extSubLang = subs[0]
             subsearch.searchFor(win.infoHash, win.fileIndex, win.mediaTitle, [subs[0]])
         }
     }
@@ -178,7 +205,9 @@ Window {
         if (!win.pipMode) {
             win.savedGeom = Qt.rect(win.x, win.y, win.width, win.height)
             if (win.visibility === Window.FullScreen) win.visibility = Window.Windowed
-            win.flags = Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+            // the frameless build is already without a frame: only on top
+            win.flags = win.frameless ? (win.baseFlags | Qt.WindowStaysOnTopHint)
+                                      : (Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
             var scr = win.screen
             win.width = 400; win.height = 225
             win.x = scr.virtualX + scr.width - 416
@@ -203,7 +232,7 @@ Window {
         player.activeSubtitleTrack = -1
         return true
     }
-    function clearExternalSubs() { extCues = []; extCueIdx = -1; extCueText = ""; extSubName = ""; extSubOffset = 0 }
+    function clearExternalSubs() { extCues = []; extCueIdx = -1; extCueText = ""; extSubName = ""; extSubOffset = 0; extSubLang = "" }
     function bumpSubOffset(ms) {
         extSubOffset += ms
         updateCue(player.position)
@@ -247,6 +276,45 @@ Window {
             win.chapters = win.chapters.concat(list)
         }
     }
+    // The episode's real season and name from TMDB: "S16E11 · Name". A fansub's
+    // absolute number ("Bleach - 353") walks the seasons until it lands.
+    property var epq: ({ tmdb: 0 })
+    function resolveEpisode(pt) {
+        win.epq = { tmdb: 0 }
+        if (!(pt.showTmdb > 0) || !(pt.episode > 0) || typeof discovery === "undefined") return
+        win.epq = { tmdb: pt.showTmdb, absolute: !!pt.absolute, want: pt.episode,
+                    season: pt.absolute ? 1 : pt.season, before: 0 }
+        discovery.fetchEpisodes(pt.showTmdb, win.epq.season)
+    }
+    function epCode(season, episode) {
+        return "S" + (season < 10 ? "0" : "") + season + "E" + (episode < 10 ? "0" : "") + episode
+    }
+    Connections {
+        target: typeof discovery !== "undefined" ? discovery : null
+        ignoreUnknownSignals: true
+        function onEpisodesReady(id, season, eps) {
+            var q = win.epq
+            if (!q.tmdb || id !== q.tmdb || season !== q.season) return
+            if (!q.absolute) {
+                for (var i = 0; i < eps.length; i++)
+                    if (eps[i].episode === q.want && eps[i].name)
+                        win.resolvedSubtitle = win.epCode(season, q.want) + " · " + eps[i].name
+                win.epq = { tmdb: 0 }
+                return
+            }
+            if (eps.length === 0 || season > 60) { win.epq = { tmdb: 0 }; return }
+            if (q.before + eps.length >= q.want) {
+                var n = q.want - q.before
+                var name = ""
+                for (var j = 0; j < eps.length; j++) if (eps[j].episode === n) name = eps[j].name || ""
+                win.resolvedSubtitle = win.epCode(season, n) + (name.length > 0 ? " · " + name : "")
+                win.epq = { tmdb: 0 }
+                return
+            }
+            win.epq = { tmdb: q.tmdb, absolute: true, want: q.want, season: season + 1, before: q.before + eps.length }
+            discovery.fetchEpisodes(q.tmdb, season + 1)
+        }
+    }
     property string nextPoster: ""
     property string nextTitle: ""
     property string nextSubtitle: ""
@@ -271,6 +339,7 @@ Window {
         var pt = (typeof session !== "undefined") ? session.playerTitle(hash, fileIdx) : ({})
         win.resolvedTitle = pt.title || ""
         win.resolvedSubtitle = pt.subtitle || ""
+        win.resolveEpisode(pt)
         resume.prepareOpen()
         runway.reset()
         retry.reset()
@@ -549,21 +618,23 @@ Window {
     }
 
     // Subtitle overlay for both kinds: an external file's cue, else the
-    // file's own track (read as ASS by the isolated player). Styled by the
-    // user's subtitle settings; an \an7-9 line sits at the top, clear of the
-    // controls, as the subtitle asks.
+    // file's own track (read as ASS by the isolated player). No box behind it
+    // unless the user asked for one: an outline and a soft shadow. It rises
+    // above the controls when they show; an \an7-9 line sits at the top, as
+    // the subtitle asks.
     readonly property string subLine: win.extCueText.length > 0 ? win.extCueText
                                       : (player.subtitleHtml !== undefined ? player.subtitleHtml : "")
     readonly property bool subTop: win.extCueText.length === 0 && player.subtitleAlign !== undefined
                                    && player.subtitleAlign >= 7
     Item {
+        id: subBox
         visible: win.subLine.length > 0
         width: parent.width
         height: subText.implicitHeight
         anchors.horizontalCenter: parent.horizontalCenter
-        y: win.subTop ? Math.max(videoOut.y, 0) + (win.controlsShown ? 76 : 28)
-                      : videoOut.y + videoOut.height - height - (chrome.barVisible ? chrome.barHeight : 0) - 26
-        Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
+        y: win.subTop ? Math.max(videoOut.y, 0) + 64
+                      : Math.min(videoOut.y + videoOut.height, win.height) - height - (win.controlsShown ? 128 : 48)
+        Behavior on y { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
         Rectangle {
             visible: win.subBgOpacity > 0
             anchors.centerIn: subText
@@ -580,12 +651,21 @@ Window {
             color: win.subColor
             style: win.subBgOpacity > 0 ? Text.Normal : Text.Outline
             styleColor: "#000000"
-            font.pixelSize: Math.max(12, Math.round(win.height * 0.034 * win.subScale))
+            font.pixelSize: Math.max(14, Math.round(win.height * 0.042 * win.subScale))
             font.weight: Font.DemiBold
             font.family: Theme.fontSans
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
-            width: Math.min(win.width * 0.86, 980)
+            width: Math.min(win.width * 0.86, 1100)
+            layer.enabled: win.subBgOpacity === 0
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: "#000000"
+                shadowOpacity: 0.9
+                shadowBlur: 0.35
+                shadowVerticalOffset: 2
+                blurMax: 8
+            }
         }
     }
 
@@ -631,7 +711,7 @@ Window {
     Timer {
         id: idle; interval: 3000
         onTriggered: {
-            if (subPanel.open || optsPanel.open || chrome.barHovered) return
+            if (optsPanel.open || morePanel.open || chrome.barHovered) return
             if (player.playbackState !== MediaPlayer.PlayingState) return
             win.controlsShown = false
         }
@@ -655,29 +735,18 @@ Window {
         onAccepted: win.loadExternalSubs(selectedFile.toString())
     }
 
-    // ---- online-subtitles panel (slide-in drawer + scrim) ----
-    // above the title/control bars so its close button and header aren't trapped
-    // underneath the top chrome (they overlap the drawer's top edge).
-    PlayerSubPanel {
-        id: subPanel
+    // subtitles and audio: one popover over the CC button, in two screens
+    PlayerSubsPopover {
+        id: optsPanel
         anchors.fill: parent
         z: 60
         pw: win
         mediaPlayer: player
-    }
-
-    // unified audio/subtitles/speed popover (replaces the old context menus)
-    PlayerOptionsPanel {
-        id: optsPanel
-        anchors.fill: parent
-        z: 55
-        pw: win
-        mediaPlayer: player
-        onSearchOnline: subPanel.openPanel()
         onLoadFile: subFileDlg.open()
     }
 
     PlayerSkipChip {
+        id: skipChip
         mediaPlayer: player
         chapters: win.chapters
         autoSkip: win.autoSkip
@@ -782,7 +851,7 @@ Window {
         pw: win
         morePanel: morePanel
         optionsPanel: optsPanel
-        subsPanel: subPanel
+        skipChip: skipChip
         extSubsActive: win.extSubsActive
     }
 
