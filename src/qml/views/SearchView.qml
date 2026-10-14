@@ -18,6 +18,14 @@ Rectangle {
     color: Theme.bg
 
     readonly property var api: typeof search !== "undefined" ? search : null
+    // Converted to JS once per change. Every pane used to read api.results
+    // itself, and each read copies the whole list into a new JS array.
+    readonly property var results: {
+        var t0 = Date.now()
+        var r = api ? api.results : []
+        console.debug("[find] results to JS " + r.length + " rows " + (Date.now() - t0) + " ms")
+        return r
+    }
     readonly property string sourceKey: {
         if (!api) return "stremio"
         var s = api.sources

@@ -21,7 +21,7 @@ Rectangle {
 
     Layout.fillWidth: true
     Layout.preferredHeight: 44
-    visible: sv.isFlatList && sv.api && sv.api.results.length > 0 && !sv.titleStage
+    visible: sv.isFlatList && sv.api && sv.results.length > 0 && !sv.titleStage
     color: "transparent"
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
 
@@ -106,13 +106,13 @@ Rectangle {
         Item { Layout.fillWidth: true }
 
         Text {
-            text: row.sv.viewModel.length + " / " + (row.sv.api ? row.sv.api.results.length : 0)
+            text: row.sv.viewModel.length + " / " + (row.sv.api ? row.sv.results.length : 0)
             color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
         }
         BtnFlat {
             // one-click "best" release for a picked title (quality + seeders + your language)
             // secondary styling so it doesn't fight the red "Search" stacked above it
-            visible: row.sv.api && row.sv.api.singleTitleView && row.sv.api.results.length > 0
+            visible: row.sv.api && row.sv.api.singleTitleView && row.sv.results.length > 0
             primary: false
             text: "★  " + (i18n.language, i18n.t("search_get_best"))
             onClicked: row.sv.pickBest()

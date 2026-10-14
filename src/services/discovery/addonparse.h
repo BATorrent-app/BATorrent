@@ -38,6 +38,10 @@ QList<CatalogItem> parseCatalogMetas(const QByteArray &data);
 // stream response streams[] → StreamResult rows (magnet-only kept).
 QList<StreamResult> parseStreamResults(const QByteArray &data, const QString &addonName);
 
+// Fills torrentName, fileName, seeders, size, source and inPack from r.title
+// (Torrentio's multi-line text). Keeps a size and file name already set.
+void readStreamTitle(StreamResult &r);
+
 // Legacy apibay-shaped root array (searchTorrents).
 QList<TorrentSearchResult> parseApibayArray(const QByteArray &data,
                                             const QString &providerName = QStringLiteral("Torrents"));

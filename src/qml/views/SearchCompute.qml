@@ -14,7 +14,7 @@ QtObject {
     function distinctTokens(role, order) {
         if (!sv || !sv.api) return []
         var seen = {}, out = []
-        var res = sv.api.results
+        var res = sv.results
         for (var i = 0; i < res.length; i++) {
             var v = res[i][role]
             if (v && !seen[v]) { seen[v] = true; out.push(v) }
@@ -37,7 +37,7 @@ QtObject {
     readonly property var providerOptions: distinctTokens("provider", [])
 
     readonly property bool hasVersions: {
-        var rs = (sv && sv.api) ? sv.api.results : []
+        var rs = (sv && sv.api) ? sv.results : []
         for (var i = 0; i < rs.length; i++)
             if ((rs[i].version || "").length > 0) return true
         return false
@@ -45,7 +45,7 @@ QtObject {
 
     readonly property var langOptions: {
         var seen = {}, out = []
-        var rs = (sv && sv.api) ? sv.api.results : []
+        var rs = (sv && sv.api) ? sv.results : []
         for (var i = 0; i < rs.length; i++) {
             var ls = rs[i].langs || []
             for (var j = 0; j < ls.length; j++)
@@ -58,7 +58,7 @@ QtObject {
     readonly property var seasonTabs: {
         if (!sv || !sv.api || !(sv.isSeriesDrill || sv.isEpisodes)) return []
         var seen = {}, out = []
-        var res = sv.api.results
+        var res = sv.results
         for (var i = 0; i < res.length; i++) {
             var s = res[i].season
             if (s > 0 && !seen[s]) { seen[s] = true; out.push(s) }
@@ -68,7 +68,7 @@ QtObject {
     }
     readonly property int packCount: {
         if (!sv || !sv.api || !sv.isSeriesDrill) return 0
-        var n = 0, res = sv.api.results
+        var n = 0, res = sv.results
         for (var i = 0; i < res.length; i++)
             if (res[i].pack === true) n++
         return n
@@ -76,7 +76,7 @@ QtObject {
     readonly property var episodeTabs: {
         if (!sv || !sv.api || !sv.isSeriesDrill || sv.seasonFilter <= 0) return []
         var seen = {}, out = []
-        var res = sv.api.results
+        var res = sv.results
         for (var i = 0; i < res.length; i++) {
             var r = res[i]
             if (r.season === sv.seasonFilter && (r.episode || 0) > 0 && !seen[r.episode]) {
@@ -91,7 +91,7 @@ QtObject {
         && session.diskVolumes.length > 0) ? (session.diskVolumes[0].freeBytes || 0) : -1
     readonly property int wontFit: {
         if (saveFree < 0 || !sv || !sv.api) return 0
-        var n = 0, res = sv.api.results
+        var n = 0, res = sv.results
         for (var i = 0; i < res.length; ++i)
             if ((res[i].sizeBytes || 0) > saveFree) ++n
         return n
@@ -100,7 +100,7 @@ QtObject {
     function computeView() {
         if (!sv || !sv.api) return []
         var arr = []
-        var res = sv.api.results
+        var res = sv.results
         var qsets = sv.api.queryWordSets()
         for (var i = 0; i < res.length; i++) {
             var o = res[i]; o._idx = i
@@ -163,6 +163,14 @@ QtObject {
         return arr
     }
 
-    // re-evaluates when computeView() reads sv.api.results / filter props
-    property var viewModel: computeView()
+    // re-evaluates when computeView() reads sv.results / filter props. The flat
+    // list sits hidden under a picked title's page; ranking every row for it
+    // there only stalled each new batch of releases.
+    property var viewModel: {
+        if (sv && sv.titleStage) return []
+        var t0 = Date.now()
+        var v = computeView()
+        console.debug("[find] computeView " + v.length + " rows " + (Date.now() - t0) + " ms")
+        return v
+    }
 }

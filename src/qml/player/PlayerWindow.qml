@@ -207,7 +207,12 @@ Window {
 
     function playNext() {
         if (win.nextIdx >= 0) {
-            if (typeof session !== "undefined") session.playFile(win.infoHash, win.nextIdx)
+            // Same window, next file: the pack's other episodes sit at priority
+            // 0 until fileStreamUrl wants this one.
+            if (typeof session === "undefined") return
+            var idx = win.nextIdx
+            var url = session.fileStreamUrl(win.infoHash, idx)
+            if (url.length > 0) win.openMedia(url, win.mediaTitle, win.infoHash, idx)
             return
         }
         var next = win.externalNext
@@ -484,6 +489,7 @@ Window {
         nextTitle: win.nextTitle
         nextSubtitle: win.nextSubtitle
         formatHelper: playerFmt
+        onPlayNextRequested: win.playNext()
     }
 
     PlayerChrome {

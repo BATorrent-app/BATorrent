@@ -176,6 +176,8 @@ QtObject {
         var median = sizes.length >= 3 ? sizes[Math.floor(sizes.length / 2)] : 0
         for (var ep in byEp) {
             byEp[ep] = byEp[ep].filter(function (x) {
+                // an addon row names the file inside the torrent; its size is that file's
+                if (x.fromAddon === true) return true
                 var s = x.sizeBytes || 0
                 var seasonSized = (smallestPack > 0 && s >= smallestPack * 0.6) || (median > 0 && s > median * 5)
                 if (seasonSized) packs.push(x)
@@ -189,13 +191,25 @@ QtObject {
     }
 
     // One episode's sources: its own releases best quality first, then the
-    // season packs that contain it.
+    // season packs that contain it. A torrent is listed once: the stream
+    // addons answer with packs the indexers also found, and their row, which
+    // knows the episode's file, is the one kept.
     function episodeReleases(index, episode) {
         var own = (index.byEp[episode] || []).slice().sort(function (a, b) {
             var q = qualityRank(b.quality) - qualityRank(a.quality)
             return q !== 0 ? q : bySeeds(a, b)
         })
-        return own.concat(index.packs)
+        var all = own.concat(index.packs)
+        var keep = ({})
+        for (var i = 0; i < all.length; i++) {
+            var h = all[i].coverHash || ""
+            if (h.length > 0 && (!keep[h] || (all[i].fromAddon === true && keep[h].fromAddon !== true)))
+                keep[h] = all[i]
+        }
+        return all.filter(function (r) {
+            var h = r.coverHash || ""
+            return h.length === 0 || keep[h] === r
+        })
     }
 
     // The release a row speaks for: the preferred quality when someone has

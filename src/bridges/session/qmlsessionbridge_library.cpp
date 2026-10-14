@@ -13,6 +13,7 @@
 #include "services/metadata/nameparser.h"
 
 #include <QSettings>
+#include <QDir>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -43,7 +44,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
             for (const auto &ext : videoExts)
                 if (mp.endsWith(ext, Qt::CaseInsensitive)) {
                     if (files[i].size > bestSize) { bestSize = files[i].size; bestIdx = i; }
-                    const QString fname = QFileInfo(mp).fileName();
+                    const QString fname = QFileInfo(QDir::fromNativeSeparators(mp)).fileName();
                     const ParsedName pn = NameParser::parse(fname);
                     vids.push_back({ i, fname, pn.season, pn.episode, files[i].progress });
                     break;

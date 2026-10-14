@@ -78,6 +78,11 @@ public:
     Q_INVOKABLE void activateResult(int index, bool force = false);
     // The same add, then the player once enough of it is here (the Get & Watch overlay).
     Q_INVOKABLE void addAndWatch(int index, bool force = false);   // catalog→streams; else add magnet (force skips the disk-fit guard)
+    // The same from an episode's sources: a pack then plays that episode's file.
+    Q_INVOKABLE void addAndWatchEpisode(int index, int season, int episode);
+    // Ask the stream addons (Torrentio) for one episode of the picked series and
+    // add their answers to the release list, tagged with that episode.
+    Q_INVOKABLE void fetchEpisodeStreams(int season, int episode);
     Q_INVOKABLE void back();                       // streams → catalog
     // A title browse already knows (a tile, the billboard): straight to its releases.
     Q_INVOKABLE void openTitle(const QVariantMap &work);
@@ -147,7 +152,11 @@ signals:
     void addWontFit(int index, const QString &name, qint64 needed, qint64 freeBytes);   // result too big for the save volume; QML confirms before force-add
     void watchSearching(const QString &title);    // Get&Watch / Get&Install: started looking
     void watchNoRelease(const QString &title);    // nothing usable found
-    void prepareAndWatch(const QString &infoHash, const QString &title);   // movie → buffer & open
+    // movie → buffer & open. target: {fileIdx, fileName, season, episode}, the
+    // file to play when the torrent holds more than one ({} = the largest video)
+    void prepareAndWatch(const QString &infoHash, const QString &title, const QVariantMap &target);
+    // a plain add of one episode out of a pack: download only that file
+    void pickFileWhenReady(const QString &infoHash, const QVariantMap &target);
     void prepareAndInstall(const QString &infoHash, const QString &title); // game → download & install
     void sourceSummary(const QString &title, int count, qint64 bestSize, int maxSeeds);
     void getFlowChanged();
@@ -212,6 +221,19 @@ private:
     bool m_fromEpisodes = false;      // current streams view was entered from an episode row
 
     bool m_watchRequest = false;      // the current activateResult came from addAndWatch
+    int m_watchSeason = -1;           // the episode page's episode behind a watch
+    int m_watchEpisode = -1;
+    QString m_workImdbId;             // the picked series' IMDb id, for stream addons
+    QSet<QString> m_addonEpisodesAsked;   // "season:episode" already asked this drill-down
+    QList<QPair<int, int>> m_addonEpisodesWaiting;   // asked before the IMDb id arrived
+    void appendAddonEpisodeRows(const QString &videoId, const QList<StreamResult> &streams);
+    // Six addons answer one episode over a few seconds, and every resultsChanged
+    // re-derives the whole page: replies landing close together share one.
+    QTimer *m_addonRowsFlush = nullptr;
+    // resultsChanged with the time QML's bindings took to follow it (they run
+    // inside the emit), at debug level: the page's cost per batch of releases.
+    void notifyResults(const char *why);
+    QVariantMap fileTargetFor(const QVariantMap &row) const;
     int m_watchIdx = -1;              // a watch held across the disk-fit prompt
     bool m_gwActive = false;          // a Get&Watch search is in flight
     bool m_gwCancelled = false;       // user cancelled mid-search → don't add

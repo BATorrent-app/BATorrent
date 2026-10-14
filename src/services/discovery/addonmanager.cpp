@@ -17,6 +17,7 @@
 #include <QJsonArray>
 #include <QSettings>
 #include <QUrl>
+#include <QDebug>
 #include <algorithm>
 
 AddonManager &AddonManager::instance()
@@ -368,6 +369,32 @@ void AddonManager::getStreams(const QString &type, const QString &id)
 
     if (m_pendingStreams == 0)
         emit streamFinished();
+}
+
+void AddonManager::getStreamsFor(const QString &type, const QString &id)
+{
+    for (const auto &addon : m_addons) {
+        if (!addon.enabled || !addon.resources.contains("stream") || !addon.types.contains(type))
+            continue;
+        const QString streamUrl = QString("%1/stream/%2/%3.json")
+            .arg(streamBaseUrl(addon.url, AddonParse::torrentioLanguageForApp()), type, id);
+        QNetworkRequest req{QUrl(streamUrl)};
+        req.setHeader(QNetworkRequest::UserAgentHeader, "BATorrent/1.9");
+        req.setTransferTimeout(15000);
+        qInfo().noquote() << "[addon]" << addon.name << "GET" << streamUrl;
+        auto *reply = m_net->get(req);
+        connect(reply, &QNetworkReply::finished, this, [this, reply, id, addonName = addon.name]() {
+            reply->deleteLater();
+            const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            if (reply->error() != QNetworkReply::NoError) {
+                qWarning().noquote() << "[addon]" << addonName << id << "HTTP" << status << reply->errorString();
+                return;
+            }
+            const auto streams = AddonParse::parseStreamResults(reply->readAll(), addonName);
+            qInfo().noquote() << "[addon]" << addonName << id << "HTTP" << status << streams.size() << "streams";
+            emit streamsFor(id, streams);
+        });
+    }
 }
 
 void AddonManager::fetchTrackerList()

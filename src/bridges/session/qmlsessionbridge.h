@@ -261,6 +261,9 @@ public:
     Q_INVOKABLE QVariantList mkvChapters(const QString &infoHash, int fileIndex) const;
     // Play a specific video file (episode) of a torrent in the embedded player.
     Q_INVOKABLE void playFile(const QString &infoHash, int fileIndex);
+    // playFile's prep (only this file wanted, pieces led by the playback position) without opening
+    // a window: the open player loads the next episode itself. "" when refused.
+    Q_INVOKABLE QString fileStreamUrl(const QString &infoHash, int fileIndex);
     // Forget a movie's resume position (drops it from HUB "Continue watching").
     Q_INVOKABLE void clearResume(const QString &infoHash, int fileIndex);
     // Player buffer bar + download badge: { totalBytes, downloadedBytes, progress, buffered }.
@@ -406,7 +409,11 @@ public:
 
     // Get & Watch: after a release is added, watch its hash and auto-open the
     // player once it's buffered enough. cancelWatch drops a pending request.
-    Q_INVOKABLE void watchWhenReady(const QString &infoHash, const QString &title);
+    // target: {fileIdx, fileName, season, episode}, which file of a pack to play.
+    Q_INVOKABLE void watchWhenReady(const QString &infoHash, const QString &title,
+                                    const QVariantMap &target = QVariantMap());
+    // One episode out of a pack: once the file list is known, download only it.
+    Q_INVOKABLE void pickFileWhenReady(const QString &infoHash, const QVariantMap &target);
     Q_INVOKABLE void cancelWatch(const QString &infoHash);
     // Give up on this release for another: stop waiting and drop what it fetched (to the Trash).
     Q_INVOKABLE void abandonWatch(const QString &infoHash);
@@ -463,6 +470,9 @@ private slots:
     void onWatchTick();   // poll pending Get&Watch hashes; open the player when buffered
     void pollPendingWatch(bool verbose);
     int bestVideoFile(int row) const;          // the largest video file, or -1
+    // The file a pending watch plays: its target's episode, else the largest video.
+    int watchFile(int row, const QString &infoHash);
+    void pollPendingFilePick();   // pickFileWhenReady: set priorities once metadata is in
     void prepStream(int row, int fileIndex);   // resume, only this file, head + tail first
     void onExtractionCompleted(const QString &infoHash, bool success);  // chain → detect/install
     void onExtractionProgress(const QString &infoHash, int percent);
@@ -507,6 +517,9 @@ private:
     QSet<QString> m_watchPrepped;   // pending watches whose file is already being fetched for playback
     QHash<QString, QElapsedTimer> m_watchClock;   // since watchWhenReady, for the start-up timings in the log
     QTimer m_watchFast;   // a quicker look than the engine's ~1 s tick while something waits to play
+    QHash<QString, QVariantMap> m_watchTargets;   // infoHash → the file to play, see watchWhenReady
+    QHash<QString, QPair<QVariantMap, qint64>> m_pendingFilePick;   // infoHash → {target, startedAtSec}
+    QHash<QString, QSet<int>> m_pickedFiles;   // episodes picked out of one pack, all kept wanted
     QHash<QString, QPair<QString, qint64>> m_pendingInstall; // Get&Install: infoHash → {title, startedAtSec}
     QSet<QString> m_installStarted;   // hashes where installGame was already kicked for pending install
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game

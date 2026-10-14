@@ -39,6 +39,8 @@ Item {
     property var openPlayers: []
 
     function openPlayer(url, title, hash, fileIndex) {
+        console.info("[player] open " + (hash || "").substring(0, 8) + " file " + fileIndex
+                     + " (" + openPlayers.length + " open)")
         // Same file twice: raise the window that already has it rather than
         // opening a duplicate that fights the first one for the same pieces.
         for (var i = 0; i < openPlayers.length; ++i) {

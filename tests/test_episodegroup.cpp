@@ -115,3 +115,107 @@ TEST_CASE("Reacher S01 season packs around 27 GB are packs, not episode 1", "[ep
         CHECK(t.season == 1);
     }
 }
+
+static EpisodeTag W(const char *s, QStringList works) { return EpisodeGroup::classify(QString::fromUtf8(s), works); }
+
+TEST_CASE("an anime sequel numbered from 1 stays off the show's season 1", "[episodegroup]")
+{
+    const QStringList bleach{ QStringLiteral("Bleach"), QStringLiteral("BLEACH") };
+    // Thousand-Year Blood War counts its own episodes from 1; as "Bleach - 04"
+    // it ranked first on Bleach T1 E4 with 979 seeds.
+    auto tybw = W("[Erai-raws] Bleach - Sennen Kessen-hen - Soukoku-tan - 04 [1080p CR WEB-DL AVC AAC][MultiSub]", bleach);
+    CHECK(tybw.season == -1);
+    CHECK(tybw.episode == -1);
+    CHECK_FALSE(tybw.pack);
+
+    // the batch is a whole-series pack, not its first episode
+    auto batch = W("[Erai-raws] Bleach - 001 ~ 366 [1080p DSNP WEB-DL AVC AAC][MultiSub] [BATCH]", bleach);
+    CHECK(batch.pack);
+    CHECK(batch.season == 1);
+    CHECK(batch.episode == -1);
+    auto arcBatch = W("[Erai-raws] Bleach - Sennen Kessen-hen - 01 ~ 13 [1080p][Multiple Subtitle]", bleach);
+    CHECK(arcBatch.season == -1);
+
+    auto own = W("[Erai-raws] Bleach - 004 [1080p][Multiple Subtitle]", bleach);
+    CHECK(own.season == 1);
+    CHECK(own.episode == 4);
+
+    auto shippuden = W("[Judas] Naruto Shippuden - 120 [1080p]", { QStringLiteral("Naruto") });
+    CHECK(shippuden.season == -1);
+    CHECK(shippuden.episode == -1);
+
+    // a year or brackets after the name are not another show
+    auto year = W("[SubsPlease] Bleach (2004) - 12 (1080p)", bleach);
+    CHECK(year.season == 1);
+    CHECK(year.episode == 12);
+
+    // without the show's names nothing changes
+    CHECK(T("[Erai-raws] Bleach - Sennen Kessen-hen - 04 [1080p]").season == 1);
+
+    // an explicit SxxExx is the season whatever the title says
+    auto explicitSe = W("Bleach Sennen Kessen-hen S02E04 1080p", bleach);
+    CHECK(explicitSe.season == 2);
+    CHECK(explicitSe.episode == 4);
+}
+
+TEST_CASE("an anime season named in the title is that season", "[episodegroup]")
+{
+    const QStringList jjk{ QStringLiteral("Jujutsu Kaisen") };
+    auto s2 = W("[SubsPlease] Jujutsu Kaisen S2 - 05 (1080p) [ABCD1234]", jjk);
+    CHECK(s2.season == 2);
+    CHECK(s2.episode == 5);
+
+    auto nd = W("[Erai-raws] Jujutsu Kaisen 2nd Season - 05 [1080p]", jjk);
+    CHECK(nd.season == 2);
+    CHECK(nd.episode == 5);
+}
+
+TEST_CASE("pickFile: the episode's file out of a pack", "[episodegroup]")
+{
+    const QStringList batch{
+        QStringLiteral("[Erai-raws] Bleach - 001 ~ 366/[Erai-raws] Bleach - 001 [1080p][Multiple Subtitle].mkv"),
+        QStringLiteral("[Erai-raws] Bleach - 001 ~ 366/[Erai-raws] Bleach - 002 [1080p][Multiple Subtitle].mkv"),
+        QStringLiteral("[Erai-raws] Bleach - 001 ~ 366/[Erai-raws] Bleach - 003 [1080p][Multiple Subtitle].mkv.!bt"),
+        QStringLiteral("[Erai-raws] Bleach - 001 ~ 366/[Erai-raws] Bleach - 004 [1080p][Multiple Subtitle].mkv"),
+        QStringLiteral("[Erai-raws] Bleach - 001 ~ 366/Bleach - Movie 1 [1080p].mkv"),
+        QStringLiteral("[Erai-raws] Bleach - 001 ~ 366/info.txt"),
+    };
+    const QList<qint64> sizes{ 300, 310, 320, 330, 4000, 1 };
+
+    // the addon's file name, even with a wrong index
+    auto byName = EpisodeGroup::pickFile(batch, sizes, 0,
+        QStringLiteral("[Erai-raws] Bleach - 003 [1080p][Multiple Subtitle].mkv"), 1, 3);
+    CHECK(byName.index == 2);
+    CHECK(byName.how == QLatin1String("filename"));
+
+    auto byIdx = EpisodeGroup::pickFile(batch, sizes, 3, QString(), 1, 4);
+    CHECK(byIdx.index == 3);
+    CHECK(byIdx.how == QLatin1String("fileIdx"));
+
+    // an index on a non-video falls through to the episode
+    auto byEp = EpisodeGroup::pickFile(batch, sizes, 5, QString(), 1, 4);
+    CHECK(byEp.index == 3);
+    CHECK(byEp.how == QLatin1String("episode"));
+
+    // nothing known: the largest video, as before (here the film)
+    auto largest = EpisodeGroup::pickFile(batch, sizes, -1, QString(), -1, -1);
+    CHECK(largest.index == 4);
+    CHECK(largest.how == QLatin1String("largest"));
+
+    const QStringList season{ QStringLiteral("Show.S02E01.mkv"), QStringLiteral("Show.S02E02.mkv"),
+                              QStringLiteral("Show.S01E02.mkv") };
+    auto s2e2 = EpisodeGroup::pickFile(season, { 10, 10, 50 }, -1, QString(), 2, 2);
+    CHECK(s2e2.index == 1);
+
+    CHECK(EpisodeGroup::pickFile({}, {}, 0, QString(), 1, 1).index == -1);
+}
+
+TEST_CASE("real pack file names read as their own episode", "[episodegroup]")
+{
+    // The Erai-raws batch's files, as the player names them.
+    auto e4 = T("[Erai-raws] Bleach - 004 [1080p DSNP WEB-DL AVC AAC][MultiSub][C0FFC48A].mkv");
+    CHECK(e4.season == 1);
+    CHECK(e4.episode == 4);
+    auto judas = T("[Judas] Bleach - 003.mkv");
+    CHECK(judas.episode == 3);
+}

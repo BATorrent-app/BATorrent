@@ -212,6 +212,11 @@ QVariantMap workDetails(const QByteArray &detailsJson, int castLimit)
     m.insert(QStringLiteral("genres"), genres);
     m.insert(QStringLiteral("cast"), names);
     m.insert(QStringLiteral("seasons"), root.value(QLatin1String("number_of_seasons")).toInt());
+    // a film carries imdb_id itself, a show only under external_ids
+    QString imdb = root.value(QLatin1String("imdb_id")).toString();
+    if (imdb.isEmpty())
+        imdb = root.value(QLatin1String("external_ids")).toObject().value(QLatin1String("imdb_id")).toString();
+    m.insert(QStringLiteral("imdbId"), imdb);
     return m;
 }
 

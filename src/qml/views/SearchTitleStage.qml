@@ -59,11 +59,11 @@ TitleStage {
         if (typeof session === "undefined") return null
         var at = session.episodeOf(hash, fileIdx)
         if (!(at.season >= 0 && at.episode > 0)) return null
-        return logic.nextEpisode(api.results, at.season, at.episode, episodes.pref)
+        return logic.nextEpisode(sv.results, at.season, at.episode, episodes.pref)
     }
     function playNext(next) {
         if (!next || !api) return
-        if (next.release) { api.addAndWatch(next.release._idx); return }
+        if (next.release) { api.addAndWatchEpisode(next.release._idx, next.season, next.episode); return }
         episodes.season = next.season
         episodes.episode = next.episode
     }

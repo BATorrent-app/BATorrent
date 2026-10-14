@@ -37,6 +37,8 @@ Item {
     QtObject {
         id: mockHost
         property var api: mockApi
+        property var results: mockApi.results   // SearchView converts api.results once
+        property bool titleStage: false
         property string qualityFilter: ""
         property string sourceFilter: ""
         property string groupFilter: ""

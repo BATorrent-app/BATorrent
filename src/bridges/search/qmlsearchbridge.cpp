@@ -75,6 +75,9 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
         setSearching(false);
         setStatus(tr_("search_streams_n").arg(m_streamCache.size()));
     });
+    connect(&mgr, &AddonManager::streamsFor, this, [this](const QString &id, const QList<StreamResult> &streams) {
+        appendAddonEpisodeRows(id, streams);
+    });
     connect(&mgr, &AddonManager::metaVideos, this, [this](const QString &id, const QVariantList &videos) {
         if (m_mode != "episodes" || id != m_epId) return;   // stale or user moved on
         setSearching(false);

@@ -1361,6 +1361,7 @@
   "find_ep_pct_watched": "已看 %1%",
   "find_ep_in_library": "已在库中",
   "find_ep_in_pack": "包含在整季合集中",
+  "find_from_pack": "合集中的单个文件",
   "find_ep_no_sources": "暂无资源",
   "find_starring": "主演",
   "find_genres": "类型",

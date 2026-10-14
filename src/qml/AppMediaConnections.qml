@@ -84,13 +84,16 @@ Item {
             var key = watchOverlay.forGame ? "gi_no_release" : "gw_no_release"
             watchOverlay.fail(i18n.t(key).arg(title))
         }
-        function onPrepareAndWatch(infoHash, title) {
+        function onPickFileWhenReady(infoHash, target) {
+            if (typeof session !== "undefined") session.pickFileWhenReady(infoHash, target)
+        }
+        function onPrepareAndWatch(infoHash, title, target) {
             if (!watchOverlay) return
             watchOverlay.forGame = false
             watchOverlay.hash = infoHash
             watchOverlay.title = title
             watchOverlay.phase = "buffering"
-            if (typeof session !== "undefined") session.watchWhenReady(infoHash, title)
+            if (typeof session !== "undefined") session.watchWhenReady(infoHash, title, target || ({}))
         }
         function onPrepareAndInstall(infoHash, title) {
             if (!watchOverlay) return

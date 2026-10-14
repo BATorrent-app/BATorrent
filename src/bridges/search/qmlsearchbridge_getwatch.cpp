@@ -126,6 +126,6 @@ void QmlSearchBridge::gwResolve()
     if (m_gwType == QLatin1String("game"))
         emit prepareAndInstall(hash, m_gwTitle);
     else
-        emit prepareAndWatch(hash, m_gwTitle);
+        emit prepareAndWatch(hash, m_gwTitle, QVariantMap());
 }
 
