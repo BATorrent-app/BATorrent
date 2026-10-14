@@ -548,16 +548,22 @@ Window {
         }
     }
 
-    // external-subtitle overlay (over the video, above the controls bar): styled
-    // by the user's subtitle settings (size / color / background)
+    // Subtitle overlay for both kinds: an external file's cue, else the
+    // file's own track (read as ASS by the isolated player). Styled by the
+    // user's subtitle settings; an \an7-9 line sits at the top, clear of the
+    // controls, as the subtitle asks.
+    readonly property string subLine: win.extCueText.length > 0 ? win.extCueText
+                                      : (player.subtitleHtml !== undefined ? player.subtitleHtml : "")
+    readonly property bool subTop: win.extCueText.length === 0 && player.subtitleAlign !== undefined
+                                   && player.subtitleAlign >= 7
     Item {
-        visible: win.extCueText.length > 0
+        visible: win.subLine.length > 0
         width: parent.width
         height: subText.implicitHeight
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: videoOut.bottom
-        anchors.bottomMargin: (chrome.barVisible ? chrome.barHeight : 0) + 26
-        Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
+        y: win.subTop ? Math.max(videoOut.y, 0) + (win.controlsShown ? 76 : 28)
+                      : videoOut.y + videoOut.height - height - (chrome.barVisible ? chrome.barHeight : 0) - 26
+        Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         Rectangle {
             visible: win.subBgOpacity > 0
             anchors.centerIn: subText
@@ -569,7 +575,7 @@ Window {
         Text {
             id: subText
             anchors.centerIn: parent
-            text: win.extCueText
+            text: win.subLine
             textFormat: Text.StyledText
             color: win.subColor
             style: win.subBgOpacity > 0 ? Text.Normal : Text.Outline

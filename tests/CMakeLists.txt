@@ -60,6 +60,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/platform/soundplayer.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/soundsynth.cpp
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitleparser.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/subtitles/asstext.cpp
     ${CMAKE_SOURCE_DIR}/src/services/subtitles/subtitlesearch.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/suspiciousscan.cpp
     ${CMAKE_SOURCE_DIR}/src/services/security/mediasniff.cpp
@@ -401,6 +402,7 @@ bat_add_test(test_mkvchapters test_mkvchapters.cpp)
 bat_add_test(test_aniskip test_aniskip.cpp)
 bat_add_test(test_cinemeta test_cinemeta.cpp)
 bat_add_test(test_streamrun test_streamrun.cpp)
+bat_add_test(test_asstext test_asstext.cpp)
 bat_add_test(test_rangeplan test_rangeplan.cpp)
 bat_add_test(test_httpdownload test_httpdownload.cpp)
 bat_add_test(test_httpdownloadmanager test_httpdownloadmanager.cpp)
@@ -426,6 +428,7 @@ if(Qt6Quick_FOUND AND Qt6QuickTest_FOUND)
     qt_add_resources(QML_TEST_RES ${CMAKE_SOURCE_DIR}/src/resources.qrc)
     qt_add_executable(test_qml ${CMAKE_CURRENT_SOURCE_DIR}/qml/main.cpp ${QML_TEST_RES}
         ${CMAKE_SOURCE_DIR}/src/bridges/isolatedmediaplayer.cpp
+        ${CMAKE_SOURCE_DIR}/src/services/subtitles/asstext.cpp
         ${CMAKE_SOURCE_DIR}/src/ipc/mediaframe.cpp
         ${CMAKE_SOURCE_DIR}/src/ipc/sharedsegment.cpp
         ${CMAKE_SOURCE_DIR}/src/ipc/mediafeed.cpp

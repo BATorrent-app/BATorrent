@@ -7,6 +7,7 @@
 #include "ipc/mediachannel.h"
 #include "ipc/mediafeed.h"
 #include "ipc/mediaframe.h"
+#include "services/subtitles/asstext.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -232,6 +233,7 @@ void IsolatedMediaPlayer::startFeed()
     if (m_feed) { m_feed->disconnect(this); m_feed->deleteLater(); }
     const qint32 gen = ++m_sourceGen;
     m_opened = false;
+    if (!m_subHtml.isEmpty()) { m_subHtml.clear(); emit subtitleChanged(); }
     logPlaybackSummary();
     m_openClock.start();
     m_feed = new MediaFeed(m_source, this);
@@ -305,8 +307,14 @@ void IsolatedMediaPlayer::onEvent(const QString &name, const QByteArray &args)
         if (in.status() == QDataStream::Ok) showFrame(gen, hdr);
     } else if (name == QLatin1String("sub")) {
         QString text; in >> text;
-        if (in.status() == QDataStream::Ok)
-            if (QVideoSink *s = sink()) s->setSubtitleText(text.left(kMaxText));
+        if (in.status() == QDataStream::Ok) {
+            const AssText::Line line = AssText::toHtml(text.left(kMaxText));
+            if (line.html != m_subHtml || line.align != m_subAlign) {
+                m_subHtml = line.html;
+                m_subAlign = line.align;
+                emit subtitleChanged();
+            }
+        }
     }
 }
 

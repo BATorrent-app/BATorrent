@@ -106,6 +106,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/platform/soundplayer.cpp
     src/services/platform/soundsynth.cpp
     src/services/subtitles/subtitleparser.cpp
+    src/services/subtitles/asstext.cpp
     src/services/subtitles/subtitlesearch.cpp
     src/services/integrations/idebridprovider.cpp
     src/services/integrations/realdebrid.cpp

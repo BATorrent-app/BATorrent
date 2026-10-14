@@ -45,6 +45,11 @@ class IsolatedMediaPlayer : public QObject
     Q_PROPERTY(QList<QMediaMetaData> subtitleTracks READ subtitleTracks NOTIFY tracksChanged)
     Q_PROPERTY(int activeAudioTrack READ activeAudioTrack WRITE setActiveAudioTrack NOTIFY activeTracksChanged)
     Q_PROPERTY(int activeSubtitleTrack READ activeSubtitleTrack WRITE setActiveSubtitleTrack NOTIFY activeTracksChanged)
+    // The embedded subtitle line, read as ASS (anime's format) and turned into
+    // rich text for the player's own overlay, with its numpad position. Drawn
+    // there rather than by the video output, which showed the override codes.
+    Q_PROPERTY(QString subtitleHtml READ subtitleHtml NOTIFY subtitleChanged)
+    Q_PROPERTY(int subtitleAlign READ subtitleAlign NOTIFY subtitleChanged)
 
 public:
     explicit IsolatedMediaPlayer(QObject *parent = nullptr);
@@ -99,6 +104,7 @@ signals:
     void hasVideoChanged();
     void playbackRateChanged();
     void tracksChanged();
+    void subtitleChanged();
     void activeTracksChanged();
     void decoderCrashed();
 
@@ -152,6 +158,13 @@ private:
     std::unique_ptr<SharedSegment> m_ring;
     qint32 m_generation = 0;
     qint64 m_slotBytes = 0;
+
+    QString m_subHtml;
+    int m_subAlign = 2;
+public:
+    QString subtitleHtml() const { return m_subHtml; }
+    int subtitleAlign() const { return m_subAlign; }
+private:
 
     // Start-up and stall timings for the log, to tell a slow swarm from a
     // slow pipeline.
