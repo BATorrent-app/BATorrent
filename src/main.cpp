@@ -7,6 +7,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
+#include <QQuickWindow>
 #include <QSplashScreen>
 #include <QPixmap>
 #include <QStandardPaths>
@@ -43,6 +44,13 @@ int main(int argc, char *argv[])
         return childExit;
 
     AppRuntime::applyGraphicsApiPreference();
+#ifdef Q_OS_WIN
+    // DirectWrite, the font engine the browser uses: Qt 6.7 still defaults to
+    // GDI on Windows, which drew IBM Plex lighter and greyer than the design
+    // files rendered in Chrome. A QT_QPA_PLATFORM set by the user still wins.
+    if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
+        qputenv("QT_QPA_PLATFORM", "windows:fontengine=directwrite");
+#endif
 
     QApplication app(argc, argv);
     app.setOrganizationName("BATorrent");
@@ -112,6 +120,10 @@ int main(int argc, char *argv[])
     AppRuntime::loadFonts(app);
     AppRuntime::logDependencyVersions();
     QQuickStyle::setStyle("Basic");
+    // The system's own text rasteriser (DirectWrite on Windows, Core Text on
+    // macOS), the one a browser uses. Qt's default distance-field text drew
+    // every weight thinner and greyer than the same font in the design files.
+    QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
 
     AppServices svc = AppServices::create(app);
 
