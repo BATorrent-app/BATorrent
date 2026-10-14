@@ -5,9 +5,12 @@
 #ifndef QMLSEARCHBRIDGE_H
 #define QMLSEARCHBRIDGE_H
 
+#include "services/discovery/cinemeta.h"
 #include "bridges/bridgecommon.h"
 
 class HttpDownloadManager;
+
+class QNetworkAccessManager;
 
 class QmlSearchBridge : public QObject
 {
@@ -82,7 +85,14 @@ public:
     Q_INVOKABLE void addAndWatchEpisode(int index, int season, int episode);
     // Ask the stream addons (Torrentio) for one episode of the picked series and
     // add their answers to the release list, tagged with that episode.
-    Q_INVOKABLE void fetchEpisodeStreams(int season, int episode);
+    // airDate (TMDB's, "YYYY-MM-DD") carries the episode over to IMDb's
+    // numbering, which is what the stream addons are asked in.
+    Q_INVOKABLE void fetchEpisodeStreams(int season, int episode, const QString &airDate = QString());
+    // The episode after the one a player is showing, when it is not in that
+    // torrent: answered by nextEpisodeFound with a release from the stream
+    // addons. playFoundEpisode adds it and watches it like a pick on the page.
+    Q_INVOKABLE void findNextEpisode(const QString &infoHash, int fileIndex);
+    Q_INVOKABLE void playFoundEpisode(const QVariantMap &next);
     Q_INVOKABLE void back();                       // streams → catalog
     // A title browse already knows (a tile, the billboard): straight to its releases.
     Q_INVOKABLE void openTitle(const QVariantMap &work);
@@ -137,6 +147,7 @@ public:
     Q_INVOKABLE void summarizeSources(const QString &title);
 
 signals:
+    void nextEpisodeFound(const QString &infoHash, int fileIndex, const QVariantMap &next);
     void sourcesChanged();
     void resultsChanged();
     void modeChanged();
@@ -225,7 +236,30 @@ private:
     int m_watchEpisode = -1;
     QString m_workImdbId;             // the picked series' IMDb id, for stream addons
     QSet<QString> m_addonEpisodesAsked;   // "season:episode" already asked this drill-down
-    QList<QPair<int, int>> m_addonEpisodesWaiting;   // asked before the IMDb id arrived
+    QList<QPair<int, int>> m_addonEpisodesWaiting;   // asked before the IMDb id (or its episode list) arrived
+    QHash<QString, QString> m_episodeAirDates;        // "season:episode" (TMDB) → air date
+    QHash<QString, QList<Cinemeta::Video>> m_cinemetaVideos;   // IMDb id → IMDb's episode list
+    QSet<QString> m_cinemetaLoading;
+    QHash<QString, QPair<int, int>> m_imdbToPage;     // "season:episode" asked of the addons → the page's
+    QNetworkAccessManager *m_cinemetaNet = nullptr;
+    void fetchCinemeta(const QString &imdbId);
+    // findNextEpisode's state: one ask per playing file, kept until the
+    // addons are asked; then held by the IMDb video id they answer for.
+    struct NextAsk {
+        QString infoHash;
+        int fileIndex = -1;
+        int tmdbId = 0;
+        QString show;
+        int season = -1, episode = -1;          // the episode playing, as its file numbers it
+        int nextSeason = -1, nextEpisode = -1;  // IMDb's
+        QString quality, group;                 // of the release playing, to stay close to it
+        bool asked = false;
+    };
+    QList<NextAsk> m_nextAsks;
+    QHash<QString, NextAsk> m_nextByVideoId;
+    QHash<int, QString> m_imdbByTmdb;
+    void resumeNextAsks();
+    void takeNextStreams(const QString &videoId, const QList<StreamResult> &streams);
     void appendAddonEpisodeRows(const QString &videoId, const QList<StreamResult> &streams);
     // Six addons answer one episode over a few seconds, and every resultsChanged
     // re-derives the whole page: replies landing close together share one.

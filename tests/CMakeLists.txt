@@ -96,6 +96,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/integrations/rssmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addonmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addonparse.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/discovery/cinemeta.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addonfinish.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addoncatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/updater.cpp
@@ -146,6 +147,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_util.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_attrs.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_work.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_next.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_covers.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_activate.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/search/qmlsearchbridge_ranking.cpp
@@ -397,6 +399,7 @@ bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_magnettrackers test_magnettrackers.cpp)
 bat_add_test(test_mkvchapters test_mkvchapters.cpp)
 bat_add_test(test_aniskip test_aniskip.cpp)
+bat_add_test(test_cinemeta test_cinemeta.cpp)
 bat_add_test(test_rangeplan test_rangeplan.cpp)
 bat_add_test(test_httpdownload test_httpdownload.cpp)
 bat_add_test(test_httpdownloadmanager test_httpdownloadmanager.cpp)

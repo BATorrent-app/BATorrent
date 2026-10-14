@@ -95,7 +95,13 @@ Item {
     onSeasonChanged: { episode = -1; requestSeason() }
     // The stream addons answer per episode (what Stremio asks), so they are
     // asked when one is opened, not for the whole season.
-    onEpisodeChanged: if (episode > 0 && sv.api) sv.api.fetchEpisodeStreams(season, episode)
+    onEpisodeChanged: if (episode > 0 && sv.api) sv.api.fetchEpisodeStreams(season, episode, airDateOf(episode))
+    // TMDB's air date carries the episode over to the addons' (IMDb's) numbering
+    function airDateOf(ep) {
+        for (var i = 0; i < tmdbRows.length; i++)
+            if (tmdbRows[i].episode === ep) return tmdbRows[i].air_date || ""
+        return ""
+    }
     onVisibleChanged: if (visible) refreshLibrary()
     function requestSeason() {
         tmdbRows = []

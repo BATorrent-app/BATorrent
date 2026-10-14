@@ -228,6 +228,17 @@ Window {
     property var chapters: []
     property bool autoSkip: false
     Connections {
+        target: typeof search !== "undefined" ? search : null
+        ignoreUnknownSignals: true
+        function onNextEpisodeFound(hash, fileIdx, next) {
+            if (hash !== win.infoHash || fileIdx !== win.fileIndex || win.nextIdx >= 0 || win.externalNext) return
+            win.externalNext = next
+            win.nextTitle = next.show || ""
+            win.nextSubtitle = next.label || ""
+            win.nextPoster = typeof session !== "undefined" ? session.posterForHash(hash) : ""
+        }
+    }
+    Connections {
         target: typeof session !== "undefined" ? session : null
         ignoreUnknownSignals: true
         function onSkipTimesReady(hash, fileIdx, list) {
@@ -271,6 +282,9 @@ Window {
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
         win.externalNext = (win.nextIdx < 0 && win.nextProvider)
                            ? win.nextProvider.nextEpisodeFor(hash, fileIdx) : null
+        // not in this torrent and no series page to ask: the stream addons
+        if (win.nextIdx < 0 && !win.externalNext && typeof search !== "undefined")
+            search.findNextEpisode(hash, fileIdx)
         endCard.reset()
         if (win.nextIdx >= 0 && typeof session !== "undefined") {
             var np = session.playerTitle(hash, win.nextIdx)
@@ -300,9 +314,16 @@ Window {
             return
         }
         var next = win.externalNext
-        if (!next || !win.nextProvider) return
-        var provider = win.nextProvider
+        if (!next) return
         resume.save()
+        // a release the addons found: added and watched like a pick on the page
+        if (next.magnet && typeof search !== "undefined") {
+            win.close()
+            search.playFoundEpisode(next)
+            return
+        }
+        if (!win.nextProvider) return
+        var provider = win.nextProvider
         win.close()
         provider.playNextEpisode(next)
     }
@@ -664,6 +685,7 @@ Window {
         mediaPlayer: player
         infoHash: win.infoHash
         nextIdx: win.nextIdx
+        hasNext: win.hasNext
         autoplayNext: win.autoplayNext
         nextPoster: win.nextPoster
         nextTitle: win.nextTitle

@@ -116,6 +116,14 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         m_discovery->fetchLogo(m_workTmdbId, m_workType);
         fetchWorkStills();
     });
+    // any show's IMDb id, for the player's next episode as much as for the page
+    connect(m_discovery, &DiscoveryService::workDetailsReady, this,
+            [this](int tmdbId, const QVariantMap &d) {
+        const QString imdb = d.value(QStringLiteral("imdbId")).toString();
+        if (imdb.isEmpty() || m_imdbByTmdb.value(tmdbId) == imdb) return;
+        m_imdbByTmdb.insert(tmdbId, imdb);
+        resumeNextAsks();
+    });
     connect(m_discovery, &DiscoveryService::workDetailsReady, this,
             [this](int tmdbId, const QVariantMap &d) {
         if (tmdbId != m_workTmdbId || d.isEmpty()) return;   // stale reply for a former title
@@ -234,8 +242,9 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
 // that episode, season and series packs included, each with the file inside it.
 // The indexers above only know release names, so a 366-episode batch with 561
 // seeders never reached an episode page. Ask the addons too.
-void QmlSearchBridge::fetchEpisodeStreams(int season, int episode)
+void QmlSearchBridge::fetchEpisodeStreams(int season, int episode, const QString &airDate)
 {
+    if (!airDate.isEmpty()) m_episodeAirDates.insert(QStringLiteral("%1:%2").arg(season).arg(episode), airDate);
     if (m_workType != QLatin1String("series") || !m_titleSources || season < 0 || episode <= 0) {
         qInfo().noquote() << "[addon] episode streams skipped: type" << m_workType
                           << "titleSources" << m_titleSources << "S" << season << "E" << episode;
@@ -253,8 +262,44 @@ void QmlSearchBridge::fetchEpisodeStreams(int season, int episode)
     }
     const QString key = QStringLiteral("%1:%2").arg(season).arg(episode);
     if (m_addonEpisodesAsked.contains(key)) return;
+    if (!m_cinemetaVideos.contains(m_workImdbId)) {
+        // IMDb's numbering first; this episode is asked again once it is in
+        const QPair<int, int> se(season, episode);
+        if (!m_addonEpisodesWaiting.contains(se)) m_addonEpisodesWaiting << se;
+        fetchCinemeta(m_workImdbId);
+        return;
+    }
     m_addonEpisodesAsked.insert(key);
-    mgr.getStreamsFor(QStringLiteral("series"), m_workImdbId + QLatin1Char(':') + key);
+    const Cinemeta::Number n = Cinemeta::mapByAirDate(m_cinemetaVideos.value(m_workImdbId),
+                                                      QDate::fromString(m_episodeAirDates.value(key), Qt::ISODate),
+                                                      season, episode);
+    const QString imdbKey = QStringLiteral("%1:%2").arg(n.season).arg(n.episode);
+    m_imdbToPage.insert(imdbKey, { season, episode });
+    if (imdbKey != key)
+        qInfo().noquote() << "[addon] TMDB" << key << "is IMDb" << imdbKey << "(aired" << m_episodeAirDates.value(key) + ")";
+    mgr.getStreamsFor(QStringLiteral("series"), m_workImdbId + QLatin1Char(':') + imdbKey);
+}
+
+void QmlSearchBridge::fetchCinemeta(const QString &imdbId)
+{
+    if (imdbId.isEmpty() || m_cinemetaLoading.contains(imdbId)) return;
+    m_cinemetaLoading.insert(imdbId);
+    if (!m_cinemetaNet) m_cinemetaNet = new QNetworkAccessManager(this);
+    QNetworkRequest req(Cinemeta::metaUrl(imdbId));
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent"));
+    req.setTransferTimeout(10000);
+    QNetworkReply *r = m_cinemetaNet->get(req);
+    connect(r, &QNetworkReply::finished, this, [this, r, imdbId] {
+        r->deleteLater();
+        m_cinemetaLoading.remove(imdbId);
+        // an empty list (unreachable, unknown show) keeps TMDB's numbers
+        m_cinemetaVideos.insert(imdbId, Cinemeta::videos(r->readAll()));
+        qInfo().noquote() << "[addon] cinemeta" << imdbId << m_cinemetaVideos.value(imdbId).size() << "episodes";
+        resumeNextAsks();
+        if (imdbId != m_workImdbId) return;
+        const auto waiting = std::exchange(m_addonEpisodesWaiting, {});
+        for (const auto &se : waiting) fetchEpisodeStreams(se.first, se.second);
+    });
 }
 
 void QmlSearchBridge::notifyResults(const char *why)
@@ -273,9 +318,13 @@ void QmlSearchBridge::appendAddonEpisodeRows(const QString &videoId, const QList
     const QStringList parts = videoId.split(QLatin1Char(':'));
     if (parts.size() != 3 || parts.at(0) != m_workImdbId) return;   // another title
     if (m_mode != QLatin1String("all") || !m_titleSources) return;
-    if (!m_addonEpisodesAsked.contains(parts.at(1) + QLatin1Char(':') + parts.at(2))) return;   // list was reset since
-    const int season = parts.at(1).toInt();
-    const int episode = parts.at(2).toInt();
+    // asked in IMDb's numbers, listed in the page's
+    const int imdbSeason = parts.at(1).toInt();
+    const QPair<int, int> page = m_imdbToPage.value(parts.at(1) + QLatin1Char(':') + parts.at(2),
+                                                     { imdbSeason, parts.at(2).toInt() });
+    const int season = page.first;
+    const int episode = page.second;
+    if (!m_addonEpisodesAsked.contains(QStringLiteral("%1:%2").arg(season).arg(episode))) return;   // list was reset since
 
     // One row per torrent per episode: two addons often answer with the same one.
     QSet<QString> seen;
@@ -300,7 +349,7 @@ void QmlSearchBridge::appendAddonEpisodeRows(const QString &videoId, const QList
         // season, or another show's numbering, is not this episode.
         const QString file = (s.fileName.isEmpty() ? name : s.fileName).section(QLatin1Char('/'), -1);
         const EpisodeTag fileTag = EpisodeGroup::classify(file, m_activeTitles);
-        if (fileTag.season > 1 && fileTag.season != season) continue;
+        if (fileTag.season > 1 && fileTag.season != season && fileTag.season != imdbSeason) continue;
         if (fileTag.episode < 0 && EpisodeGroup::classify(file).episode > 0) continue;
         const int seeds = qMax(0, s.seeders);
         QVariantMap m;

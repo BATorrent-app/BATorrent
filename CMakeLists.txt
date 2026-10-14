@@ -145,6 +145,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/updater.cpp
     src/services/discovery/addonmanager.cpp
     src/services/discovery/addonparse.cpp
+    src/services/discovery/cinemeta.cpp
     src/services/discovery/addonfinish.cpp
     src/services/discovery/addoncatalog.cpp
     src/services/integrations/rssmanager.cpp
@@ -216,6 +217,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/search/qmlsearchbridge_util.cpp
     src/bridges/search/qmlsearchbridge_attrs.cpp
     src/bridges/search/qmlsearchbridge_work.cpp
+    src/bridges/search/qmlsearchbridge_next.cpp
     src/bridges/search/qmlsearchbridge_covers.cpp
     src/bridges/search/qmlsearchbridge_activate.cpp
     src/bridges/search/qmlsearchbridge_ranking.cpp

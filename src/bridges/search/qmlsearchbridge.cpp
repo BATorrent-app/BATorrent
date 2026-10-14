@@ -76,6 +76,7 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
         setStatus(tr_("search_streams_n").arg(m_streamCache.size()));
     });
     connect(&mgr, &AddonManager::streamsFor, this, [this](const QString &id, const QList<StreamResult> &streams) {
+        takeNextStreams(id, streams);
         appendAddonEpisodeRows(id, streams);
     });
     connect(&mgr, &AddonManager::metaVideos, this, [this](const QString &id, const QVariantList &videos) {

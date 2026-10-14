@@ -16,6 +16,8 @@ Item {
     property var mediaPlayer
     property string infoHash: ""
     property int nextIdx: -1
+    // a next episode in this torrent or another one (see PlayerWindow.playNext)
+    property bool hasNext: nextIdx >= 0
     property bool autoplayNext: true
     property string nextPoster: ""
     property string nextTitle: ""
@@ -27,18 +29,18 @@ Item {
     readonly property real endCardLeadMs: 28000
     readonly property bool inLeadWindow: mediaPlayer && mediaPlayer.duration > 0 && mediaPlayer.position > 0
         && (mediaPlayer.duration - mediaPlayer.position) <= endCardLeadMs
-    readonly property bool showEndCard: root.nextIdx >= 0 && !root.endCardDismissed
+    readonly property bool showEndCard: root.hasNext && !root.endCardDismissed
         && root.autoplayNext && (root.inLeadWindow || root.countdownSec > 0)
 
     // The window loads it in place; a playFile here opened a second player.
     signal playNextRequested()
     function playNextNow() {
         countdown.stop(); root.countdownSec = 0
-        if (root.nextIdx >= 0) root.playNextRequested()
+        if (root.hasNext) root.playNextRequested()
     }
 
     function maybePlayNext() {
-        if (typeof session === "undefined" || root.nextIdx < 0) return
+        if (typeof session === "undefined" || !root.hasNext) return
         if (!root.autoplayNext || root.endCardDismissed) return
         root.countdownSec = 8
         countdown.restart()
