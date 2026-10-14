@@ -19,6 +19,8 @@ ColumnLayout {
     property var win
     property var controller
     property int groupRow: -1
+    // the bottom panel draws the show itself beside the list
+    property bool showHeader: true
     spacing: 0
     Layout.fillHeight: false
 
@@ -82,8 +84,22 @@ ColumnLayout {
         function onLanguageReloaded() { grp.names = ({}); grp.asked = ({}); grp.askNames() }
     }
 
+    // A season pack next to single episodes of the same season holds them too:
+    // say so, it is the same data twice on disk.
+    readonly property string overlapNote: {
+        var packs = {}, dup = []
+        for (var i = 0; i < episodes.length; i++)
+            if (episodes[i].season > 0 && episodes[i].episode <= 0) packs[episodes[i].season] = true
+        for (var j = 0; j < episodes.length; j++) {
+            var e = episodes[j]
+            if (e.episode > 0 && packs[e.season]) dup.push(e.label)
+        }
+        return dup.length > 0 ? (i18n.language, i18n.t("group_overlap")).arg(dup.join(", ")) : ""
+    }
+
     // ---- the show ----
     Item {
+        visible: grp.showHeader
         Layout.fillWidth: true
         Layout.preferredHeight: 104
         Item {
@@ -193,6 +209,7 @@ ColumnLayout {
 
     Text {
         Layout.leftMargin: 16
+        Layout.topMargin: grp.showHeader ? 0 : 14
         Layout.bottomMargin: 6
         text: (i18n.language, i18n.t("detail_episodes"))
         color: Theme.t4
@@ -211,7 +228,8 @@ ColumnLayout {
         Layout.rightMargin: 8
         Layout.bottomMargin: 10
         // a long season scrolls here instead of pushing the tabs off the panel
-        Layout.preferredHeight: Math.min(contentHeight, 42 * 6)
+        Layout.preferredHeight: grp.showHeader ? Math.min(contentHeight, 42 * 6) : -1
+        Layout.fillHeight: !grp.showHeader
         clip: true
         interactive: contentHeight > height
         boundsBehavior: Flickable.StopAtBounds
@@ -301,5 +319,15 @@ ColumnLayout {
                 onClicked: if (typeof session !== "undefined") session.playByHash(row.modelData.infoHash)
             }
         }
+    }
+    Text {
+        visible: grp.overlapNote.length > 0
+        Layout.fillWidth: true
+        Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.bottomMargin: 10
+        text: grp.overlapNote
+        color: Theme.t4
+        font.pixelSize: 12
+        font.family: Theme.fontSans
+        wrapMode: Text.WordWrap
     }
 }

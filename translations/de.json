@@ -1602,5 +1602,8 @@
   "kind_archive": "Archiv",
   "kind_video": "Videodatei",
   "kind_audio": "Audio",
-  "kind_program": "Programm"
+  "kind_program": "Programm",
+  "group_overlap": "%1 sind auch im Staffelpaket: dieselben Dateien doppelt auf der Platte.",
+  "player_resumed_at": "Weiter ab %1",
+  "player_from_start": "Von vorn"
 }

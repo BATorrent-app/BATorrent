@@ -83,25 +83,48 @@ Item {
         onTriggered: root.save()
     }
 
+    // Said in words, in the skip chip's style and place: where it picked up,
+    // and the way back to the start.
+    property bool controlsShown: true
     Rectangle {
         id: cue
         function show() { opacity = 1; hideTimer.restart() }
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: root.topInset + 16
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.rightMargin: 24
+        anchors.bottomMargin: root.controlsShown ? 184 : 40
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         opacity: 0
         visible: opacity > 0
-        radius: 999
-        color: "#cc000000"
-        border.color: Theme.accent; border.width: 1
-        implicitWidth: rcLbl.implicitWidth + 26; implicitHeight: 30
+        radius: 8
+        color: Qt.rgba(20 / 255, 20 / 255, 22 / 255, 0.85)
+        border.color: Qt.rgba(1, 1, 1, 0.18); border.width: 1
+        implicitWidth: cueRow.implicitWidth + 32; implicitHeight: 40
         Behavior on opacity { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
-        Text {
-            id: rcLbl
+        Row {
+            id: cueRow
             anchors.centerIn: parent
-            text: "↩  " + (formatHelper ? formatHelper.fmt(root.resumeAtMs) : "")
-            color: "white"; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
+            spacing: 14
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: (i18n.language, i18n.t("player_resumed_at")).arg(formatHelper ? formatHelper.fmt(root.resumeAtMs) : "")
+                color: "#ffffff"; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: (i18n.language, i18n.t("player_from_start"))
+                color: startMa.containsMouse ? "#ffffff" : Theme.stageMuted
+                font.pixelSize: 13; font.family: Theme.fontSans
+                font.underline: startMa.containsMouse
+                MouseArea {
+                    id: startMa
+                    anchors.fill: parent; anchors.margins: -6
+                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: { resumeRetry.stop(); root.resumeAtMs = 0; if (mediaPlayer) mediaPlayer.position = 0; cue.opacity = 0 }
+                }
+            }
         }
-        Timer { id: hideTimer; interval: 3500; onTriggered: cue.opacity = 0 }
+        HoverHandler { id: cueHover; onHoveredChanged: if (hovered) hideTimer.stop(); else hideTimer.restart() }
+        Timer { id: hideTimer; interval: 6000; onTriggered: cue.opacity = 0 }
     }
 }

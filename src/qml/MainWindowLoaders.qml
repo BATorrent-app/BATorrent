@@ -37,6 +37,9 @@ Item {
     // asked to watch more than one at a time, and separate windows are what the
     // OS already knows how to arrange, move between screens and full-screen.
     property var openPlayers: []
+    // a player is up: the nav bar's continue chip steps aside (it would offer
+    // something else while this plays)
+    property int playersOpen: 0
 
     function openPlayer(url, title, hash, fileIndex) {
         console.info("[player] open " + (hash || "").substring(0, 8) + " file " + fileIndex
@@ -55,6 +58,7 @@ Item {
         var step = 34 * (openPlayers.length % 6)
         if (step > 0) { w.x = w.x + step; w.y = w.y + step }
         openPlayers.push(w)
+        playersOpen = openPlayers.length
         w.nextProvider = root.searchPage
         w.prepareFrame()
         w.show(); w.raise(); w.requestActivate()
@@ -71,6 +75,7 @@ Item {
         for (var i = 0; i < openPlayers.length; ++i)
             if (openPlayers[i] !== w) out.push(openPlayers[i])
         openPlayers = out
+        playersOpen = openPlayers.length
         if (root.hubPage) root.hubPage.refresh()
     }
 

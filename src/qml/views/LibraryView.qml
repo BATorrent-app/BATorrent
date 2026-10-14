@@ -392,7 +392,7 @@ Item {
                 }
             }
             // an episode shows its code and TMDB name: the release name here
-            if (d && d.groupChild && d.rawName !== undefined && d.rawName !== d.displayName && !dragging) {
+            if (d && d.rawName !== undefined && d.rawName !== d.displayName && !dragging) {
                 var sp = d.stateCell.mapToItem(listArea, 0, 0)
                 if (mx < sp.x - 220) {
                     tipText = d.rawName

@@ -1602,5 +1602,8 @@
   "kind_archive": "Архів",
   "kind_video": "Відеофайл",
   "kind_audio": "Аудіо",
-  "kind_program": "Програма"
+  "kind_program": "Програма",
+  "group_overlap": "%1 також є в паку сезону: ті самі файли двічі на диску.",
+  "player_resumed_at": "Продовжено з %1",
+  "player_from_start": "З початку"
 }

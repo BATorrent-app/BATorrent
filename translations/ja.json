@@ -1602,5 +1602,8 @@
   "kind_archive": "圧縮ファイル",
   "kind_video": "動画ファイル",
   "kind_audio": "オーディオ",
-  "kind_program": "プログラム"
+  "kind_program": "プログラム",
+  "group_overlap": "%1 はシーズンパックにも含まれています：同じファイルがディスクに二重にあります。",
+  "player_resumed_at": "%1 から再開",
+  "player_from_start": "最初から"
 }

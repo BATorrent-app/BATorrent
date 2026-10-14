@@ -51,7 +51,8 @@ Item {
     readonly property string groupCaption: {
         if (!tile.isGroup || !controller || !controller.rowModel) return ""
         var s = (tile.groupCount, controller.rowModel.groupSummary(tile.index)).seasons || ""
-        var n = (i18n.language, i18n.t("search_episodes_n")).arg(tile.groupCount)
+        // items, not episodes: a season pack sits among them
+        var n = (i18n.language, i18n.t("group_items_n")).arg(tile.groupCount)
         return s.length > 0 ? s + " · " + n : n
     }
     // A group plays the episode last watched, else its first one to watch.
@@ -275,7 +276,10 @@ Item {
                 onArt: true
                 progress: tile.shownProgress
                 stateKey: tile.stateKey
-                fill: tile.isDownloading ? Theme.accent : Theme.fillFor(tile.stateKey)
+                // over art the paused grey needs to stand off the white wash
+                fill: tile.isDownloading ? Theme.accent
+                      : (tile.stateKey === "paused" || tile.stateKey === "queued") ? Qt.rgba(1, 1, 1, 0.55)
+                      : Theme.fillFor(tile.stateKey)
                 sheen: tile.isDownloading && tile.downRate > 0
                 MouseArea {
                     id: barMa

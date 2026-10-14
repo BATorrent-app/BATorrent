@@ -83,6 +83,8 @@ Column {
         : slow ? shortEta(tile.etaSec)
         : tile.isDownloading ? pair(tile.downloaded, tile.size, " / ")
         : k === "paused" || k === "fetching" || k === "queued" ? ""
+        // done and idle: the line is the catalogue, and the size would cut it
+        : (k === "completed" || (k === "seeding" && tile.upRate <= 0)) ? ""
         : tile.size
 
     Text {

@@ -1602,5 +1602,8 @@
   "kind_archive": "Archive",
   "kind_video": "Video file",
   "kind_audio": "Audio",
-  "kind_program": "Program"
+  "kind_program": "Program",
+  "group_overlap": "%1 are also in the season pack: the same files twice on disk.",
+  "player_resumed_at": "Picked up at %1",
+  "player_from_start": "From the start"
 }

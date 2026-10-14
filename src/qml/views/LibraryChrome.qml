@@ -51,6 +51,7 @@ ColumnLayout {
 
     DetailPanel {
         win: root.host
+        controller: root.controller
         visible: !root.controller.gridView
         onRenameFileRequested: function(idx, current) { root.renameFileRequested(idx, current) }
     }

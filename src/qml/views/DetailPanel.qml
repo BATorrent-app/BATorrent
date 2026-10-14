@@ -14,7 +14,14 @@ import "../widgets"
 Rectangle {
     id: detailPanel
     property var win
+    property var controller: null
     signal renameFileRequested(int idx, string current)
+    // A series row picked in the list: the show and its episodes, like the
+    // grid's inspector, until one episode is picked (then its tabs).
+    readonly property int groupRow: (controller && controller.keyedRows && controller.selectedRows.length === 1
+                                     && controller.rowModel.isGroup(controller.selectedRows[0]))
+                                    ? controller.selectedRows[0] : -1
+    readonly property bool groupMode: groupRow >= 0 && controller.focusedEpisodeSource < 0
     Layout.fillWidth: true
     Layout.preferredHeight: win.detailsShownCollapsed ? 42 : 262
     Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
@@ -63,7 +70,17 @@ Rectangle {
                 ToolTip.delay: 400
             }
 
+            Text {
+                visible: detailPanel.groupMode
+                anchors.left: parent.left; anchors.leftMargin: 24
+                anchors.verticalCenter: parent.verticalCenter
+                text: (i18n.language, i18n.t("insp_series_n")).arg(panelGroup.summary.count || 0)
+                color: Theme.t4
+                font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 1.0
+                font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
+            }
             DetailTabs {
+                visible: !detailPanel.groupMode
                 anchors.left: parent.left
                 anchors.leftMargin: 24
                 anchors.right: collapseBtn.left
@@ -101,7 +118,77 @@ Rectangle {
                 visible: detailPanel.win.hasSel
                 Layout.preferredWidth: 440
                 Layout.fillHeight: true
+                // the show: cover, title, the season and a segment per episode
+                Item {
+                    visible: detailPanel.groupMode
+                    x: 24; y: 18
+                    width: parent.width - 48
+                    height: 142
+                    Rectangle {
+                        id: grpCover
+                        width: 100; height: 142; radius: 7; clip: true
+                        color: Theme.tileBlank
+                        border.color: Theme.hair; border.width: 1
+                        Image {
+                            anchors.fill: parent; anchors.margins: 1
+                            source: panelGroup.summary.poster ? detailPanel.win.fileUrl(panelGroup.summary.poster) : ""
+                            fillMode: Image.PreserveAspectCrop; asynchronous: true
+                            sourceSize: Qt.size(200, 284)
+                        }
+                    }
+                    Column {
+                        anchors.left: grpCover.right; anchors.leftMargin: 18
+                        anchors.right: parent.right
+                        spacing: 3
+                        Text {
+                            width: parent.width
+                            text: panelGroup.summary.title || ""
+                            color: Theme.t1; font.pixelSize: 17; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            width: parent.width
+                            text: [panelGroup.summary.year > 0 ? String(panelGroup.summary.year) : "", panelGroup.summary.genres || "",
+                                   detailPanel.win.catLabel("Series")].filter(function (x) { return x.length > 0 }).join(" · ")
+                            color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans
+                            elide: Text.ElideRight
+                        }
+                    }
+                    Column {
+                        anchors.left: grpCover.right; anchors.leftMargin: 18
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        spacing: 7
+                        Item {
+                            width: parent.width; height: 16
+                            Text {
+                                text: [panelGroup.summary.seasons || "", (i18n.language, i18n.t("group_items_n")).arg(panelGroup.summary.count || 0)]
+                                      .filter(function (x) { return x.length > 0 }).join(" · ")
+                                color: Theme.t1; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                            }
+                            Text {
+                                anchors.right: parent.right
+                                text: panelGroup.summary.size || ""
+                                color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+                            }
+                        }
+                        Row {
+                            width: parent.width; height: 4; spacing: 3
+                            Repeater {
+                                model: panelGroup.episodes
+                                Rectangle {
+                                    required property var modelData
+                                    readonly property real p: Math.max(0, Math.min(1, modelData.progress || 0))
+                                    width: (parent.width - parent.spacing * (panelGroup.episodes.length - 1)) / Math.max(1, panelGroup.episodes.length)
+                                    height: 4; radius: 2; color: Theme.track
+                                    Rectangle { width: parent.width * parent.p; height: 4; radius: 2; color: parent.p >= 0.999 ? Theme.doneFill : Theme.accent }
+                                }
+                            }
+                        }
+                    }
+                }
                 DetailIdentity {
+                    visible: !detailPanel.groupMode
                     win: detailPanel.win
                     vertical: false
                     x: 24; y: 18
@@ -111,8 +198,21 @@ Rectangle {
                 Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.hairSoft }
             }
 
+            DetailGroup {
+                id: panelGroup
+                visible: detailPanel.groupMode
+                showHeader: false
+                win: detailPanel.win
+                controller: detailPanel.controller
+                groupRow: detailPanel.groupRow
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.leftMargin: 12
+                Layout.rightMargin: 12
+            }
             StackLayout {
                 id: panes
+                visible: !detailPanel.groupMode
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.leftMargin: 24

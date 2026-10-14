@@ -18,7 +18,8 @@ import "../widgets"
 Window {
     id: win
     PlayerFormat { id: playerFmt }
-    width: 1120; height: 720
+    // 16:9: the picture fills the window and the chrome floats on it, no bars
+    width: 1280; height: 720
     minimumWidth: 560; minimumHeight: 360
     color: "#000000"
     title: Theme.unifiedChrome ? "" : (win.mediaTitle.length > 0 ? ("BATorrent — " + win.mediaTitle) : "BATorrent")
@@ -215,7 +216,7 @@ Window {
             win.pipMode = true
         } else {
             win.flags = win.stayOnTop ? (win.baseFlags | Qt.WindowStaysOnTopHint) : win.baseFlags
-            win.width = win.savedGeom.width > 0 ? win.savedGeom.width : 1120
+            win.width = win.savedGeom.width > 0 ? win.savedGeom.width : 1280
             win.height = win.savedGeom.height > 0 ? win.savedGeom.height : 720
             win.x = win.savedGeom.x; win.y = win.savedGeom.y
             win.pipMode = false
@@ -286,6 +287,15 @@ Window {
                     season: pt.absolute ? 1 : pt.season, before: 0 }
         discovery.fetchEpisodes(pt.showTmdb, win.epq.season)
     }
+    // the next file in this torrent, named the same way ("Next: S01E354 · …")
+    function nameNext(season, n, eps) {
+        if (win.nextIdx < 0) return
+        for (var i = 0; i < eps.length; i++)
+            if (eps[i].episode === n && eps[i].name) {
+                win.nextSubtitle = win.epCode(season, n) + " · " + eps[i].name
+                return
+            }
+    }
     function epCode(season, episode) {
         return "S" + (season < 10 ? "0" : "") + season + "E" + (episode < 10 ? "0" : "") + episode
     }
@@ -299,6 +309,7 @@ Window {
                 for (var i = 0; i < eps.length; i++)
                     if (eps[i].episode === q.want && eps[i].name)
                         win.resolvedSubtitle = win.epCode(season, q.want) + " · " + eps[i].name
+                win.nameNext(season, q.want + 1, eps)
                 win.epq = { tmdb: 0 }
                 return
             }
@@ -308,6 +319,7 @@ Window {
                 var name = ""
                 for (var j = 0; j < eps.length; j++) if (eps[j].episode === n) name = eps[j].name || ""
                 win.resolvedSubtitle = win.epCode(season, n) + (name.length > 0 ? " · " + name : "")
+                win.nameNext(season, n + 1, eps)
                 win.epq = { tmdb: 0 }
                 return
             }
@@ -570,6 +582,7 @@ Window {
         fileIndex: win.fileIndex
         formatHelper: playerFmt
         topInset: chrome.topVisible ? chrome.topHeight : 0
+        controlsShown: win.controlsShown
     }
 
     PlayerRunway {

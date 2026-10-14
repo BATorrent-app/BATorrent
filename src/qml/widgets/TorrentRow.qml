@@ -73,7 +73,8 @@ Rectangle {
     readonly property bool isPack: groupChild && season > 0 && episode <= 0
     readonly property string displayName: {
         if (isGroup) return metaTitle
-        if (!groupChild || epCode.length === 0) return torrentName
+        // the clean title when the catalogue knows it, the release name on hover
+        if (!groupChild || epCode.length === 0) return metaTitle.length > 0 ? metaTitle : torrentName
         if (isPack) return epCode + " · " + (i18n.language, i18n.t("season_complete")).arg(season)
         var n = controller.episodeName(showTmdb, season, episode)
         return n.length > 0 ? epCode + " · " + n : epCode

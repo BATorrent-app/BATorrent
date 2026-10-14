@@ -62,7 +62,9 @@ Item {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * Math.max(0, Math.min(1, track.progress))
+            // never narrower than it is tall: a sliver under the rounding read
+            // as a slider knob instead of a little progress
+            width: track.progress > 0 ? Math.max(parent.height, parent.width * Math.min(1, track.progress)) : 0
             radius: parent.radius
             color: track.fill
             Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }

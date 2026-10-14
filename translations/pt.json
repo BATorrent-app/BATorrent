@@ -1602,5 +1602,8 @@
   "kind_archive": "Arquivo compactado",
   "kind_video": "Arquivo de vídeo",
   "kind_audio": "Áudio",
-  "kind_program": "Programa"
+  "kind_program": "Programa",
+  "group_overlap": "%1 também estão no pack da temporada: os mesmos arquivos duas vezes no disco.",
+  "player_resumed_at": "Continuando de %1",
+  "player_from_start": "Do início"
 }

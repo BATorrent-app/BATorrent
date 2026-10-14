@@ -532,7 +532,7 @@ Window {
             appWindow: win
             ownsTitleBar: win.frameless
             currentIndex: win.currentPage
-            showDownloadChip: win.showDownloadChip
+            showDownloadChip: win.showDownloadChip && windowLoaders.playersOpen === 0
             menuOpen: logoMenu.opened
             onPageRequested: function(page) { win.currentPage = page }
             onSettingsClicked: win.currentPage = 3
