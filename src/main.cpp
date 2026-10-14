@@ -120,10 +120,17 @@ int main(int argc, char *argv[])
     AppRuntime::loadFonts(app);
     AppRuntime::logDependencyVersions();
     QQuickStyle::setStyle("Basic");
-    // The system's own text rasteriser (DirectWrite on Windows, Core Text on
-    // macOS), the one a browser uses. Qt's default distance-field text drew
-    // every weight thinner and greyer than the same font in the design files.
-    QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
+    // Text drawn from the glyph outlines with grey anti-aliasing, like the
+    // browser the design files were made in. Qt's default distance fields read
+    // thin and grey; the native rasteriser on Windows adds ClearType colour
+    // fringes and hard hinting, which look jagged on the dark surfaces.
+    // BAT_TEXT_RENDER=native|qt brings either back for comparison.
+    {
+        const QByteArray mode = qgetenv("BAT_TEXT_RENDER");
+        QQuickWindow::setTextRenderType(mode == "native" ? QQuickWindow::NativeTextRendering
+                                        : mode == "qt" ? QQuickWindow::QtTextRendering
+                                        : QQuickWindow::CurveTextRendering);
+    }
 
     AppServices svc = AppServices::create(app);
 
