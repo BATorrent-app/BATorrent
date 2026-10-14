@@ -71,23 +71,30 @@ Item {
             Behavior on color { ColorAnimation { duration: Theme.durBase } }
             clip: true
 
+            // a soft light sweeping across, fading out at both ends: a solid
+            // band read as a bubble and spilled past the rounded corners
             Rectangle {
                 id: sheenBand
                 visible: track.sheen && !Theme.reduceMotion
-                width: Math.max(24, parent.width * 0.28)
+                width: 48
                 height: parent.height
-                radius: parent.radius
-                color: Qt.rgba(1, 1, 1, 0.35)
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0) }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.3) }
+                    GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0) }
+                }
                 SequentialAnimation on x {
                     running: sheenBand.visible
                     loops: Animation.Infinite
                     NumberAnimation {
                         from: -sheenBand.width
                         to: Math.max(1, sheenBand.parent.width)
-                        duration: 2600
-                        easing.type: Easing.InOutSine
+                        // the design's 2.6s cycle: across in the first 70%, then rest
+                        duration: 1820
+                        easing.type: Easing.InOutQuad
                     }
-                    PauseAnimation { duration: 900 }
+                    PauseAnimation { duration: 780 }
                 }
             }
         }
