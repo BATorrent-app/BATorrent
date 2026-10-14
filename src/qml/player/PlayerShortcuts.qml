@@ -13,6 +13,7 @@ Item {
     property var pw
     // Named differently from host ids: same-name bindings self-shadow to undefined.
     property var optionsPanel
+    property var morePanel
     property var subsPanel
     property bool extSubsActive: false
 
@@ -72,6 +73,7 @@ Item {
         sequence: "Escape"
         onActivated: {
             if (pw && pw.helpOpen) { pw.helpOpen = false; return }
+            if (morePanel && morePanel.open) { morePanel.closePanel(); return }
             if (optionsPanel && optionsPanel.open) { optionsPanel.closePanel(); return }
             if (subsPanel && subsPanel.open) { subsPanel.closePanel(); return }
             if (!pw) return

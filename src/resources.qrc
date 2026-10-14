@@ -26,6 +26,11 @@
 <file>icons/ellipsis.svg</file>
 <file>icons/maximize.svg</file>
 <file>icons/pip.svg</file>
+<file>icons/camera.svg</file>
+<file>icons/keyboard.svg</file>
+<file>icons/rotate-clockwise.svg</file>
+<file>icons/aspect-ratio.svg</file>
+<file>icons/pinned.svg</file>
 <file>icons/skip-forward.svg</file>
 <file>icons/clock.svg</file>
 <file>icons/countryflags/at.svg</file>
@@ -180,6 +185,7 @@
     <file>../src/qml/player/PlayerSlider.qml</file>
     <file>../src/qml/player/PlayerSubPanel.qml</file>
     <file>../src/qml/player/PlayerOptionsPanel.qml</file>
+    <file>../src/qml/player/PlayerMorePanel.qml</file>
     <file>../src/qml/player/PlayerResume.qml</file>
     <file>../src/qml/player/PlayerEndCard.qml</file>
     <file>../src/qml/player/PlayerSkipChip.qml</file>

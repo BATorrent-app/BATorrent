@@ -612,38 +612,14 @@ Window {
     onFullscreenChanged: { win.controlsShown = true; idle.restart() }
 
     // audio · subtitles · speed live in one options panel (see below); the
-    // "…" menu keeps only what doesn't fit a picker
-    BatMenu {
-        id: moreMenu
-        implicitWidth: 210
-        BatMenuItem {
-            text: (i18n.language, i18n.t("player_aspect")).arg(win.aspectLabel(win.aspectMode)) + "    Z"
-            onTriggered: win.cycleAspect()
-        }
-        BatMenuItem {
-            text: (i18n.language, i18n.t("player_rotate")) + "    R"
-            onTriggered: win.rotate()
-        }
-        BatMenuItem {
-            text: (i18n.language, i18n.t("player_screenshot")) + "    Ctrl+S"
-            onTriggered: win.screenshot()
-        }
-        BatMenuItem {
-            checkable: true
-            checked: win.stayOnTop
-            text: (i18n.language, i18n.t("player_on_top")) + "    T"
-            onTriggered: win.toggleOnTop()
-        }
-        BatMenuItem {
-            text: (i18n.language, i18n.t("help_title")) + "    ?"
-            onTriggered: win.helpOpen = true
-        }
-        BatMenuSep {}
-        BatMenuItem {
-            text: (i18n.language, i18n.t("player_external"))
-            onTriggered: { resume.save(); win.openExternal() }
-        }
+    // "…": picture, window and the odd actions, in sections
+    PlayerMorePanel {
+        id: morePanel
+        anchors.fill: parent
+        z: 56
+        pw: win
     }
+    function openExternalSaved() { resume.save(); win.openExternal() }
 
     FileDialog {
         id: subFileDlg
@@ -702,7 +678,7 @@ Window {
         mediaPlayer: player
         formatHelper: playerFmt
         optionsPanel: optsPanel
-        overflowMenu: moreMenu
+        overflowMenu: morePanel
     }
 
     // ---- keyboard help ----
@@ -776,6 +752,7 @@ Window {
 
     PlayerShortcuts {
         pw: win
+        morePanel: morePanel
         optionsPanel: optsPanel
         subsPanel: subPanel
         extSubsActive: win.extSubsActive
