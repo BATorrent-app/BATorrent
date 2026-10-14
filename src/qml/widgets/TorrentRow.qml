@@ -32,11 +32,19 @@ Rectangle {
     required property real availability
     required property string eta
     required property string posterPath
+    // Episodes of one series fold into a group row (QmlLibraryModel). A group
+    // adds its episodes up; an open one lists them indented under it.
+    required property bool isGroup
+    required property int groupCount
+    required property bool groupExpanded
+    required property bool groupChild
 
     readonly property string posterUrl: win.fileUrl(posterPath)
     // the "stalled why" tooltip is driven by listArea (its z:2
     // hover-exclusive MouseArea starves any in-delegate handler)
     readonly property Item stateCell: lrowStateText
+    // Same reason: listArea checks a click against the chevron to open the group.
+    readonly property Item toggleCell: lrowChevron
 
     color: controller.isRowSelected(index) ? Theme.sel : (listArea.hoveredRow === index ? Theme.hover : "transparent")
 
@@ -61,14 +69,50 @@ Rectangle {
 
         // classic = cover-less, dense qBittorrent-style row (this ListView is
         // only ever shown in classic mode now)
-        Text {
+        RowLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            text: lrow.torrentName
-            color: Theme.t1
-            font.pixelSize: 13
-            font.family: Theme.fontSans
-            elide: Text.ElideRight
+            spacing: 6
+            // An episode lines its name up past the group's chevron.
+            Item {
+                visible: lrow.groupChild
+                Layout.preferredWidth: 14
+                Layout.preferredHeight: 1
+            }
+            Item {
+                id: lrowChevron
+                visible: lrow.isGroup
+                Layout.preferredWidth: 14
+                Layout.preferredHeight: 14
+                Layout.alignment: Qt.AlignVCenter
+                IconImg {
+                    anchors.centerIn: parent
+                    src: "qrc:/icons/chevron.svg"
+                    tint: Theme.t2
+                    s: 12
+                    rotation: lrow.groupExpanded ? 0 : -90
+                    Behavior on rotation { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
+                }
+            }
+            Text {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                text: lrow.isGroup ? lrow.metaTitle : lrow.torrentName
+                color: lrow.groupChild ? Theme.t2 : Theme.t1
+                font.pixelSize: 13
+                font.weight: lrow.isGroup ? Font.DemiBold : Font.Normal
+                font.family: Theme.fontSans
+                elide: Text.ElideRight
+            }
+            Text {
+                visible: lrow.isGroup
+                Layout.alignment: Qt.AlignVCenter
+                text: (i18n.language, i18n.t("search_episodes_n")).arg(lrow.groupCount)
+                color: Theme.t3
+                font.pixelSize: 12
+                font.family: Theme.fontSans
+                font.features: Theme.tnum
+            }
         }
         Text {
             text: lrow.size

@@ -118,6 +118,8 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/librarygroups.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/qmllibrarymodel.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_add.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_details.cpp
@@ -352,6 +354,7 @@ bat_add_test(test_memory     test_memory.cpp)
 bat_add_test(test_unit       test_unit.cpp)
 bat_add_test(test_nameparser test_nameparser.cpp)
 bat_add_test(test_episodegroup test_episodegroup.cpp)
+bat_add_test(test_librarygroups test_librarygroups.cpp)
 bat_add_test(test_bridge     test_bridge.cpp)
 bat_add_test(test_gamesource test_gamesource.cpp)
 bat_add_test(test_memguard   test_memguard.cpp)

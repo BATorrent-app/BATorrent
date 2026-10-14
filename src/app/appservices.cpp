@@ -8,6 +8,7 @@
 #include "app/mediarefresh.h"
 #include "app/vpnwiring.h"
 #include "bridges/qmlposterbridge.h"
+#include "bridges/qmllibrarymodel.h"
 #include "services/discovery/addonmanager.h"
 #include "services/discovery/discoveryservice.h"
 #include "services/downloads/httpdownloadmanager.h"
@@ -244,6 +245,9 @@ AppServices AppServices::create(QApplication &app)
 
     svc.filterProxy = new QmlTorrentFilterProxy(&app);
     svc.filterProxy->setSourceModel(svc.posterModel);
+    // Episodes of one series fold into one row here; which groups are open
+    // is kept across restarts.
+    svc.libraryModel = new QmlLibraryModel(svc.filterProxy, QStringLiteral("library/openGroups"), &app);
 
     Translator::instance().applySaved();
     svc.i18nBridge = new QmlI18nBridge(&app);

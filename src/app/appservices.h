@@ -31,6 +31,7 @@ class QmlNotificationBridge;
 class DiscordRpcBridge;
 class QmlI18nBridge;
 class QmlTorrentFilterProxy;
+class QmlLibraryModel;
 
 // Engine selection + bridge graph + signal wiring that feeds QML context props.
 struct AppServices {
@@ -57,6 +58,7 @@ struct AppServices {
     QmlUpdaterBridge *updaterBridge = nullptr;
     QmlI18nBridge *i18nBridge = nullptr;
     QmlTorrentFilterProxy *filterProxy = nullptr;
+    QmlLibraryModel *libraryModel = nullptr;
 
     static AppServices create(QApplication &app);
 };

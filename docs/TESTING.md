@@ -10,7 +10,7 @@ green before a merge.
 | Area | Suites | What they check | Not covered |
 |------|--------|-----------------|-------------|
 | torrent / engine | `sessionconfig`, `sessionresume`, `sessionremove`, `contentprobe`, `ipblocklist`, `bandwidthschedule`, `magnettrackers`, `proxycontroller`, parts of `unit` | Resume file naming, migration and corrupt-file handling; `.!bt` suffix cleanup; finish moves; remove with missing files; config round-trips; missing-content detection | Every libtorrent alert branch; streaming piece priority |
-| bridges | `bridge` | Headless bridge setup, adding fixture torrents, `playFile` / stream URL / `clearResume` | Library and watchlist glue |
+| bridges | `bridge`, `librarygroups` | Headless bridge setup, adding fixture torrents, `playFile` / stream URL / `clearResume`; series grouping in the library list | Watchlist glue |
 | discovery | `tmdbparse`, `igdbparse`, `addonparse`, `addonfinish`, `discoverysearch`, `discoveryassemble`, `discoveryfinish`, `hublogic`, `gamesource` | JSON to card mapping, dedupe, search queries, offline shelf and search results, stale addon responses being dropped | Live TMDB / IGDB calls (tagged `[net]`, run by hand) |
 | metadata | `nameparser`, `metadatamatch`, `searchranker`, `releasegroup`, `releasetrust`, `gamereleasepick`, `episodegroup`, `mkvchapters` | Title parsing, poster lookup, ranking and trust | The full metadata fetch, which needs the network |
 | security | `security`, `memguard`, parts of `unit` | Suspicious file scan, password hashing, archive volume rules | OS antivirus behaviour |

@@ -19,6 +19,21 @@ Menu {
     required property var exportDialog
     required property var diagnoseDialog
 
+    // Read when the menu opens: the row under a right-click is a series group
+    // (open or closed), and the selection covers more than one torrent. With
+    // several, pause and resume both stay offered: the first one's state says
+    // nothing about the rest.
+    property bool onGroup: false
+    property bool groupOpen: false
+    property bool multi: false
+    onAboutToShow: {
+        var row = controller.selected
+        var keyed = controller.keyedRows
+        onGroup = keyed && torrentFilter.isGroup(row)
+        groupOpen = onGroup && torrentFilter.isGroupExpanded(row)
+        multi = session.selectedRows().length > 1
+    }
+
     component CatItem: MenuItem {
         id: ci
         implicitHeight: enabled ? 30 : 1
@@ -194,6 +209,14 @@ Menu {
         }
     }
 
+    CtxItem {
+        visible: root.onGroup
+        height: visible ? implicitHeight : 0
+        iconSrc: "qrc:/icons/chevron.svg"
+        text: (i18n.language, root.groupOpen ? i18n.t("lib_group_close") : i18n.t("lib_group_open"))
+        onTriggered: controller.toggleGroup(controller.selected)
+    }
+
     // Common actions stay one click; the rest is grouped into submenus so
     // the menu doesn't run the whole height of the screen.
     CtxItem {
@@ -203,7 +226,7 @@ Menu {
         readonly property bool seeding: session.selectedDataDone || session.selectedCompleted
         iconSrc: "qrc:/icons/pause.svg"
         text: (i18n.language, seeding ? i18n.t("ctx_pause_seeding") : i18n.t("ctx_pause_download"))
-        enabled: !session.selectedPaused
+        enabled: !session.selectedPaused || root.multi
         onTriggered: session.pauseSelected()
     }
     CtxItem {
@@ -212,7 +235,7 @@ Menu {
         readonly property bool seedAgain: session.selectedDataDone || session.selectedCompleted
         iconSrc: seedAgain ? "qrc:/icons/upload.svg" : "qrc:/icons/play.svg"
         text: (i18n.language, seedAgain ? i18n.t("ctx_seed_again") : i18n.t("ctx_resume_download"))
-        enabled: session.selectedPaused
+        enabled: session.selectedPaused || root.multi
         onTriggered: session.resumeSelected()
     }
     CtxItem { iconSrc: "qrc:/icons/folder.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
@@ -224,7 +247,14 @@ Menu {
         height: visible ? implicitHeight : 0
         iconSrc: "qrc:/icons/lock.svg"
         text: (i18n.language, i18n.t("ctx_defender_exclude"))
-        onTriggered: session.excludeTorrentFromDefender(torrentFilter.mapToSource(controller.selected))
+        // a group row has no torrent of its own: its first episode's folder
+        // is the one the episodes share
+        onTriggered: {
+            var rows = typeof torrentFilter.sourceRowsAt === "function"
+                       ? torrentFilter.sourceRowsAt(controller.selected)
+                       : [torrentFilter.mapToSource(controller.selected)]
+            if (rows.length > 0) session.excludeTorrentFromDefender(rows[0])
+        }
     }
     CtxItem {
         visible: session.selectedHasArchives

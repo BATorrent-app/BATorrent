@@ -1449,5 +1449,7 @@
   "guard_search": "Procurar outra versão",
   "set_isolated_player": "Abrir vídeos num processo isolado (experimental)",
   "set_isolated_player_note": "O vídeo é decodificado num processo separado: se um arquivo derrubar o decodificador, o resto do app continua funcionando. Vale para os próximos vídeos que você abrir.",
-  "player_decoder_crashed": "Este arquivo derrubou o decodificador de vídeo. O BATorrent continua funcionando normalmente: tente outra versão."
+  "player_decoder_crashed": "Este arquivo derrubou o decodificador de vídeo. O BATorrent continua funcionando normalmente: tente outra versão.",
+  "lib_group_open": "Mostrar episódios",
+  "lib_group_close": "Ocultar episódios"
 }

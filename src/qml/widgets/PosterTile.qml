@@ -37,6 +37,12 @@ Item {
     required property int year
     required property string genres
     required property int queuePos
+    // A series group (QmlLibraryModel): one tile for every episode of a show,
+    // opening to the episodes' own tiles right after it.
+    required property bool isGroup
+    required property int groupCount
+    required property bool groupExpanded
+    required property bool groupChild
 
     // Allow-list, not a deny-list: the old form listed every state that is not
     // downloading, so it never excluded "error" (an errored torrent showed a
@@ -55,7 +61,7 @@ Item {
     // hole where the artwork should be: a missing image plugin, a truncated
     // download or a corrupt file all land here.
     readonly property bool artShown: posterUrl !== "" && posterImg.status !== Image.Error
-    readonly property bool hovered: tileMa.containsMouse || ptMa.containsMouse
+    readonly property bool hovered: tileMa.containsMouse || ptMa.containsMouse || chipMa.containsMouse
 
     // What the bar and the percentage draw. The engine reports once a second,
     // so `progress` moves in steps; this follows it linearly over that second.
@@ -117,11 +123,30 @@ Item {
     }
     NumberAnimation { id: progGlide; target: tile; property: "shownProgress" }
 
+    // A group reads as a stack: two cards peek out above its cover.
+    Repeater {
+        model: tile.isGroup ? 2 : 0
+        Rectangle {
+            required property int index
+            x: 8 * (index + 1)
+            y: -5 * (index + 1)
+            z: -1 - index
+            width: 178 - 16 * (index + 1)
+            height: 237
+            radius: 10
+            color: Theme.isLight ? Qt.darker(Theme.panel, 1.06 + index * 0.06) : Qt.lighter("#161618", 1.35 - index * 0.15)
+            border.color: Theme.hair
+            border.width: 1
+            transform: Translate { y: posterShift.y }
+        }
+    }
+
     Item {
         id: posterWrap
         width: 178
         height: 237
         transform: Translate {
+            id: posterShift
             y: tile.hovered ? -Theme.travel(4) : 0
             Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         }
@@ -429,7 +454,9 @@ Item {
                     const again = mouse.modifiers === Qt.NoModifier && controller.isRowSelected(tile.index)
                                   && controller.selectedRows.length <= 1
                     controller.selectRow(tile.index, mouse.modifiers)
-                    if (again && win.openTorrentPage(tile.infoHash)) tileMa.pageOpenedMs = Date.now()
+                    // a series group opens to its episodes rather than to a page
+                    if (again && controller.toggleGroup(tile.index)) tileMa.pageOpenedMs = Date.now()
+                    else if (again && win.openTorrentPage(tile.infoHash)) tileMa.pageOpenedMs = Date.now()
                 }
             }
             // A film, show or game opens on its own page, as in the list; with
@@ -438,11 +465,76 @@ Item {
             property real pageOpenedMs: 0
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.RightButton && Date.now() - pageOpenedMs >= 800) {
+                    if (controller.toggleGroup(tile.index)) return
                     controller.selectRow(tile.index, 0)
                     if (!win.openTorrentPage(tile.infoHash)) session.openSelectedFile()
                 }
             }
         }
+    }
+
+    // How many episodes, and the way in: the chip opens the group in place
+    // without changing the selection.
+    Rectangle {
+        id: groupChip
+        visible: tile.isGroup
+        parent: posterWrap
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: 8
+        anchors.topMargin: 8
+        z: 6
+        radius: 9
+        height: 20
+        width: chipRow.implicitWidth + 14
+        color: chipMa.containsMouse ? "#ee000000" : "#cc000000"
+        border.color: chipMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.18)
+        border.width: 1
+        Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
+        Row {
+            id: chipRow
+            anchors.centerIn: parent
+            spacing: 4
+            IconImg {
+                anchors.verticalCenter: parent.verticalCenter
+                src: "qrc:/icons/chevron.svg"
+                tint: "#ffffff"
+                s: 11
+                rotation: tile.groupExpanded ? 0 : -90
+                Behavior on rotation { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: (i18n.language, i18n.t("search_episodes_n")).arg(tile.groupCount)
+                color: "#ffffff"
+                font.pixelSize: 10
+                font.weight: Font.Bold
+                font.family: Theme.fontSans
+                font.features: Theme.tnum
+            }
+        }
+        MouseArea {
+            id: chipMa
+            anchors.fill: parent
+            anchors.margins: -4
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: controller.toggleGroup(tile.index)
+        }
+    }
+    // An episode shown under its open group: a short rule over the cover ties
+    // it to the stack before it.
+    Rectangle {
+        visible: tile.groupChild
+        parent: posterWrap
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: -7
+        width: 40
+        height: 3
+        radius: 1.5
+        color: Theme.t3
+        opacity: 0.6
     }
 
     PosterTileMeta {

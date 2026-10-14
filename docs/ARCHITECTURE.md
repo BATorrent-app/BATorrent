@@ -85,7 +85,7 @@ was never wired (the migration left a few of the latter; verify before deleting)
 | `session`       | `QmlSessionBridge`      | Torrent ops + current selection (peers/files/trackers, limits, smart-paste). Owns a `GeoIpResolver`. → `SessionManager` |
 | `settings`      | `QmlSettingsBridge`     | Every preference; WebUI/pairing; secrets; export/import. → QSettings + `SecretStore` + `WebServer` |
 | `themeBridge`   | `QmlThemeBridge`        | Theme name / anime accent / custom palette / tray icon |
-| `torrentModel` / `torrentFilter` | `QmlPosterModel` → `QmlTorrentFilterProxy` | The torrent grid/list model with poster art + filtering/sorting |
+| `torrentModel` / `torrentFilter` | `QmlPosterModel` → `QmlTorrentFilterProxy` → `QmlLibraryModel` | The torrent grid/list model with poster art, filtering/sorting and series groups |
 | `rss`           | `QmlRssBridge`          | RSS feeds + rules. → `RssManager`                     |
 | `search`        | `QmlSearchBridge`       | Torrent search across providers. → `AddonManager`     |
 | `addons`        | `QmlAddonBridge`        | Manage search providers + auto-tracker list. → `AddonManager` |
@@ -97,7 +97,11 @@ was never wired (the migration left a few of the latter; verify before deleting)
 
 The model pipeline: `QmlPosterModel` (rows = torrents + resolved posters) →
 `QmlTorrentFilterProxy` (`setSourceModel(posterModel)`, sorts by seeders /
-filters by tab+search) → exposed to QML as both `torrentModel` and `torrentFilter`.
+filters by tab+search) → `QmlLibraryModel` (folds the episodes of one series
+into a group row that opens to them; keyed by TMDB id, else the parsed show
+name, see `LibraryGroups`) → exposed to QML as both `torrentModel` and
+`torrentFilter`. A group row has no torrent of its own, so selection maps rows
+with `sourceRowsAt()`, which gives every episode behind a group.
 
 ---
 

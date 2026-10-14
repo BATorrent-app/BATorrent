@@ -441,6 +441,10 @@ Item {
                 win.openContext(clickRow)
             } else if (doubleHandled) {
                 doubleHandled = false   // this release ends a double-click that already acted
+            } else if (mouse.modifiers === Qt.NoModifier && onChevron(clickRow, mouse.x)) {
+                // the chevron opens or closes the group without touching the selection
+                controller.toggleGroup(clickRow)
+                pageOpenedMs = Date.now()
             } else {
                 // A plain click on the row that is already the only one
                 // selected opens its page (a game or a title); the first click
@@ -448,8 +452,16 @@ Item {
                 var again = mouse.modifiers === Qt.NoModifier && controller.isRowSelected(clickRow)
                             && controller.selectedRows.length <= 1
                 controller.selectRow(clickRow, mouse.modifiers)
-                if (again && win.openTorrentPage(session.selectedInfoHash)) pageOpenedMs = Date.now()
+                // a series group opens to its episodes rather than to a page
+                if (again && controller.toggleGroup(clickRow)) pageOpenedMs = Date.now()
+                else if (again && win.openTorrentPage(session.selectedInfoHash)) pageOpenedMs = Date.now()
             }
+        }
+        function onChevron(row, mx) {
+            var d = list.itemAtIndex(row)
+            if (!d || !d.isGroup || !d.toggleCell) return false
+            var p = d.toggleCell.mapToItem(listArea, 0, 0)
+            return mx >= p.x - 8 && mx <= p.x + d.toggleCell.width + 8
         }
         // doubleClicked lands between the second press and its release, so the
         // release must not act on the same click again.
@@ -464,6 +476,7 @@ Item {
             if (r >= 0) {
                 doubleHandled = true
                 if (Date.now() - pageOpenedMs < 800) return
+                if (controller.toggleGroup(r)) return
                 controller.selectRow(r, 0)
                 if (!win.openTorrentPage(session.selectedInfoHash)) session.openSelectedFile()
             }

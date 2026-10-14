@@ -8,6 +8,8 @@
 #include "services/discovery/discoveryservice.h"
 #include "services/metadata/episodegroup.h"
 #include "services/metadata/nameparser.h"
+#include "services/metadata/episodegroup.h"
+#include "bridges/librarygroups.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
 #include "services/platform/logger.h"
@@ -285,8 +287,51 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         return QString();
     }
     case QueuePosRole:    return info.queuePos;
+    case ShowTmdbRole:    return showInfo(hash, info.name).tmdbId;
+    case ShowKeyRole:     return showInfo(hash, info.name).key;
+    case ShowTitleRole:   return showInfo(hash, info.name).title;
+    case SeasonRole:      return showInfo(hash, info.name).season;
+    case EpisodeRole:     return showInfo(hash, info.name).episode;
     }
     return {};
+}
+
+QmlPosterModel::ShowInfo QmlPosterModel::showInfo(const QString &hash, const QString &name) const
+{
+    const auto hit = m_showCache.constFind(hash);
+    if (hit != m_showCache.constEnd() && hit->forName == name)
+        return *hit;
+
+    ShowInfo out;
+    out.forName = name;
+    const ParsedName pn = NameParser::parse(name);
+    bool series = pn.contentType == ContentType::Series;
+    // The resolver outranks the name, both ways: a show added from the Hub
+    // carries only its title until the metadata lands, and a film whose name
+    // happens to parse like an episode must not join a series.
+    if (m_resolver && !hash.isEmpty() && m_resolver->hasCached(hash)) {
+        const MetadataResult meta = m_resolver->cached(hash);
+        if (meta.valid && meta.contentType != ContentType::Unknown) {
+            series = meta.contentType == ContentType::Series;
+            if (series) {
+                out.tmdbId = meta.tmdbId;
+                out.title = meta.title;
+            }
+        }
+    }
+    if (series) {
+        out.key = LibraryGroups::nameKey(pn.cleanTitle);
+        if (out.key.isEmpty()) out.key = LibraryGroups::nameKey(out.title);
+        if (out.title.isEmpty()) out.title = pn.cleanTitle.trimmed();
+        const EpisodeTag tag = EpisodeGroup::classify(name);
+        out.season = tag.season >= 0 ? tag.season : pn.season;
+        out.episode = tag.episode >= 0 ? tag.episode : (tag.pack ? -1 : pn.episode);
+        // Nothing to group by: no id and no name left after parsing.
+        if (out.key.isEmpty() && out.tmdbId <= 0) out = ShowInfo{name};
+    }
+    if (!hash.isEmpty())
+        m_showCache.insert(hash, out);
+    return out;
 }
 
 QHash<int, QByteArray> QmlPosterModel::roleNames() const
@@ -319,7 +364,12 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {GenresRole,      "genres"},
         {QueuePosRole,    "queuePos"},
         {AutoCategoryRole, "autoCategory"},
-        {FileKindRole,    "fileKind"}
+        {FileKindRole,    "fileKind"},
+        {ShowTmdbRole,    "showTmdb"},
+        {ShowKeyRole,     "showKey"},
+        {ShowTitleRole,   "showTitle"},
+        {SeasonRole,      "season"},
+        {EpisodeRole,     "episode"}
     };
 }
 
@@ -373,7 +423,7 @@ void QmlPosterModel::emitRows(bool fullRoles)
 }
 
 void QmlPosterModel::refresh()      { syncCount(); emitRows(false); }
-void QmlPosterModel::refreshFull()  { syncCount(); emitRows(true); }
+void QmlPosterModel::refreshFull()  { m_showCache.clear(); syncCount(); emitRows(true); }
 
 void QmlPosterModel::removeRow(int index)
 {
@@ -385,13 +435,15 @@ void QmlPosterModel::removeRow(int index)
 
 void QmlPosterModel::posterResolved(const QString &hash)
 {
+    m_showCache.remove(hash);
     // No early return: a hash can legitimately back more than one row (a resume
     // round-trip mid-add, or a list that predates the addMagnet duplicate guard).
     // Stopping at the first match left the other tile blank with no way to fix it.
     for (int row = 0; row < m_lastCount; ++row) {
         if (m_session->torrentHashAt(row) == hash) {
             emit dataChanged(index(row), index(row),
-                             {PosterPathRole, MetaTitleRole, YearRole, GenresRole});
+                             {PosterPathRole, MetaTitleRole, YearRole, GenresRole,
+                              AutoCategoryRole, ShowTmdbRole, ShowKeyRole, ShowTitleRole});
         }
     }
 }

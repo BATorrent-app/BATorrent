@@ -82,7 +82,8 @@ Item {
         readonly property int maxW: Math.round(tile.width) - 16 - 6 - statusPill.width
         // Below this it is a stub with an ellipsis in it, which says less than
         // showing nothing at all.
-        visible: (tile.year > 0 || tile.category.length > 0) && maxW >= 34
+        // a group's episode count takes this corner
+        visible: !tile.isGroup && (tile.year > 0 || tile.category.length > 0) && maxW >= 34
         radius: 9
         color: "#99000000"
         implicitWidth: Math.min(tagRow.implicitWidth + 12, maxW)

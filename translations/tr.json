@@ -1449,5 +1449,7 @@
   "guard_search": "Başka sürüm ara",
   "set_isolated_player": "Videoları yalıtılmış bir süreçte oynat (deneysel)",
   "set_isolated_player_note": "Video ayrı bir süreçte çözülür: bir dosya kod çözücüyü çökertirse uygulamanın geri kalanı çalışmaya devam eder. Bundan sonra açtığınız videolara uygulanır.",
-  "player_decoder_crashed": "Bu dosya video kod çözücüsünü çökertti. BATorrent normal şekilde çalışmaya devam ediyor: başka bir sürüm deneyin."
+  "player_decoder_crashed": "Bu dosya video kod çözücüsünü çökertti. BATorrent normal şekilde çalışmaya devam ediyor: başka bir sürüm deneyin.",
+  "lib_group_open": "Bölümleri göster",
+  "lib_group_close": "Bölümleri gizle"
 }

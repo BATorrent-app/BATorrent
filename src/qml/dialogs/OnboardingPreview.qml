@@ -58,7 +58,8 @@ Rectangle {
             sizeBytes: 9019431322, infoHash: "demo-nightfall", playable: true,
             downloaded: "6.1 GB", year: 2026, genres: "Thriller · Drama",
             queuePos: 0, numPeers: 18, numSeeds: 42, ratio: 0.64,
-            availability: 4.2, eta: "14m"
+            availability: 4.2, eta: "14m",
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
         })
         demoModel.append({
             torrentName: "Forza.Horizon.Collection", metaTitle: "Forza Horizon",
@@ -69,7 +70,8 @@ Rectangle {
             sizeBytes: 72155450572, infoHash: "demo-forza", playable: false,
             downloaded: "67.2 GB", year: 2025, genres: "Racing",
             queuePos: 0, numPeers: 7, numSeeds: 31, ratio: 1.84,
-            availability: 8.1, eta: ""
+            availability: 8.1, eta: "",
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
         })
         demoModel.append({
             torrentName: "Hollow.Knight.Soundtrack", metaTitle: "Hollow Knight",
@@ -80,7 +82,8 @@ Rectangle {
             sizeBytes: 1395864371, infoHash: "demo-hollow", playable: true,
             downloaded: "1.3 GB", year: 2017, genres: "Soundtrack",
             queuePos: 0, numPeers: 0, numSeeds: 18, ratio: 0.92,
-            availability: 3.7, eta: ""
+            availability: 3.7, eta: "",
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
         })
         demoModel.append({
             torrentName: "Open.Skies.S01E04", metaTitle: "Open Skies",
@@ -91,7 +94,8 @@ Rectangle {
             sizeBytes: 3328599654, infoHash: "demo-skies", playable: true,
             downloaded: "1.2 GB", year: 2026, genres: "Documentary",
             queuePos: 0, numPeers: 9, numSeeds: 24, ratio: 0.18,
-            availability: 2.8, eta: "23m"
+            availability: 2.8, eta: "23m",
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
         })
         demoModel.append({
             torrentName: "Creative.Tools.Bundle", metaTitle: "Creative Tools",
@@ -102,7 +106,8 @@ Rectangle {
             sizeBytes: 5153960755, infoHash: "demo-tools", playable: false,
             downloaded: "2.6 GB", year: 2026, genres: "Software",
             queuePos: 0, numPeers: 0, numSeeds: 16, ratio: 0.0,
-            availability: 1.9, eta: ""
+            availability: 1.9, eta: "",
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
         })
     }
     Component.onCompleted: populateDemoModel()
