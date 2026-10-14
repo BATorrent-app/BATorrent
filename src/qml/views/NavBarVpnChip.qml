@@ -21,14 +21,16 @@ Rectangle {
 
     property bool bound: false
     function refreshBound() {
-        bound = (typeof settings !== "undefined") && settings.get("outgoingInterface") !== ""
+        bound = (typeof settings !== "undefined") && (settings.get("outgoingInterface") || "") !== ""
     }
     Component.onCompleted: refreshBound()
     Connections {
         target: (typeof settings !== "undefined") ? settings : null
         function onChanged() { root.refreshBound() }
     }
-    readonly property int st: bound ? 2 : 0
+    // the app's own tunnel when it has a state, else bound to an interface
+    readonly property int st: (typeof vpn !== "undefined" && vpn !== null && vpn.connState > 0) ? vpn.connState
+                              : (bound ? 2 : 0)
     readonly property color stColor: st === 2 ? Theme.grn
                                    : st === 1 ? Theme.amber
                                    : st === 3 ? Theme.accent : Theme.t4

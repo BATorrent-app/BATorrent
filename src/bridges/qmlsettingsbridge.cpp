@@ -486,6 +486,27 @@ QStringList QmlSettingsBridge::networkInterfaces() const
     return out;
 }
 
+QVariantList QmlSettingsBridge::networkInterfaceList() const
+{
+    QVariantList out;
+    const QString active = QSettings().value(QStringLiteral("vpnActiveIface")).toString();
+    for (const QNetworkInterface &iface : QNetworkInterface::allInterfaces()) {
+        if (!(iface.flags() & QNetworkInterface::IsUp)) continue;
+        if (iface.flags() & QNetworkInterface::IsLoopBack) continue;
+        QString ip;
+        for (const QNetworkAddressEntry &e : iface.addressEntries())
+            if (e.ip().protocol() == QAbstractSocket::IPv4Protocol) { ip = e.ip().toString(); break; }
+        QVariantMap m;
+        m[QStringLiteral("id")] = iface.name();
+        m[QStringLiteral("label")] = iface.humanReadableName().isEmpty() ? iface.name() : iface.humanReadableName();
+        m[QStringLiteral("ip")] = ip;
+        m[QStringLiteral("vpn")] = (!active.isEmpty() && iface.name() == active) || looksLikeTunnel(iface);
+        m[QStringLiteral("active")] = !active.isEmpty() && iface.name() == active;
+        out << m;
+    }
+    return out;
+}
+
 bool QmlSettingsBridge::setAsDefaultApp()
 {
     return FileAssociation::setAsDefaultApp();

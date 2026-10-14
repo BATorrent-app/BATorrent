@@ -382,6 +382,8 @@ Rectangle {
                             required property int index
                             Layout.fillWidth: true
                             spacing: 12
+                            // a page that draws its own cards (VPN) is not boxed in another
+                            readonly property bool bare: modelData.rows.length === 1 && modelData.rows[0].type === "vpn"
 
                             Text {
                                 visible: modelData.label !== ""
@@ -397,17 +399,17 @@ Rectangle {
                             Rectangle {
                                 Layout.fillWidth: true
                                 radius: 14
-                                color: Theme.panel
+                                color: blk.bare ? "transparent" : Theme.panel
                                 border.color: Theme.hair
-                                border.width: 1
+                                border.width: blk.bare ? 0 : 1
                                 implicitHeight: rowsCol.implicitHeight
 
                                 ColumnLayout {
                                     id: rowsCol
                                     anchors.left: parent.left
                                     anchors.right: parent.right
-                                    anchors.leftMargin: Theme.sp5
-                                    anchors.rightMargin: Theme.sp5
+                                    anchors.leftMargin: blk.bare ? 0 : Theme.sp5
+                                    anchors.rightMargin: blk.bare ? 0 : Theme.sp5
                                     spacing: 0
 
                                     Repeater {
