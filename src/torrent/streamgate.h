@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <QBitArray>
 #include <QString>
 #include <QtGlobal>
 #include <algorithm>
@@ -77,6 +78,26 @@ inline double progress(qint64 contiguousHead, qint64 fileSize, bool haveTail, bo
     const double head = double(std::min(contiguousHead, want)) / double(want);
     if (!tailNeeded) return head;
     return head * 0.9 + (haveTail ? 0.1 : 0.0);
+}
+
+// Bytes on disk without a gap from `fromByte` of a file, capped: whole
+// pieces only, since a piece is readable once it is complete. `have` holds one
+// bit per piece of the torrent; the file starts at `fileOffset` in it.
+inline qint64 contiguousRun(const QBitArray &have, qint64 pieceSize, qint64 fileOffset, qint64 fileSize,
+                            qint64 fromByte, qint64 cap)
+{
+    if (pieceSize <= 0 || fromByte < 0 || fromByte >= fileSize || cap <= 0) return 0;
+    const qint64 globalPos = fileOffset + fromByte;
+    qint64 piece = globalPos / pieceSize;
+    if (piece >= have.size() || !have.testBit(int(piece))) return 0;
+    qint64 end = (piece + 1) * pieceSize;
+    while (end - globalPos < cap) {
+        const qint64 next = end / pieceSize;
+        if (next >= have.size() || !have.testBit(int(next))) break;
+        end = (next + 1) * pieceSize;
+    }
+    end = std::min(end, fileOffset + fileSize);
+    return std::min(cap, end - globalPos);
 }
 
 } // namespace StreamGate

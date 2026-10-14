@@ -125,6 +125,9 @@ public:
 signals:
     void torrentsUpdated();
     void torrentFinished(const QString &name, const QString &infoHash);
+    // A piece of a torrent being streamed finished: the stream server reads
+    // on at once instead of at its next poll. Only for streamed torrents.
+    void pieceFinished(const QString &infoHash, int piece);
     void extractionCompleted(const QString &infoHash, bool success);
     void extractionProgress(const QString &infoHash, int percent);   // 0-100
     void altSpeedsActiveChanged(bool active);

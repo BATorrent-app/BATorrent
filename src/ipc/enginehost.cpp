@@ -50,6 +50,10 @@ EngineHost::EngineHost(SessionManager *session, const QString &serverName, QObje
         QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
         o << name << files; sendEvent(QStringLiteral("suspicious"), a);
     });
+    connect(m_session, &SessionManager::pieceFinished, this, [this](const QString &hash, int piece) {
+        QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+        o << hash << qint32(piece); sendEvent(QStringLiteral("pieceFinished"), a);
+    });
     connect(m_session, &SessionManager::killSwitchTriggered, this, [this]() {
         sendEvent(QStringLiteral("killSwitch"), {});
     });
@@ -326,6 +330,8 @@ QByteArray EngineHost::dispatch(const QString &method, const QByteArray &args)
         out << m_session->applySetting(key, val);
 
     // ---- streaming hooks ----
+    } else if (method == QLatin1String("streamGeometry")) {
+        qint32 ti, fi; in >> ti >> fi; out << m_session->streamGeometry(ti, fi);
     } else if (method == QLatin1String("streamFileSize")) {
         qint32 ti, fi; in >> ti >> fi; out << qint64(m_session->streamFileSize(ti, fi));
     } else if (method == QLatin1String("streamContiguousAvailableBytes")) {

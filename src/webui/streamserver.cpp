@@ -20,7 +20,7 @@ namespace {
 
 constexpr qint64 kChunk      = 256 * 1024;        // bytes read+written per pump step
 constexpr qint64 kWriteHigh  = 4 * 1024 * 1024;   // pause reading above this socket backlog
-constexpr int    kRetryMs    = 200;               // re-check cadence while buffering
+constexpr int    kRetryMs    = 500;               // fallback re-check while buffering; pieceFinished is the usual wake-up
 constexpr int    kGiveUpMs   = 90 * 1000;         // no-progress timeout (dead torrent)
 constexpr int    kRefreshMs  = 1000;              // move the deadline window along this often while serving
 constexpr int    kSlowWaitMs = 250;               // waits for a piece longer than this get logged
@@ -52,6 +52,10 @@ public:
         connect(m_sock, &QTcpSocket::readyRead, this, &StreamConnection::onReadyRead);
         connect(m_sock, &QTcpSocket::disconnected, m_sock, &QObject::deleteLater);
         connect(m_sock, &QTcpSocket::bytesWritten, this, [this](qint64){ pump(); });
+        // the piece it waits on is here: serve it now, not at the next poll
+        connect(m_session, &IEngine::pieceFinished, this, [this](const QString &hash, int) {
+            if (m_waiting && hash.compare(m_hash, Qt::CaseInsensitive) == 0) pump();
+        });
         m_noProgress.start();
     }
 
@@ -210,12 +214,14 @@ private:
         if (m_retry && !m_retry->isActive()) m_retry->start();
     }
 
+    // The path is looked up only to open the file: asking for it on every
+    // chunk was a round trip to the engine each time. A file that stops
+    // reading (renamed when it completes) is closed and found again.
     bool ensureOpen()
     {
-        const QString path = m_session->streamFilePath(m_torIdx, m_fileIdx);
-        if (path.isEmpty()) return false;
-        if (!m_file.isOpen() || m_file.fileName() != path) {
-            m_file.close();
+        if (!m_file.isOpen()) {
+            const QString path = m_session->streamFilePath(m_torIdx, m_fileIdx);
+            if (path.isEmpty()) return false;
             m_file.setFileName(path);
             if (!m_file.open(QIODevice::ReadOnly)) return false;
         }

@@ -326,6 +326,7 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         m_lastResumeSaveAt.erase(h);
         m_lastFastAt.erase(h);
         m_streamWindows.erase(h);
+        m_streamed.erase(h);
         m_pendingResumeStripCheck.erase(h);
         m_magnetAddedAt.erase(h);
         m_magnetHashes.erase(h);

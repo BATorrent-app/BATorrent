@@ -104,6 +104,11 @@ public:
     // off the file size. windowPieces 0 sizes the window to ~30 s of video.
     void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte,
                                  int windowPieces = 0);
+    // Everything a reader in another process needs to answer "how much is on
+    // disk from here" by itself: {pieceSize, fileOffset, fileSize, have
+    // (one bit per piece)}. Marks the torrent as streamed, so pieceFinished
+    // keeps that copy current from here on.
+    QVariantMap streamGeometry(int torrentIndex, int fileIndex);
 
     // Rename one file in the torrent (libtorrent's rename_file). The path
     // is interpreted relative to the torrent's save_path.
@@ -566,6 +571,7 @@ private:
     // missing piece again is a no-op, a jump outside it clears the old one.
     struct StreamWindow { int file = -1; int firstMissing = -1; int first = -1; int last = -1; };
     std::map<lt::torrent_handle, StreamWindow> m_streamWindows;
+    std::map<lt::torrent_handle, QString> m_streamed;   // torrents a player reads → their hash, for pieceFinished
     // Per-handle "epoch seconds of last resume save" so piece_finished_alert
     // can request a save without thrashing the disk on every piece. Saved
     // only if the last save was more than kMinResumeSaveIntervalSec ago.

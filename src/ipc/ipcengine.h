@@ -13,6 +13,8 @@
 #ifndef BATORRENT_IPCENGINE_H
 #define BATORRENT_IPCENGINE_H
 
+#include <QBitArray>
+#include <QHash>
 #include "torrent/iengine.h"
 #include "ipc/ipcprotocol.h"
 #include "ipc/ipcserialize.h"
@@ -131,6 +133,11 @@ private slots:
     void onSocketReadyRead();
 
 private:
+    // One streamed file's map, answered locally once fetched (see
+    // SessionManager::streamGeometry) and kept current by pieceFinished.
+    struct StreamGeo { qint64 pieceSize = 0; qint64 fileOffset = 0; qint64 fileSize = 0; QBitArray have; };
+    mutable QHash<QString, StreamGeo> m_streamGeo;   // "hash:file"
+    const StreamGeo *streamGeo(int ti, int fi) const;
     void spawnEngine();
     void pumpSocket() const;   // drain socket → handleFrame; the one const_cast lives here
     void handleFrame(ipc::Kind kind, const QByteArray &payload);

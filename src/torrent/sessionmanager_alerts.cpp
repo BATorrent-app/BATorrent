@@ -196,6 +196,8 @@ void SessionManager::onPieceFinished(const lt::piece_finished_alert *pf)
     // so a fast torrent doesn't hammer the disk; with the limit, the
     // worst case is ~1 resume write per minute per active download.
     if (!pf->handle.is_valid()) return;
+    if (const auto s = m_streamed.find(pf->handle); s != m_streamed.end())
+        emit pieceFinished(s->second, int(static_cast<int>(pf->piece_index)));
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     auto it = m_lastResumeSaveAt.find(pf->handle);
     if (it == m_lastResumeSaveAt.end() || now - it->second >= 60) {

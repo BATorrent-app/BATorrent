@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "ipc/ipcengine.h"
+#include "torrent/streamgate.h"
 #include "torrent/sessionconfig.h"
 #include <QSettings>
 #include <QLocalSocket>
@@ -151,8 +152,16 @@ void IpcEngine::dispatchEvent(const QString &name, const QByteArray &args)
         bool a; in >> a; m_snap.altSpeedsActive = a; emit altSpeedsActiveChanged(a);
     } else if (name == QLatin1String("portStatusChanged")) {
         qint32 st; in >> st; m_snap.portStatus = st; emit portStatusChanged(st);
+    } else if (name == QLatin1String("pieceFinished")) {
+        QString h; qint32 piece; in >> h >> piece;
+        const QString prefix = h + QLatin1Char(':');
+        for (auto it = m_streamGeo.begin(); it != m_streamGeo.end(); ++it)
+            if (it.key().startsWith(prefix) && piece >= 0 && piece < it->have.size()) it->have.setBit(piece);
+        emit pieceFinished(h, piece);
     } else if (name == QLatin1String("torrentRemoved")) {
-        qint32 idx; in >> idx; emit torrentRemoved(idx);
+        qint32 idx; in >> idx;
+        m_streamGeo.clear();   // a torrent re-added later under the same hash starts from nothing
+        emit torrentRemoved(idx);
     } else if (name == QLatin1String("torrentError")) {
         QString msg; in >> msg; emit torrentError(msg);
     } else if (name == QLatin1String("suspicious")) {
@@ -373,12 +382,37 @@ bool IpcEngine::applySetting(const QString &key, const QVariant &v)
   QDataStream in(request(QStringLiteral("applySetting"), d)); in.setVersion(ipc::kStreamVersion); bool b = false; in >> b; return b; }
 
 // ---- streaming hooks (embedded player) ----
+// The stream server asks these for every chunk it serves. A blocking round
+// trip each time stalled both the stream and the UI whenever the engine was
+// busy, so the file's map is fetched once and answered here after that.
+const IpcEngine::StreamGeo *IpcEngine::streamGeo(int ti, int fi) const
+{
+    const QString hash = torrentHashAt(ti);
+    if (hash.isEmpty()) return nullptr;
+    const QString key = hash + QLatin1Char(':') + QString::number(fi);
+    auto it = m_streamGeo.constFind(key);
+    if (it != m_streamGeo.constEnd()) return &it.value();
+    QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << qint32(ti) << qint32(fi);
+    QDataStream in(request(QStringLiteral("streamGeometry"), d)); in.setVersion(ipc::kStreamVersion);
+    QVariantMap m; in >> m;
+    if (m.isEmpty()) return nullptr;   // no metadata yet: ask again next time
+    StreamGeo g;
+    g.pieceSize = m.value(QStringLiteral("pieceSize")).toLongLong();
+    g.fileOffset = m.value(QStringLiteral("fileOffset")).toLongLong();
+    g.fileSize = m.value(QStringLiteral("fileSize")).toLongLong();
+    g.have = m.value(QStringLiteral("have")).toBitArray();
+    return &m_streamGeo.insert(key, g).value();
+}
 qint64 IpcEngine::streamFileSize(int ti, int fi) const
-{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << qint32(ti) << qint32(fi);
-  QDataStream in(request(QStringLiteral("streamFileSize"), d)); in.setVersion(ipc::kStreamVersion); qint64 v = 0; in >> v; return v; }
+{
+    const StreamGeo *g = streamGeo(ti, fi);
+    return g ? g->fileSize : 0;
+}
 qint64 IpcEngine::streamContiguousAvailableBytes(int ti, int fi, qint64 fromByte, qint64 cap) const
-{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << qint32(ti) << qint32(fi) << fromByte << cap;
-  QDataStream in(request(QStringLiteral("streamContiguousAvailableBytes"), d)); in.setVersion(ipc::kStreamVersion); qint64 v = 0; in >> v; return v; }
+{
+    const StreamGeo *g = streamGeo(ti, fi);
+    return g ? StreamGate::contiguousRun(g->have, g->pieceSize, g->fileOffset, g->fileSize, fromByte, cap) : 0;
+}
 void IpcEngine::streamSetDeadlineWindow(int ti, int fi, qint64 startByte, int windowPieces)
 { QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << qint32(ti) << qint32(fi) << startByte << qint32(windowPieces);
   call(QStringLiteral("streamSetDeadlineWindow"), d); }

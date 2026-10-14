@@ -14,6 +14,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QVariantMap>
+#include <QBitArray>
 #include <algorithm>
 #include <cmath>
 
@@ -198,6 +199,7 @@ void SessionManager::streamSetDeadlineWindow(int torrentIndex, int fileIndex,
 
     // Deadlines count from now, so setting the same window again every poll
     // keeps pushing it back. Only a reader that moved changes anything.
+    if (!m_streamed.count(h)) m_streamed[h] = torrentHash(torrentIndex);
     StreamWindow &w = m_streamWindows[h];
     if (w.file == fileIndex && w.first == firstPiece && w.firstMissing == firstMissing) return;
 
@@ -257,4 +259,25 @@ void SessionManager::streamSetDeadlineWindow(int torrentIndex, int fileIndex,
         // when playback should get here: tight up front, relaxed further out
         h.set_piece_deadline(lt::piece_index_t(p), StreamGate::deadlineMs(qint64(p) * pieceSize - off, fileSize));
     }
+}
+
+QVariantMap SessionManager::streamGeometry(int torrentIndex, int fileIndex)
+{
+    QVariantMap out;
+    if (torrentIndex < 0 || torrentIndex >= static_cast<int>(m_torrents.size())) return out;
+    auto &h = m_torrents[torrentIndex];
+    if (!h.is_valid()) return out;
+    auto ti = h.torrent_file();
+    if (!ti || fileIndex < 0 || fileIndex >= ti->num_files()) return out;
+    // registered before the pieces are read, so none finishes unseen in between
+    if (!m_streamed.count(h)) m_streamed[h] = torrentHash(torrentIndex);
+    const auto fIdx = lt::file_index_t(fileIndex);
+    QBitArray have(ti->num_pieces());
+    for (int p = 0; p < ti->num_pieces(); ++p)
+        if (h.have_piece(lt::piece_index_t(p))) have.setBit(p);
+    out[QStringLiteral("pieceSize")] = qint64(ti->piece_length());
+    out[QStringLiteral("fileOffset")] = qint64(ti->files().file_offset(fIdx));
+    out[QStringLiteral("fileSize")] = qint64(ti->files().file_size(fIdx));
+    out[QStringLiteral("have")] = have;
+    return out;
 }
