@@ -8,6 +8,7 @@
 #include "bridges/bridgecommon.h"
 #include "services/integrations/gameinstall.h"
 
+#include <QElapsedTimer>
 #include <memory>
 
 class HttpDownloadManager;
@@ -263,7 +264,9 @@ public:
     // Forget a movie's resume position (drops it from HUB "Continue watching").
     Q_INVOKABLE void clearResume(const QString &infoHash, int fileIndex);
     // Player buffer bar + download badge: { totalBytes, downloadedBytes, progress, buffered }.
-    Q_INVOKABLE QVariantMap streamFileStats(const QString &infoHash, int fileIndex) const;
+    // `from` (0..1, the playback position) adds bufferedFrom/bufferedTo: the
+    // contiguous run on disk from there, which is what playing on needs.
+    Q_INVOKABLE QVariantMap streamFileStats(const QString &infoHash, int fileIndex, double from = -1) const;
     // Raw video file name (has the quality/audio tags the player badges parse).
     Q_INVOKABLE QString streamFileName(const QString &infoHash, int fileIndex) const;
     Q_INVOKABLE QString streamLocalPath(const QString &infoHash, int fileIndex) const;
@@ -458,8 +461,9 @@ signals:
 private slots:
     void sampleSpeeds();
     void onWatchTick();   // poll pending Get&Watch hashes; open the player when buffered
+    void pollPendingWatch(bool verbose);
     int bestVideoFile(int row) const;          // the largest video file, or -1
-    void prepStream(int row, int fileIndex);   // resume, sequential, only this file, head + tail first
+    void prepStream(int row, int fileIndex);   // resume, only this file, head + tail first
     void onExtractionCompleted(const QString &infoHash, bool success);  // chain → detect/install
     void onExtractionProgress(const QString &infoHash, int percent);
     void onGameTorrentFinished(const QString &name, const QString &infoHash);  // auto-install hook
@@ -501,6 +505,8 @@ private:
     QString searchQueryFor(const QString &infoHash) const;
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
     QSet<QString> m_watchPrepped;   // pending watches whose file is already being fetched for playback
+    QHash<QString, QElapsedTimer> m_watchClock;   // since watchWhenReady, for the start-up timings in the log
+    QTimer m_watchFast;   // a quicker look than the engine's ~1 s tick while something waits to play
     QHash<QString, QPair<QString, qint64>> m_pendingInstall; // Get&Install: infoHash → {title, startedAtSec}
     QSet<QString> m_installStarted;   // hashes where installGame was already kicked for pending install
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game

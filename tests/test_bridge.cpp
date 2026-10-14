@@ -695,7 +695,7 @@ TEST_CASE("playFile: no-op when port unset, hash missing, or index OOB",
     REQUIRE(spy.count() == 0);
 }
 
-TEST_CASE("playFile: emits stream URL and sets sequential + file priorities",
+TEST_CASE("playFile: emits stream URL, only that file wanted, not sequential",
           "[bridge][playback][playFile]")
 {
     app();
@@ -736,8 +736,11 @@ TEST_CASE("playFile: emits stream URL and sets sequential + file priorities",
         QStringLiteral("^http://127\\.0\\.0\\.1:\\d+/stream/[0-9a-fA-F]+/\\d+$"));
     REQUIRE(re.match(url).hasMatch());
 
+    // Streaming leaves strict order off: the engine's deadline window and
+    // position-based piece priorities feed the player, and outside them
+    // rarest-first gets more out of the swarm.
     REQUIRE(pumpUntil([&] {
-        if (!session.isSequentialDownload(row)) return false;
+        if (session.isSequentialDownload(row)) return false;
         const auto files = session.filesAt(row);
         if (videoIdx >= int(files.size())) return false;
         if (files[size_t(videoIdx)].priority != 7) return false;

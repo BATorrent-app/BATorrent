@@ -5,6 +5,7 @@
 #ifndef ISOLATEDMEDIAPLAYER_H
 #define ISOLATEDMEDIAPLAYER_H
 
+#include <QElapsedTimer>
 #include <QList>
 #include <QMediaMetaData>
 #include <QObject>
@@ -115,6 +116,7 @@ private:
     void failWith(int error, const QString &why);
     void onChildLost();
     void teardown();
+    void logPlaybackSummary();
     void send(const QString &method, const QByteArray &args = {});
     QVideoSink *sink() const;
 
@@ -150,6 +152,14 @@ private:
     std::unique_ptr<SharedSegment> m_ring;
     qint32 m_generation = 0;
     qint64 m_slotBytes = 0;
+
+    // Start-up and stall timings for the log, to tell a slow swarm from a
+    // slow pipeline.
+    QElapsedTimer m_openClock;    // since the feed started
+    bool m_sawFrame = false;
+    QElapsedTimer m_stallClock;   // running while a stream that had started is starved
+    int m_stalls = 0;
+    qint64 m_stallMs = 0;
 };
 
 #endif

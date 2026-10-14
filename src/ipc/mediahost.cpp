@@ -231,7 +231,15 @@ void MediaHost::onFrame(const QVideoFrame &frame)
     int slot = -1;
     for (int i = 0; i < media::kSlots; ++i)
         if (!m_busy[size_t(i)]) { slot = i; break; }
-    if (slot < 0) { f.unmap(); return; }   // UI is behind: the next frame supersedes this one
+    if (!m_frameWindow.isValid()) m_frameWindow.start();
+    if (m_frameWindow.elapsed() > 5000) {
+        if (m_framesDropped > 0)
+            qInfo().noquote() << "[media] dropped" << m_framesDropped << "of"
+                              << m_framesSent + m_framesDropped << "frames in 5 s (UI behind)";
+        m_framesSent = m_framesDropped = 0;
+        m_frameWindow.restart();
+    }
+    if (slot < 0) { ++m_framesDropped; f.unmap(); return; }   // UI is behind: the next frame supersedes this one
 
     media::FrameHeader hdr;
     uchar *base = m_ring->data() + qint64(slot) * m_slotBytes;
@@ -240,6 +248,7 @@ void MediaHost::onFrame(const QVideoFrame &frame)
     if (!packed) return;
     hdr.slot = slot;
     m_busy[size_t(slot)] = true;
+    ++m_framesSent;
     sendEvent(QStringLiteral("frame"), media::encode(m_generation, hdr));
 }
 

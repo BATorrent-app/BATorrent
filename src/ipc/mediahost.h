@@ -6,6 +6,7 @@
 #define BATORRENT_MEDIAHOST_H
 
 #include <QAudioOutput>
+#include <QElapsedTimer>
 #include <QMediaPlayer>
 #include <QObject>
 #include <QPointer>
@@ -61,6 +62,9 @@ private:
     qint32 m_generation = 0;
     qint64 m_ringAsked = 0;
     std::array<bool, media::kSlots> m_busy{};
+    int m_framesSent = 0;
+    int m_framesDropped = 0;   // the UI still held every slot
+    QElapsedTimer m_frameWindow;
     bool m_stateQueued = false;
 };
 

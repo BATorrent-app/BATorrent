@@ -4,12 +4,14 @@
 //
 // SessionManager: streaming slice. Piece-priority/deadline shaping and the
 // byte-availability queries the local StreamServer polls while playing a file
-// mid-download. Split out of sessionmanager.cpp (the engine monolith) verbatim;
-// no behaviour change. The general index/hash helpers stay in the core file.
+// mid-download. Split out of sessionmanager.cpp (the engine monolith). The
+// general index/hash helpers stay in the core file.
 
 #include "torrent/sessionmanager.h"
+#include "torrent/streamgate.h"
 
 #include <libtorrent/torrent_info.hpp>
+#include <QDebug>
 #include <QFileInfo>
 #include <QVariantMap>
 #include <algorithm>
@@ -47,15 +49,15 @@ void SessionManager::prioritizeFilePieceBoundaries(int torrentIndex, int fileInd
             h.piece_priority(lt::piece_index_t(p), lt::download_priority_t(7));
     };
     for (int k = 0; k < numToBoost; ++k) boost(firstPiece + k);
-    // The tail matters for playback start: an MP4 with its 'moov' atom at EOF is
-    // unplayable until the last pieces arrive. Under sequential_download a high
-    // priority alone won't fetch them early: only a deadline jumps the in-order
-    // queue. Give the tail a deadline so the player can start without waiting for
-    // the whole file. (The head is covered by sequential + the reactive window.)
-    for (int k = 0; k < numToBoost; ++k) {
+    for (int k = 0; k < numToBoost; ++k) boost(lastPiece - k);
+    // An MP4 with its 'moov' atom at EOF is unplayable until the last pieces
+    // arrive, and FFmpeg reads an MKV's end on open too (seek head, cues): it
+    // blocked 3.5 s there without this. Priority alone won't fetch them early,
+    // only a deadline jumps the queue. Just the last couple of pieces; more
+    // deadlines here only compete with the head.
+    for (int k = 0; k < StreamGate::kTailPieces; ++k) {
         const int p = lastPiece - k;
-        boost(p);
-        if (p >= 0 && p < numPieces)
+        if (p >= firstPiece && p >= 0 && p < numPieces)
             h.set_piece_deadline(lt::piece_index_t(p), 2000);
     }
 }
@@ -178,14 +180,81 @@ void SessionManager::streamSetDeadlineWindow(int torrentIndex, int fileIndex,
     if (fileIndex < 0 || fileIndex >= ti->num_files()) return;
     const int pieceSize = ti->piece_length();
     if (pieceSize <= 0) return;
-    const int numPieces = ti->num_pieces();
-    const qint64 off = ti->files().file_offset(lt::file_index_t(fileIndex)) + qMax<qint64>(0, startByte);
+    const auto &fs = ti->files();
+    const auto fIdx = lt::file_index_t(fileIndex);
+    const qint64 fileOffset = fs.file_offset(fIdx);
+    const qint64 fileSize = fs.file_size(fIdx);
+    if (fileSize <= 0) return;
+    const qint64 off = fileOffset + std::clamp<qint64>(startByte, 0, fileSize - 1);
     const int firstPiece = int(off / pieceSize);
-    for (int k = 0; k < windowPieces; ++k) {
-        const int p = firstPiece + k;
-        if (p < 0 || p >= numPieces) break;
+    const int lastFilePiece = std::min(int((fileOffset + fileSize - 1) / pieceSize), ti->num_pieces() - 1);
+    const int window = windowPieces > 0 ? windowPieces : StreamGate::windowPieces(pieceSize, fileSize);
+    const int last = std::min(firstPiece + window - 1, lastFilePiece);
+
+    int firstMissing = -1;
+    for (int p = firstPiece; p <= last; ++p)
+        if (!h.have_piece(lt::piece_index_t(p))) { firstMissing = p; break; }
+    if (firstMissing < 0) return;   // the whole window is already here
+
+    // Deadlines count from now, so setting the same window again every poll
+    // keeps pushing it back. Only a reader that moved changes anything.
+    StreamWindow &w = m_streamWindows[h];
+    if (w.file == fileIndex && w.first == firstPiece && w.firstMissing == firstMissing) return;
+
+    // FFmpeg reads an MKV's index at EOF on a second connection while the main
+    // reader stays put. That read is not the reader moving: fetch it without
+    // touching the window, or the two connections throw each other's window
+    // away on every 200 ms retry.
+    const bool tailRead = firstPiece > lastFilePiece - StreamGate::kTailPieces;
+    if (tailRead && w.file == fileIndex) {
+        for (int p = firstMissing; p <= last; ++p)
+            if (!h.have_piece(lt::piece_index_t(p)))
+                h.set_piece_deadline(lt::piece_index_t(p), 0);
+        return;
+    }
+
+    // A seek leaves the old window's deadlines competing with the new one.
+    const bool jumped = w.file != fileIndex || firstPiece < w.first || firstPiece > w.last;
+    if (jumped && w.file >= 0) {
+        h.clear_piece_deadlines();
+        // clearing took the container index's deadlines with it
+        for (int p = std::max(int(fileOffset / pieceSize), lastFilePiece - StreamGate::kTailPieces + 1); p <= lastFilePiece; ++p)
+            if (!h.have_piece(lt::piece_index_t(p)))
+                h.set_piece_deadline(lt::piece_index_t(p), 2000);
+    }
+    const bool moved = w.file != fileIndex || w.first != firstPiece;
+    w = { fileIndex, firstMissing, firstPiece, last };
+
+    // No scheduling helps when no connected peer has the piece the player is
+    // stuck on; say so, so a slow swarm isn't mistaken for a slow app.
+    std::vector<int> avail;
+    h.piece_availability(avail);
+    if (firstMissing < int(avail.size()) && avail[size_t(firstMissing)] == 0)
+        qInfo().noquote() << "[stream] piece" << firstMissing << "is on none of the"
+                          << cachedStatus(h).num_peers << "connected peers";
+
+    // Priority follows the reader, the way Stremio does it: with the whole
+    // file at one priority the window was no more wanted than any other piece
+    // and rarest-first spread the bandwidth over all of it. After a seek the
+    // part behind the reader drops to the bottom instead of being fetched first.
+    if (moved) {
+        const int fileFirst = int(fileOffset / pieceSize);
+        const int nearEnd = std::min(last + window * StreamGate::kNearAheadWindows, lastFilePiece);
+        std::vector<lt::download_priority_t> prio = h.get_piece_priorities();
+        for (int p = fileFirst; p <= lastFilePiece && p < int(prio.size()); ++p) {
+            int level = 4;                                   // later in the file
+            if (p < firstPiece) level = 1;                   // already watched or skipped
+            else if (p <= last) level = 7;                   // the deadline window
+            else if (p <= nearEnd) level = 6;                // the next few minutes
+            if (p > lastFilePiece - StreamGate::kTailPieces) level = 7;   // container index at EOF
+            prio[size_t(p)] = lt::download_priority_t(std::uint8_t(level));
+        }
+        h.prioritize_pieces(prio);
+    }
+
+    for (int p = firstMissing; p <= last; ++p) {
         if (h.have_piece(lt::piece_index_t(p))) continue;
-        h.piece_priority(lt::piece_index_t(p), lt::download_priority_t(7));
-        h.set_piece_deadline(lt::piece_index_t(p), k * 40);   // ms: increasing = playback order
+        // when playback should get here: tight up front, relaxed further out
+        h.set_piece_deadline(lt::piece_index_t(p), StreamGate::deadlineMs(qint64(p) * pieceSize - off, fileSize));
     }
 }

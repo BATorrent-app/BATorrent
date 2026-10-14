@@ -120,7 +120,7 @@ public:
     // --- streaming server hooks (embedded player) ---
     virtual qint64 streamFileSize(int torrentIndex, int fileIndex) const = 0;
     virtual qint64 streamContiguousAvailableBytes(int torrentIndex, int fileIndex, qint64 fromByte, qint64 cap = 8 * 1024 * 1024) const = 0;
-    virtual void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte, int windowPieces = 24) = 0;
+    virtual void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte, int windowPieces = 0) = 0;
 
 signals:
     void torrentsUpdated();

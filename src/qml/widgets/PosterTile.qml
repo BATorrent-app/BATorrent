@@ -326,7 +326,7 @@ Item {
 
         Rectangle {
             // Metadata and a video in it is the whole condition. Playing preps
-            // sequential download and prioritises the head of the file, so
+            // the file for streaming and prioritises its head, so
             // there is nothing to wait for: the old `progress > 0.02` gate
             // meant 1 GB on a 50 GB torrent and 14 MB on a 700 MB one, and
             // hid the control exactly while someone wanted to start watching.

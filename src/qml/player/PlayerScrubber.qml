@@ -21,6 +21,7 @@ RowLayout {
     property bool stillDownloading: false
     property real downloadedToMs: 0
     property real buffered: 0
+    property real bufferedFrom: 0
 
     signal localPathRefreshRequested()
 
@@ -37,6 +38,7 @@ RowLayout {
         from: 0; to: Math.max(1, mediaPlayer ? mediaPlayer.duration : 1)
         value: mediaPlayer ? mediaPlayer.position : 0
         buffered: root.buffered
+        bufferedFrom: root.bufferedFrom
         enabled: !!(mediaPlayer && mediaPlayer.seekable)
         onMoved: if (mediaPlayer) mediaPlayer.position = value
         MouseArea {

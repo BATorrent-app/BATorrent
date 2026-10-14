@@ -13,14 +13,47 @@
 // keeps only its cues there, and those are for seeking, not for starting.
 namespace StreamGate {
 
-constexpr qint64 kMinHead = 4LL * 1024 * 1024;
-constexpr qint64 kMaxHead = 16LL * 1024 * 1024;
+constexpr qint64 kMinHead = 3LL * 1024 * 1024;
+constexpr qint64 kMaxHead = 10LL * 1024 * 1024;
+constexpr qint64 kHeadSecs = 3;
 
-// Contiguous bytes from the start of the file wanted before opening it.
+// The runtime is unknown until the player opens the file, so the bitrate is
+// guessed from the size over a short episode's runtime. A movie comes out
+// above its real bitrate, which only makes its deadlines tighter.
+constexpr qint64 kAssumedRuntimeSecs = 30 * 60;
+constexpr qint64 kMinBytesPerSec = 256 * 1024;
+constexpr qint64 kWindowSecs = 30;
+constexpr int kMinWindowPieces = 4;
+constexpr int kMaxWindowPieces = 128;
+constexpr int kTailPieces = 2;
+constexpr int kNearAheadWindows = 10;   // past the window, ~5 min more gets the next priority down
+
+inline qint64 bytesPerSec(qint64 fileSize)
+{
+    return std::max(fileSize / kAssumedRuntimeSecs, kMinBytesPerSec);
+}
+
+// When playback should reach a byte `distance` past the reader, in ms.
+inline int deadlineMs(qint64 distance, qint64 fileSize)
+{
+    if (distance <= 0) return 0;
+    return int(std::min<qint64>(distance * 1000 / bytesPerSec(fileSize), 10 * 60 * 1000));
+}
+
+// Pieces covering kWindowSecs of playback ahead of the reader.
+inline int windowPieces(qint64 pieceSize, qint64 fileSize)
+{
+    if (pieceSize <= 0) return kMinWindowPieces;
+    const qint64 n = (kWindowSecs * bytesPerSec(fileSize) + pieceSize - 1) / pieceSize;
+    return int(std::clamp<qint64>(n, kMinWindowPieces, kMaxWindowPieces));
+}
+
+// Contiguous bytes from the start of the file wanted before opening it: a few
+// seconds of playback. The player keeps buffering past this on its own.
 inline qint64 headBytes(qint64 fileSize)
 {
     if (fileSize <= 0) return 0;
-    return std::min(fileSize, std::clamp(fileSize / 200, kMinHead, kMaxHead));
+    return std::min(fileSize, std::clamp(kHeadSecs * bytesPerSec(fileSize), kMinHead, kMaxHead));
 }
 
 inline bool needsTail(const QString &fileName)

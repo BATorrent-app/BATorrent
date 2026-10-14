@@ -117,6 +117,8 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
             this, &QmlSessionBridge::portStatusChanged);
     connect(m_session, &IEngine::torrentsUpdated,
             this, &QmlSessionBridge::onWatchTick);
+    m_watchFast.setInterval(250);
+    connect(&m_watchFast, &QTimer::timeout, this, [this] { pollPendingWatch(false); });
     connect(m_session, &IEngine::extractionCompleted,
             this, &QmlSessionBridge::onExtractionCompleted);
     connect(m_session, &IEngine::extractionProgress,

@@ -26,6 +26,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <algorithm>
 
 void QmlSessionBridge::streamSelected()
 {
@@ -97,7 +98,9 @@ void QmlSessionBridge::prepStream(int row, int fileIndex)
     const auto files = m_session->filesAt(row);
     if (fileIndex < 0 || fileIndex >= int(files.size())) return;
     m_session->resumeTorrent(row);   // a paused torrent would never buffer
-    m_session->setSequentialDownload(row, true);
+    // The deadline window ahead of the reader keeps playback fed; outside it
+    // rarest-first gets more out of the swarm than strict order does.
+    m_session->setSequentialDownload(row, false);
     for (int i = 0; i < int(files.size()); ++i)
         m_session->setFilePriority(row, i, i == fileIndex ? 7 : 0);
     m_session->prioritizeFilePieceBoundaries(row, fileIndex);
@@ -161,11 +164,20 @@ void QmlSessionBridge::clearResume(const QString &infoHash, int fileIndex)
     s.remove(rk + QStringLiteral("_at"));
 }
 
-QVariantMap QmlSessionBridge::streamFileStats(const QString &infoHash, int fileIndex) const
+QVariantMap QmlSessionBridge::streamFileStats(const QString &infoHash, int fileIndex, double from) const
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);
     if (row < 0) return {};
-    return m_session->streamFileStats(row, fileIndex);
+    QVariantMap stats = m_session->streamFileStats(row, fileIndex);
+    const qint64 size = stats.value(QStringLiteral("totalBytes")).toLongLong();
+    if (from >= 0 && size > 0) {
+        // Bytes map to time only roughly (VBR), but the run is exact in bytes.
+        const qint64 fromByte = std::clamp<qint64>(qint64(from * double(size)), 0, size - 1);
+        const qint64 run = m_session->streamContiguousAvailableBytes(row, fileIndex, fromByte, size - fromByte);
+        stats[QStringLiteral("bufferedFrom")] = double(fromByte) / double(size);
+        stats[QStringLiteral("bufferedTo")] = double(fromByte + run) / double(size);
+    }
+    return stats;
 }
 
 QString QmlSessionBridge::streamLocalPath(const QString &infoHash, int fileIndex) const

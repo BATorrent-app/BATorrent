@@ -165,6 +165,8 @@ Window {
     readonly property real downloadedToMs: runway.downloadedToMs
     readonly property real bufferedAheadMs: runway.bufferedAheadMs
     readonly property var streamStats: runway.streamStats
+    readonly property real bufferedTo: runway.bufferedTo
+    readonly property real bufferedFrom: runway.bufferedFrom
     readonly property bool starved: runway.starved
     readonly property bool showEndCard: endCard.showEndCard
 

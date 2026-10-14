@@ -9,7 +9,8 @@ import "../theme"
 
 Slider {
     id: sl
-    property real buffered: 0   // 0..1 downloaded-from-start, drawn dim behind the fill
+    property real buffered: 0       // 0..1 end of the run on disk, drawn dim behind the fill
+    property real bufferedFrom: 0   // 0..1 where that run starts (the playback position)
     readonly property bool active: sl.pressed || sl.hovered
     implicitHeight: 18
     background: Rectangle {
@@ -18,7 +19,11 @@ Slider {
         height: sl.active ? 7 : 5; radius: height / 2
         color: "#26ffffff"
         Behavior on height { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
-        Rectangle { width: Math.max(0, Math.min(1, sl.buffered)) * parent.width; height: parent.height; radius: parent.radius; color: "#4dffffff" }
+        Rectangle {
+            x: Math.max(0, Math.min(1, sl.bufferedFrom)) * parent.width
+            width: Math.max(0, Math.min(1, sl.buffered) - Math.max(0, sl.bufferedFrom)) * parent.width
+            height: parent.height; radius: parent.radius; color: "#4dffffff"
+        }
         Rectangle {
             width: sl.visualPosition * parent.width; height: parent.height; radius: parent.radius
             gradient: Gradient {

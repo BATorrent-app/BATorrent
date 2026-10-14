@@ -72,8 +72,10 @@ QString magnetTrackerParams()
     static const QStringList trackers = {
         QStringLiteral("udp://tracker.opentrackr.org:1337/announce"),
         QStringLiteral("udp://open.stealth.si:80/announce"),
-        QStringLiteral("udp://tracker.openbittorrent.com:6969/announce"),
         QStringLiteral("udp://exodus.desync.com:6969/announce"),
+        QStringLiteral("udp://open.demonii.com:1337/announce"),
+        QStringLiteral("udp://tracker.torrent.eu.org:451/announce"),
+        QStringLiteral("udp://explodie.org:6969/announce"),
     };
     QString params;
     for (const auto &t : trackers)

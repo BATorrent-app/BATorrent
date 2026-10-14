@@ -88,7 +88,7 @@ public:
     void addTracker(int index, const QString &url) override;
     void addTorrentWithPriorities(const QString &filePath, const QString &savePath, const std::vector<int> &filePriorities) override;
     void addMagnet(const QString &uri, const QString &savePath, const QString &coverHint = QString(), int coverType = -1) override;
-    void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte, int windowPieces = 24) override;
+    void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte, int windowPieces = 0) override;
     qint64 streamContiguousAvailableBytes(int torrentIndex, int fileIndex, qint64 fromByte, qint64 cap = 8 * 1024 * 1024) const override;
 
     // ---------------------------------------------------------------------

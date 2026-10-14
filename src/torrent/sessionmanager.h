@@ -99,10 +99,11 @@ public:
     // buffered } where progress is the file fraction on disk and buffered is the
     // contiguous fraction from the start (what's safe to seek to).
     QVariantMap streamFileStats(int torrentIndex, int fileIndex) const;
-    // Urgency-fetch a window of pieces from `startByte` forward (seek): sets
-    // increasing piece deadlines so libtorrent fetches them in playback order.
+    // Urgency-fetch a window of pieces from `startByte` forward (seek): each
+    // piece's deadline is when playback should reach it, from a bitrate guessed
+    // off the file size. windowPieces 0 sizes the window to ~30 s of video.
     void streamSetDeadlineWindow(int torrentIndex, int fileIndex, qint64 startByte,
-                                 int windowPieces = 24);
+                                 int windowPieces = 0);
 
     // Rename one file in the torrent (libtorrent's rename_file). The path
     // is interpreted relative to the torrent's save_path.
@@ -561,6 +562,10 @@ private:
     // counting active downloads: a stalled torrent shouldn't permanently
     // hog one of the user's queue slots.
     std::map<lt::torrent_handle, qint64> m_lastFastAt;
+    // The deadline window last set per streamed torrent: the same first
+    // missing piece again is a no-op, a jump outside it clears the old one.
+    struct StreamWindow { int file = -1; int firstMissing = -1; int first = -1; int last = -1; };
+    std::map<lt::torrent_handle, StreamWindow> m_streamWindows;
     // Per-handle "epoch seconds of last resume save" so piece_finished_alert
     // can request a save without thrashing the disk on every piece. Saved
     // only if the last save was more than kMinResumeSaveIntervalSec ago.

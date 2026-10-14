@@ -133,7 +133,8 @@ Item {
                 localFile: pw ? pw.localFile : ""
                 stillDownloading: pw ? pw.stillDownloading : false
                 downloadedToMs: pw ? pw.downloadedToMs : 0
-                buffered: (pw && pw.streamStats && pw.streamStats.buffered) || 0
+                buffered: pw ? pw.bufferedTo : 0
+                bufferedFrom: pw ? pw.bufferedFrom : 0
                 onLocalPathRefreshRequested: {
                     if (pw && typeof session !== "undefined")
                         pw.localFile = session.streamLocalPath(pw.infoHash, pw.fileIndex)

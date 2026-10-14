@@ -14,6 +14,7 @@
 #include <QTimer>
 #include <QRegularExpression>
 #include <QElapsedTimer>
+#include <QDebug>
 
 namespace {
 
@@ -21,6 +22,8 @@ constexpr qint64 kChunk      = 256 * 1024;        // bytes read+written per pump
 constexpr qint64 kWriteHigh  = 4 * 1024 * 1024;   // pause reading above this socket backlog
 constexpr int    kRetryMs    = 200;               // re-check cadence while buffering
 constexpr int    kGiveUpMs   = 90 * 1000;         // no-progress timeout (dead torrent)
+constexpr int    kRefreshMs  = 1000;              // move the deadline window along this often while serving
+constexpr int    kSlowWaitMs = 250;               // waits for a piece longer than this get logged
 
 QByteArray contentType(const QString &path)
 {
@@ -107,6 +110,8 @@ private:
         if (start > end) { fail(416); return; }
 
         m_pos = start; m_end = end;
+        if (!head) qInfo().noquote() << "[stream]" << m_hash.left(8) << "file" << m_fileIdx << "from byte" << start
+                                     << "of" << m_size;
 
         QByteArray hdr;
         const qint64 len = end - start + 1;
@@ -127,6 +132,7 @@ private:
 
         // kick libtorrent to fetch this window first, then start serving
         m_session->streamSetDeadlineWindow(m_torIdx, m_fileIdx, m_pos);
+        m_lastWindow.start();
         m_retry = new QTimer(this);
         m_retry->setInterval(kRetryMs);
         connect(m_retry, &QTimer::timeout, this, &StreamConnection::pump);
@@ -147,7 +153,9 @@ private:
         qint64 avail = m_session->streamContiguousAvailableBytes(m_torIdx, m_fileIdx, m_pos, kChunk);
         if (avail <= 0) {
             // not downloaded yet: prioritize and wait
+            if (!m_waiting) { m_waiting = true; m_waitClock.start(); }
             m_session->streamSetDeadlineWindow(m_torIdx, m_fileIdx, m_pos);
+            m_lastWindow.restart();
             waitOrGiveUp();
             return;
         }
@@ -174,8 +182,23 @@ private:
             return;
         }
         m_sock->write(buf);
+        if (m_waiting) {
+            m_waiting = false;
+            if (m_waitClock.elapsed() > kSlowWaitMs) {
+                const TorrentInfo info = m_session->torrentAt(m_torIdx);
+                qInfo().noquote() << "[stream]" << m_hash.left(8) << "waited" << m_waitClock.elapsed()
+                                  << "ms for byte" << m_pos << "at" << info.downloadRate / 1024 << "KB/s,"
+                                  << info.numPeers << "peers";
+            }
+        }
         m_pos += buf.size();
         m_noProgress.restart();
+        // The reader moving on carries the deadlines with it: without this the
+        // pieces past the window only get asked for once playback hits them.
+        if (m_lastWindow.elapsed() > kRefreshMs) {
+            m_session->streamSetDeadlineWindow(m_torIdx, m_fileIdx, m_pos);
+            m_lastWindow.restart();
+        }
         if (m_pos > m_end) { finishOk(); return; }
         // keep going this tick while data is ready and the buffer has room
         if (m_sock->bytesToWrite() <= kWriteHigh) QTimer::singleShot(0, this, &StreamConnection::pump);
@@ -229,6 +252,9 @@ private:
     QFile m_file;
     QTimer *m_retry = nullptr;
     QElapsedTimer m_noProgress;
+    QElapsedTimer m_lastWindow;
+    QElapsedTimer m_waitClock;
+    bool m_waiting = false;
 };
 
 } // namespace

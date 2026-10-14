@@ -1986,22 +1986,23 @@ TEST_CASE("classifyAdd answers for every path that used to answer for itself",
 TEST_CASE("StreamGate: a file opens once its head and its last piece are here", "[unit][stream]")
 {
     const qint64 MB = 1024 * 1024;
-    SECTION("the head scales with the file, within bounds") {
+    SECTION("the head is a few seconds of playback, within bounds") {
         CHECK(StreamGate::headBytes(0) == 0);
         CHECK(StreamGate::headBytes(2 * MB) == 2 * MB);              // a tiny file: all of it
-        CHECK(StreamGate::headBytes(700 * MB) == 4 * MB);            // floor
-        CHECK(StreamGate::headBytes(2000 * MB) == 10 * MB);          // 0.5%
-        CHECK(StreamGate::headBytes(60000 * MB) == 16 * MB);         // ceiling
+        CHECK(StreamGate::headBytes(700 * MB) == 3 * MB);            // floor
+        CHECK(StreamGate::headBytes(5000 * MB) == 3 * (5000 * MB / StreamGate::kAssumedRuntimeSecs));
+        CHECK(StreamGate::headBytes(10000 * MB) == 10 * MB);         // ceiling
+        CHECK(StreamGate::headBytes(60000 * MB) == 10 * MB);
     }
     SECTION("5 MB of anything is not ready: the head has to be contiguous, and the tail there") {
-        const qint64 size = 2000 * MB;
+        const qint64 size = 10000 * MB;
         CHECK_FALSE(StreamGate::ready(5 * MB, size, true));
         CHECK_FALSE(StreamGate::ready(10 * MB, size, false));
         CHECK(StreamGate::ready(10 * MB, size, true));
         CHECK_FALSE(StreamGate::ready(10 * MB, 0, true));
     }
     SECTION("only an MP4 waits for its last piece") {
-        const qint64 size = 2000 * MB;
+        const qint64 size = 10000 * MB;
         CHECK(StreamGate::needsTail("Movie.2026.1080p.mp4"));
         CHECK(StreamGate::needsTail("movie.M4V.!bt"));
         CHECK_FALSE(StreamGate::needsTail("Doing.Life.2026.1080p.mkv"));
@@ -2010,10 +2011,29 @@ TEST_CASE("StreamGate: a file opens once its head and its last piece are here", 
         CHECK(StreamGate::progress(5 * MB, size, false, false) == Catch::Approx(0.5));
     }
     SECTION("progress for the overlay") {
-        const qint64 size = 2000 * MB;
+        const qint64 size = 10000 * MB;
         CHECK(StreamGate::progress(0, size, false) == 0.0);
         CHECK(StreamGate::progress(5 * MB, size, false) == Catch::Approx(0.45));
         CHECK(StreamGate::progress(10 * MB, size, true) == Catch::Approx(1.0));
         CHECK(StreamGate::progress(99 * MB, size, false) == Catch::Approx(0.9));
+    }
+}
+
+TEST_CASE("StreamGate: piece deadlines follow playback, not a fixed step", "[unit][stream]")
+{
+    const qint64 MB = 1024 * 1024;
+    const qint64 size = StreamGate::kAssumedRuntimeSecs * MB;   // guessed at 1 MB/s
+    SECTION("a deadline is when the reader gets there") {
+        CHECK(StreamGate::deadlineMs(0, size) == 0);
+        CHECK(StreamGate::deadlineMs(-MB, size) == 0);               // behind the reader: now
+        CHECK(StreamGate::deadlineMs(4 * MB, size) == 4000);
+        CHECK(StreamGate::deadlineMs(100 * MB, 100 * MB) == 400000); // tiny file: bitrate floor
+        CHECK(StreamGate::deadlineMs(100000 * MB, size) == 10 * 60 * 1000);
+    }
+    SECTION("the window covers ~30 s, within bounds") {
+        CHECK(StreamGate::windowPieces(4 * MB, size) == 8);          // 30 MB in 4 MB pieces
+        CHECK(StreamGate::windowPieces(16 * MB, size) == StreamGate::kMinWindowPieces);
+        CHECK(StreamGate::windowPieces(256 * 1024, 10 * size) == StreamGate::kMaxWindowPieces);
+        CHECK(StreamGate::windowPieces(0, size) == StreamGate::kMinWindowPieces);
     }
 }

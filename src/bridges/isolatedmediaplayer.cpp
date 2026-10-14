@@ -232,6 +232,8 @@ void IsolatedMediaPlayer::startFeed()
     if (m_feed) { m_feed->disconnect(this); m_feed->deleteLater(); }
     const qint32 gen = ++m_sourceGen;
     m_opened = false;
+    logPlaybackSummary();
+    m_openClock.start();
     m_feed = new MediaFeed(m_source, this);
     connect(m_feed, &MediaFeed::ready, this, [this, gen](qint64 size) {
         send(QStringLiteral("open"), media::encode(gen, size, m_source.fileName()));
@@ -332,6 +334,20 @@ void IsolatedMediaPlayer::applyState(const media::State &in)
     if (old.seekable != s.seekable) emit seekableChanged();
     if (old.hasVideo != s.hasVideo) emit hasVideoChanged();
     if (!qFuzzyCompare(old.playbackRate, s.playbackRate)) emit playbackRateChanged();
+
+    if (m_sawFrame && old.mediaStatus != s.mediaStatus) {
+        const bool starved = s.mediaStatus == QMediaPlayer::StalledMedia
+                             || s.mediaStatus == QMediaPlayer::BufferingMedia;
+        if (starved && !m_stallClock.isValid()) {
+            m_stallClock.start();
+        } else if (!starved && m_stallClock.isValid()) {
+            const qint64 ms = m_stallClock.elapsed();
+            ++m_stalls;
+            m_stallMs += ms;
+            qInfo().noquote() << "[play] starved" << ms << "ms at" << s.position / 1000 << "s";
+            m_stallClock.invalidate();
+        }
+    }
 }
 
 void IsolatedMediaPlayer::applyTracks(const media::Tracks &t)
@@ -376,8 +392,22 @@ void IsolatedMediaPlayer::showFrame(qint32 generation, const media::FrameHeader 
         frame = media::unpack(hdr, base, m_slotBytes);
     }
     send(QStringLiteral("release"), media::encode(generation, hdr.slot));
+    if (frame.isValid() && !m_sawFrame) {
+        m_sawFrame = true;
+        qInfo().noquote() << "[play] first frame after" << m_openClock.elapsed() << "ms," << hdr.width << "x" << hdr.height;
+    }
     if (frame.isValid())
         if (QVideoSink *s = sink()) s->setVideoFrame(frame);
+}
+
+void IsolatedMediaPlayer::logPlaybackSummary()
+{
+    if (m_sawFrame)
+        qInfo().noquote() << "[play] done:" << m_stalls << "stalls," << m_stallMs << "ms starved";
+    m_sawFrame = false;
+    m_stalls = 0;
+    m_stallMs = 0;
+    m_stallClock.invalidate();
 }
 
 void IsolatedMediaPlayer::failWith(int error, const QString &why)
@@ -400,6 +430,7 @@ void IsolatedMediaPlayer::onChildLost()
 void IsolatedMediaPlayer::teardown()
 {
     m_tearingDown = true;
+    logPlaybackSummary();
     if (m_feed) { m_feed->disconnect(this); m_feed->deleteLater(); m_feed = nullptr; }
     if (m_sock) { m_sock->disconnect(this); m_sock->abort(); m_sock->deleteLater(); m_sock = nullptr; }
     if (m_proc) {

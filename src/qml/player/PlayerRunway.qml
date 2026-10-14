@@ -25,9 +25,13 @@ Item {
     property bool starved: false
 
     readonly property bool stillDownloading: ((streamStats && streamStats.progress) || 0) < 0.999
-    readonly property real downloadedToMs: (streamStats && streamStats.buffered > 0
-                                            && mediaPlayer && mediaPlayer.duration > 0)
-                                           ? streamStats.buffered * mediaPlayer.duration : 0
+    // From the playback position, not the start: after a seek the start may
+    // never have been fetched, and what matters is the run ahead of here.
+    readonly property real bufferedTo: streamStats
+        ? (streamStats.bufferedTo !== undefined ? streamStats.bufferedTo : (streamStats.buffered || 0)) : 0
+    readonly property real bufferedFrom: (streamStats && streamStats.bufferedFrom) || 0
+    readonly property real downloadedToMs: (bufferedTo > 0 && mediaPlayer && mediaPlayer.duration > 0)
+                                           ? bufferedTo * mediaPlayer.duration : 0
     readonly property real bufferedAheadMs: mediaPlayer
         ? Math.max(0, downloadedToMs - mediaPlayer.position) : 0
     readonly property bool starvedNow: mediaPlayer
@@ -46,7 +50,9 @@ Item {
         running: root.windowVisible && typeof session !== "undefined"
         triggeredOnStart: true
         onTriggered: {
-            root.streamStats = session.streamFileStats(root.infoHash, root.fileIndex)
+            const d = root.mediaPlayer ? root.mediaPlayer.duration : 0
+            root.streamStats = session.streamFileStats(root.infoHash, root.fileIndex,
+                                                       d > 0 ? root.mediaPlayer.position / d : 0)
             if (!root.aheadShown && root.stillDownloading && root.bufferedAheadMs > 1500) {
                 root.aheadShown = true
                 aheadPill.show()
