@@ -26,6 +26,11 @@ Translator::Translator()
 
 void Translator::applySaved()
 {
+    setLanguage(savedLanguage());
+}
+
+Translator::Language Translator::savedLanguage()
+{
     QSettings s;
     int lang = 0;
     if (s.contains("language")) {
@@ -42,7 +47,7 @@ void Translator::applySaved()
         else if (sys.startsWith("tr")) lang = 8;
         else                           lang = 0;
     }
-    setLanguage(static_cast<Language>(lang));
+    return static_cast<Language>(lang);
 }
 
 QLocale Translator::locale() const
@@ -54,6 +59,7 @@ QLocale Translator::locale() const
 void Translator::setLanguage(Language lang)
 {
     m_lang = lang;
+    m_applied = true;
     static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk", "tr"};
     m_strings.clear();
     loadLanguage(codes[static_cast<int>(lang)], m_strings);

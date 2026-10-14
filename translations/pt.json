@@ -47,6 +47,8 @@
   "addon_sug_brazuca": "Filmes e séries dublados no Brasil — BaixaFilmes, RedeTorrent, VacaTorrent…",
   "addon_sug_cinemeta": "Catálogos oficiais de filmes e séries",
   "addon_sug_torrentio": "Streams de torrent de vários indexadores (respeita o idioma do conteúdo)",
+  "addon_sug_torrentsdb": "Streams de torrent do YTS, EZTV, 1337x, TorrentCSV, Nyaa e outros",
+  "addon_sug_peerflix": "Streams de torrent em inglês e espanhol, muitos que não aparecem em outras fontes",
   "addon_sug_torrentio_anime": "Nyaa.si, TokyoTosho, AniDex, HorribleSubs — torrents de anime",
   "addon_sug_torrentio_cfg": "Abra o Configure do Torrentio — provedores, idioma, debrid opcional — e cole o link de instalação",
   "addon_sug_torrentio_de": "Alemão — resultados Torrentio priorizando o idioma",

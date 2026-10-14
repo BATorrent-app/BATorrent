@@ -217,6 +217,16 @@ TEST_CASE("curatedCatalog seedDefault non-empty and ids unique when set", "[addo
     REQUIRE(seeded > 0);
     REQUIRE(ids.contains(QStringLiteral("com.linvo.cinemeta")));
     REQUIRE(ids.contains(QStringLiteral("com.stremio.torrentio.addon")));
+    // The other public torrent addons, seeded on for every language.
+    for (const auto &a : cat) {
+        if (a.id == QLatin1String("com.torrentsdb.addon") || a.id == QLatin1String("com.keopps.peerflix")) {
+            REQUIRE(a.seedDefault);
+            REQUIRE(a.lang.isEmpty());
+            REQUIRE(a.resources == QStringList{ QStringLiteral("stream") });
+        }
+    }
+    REQUIRE(ids.contains(QStringLiteral("com.torrentsdb.addon")));
+    REQUIRE(ids.contains(QStringLiteral("com.keopps.peerflix")));
 }
 
 TEST_CASE("providerCatalog ids unique and non-empty", "[addoncatalog]") {

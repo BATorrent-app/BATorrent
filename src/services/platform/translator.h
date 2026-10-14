@@ -24,7 +24,11 @@ public:
     // locale's when they never picked one. Both processes call this: the UI,
     // and the engine child, which builds the state labels the UI shows.
     void applySaved();
+    // The language applySaved() picks: the saved choice, else the system's.
+    // Readable before it runs, which the addon seeding at startup needs.
+    static Language savedLanguage();
     Language language() const { return m_lang; }
+    bool languageApplied() const { return m_applied; }   // setLanguage has run
     QString tr(const QString &key) const;
 
 private:
@@ -32,6 +36,7 @@ private:
     void loadLanguage(const QString &code, QMap<QString, QString> &map);
 
     Language m_lang = English;
+    bool m_applied = false;
     QMap<QString, QString> m_strings;
     QMap<QString, QString> m_englishFallback;
 };

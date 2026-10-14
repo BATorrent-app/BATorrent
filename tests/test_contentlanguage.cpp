@@ -121,3 +121,15 @@ TEST_CASE("the app language maps to a locale for dates", "[contentlang]")
     REQUIRE(tr.locale().name() == QLatin1String("de_DE"));
     tr.setLanguage(before);
 }
+
+// Read before the UI language is applied: the addon seeding at startup asks for
+// the content language then, and took English for a Portuguese install.
+TEST_CASE("the saved app language is readable before it is applied", "[contentlanguage]")
+{
+    SettingsScope scope;
+    QSettings().setValue(QStringLiteral("language"), int(Translator::Portuguese));
+    REQUIRE(Translator::savedLanguage() == Translator::Portuguese);
+    QSettings().setValue(QStringLiteral("language"), int(Translator::Turkish));
+    REQUIRE(Translator::savedLanguage() == Translator::Turkish);
+    QSettings().remove(QStringLiteral("language"));
+}

@@ -29,6 +29,22 @@ QList<CuratedAddon> curatedCatalog()
          QStringLiteral("https://torrentio.strem.fun"), {}, {},
          movieSeries, stream, true, true, false, false},
 
+        // Next to Torrentio, the two public torrent addons that still answer
+        // without a debrid account. On Dune: Part Two, TorrentsDB added 92
+        // torrents Torrentio did not have and Peerflix 14; on The Matrix 37
+        // and 21. Both cover every language.
+        {QStringLiteral("com.torrentsdb.addon"), QStringLiteral("TorrentsDB"),
+         QStringLiteral("addon_sug_torrentsdb"),
+         QStringLiteral("Torrent streams from YTS, EZTV, 1337x, TorrentCSV, Nyaa and more"),
+         QStringLiteral("https://torrentsdb.com"), {}, {},
+         movieSeries, stream, true, true, false, false},
+
+        {QStringLiteral("com.keopps.peerflix"), QStringLiteral("Peerflix"),
+         QStringLiteral("addon_sug_peerflix"),
+         QStringLiteral("Torrent streams in English and Spanish, many found nowhere else"),
+         QStringLiteral("https://peerflix.mov"), {}, {},
+         movieSeries, stream, true, true, false, false},
+
         {QStringLiteral("com.stremio.brazuca.addon"), QStringLiteral("Brazuca Torrents"),
          QStringLiteral("addon_sug_brazuca"),
          QStringLiteral("Brazilian dubbed movies & series — BaixaFilmes, RedeTorrent, VacaTorrent…"),

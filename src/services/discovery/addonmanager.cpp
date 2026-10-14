@@ -83,7 +83,10 @@ void AddonManager::installDefaults()
     // Seed gen bumps install missing curated free addons for existing users.
     // 4 = broad out-of-box: core + Brazuca + Anime Kitsu + Nyaa pack + all lang packs
     //     (regional packs installed; enabled intelligently via syncCuratedAddons).
-    constexpr int kAddonSeedGen = 4;
+    // 5 = TorrentsDB + Peerflix, the public torrent addons beside Torrentio.
+    // 6 = sync again now that Content language is right at startup: the
+    //     language packs had been switched by English for everyone.
+    constexpr int kAddonSeedGen = 6;
     QSettings settings("BATorrent", "BATorrent");
     const int have = settings.value(QStringLiteral("addonCatalogSeed"), 0).toInt();
     if (have < kAddonSeedGen) {

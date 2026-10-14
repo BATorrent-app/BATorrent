@@ -47,6 +47,8 @@
   "addon_sug_brazuca": "巴西配音影视 — BaixaFilmes、RedeTorrent、VacaTorrent…",
   "addon_sug_cinemeta": "电影与剧集官方目录",
   "addon_sug_torrentio": "来自多个索引的种子流（遵循内容语言）",
+  "addon_sug_torrentsdb": "来自 YTS、EZTV、1337x、TorrentCSV、Nyaa 等的种子流",
+  "addon_sug_peerflix": "英语和西班牙语的种子流，很多在别处找不到",
   "addon_sug_torrentio_anime": "Nyaa.si、TokyoTosho、AniDex、HorribleSubs — 动画种子",
   "addon_sug_torrentio_cfg": "打开 Torrentio 配置——源、语言、可选 debrid——再粘贴安装链接",
   "addon_sug_torrentio_de": "德语 — 语言优先的 Torrentio 结果",

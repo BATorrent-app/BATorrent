@@ -24,7 +24,11 @@ Translator::Language ContentLanguage::current()
     bool ok = false;
     const int i = v.toInt(&ok);
     if (ok && inRange(i)) return static_cast<Translator::Language>(i);
-    return Translator::instance().language();
+    // Until the UI language is applied, the one it is about to be: the addon
+    // seeding asks this at startup before then, read English, and a Brazilian
+    // install got Torrentio's Portuguese pack switched off.
+    const Translator &t = Translator::instance();
+    return t.languageApplied() ? t.language() : Translator::savedLanguage();
 }
 
 void ContentLanguage::set(Translator::Language lang)

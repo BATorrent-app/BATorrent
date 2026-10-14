@@ -47,6 +47,8 @@
   "addon_sug_brazuca": "Бразильський дубляж фільмів і серіалів — BaixaFilmes, RedeTorrent…",
   "addon_sug_cinemeta": "Офіційні каталоги фільмів і серіалів",
   "addon_sug_torrentio": "Торрент-стріми з багатьох індексів (враховує мову вмісту)",
+  "addon_sug_torrentsdb": "Торент-потоки з YTS, EZTV, 1337x, TorrentCSV, Nyaa та інших",
+  "addon_sug_peerflix": "Торент-потоки англійською та іспанською, багатьох немає в інших джерелах",
   "addon_sug_torrentio_anime": "Nyaa.si, TokyoTosho, AniDex, HorribleSubs — аніме-торенти",
   "addon_sug_torrentio_cfg": "Відкрийте конфіг Torrentio — провайдери, мова, опційний debrid — вставте посилання",
   "addon_sug_torrentio_de": "Німецька — результати Torrentio з пріоритетом мови",

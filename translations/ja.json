@@ -47,6 +47,8 @@
   "addon_sug_brazuca": "ブラジル吹替の映画・ドラマ — BaixaFilmes、RedeTorrent など",
   "addon_sug_cinemeta": "映画・ドラマの公式カタログ",
   "addon_sug_torrentio": "複数インデクサからのTorrent配信（コンテンツ言語に対応）",
+  "addon_sug_torrentsdb": "YTS、EZTV、1337x、TorrentCSV、Nyaa などのトレントストリーム",
+  "addon_sug_peerflix": "英語とスペイン語のトレントストリーム。他にないものも多数",
   "addon_sug_torrentio_anime": "Nyaa.si、TokyoTosho、AniDex、HorribleSubs — アニメ用トレント",
   "addon_sug_torrentio_cfg": "Torrentio 設定を開く — プロバイダ・言語・任意のデブリド — インストール URL を貼付",
   "addon_sug_torrentio_de": "ドイツ語 — 言語優先の Torrentio 結果",
