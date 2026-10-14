@@ -45,11 +45,13 @@ int main(int argc, char *argv[])
 
     AppRuntime::applyGraphicsApiPreference();
 #ifdef Q_OS_WIN
-    // DirectWrite, the font engine the browser uses: Qt 6.7 still defaults to
-    // GDI on Windows, which drew IBM Plex lighter and greyer than the design
-    // files rendered in Chrome. A QT_QPA_PLATFORM set by the user still wins.
+    // FreeType: grey anti-aliasing with the glyphs still fitted to the pixel
+    // grid, the closest match to Chrome, where the design files were made.
+    // GDI (Qt 6.7's default) drew IBM Plex light and grey, DirectWrite added
+    // ClearType colour fringes that look jagged on the dark surfaces. A
+    // QT_QPA_PLATFORM set by the user still wins.
     if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
-        qputenv("QT_QPA_PLATFORM", "windows:fontengine=directwrite");
+        qputenv("QT_QPA_PLATFORM", "windows:fontengine=freetype");
 #endif
 
     QApplication app(argc, argv);
@@ -120,16 +122,15 @@ int main(int argc, char *argv[])
     AppRuntime::loadFonts(app);
     AppRuntime::logDependencyVersions();
     QQuickStyle::setStyle("Basic");
-    // Text drawn from the glyph outlines with grey anti-aliasing, like the
-    // browser the design files were made in. Qt's default distance fields read
-    // thin and grey; the native rasteriser on Windows adds ClearType colour
-    // fringes and hard hinting, which look jagged on the dark surfaces.
-    // BAT_TEXT_RENDER=native|qt brings either back for comparison.
+    // The platform's own text rasteriser (FreeType on Windows, see above; Core
+    // Text on macOS). Qt's default distance fields drew every weight thinner
+    // and greyer than the design files. BAT_TEXT_RENDER=curve|qt brings the
+    // others back for comparison.
     {
         const QByteArray mode = qgetenv("BAT_TEXT_RENDER");
-        QQuickWindow::setTextRenderType(mode == "native" ? QQuickWindow::NativeTextRendering
+        QQuickWindow::setTextRenderType(mode == "curve" ? QQuickWindow::CurveTextRendering
                                         : mode == "qt" ? QQuickWindow::QtTextRendering
-                                        : QQuickWindow::CurveTextRendering);
+                                        : QQuickWindow::NativeTextRendering);
     }
 
     AppServices svc = AppServices::create(app);
