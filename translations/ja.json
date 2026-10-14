@@ -1098,7 +1098,7 @@
   "state_no_peers_dht": "ピアがまだいません — DHTとトラッカーで検索中",
   "state_no_seeds": "ピアは接続中ですがシードなし — 不足ピースが入手できません",
   "state_paused": "一時停止中",
-  "state_paused_done": "ダウンロード完了 — シードは一時停止中",
+  "state_paused_done": "シード一時停止",
   "state_queued": "待機 #%1",
   "state_s_connecting": "接続中…",
   "state_s_no_peers": "ピアなし",

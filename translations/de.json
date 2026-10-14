@@ -1098,7 +1098,7 @@
   "state_no_peers_dht": "Noch keine Peers — Suche über DHT und Tracker läuft",
   "state_no_seeds": "Peers verbunden, aber keine Seeds — fehlende Teile sind nicht verfügbar",
   "state_paused": "Pausiert",
-  "state_paused_done": "Abgeschlossen — Seeding pausiert",
+  "state_paused_done": "Seeding pausiert",
   "state_queued": "Warteschlange #%1",
   "state_s_connecting": "Verbinde…",
   "state_s_no_peers": "Keine Peers",

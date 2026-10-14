@@ -1098,7 +1098,7 @@
   "state_no_peers_dht": "Пірів поки немає — пошук через DHT і трекери",
   "state_no_seeds": "Піри підключені, але сідів немає — відсутні частини недоступні",
   "state_paused": "Пауза",
-  "state_paused_done": "Завантаження завершено — роздача на паузі",
+  "state_paused_done": "Роздача на паузі",
   "state_queued": "Черга #%1",
   "state_s_connecting": "Підключення…",
   "state_s_no_peers": "Немає пірів",

@@ -1098,7 +1098,7 @@
   "state_no_peers_dht": "Aún sin pares — buscando en el enjambre vía DHT y trackers",
   "state_no_seeds": "Pares conectados pero sin semillas — las partes faltantes no están disponibles",
   "state_paused": "Pausado",
-  "state_paused_done": "Descarga completa — siembra pausada",
+  "state_paused_done": "Siembra pausada",
   "state_queued": "Cola #%1",
   "state_s_connecting": "Conectando…",
   "state_s_no_peers": "Sin pares",

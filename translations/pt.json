@@ -1098,7 +1098,7 @@
   "state_no_peers_dht": "Sem peers ainda — procurando o enxame via DHT e trackers",
   "state_no_seeds": "Peers conectados, mas sem seeds — as partes faltantes não estão disponíveis",
   "state_paused": "Pausado",
-  "state_paused_done": "Download concluído — semeadura pausada",
+  "state_paused_done": "Semeadura pausada",
   "state_queued": "Fila #%1",
   "state_s_connecting": "Conectando…",
   "state_s_no_peers": "Sem peers",

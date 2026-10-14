@@ -1098,7 +1098,7 @@
   "state_no_peers_dht": "No peers yet — searching the swarm via DHT and trackers",
   "state_no_seeds": "Peers connected, but no seeds — the missing pieces aren't available",
   "state_paused": "Paused",
-  "state_paused_done": "Download complete — seeding paused",
+  "state_paused_done": "Seeding paused",
   "state_queued": "Queue #%1",
   "state_s_connecting": "Connecting…",
   "state_s_no_peers": "No peers",
