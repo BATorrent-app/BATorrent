@@ -12,6 +12,7 @@
 #include <memory>
 
 class HttpDownloadManager;
+class QNetworkAccessManager;
 class PlayLog;
 class AchievementLedger;
 class AchievementService;
@@ -259,6 +260,10 @@ public:
     // kind is "intro"/"credits"/"": drives the player's skip chip. Empty for
     // non-mkv or when the chapters element isn't downloaded yet.
     Q_INVOKABLE QVariantList mkvChapters(const QString &infoHash, int fileIndex) const;
+    // Opening/ending times for an anime episode from AniSkip, answered later
+    // by skipTimesReady. Only asked for a first season tagged as animation
+    // whose MyAnimeList entry matches the show's name.
+    Q_INVOKABLE void fetchSkipTimes(const QString &infoHash, int fileIndex);
     // Play a specific video file (episode) of a torrent in the embedded player.
     Q_INVOKABLE void playFile(const QString &infoHash, int fileIndex);
     // playFile's prep (only this file wanted, pieces led by the playback position) without opening
@@ -270,6 +275,10 @@ public:
     // `from` (0..1, the playback position) adds bufferedFrom/bufferedTo: the
     // contiguous run on disk from there, which is what playing on needs.
     Q_INVOKABLE QVariantMap streamFileStats(const QString &infoHash, int fileIndex, double from = -1) const;
+    // A track's language (QLocale::Language, as the player reports it) as a
+    // two-letter code, matched against the preferred-language lists. "" when
+    // the file doesn't say.
+    Q_INVOKABLE QString langCode(int qlocaleLanguage) const;
     // Raw video file name (has the quality/audio tags the player badges parse).
     Q_INVOKABLE QString streamFileName(const QString &infoHash, int fileIndex) const;
     Q_INVOKABLE QString streamLocalPath(const QString &infoHash, int fileIndex) const;
@@ -441,6 +450,7 @@ signals:
     void watchProgress(const QString &infoHash, double percent);   // 0..1, each tick while pending
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
     void watchHealth(const QString &infoHash, int downBps, int peers, int waitedSec);   // each tick while pending
+    void skipTimesReady(const QString &infoHash, int fileIndex, const QVariantList &chapters);
     void mediaQuarantined(const QString &infoHash, const QString &fileName,
                           const QString &kindKey, const QString &searchQuery);
     void mediaLure(const QString &infoHash, const QString &fileName, const QString &searchQuery);
@@ -520,6 +530,7 @@ private:
     QHash<QString, QVariantMap> m_watchTargets;   // infoHash → the file to play, see watchWhenReady
     QHash<QString, QPair<QVariantMap, qint64>> m_pendingFilePick;   // infoHash → {target, startedAtSec}
     QHash<QString, QSet<int>> m_pickedFiles;   // episodes picked out of one pack, all kept wanted
+    QNetworkAccessManager *m_skipNet = nullptr;   // AniSkip and the AniList lookup before it
     QHash<QString, QPair<QString, qint64>> m_pendingInstall; // Get&Install: infoHash → {title, startedAtSec}
     QSet<QString> m_installStarted;   // hashes where installGame was already kicked for pending install
     QHash<QString, qint64> m_runningGames;   // infoHash → pid of a launched (detached) game

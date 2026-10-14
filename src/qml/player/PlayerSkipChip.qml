@@ -17,7 +17,21 @@ Item {
     property var chapters: []
     property bool endCardVisible: false
     property bool controlsShown: true
+    property bool autoSkip: false
     signal skipped()
+
+    // Skips once per chapter, and only when playback walked into it: someone
+    // who seeks back into the opening means to watch it.
+    property real autoSkippedAt: -1
+    onChaptersChanged: autoSkippedAt = -1
+    onActiveSkipChanged: {
+        var sk = root.activeSkip
+        if (!root.autoSkip || !sk || !mediaPlayer || root.endCardVisible) return
+        if (sk.startMs === root.autoSkippedAt || mediaPlayer.position > sk.startMs + 4000) return
+        root.autoSkippedAt = sk.startMs
+        mediaPlayer.position = sk.endMs
+        root.skipped()
+    }
 
     readonly property var activeSkip: {
         if (!mediaPlayer) return null

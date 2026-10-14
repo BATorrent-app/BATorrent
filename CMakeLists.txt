@@ -163,6 +163,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/metadata/metadataresolver.cpp
     src/services/metadata/metadatamatch.cpp
     src/services/metadata/mkvchapters.cpp
+    src/services/metadata/aniskip.cpp
     src/services/downloads/httpdownload.cpp
     src/services/downloads/httpdownloadmanager.cpp
     src/services/downloads/httpmergeengine.cpp

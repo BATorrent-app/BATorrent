@@ -11,6 +11,7 @@ import QtQuick.Controls
 import QtQuick.Effects
 import QtMultimedia
 import QtQuick.Dialogs
+import Qt.labs.platform as Platform
 import "../theme"
 import "../widgets"
 
@@ -82,15 +83,54 @@ Window {
         return fallback
     }
 
-    // remember the chosen audio/subtitle track per torrent
+    // Start each file on the viewer's languages. A track picked by hand for
+    // this torrent wins; with none saved, the first preferred language the
+    // file has. Subtitles stay off when the audio already speaks the first
+    // subtitle language (unless subAlways), and with no embedded subtitle in
+    // that language the best one online is fetched (autoSubs).
     property bool tracksRestored: false
+    property bool autoSubPending: false
+    function prefLangs(key) {
+        return String(settings.get(key) || "").split(",").filter(function (c) { return c.length > 0 })
+    }
+    function trackLang(meta) {
+        if (!meta) return ""
+        var code = (typeof session !== "undefined")
+                   ? session.langCode(Number(meta.value(MediaMetaData.Language)) || 0) : ""
+        if (code.length > 0) return code
+        // untagged tracks often carry the language in their title
+        var t = String(meta.stringValue(MediaMetaData.Title)).toLowerCase()
+        var names = { pt: ["portug", "brazil", "pt-br"], en: ["english"], es: ["spanish", "español", "latino"],
+                      fr: ["french", "français"], de: ["german", "deutsch"], it: ["italian"],
+                      ja: ["japanese", "日本"], ko: ["korean"], zh: ["chinese", "中文"], ru: ["russian"],
+                      uk: ["ukrain"], tr: ["turkish"], pl: ["polish"], nl: ["dutch"], sv: ["swedish"],
+                      ar: ["arabic"], hi: ["hindi"], th: ["thai"] }
+        for (var c in names)
+            for (var i = 0; i < names[c].length; i++)
+                if (t.indexOf(names[c][i]) >= 0) return c
+        return ""
+    }
+    function firstTrackIn(tracks, langs) {
+        for (var l = 0; l < langs.length; l++)
+            for (var i = 0; i < tracks.length; i++)
+                if (win.trackLang(tracks[i]) === langs[l]) return { idx: i, lang: langs[l] }
+        return null
+    }
     function restoreTracks() {
         if (win.tracksRestored || typeof settings === "undefined") return
         if (player.audioTracks.length === 0 && player.subtitleTracks.length === 0) return
         win.tracksRestored = true
+
+        var audioIdx = -1
         var at = settings.get("audioTrack_" + win.infoHash)
-        if (at !== undefined && at !== "" && Number(at) >= 0 && Number(at) < player.audioTracks.length)
-            player.activeAudioTrack = Number(at)
+        if (at !== undefined && at !== "" && Number(at) >= 0 && Number(at) < player.audioTracks.length) {
+            audioIdx = Number(at)
+        } else {
+            var a = win.firstTrackIn(player.audioTracks, win.prefLangs("audioLangs"))
+            if (a) audioIdx = a.idx
+        }
+        if (audioIdx >= 0) player.activeAudioTrack = audioIdx
+
         var st = settings.get("subTrack_" + win.infoHash)
         if (st !== undefined && st !== "") {
             var sn = Number(st)
@@ -99,7 +139,36 @@ Window {
                 player.activeSubtitleTrack = -1
             else if (sn < player.subtitleTracks.length)
                 player.activeSubtitleTrack = sn
+            return
         }
+        var subs = win.prefLangs("subLangs")
+        if (subs.length === 0) return
+        var audioLang = player.audioTracks.length > 0
+                        ? win.trackLang(player.audioTracks[Math.max(0, audioIdx)]) : ""
+        if (!settings.getBool("subAlways", false) && audioLang === subs[0]) {
+            player.activeSubtitleTrack = -1
+            return
+        }
+        var s = win.firstTrackIn(player.subtitleTracks, subs)
+        if (s) player.activeSubtitleTrack = s.idx
+        if (s && s.lang === subs[0]) return
+        // nothing embedded in the first language: fetch the best one online
+        if (settings.getBool("autoSubs", true) && typeof subsearch !== "undefined" && !win.extSubsActive) {
+            console.info("[player] no embedded " + subs[0] + " subtitle, searching online")
+            win.autoSubPending = true
+            subsearch.searchFor(win.infoHash, win.fileIndex, win.mediaTitle, [subs[0]])
+        }
+    }
+    Connections {
+        target: typeof subsearch !== "undefined" ? subsearch : null
+        ignoreUnknownSignals: true
+        function onSearchingChanged() {
+            if (!win.autoSubPending || subsearch.searching) return
+            if (subsearch.results.length > 0) subsearch.download(0)
+            else win.autoSubPending = false
+        }
+        function onSubtitleReady(path) { win.autoSubPending = false }
+        function onSearchError(message) { win.autoSubPending = false }
     }
 
     // picture-in-picture: shrink to a small always-on-top corner window
@@ -116,7 +185,7 @@ Window {
             win.y = scr.virtualY + scr.height - 241
             win.pipMode = true
         } else {
-            win.flags = win.baseFlags
+            win.flags = win.stayOnTop ? (win.baseFlags | Qt.WindowStaysOnTopHint) : win.baseFlags
             win.width = win.savedGeom.width > 0 ? win.savedGeom.width : 1120
             win.height = win.savedGeom.height > 0 ? win.savedGeom.height : 720
             win.x = win.savedGeom.x; win.y = win.savedGeom.y
@@ -157,6 +226,16 @@ Window {
     readonly property bool hasNext: nextIdx >= 0 || externalNext !== null
     property bool autoplayNext: (typeof settings === "undefined") || settings.getBool("autoplayNext", true)
     property var chapters: []
+    property bool autoSkip: false
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        ignoreUnknownSignals: true
+        function onSkipTimesReady(hash, fileIdx, list) {
+            if (hash !== win.infoHash || fileIdx !== win.fileIndex) return
+            if (win.chapters.some(function (c) { return c.kind })) return
+            win.chapters = win.chapters.concat(list)
+        }
+    }
     property string nextPoster: ""
     property string nextTitle: ""
     property string nextSubtitle: ""
@@ -185,6 +264,10 @@ Window {
         runway.reset()
         retry.reset()
         win.chapters = (typeof session !== "undefined") ? session.mkvChapters(hash, fileIdx) : []
+        win.autoSkip = typeof settings !== "undefined" && settings.getBool("autoSkipIntro", false)
+        // no opening/ending in the file's own chapters: ask AniSkip (anime only)
+        if (typeof session !== "undefined" && !win.chapters.some(function (c) { return c.kind }))
+            session.fetchSkipTimes(hash, fileIdx)
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
         win.externalNext = (win.nextIdx < 0 && win.nextProvider)
                            ? win.nextProvider.nextEpisodeFor(hash, fileIdx) : null
@@ -196,6 +279,7 @@ Window {
             win.nextPoster = session.posterForHash(hash)
         } else { win.nextTitle = ""; win.nextSubtitle = ""; win.nextPoster = "" }
         win.tracksRestored = false
+        win.autoSubPending = false
         win.loadSubStyle()
         win.clearExternalSubs()
         if (typeof session !== "undefined") {
@@ -295,12 +379,87 @@ Window {
         saturation: 0.35
     }
 
+    // ---- picture: aspect, rotation, screenshot, always on top ----
+    // fit/fill/stretch use the output's own modes; a forced ratio sizes the
+    // output to that ratio inside the window and stretches the frame into it
+    readonly property var aspectModes: ["fit", "fill", "stretch", "16:9", "4:3", "21:9"]
+    property string aspectMode: "fit"
+    property int videoRotation: 0
+    property bool stayOnTop: false
+    function cycleAspect() {
+        var i = aspectModes.indexOf(aspectMode)
+        aspectMode = aspectModes[(i + 1) % aspectModes.length]
+        win.notice((i18n.language, i18n.t("player_aspect")).arg(win.aspectLabel(aspectMode)))
+    }
+    function aspectLabel(m) {
+        if (m === "fit") return i18n.t("player_aspect_fit")
+        if (m === "fill") return i18n.t("player_aspect_fill")
+        if (m === "stretch") return i18n.t("player_aspect_stretch")
+        return m
+    }
+    function rotate() { videoRotation = (videoRotation + 90) % 360 }
+    function toggleOnTop() {
+        stayOnTop = !stayOnTop
+        if (!win.pipMode) win.flags = stayOnTop ? (win.baseFlags | Qt.WindowStaysOnTopHint) : win.baseFlags
+    }
+    function screenshot() {
+        var dir = String(Platform.StandardPaths.writableLocation(Platform.StandardPaths.PicturesLocation))
+                  .replace(/^file:\/\/\/?/, Qt.platform.os === "windows" ? "" : "/")
+        var name = (win.headerTitle || "BATorrent").replace(/[\\/:*?"<>|]/g, " ").trim()
+        var ms = player.position, sec = Math.floor(ms / 1000)
+        var stamp = Math.floor(sec / 3600) + "h" + ("0" + Math.floor(sec % 3600 / 60)).slice(-2) + "m"
+                    + ("0" + sec % 60).slice(-2) + "s"
+        var path = decodeURIComponent(dir) + "/" + name + " " + stamp + ".png"
+        videoOut.grabToImage(function (result) {
+            win.notice(result.saveToFile(path)
+                       ? (i18n.language, i18n.t("player_shot_saved")).arg(path)
+                       : (i18n.language, i18n.t("player_shot_failed")))
+        })
+    }
+    // a line of feedback over the video for actions with no other trace
+    property string noticeText: ""
+    function notice(t) { noticeText = t; noticeTimer.restart() }
+    Timer { id: noticeTimer; interval: 2600; onTriggered: win.noticeText = "" }
+
     VideoOutput {
         id: videoOut
-        anchors.fill: parent
+        readonly property real forced: {
+            var m = win.aspectMode
+            if (m === "16:9") return 16 / 9
+            if (m === "4:3") return 4 / 3
+            if (m === "21:9") return 21 / 9
+            return 0
+        }
+        // a quarter turn swaps which side the ratio is measured along
+        readonly property bool sideways: win.videoRotation % 180 !== 0
+        anchors.centerIn: parent
+        readonly property real ratio: forced > 0 ? (sideways ? 1 / forced : forced) : 0
+        width: ratio > 0 ? Math.min(parent.width, parent.height * ratio) : parent.width
+        height: ratio > 0 ? width / ratio : parent.height
+        orientation: win.videoRotation
         // video fills the window; the chrome floats over it (Stremio-style) so
         // the gradient scrims read as depth, not a flat deck on a black frame
-        fillMode: VideoOutput.PreserveAspectFit
+        fillMode: win.aspectMode === "fill" ? VideoOutput.PreserveAspectCrop
+                : (win.aspectMode === "fit" ? VideoOutput.PreserveAspectFit : VideoOutput.Stretch)
+    }
+    Rectangle {
+        z: 58
+        visible: win.noticeText.length > 0
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top; anchors.topMargin: 72
+        width: Math.min(parent.width - 48, noticeLbl.implicitWidth + 28)
+        height: noticeLbl.implicitHeight + 16
+        radius: 8
+        color: "#e6101014"
+        border.color: Theme.hair; border.width: 1
+        Text {
+            id: noticeLbl
+            anchors.centerIn: parent
+            width: Math.min(implicitWidth, parent.parent.width - 76)
+            text: win.noticeText
+            color: Theme.t1; font.pixelSize: 13; font.family: Theme.fontSans
+            elide: Text.ElideMiddle
+        }
     }
 
     // click toggles play/pause, double-click toggles fullscreen, movement
@@ -417,6 +576,27 @@ Window {
         if (player.seekable) player.position = Math.max(0, Math.min(player.duration, player.position + ms))
     }
     function bumpVolume(d) { win.muted = false; win.volume = Math.max(0, Math.min(1, win.volume + d)) }
+    function seekFraction(f) { if (player.seekable && player.duration > 0) player.position = Math.round(player.duration * f) }
+    // One frame at 24 fps; the frame rate isn't exposed, and this lands on the
+    // next or previous frame of anything from 24 to 30.
+    function frameStep(dir) {
+        if (!player.seekable) return
+        if (player.playbackState === MediaPlayer.PlayingState) player.pause()
+        player.position = Math.max(0, Math.min(player.duration, player.position + dir * 42))
+    }
+    function subtitleTrackCount() { return player.subtitleTracks.length }
+    function audioTrackCount() { return player.audioTracks.length }
+    function activeSubtitle() { return player.activeSubtitleTrack }
+    function activeAudio() { return Math.max(0, player.activeAudioTrack) }
+    function trackLabel(kind) {
+        if (kind === "audio")
+            return i18n.t("player_audio") + ": " + win.trackName(player.audioTracks[win.activeAudio()],
+                                                              i18n.t("player_audio") + " " + (win.activeAudio() + 1))
+        var s = player.activeSubtitleTrack
+        return i18n.t("player_subs") + ": " + (s < 0 ? i18n.t("player_subs_off")
+               : win.trackName(player.subtitleTracks[s], i18n.t("player_subs") + " " + (s + 1)))
+    }
+    property bool helpOpen: false
     function showControls() { win.controlsShown = true; idle.restart() }
 
     // auto-hide the chrome after inactivity (both windowed and fullscreen, like
@@ -436,6 +616,29 @@ Window {
     BatMenu {
         id: moreMenu
         implicitWidth: 210
+        BatMenuItem {
+            text: (i18n.language, i18n.t("player_aspect")).arg(win.aspectLabel(win.aspectMode)) + "    Z"
+            onTriggered: win.cycleAspect()
+        }
+        BatMenuItem {
+            text: (i18n.language, i18n.t("player_rotate")) + "    R"
+            onTriggered: win.rotate()
+        }
+        BatMenuItem {
+            text: (i18n.language, i18n.t("player_screenshot")) + "    Ctrl+S"
+            onTriggered: win.screenshot()
+        }
+        BatMenuItem {
+            checkable: true
+            checked: win.stayOnTop
+            text: (i18n.language, i18n.t("player_on_top")) + "    T"
+            onTriggered: win.toggleOnTop()
+        }
+        BatMenuItem {
+            text: (i18n.language, i18n.t("help_title")) + "    ?"
+            onTriggered: win.helpOpen = true
+        }
+        BatMenuSep {}
         BatMenuItem {
             text: (i18n.language, i18n.t("player_external"))
             onTriggered: { resume.save(); win.openExternal() }
@@ -474,6 +677,7 @@ Window {
     PlayerSkipChip {
         mediaPlayer: player
         chapters: win.chapters
+        autoSkip: win.autoSkip
         endCardVisible: win.showEndCard
         controlsShown: win.controlsShown
         onSkipped: win.showControls()
@@ -499,6 +703,75 @@ Window {
         formatHelper: playerFmt
         optionsPanel: optsPanel
         overflowMenu: moreMenu
+    }
+
+    // ---- keyboard help ----
+    Rectangle {
+        anchors.fill: parent
+        z: 70
+        visible: win.helpOpen
+        color: "#b3000000"
+        MouseArea { anchors.fill: parent; onClicked: win.helpOpen = false }
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - 48, 560)
+            height: Math.min(parent.height - 48, helpCol.implicitHeight + 40)
+            radius: 12
+            color: "#f50a0a0c"
+            border.color: Theme.hair; border.width: 1
+            clip: true
+            MouseArea { anchors.fill: parent }
+            ColumnLayout {
+                id: helpCol
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 8
+                Text {
+                    text: (i18n.language, i18n.t("help_title"))
+                    color: Theme.t1; font.pixelSize: 17; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    Layout.bottomMargin: 6
+                }
+                GridLayout {
+                    columns: 2
+                    columnSpacing: 24
+                    rowSpacing: 7
+                    Repeater {
+                        model: [
+                            ["Space", "help_play"], ["←  →", "help_seek"], ["Shift + ←  →", "help_seek_big"],
+                            ["0 – 9", "help_jump"], [",  .", "help_frame"], ["↑  ↓", "help_volume"],
+                            ["M", "help_mute"], ["N", "player_next"], ["S", "help_sub_cycle"], ["A", "help_audio_cycle"],
+                            ["[  ]", "help_sub_delay"], ["Z", "help_aspect"], ["R", "player_rotate"],
+                            ["Ctrl + S", "player_screenshot"], ["T", "player_on_top"], ["P", "player_pip"],
+                            ["F", "player_fullscreen"], ["Esc", "help_close"]
+                        ]
+                        delegate: RowLayout {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: 10
+                            Rectangle {
+                                Layout.preferredWidth: 104
+                                Layout.preferredHeight: 24
+                                radius: 6
+                                color: Theme.field
+                                border.color: Theme.hair; border.width: 1
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData[0]
+                                    color: Theme.t1; font.pixelSize: 12; font.weight: Font.DemiBold
+                                    font.family: Theme.fontSans
+                                }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: (i18n.language, i18n.t(modelData[1]))
+                                color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans
+                                elide: Text.ElideRight
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     PlayerShortcuts {

@@ -35,6 +35,7 @@ Rectangle {
     Shortcut { enabled: win.isCurrent; sequences: [StandardKey.Close];  onActivated: win.closed() }
 
     SettingsSchema { id: schema }
+    readonly property var schemaLanguages: schema.prefLanguages
 
     // group consecutive fields into { label, rows[] } blocks (a "group" field starts a new card).
     property string query: ""

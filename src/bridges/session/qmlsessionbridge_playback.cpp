@@ -14,6 +14,7 @@
 #include "services/metadata/episodegroup.h"
 #include "services/metadata/nameparser.h"
 #include "services/metadata/mkvchapters.h"
+#include "services/metadata/aniskip.h"
 #include "services/platform/translator.h"
 #include "services/platform/utils.h"
 
@@ -28,6 +29,10 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QDebug>
+#include <QLocale>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <algorithm>
 
 void QmlSessionBridge::streamSelected()
@@ -238,6 +243,13 @@ void QmlSessionBridge::clearResume(const QString &infoHash, int fileIndex)
     s.remove(rk + QStringLiteral("_at"));
 }
 
+QString QmlSessionBridge::langCode(int qlocaleLanguage) const
+{
+    const auto lang = static_cast<QLocale::Language>(qlocaleLanguage);
+    if (lang == QLocale::AnyLanguage || lang == QLocale::C) return {};
+    return QLocale::languageToCode(lang, QLocale::ISO639Part1);
+}
+
 QVariantMap QmlSessionBridge::streamFileStats(const QString &infoHash, int fileIndex, double from) const
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);
@@ -406,6 +418,63 @@ QVariantList QmlSessionBridge::mkvChapters(const QString &infoHash, int fileInde
         out << m;
     }
     return out;
+}
+
+void QmlSessionBridge::fetchSkipTimes(const QString &infoHash, int fileIndex)
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0 || !m_resolver || !m_resolver->hasCached(infoHash)) return;
+    const MetadataResult meta = m_resolver->cached(infoHash);
+    if (!meta.valid || meta.title.isEmpty()) return;
+    // TMDB names the genre in the content language
+    bool animated = false;
+    for (const QString &g : meta.genres)
+        if (g.startsWith(QLatin1String("Anim"), Qt::CaseInsensitive) || g.contains(QStringLiteral("アニメ"))
+            || g.contains(QStringLiteral("动画")) || g.contains(QStringLiteral("ульт")))
+            animated = true;
+    if (!animated) return;
+    const QVariantMap ep = episodeOf(infoHash, fileIndex);
+    const int season = ep.value(QStringLiteral("season")).toInt();
+    const int episode = ep.value(QStringLiteral("episode")).toInt();
+    // MyAnimeList gives each season an entry of its own, so episode N of a
+    // later season is not episode N of the show: only the first lines up.
+    if (episode <= 0 || season > 1) return;
+
+    if (!m_skipNet) m_skipNet = new QNetworkAccessManager(this);
+    auto askTimes = [this, infoHash, fileIndex, episode](int malId) {
+        QNetworkRequest req(AniSkip::skipTimesUrl(malId, episode));
+        req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent"));
+        QNetworkReply *r = m_skipNet->get(req);
+        connect(r, &QNetworkReply::finished, this, [this, r, infoHash, fileIndex, malId, episode] {
+            r->deleteLater();
+            const auto chapters = AniSkip::chaptersFromSkipTimes(r->readAll());
+            qInfo().noquote() << "[skip] AniSkip" << malId << "ep" << episode << ":" << chapters.size() << "times";
+            if (chapters.isEmpty()) return;
+            QVariantList out;
+            for (const MkvChapter &c : chapters)
+                out << QVariantMap{ { QStringLiteral("startMs"), c.startMs }, { QStringLiteral("endMs"), c.endMs },
+                                    { QStringLiteral("name"), c.name }, { QStringLiteral("kind"), c.kind } };
+            emit skipTimesReady(infoHash, fileIndex, out);
+        });
+    };
+
+    const QString key = QStringLiteral("malId/") + (meta.tmdbId > 0 ? QString::number(meta.tmdbId) : meta.title);
+    const int known = QSettings().value(key, 0).toInt();
+    if (known > 0) { askTimes(known); return; }
+    QStringList names{ meta.title };
+    const QString parsed = NameParser::parse(m_session->torrentAt(row).name).cleanTitle;
+    if (!parsed.isEmpty()) names << parsed;
+    QNetworkRequest req(AniSkip::malSearchUrl());
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent"));
+    req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+    QNetworkReply *r = m_skipNet->post(req, AniSkip::malSearchBody(parsed.isEmpty() ? meta.title : parsed));
+    connect(r, &QNetworkReply::finished, this, [r, names, key, askTimes] {
+        r->deleteLater();
+        const int malId = AniSkip::malIdFromSearch(r->readAll(), names);
+        if (malId <= 0) return;
+        QSettings().setValue(key, malId);
+        askTimes(malId);
+    });
 }
 
 QString QmlSessionBridge::posterForHash(const QString &infoHash) const

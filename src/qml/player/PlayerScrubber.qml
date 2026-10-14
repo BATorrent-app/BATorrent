@@ -22,6 +22,15 @@ RowLayout {
     property real downloadedToMs: 0
     property real buffered: 0
     property real bufferedFrom: 0
+    property var chapters: []
+    function chapterAt(ms) {
+        for (var i = 0; i < chapters.length; i++) {
+            var c = chapters[i]
+            var end = c.endMs > 0 ? c.endMs : (i + 1 < chapters.length ? chapters[i + 1].startMs : Infinity)
+            if (ms >= c.startMs && ms < end) return c.name || ""
+        }
+        return ""
+    }
 
     signal localPathRefreshRequested()
 
@@ -39,6 +48,14 @@ RowLayout {
         value: mediaPlayer ? mediaPlayer.position : 0
         buffered: root.buffered
         bufferedFrom: root.bufferedFrom
+        marks: {
+            var d = mediaPlayer ? mediaPlayer.duration : 0
+            if (d <= 0) return []
+            var out = []
+            for (var i = 0; i < root.chapters.length; i++)
+                if (root.chapters[i].startMs > 0 && root.chapters[i].startMs < d) out.push(root.chapters[i].startMs / d)
+            return out
+        }
         enabled: !!(mediaPlayer && mediaPlayer.seekable)
         onMoved: if (mediaPlayer) mediaPlayer.position = value
         MouseArea {
@@ -102,7 +119,8 @@ RowLayout {
                     anchors.bottom: parent.showThumb ? parent.bottom : undefined
                     anchors.bottomMargin: 5
                     anchors.verticalCenter: parent.showThumb ? undefined : parent.verticalCenter
-                    text: root.fmt(seekHover.targetMs)
+                    readonly property string chapter: root.chapterAt(seekHover.targetMs)
+                    text: root.fmt(seekHover.targetMs) + (chapter.length > 0 ? "  ·  " + chapter : "")
                     color: "#fff"; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
                 }
             }

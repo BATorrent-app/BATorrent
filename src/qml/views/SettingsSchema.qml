@@ -20,6 +20,17 @@ QtObject {
                                           "qrc:/icons/flags/de.svg", "qrc:/icons/flags/uk.svg",
                                           "qrc:/icons/flags/tr.svg"]
 
+    // Languages a viewer can put in the preferred audio/subtitle lists, by
+    // their own names so the list needs no translation.
+    readonly property var prefLanguages: [
+        { code: "pt", name: "Português" }, { code: "en", name: "English" }, { code: "es", name: "Español" },
+        { code: "fr", name: "Français" }, { code: "de", name: "Deutsch" }, { code: "it", name: "Italiano" },
+        { code: "ja", name: "日本語" }, { code: "ko", name: "한국어" }, { code: "zh", name: "中文" },
+        { code: "ru", name: "Русский" }, { code: "uk", name: "Українська" }, { code: "tr", name: "Türkçe" },
+        { code: "pl", name: "Polski" }, { code: "nl", name: "Nederlands" }, { code: "sv", name: "Svenska" },
+        { code: "ar", name: "العربية" }, { code: "hi", name: "हिन्दी" }, { code: "th", name: "ไทย" }
+    ]
+
     // ---- nav metadata ----
     readonly property var navs: [
         { nav: (i18n.language, i18n.t("detail_general")),               icon: "qrc:/icons/set-general.svg" },
@@ -95,6 +106,7 @@ QtObject {
             { type: "select", key: "preferredQuality", label: (i18n.language, i18n.t("set_preferred_quality")), options: ["Auto", "1080p", "720p", "2160p"], value: 1, note: (i18n.language, i18n.t("set_pref_quality_note")) },
             { type: "number", key: "preferMaxSize", label: (i18n.language, i18n.t("set_max_size")), value: "0", suffix: "MB", note: (i18n.language, i18n.t("note_unlimited")) },
             { type: "toggle", key: "autoplayNext", on: true, label: (i18n.language, i18n.t("set_autoplay_next")), note: (i18n.language, i18n.t("set_autoplay_next_note")) },
+            { type: "toggle", key: "autoSkipIntro", on: false, label: (i18n.language, i18n.t("set_auto_skip")), note: (i18n.language, i18n.t("set_auto_skip_note")) },
             { type: "toggle", key: "preferNativeLang", on: true, label: (i18n.language, i18n.t("set_prefer_native")), note: (i18n.language, i18n.t("set_prefer_native_note")) },
             // Separate from the interface language on purpose: reading English
             // menus and wanting Portuguese audio is a normal combination.
@@ -102,6 +114,10 @@ QtObject {
               options: [(i18n.language, i18n.t("set_content_language_same"))].concat(root.languageNames),
               icons: [""].concat(root.languageFlags),
               note: (i18n.language, i18n.t("set_content_language_note")), value: 0 },
+            { type: "langlist", key: "audioLangs", label: (i18n.language, i18n.t("set_audio_langs")), note: (i18n.language, i18n.t("set_audio_langs_note")) },
+            { type: "langlist", key: "subLangs", label: (i18n.language, i18n.t("set_sub_langs")), note: (i18n.language, i18n.t("set_sub_langs_note")) },
+            { type: "toggle", key: "subAlways", on: false, label: (i18n.language, i18n.t("set_sub_always")), note: (i18n.language, i18n.t("set_sub_always_note")) },
+            { type: "toggle", key: "autoSubs", on: true, label: (i18n.language, i18n.t("set_auto_subs")), note: (i18n.language, i18n.t("set_auto_subs_note")) },
             { type: "number", key: "subFontScale", label: (i18n.language, i18n.t("set_sub_size")), value: "100", suffix: "%" },
             { type: "select", key: "subColor", label: (i18n.language, i18n.t("set_sub_color")), options: [(i18n.language, i18n.t("color_white")), (i18n.language, i18n.t("color_yellow")), (i18n.language, i18n.t("color_cyan")), (i18n.language, i18n.t("color_green"))], value: 0 },
             { type: "number", key: "subBgOpacity", label: (i18n.language, i18n.t("set_sub_bg")), value: "0", suffix: "%", note: (i18n.language, i18n.t("set_sub_bg_note")) },

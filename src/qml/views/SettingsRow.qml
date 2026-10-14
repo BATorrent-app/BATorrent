@@ -98,6 +98,7 @@ ColumnLayout {
                 case "path": return fieldCtrls.path
                 case "timerange": return fieldCtrls.timerange
                 case "days": return fieldCtrls.days
+                case "langlist": return fieldCtrls.langlist
                 case "anime": return themeCtrls.anime
                 case "number": return fieldCtrls.number
                 case "text": return fieldCtrls.text

@@ -11,6 +11,7 @@ Slider {
     id: sl
     property real buffered: 0       // 0..1 end of the run on disk, drawn dim behind the fill
     property real bufferedFrom: 0   // 0..1 where that run starts (the playback position)
+    property var marks: []          // 0..1 chapter starts, cut into the track
     readonly property bool active: sl.pressed || sl.hovered
     implicitHeight: 18
     background: Rectangle {
@@ -23,6 +24,16 @@ Slider {
             x: Math.max(0, Math.min(1, sl.bufferedFrom)) * parent.width
             width: Math.max(0, Math.min(1, sl.buffered) - Math.max(0, sl.bufferedFrom)) * parent.width
             height: parent.height; radius: parent.radius; color: "#4dffffff"
+        }
+        Repeater {
+            model: sl.marks
+            Rectangle {
+                required property real modelData
+                z: 2
+                x: modelData * parent.width - 1
+                width: 2; height: parent.height
+                color: "#cc000000"
+            }
         }
         Rectangle {
             width: sl.visualPosition * parent.width; height: parent.height; radius: parent.radius

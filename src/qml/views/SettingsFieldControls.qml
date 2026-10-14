@@ -34,6 +34,7 @@ Item {
     property Component path: cPath
     property Component timerange: cTimeRange
     property Component days: cDays
+    property Component langlist: cLangList
 
     Component {
         id: cNumber
@@ -297,6 +298,98 @@ Item {
                         anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                         onClicked: root.sw.openPathPicker(root.field.key, root.field.file === true)
                     }
+                }
+            }
+        }
+    }
+    Component {
+        id: cLangList
+        // An ordered list of language codes stored comma-separated: the first
+        // one the file has wins. Chips in priority order, each can move up or
+        // go; the select at the end adds one.
+        ColumnLayout {
+            id: ll
+            spacing: Theme.sp2
+            property var codes: {
+                var v = (typeof settings !== "undefined" && root.field.key !== undefined) ? settings.get(root.field.key) : ""
+                return String(v || "").split(",").filter(function (c) { return c.length > 0 })
+            }
+            readonly property var all: root.sw.schemaLanguages
+            function nameOf(code) {
+                for (var i = 0; i < all.length; i++) if (all[i].code === code) return all[i].name
+                return code
+            }
+            function save(list) {
+                ll.codes = list
+                if (typeof settings !== "undefined" && root.field.key !== undefined) settings.set(root.field.key, list.join(","))
+            }
+            readonly property var remaining: all.filter(function (l) { return ll.codes.indexOf(l.code) < 0 })
+
+            Flow {
+                Layout.preferredWidth: 360
+                Layout.alignment: Qt.AlignRight
+                layoutDirection: Qt.RightToLeft
+                spacing: 6
+                visible: ll.codes.length > 0
+                Repeater {
+                    // reversed so the right-to-left flow still reads 1, 2, 3
+                    model: ll.codes.slice().reverse()
+                    delegate: Rectangle {
+                        required property string modelData
+                        required property int index
+                        readonly property int pos: ll.codes.length - 1 - index
+                        height: 34
+                        width: chipRow.implicitWidth + 16
+                        radius: 8
+                        color: Theme.field
+                        border.color: Theme.hair; border.width: 1
+                        RowLayout {
+                            id: chipRow
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text { text: (pos + 1) + "."; color: Theme.t4; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum }
+                            Text { text: ll.nameOf(modelData); color: Theme.t1; font.pixelSize: 14; font.family: Theme.fontSans }
+                            IconImg {
+                                visible: pos > 0
+                                src: "qrc:/icons/chevron-bold.svg"; rotation: 180; s: 11
+                                tint: upMa.containsMouse ? Theme.t1 : Theme.t3
+                                MouseArea {
+                                    id: upMa
+                                    anchors.fill: parent; anchors.margins: -4
+                                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        var l = ll.codes.slice(); var t = l[pos - 1]; l[pos - 1] = l[pos]; l[pos] = t
+                                        ll.save(l)
+                                    }
+                                }
+                            }
+                            IconImg {
+                                src: "qrc:/icons/close.svg"; s: 11
+                                tint: rmMa.containsMouse ? Theme.t1 : Theme.t3
+                                MouseArea {
+                                    id: rmMa
+                                    anchors.fill: parent; anchors.margins: -4
+                                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: { var l = ll.codes.slice(); l.splice(pos, 1); ll.save(l) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            TSelect {
+                Layout.alignment: Qt.AlignRight
+                visible: ll.remaining.length > 0
+                implicitWidth: 220
+                implicitHeight: root.ctlH
+                radius: root.ctlRadius
+                font.pixelSize: root.ctlFont
+                displayText: (i18n.language, i18n.t("set_lang_add"))
+                model: ll.remaining.map(function (l) { return l.name })
+                currentIndex: -1
+                onActivated: function (i) {
+                    var l = ll.codes.slice(); l.push(ll.remaining[i].code); ll.save(l)
+                    currentIndex = -1
                 }
             }
         }

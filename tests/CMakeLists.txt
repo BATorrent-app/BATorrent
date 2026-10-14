@@ -110,6 +110,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/platform/fileassociation.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/autostart.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/mkvchapters.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/aniskip.cpp
     ${CMAKE_SOURCE_DIR}/src/services/discovery/gamesourcemanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownload.cpp
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownloadmanager.cpp
@@ -395,6 +396,7 @@ bat_add_test(test_mediasandbox test_mediasandbox.cpp)
 bat_add_test(test_bandwidthschedule test_bandwidthschedule.cpp)
 bat_add_test(test_magnettrackers test_magnettrackers.cpp)
 bat_add_test(test_mkvchapters test_mkvchapters.cpp)
+bat_add_test(test_aniskip test_aniskip.cpp)
 bat_add_test(test_rangeplan test_rangeplan.cpp)
 bat_add_test(test_httpdownload test_httpdownload.cpp)
 bat_add_test(test_httpdownloadmanager test_httpdownloadmanager.cpp)

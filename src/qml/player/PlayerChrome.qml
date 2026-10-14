@@ -135,6 +135,7 @@ Item {
                 downloadedToMs: pw ? pw.downloadedToMs : 0
                 buffered: pw ? pw.bufferedTo : 0
                 bufferedFrom: pw ? pw.bufferedFrom : 0
+                chapters: pw ? pw.chapters : []
                 onLocalPathRefreshRequested: {
                     if (pw && typeof session !== "undefined")
                         pw.localFile = session.streamLocalPath(pw.infoHash, pw.fileIndex)

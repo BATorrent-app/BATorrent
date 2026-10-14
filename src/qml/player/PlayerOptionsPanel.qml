@@ -8,6 +8,7 @@
 // accent, surfaces stay dark.
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls.Basic
 import "../theme"
 
 Item {
@@ -19,6 +20,12 @@ Item {
     signal loadFile()
 
     function openPanel() { open = true }
+    // Live on the open player and saved, so the next file opens the same.
+    function setSubScale(v) {
+        var c = Math.max(0.5, Math.min(2.5, Math.round(v * 10) / 10))
+        opts.pw.subScale = c
+        if (typeof settings !== "undefined") settings.set("subFontScale", Math.round(c * 100))
+    }
     function closePanel() { open = false }
 
     visible: opacity > 0
@@ -29,7 +36,7 @@ Item {
     readonly property int subTrackCount: mediaPlayer ? mediaPlayer.subtitleTracks.length : 0
     // Rough content height: section titles + rows + speed strip. Cap + scroll when long.
     readonly property int panelRows: Math.max(subTrackCount + 3, hasAudioChoice ? mediaPlayer.audioTracks.length : 0)
-    readonly property int idealHeight: 100 + Math.min(panelRows, 11) * 36
+    readonly property int idealHeight: 146 + Math.min(panelRows, 11) * 36
 
     // Own UI selection state: OptRow's `checked:` binding was going stale (both
     // "off" and a track could show ✓). Sync from the player, write on click.
@@ -106,6 +113,30 @@ Item {
             hoverEnabled: true; cursorShape: Qt.PointingHandCursor
             onClicked: row.activated()
         }
+    }
+
+    component RoundBtn: Rectangle {
+        id: rb
+        property string glyph
+        property bool on: true
+        signal clicked()
+        implicitWidth: 24; implicitHeight: 24
+        radius: 12
+        color: rbMa.containsMouse && on ? "#14ffffff" : "transparent"
+        border.color: Theme.hair; border.width: 1
+        Text { anchors.centerIn: parent; text: rb.glyph; color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans }
+        MouseArea {
+            id: rbMa; anchors.fill: parent
+            enabled: rb.on
+            hoverEnabled: true; cursorShape: rb.on ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: rb.clicked()
+        }
+    }
+    component StepValue: Text {
+        Layout.preferredWidth: 46
+        horizontalAlignment: Text.AlignHCenter
+        color: Theme.t1; font.pixelSize: 11; font.weight: Font.DemiBold
+        font.family: Theme.fontSans; font.features: Theme.tnum
     }
 
     component SectionTitle: Text {
@@ -227,6 +258,35 @@ Item {
                             }
                         }
                     }
+                }
+            }
+
+            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.hairSoft }
+
+            // ---- subtitle size and delay, without a trip to Settings ----
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
+                SectionTitle { text: (i18n.language, i18n.t("player_subs")) }
+                Item { Layout.fillWidth: true }
+                Text { text: (i18n.language, i18n.t("player_sub_size")); color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans }
+                RoundBtn { glyph: "−"; onClicked: opts.setSubScale(opts.pw.subScale - 0.1) }
+                StepValue { text: Math.round(opts.pw.subScale * 100) + "%" }
+                RoundBtn { glyph: "+"; onClicked: opts.setSubScale(opts.pw.subScale + 0.1) }
+                Item { Layout.preferredWidth: 10 }
+                // QtMultimedia gives no delay for a file's own subtitles; the
+                // ones BATorrent loads itself (online or from a file) can shift
+                RowLayout {
+                    spacing: 6
+                    opacity: opts.pw.extSubsActive ? 1 : 0.4
+                    Text { text: (i18n.language, i18n.t("player_sub_delay")); color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans }
+                    RoundBtn { glyph: "−"; on: opts.pw.extSubsActive; onClicked: opts.pw.bumpSubOffset(-250) }
+                    StepValue { text: (opts.pw.extSubOffset >= 0 ? "+" : "") + (opts.pw.extSubOffset / 1000).toFixed(2) + "s" }
+                    RoundBtn { glyph: "+"; on: opts.pw.extSubsActive; onClicked: opts.pw.bumpSubOffset(250) }
+                    HoverHandler { id: delayHover }
+                    ToolTip.visible: !opts.pw.extSubsActive && delayHover.hovered
+                    ToolTip.text: (i18n.language, i18n.t("player_sub_delay_ext"))
+                    ToolTip.delay: 300
                 }
             }
 
