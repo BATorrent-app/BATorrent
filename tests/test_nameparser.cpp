@@ -197,3 +197,15 @@ TEST_CASE("what a repack bundles with the game is not its title", "[nameparser]"
     CHECK(P("Silent Hill: Townfall \u2013 Digital Deluxe Edition, v1.0 [FitGirl Repack]").cleanTitle
           == "Silent Hill: Townfall");
 }
+
+TEST_CASE("GOG installer names: underscores, version, build and platform go", "[nameparser]")
+{
+    const auto g = P("LEGO_The_Lord_of_The_Rings_1.0_(75536)_win_gog");
+    CHECK(g.cleanTitle == "Lego The Lord Of The Rings");
+    CHECK(g.contentType == ContentType::Game);
+    CHECK(g.repackerTag == "GOG");
+    CHECK(P("LEGO Pirates of the Caribbean - The Video Game [GOG]").cleanTitle
+          == "Lego Pirates Of The Caribbean - The Video Game");
+    // A plain number in a title is not a version.
+    CHECK(P("Cyberpunk 2077 [GOG]").cleanTitle == "Cyberpunk 2077");
+}

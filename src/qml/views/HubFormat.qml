@@ -64,7 +64,11 @@ QtObject {
         case 2: return (item.extractProgress >= 0)
                        ? i18n.t("hub_gs_extracting") + " " + item.extractProgress + "%"
                        : i18n.t("hub_gs_extracting")
-        case 3: return i18n.t("hub_gs_finish_setup")
+        // A repack's own window or a silent GOG setup: either way it is installing.
+        // "Finish setup" read as stuck while nothing was on screen to finish.
+        case 3: return (item.installProgress >= 0)
+                       ? i18n.t("hub_gs_installing") + " " + item.installProgress + "%"
+                       : i18n.t("hub_gs_installing")
         case 4: return i18n.t("hub_gs_play")
         case 5: return i18n.t("hub_gs_playing")
         case 6: return i18n.t("hub_gs_setup")

@@ -288,6 +288,9 @@ public:
     // A game whose torrent was removed but which is still installed stays in
     // the library; these tell such a game apart and let the user drop it.
     Q_INVOKABLE bool gameTorrentless(const QString &infoHash) const;
+    // The remove dialog's "the game stays" line: the selected torrent's game
+    // is installed outside what it downloaded.
+    Q_INVOKABLE bool selectedGameOutlivesTorrent();
     Q_INVOKABLE void forgetGame(const QString &infoHash);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
@@ -441,6 +444,9 @@ signals:
     void gameReady(const QString &infoHash, const QString &name);    // game download done → offer Install
     void installProgress(const QString &infoHash, double percent);  // Get&Install download/install progress
     void installFailed(const QString &title, const QString &reasonKey); // gi_failed / gi_need_setup
+    // An installer that runs on its own and no folder chosen for games yet:
+    // the UI asks once, saves it as gameInstallDir, and calls installGame again.
+    void installFolderNeeded(const QString &infoHash);
     void installFinished(const QString &infoHash, const QString &title); // launched (or ready)
     // A .torrent arrived from outside the UI (file association, CLI, second
     // instance). QML routes it through the same add dialog as a drag-drop so
@@ -482,6 +488,10 @@ private:
     void pollInstallWatch();   // guided installs: watch the folder for a produced exe
     // The game's exe in the folder Windows lists it installed in, "" if none.
     QString installedGameExe(const QString &infoHash, qint64 sinceMs) const;
+    QString silentInstallDir(const QString &infoHash) const;
+    bool gameOutlivesTorrent(const QString &infoHash) const;
+    QString readyNote(const QString &infoHash, const QString &exe) const;   // the "ready" toast's body
+    void measureSilentInstalls();
     void pollPendingInstall(); // Get & Install: download → installGame → launch
 
     IEngine *m_session;   // the session API: SessionManager in-process today, IpcEngine after the split
@@ -505,8 +515,14 @@ private:
     QHash<QString, int> m_gameInstallState;  // infoHash → transient GameInstallState overlay
     QHash<QString, qint64> m_installWatch;   // infoHash → pid of a guided installer being watched
     QHash<QString, qint64> m_installSince;   // infoHash → ms the guided installer was opened
+    QHash<QString, QString> m_installImage;  // infoHash → installer exe name, any copy of which still running means not done
+    QHash<QString, QString> m_installTarget; // infoHash → folder an unattended install was sent to
     QSet<QString> m_extracted;               // infoHashes already extracted (avoid re-extracting)
     QHash<QString, int> m_extractProgress;   // infoHash → 0-100 while its archives unpack
+    QHash<QString, int> m_installProgress;   // infoHash → 0-99 while a silent install fills its folder
+    QHash<QString, qint64> m_installExpect;  // infoHash → bytes the installer's own files add up to
+    qint64 m_installMeasuredMs = 0;          // last time the silent installs' folders were sized
+    bool m_installMeasuring = false;         // a sizing pass is running off the GUI thread
     void pollRunningGames();   // detect game exit → record playtime
     void importLegacyPlaytime();
     std::unique_ptr<PlayLog> m_playLog;

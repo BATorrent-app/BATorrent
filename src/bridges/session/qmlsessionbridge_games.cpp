@@ -130,6 +130,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["group"]      = ReleaseGroup::detect(info.name);
         m["installState"] = gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));
         m["extractProgress"] = m_extractProgress.value(hash, -1);   // 0-100 while unpacking, else -1
+        m["installProgress"] = m_installProgress.value(hash, -1);   // 0-99 during a silent install, else -1
         out << m;
         // Remembered while the torrent is here, so the game outlives it.
         if (m["hasExe"].toBool() && keptName(hash) != info.name) {
@@ -183,10 +184,44 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["group"] = ReleaseGroup::detect(name);
         m["installState"] = gameInstallState(hash, true);
         m["extractProgress"] = -1;
+        m["installProgress"] = -1;
         m["torrentless"] = true;
         out << m;
     }
     return out;
+}
+
+// The exe lives outside everything the torrent downloaded, so removing the
+// torrent, files and all, leaves the game playable.
+bool QmlSessionBridge::gameOutlivesTorrent(const QString &infoHash) const
+{
+    const QString exe = gameExe(infoHash);
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (exe.isEmpty() || row < 0 || !QFileInfo::exists(exe)) return false;
+    const TorrentInfo info = m_session->torrentAt(row);
+    const QString path = QDir::cleanPath(QDir::fromNativeSeparators(exe));
+    for (const QString &root : { info.savePath + QLatin1Char('/') + info.name, gameFolder(infoHash) }) {
+        const QString r = QDir::cleanPath(QDir::fromNativeSeparators(root));
+        if (path.compare(r, Qt::CaseInsensitive) == 0
+            || path.startsWith(r + QLatin1Char('/'), Qt::CaseInsensitive))
+            return false;
+    }
+    return true;
+}
+
+bool QmlSessionBridge::selectedGameOutlivesTorrent()
+{
+    if (!hasSelection()) return false;
+    const QString hash = m_session->torrentHashAt(m_selectedIndex);
+    if (!gameOutlivesTorrent(hash)) return false;
+    gameLibrary();   // records it as a kept game now, before the torrent goes
+    return true;
+}
+
+QString QmlSessionBridge::readyNote(const QString &infoHash, const QString &exe) const
+{
+    const QString name = QFileInfo(exe).completeBaseName();
+    return gameOutlivesTorrent(infoHash) ? tr_("hub_install_ready_keep").arg(name) : name;
 }
 
 bool QmlSessionBridge::gameTorrentless(const QString &infoHash) const

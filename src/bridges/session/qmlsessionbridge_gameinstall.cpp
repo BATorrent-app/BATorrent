@@ -20,16 +20,20 @@
 #include <QProcess>
 #include <QThread>
 #include <QDir>
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QFile>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QDesktopServices>
 #include <QDateTime>
+#include <QRegularExpression>
+#include <QStorageInfo>
 #include <QUrl>
 #if defined(Q_OS_WIN)
 #include <windows.h>
 #include <shellapi.h>
+#include <tlhelp32.h>
 #else
 #include <csignal>
 #include <cerrno>
@@ -245,7 +249,7 @@ void QmlSessionBridge::finalizeInstall(const QString &infoHash)
                 QSettings().setValue(QStringLiteral("gameExe/") + infoHash, installed);
                 m_gameInstallState.remove(infoHash);
                 emit gamesChanged();
-                emit toast(tr_("hub_install_ready"), QFileInfo(installed).completeBaseName());
+                emit toast(tr_("hub_install_ready"), readyNote(infoHash, installed));
                 return;
             }
             runInstaller(infoHash, exe, folder);
@@ -263,7 +267,7 @@ void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &inst
         siblings << fi.fileName();
     const InstallerProfile::Engine engine = InstallerProfile::detectEngine(installerExe);
     const bool repack = InstallerProfile::isLikelyRepack(installerExe, siblings);
-    const QString targetDir = QDir(folder).filePath(QStringLiteral("_BATorrent"));
+    const QString targetDir = silentInstallDir(infoHash);
 
     m_gameInstallState.insert(infoHash, GIS_Installing);
     emit gamesChanged();
@@ -274,34 +278,47 @@ void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &inst
     const InstallerProfile::SilentInvocation si =
         InstallerProfile::silentInvocation(engine, installerExe, targetDir);
     if (si.supported && !repack) {
-        QDir().mkpath(targetDir);
-        auto *p = new QProcess(this);
-        const QString program = si.program.isEmpty() ? installerExe : si.program;
-        if (!si.rawTail.isEmpty())
-            p->setNativeArguments(si.rawTail);   // NSIS /D= must stay last and unquoted
-        connect(p, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-                [this, p, infoHash, targetDir](int code, QProcess::ExitStatus) {
-            p->deleteLater();
-            const bool ok = (code == 0 || code == 3010 || code == 1641);  // MSI reboot codes = success
-            bool inst = false;
-            const QString exe = ok ? GameExeDetect::autodetect(targetDir, &inst) : QString();
-            if (!exe.isEmpty() && !inst) {
-                QSettings().setValue(QStringLiteral("gameExe/") + infoHash, exe);
-                m_gameInstallState.remove(infoHash);
-                emit toast(tr_("hub_install_ready"), QFileInfo(exe).completeBaseName());
-            } else {
-                m_gameInstallState.insert(infoHash, GIS_NeedsSetup);
-                emit toast(tr_("hub_install_need_exe"), QString());
-            }
+        // Left to itself a GOG setup installs beside itself, inside the
+        // download (and so goes when the torrent is removed with its files).
+        // Where games live is the user's call, asked the first time.
+        if (targetDir.isEmpty()) {
+            m_gameInstallState.remove(infoHash);
             emit gamesChanged();
-        });
-        connect(p, &QProcess::errorOccurred, this, [this, p, infoHash](QProcess::ProcessError) {
-            p->deleteLater();
+            emit installFolderNeeded(infoHash);
+            return;
+        }
+        QDir().mkpath(targetDir);
+        QProcess p;
+        p.setProgram(si.program.isEmpty() ? installerExe : si.program);
+        p.setArguments(si.args);
+        if (!si.rawTail.isEmpty())
+            p.setNativeArguments(si.rawTail);   // NSIS /D= must stay last and unquoted
+        p.setWorkingDirectory(QFileInfo(installerExe).absolutePath());
+        qint64 pid = 0;
+        if (!p.startDetached(&pid) || pid <= 0) {
             m_gameInstallState.insert(infoHash, GIS_Failed);
             emit toast(tr_("hub_install_need_exe"), QString());
             emit gamesChanged();
-        });
-        p->start(program, si.args);
+            return;
+        }
+        // Watched like a guided install. The process started here is not the
+        // whole install: a GOG setup that needs admin hands off to an elevated
+        // copy and exits, which read as "done" with nothing installed yet.
+        qInfo().noquote() << "[install] silent into" << targetDir;
+        m_installWatch.insert(infoHash, pid);
+        m_installSince.insert(infoHash, QDateTime::currentMSecsSinceEpoch());
+        m_installImage.insert(infoHash, QFileInfo(installerExe).completeBaseName().toLower());
+        m_installTarget.insert(infoHash, targetDir);
+        // What the setup and its .bin parts weigh: close to what lands on disk
+        // (6.2 GB of GOG installer, 5.9 GB of LEGO installed), so the folder's
+        // growth against it reads as progress.
+        qint64 expect = 0;
+        const QString base = QFileInfo(installerExe).completeBaseName();
+        for (const QFileInfo &fi : QFileInfo(installerExe).dir().entryInfoList(QDir::Files))
+            if (fi.fileName().startsWith(base, Qt::CaseInsensitive)) expect += fi.size();
+        m_installExpect.insert(infoHash, expect);
+        m_installProgress.insert(infoHash, 0);
+        emit toast(tr_("hub_game_installing"), QFileInfo(installerExe).completeBaseName());
         return;
     }
 #else
@@ -316,6 +333,7 @@ void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &inst
         && pid > 0) {
         m_installWatch.insert(infoHash, pid);
         m_installSince.insert(infoHash, QDateTime::currentMSecsSinceEpoch());
+        m_installImage.insert(infoHash, QFileInfo(installerExe).completeBaseName().toLower());
         emit toast(tr_("hub_game_installing"), QFileInfo(installerExe).completeBaseName());
     } else {
         const int row = m_session->torrentIndexByInfoHash(infoHash);
@@ -328,24 +346,107 @@ void QmlSessionBridge::runInstaller(const QString &infoHash, const QString &inst
     }
 }
 
+// The folders silent installs are filling, sized every few seconds off the
+// GUI thread (a game is thousands of files) and turned into a percentage.
+// Held at 99 until the installer is gone: the total is an estimate.
+void QmlSessionBridge::measureSilentInstalls()
+{
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_installMeasuring || m_installTarget.isEmpty() || now - m_installMeasuredMs < 3000) return;
+    m_installMeasuredMs = now;
+    m_installMeasuring = true;
+    const QHash<QString, QString> targets = m_installTarget;
+    auto *thread = QThread::create([this, targets]() {
+        QHash<QString, qint64> sizes;
+        for (auto it = targets.cbegin(); it != targets.cend(); ++it) {
+            qint64 total = 0;
+            QDirIterator files(it.value(), QDir::Files | QDir::Hidden, QDirIterator::Subdirectories);
+            while (files.hasNext()) total += files.nextFileInfo().size();
+            sizes.insert(it.key(), total);
+        }
+        QMetaObject::invokeMethod(this, [this, sizes]() {
+            m_installMeasuring = false;
+            bool changed = false;
+            for (auto it = sizes.cbegin(); it != sizes.cend(); ++it) {
+                if (!m_installProgress.contains(it.key())) continue;   // finished meanwhile
+                const qint64 expect = m_installExpect.value(it.key());
+                const int pct = expect > 0 ? int(qMin<qint64>(99, it.value() * 100 / expect)) : 0;
+                if (pct != m_installProgress.value(it.key())) {
+                    m_installProgress.insert(it.key(), pct);
+                    changed = true;
+                }
+            }
+            if (changed) emit gamesChanged();
+        });
+    });
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
+}
+
+// A process runs whose exe is named base (".exe" or Inno's ".tmp"). Read from
+// the process list itself, so an elevated one counts too.
+static bool imageRunning(const QString &base)
+{
+#if defined(Q_OS_WIN)
+    if (base.isEmpty()) return false;
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snap == INVALID_HANDLE_VALUE) return false;
+    bool found = false;
+    PROCESSENTRY32W pe = {};
+    pe.dwSize = sizeof(pe);
+    for (BOOL ok = Process32FirstW(snap, &pe); ok && !found; ok = Process32NextW(snap, &pe))
+        found = QFileInfo(QString::fromWCharArray(pe.szExeFile)).completeBaseName().toLower() == base;
+    CloseHandle(snap);
+    return found;
+#else
+    Q_UNUSED(base);
+    return false;
+#endif
+}
+
+// Where an unattended install goes: under the folder the user chose for
+// games, in one named for the game. "" until one is chosen.
+QString QmlSessionBridge::silentInstallDir(const QString &infoHash) const
+{
+    const QString root = QSettings().value(QStringLiteral("gameInstallDir")).toString();
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (root.isEmpty() || row < 0) return {};
+    const TorrentInfo info = m_session->torrentAt(row);
+    QString name = NameParser::parse(info.name).cleanTitle;
+    if (name.isEmpty()) name = info.name;
+    static const QRegularExpression bad(QStringLiteral("[<>:\"/\\\\|?*]"));
+    name.replace(bad, QStringLiteral(" "));
+    name = name.simplified();
+    return name.isEmpty() ? QString() : QDir(root).filePath(name);
+}
+
 void QmlSessionBridge::pollInstallWatch()
 {
     if (m_installWatch.isEmpty()) return;
+    measureSilentInstalls();
     bool changed = false;
     for (const QString &hash : m_installWatch.keys()) {
-        if (pidAlive(m_installWatch.value(hash))) continue;   // installer still open
+        // Still open: the process started, or any copy of the installer (its
+        // elevated twin, Inno's setup .tmp) that carries on after it exits.
+        if (pidAlive(m_installWatch.value(hash)) || imageRunning(m_installImage.value(hash))) continue;
         m_installWatch.remove(hash);
+        m_installImage.remove(hash);
+        m_installProgress.remove(hash);
+        m_installExpect.remove(hash);
         bool inst = false;
         const QString folder = gameFolder(hash);
         // A repack installs wherever the user pointed it, not beside the torrent.
         QString exe = installedGameExe(hash, m_installSince.take(hash));
+        const QString target = m_installTarget.take(hash);
+        if (exe.isEmpty() && !target.isEmpty())
+            exe = GameExeDetect::autodetect(target, &inst);
         if (exe.isEmpty())
             exe = GameExeDetect::autodetect(folder, &inst);
         if (!exe.isEmpty() && !inst) {
             applyCrackIfPresent(folder, QFileInfo(exe).absolutePath());
             QSettings().setValue(QStringLiteral("gameExe/") + hash, exe);
             m_gameInstallState.remove(hash);
-            emit toast(tr_("hub_install_ready"), QFileInfo(exe).completeBaseName());
+            emit toast(tr_("hub_install_ready"), readyNote(hash, exe));
         } else {
             m_gameInstallState.insert(hash, GIS_NeedsSetup);   // user points us at it
             emit toast(tr_("hub_install_need_exe"), QString());

@@ -50,6 +50,13 @@ ParsedName NameParser::parse(const QString &rawName)
         QRegularExpression::CaseInsensitiveOption);
     work.remove(extRe);
 
+    // GOG names its installers with underscores and a build number:
+    // "LEGO_The_Lord_of_The_Rings_1.0_(75536)_win_gog". Underscores read as
+    // spaces from here on, and the version before the build goes with it.
+    work.replace(QLatin1Char('_'), QLatin1Char(' '));
+    static const QRegularExpression gogBuildRe(QStringLiteral("\\s\\d+(?:\\.\\d+)+\\s*\\(\\d{3,}\\)"));
+    work.remove(gogBuildRe);
+
     // Strip version numbers (v1.12, v2.3.1, etc.)
     static const QRegularExpression versionRe(QStringLiteral("[.\\s\\-]v\\d+(?:\\.\\d+)*"),
         QRegularExpression::CaseInsensitiveOption);
@@ -143,6 +150,11 @@ ParsedName NameParser::parse(const QString &rawName)
             break;
         }
     }
+
+    // The platform a GOG installer is for, left at the end once "gog" is gone.
+    static const QRegularExpression platformTailRe(
+        QStringLiteral("\\s+(?:win(?:32|64)?|x64|x86)\\s*$"), QRegularExpression::CaseInsensitiveOption);
+    work.remove(platformTailRe);
 
     // Trailing uploader tag: "... By Igruha", "from SomeGroup", or a bare "By"
     // left dangling once a known repacker above was removed. These pollute the

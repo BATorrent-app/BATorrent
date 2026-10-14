@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 import QtQuick
+import QtQuick.Dialogs
 import "../windows"
 
 // Get&Watch overlay + toast host + one-shot star/crash asks.
@@ -64,9 +65,26 @@ Item {
             gwOverlay.forGame = true
             gwOverlay.fail(i18n.t(key).arg(title))
         }
+        function onInstallFolderNeeded(infoHash) {
+            gamesFolderDlg.pendingHash = infoHash
+            gamesFolderDlg.open()
+        }
         function onInstallFinished(infoHash, title) {
             if (gwOverlay.hash === infoHash || gwOverlay.forGame)
                 gwOverlay.hide()
+        }
+    }
+
+    // Asked once, the first time an installer that runs on its own (GOG) has
+    // nowhere chosen to go; kept as the "Game install folder" setting.
+    FolderDialog {
+        id: gamesFolderDlg
+        property string pendingHash: ""
+        title: (i18n.language, i18n.t("hub_pick_games_folder"))
+        onAccepted: {
+            if (typeof session === "undefined" || typeof settings === "undefined") return
+            settings.set("gameInstallDir", session.urlToLocalPath(selectedFolder.toString()))
+            session.installGame(pendingHash)
         }
     }
 

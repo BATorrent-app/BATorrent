@@ -90,6 +90,7 @@ QtObject {
             { type: "toggle", key: "autoExtractDelete", label: (i18n.language, i18n.t("settings_auto_extract_delete")) },
             { type: "text", key: "extractPasswords", label: (i18n.language, i18n.t("set_extract_passwords2")), placeholder: "pass1; pass2; online-fix.me", note: (i18n.language, i18n.t("set_extract_passwords_note")), w: "grow" },
             { type: "toggle", key: "gameAutoInstall", label: (i18n.language, i18n.t("set_game_autoinstall")), note: (i18n.language, i18n.t("set_game_autoinstall_note")) },
+            { type: "path", key: "gameInstallDir", label: (i18n.language, i18n.t("set_game_install_dir")), placeholder: (i18n.language, i18n.t("set_game_install_dir_ph")), note: (i18n.language, i18n.t("set_game_install_dir_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_playback")) },
             { type: "select", key: "preferredQuality", label: (i18n.language, i18n.t("set_preferred_quality")), options: ["Auto", "1080p", "720p", "2160p"], value: 1, note: (i18n.language, i18n.t("set_pref_quality_note")) },
             { type: "number", key: "preferMaxSize", label: (i18n.language, i18n.t("set_max_size")), value: "0", suffix: "MB", note: (i18n.language, i18n.t("note_unlimited")) },

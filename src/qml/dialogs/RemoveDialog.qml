@@ -11,15 +11,21 @@ BatDialog {
     id: dlg
     title: (i18n.language, i18n.t("remove_title2"))
     cardW: 440
-    cardH: dlg.deleteFiles ? 432 : 360
+    cardH: (dlg.deleteFiles ? 432 : 360) + (dlg.keepsGame ? 56 : 0)
     okText: (i18n.language, i18n.t("addon_remove"))
 
     // default OFF: "Remove" only un-lists the torrent; deleting the downloaded
     // files is an explicit opt-in (matches qBittorrent/Transmission convention).
     property bool deleteFiles: false
     property bool deletePermanently: false
+    // The selected torrent is a game installed outside its download: say that
+    // removing it, files and all, keeps the game playable from the HUB.
+    property bool keepsGame: false
     // never let a sticky "permanent" carry into the next removal
-    onVisibleChanged: if (visible) { deleteFiles = false; deletePermanently = false }
+    onVisibleChanged: if (visible) {
+        deleteFiles = false; deletePermanently = false
+        keepsGame = typeof session !== "undefined" && session.selectedGameOutlivesTorrent()
+    }
     onDeleteFilesChanged: if (!deleteFiles) deletePermanently = false
 
     // .top: warn icon + title + description
@@ -70,6 +76,32 @@ BatDialog {
                          + (typeof session !== "undefined" ? session.selectedName : "")
                              .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
                          + "</b></font>")
+            }
+        }
+    }
+
+    // The installed game stays: only shown when that is true.
+    Rectangle {
+        Layout.fillWidth: true
+        Layout.preferredHeight: 44
+        visible: dlg.keepsGame
+        radius: 11
+        color: Theme.panel
+        border.color: Theme.hair
+        border.width: 1
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 14
+            anchors.rightMargin: 14
+            spacing: Theme.sp3
+            IconImg { src: "qrc:/icons/device-gamepad-2.svg"; tint: Theme.t2; s: 16 }
+            Text {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: (i18n.language, i18n.t("remove_game_stays"))
+                color: Theme.t2
+                font.pixelSize: 12
+                font.family: Theme.fontSans
             }
         }
     }
