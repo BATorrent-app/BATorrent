@@ -158,6 +158,16 @@ Item {
     }
     readonly property int count: controller.gridView ? grid.count : list.count
 
+    // In the grid a group stays one card; its episodes are listed in the
+    // inspector beside the grid instead of as rows of posters.
+    Binding {
+        target: libraryView.controller ? libraryView.controller.rowModel : null
+        property: "expandable"
+        value: !libraryView.controller.gridView
+        when: !!libraryView.controller && !!libraryView.controller.rowModel
+              && libraryView.controller.rowModel.expandable !== undefined
+    }
+
     // ----- GRID -----
     GridView {
         id: grid
@@ -179,6 +189,11 @@ Item {
         cellWidth: 178 + Theme.sp4
         cellHeight: 286
         WheelScroller { flick: grid }
+        // Back from the list the grid is still hidden while the inspector
+        // slides in and takes its width, and a hidden GridView keeps the
+        // columns it had: the last ones ended up under the panel.
+        onWidthChanged: forceLayout()
+        onVisibleChanged: if (visible) forceLayout()
         // No `populate` transition: it re-runs (fading every tile from 0)
         // when the filter proxy reports a reorder as a re-layout, which read
         // as the whole grid flashing. The container's opacity Behavior already

@@ -44,6 +44,9 @@ QtObject {
     signal scrollToRowRequested(int proxyRow)
     // Ask Main to drop search-field focus after a row click.
     signal releaseSearchFocusRequested()
+    // One episode picked in the inspector's list: the group stays selected in the grid,
+    // but what the inspector shows and the toolbar acts on is that episode.
+    property int focusedEpisodeSource: -1
 
     function commitSel() {
         if (root.keyedRows) {
@@ -55,6 +58,12 @@ QtObject {
             root.anchorKey = root.rowModel.rowKey(root.anchorRow)
         }
         if (typeof session === "undefined" || !root.rowModel) return
+        if (root.focusedEpisodeSource >= 0 && root.selectedRows.length === 1
+                && root.rowModel.sourceRowsAt(root.selectedRows[0]).indexOf(root.focusedEpisodeSource) >= 0) {
+            session.setSelectedRows([root.focusedEpisodeSource])
+            return
+        }
+        root.focusedEpisodeSource = -1
         var src = []
         for (var i = 0; i < root.selectedRows.length; ++i) {
             // A series group stands for all of its episodes: whatever is done
@@ -88,6 +97,14 @@ QtObject {
         if (lost) root.commitSel()
     }
 
+    function focusEpisode(groupRow, sourceRow) {
+        root.selectedRows = [groupRow]
+        root.selected = groupRow
+        root.anchorRow = groupRow
+        root.focusedEpisodeSource = sourceRow
+        root.commitSel()
+    }
+
     // Opens or closes the series group on this row. False when it is not one.
     function toggleGroup(row) {
         if (!root.keyedRows || !root.rowModel.isGroup(row)) return false
@@ -97,6 +114,7 @@ QtObject {
 
     function selectRow(proxyRow, mods) {
         root.clearFilterFocusRequested()
+        root.focusedEpisodeSource = -1
         mods = mods || 0
         var ctrl = (mods & Qt.ControlModifier) || (mods & Qt.MetaModifier)
         var shift = (mods & Qt.ShiftModifier)

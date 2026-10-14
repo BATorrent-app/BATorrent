@@ -328,6 +328,7 @@
 <file>../src/qml/widgets/DetailTabs.qml</file>
 <file>../src/qml/widgets/DownloadCarousel.qml</file>
 <file>../src/qml/widgets/DetailSidebar.qml</file>
+<file>../src/qml/widgets/DetailGroup.qml</file>
 <file>../src/qml/widgets/PosterShelf.qml</file>
 <file>../src/qml/widgets/DetailFiles.qml</file>
 <file>../src/qml/widgets/DetailTrackers.qml</file>

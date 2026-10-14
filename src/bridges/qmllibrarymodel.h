@@ -23,6 +23,9 @@ class QmlTorrentFilterProxy;
 class QmlLibraryModel : public QAbstractListModel
 {
     Q_OBJECT
+    // Off in the grid, where a group's episodes open beside it instead of as
+    // rows of full posters; on in the list. The open groups are kept either way.
+    Q_PROPERTY(bool expandable READ expandable WRITE setExpandable NOTIFY expandableChanged)
 public:
     // Past every role QmlPosterModel defines, which this model passes through.
     enum Roles {
@@ -60,6 +63,15 @@ public:
     // Every session row a row stands for: one for a torrent, all of its
     // episodes for a group. What an action on the row applies to.
     Q_INVOKABLE QVariantList sourceRowsAt(int row) const;
+    // A group's episodes in season/episode order, for the grid's episode
+    // panel: {sourceRow, infoHash, label, name, progress, stateKey,
+    // stateString, size, downSpeed, eta, playable}. Empty for a plain row.
+    Q_INVOKABLE QVariantList groupEpisodes(int row) const;
+    // What the inspector heads a group with: {title, poster, year, genres,
+    // size, progress, count, seasons ("S01", "S01–S03")}. Empty for a plain row.
+    Q_INVOKABLE QVariantMap groupSummary(int row) const;
+    bool expandable() const { return m_expandable; }
+    void setExpandable(bool on);
     Q_INVOKABLE bool isGroup(int row) const;
     Q_INVOKABLE bool isGroupExpanded(int row) const;
     Q_INVOKABLE void toggleGroup(int row);
@@ -73,6 +85,7 @@ public:
     Q_INVOKABLE int rowForKey(const QString &key) const;
 
 signals:
+    void expandableChanged();
     // Rows were added, removed or moved. Row numbers held from before are stale.
     void structureChanged();
 
@@ -95,6 +108,7 @@ private:
     QString m_persistKey;
     QVector<Row> m_rows;
     QSet<QString> m_expanded;
+    bool m_expandable = true;
 };
 
 #endif // QMLLIBRARYMODEL_H

@@ -40,6 +40,28 @@ Item {
     // A series group (QmlLibraryModel): one tile for every episode of a show,
     // opening to the episodes' own tiles right after it.
     required property bool isGroup
+    // A group's bar is one segment per episode, and its caption names the
+    // seasons it spans. Read again whenever the group's own progress moves.
+    readonly property var groupSegs: tile.isGroup && controller && controller.rowModel
+        ? (tile.progress, controller.rowModel.groupEpisodes(tile.index).map(function (e) { return e.progress || 0 }))
+        : []
+    readonly property string groupCaption: {
+        if (!tile.isGroup || !controller || !controller.rowModel) return ""
+        var s = (tile.groupCount, controller.rowModel.groupSummary(tile.index)).seasons || ""
+        var n = (i18n.language, i18n.t("search_episodes_n")).arg(tile.groupCount)
+        return s.length > 0 ? s + "  \u00b7  " + n : n
+    }
+    // A group plays the episode last watched, else its first one to watch.
+    function groupPlayHash() {
+        var eps = controller.rowModel.groupEpisodes(tile.index)
+        var resume = typeof session !== "undefined" ? session.resumeItems : []
+        for (var r = 0; r < resume.length; r++)
+            for (var e = 0; e < eps.length; e++)
+                if (eps[e].infoHash === resume[r].infoHash) return eps[e].infoHash
+        for (var i = 0; i < eps.length; i++)
+            if (eps[i].playable) return eps[i].infoHash
+        return tile.infoHash
+    }
     required property int groupCount
     required property bool groupExpanded
     required property bool groupChild
@@ -333,6 +355,8 @@ Item {
             // 9, not 14: the extra height only ever existed to seat the
             // percentage, and that moved out beside it.
             height: 9
+            // a group draws its episodes' segments over this instead
+            opacity: tile.isGroup ? 0 : 1
             progress: tile.shownProgress
             stateKey: tile.stateKey
             sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
@@ -347,6 +371,30 @@ Item {
             ToolTip.visible: barMa.containsMouse
             ToolTip.delay: 250
             ToolTip.text: tile.downloaded + " " + (i18n.language, i18n.t("word_of")) + " " + tile.size
+        }
+        Row {
+            visible: tile.isGroup && tile.groupSegs.length > 0
+            anchors.left: progTrack.left
+            anchors.right: progTrack.right
+            anchors.verticalCenter: progTrack.verticalCenter
+            height: 4
+            spacing: 3
+            Repeater {
+                model: tile.groupSegs
+                Rectangle {
+                    required property real modelData
+                    width: (parent.width - parent.spacing * (tile.groupSegs.length - 1)) / Math.max(1, tile.groupSegs.length)
+                    height: 4
+                    radius: 2
+                    color: Qt.rgba(1, 1, 1, 0.22)
+                    Rectangle {
+                        width: parent.width * Math.max(0, Math.min(1, modelData))
+                        height: parent.height
+                        radius: 2
+                        color: modelData >= 0.999 ? Theme.amber : Theme.accent
+                    }
+                }
+            }
         }
 
         Rectangle {
@@ -381,7 +429,7 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: if (typeof session !== "undefined") session.playByHash(tile.infoHash)
+                onClicked: if (typeof session !== "undefined") session.playByHash(tile.isGroup ? tile.groupPlayHash() : tile.infoHash)
             }
         }
 
@@ -454,9 +502,7 @@ Item {
                     const again = mouse.modifiers === Qt.NoModifier && controller.isRowSelected(tile.index)
                                   && controller.selectedRows.length <= 1
                     controller.selectRow(tile.index, mouse.modifiers)
-                    // a series group opens to its episodes rather than to a page
-                    if (again && controller.toggleGroup(tile.index)) tileMa.pageOpenedMs = Date.now()
-                    else if (again && win.openTorrentPage(tile.infoHash)) tileMa.pageOpenedMs = Date.now()
+                    if (again && win.openTorrentPage(tile.infoHash)) tileMa.pageOpenedMs = Date.now()
                 }
             }
             // A film, show or game opens on its own page, as in the list; with
@@ -465,7 +511,6 @@ Item {
             property real pageOpenedMs: 0
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.RightButton && Date.now() - pageOpenedMs >= 800) {
-                    if (controller.toggleGroup(tile.index)) return
                     controller.selectRow(tile.index, 0)
                     if (!win.openTorrentPage(tile.infoHash)) session.openSelectedFile()
                 }
@@ -519,7 +564,8 @@ Item {
             anchors.margins: -4
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: controller.toggleGroup(tile.index)
+            // the episodes are in the inspector: the chip selects the group
+            onClicked: controller.selectRow(tile.index, 0)
         }
     }
     // An episode shown under its open group: a short rule over the cover ties

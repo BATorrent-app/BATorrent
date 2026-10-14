@@ -119,7 +119,7 @@ QVariant QmlLibraryModel::data(const QModelIndex &index, int role) const
     switch (role) {
     case IsGroupRole:       return r.group;
     case GroupCountRole:    return r.group ? int(r.members.size()) : 0;
-    case GroupExpandedRole: return r.group && m_expanded.contains(r.groupKey);
+    case GroupExpandedRole: return r.group && m_expandable && m_expanded.contains(r.groupKey);
     case GroupChildRole:    return r.child;
     case GroupKeyRole:      return r.groupKey;
     case RowKeyRole:        return r.key;
@@ -245,7 +245,12 @@ QVariant QmlLibraryModel::groupData(const Row &row, int role) const
     }
     case PM::AutoCategoryRole: return QStringLiteral("Series");
     case PM::FileKindRole:     return QStringLiteral("SERIES");
-    case PM::PlayableRole:     return false;   // which episode? the row opens instead
+    case PM::PlayableRole: {
+        // any episode to watch; which one is the tile's call (the one being watched)
+        for (const QModelIndex &i : live)
+            if (val(i, PM::PlayableRole).toBool()) return true;
+        return false;
+    }
     case PM::QueuePosRole:     return 0;
     case PM::PosterPathRole:
     case PM::YearRole:
@@ -278,7 +283,7 @@ QVector<QmlLibraryModel::Row> QmlLibraryModel::computeRows() const
 
     QVector<Row> rows;
     QHash<QString, int> seen;
-    for (const LibraryGroups::Row &lr : LibraryGroups::layout(members, m_expanded)) {
+    for (const LibraryGroups::Row &lr : LibraryGroups::layout(members, m_expandable ? m_expanded : QSet<QString>())) {
         Row r;
         r.group = lr.group;
         r.child = lr.child;
@@ -415,6 +420,87 @@ QVariantList QmlLibraryModel::sourceRowsAt(int row) const
     return out;
 }
 
+QVariantList QmlLibraryModel::groupEpisodes(int row) const
+{
+    using PM = QmlPosterModel;
+    QVariantList out;
+    if (!isGroup(row)) return out;
+    struct Ep { int season; int episode; QVariantMap m; };
+    QList<Ep> eps;
+    for (const QPersistentModelIndex &p : m_rows[row].members) {
+        if (!p.isValid()) continue;
+        const QModelIndex i(p);
+        auto val = [&](int r) { return m_filter->data(i, r); };
+        const int season = val(PM::SeasonRole).isValid() ? val(PM::SeasonRole).toInt() : -1;
+        const int episode = val(PM::EpisodeRole).isValid() ? val(PM::EpisodeRole).toInt() : -1;
+        QString label;
+        if (episode > 0)
+            label = season > 0 ? QStringLiteral("S%1E%2").arg(season, 2, 10, QLatin1Char('0')).arg(episode, 2, 10, QLatin1Char('0'))
+                               : QStringLiteral("E%1").arg(episode, 2, 10, QLatin1Char('0'));
+        else if (season > 0)
+            label = QStringLiteral("S%1").arg(season, 2, 10, QLatin1Char('0'));   // a season pack
+        QVariantMap m;
+        m[QStringLiteral("sourceRow")] = m_filter->mapToSource(p.row());
+        m[QStringLiteral("infoHash")] = val(PM::InfoHashRole);
+        m[QStringLiteral("label")] = label;
+        m[QStringLiteral("name")] = val(PM::NameRole);
+        m[QStringLiteral("progress")] = val(PM::ProgressRole);
+        m[QStringLiteral("stateKey")] = val(PM::StateKeyRole);
+        m[QStringLiteral("stateString")] = val(PM::StateStringRole);
+        m[QStringLiteral("size")] = val(PM::SizeRole);
+        m[QStringLiteral("downSpeed")] = val(PM::DownSpeedRole);
+        m[QStringLiteral("eta")] = val(PM::EtaRole);
+        m[QStringLiteral("playable")] = val(PM::PlayableRole);
+        m[QStringLiteral("season")] = season;
+        m[QStringLiteral("episode")] = episode;
+        m[QStringLiteral("showTmdb")] = val(PM::ShowTmdbRole);
+        eps << Ep{ season, episode, m };
+    }
+    // packs (no episode) first in their season, then by episode
+    std::stable_sort(eps.begin(), eps.end(), [](const Ep &a, const Ep &b) {
+        if (a.season != b.season) return a.season < b.season;
+        return a.episode < b.episode;
+    });
+    for (const Ep &e : eps) out << e.m;
+    return out;
+}
+
+QVariantMap QmlLibraryModel::groupSummary(int row) const
+{
+    using PM = QmlPosterModel;
+    QVariantMap out;
+    if (!isGroup(row)) return out;
+    const Row &r = m_rows[row];
+    QList<int> seasons;
+    for (const QPersistentModelIndex &p : r.members) {
+        if (!p.isValid()) continue;
+        const QVariant s = m_filter->data(QModelIndex(p), PM::SeasonRole);
+        if (s.isValid() && s.toInt() > 0 && !seasons.contains(s.toInt())) seasons << s.toInt();
+    }
+    std::sort(seasons.begin(), seasons.end());
+    auto sTag = [](int s) { return QStringLiteral("S%1").arg(s, 2, 10, QLatin1Char('0')); };
+    QString span;
+    if (!seasons.isEmpty())
+        span = seasons.size() == 1 ? sTag(seasons.first()) : sTag(seasons.first()) + QStringLiteral("–") + sTag(seasons.last());
+    out[QStringLiteral("title")] = groupData(r, PM::NameRole);
+    out[QStringLiteral("poster")] = groupData(r, PM::PosterPathRole);
+    out[QStringLiteral("year")] = groupData(r, PM::YearRole);
+    out[QStringLiteral("genres")] = groupData(r, PM::GenresRole);
+    out[QStringLiteral("size")] = groupData(r, PM::SizeRole);
+    out[QStringLiteral("progress")] = groupData(r, PM::ProgressRole);
+    out[QStringLiteral("count")] = int(r.members.size());
+    out[QStringLiteral("seasons")] = span;
+    return out;
+}
+
+void QmlLibraryModel::setExpandable(bool on)
+{
+    if (m_expandable == on) return;
+    m_expandable = on;
+    rebuild();
+    emit expandableChanged();
+}
+
 bool QmlLibraryModel::isGroup(int row) const
 {
     return row >= 0 && row < m_rows.size() && m_rows[row].group;
@@ -422,7 +508,7 @@ bool QmlLibraryModel::isGroup(int row) const
 
 bool QmlLibraryModel::isGroupExpanded(int row) const
 {
-    return isGroup(row) && m_expanded.contains(m_rows[row].groupKey);
+    return isGroup(row) && m_expandable && m_expanded.contains(m_rows[row].groupKey);
 }
 
 void QmlLibraryModel::toggleGroup(int row)
@@ -442,6 +528,8 @@ int QmlLibraryModel::revealSource(int sourceRow)
     const int proxyRow = m_filter->mapFromSource(sourceRow);
     if (proxyRow < 0) return -1;
     const int g = groupRowOf(proxyRow);
+    if (g >= 0 && !m_expandable)
+        return g;   // the grid shows the group; its episode opens beside it
     if (g >= 0 && !m_expanded.contains(m_rows[g].groupKey))
         setExpanded(m_rows[g].groupKey, true);
     return mapFromSource(sourceRow);

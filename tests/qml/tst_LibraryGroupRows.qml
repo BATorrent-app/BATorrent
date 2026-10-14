@@ -36,6 +36,7 @@ Item {
             toggled = toggled.concat([r])
             return true
         }
+
     }
 
     function row(name, group, count, open, child) {
@@ -88,14 +89,15 @@ Item {
             verify(!list.itemAtIndex(2).toggleCell.visible)
         }
 
-        function test_chipOnGroupTileOpensTheGroup() {
+        function test_chipOnGroupTileSelectsTheGroup() {
             tryVerify(function() { return grid.itemAtIndex(0) !== null })
             var tile = grid.itemAtIndex(0)
             waitForRendering(grid)
             mouseClick(tile, 24, 18)
-            compare(ctrlStub.toggled.length, 1)
-            compare(ctrlStub.toggled[0], 0)
-            compare(ctrlStub.selectedRows.length, 0, "the chip leaves the selection alone")
+            // the episodes are listed in the inspector, so the chip selects
+            // the group rather than expanding it into tiles
+            compare(ctrlStub.toggled.length, 0)
+            compare(ctrlStub.selectedRows, [0])
         }
     }
 }

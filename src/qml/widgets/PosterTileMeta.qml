@@ -34,7 +34,10 @@ Column {
             // get the line when nothing is wrong.
             readonly property bool hasTrouble: tile.stateDetailShort.length > 0
             readonly property bool hasGenres: tile.genres.length > 0
+            // a group says how many episodes it holds: the genre is the
+            // same on every one of them and told the group apart from none
             text: hasTrouble ? tile.stateDetailShort
+                  : tile.isGroup ? tile.groupCaption
                   : hasGenres ? tile.genres
                   : tile.isDownloading ? ("↓ " + tile.downSpeed)
                   : tile.stateKey === "seeding" ? ("↑ " + tile.upSpeed)

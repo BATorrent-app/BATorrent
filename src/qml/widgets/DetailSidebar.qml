@@ -27,6 +27,12 @@ Rectangle {
     // never whether it is there. A panel that came and went on selection resized
     // the grid under the cursor, which moved every tile on a click (Sherwan #10).
     readonly property bool shown: showInspector && controller.gridView
+    // A series group selected: the panel lists its episodes, and the tabs
+    // wait for one of them to be picked.
+    readonly property int groupRow: (controller && controller.keyedRows && controller.selectedRows.length === 1
+                                     && controller.rowModel.isGroup(controller.selectedRows[0]))
+                                    ? controller.selectedRows[0] : -1
+    readonly property bool showTabs: win.hasSel && (groupRow < 0 || controller.focusedEpisodeSource >= 0)
 
     // Same collapse the bottom deck has, and the same state behind it: the two are
     // one feature in two placements, so collapsing one and finding the other open
@@ -142,7 +148,7 @@ Rectangle {
             // Fixed above the tabs: which torrent you are looking at should not
             // disappear when you go read its peers or its files.
             DetailIdentity {
-                visible: sidebar.win.hasSel
+                visible: sidebar.win.hasSel && sidebar.groupRow < 0
                 win: sidebar.win
                 vertical: true
                 Layout.fillWidth: true
@@ -151,12 +157,33 @@ Rectangle {
                 Layout.topMargin: Theme.sp4
                 Layout.bottomMargin: Theme.sp4
             }
+            DetailGroup {
+                visible: sidebar.groupRow >= 0
+                win: sidebar.win
+                controller: sidebar.controller
+                groupRow: sidebar.groupRow
+                Layout.fillWidth: true
+                Layout.bottomMargin: Theme.sp3
+            }
             Rectangle {
                 visible: sidebar.win.hasSel
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
                 color: Theme.hair
             }
+            // a group with no episode picked yet: say how to get the details
+            Text {
+                visible: sidebar.groupRow >= 0 && !sidebar.showTabs
+                Layout.fillWidth: true
+                Layout.margins: Theme.sp4
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: (i18n.language, i18n.t("detail_pick_episode"))
+                color: Theme.t4
+                font.pixelSize: 12
+                font.family: Theme.fontSans
+            }
+            Item { visible: sidebar.groupRow >= 0 && !sidebar.showTabs; Layout.fillHeight: true }
 
             // Nothing selected: an empty state, not the tabs with every field
             // blank. A panel that is always there has to say something when
@@ -187,7 +214,7 @@ Rectangle {
                 }
             }
             DetailTabs {
-                visible: sidebar.win.hasSel
+                visible: sidebar.showTabs
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
                 Layout.leftMargin: Theme.sp4
@@ -196,12 +223,12 @@ Rectangle {
                 current: sidebar.win.detailTab
                 onSelect: function(idx) { sidebar.win.detailTab = idx }
             }
-            Rectangle { visible: sidebar.win.hasSel; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
+            Rectangle { visible: sidebar.showTabs; Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
 
             // panes: same guard discipline as the bottom panel: only the open
             // tab of the VISIBLE surface binds live data
             StackLayout {
-                visible: sidebar.win.hasSel
+                visible: sidebar.showTabs
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: sidebar.win.detailTab
