@@ -29,6 +29,8 @@ Item {
         property bool fill: false
         property int w: 78
         property bool alignRight: false
+        property string arrow: ""          // ↓ / ↑ before Download and Upload
+        property color arrowInk: Theme.t4
         Layout.fillWidth: fill
         Layout.preferredWidth: fill ? -1 : w
         Layout.fillHeight: true
@@ -37,6 +39,13 @@ Item {
             anchors.left: hc.alignRight ? undefined : parent.left
             anchors.right: hc.alignRight ? parent.right : undefined
             spacing: 4
+            Text {
+                visible: hc.arrow.length > 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: hc.arrow
+                color: hc.arrowInk
+                font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans
+            }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: hc.label
@@ -186,14 +195,23 @@ Item {
         bottomMargin: Theme.sp5
         leftMargin: Theme.sp4
         rightMargin: Theme.sp4
-        cellWidth: 178 + Theme.sp4
-        cellHeight: 286
+        cellWidth: 178 + Theme.sp4 + nudge
+        cellHeight: 308   // 286 of card and 22 of air between rows
         WheelScroller { flick: grid }
-        // Back from the list the grid is still hidden while the inspector
-        // slides in and takes its width, and a hidden GridView keeps the
-        // columns it had: the last ones ended up under the panel.
-        onWidthChanged: forceLayout()
-        onVisibleChanged: if (visible) forceLayout()
+        // A GridView that changes width while hidden (in the list, while the
+        // inspector slides in) keeps the columns it had, and forceLayout()
+        // does nothing unless a layout is already pending: the last cards
+        // ended up under the inspector. A change of cell width is the one
+        // thing that always reflows it, so every width change nudges it by a
+        // ten-thousandth of a pixel.
+        // Once more after things settle: the inspector's slide and the grid's
+        // own fade-in overlap, and a reflow asked for while it is still hidden
+        // is dropped.
+        property real nudge: 0
+        function reflow() { nudge = nudge > 0 ? 0 : 0.0001 }
+        onWidthChanged: { reflow(); settleReflow.restart() }
+        onVisibleChanged: if (visible) { reflow(); settleReflow.restart() }
+        Timer { id: settleReflow; interval: Theme.durSlower + 60; onTriggered: grid.reflow() }
         // No `populate` transition: it re-runs (fading every tile from 0)
         // when the filter proxy reports a reorder as a re-layout, which read
         // as the whole grid flashing. The container's opacity Behavior already
@@ -305,27 +323,27 @@ Item {
 
         header: Rectangle {
             width: ListView.view.width
-            height: 36
+            height: 34
             color: "transparent"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
 
+            // same widths as TorrentRow.cols
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: Theme.sp4
-                anchors.rightMargin: Theme.sp4
-                spacing: Theme.sp4
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                spacing: 16
 
+                Item { Layout.preferredWidth: 20 }
                 HCol { label: (i18n.language, i18n.t("col_name")); col: "name"; fill: true }
                 HCol { label: (i18n.language, i18n.t("col_size")); col: "size"; w: 72; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_progress")); col: "progress"; w: 96 }
-                HCol { label: (i18n.language, i18n.t("col_state")); col: "state"; w: 104 }
-                HCol { label: (i18n.language, i18n.t("col_seeds")); col: "seeds"; w: 44; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_peers")); col: "peers"; w: 44; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_down")); col: "down"; w: 74; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_up")); col: "up"; w: 74; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_ratio")); col: "ratio"; w: 50; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_eta")); col: "eta"; w: 66; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_category")); col: "category"; w: 84 }
+                HCol { label: (i18n.language, i18n.t("col_progress")); col: "progress"; w: 104 }
+                HCol { label: (i18n.language, i18n.t("col_state")); col: "state"; w: 140 }
+                HCol { label: (i18n.language, i18n.t("col_seeds_peers")); col: "seeds"; w: 76; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_download")); col: "down"; w: 88; alignRight: true; arrow: "↓"; arrowInk: Theme.accent }
+                HCol { label: (i18n.language, i18n.t("col_upload")); col: "up"; w: 88; alignRight: true; arrow: "↑"; arrowInk: Theme.amber }
+                HCol { label: (i18n.language, i18n.t("col_ratio")); col: "ratio"; w: 48; alignRight: true }
+                HCol { label: (i18n.language, i18n.t("col_category")); col: "category"; w: 72 }
             }
         }
 
@@ -344,7 +362,7 @@ Item {
         z: 2
 
         property int hoveredRow: -1
-        readonly property int rowH: 56
+        readonly property int rowH: 40
         property bool dragging: false
         property real startX: 0
         property real startY: 0
@@ -369,6 +387,16 @@ Item {
                 if (mx >= p.x - 6 && mx <= p.x + d.stateCell.width + 6) {
                     tipText = d.stateDetail
                     tipPos = Qt.point(p.x, p.y + 26)
+                    if (!stateTip.visible) stateTipDelay.restart()
+                    return
+                }
+            }
+            // an episode shows its code and TMDB name: the release name here
+            if (d && d.groupChild && d.rawName !== undefined && d.rawName !== d.displayName && !dragging) {
+                var sp = d.stateCell.mapToItem(listArea, 0, 0)
+                if (mx < sp.x - 220) {
+                    tipText = d.rawName
+                    tipPos = Qt.point(Math.max(8, mx - 40), d.mapToItem(listArea, 0, 0).y + 34)
                     if (!stateTip.visible) stateTipDelay.restart()
                     return
                 }

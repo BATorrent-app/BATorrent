@@ -15,8 +15,8 @@ Rectangle {
 
     visible: typeof vpn !== "undefined"
     Layout.alignment: Qt.AlignVCenter
-    Layout.preferredHeight: 34
-    Layout.preferredWidth: vpnRow.implicitWidth + 22
+    Layout.preferredHeight: 36
+    Layout.preferredWidth: vpnRow.implicitWidth + 24
     radius: 9
 
     property bool bound: false
@@ -38,31 +38,20 @@ Rectangle {
         id: vpnRow
         anchors.centerIn: parent
         spacing: 8
-        Item {
-            Layout.preferredWidth: 16; Layout.preferredHeight: 16
-            IconImg {
-                anchors.centerIn: parent
-                src: "qrc:/icons/set-vpn.svg"
-                tint: root.stColor; s: 15
-            }
-            Rectangle {
-                width: 7; height: 7; radius: 3.5
-                anchors.right: parent.right; anchors.bottom: parent.bottom
-                anchors.rightMargin: -1; anchors.bottomMargin: -1
-                color: root.stColor
-                SequentialAnimation on opacity {
-                    running: root.st === 1
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 1; to: 0.3; duration: 600 }
-                    NumberAnimation { from: 0.3; to: 1; duration: 600 }
-                }
+        IconImg {
+            src: "qrc:/icons/set-vpn.svg"
+            tint: root.stColor; s: 16
+            SequentialAnimation on opacity {
+                running: root.st === 1
+                loops: Animation.Infinite
+                NumberAnimation { from: 1; to: 0.3; duration: 600 }
+                NumberAnimation { from: 0.3; to: 1; duration: 600 }
             }
         }
         Text {
-            visible: !root.bar.tightChip
             text: "VPN"
-            color: Theme.t3
-            font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
+            color: Theme.tSoft
+            font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans
         }
         Text {
             visible: !root.bar.tightChip

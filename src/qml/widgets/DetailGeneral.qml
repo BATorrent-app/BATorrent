@@ -16,15 +16,15 @@ Flickable {
     property bool vertical: false
 
     contentWidth: width
-    contentHeight: body.implicitHeight + Theme.sp5 * 2
+    contentHeight: body.implicitHeight + body.y * 2
     interactive: vertical && contentHeight > height
     clip: true
 
     GridLayout {
         id: body
-        x: Theme.sp5
-        y: Theme.sp5
-        width: gen.width - Theme.sp5 * 2
+        x: gen.vertical ? 18 : 0
+        y: gen.vertical ? 12 : 18
+        width: gen.width - x * 2
         columns: 1
         columnSpacing: Theme.sp6
         rowSpacing: Theme.sp4
@@ -94,17 +94,17 @@ Flickable {
         // .dcols: three KV sections (row in the panel, stacked in the inspector)
         GridLayout {
             Layout.alignment: Qt.AlignTop
-            Layout.fillWidth: gen.vertical
+            Layout.fillWidth: true
             columns: gen.vertical ? 1 : 3
-            columnSpacing: Theme.sp6
-            rowSpacing: Theme.sp4
+            columnSpacing: 48
+            rowSpacing: 11
 
             DetailKVSection {
-                Layout.preferredWidth: gen.vertical ? -1 : 168
-                Layout.fillWidth: gen.vertical
+                Layout.preferredWidth: 1
+                Layout.fillWidth: true
+                roomy: !gen.vertical
                 Layout.alignment: Qt.AlignTop
                 title: (i18n.language, i18n.t("detail_section_storage"))
-                valueMaxWidth: gen.vertical ? 170 : 110
                 model: [
                     { kk: "detail_kv_size",  v: gen.win.hasSel ? session.selectedSize : "—" },
                     { kk: "detail_kv_hash",  v: gen.win.hasSel ? session.selectedHash : "—" },
@@ -113,11 +113,11 @@ Flickable {
                 ]
             }
             DetailKVSection {
-                Layout.preferredWidth: gen.vertical ? -1 : 168
-                Layout.fillWidth: gen.vertical
+                Layout.preferredWidth: 1
+                Layout.fillWidth: true
+                roomy: !gen.vertical
                 Layout.alignment: Qt.AlignTop
                 title: (i18n.language, i18n.t("detail_section_transfer"))
-                valueMaxWidth: gen.vertical ? 170 : 110
                 model: [
                     { kk: "detail_kv_downloaded", v: gen.win.hasSel ? session.selectedDownloaded.split(" (")[0] : "—" },
                     { kk: "detail_kv_uploaded",   v: gen.win.hasSel ? session.selectedUploaded : "—" },
@@ -125,11 +125,11 @@ Flickable {
                 ]
             }
             DetailKVSection {
-                Layout.preferredWidth: gen.vertical ? -1 : 168
-                Layout.fillWidth: gen.vertical
+                Layout.preferredWidth: 1
+                Layout.fillWidth: true
+                roomy: !gen.vertical
                 Layout.alignment: Qt.AlignTop
                 title: (i18n.language, i18n.t("detail_section_health"))
-                valueMaxWidth: gen.vertical ? 170 : 110
                 model: [
                     { kk: "detail_kv_seeds",        v: gen.win.hasSel ? String(session.selectedSeeds) : "—" },
                     { kk: "detail_kv_peers",        v: gen.win.hasSel ? String(session.selectedPeers) : "—" },

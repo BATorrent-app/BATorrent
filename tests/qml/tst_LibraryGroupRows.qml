@@ -31,6 +31,7 @@ Item {
         property var toggled: []
         function isRowSelected(r) { return selectedRows.indexOf(r) >= 0 }
         function selectRow(r, m) { selectedRows = [r] }
+        function episodeName(t, s, e) { return "" }
         function toggleGroup(r) {
             if (r !== 0) return false
             toggled = toggled.concat([r])
@@ -47,7 +48,8 @@ Item {
             downRate: 0, upRate: 0, sizeBytes: 1000, infoHash: "h-" + name, playable: false,
             downloaded: "0 B", year: 0, genres: "", queuePos: 0, numPeers: 0, numSeeds: 0,
             ratio: 0, availability: 0, eta: "", isGroup: group, groupCount: count,
-            groupExpanded: open, groupChild: child
+            groupExpanded: open, groupChild: child,
+            season: child ? 1 : -1, episode: child ? 1 : -1, showTmdb: 0, autoCategory: ""
         }
     }
 

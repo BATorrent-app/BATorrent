@@ -10,9 +10,9 @@ import "../views"
 Rectangle {
     id: preview
     property bool classic: false
-    property bool navLeft: false
-    property bool detailBottom: false
     property string focusArea: ""
+    // details sit at the bottom in the list, at the right in the grid
+    readonly property bool detailBottom: classic
 
     readonly property real logicalWidth: 1280
     readonly property real logicalHeight: 720
@@ -59,7 +59,8 @@ Rectangle {
             downloaded: "6.1 GB", year: 2026, genres: "Thriller · Drama",
             queuePos: 0, numPeers: 18, numSeeds: 42, ratio: 0.64,
             availability: 4.2, eta: "14m",
-            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false,
+            season: -1, episode: -1, showTmdb: 0, autoCategory: ""
         })
         demoModel.append({
             torrentName: "Forza.Horizon.Collection", metaTitle: "Forza Horizon",
@@ -71,7 +72,8 @@ Rectangle {
             downloaded: "67.2 GB", year: 2025, genres: "Racing",
             queuePos: 0, numPeers: 7, numSeeds: 31, ratio: 1.84,
             availability: 8.1, eta: "",
-            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false,
+            season: -1, episode: -1, showTmdb: 0, autoCategory: ""
         })
         demoModel.append({
             torrentName: "Hollow.Knight.Soundtrack", metaTitle: "Hollow Knight",
@@ -83,7 +85,8 @@ Rectangle {
             downloaded: "1.3 GB", year: 2017, genres: "Soundtrack",
             queuePos: 0, numPeers: 0, numSeeds: 18, ratio: 0.92,
             availability: 3.7, eta: "",
-            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false,
+            season: -1, episode: -1, showTmdb: 0, autoCategory: ""
         })
         demoModel.append({
             torrentName: "Open.Skies.S01E04", metaTitle: "Open Skies",
@@ -95,7 +98,8 @@ Rectangle {
             downloaded: "1.2 GB", year: 2026, genres: "Documentary",
             queuePos: 0, numPeers: 9, numSeeds: 24, ratio: 0.18,
             availability: 2.8, eta: "23m",
-            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false,
+            season: -1, episode: -1, showTmdb: 0, autoCategory: ""
         })
         demoModel.append({
             torrentName: "Creative.Tools.Bundle", metaTitle: "Creative Tools",
@@ -107,7 +111,8 @@ Rectangle {
             downloaded: "2.6 GB", year: 2026, genres: "Software",
             queuePos: 0, numPeers: 0, numSeeds: 16, ratio: 0.0,
             availability: 1.9, eta: "",
-            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
+            isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false,
+            season: -1, episode: -1, showTmdb: 0, autoCategory: ""
         })
     }
     Component.onCompleted: populateDemoModel()
@@ -195,9 +200,8 @@ Rectangle {
 
             NavBar {
                 id: topNavigation
-                visible: !preview.navLeft
                 Layout.fillWidth: true
-                Layout.preferredHeight: visible ? 54 : 0
+                Layout.preferredHeight: 54
                 currentIndex: 0
                 showDownloadChip: false
             }
@@ -206,17 +210,6 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 0
-
-                NavRail {
-                    id: sideNavigation
-                    visible: preview.navLeft
-                    Layout.preferredWidth: visible ? 188 : 0
-                    Layout.fillHeight: true
-                    currentIndex: 0
-                    collapsed: false
-                    persistCollapsedState: false
-                    showDownloadChip: false
-                }
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -252,10 +245,7 @@ Rectangle {
 
                         OnboardingPreviewDetail {
                             id: sideDetail
-                            // Honor the detail-position choice alone. Coupling to
-                            // classicMode made both tiles look identical after the
-                            // user picked the list view (classic always docks bottom).
-                            visible: preview.focusArea === "detail" && !preview.detailBottom
+                            visible: !preview.detailBottom
                             Layout.preferredWidth: visible ? 340 : 0
                             Layout.fillHeight: true
                             vertical: true
@@ -264,7 +254,7 @@ Rectangle {
 
                     OnboardingPreviewDetail {
                         id: bottomDetail
-                        visible: preview.focusArea === "detail" && preview.detailBottom
+                        visible: preview.detailBottom
                         Layout.fillWidth: true
                         Layout.preferredHeight: visible ? 270 : 0
                         vertical: false
@@ -275,14 +265,6 @@ Rectangle {
             }
         }
 
-        OnboardingPreviewFocus {
-            targetItem: preview.navLeft ? sideNavigation : topNavigation
-            visible: preview.focusArea === "nav"
-        }
-        OnboardingPreviewFocus {
-            targetItem: preview.detailBottom ? bottomDetail : sideDetail
-            visible: preview.focusArea === "detail"
-        }
         OnboardingPreviewFocus {
             targetItem: library
             visible: preview.focusArea === "view"

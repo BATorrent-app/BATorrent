@@ -2,8 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// The first-run setup, asked as four short steps instead of one long form:
-// language, theme, library view and layout. Every answer is written immediately, so the app and
+// The first-run setup, asked as three short steps instead of one long form:
+// language, theme and library view. Every answer is written immediately, so the app and
 // this very dialog re-dress themselves while the user is still deciding: the
 // preview IS the product, which no swatch or caption can match.
 import QtQuick
@@ -16,7 +16,7 @@ GridLayout {
     id: steps
     property int step: 0
     property var uiPalette: Theme
-    readonly property int lastStep: 4
+    readonly property int lastStep: 2
     readonly property bool narrow: width < 760
 
     Layout.fillWidth: true
@@ -28,19 +28,14 @@ GridLayout {
 
     SettingsSchema { id: schema }
 
-    // Mirrors of the two layout settings. A function call inside a binding would
-    // not re-run when the setting changes, and these tiles have to restate the
-    // choice the moment it is made: the same reason Main.qml keeps its own
-    // copies and refreshes them on settings.changed.
-    property bool navLeft: false
-    property bool detailBottom: false
+    // Mirror of the view setting. A function call inside a binding would not
+    // re-run when the setting changes, and the tiles have to restate the
+    // choice the moment it is made.
     property bool classicView: false
     function boolPref(key) {
         return typeof settings !== "undefined" && settings.getBool(key)
     }
     function refreshLayout() {
-        navLeft = boolPref("layoutClassic")
-        detailBottom = boolPref("detailBottom")
         classicView = boolPref("classicMode")
     }
     Component.onCompleted: refreshLayout()
@@ -60,9 +55,7 @@ GridLayout {
             Layout.fillWidth: true
             text: (i18n.language, i18n.t(steps.step === 0 ? "welcome_heading"
                                        : steps.step === 1 ? "welcome_theme_title"
-                                       : steps.step === 2 ? "welcome_view_title"
-                                       : steps.step === 3 ? "welcome_nav_title"
-                                       : "welcome_detail_title"))
+                                       : "welcome_view_title"))
             color: steps.uiPalette.t1
             font.pixelSize: 22; font.weight: Font.Bold; font.family: steps.uiPalette.fontSans
             wrapMode: Text.WordWrap
@@ -71,9 +64,7 @@ GridLayout {
             Layout.fillWidth: true
             text: (i18n.language, i18n.t(steps.step === 0 ? "welcome_blurb2"
                                        : steps.step === 1 ? "welcome_theme_note"
-                                       : steps.step === 2 ? "welcome_view_note"
-                                       : steps.step === 3 ? "welcome_nav_note"
-                                       : "welcome_detail_note"))
+                                       : "welcome_view_note"))
             color: steps.uiPalette.t2
             font.pixelSize: 13; font.family: steps.uiPalette.fontSans
             wrapMode: Text.WordWrap; lineHeight: 1.45
@@ -181,8 +172,6 @@ GridLayout {
                 uiPalette: steps.uiPalette
                 asking: "view"
                 classic: false
-                navLeft: steps.navLeft
-                detailBottom: steps.detailBottom
                 selected: !steps.classicView
                 label: (i18n.language, i18n.t("welcome_view_grid"))
                 onPicked: if (typeof settings !== "undefined") settings.set("classicMode", false)
@@ -191,73 +180,10 @@ GridLayout {
                 uiPalette: steps.uiPalette
                 asking: "view"
                 classic: true
-                navLeft: steps.navLeft
-                detailBottom: steps.detailBottom
+                detailBottom: true
                 selected: steps.classicView
                 label: (i18n.language, i18n.t("welcome_view_classic"))
                 onPicked: if (typeof settings !== "undefined") settings.set("classicMode", true)
-            }
-            Item { Layout.fillWidth: true }
-        }
-    }
-
-    // ---- step 3: navigation ----
-    ColumnLayout {
-        visible: steps.step === 3
-        Layout.fillWidth: true; Layout.topMargin: Theme.sp1
-        spacing: Theme.sp3
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 14
-            LayoutChoiceTile {
-                uiPalette: steps.uiPalette
-                asking: "nav"
-                navLeft: false
-                detailBottom: steps.detailBottom
-                selected: !steps.navLeft
-                label: (i18n.language, i18n.t("welcome_nav_top"))
-                onPicked: if (typeof settings !== "undefined") settings.set("layoutClassic", false)
-            }
-            LayoutChoiceTile {
-                uiPalette: steps.uiPalette
-                asking: "nav"
-                navLeft: true
-                detailBottom: steps.detailBottom
-                selected: steps.navLeft
-                label: (i18n.language, i18n.t("welcome_nav_left"))
-                onPicked: if (typeof settings !== "undefined") settings.set("layoutClassic", true)
-            }
-            Item { Layout.fillWidth: true }
-        }
-    }
-
-    // ---- step 4: detail panel ----
-    ColumnLayout {
-        visible: steps.step === 4
-        Layout.fillWidth: true; Layout.topMargin: Theme.sp1
-        spacing: Theme.sp3
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 14
-            LayoutChoiceTile {
-                uiPalette: steps.uiPalette
-                asking: "detail"
-                navLeft: steps.navLeft
-                detailBottom: false
-                selected: !steps.detailBottom
-                label: (i18n.language, i18n.t("welcome_detail_right"))
-                onPicked: if (typeof settings !== "undefined") settings.set("detailBottom", false)
-            }
-            LayoutChoiceTile {
-                uiPalette: steps.uiPalette
-                asking: "detail"
-                navLeft: steps.navLeft
-                detailBottom: true
-                selected: steps.detailBottom
-                label: (i18n.language, i18n.t("welcome_detail_bottom"))
-                onPicked: if (typeof settings !== "undefined") settings.set("detailBottom", true)
             }
             Item { Layout.fillWidth: true }
         }
@@ -324,8 +250,6 @@ GridLayout {
         Layout.fillHeight: true
         Layout.alignment: Qt.AlignTop
         classic: steps.classicView
-        navLeft: steps.navLeft
-        detailBottom: steps.detailBottom
         step: steps.step
         narrow: steps.narrow
         uiPalette: steps.uiPalette

@@ -132,6 +132,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_achievements.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_library.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_playback.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_overview.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_guard.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_subtitles.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_watch.cpp

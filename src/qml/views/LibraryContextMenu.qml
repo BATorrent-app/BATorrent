@@ -7,9 +7,14 @@ import QtQuick.Controls.Basic
 import "../theme"
 import "../widgets"
 
-// Downloads library context menu. session/i18n/torrentFilter are context
-// properties; dialogs and host helpers are injected as props.
-Menu {
+// Downloads right-click menu. Same structure for every item, with what does
+// not apply left out: Play or Watch only when there is something to play;
+// Pause upload, Pause or Resume by state; Extract only for archives; the
+// Defender exclusion only for games; Fix cover only when there is one; "Mark
+// as…" names the type (watched, played, done). Everything that copies sits in
+// Copy ▸. session/i18n/torrentFilter are context properties; dialogs and host
+// helpers are injected.
+DMenu {
     id: root
     required property var host
     required property var controller
@@ -26,226 +31,90 @@ Menu {
     property bool onGroup: false
     property bool groupOpen: false
     property bool multi: false
+    property string cat: ""
     onAboutToShow: {
         var row = controller.selected
         var keyed = controller.keyedRows
         onGroup = keyed && torrentFilter.isGroup(row)
         groupOpen = onGroup && torrentFilter.isGroupExpanded(row)
         multi = session.selectedRows().length > 1
+        cat = session.selectedCategory()
     }
 
-    component CatItem: MenuItem {
-        id: ci
-        implicitHeight: enabled ? 30 : 1
-        visible: enabled
-        padding: 0
-        contentItem: Text {
-            leftPadding: 14; rightPadding: 14
-            text: ci.text
-            color: ci.highlighted ? Theme.t1 : Theme.t2
-            font.pixelSize: 12; font.family: Theme.fontSans
-            verticalAlignment: Text.AlignVCenter
-            elide: Text.ElideRight
-        }
-        background: Rectangle {
-            color: ci.highlighted ? Theme.hover : "transparent"
-            radius: 5
-        }
-    }
+    // depend on selectedHash (NOTIFY selectionChanged): the QML row changes
+    // before the C++ selection commits, and the menu must read the new one
+    readonly property bool isGame: (session.selectedHash, session.selectedIsGame())
+    readonly property int gameState: (session.selectedHash, session.selectedGameState())
+    readonly property bool done: session.selectedDataDone || session.selectedCompleted
+    readonly property string markKey: isGame || cat === "Games" ? "mark_played"
+                                     : (session.selectedHasVideo || cat === "Movies" || cat === "Series") ? "mark_watched"
+                                     : "ctx_mark_completed_plain"
+    width: 248
 
-    modal: true
-    implicitWidth: 220
-    // flush rows (the accent header reads as a band, not a floating pill);
-    // just a breath of space under the last row so Remove isn't glued to
-    // the card's bottom edge
-    padding: 0
-    bottomPadding: 6
-    background: Rectangle {
-        color: Theme.panel
-        border.color: Theme.hair
-        border.width: 1
-        radius: 8
+    // ---- the one thing this item is for ----
+    DMenuItem {
+        hideWhenDisabled: true
+        enabled: root.isGame && root.gameState !== 5
+        tone: "primary"
+        iconSrc: root.gameState === 4 ? "qrc:/icons/play.svg" : "qrc:/icons/download.svg"
+        text: (i18n.language, root.gameState === 4 ? i18n.t("ov_act_play") : i18n.t("hub_gs_install"))
+        onTriggered: root.gameState === 4 ? session.playSelectedGame() : session.installSelectedGame()
     }
-    component CtxItem: MenuItem {
-        id: ci
-        property string iconSrc: ""
-        // gutter aligns iconless rows (submenu titles) to the icon column
-        property bool gutter: false
-        // destructive: red icon + red text on hover (Remove)
-        property bool destructive: false
-        implicitHeight: enabled ? 30 : 1
-        visible: enabled
-        padding: 0
-        contentItem: Item {
-            IconImg {
-                visible: ci.iconSrc !== ""
-                src: ci.iconSrc; s: 14
-                tint: ci.destructive ? Theme.accent
-                                     : (ci.highlighted ? Theme.t1 : Theme.t3)
-                x: 14
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                anchors.fill: parent
-                leftPadding: (ci.iconSrc !== "" || ci.gutter) ? 38 : 14
-                rightPadding: 14
-                text: ci.text
-                color: ci.destructive && ci.highlighted ? Theme.accent
-                      : ci.highlighted ? Theme.t1 : Theme.t2
-                font.pixelSize: 12
-                font.family: Theme.fontSans
-                verticalAlignment: Text.AlignVCenter
-                elide: Text.ElideRight
-            }
-        }
-        background: Rectangle {
-            color: ci.highlighted
-                   ? (ci.destructive ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12) : Theme.hover)
-                   : "transparent"
-            radius: 5
-            Behavior on color { ColorAnimation { duration: 80 } }
-        }
-        arrow: Text {
-            visible: ci.subMenu
-            text: "›"
-            color: ci.highlighted ? Theme.t1 : Theme.t4
-            font.pixelSize: 16
-            font.family: Theme.fontSans
-            x: ci.width - width - 12
-            y: (ci.height - height) / 2
-        }
-    }
-    component Sep: MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-    // submenu title rows are spawned from this delegate: the gutter keeps
-    // their text on the same column as the icon rows above
-    delegate: CtxItem { gutter: true }
-
-    // gentle pop: fade + 4px rise, matching the app's page transitions
-    enter: Transition {
-        ParallelAnimation {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.durFast; easing.type: Theme.easeOut }
-            NumberAnimation { property: "y"; duration: Theme.durFast; easing.type: Theme.easeOut
-                              from: root.y + 4; to: root.y }
-        }
-    }
-    exit: Transition {
-        NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 80; easing.type: Easing.InCubic }
-    }
-
-    // Games lead the menu with an accent button (state-driven, Steam model):
-    // Play when ready, else Install. A torrent is a game XOR a video, so only
-    // one of gameCtx/playCtx is ever visible: both sit at the very top.
-    MenuItem {
-        id: gameCtx
-        // depend on selectedHash (NOTIFY selectionChanged), not win.selected:
-        // the QML row changes BEFORE the C++ selection commits, so binding to
-        // it showed the PREVIOUS torrent's game state (movies got "Install")
-        readonly property bool gReady: (session.selectedHash, session.selectedGameState() === 4)
-        visible: (session.selectedHash, session.selectedIsGame() && session.selectedGameState() !== 5)
-        height: visible ? 36 : 0
-        implicitHeight: height
-        padding: 0
-        onTriggered: gameCtx.gReady ? session.playSelectedGame() : session.installSelectedGame()
-        // same column geometry as CtxItem (icon x:14, text 38) so the
-        // accent header lines up with the rows below it
-        contentItem: Item {
-            IconImg {
-                x: 14
-                anchors.verticalCenter: parent.verticalCenter
-                src: gameCtx.gReady ? "qrc:/icons/play.svg" : "qrc:/icons/download.svg"; tint: Theme.accent; s: 14
-            }
-            Text {
-                anchors.fill: parent
-                leftPadding: 38
-                text: (i18n.language, gameCtx.gReady ? i18n.t("hub_gs_play") : i18n.t("hub_gs_install"))
-                color: Theme.accent
-                font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                verticalAlignment: Text.AlignVCenter
-                elide: Text.ElideRight
-            }
-        }
-        background: Rectangle {
-            // full-width band: top corners follow the card's radius
-            radius: 0
-            topLeftRadius: 8; topRightRadius: 8
-            color: gameCtx.highlighted
-                   ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
-                   : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.07)
-            Behavior on color { ColorAnimation { duration: 80 } }
-        }
-    }
-    // Play leads the menu as a minimalist accent button (not a plain row) so
-    // the primary action for a video torrent stands out at a glance.
-    MenuItem {
-        id: playCtx
-        visible: session.selectedHasVideo
-        height: visible ? 36 : 0
-        implicitHeight: height
-        padding: 0
+    DMenuItem {
+        hideWhenDisabled: true
+        enabled: !root.isGame && session.selectedHasVideo
+        tone: "primary"
+        iconSrc: "qrc:/icons/play.svg"
+        text: (i18n.language, i18n.t("ov_act_watch"))
         onTriggered: session.playSelected()
-        contentItem: Item {
-            IconImg {
-                x: 14
-                anchors.verticalCenter: parent.verticalCenter
-                src: "qrc:/icons/play.svg"; tint: Theme.accent; s: 14
-            }
-            Text {
-                anchors.fill: parent
-                leftPadding: 38
-                text: (i18n.language, i18n.t("ctx_play"))
-                color: Theme.accent
-                font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                verticalAlignment: Text.AlignVCenter
-                elide: Text.ElideRight
-            }
-        }
-        background: Rectangle {
-            radius: 0
-            topLeftRadius: 8; topRightRadius: 8
-            color: playCtx.highlighted
-                   ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
-                   : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.07)
-            Behavior on color { ColorAnimation { duration: 80 } }
-        }
     }
-
-    CtxItem {
-        visible: root.onGroup
-        height: visible ? implicitHeight : 0
+    DMenuItem {
+        hideWhenDisabled: true
+        enabled: root.onGroup
         iconSrc: "qrc:/icons/chevron.svg"
         text: (i18n.language, root.groupOpen ? i18n.t("lib_group_close") : i18n.t("lib_group_open"))
         onTriggered: controller.toggleGroup(controller.selected)
     }
-
-    // Common actions stay one click; the rest is grouped into submenus so
-    // the menu doesn't run the whole height of the screen.
-    CtxItem {
-        // The mirror of the row below: a finished torrent has no download left
-        // to pause, so what this actually stops there is the seeding. Offering
-        // "Pause download" on something that is done was the tester's report.
-        readonly property bool seeding: session.selectedDataDone || session.selectedCompleted
-        iconSrc: "qrc:/icons/pause.svg"
-        text: (i18n.language, seeding ? i18n.t("ctx_pause_seeding") : i18n.t("ctx_pause_download"))
+    // A finished item has no download to pause: what pausing stops there is
+    // the upload, so it says so.
+    DMenuItem {
+        hideWhenDisabled: true
         enabled: !session.selectedPaused || root.multi
+        iconSrc: "qrc:/icons/pause.svg"
+        text: (i18n.language, root.done ? i18n.t("ctx_pause_upload") : i18n.t("tb_pause"))
         onTriggered: session.pauseSelected()
     }
-    CtxItem {
-        // a completed torrent has no download to resume: what this action
-        // actually does there is put it back to seeding; say so
-        readonly property bool seedAgain: session.selectedDataDone || session.selectedCompleted
-        iconSrc: seedAgain ? "qrc:/icons/upload.svg" : "qrc:/icons/play.svg"
-        text: (i18n.language, seedAgain ? i18n.t("ctx_seed_again") : i18n.t("ctx_resume_download"))
+    DMenuItem {
+        hideWhenDisabled: true
         enabled: session.selectedPaused || root.multi
+        iconSrc: root.done ? "qrc:/icons/upload.svg" : "qrc:/icons/play.svg"
+        text: (i18n.language, root.done ? i18n.t("ctx_seed_again") : i18n.t("tb_resume"))
         onTriggered: session.resumeSelected()
     }
-    CtxItem { iconSrc: "qrc:/icons/folder.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); onTriggered: session.openSaveFolder() }
-    // promoted out of the Copy submenu: the two most-reached actions (tester, MotrixNext ref)
-    CtxItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
-    CtxItem { iconSrc: "qrc:/icons/copy.svg"; text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
-    CtxItem {
-        visible: Qt.platform.os === "windows"
-        height: visible ? implicitHeight : 0
-        iconSrc: "qrc:/icons/lock.svg"
+    DMenuSep {}
+    DMenuItem { iconSrc: "qrc:/icons/folder.svg"; text: (i18n.language, i18n.t("ctx_open_folder")); shortcutText: "Ctrl+E"; onTriggered: session.openSaveFolder() }
+    DMenuItem {
+        hideWhenDisabled: true
+        enabled: session.selectedHasArchives
+        iconSrc: "qrc:/icons/download.svg"
+        text: (i18n.language, i18n.t("ctx_extract"))
+        onTriggered: inputPrompt.openWith(i18n.t("ctx_extract"), i18n.t("extract_password_label"),
+                                          "", i18n.t("extract_password_ph"),
+                                          function(pw){ session.extractSelected(pw) })
+    }
+    DMenuItem { iconSrc: "qrc:/icons/pencil.svg"; text: (i18n.language, i18n.t("ctx_rename")); shortcutText: "F2"; onTriggered: host.promptRenameSelected() }
+    DMenuItem {
+        // only once the data is done: marking mid-download freezes the torrent
+        hideWhenDisabled: true
+        enabled: root.done
+        iconSrc: "qrc:/icons/check.svg"
+        text: (i18n.language, session.selectedCompleted ? i18n.t("ctx_unmark_completed_plain") : i18n.t(root.markKey))
+        onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted()
+    }
+    DMenuItem {
+        hideWhenDisabled: true
+        enabled: Qt.platform.os === "windows" && (root.isGame || root.cat === "Games")
+        iconSrc: "qrc:/icons/shield-check.svg"
         text: (i18n.language, i18n.t("ctx_defender_exclude"))
         // a group row has no torrent of its own: its first episode's folder
         // is the one the episodes share
@@ -256,132 +125,120 @@ Menu {
             if (rows.length > 0) session.excludeTorrentFromDefender(rows[0])
         }
     }
-    CtxItem {
-        visible: session.selectedHasArchives
-        height: visible ? implicitHeight : 0
-        iconSrc: "qrc:/icons/download.svg"
-        text: (i18n.language, i18n.t("ctx_extract"))
-        onTriggered: inputPrompt.openWith(i18n.t("ctx_extract"), i18n.t("extract_password_label"),
-                                          "", i18n.t("extract_password_ph"),
-                                          function(pw){ session.extractSelected(pw) })
-    }
-    CtxItem { iconSrc: "qrc:/icons/pencil.svg"; text: (i18n.language, i18n.t("ctx_rename")); onTriggered: inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "", function(t){ session.renameSelected(t) }) }
-    CtxItem {
-        // only once the data is done: marking mid-download freezes the torrent
-        visible: session.selectedDataDone || session.selectedCompleted
-        height: visible ? implicitHeight : 0
-        iconSrc: "qrc:/icons/check.svg"
-        text: session.selectedCompleted ? (i18n.language, i18n.t("ctx_unmark_completed_plain")) : (i18n.language, i18n.t("ctx_mark_completed_plain"))
-        onTriggered: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted()
-    }
-    Sep {}
+    DMenuSep {}
 
-    Menu {
-        title: (i18n.language, i18n.t("ctx_grp_queue"))
-        implicitWidth: 200
-        delegate: CtxItem {}
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { iconSrc: "qrc:/icons/chevrons-up.svg"; text: (i18n.language, i18n.t("ctx_queue_top")); onTriggered: session.queueTopSelected() }
-        CtxItem { iconSrc: "qrc:/icons/chevron-up.svg"; text: (i18n.language, i18n.t("ctx_queue_up")); onTriggered: session.queueUpSelected() }
-        CtxItem { iconSrc: "qrc:/icons/chevron.svg"; text: (i18n.language, i18n.t("ctx_queue_down")); onTriggered: session.queueDownSelected() }
-        CtxItem { iconSrc: "qrc:/icons/chevrons-down.svg"; text: (i18n.language, i18n.t("ctx_queue_bottom")); onTriggered: session.queueBottomSelected() }
+    DMenu {
+        title: (i18n.language, i18n.t("ctx_grp_copy"))
+        iconSrc: "qrc:/icons/copy.svg"
+        implicitWidth: 220
+        DMenuItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
+        DMenuItem { iconSrc: "qrc:/icons/folder.svg"; text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
+        DMenuItem { iconSrc: "qrc:/icons/abc.svg"; text: (i18n.language, i18n.t("ctx_copy_name")); onTriggered: session.copySelectedName() }
+        DMenuItem { iconSrc: "qrc:/icons/hash.svg"; text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
     }
-    Menu {
-        title: (i18n.language, i18n.t("ctx_grp_download"))
-        implicitWidth: 230
-        delegate: CtxItem {}
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { iconSrc: "qrc:/icons/download.svg"; text: (i18n.language, i18n.t("ctx_speed_down")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_down"), i18n.t("prompt_speed_kbs"), String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
-        CtxItem { iconSrc: "qrc:/icons/upload.svg"; text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_up"), i18n.t("prompt_speed_kbs"), String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
-        CtxItem { iconSrc: "qrc:/icons/arrows-sort.svg"; text: (session.selectedSequential() ? "✓ " : "") + (i18n.language, i18n.t("ctx_sequential")); onTriggered: session.setSelectedSequential(!session.selectedSequential()) }
-        CtxItem { iconSrc: "qrc:/icons/bolt.svg"; text: (session.selectedForceStart ? "✓ " : "") + (i18n.language, i18n.t("ctx_force_start_plain")); onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
-        // Only offered on a complete seed: libtorrent ignores the flag otherwise
-        // ("if the torrent is not a seed, this flag has no effect") but still
-        // reports it set, so the menu would show a tick over a no-op. CtxItem
-        // hides itself when disabled, which is the behaviour we want here.
-        CtxItem {
+    DMenu {
+        title: (i18n.language, i18n.t("ctx_grp_queue"))
+        iconSrc: "qrc:/icons/sliders.svg"
+        implicitWidth: 210
+        DMenuItem { iconSrc: "qrc:/icons/chevrons-up.svg"; text: (i18n.language, i18n.t("ctx_queue_top")); onTriggered: session.queueTopSelected() }
+        DMenuItem { iconSrc: "qrc:/icons/chevron-up.svg"; text: (i18n.language, i18n.t("ctx_queue_up")); onTriggered: session.queueUpSelected() }
+        DMenuItem { iconSrc: "qrc:/icons/chevron.svg"; text: (i18n.language, i18n.t("ctx_queue_down")); onTriggered: session.queueDownSelected() }
+        DMenuItem { iconSrc: "qrc:/icons/chevrons-down.svg"; text: (i18n.language, i18n.t("ctx_queue_bottom")); onTriggered: session.queueBottomSelected() }
+    }
+    DMenu {
+        title: (i18n.language, i18n.t("ctx_grp_speed"))
+        iconSrc: "qrc:/icons/arrow-down.svg"
+        implicitWidth: 240
+        DMenuItem { iconSrc: "qrc:/icons/download.svg"; text: (i18n.language, i18n.t("ctx_speed_down")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_down"), i18n.t("prompt_speed_kbs"), String(session.selectedDownloadLimit()), "0", function(t){ session.setSelectedDownloadLimit(parseInt(t) || 0) }) }
+        DMenuItem { iconSrc: "qrc:/icons/upload.svg"; text: (i18n.language, i18n.t("ctx_speed_up")); onTriggered: inputPrompt.openWith(i18n.t("ctx_speed_up"), i18n.t("prompt_speed_kbs"), String(session.selectedUploadLimit()), "0", function(t){ session.setSelectedUploadLimit(parseInt(t) || 0) }) }
+        DMenuItem { iconSrc: "qrc:/icons/arrows-sort.svg"; checkable: true; checked: session.selectedSequential(); text: (i18n.language, i18n.t("ctx_sequential")); onTriggered: session.setSelectedSequential(!session.selectedSequential()) }
+        DMenuItem { iconSrc: "qrc:/icons/bolt.svg"; checkable: true; checked: session.selectedForceStart; text: (i18n.language, i18n.t("ctx_force_start_plain")); onTriggered: session.setSelectedForceStart(!session.selectedForceStart) }
+        // Only on a complete seed: libtorrent ignores the flag otherwise but
+        // still reports it set, so the menu would tick a no-op.
+        DMenuItem {
+            hideWhenDisabled: true
             enabled: session.selectedDataDone
             iconSrc: "qrc:/icons/share.svg"
-            text: (session.selectedSuperSeeding ? "✓ " : "") + (i18n.language, i18n.t("ctx_super_seeding"))
+            checkable: true; checked: session.selectedSuperSeeding
+            text: (i18n.language, i18n.t("ctx_super_seeding"))
             onTriggered: session.setSelectedSuperSeeding(!session.selectedSuperSeeding)
         }
     }
-    Menu {
+    DMenu {
         id: catMenu
-        title: (i18n.language, i18n.t("ctx_grp_organize"))
-        implicitWidth: 200
-        delegate: CatItem {}
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-
-        // The built-ins below are static (catLabel translates them).
-        // Anything the user typed via "Other…" is appended here: before this,
-        // a custom category was applied to the torrent but never appeared in
-        // the list, so it looked like it hadn't been saved.
+        title: (i18n.language, i18n.t("ctx_grp_category_tags"))
+        iconSrc: "qrc:/icons/hub.svg"
+        implicitWidth: 220
+        // The built-ins are static (catLabel translates them); categories the
+        // user typed through "Other…" are appended when the menu opens.
         onAboutToShow: customCats.model = host.customCategories()
         Instantiator {
             id: customCats
             model: []
-            delegate: CatItem {
+            delegate: DMenuItem {
                 required property var modelData
-                text: (session.selectedCategory() === modelData ? "✓ " : "") + modelData
+                checkable: true
+                checked: root.cat === modelData
+                text: modelData
                 onTriggered: session.setSelectedCategory(modelData)
             }
             onObjectAdded: function(index, object) { catMenu.insertItem(5 + index, object) }
             onObjectRemoved: function(index, object) { catMenu.removeItem(object) }
         }
-
-        CatItem { text: (session.selectedCategory() === "Apps"   ? "✓ " : "") + host.catLabel("Apps");   onTriggered: session.setSelectedCategory("Apps") }
-        CatItem { text: (session.selectedCategory() === "Games"  ? "✓ " : "") + host.catLabel("Games");  onTriggered: session.setSelectedCategory("Games") }
-        CatItem { text: (session.selectedCategory() === "Movies" ? "✓ " : "") + host.catLabel("Movies"); onTriggered: session.setSelectedCategory("Movies") }
-        CatItem { text: (session.selectedCategory() === "Series" ? "✓ " : "") + host.catLabel("Series"); onTriggered: session.setSelectedCategory("Series") }
-        CatItem { text: (session.selectedCategory() === "Compressed" ? "✓ " : "") + host.catLabel("Compressed"); onTriggered: session.setSelectedCategory("Compressed") }
-        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-        CatItem { text: (session.selectedCategory() === "" ? "✓ " : "") + (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
-        CatItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith(i18n.t("ctx_category"), i18n.t("prompt_category_name"), session.selectedCategory(), i18n.t("prompt_category_eg"), function(t){ session.setSelectedCategory(t) }) }
-        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-        CatItem { text: (i18n.language, i18n.t("ctx_add_tag")); onTriggered: inputPrompt.openWith(i18n.t("prompt_add_tag_title"), i18n.t("prompt_new_tag"), "", i18n.t("prompt_tag_eg"), function(t){ if (t.length === 0) return; var tags = session.selectedTagList(); if (tags.indexOf(t) < 0) { tags.push(t); session.setSelectedTags(tags) } }) }
-        CatItem { text: (i18n.language, i18n.t("tracker_add")); onTriggered: inputPrompt.openWith(i18n.t("prompt_add_tracker_title"), i18n.t("prompt_tracker_url"), "", "udp://tracker:porta", function(t){ session.addTrackerToSelected(t) }) }
+        DMenuItem { checkable: true; checked: root.cat === "Apps";   text: host.catLabel("Apps");   onTriggered: session.setSelectedCategory("Apps") }
+        DMenuItem { checkable: true; checked: root.cat === "Games";  text: host.catLabel("Games");  onTriggered: session.setSelectedCategory("Games") }
+        DMenuItem { checkable: true; checked: root.cat === "Movies"; text: host.catLabel("Movies"); onTriggered: session.setSelectedCategory("Movies") }
+        DMenuItem { checkable: true; checked: root.cat === "Series"; text: host.catLabel("Series"); onTriggered: session.setSelectedCategory("Series") }
+        DMenuItem { checkable: true; checked: root.cat === "Compressed"; text: host.catLabel("Compressed"); onTriggered: session.setSelectedCategory("Compressed") }
+        DMenuSep {}
+        DMenuItem { checkable: true; checked: root.cat === ""; text: (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
+        DMenuItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith(i18n.t("ctx_category"), i18n.t("prompt_category_name"), root.cat, i18n.t("prompt_category_eg"), function(t){ session.setSelectedCategory(t) }) }
+        DMenuSep {}
+        DMenuItem { text: (i18n.language, i18n.t("ctx_add_tag")); onTriggered: inputPrompt.openWith(i18n.t("prompt_add_tag_title"), i18n.t("prompt_new_tag"), "", i18n.t("prompt_tag_eg"), function(t){ if (t.length === 0) return; var tags = session.selectedTagList(); if (tags.indexOf(t) < 0) { tags.push(t); session.setSelectedTags(tags) } }) }
+        DMenuItem { text: (i18n.language, i18n.t("tracker_add")); onTriggered: inputPrompt.openWith(i18n.t("prompt_add_tracker_title"), i18n.t("prompt_tracker_url"), "", "udp://tracker:porta", function(t){ session.addTrackerToSelected(t) }) }
     }
-    Menu {
-        title: (i18n.language, i18n.t("ctx_grp_copy"))
-        implicitWidth: 180
-        delegate: CtxItem {}
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { iconSrc: "qrc:/icons/abc.svg"; text: (i18n.language, i18n.t("ctx_copy_name")); onTriggered: session.copySelectedName() }
-        CtxItem { iconSrc: "qrc:/icons/hash.svg"; text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
-    }
-    Menu {
+    DMenu {
+        id: coverMenu
         title: (i18n.language, i18n.t("ctx_fix_cover"))
-        implicitWidth: 200
-        delegate: CtxItem {}
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { iconSrc: "qrc:/icons/movie.svg"; text: host.catLabel("Movies"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "movie") }) }
-        CtxItem { iconSrc: "qrc:/icons/device-tv.svg"; text: host.catLabel("Series"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "series") }) }
-        CtxItem { iconSrc: "qrc:/icons/device-gamepad-2.svg"; text: host.catLabel("Games"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Cyberpunk 2077", function(t){ session.relinkSelectedCover(t, "game") }) }
-        MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-        CtxItem { iconSrc: "qrc:/icons/photo-off.svg"; text: (i18n.language, i18n.t("ctx_no_cover")); onTriggered: session.clearSelectedCover() }
+        iconSrc: "qrc:/icons/photo-off.svg"
+        implicitWidth: 210
+        DMenuItem { iconSrc: "qrc:/icons/movie.svg"; text: host.catLabel("Movies"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "movie") }) }
+        DMenuItem { iconSrc: "qrc:/icons/device-tv.svg"; text: host.catLabel("Series"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Euphoria", function(t){ session.relinkSelectedCover(t, "series") }) }
+        DMenuItem { iconSrc: "qrc:/icons/device-gamepad-2.svg"; text: host.catLabel("Games"); onTriggered: inputPrompt.openWith(i18n.t("ctx_fix_cover"), i18n.t("ctx_fix_cover_hint"), "", "Cyberpunk 2077", function(t){ session.relinkSelectedCover(t, "game") }) }
+        DMenuSep {}
+        DMenuItem { iconSrc: "qrc:/icons/photo-off.svg"; text: (i18n.language, i18n.t("ctx_no_cover")); onTriggered: session.clearSelectedCover() }
     }
-    Menu {
-        title: (i18n.language, i18n.t("ctx_grp_more"))
-        implicitWidth: 230
-        delegate: CtxItem {}
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-        CtxItem { iconSrc: "qrc:/icons/folder-symlink.svg"; text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDialog.open() }
-        CtxItem { iconSrc: "qrc:/icons/refresh.svg"; text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
-        CtxItem { iconSrc: "qrc:/icons/broadcast.svg"; text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
-        CtxItem { iconSrc: "qrc:/icons/file-export.svg"; text: (i18n.language, i18n.t("ctx_export_torrent")); onTriggered: exportDialog.open() }
-        CtxItem { iconSrc: "qrc:/icons/gauge.svg"; text: (i18n.language, i18n.t("ctx_why_slow")); onTriggered: { diagnoseDialog.body = session.diagnoseSelectedSlow(); diagnoseDialog.open() } }
-        CtxItem { iconSrc: "qrc:/icons/stop.svg"; text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
-        Menu {
+    DMenu {
+        title: (i18n.language, i18n.t("ctx_grp_advanced"))
+        iconSrc: "qrc:/icons/ellipsis.svg"
+        implicitWidth: 240
+        DMenuItem { iconSrc: "qrc:/icons/folder-symlink.svg"; text: (i18n.language, i18n.t("ctx_move_storage")); onTriggered: setLocationDialog.open() }
+        DMenuItem { iconSrc: "qrc:/icons/refresh.svg"; text: (i18n.language, i18n.t("ctx_force_recheck")); onTriggered: session.forceRecheckSelected() }
+        DMenuItem { iconSrc: "qrc:/icons/broadcast.svg"; text: (i18n.language, i18n.t("ctx_force_reannounce")); onTriggered: session.forceReannounceSelected() }
+        DMenuItem { iconSrc: "qrc:/icons/file-export.svg"; text: (i18n.language, i18n.t("ctx_export_torrent")); onTriggered: exportDialog.open() }
+        DMenuItem { iconSrc: "qrc:/icons/gauge.svg"; text: (i18n.language, i18n.t("ctx_why_slow")); onTriggered: { diagnoseDialog.body = session.diagnoseSelectedSlow(); diagnoseDialog.open() } }
+        DMenuItem { iconSrc: "qrc:/icons/stop.svg"; text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
+        DMenu {
             title: (i18n.language, i18n.t("ctx_seed_rules"))
-            implicitWidth: 220
-            delegate: CtxItem {}
-            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
-            CtxItem { iconSrc: "qrc:/icons/replay.svg"; text: (i18n.language, i18n.t("ctx_seed_use_default")); onTriggered: { session.setSelectedStopAfter(-1); session.setSelectedMaxSeedDays(-1) } }
-            CtxItem { iconSrc: "qrc:/icons/check.svg"; text: (session.selectedStopAfter() === 1 ? "✓ " : "") + (i18n.language, i18n.t("ctx_stop_after_download")); onTriggered: session.setSelectedStopAfter(session.selectedStopAfter() === 1 ? 0 : 1) }
-            CtxItem { iconSrc: "qrc:/icons/clock.svg"; text: (i18n.language, i18n.t("ctx_max_seed_time")); onTriggered: inputPrompt.openWith(i18n.t("ctx_max_seed_time"), i18n.t("ctx_max_seed_prompt"), String(Math.max(0, session.selectedMaxSeedDays())), "0", function(t){ session.setSelectedMaxSeedDays(parseInt(t) || 0) }) }
+            iconSrc: "qrc:/icons/upload.svg"
+            implicitWidth: 240
+            DMenuItem { iconSrc: "qrc:/icons/replay.svg"; text: (i18n.language, i18n.t("ctx_seed_use_default")); onTriggered: { session.setSelectedStopAfter(-1); session.setSelectedMaxSeedDays(-1) } }
+            DMenuItem { iconSrc: "qrc:/icons/check.svg"; checkable: true; checked: session.selectedStopAfter() === 1; text: (i18n.language, i18n.t("ctx_stop_after_download")); onTriggered: session.setSelectedStopAfter(session.selectedStopAfter() === 1 ? 0 : 1) }
+            DMenuItem { iconSrc: "qrc:/icons/clock.svg"; text: (i18n.language, i18n.t("ctx_max_seed_time")); onTriggered: inputPrompt.openWith(i18n.t("ctx_max_seed_time"), i18n.t("ctx_max_seed_prompt"), String(Math.max(0, session.selectedMaxSeedDays())), "0", function(t){ session.setSelectedMaxSeedDays(parseInt(t) || 0) }) }
         }
     }
-    Sep {}
-    CtxItem { iconSrc: "qrc:/icons/trash.svg"; destructive: true; implicitHeight: enabled ? 34 : 1; text: (i18n.language, i18n.t("ctx_remove")); onTriggered: removeDialog.open() }
+    DMenuSep {}
+    DMenuItem { iconSrc: "qrc:/icons/trash.svg"; tone: "danger"; text: (i18n.language, i18n.t("ctx_remove_short")); shortcutText: "Del"; onTriggered: removeDialog.open() }
+
+    // Fix cover only means something when there is a cover. A submenu has
+    // no `visible` of its own: its row is the menu item that opens it.
+    Component.onCompleted: {
+        for (var i = 0; i < count; ++i) {
+            var it = itemAt(i)
+            if (it && it.subMenu === coverMenu) {
+                it.hideWhenDisabled = true
+                it.enabled = Qt.binding(function () { return (session.selectedHash, session.selectedPoster.length > 0) })
+            }
+        }
+    }
 }

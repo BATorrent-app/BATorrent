@@ -30,6 +30,7 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(int pausedCount READ pausedCount NOTIFY statsChanged)
     Q_PROPERTY(int completedCount READ completedCount NOTIFY statsChanged)
     Q_PROPERTY(int queuedCount READ queuedCount NOTIFY statsChanged)
+    Q_PROPERTY(int problemCount READ problemCount NOTIFY statsChanged)
     Q_PROPERTY(QString totalDownSpeed READ totalDownSpeed NOTIFY statsChanged)
     Q_PROPERTY(QString totalUpSpeed READ totalUpSpeed NOTIFY statsChanged)
     Q_PROPERTY(QString freeDiskSpace READ freeDiskSpace NOTIFY statsChanged)
@@ -112,6 +113,7 @@ public:
     int pausedCount() const;
     int completedCount() const;
     int queuedCount() const;
+    int problemCount() const;
     QString totalDownSpeed() const;
     QString totalUpSpeed() const;
     QString freeDiskSpace() const;
@@ -247,6 +249,12 @@ public:
     Q_INVOKABLE void playByHashFile(const QString &infoHash, int fileIndex);   // resume a specific episode
     // Next episode's file index after fileIndex (season/episode order), or -1.
     Q_INVOKABLE int nextEpisode(const QString &infoHash, int fileIndex) const;
+    // How far the torrent's own video got: {videos, watched, resumeMs, durMs}
+    // for its biggest video file (videos > 1 is a pack: no single answer).
+    Q_INVOKABLE QVariantMap watchState(const QString &infoHash) const;
+    // The inspector with nothing selected: what needs you, what is ready and
+    // never opened, and the space left once the downloads land.
+    Q_INVOKABLE QVariantMap overview() const;
     Q_INVOKABLE QVariantMap episodeOf(const QString &infoHash, int fileIndex) const;   // {season, episode}, -1 when not an episode
     // Resolved display title for the player header: {title, subtitle, raw}.
     // title/subtitle come from the metadata cache + name parse; raw is the
@@ -597,7 +605,7 @@ private:
     // every QML read (~10 O(torrents) passes/sec → 1).
     void recomputeAggregates();
     int m_activeCount = 0, m_downloadingCount = 0, m_seedingCount = 0,
-        m_pausedCount = 0, m_completedCount = 0, m_queuedCount = 0;
+        m_pausedCount = 0, m_completedCount = 0, m_queuedCount = 0, m_problemCount = 0;
     int m_totalDownRate = 0, m_totalUpRate = 0;
     bool m_anyDownloading = false;
     static constexpr int HistoryMaxPoints = 60;

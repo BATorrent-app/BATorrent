@@ -16,25 +16,24 @@ import "views"
 
 Window {
     id: win
-    visible: true
+    // Shown from Component.onCompleted once the title bar is set up, so a
+    // frameless window never flashes its system frame first.
+    visible: false
     width: 1360
     height: 884
     // floor wide enough that the full toolbar (labels + speed module) always
     // fits: below this the RowLayout would have to clip, which is what made
     // the old icon-only "compact" hack feel broken.
-    // classic keeps the old +188 rail budget; the top bar frees that width
     // Capped to the screen: on DPI-scaled laptops (150% on 1920 = 1280 logical)
     // an uncapped floor forces the window wider than the desktop and the right
     // column (grid detail sidebar) renders past the screen edge.
-    minimumWidth: Math.min(layoutClassic ? 1288 : 1200,
-                           Screen.desktopAvailableWidth > 0 ? Screen.desktopAvailableWidth : 1288)
+    minimumWidth: Math.min(1200, Screen.desktopAvailableWidth > 0 ? Screen.desktopAvailableWidth : 1200)
     minimumHeight: 640
     color: Theme.bg
-    // Native titlebar in both layouts. Merging it into the classic rail's brand
-    // zone would leave the macOS traffic lights floating over the rail instead
-    // of sitting in a titlebar. unifiedChrome stays on for the secondary windows,
-    // which draw their own title and would otherwise show it twice.
+    // On Windows the navigation bar is the title bar (AppFramelessAgent, when
+    // the build has QWindowKit). macOS and Linux keep the native one above it.
     flags: Qt.Window
+    readonly property bool frameless: typeof framelessWindow !== "undefined" && framelessWindow === true
     title: "BATorrent"
 
     // Close button hides to the tray instead of quitting (quitOnLastWindowClosed
@@ -58,27 +57,18 @@ Window {
         }
     }
 
-    // current page of the content stack (0 Downloads · 1 Discover · 2 Search ·
-    // 3 HUB · 4 Settings). Owned by the window so navigation works whichever
-    // nav component (rail or top bar) is loaded.
+    // current page of the content stack (0 Downloads · 1 Find · 2 HUB ·
+    // 3 Settings).
     property int currentPage: 0
     onCurrentPageChanged: {
         clearFilterFocus()
         if (currentPage !== 1) searchPage.returnPage = -1
         if (currentPage !== 2) hubPage.gameReturnPage = -1
     }
-    // classic layout = the pre-4.5 left nav rail; default is the top bar.
-    // Only one nav component is ever loaded: a hidden rail would keep its
-    // carousel timer and ~30 session bindings alive for nothing.
-    property bool layoutClassic: false
-    // grid-mode detail panel: side inspector (default) or the bottom deck. Both
-    // components already exist; this just picks which one the grid uses: a
-    // side panel suits wide screens, a bottom deck suits narrow ones.
-    property bool detailBottom: false
     // the contextual continue/download chip in the top bar (some users find it
     // redundant on the Downloads page)
     property bool showDownloadChip: true
-    readonly property Item navHost: layoutClassic ? navRailLoader.item : navBarLoader.item
+    readonly property Item navHost: navBar
 
     // Selection/filter state lives on library. Leaf chrome takes `controller`
     // explicitly; there are no win.* aliases for selection.
@@ -97,6 +87,11 @@ Window {
     }
 
     function selectTorrentByHash(infoHash) { library.selectTorrentByHash(infoHash) }
+    function promptRenameSelected() {
+        if (typeof session === "undefined" || !win.hasSel) return
+        inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), session.selectedName, "",
+            function(t){ if (t.length > 0) session.renameSelected(t) })
+    }
     function promptRenameFile(idx, current) {
         inputPrompt.openWith(i18n.t("ctx_rename"), i18n.t("ctx_rename_prompt"), current, "",
             function(t){ if (t.length > 0) session.renameSelectedFile(idx, t) })
@@ -125,8 +120,6 @@ Window {
     Connections {
         target: typeof settings !== "undefined" ? settings : null
         function onChanged() {
-            win.layoutClassic = settings.getBool("layoutClassic")
-            win.detailBottom = settings.getBool("detailBottom")
             win.showDownloadChip = settings.getBool("showDownloadChip", true)
             // Read here too, not only at startup: the setup wizard writes this
             // one like the other three and promises the app follows along.
@@ -158,11 +151,8 @@ Window {
         }
         if (typeof settings !== "undefined") library.classicMode = settings.getBool("classicMode")
         if (library.classicMode) library.gridView = false   // classic is a list layout
-        if (typeof settings !== "undefined") {
-            win.layoutClassic = settings.getBool("layoutClassic")
-            win.detailBottom = settings.getBool("detailBottom")
+        if (typeof settings !== "undefined")
             win.showDownloadChip = settings.getBool("showDownloadChip", true)
-        }
         if (typeof settings === "undefined") {
             showSplash = true
         } else {
@@ -175,11 +165,23 @@ Window {
         // Start hidden only when the login item launched us. Applying this to a
         // deliberate launch made the app look like it had failed to open: you
         // double-click the icon and nothing appears (tester report, beta7 #12).
-        if (typeof launchedBySystem !== "undefined" && launchedBySystem
+        var startHidden = typeof launchedBySystem !== "undefined" && launchedBySystem
                 && typeof settings !== "undefined" && settings.getBool("startTray")
-                && trayIcon.available)
-            win.visible = false
+                && trayIcon.available
+        // The frameless setup runs on the hidden window, before any show:
+        // also when starting in the tray, since a later show (tray, second
+        // launch) can come from C++ without passing through QML.
+        Qt.callLater(function() {
+            if (framelessLoader.item) framelessLoader.item.attach()
+            if (!startHidden) win.visible = true
+        })
         if (!showSplash) win.maybeShowWelcome()
+    }
+    Loader {
+        id: framelessLoader
+        active: win.frameless
+        source: win.frameless ? "AppFramelessAgent.qml" : ""
+        onLoaded: { item.window = win; item.navBar = navBar }
     }
     AppWindowLifecycle { host: win }
 
@@ -287,6 +289,11 @@ Window {
     property alias setLocationDlg: libraryShortcuts.setLocationDlg
     // Full-screen visual acknowledgement for a manual Refresh.
     function flashRefresh() { refreshFlash.flash() }
+    // F5 and the menu's Refresh: re-read every torrent, with the flash as proof
+    function refreshView() {
+        flashRefresh()
+        if (typeof session !== "undefined") session.refreshAll()
+    }
 
     // post-download action: cancelable countdown after all downloads finish
     property int shutdownLeft: 0
@@ -432,6 +439,25 @@ Window {
         aboutDialog: aboutDlg
     }
 
+    // The app menu behind the logo. macOS has the system menu bar instead.
+    AppLogoMenu {
+        id: logoMenu
+        host: win
+        openFileDialog: openFileDlg
+        addDialog: addDlg
+        createDialog: createDlg
+        inspectFileDialog: inspectFileDlg
+        importQbtDialog: importQbtDlg
+        removeDialog: removeDlg
+        addAddonDialog: addAddonDlg
+        pairingDialog: pairingDlg
+        tourOverlay: appTour.tourOverlay
+        welcomeDialog: welcomeDlg
+        releaseNotesDialog: releaseNotesDlg
+        aboutDialog: aboutDlg
+        settingsPage: settingsPage
+    }
+
     // ----- system tray -----
     AppTray {
         id: trayIcon
@@ -499,68 +525,32 @@ Window {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-        AppWinMenuBar {
-            id: winMenuBar
-            visible: Qt.platform.os !== "osx"
+        // ===== top navigation bar (the title bar too, on Windows) =====
+        NavBar {
+            id: navBar
             Layout.fillWidth: true
-            Layout.preferredHeight: visible ? implicitHeight : 0
-            host: win
-            openFileDialog: openFileDlg
-            addDialog: addDlg
-            createDialog: createDlg
-            inspectFileDialog: inspectFileDlg
-            importQbtDialog: importQbtDlg
-            removeDialog: removeDlg
-            addAddonDialog: addAddonDlg
-            pairingDialog: pairingDlg
-            tourOverlay: appTour.tourOverlay
-            welcomeDialog: welcomeDlg
-            releaseNotesDialog: releaseNotesDlg
-            aboutDialog: aboutDlg
-            makeRoomPanel: win.makeRoomPanel
-            settingsPage: settingsPage
-        }
-
-        // ===== top nav bar (default layout) =====
-        Loader {
-            id: navBarLoader
-            Layout.fillWidth: true
-            active: !win.layoutClassic
-            visible: active
-            sourceComponent: NavBar {
-                currentIndex: win.currentPage
-                showDownloadChip: win.showDownloadChip
-                onPageRequested: function(page) { win.currentPage = page }
-                onSettingsClicked: win.currentPage = 3
-                onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }
-                onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
-                onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
-                onAboutRequested: aboutDlg.open()
+            appWindow: win
+            ownsTitleBar: win.frameless
+            currentIndex: win.currentPage
+            showDownloadChip: win.showDownloadChip
+            menuOpen: logoMenu.opened
+            onPageRequested: function(page) { win.currentPage = page }
+            onSettingsClicked: win.currentPage = 3
+            onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }
+            onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
+            onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
+            onMenuRequested: function(anchor) {
+                if (logoMenu.opened) { logoMenu.close(); return }
+                var p = anchor.mapToItem(win.contentItem, 0, anchor.height + 4)
+                logoMenu.popup(win.contentItem, p.x, p.y)
             }
         }
 
-        // ===== nav rail (classic layout) + content stack (4.0 hub shell) =====
+        // ===== content stack (4.0 hub shell) =====
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
-
-            Loader {
-                id: navRailLoader
-                Layout.fillHeight: true
-                active: win.layoutClassic
-                visible: active
-                sourceComponent: NavRail {
-                    currentIndex: win.currentPage
-                    showDownloadChip: win.showDownloadChip
-                    onPageRequested: function(page) { win.currentPage = page }
-                    onSettingsClicked: win.currentPage = 3
-                    onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }
-                    onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
-                    onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
-                    onAboutRequested: aboutDlg.open()
-                }
-            }
 
             StackLayout {
                 id: contentStack
@@ -606,6 +596,7 @@ Window {
         Toolbar {
             id: toolbar
             win: win
+            controller: library
             onOpenFile: openFileDlg.open()
             onAddMagnet: addDlg.open()
             onAddLink: promptHttpDownload()

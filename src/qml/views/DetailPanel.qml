@@ -16,7 +16,7 @@ Rectangle {
     property var win
     signal renameFileRequested(int idx, string current)
     Layout.fillWidth: true
-    Layout.preferredHeight: win.detailsShownCollapsed ? 42 : 270
+    Layout.preferredHeight: win.detailsShownCollapsed ? 42 : 262
     Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
     color: Theme.panel
     clip: true
@@ -39,8 +39,8 @@ Rectangle {
                 anchors.right: parent.right; anchors.rightMargin: Theme.sp4
                 anchors.verticalCenter: parent.verticalCenter
                 width: 30; height: 26; radius: 7
-                color: colMa.containsMouse ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : Theme.hover
-                border.width: 1; border.color: colMa.containsMouse ? Theme.accent : Theme.hair
+                color: colMa.containsMouse ? Theme.hover : "transparent"
+                border.width: 1; border.color: Theme.hair
                 Behavior on color { ColorAnimation { duration: Theme.durFast } }
                 IconImg {
                     anchors.centerIn: parent
@@ -65,7 +65,7 @@ Rectangle {
 
             DetailTabs {
                 anchors.left: parent.left
-                anchors.leftMargin: Theme.sp5
+                anchors.leftMargin: 24
                 anchors.right: collapseBtn.left
                 anchors.rightMargin: Theme.sp3
                 anchors.top: parent.top
@@ -95,23 +95,43 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.leftMargin: Theme.sp5
-            spacing: Theme.sp6
+            spacing: 0
 
-            DetailIdentity {
+            Item {
                 visible: detailPanel.win.hasSel
-                win: detailPanel.win
-                vertical: false
-                Layout.preferredWidth: 460
-                Layout.maximumWidth: 460
-                Layout.alignment: Qt.AlignTop
-                Layout.topMargin: Theme.sp4
+                Layout.preferredWidth: 440
+                Layout.fillHeight: true
+                DetailIdentity {
+                    win: detailPanel.win
+                    vertical: false
+                    x: 24; y: 18
+                    width: parent.width - 48
+                    height: 142
+                }
+                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.hairSoft }
             }
 
             StackLayout {
+                id: panes
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
                 currentIndex: detailPanel.win.detailTab
+                // the new tab fades in from the side it sits on
+                transform: Translate { id: paneShift }
+                property int prev: 0
+                onCurrentIndexChanged: {
+                    paneShift.x = Theme.travel(currentIndex > prev ? 14 : -14)
+                    prev = currentIndex
+                    panes.opacity = 0
+                    paneIn.restart()
+                }
+                ParallelAnimation {
+                    id: paneIn
+                    NumberAnimation { target: panes; property: "opacity"; to: 1; duration: Theme.durBase; easing.type: Easing.OutQuart }
+                    NumberAnimation { target: paneShift; property: "x"; to: 0; duration: Theme.durSlow; easing.type: Easing.OutQuart }
+                }
 
                 DetailGeneral { win: detailPanel.win; vertical: false }
                 DetailPeers {

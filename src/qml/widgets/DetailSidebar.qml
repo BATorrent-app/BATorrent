@@ -110,7 +110,9 @@ Rectangle {
                     // already says which torrent this is, in the size that
                     // question deserves. Two of the same title, one small and
                     // one large, just read as a mistake.
-                    text: (i18n.language, i18n.t("detail_selected_torrent"))
+                    text: (i18n.language, sidebar.groupRow >= 0
+                           ? i18n.t("insp_series_n").arg(sidebar.controller.rowModel.groupSummary(sidebar.groupRow).count || 0)
+                           : sidebar.win.hasSel ? i18n.t("detail_selected_torrent") : i18n.t("insp_overview"))
                     color: Theme.t4
                     font.pixelSize: 10
                     font.weight: Font.Bold
@@ -175,43 +177,25 @@ Rectangle {
             Text {
                 visible: sidebar.groupRow >= 0 && !sidebar.showTabs
                 Layout.fillWidth: true
-                Layout.margins: Theme.sp4
+                Layout.topMargin: 28
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 text: (i18n.language, i18n.t("detail_pick_episode"))
                 color: Theme.t4
-                font.pixelSize: 12
+                font.pixelSize: 13
                 font.family: Theme.fontSans
+                lineHeight: 1.4
             }
             Item { visible: sidebar.groupRow >= 0 && !sidebar.showTabs; Layout.fillHeight: true }
 
-            // Nothing selected: an empty state, not the tabs with every field
-            // blank. A panel that is always there has to say something when
-            // there is nothing to say.
-            Item {
+            // Nothing selected: what needs a hand, what is ready, the disk
+            InspectorOverview {
                 visible: !sidebar.win.hasSel
+                win: sidebar.win
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    width: Math.min(parent.width - Theme.sp5 * 2, 260)
-                    spacing: Theme.sp3
-                    IconImg {
-                        Layout.alignment: Qt.AlignHCenter
-                        src: "qrc:/icons/list.svg"
-                        tint: Theme.t4
-                        s: 24
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                        text: (i18n.language, i18n.t("detail_expand_needs_selection"))
-                        color: Theme.t4
-                        font.pixelSize: 12
-                        font.family: Theme.fontSans
-                    }
-                }
             }
             DetailTabs {
                 visible: sidebar.showTabs
@@ -228,10 +212,25 @@ Rectangle {
             // panes: same guard discipline as the bottom panel: only the open
             // tab of the VISIBLE surface binds live data
             StackLayout {
+                id: sidePanes
                 visible: sidebar.showTabs
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: sidebar.win.detailTab
+                // the new tab fades in from the side it sits on
+                transform: Translate { id: sideShift }
+                property int prev: 0
+                onCurrentIndexChanged: {
+                    sideShift.x = Theme.travel(currentIndex > prev ? 14 : -14)
+                    prev = currentIndex
+                    sidePanes.opacity = 0
+                    sideIn.restart()
+                }
+                ParallelAnimation {
+                    id: sideIn
+                    NumberAnimation { target: sidePanes; property: "opacity"; to: 1; duration: Theme.durBase; easing.type: Easing.OutQuart }
+                    NumberAnimation { target: sideShift; property: "x"; to: 0; duration: Theme.durSlow; easing.type: Easing.OutQuart }
+                }
 
                 DetailGeneral { win: sidebar.win; vertical: true }
                 DetailPeers {

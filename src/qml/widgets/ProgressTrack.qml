@@ -38,6 +38,9 @@ Item {
     // to set `opacity` on the whole component to keep its percentage readable,
     // which only worked while the percentage lived outside the bar.
     property real fillOpacity: 1.0
+    // Over poster art the empty part is a white wash, not the theme's track:
+    // the art behind it decides what a translucent grey looks like.
+    property bool onArt: false
 
     readonly property bool trouble: Theme.isTroubleState(track.stateKey)
     // Nothing has been measured yet, so there is no percentage to be honest
@@ -49,7 +52,7 @@ Item {
         id: bed
         anchors.fill: parent
         radius: height / 2
-        color: Theme.track
+        color: track.onArt ? Qt.rgba(1, 1, 1, 0.18) : Theme.track
         clip: true
 
         // normal states: a fill you can read a percentage off

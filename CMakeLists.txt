@@ -202,6 +202,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/session/qmlsessionbridge_achievements.cpp
     src/bridges/session/qmlsessionbridge_library.cpp
     src/bridges/session/qmlsessionbridge_playback.cpp
+    src/bridges/session/qmlsessionbridge_overview.cpp
     src/bridges/session/qmlsessionbridge_guard.cpp
     src/bridges/session/qmlsessionbridge_subtitles.cpp
     src/bridges/session/qmlsessionbridge_watch.cpp
@@ -378,6 +379,31 @@ if(WIN32)
             $<$<NOT:$<CONFIG:Debug>>:/OPT:REF>
             $<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>)
     endif()
+endif()
+
+# Windows: the main window draws its own title bar (the navigation bar doubles
+# as one) through QWindowKit, which keeps snap layouts, the system resize
+# borders and Aero shake. macOS and Linux keep the native title bar.
+if(WIN32)
+    option(BAT_FRAMELESS "Merge the title bar into the navigation bar (QWindowKit)" ON)
+else()
+    set(BAT_FRAMELESS OFF)
+endif()
+if(BAT_FRAMELESS)
+    include(FetchContent)
+    set(QWINDOWKIT_BUILD_QUICK ON CACHE BOOL "" FORCE)
+    set(QWINDOWKIT_BUILD_WIDGETS OFF CACHE BOOL "" FORCE)
+    set(QWINDOWKIT_BUILD_STATIC ON CACHE BOOL "" FORCE)
+    set(QWINDOWKIT_INSTALL OFF CACHE BOOL "" FORCE)
+    set(QWINDOWKIT_ENABLE_STYLE_AGENT OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(qwindowkit
+        GIT_REPOSITORY https://github.com/stdware/qwindowkit.git
+        GIT_TAG 1.5.0
+        GIT_SHALLOW TRUE
+        GIT_SUBMODULES qmsetup)
+    FetchContent_MakeAvailable(qwindowkit)
+    target_link_libraries(BATorrent PRIVATE QWindowKit::Quick)
+    target_compile_definitions(BATorrent PRIVATE BAT_FRAMELESS)
 endif()
 
 # Linux: install rules for icon and .desktop file

@@ -126,6 +126,12 @@ void applyGraphicsApiPreference()
         QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
     else if (api == QLatin1String("d3d11") || api == QLatin1String("direct3d11"))
         QQuickWindow::setGraphicsApi(QSGRendererInterface::Direct3D11);
+#ifdef BAT_FRAMELESS
+    // Direct3D draws a stray white line along the top of a window without the
+    // system title bar; QWindowKit's documented fix. OpenGL breaks with it on.
+    if (api != QLatin1String("opengl") && !qEnvironmentVariableIsSet("QT_QPA_DISABLE_REDIRECTION_SURFACE"))
+        qputenv("QT_QPA_DISABLE_REDIRECTION_SURFACE", "1");
+#endif
 }
 
 void runStartupMigrations()

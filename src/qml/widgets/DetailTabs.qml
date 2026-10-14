@@ -3,8 +3,9 @@
 // See LICENSE file for details
 
 // The six-tab strip of the detail surfaces (General/Peers/Files/Trackers/
-// Pieces/Graph). compact: tighter type, counts hidden, and the row scrolls
-// horizontally so long locales never clip in the 340px inspector.
+// Pieces/Graph). One indicator slides to the active tab (300ms, none under
+// reduced motion). compact: tighter type, counts hidden, the tabs spread over
+// the inspector's width, and the row scrolls if a locale still does not fit.
 import QtQuick
 import "../theme"
 
@@ -32,8 +33,14 @@ Item {
         Row {
             id: strip
             height: tabs.height
-            spacing: tabs.compact ? Theme.sp4 : Theme.sp5
+            spacing: tabs.compact ? Math.max(Theme.sp3, (tabs.width - tabWidths) / 5) : Theme.sp5
+            property real tabWidths: {
+                var w = 0
+                for (var i = 0; i < tabRepeater.count; ++i) { var it = tabRepeater.itemAt(i); if (it) w += it.width }
+                return w
+            }
             Repeater {
+                id: tabRepeater
                 model: 6
                 delegate: Item {
                     height: strip.height
@@ -46,9 +53,10 @@ Item {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: tabs.labels[index]
-                            color: on ? Theme.t1 : (tabMa.containsMouse ? Theme.t2 : Theme.t3)
+                            color: on || tabMa.containsMouse ? Theme.t1 : Theme.t3
+                            Behavior on color { ColorAnimation { duration: Theme.durFast } }
                             font.pixelSize: tabs.compact ? 12 : 13
-                            font.weight: on ? Font.DemiBold : Font.Medium
+                            font.weight: on ? Font.DemiBold : Font.Normal
                             font.family: Theme.fontSans
                         }
                         Text {
@@ -61,14 +69,6 @@ Item {
                             font.features: Theme.tnum
                         }
                     }
-                    Rectangle {
-                        visible: on
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        height: 2
-                        color: Theme.accent
-                    }
                     MouseArea {
                         id: tabMa
                         anchors.fill: parent
@@ -78,6 +78,22 @@ Item {
                     }
                 }
             }
+        }
+        Rectangle {
+            id: indicator
+            readonly property Item target: tabRepeater.count > tabs.current ? tabRepeater.itemAt(tabs.current) : null
+            property bool ready: false
+            Component.onCompleted: Qt.callLater(function () { indicator.ready = true })
+            x: target ? strip.x + target.x : 0
+            width: target ? target.width : 0
+            y: tabs.height - 2
+            height: 2
+            radius: 1
+            color: Theme.accent
+            Behavior on x { enabled: indicator.ready && !Theme.reduceMotion
+                NumberAnimation { duration: Theme.durSlower; easing.type: Easing.OutQuart } }
+            Behavior on width { enabled: indicator.ready && !Theme.reduceMotion
+                NumberAnimation { duration: Theme.durSlower; easing.type: Easing.OutQuart } }
         }
     }
 }

@@ -35,7 +35,7 @@ Item {
     clip: true
     Layout.alignment: Qt.AlignVCenter
     Layout.preferredHeight: 40
-    Layout.preferredWidth: tight ? 76 : diskCol.implicitWidth + 24
+    Layout.preferredWidth: tight ? 76 : Math.max(150, diskCol.implicitWidth) + 20
 
     Timer {
         interval: 6000
@@ -79,14 +79,14 @@ Item {
                 Layout.maximumWidth: 110
                 text: root.shown ? root.shown.name : ""
                 color: Theme.t4; elide: Text.ElideRight
-                font.pixelSize: 9; font.weight: Font.Bold; font.letterSpacing: 1.0
+                font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.8
                 font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
             }
             Text {
                 text: root.shown
                       ? (i18n.language, i18n.t("status_free_space")).arg(root.shown.free) : ""
-                color: Theme.t3
-                font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
+                color: Theme.t2
+                font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
             }
         }
         Rectangle {

@@ -14,9 +14,7 @@ EmptyState 1.0 EmptyState.qml
 LayoutChoiceTile 1.0 LayoutChoiceTile.qml
 PosterThumb 1.0 PosterThumb.qml
 ProgressTrack 1.0 ProgressTrack.qml
-StatusMark 1.0 StatusMark.qml
 PosterTile 1.0 PosterTile.qml
-PosterTileBadges 1.0 PosterTileBadges.qml
 PosterTileMeta 1.0 PosterTileMeta.qml
 PosterCard 1.0 PosterCard.qml
 PosterShelf 1.0 PosterShelf.qml
@@ -33,6 +31,7 @@ DetailTabs 1.0 DetailTabs.qml
 DownloadCarousel 1.0 DownloadCarousel.qml
 DetailSidebar 1.0 DetailSidebar.qml
 DetailGroup 1.0 DetailGroup.qml
+InspectorOverview 1.0 InspectorOverview.qml
 DetailFiles 1.0 DetailFiles.qml
 DetailTrackers 1.0 DetailTrackers.qml
 DetailPieces 1.0 DetailPieces.qml
@@ -41,6 +40,9 @@ Spinner 1.0 Spinner.qml
 BatMenu 1.0 BatMenu.qml
 BatMenuItem 1.0 BatMenuItem.qml
 BatMenuSep 1.0 BatMenuSep.qml
+DMenu 1.0 DMenu.qml
+DMenuItem 1.0 DMenuItem.qml
+DMenuSep 1.0 DMenuSep.qml
 singleton DialogStack 1.0 DialogStack.qml
 SpeedGraph 1.0 SpeedGraph.qml
 WheelScroller 1.0 WheelScroller.qml

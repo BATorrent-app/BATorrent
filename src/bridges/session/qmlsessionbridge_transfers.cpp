@@ -139,6 +139,17 @@ QVariantList QmlSessionBridge::resumeItems() const
         o["poster"]    = mv.value(QStringLiteral("poster"));
         o["progress"]  = pct;
         o["metric"]    = QString::number(int(pct * 100)) + QStringLiteral("%");
+        // the episode being continued, for the chip ("S01E02")
+        const int fi = mv.value(QStringLiteral("fileIndex")).toInt();
+        for (const QVariant &vv : mv.value(QStringLiteral("videos")).toList()) {
+            const QVariantMap vf = vv.toMap();
+            if (vf.value(QStringLiteral("idx")).toInt() != fi) continue;
+            const int se = vf.value(QStringLiteral("season"), -1).toInt();
+            const int ep = vf.value(QStringLiteral("episode"), -1).toInt();
+            if (se >= 0 && ep >= 0)
+                o["code"] = QStringLiteral("S%1E%2").arg(se, 2, 10, QLatin1Char('0')).arg(ep, 2, 10, QLatin1Char('0'));
+            break;
+        }
         rows.append({ mv.value(QStringLiteral("resumeAt")).toLongLong(), o });
     }
     for (const QVariant &v : gameLibrary()) {

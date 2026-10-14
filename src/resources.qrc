@@ -138,7 +138,8 @@
 <file>../src/qml/Main.qml</file>
 <file>../src/qml/views/LibraryController.qml</file>
 <file>../src/qml/AppTray.qml</file>
-<file>../src/qml/AppWinMenuBar.qml</file>
+<file>../src/qml/AppLogoMenu.qml</file>
+<file>../src/qml/AppFramelessAgent.qml</file>
 <file>../src/qml/AppMenuBar.qml</file>
 <file>../src/qml/MainWindowLoaders.qml</file>
 <file>../src/qml/views/LibraryChrome.qml</file>
@@ -209,9 +210,6 @@
 <file>../src/qml/windows/LogViewerWindow.qml</file>
 <file>../src/qml/windows/DiagnosticsWindow.qml</file>
 <file>../src/qml/dialogs/PairingDialog.qml</file>
-<file>../src/qml/views/NavRail.qml</file>
-<file>../src/qml/views/NavRailDownloadSlot.qml</file>
-<file>../src/qml/views/NavRailMiniDownloads.qml</file>
 <file>../src/qml/views/DetailPanel.qml</file>
 <file>../src/qml/views/FilterBar.qml</file>
 <file>../src/qml/views/Toolbar.qml</file>
@@ -305,15 +303,16 @@
 <file>../src/qml/widgets/BatMenu.qml</file>
 <file>../src/qml/widgets/BatMenuItem.qml</file>
 <file>../src/qml/widgets/BatMenuSep.qml</file>
+<file>../src/qml/widgets/DMenu.qml</file>
+<file>../src/qml/widgets/DMenuItem.qml</file>
+<file>../src/qml/widgets/DMenuSep.qml</file>
 <file>../src/qml/widgets/DialogStack.qml</file>
 <file>../src/qml/widgets/SpeedGraph.qml</file>
 <file>../src/qml/widgets/WheelScroller.qml</file>
 <file>../src/qml/widgets/PosterThumb.qml</file>
 <file>../src/qml/widgets/ProgressTrack.qml</file>
-<file>../src/qml/widgets/StatusMark.qml</file>
 <file>../src/qml/widgets/LayoutChoiceTile.qml</file>
 <file>../src/qml/widgets/PosterTile.qml</file>
-<file>../src/qml/widgets/PosterTileBadges.qml</file>
 <file>../src/qml/widgets/PosterTileMeta.qml</file>
 <file>../src/qml/widgets/PChip.qml</file>
 <file>../src/qml/widgets/FavFolders.qml</file>
@@ -329,6 +328,7 @@
 <file>../src/qml/widgets/DownloadCarousel.qml</file>
 <file>../src/qml/widgets/DetailSidebar.qml</file>
 <file>../src/qml/widgets/DetailGroup.qml</file>
+<file>../src/qml/widgets/InspectorOverview.qml</file>
 <file>../src/qml/widgets/PosterShelf.qml</file>
 <file>../src/qml/widgets/DetailFiles.qml</file>
 <file>../src/qml/widgets/DetailTrackers.qml</file>

@@ -622,6 +622,12 @@ bool QmlTorrentFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &s
             || src->data(idx, QmlPosterModel::UpRateRole).toLongLong() > 0;
     }
     QString key = src->data(idx, QmlPosterModel::StateKeyRole).toString();
+    // Done is finished, whether or not it is still seeding; Problems is
+    // whatever needs a hand (files gone, an engine error).
+    if (m_filterState == QStringLiteral("completed"))
+        return key == QStringLiteral("completed") || key == QStringLiteral("seeding");
+    if (m_filterState == QStringLiteral("problems"))
+        return key == QStringLiteral("missing") || key == QStringLiteral("error");
     return key == m_filterState;
 }
 

@@ -106,6 +106,7 @@ int QmlSessionBridge::seedingCount() const     { return m_seedingCount; }
 int QmlSessionBridge::pausedCount() const      { return m_pausedCount; }
 int QmlSessionBridge::completedCount() const   { return m_completedCount; }
 int QmlSessionBridge::queuedCount() const      { return m_queuedCount; }
+int QmlSessionBridge::problemCount() const     { return m_problemCount; }
 QString QmlSessionBridge::totalDownSpeed() const { return formatSpeed(m_totalDownRate); }
 QString QmlSessionBridge::totalUpSpeed() const   { return formatSpeed(m_totalUpRate); }
 
@@ -210,7 +211,7 @@ void QmlSessionBridge::clearRemovedHistory()
 void QmlSessionBridge::recomputeAggregates()
 {
     m_activeCount = m_downloadingCount = m_seedingCount = 0;
-    m_pausedCount = m_completedCount = m_queuedCount = 0;
+    m_pausedCount = m_completedCount = m_queuedCount = m_problemCount = 0;
     m_totalDownRate = m_totalUpRate = 0;
     m_anyDownloading = false;
     const int n = m_session->torrentCount();
@@ -230,7 +231,9 @@ void QmlSessionBridge::recomputeAggregates()
         const QString state = torrentStateKey(info);
         if (state == QLatin1String("downloading")) { ++m_downloadingCount; m_anyDownloading = true; }
         else if (state == QLatin1String("seeding")) ++m_seedingCount;
-        if (info.completed) ++m_completedCount;
+        // Done counts what the Done filter shows: seeding or finished.
+        if (state == QLatin1String("seeding") || state == QLatin1String("completed")) ++m_completedCount;
+        if (state == QLatin1String("missing") || state == QLatin1String("error")) ++m_problemCount;
     }
 }
 

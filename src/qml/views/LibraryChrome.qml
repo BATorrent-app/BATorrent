@@ -44,14 +44,14 @@ ColumnLayout {
             id: detailSidebar
             win: root.host
             controller: root.controller
-            showInspector: root.controller.gridView && !root.host.detailBottom
+            showInspector: root.controller.gridView
             onRenameFileRequested: function(idx, current) { root.renameFileRequested(idx, current) }
         }
     }
 
     DetailPanel {
         win: root.host
-        visible: !root.controller.gridView || root.host.detailBottom
+        visible: !root.controller.gridView
         onRenameFileRequested: function(idx, current) { root.renameFileRequested(idx, current) }
     }
 

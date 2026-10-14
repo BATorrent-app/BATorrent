@@ -2,7 +2,8 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Filter bar: grid/list toggle, status-filter pills, category menu, search box.
+// Filter bar: search box, grid/list toggle, status-filter pills (the rare
+// ones behind "More"), category menu.
 // Carved out of Main.qml; reads/writes window state via `win`, exposes the search
 // field via the `searchInput` alias for the parent's focus shortcut.
 import QtQuick
@@ -34,10 +35,11 @@ Rectangle {
         property string count
         property string filterKey: "all"   // NOT `state`: that shadows Item.state
         property bool on: controller.activeFilter === filterKey
+        property bool warn: false          // Problems: a notch brighter when idle
         signal clicked()
         radius: 8
         height: 30
-        implicitWidth: pillRow.implicitWidth + 26
+        implicitWidth: pillRow.implicitWidth + 24
         color: on ? Theme.accentTint : (piMa.containsMouse ? Theme.hover : "transparent")
 
         // announced as a radio: the pills are one exclusive choice, and the count
@@ -69,8 +71,8 @@ Rectangle {
                 id: pillLabel
                 anchors.verticalCenter: parent.verticalCenter
                 text: pi.label
-                color: pi.on ? Theme.accentText : (piMa.containsMouse ? Theme.t2 : Theme.t3)
-                font.pixelSize: 12
+                color: pi.on ? Theme.accentText : (piMa.containsMouse || pi.warn ? Theme.t2 : Theme.t3)
+                font.pixelSize: 13
                 font.family: Theme.fontSans
                 font.weight: pi.on ? Font.Medium : Font.Normal
             }
@@ -93,6 +95,26 @@ Rectangle {
             cursorShape: Qt.PointingHandCursor
             onClicked: pi.clicked()
         }
+    }
+
+    component SegCell: Rectangle {
+        id: sc
+        property bool on: false
+        property string icon
+        property string tip
+        signal clicked()
+        width: 30; height: 26
+        radius: 6
+        color: on ? Theme.hover2 : (scMa.containsMouse ? Theme.hover : "transparent")
+        IconImg { anchors.centerIn: parent; src: sc.icon; tint: sc.on ? Theme.t1 : Theme.t3; s: 14 }
+        MouseArea { id: scMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: sc.clicked() }
+        ToolTip.visible: scMa.containsMouse
+        ToolTip.text: sc.tip
+        ToolTip.delay: 500
+        Accessible.role: Accessible.RadioButton
+        Accessible.name: sc.tip
+        Accessible.checked: sc.on
+        Accessible.onPressAction: sc.clicked()
     }
 
     // Overflow affordance for the pills row: a panel-colored fade over the cut
@@ -145,7 +167,7 @@ Rectangle {
     }
 
     Layout.fillWidth: true
-    Layout.preferredHeight: 54
+    Layout.preferredHeight: 48
     color: Theme.panel
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hair }
 
@@ -161,7 +183,7 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: 240
             Layout.minimumWidth: 150
-            Layout.preferredHeight: 34
+            Layout.preferredHeight: 32
             Layout.alignment: Qt.AlignVCenter
             color: Theme.field
             border.color: searchInput.activeFocus ? Theme.accent : Theme.hair
@@ -199,7 +221,7 @@ Rectangle {
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: (i18n.language, i18n.t("search_heading"))
+                        text: (i18n.language, i18n.t("filter_downloads_hint"))
                         color: Theme.t4
                         font: searchInput.font
                         visible: searchInput.text.length === 0 && !searchInput.activeFocus
@@ -208,75 +230,31 @@ Rectangle {
             }
         }
 
-        // .seg (toggle Grade/Lista): padding 2, bg panel
+        // Grid / List: icon-only cells, the name in the tooltip
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 32
-            Layout.minimumWidth: implicitWidth      // never clip the toggle
-            implicitWidth: segRow.implicitWidth + 4
-            color: Theme.panel
+            Layout.minimumWidth: implicitWidth
+            implicitWidth: segRow.implicitWidth + 6
+            color: "transparent"
             border.color: Theme.hair
             border.width: 1
             radius: 8
-
             Row {
                 id: segRow
                 anchors.centerIn: parent
                 spacing: 2
-
-                Rectangle {
-                    readonly property bool on: controller.gridView && !controller.classicMode
-                    implicitWidth: segGr.implicitWidth + 22
-                    height: 28
-                    radius: 6
-                    color: on ? Qt.rgba(1,1,1,0.08) : "transparent"
-                    Row {
-                        id: segGr
-                        anchors.centerIn: parent
-                        spacing: 6
-                        IconImg {
-                            anchors.verticalCenter: parent.verticalCenter
-                            src: "qrc:/icons/grid.svg"
-                            tint: parent.parent.on ? Theme.t1 : Theme.t3
-                            s: 14
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: (i18n.language, i18n.t("view_grid"))
-                            color: parent.parent.on ? Theme.t1 : Theme.t3
-                            font.pixelSize: 12
-                            font.weight: parent.parent.on ? Font.Medium : Font.Normal
-                            font.family: Theme.fontSans
-                        }
-                    }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { controller.classicMode = false; controller.gridView = true } }
+                SegCell {
+                    on: controller.gridView && !controller.classicMode
+                    icon: "qrc:/icons/grid.svg"
+                    tip: (i18n.language, i18n.t("view_grid"))
+                    onClicked: { controller.classicMode = false; controller.gridView = true }
                 }
-                Rectangle {
-                    readonly property bool on: controller.classicMode
-                    implicitWidth: segCl.implicitWidth + 22
-                    height: 28
-                    radius: 6
-                    color: on ? Qt.rgba(1,1,1,0.08) : "transparent"
-                    Row {
-                        id: segCl
-                        anchors.centerIn: parent
-                        spacing: 6
-                        IconImg {
-                            anchors.verticalCenter: parent.verticalCenter
-                            src: "qrc:/icons/list.svg"
-                            tint: parent.parent.on ? Theme.t1 : Theme.t3
-                            s: 14
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: (i18n.language, i18n.t("view_list"))
-                            color: parent.parent.on ? Theme.t1 : Theme.t3
-                            font.pixelSize: 12
-                            font.weight: parent.parent.on ? Font.Medium : Font.Normal
-                            font.family: Theme.fontSans
-                        }
-                    }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { controller.classicMode = true; controller.gridView = false } }
+                SegCell {
+                    on: controller.classicMode
+                    icon: "qrc:/icons/list.svg"
+                    tip: (i18n.language, i18n.t("view_list"))
+                    onClicked: { controller.classicMode = true; controller.gridView = false }
                 }
             }
         }
@@ -321,25 +299,43 @@ Rectangle {
                     height: pillsFlick.height
                     spacing: Theme.sp3
 
-                    // .pills (gap 4): 7 pills, counts from session, click sets filter
+                    // the four everyone uses, Problems, and the rest behind More
                     Row {
                         id: pillsRow
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: Theme.sp1
-                        Pill { label: (i18n.language, i18n.t("filter_all"));     filterKey: "all";         count: filterBar.countFor("all", typeof session !== "undefined" ? session.torrentCount : 0);     onClicked: controller.setFilter("all") }
-                        Pill { label: (i18n.language, i18n.t("filter_all_active"));    filterKey: "active";      count: filterBar.countFor("active", typeof session !== "undefined" ? session.activeCount : 0);      onClicked: controller.setFilter("active") }
-                        Pill { label: (i18n.language, i18n.t("filter_downloading"));  filterKey: "downloading"; count: filterBar.countFor("downloading", typeof session !== "undefined" ? session.downloadingCount : 0); onClicked: controller.setFilter("downloading") }
-                        Pill { label: (i18n.language, i18n.t("filter_seeding"));  filterKey: "seeding";     count: filterBar.countFor("seeding", typeof session !== "undefined" ? session.seedingCount : 0);     onClicked: controller.setFilter("seeding") }
-                        Pill { label: (i18n.language, i18n.t("filter_paused"));   filterKey: "paused";      count: filterBar.countFor("paused", typeof session !== "undefined" ? session.pausedCount : 0);      onClicked: controller.setFilter("paused") }
-                        // always visible, like the other pills (tester asked for it to stay
-                        // put next to Paused/Completed instead of appearing only when a queue
-                        // limit is holding torrents back)
+                        Pill { label: (i18n.language, i18n.t("filter_all")); filterKey: "all"; count: filterBar.countFor("all", typeof session !== "undefined" ? session.torrentCount : 0); onClicked: controller.setFilter("all") }
+                        Pill { label: (i18n.language, i18n.t("filter_downloading")); filterKey: "downloading"; count: filterBar.countFor("downloading", typeof session !== "undefined" ? session.downloadingCount : 0); onClicked: controller.setFilter("downloading") }
+                        Pill { label: (i18n.language, i18n.t("filter_done")); filterKey: "completed"; count: filterBar.countFor("completed", typeof session !== "undefined" ? session.completedCount : 0); onClicked: controller.setFilter("completed") }
+                        Pill { label: (i18n.language, i18n.t("filter_paused")); filterKey: "paused"; count: filterBar.countFor("paused", typeof session !== "undefined" ? session.pausedCount : 0); onClicked: controller.setFilter("paused") }
                         Pill {
-                            label: (i18n.language, i18n.t("filter_queued")); filterKey: "queued"
-                            count: filterBar.countFor("queued", typeof session !== "undefined" ? session.queuedCount : 0)
-                            onClicked: controller.setFilter("queued")
+                            readonly property int n: filterBar.countFor("problems", typeof session !== "undefined" ? session.problemCount : 0)
+                            visible: n > 0 || on
+                            warn: n > 0
+                            label: (i18n.language, i18n.t("filter_problems")); filterKey: "problems"; count: n
+                            onClicked: controller.setFilter("problems")
                         }
-                        Pill { label: (i18n.language, i18n.t("filter_completed")); filterKey: "completed";   count: filterBar.countFor("completed", typeof session !== "undefined" ? session.completedCount : 0);   onClicked: controller.setFilter("completed") }
+                        Pill {
+                            id: morePill
+                            readonly property var keys: ["active", "seeding", "queued"]
+                            readonly property int idx: keys.indexOf(controller.activeFilter)
+                            on: idx >= 0
+                            filterKey: "_more"
+                            label: (i18n.language, idx === 0 ? i18n.t("filter_all_active")
+                                   : idx === 1 ? i18n.t("filter_seeding")
+                                   : idx === 2 ? i18n.t("filter_queued") : i18n.t("filter_more"))
+                            count: idx === 0 ? filterBar.countFor("active", typeof session !== "undefined" ? session.activeCount : 0)
+                                 : idx === 1 ? filterBar.countFor("seeding", typeof session !== "undefined" ? session.seedingCount : 0)
+                                 : idx === 2 ? filterBar.countFor("queued", typeof session !== "undefined" ? session.queuedCount : 0) : ""
+                            onClicked: moreMenu.opened ? moreMenu.close() : moreMenu.popup(morePill, 0, morePill.height + 4)
+                            DMenu {
+                                id: moreMenu
+                                implicitWidth: 200
+                                DMenuItem { text: (i18n.language, i18n.t("filter_all_active")); shortcutText: typeof session !== "undefined" ? String(session.activeCount) : ""; checkable: true; checked: controller.activeFilter === "active"; onTriggered: controller.setFilter("active") }
+                                DMenuItem { text: (i18n.language, i18n.t("filter_seeding")); shortcutText: typeof session !== "undefined" ? String(session.seedingCount) : ""; checkable: true; checked: controller.activeFilter === "seeding"; onTriggered: controller.setFilter("seeding") }
+                                DMenuItem { text: (i18n.language, i18n.t("filter_queued")); shortcutText: typeof session !== "undefined" ? String(session.queuedCount) : ""; checkable: true; checked: controller.activeFilter === "queued"; onTriggered: controller.setFilter("queued") }
+                            }
+                        }
                     }
 
                     // keeps the category button right-aligned while everything fits
@@ -353,7 +349,7 @@ Rectangle {
                     Rectangle {
                         id: catBox
                         anchors.verticalCenter: parent.verticalCenter
-                        height: 34
+                        height: 32
                         implicitWidth: catRow.implicitWidth + 24
                         width: implicitWidth
                         color: "transparent"
@@ -369,14 +365,14 @@ Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: controller.catFilter.length > 0 ? win.catLabel(controller.catFilter) : (i18n.language, i18n.t("filter_all_categories"))
                                 color: controller.catFilter.length > 0 ? Theme.t1 : Theme.t2
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                                 font.family: Theme.fontSans
                             }
                             IconImg {
                                 anchors.verticalCenter: parent.verticalCenter
                                 src: "qrc:/icons/chevron.svg"
                                 tint: Theme.t4
-                                s: 13
+                                s: 11
                             }
                         }
                         MouseArea {
@@ -461,9 +457,5 @@ Rectangle {
             EdgeScroller { rightSide: false; active: pillsFlick.canScrollLeft;  anchors.left: parent.left }
         }
 
-        // donate moved to the nav rail (bottom): it was cramped here
-        // and got clipped when the filter row filled up.
-        // (the port indicator now lives in the status bar: it's status,
-        // not a filter, and it was the first thing to clip here)
     }
 }

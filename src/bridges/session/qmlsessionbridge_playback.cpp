@@ -329,6 +329,36 @@ QVariantMap QmlSessionBridge::episodeOf(const QString &infoHash, int fileIndex) 
     return out;
 }
 
+QVariantMap QmlSessionBridge::watchState(const QString &infoHash) const
+{
+    QVariantMap out;
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0) return out;
+    static const QStringList videoExts = {".mp4",".mkv",".avi",".mov",".wmv",".flv",".webm",".m4v",".ts"};
+    const auto files = m_session->filesAt(row);
+    int best = -1, videos = 0;
+    qint64 bestSize = 0;
+    for (int i = 0; i < int(files.size()); ++i) {
+        QString mp = files[i].path;
+        if (mp.endsWith(QStringLiteral(".!bt"))) mp.chop(4);
+        for (const auto &ext : videoExts)
+            if (mp.endsWith(ext, Qt::CaseInsensitive)) {
+                ++videos;
+                if (files[i].size > bestSize) { bestSize = files[i].size; best = i; }
+                break;
+            }
+    }
+    out[QStringLiteral("videos")] = videos;
+    if (best < 0) return out;
+    QSettings s;
+    const QString rk = QStringLiteral("resume_%1_%2").arg(infoHash).arg(best);
+    out[QStringLiteral("fileIndex")] = best;
+    out[QStringLiteral("watched")] = s.value(rk + QStringLiteral("_watched"), false).toBool();
+    out[QStringLiteral("resumeMs")] = s.value(rk, 0).toLongLong();
+    out[QStringLiteral("durMs")] = s.value(rk + QStringLiteral("_dur"), 0).toLongLong();
+    return out;
+}
+
 int QmlSessionBridge::nextEpisode(const QString &infoHash, int fileIndex) const
 {
     const int row = m_session->torrentIndexByInfoHash(infoHash);

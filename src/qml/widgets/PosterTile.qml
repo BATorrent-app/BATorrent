@@ -2,6 +2,11 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
+// A Downloads grid card. The art is only art: nothing sits on it but what is
+// in progress or wrong (a 9px bar with its percentage, hazard stripes, the
+// metadata sweep) and, on a series, the episode count. The title goes under
+// the poster, and the state lives in one line below it: a dot, what is going
+// on, and why (PosterTileMeta). A finished item has no bar at all.
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Controls.Basic
@@ -37,19 +42,17 @@ Item {
     required property int year
     required property string genres
     required property int queuePos
-    // A series group (QmlLibraryModel): one tile for every episode of a show,
-    // opening to the episodes' own tiles right after it.
+    // A series group (QmlLibraryModel): one card for every episode of a show;
+    // the inspector lists the episodes.
     required property bool isGroup
-    // A group's bar is one segment per episode, and its caption names the
-    // seasons it spans. Read again whenever the group's own progress moves.
-    readonly property var groupSegs: tile.isGroup && controller && controller.rowModel
-        ? (tile.progress, controller.rowModel.groupEpisodes(tile.index).map(function (e) { return e.progress || 0 }))
-        : []
+    required property int groupCount
+    required property bool groupExpanded
+    required property bool groupChild
     readonly property string groupCaption: {
         if (!tile.isGroup || !controller || !controller.rowModel) return ""
         var s = (tile.groupCount, controller.rowModel.groupSummary(tile.index)).seasons || ""
         var n = (i18n.language, i18n.t("search_episodes_n")).arg(tile.groupCount)
-        return s.length > 0 ? s + "  \u00b7  " + n : n
+        return s.length > 0 ? s + " · " + n : n
     }
     // A group plays the episode last watched, else its first one to watch.
     function groupPlayHash() {
@@ -62,33 +65,25 @@ Item {
             if (eps[i].playable) return eps[i].infoHash
         return tile.infoHash
     }
-    required property int groupCount
-    required property bool groupExpanded
-    required property bool groupChild
 
-    // Allow-list, not a deny-list: the old form listed every state that is not
-    // downloading, so it never excluded "error" (an errored torrent showed a
-    // download speed) and still named "finished", which torrentStateKey has
-    // never produced. Any state added later would leak through too.
     readonly property bool isDownloading: stateKey === "downloading"
-    // Incomplete, not just actively moving. A paused or stalled torrent is the
-    // case where Windows already shows the file at its final size, so hiding
-    // how much is really on disk is exactly when it misleads most.
     readonly property bool isIncomplete: progress < 1.0 && stateKey !== "fetching"
     readonly property int etaSec: (downRate > 0 && progress < 1.0 && sizeBytes > 0)
         ? Math.round(sizeBytes * (1 - progress) / downRate) : -1
+    readonly property bool selected: controller.isRowSelected(tile.index)
+    // Over the art only what is unfinished or wrong. A finished item, seeding
+    // or not, has nothing to report there.
+    readonly property bool trouble: Theme.isTroubleState(stateKey)
+    readonly property bool fetching: stateKey === "fetching"
+    readonly property bool showBar: !tile.isGroup
+        && (trouble || fetching || (progress < 0.999 && stateKey !== "completed" && stateKey !== "seeding"))
 
     readonly property string posterUrl: win.fileUrl(posterPath)
-    // A poster that fails to decode is no poster. Treating it as one left a
-    // hole where the artwork should be: a missing image plugin, a truncated
-    // download or a corrupt file all land here.
     readonly property bool artShown: posterUrl !== "" && posterImg.status !== Image.Error
-    readonly property bool hovered: tileMa.containsMouse || ptMa.containsMouse || chipMa.containsMouse
+    readonly property bool hovered: tileMa.containsMouse || ptMa.containsMouse
 
     // What the bar and the percentage draw. The engine reports once a second,
     // so `progress` moves in steps; this follows it linearly over that second.
-    // It animates the value, not the bar width, so resizing the window stays
-    // instant.
     property real shownProgress: 0
     property string seenHash: ""
     property bool wasDone: false
@@ -145,22 +140,24 @@ Item {
     }
     NumberAnimation { id: progGlide; target: tile; property: "shownProgress" }
 
-    // A group reads as a stack: two cards peek out above its cover.
-    Repeater {
-        model: tile.isGroup ? 2 : 0
-        Rectangle {
-            required property int index
-            x: 8 * (index + 1)
-            y: -5 * (index + 1)
-            z: -1 - index
-            width: 178 - 16 * (index + 1)
-            height: 237
-            radius: 10
-            color: Theme.isLight ? Qt.darker(Theme.panel, 1.06 + index * 0.06) : Qt.lighter("#161618", 1.35 - index * 0.15)
-            border.color: Theme.hair
-            border.width: 1
-            transform: Translate { y: posterShift.y }
-        }
+    // A series reads as a stack: two covers peek out above its own.
+    Rectangle {
+        visible: tile.isGroup
+        x: 16; y: -10
+        width: 178 - 32; height: 30
+        radius: 10
+        color: Theme.stackBack
+        border.color: Theme.hair; border.width: 1
+        transform: Translate { y: posterShift.y }
+    }
+    Rectangle {
+        visible: tile.isGroup
+        x: 8; y: -5
+        width: 178 - 16; height: 30
+        radius: 10
+        color: Theme.stackMid
+        border.color: Theme.hair; border.width: 1
+        transform: Translate { y: posterShift.y }
     }
 
     Item {
@@ -169,94 +166,46 @@ Item {
         height: 237
         transform: Translate {
             id: posterShift
-            y: tile.hovered ? -Theme.travel(4) : 0
+            y: tile.hovered ? -Theme.travel(3) : 0
             Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         }
 
+        // no art: what kind of file it is, set large at the top left
         Rectangle {
             anchors.fill: parent
             radius: 10
-            color: "#161618"
+            color: Theme.tileBlank
             visible: !tile.artShown
-            // Last resort only: no usable extension, no resolved type, nothing
-            // to say. The bat goes in the middle only when it is the only
-            // thing we know; as a permanent backdrop it was just noise.
             Image {
-                anchors.centerIn: parent
-                width: parent.width * 0.5
-                height: width
+                // a magnet without metadata yet: only the bat, faint
+                x: 45; y: 70
+                width: 88; height: 88
                 visible: tile.fileKind.length === 0
                 source: "qrc:/images/logo.svg"
-                sourceSize: Qt.size(width * 2, width * 2)
+                sourceSize: Qt.size(176, 176)
                 fillMode: Image.PreserveAspectFit
-                opacity: 0.06
+                opacity: 0.07
                 layer.enabled: Theme.isLight
                 layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
             }
-
-            // A typographic cover rather than a centred watermark. Centred and
-            // symmetrical is what reads as a placeholder; a hero set high and
-            // left, with air under it, reads as a decision. The extension is
-            // also the most useful thing we know about a torrent with no art.
-            Column {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                anchors.topMargin: Math.round(parent.height * 0.17)
-                spacing: 7
-                visible: tile.fileKind.length > 0
-
-                Text {
-                    id: kindText
-                    text: tile.fileKind
-                    color: "#f5f5f6"
-                    // HorizontalFit so a long one (M2TS, WEBM) shrinks to the
-                    // tile instead of being clipped or eliding to nonsense.
-                    font.pixelSize: Math.round(tile.width * 0.30)
-                    fontSizeMode: Text.HorizontalFit
-                    minimumPixelSize: 20
-                    width: parent.width
-                    horizontalAlignment: Text.AlignLeft
-                    font.weight: Font.Bold
-                    font.letterSpacing: -1.5
-                    font.family: Theme.fontSans
-                }
-                // Red only here, and only under the hero: colour is signal, and
-                // this is the one place on a blank tile that earns it.
-                Rectangle {
-                    width: Math.min(kindText.contentWidth, parent.width)
-                    height: 3
-                    radius: 1.5
-                    color: Theme.accent
-                }
-            }
             Text {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.leftMargin: 13
-                anchors.rightMargin: 13
-                // Same as the artwork title: the bar's band is 8 + 9 whether
-                // or not there is a poster behind it.
-                anchors.bottomMargin: 25
-                text: tile.metaTitle || tile.torrentName
-                color: "#f5f5f6"
-                font.pixelSize: 18
+                visible: tile.fileKind.length > 0
+                x: 12; y: 40
+                width: parent.width - 24
+                text: tile.fileKind
+                color: Theme.tileInk
+                font.pixelSize: 53
+                fontSizeMode: Text.HorizontalFit
+                minimumPixelSize: 20
                 font.weight: Font.Bold
-                font.letterSpacing: -0.3
+                font.letterSpacing: -1.5
                 font.family: Theme.fontSans
-                wrapMode: Text.WordWrap
-                maximumLineCount: 3
-                elide: Text.ElideRight
             }
         }
 
-        Rectangle {
+        Item {
             id: posterBg
             anchors.fill: parent
-            color: "#161618"
             visible: false
             layer.enabled: true
             Image {
@@ -267,17 +216,6 @@ Item {
                 asynchronous: true
                 sourceSize: Qt.size(356, 474)
                 cache: true
-            }
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: parent.height * 0.6
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.55; color: Qt.rgba(0, 0, 0, 0.45) }
-                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.92) }
-                }
             }
         }
         Rectangle {
@@ -295,123 +233,73 @@ Item {
             maskSource: posterMask
             visible: tile.artShown
         }
-        Text {
-            visible: tile.artShown
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            // Clears the progress bar's band (8 + 9 high) instead of sitting in it.
-            anchors.bottomMargin: 25
-            text: tile.metaTitle || tile.torrentName
-            color: "#f5f5f6"
-            font.pixelSize: 15
-            font.weight: Font.Bold
-            font.letterSpacing: -0.2
-            font.family: Theme.fontSans
-            elide: Text.ElideRight
-            maximumLineCount: 2
-            wrapMode: Text.WordWrap
-        }
 
-        // No pill behind it: the poster already carries a scrim that reaches
-        // 92% black at this edge, so a second dark plate was black on black
-        // and only added weight.
-        // Sized for the widest value it can ever hold, so every bar in the
-        // grid ends at the same x: letting the text size itself made a tile
-        // at 100% stop 20px short of one at 0%.
-        TextMetrics {
-            id: pctMetrics
-            font: pctTxt.font
-            text: "100%"
-        }
-        Text {
-            id: pctTxt
-            visible: !Theme.isTroubleState(tile.stateKey) && tile.stateKey !== "fetching"
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            // Centred on the bar, not sharing its bottom edge: a text item's
-            // box reserves descender space, so matching bottoms leaves the
-            // glyphs sitting high.
-            anchors.verticalCenter: progTrack.verticalCenter
-            width: pctMetrics.width
-            horizontalAlignment: Text.AlignRight
-            text: Math.floor(Math.max(0, Math.min(1, tile.shownProgress)) * 100) + "%"
-            color: "#ffffff"
-            font.pixelSize: 11
-            font.weight: Font.Bold
-            font.family: Theme.fontSans
-            font.features: Theme.tnum
-        }
-        ProgressTrack {
-            id: progTrack
-            anchors.left: parent.left
-            anchors.right: pctTxt.visible ? pctTxt.left : parent.right
-            anchors.bottom: parent.bottom
-            anchors.leftMargin: 12
-            anchors.rightMargin: pctTxt.visible ? 8 : 12
-            anchors.bottomMargin: 8
-            // 9, not 14: the extra height only ever existed to seat the
-            // percentage, and that moved out beside it.
-            height: 9
-            // a group draws its episodes' segments over this instead
-            opacity: tile.isGroup ? 0 : 1
-            progress: tile.shownProgress
-            stateKey: tile.stateKey
-            sheen: (tile.stateKey === "seeding" && tile.upRate > 0)
-                   || (tile.isDownloading && tile.downRate > 0)
-            MouseArea {
-                id: barMa
-                anchors.fill: parent
-                anchors.margins: -6
-                acceptedButtons: Qt.NoButton
-                hoverEnabled: tile.isIncomplete
-            }
-            ToolTip.visible: barMa.containsMouse
-            ToolTip.delay: 250
-            ToolTip.text: tile.downloaded + " " + (i18n.language, i18n.t("word_of")) + " " + tile.size
-        }
-        Row {
-            visible: tile.isGroup && tile.groupSegs.length > 0
-            anchors.left: progTrack.left
-            anchors.right: progTrack.right
-            anchors.verticalCenter: progTrack.verticalCenter
-            height: 4
-            spacing: 3
-            Repeater {
-                model: tile.groupSegs
-                Rectangle {
-                    required property real modelData
-                    width: (parent.width - parent.spacing * (tile.groupSegs.length - 1)) / Math.max(1, tile.groupSegs.length)
-                    height: 4
-                    radius: 2
-                    color: Qt.rgba(1, 1, 1, 0.22)
-                    Rectangle {
-                        width: parent.width * Math.max(0, Math.min(1, modelData))
-                        height: parent.height
-                        radius: 2
-                        color: modelData >= 0.999 ? Theme.amber : Theme.accent
-                    }
+        // the bar, only while unfinished or in trouble, over a short scrim
+        Item {
+            id: barBand
+            visible: tile.showBar
+            anchors.fill: parent
+            Rectangle {
+                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                height: 56
+                radius: 10
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.85) }
                 }
             }
+            Text {
+                id: pctTxt
+                visible: !tile.trouble && !tile.fetching
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: progTrack.verticalCenter
+                width: 30
+                horizontalAlignment: Text.AlignRight
+                text: Math.floor(Math.max(0, Math.min(1, tile.shownProgress)) * 100) + "%"
+                color: "#ffffff"
+                font.pixelSize: 11
+                font.weight: Font.Bold
+                font.family: Theme.fontSans
+                font.features: Theme.tnum
+            }
+            ProgressTrack {
+                id: progTrack
+                anchors.left: parent.left
+                anchors.right: pctTxt.visible ? pctTxt.left : parent.right
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: 12
+                anchors.rightMargin: pctTxt.visible ? 8 : 12
+                anchors.bottomMargin: tile.trouble ? 13 : 10
+                height: 9
+                onArt: true
+                progress: tile.shownProgress
+                stateKey: tile.stateKey
+                fill: tile.isDownloading ? Theme.accent : Theme.fillFor(tile.stateKey)
+                sheen: tile.isDownloading && tile.downRate > 0
+                MouseArea {
+                    id: barMa
+                    anchors.fill: parent
+                    anchors.margins: -6
+                    acceptedButtons: Qt.NoButton
+                    hoverEnabled: tile.isIncomplete
+                }
+                ToolTip.visible: barMa.containsMouse
+                ToolTip.delay: 250
+                ToolTip.text: tile.downloaded + " " + (i18n.language, i18n.t("word_of")) + " " + tile.size
+            }
         }
 
+        // play: on the selected card, or under the pointer
         Rectangle {
-            // Metadata and a video in it is the whole condition. Playing preps
-            // the file for streaming and prioritises its head, so
-            // there is nothing to wait for: the old `progress > 0.02` gate
-            // meant 1 GB on a 50 GB torrent and 14 MB on a 700 MB one, and
-            // hid the control exactly while someone wanted to start watching.
-            visible: tile.playable
-                     && (tileMa.containsMouse || ptMa.containsMouse || controller.isRowSelected(tile.index))
+            visible: tile.playable && (tile.selected || tileMa.containsMouse || ptMa.containsMouse)
             x: (parent.width - width) / 2
-            y: (parent.height - height) / 2
+            y: 95
             width: 46
             height: 46
             radius: 23
             z: 5
-            color: "#cc101014"
+            color: Qt.rgba(16 / 255, 16 / 255, 20 / 255, 0.8)
             border.color: ptMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
             border.width: 1
             scale: ptMa.containsMouse ? 1.08 : 1.0
@@ -433,19 +321,43 @@ Item {
             }
         }
 
+        // a series: how many episodes, top left, nothing else
+        Rectangle {
+            visible: tile.isGroup
+            x: 8; y: 8
+            z: 6
+            radius: 10
+            height: 20
+            width: countTxt.implicitWidth + 16
+            color: Qt.rgba(0, 0, 0, 0.8)
+            Text {
+                id: countTxt
+                anchors.centerIn: parent
+                text: tile.groupCount
+                color: "#ffffff"
+                font.pixelSize: 11
+                font.weight: Font.Bold
+                font.family: Theme.fontSans
+                font.features: Theme.tnum
+            }
+        }
+
+        // Selection is neutral: a white ring outside the edge, never the accent
+        // (red already means downloading and trouble). Otherwise a hairline.
         Rectangle {
             anchors.fill: parent
-            radius: 10
+            anchors.margins: tile.selected ? -2 : 0
+            radius: tile.selected ? 12 : 10
             color: "transparent"
-            border.color: controller.isRowSelected(tile.index) ? Theme.accent
-                          : (tileMa.containsMouse ? Qt.rgba(1, 1, 1, 0.2) : Theme.hair)
-            border.width: controller.isRowSelected(tile.index) ? 2 : 1
+            border.color: tile.selected ? Theme.t1
+                          : (tileMa.containsMouse ? Qt.rgba(1, 1, 1, 0.18) : Theme.hair)
+            border.width: tile.selected ? 2 : 1
             Behavior on border.color { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
         }
 
-        // Finished while on screen: the bar fills, then a ring in the done
-        // colour grows off the poster edge and fades. Only on the transition,
-        // never for a tile that loads already complete.
+        // Finished while on screen: a ring in the done colour grows off the
+        // poster edge and fades. Only on the transition, never for a card
+        // that loads already complete.
         Rectangle {
             id: finishHalo
             anchors.fill: parent
@@ -484,8 +396,6 @@ Item {
             }
         }
 
-        PosterTileBadges { tile: tile }
-
         MouseArea {
             id: tileMa
             anchors.fill: parent
@@ -497,7 +407,7 @@ Item {
                     if (!controller.isRowSelected(tile.index)) controller.selectRow(tile.index, 0)
                     win.openContext(tile.index)
                 } else {
-                    // A plain click on the tile that is already the only one
+                    // A plain click on the card that is already the only one
                     // selected opens its page; the first click just selects it.
                     const again = mouse.modifiers === Qt.NoModifier && controller.isRowSelected(tile.index)
                                   && controller.selectedRows.length <= 1
@@ -505,9 +415,9 @@ Item {
                     if (again && win.openTorrentPage(tile.infoHash)) tileMa.pageOpenedMs = Date.now()
                 }
             }
-            // A film, show or game opens on its own page, as in the list; with
-            // no page to open, the file is revealed.
-            // A double-click on the selected tile: its first click already opened the page.
+            // A film, show or game opens on its own page; with no page to
+            // open, the file is revealed. A double-click on the selected card:
+            // its first click already opened the page.
             property real pageOpenedMs: 0
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.RightButton && Date.now() - pageOpenedMs >= 800) {
@@ -516,71 +426,6 @@ Item {
                 }
             }
         }
-    }
-
-    // How many episodes, and the way in: the chip opens the group in place
-    // without changing the selection.
-    Rectangle {
-        id: groupChip
-        visible: tile.isGroup
-        parent: posterWrap
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.leftMargin: 8
-        anchors.topMargin: 8
-        z: 6
-        radius: 9
-        height: 20
-        width: chipRow.implicitWidth + 14
-        color: chipMa.containsMouse ? "#ee000000" : "#cc000000"
-        border.color: chipMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.18)
-        border.width: 1
-        Behavior on border.color { ColorAnimation { duration: Theme.durFast } }
-        Row {
-            id: chipRow
-            anchors.centerIn: parent
-            spacing: 4
-            IconImg {
-                anchors.verticalCenter: parent.verticalCenter
-                src: "qrc:/icons/chevron.svg"
-                tint: "#ffffff"
-                s: 11
-                rotation: tile.groupExpanded ? 0 : -90
-                Behavior on rotation { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: (i18n.language, i18n.t("search_episodes_n")).arg(tile.groupCount)
-                color: "#ffffff"
-                font.pixelSize: 10
-                font.weight: Font.Bold
-                font.family: Theme.fontSans
-                font.features: Theme.tnum
-            }
-        }
-        MouseArea {
-            id: chipMa
-            anchors.fill: parent
-            anchors.margins: -4
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            // the episodes are in the inspector: the chip selects the group
-            onClicked: controller.selectRow(tile.index, 0)
-        }
-    }
-    // An episode shown under its open group: a short rule over the cover ties
-    // it to the stack before it.
-    Rectangle {
-        visible: tile.groupChild
-        parent: posterWrap
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: -7
-        width: 40
-        height: 3
-        radius: 1.5
-        color: Theme.t3
-        opacity: 0.6
     }
 
     PosterTileMeta {

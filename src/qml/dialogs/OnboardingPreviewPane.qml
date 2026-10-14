@@ -10,8 +10,6 @@ ColumnLayout {
     id: pane
 
     property bool classic: false
-    property bool navLeft: false
-    property bool detailBottom: false
     property int step: 0
     property bool narrow: false
     property var uiPalette: Theme
@@ -25,12 +23,8 @@ ColumnLayout {
         OnboardingPreview {
             anchors.fill: parent
             classic: pane.classic
-            navLeft: pane.navLeft
-            detailBottom: pane.detailBottom
             focusArea: pane.step === 1 ? "theme"
-                     : pane.step === 2 ? "view"
-                     : pane.step === 3 ? "nav"
-                     : pane.step === 4 ? "detail" : ""
+                     : pane.step === 2 ? "view" : ""
         }
 
         Rectangle {

@@ -449,6 +449,7 @@ QVariantList QmlLibraryModel::groupEpisodes(int row) const
         m[QStringLiteral("stateString")] = val(PM::StateStringRole);
         m[QStringLiteral("size")] = val(PM::SizeRole);
         m[QStringLiteral("downSpeed")] = val(PM::DownSpeedRole);
+        m[QStringLiteral("upRate")] = val(PM::UpRateRole);
         m[QStringLiteral("eta")] = val(PM::EtaRole);
         m[QStringLiteral("playable")] = val(PM::PlayableRole);
         m[QStringLiteral("season")] = season;

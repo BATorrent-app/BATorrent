@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QQuickStyle>
 #include <QSplashScreen>
 #include <QPixmap>
@@ -13,6 +14,9 @@
 
 #ifdef BAT_HAVE_SENTRY
 #include <sentry.h>
+#endif
+#ifdef BAT_FRAMELESS
+#include <QWKQuick/qwkquickglobal.h>
 #endif
 
 #include "app/appruntime.h"
@@ -112,6 +116,11 @@ int main(int argc, char *argv[])
     AppServices svc = AppServices::create(app);
 
     QQmlApplicationEngine engine;
+#ifdef BAT_FRAMELESS
+    QWK::registerTypes(&engine);
+    // Main.qml loads AppFramelessAgent (which imports QWindowKit) only when set
+    engine.rootContext()->setContextProperty(QStringLiteral("framelessWindow"), true);
+#endif
     engine.addImageProvider(QStringLiteral("applogo"), AppRuntime::createAppLogoProvider());
     engine.addImageProvider(QStringLiteral("steamart"), new SteamArtProvider);
 

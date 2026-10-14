@@ -43,7 +43,17 @@ Item {
     }
 
     Shortcut { sequences: [StandardKey.HelpContents]; onActivated: host.showWin(host.shortcutsWinLoader) }
+    // The menu bar used to own these; the logo menu only shows them. macOS
+    // still has its system menu bar, which carries the same keys.
+    Shortcut { enabled: Qt.platform.os !== "osx"; sequences: [StandardKey.Open]; onActivated: host.openFileDlg.open() }
+    Shortcut { enabled: Qt.platform.os !== "osx"; sequence: "Ctrl+Q"; onActivated: Qt.quit() }
+    Shortcut { sequences: [StandardKey.Refresh, "F5"]; onActivated: host.refreshView() }
     Shortcut { sequence: "Ctrl+F"; onActivated: filterBar.searchInput.forceActiveFocus() }
+    // what the right-click menu lists next to its rows; Downloads only, and a
+    // text field under the cursor keeps its own Delete and Enter
+    Shortcut { enabled: host.currentPage === 0 && host.hasSel; sequences: [StandardKey.Delete]; onActivated: host.removeDlg.open() }
+    Shortcut { enabled: host.currentPage === 0 && host.hasSel; sequence: "F2"; onActivated: host.promptRenameSelected() }
+    Shortcut { enabled: host.currentPage === 0 && host.hasSel; sequence: "Ctrl+E"; onActivated: session.openSaveFolder() }
     Shortcut { sequence: "Ctrl+R"; onActivated: if (typeof session !== "undefined") session.forceRecheckSelected() }
     // reorder queue: vertical in list, horizontal in grid (tiles sit side by side)
     Shortcut { sequence: "Ctrl+Up";    enabled: !library.gridView; onActivated: if (typeof session !== "undefined") session.queueUpSelected() }

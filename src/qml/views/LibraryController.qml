@@ -48,6 +48,30 @@ QtObject {
     // but what the inspector shows and the toolbar acts on is that episode.
     property int focusedEpisodeSource: -1
 
+    // Episode names from TMDB, shared by every list row ("S01E01 · The Day I
+    // Became a Shinigami"): asked once per show and season.
+    property var episodeNames: ({})
+    property var episodeAsked: ({})
+    function episodeName(tmdb, season, episode) {
+        if (!(tmdb > 0) || !(season > 0) || !(episode > 0)) return ""
+        var key = tmdb + ":" + season
+        if (!root.episodeAsked[key] && typeof discovery !== "undefined") {
+            root.episodeAsked[key] = true
+            discovery.fetchEpisodes(tmdb, season)
+        }
+        return root.episodeNames[key + ":" + episode] || ""
+    }
+    property Connections episodeFeed: Connections {
+        target: typeof discovery !== "undefined" ? discovery : null
+        ignoreUnknownSignals: true
+        function onEpisodesReady(id, season, eps) {
+            var n = Object.assign({}, root.episodeNames)
+            for (var i = 0; i < eps.length; i++) n[id + ":" + season + ":" + eps[i].episode] = eps[i].name
+            root.episodeNames = n
+        }
+        function onLanguageReloaded() { root.episodeNames = ({}); root.episodeAsked = ({}) }
+    }
+
     function commitSel() {
         if (root.keyedRows) {
             var keys = []

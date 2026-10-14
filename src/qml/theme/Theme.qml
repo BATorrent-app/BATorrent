@@ -60,12 +60,12 @@ QtObject {
 
     // ---------- state → colour ----------
     // One home for the language, because the dot, the label and the progress
-    // bar have to agree: done green, seeding amber, paused grey, trouble red.
-    // Downloading keeps the brand accent: green there would collide with done,
-    // which is what green already means everywhere else in the app.
+    // bar have to agree: one colour per meaning. Red is downloading now or a
+    // problem; green is done, seeding or not (a darker green under a bar, so
+    // a row of finished items does not glare); grey is paused or queued. Amber
+    // is only the upload arrow.
     function fillFor(k) {
-        if (k === "finished" || k === "completed") return grn
-        if (k === "seeding") return amber
+        if (k === "finished" || k === "completed" || k === "seeding") return doneFill
         if (k === "paused" || k === "queued") return pausedFill
         if (k === "missing" || k === "error") return accent
         return accent
@@ -168,6 +168,21 @@ QtObject {
         name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.10) :
         name === "matrix"   ? Qt.rgba(43/255,232/255,106/255,0.09) : Qt.rgba(1,1,1,0.035)
 
+    // a step above hover: a pressed/open control, the selected row, a caption button
+    readonly property color hover2:
+        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.08) :
+        isLight             ? Qt.rgba(0,0,0,0.07) : Qt.rgba(1,1,1,0.06)
+
+    // a grid card with no art, and the type label set on it
+    readonly property color tileBlank: isLight ? Qt.darker(panel, 1.04) : "#161618"
+    readonly property color tileInk: isLight ? t1 : "#f3f3f4"
+    // the two covers peeking out above a series card, back one darkest
+    readonly property color stackBack: isLight ? Qt.darker(panel, 1.10) : "#1c1c20"
+    readonly property color stackMid: isLight ? Qt.darker(panel, 1.05) : "#252529"
+
+    // the close caption button under the pointer (Windows' own red)
+    readonly property color winClose: "#c42b1c"
+
     // .sel / .pill.on tint (--c-sel)
     readonly property color sel:
         name === "custom"   ? Qt.rgba(customPrimaryColor.r, customPrimaryColor.g, customPrimaryColor.b, 0.13) :
@@ -218,6 +233,10 @@ QtObject {
         name === "matrix"   ? "#55a86c" : "#999a9f"
 
 
+    // between t1 and t2: menu rows, body copy that should not shout
+    readonly property color tSoft:
+        name === "dark" ? "#d9dade" : (name === "light" ? "#2a2c31" : t1)
+
     readonly property color t4:
         name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.55) :
         name === "light"    ? "#727581" :
@@ -264,8 +283,9 @@ QtObject {
 
     // ---------- signal colours that are not theme accents ----------
     readonly property color star: up                 // a rating
+    // orange, apart from the seeding amber: won't fit, slow, port blocked
     readonly property color warn:
-        name === "matrix" ? "#e6d84a" : (isLight ? "#b07a12" : "#e0a533")   // won't fit, slow
+        name === "matrix" ? "#e6d84a" : (isLight ? "#c2621f" : "#e8833a")
     readonly property color seedLow:
         name === "matrix" ? "#d6a24a" : (isLight ? "#b4562a" : "#d97640")   // 1–9 seeds
 
@@ -320,6 +340,11 @@ QtObject {
     readonly property color pausedFill:
         name === "custom" ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.42) :
         isLight ? "#6a6c73" : "#54555c"
+
+    // a finished item's bar: the done green, darker so many of them stay calm
+    readonly property color doneFill:
+        name === "custom" ? Qt.darker(customTertiaryColor, 1.7) :
+        name === "matrix" ? "#1f7a3a" : (isLight ? "#3d9a4c" : "#24692f")
 
     // --grn (verde de saúde: seeds em Search, "Instalado" em Addons, badge "Auto" em RSS)
     // dark/midnight/darkstar #3fb950 ; light/sakura #2e9c40
