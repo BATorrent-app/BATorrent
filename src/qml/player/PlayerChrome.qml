@@ -74,6 +74,80 @@ Item {
         Accessible.name: cb.tip
         Accessible.onPressAction: cb.clicked()
     }
+    // Back/forward 10 s: on a seek the button swells and the ring makes a full
+    // turn in the seek's direction while the 10 stays put (iOS does the same).
+    // A seek mid-turn adds another turn instead of snapping back.
+    component SkipBtn: Item {
+        id: sb
+        property int dir: 1
+        property string tip
+        signal clicked()
+        implicitWidth: 40; implicitHeight: 40
+        function spin() {
+            const dest = (turn.running ? turn.to : 0) + sb.dir * 360
+            turn.stop()
+            turn.from = ring.rotation
+            turn.to = dest
+            turn.start()
+            pop.restart()
+        }
+        Rectangle {
+            id: sbBg
+            anchors.fill: parent
+            radius: 8
+            color: sbMa.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.durFast } }
+        }
+        Rectangle {
+            id: flash
+            anchors.fill: parent
+            radius: 8
+            color: "#ffffff"
+            opacity: 0
+        }
+        IconImg {
+            id: ring
+            anchors.centerIn: parent
+            src: sb.dir > 0 ? "qrc:/icons/skip-ring-fwd.svg" : "qrc:/icons/skip-ring-back.svg"
+            s: 28; tint: "#ffffff"
+        }
+        Text {
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: 1
+            text: "10"
+            color: "#ffffff"
+            font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
+        }
+        NumberAnimation {
+            id: turn
+            target: ring; property: "rotation"
+            duration: 520; easing.type: Easing.OutCubic
+            onFinished: ring.rotation = 0
+        }
+        SequentialAnimation {
+            id: pop
+            ParallelAnimation {
+                NumberAnimation { target: sb; property: "scale"; to: 1.14; duration: 120; easing.type: Easing.OutCubic }
+                NumberAnimation { target: flash; property: "opacity"; to: 0.16; duration: 120; easing.type: Easing.OutCubic }
+            }
+            ParallelAnimation {
+                NumberAnimation { target: sb; property: "scale"; to: 1; duration: 380; easing.type: Easing.OutBack }
+                NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+            }
+        }
+        MouseArea { id: sbMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: sb.clicked() }
+        ToolTip.visible: sbMa.containsMouse && sb.tip.length > 0
+        ToolTip.text: sb.tip
+        ToolTip.delay: 500
+        Accessible.role: Accessible.Button
+        Accessible.name: sb.tip
+        Accessible.onPressAction: sb.clicked()
+    }
+    Connections {
+        target: root.pw
+        ignoreUnknownSignals: true
+        function onSkipped(ms) { (ms < 0 ? skipBackBtn : skipFwdBtn).spin() }
+    }
     component WinBtn: Rectangle {
         id: wb
         property string glyph
@@ -234,14 +308,14 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
                 spacing: 6
-                CtlBtn { icon: "qrc:/icons/skip-back-10.svg"; tip: (i18n.language, i18n.t("player_back10")); onClicked: if (pw) pw.seekBy(-10000) }
+                SkipBtn { id: skipBackBtn; dir: -1; tip: (i18n.language, i18n.t("player_back10")); onClicked: if (pw) pw.seekBy(-10000) }
                 CtlBtn {
                     readonly property bool playing: !!mediaPlayer && mediaPlayer.playbackState === MediaPlayer.PlayingState
                     icon: playing ? "qrc:/icons/pause.svg" : "qrc:/icons/play.svg"
                     tip: (i18n.language, i18n.t("player_play_pause"))
                     onClicked: if (pw) pw.togglePlay()
                 }
-                CtlBtn { icon: "qrc:/icons/skip-fwd-10.svg"; tip: (i18n.language, i18n.t("player_fwd10")); onClicked: if (pw) pw.seekBy(10000) }
+                SkipBtn { id: skipFwdBtn; dir: 1; tip: (i18n.language, i18n.t("player_fwd10")); onClicked: if (pw) pw.seekBy(10000) }
                 CtlBtn {
                     visible: !!pw && pw.hasNext
                     icon: "qrc:/icons/skip-forward.svg"; s: 18

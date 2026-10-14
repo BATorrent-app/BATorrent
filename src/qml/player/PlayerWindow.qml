@@ -692,8 +692,12 @@ Window {
     function toggleFullscreen() {
         win.visibility = (win.visibility === Window.FullScreen) ? Window.Windowed : Window.FullScreen
     }
+    // the chrome turns the matching skip ring, for the keys as well as the buttons
+    signal skipped(int ms)
     function seekBy(ms) {
-        if (player.seekable) player.position = Math.max(0, Math.min(player.duration, player.position + ms))
+        if (!player.seekable) return
+        player.position = Math.max(0, Math.min(player.duration, player.position + ms))
+        win.skipped(ms)
     }
     function bumpVolume(d) { win.muted = false; win.volume = Math.max(0, Math.min(1, win.volume + d)) }
     function seekFraction(f) { if (player.seekable && player.duration > 0) player.position = Math.round(player.duration * f) }
