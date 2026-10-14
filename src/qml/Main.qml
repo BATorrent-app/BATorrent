@@ -57,7 +57,7 @@ Window {
         }
     }
 
-    // current page of the content stack (0 Downloads · 1 Find · 2 HUB ·
+    // current page of the content stack (0 Downloads Â· 1 Find Â· 2 HUB Â·
     // 3 Settings).
     property int currentPage: 0
     onCurrentPageChanged: {
@@ -98,7 +98,7 @@ Window {
     }
     // Shared by the File menu, the toolbar "Link" button and the empty state.
     function promptHttpDownload() {
-        inputPrompt.openWith(i18n.t("menu_add_http"), i18n.t("prompt_http_url"), "", "https://…/file.zip",
+        inputPrompt.openWith(i18n.t("menu_add_http"), i18n.t("prompt_http_url"), "", "https://â€¦/file.zip",
             function(t){ if (t.length > 0) session.addHttpUrl(t) })
     }
     // What Find and HUB show is per language: a change has to fetch it again,
@@ -142,13 +142,6 @@ Window {
         || (welcomeDlg && welcomeDlg.opened)
         || (tourOverlay && tourOverlay.running)
     Component.onCompleted: {
-        // restore the last window size (only if it's still sane vs the minimums)
-        if (typeof settings !== "undefined") {
-            var sw = Number(settings.get("winWidth") || 0)
-            var sh = Number(settings.get("winHeight") || 0)
-            if (sw >= win.minimumWidth && sw <= Screen.desktopAvailableWidth) win.width = sw
-            if (sh >= win.minimumHeight && sh <= Screen.desktopAvailableHeight) win.height = sh
-        }
         if (typeof settings !== "undefined") library.classicMode = settings.getBool("classicMode")
         if (library.classicMode) library.gridView = false   // classic is a list layout
         if (typeof settings !== "undefined")
@@ -171,11 +164,26 @@ Window {
         // The frameless setup runs on the hidden window, before any show:
         // also when starting in the tray, since a later show (tray, second
         // launch) can come from C++ without passing through QML.
+        // The saved size goes on after that: set before, the frame came off
+        // around it and its caption height joined the window, which then
+        // grew by that much on every launch.
         Qt.callLater(function() {
             if (framelessLoader.item) framelessLoader.item.attach()
+            win.restoreSize()
             if (!startHidden) win.visible = true
+            // and once more after the first show: the frame only really comes
+            // off when the native window exists, and takes its caption with it
+            Qt.callLater(win.restoreSize)
         })
         if (!showSplash) win.maybeShowWelcome()
+    }
+    // the last window size, if it is still sane for the minimums and the screen
+    function restoreSize() {
+        if (typeof settings === "undefined") return
+        var sw = Number(settings.get("winWidth") || 0)
+        var sh = Number(settings.get("winHeight") || 0)
+        if (sw >= win.minimumWidth && sw <= Screen.desktopAvailableWidth) win.width = sw
+        if (sh >= win.minimumHeight && sh <= Screen.desktopAvailableHeight) win.height = sh
     }
     Loader {
         id: framelessLoader
@@ -191,10 +199,10 @@ Window {
         var m = session.clipboardMagnetIfNew()
         if (m.length > 0) addDlg.openWithText(m)
     }
-    // first launch → the interactive tour (opens with a welcome step); an update
-    // (version changed) → the what's-new screen. Once each, never both, never on
+    // first launch â†’ the interactive tour (opens with a welcome step); an update
+    // (version changed) â†’ the what's-new screen. Once each, never both, never on
     // a plain relaunch.
-    // "4.7.1" → 40701, so versions compare as numbers instead of strings, where
+    // "4.7.1" â†’ 40701, so versions compare as numbers instead of strings, where
     // "4.10" would sort below "4.9". Missing or unparseable reads as 0, which is
     // the right answer: an install too old to have recorded a version is exactly
     // the one that needs the most help.
@@ -231,7 +239,7 @@ Window {
     }
 
     // Dismissed, not completed: remember it was offered, but do not start the
-    // tour — that is a reward for finishing, not a consolation for leaving.
+    // tour â€” that is a reward for finishing, not a consolation for leaving.
     function dismissWelcome() {
         if (typeof settings === "undefined") return
         settings.set("welcomeShown", true)
@@ -259,7 +267,7 @@ Window {
         return Qt.rect(p.x, p.y, item.width, item.height)
     }
     readonly property var presetCats: ["Apps", "Games", "Movies", "Series", "Compressed"]
-    property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
+    property int detailTab: 0   // 0 Geral Â· 1 Peers Â· 2 Arquivos Â· 3 Trackers Â· 4 PedaÃ§os
     property bool detailsCollapsed: typeof settings !== "undefined" && settings.getBool("detailsCollapsed")
     function toggleDetailsCollapsed() {
         detailsCollapsed = !detailsCollapsed
@@ -310,7 +318,7 @@ Window {
     readonly property bool peersTabOpen: win.hasSel && win.detailTab === 1
     onPeersTabOpenChanged: if (typeof session !== "undefined") session.setDetailPeersActive(peersTabOpen)
 
-    // live model from C++ (QmlTorrentFilterProxy → QmlPosterModel). Roles:
+    // live model from C++ (QmlTorrentFilterProxy â†’ QmlPosterModel). Roles:
     // torrentName, metaTitle, stateKey, progress(0..1), posterPath, stateString,
     // downSpeed, upSpeed, category, numPeers, downRate, upRate, size, infoHash.
     readonly property var model: typeof torrentModel !== "undefined" ? torrentModel : null
@@ -319,7 +327,7 @@ Window {
     // click unfolded it again, and the grid reflowed on both.
     readonly property bool detailsShownCollapsed: win.detailsCollapsed
 
-    // ----- state→color helpers (keyed by real stateKey) -----
+    // ----- stateâ†’color helpers (keyed by real stateKey) -----
     // The mapping lives in Theme so the progress bar can reach it without a
     // window; this stays as the call site every view already uses.
     function fillFor(k) { return Theme.fillFor(k) }
@@ -465,7 +473,7 @@ Window {
         onContextRequested: function(geo) { trayPopup.popUpAt(geo) }
     }
 
-    // Background events → in-app toast (when the window is up) AND the native
+    // Background events â†’ in-app toast (when the window is up) AND the native
     // OS notification (so it's seen when minimized/in the tray). Both, like the
     // legacy app.
     // Unified notification: when the window is up, show the custom toast at the
@@ -697,8 +705,8 @@ Window {
 
     function showWin(loader) { windowLoaders.showWin(loader) }
     function showWrapped() { windowLoaders.showWrapped() }
-    // Build a valid file: URL for a local path. On Windows a path is "C:/…",
-    // so plain "file://"+path yields "file://C:/…" where QUrl reads "C:" as a
+    // Build a valid file: URL for a local path. On Windows a path is "C:/â€¦",
+    // so plain "file://"+path yields "file://C:/â€¦" where QUrl reads "C:" as a
     // host and the image fails to load; Windows needs the triple-slash form.
     function fileUrl(p) {
         if (!p || p.length === 0) return ""
