@@ -74,7 +74,7 @@ Rectangle {
                 color: pi.on ? Theme.accentText : (piMa.containsMouse || pi.warn ? Theme.t2 : Theme.t3)
                 font.pixelSize: 13
                 font.family: Theme.fontSans
-                font.weight: pi.on ? Font.Medium : Font.Normal
+                font.weight: pi.on ? Font.DemiBold : Font.Medium
             }
             Text {
                 // baseline, not verticalCenter: the count is a size smaller, and
@@ -117,7 +117,7 @@ Rectangle {
                 text: sc.tip
                 color: sc.on ? Theme.t1 : (scMa.containsMouse ? Theme.t2 : Theme.t3)
                 font.pixelSize: 13
-                font.weight: sc.on ? Font.Medium : Font.Normal
+                font.weight: sc.on ? Font.DemiBold : Font.Medium
                 font.family: Theme.fontSans
             }
         }

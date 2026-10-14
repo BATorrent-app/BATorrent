@@ -316,7 +316,7 @@ BatDialog {
                     Text {
                         Layout.fillWidth: true
                         text: model.path; color: Theme.t1
-                        font.pixelSize: 12; font.weight: model.dir ? Font.DemiBold : Font.Normal
+                        font.pixelSize: 12; font.weight: model.dir ? Font.DemiBold : Font.Medium
                         font.family: Theme.fontSans; elide: Text.ElideMiddle
                     }
                     Text { text: model.size; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum; visible: model.size !== "" }

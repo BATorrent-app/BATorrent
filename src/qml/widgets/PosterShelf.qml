@@ -60,7 +60,7 @@ Item {
             text: (i18n.language, i18n.t("see_all"))
             color: saMa.containsMouse ? Theme.t1 : Theme.t4
             font.pixelSize: shelf.landscape ? 12 : 13
-            font.weight: shelf.landscape ? Font.Normal : Font.Medium
+            font.weight: shelf.landscape ? Font.Medium : Font.DemiBold
             font.family: Theme.fontSans
             MouseArea {
                 id: saMa; anchors.fill: parent; anchors.margins: -4

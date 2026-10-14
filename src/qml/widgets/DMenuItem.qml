@@ -48,7 +48,7 @@ MenuItem {
             text: (mi.checkable && mi.checked ? "✓  " : "") + mi.text
             color: mi.ink
             font.pixelSize: 13
-            font.weight: mi.tone === "primary" ? Font.DemiBold : Font.Normal
+            font.weight: mi.tone === "primary" ? Font.DemiBold : Font.Medium
             font.family: Theme.fontSans
             elide: Text.ElideRight
         }

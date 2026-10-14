@@ -30,7 +30,7 @@ MenuItem {
             text: cmi.text
             color: cmi.current ? Theme.accentText : (cmi.highlighted ? Theme.t1 : Theme.t2)
             font.pixelSize: 12
-            font.weight: cmi.current ? Font.DemiBold : Font.Normal
+            font.weight: cmi.current ? Font.DemiBold : Font.Medium
             font.family: Theme.fontSans
             elide: Text.ElideRight
         }

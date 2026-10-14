@@ -210,7 +210,7 @@ Rectangle {
                                             text: navItem.modelData.nav
                                             color: navItem.on || nrMa.containsMouse ? Theme.t1 : Theme.t2
                                             font.pixelSize: 15
-                                            font.weight: navItem.on ? Font.DemiBold : Font.Normal
+                                            font.weight: navItem.on ? Font.DemiBold : Font.Medium
                                             font.family: Theme.fontSans
                                             elide: Text.ElideRight
                                         }
@@ -463,7 +463,7 @@ Rectangle {
                                                  : (i18n.language, i18n.t("set_all_saved"))
                         color: Theme.grn
                         font.pixelSize: 14
-                        font.weight: savedFlash.running ? Font.DemiBold : Font.Normal
+                        font.weight: savedFlash.running ? Font.DemiBold : Font.Medium
                         font.family: Theme.fontSans
                     }
                     Timer { id: savedFlash; interval: 1800 }

@@ -178,7 +178,7 @@ Item {
         text: tile.label
         color: tile.selected ? tile.uiPalette.t1 : tile.uiPalette.t3
         font.pixelSize: 12
-        font.weight: tile.selected ? Font.DemiBold : Font.Normal
+        font.weight: tile.selected ? Font.DemiBold : Font.Medium
         font.family: tile.uiPalette.fontSans
     }
 

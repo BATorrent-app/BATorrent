@@ -58,7 +58,7 @@ Flow {
                                   : (chip.modelData.label || chip.modelData.value)
                             color: chip.on ? Theme.accentText : Theme.stageT2
                             font.pixelSize: 12
-                            font.weight: chip.on ? Font.Medium : Font.Normal
+                            font.weight: chip.on ? Font.DemiBold : Font.Medium
                             font.family: Theme.fontSans
                         }
                         Text {

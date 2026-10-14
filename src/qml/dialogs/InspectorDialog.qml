@@ -104,7 +104,7 @@ BatDialog {
                 property int idx: 0
                 color: dlg.tab === idx ? Theme.t1 : Theme.t3
                 font.pixelSize: 13
-                font.weight: dlg.tab === idx ? Font.DemiBold : Font.Normal
+                font.weight: dlg.tab === idx ? Font.DemiBold : Font.Medium
                 font.family: Theme.fontSans
                 MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: dlg.tab = parent.idx }
             }

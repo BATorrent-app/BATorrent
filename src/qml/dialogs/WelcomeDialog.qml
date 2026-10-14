@@ -311,7 +311,7 @@ BatDialog {
                     text: hRow.modelData
                     color: hRow.lead ? dlg.uiPalette.t1 : dlg.uiPalette.t2
                     font.pixelSize: hRow.lead ? 19 : 13
-                    font.weight: hRow.lead ? Font.Bold : Font.Normal
+                    font.weight: hRow.lead ? Font.Bold : Font.Medium
                     font.letterSpacing: hRow.lead ? -0.3 : 0
                     font.family: dlg.uiPalette.fontSans
                     wrapMode: Text.WordWrap; lineHeight: hRow.lead ? 1.2 : 1.35

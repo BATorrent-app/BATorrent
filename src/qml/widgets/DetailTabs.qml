@@ -56,7 +56,7 @@ Item {
                             color: on || tabMa.containsMouse ? Theme.t1 : Theme.t3
                             Behavior on color { ColorAnimation { duration: Theme.durFast } }
                             font.pixelSize: tabs.compact ? 12 : 13
-                            font.weight: on ? Font.DemiBold : Font.Normal
+                            font.weight: on ? Font.DemiBold : Font.Medium
                             font.family: Theme.fontSans
                         }
                         Text {

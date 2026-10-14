@@ -80,7 +80,7 @@ Grid {
                 color: swatch.modelData.key === "light" || swatch.modelData.key === "sakura"
                        ? "#16171a" : "#f3f3f4"
                 font.pixelSize: 13
-                font.weight: swatch.selected ? Font.DemiBold : Font.Normal
+                font.weight: swatch.selected ? Font.DemiBold : Font.Medium
                 font.family: picker.uiPalette.fontSans
             }
 

@@ -242,7 +242,7 @@ Item {
                                     text: index === 0 ? (i18n.language, i18n.t("player_subs_tab"))
                                           : (i18n.language, i18n.t("player_audio")) + (pop.audioCode.length > 0 ? " · " + pop.audioCode : "")
                                     color: parent.on ? "#ffffff" : Theme.stageMuted
-                                    font.pixelSize: 13; font.weight: parent.on ? Font.DemiBold : Font.Normal; font.family: Theme.fontSans
+                                    font.pixelSize: 13; font.weight: parent.on ? Font.DemiBold : Font.Medium; font.family: Theme.fontSans
                                 }
                                 MouseArea { anchors.fill: parent; enabled: parent.usable; cursorShape: Qt.PointingHandCursor; onClicked: pop.audioTab = index === 1 }
                             }

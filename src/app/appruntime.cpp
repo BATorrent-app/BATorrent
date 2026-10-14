@@ -162,6 +162,11 @@ void loadFonts(QApplication &app)
 
     QFont defaultFont("IBM Plex Sans", 10);
     defaultFont.setStyleStrategy(QFont::PreferAntialias);
+    // Body text in Medium. Qt draws IBM Plex's Regular with thinner stems than
+    // Chrome does (Chrome thickens text on dark backgrounds), so 400 read washed
+    // out next to the design; 500 here lands where Chrome's 400 does. The
+    // heavier weights already matched and stay as written.
+    defaultFont.setWeight(QFont::Medium);
     app.setFont(defaultFont);
 }
 

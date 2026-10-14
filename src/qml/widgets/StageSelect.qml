@@ -42,7 +42,7 @@ Item {
         text: sel.label
         color: sel.bare ? (ma.containsMouse ? Theme.stageT1 : Theme.stageT2) : Theme.stageT1
         font.pixelSize: sel.fontSize
-        font.weight: sel.bare ? Font.Normal : Font.Medium
+        font.weight: sel.bare ? Font.Medium : Font.DemiBold
         font.family: Theme.fontSans
     }
     IconImg {
