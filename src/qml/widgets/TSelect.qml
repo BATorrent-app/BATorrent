@@ -37,8 +37,9 @@ ComboBox {
         }
     }
 
+    property real radius: 7
     background: Rectangle {
-        radius: 7
+        radius: cb.radius
         color: cb.uiPalette.field
         border.color: cb.activeFocus ? cb.uiPalette.accent : cb.uiPalette.hair
         border.width: 1
@@ -79,7 +80,7 @@ ComboBox {
 
     delegate: ItemDelegate {
         width: cb.width - 8
-        height: 28
+        height: Math.max(28, Math.round(cb.font.pixelSize * 2.3))
         contentItem: Row {
             leftPadding: 8
             spacing: 7
@@ -96,7 +97,7 @@ ComboBox {
                 text: (cb.textRole.length > 0 && modelData && modelData[cb.textRole] !== undefined)
                       ? modelData[cb.textRole] : modelData
                 color: cb.uiPalette.t1
-                font.pixelSize: 12
+                font.pixelSize: cb.font.pixelSize
                 font.family: cb.uiPalette.fontSans
             }
         }

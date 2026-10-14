@@ -43,13 +43,14 @@ ColumnLayout {
         id: srow
         visible: field.type !== "warning" && field.type !== "vpn"
         Layout.fillWidth: true
-        Layout.topMargin: 13
-        Layout.bottomMargin: 13
-        spacing: Theme.sp4
+        Layout.topMargin: Theme.sp4 + 2
+        Layout.bottomMargin: Theme.sp4 + 2
+        Layout.minimumHeight: 36
+        spacing: Theme.sp6
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.minimumWidth: 120
+            Layout.minimumWidth: 200
             spacing: 4
             RowLayout {
                 spacing: Theme.sp2
@@ -57,31 +58,33 @@ ColumnLayout {
                 Text {
                     text: field.label
                     color: Theme.t1
-                    font.pixelSize: 13
+                    font.pixelSize: 16
+                    font.weight: Font.Medium
                     font.family: Theme.fontSans
                     wrapMode: Text.WordWrap
+                    lineHeight: 1.2
                     Layout.fillWidth: true
                 }
                 Rectangle {
                     visible: field.badge !== undefined
-                    implicitWidth: bdg.implicitWidth + 14
-                    implicitHeight: 18
+                    implicitWidth: bdg.implicitWidth + 16
+                    implicitHeight: 22
                     radius: 999
                     color: Theme.field
                     border.color: Theme.hair
                     border.width: 1
-                    Text { id: bdg; anchors.centerIn: parent; text: field.badge || ""; color: Theme.t3; font.pixelSize: 10; font.family: Theme.fontSans; font.features: Theme.tnum }
+                    Text { id: bdg; anchors.centerIn: parent; text: field.badge || ""; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
                 }
             }
             Text {
                 visible: field.note !== undefined
                 Layout.fillWidth: true
                 text: field.note || ""
-                color: Theme.t4
-                font.pixelSize: 11
+                color: Theme.t3
+                font.pixelSize: 14
                 font.family: Theme.fontSans
                 wrapMode: Text.WordWrap
-                lineHeight: 1.5
+                lineHeight: 1.4
             }
         }
 
@@ -120,19 +123,19 @@ ColumnLayout {
     RowLayout {
         visible: field.type === "warning"
         Layout.fillWidth: true
-        Layout.topMargin: 12
-        Layout.bottomMargin: 12
+        Layout.topMargin: 16
+        Layout.bottomMargin: 16
         spacing: Theme.sp3
-        IconImg { src: "qrc:/icons/triangle-alert.svg"; tint: Theme.amber; s: 13; Layout.alignment: Qt.AlignTop }
+        IconImg { src: "qrc:/icons/triangle-alert.svg"; tint: Theme.amber; s: 17; Layout.alignment: Qt.AlignTop; Layout.topMargin: 2 }
         Text {
             Layout.fillWidth: true
             visible: field.type === "warning"
             text: field.text || ""
-            color: Theme.t3
-            font.pixelSize: 11
+            color: Theme.t2
+            font.pixelSize: 14
             font.family: Theme.fontSans
             wrapMode: Text.WordWrap
-            lineHeight: 1.45
+            lineHeight: 1.4
         }
     }
 

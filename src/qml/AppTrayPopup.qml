@@ -15,4 +15,5 @@ TrayPopupWindow {
     onResumeAll:    if (typeof session !== "undefined") session.resumeAll()
     onOpenSettings: { host.show(); host.raise(); host.requestActivate(); host.currentPage = 3 }
     onQuitApp:      Qt.quit()
+    onSelectTorrent: function(hash) { host.show(); host.raise(); host.requestActivate(); host.currentPage = 0; host.selectTorrentByHash(hash) }
 }

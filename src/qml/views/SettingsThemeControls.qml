@@ -30,6 +30,7 @@ Item {
     Component {
         id: cToggle
         TToggle {
+            big: true
             on: (root.field.key === "torrentSearchEnabled" && typeof addons !== "undefined") ? addons.torrentSearchEnabled
                 : (root.field.key === "autoTrackers" && typeof addons !== "undefined") ? addons.autoTrackers
                 : (root.field.key === "followSystem" && typeof themeBridge !== "undefined") ? themeBridge.followSystem
@@ -45,6 +46,7 @@ Item {
     Component {
         id: cAnime
         TToggle {
+            big: true
             on: Theme.anime
             onToggled: function(v) { Theme.setAnime(v) }
         }
@@ -53,7 +55,10 @@ Item {
         id: cTheme
         TSelect {
             readonly property var names: ["dark", "light", "midnight", "sakura", "darkstar", "matrix", "custom"]
-            implicitWidth: 180
+            implicitWidth: 220
+            implicitHeight: 42
+            radius: 9
+            font.pixelSize: 15
             model: root.field.options || []
             currentIndex: Math.max(0, names.indexOf(Theme.name))
             onActivated: function(i) { Theme.setName(names[i]) }
@@ -62,7 +67,7 @@ Item {
     Component {
         id: cAppIcon
         Row {
-            spacing: 7
+            spacing: 10
             Repeater {
                 model: (typeof themeBridge !== "undefined") ? themeBridge.appIcons() : []
                 delegate: Rectangle {
@@ -70,7 +75,7 @@ Item {
                     required property var modelData
                     readonly property bool sel: typeof themeBridge !== "undefined"
                         && (themeBridge.appIconChoice, themeBridge.appIconChoice === modelData.key)
-                    width: 44; height: 44; radius: 11
+                    width: 46; height: 46; radius: 12
                     color: tile.sel ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12) : "transparent"
                     border.width: 2
                     border.color: tile.sel ? Theme.accent : Theme.hair
@@ -101,7 +106,10 @@ Item {
         RowLayout {
             spacing: Theme.sp2
             TSelect {
-                implicitWidth: 150
+                implicitWidth: 180
+                implicitHeight: 42
+                radius: 9
+                font.pixelSize: 15
                 model: {
                     var names = []
                     if (typeof themeBridge !== "undefined")
@@ -112,13 +120,13 @@ Item {
                 currentIndex: themeBridge ? themeBridge.activeProfile : 0
                 onActivated: function(i) { if (themeBridge) themeBridge.activeProfile = i }
             }
-            BtnFlat { text: "+"; sm: true; onClicked: if (themeBridge) themeBridge.activeProfile = themeBridge.addProfile() }
+            BtnFlat { text: "+"; lg: true; onClicked: if (themeBridge) themeBridge.activeProfile = themeBridge.addProfile() }
             BtnFlat {
-                text: (i18n.language, i18n.t("set_custom_rename")); sm: true
+                text: (i18n.language, i18n.t("set_custom_rename")); lg: true
                 onClicked: root.host.renameProfileRequested()
             }
             BtnFlat {
-                text: (i18n.language, i18n.t("set_custom_clear")); sm: true
+                text: (i18n.language, i18n.t("set_custom_clear")); lg: true
                 enabled: themeBridge && themeBridge.customProfiles.length > 1
                 onClicked: if (themeBridge) themeBridge.removeProfile(themeBridge.activeProfile)
             }
@@ -130,12 +138,12 @@ Item {
             spacing: Theme.sp2
             readonly property string cur: (root.sw.ap && root.sw.ap[root.field.role]) ? root.sw.ap[root.field.role] : "#000000"
             Rectangle {
-                implicitWidth: 26; implicitHeight: 26; radius: 6
+                implicitWidth: 32; implicitHeight: 32; radius: 8
                 color: parent.cur
                 border.color: Theme.hair; border.width: 1
             }
             TFld {
-                implicitWidth: 110; implicitHeight: 30; mono: true
+                implicitWidth: 130; implicitHeight: 42; radius: 9; fontSize: 14; mono: true
                 text: parent.cur
                 placeholder: "#rrggbb"
                 onEdited: function(t) {
@@ -145,7 +153,7 @@ Item {
                 }
             }
             BtnFlat {
-                text: "…"; sm: true
+                text: "…"; lg: true
                 onClicked: root.host.colorPickRequested(root.field.role, parent.cur)
             }
         }
@@ -155,13 +163,13 @@ Item {
         RowLayout {
             spacing: Theme.sp2
             TFld {
-                implicitWidth: 210; implicitHeight: 30; mono: true
+                implicitWidth: 240; implicitHeight: 42; radius: 9; fontSize: 14; mono: true
                 text: (root.sw.ap && root.sw.ap.image) ? root.sw.ap.image : ""
                 placeholder: (i18n.language, i18n.t("set_custom_bgimage"))
                 readonly: true
             }
-            BtnFlat { text: (i18n.language, i18n.t("settings_browse")); sm: true; onClicked: root.host.bgImageRequested() }
-            BtnFlat { text: (i18n.language, i18n.t("set_custom_clear")); sm: true; onClicked: if (themeBridge) themeBridge.setProfileImage(themeBridge.activeProfile, "") }
+            BtnFlat { text: (i18n.language, i18n.t("settings_browse")); lg: true; onClicked: root.host.bgImageRequested() }
+            BtnFlat { text: (i18n.language, i18n.t("set_custom_clear")); lg: true; onClicked: if (themeBridge) themeBridge.setProfileImage(themeBridge.activeProfile, "") }
         }
     }
     Component {
@@ -170,7 +178,7 @@ Item {
             spacing: Theme.sp2
             Slider {
                 id: opacitySlider
-                implicitWidth: 150
+                implicitWidth: 200
                 from: 0; to: 100; stepSize: 1
                 onMoved: if (themeBridge) themeBridge.setProfileOpacity(themeBridge.activeProfile, Math.round(value))
                 // Binding (not a plain `value:`) so dragging doesn't break the link.
@@ -183,14 +191,14 @@ Item {
                 handle: Rectangle {
                     x: parent.leftPadding + parent.visualPosition * (parent.availableWidth - width)
                     y: parent.topPadding + parent.availableHeight / 2 - height / 2
-                    implicitWidth: 16; implicitHeight: 16; radius: 8
+                    implicitWidth: 20; implicitHeight: 20; radius: 10
                     color: Theme.accent; border.color: Theme.bg; border.width: 2
                 }
             }
             Text {
                 text: ((root.sw.ap && root.sw.ap.opacity !== undefined) ? root.sw.ap.opacity : 55) + "%"
-                color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
-                Layout.preferredWidth: 36
+                color: Theme.t3; font.pixelSize: 14; font.family: Theme.fontSans; font.features: Theme.tnum
+                Layout.preferredWidth: 44
             }
         }
     }

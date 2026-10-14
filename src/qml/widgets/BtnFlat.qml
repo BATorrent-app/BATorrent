@@ -11,13 +11,14 @@ Rectangle {
     property string text
     property string icon: ""               // qrc path opcional (esquerda)
     property bool sm: false
+    property bool lg: false                // Settings: sits beside 16px labels
     property bool primary: false
     property var uiPalette: Theme
     signal clicked()
 
-    implicitWidth: row.implicitWidth + (sm ? 22 : 28)
-    implicitHeight: sm ? 28 : 32
-    radius: 7
+    implicitWidth: row.implicitWidth + (lg ? 32 : sm ? 22 : 28)
+    implicitHeight: lg ? 40 : sm ? 28 : 32
+    radius: lg ? 9 : 7
     opacity: enabled ? 1 : 0.45
 
     activeFocusOnTab: true
@@ -57,13 +58,13 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             src: btn.icon
             tint: btn.primary ? "#ffffff" : (ma.containsMouse ? btn.uiPalette.t1 : btn.uiPalette.t2)
-            s: 14
+            s: btn.lg ? 16 : 14
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: btn.text
             color: btn.primary ? "#ffffff" : (ma.containsMouse ? btn.uiPalette.t1 : btn.uiPalette.t2)
-            font.pixelSize: btn.sm ? 11 : 12
+            font.pixelSize: btn.lg ? 14 : btn.sm ? 11 : 12
             font.weight: btn.primary ? Font.DemiBold : Font.Medium
             font.family: btn.uiPalette.fontSans
         }

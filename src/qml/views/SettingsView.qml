@@ -107,113 +107,193 @@ Rectangle {
         return blocks
     }
 
-    ColumnLayout {
+    // The blocks on screen: every section's matches while searching, else the
+    // open section's groups.
+    readonly property var curBlocks: win.query.length > 0 ? win.searchBlocks(win.query)
+                                                           : (win.reloadTick, win.buildBlocks(schema.sections[win.sec]))
+    // The group the reader has scrolled to: drives the sub-list under the open
+    // section in the sidebar.
+    property int activeGroup: 0
+    onSecChanged: { activeGroup = 0; contentScroll.contentY = 0 }
+
+    function goGroup(i) {
+        var it = groupRep.itemAt(i)
+        if (!it) return
+        var maxY = Math.max(0, contentScroll.contentHeight - contentScroll.height)
+        contentScroll.contentY = Math.min(maxY, Math.max(0, contentCol.y + it.y - 28))
+    }
+    function trackGroup() {
+        var a = 0
+        for (var i = 0; i < groupRep.count; i++) {
+            var it = groupRep.itemAt(i)
+            if (it && contentCol.y + it.y - 80 <= contentScroll.contentY) a = i
+        }
+        if (contentScroll.contentY + contentScroll.height >= contentScroll.contentHeight - 4)
+            a = groupRep.count - 1
+        if (a !== win.activeGroup) win.activeGroup = Math.max(0, a)
+    }
+
+    RowLayout {
         anchors.fill: parent
         spacing: 0
 
-        // ===== titlebar =====
+        // ----- sidebar -----
         Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 36
-            color: Theme.elev
-            Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("settings_heading")); color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
-        }
-
-        // ===== sbody =====
-        RowLayout {
-            Layout.fillWidth: true
+            Layout.preferredWidth: 260
             Layout.fillHeight: true
-            spacing: 0
+            color: Theme.panel
+            Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.hair }
 
-            // ----- sidebar (.sside 226) -----
-            Rectangle {
-                Layout.preferredWidth: 226
-                Layout.fillHeight: true
-                color: Theme.panel
-                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.hair }
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.topMargin: 20
+                anchors.bottomMargin: 20
+                anchors.leftMargin: 14
+                anchors.rightMargin: 14
+                spacing: 18
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.topMargin: Theme.sp3
-                    anchors.bottomMargin: Theme.sp3
-                    anchors.leftMargin: Theme.sp2
-                    anchors.rightMargin: Theme.sp2
-                    spacing: 0
+                TFld {
+                    id: searchFld
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 42
+                    radius: 10
+                    fontSize: 15
+                    iconSize: 15
+                    icon: "qrc:/icons/search.svg"
+                    clearable: true
+                    placeholder: (i18n.language, i18n.t("set_search_config_ph"))
+                    onTextChanged: win.query = text.trim().toLowerCase()
+                }
 
-                    // .ssearch
-                    TFld {
-                        id: searchFld
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 32
-                        Layout.bottomMargin: Theme.sp3
-                        icon: "qrc:/icons/search.svg"
-                        clearable: true
-                        placeholder: (i18n.language, i18n.t("set_search_config_ph"))
-                        onTextChanged: win.query = text.trim().toLowerCase()
-                    }
+                Flickable {
+                    id: navScroll
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    contentWidth: width
+                    contentHeight: navCol.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
 
-                    // .snav
-                    ListView {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        clip: true
-                        spacing: 1
-                        model: schema.navs
-                        boundsBehavior: Flickable.StopAtBounds
+                    Column {
+                        id: navCol
+                        width: navScroll.width
+                        spacing: 2
 
-                        delegate: Rectangle {
-                            width: ListView.view.width
-                            height: 34
-                            radius: 7
-                            color: win.sec === index ? Theme.sel : (nrMa.containsMouse ? Theme.hover : "transparent")
+                        Repeater {
+                            model: schema.navs
+                            delegate: Column {
+                                id: navItem
+                                required property var modelData
+                                required property int index
+                                readonly property bool on: win.query.length === 0 && win.sec === index
+                                width: navCol.width
 
-                            // .nrow.on::before left bar
-                            Rectangle {
-                                visible: win.sec === index
-                                anchors.left: parent.left
-                                anchors.leftMargin: -2
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 2
-                                height: 20
-                                radius: 1
-                                color: Theme.accent
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 10
-                                anchors.rightMargin: 10
-                                spacing: Theme.sp3
-                                IconImg {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    src: modelData.icon
-                                    tint: win.sec === index ? Theme.accent : Theme.t3
-                                    s: 16
+                                Rectangle {
+                                    width: parent.width
+                                    height: 44
+                                    radius: 9
+                                    color: navItem.on ? Theme.sel : (nrMa.containsMouse ? Theme.hover : "transparent")
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 12
+                                        anchors.rightMargin: 12
+                                        spacing: 12
+                                        IconImg {
+                                            Layout.alignment: Qt.AlignVCenter
+                                            src: navItem.modelData.icon
+                                            tint: navItem.on ? Theme.accent : Theme.t3
+                                            s: 17
+                                        }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: navItem.modelData.nav
+                                            color: navItem.on || nrMa.containsMouse ? Theme.t1 : Theme.t2
+                                            font.pixelSize: 15
+                                            font.weight: navItem.on ? Font.DemiBold : Font.Normal
+                                            font.family: Theme.fontSans
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    MouseArea {
+                                        id: nrMa
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: { searchFld.text = ""; win.sec = navItem.index }
+                                    }
                                 }
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: modelData.nav
-                                    color: win.sec === index ? Theme.t1 : (nrMa.containsMouse ? Theme.t1 : Theme.t2)
-                                    font.pixelSize: 13
-                                    font.family: Theme.fontSans
-                                    elide: Text.ElideRight
+
+                                // the open section's groups, for jumping down a long page
+                                Item {
+                                    visible: navItem.on && win.curBlocks.length > 1
+                                    width: parent.width
+                                    height: visible ? subCol.implicitHeight + 12 : 0
+                                    Rectangle {
+                                        x: 20; y: 4
+                                        width: 1
+                                        height: subCol.implicitHeight
+                                        color: Theme.hair
+                                    }
+                                    Column {
+                                        id: subCol
+                                        x: 20; y: 4
+                                        width: parent.width - 20
+                                        Repeater {
+                                            model: navItem.on ? win.curBlocks : []
+                                            delegate: Item {
+                                                required property var modelData
+                                                required property int index
+                                                readonly property bool cur: index === win.activeGroup
+                                                visible: modelData.label !== ""
+                                                width: subCol.width
+                                                height: visible ? 34 : 0
+                                                Rectangle {
+                                                    visible: parent.cur
+                                                    width: 2; height: 20; radius: 1
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    color: Theme.accent
+                                                }
+                                                Text {
+                                                    anchors.left: parent.left; anchors.leftMargin: 12
+                                                    anchors.right: parent.right
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    text: modelData.label
+                                                    color: parent.cur || subMa.containsMouse ? Theme.t1 : Theme.t3
+                                                    font.pixelSize: 14
+                                                    font.family: Theme.fontSans
+                                                    elide: Text.ElideRight
+                                                }
+                                                MouseArea {
+                                                    id: subMa
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: win.goGroup(index)
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                            MouseArea { id: nrMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.sec = index }
                         }
                     }
                 }
             }
+        }
 
-            // ----- content (.scontent) -----
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+
+            // ----- content -----
             Flickable {
                 id: contentScroll
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
                 contentWidth: width
-                contentHeight: contentCol.implicitHeight + 2 * Theme.sp5
+                contentHeight: contentCol.implicitHeight + Theme.sp6 + Theme.sp2 + 2 * Theme.sp6
                 boundsBehavior: Flickable.StopAtBounds
                 // Tester feedback: the default glide over-ran the target setting.
                 // Decelerate harder and cap the top speed so a wheel notch lands
@@ -221,81 +301,101 @@ Rectangle {
                 flickDeceleration: 6500
                 maximumFlickVelocity: 2500
                 WheelScroller { flick: contentScroll }
+                onContentYChanged: win.trackGroup()
 
                 ColumnLayout {
                     id: contentCol
-                    x: Theme.sp5
-                    y: Theme.sp5
-                    width: contentScroll.width - 2 * Theme.sp5
-                    spacing: 0
+                    // a reading column, centred: rows stretched across a wide
+                    // window put the switch a long way from its label
+                    width: Math.min(840, contentScroll.width - 2 * (Theme.sp6 + Theme.sp4))
+                    x: Math.round((contentScroll.width - width) / 2)
+                    y: Theme.sp6 + Theme.sp2
+                    spacing: Theme.sp6 + Theme.sp2
 
-                    // .shead
-                    Eyebrow { text: schema.heads[win.sec].eyebrow }
                     RowLayout {
                         Layout.fillWidth: true
-                        Layout.topMargin: 6
-                        spacing: Theme.sp3
-                        Text {
+                        spacing: Theme.sp5
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            text: schema.heads[win.sec].h
-                            color: Theme.t1
-                            font.pixelSize: 19
-                            font.weight: Font.DemiBold
-                            font.letterSpacing: -0.3
-                            font.family: Theme.fontSans
+                            spacing: 6
+                            Text {
+                                Layout.fillWidth: true
+                                text: win.query.length > 0 ? (i18n.language, i18n.t("set_search_title"))
+                                                           : schema.heads[win.sec].h
+                                color: Theme.t1
+                                font.pixelSize: 34
+                                font.weight: Font.Bold
+                                font.letterSpacing: -0.6
+                                font.family: Theme.fontSans
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                visible: text.length > 0
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                text: win.query.length > 0 ? "" : schema.heads[win.sec].sub
+                                color: Theme.t3
+                                font.pixelSize: 16
+                                font.family: Theme.fontSans
+                                lineHeight: 1.4
+                            }
                         }
                         // reset just this section; hidden while searching (the
                         // filtered view spans sections, so it'd be ambiguous)
                         BtnFlat {
-                            sm: true
+                            lg: true
+                            Layout.alignment: Qt.AlignBottom
                             visible: win.query.length === 0
-                            icon: "qrc:/icons/replay.svg"
                             text: (i18n.language, i18n.t("set_reset_section"))
                             onClicked: { confirmReset.scope = "section"; confirmReset.open() }
                         }
                     }
-                    Text {
-                        Layout.topMargin: 8
-                        Layout.maximumWidth: 540
-                        Layout.bottomMargin: Theme.sp5
-                        wrapMode: Text.WordWrap
-                        text: schema.heads[win.sec].sub
-                        color: Theme.t3
-                        font.pixelSize: 12
-                        font.family: Theme.fontSans
-                        lineHeight: 1.5
+
+                    Rectangle {
+                        visible: win.query.length > 0 && win.curBlocks.length === 0
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140
+                        radius: 14
+                        color: "transparent"
+                        border.color: Theme.hair
+                        border.width: 1
+                        Text {
+                            anchors.centerIn: parent
+                            width: parent.width - 48
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            text: (i18n.language, i18n.t("set_no_match")).arg(searchFld.text.trim())
+                            color: Theme.t3
+                            font.pixelSize: 16
+                            font.family: Theme.fontSans
+                        }
                     }
 
-                    // blocks (glabel + card)
+                    // blocks (group title + card)
                     Repeater {
-                        model: win.query.length > 0 ? win.searchBlocks(win.query) : (win.reloadTick, win.buildBlocks(schema.sections[win.sec]))
+                        id: groupRep
+                        model: win.curBlocks
                         delegate: ColumnLayout {
+                            id: blk
                             required property var modelData
                             required property int index
                             Layout.fillWidth: true
-                            spacing: 0
+                            spacing: 12
 
                             Text {
                                 visible: modelData.label !== ""
-                                Layout.topMargin: index === 0 ? 0 : Theme.sp5
-                                Layout.bottomMargin: Theme.sp2
-                                Layout.leftMargin: 2
+                                Layout.leftMargin: 4
                                 text: modelData.label
-                                color: Theme.t4
-                                font.pixelSize: 10
-                                font.weight: Font.Bold
-                                font.letterSpacing: 0.8
+                                color: Theme.t1
+                                font.pixelSize: 19
+                                font.weight: Font.DemiBold
+                                font.letterSpacing: -0.2
                                 font.family: Theme.fontSans
-                                // Brand names keep their own casing: "WireGuard" has
-                                // an intentional inner capital that ALL-CAPS destroys.
-                                font.capitalization: modelData.label.toLowerCase().indexOf("wireguard") >= 0
-                                    ? Font.MixedCase : Font.AllUppercase
                             }
 
-                            // .card
                             Rectangle {
                                 Layout.fillWidth: true
-                                radius: 11
+                                radius: 14
                                 color: Theme.panel
                                 border.color: Theme.hair
                                 border.width: 1
@@ -305,8 +405,8 @@ Rectangle {
                                     id: rowsCol
                                     anchors.left: parent.left
                                     anchors.right: parent.right
-                                    anchors.leftMargin: Theme.sp4
-                                    anchors.rightMargin: Theme.sp4
+                                    anchors.leftMargin: Theme.sp5
+                                    anchors.rightMargin: Theme.sp5
                                     spacing: 0
 
                                     Repeater {
@@ -317,8 +417,8 @@ Rectangle {
                                             Layout.fillWidth: true
                                             sw: win
                                             field: modelData
-                                            isLast: index === (rowsCol.parent.parent.modelData ? 0 : 0)  // border handled inside
-                                            showDivider: true
+                                            // the card's own edge closes the last row
+                                            showDivider: index < blk.modelData.rows.length - 1
                                             onRenameProfileRequested: { renameDlg.idx = themeBridge.activeProfile; renameField.text = themeBridge.customProfiles[themeBridge.activeProfile].name; renameDlg.open() }
                                             onColorPickRequested: function (role, cur) { colorDlg.targetRole = role; colorDlg.selectedColor = cur; colorDlg.open() }
                                             onBgImageRequested: bgImageDlg.open()
@@ -328,69 +428,59 @@ Rectangle {
                             }
                         }
                     }
-
-                    Item { Layout.preferredHeight: Theme.sp5 }
                 }
             }
-        }
 
-        // ===== footer (.sfoot) =====
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 56
-            color: Theme.elev
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair }
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Theme.sp5
-                anchors.rightMargin: 20
-                spacing: 8
-                // a change auto-saves; a clearer "Saved" pulse the moment it does,
-                // so the user never wonders whether their edit stuck (tester: the
-                // old flash was too subtle to notice).
-                // "Saved" pulses only on an actual change; no permanent
-                // "changes are applied immediately" caption cluttering the footer.
-                IconImg {
-                    id: savedCheck
-                    src: "qrc:/icons/check.svg"; s: 13
-                    tint: Theme.grn
-                    transformOrigin: Item.Center
-                    opacity: savedFlash.running ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
-                    SequentialAnimation {
-                        id: savedPop
-                        NumberAnimation { target: savedCheck; property: "scale"; from: 0.6; to: 1.4; duration: 150; easing.type: Easing.OutBack }
-                        NumberAnimation { target: savedCheck; property: "scale"; to: 1.0; duration: Theme.durBase; easing.type: Theme.easeOut }
+            // ----- footer -----
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 64
+                color: Theme.panel
+                Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.hair }
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.sp5
+                    anchors.rightMargin: Theme.sp5
+                    spacing: Theme.sp2
+                    // Every edit applies and saves at once, so the status only ever
+                    // says so; it pulses on a change so the save is visible.
+                    Rectangle {
+                        id: savedDot
+                        width: 7; height: 7; radius: 3.5
+                        color: Theme.grn
+                        transformOrigin: Item.Center
+                        SequentialAnimation {
+                            id: savedPop
+                            NumberAnimation { target: savedDot; property: "scale"; from: 1; to: 2.2; duration: 150; easing.type: Easing.OutBack }
+                            NumberAnimation { target: savedDot; property: "scale"; to: 1.0; duration: Theme.durSlow; easing.type: Theme.easeOut }
+                        }
                     }
+                    Text {
+                        text: savedFlash.running ? (i18n.language, i18n.t("set_saved_now"))
+                                                 : (i18n.language, i18n.t("set_all_saved"))
+                        color: Theme.grn
+                        font.pixelSize: 14
+                        font.weight: savedFlash.running ? Font.DemiBold : Font.Normal
+                        font.family: Theme.fontSans
+                    }
+                    Timer { id: savedFlash; interval: 1800 }
+                    Connections {
+                        target: typeof settings !== "undefined" ? settings : null
+                        function onChanged() { savedFlash.restart(); savedPop.restart() }
+                    }
+                    Item { Layout.fillWidth: true }
+                    BtnFlat {
+                        lg: true
+                        text: (i18n.language, i18n.t("set_reset_all"))
+                        onClicked: { confirmReset.scope = "all"; confirmReset.open() }
+                    }
+                    // "Done" (not "Close"): nothing is discarded; every edit is
+                    // already saved, so the button just dismisses the page
+                    BtnFlat { lg: true; primary: true; text: (i18n.language, i18n.t("btn_done")); onClicked: win.closed() }
                 }
-                Text {
-                    id: savedText
-                    text: (i18n.language, i18n.t("set_saved_now"))
-                    color: Theme.grn
-                    opacity: savedFlash.running ? 1 : 0
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                    font.family: Theme.fontSans
-                    Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
-                }
-                Timer { id: savedFlash; interval: 1800 }
-                Connections {
-                    target: typeof settings !== "undefined" ? settings : null
-                    function onChanged() { savedFlash.restart(); savedPop.restart() }
-                }
-                Item { Layout.fillWidth: true }
-                BtnFlat {
-                    text: (i18n.language, i18n.t("set_reset_all"))
-                    icon: "qrc:/icons/replay.svg"
-                    onClicked: { confirmReset.scope = "all"; confirmReset.open() }
-                }
-                // "Done" (not "Close"): nothing is discarded; every edit is
-                // already saved, so the button just dismisses the window
-                BtnFlat { primary: true; text: (i18n.language, i18n.t("btn_done")); onClicked: win.closed() }
             }
         }
     }
-
 
     // custom-theme dialogs
     ColorDialog {

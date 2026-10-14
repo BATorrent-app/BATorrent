@@ -17,6 +17,12 @@ Item {
     property var field
     property var sw
 
+    // One height and type size for every input on the page, so a row with a
+    // select lines up with the row of text field under it.
+    readonly property int ctlH: 42
+    readonly property int ctlFont: 15
+    readonly property int ctlRadius: 9
+
     property Component number: cNumber
     property Component text: cText
     property Component iface: cIface
@@ -34,13 +40,13 @@ Item {
         RowLayout {
             spacing: Theme.sp2
             Rectangle {
-                implicitWidth: 92; implicitHeight: 30; radius: 7
+                implicitWidth: 108; implicitHeight: root.ctlH; radius: root.ctlRadius
                 color: Theme.field; border.color: Theme.hair; border.width: 1
                 TextInput {
-                    anchors.fill: parent; anchors.rightMargin: 10
+                    anchors.fill: parent; anchors.rightMargin: 14
                     text: { var v = (typeof settings !== "undefined" && root.field.key !== undefined) ? settings.get(root.field.key) : root.field.value; return (v === undefined || v === null) ? "" : String(v) }
                     color: Theme.t1
-                    font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+                    font.pixelSize: root.ctlFont; font.family: Theme.fontSans; font.features: Theme.tnum
                     horizontalAlignment: TextInput.AlignRight
                     verticalAlignment: TextInput.AlignVCenter
                     onEditingFinished: if (typeof settings !== "undefined" && root.field.key !== undefined) settings.set(root.field.key, text)
@@ -49,14 +55,16 @@ Item {
                         && String(settings.get(root.field.key)) !== text) settings.set(root.field.key, text)
                 }
             }
-            Text { visible: root.field.suffix !== undefined; text: root.field.suffix || ""; color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
+            Text { visible: root.field.suffix !== undefined; text: root.field.suffix || ""; color: Theme.t3; font.pixelSize: 14; font.family: Theme.fontSans; font.features: Theme.tnum }
         }
     }
     Component {
         id: cText
         TFld {
-            implicitWidth: root.field.w === "grow" ? 300 : root.field.w === "w-md" ? 210 : root.field.w === "w-sm" ? 120 : 180
-            implicitHeight: 30
+            implicitWidth: root.field.w === "grow" ? 330 : root.field.w === "w-md" ? 260 : root.field.w === "w-sm" ? 150 : 220
+            implicitHeight: root.ctlH
+            radius: root.ctlRadius
+            fontSize: root.field.mono === true ? 14 : 15
             mono: root.field.mono === true
             password: root.field.type === "password"
             text: (root.field.key === "torrentSearchUrl" && typeof addons !== "undefined") ? addons.torrentSearchUrl
@@ -76,7 +84,10 @@ Item {
     Component {
         id: cIface
         TSelect {
-            implicitWidth: 220
+            implicitWidth: 260
+            implicitHeight: root.ctlH
+            radius: root.ctlRadius
+            font.pixelSize: root.ctlFont
             model: (typeof settings !== "undefined") ? settings.networkInterfaces() : []
             currentIndex: {
                 var cur = (typeof settings !== "undefined") ? (settings.get("outgoingInterface") || "") : ""
@@ -94,7 +105,10 @@ Item {
     Component {
         id: cSelect
         TSelect {
-            implicitWidth: 180
+            implicitWidth: 220
+            implicitHeight: root.ctlH
+            radius: root.ctlRadius
+            font.pixelSize: root.ctlFont
             model: root.field.options || []
             icons: root.field.icons || []
             currentIndex: {
@@ -118,9 +132,9 @@ Item {
     Component {
         id: cSegmented
         Rectangle {
-            implicitWidth: segR.implicitWidth + 4
-            implicitHeight: 29
-            radius: 8
+            implicitWidth: segR.implicitWidth + 8
+            implicitHeight: 42
+            radius: 10
             color: Theme.field
             border.color: Theme.hair
             border.width: 1
@@ -135,16 +149,16 @@ Item {
                 Repeater {
                     model: root.field.options || []
                     delegate: Rectangle {
-                        height: 25
-                        implicitWidth: segLbl.implicitWidth + 22
-                        radius: 6
+                        height: 34
+                        implicitWidth: segLbl.implicitWidth + 28
+                        radius: 7
                         color: index === parent.parent.parent.curIdx ? Theme.sel : "transparent"
                         Text {
                             id: segLbl
                             anchors.centerIn: parent
                             text: modelData
-                            color: index === parent.parent.parent.curIdx ? Theme.accentText : Theme.t3
-                            font.pixelSize: 11
+                            color: index === parent.parent.parent.curIdx ? Theme.t1 : Theme.t3
+                            font.pixelSize: 14
                             font.weight: Font.Medium
                             font.family: Theme.fontSans
                         }
@@ -156,7 +170,7 @@ Item {
     }
     Component {
         id: cButton
-        BtnFlat { text: root.field.btn || ""; sm: false; onClicked: root.sw.runButtonAction(root.field.action) }
+        BtnFlat { text: root.field.btn || ""; lg: true; onClicked: root.sw.runButtonAction(root.field.action) }
     }
     Component {
         id: cDebridPicker
@@ -185,13 +199,13 @@ Item {
                     ? "✓ " + debrid.accountName + " · " + debrid.accountPlan
                       + (debrid.expiry ? " · " + debrid.expiry : "")
                     : ""
-                color: Theme.grn; font.pixelSize: 12; font.family: Theme.fontSans
-                elide: Text.ElideRight; Layout.maximumWidth: 280
+                color: Theme.grn; font.pixelSize: 14; font.family: Theme.fontSans
+                elide: Text.ElideRight; Layout.maximumWidth: 320
             }
             TFld {
                 id: debTok
                 visible: !parent.connected
-                implicitWidth: 220; implicitHeight: 30; mono: true; password: true
+                implicitWidth: 260; implicitHeight: root.ctlH; radius: root.ctlRadius; fontSize: 14; mono: true; password: true
                 placeholder: (i18n.language, i18n.t("set_rd_token_ph"))
                 onEdited: function(t) { if (typeof debrid !== "undefined") debrid.setToken(t) }
             }
@@ -209,40 +223,81 @@ Item {
     }
     Component {
         id: cPath
-        RowLayout {
+        // One field with clear and Browse inside it: three loose controls in a
+        // row read as three settings.
+        Rectangle {
             id: pathRow
-            spacing: Theme.sp2
+            implicitWidth: 330
+            implicitHeight: root.ctlH
+            radius: root.ctlRadius
+            color: Theme.field
+            border.color: pathInput.activeFocus ? Theme.accent : Theme.hair
+            border.width: 1
             function curPath() {
                 return (typeof settings !== "undefined" && root.field.key !== undefined)
                     ? (settings.get(root.field.key) || "") : (root.field.value || "")
             }
-            TFld {
-                id: pathFld
-                implicitWidth: 220; implicitHeight: 30; mono: true
-                placeholder: root.field.placeholder || ""
-                // Imperative text: settings.get() isn't reactive; binding wouldn't refresh on Browse.
-                Component.onCompleted: text = pathRow.curPath()
-                onEdited: function(t) {
-                    if (typeof settings !== "undefined" && root.field.key !== undefined)
-                        settings.set(root.field.key, t)
-                }
-                Connections {
-                    target: typeof settings !== "undefined" ? settings : null
-                    ignoreUnknownSignals: true
-                    function onChanged() {
-                        var v = pathRow.curPath()
-                        if (pathFld.text !== v) pathFld.text = v
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 14
+                anchors.rightMargin: 5
+                spacing: 4
+                TextField {
+                    id: pathInput
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    background: null
+                    padding: 0
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: Theme.t1
+                    placeholderText: root.field.placeholder || ""
+                    placeholderTextColor: Theme.t4
+                    font.pixelSize: 14
+                    font.family: Theme.fontMono
+                    // Imperative text: settings.get() isn't reactive; binding wouldn't refresh on Browse.
+                    Component.onCompleted: text = pathRow.curPath()
+                    onEditingFinished: if (typeof settings !== "undefined" && root.field.key !== undefined)
+                                           settings.set(root.field.key, text)
+                    Connections {
+                        target: typeof settings !== "undefined" ? settings : null
+                        ignoreUnknownSignals: true
+                        function onChanged() {
+                            var v = pathRow.curPath()
+                            if (pathInput.text !== v) pathInput.text = v
+                        }
                     }
                 }
-            }
-            BtnFlat {
-                text: (i18n.language, i18n.t("settings_browse")); sm: true
-                onClicked: root.sw.openPathPicker(root.field.key, root.field.file === true)
-            }
-            BtnFlat {
-                visible: root.field.file !== true
-                text: (i18n.language, i18n.t("set_custom_clear")); sm: true
-                onClicked: if (typeof settings !== "undefined" && root.field.key !== undefined) settings.set(root.field.key, "")
+                Rectangle {
+                    visible: root.field.file !== true && pathInput.text.length > 0
+                    Layout.preferredWidth: 30; Layout.preferredHeight: 30
+                    radius: 6
+                    color: clrMa.containsMouse ? Theme.hover : "transparent"
+                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/close.svg"; s: 12; tint: clrMa.containsMouse ? Theme.t1 : Theme.t3 }
+                    MouseArea {
+                        id: clrMa
+                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: if (typeof settings !== "undefined" && root.field.key !== undefined) settings.set(root.field.key, "")
+                    }
+                }
+                Rectangle {
+                    Layout.preferredHeight: 32
+                    Layout.preferredWidth: brLbl.implicitWidth + 24
+                    radius: 6
+                    color: brMa.containsMouse ? Theme.hover : Theme.elev
+                    border.color: Theme.hair; border.width: 1
+                    Text {
+                        id: brLbl
+                        anchors.centerIn: parent
+                        text: (i18n.language, i18n.t("settings_browse"))
+                        color: Theme.t1
+                        font.pixelSize: 14; font.weight: Font.Medium; font.family: Theme.fontSans
+                    }
+                    MouseArea {
+                        id: brMa
+                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: root.sw.openPathPicker(root.field.key, root.field.file === true)
+                    }
+                }
             }
         }
     }
@@ -254,20 +309,20 @@ Item {
                 model: [{ k: "scheduleFromHour" }, { k: "scheduleToHour" }]
                 delegate: Row {
                     spacing: Theme.sp2
-                    Text { visible: index === 1; text: "—"; color: Theme.t4; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                    Text { visible: index === 1; text: "—"; color: Theme.t4; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
                     Rectangle {
-                        width: 64; height: 30; radius: 7
+                        width: 72; height: root.ctlH; radius: root.ctlRadius
                         color: Theme.field; border.color: Theme.hair; border.width: 1
                         TextInput {
                             anchors.fill: parent; anchors.margins: 6
                             text: (typeof settings !== "undefined") ? String(settings.get(modelData.k)) : "0"
-                            color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+                            color: Theme.t1; font.pixelSize: root.ctlFont; font.family: Theme.fontSans; font.features: Theme.tnum
                             horizontalAlignment: TextInput.AlignHCenter; verticalAlignment: TextInput.AlignVCenter
                             validator: IntValidator { bottom: 0; top: 23 }
                             onEditingFinished: if (typeof settings !== "undefined") settings.set(modelData.k, Math.max(0, Math.min(23, parseInt(text) || 0)))
                         }
                     }
-                    Text { text: "h"; color: Theme.t4; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "h"; color: Theme.t3; font.pixelSize: 14; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
         }
@@ -280,11 +335,11 @@ Item {
             Repeater {
                 model: [(i18n.language, i18n.t("day_mon")), i18n.t("day_tue"), i18n.t("day_wed"), i18n.t("day_thu"), i18n.t("day_fri"), i18n.t("day_sat"), i18n.t("day_sun")]
                 delegate: Rectangle {
-                    width: 30; height: 30; radius: 7
+                    width: 40; height: 40; radius: root.ctlRadius
                     readonly property bool sel: (parent.mask & (1 << index)) !== 0
                     color: sel ? Theme.accentTint : Theme.field
                     border.color: sel ? Theme.accent : Theme.hair; border.width: 1
-                    Text { anchors.centerIn: parent; text: modelData; color: parent.sel ? Theme.accentText : Theme.t3; font.pixelSize: 11; font.weight: parent.sel ? Font.DemiBold : Font.Medium; font.family: Theme.fontSans }
+                    Text { anchors.centerIn: parent; text: modelData; color: parent.sel ? Theme.accentText : Theme.t3; font.pixelSize: 13; font.weight: parent.sel ? Font.DemiBold : Font.Medium; font.family: Theme.fontSans }
                     MouseArea {
                         anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                         onClicked: if (typeof settings !== "undefined") {

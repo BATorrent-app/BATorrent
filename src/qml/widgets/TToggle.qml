@@ -9,10 +9,12 @@ import "../theme"
 Rectangle {
     id: tg
     property bool on: false
+    // Settings rows use the larger switch: it sits beside 16px labels there.
+    property bool big: false
     signal toggled(bool on)
 
-    implicitWidth: 38
-    implicitHeight: 21
+    implicitWidth: big ? 48 : 38
+    implicitHeight: big ? 28 : 21
     radius: 999
     // ON is a light track with a dark knob, not a red pill. A Settings page can
     // carry eight of these at once, and filling every one with the accent turned
@@ -37,11 +39,11 @@ Rectangle {
     }
 
     Rectangle {
-        width: 15
-        height: 15
-        radius: 7.5
+        width: tg.big ? 22 : 15
+        height: width
+        radius: width / 2
         anchors.verticalCenter: parent.verticalCenter
-        x: tg.on ? 19 : 2
+        x: tg.on ? tg.width - width - (tg.big ? 3 : 4) : (tg.big ? 3 : 2)
         color: tg.on
             ? Theme.panel                                   // dark knob on the light track
             : (Theme.isDark ? "#8c8884" : "#ffffff")
