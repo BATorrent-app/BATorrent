@@ -497,6 +497,9 @@ private slots:
     void onGameTorrentFinished(const QString &name, const QString &infoHash);  // auto-install hook
 
 private:
+    // "S01E02", or "Ep 353" for a fansub's absolute number ("[Group] Show - 353"),
+    // which the parser reads as season 1. Empty when the file has no episode.
+    static QString episodeCode(const QString &fileName, int season, int episode, bool *absolute = nullptr);
     // States surfaced to the game card as "installState" (int). Values MUST match
     // GameInstall::* (services/integrations/gameinstall.h); QML and tests depend on them.
     enum GameInstallState {

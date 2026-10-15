@@ -63,14 +63,16 @@ QVariantList QmlSessionBridge::activeDownloads() const
         if (info.completed || info.finished || info.paused || info.queued) continue;
         const QString hash = m_session->torrentHashAt(i);
         QString poster;
+        QString title = info.name;   // the matched title, not the release name
         if (m_resolver && m_resolver->hasCached(hash)) {
             const auto meta = m_resolver->cached(hash);
             if (!meta.posterPath.isEmpty())
                 poster = QUrl::fromLocalFile(meta.posterPath).toString();
+            if (!meta.title.isEmpty()) title = meta.title;
         }
         QVariantMap m;
         m["infoHash"]  = hash;
-        m["title"]     = info.name;
+        m["title"]     = title;
         m["progress"]  = double(info.progress);
         m["downSpeed"] = formatSize(info.downloadRate) + QStringLiteral("/s");
         m["paused"]    = info.paused;
@@ -93,14 +95,16 @@ QVariantList QmlSessionBridge::seedingTransfers() const
         if (!info.finished && !info.seeding && !info.completed) continue;
         const QString hash = m_session->torrentHashAt(i);
         QString poster;
+        QString title = info.name;   // the matched title, not the release name
         if (m_resolver && m_resolver->hasCached(hash)) {
             const auto meta = m_resolver->cached(hash);
             if (!meta.posterPath.isEmpty())
                 poster = QUrl::fromLocalFile(meta.posterPath).toString();
+            if (!meta.title.isEmpty()) title = meta.title;
         }
         QVariantMap m;
         m["infoHash"] = hash;
-        m["title"]    = info.name;
+        m["title"]    = title;
         m["progress"] = 1.0;
         m["seeding"]  = true;
         m["paused"]   = info.paused;
@@ -144,10 +148,8 @@ QVariantList QmlSessionBridge::resumeItems() const
         for (const QVariant &vv : mv.value(QStringLiteral("videos")).toList()) {
             const QVariantMap vf = vv.toMap();
             if (vf.value(QStringLiteral("idx")).toInt() != fi) continue;
-            const int se = vf.value(QStringLiteral("season"), -1).toInt();
-            const int ep = vf.value(QStringLiteral("episode"), -1).toInt();
-            if (se >= 0 && ep >= 0)
-                o["code"] = QStringLiteral("S%1E%2").arg(se, 2, 10, QLatin1Char('0')).arg(ep, 2, 10, QLatin1Char('0'));
+            const QString code = vf.value(QStringLiteral("code")).toString();
+            if (!code.isEmpty()) o["code"] = code;
             break;
         }
         rows.append({ mv.value(QStringLiteral("resumeAt")).toLongLong(), o });

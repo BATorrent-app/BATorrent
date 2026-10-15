@@ -20,6 +20,19 @@
 #include <QJsonObject>
 #include <QVariantMap>
 #include <QVariantList>
+#include <QRegularExpression>
+
+QString QmlSessionBridge::episodeCode(const QString &fileName, int season, int episode, bool *absolute)
+{
+    static const QRegularExpression explicitSe(QStringLiteral("[Ss]\\d{1,2}\\s*[EeXx]\\d{1,4}|\\b\\d{1,2}x\\d{1,3}\\b"));
+    const bool abs = season == 1 && episode > 0 && !explicitSe.match(fileName).hasMatch()
+                     && fileName.trimmed().startsWith(QLatin1Char('['));
+    if (absolute) *absolute = abs;
+    if (abs) return QStringLiteral("Ep %1").arg(episode);
+    if (season >= 0 && episode >= 0)
+        return QStringLiteral("S%1E%2").arg(season, 2, 10, QLatin1Char('0')).arg(episode, 2, 10, QLatin1Char('0'));
+    return QString();
+}
 
 QVariantList QmlSessionBridge::movieLibrary() const
 {
@@ -77,6 +90,7 @@ QVariantList QmlSessionBridge::movieLibrary() const
             vf["name"] = v.name;
             vf["season"] = v.season;
             vf["episode"] = v.episode;
+            vf["code"] = episodeCode(v.name, v.season, v.episode);
             vf["watched"] = s.value(vrk + QStringLiteral("_watched"), false).toBool();
             vf["watchedPct"] = watchedPct(vrk);
             vf["resumeAt"] = s.value(vrk + QStringLiteral("_at"), 0).toLongLong();   // when last played

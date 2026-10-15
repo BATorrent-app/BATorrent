@@ -25,8 +25,8 @@ QtObject {
         if (!item || !item.isSeries || !item.videos) return ""
         for (var i = 0; i < item.videos.length; i++) {
             var v = item.videos[i]
-            if (v.idx === item.fileIndex && (v.season > 0 || v.episode > 0))
-                return "S" + v.season + "E" + (v.episode < 10 ? "0" + v.episode : v.episode)
+            if (v.idx === item.fileIndex && v.code)
+                return v.code
         }
         return ""
     }
