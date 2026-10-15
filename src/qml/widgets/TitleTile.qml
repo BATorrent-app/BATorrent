@@ -2,9 +2,10 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// A title as a wide tile: its backdrop, the name under it, and one line that
-// says what the person already has of it ("S01 · 1 of 8 watched", "Watched")
-// or, when nothing, rating, year and kind in grey. The same picture the
+// A title as a wide tile: its backdrop with its own lettering in the corner
+// (the name in text when it has none), and one line under it that says what
+// the person already has of it ("S01 · 1 of 8 watched", "Watched") or, when
+// nothing, rating, year and kind in grey. The same picture the
 // title's page opens on, so a click lands where the tile already promised.
 import QtQuick
 import "../theme"
@@ -23,7 +24,7 @@ Item {
     readonly property real artH: Math.round(width * 9 / 16)
 
     implicitWidth: 252
-    implicitHeight: artH + 10 + nameTxt.implicitHeight + 3 + meta.implicitHeight
+    implicitHeight: artH + 9 + meta.implicitHeight
 
     function typeLabel(t) {
         return t === "movie" ? i18n.t("search_type_movie")
@@ -50,6 +51,26 @@ Item {
             opacity: status === Image.Ready ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.durSlow } }
         }
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0) }
+                GradientStop { position: 1.0;  color: Qt.rgba(0, 0, 0, 0.65) }
+            }
+        }
+        TitleMark {
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            anchors.leftMargin: 12
+            anchors.bottomMargin: 10
+            width: maxWidth
+            height: maxHeight
+            maxWidth: frame.width * 0.58
+            maxHeight: frame.height * 0.42
+            tmdbId: tile.item.tmdbId || 0
+            type: tile.item.type || ""
+            title: tile.item.title || tile.item.name || ""
+        }
         CardActions {
             anchors.fill: parent
             showPlay: false
@@ -70,21 +91,10 @@ Item {
         }
     }
 
-    Text {
-        id: nameTxt
-        anchors.top: frame.bottom
-        anchors.topMargin: 10
-        width: parent.width
-        text: tile.item.title || tile.item.name || ""
-        textFormat: Text.PlainText
-        color: Theme.t1
-        font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
-        elide: Text.ElideRight
-    }
     Row {
         id: meta
-        anchors.top: nameTxt.bottom
-        anchors.topMargin: 3
+        anchors.top: frame.bottom
+        anchors.topMargin: 9
         width: parent.width
         spacing: 6
         Rectangle {

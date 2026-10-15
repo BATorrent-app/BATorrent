@@ -45,9 +45,10 @@ ColumnLayout {
                 width: Math.max(dName.implicitWidth, dSub.implicitWidth) + 24
                 height: 44
                 radius: Theme.rad(8)
-                color: on ? Theme.hover : (dMa.containsMouse ? Theme.hover : "transparent")
-                border.width: on ? 1.5 : 1
-                border.color: on ? (ok ? Theme.t1 : Theme.amber) : Theme.hair
+                // picked: a filled chip with a soft ring, not a hard white outline
+                color: on ? Theme.selectedFill : (dMa.containsMouse ? Theme.hover : "transparent")
+                border.width: 1
+                border.color: on ? (ok ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.4) : Theme.amber) : Theme.hair
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     x: 12

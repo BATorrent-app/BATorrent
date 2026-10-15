@@ -800,28 +800,30 @@ ModalShell {
                     readonly property bool ready: dlg.addCount > 0 && (!dlg.single || dlg.selCount > 0)
                     Layout.preferredWidth: addTxt.implicitWidth + 32 + 32
                     Layout.preferredHeight: 36
-                    opacity: ready ? 1 : 0.4
+                    // Nothing to add yet: a neutral, opaque button (red is for
+                    // acting, and fading the halves showed where they overlap).
+                    readonly property color idle: Qt.tint(Theme.elev, Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.07))
                     Rectangle {
                         id: addMain
                         width: parent.width - 32; height: parent.height
                         radius: Theme.rad(8)
-                        color: addMa.containsMouse && split.ready ? Qt.lighter(Theme.accent, 1.13) : Theme.accent
+                        color: !split.ready ? split.idle : addMa.containsMouse ? Qt.lighter(Theme.accent, 1.13) : Theme.accent
                         Rectangle { anchors.right: parent.right; width: Theme.rad(8); height: parent.height; color: parent.color }
                         Text {
                             id: addTxt
                             anchors.centerIn: parent
                             text: (i18n.language, dlg.addCount > 1 ? i18n.t("addw_add_n").arg(dlg.addCount) : i18n.t("addw_add"))
-                            color: Theme.inkOnAccent; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                            color: split.ready ? Theme.inkOnAccent : Theme.t4; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
                         }
                         MouseArea { id: addMa; anchors.fill: parent; hoverEnabled: true; enabled: split.ready; cursorShape: Qt.PointingHandCursor; onClicked: dlg.commit(false, false) }
                     }
                     Rectangle {
                         x: parent.width - 32; width: 32; height: parent.height
                         radius: Theme.rad(8)
-                        color: arrMa.containsMouse && split.ready ? Qt.lighter(Theme.accentDark, 1.13) : Theme.accentDark
+                        color: !split.ready ? split.idle : arrMa.containsMouse ? Qt.lighter(Theme.accentDark, 1.13) : Theme.accentDark
                         Rectangle { width: Theme.rad(8); height: parent.height; color: parent.color }
-                        Rectangle { width: 1; height: parent.height; color: Theme.splitSeam }
-                        IconImg { anchors.centerIn: parent; src: "qrc:/icons/chevron.svg"; s: 11; tint: Theme.inkOnAccent }
+                        Rectangle { width: 1; height: parent.height; color: split.ready ? Theme.splitSeam : Theme.hair }
+                        IconImg { anchors.centerIn: parent; src: "qrc:/icons/chevron.svg"; s: 11; tint: split.ready ? Theme.inkOnAccent : Theme.t4 }
                         MouseArea { id: arrMa; anchors.fill: parent; hoverEnabled: true; enabled: split.ready; cursorShape: Qt.PointingHandCursor; onClicked: addMenu.popup(0, height + 4) }
                         DMenu {
                             id: addMenu
