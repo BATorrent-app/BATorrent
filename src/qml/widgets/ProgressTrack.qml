@@ -12,6 +12,7 @@
 // Those get travelling bands over a dead track instead: hazard stripes for
 // missing and error, a single sweep for fetching.
 import QtQuick
+import QtQuick.Effects
 import "../theme"
 
 Item {
@@ -71,30 +72,50 @@ Item {
             Behavior on color { ColorAnimation { duration: Theme.durBase } }
             clip: true
 
-            // a soft light sweeping across, fading out at both ends: a solid
-            // band read as a bubble and spilled past the rounded corners
+            // a soft light sweeping across, fading out at both ends, cut to the
+            // fill's own rounded shape (clip alone keeps square corners, and the
+            // light showed past the pill's end)
             Rectangle {
-                id: sheenBand
+                id: fillShape
+                anchors.fill: parent
+                radius: parent.radius
+                visible: false
+                layer.enabled: sheenLayer.visible
+            }
+            Item {
+                id: sheenLayer
+                anchors.fill: parent
                 visible: track.sheen && !Theme.reduceMotion
-                width: 48
-                height: parent.height
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0) }
-                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.3) }
-                    GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0) }
+                layer.enabled: visible
+                layer.effect: MultiEffect {
+                    maskEnabled: true
+                    maskSource: fillShape
+                    maskThresholdMin: 0.5
+                    maskSpreadAtMin: 1.0
                 }
-                SequentialAnimation on x {
-                    running: sheenBand.visible
-                    loops: Animation.Infinite
-                    NumberAnimation {
-                        from: -sheenBand.width
-                        to: Math.max(1, sheenBand.parent.width)
-                        // the design's 2.6s cycle: across in the first 70%, then rest
-                        duration: 1820
-                        easing.type: Easing.InOutQuad
+                Rectangle {
+                    id: sheenBand
+                    visible: sheenLayer.visible
+                    width: 48
+                    height: parent.height
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0) }
+                        GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.3) }
+                        GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0) }
                     }
-                    PauseAnimation { duration: 780 }
+                    SequentialAnimation on x {
+                        running: sheenBand.visible
+                        loops: Animation.Infinite
+                        NumberAnimation {
+                            from: -sheenBand.width
+                            to: Math.max(1, sheenBand.parent.width)
+                            // the design's 2.6s cycle: across in the first 70%, then rest
+                            duration: 1820
+                            easing.type: Easing.InOutQuad
+                        }
+                        PauseAnimation { duration: 780 }
+                    }
                 }
             }
         }

@@ -117,15 +117,34 @@ Item {
     }
 
     // ----- GRID -----
+    // The grid shows only once it has its columns for the width it lands at.
+    // Coming from the list, the inspector takes its width in the same moment
+    // and the grid laid out its first frame still at the list's width: one
+    // frame of cards in the wrong columns, then the jump into place.
+    property bool gridReady: false
+    Component.onCompleted: gridReady = controller.gridView
+    Connections {
+        target: libraryView.controller
+        function onGridViewChanged() {
+            if (!libraryView.controller.gridView) { libraryView.gridReady = false; return }
+            gridSettle.restart()
+        }
+    }
+    Timer {
+        id: gridSettle
+        interval: 32
+        onTriggered: { grid.reflow(); grid.forceLayout(); libraryView.gridReady = true }
+    }
+
     GridView {
         id: grid
-        opacity: (controller.gridView && !parent.empty) ? 1 : 0
+        opacity: (controller.gridView && libraryView.gridReady && !parent.empty) ? 1 : 0
         visible: opacity > 0.01
         // Grid and list are two views of the SAME rows, so the switch should read
         // as one changing form, not two things swapping. The incoming view grows
         // the last 1.5% into place while the outgoing shrinks away underneath:
         // a plain cross-fade left both hanging half-visible on top of each other.
-        scale: (Theme.reduceMotion || (controller.gridView && !parent.empty)) ? 1 : 0.985
+        scale: (Theme.reduceMotion || (controller.gridView && libraryView.gridReady && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
         Behavior on opacity { NumberAnimation { duration: 190; easing.type: Theme.easeOut } }
         Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }

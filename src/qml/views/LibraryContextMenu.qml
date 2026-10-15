@@ -128,6 +128,7 @@ DMenu {
     DMenuSep {}
 
     DMenu {
+        sub: true
         title: (i18n.language, i18n.t("ctx_grp_copy"))
         iconSrc: "qrc:/icons/copy.svg"
         implicitWidth: 220
@@ -137,6 +138,7 @@ DMenu {
         DMenuItem { iconSrc: "qrc:/icons/hash.svg"; text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
     }
     DMenu {
+        sub: true
         title: (i18n.language, i18n.t("ctx_grp_queue"))
         iconSrc: "qrc:/icons/sliders.svg"
         implicitWidth: 210
@@ -146,6 +148,7 @@ DMenu {
         DMenuItem { iconSrc: "qrc:/icons/chevrons-down.svg"; text: (i18n.language, i18n.t("ctx_queue_bottom")); onTriggered: session.queueBottomSelected() }
     }
     DMenu {
+        sub: true
         title: (i18n.language, i18n.t("ctx_grp_speed"))
         iconSrc: "qrc:/icons/arrow-down.svg"
         implicitWidth: 240
@@ -165,6 +168,7 @@ DMenu {
         }
     }
     DMenu {
+        sub: true
         id: catMenu
         title: (i18n.language, i18n.t("ctx_grp_category_tags"))
         iconSrc: "qrc:/icons/hub.svg"
@@ -198,6 +202,7 @@ DMenu {
         DMenuItem { text: (i18n.language, i18n.t("tracker_add")); onTriggered: inputPrompt.openWith(i18n.t("prompt_add_tracker_title"), i18n.t("prompt_tracker_url"), "", "udp://tracker:porta", function(t){ session.addTrackerToSelected(t) }) }
     }
     DMenu {
+        sub: true
         id: coverMenu
         title: (i18n.language, i18n.t("ctx_fix_cover"))
         iconSrc: "qrc:/icons/photo-off.svg"
@@ -209,6 +214,7 @@ DMenu {
         DMenuItem { iconSrc: "qrc:/icons/photo-off.svg"; text: (i18n.language, i18n.t("ctx_no_cover")); onTriggered: session.clearSelectedCover() }
     }
     DMenu {
+        sub: true
         title: (i18n.language, i18n.t("ctx_grp_advanced"))
         iconSrc: "qrc:/icons/ellipsis.svg"
         implicitWidth: 240
@@ -219,6 +225,7 @@ DMenu {
         DMenuItem { iconSrc: "qrc:/icons/gauge.svg"; text: (i18n.language, i18n.t("ctx_why_slow")); onTriggered: { diagnoseDialog.body = session.diagnoseSelectedSlow(); diagnoseDialog.open() } }
         DMenuItem { iconSrc: "qrc:/icons/stop.svg"; text: (i18n.language, i18n.t("ctx_stop_seeding")); onTriggered: session.stopSeedingSelected() }
         DMenu {
+            sub: true
             title: (i18n.language, i18n.t("ctx_seed_rules"))
             iconSrc: "qrc:/icons/upload.svg"
             implicitWidth: 240

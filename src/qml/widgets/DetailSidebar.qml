@@ -42,7 +42,13 @@ Rectangle {
 
     Layout.fillHeight: true
     Layout.preferredWidth: shown ? (collapsed ? 46 : 340) : 0
-    Behavior on Layout.preferredWidth { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
+    // Slides only to collapse or expand. Coming in with the switch from the
+    // list it takes its width at once: sliding, it narrowed the grid frame by
+    // frame and the cards could be seen re-flowing into their columns.
+    Behavior on Layout.preferredWidth {
+        enabled: sidebar.visible
+        NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut }
+    }
     visible: Layout.preferredWidth > 0
     clip: true
     color: Theme.panel

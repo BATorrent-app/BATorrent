@@ -12,7 +12,11 @@ import "../theme"
 
 Menu {
     id: menu
-    modal: true
+    // Set on a submenu. Only the top menu is modal: a modal submenu took the
+    // pointer from the menu under it, so moving to another row there did not
+    // switch to that row's submenu.
+    property bool sub: false
+    modal: !sub
     // the icon its row shows when this menu is a submenu
     property string iconSrc: ""
     implicitWidth: 244

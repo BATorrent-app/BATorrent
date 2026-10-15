@@ -30,6 +30,7 @@ DMenu {
     width: 248
 
     DMenu {
+        sub: true
         title: (i18n.language, i18n.t("menu_file_title"))
         DMenuItem { iconSrc: "qrc:/icons/file.svg"; text: (i18n.language, i18n.t("menu_open_torrent")); onTriggered: root.openFileDialog.open() }
         DMenuItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("menu_add_magnet")); onTriggered: root.addDialog.open() }
@@ -41,6 +42,7 @@ DMenu {
         DMenuItem { iconSrc: "qrc:/icons/clock.svg"; text: (i18n.language, i18n.t("menu_recently_removed")); onTriggered: root.host.showWin(root.host.removedWinLoader) }
     }
     DMenu {
+        sub: true
         title: (i18n.language, i18n.t("menu_torrent_title"))
         DMenuItem { iconSrc: "qrc:/icons/pause.svg"; text: (i18n.language, i18n.t("menu_pause")); enabled: root.host.hasSel; onTriggered: session.pauseSelected() }
         DMenuItem { iconSrc: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("menu_resume")); enabled: root.host.hasSel; onTriggered: session.resumeSelected() }
@@ -52,6 +54,7 @@ DMenu {
         DMenuItem { iconSrc: "qrc:/icons/trash.svg"; text: (i18n.language, i18n.t("menu_remove")); enabled: root.host.hasSel; onTriggered: root.removeDialog.open() }
     }
     DMenu {
+        sub: true
         title: (i18n.language, i18n.t("menu_settings_title"))
         DMenuItem { iconSrc: "qrc:/icons/settings.svg"; text: (i18n.language, i18n.t("menu_preferences")); onTriggered: root.host.currentPage = 3 }
         DMenuItem { iconSrc: "qrc:/icons/set-addons.svg"; text: (i18n.language, i18n.t("menu_addons")); onTriggered: root.addAddonDialog.open() }
@@ -62,6 +65,7 @@ DMenu {
         DMenuItem { iconSrc: "qrc:/icons/bolt.svg"; text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
     }
     DMenu {
+        sub: true
         title: (i18n.language, i18n.t("menu_help_title"))
         DMenuItem { iconSrc: "qrc:/icons/sliders.svg"; text: (i18n.language, i18n.t("menu_setup_wizard")); onTriggered: { root.welcomeDialog.mode = "welcome"; root.welcomeDialog.open() } }
         DMenuItem { iconSrc: "qrc:/icons/discover.svg"; text: (i18n.language, i18n.t("menu_tour")); onTriggered: root.tourOverlay.start() }
