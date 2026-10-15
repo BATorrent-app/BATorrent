@@ -73,6 +73,28 @@ Window {
         win.lastPage = currentPage
     }
     property int lastPage: 0
+    // Where you are, for the title strip: the page, and what is open in it
+    // ("HUB: Portal 2", "Find: Bleach", "Settings: Appearance").
+    readonly property string navLocation: {
+        var names = [i18n.t("nav_downloads"), i18n.t("nav_find"), i18n.t("nav_hub"), i18n.t("tb_settings")]
+        var base = (i18n.language, names[currentPage] || "BATorrent"), sub = ""
+        if (currentPage === 1 && searchPage.api) {
+            var api = searchPage.api
+            if ((api.singleTitleView || api.inStreams) && api.workTitle) sub = api.workTitle
+            else if (api.activeQuery) sub = api.activeQuery
+        } else if (currentPage === 2) {
+            if (hubPage.gameOpen) {
+                var g = hubPage.gameItems || []
+                for (var i = 0; i < g.length; i++)
+                    if (g[i].infoHash === hubPage.gameHash) { sub = g[i].title || ""; break }
+            } else if (hubPage.detailOpen && hubPage.detailItem) {
+                sub = hubPage.detailItem.title || ""
+            }
+        } else if (currentPage === 3) {
+            sub = settingsPage.sectionTitle || ""
+        }
+        return sub.length > 0 ? base + ": " + sub : base
+    }
     property var pageBack: []
     property var pageForward: []
     property bool historyStep: false
@@ -628,6 +650,7 @@ Window {
             currentIndex: win.currentPage
             showDownloadChip: win.showDownloadChip && windowLoaders.playersOpen === 0
             menuOpen: logoMenu.opened
+            location: win.navLocation
             canBack: win.pageBack.length > 0
             canForward: win.pageForward.length > 0
             onBackRequested: win.goBack()

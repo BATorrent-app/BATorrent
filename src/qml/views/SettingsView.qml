@@ -31,6 +31,8 @@ Rectangle {
     Shortcut { enabled: win.isCurrent; sequences: [StandardKey.Close];  onActivated: win.closed() }
 
     SettingsSchema { id: schema }
+    // the open section's name, for the title strip
+    readonly property string sectionTitle: (schema.heads[win.sec] || {}).h || ""
     readonly property var schemaLanguages: schema.prefLanguages
 
     // group consecutive fields into { label, rows[] } blocks (a "group" field starts a new card).

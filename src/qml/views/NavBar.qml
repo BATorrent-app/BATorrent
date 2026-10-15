@@ -36,6 +36,7 @@ Rectangle {
     signal makeRoomRequested()
     signal menuRequested(Item anchor)
     // page history, like a browser's
+    property string location: "BATorrent"   // where you are, shown in the title strip
     property bool canBack: false
     property bool canForward: false
     signal backRequested()
@@ -355,24 +356,16 @@ Rectangle {
                 onClicked: bar.forwardRequested()
             }
         }
-        Row {
+        // where you are: the page and what is open in it
+        Text {
             anchors.centerIn: parent
-            spacing: 7
-            Image {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 16; height: 16
-                source: Theme.logoSource
-                sourceSize: Qt.size(32, 32)
-                fillMode: Image.PreserveAspectFit
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "BATorrent"
-                color: Theme.t2
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                font.family: Theme.fontSans
-            }
+            width: Math.min(implicitWidth, parent.width - 2 * 320)
+            text: bar.location
+            color: Theme.t2
+            font.pixelSize: 12
+            font.weight: Font.DemiBold
+            font.family: Theme.fontSans
+            elide: Text.ElideMiddle
         }
         Row {
             id: winButtons
@@ -420,11 +413,14 @@ Rectangle {
         width: 34; height: bar.stripH
         radius: Theme.rad(6)
         color: sbtnMa.containsMouse && sbtn.active ? Theme.hover2 : "transparent"
+        // a dead arrow has to look dead next to a live one: grey against
+        // grey read the same, so it fades right back and the live one lights up
         IconImg {
             anchors.centerIn: parent
             src: sbtn.icon
             s: 18
-            tint: !sbtn.active ? Theme.t4 : (sbtnMa.containsMouse ? Theme.t1 : Theme.t3)
+            tint: !sbtn.active ? Theme.t4 : (sbtnMa.containsMouse ? Theme.t1 : Theme.tSoft)
+            opacity: sbtn.active ? 1 : 0.35
         }
         MouseArea {
             id: sbtnMa
