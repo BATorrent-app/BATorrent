@@ -146,6 +146,7 @@ Item {
         }
         else openDetail(item, kind === "game")
     }
+    function mediaKind(it) { return it && (it.isSeries || it.isGroup) ? "series" : "movie" }
     function openRec(item) {
         if (item) openTitle(item)
     }
@@ -225,25 +226,19 @@ Item {
                 onActivated: function (it) { page.openItem(it, "game") }
                 onContext: function (it) { page.gameMenu.openFor(it.infoHash) }
             }
+            // shows and films share one row; the chips narrow it to either
             HubRail {
                 width: col.width
-                visible: items.length > 0 && (page.libraryFilter === "all" || page.libraryFilter === "series")
+                visible: items.length > 0 && page.libraryFilter !== "game"
                 hub: page
-                kind: "series"
-                title: (i18n.language, i18n.t("hub_kind_series"))
-                items: page.seriesRail
-                onActivated: function (it) { page.openItem(it, "series") }
+                kind: "media"
+                title: (i18n.language, i18n.t(page.libraryFilter === "series" ? "hub_kind_series"
+                                              : page.libraryFilter === "movie" ? "hub_kind_movies" : "hub_kind_media"))
+                items: page.libraryFilter === "series" ? page.seriesRail
+                     : page.libraryFilter === "movie" ? page.movieRail
+                     : page.seriesRail.concat(page.movieRail)
+                onActivated: function (it) { page.openItem(it, page.mediaKind(it)) }
                 onContext: function (it) { if (!it.isGroup) page.continueMenu.openFor(it.infoHash, it.fileIndex) }
-            }
-            HubRail {
-                width: col.width
-                visible: items.length > 0 && (page.libraryFilter === "all" || page.libraryFilter === "movie")
-                hub: page
-                kind: "movie"
-                title: (i18n.language, i18n.t("hub_kind_movies"))
-                items: page.movieRail
-                onActivated: function (it) { page.openItem(it, "movie") }
-                onContext: function (it) { page.continueMenu.openFor(it.infoHash, it.fileIndex) }
             }
 
             Item { width: 1; height: 16; visible: !page.empty }

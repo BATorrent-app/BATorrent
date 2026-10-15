@@ -18,6 +18,7 @@ Rectangle {
     property bool readonly: false
     property bool password: false
     property bool clearable: false   // shows an ✕ to empty the field when it has text
+    property string hint: ""         // a key to press, in grey before the ✕ ("Enter")
     // optional appearance overrides: let a hero/landing field scale up without a
     // second component (defaults preserve every existing call site)
     property real fontSize: mono ? 12 : 13
@@ -28,8 +29,9 @@ Rectangle {
     implicitHeight: 34
     radius: Theme.rad(8)
     color: Theme.field
-    border.color: input.activeFocus ? Theme.accent : Theme.hair
-    border.width: 1
+    // focus is a neutral ring: red is for acting
+    border.color: input.activeFocus ? Theme.fieldFocus : Theme.hair
+    border.width: input.activeFocus ? 1.5 : 1
 
     RowLayout {
         anchors.fill: parent
@@ -58,6 +60,12 @@ Rectangle {
             background: null
             padding: 0
             onEditingFinished: fld.edited(text)
+        }
+        Text {
+            visible: fld.hint !== ""
+            Layout.alignment: Qt.AlignVCenter
+            text: fld.hint
+            color: Theme.t4; font.pixelSize: 13; font.family: Theme.fontSans
         }
         IconImg {
             visible: fld.clearable && input.text.length > 0

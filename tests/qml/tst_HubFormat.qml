@@ -41,7 +41,7 @@ Item {
 
         function test_aGameNotYetInstalledIsDimmed() {
             var g = fmt.tileState({ installState: 1, size: 1 }, "game")
-            compare(g.state, "hub_tile_not_installed")
+            compare(g.state, "hub_ready_to_install")
             verify(g.dim)
             verify(!fmt.tileState({ installState: 4 }, "game").dim)
         }

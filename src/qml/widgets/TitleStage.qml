@@ -108,7 +108,7 @@ Item {
             Text {
                 visible: stage.rating > 0
                 text: "★ " + stage.rating.toFixed(1)
-                color: Theme.star
+                color: Theme.stageT1
                 font.pixelSize: 14; font.weight: Font.DemiBold
                 font.family: Theme.fontSans; font.features: Theme.tnum
             }

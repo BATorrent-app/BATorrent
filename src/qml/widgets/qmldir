@@ -60,6 +60,8 @@ StageFilterBar 1.0 StageFilterBar.qml
 TitleMark 1.0 TitleMark.qml
 CardActions 1.0 CardActions.qml
 TitleTile 1.0 TitleTile.qml
+OwnedIndex 1.0 OwnedIndex.qml
+ReleaseRow 1.0 ReleaseRow.qml
 TitleBanner 1.0 TitleBanner.qml
 ThemeArt 1.0 ThemeArt.qml
 WindowTitleBar 1.0 WindowTitleBar.qml

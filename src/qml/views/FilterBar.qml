@@ -197,7 +197,7 @@ Rectangle {
             Layout.preferredHeight: 32
             Layout.alignment: Qt.AlignVCenter
             color: Theme.field
-            border.color: searchInput.activeFocus ? Theme.accent : Theme.hair
+            border.color: searchInput.activeFocus ? Theme.fieldFocus : Theme.hair
             border.width: 1
             radius: Theme.rad(8)
 

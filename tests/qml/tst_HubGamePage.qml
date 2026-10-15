@@ -129,8 +129,9 @@ Item {
             var p = createTemporaryObject(pageComp, root)
             mockHub.gameHash = "fresh"
             mockHub.gameOpen = true
-            verify(findByText(p, "game_playtime") !== null)
-            verify(findByText(p, "—") !== null)
+            // never played: no play time at all, rather than a dash
+            verify(findByText(p, "game_playtime") === null)
+            verify(findByText(p, "—") === null)
             verify(findByText(p, "game_activity") === null)
             verify(findByText(p, "game_build") === null)
             mockHub.gameHash = "played"

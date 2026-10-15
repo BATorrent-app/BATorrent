@@ -232,7 +232,7 @@ Item {
             implicitHeight: root.ctlH
             radius: root.ctlRadius
             color: Theme.field
-            border.color: pathInput.activeFocus ? Theme.accent : Theme.hair
+            border.color: pathInput.activeFocus ? Theme.fieldFocus : Theme.hair
             border.width: 1
             function curPath() {
                 return (typeof settings !== "undefined" && root.field.key !== undefined)

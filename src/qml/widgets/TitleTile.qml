@@ -2,9 +2,10 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// A title as a wide tile: its backdrop with its own lettering on it, rating,
-// year and kind underneath. The same picture the title's page opens on, so a
-// click lands where the tile already promised.
+// A title as a wide tile: its backdrop, the name under it, and one line that
+// says what the person already has of it ("S01 · 1 of 8 watched", "Watched")
+// or, when nothing, rating, year and kind in grey. The same picture the
+// title's page opens on, so a click lands where the tile already promised.
 import QtQuick
 import "../theme"
 
@@ -13,6 +14,8 @@ Item {
     property var item: ({})
     property bool watchlistEnabled: typeof session !== "undefined"
     property bool saved: false
+    // { text } from OwnedIndex.stateOf(item), or null when it is not in the library
+    property var owned: null
     signal activated()
     signal watchlistToggle()
 
@@ -20,7 +23,7 @@ Item {
     readonly property real artH: Math.round(width * 9 / 16)
 
     implicitWidth: 252
-    implicitHeight: artH + 9 + meta.implicitHeight
+    implicitHeight: artH + 10 + nameTxt.implicitHeight + 3 + meta.implicitHeight
 
     function typeLabel(t) {
         return t === "movie" ? i18n.t("search_type_movie")
@@ -47,26 +50,6 @@ Item {
             opacity: status === Image.Ready ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.durSlow } }
         }
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0) }
-                GradientStop { position: 1.0;  color: Qt.rgba(0, 0, 0, 0.65) }
-            }
-        }
-        TitleMark {
-            anchors.left: parent.left
-            anchors.bottom: parent.bottom
-            anchors.leftMargin: 12
-            anchors.bottomMargin: 10
-            width: maxWidth
-            height: maxHeight
-            maxWidth: frame.width * 0.58
-            maxHeight: frame.height * 0.42
-            tmdbId: tile.item.tmdbId || 0
-            type: tile.item.type || ""
-            title: tile.item.title || tile.item.name || ""
-        }
         CardActions {
             anchors.fill: parent
             showPlay: false
@@ -81,32 +64,52 @@ Item {
             radius: parent.radius
             color: "transparent"
             border.width: 2
-            border.color: Qt.rgba(1, 1, 1, 0.85)
+            border.color: Theme.t1
             opacity: ma.containsMouse ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
         }
     }
 
+    Text {
+        id: nameTxt
+        anchors.top: frame.bottom
+        anchors.topMargin: 10
+        width: parent.width
+        text: tile.item.title || tile.item.name || ""
+        textFormat: Text.PlainText
+        color: Theme.t1
+        font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+        elide: Text.ElideRight
+    }
     Row {
         id: meta
-        anchors.top: frame.bottom
-        anchors.topMargin: 9
-        spacing: 8
-        Text {
-            visible: (tile.item.rating || 0) > 0
-            text: "★ " + (tile.item.rating || 0).toFixed(1)
-            color: Theme.star
-            font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+        anchors.top: nameTxt.bottom
+        anchors.topMargin: 3
+        width: parent.width
+        spacing: 6
+        Rectangle {
+            visible: !!tile.owned
+            anchors.verticalCenter: parent.verticalCenter
+            width: 6; height: 6; radius: 3
+            color: Theme.grn
         }
         Text {
-            text: tile.item.year || ""
-            color: Theme.t4
+            width: Math.min(implicitWidth, parent.width - 12)
+            elide: Text.ElideRight
+            textFormat: Text.StyledText
             font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
-        }
-        Text {
-            text: (i18n.language, tile.typeLabel(tile.item.type || ""))
-            color: Theme.t4
-            font.pixelSize: 12; font.family: Theme.fontSans
+            color: Theme.t3
+            text: {
+                i18n.language
+                var facts = []
+                if ((tile.item.rating || 0) > 0) facts.push("★ " + tile.item.rating.toFixed(1))
+                if (tile.item.year) facts.push(tile.item.year)
+                if (!tile.owned) facts.push(tile.typeLabel(tile.item.type || ""))
+                facts = facts.filter(function (f) { return String(f).length > 0 })
+                if (!tile.owned) return facts.join(" · ")
+                return "<font color='" + Theme.t2 + "'>" + tile.owned.text + "</font>"
+                       + (facts.length ? " · " + facts.join(" · ") : "")
+            }
         }
     }
 

@@ -209,6 +209,24 @@ bool QmlSessionBridge::gameOutlivesTorrent(const QString &infoHash) const
     return true;
 }
 
+QVariantMap QmlSessionBridge::setupFilesOf(const QString &infoHash) const
+{
+    const int row = m_session->torrentIndexByInfoHash(infoHash);
+    if (row < 0 || !gameOutlivesTorrent(infoHash)) return {};
+    if (QSettings().value(QStringLiteral("setupKept/") + infoHash).toBool()) return {};
+    const TorrentInfo info = m_session->torrentAt(row);
+    QVariantMap m;
+    m[QStringLiteral("size")] = formatSize(info.totalDone);
+    m[QStringLiteral("peers")] = info.seeding && !info.paused ? info.numPeers : 0;
+    return m;
+}
+
+void QmlSessionBridge::keepSetupFiles(const QString &infoHash)
+{
+    QSettings().setValue(QStringLiteral("setupKept/") + infoHash, true);
+    emit gamesChanged();
+}
+
 QString QmlSessionBridge::readyNote(const QString &infoHash, const QString &exe) const
 {
     const QString name = QFileInfo(exe).completeBaseName();

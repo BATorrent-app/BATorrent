@@ -77,7 +77,8 @@ Item {
                                                 : [root.watch.year].concat((root.watch.genres || []).slice(0, 1))
                                                       .filter(function (s) { return !!s }).join("  ·  ")) : ""
         buttonText: (i18n.language, i18n.t(root.watchSuggested ? "hub_gs_play" : "hub_resume"))
-        buttonLight: true
+        // Resume and Play are the same red button: the one way back in
+        buttonLight: false
         progress: root.watch && !root.watchSuggested ? (root.watch.watchedPct || 0) : -1
         note: root.watch && !root.watchSuggested
               ? root.hub.fmtLeft((root.watch.durMs || 0) - (root.watch.resumeMs || 0)) : ""
@@ -104,7 +105,8 @@ Item {
             var parts = []
             if ((root.play.playSeconds || 0) > 0)
                 parts.push((i18n.language, i18n.t("hub_tile_played")).arg(root.hub.hours(root.play.playSeconds)))
-            if (root.playAchTotal > 0)
+            // only what has happened: no "0 of 48 achievements"
+            if (root.playAchTotal > 0 && root.playAchUnlocked > 0)
                 parts.push((i18n.language, i18n.t("hub_ach_short")).arg(root.playAchUnlocked).arg(root.playAchTotal))
             return parts.join("  ·  ")
         }

@@ -34,7 +34,8 @@ QtObject {
         if (!b || b <= 0) return ""
         var u = ["B", "KB", "MB", "GB", "TB"]
         var i = Math.min(u.length - 1, Math.floor(Math.log(b) / Math.log(1024)))
-        return (b / Math.pow(1024, i)).toFixed(i >= 3 ? 1 : 0) + " " + u[i]
+        // the language's decimal mark: "39,9 GB" in Portuguese
+        return Number(b / Math.pow(1024, i)).toLocaleString(typeof i18n !== "undefined" && i18n.localeName ? Qt.locale(i18n.localeName) : Qt.locale("C"), "f", i >= 3 ? 1 : 0) + " " + u[i]
     }
     function fmtTime(ms) {
         if (!ms || ms <= 0) return ""
@@ -131,13 +132,14 @@ QtObject {
         }
         if (kind === "game") {
             out.meta = size
-            if (item.playing) { out.state = i18n.t("hub_playing_now"); out.ink = Theme.accentText }
+            if (item.playing) { out.state = i18n.t("hub_playing_now"); out.ink = Theme.grn }
             else if (item.installState === 4) {
                 out.state = i18n.t("hub_installed")
                 if ((item.playSeconds || 0) > 0) out.meta = i18n.t("hub_tile_played").arg(root.hours(item.playSeconds))
             } else if (item.installState === 1) {
-                out.state = i18n.t("hub_tile_not_installed")
-                out.ink = Theme.t4
+                // the setup is on disk: ready, said plainly, with Install on the art
+                out.state = i18n.t("hub_ready_to_install")
+                out.ink = Theme.t2
                 out.dim = true
             } else {
                 out.state = root.gameStateLabel(item)

@@ -21,6 +21,8 @@ Item {
     property alias list: list
     signal addMagnetRequested()
     signal addLinkRequested()
+    signal findRequested()
+    signal findTitleRequested(var item)
 
     component HCol: Item {
         id: hc
@@ -80,10 +82,11 @@ Item {
     // empty state (no torrents)
     EmptyState {
         anchors.centerIn: parent
+        width: Math.min(parent.width - 64, 860)
         visible: parent.empty
-        onOpenClicked: openFileDlg.open()
-        onMagnetClicked: libraryView.addMagnetRequested()
-        onLinkClicked: libraryView.addLinkRequested()
+        onAddClicked: libraryView.addMagnetRequested()
+        onFindRequested: libraryView.findRequested()
+        onTitleRequested: function (it) { libraryView.findTitleRequested(it) }
     }
 
 

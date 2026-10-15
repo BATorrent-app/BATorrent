@@ -16,6 +16,7 @@ Item {
     property string typeFilter: "all"   // all | game | movie | series
     property bool active: true          // gates the billboard rotation
     property bool showCatalogEntry: false
+    property var ownedIndex: null
     signal titleRequested(var item)     // a known title: straight to its page
     signal rowGridRequested(string rowLabel, var rowItems)
     signal catalogBrowseRequested(string group)   // "" = all catalogs; else release group
@@ -137,6 +138,7 @@ Item {
                     landscape: true
                     label: modelData.label
                     items: modelData.items
+                    ownedIndex: browse.ownedIndex
                     flickY: flick.contentY
                     flickH: flick.height
                     onActivated: function(item) { browse.titleRequested(item) }
@@ -161,6 +163,7 @@ Item {
                     landscape: true
                     label: modelData.label
                     items: modelData.items
+                    ownedIndex: browse.ownedIndex
                     flickY: flick.contentY
                     flickH: flick.height
                     onActivated: function(item) { browse.titleRequested(item) }

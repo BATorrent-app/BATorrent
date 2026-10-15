@@ -190,9 +190,14 @@ Item {
                 subLine: {
                     if (status.key.length === 0) return modelData.main.quality + "  ·  " + (modelData.main.sizeStr || "")
                     var line = (i18n.language, i18n.t(status.key))
-                    return status.arg === "" ? line : line.arg(status.arg)
+                    line = status.arg === "" ? line : line.arg(status.arg)
+                    // the exceptions, said per episode: what you have, and the pack it sits in
+                    if (status.key === "find_ep_in_library" || status.key === "find_ep_watched") line = "✓ " + line
+                    if (status.key === "find_ep_in_pack" && modelData.pack && modelData.pack.sizeStr)
+                        line += " · " + modelData.pack.sizeStr
+                    return line
                 }
-                subColor: status.tone === "dim" ? Qt.rgba(1, 1, 1, 0.3) : Theme.stageMuted
+                subColor: status.tone === "ok" ? Theme.grn : status.tone === "dim" ? Theme.stageDim : Theme.stageMuted
                 slowText: modelData.lib === null && panel.logic.isSlow(modelData.main)
                           ? (i18n.language, i18n.t("find_slow")) : ""
                 onOpenRequested: panel.episode = modelData.episode

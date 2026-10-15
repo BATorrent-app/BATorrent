@@ -308,6 +308,8 @@
 <file>../src/qml/widgets/TitleMark.qml</file>
 <file>../src/qml/widgets/CardActions.qml</file>
 <file>../src/qml/widgets/TitleTile.qml</file>
+<file>../src/qml/widgets/OwnedIndex.qml</file>
+<file>../src/qml/widgets/ReleaseRow.qml</file>
 <file>../src/qml/widgets/TitleBanner.qml</file>
 <file>../src/qml/widgets/qmldir</file>
 <file>../src/qml/widgets/ThemeArt.qml</file>

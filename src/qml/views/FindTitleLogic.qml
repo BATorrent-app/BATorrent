@@ -298,6 +298,90 @@ QtObject {
 
     function isSlow(r) { return !!r && (r.seedsN || 0) < 10 }
 
+    // ---- one episode's releases, as people read them ----
+
+    // Under this many seeds a release says so, in orange.
+    readonly property int fewSeeds: 30
+    function hasFewSeeds(r) { return !!r && (r.seedsN || 0) < fewSeeds }
+
+    // The release's name as a person would say it: what it was made from and
+    // how it sounds for an episode ("BluRay · 5.1"); which season(s) and cut
+    // for a pack ("Season 1 · BluRay", "Seasons 1–4 · complete"). The raw
+    // name stays in the tooltip. tr: i18n.t.
+    function readableName(r, tr) {
+        var n = r.name || ""
+        var bits = []
+        if (!((r.episode || 0) > 0)) {
+            var span = /\bS(?:eason)?[ ._-]?0?(\d{1,2})\s*[-–~]\s*S?(?:eason)?[ ._-]?0?(\d{1,2})\b/i.exec(n)
+            if (span && parseInt(span[2]) > parseInt(span[1])) {
+                bits.push(tr("find_rel_seasons").arg(parseInt(span[1])).arg(parseInt(span[2])))
+                if (/complete/i.test(n)) bits.push(tr("find_rel_complete"))
+            } else if ((r.season || 0) > 0) {
+                bits.push(tr("find_rel_season").arg(r.season))
+            }
+            if (/\bextended\b/i.test(n)) bits.push(tr("find_rel_extended"))
+        }
+        if (r.hdr === true) bits.push(r.quality === "4K" ? "4K HDR" : "HDR")
+        else if ((r.source || "").length > 0 && r.source !== "CAM") bits.push(r.source)
+        var ch = /\b(?:DDP?|AAC|DTS(?:-HD)?|AC3|E-?AC-?3|TrueHD|Atmos)?[ ._]?([257])[ ._]([01])\b/i.exec(n)
+        if (ch && (r.episode || 0) > 0) bits.push(ch[1] + "." + ch[2])
+        if (bits.length > 0) return bits.join(" · ")
+        // nothing it is made of: who released it, then the raw name
+        return (r.releaseGroup || "").length > 0 ? r.releaseGroup : n
+    }
+
+    // H.264 / H.265 the way players name them, from x264, AVC, HEVC...
+    function codecName(c) {
+        var k = String(c || "").toLowerCase()
+        if (k === "x264" || k === "h264" || k === "avc" || k === "h.264") return "H.264"
+        if (k === "x265" || k === "h265" || k === "hevc" || k === "h.265") return "H.265"
+        return c || ""
+    }
+
+    // The line under the name: the person's language first and strong ("Dub +
+    // Sub PT-BR"), the others plain, then the codec. [{text, mine}]; empty
+    // parts never show (no data, no text). myTag is "PT-BR" style.
+    function langBits(r, myTag, tr) {
+        var out = []
+        var mode = r.audioMode || ""
+        // dubbed and also subtitled: the name says DUAL, legendado or subs
+        if (mode === "dub" && /\b(dual|legendad[oa]|subs?|multi[ ._-]?subs?)\b/i.test(r.name || ""))
+            out.push({ text: tr("find_rel_dub_sub").arg(myTag), mine: true })
+        else if (mode === "dub") out.push({ text: tr("find_rel_dub").arg(myTag), mine: true })
+        else if (mode === "sub") out.push({ text: tr("find_rel_sub").arg(myTag), mine: true })
+        var mine = String(myTag || "").split("-")[0].toUpperCase()
+        var others = (r.langs || []).filter(function (l) { return String(l).toUpperCase() !== mine })
+        var multi = others.some(function (l) { return String(l).toUpperCase() === "MULTI" })
+        if (others.length > 3 || multi) out.push({ text: tr("find_rel_multi"), mine: false })
+        else if (others.length > 0) out.push({ text: tr("find_rel_audio").arg(others.join("/")), mine: false })
+        var codec = codecName(r.codec)
+        if (codec.length > 0) out.push({ text: codec, mine: false })
+        return out
+    }
+
+    // The one to mark Recommended in a list: the bridge's pick when it is in
+    // the list, else the first that fits and is well seeded (the list comes
+    // sorted by quality, then seeds). -1 when none qualifies.
+    function recommendedIdx(rows, bridgeBest, freeBytes) {
+        for (var i = 0; i < rows.length; i++) if (rows[i]._idx === bridgeBest) return bridgeBest
+        for (var j = 0; j < rows.length; j++)
+            if (!hasFewSeeds(rows[j]) && fitOf(rows[j], freeBytes).fits) return rows[j]._idx
+        return -1
+    }
+
+    // How a release sits on the save disk: {fits, short} with short the bytes missing.
+    function fitOf(r, freeBytes) {
+        var need = r.sizeBytes || 0
+        if (!(freeBytes >= 0) || need <= freeBytes) return { fits: true, short: 0 }
+        return { fits: false, short: need - freeBytes }
+    }
+
+    // Seeds as a fill for the neutral bar: a log scale, so 30 is a sliver and 1000 is full.
+    function seedFillOf(n) {
+        if (!(n > 0)) return 0
+        return Math.max(0.04, Math.min(1, Math.log(n + 1) / Math.log(1000)))
+    }
+
     // How much of the space a game needs is free: the fill of the disk bar.
     function fitFraction(needBytes, freeBytes) {
         if (!(needBytes > 0) || freeBytes < 0) return 0

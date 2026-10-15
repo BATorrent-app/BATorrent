@@ -106,7 +106,7 @@ Rectangle {
                 Rectangle {
                     height: parent.height
                     width: parent.width * (row.watched ? 1 : row.watchedPct)
-                    color: Theme.accent
+                    color: Theme.stageT1
                 }
             }
         }

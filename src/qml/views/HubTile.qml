@@ -46,7 +46,7 @@ Item {
         height: tile.artH
         radius: Theme.rad(4)
         clip: true
-        color: "#17171a"
+        color: Theme.stagePanel
 
         // The design's placeholder: diagonal stripes, so a tile with no art yet
         // reads as waiting rather than broken.
@@ -55,9 +55,9 @@ Item {
             visible: art.status !== Image.Ready
             onPaint: {
                 var ctx = getContext("2d")
-                ctx.fillStyle = "#17171a"
+                ctx.fillStyle = String(Theme.stagePanel)
                 ctx.fillRect(0, 0, width, height)
-                ctx.strokeStyle = "#1c1c1f"
+                ctx.strokeStyle = String(Qt.lighter(Theme.stagePanel, 1.18))
                 ctx.lineWidth = 10
                 for (var x = -height; x < width + height; x += 20) {
                     ctx.beginPath(); ctx.moveTo(x, height); ctx.lineTo(x + height, 0); ctx.stroke()
@@ -109,12 +109,24 @@ Item {
                 Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
             }
         }
+        // a game whose setup is on disk: the one thing to do, on the art
+        Rectangle {
+            visible: tile.isGame && tile.item.installState === 1
+            anchors.right: parent.right; anchors.top: parent.top
+            anchors.margins: 10
+            width: instTxt.implicitWidth + 22; height: 28
+            radius: Theme.rad(6)
+            color: instMa.containsMouse ? "#ffffff" : Theme.stageT1
+            Text { id: instTxt; anchors.centerIn: parent; text: (i18n.language, i18n.t("hub_gs_install")); color: Theme.stageBg; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            MouseArea { id: instMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; z: 2
+                onClicked: tile.hub.gamePrimary(tile.item) }
+        }
         Rectangle {
             anchors.fill: parent
             radius: parent.radius
             color: "transparent"
             border.width: 2
-            border.color: Qt.rgba(1, 1, 1, 0.85)
+            border.color: Theme.t1
             opacity: ma.containsMouse ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
         }
@@ -130,14 +142,14 @@ Item {
         Text {
             text: tile.st.state
             color: tile.st.ink
-            font.pixelSize: 12
+            font.pixelSize: 13
             font.family: Theme.fontSans
             font.features: Theme.tnum
         }
         Text {
             text: tile.st.meta
-            color: Theme.stageDim
-            font.pixelSize: 12
+            color: Theme.stageMuted
+            font.pixelSize: 13
             font.family: Theme.fontSans
             font.features: Theme.tnum
         }
@@ -146,6 +158,7 @@ Item {
     MouseArea {
         id: ma
         anchors.fill: frame
+        z: -1   // under the art, so the Install button on it takes its own click
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton

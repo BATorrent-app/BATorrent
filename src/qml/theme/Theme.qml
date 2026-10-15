@@ -202,6 +202,8 @@ QtObject {
     // A chosen segment, and a chosen row or card (the spec's `selected`).
     readonly property color segOn: Qt.rgba(t1.r, t1.g, t1.b, 0.12)
     readonly property color selectedFill: Qt.rgba(t1.r, t1.g, t1.b, 0.08)
+    // a focused field: a neutral ring, never the accent
+    readonly property color fieldFocus: Qt.rgba(t1.r, t1.g, t1.b, 0.35)
     // The 1px seam between the two halves of a split primary button.
     readonly property color splitSeam: Qt.rgba(0, 0, 0, 0.25)
     // the VPN-dropped band: the page tinted toward the problem red

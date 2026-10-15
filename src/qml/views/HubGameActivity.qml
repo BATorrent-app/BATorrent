@@ -63,8 +63,9 @@ Column {
                     // follows, and the old maximum made a bar taller than the page.
                     height: modelData > 0 ? Math.max(4, Math.round(Math.min(1, modelData / root.maxSecs) * 86)) : 3
                     radius: Theme.rad(2)
-                    color: modelData <= 0 ? Qt.rgba(1, 1, 1, 0.08)
-                         : (index === root.days.length - 1 ? Theme.accent : Qt.rgba(1, 1, 1, 0.32))
+                    // today in white, the other days grey: no red where nothing needs doing
+                    color: modelData <= 0 ? Theme.stageHair
+                         : (index === root.days.length - 1 ? Theme.stageT1 : Qt.rgba(1, 1, 1, 0.32))
                     Behavior on height { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                 }
                 MouseArea { id: tipMa; anchors.fill: parent; hoverEnabled: true }
@@ -81,15 +82,15 @@ Column {
         Text {
             id: weeksTxt
             text: (i18n.language, i18n.t("game_two_weeks_ago"))
-            color: Theme.stageDim
-            font.pixelSize: 11
+            color: Theme.stageMuted
+            font.pixelSize: 12
             font.family: Theme.fontSans
         }
         Text {
             anchors.right: parent.right
             text: (i18n.language, i18n.t("hub_today"))
-            color: Theme.stageDim
-            font.pixelSize: 11
+            color: Theme.stageMuted
+            font.pixelSize: 12
             font.family: Theme.fontSans
         }
     }

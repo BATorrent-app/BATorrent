@@ -37,7 +37,7 @@ Column {
             anchors.left: head.right
             anchors.leftMargin: 12
             anchors.baseline: head.baseline
-            text: (i18n.language, i18n.t("hub_n_titles")).arg(rail.items.length)
+            text: (i18n.language, i18n.t(rail.items.length === 1 ? "hub_n_title_1" : "hub_n_titles")).arg(rail.items.length)
             color: Theme.t4
             font.pixelSize: 12
             font.family: Theme.fontSans
@@ -61,7 +61,7 @@ Column {
             width: 252
             hub: rail.hub
             item: modelData
-            kind: rail.kind
+            kind: rail.kind === "media" ? rail.hub.mediaKind(modelData) : rail.kind
             onActivated: rail.activated(modelData)
             onContext: rail.context(modelData)
         }

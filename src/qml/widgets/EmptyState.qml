@@ -2,121 +2,207 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Empty state for the main content area.
+// Downloads with nothing in it: three ways to start, all in sight. A dashed
+// area that says a file can be dropped anywhere, the one red button (it
+// opens Add download), the paste shortcut, and six titles from Find that
+// open their page. Offline, the Find row is not there.
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
 
-ColumnLayout {
+Item {
     id: empty
-    signal openClicked()
-    signal magnetClicked()
-    signal linkClicked()
+    signal addClicked()
+    signal findRequested()
+    signal titleRequested(var item)
 
-    spacing: 0
+    implicitWidth: 860
+    implicitHeight: col.implicitHeight
 
-    // .mk 86×86
-    Rectangle {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.bottomMargin: 22
-        implicitWidth: 86
-        implicitHeight: 86
-        radius: Theme.rad(22)
-        color: Theme.panel
-        border.color: Theme.hair
-        border.width: 1
-        Image {
-            anchors.centerIn: parent
-            width: 44; height: 44
-            source: Theme.logoSource
-            sourceSize: Qt.size(88, 88)
-            fillMode: Image.PreserveAspectFit
-            opacity: 0.5
-        }
-    }
+    readonly property var disco: typeof discovery !== "undefined" ? discovery : null
+    onVisibleChanged: if (visible && disco && (disco.rows || []).length === 0) disco.load()
+    Component.onCompleted: if (visible && disco && (disco.rows || []).length === 0) disco.load()
 
-    Text {
-        Layout.alignment: Qt.AlignHCenter
-        text: (i18n.language, i18n.t("empty_title"))
-        color: Theme.t1
-        font.pixelSize: 19
-        font.weight: Font.DemiBold
-        font.letterSpacing: -0.3
-        font.family: Theme.fontSans
-    }
-    Text {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.topMargin: 9
-        Layout.maximumWidth: 360
-        horizontalAlignment: Text.AlignHCenter
-        wrapMode: Text.WordWrap
-        text: (i18n.language, i18n.t("empty_body2"))
-        color: Theme.t3
-        font.pixelSize: 13
-        font.family: Theme.fontSans
-        lineHeight: 1.55
-    }
-
-    // .cta
-    RowLayout {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.topMargin: 24
-        spacing: 10
-
-        Rectangle {
-            implicitWidth: openRow.implicitWidth + 32
-            implicitHeight: 36
-            radius: Theme.rad(8)
-            color: openMa.containsMouse ? Theme.accentDark : Theme.accent
-            Row {
-                id: openRow
-                anchors.centerIn: parent
-                spacing: 8
-                IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/open.svg"; tint: "#ffffff"; s: 16 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("welcome_card_open_title")); color: "#ffffff"; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+    // two films, two shows, two games from the top of Find's shelves; a kind
+    // with none leaves its places to the others
+    readonly property var picks: {
+        var rows = disco ? (disco.rows || []) : []
+        var byType = { movie: [], series: [], game: [] }, rest = [], seen = ({})
+        for (var r = 0; r < rows.length; r++) {
+            var items = rows[r].items || []
+            for (var k = 0; k < items.length; k++) {
+                var it = items[k]
+                var key = (it.title || "") + "|" + (it.type || "")
+                if (!it.poster || seen[key]) continue
+                seen[key] = true
+                var bucket = byType[it.type]
+                if (bucket && bucket.length < 2) bucket.push(it)
+                else rest.push(it)
             }
-            MouseArea { id: openMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.openClicked() }
         }
-        Rectangle {
-            implicitWidth: magRow.implicitWidth + 32
-            implicitHeight: 36
-            radius: Theme.rad(8)
-            color: Theme.panel
-            border.color: magMa.containsMouse ? (Theme.isDark ? Qt.rgba(1,1,1,0.2) : Qt.rgba(0,0,0,0.22)) : Theme.hair
-            border.width: 1
-            Row {
-                id: magRow
-                anchors.centerIn: parent
-                spacing: 8
-                IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/magnet.svg"; tint: Theme.t1; s: 16 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("empty_paste_btn")); color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-            }
-            MouseArea { id: magMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.magnetClicked() }
-        }
-        Rectangle {
-            implicitWidth: linkRow.implicitWidth + 32
-            implicitHeight: 36
-            radius: Theme.rad(8)
-            color: Theme.panel
-            border.color: linkMa.containsMouse ? (Theme.isDark ? Qt.rgba(1,1,1,0.2) : Qt.rgba(0,0,0,0.22)) : Theme.hair
-            border.width: 1
-            Row {
-                id: linkRow
-                anchors.centerIn: parent
-                spacing: 8
-                IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/download.svg"; tint: Theme.t1; s: 16 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("empty_link_btn")); color: Theme.t1; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-            }
-            MouseArea { id: linkMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.linkClicked() }
-        }
+        var out = byType.movie.concat(byType.series, byType.game)
+        return out.concat(rest.slice(0, Math.max(0, 6 - out.length))).slice(0, 6)
+    }
+    function typeLabel(t) {
+        return t === "movie" ? i18n.t("search_type_movie")
+             : t === "series" ? i18n.t("search_type_series")
+             : t === "game" ? i18n.t("search_type_game") : ""
     }
 
-    // .hintdrop
-    RowLayout {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.topMargin: 26
-        spacing: 8
-        IconImg { src: "qrc:/icons/upload.svg"; tint: Theme.t4; s: 14 }
-        Text { text: (i18n.language, i18n.t("empty_drag_hint")); color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans }
+    ColumnLayout {
+        id: col
+        width: parent.width
+        spacing: 0
+
+        // the drop area: dashed, because a file can land here (and anywhere)
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 270
+            Canvas {
+                id: dash
+                anchors.fill: parent
+                onPaint: {
+                    var ctx = getContext("2d")
+                    ctx.reset()
+                    ctx.strokeStyle = String(Theme.t4)
+                    ctx.globalAlpha = 0.55
+                    ctx.lineWidth = 1
+                    ctx.setLineDash([4, 4])
+                    var r = Theme.rad(12)
+                    ctx.beginPath()
+                    ctx.roundedRect(0.5, 0.5, width - 1, height - 1, r, r)
+                    ctx.stroke()
+                }
+                Connections { target: Theme; function onT4Changed() { dash.requestPaint() } }
+            }
+            ColumnLayout {
+                anchors.centerIn: parent
+                width: Math.min(parent.width - 64, 560)
+                spacing: 0
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: (i18n.language, i18n.t("empty_first_title"))
+                    color: Theme.t1
+                    font.pixelSize: 26; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                }
+                Text {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 12
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                    text: (i18n.language, i18n.t("empty_first_body"))
+                    color: Theme.t2
+                    font.pixelSize: 15; font.family: Theme.fontSans
+                    lineHeight: 1.35
+                }
+                Row {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.topMargin: 24
+                    spacing: 14
+                    Rectangle {
+                        width: addRow.implicitWidth + 40; height: 44
+                        radius: Theme.rad(8)
+                        color: addMa.containsMouse ? Theme.accentDark : Theme.accent
+                        Row {
+                            id: addRow
+                            anchors.centerIn: parent
+                            spacing: 9
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: "+"; color: Theme.inkOnAccent; font.pixelSize: 18; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("empty_add_btn")); color: Theme.inkOnAccent; font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                        }
+                        MouseArea { id: addMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.addClicked() }
+                    }
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 6
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: (i18n.language, i18n.t("empty_or_paste")); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans }
+                        Repeater {
+                            model: [Qt.platform.os === "osx" ? "⌘" : "Ctrl", "V"]
+                            Rectangle {
+                                required property var modelData
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.max(26, kTxt.implicitWidth + 14); height: 26
+                                radius: Theme.rad(6)
+                                color: Theme.field
+                                border.color: Theme.hair; border.width: 1
+                                Text { id: kTxt; anchors.centerIn: parent; text: modelData; color: Theme.t2; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontMono }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // the third way: something from Find (its page, never a download)
+        RowLayout {
+            visible: empty.picks.length > 0
+            Layout.fillWidth: true
+            Layout.topMargin: 40
+            Text {
+                Layout.fillWidth: true
+                text: (i18n.language, i18n.t("empty_from_find"))
+                color: Theme.t1
+                font.pixelSize: 16; font.weight: Font.DemiBold; font.family: Theme.fontSans
+            }
+            Text {
+                text: (i18n.language, i18n.t("empty_open_find")) + "  →"
+                color: ofMa.containsMouse ? Theme.t1 : Theme.t2
+                font.pixelSize: 14; font.family: Theme.fontSans
+                MouseArea { id: ofMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.findRequested() }
+            }
+        }
+        Row {
+            visible: empty.picks.length > 0
+            Layout.fillWidth: true
+            Layout.topMargin: 14
+            spacing: 14
+            readonly property real cardW: (col.width - 5 * spacing) / 6
+            Repeater {
+                model: empty.picks
+                Column {
+                    id: pick
+                    required property var modelData
+                    width: parent.cardW
+                    spacing: 6
+                    Rectangle {
+                        width: parent.width; height: width * 1.5
+                        radius: Theme.rad(8)
+                        color: Theme.panel
+                        clip: true
+                        RoundedImage {
+                            anchors.fill: parent
+                            radius: Theme.rad(8)
+                            sourceWidth: 260
+                            sources: [pick.modelData.poster]
+                        }
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Theme.rad(8)
+                            color: "transparent"
+                            border.width: 2; border.color: Theme.t1
+                            opacity: pkMa.containsMouse ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
+                        }
+                        MouseArea { id: pkMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: empty.titleRequested(pick.modelData) }
+                    }
+                    Text {
+                        width: parent.width
+                        text: pick.modelData.title || ""
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
+                        color: Theme.t1
+                        font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                    }
+                    Text {
+                        width: parent.width
+                        text: (i18n.language, [empty.typeLabel(pick.modelData.type || ""), pick.modelData.year || ""]
+                                              .filter(function (s) { return String(s).length > 0 }).join(" · "))
+                        elide: Text.ElideRight
+                        color: Theme.t3
+                        font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+                    }
+                }
+            }
+        }
     }
 }

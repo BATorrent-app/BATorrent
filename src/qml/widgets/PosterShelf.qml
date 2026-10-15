@@ -14,6 +14,8 @@ Item {
     id: shelf
     property string label
     property var items: []
+    // an OwnedIndex: tiles say what the person already has of each title
+    property var ownedIndex: null
     property bool showSeeAll: true
     // Wide 16:9 tiles with the title's lettering instead of 2:3 posters.
     property bool landscape: false
@@ -103,6 +105,7 @@ Item {
             width: 252
             item: modelData
             saved: shelf.savedOf(modelData)
+            owned: shelf.ownedIndex ? shelf.ownedIndex.stateOf(modelData) : null
             onWatchlistToggle: shelf.toggleSaved(modelData)
             onActivated: shelf.activated(modelData)
         }

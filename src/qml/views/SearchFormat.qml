@@ -52,7 +52,8 @@ QtObject {
         if (!b || b <= 0) return "0 B"
         var u = ["B", "KB", "MB", "GB", "TB"]
         var i = Math.min(u.length - 1, Math.floor(Math.log(b) / Math.log(1024)))
-        return (b / Math.pow(1024, i)).toFixed(i >= 3 ? 1 : 0) + " " + u[i]
+        // the language's decimal mark: "39,9 GB" in Portuguese
+        return Number(b / Math.pow(1024, i)).toLocaleString(typeof i18n !== "undefined" && i18n.localeName ? Qt.locale(i18n.localeName) : Qt.locale("C"), "f", i >= 3 ? 1 : 0) + " " + u[i]
     }
     function fmtCount(n) {
         return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n)

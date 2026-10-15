@@ -228,4 +228,40 @@ TestCase {
         compare(logic.fitFraction(0, 10), 0)
         compare(logic.fitFraction(100, -1), 0)
     }
+
+    // ---- one episode's releases ----
+
+    function test_anEpisodeIsNamedByWhatItIs() {
+        compare(logic.readableName(rel({ name: "True.Detective.S01E01.1080p.BluRay.DDP5.1.x264", source: "BluRay",
+                                         season: 1, episode: 1 }), tr), "BluRay · 5.1")
+        // nothing to say: the raw name stays
+        compare(logic.readableName(rel({ name: "weird name", season: 1, episode: 1 }), tr), "weird name")
+    }
+
+    function test_aPackSaysWhichSeasons() {
+        compare(logic.readableName(rel({ name: "Show S01-S04 Complete 1080p", season: 1, source: "WEB" }), tr),
+                "find_rel_seasons(1) · find_rel_complete(%1) · WEB")
+        compare(logic.readableName(rel({ name: "Show Season 1 Extended 1080p", season: 1, source: "BluRay" }), tr),
+                "find_rel_season(1) · find_rel_extended(%1) · BluRay")
+    }
+
+    function test_theLanguageLinePutsYoursFirstAndStrong() {
+        var bits = logic.langBits(rel({ name: "Show S01E01 DUAL 1080p", audioMode: "dub", langs: ["PT", "EN"], codec: "x264" }),
+                                  "PT-BR", tr)
+        compare(bits[0].mine, true)
+        compare(bits[0].text, "find_rel_dub_sub(PT-BR)")
+        compare(bits[1].text, "find_rel_audio(EN)")
+        compare(bits[2].text, "H.264")
+        // no data, no text
+        compare(logic.langBits(rel({ name: "x" }), "PT-BR", tr).length, 0)
+    }
+
+    function test_fewSeedsAndWhatDoesNotFit() {
+        verify(logic.hasFewSeeds(rel({ seedsN: 29 })))
+        verify(!logic.hasFewSeeds(rel({ seedsN: 30 })))
+        var f = logic.fitOf(rel({ sizeBytes: 500 }), 200)
+        verify(!f.fits)
+        compare(f.short, 300)
+        verify(logic.fitOf(rel({ sizeBytes: 500 }), -1).fits)
+    }
 }

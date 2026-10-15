@@ -40,6 +40,12 @@ Item {
         }
     }
 
+    // the type chips filter the list: open by the row's place in the full results
+    function activate(it) {
+        if (!sv.api || !it) return
+        var i = sv.results.indexOf(it)
+        if (i >= 0) sv.api.activateResult(i)
+    }
     function savedOf(it) {
         return typeof session !== "undefined"
                && (session.watchlist, session.inWatchlist(it.name || "", it.type || ""))
@@ -75,7 +81,7 @@ Item {
 
             Rectangle {
                 width: col.width
-                height: 300
+                height: 330
                 radius: Theme.rad(8)
                 color: Theme.stageBg
                 clip: true
@@ -84,25 +90,47 @@ Item {
                     anchors.fill: parent
                     item: pane.bestItem
                     centered: true
-                    showRating: false
                     textWidth: 480
                     logoWidth: 300
                     logoHeight: 96
-                    kicker: (i18n.language, i18n.t("search_best_match"))
-                    kickerColor: Theme.accentText
-                    extraFacts: pane.bestItem && (pane.bestItem.maker || "").length > 0 ? [pane.bestItem.maker] : []
-                    status: pane.bestSummary && pane.bestSummary.count > 0
-                            ? (i18n.language, i18n.t("find_n_releases_best"))
-                                  .arg(pane.bestSummary.count).arg(pane.sv.fmtCount(pane.bestSummary.maxSeeds))
-                            : ""
-                    primaryLabel: (i18n.language, i18n.t("find_see_releases"))
-                    onPrimaryClicked: if (pane.sv.api) pane.sv.api.activateResult(0)
+                    kicker: pane.bestItem ? (i18n.language, i18n.t("search_best_match")).toUpperCase() + "  ·  "
+                                            + typeLabel(pane.bestItem.type || "").toUpperCase() : ""
+                    showType: false
+                    extraFacts: {
+                        var b = pane.bestItem
+                        if (!b) return []
+                        var f = []
+                        if ((b.maker || "").length > 0) f.push(b.maker)
+                        var g = b.genres || []
+                        if (g.length > 0) f.push(g.slice(0, 2).join(", "))
+                        return f
+                    }
+                    // what the person already has of it, then how many releases there are
+                    statusDot: false
+                    status: {
+                        i18n.language
+                        var bits = []
+                        var o = pane.sv.owned ? pane.sv.owned.stateOf(pane.bestItem) : null
+                        if (o) {
+                            bits.push(i18n.t("find_in_library"))
+                            if (o.next) bits.push(i18n.t("find_next_ep").arg(o.next.season).arg(o.next.episode))
+                        }
+                        if (pane.bestSummary && pane.bestSummary.count > 0)
+                            bits.push(i18n.t("find_n_releases").arg(pane.bestSummary.count))
+                        return bits.join(" · ")
+                    }
+                    primaryLabel: {
+                        i18n.language
+                        var t = pane.bestItem ? pane.bestItem.type : ""
+                        return i18n.t(t === "series" ? "find_open_series" : t === "game" ? "find_see_builds" : "find_see_releases")
+                    }
+                    onPrimaryClicked: pane.activate(pane.bestItem)
                 }
                 MouseArea {
                     anchors.fill: parent
                     z: -1
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: if (pane.sv.api) pane.sv.api.activateResult(0)
+                    onClicked: pane.activate(pane.bestItem)
                 }
             }
 
@@ -121,28 +149,29 @@ Item {
                     }
                     Text {
                         anchors.baseline: othersTitle.baseline
-                        text: (i18n.language, i18n.t("search_titles_n")).arg(pane.others.length)
+                        text: (i18n.language, i18n.t("find_n_titles_relevance")).arg(Math.min(pane.others.length, grid.cols))
                         color: Theme.t4
                         font.pixelSize: 12; font.family: Theme.fontSans
                     }
                 }
                 Grid {
                     id: grid
-                    readonly property int cols: Math.max(2, Math.min(6, Math.floor((col.width + 10) / 250)))
+                    // one row: the next few by relevance, the rest is the raw list's job
+                    readonly property int cols: Math.max(2, Math.min(6, Math.floor((col.width + 12) / 212)))
                     readonly property real cellW: (col.width - (cols - 1) * columnSpacing) / cols
                     columns: cols
                     columnSpacing: 10
                     rowSpacing: 24
                     Repeater {
-                        model: pane.others
+                        model: pane.others.slice(0, grid.cols)
                         TitleTile {
                             required property var modelData
-                            required property int index
                             width: grid.cellW
                             item: modelData
                             saved: pane.savedOf(modelData)
+                            owned: pane.sv.owned ? pane.sv.owned.stateOf(modelData) : null
                             onWatchlistToggle: pane.toggleSaved(modelData)
-                            onActivated: if (pane.sv.api) pane.sv.api.activateResult(pane.showBest ? index + 1 : index)
+                            onActivated: pane.activate(modelData)
                         }
                     }
                 }

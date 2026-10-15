@@ -800,6 +800,8 @@ Window {
             controller: library
             onAddMagnetRequested: addDlg.open()
             onAddLinkRequested: promptHttpDownload()
+            onFindRequested: win.currentPage = 1
+            onFindTitleRequested: function (it) { win.currentPage = 1; searchPage.openTitle(it, 0) }
             onRenameFileRequested: function(idx, current) { win.promptRenameFile(idx, current) }
         }
                 }

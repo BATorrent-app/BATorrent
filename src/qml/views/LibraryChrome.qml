@@ -19,12 +19,18 @@ ColumnLayout {
     signal addMagnetRequested()
     signal addLinkRequested()
     signal renameFileRequested(int idx, string current)
+    signal findRequested()
+    signal findTitleRequested(var item)
+
+    // nothing in the list: no filters, no inspector, nothing to act on
+    readonly property bool empty: typeof session !== "undefined" && session.torrentCount === 0
 
     property alias filterBar: filterBar
     property alias libraryView: libraryView
 
     FilterBar {
         id: filterBar
+        visible: !root.empty
         win: root.host
         controller: root.controller
     }
@@ -39,11 +45,14 @@ ColumnLayout {
             controller: root.controller
             onAddMagnetRequested: root.addMagnetRequested()
             onAddLinkRequested: root.addLinkRequested()
+            onFindRequested: root.findRequested()
+            onFindTitleRequested: function (it) { root.findTitleRequested(it) }
         }
         DetailSidebar {
             id: detailSidebar
             win: root.host
             controller: root.controller
+            visible: !root.empty
             showInspector: root.controller.gridView
             onRenameFileRequested: function(idx, current) { root.renameFileRequested(idx, current) }
         }
@@ -52,7 +61,7 @@ ColumnLayout {
     DetailPanel {
         win: root.host
         controller: root.controller
-        visible: !root.controller.gridView
+        visible: !root.controller.gridView && !root.empty
         onRenameFileRequested: function(idx, current) { root.renameFileRequested(idx, current) }
     }
 

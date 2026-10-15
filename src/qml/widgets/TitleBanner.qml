@@ -17,9 +17,14 @@ Item {
     property bool showRating: true
     property var extraFacts: []         // after year and kind: a studio, say
     property string body
-    property string status              // a green-dot line: what can be got
+    property string status              // a line under the facts: what can be got
+    property bool statusDot: true       // the green dot before it
+    property bool showType: true        // the kind among the facts (off when the kicker says it)
     property string primaryLabel
     property string secondaryLabel
+    // "light" (white), "red" (the one action that gets something), "outline", "dark"
+    property string primaryKind: "light"
+    property string secondaryKind: "dark"
     property bool centered: false       // text block centred instead of resting on the bottom
     property real textWidth: 500
     property real logoWidth: 380
@@ -100,13 +105,14 @@ Item {
             Text {
                 visible: banner.showRating && banner.item && (banner.item.rating || 0) > 0
                 text: banner.item ? "★ " + (banner.item.rating || 0).toFixed(1) : ""
-                color: Theme.star
+                // the rating is a fact like the year: no colour of its own
+                color: Theme.stageT1
                 font.pixelSize: 14; font.weight: Font.DemiBold
                 font.family: Theme.fontSans; font.features: Theme.tnum
             }
             Repeater {
                 model: banner.item
-                       ? [banner.item.year || "", (i18n.language, banner.typeLabel(banner.item.type || ""))]
+                       ? [banner.item.year || "", banner.showType ? (i18n.language, banner.typeLabel(banner.item.type || "")) : ""]
                          .concat(banner.extraFacts).filter(function (f) { return f.length > 0 })
                        : []
                 Text {
@@ -133,6 +139,7 @@ Item {
             visible: banner.status.length > 0
             spacing: 8
             Rectangle {
+                visible: banner.statusDot
                 anchors.verticalCenter: parent.verticalCenter
                 width: 6; height: 6; radius: Theme.rad(3)
                 color: Theme.grn
@@ -149,22 +156,27 @@ Item {
             component Cta: Rectangle {
                 id: cta
                 property alias label: ctaTxt.text
-                property bool light: true
+                property string kind: "light"
+                readonly property bool light: kind === "light"
                 signal clicked()
                 visible: label.length > 0
                 width: ctaTxt.implicitWidth + 40
                 height: 40
-                radius: Theme.rad(4)
-                color: light ? (ctaMa.containsMouse ? "#ffffff" : Theme.stageT1)
-                             : (ctaMa.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.1))
+                radius: Theme.rad(6)
+                color: kind === "red" ? (ctaMa.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent)
+                     : light ? (ctaMa.containsMouse ? "#ffffff" : Theme.stageT1)
+                     : kind === "outline" ? (ctaMa.containsMouse ? Theme.stageHover : "transparent")
+                     : (ctaMa.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.1))
+                border.width: kind === "outline" ? 1 : 0
+                border.color: Theme.stageEdge
                 Behavior on color { ColorAnimation { duration: Theme.durFast } }
                 scale: ctaMa.pressed ? Theme.pressScale : 1
                 Text {
                     id: ctaTxt
                     anchors.centerIn: parent
-                    color: cta.light ? Theme.stageBg : Theme.stageT1
+                    color: cta.kind === "red" ? Theme.inkOnAccent : cta.light ? Theme.stageBg : Theme.stageT1
                     font.pixelSize: 14
-                    font.weight: cta.light ? Font.DemiBold : Font.Medium
+                    font.weight: cta.light || cta.kind === "red" ? Font.DemiBold : Font.Medium
                     font.family: Theme.fontSans
                 }
                 MouseArea {
@@ -176,11 +188,12 @@ Item {
                 }
             }
             Cta {
+                kind: banner.primaryKind
                 label: banner.primaryLabel
                 onClicked: banner.primaryClicked()
             }
             Cta {
-                light: false
+                kind: banner.secondaryKind
                 label: banner.secondaryLabel
                 onClicked: banner.secondaryClicked()
             }

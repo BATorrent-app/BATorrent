@@ -17,6 +17,8 @@ import "../widgets"
 
 Rectangle {
     id: toolbar
+    // nothing in the list: Add, RSS and the disk; the rest comes back with the first item
+    readonly property bool empty: typeof session !== "undefined" && session.torrentCount === 0
     property var win
     property var controller: null
     property string downSpeedOverride: ""
@@ -185,8 +187,9 @@ Rectangle {
             ToolTip.text: (i18n.language, i18n.t("add_any_title"))
             ToolTip.delay: 600
         }
-        TGrpDiv {}
+        TGrpDiv { visible: !toolbar.empty }
         Text {
+            visible: !toolbar.empty
             Layout.leftMargin: 4
             Layout.rightMargin: 8
             text: (i18n.language, toolbar.selCount === 0 ? i18n.t("tb_sel_none")
@@ -196,15 +199,16 @@ Rectangle {
             font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
         }
         TBtn {
+            visible: !toolbar.empty
             label: (i18n.language, i18n.t(toolbar.resumes ? "tb_resume" : "tb_pause"))
             icon: toolbar.resumes ? "qrc:/icons/play.svg" : "qrc:/icons/pause.svg"
             disabled: !toolbar.hasSel
             onClicked: toolbar.resumes ? session.resumeSelected() : session.pauseSelected()
         }
-        TBtn { label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !toolbar.hasSel; onClicked: toolbar.removeSelected() }
-        TBtn { label: (i18n.language, i18n.t("tb_copy_magnet")); icon: "qrc:/icons/copy.svg"; disabled: !toolbar.hasSel; onClicked: session.copyMagnetLink() }
-        TBtn { label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; hint: (i18n.language, i18n.t("ctx_open_folder")); disabled: !toolbar.hasSel; onClicked: session.openSaveFolder() }
-        TGrpDiv {}
+        TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !toolbar.hasSel; onClicked: toolbar.removeSelected() }
+        TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_copy_magnet")); icon: "qrc:/icons/copy.svg"; disabled: !toolbar.hasSel; onClicked: session.copyMagnetLink() }
+        TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; hint: (i18n.language, i18n.t("ctx_open_folder")); disabled: !toolbar.hasSel; onClicked: session.openSaveFolder() }
+        TGrpDiv { visible: !toolbar.empty }
         TBtn { label: (i18n.language, i18n.t("tb_rss")); icon: "qrc:/icons/rss.svg"; onClicked: toolbar.openRss() }
 
         Item { Layout.fillWidth: true }
@@ -212,11 +216,12 @@ Rectangle {
         DiskGauge {
             onMakeRoomRequested: toolbar.makeRoomRequested()
         }
-        TGrpDiv {}
+        TGrpDiv { visible: !toolbar.empty }
 
         // alt speed (turtle): a speed limit, so it lives with the speeds
         Rectangle {
             id: altChip
+            visible: !toolbar.empty
             readonly property bool on: typeof session !== "undefined" && session.altSpeedsActive
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 32
@@ -269,6 +274,7 @@ Rectangle {
 
         // global speeds: the tinted arrows carry down/up, the figures stay neutral
         Row {
+            visible: !toolbar.empty
             Layout.alignment: Qt.AlignVCenter
             Layout.leftMargin: 8
             Layout.rightMargin: 4

@@ -343,6 +343,11 @@ public:
     // seeded to, and an installed game that outlives its torrent.
     Q_INVOKABLE QVariantMap removalInfo();
     Q_INVOKABLE void forgetGame(const QString &infoHash);
+    // A game installed outside its download whose setup files are still in the
+    // list: {size, peers} for the game page's card; {} when there is none, or
+    // when the person chose to keep them (keepSetupFiles).
+    Q_INVOKABLE QVariantMap setupFilesOf(const QString &infoHash) const;
+    Q_INVOKABLE void keepSetupFiles(const QString &infoHash);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
     // Windows: exclude the game's own folder from Defender (UAC prompt), then install.

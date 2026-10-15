@@ -142,17 +142,19 @@ Item {
 
         Repeater {
             model: {
-                var out = [
-                    { label: "game_playtime", value: root.played ? root.hub.hours(root.game.playSeconds) : "—" },
-                    { label: "game_last_played",
-                      value: !root.played ? "—"
-                             : (root.game.playing ? i18n.t("hub_playing_now") : root.hub.fmtAgo(root.game.lastPlayed)) }
-                ]
-                if (root.achTotal > 0 || root.achUnlocked > 0)
+                // only what has happened: no zero play time, no "—", no 0 of 48
+                var out = []
+                if (root.played) {
+                    out.push({ label: "game_playtime", value: root.hub.hours(root.game.playSeconds) })
+                    out.push({ label: "game_last_played",
+                               value: root.game.playing ? i18n.t("hub_playing_now") : root.hub.fmtAgo(root.game.lastPlayed) })
+                }
+                if (root.achUnlocked > 0)
                     out.push({ label: "game_achievements",
                                value: root.achTotal > 0 ? root.achUnlocked + " / " + root.achTotal : String(root.achUnlocked),
                                bar: root.achTotal > 0 ? root.achUnlocked / root.achTotal : -1 })
-                out.push({ label: "game_on_disk", value: root.game ? (root.hub.fmtSize(root.game.size) || "—") : "—" })
+                if (root.game && (root.game.size || 0) > 0)
+                    out.push({ label: "game_on_disk", value: root.hub.fmtSize(root.game.size) })
                 return out
             }
             delegate: Column {
@@ -184,25 +186,15 @@ Item {
                         width: parent.width * Math.max(0, Math.min(1, modelData.bar || 0))
                         height: parent.height
                         radius: Theme.rad(2)
-                        color: Theme.accent
+                        color: Theme.stageT1
                         Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                     }
                 }
             }
         }
 
+        // the folder and the exe live in the Play menu, by name
         Item { Layout.fillWidth: true }
-
-        StageRoundButton {
-            size: 40
-            icon: "qrc:/icons/folder.svg"
-            onClicked: if (root.game) root.hub.gameMenuOpenFolder(root.game.infoHash)
-        }
-        StageRoundButton {
-            size: 40
-            icon: "qrc:/icons/settings.svg"
-            onClicked: root.settingsRequested()
-        }
     }
 
     Rectangle {

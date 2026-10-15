@@ -208,8 +208,19 @@ Rectangle {
 
     onShowGameMgrChanged: if (showGameMgr) reloadGames()
     onVisibleChanged: if (visible) {
+        ownedIdx.refresh()
         if (api) api.refreshSources()
         Qt.callLater(function() { findBar.focusInput() })
+    }
+
+    // what the person already has, for the tiles and the best match
+    OwnedIndex { id: ownedIdx }
+    readonly property alias owned: ownedIdx
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        ignoreUnknownSignals: true
+        function onTorrentFinished(name, hash) { if (page.visible) ownedIdx.refresh() }
+        function onGamesChanged() { if (page.visible) ownedIdx.refresh() }
     }
 
     property var recentList: []
@@ -355,6 +366,7 @@ Rectangle {
             Layout.preferredHeight: mainCol.height - findBar.height
             visible: page.browse && page.catalogAvailable && !page.showCatalogBrowse && !page.showRowGrid
             typeFilter: page.typeFilter
+            ownedIndex: ownedIdx
             active: page.visible && page.browse && page.catalogAvailable && !page.showCatalogBrowse && !page.showRowGrid
             showCatalogEntry: {
                 var _ = page.gameCatalogGen

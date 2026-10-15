@@ -88,12 +88,13 @@ Item {
             kicker: bb.heroItem ? (i18n.language, i18n.t("find_featured")) + "  ·  "
                                   + content.typeLabel(bb.heroItem.type || "").toUpperCase() : ""
             body: bb.heroItem ? (bb.heroItem.overview || "") : ""
-            primaryLabel: bb.heroItem ? (i18n.language, i18n.t(bb.ctaKey(bb.heroItem.type || ""))) : ""
-            secondaryLabel: bb.heroItem && bb.heroItem.type === "game"
-                            ? (i18n.language, i18n.t("gi_get_and_install"))
-                            : (i18n.language, i18n.t("gw_get_and_watch"))
-            onPrimaryClicked: if (bb.heroItem) bb.openRequested(bb.heroItem)
-            onSecondaryClicked: if (bb.heroItem) bb.getWatchRequested(bb.heroItem)
+            // one red action that gets it; the releases beside it, outlined
+            primaryKind: "red"
+            secondaryKind: "outline"
+            primaryLabel: bb.heroItem ? (i18n.language, i18n.t("find_get")) : ""
+            secondaryLabel: bb.heroItem ? (i18n.language, i18n.t(bb.ctaKey(bb.heroItem.type || ""))) : ""
+            onPrimaryClicked: if (bb.heroItem) bb.getWatchRequested(bb.heroItem)
+            onSecondaryClicked: if (bb.heroItem) bb.openRequested(bb.heroItem)
             NumberAnimation {
                 id: kenBurns
                 target: content.art
@@ -129,7 +130,7 @@ Item {
                     // the current dot fills up until the next item comes in
                     Rectangle {
                         height: parent.height; radius: parent.radius
-                        color: Theme.accent
+                        color: Theme.stageT1
                         visible: dot.current
                         width: heroTimer.running && !Theme.reduceMotion ? parent.width * dot.fill : parent.width
                     }
