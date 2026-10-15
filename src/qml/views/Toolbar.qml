@@ -129,8 +129,8 @@ Rectangle {
             Layout.preferredWidth: addRow.implicitWidth + 25
             Layout.rightMargin: 8
             radius: Theme.rad(8)
-            // hover lifts it clearly (8% lighter could not be seen on red)
-            color: addMa.pressed ? Theme.accentDark : (addMa.containsMouse ? Qt.lighter(Theme.accent, 1.22) : Theme.accent)
+            // hover lifts it enough to see (8% did not show on red, 22% turned it pink)
+            color: addMa.pressed ? Theme.accentDark : (addMa.containsMouse ? Qt.lighter(Theme.accent, 1.13) : Theme.accent)
             Behavior on color { ColorAnimation { duration: Theme.durFast } }
             scale: addMa.pressed ? Theme.pressScale : 1
             Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
