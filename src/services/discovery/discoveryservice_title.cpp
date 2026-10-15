@@ -134,8 +134,14 @@ void DiscoveryService::fetchLogo(int tmdbId, const QString &type)
     }
     if (m_logoPending.contains(key) || tmdbApiKey().isEmpty()) return;
     m_logoPending.insert(key);
+    // English first (logoUrl prefers it), but a show made in Japan or Korea
+    // often has its lettering only in its own language: ask for those, and
+    // the app's language, too, rather than fall back to plain text.
+    const QString ui = tmdbLang().section(QLatin1Char('-'), 0, 0);
+    QString langs = QStringLiteral("en,null,ja,ko,zh");
+    if (!ui.isEmpty() && !langs.split(QLatin1Char(',')).contains(ui)) langs += QLatin1Char(',') + ui;
     QNetworkReply *reply = tmdbGet(QStringLiteral("/%1/%2/images").arg(tmdbKind(type)).arg(tmdbId),
-                                   { { QStringLiteral("include_image_language"), QStringLiteral("en,null") } });
+                                   { { QStringLiteral("include_image_language"), langs } });
     connect(reply, &QNetworkReply::finished, this, [this, reply, tmdbId, type, key]() {
         reply->deleteLater();
         m_logoPending.remove(key);

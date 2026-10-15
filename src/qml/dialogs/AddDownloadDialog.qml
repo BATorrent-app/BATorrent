@@ -652,15 +652,12 @@ ModalShell {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 14
+                        // the cover when there is one; no empty box for what has none
                         Rectangle {
+                            visible: dlg.singlePoster !== ""
                             Layout.preferredWidth: 52; Layout.preferredHeight: 74
                             radius: Theme.rad(5)
                             color: Theme.hover
-                            Image {
-                                anchors.centerIn: parent; width: 24; height: 24
-                                visible: dlg.singlePoster === ""
-                                source: Theme.logoSource; sourceSize: Qt.size(48, 48); opacity: 0.45
-                            }
                             RoundedImage {
                                 anchors.fill: parent
                                 radius: Theme.rad(5)

@@ -17,6 +17,20 @@ Item {
     property bool saved: false
     // { text } from OwnedIndex.stateOf(item), or null when it is not in the library
     property var owned: null
+
+    // A game has no TMDB id: its lettering is Steam's, found the way the
+    // HUB's library tiles find it.
+    readonly property bool isGame: (item.type || "") === "game"
+    readonly property var disco: typeof discovery !== "undefined" ? discovery : null
+    property string gameLogo: ""
+    Component.onCompleted: if (isGame && disco && item.title) disco.fetchGameDetails(item.title)
+    Connections {
+        target: tile.isGame ? tile.disco : null
+        ignoreUnknownSignals: true
+        function onGameDetailsReady(name, d) {
+            if (name === (tile.item.title || "").trim() && d.steamLogo) tile.gameLogo = d.steamLogo
+        }
+    }
     signal activated()
     signal watchlistToggle()
 
@@ -70,6 +84,7 @@ Item {
             tmdbId: tile.item.tmdbId || 0
             type: tile.item.type || ""
             title: tile.item.title || tile.item.name || ""
+            fixedLogo: tile.gameLogo
         }
         CardActions {
             anchors.fill: parent

@@ -38,6 +38,9 @@ Item {
     readonly property alias maxButton: maxBtn
     readonly property alias closeButton: closeBtn
 
+    // no subtitles showing: the CC goes quiet instead of saying "Off" loudly
+    readonly property bool subsOff: !!pw && !!mediaPlayer && !pw.extSubsActive
+                                    && mediaPlayer.activeSubtitleTrack < 0 && pw.subLine.length === 0
     readonly property string subBadge: {
         if (!pw || !mediaPlayer) return ""
         if (pw.extSubsActive) return pw.extSubLang.length > 0 ? pw.extSubLang.toUpperCase() : "ON"
@@ -363,10 +366,12 @@ Item {
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             width: ccT.implicitWidth + 8; height: 18; radius: 3
-                            color: "transparent"; border.color: "#ffffff"; border.width: 1.5
-                            Text { id: ccT; anchors.centerIn: parent; text: "CC"; color: "#ffffff"; font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans }
+                            color: "transparent"
+                            border.color: root.subsOff ? Qt.rgba(1, 1, 1, ccMa.containsMouse ? 0.7 : 0.45) : "#ffffff"
+                            border.width: root.subsOff ? 1 : 1.5
+                            Text { id: ccT; anchors.centerIn: parent; text: "CC"; color: parent.border.color; font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans }
                         }
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: root.subBadge; color: "#ffffff"; font.pixelSize: 13; font.family: Theme.fontSans }
+                        Text { visible: !root.subsOff; anchors.verticalCenter: parent.verticalCenter; text: root.subBadge; color: "#ffffff"; font.pixelSize: 13; font.family: Theme.fontSans }
                     }
                     MouseArea {
                         id: ccMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
