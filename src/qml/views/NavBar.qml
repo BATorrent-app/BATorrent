@@ -21,7 +21,7 @@ Rectangle {
     readonly property real stripH: ownsTitleBar ? 32 : 0
     implicitHeight: 52 + stripH
     // With the title strip the bar is the window's frame, a step darker, and
-    // a thin accent line sets it apart from the app below.
+    // a thin line sets it apart from the app below.
     color: ownsTitleBar ? Theme.frame : Theme.nav
 
     property int currentIndex: 0            // bound down from the window; never self-assigned
@@ -75,8 +75,8 @@ Rectangle {
         width: parent.width
         height: parent.height - y
         color: Theme.nav
-        // one thin line in the accent marks where the app begins
-        Rectangle { width: parent.width; height: 1; color: Theme.accent }
+        // one thin line marks where the app begins
+        Rectangle { width: parent.width; height: 1; color: Theme.hair }
     }
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
 
