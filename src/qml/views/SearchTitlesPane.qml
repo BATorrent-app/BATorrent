@@ -15,7 +15,12 @@ Item {
     property var sv
     visible: sv.isTitles && !sv.browse
 
-    readonly property var titles: sv.api && sv.isTitles ? sv.results : []
+    // the type chips filter what the catalogs found
+    readonly property var titles: {
+        var all = sv.api && sv.isTitles ? sv.results : []
+        var t = sv.typeFilter
+        return t === "all" ? all : all.filter(function (w) { return w.type === t })
+    }
     readonly property bool showBest: titles.length > 0 && sv.api && !sv.api.searching
     readonly property var bestItem: showBest ? titles[0] : null
     readonly property var others: showBest ? titles.slice(1) : titles

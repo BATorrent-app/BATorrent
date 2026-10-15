@@ -209,15 +209,6 @@ bool QmlSessionBridge::gameOutlivesTorrent(const QString &infoHash) const
     return true;
 }
 
-bool QmlSessionBridge::selectedGameOutlivesTorrent()
-{
-    if (!hasSelection()) return false;
-    const QString hash = m_session->torrentHashAt(m_selectedIndex);
-    if (!gameOutlivesTorrent(hash)) return false;
-    gameLibrary();   // records it as a kept game now, before the torrent goes
-    return true;
-}
-
 QString QmlSessionBridge::readyNote(const QString &infoHash, const QString &exe) const
 {
     const QString name = QFileInfo(exe).completeBaseName();

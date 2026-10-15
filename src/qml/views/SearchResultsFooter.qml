@@ -52,7 +52,7 @@ Rectangle {
             }
         }
         BtnFlat {
-            visible: root.sv.isTitles && root.sv.api && !root.sv.api.searching
+            visible: root.sv.isTitles && root.sv.api && !root.sv.api.searching && root.sv.results.length > 0
             text: (i18n.language, i18n.t("search_raw_results"))
             onClicked: if (root.sv.api) root.sv.api.searchRaw()
         }

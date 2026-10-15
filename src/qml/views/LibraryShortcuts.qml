@@ -87,7 +87,7 @@ Item {
     Shortcut {
         enabled: host.currentPage === 0 && host.hasSel
         sequence: "Shift+Del"
-        onActivated: { if (typing()) return; host.removeDlg.open(); host.removeDlg.deleteFiles = true }
+        onActivated: { if (typing()) return; host.removeDlg.openWith(2) }
     }
     Shortcut { enabled: Qt.platform.os !== "osx"; sequence: "Ctrl+N"; onActivated: host.createDlg.open() }
     Shortcut { enabled: Qt.platform.os !== "osx"; sequence: "Ctrl+,"; onActivated: host.currentPage = 3 }

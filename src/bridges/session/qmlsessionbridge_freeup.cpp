@@ -57,7 +57,7 @@ void QmlSessionBridge::trackStillSince()
         if (still && !m_pausedSince.contains(h)) {
             m_pausedSince.insert(h, info.progress <= 0.0f && info.addedTime > 0 ? info.addedTime : now);
             changed = true;
-        } else if (!still && m_pausedSince.remove(h) > 0) {
+        } else if (!still && m_pausedSince.remove(h)) {
             changed = true;
         }
     }

@@ -139,3 +139,22 @@ TEST_CASE("search finish empty bodies still completes", "[discoveryfinish]") {
         pending, QStringLiteral("x"), works, &ranked));
     REQUIRE(ranked.isEmpty());
 }
+
+TEST_CASE("a misspelt query finds the title it meant", "[discoveryfinish]") {
+    const QVariantList works = {
+        QVariantMap{ { "title", "True Detective" }, { "type", "series" } },
+        QVariantMap{ { "title", "True Blood" }, { "type", "series" } },
+        QVariantMap{ { "title", "Detective Pikachu" }, { "type", "movie" } },
+    };
+    REQUIRE(DiscoveryFinish::nearestTitle(QStringLiteral("true detctive"), works)
+                .value("title").toString() == QLatin1String("True Detective"));
+    // something else entirely is not a typo of anything here
+    REQUIRE(DiscoveryFinish::nearestTitle(QStringLiteral("hollow knight"), works).isEmpty());
+}
+
+TEST_CASE("suggestion queries cut each word to its start", "[discoveryfinish]") {
+    const QStringList q = DiscoveryFinish::suggestionQueries(QStringLiteral("True Detctive"));
+    REQUIRE(q.contains(QStringLiteral("true")));
+    REQUIRE(q.contains(QStringLiteral("tru det")));
+    REQUIRE(DiscoveryFinish::suggestionQueries(QStringLiteral("ab")).isEmpty());
+}

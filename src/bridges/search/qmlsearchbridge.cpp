@@ -28,6 +28,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QNetworkAccessManager>
+#include <QNetworkInformation>
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QRegularExpression>
@@ -41,6 +42,13 @@
 QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
     : QObject(parent), m_session(session), m_mode("torrent")
 {
+    // The platform's reachability, for the Find page's offline state: loaded
+    // once, and absent on a system without a backend (then always "online",
+    // and a failed search is what says otherwise).
+    if (QNetworkInformation::loadBackendByFeatures(QNetworkInformation::Feature::Reachability))
+        connect(QNetworkInformation::instance(), &QNetworkInformation::reachabilityChanged,
+                this, &QmlSearchBridge::onlineChanged);
+
     auto &mgr = AddonManager::instance();
     connect(&mgr, &AddonManager::catalogResults, this, [this](const QList<CatalogItem> &items) {
         m_catalogCache = items;
@@ -268,12 +276,23 @@ void QmlSearchBridge::setMode(const QString &m) { if (m_mode == m) return; m_mod
 
 void QmlSearchBridge::refreshSources() { emit sourcesChanged(); }
 
+bool QmlSearchBridge::online() const
+{
+    const QNetworkInformation *ni = QNetworkInformation::instance();
+    if (!ni) return true;
+    const auto r = ni->reachability();
+    return r != QNetworkInformation::Reachability::Disconnected
+        && r != QNetworkInformation::Reachability::Local;
+}
+
 void QmlSearchBridge::search(const QString &sourceKey, const QString &query, int categoryCode)
 {
     const QString q = query.trimmed();
     if (q.isEmpty()) return;
     m_lastQuery = q;
     m_activeQuery = q;
+    m_failure.clear();
+    if (!m_suggestion.isEmpty()) { m_suggestion.clear(); emit suggestionChanged(); }
     m_aggregate = false;
     m_titleSources = false;
     m_fromEpisodes = false;

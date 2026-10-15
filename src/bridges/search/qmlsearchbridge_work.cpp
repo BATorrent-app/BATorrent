@@ -153,11 +153,24 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
             m_results << SearchBridgeUtil::titleRowFromWork(v.toMap());
         m_titleCache = m_results;
         setSearching(false);
+        // Empty because it failed, or because nothing is called that: the page
+        // says which, and for the second looks for what was probably meant.
+        const int fail = m_results.isEmpty() ? m_discovery->lastSearchFailure() : DiscoveryService::NoFailure;
+        m_failure = fail == DiscoveryService::Offline ? QStringLiteral("offline")
+                  : fail == DiscoveryService::CatalogDown ? QStringLiteral("catalog") : QString();
+        if (m_results.isEmpty() && fail == DiscoveryService::NoFailure) m_discovery->suggestTitle(query);
         // Stay in the grid even when empty: the page shows an empty state with a
         // "raw results" escape, so the flow is consistent (never silently flips).
         setStatus(m_results.isEmpty() ? tr_("search_no_titles")
                                       : tr_("search_titles_n").arg(m_results.size()));
+        emit statusChanged();
         emit resultsChanged();
+    });
+    connect(m_discovery, &DiscoveryService::titleSuggestion, this,
+            [this](const QString &query, const QVariantMap &work) {
+        if (query != m_titleQuery || m_mode != QLatin1String("titles") || work.isEmpty()) return;
+        m_suggestion = SearchBridgeUtil::titleRowFromWork(work);
+        emit suggestionChanged();
     });
 }
 

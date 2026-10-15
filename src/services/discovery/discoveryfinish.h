@@ -7,6 +7,7 @@
 #include <QByteArray>
 #include <QMap>
 #include <QString>
+#include <QStringList>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -43,5 +44,14 @@ bool tryFinishSearch(int &pending,
                      const QString &query,
                      const QVariantList &works,
                      QVariantList *rankedOut);
+
+// The queries that may still find a misspelt title: the first word alone,
+// and every word cut to its first three letters ("true detctive" -> "true",
+// "tru det"). Empty when the query is too short to guess from.
+QStringList suggestionQueries(const QString &query);
+
+// The work whose title is nearest the query by edit distance, when it is
+// near enough to be a typo (an empty map otherwise).
+QVariantMap nearestTitle(const QString &query, const QVariantList &works);
 
 } // namespace DiscoveryFinish

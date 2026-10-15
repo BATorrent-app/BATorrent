@@ -264,6 +264,7 @@ Rectangle {
     // not to an empty Find.
     property int returnPage: -1
     signal backTo(int page)
+    signal addMagnetRequested()
     // { tmdbId, season, episode } a show opens on (the HUB sends where you are in it).
     property var pendingEpisode: null
     // The views opened inside Find, for the title strip's back/forward:

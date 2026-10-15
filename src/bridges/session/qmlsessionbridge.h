@@ -338,9 +338,10 @@ public:
     // A game whose torrent was removed but which is still installed stays in
     // the library; these tell such a game apart and let the user drop it.
     Q_INVOKABLE bool gameTorrentless(const QString &infoHash) const;
-    // The remove dialog's "the game stays" line: the selected torrent's game
-    // is installed outside what it downloaded.
-    Q_INVOKABLE bool selectedGameOutlivesTorrent();
+    // What the remove dialog says about the selection: how many, their names,
+    // the first one's cover, the bytes on disk and where, who is still being
+    // seeded to, and an installed game that outlives its torrent.
+    Q_INVOKABLE QVariantMap removalInfo();
     Q_INVOKABLE void forgetGame(const QString &infoHash);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder

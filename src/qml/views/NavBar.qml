@@ -284,6 +284,18 @@ Rectangle {
 
         NavBarDownloadChip { id: dlChip; bar: bar; car: car }
 
+        // no internet: said once, up here, wherever the person is
+        RowLayout {
+            readonly property bool offline: typeof search !== "undefined" && search !== null
+                                            && (!search.online || search.failure === "offline")
+            visible: offline
+            Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: 8; Layout.rightMargin: 8
+            spacing: 6
+            Rectangle { width: 6; height: 6; radius: 3; color: Theme.warn }
+            Text { text: (i18n.language, i18n.t("net_offline")); color: Theme.warn; font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans }
+        }
+
         NavBarVpnChip { id: vpnChip; bar: bar }
 
         Rectangle {

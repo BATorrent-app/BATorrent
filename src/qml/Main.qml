@@ -809,6 +809,7 @@ Window {
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open() }
                     onBackTo: function (page) { win.currentPage = page }
+                    onAddMagnetRequested: addDlg.open()
                 }
                 // ----- page 2: HUB -----
                 HubView {

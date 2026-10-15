@@ -116,11 +116,11 @@ Item {
     }
     RemoveDialog {
         id: removeDlg
-        onAccepted: if (typeof session !== "undefined") {
-            if (deleteFiles) {
-                if (deletePermanently) session.removeSelectedWithFilesPermanent()
-                else session.removeSelectedWithFiles()
-            } else session.removeSelected()
+        onAccepted: function (choice) {
+            if (typeof session === "undefined") return
+            if (choice === 2) session.removeSelectedWithFilesPermanent()
+            else if (choice === 1) session.removeSelectedWithFiles()
+            else session.removeSelected()
         }
     }
     MediaGuardDialog {

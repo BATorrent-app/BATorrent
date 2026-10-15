@@ -25,6 +25,12 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(bool singleTitleView READ singleTitleView NOTIFY modeChanged) // list is one picked title → drop per-row covers
     Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
+    // a title search that failed instead of finding nothing: "offline" or "catalog" ("" otherwise)
+    Q_PROPERTY(QString failure READ failure NOTIFY statusChanged)
+    // the nearest real title to a query that found none (a typo), {} when none is close
+    Q_PROPERTY(QVariantMap suggestion READ suggestion NOTIFY suggestionChanged)
+    // the system's word on the connection; true when it has none to give
+    Q_PROPERTY(bool online READ online NOTIFY onlineChanged)
     // The picked title behind the current drill-down ("movie"|"series"|"game", ""
     // when the list isn't a single work) and its identity + backdrops/screenshots.
     Q_PROPERTY(QString workType READ workType NOTIFY workChanged)
@@ -59,6 +65,9 @@ public:
     bool singleTitleView() const;
     bool searching() const;
     QString statusText() const;
+    QString failure() const { return m_failure; }
+    QVariantMap suggestion() const { return m_suggestion; }
+    bool online() const;
     QString workType() const { return m_workType; }
     QString workTitle() const { return m_workTitle; }
     QString workPoster() const { return m_workPoster; }
@@ -171,6 +180,8 @@ signals:
     void prepareAndInstall(const QString &infoHash, const QString &title); // game → download & install
     void sourceSummary(const QString &title, int count, qint64 bestSize, int maxSeeds);
     void getFlowChanged();
+    void suggestionChanged();
+    void onlineChanged();
 
 private:
     bool fitsOnSaveVolume(qint64 needed) const;   // false ⇒ won't fit on the save disk
@@ -292,6 +303,8 @@ private:
     bool m_aggregate = false;          // "Tudo": merge every source into one list
     int m_pendingSources = 0;          // async sources still running in aggregate
     QString m_status;
+    QString m_failure;
+    QVariantMap m_suggestion;
     QVariantList m_results;
     QStringList m_resultMagnets;        // magnet per flat result row (add target)
     QStringList m_resultHttp;           // direct/file-host http URL per row, "" when it's a magnet row

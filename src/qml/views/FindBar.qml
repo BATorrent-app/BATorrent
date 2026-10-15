@@ -71,9 +71,9 @@ Item {
             }
         }
 
-        // category pills: browse only (both skins), filtering the catalog
+        // category pills: browse and the titles a search found, filtering both
         Row {
-            visible: bar.sv.browse && bar.sv.catalogAvailable
+            visible: (bar.sv.browse || bar.sv.isTitles) && bar.sv.catalogAvailable
             Layout.alignment: Qt.AlignVCenter
             spacing: 4
             Repeater {
@@ -136,8 +136,9 @@ Item {
             text: (i18n.language, i18n.t("src_manage_btn"))
             onClicked: bar.sv.showSourcesMgr = true
         }
+        // Enter searches; the titles view keeps the one red button off the page
         BtnFlat {
-            visible: !bar.sv.browse
+            visible: !bar.sv.browse && !bar.sv.isTitles
             primary: true
             text: (i18n.language, i18n.t("empty_search_btn"))
             onClicked: bar.sv.commitSearch()

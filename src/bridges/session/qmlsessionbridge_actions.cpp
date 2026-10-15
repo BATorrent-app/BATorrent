@@ -73,6 +73,53 @@ void QmlSessionBridge::removeSelectedWithFilesPermanent() { removeSelectedRows(t
 void QmlSessionBridge::removeSelected()          { removeSelectedRows(false); }
 void QmlSessionBridge::removeSelectedWithFiles() { removeSelectedRows(true); }
 
+QVariantMap QmlSessionBridge::removalInfo()
+{
+    const QList<int> rows = resolveRows(m_selectedRows, m_selectedIndex);
+    QVariantMap m;
+    m[QStringLiteral("count")] = rows.size();
+    if (rows.isEmpty()) return m;
+
+    QStringList names;
+    QString folder, poster, game, gameSize;
+    bool oneFolder = true;
+    qint64 bytes = 0;
+    int peers = 0;
+    for (int r : rows) {
+        const TorrentInfo info = m_session->torrentAt(r);
+        const QString hash = m_session->torrentHashAt(r);
+        QString name = info.name;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const MetadataResult meta = m_resolver->cached(hash);
+            if (meta.valid && !meta.title.isEmpty()) name = meta.title;
+            if (poster.isEmpty() && meta.valid && !meta.posterPath.isEmpty())
+                poster = QUrl::fromLocalFile(meta.posterPath).toString();
+        }
+        names << name;
+        bytes += info.totalDone;
+        // the people this stops: only what is seeding right now
+        if (info.seeding && !info.paused) peers += info.numPeers;
+        const QString dir = QDir::toNativeSeparators(info.savePath);
+        if (folder.isEmpty()) folder = dir;
+        else if (dir.compare(folder, Qt::CaseInsensitive) != 0) oneFolder = false;
+        if (game.isEmpty() && gameOutlivesTorrent(hash)) {
+            game = name;
+            gameSize = formatSize(info.totalDone);
+        }
+    }
+    // records the kept game now, before its torrent goes
+    if (!game.isEmpty()) gameLibrary();
+
+    m[QStringLiteral("names")] = names;
+    m[QStringLiteral("poster")] = poster;
+    m[QStringLiteral("size")] = formatSize(bytes);
+    m[QStringLiteral("folder")] = oneFolder ? folder : QString();
+    m[QStringLiteral("peers")] = peers;
+    m[QStringLiteral("game")] = game;
+    m[QStringLiteral("gameSize")] = gameSize;
+    return m;
+}
+
 void QmlSessionBridge::pauseAll() { m_session->pauseAll(); }
 void QmlSessionBridge::resumeAll() { m_session->resumeAll(); }
 

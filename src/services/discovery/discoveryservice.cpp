@@ -19,6 +19,7 @@
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <memory>
 #include <QNetworkRequest>
 #include <QPair>
 #include <QSet>
@@ -164,6 +165,7 @@ void DiscoveryService::searchTitles(const QString &query)
     m_searchQuery = q;
     m_searchWorks.clear();
     m_searchPending = 0;
+    m_searchFailure = NoFailure;
 
     const bool haveTmdb = !tmdbApiKey().isEmpty();
     const bool haveIgdb = !igdbClientId().isEmpty() && !igdbClientSecret().isEmpty();
@@ -187,6 +189,7 @@ void DiscoveryService::searchTmdbTitles(const QString &query)
                                    12000);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) noteSearchError(reply->error());
         // With a backdrop base too: a picked title now opens on a full-width
         // hero, and a 342px poster stretched across it is the soft, smeared
         // band that stood in for art.
@@ -218,8 +221,10 @@ void DiscoveryService::searchIgdbTitles(const QString &query)
         QNetworkReply *reply = m_nam->post(req, body);
         connect(reply, &QNetworkReply::finished, this, [this, reply]() {
             reply->deleteLater();
-            if (reply->error() != QNetworkReply::NoError)
+            if (reply->error() != QNetworkReply::NoError) {
                 qDebug() << "[search] IGDB title search error:" << reply->errorString();
+                noteSearchError(reply->error());
+            }
             DiscoveryFinish::ingestIgdbSearch(
                 m_searchWorks, reply->error() == QNetworkReply::NoError, reply->readAll());
             maybeFinishSearch();
@@ -519,4 +524,41 @@ void DiscoveryService::setStatus(const QString &s)
     if (m_status == s) return;
     m_status = s;
     emit statusChanged();
+}
+
+// A failed reply says which: no route out at all, or a service that did not answer.
+void DiscoveryService::noteSearchError(int networkError)
+{
+    switch (networkError) {
+    case QNetworkReply::HostNotFoundError:
+    case QNetworkReply::UnknownNetworkError:
+    case QNetworkReply::NetworkSessionFailedError:
+    case QNetworkReply::TemporaryNetworkFailureError:
+        m_searchFailure = Offline;
+        break;
+    default:
+        if (m_searchFailure != Offline) m_searchFailure = CatalogDown;
+    }
+}
+
+void DiscoveryService::suggestTitle(const QString &query)
+{
+    const QStringList queries = DiscoveryFinish::suggestionQueries(query);
+    if (queries.isEmpty() || tmdbApiKey().isEmpty()) { emit titleSuggestion(query, {}); return; }
+    auto works = std::make_shared<QVariantList>();
+    auto left = std::make_shared<int>(int(queries.size()));
+    for (const QString &q : queries) {
+        QNetworkReply *reply = tmdbGet(QStringLiteral("/search/multi"),
+                                       { { QStringLiteral("language"), tmdbLang() },
+                                         { QStringLiteral("query"), q },
+                                         { QStringLiteral("include_adult"), QStringLiteral("false") },
+                                         { QStringLiteral("page"), QStringLiteral("1") } },
+                                       12000);
+        connect(reply, &QNetworkReply::finished, this, [this, reply, query, works, left]() {
+            reply->deleteLater();
+            DiscoveryFinish::ingestTmdbSearch(*works, reply->error() == QNetworkReply::NoError,
+                                              reply->readAll(), TmdbPosterBase, TmdbBackdrop);
+            if (--*left == 0) emit titleSuggestion(query, DiscoveryFinish::nearestTitle(query, *works));
+        });
+    }
 }
