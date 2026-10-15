@@ -261,10 +261,11 @@ Item {
                         RowLayout {
                             Layout.topMargin: 24
                             spacing: 12
-                            Rectangle {
-                                width: 38; height: 38; radius: 19
-                                color: Theme.hover
-                                Text { anchors.centerIn: parent; text: "M"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 19 }
+                            RoundedImage {
+                                width: 38; height: 38
+                                radius: 19
+                                sources: ["qrc:/images/avatar-mateus.jpg"]
+                                sourceWidth: 76
                             }
                             ColumnLayout {
                                 spacing: 0
@@ -458,7 +459,6 @@ Item {
                                             required property var modelData
                                             Layout.fillWidth: true
                                             spacing: 10
-                                            Text { Layout.alignment: Qt.AlignTop; text: "✓"; color: Theme.grn; font.pixelSize: 14; font.weight: Font.Bold; font.family: Theme.fontSans }
                                             Text { Layout.fillWidth: true; text: modelData; color: Theme.t2; font.pixelSize: 14; font.family: Theme.fontSans; wrapMode: Text.WordWrap }
                                         }
                                     }
