@@ -48,11 +48,23 @@ Item {
     required property int groupCount
     required property bool groupExpanded
     required property bool groupChild
+    // Single episodes that a season pack of the same season already holds:
+    // the same data twice on disk, which the inspector also points out.
+    readonly property int groupRepeats: {
+        if (!tile.isGroup || !controller || !controller.rowModel) return 0
+        var eps = (tile.groupCount, controller.rowModel.groupEpisodes(tile.index)), packs = {}, n = 0
+        for (var i = 0; i < eps.length; i++)
+            if (eps[i].season > 0 && eps[i].episode <= 0) packs[eps[i].season] = true
+        for (var j = 0; j < eps.length; j++)
+            if (eps[j].episode > 0 && packs[eps[j].season]) n++
+        return n
+    }
     readonly property string groupCaption: {
         if (!tile.isGroup || !controller || !controller.rowModel) return ""
         var s = (tile.groupCount, controller.rowModel.groupSummary(tile.index)).seasons || ""
         // items, not episodes: a season pack sits among them
         var n = (i18n.language, i18n.t("group_items_n")).arg(tile.groupCount)
+        if (tile.groupRepeats > 0) n += " · " + (i18n.language, i18n.t("group_repeats_n")).arg(tile.groupRepeats)
         return s.length > 0 ? s + " · " + n : n
     }
     // A group plays the episode last watched, else its first one to watch.
@@ -76,7 +88,10 @@ Item {
     // or not, has nothing to report there.
     readonly property bool trouble: Theme.isTroubleState(stateKey)
     readonly property bool fetching: stateKey === "fetching"
+    // Paused before a single byte: an empty bar and "0%" over the art say
+    // nothing the line under the card ("Paused · 0 B of 1.4 GB") does not.
     readonly property bool showBar: !tile.isGroup
+        && !(stateKey === "paused" && progress <= 0)
         && (trouble || fetching || (progress < 0.999 && stateKey !== "completed" && stateKey !== "seeding"))
 
     readonly property string posterUrl: win.fileUrl(posterPath)

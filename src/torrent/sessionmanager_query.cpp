@@ -173,11 +173,18 @@ TorrentInfo SessionManager::torrentAt(int index) const
         info.stateDetailShort = tr_("state_s_missing_pieces");
     }
 
-    qint64 uploaded = st.total_payload_upload;
-    qint64 downloaded = st.total_payload_download;
+    // Ratio over the torrent's whole life, not this session's payload: a
+    // torrent downloaded yesterday and seeding today read 0.00 here while it
+    // had sent 1.4 GB. Data that was already on disk (a recheck, an import)
+    // never counts as downloaded, so the done bytes stand in for it then.
+    const qint64 uploaded = st.all_time_upload;
+    const qint64 downloaded = st.all_time_download > 0 ? st.all_time_download : st.total_wanted_done;
     info.ratio = downloaded > 0 ? static_cast<float>(uploaded) / static_cast<float>(downloaded) : 0.0f;
     info.totalUploaded = st.all_time_upload;
-    info.availability = st.distributed_copies < 0 ? 0.0f : st.distributed_copies;
+    // libtorrent counts the copies among the peers, not ours: with the whole
+    // torrent here there is at least one, whatever the peers hold.
+    const float peerCopies = st.distributed_copies < 0 ? 0.0f : st.distributed_copies;
+    info.availability = (st.is_seeding || st.progress >= 1.0f) ? peerCopies + 1.0f : peerCopies;
     info.addedTime = static_cast<qint64>(st.added_time);
 
     if (!hash.isEmpty()) {

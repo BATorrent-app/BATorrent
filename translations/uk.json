@@ -1505,7 +1505,7 @@
   "tile_error": "Помилка",
   "tile_fetching": "Пошук",
   "tile_queued": "У черзі · #%1",
-  "tile_uploading": "Роздача %1",
+  "tile_uploading": "Роздача · ↑ %1",
   "ep_watched": "Переглянуто",
   "ep_stopped_at": "Зупинено на %1",
   "ep_uploading": "роздається",
@@ -1651,5 +1651,7 @@
   "ed_contrast_warn": "Текст на цьому тлі нижче 4,5:1 і може погано читатися.",
   "ed_new_name": "Моя тема %1",
   "nav_back": "Назад",
-  "nav_forward": "Вперед"
+  "nav_forward": "Вперед",
+  "group_repeats_n": "%1 повторюються",
+  "insp_sending_to": "Віддає %1 пірам"
 }

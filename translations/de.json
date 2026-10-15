@@ -1505,7 +1505,7 @@
   "tile_error": "Fehler",
   "tile_fetching": "Suche",
   "tile_queued": "Warteschlange · #%1",
-  "tile_uploading": "Lädt hoch %1",
+  "tile_uploading": "Seeden · ↑ %1",
   "ep_watched": "Gesehen",
   "ep_stopped_at": "Gestoppt bei %1",
   "ep_uploading": "lädt hoch",
@@ -1651,5 +1651,7 @@
   "ed_contrast_warn": "Text auf diesem Hintergrund liegt unter 4,5:1 und ist eventuell schwer lesbar.",
   "ed_new_name": "Mein Theme %1",
   "nav_back": "Zurück",
-  "nav_forward": "Vorwärts"
+  "nav_forward": "Vorwärts",
+  "group_repeats_n": "%1 doppelt",
+  "insp_sending_to": "Sendet an %1 Peers"
 }

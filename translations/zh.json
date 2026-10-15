@@ -1505,7 +1505,7 @@
   "tile_error": "错误",
   "tile_fetching": "正在查找",
   "tile_queued": "排队中 · #%1",
-  "tile_uploading": "上传中 %1",
+  "tile_uploading": "做种中 · ↑ %1",
   "ep_watched": "已看",
   "ep_stopped_at": "停在 %1",
   "ep_uploading": "上传中",
@@ -1651,5 +1651,7 @@
   "ed_contrast_warn": "此背景上的文字对比度低于 4.5:1，可能不易阅读。",
   "ed_new_name": "我的主题 %1",
   "nav_back": "后退",
-  "nav_forward": "前进"
+  "nav_forward": "前进",
+  "group_repeats_n": "%1 个重复",
+  "insp_sending_to": "正在向 %1 个节点发送"
 }

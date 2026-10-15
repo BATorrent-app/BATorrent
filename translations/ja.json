@@ -1505,7 +1505,7 @@
   "tile_error": "エラー",
   "tile_fetching": "検索中",
   "tile_queued": "待機中 · #%1",
-  "tile_uploading": "アップロード中 %1",
+  "tile_uploading": "シード中 · ↑ %1",
   "ep_watched": "視聴済み",
   "ep_stopped_at": "%1 で停止",
   "ep_uploading": "アップロード中",
@@ -1651,5 +1651,7 @@
   "ed_contrast_warn": "この背景の文字はコントラストが 4.5:1 未満で、読みにくい場合があります。",
   "ed_new_name": "マイテーマ %1",
   "nav_back": "戻る",
-  "nav_forward": "進む"
+  "nav_forward": "進む",
+  "group_repeats_n": "%1件重複",
+  "insp_sending_to": "%1 人のピアに送信中"
 }

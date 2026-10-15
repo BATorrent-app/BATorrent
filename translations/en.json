@@ -1505,7 +1505,7 @@
   "tile_error": "Error",
   "tile_fetching": "Searching",
   "tile_queued": "Queued · #%1",
-  "tile_uploading": "Uploading %1",
+  "tile_uploading": "Seeding · ↑ %1",
   "ep_watched": "Watched",
   "ep_stopped_at": "Stopped at %1",
   "ep_uploading": "uploading",
@@ -1651,5 +1651,7 @@
   "ed_contrast_warn": "Text on this background is under 4.5:1 and may be hard to read.",
   "ed_new_name": "My theme %1",
   "nav_back": "Back",
-  "nav_forward": "Forward"
+  "nav_forward": "Forward",
+  "group_repeats_n": "%1 repeated",
+  "insp_sending_to": "Sending to %1 peers"
 }

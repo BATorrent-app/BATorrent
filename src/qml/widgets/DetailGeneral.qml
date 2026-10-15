@@ -130,11 +130,16 @@ Flickable {
                 roomy: !gen.vertical
                 Layout.alignment: Qt.AlignTop
                 title: (i18n.language, i18n.t("detail_section_health"))
-                model: [
-                    { kk: "detail_kv_seeds",        v: gen.win.hasSel ? String(session.selectedSeeds) : "—" },
-                    { kk: "detail_kv_peers",        v: gen.win.hasSel ? String(session.selectedPeers) : "—" },
-                    { kk: "detail_kv_availability", v: gen.win.hasSel ? session.selectedAvailability : "—" }
-                ]
+                // Seeding with bytes going out, "Seeds 0 · Peers 4" read as a
+                // problem; one line says what is happening instead.
+                readonly property bool sending: gen.win.hasSel && session.selectedUpRate > 0 && session.selectedPeers > 0
+                                                && session.selectedSeeds === 0
+                model: sending
+                    ? [ { kk: "detail_kv_peers",        v: (i18n.language, i18n.t("insp_sending_to")).arg(session.selectedPeers) },
+                        { kk: "detail_kv_availability", v: session.selectedAvailability } ]
+                    : [ { kk: "detail_kv_seeds",        v: gen.win.hasSel ? String(session.selectedSeeds) : "—" },
+                        { kk: "detail_kv_peers",        v: gen.win.hasSel ? String(session.selectedPeers) : "—" },
+                        { kk: "detail_kv_availability", v: gen.win.hasSel ? session.selectedAvailability : "—" } ]
             }
         }
     }

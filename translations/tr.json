@@ -1505,7 +1505,7 @@
   "tile_error": "Hata",
   "tile_fetching": "Aranıyor",
   "tile_queued": "Sırada · #%1",
-  "tile_uploading": "Yükleniyor %1",
+  "tile_uploading": "Tohumlanıyor · ↑ %1",
   "ep_watched": "İzlendi",
   "ep_stopped_at": "%1 noktasında kaldı",
   "ep_uploading": "yükleniyor",
@@ -1651,5 +1651,7 @@
   "ed_contrast_warn": "Bu arka plandaki metin 4,5:1'in altında ve okunması zor olabilir.",
   "ed_new_name": "Temam %1",
   "nav_back": "Geri",
-  "nav_forward": "İleri"
+  "nav_forward": "İleri",
+  "group_repeats_n": "%1 tekrar",
+  "insp_sending_to": "%1 eşe gönderiliyor"
 }

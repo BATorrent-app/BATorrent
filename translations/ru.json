@@ -1505,7 +1505,7 @@
   "tile_error": "Ошибка",
   "tile_fetching": "Поиск",
   "tile_queued": "В очереди · #%1",
-  "tile_uploading": "Раздача %1",
+  "tile_uploading": "Раздача · ↑ %1",
   "ep_watched": "Просмотрено",
   "ep_stopped_at": "Остановлено на %1",
   "ep_uploading": "раздаётся",
@@ -1651,5 +1651,7 @@
   "ed_contrast_warn": "Текст на этом фоне ниже 4,5:1 и может плохо читаться.",
   "ed_new_name": "Моя тема %1",
   "nav_back": "Назад",
-  "nav_forward": "Вперёд"
+  "nav_forward": "Вперёд",
+  "group_repeats_n": "%1 повторяются",
+  "insp_sending_to": "Отдаёт %1 пирам"
 }

@@ -79,12 +79,13 @@ Column {
         : kindLabel(tile.fileKind).length > 0 ? kindLabel(tile.fileKind)
         : i18n.t("state_completed"))
     readonly property string rightText:
-          tile.isGroup ? tile.size
+          // with repeats the total counts them twice: better none than a wrong one
+          tile.isGroup ? (tile.groupRepeats > 0 ? "" : tile.size)
         : slow ? shortEta(tile.etaSec)
         : tile.isDownloading ? pair(tile.downloaded, tile.size, " / ")
         : k === "paused" || k === "fetching" || k === "queued" ? ""
-        // done and idle: the line is the catalogue, and the size would cut it
-        : (k === "completed" || (k === "seeding" && tile.upRate <= 0)) ? ""
+        // done: the line is the catalogue or the upload, and the size would cut it
+        : (k === "completed" || k === "seeding") ? ""
         : tile.size
 
     Text {

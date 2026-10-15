@@ -1505,7 +1505,7 @@
   "tile_error": "Error",
   "tile_fetching": "Buscando",
   "tile_queued": "En cola · #%1",
-  "tile_uploading": "Subiendo %1",
+  "tile_uploading": "Sembrando · ↑ %1",
   "ep_watched": "Visto",
   "ep_stopped_at": "Parado en %1",
   "ep_uploading": "subiendo",
@@ -1651,5 +1651,7 @@
   "ed_contrast_warn": "El texto sobre este fondo está por debajo de 4,5:1 y puede costar leerlo.",
   "ed_new_name": "Mi tema %1",
   "nav_back": "Atrás",
-  "nav_forward": "Adelante"
+  "nav_forward": "Adelante",
+  "group_repeats_n": "%1 repetidos",
+  "insp_sending_to": "Enviando a %1 peers"
 }

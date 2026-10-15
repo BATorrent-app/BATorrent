@@ -70,18 +70,6 @@ Rectangle {
                 font.family: Theme.fontSans
             }
         }
-        // Permanent and quiet. The wizard says it properly once; this is what
-        // is always there, on the one page where transfers actually happen.
-        Note {
-            Layout.maximumWidth: 300
-            text: "· " + (i18n.language, i18n.t("share_notice_short"))
-            elide: Text.ElideRight
-            ToolTip.visible: shareMa.containsMouse
-            ToolTip.delay: 300
-            ToolTip.text: (i18n.language, i18n.t("share_notice_body"))
-            MouseArea { id: shareMa; anchors.fill: parent; hoverEnabled: true }
-        }
-
         Item { Layout.fillWidth: true }
 
         Note {
