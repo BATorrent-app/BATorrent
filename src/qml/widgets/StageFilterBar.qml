@@ -29,7 +29,7 @@ Flow {
         visible: bar.qualities.length > 2
         width: seg.width + 4
         height: 30
-        radius: 15
+        radius: Theme.rad(15)
         color: Theme.stageBg
         border.width: 1
         border.color: Theme.stageHair
@@ -45,7 +45,7 @@ Flow {
                     readonly property bool on: bar.quality === modelData.value
                     width: chipRow.implicitWidth + 20
                     height: 26
-                    radius: 13
+                    radius: Theme.rad(13)
                     color: on ? Theme.accentTint : (chipMa.containsMouse ? Theme.stageHover : "transparent")
                     Behavior on color { ColorAnimation { duration: Theme.durFast } }
                     Row {
@@ -87,7 +87,7 @@ Flow {
         signal toggled()
         width: togRow.implicitWidth + 22
         height: 30
-        radius: 15
+        radius: Theme.rad(15)
         color: on ? Theme.accentTint : (togMa.containsMouse ? Theme.stageHover : "transparent")
         border.width: 1
         border.color: on ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.35) : Theme.stageHair
@@ -98,7 +98,7 @@ Flow {
             spacing: 7
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 12; height: 12; radius: 4
+                width: 12; height: 12; radius: Theme.rad(4)
                 color: tog.on ? Theme.accent : "transparent"
                 border.width: 1
                 border.color: tog.on ? Theme.accent : Qt.rgba(1, 1, 1, 0.2)

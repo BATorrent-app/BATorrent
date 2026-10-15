@@ -78,7 +78,7 @@ Item {
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.preferredWidth: 190; Layout.preferredHeight: 285
-                    radius: 10
+                    radius: Theme.rad(10)
                     color: "#161618"
                     border.color: Theme.hair; border.width: 1
                     clip: true
@@ -154,7 +154,7 @@ Item {
                     delegate: Rectangle {
                         required property var modelData
                         width: 160; height: 90
-                        radius: 8
+                        radius: Theme.rad(8)
                         color: "#161618"
                         border.color: Theme.hair; border.width: 1
                         clip: true

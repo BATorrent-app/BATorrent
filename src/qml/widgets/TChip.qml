@@ -15,7 +15,7 @@ Rectangle {
 
     implicitWidth: lbl.implicitWidth + 16
     implicitHeight: 18
-    radius: 999
+    radius: Theme.rad(999)
     color: red ? Theme.sel
                : (chip.clickable && ma.containsMouse ? Theme.hover : Theme.field)
     border.color: red ? Qt.rgba(229/255, 51/255, 43/255, 0.3)

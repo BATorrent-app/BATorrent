@@ -49,7 +49,7 @@ ListView {
         readonly property bool isPack: !((modelData.episode || 0) > 0)
         width: list.width
         height: body.implicitHeight + 22
-        radius: 6
+        radius: Theme.rad(6)
         color: ma.containsMouse ? Qt.rgba(1, 1, 1, 0.04) : "transparent"
 
         MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true }

@@ -59,7 +59,7 @@ Item {
             color: Theme.panel
             border.color: Theme.hair
             border.width: 1
-            radius: 6
+            radius: Theme.rad(6)
         }
         GameItem {
             text: (i18n.language, i18n.t("hub_gs_install"))

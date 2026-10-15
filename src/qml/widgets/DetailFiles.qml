@@ -80,8 +80,8 @@ ColumnLayout {
                 RowLayout {
                     Layout.preferredWidth: 128; spacing: 9
                     Rectangle {
-                        Layout.fillWidth: true; Layout.preferredHeight: 5; radius: 3; color: Theme.track; clip: true
-                        Rectangle { anchors.left: parent.left; height: parent.height; width: parent.width * (modelData.progress || 0); radius: 3; color: Theme.accent }
+                        Layout.fillWidth: true; Layout.preferredHeight: 5; radius: Theme.rad(3); color: Theme.track; clip: true
+                        Rectangle { anchors.left: parent.left; height: parent.height; width: parent.width * (modelData.progress || 0); radius: Theme.rad(3); color: Theme.down }
                     }
                     Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 34; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum }
                 }

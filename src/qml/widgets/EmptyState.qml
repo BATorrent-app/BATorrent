@@ -21,14 +21,14 @@ ColumnLayout {
         Layout.bottomMargin: 22
         implicitWidth: 86
         implicitHeight: 86
-        radius: 22
+        radius: Theme.rad(22)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
         Image {
             anchors.centerIn: parent
             width: 44; height: 44
-            source: "qrc:/images/logo.svg"
+            source: Theme.logoSource
             sourceSize: Qt.size(88, 88)
             fillMode: Image.PreserveAspectFit
             opacity: 0.5
@@ -66,7 +66,7 @@ ColumnLayout {
         Rectangle {
             implicitWidth: openRow.implicitWidth + 32
             implicitHeight: 36
-            radius: 8
+            radius: Theme.rad(8)
             color: openMa.containsMouse ? Theme.accentDark : Theme.accent
             Row {
                 id: openRow
@@ -80,7 +80,7 @@ ColumnLayout {
         Rectangle {
             implicitWidth: magRow.implicitWidth + 32
             implicitHeight: 36
-            radius: 8
+            radius: Theme.rad(8)
             color: Theme.panel
             border.color: magMa.containsMouse ? (Theme.isDark ? Qt.rgba(1,1,1,0.2) : Qt.rgba(0,0,0,0.22)) : Theme.hair
             border.width: 1
@@ -96,7 +96,7 @@ ColumnLayout {
         Rectangle {
             implicitWidth: linkRow.implicitWidth + 32
             implicitHeight: 36
-            radius: 8
+            radius: Theme.rad(8)
             color: Theme.panel
             border.color: linkMa.containsMouse ? (Theme.isDark ? Qt.rgba(1,1,1,0.2) : Qt.rgba(0,0,0,0.22)) : Theme.hair
             border.width: 1

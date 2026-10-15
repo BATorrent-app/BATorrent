@@ -166,11 +166,11 @@ BatDialog {
             // placeholder (no poster): field bg + dimmed logo
             Rectangle {
                 anchors.fill: parent
-                radius: 10; color: Theme.field; border.color: Theme.hair; border.width: 1
+                radius: Theme.rad(10); color: Theme.field; border.color: Theme.hair; border.width: 1
                 visible: dlg.posterUrl === ""
                 Image {
                     anchors.centerIn: parent; width: 24; height: 24
-                    source: "qrc:/images/logo.svg"; sourceSize: Qt.size(48, 48)
+                    source: Theme.logoSource; sourceSize: Qt.size(48, 48)
                     fillMode: Image.PreserveAspectFit; opacity: 0.5
                 }
             }
@@ -181,7 +181,7 @@ BatDialog {
                 visible: false; layer.enabled: true
                 Image { anchors.fill: parent; source: dlg.posterUrl; fillMode: Image.PreserveAspectCrop; asynchronous: true }
             }
-            Rectangle { id: pMask; anchors.fill: parent; radius: 10; color: "white"; visible: false; layer.enabled: true }
+            Rectangle { id: pMask; anchors.fill: parent; radius: Theme.rad(10); color: "white"; visible: false; layer.enabled: true }
             MultiEffect {
                 source: pContent; anchors.fill: parent
                 maskEnabled: true; maskSource: pMask
@@ -211,7 +211,7 @@ BatDialog {
         Layout.fillWidth: true
         visible: dlg.wontFit
         implicitHeight: fitRow.implicitHeight + 16
-        radius: 8
+        radius: Theme.rad(8)
         color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.12)
         border.color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.32)
         border.width: 1
@@ -257,7 +257,7 @@ BatDialog {
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 224
-        radius: 11; color: Theme.panel; border.color: Theme.hair; border.width: 1
+        radius: Theme.rad(11); color: Theme.panel; border.color: Theme.hair; border.width: 1
         clip: true
         ListView {
             anchors.fill: parent; anchors.margins: 1; clip: true; model: fileModel

@@ -78,7 +78,7 @@ GridLayout {
         visible: steps.step === 0
         Layout.fillWidth: true; Layout.topMargin: Theme.sp1
         implicitHeight: langCol.implicitHeight + 2 * Theme.sp3
-        radius: 12
+        radius: Theme.rad(12)
         color: steps.uiPalette.field
         border.color: steps.uiPalette.hair; border.width: 1
 
@@ -196,7 +196,7 @@ GridLayout {
         visible: steps.step === steps.lastStep
         Layout.fillWidth: true; Layout.topMargin: Theme.sp2
         implicitHeight: shareCol.implicitHeight + 2 * Theme.sp3
-        radius: 12
+        radius: Theme.rad(12)
         color: steps.uiPalette.field
         border.color: steps.uiPalette.hair; border.width: 1
 
@@ -231,7 +231,7 @@ GridLayout {
         Rectangle {
             Layout.alignment: Qt.AlignTop
             Layout.preferredWidth: 28; Layout.preferredHeight: 28
-            radius: 8; color: steps.uiPalette.field
+            radius: Theme.rad(8); color: steps.uiPalette.field
             IconImg { anchors.centerIn: parent; src: "qrc:/icons/discover.svg"; tint: steps.uiPalette.accentText; s: 15 }
         }
         Text {

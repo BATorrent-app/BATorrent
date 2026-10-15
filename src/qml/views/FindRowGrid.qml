@@ -33,7 +33,7 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: Theme.sp5
             anchors.verticalCenter: parent.verticalCenter
-            width: 30; height: 30; radius: 8
+            width: 30; height: 30; radius: Theme.rad(8)
             color: backMa.containsMouse ? Theme.hover : "transparent"
             IconImg {
                 anchors.centerIn: parent
@@ -55,7 +55,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: rowGrid.label
             color: Theme.t1
-            font.pixelSize: 17; font.weight: Font.Bold; font.family: Theme.fontSans
+            font.pixelSize: Theme.displaySize(17); font.weight: Theme.tWeight(Font.Bold); font.family: Theme.fontDisplay; font.capitalization: Theme.tCaps; font.italic: Theme.tItalic; font.letterSpacing: Theme.tTrack(17, 0)
         }
         Text {
             anchors.right: parent.right

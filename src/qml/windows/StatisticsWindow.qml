@@ -41,7 +41,7 @@ Window {
         property string label: ""
         property string value: ""
         property color tint: Theme.t2
-        radius: 10
+        radius: Theme.rad(10)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
@@ -86,7 +86,7 @@ Window {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 130
                 Layout.topMargin: Theme.sp3
-                radius: 10
+                radius: Theme.rad(10)
                 color: Theme.panel
                 border.color: Theme.hair
                 border.width: 1
@@ -104,12 +104,12 @@ Window {
                     spacing: Theme.sp4
                     Row {
                         spacing: 6
-                        Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
+                        Rectangle { implicitWidth: 6; implicitHeight: 6; radius: Theme.rad(3); color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
                         Text { text: win.sess ? win.sess.totalDownSpeed : ""; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum; anchors.verticalCenter: parent.verticalCenter }
                     }
                     Row {
                         spacing: 6
-                        Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
+                        Rectangle { implicitWidth: 6; implicitHeight: 6; radius: Theme.rad(3); color: Theme.amber; anchors.verticalCenter: parent.verticalCenter }
                         Text { text: win.sess ? win.sess.totalUpSpeed : ""; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; anchors.verticalCenter: parent.verticalCenter }
                     }
                 }
@@ -121,7 +121,7 @@ Window {
                 Layout.topMargin: Theme.sp2
                 spacing: Theme.sp2
                 StatChip { label: (i18n.language, i18n.t("filter_all")); value: win.sess ? String(win.sess.torrentCount) : "0"; tint: Theme.t1 }
-                StatChip { label: (i18n.language, i18n.t("filter_downloading")); value: win.sess ? String(win.sess.downloadingCount) : "0"; tint: Theme.accentText }
+                StatChip { label: (i18n.language, i18n.t("filter_downloading")); value: win.sess ? String(win.sess.downloadingCount) : "0"; tint: Theme.downText }
                 StatChip { label: (i18n.language, i18n.t("filter_seeding")); value: win.sess ? String(win.sess.seedingCount) : "0"; tint: Theme.up }
                 StatChip { label: (i18n.language, i18n.t("filter_completed")); value: win.sess ? String(win.sess.completedCount) : "0"; tint: Theme.grn }
                 StatChip { label: (i18n.language, i18n.t("filter_paused")); value: win.sess ? String(win.sess.pausedCount) : "0"; tint: Theme.t3 }

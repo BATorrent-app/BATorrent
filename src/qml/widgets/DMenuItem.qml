@@ -74,6 +74,6 @@ MenuItem {
     }
     background: Rectangle {
         color: mi.highlighted && mi.enabled ? Theme.hover2 : "transparent"
-        radius: 7
+        radius: Theme.rad(7)
     }
 }

@@ -81,7 +81,7 @@ BatDialog {
     Rectangle {
         visible: dlg.active && dlg.api && dlg.api.available && dlg.rows.length > 0
         Layout.alignment: Qt.AlignHCenter
-        width: 224; height: 224; radius: 8; color: "white"
+        width: 224; height: 224; radius: Theme.rad(8); color: "white"
         Column {
             anchors.centerIn: parent
             property int mods: dlg.rows.length
@@ -108,7 +108,7 @@ BatDialog {
     Rectangle {
         visible: dlg.active && dlg.api && dlg.api.available
         Layout.fillWidth: true
-        implicitHeight: 46; radius: 8
+        implicitHeight: 46; radius: Theme.rad(8)
         color: Theme.panel; border.color: Theme.hair; border.width: 1
         Text {
             anchors.centerIn: parent
@@ -123,7 +123,7 @@ BatDialog {
     Rectangle {
         visible: dlg.active
         Layout.fillWidth: true
-        implicitHeight: 54; radius: 8
+        implicitHeight: 54; radius: Theme.rad(8)
         color: Theme.panel; border.color: Theme.hair; border.width: 1
         RowLayout {
             anchors.fill: parent

@@ -40,7 +40,7 @@ Column {
     readonly property bool done: k === "seeding" || k === "completed"
     readonly property bool waiting: k === "paused" || k === "queued" || k === "checking"
 
-    readonly property color dot: tile.isGroup ? (tile.progress >= 0.999 ? Theme.grn : Theme.accent)
+    readonly property color dot: tile.isGroup ? (tile.progress >= 0.999 ? Theme.grn : Theme.down)
                                : done ? Theme.grn
                                : waiting ? Theme.t3
                                : Theme.accent
@@ -103,7 +103,7 @@ Column {
             id: dotMark
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: 7; height: 7; radius: 3.5
+            width: 7; height: 7; radius: Theme.rad(3.5)
             color: root.dot
             Behavior on color { ColorAnimation { duration: Theme.durBase } }
         }

@@ -31,7 +31,7 @@ BatDialog {
             Layout.preferredWidth: 44
             Layout.preferredHeight: 44
             Layout.alignment: Qt.AlignTop
-            source: "qrc:/images/logo.svg"
+            source: Theme.logoSource
             sourceSize: Qt.size(88, 88)
             fillMode: Image.PreserveAspectFit
         }

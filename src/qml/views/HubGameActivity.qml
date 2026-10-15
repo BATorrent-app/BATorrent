@@ -62,7 +62,7 @@ Column {
                     // Capped: on a game switch the new days arrive before maxSecs
                     // follows, and the old maximum made a bar taller than the page.
                     height: modelData > 0 ? Math.max(4, Math.round(Math.min(1, modelData / root.maxSecs) * 86)) : 3
-                    radius: 2
+                    radius: Theme.rad(2)
                     color: modelData <= 0 ? Qt.rgba(1, 1, 1, 0.08)
                          : (index === root.days.length - 1 ? Theme.accent : Qt.rgba(1, 1, 1, 0.32))
                     Behavior on height { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }

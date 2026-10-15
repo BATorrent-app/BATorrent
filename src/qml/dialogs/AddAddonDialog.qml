@@ -111,7 +111,7 @@ BatDialog {
             Layout.fillWidth: true
             visible: !dlg.addonsApi || dlg.addonsApi.installed.length === 0
             implicitHeight: 56
-            radius: 11
+            radius: Theme.rad(11)
             color: Theme.panel
             border.color: Theme.hair
             border.width: 1
@@ -125,7 +125,7 @@ BatDialog {
         Rectangle {
             Layout.fillWidth: true
             visible: dlg.addonsApi && dlg.addonsApi.installed.length > 0
-            radius: 11
+            radius: Theme.rad(11)
             color: Theme.panel
             border.color: Theme.hair
             border.width: 1
@@ -153,7 +153,7 @@ BatDialog {
 
                             Rectangle {
                                 Layout.preferredWidth: 36; Layout.preferredHeight: 36
-                                radius: 9; color: Theme.field
+                                radius: Theme.rad(9); color: Theme.field
                                 border.color: Theme.hair; border.width: 1
                                 IconImg { anchors.centerIn: parent; src: "qrc:/icons/rss.svg"; tint: Theme.accentText; s: 18 }
                             }
@@ -197,7 +197,7 @@ BatDialog {
 
         Rectangle {
             Layout.fillWidth: true
-            radius: 11
+            radius: Theme.rad(11)
             color: Theme.panel
             border.color: Theme.hair
             border.width: 1
@@ -224,7 +224,7 @@ BatDialog {
 
                             Rectangle {
                                 Layout.preferredWidth: 36; Layout.preferredHeight: 36
-                                radius: 9; color: Theme.field
+                                radius: Theme.rad(9); color: Theme.field
                                 border.color: Theme.hair; border.width: 1
                                 IconImg { anchors.centerIn: parent; src: "qrc:/icons/rss.svg"; tint: Theme.accentText; s: 18 }
                             }
@@ -239,7 +239,7 @@ BatDialog {
                                         visible: !!(modelData.lang && modelData.lang.length)
                                         implicitWidth: langBadge.implicitWidth + 10
                                         implicitHeight: 16
-                                        radius: 4
+                                        radius: Theme.rad(4)
                                         color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
                                         Text {
                                             id: langBadge; anchors.centerIn: parent
@@ -252,7 +252,7 @@ BatDialog {
                                         visible: !!(modelData.needsDebrid || modelData.needsConfig)
                                         implicitWidth: keyBadge.implicitWidth + 10
                                         implicitHeight: 16
-                                        radius: 4
+                                        radius: Theme.rad(4)
                                         color: "#22f5a623"
                                         Text {
                                             id: keyBadge; anchors.centerIn: parent
@@ -317,7 +317,7 @@ BatDialog {
 
         Rectangle {
             Layout.fillWidth: true
-            radius: 11
+            radius: Theme.rad(11)
             color: Theme.panel
             border.color: Theme.hair
             border.width: 1

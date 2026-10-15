@@ -39,7 +39,7 @@ BatDialog {
             Layout.preferredWidth: 40
             Layout.preferredHeight: 40
             Layout.alignment: Qt.AlignTop
-            radius: 10
+            radius: Theme.rad(10)
             color: Qt.rgba(229/255, 51/255, 43/255, 0.12)
             border.color: Qt.rgba(229/255, 51/255, 43/255, 0.32)
             border.width: 1
@@ -85,7 +85,7 @@ BatDialog {
         Layout.fillWidth: true
         Layout.preferredHeight: 44
         visible: dlg.keepsGame
-        radius: 11
+        radius: Theme.rad(11)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
@@ -110,7 +110,7 @@ BatDialog {
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 64
-        radius: 11
+        radius: Theme.rad(11)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
@@ -156,7 +156,7 @@ BatDialog {
         Layout.fillWidth: true
         Layout.preferredHeight: 56
         visible: dlg.deleteFiles
-        radius: 11
+        radius: Theme.rad(11)
         color: Theme.panel
         border.color: dlg.deletePermanently ? Qt.rgba(229/255, 51/255, 43/255, 0.32) : Theme.hair
         border.width: 1

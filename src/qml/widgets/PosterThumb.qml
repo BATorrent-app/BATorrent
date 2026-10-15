@@ -25,7 +25,7 @@ Item {
     // base (also the placeholder bg)
     Rectangle {
         anchors.fill: parent
-        radius: 5
+        radius: Theme.rad(5)
         border.color: Theme.hair
         border.width: 1
         gradient: Gradient {
@@ -72,7 +72,7 @@ Item {
     Rectangle {
         id: imgMask
         anchors.fill: parent
-        radius: 5
+        radius: Theme.rad(5)
         color: "white"
         visible: false
         layer.enabled: true

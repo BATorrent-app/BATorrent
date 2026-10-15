@@ -49,14 +49,14 @@ MenuItem {
     }
     background: Rectangle {
         color: cmi.highlighted ? Theme.hover : "transparent"
-        radius: 5
+        radius: Theme.rad(5)
         Rectangle {
             visible: cmi.current
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             width: 3
             height: parent.height - 10
-            radius: 1.5
+            radius: Theme.rad(1.5)
             color: Theme.accent
         }
     }

@@ -16,7 +16,7 @@ Menu {
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
-        radius: 11
+        radius: Theme.rad(11)
     }
     delegate: BatMenuItem {}
 

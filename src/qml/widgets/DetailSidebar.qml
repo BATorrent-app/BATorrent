@@ -62,7 +62,7 @@ Rectangle {
             Layout.preferredHeight: 45
             Rectangle {
                 anchors.centerIn: parent
-                width: 30; height: 30; radius: 8
+                width: 30; height: 30; radius: Theme.rad(8)
                 color: expandMa.containsMouse ? Theme.hover : "transparent"
                 IconImg {
                     anchors.centerIn: parent
@@ -125,7 +125,7 @@ Rectangle {
                     id: collapseBtn
                     anchors.right: parent.right; anchors.rightMargin: Theme.sp3
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 34; height: 34; radius: 8
+                    width: 34; height: 34; radius: Theme.rad(8)
                     color: collMa.containsMouse ? Theme.hover : "transparent"
                     IconImg {
                         anchors.centerIn: parent

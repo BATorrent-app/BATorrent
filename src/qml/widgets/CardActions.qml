@@ -50,7 +50,7 @@ Item {
     Rectangle {
         visible: acts.watchlistEnabled && (acts.hovered || wlMa.containsMouse || acts.saved)
         x: 6; y: 6
-        width: 26; height: 26; radius: 13
+        width: 26; height: 26; radius: Theme.rad(13)
         color: wlMa.containsMouse ? "#cc000000" : "#99000000"
         IconImg {
             anchors.centerIn: parent

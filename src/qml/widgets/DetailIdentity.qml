@@ -68,17 +68,20 @@ Item {
                 sourceSize: Qt.size(208, 292)
             }
         }
-        Rectangle { id: coverMask; anchors.fill: parent; radius: 7; visible: false; layer.enabled: true }
+        Rectangle { id: coverMask; anchors.fill: parent; radius: Theme.rad(7); visible: false; layer.enabled: true }
         MultiEffect { source: coverContent; anchors.fill: parent; maskEnabled: true; maskSource: coverMask }
-        Rectangle { anchors.fill: parent; radius: 7; color: "transparent"; border.color: Theme.hair; border.width: 1 }
+        Rectangle { anchors.fill: parent; radius: Theme.rad(7); color: "transparent"; border.color: Theme.hair; border.width: 1 }
     }
     component Title: Text {
         text: ident.hasSel ? (session.selectedMetaTitle.length > 0 ? session.selectedMetaTitle : session.selectedName)
                            : (i18n.language, i18n.t("empty_no_selection"))
         color: Theme.t1
-        font.pixelSize: 17
-        font.weight: Font.DemiBold
-        font.family: Theme.fontSans
+        font.pixelSize: Theme.displaySize(17)
+        font.weight: Theme.tWeight(Font.DemiBold)
+        font.family: Theme.fontDisplay
+        font.capitalization: Theme.tCaps
+        font.italic: Theme.tItalic
+        font.letterSpacing: Theme.tTrack(17, 0)
         lineHeight: 1.15
         wrapMode: Text.WordWrap
         maximumLineCount: 2
@@ -113,7 +116,7 @@ Item {
             Layout.preferredHeight: 4
             progress: ident.hasSel ? session.selectedProgress : 0
             stateKey: ident.hasSel ? session.selectedStateKey : ""
-            fill: ident.hasSel && session.selectedStateKey === "downloading" ? Theme.accent : Theme.fillFor(stateKey)
+            fill: ident.hasSel && session.selectedStateKey === "downloading" ? Theme.down : Theme.fillFor(stateKey)
         }
     }
     // DOWN · UP · ETA. The arrows carry the direction colour, the rates stay neutral.
@@ -121,7 +124,7 @@ Item {
         spacing: 12
         Repeater {
             model: [
-                { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: ident.hasSel ? session.selectedDownSpeed : "—", c: Theme.accent },
+                { lbl: (i18n.language, i18n.t("graph_download")), arrow: "↓ ", v: ident.hasSel ? session.selectedDownSpeed : "—", c: Theme.down },
                 { lbl: (i18n.language, i18n.t("graph_upload")),   arrow: "↑ ", v: ident.hasSel ? session.selectedUpSpeed   : "—", c: Theme.amber },
                 { lbl: (i18n.language, i18n.t("col_eta")),        arrow: "",   v: ident.hasSel && session.selectedEta.length > 0 ? session.selectedEta : "—", c: Theme.t1 }
             ]
@@ -158,7 +161,7 @@ Item {
         Layout.fillWidth: ib.wide
         Layout.preferredWidth: ib.wide ? -1 : 28
         Layout.preferredHeight: 28
-        radius: 8
+        radius: Theme.rad(8)
         color: ib.active ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.12)
                          : (ibMa.containsMouse ? Theme.hover2 : Theme.elev)
         border.color: ib.active ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.42) : Theme.hair

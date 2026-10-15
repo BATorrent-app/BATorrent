@@ -31,7 +31,7 @@ Item {
     Rectangle {
         id: frame
         anchors.fill: parent
-        radius: 8
+        radius: Theme.rad(8)
         clip: true
         color: "#0a0a0b"
 
@@ -101,7 +101,7 @@ Item {
                     id: btn
                     height: 40
                     width: btnRow.implicitWidth + 36
-                    radius: 4
+                    radius: Theme.rad(4)
                     opacity: card.buttonEnabled ? 1 : 0.6
                     color: card.buttonLight ? (btnMa.containsMouse ? "#ffffff" : Theme.stageT1)
                                             : (btnMa.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent)
@@ -141,12 +141,12 @@ Item {
                     visible: card.progress >= 0
                     width: 140
                     height: 3
-                    radius: 2
+                    radius: Theme.rad(2)
                     color: Qt.rgba(1, 1, 1, 0.25)
                     Rectangle {
                         width: parent.width * Math.max(0, Math.min(1, card.progress))
                         height: parent.height
-                        radius: 2
+                        radius: Theme.rad(2)
                         color: Theme.accent
                     }
                 }

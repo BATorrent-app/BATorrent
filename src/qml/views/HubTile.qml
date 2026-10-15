@@ -44,7 +44,7 @@ Item {
         id: frame
         width: parent.width
         height: tile.artH
-        radius: 4
+        radius: Theme.rad(4)
         clip: true
         color: "#17171a"
 

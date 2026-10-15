@@ -121,7 +121,7 @@ Item {
                         signal tapped()
                         implicitWidth: chipTxt.implicitWidth + 26
                         implicitHeight: 30
-                        radius: 8
+                        radius: Theme.rad(8)
                         color: on ? Theme.accent : (chipMa.containsMouse ? Theme.hover : Theme.field)
                         border.color: on ? Theme.accent : Theme.hair
                         border.width: 1

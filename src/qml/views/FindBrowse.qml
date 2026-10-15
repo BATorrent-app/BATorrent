@@ -107,7 +107,7 @@ Item {
                 Rectangle {
                     anchors.top: parent.top; anchors.right: parent.right
                     anchors.margins: Theme.sp4
-                    width: 34; height: 34; radius: 17
+                    width: 34; height: 34; radius: Theme.rad(17)
                     z: 6
                     color: rfMa.containsMouse ? Theme.hover : Qt.rgba(0, 0, 0, 0.35)
                     border.color: Theme.hair; border.width: 1
@@ -216,19 +216,19 @@ Item {
         Rectangle {
             x: Theme.sp5
             width: skeleton.width - 2 * Theme.sp5
-            height: 440; radius: 8; color: Theme.elev
+            height: 440; radius: Theme.rad(8); color: Theme.elev
         }
         Repeater {
             model: 2
             Column {
                 x: Theme.sp5
                 spacing: 10
-                Rectangle { width: 150; height: 16; radius: 4; color: Theme.track }
+                Rectangle { width: 150; height: 16; radius: Theme.rad(4); color: Theme.track }
                 Row {
                     spacing: 10
                     Repeater {
                         model: 6
-                        Rectangle { width: 252; height: 142; radius: 4; color: Theme.elev }
+                        Rectangle { width: 252; height: 142; radius: Theme.rad(4); color: Theme.elev }
                     }
                 }
             }

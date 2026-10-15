@@ -54,7 +54,7 @@ BatDialog {
             Layout.preferredWidth: 40
             Layout.preferredHeight: 40
             Layout.alignment: Qt.AlignTop
-            radius: 10
+            radius: Theme.rad(10)
             color: Theme.accentTint
             IconImg {
                 anchors.centerIn: parent

@@ -54,7 +54,7 @@ Window {
         property bool shown: false
         width: parent.width
         height: parent.height
-        radius: 10
+        radius: Theme.rad(10)
         color: "#141416"
         border.width: 1
         border.color: toast.rare ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.55)
@@ -69,7 +69,7 @@ Window {
             x: 0; y: 10
             width: 3
             height: parent.height - 20
-            radius: 2
+            radius: Theme.rad(2)
             color: Theme.accent
         }
 
@@ -81,7 +81,7 @@ Window {
             RoundedImage {
                 width: 72
                 height: 72
-                radius: 8
+                radius: Theme.rad(8)
                 fill: "#1d1d20"
                 sourceWidth: 144
                 sources: toast.current && toast.current.icon ? [toast.current.icon] : []
@@ -107,7 +107,7 @@ Window {
                         anchors.verticalCenter: parent.verticalCenter
                         width: rareTxt.implicitWidth + 12
                         height: 16
-                        radius: 8
+                        radius: Theme.rad(8)
                         color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.16)
                         Text {
                             id: rareTxt

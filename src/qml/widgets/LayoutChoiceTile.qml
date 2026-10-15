@@ -42,7 +42,7 @@ Item {
         id: frame
         width: parent.width
         height: 86
-        radius: 9
+        radius: Theme.rad(9)
         color: tile.uiPalette.bg
         border.width: tile.selected || tile.activeFocus ? 2 : 1
         border.color: tile.selected ? tile.uiPalette.accent
@@ -58,7 +58,7 @@ Item {
             anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
             anchors.margins: 5
             height: 13
-            radius: 4
+            radius: Theme.rad(4)
             color: tile.uiPalette.panel
             opacity: tile.navOp
             Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
@@ -68,7 +68,7 @@ Item {
                 spacing: 4
                 Repeater {
                     model: 3
-                    Rectangle { width: 12; height: 3; radius: 1.5; color: tile.uiPalette.t4 }
+                    Rectangle { width: 12; height: 3; radius: Theme.rad(1.5); color: tile.uiPalette.t4 }
                 }
             }
         }
@@ -78,7 +78,7 @@ Item {
             anchors.top: parent.top; anchors.bottom: parent.bottom; anchors.left: parent.left
             anchors.margins: 5
             width: 26
-            radius: 4
+            radius: Theme.rad(4)
             color: tile.uiPalette.panel
             opacity: tile.navOp
             Behavior on opacity { NumberAnimation { duration: Theme.durBase } }
@@ -88,7 +88,7 @@ Item {
                 spacing: 5
                 Repeater {
                     model: 3
-                    Rectangle { width: 14; height: 3; radius: 1.5; color: tile.uiPalette.t4 }
+                    Rectangle { width: 14; height: 3; radius: Theme.rad(1.5); color: tile.uiPalette.t4 }
                 }
             }
         }
@@ -114,7 +114,7 @@ Item {
                     Rectangle {
                         width: (content.width - 8) / 3
                         height: Math.max(4, (content.height - 4) / 2)
-                        radius: 2
+                        radius: Theme.rad(2)
                         color: tile.uiPalette.hover
                     }
                 }
@@ -128,7 +128,7 @@ Item {
                     Rectangle {
                         width: content.width
                         height: Math.max(3, (content.height - 16) / 5)
-                        radius: 1.5
+                        radius: Theme.rad(1.5)
                         color: tile.uiPalette.hover
                     }
                 }
@@ -146,7 +146,7 @@ Item {
             anchors.margins: 5
             width: tile.detailBottom ? undefined : 30
             height: tile.detailBottom ? 24 : undefined
-            radius: 4
+            radius: Theme.rad(4)
             color: tile.uiPalette.panel
             border.width: 1
             border.color: tile.uiPalette.hair
@@ -156,7 +156,7 @@ Item {
                 x: 4; y: 4
                 width: tile.detailBottom ? 13 : 10
                 height: tile.detailBottom ? 16 : 14
-                radius: 2
+                radius: Theme.rad(2)
                 color: tile.uiPalette.hover
             }
             Rectangle {
@@ -164,7 +164,7 @@ Item {
                 y: tile.detailBottom ? 6 : 21
                 width: tile.detailBottom ? 40 : 22
                 height: 3
-                radius: 1.5
+                radius: Theme.rad(1.5)
                 color: tile.uiPalette.accent
             }
         }

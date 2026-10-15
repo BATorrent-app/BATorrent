@@ -247,7 +247,7 @@ BatDialog {
     Rectangle {
         visible: !dlg.isWelcome
         Layout.fillWidth: true
-        radius: 11; color: dlg.uiPalette.panel; border.color: dlg.uiPalette.hair; border.width: 1
+        radius: Theme.rad(11); color: dlg.uiPalette.panel; border.color: dlg.uiPalette.hair; border.width: 1
         Layout.preferredHeight: noteCol.implicitHeight + 28
         ColumnLayout {
             id: noteCol

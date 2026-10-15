@@ -194,7 +194,68 @@ TEST_CASE("Theme: themeName round-trips through settings", "[bridge][theme]")
     QmlThemeBridge t2;                                // a fresh bridge reads the persisted value
     REQUIRE(t2.themeName() == QStringLiteral("midnight"));
 
-    t.setThemeName(QStringLiteral("dark"));           // restore default-ish
+    t.setThemeName(QStringLiteral("default"));        // restore
+}
+
+TEST_CASE("Theme: the older names and the anime switch migrate once", "[bridge][theme]")
+{
+    app();
+    QSettings s;
+    s.remove(QStringLiteral("qmlThemesV2"));
+    s.remove(QStringLiteral("qmlBackgroundMode"));
+    s.remove(QStringLiteral("qmlCustomProfiles"));
+    s.setValue(QStringLiteral("qmlThemeName"), QStringLiteral("dark"));
+    s.setValue(QStringLiteral("qmlAnime"), true);
+    {
+        QmlThemeBridge t;
+        REQUIRE(t.themeName() == QStringLiteral("default"));   // "dark" was the app as it is
+        REQUIRE(t.backgroundMode() == QStringLiteral("theme"));
+        REQUIRE(!QSettings().contains(QStringLiteral("qmlAnime")));
+    }
+    // an existing install with the art off keeps a clean background
+    s.remove(QStringLiteral("qmlThemesV2"));
+    s.remove(QStringLiteral("qmlBackgroundMode"));
+    s.setValue(QStringLiteral("qmlThemeName"), QStringLiteral("midnight"));
+    s.setValue(QStringLiteral("qmlAnime"), false);
+    {
+        QmlThemeBridge t;
+        REQUIRE(t.themeName() == QStringLiteral("midnight"));
+        REQUIRE(t.backgroundMode() == QStringLiteral("clean"));
+    }
+    // the old Custom theme becomes a theme of the user's own
+    s.remove(QStringLiteral("qmlThemesV2"));
+    s.setValue(QStringLiteral("qmlThemeName"), QStringLiteral("custom"));
+    s.setValue(QStringLiteral("qmlCustomProfiles"),
+               QByteArray(R"([{"name":"Mine","bg":"#101010","opacity":70}])"));
+    {
+        QmlThemeBridge t;
+        REQUIRE(t.themeName() == QStringLiteral("user"));
+        REQUIRE(t.customProfiles().size() == 1);
+        const QVariantMap p = t.customProfiles().first().toMap();
+        REQUIRE(p.value("dim").toInt() == 30);                 // opacity 70 -> dim 30
+        REQUIRE(p.value("base").toString() == QStringLiteral("dark"));
+        t.removeProfile(0);                                     // deleting it goes back to Default
+        REQUIRE(t.themeName() == QStringLiteral("default"));
+    }
+    s.remove(QStringLiteral("qmlCustomProfiles"));
+}
+
+TEST_CASE("Theme: a theme of one's own is light or dark by its base", "[bridge][theme]")
+{
+    app();
+    QSettings().remove(QStringLiteral("qmlCustomProfiles"));
+    QmlThemeBridge t;
+    const int i = t.addProfile();
+    t.selectProfile(i);
+    REQUIRE(t.themeName() == QStringLiteral("user"));
+    REQUIRE(!t.isLightTheme(QStringLiteral("user")));
+    t.setProfileValue(i, QStringLiteral("base"), QStringLiteral("light"));
+    REQUIRE(t.isLightTheme(QStringLiteral("user")));
+    REQUIRE(t.duplicateProfile(i) == i + 1);
+    REQUIRE(t.customProfiles().size() == 2);
+    t.removeProfile(i + 1);
+    t.removeProfile(i);
+    REQUIRE(t.themeName() == QStringLiteral("default"));
 }
 
 // ============================================================================

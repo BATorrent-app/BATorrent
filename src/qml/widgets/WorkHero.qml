@@ -131,7 +131,7 @@ Item {
                     required property var modelData
                     height: 24
                     width: chipTxt.implicitWidth + 20
-                    radius: 12
+                    radius: Theme.rad(12)
                     color: Qt.rgba(1, 1, 1, 0.1)
                     Text {
                         id: chipTxt

@@ -26,7 +26,7 @@ Rectangle {
 
     implicitWidth: 240
     implicitHeight: 34
-    radius: 8
+    radius: Theme.rad(8)
     color: Theme.field
     border.color: input.activeFocus ? Theme.accent : Theme.hair
     border.width: 1

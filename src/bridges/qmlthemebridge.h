@@ -14,21 +14,17 @@ class QmlThemeBridge : public QObject
     Q_OBJECT
     Q_PROPERTY(QString themeName READ themeName WRITE setThemeName NOTIFY changed)
     Q_PROPERTY(bool followSystem READ followSystem WRITE setFollowSystem NOTIFY changed)
-    Q_PROPERTY(bool anime READ anime WRITE setAnime NOTIFY changed)
-    // Custom theme (name === "custom"): a list of user profiles, each a full
-    // palette (6 colors + bg image + opacity). The active one drives Theme.qml.
+    // What sits behind the library: "clean" (nothing), "theme" (the art made
+    // for the theme) or "user" (the user's own picture in the same corner).
+    // Replaces the old anime toggle.
+    Q_PROPERTY(QString backgroundMode READ backgroundMode WRITE setBackgroundMode NOTIFY changed)
+    Q_PROPERTY(QString userImage READ userImage WRITE setUserImage NOTIFY changed)
+    // Themes of the user's own (themeName === "user"): each a whole theme
+    // (base, corners, title font, six colours, a window background), not a
+    // tweak of a built-in one. The active one drives Theme.qml.
     Q_PROPERTY(QVariantList customProfiles READ customProfiles NOTIFY profilesChanged)
     Q_PROPERTY(int activeProfile READ activeProfile WRITE setActiveProfile NOTIFY changed)
-    // Active-profile colors, read by Theme.qml (no per-token signal needed:
-    // changed() re-evaluates all of them).
-    Q_PROPERTY(QString cBg        READ cBg        NOTIFY changed)
-    Q_PROPERTY(QString cPanel     READ cPanel     NOTIFY changed)
-    Q_PROPERTY(QString cText      READ cText      NOTIFY changed)
-    Q_PROPERTY(QString cPrimary   READ cPrimary   NOTIFY changed)
-    Q_PROPERTY(QString cSecondary READ cSecondary NOTIFY changed)
-    Q_PROPERTY(QString cTertiary  READ cTertiary  NOTIFY changed)
-    Q_PROPERTY(QString cBgImage   READ cBgImage   NOTIFY changed)
-    Q_PROPERTY(int     cBgOpacity READ cBgOpacity NOTIFY changed)
+    Q_PROPERTY(QVariantMap userTheme READ activeMap NOTIFY changed)
     // True when the OS taskbar/tray is in light mode (for logo contrast).
     Q_PROPERTY(bool osLight READ osLight NOTIFY osSchemeChanged)
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
@@ -58,29 +54,32 @@ public:
     void setThemeName(const QString &n);
     bool followSystem() const;
     void setFollowSystem(bool on);
-    bool anime() const;
-    void setAnime(bool on);
+    QString backgroundMode() const;
+    void setBackgroundMode(const QString &mode);
+    QString userImage() const;
+    void setUserImage(const QString &path);
 
-    // ---- custom profiles ----
-    QVariantList customProfiles() const;       // list of {name,bg,panel,text,primary,secondary,tertiary,image,opacity}
+    // ---- the user's own themes ----
+    // Each: {name, base(dark|light), corners(square|soft|round), font,
+    //        bg, panel, text, primary, secondary, tertiary,
+    //        image, fit(fill|fit|stretch|center|tile), zoom, dim, blur}
+    QVariantList customProfiles() const;
     int activeProfile() const;
     void setActiveProfile(int i);
-    Q_INVOKABLE int addProfile();              // appends a default profile, returns its index
-    Q_INVOKABLE void removeProfile(int i);     // keeps at least one profile
+    QVariantMap activeMap() const;
+    Q_INVOKABLE int addProfile();              // a new theme, returns its index
+    Q_INVOKABLE int duplicateProfile(int i);   // a copy right after it, returns its index
+    Q_INVOKABLE void removeProfile(int i);     // back to Default when it was the one in use
+    Q_INVOKABLE void selectProfile(int i);     // switch to that theme
+    Q_INVOKABLE void setProfileValue(int i, const QString &key, const QVariant &value);
     Q_INVOKABLE void renameProfile(int i, const QString &name);
-    Q_INVOKABLE void setProfileColor(int i, const QString &role, const QString &hex);  // role: bg/panel/text/primary/secondary/tertiary
+    Q_INVOKABLE void setProfileColor(int i, const QString &role, const QString &hex);
     Q_INVOKABLE void setProfileImage(int i, const QString &path);
-    Q_INVOKABLE void setProfileOpacity(int i, int pct);
-
-    // active-profile accessors (Theme.qml)
-    QString cBg() const;
-    QString cPanel() const;
-    QString cText() const;
-    QString cPrimary() const;
-    QString cSecondary() const;
-    QString cTertiary() const;
-    QString cBgImage() const;
-    int cBgOpacity() const;
+    // Light or dark, for the native title bar and for "follow system".
+    Q_INVOKABLE bool isLightTheme(const QString &name) const;
+    // The theme's interface face, so text drawn by Qt itself (menus, dialogs,
+    // anything without font.family) follows the theme too.
+    Q_INVOKABLE void setAppFontFamily(const QString &family);
 
     bool osLight() const;
     QString appVersion() const;
@@ -123,7 +122,7 @@ protected:
 private:
     void loadProfiles();
     void saveProfiles();
-    QVariantMap activeMap() const;
+    void migrateThemes();                          // one-off: names and settings of the older themes
     static QVariantMap defaultProfile(const QString &name);
     bool darkTitleBar() const;                     // true unless a light-ish theme
     static void applyTitleBar(QWindow *w, bool dark);
@@ -131,7 +130,8 @@ private:
 
     QString m_themeName;
     bool m_followSystem = false;
-    bool m_anime = true;
+    QString m_backgroundMode;
+    QString m_userImage;
     QVariantList m_profiles;
     int m_activeProfile = 0;
     bool m_osLight = false;

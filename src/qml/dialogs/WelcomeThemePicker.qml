@@ -18,11 +18,11 @@ Grid {
             id: swatch
 
             required property var modelData
-            readonly property bool selected: Theme.name === modelData.key
+            readonly property bool selected: Theme.key === modelData.key
 
             width: Math.max(132, (picker.width - picker.spacing) / 2)
             height: 62
-            radius: 10
+            radius: Theme.rad(10)
             color: modelData.bg
             border.width: selected || activeFocus ? 2 : 1
             border.color: selected ? picker.uiPalette.accent
@@ -47,14 +47,14 @@ Grid {
                 y: 10
                 width: 44
                 height: 42
-                radius: 6
+                radius: Theme.rad(6)
                 color: swatch.modelData.panel
                 Rectangle {
                     x: 7
                     y: 8
                     width: 22
                     height: 4
-                    radius: 2
+                    radius: Theme.rad(2)
                     color: swatch.modelData.accent
                 }
                 Rectangle {
@@ -62,7 +62,7 @@ Grid {
                     y: 18
                     width: 30
                     height: 3
-                    radius: 1.5
+                    radius: Theme.rad(1.5)
                     color: swatch.modelData.accent
                     opacity: 0.35
                 }
@@ -72,7 +72,8 @@ Grid {
                 id: themeLabel
                 x: 64
                 anchors.verticalCenter: parent.verticalCenter
-                text: swatch.modelData.key === "dark" ? i18n.t("set_theme_dark")
+                text: swatch.modelData.key === "default" ? i18n.t("theme_default")
+                    : swatch.modelData.key === "cinema" ? i18n.t("theme_cinema")
                     : swatch.modelData.key === "light" ? i18n.t("set_theme_light")
                     : swatch.modelData.key === "midnight" ? "Midnight"
                     : swatch.modelData.key === "sakura" ? "Sakura"

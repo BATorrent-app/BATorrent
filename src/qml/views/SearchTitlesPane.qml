@@ -71,7 +71,7 @@ Item {
             Rectangle {
                 width: col.width
                 height: 300
-                radius: 8
+                radius: Theme.rad(8)
                 color: Theme.stageBg
                 clip: true
                 visible: pane.bestItem !== null

@@ -137,8 +137,8 @@ Item {
             strokeWidth: 0
             fillGradient: LinearGradient {
                 x1: 0; y1: 0; x2: 0; y2: shape.height
-                GradientStop { position: 0.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.09) }
-                GradientStop { position: 1.0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.0) }
+                GradientStop { position: 0.0; color: Qt.rgba(Theme.down.r, Theme.down.g, Theme.down.b, 0.09) }
+                GradientStop { position: 1.0; color: Qt.rgba(Theme.down.r, Theme.down.g, Theme.down.b, 0.0) }
             }
             PathSvg { path: g.areaPath(g.dl, shape.height) }
         }
@@ -149,7 +149,7 @@ Item {
             PathSvg { path: g.linePath(g.ul, shape.height) }
         }
         ShapePath {
-            strokeColor: Theme.accent
+            strokeColor: Theme.down
             strokeWidth: 1.5
             fillColor: "transparent"
             PathSvg { path: g.linePath(g.dl, shape.height) }

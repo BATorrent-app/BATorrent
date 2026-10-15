@@ -25,10 +25,12 @@ Item {
         Text {
             text: (i18n.language, i18n.t("hub_your_library"))
             color: Theme.t1
-            font.pixelSize: 22
-            font.weight: Font.DemiBold
-            font.letterSpacing: -0.3
-            font.family: Theme.fontSans
+            font.pixelSize: Theme.displaySize(22)
+            font.weight: Theme.tWeight(Font.DemiBold)
+            font.letterSpacing: Theme.tTrack(22, -0.3)
+            font.family: Theme.fontDisplay
+            font.capitalization: Theme.tCaps
+            font.italic: Theme.tItalic
         }
 
         Row {
@@ -43,7 +45,7 @@ Item {
                     readonly property bool on: bar.hub.libraryFilter === modelData.key
                     height: 30
                     width: pillRow.implicitWidth + 26
-                    radius: 15
+                    radius: Theme.rad(15)
                     color: on ? Qt.rgba(1, 1, 1, 0.08) : (pillMa.containsMouse ? Qt.rgba(1, 1, 1, 0.04) : "transparent")
                     Behavior on color { ColorAnimation { duration: Theme.durFast } }
                     Row {

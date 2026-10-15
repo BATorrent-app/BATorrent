@@ -61,7 +61,7 @@ Item {
         anchors.centerIn: parent
         width: 420
         height: col.implicitHeight + 44
-        radius: 14
+        radius: Theme.rad(14)
         color: Theme.bg
         border.color: Theme.hair
         border.width: 1
@@ -145,11 +145,11 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 4
-                radius: 2
+                radius: Theme.rad(2)
                 visible: ov.showBar
                 color: Theme.track
                 Rectangle {
-                    height: parent.height; radius: 2
+                    height: parent.height; radius: Theme.rad(2)
                     width: parent.width * Math.max(0.02, Math.min(1, ov.percent))
                     color: Theme.accent
                     Behavior on width { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }

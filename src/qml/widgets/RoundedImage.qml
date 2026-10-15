@@ -9,7 +9,7 @@ import "../theme"
 Item {
     id: root
     property var sources: []
-    property real radius: 6
+    property real radius: Theme.rad(6)
     property color fill: Theme.elev
     property int sourceWidth: 0
     property real imageScale: 1

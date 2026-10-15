@@ -14,7 +14,7 @@ ColumnLayout {
     Image {
         Layout.alignment: Qt.AlignHCenter
         Layout.preferredWidth: 58; Layout.preferredHeight: 58
-        source: "qrc:/images/logo.svg"
+        source: Theme.logoSource
         sourceSize: Qt.size(116, 116)
         fillMode: Image.PreserveAspectFit
     }

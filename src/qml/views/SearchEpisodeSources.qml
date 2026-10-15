@@ -32,7 +32,7 @@ ColumnLayout {
             Layout.preferredHeight: 28
             Rectangle {
                 anchors.fill: parent
-                radius: 14
+                radius: Theme.rad(14)
                 color: backMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
             }
             IconImg {

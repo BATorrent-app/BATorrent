@@ -24,7 +24,7 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: detail.vertical ? 104 : 116
             Layout.preferredHeight: detail.vertical ? 146 : 154
-            radius: 9
+            radius: Theme.rad(9)
             color: Theme.field
             clip: true
             Image {
@@ -71,7 +71,7 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 8
-                radius: 4
+                radius: Theme.rad(4)
                 color: Theme.track
                 Rectangle {
                     width: parent.width * 0.72

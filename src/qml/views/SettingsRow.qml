@@ -13,15 +13,16 @@ import "../widgets"
 ColumnLayout {
     id: rowRoot
     property var sw
-    signal renameProfileRequested()
     signal colorPickRequested(string role, color cur)
-    signal bgImageRequested()
+    signal bgImageRequested()          // the window picture of a theme of one's own
+    signal userImageRequested()        // "My image" behind a built-in theme
     property var field
     property bool showDivider: true
     property bool isLast: false
     spacing: 0
 
-    readonly property bool rowVisible: (!field.customOnly || Theme.name === "custom")
+    readonly property bool rowVisible: (!field.userThemeOnly || Theme.isUser)
+                                       && (!field.userImageOnly || (Theme.backgroundMode === "user" && !Theme.isUser))
                                        && (!field.winOnly || Qt.platform.os === "windows")
                                        && field.hidden !== true
     visible: rowVisible
@@ -48,6 +49,16 @@ ColumnLayout {
         Layout.minimumHeight: 36
         spacing: Theme.sp6
 
+        // a row that belongs to the one above it ("Your image" under Theme)
+        Rectangle {
+            visible: field.sub === true
+            Layout.preferredWidth: 2
+            Layout.fillHeight: true
+            Layout.leftMargin: 6
+            Layout.rightMargin: -Theme.sp6 + 18
+            color: Theme.hair
+        }
+
         ColumnLayout {
             Layout.fillWidth: true
             Layout.minimumWidth: 200
@@ -69,7 +80,7 @@ ColumnLayout {
                     visible: field.badge !== undefined
                     implicitWidth: bdg.implicitWidth + 16
                     implicitHeight: 22
-                    radius: 999
+                    radius: Theme.rad(999)
                     color: Theme.field
                     border.color: Theme.hair
                     border.width: 1
@@ -99,7 +110,6 @@ ColumnLayout {
                 case "timerange": return fieldCtrls.timerange
                 case "days": return fieldCtrls.days
                 case "langlist": return fieldCtrls.langlist
-                case "anime": return themeCtrls.anime
                 case "number": return fieldCtrls.number
                 case "text": return fieldCtrls.text
                 case "password": return fieldCtrls.text
@@ -110,26 +120,22 @@ ColumnLayout {
                 case "debridtoken": return fieldCtrls.debridtoken
                 case "button": return fieldCtrls.button
                 case "iface": return fieldCtrls.iface
-                case "profiles": return themeCtrls.profiles
-                case "color": return themeCtrls.color
-                case "bgimage": return themeCtrls.bgimage
-                case "slider": return themeCtrls.slider
+                case "userimage": return themeCtrls.userimage
                 }
                 return null
             }
         }
     }
 
-    // the theme picker sits under its label, across the row
+    // the theme picker and the theme editor sit under their label, across the row
     Loader {
-        visible: field.type === "theme"
-        active: field.type === "theme"
+        visible: field.type === "appearance" || field.type === "editor"
+        active: visible
         Layout.fillWidth: true
         Layout.topMargin: -2
         Layout.bottomMargin: Theme.sp5
-        Layout.leftMargin: 3
-        Layout.rightMargin: 3
-        sourceComponent: field.type === "theme" ? themeCtrls.theme : null
+        sourceComponent: field.type === "appearance" ? themeCtrls.appearance
+                       : field.type === "editor" ? themeCtrls.editor : null
     }
 
     RowLayout {

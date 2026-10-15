@@ -117,7 +117,7 @@ BatDialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 180
-            radius: 8
+            radius: Theme.rad(8)
             color: Theme.field
             border.color: Theme.hair
             border.width: 1

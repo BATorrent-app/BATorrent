@@ -65,7 +65,7 @@ Window {
                 id: card
                 width: overlay.cardW
                 height: mActionId !== "" ? 104 : 86
-                radius: 10
+                radius: Theme.rad(10)
                 color: Theme.panel
                 border.width: 1
                 border.color: Theme.hair
@@ -80,7 +80,7 @@ Window {
                 // full-card border (which read as a random red box).
                 Rectangle {
                     visible: mKind === "success" || mKind === "warning" || mKind === "error"
-                    x: 1; y: 10; width: 3; height: card.height - 20; radius: 2
+                    x: 1; y: 10; width: 3; height: card.height - 20; radius: Theme.rad(2)
                     color: card.eyebrowColor
                 }
 
@@ -89,11 +89,9 @@ Window {
                     id: tlogo
                     x: 16; anchors.verticalCenter: parent.verticalCenter
                     width: 44; height: 44
-                    source: "qrc:/images/logo.svg"
+                    source: Theme.logoSource
                     sourceSize: Qt.size(88, 88)
                     fillMode: Image.PreserveAspectFit
-                    layer.enabled: Theme.isLight
-                    layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
                 }
 
                 // The whole card has always dismissed on click, but nothing said

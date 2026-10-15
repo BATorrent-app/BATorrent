@@ -92,7 +92,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: logoRow.implicitWidth + 16
         height: 40
-        radius: 9
+        radius: Theme.rad(9)
         color: bar.menuOpen ? Theme.hover2 : (logoMa.containsMouse ? Theme.hover : "transparent")
         Behavior on color { ColorAnimation { duration: Theme.durFast } }
         Row {
@@ -102,11 +102,19 @@ Rectangle {
             Image {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 30; height: 30
-                source: "qrc:/images/logo.svg"
+                source: Theme.logoSource   // dark body on the light themes
                 sourceSize: Qt.size(60, 60)
                 fillMode: Image.PreserveAspectFit
-                layer.enabled: Theme.isLight
-                layer.effect: MultiEffect { colorization: 1.0; colorizationColor: Theme.t1 }
+            }
+            // Sakura: the kanji for cherry blossom beside the logo
+            Text {
+                visible: Theme.kanji
+                anchors.verticalCenter: parent.verticalCenter
+                text: "桜"
+                color: Theme.accent
+                font.pixelSize: 18
+                font.weight: Font.Bold
+                font.family: "Shippori Mincho"
             }
             IconImg {
                 anchors.verticalCenter: parent.verticalCenter
@@ -158,7 +166,7 @@ Rectangle {
                     visible: navTab.activeFocus
                     anchors.fill: parent
                     anchors.margins: 6
-                    radius: 9
+                    radius: Theme.rad(9)
                     color: "transparent"
                     border.color: Theme.focusRing
                     border.width: Theme.focusRingWidth
@@ -177,12 +185,30 @@ Rectangle {
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: navTab.modelData.label
+                        // Matrix reads like a prompt: "> downloads_"
+                        text: (Theme.tabCursor && navTab.active ? "> " : "") + navTab.modelData.label
                         color: navTab.ink
-                        font.pixelSize: 14
-                        font.weight: navTab.active ? Font.DemiBold : Font.Medium
-                        font.family: Theme.fontSans
+                        font.pixelSize: Math.round(Theme.tabSize)
+                        font.weight: navTab.active ? Theme.tabWeightOn : Theme.tabWeightOff
+                        font.family: Theme.fontDisplay
+                        font.capitalization: Theme.tabCaps
+                        font.italic: Theme.tabItalic
+                        font.letterSpacing: Theme.tabTracking
                         Behavior on color { ColorAnimation { duration: Theme.durFast } }
+                    }
+                    Rectangle {
+                        visible: Theme.tabCursor && navTab.active
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 8; height: 15
+                        color: Theme.accent
+                        SequentialAnimation on opacity {
+                            running: Theme.tabCursor && navTab.active && !Theme.reduceMotion
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 0; duration: 1; }
+                            PauseAnimation { duration: 530 }
+                            NumberAnimation { to: 1; duration: 1 }
+                            PauseAnimation { duration: 530 }
+                        }
                     }
                 }
                 MouseArea {
@@ -214,6 +240,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         height: 2
         color: Theme.accent
+        visible: !Theme.tabCursor   // Matrix marks the tab with a cursor instead
         opacity: target ? 1 : 0
         Behavior on x { enabled: tabLine.ready && !Theme.reduceMotion
             NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
@@ -239,7 +266,7 @@ Rectangle {
             Layout.leftMargin: dlChip.visible ? 6 : 0
             Layout.preferredHeight: 36
             Layout.preferredWidth: altRow.implicitWidth + 24
-            radius: 9
+            radius: Theme.rad(9)
             color: on ? Theme.accentTint : (altMa.containsMouse ? Theme.hover : "transparent")
             Behavior on color { ColorAnimation { duration: Theme.durFast } }
             readonly property color ink: on ? Theme.accentText : Theme.t3
@@ -292,7 +319,7 @@ Rectangle {
             readonly property bool on: bar.currentIndex === 3
             Layout.preferredWidth: 36
             Layout.preferredHeight: 36
-            radius: 9
+            radius: Theme.rad(9)
             color: on ? Theme.hover2 : (gearMa.containsMouse ? Theme.hover : "transparent")
             Behavior on color { ColorAnimation { duration: Theme.durFast } }
             IconImg {
@@ -369,7 +396,7 @@ Rectangle {
         Rectangle {   // maximize
             visible: wb.glyph === "max"
             anchors.centerIn: parent
-            width: 10; height: 10; radius: 1
+            width: 10; height: 10; radius: Theme.rad(1)
             color: "transparent"
             border.width: 1; border.color: wb.ink
         }
@@ -377,8 +404,8 @@ Rectangle {
             visible: wb.glyph === "restore"
             anchors.centerIn: parent
             width: 10; height: 10
-            Rectangle { x: 2; y: 0; width: 8; height: 8; radius: 1; color: "transparent"; border.width: 1; border.color: wb.ink }
-            Rectangle { x: 0; y: 2; width: 8; height: 8; radius: 1; color: wb.color.a > 0 ? wb.color : bar.color; border.width: 1; border.color: wb.ink }
+            Rectangle { x: 2; y: 0; width: 8; height: 8; radius: Theme.rad(1); color: "transparent"; border.width: 1; border.color: wb.ink }
+            Rectangle { x: 0; y: 2; width: 8; height: 8; radius: Theme.rad(1); color: wb.color.a > 0 ? wb.color : bar.color; border.width: 1; border.color: wb.ink }
         }
         Item {        // close
             visible: wb.glyph === "close"

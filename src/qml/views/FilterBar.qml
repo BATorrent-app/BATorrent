@@ -37,7 +37,7 @@ Rectangle {
         property bool on: controller.activeFilter === filterKey
         property bool warn: false          // Problems: a notch brighter when idle
         signal clicked()
-        radius: 8
+        radius: Theme.rad(8)
         height: 30
         implicitWidth: pillRow.implicitWidth + 24
         color: on ? Theme.accentTint : (piMa.containsMouse ? Theme.hover : "transparent")
@@ -57,7 +57,7 @@ Rectangle {
             visible: pi.activeFocus
             anchors.fill: parent
             anchors.margins: -2
-            radius: 10
+            radius: Theme.rad(10)
             color: "transparent"
             border.color: Theme.focusRing
             border.width: Theme.focusRingWidth
@@ -105,7 +105,7 @@ Rectangle {
         signal clicked()
         // icon and name: an icon-only toggle was easy to miss
         width: scRow.implicitWidth + 20; height: 26
-        radius: 6
+        radius: Theme.rad(6)
         color: on ? Theme.hover2 : (scMa.containsMouse ? Theme.hover : "transparent")
         Row {
             id: scRow
@@ -153,7 +153,7 @@ Rectangle {
             anchors.left: edge.rightSide ? undefined : parent.left
             anchors.rightMargin: 4
             anchors.leftMargin: 4
-            width: 28; height: 28; radius: 14
+            width: 28; height: 28; radius: Theme.rad(14)
             color: Theme.panel
             border.color: Theme.hair
             border.width: 1
@@ -199,7 +199,7 @@ Rectangle {
             color: Theme.field
             border.color: searchInput.activeFocus ? Theme.accent : Theme.hair
             border.width: 1
-            radius: 8
+            radius: Theme.rad(8)
 
             RowLayout {
                 anchors.fill: parent
@@ -250,7 +250,7 @@ Rectangle {
             color: "transparent"
             border.color: Theme.hair
             border.width: 1
-            radius: 8
+            radius: Theme.rad(8)
             Row {
                 id: segRow
                 anchors.centerIn: parent
@@ -366,7 +366,7 @@ Rectangle {
                         color: "transparent"
                         border.color: Theme.hair
                         border.width: 1
-                        radius: 8
+                        radius: Theme.rad(8)
 
                         Row {
                             id: catRow
@@ -424,7 +424,7 @@ Rectangle {
                             // are the same answer.
                             property var counts: ({})
                             function countOf(c) { return counts[c] === undefined ? 0 : counts[c] }
-                            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 8 }
+                            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: Theme.rad(8) }
                             // The four built-ins are static; user-created ones are
                             // appended on open: the same rule the right-click menu
                             // follows. This list was hardcoded too, so a category

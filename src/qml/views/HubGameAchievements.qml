@@ -80,7 +80,7 @@ Column {
                 required property var modelData
                 width: root.width
                 height: 68
-                radius: 6
+                radius: Theme.rad(6)
                 color: rowMa.containsMouse ? Theme.stageHover : "transparent"
                 opacity: modelData.unlocked ? 1 : 0.5
                 MouseArea { id: rowMa; anchors.fill: parent; hoverEnabled: true }
@@ -93,7 +93,7 @@ Column {
                     Rectangle {
                         Layout.preferredWidth: 48
                         Layout.preferredHeight: 48
-                        radius: 6
+                        radius: Theme.rad(6)
                         color: "#1a1a1d"
                         clip: true
                         ChainImage {
@@ -132,13 +132,13 @@ Column {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 140
                                 height: 3
-                                radius: 2
+                                radius: Theme.rad(2)
                                 color: Qt.rgba(1, 1, 1, 0.12)
                                 Rectangle {
                                     width: parent.width * Math.min(1, (row.modelData.progress || 0)
                                                                       / Math.max(1, row.modelData.progressMax || 1))
                                     height: parent.height
-                                    radius: 2
+                                    radius: Theme.rad(2)
                                     color: Theme.t2
                                 }
                             }
@@ -180,7 +180,7 @@ Column {
             visible: root.showSecrets
             width: root.width
             height: 68
-            radius: 6
+            radius: Theme.rad(6)
             color: "transparent"
             opacity: 0.5
             RowLayout {
@@ -191,7 +191,7 @@ Column {
                 Rectangle {
                     Layout.preferredWidth: 48
                     Layout.preferredHeight: 48
-                    radius: 6
+                    radius: Theme.rad(6)
                     color: "#1a1a1d"
                     Text {
                         anchors.centerIn: parent

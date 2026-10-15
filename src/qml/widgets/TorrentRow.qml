@@ -152,7 +152,7 @@ Rectangle {
                 visible: lrow.isPack
                 implicitWidth: packTxt.implicitWidth + 12
                 implicitHeight: 18
-                radius: 5
+                radius: Theme.rad(5)
                 color: Theme.hover2
                 Text {
                     id: packTxt
@@ -178,7 +178,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             progress: lrow.progress
             stateKey: lrow.stateKey
-            fill: lrow.k === "downloading" ? Theme.accent : Theme.fillFor(lrow.stateKey)
+            fill: lrow.k === "downloading" ? Theme.down : Theme.fillFor(lrow.stateKey)
             sheen: lrow.downRate > 0 || lrow.upRate > 0
             showPercent: true
             percentColor: lrow.progress >= 0.6 ? Theme.inkOn(fill) : Theme.tSoft
@@ -191,7 +191,7 @@ Rectangle {
             spacing: 5
             clip: true
             readonly property color symInk: lrow.k === "seeding" ? Theme.amber
-                                          : lrow.k === "downloading" ? Theme.accent
+                                          : lrow.k === "downloading" ? Theme.down
                                           : lrow.k === "completed" ? Theme.grn : Theme.t3
             Text {
                 visible: lrow.k === "seeding" || lrow.k === "downloading"

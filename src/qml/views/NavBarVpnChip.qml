@@ -17,7 +17,7 @@ Rectangle {
     Layout.alignment: Qt.AlignVCenter
     Layout.preferredHeight: 36
     Layout.preferredWidth: vpnRow.implicitWidth + 24
-    radius: 9
+    radius: Theme.rad(9)
 
     property bool bound: false
     function refreshBound() {
@@ -33,7 +33,7 @@ Rectangle {
                               : (bound ? 2 : 0)
     readonly property color stColor: st === 2 ? Theme.grn
                                    : st === 1 ? Theme.amber
-                                   : st === 3 ? Theme.accent : Theme.t4
+                                   : st === 3 ? Theme.down : Theme.t4
     color: vpnMa.containsMouse ? Theme.hover : "transparent"
     Behavior on color { ColorAnimation { duration: Theme.durFast } }
     RowLayout {

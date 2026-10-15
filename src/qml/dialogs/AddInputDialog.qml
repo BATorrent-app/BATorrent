@@ -116,7 +116,7 @@ BatDialog {
             Rectangle {
                 Layout.preferredWidth: 150
                 Layout.preferredHeight: 92
-                radius: 9
+                radius: Theme.rad(9)
                 color: fileMa.containsMouse ? Theme.hover : Theme.field
                 border.color: fileMa.containsMouse ? Theme.accent : Theme.hair
                 border.width: 1
@@ -162,7 +162,7 @@ BatDialog {
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 60
-        radius: 9
+        radius: Theme.rad(9)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
@@ -179,7 +179,7 @@ BatDialog {
             Rectangle {
                 Layout.alignment: Qt.AlignTop
                 implicitWidth: 15; implicitHeight: 15
-                radius: 7.5
+                radius: Theme.rad(7.5)
                 color: "transparent"
                 border.color: Theme.t3
                 border.width: 1

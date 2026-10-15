@@ -71,14 +71,14 @@ BatDialog {
             visible: dlg.downloading
             Layout.fillWidth: true
             Layout.preferredHeight: 8
-            radius: 4
+            radius: Theme.rad(4)
             color: Theme.field
             Rectangle {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: parent.width * (dlg.pct / 100)
-                radius: 4
+                radius: Theme.rad(4)
                 color: Theme.accent
                 Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
             }

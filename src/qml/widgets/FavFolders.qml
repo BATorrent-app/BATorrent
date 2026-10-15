@@ -25,7 +25,7 @@ Flow {
             required property var modelData
             readonly property bool cur: root.current === modelData.path
             implicitWidth: favTxt.implicitWidth + 18; implicitHeight: 24
-            radius: 12
+            radius: Theme.rad(12)
             color: favMa.containsMouse && !cur ? Theme.hover : Theme.field
             border.color: cur ? Theme.accent : Theme.hair; border.width: 1
             Behavior on border.color { ColorAnimation { duration: Theme.durExit } }

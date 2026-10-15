@@ -26,9 +26,12 @@ Column {
             id: head
             text: rail.title
             color: Theme.t1
-            font.pixelSize: 17
-            font.weight: Font.DemiBold
-            font.family: Theme.fontSans
+            font.pixelSize: Theme.displaySize(17)
+            font.weight: Theme.tWeight(Font.DemiBold)
+            font.family: Theme.fontDisplay
+            font.capitalization: Theme.tCaps
+            font.italic: Theme.tItalic
+            font.letterSpacing: Theme.tTrack(17, 0)
         }
         Text {
             anchors.left: head.right

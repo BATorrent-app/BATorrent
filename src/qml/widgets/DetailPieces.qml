@@ -49,7 +49,7 @@ ColumnLayout {
                 delegate: Rectangle {
                     width: (pieceGrid.width - (pieceGrid.columns - 1) * 2) / pieceGrid.columns
                     height: width
-                    radius: 2
+                    radius: Theme.rad(2)
                     readonly property real f: pane.cells[index] || 0
                     color: f >= 0.999 ? Theme.accent
                          : f > 0 ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.3 + 0.65 * f)

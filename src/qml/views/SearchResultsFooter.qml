@@ -41,7 +41,7 @@ Rectangle {
             spacing: 7
             visible: root.sv.isFlatList && root.sv.wontFit > 0 && root.sv.saveFree >= 0
             Rectangle {
-                width: 7; height: 7; radius: 4; color: Theme.warn
+                width: 7; height: 7; radius: Theme.rad(4); color: Theme.warn
                 anchors.verticalCenter: parent.verticalCenter
             }
             Text {

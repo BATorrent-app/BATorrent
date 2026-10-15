@@ -26,7 +26,7 @@ Flow {
         model: root.sv.recentList
         delegate: Rectangle {
             required property var modelData
-            radius: 12
+            radius: Theme.rad(12)
             color: rcMa.containsMouse ? Theme.hover : Theme.field
             border.color: Theme.hair; border.width: 1
             implicitWidth: rcTxt.implicitWidth + 22

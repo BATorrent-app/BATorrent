@@ -58,7 +58,7 @@ Item {
                 Item {
                     Layout.fillWidth: true; Layout.preferredHeight: 28
                     Rectangle {
-                        anchors.right: parent.right; width: 28; height: 28; radius: 14
+                        anchors.right: parent.right; width: 28; height: 28; radius: Theme.rad(14)
                         color: dClose.containsMouse ? Theme.hover : "transparent"
                         Text { anchors.centerIn: parent; text: "✕"; color: Theme.t2; font.pixelSize: 14 }
                         MouseArea { id: dClose; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.hub.detailOpen = false }
@@ -71,9 +71,9 @@ Item {
                     Layout.preferredWidth: 168; Layout.preferredHeight: 224
                     Rectangle { id: dPC; anchors.fill: parent; color: "#161618"; visible: false; layer.enabled: true
                         Image { anchors.fill: parent; source: detailDrawer.it ? (detailDrawer.it.poster || "") : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true } }
-                    Rectangle { id: dPM; anchors.fill: parent; radius: 14; color: "white"; visible: false; layer.enabled: true }
+                    Rectangle { id: dPM; anchors.fill: parent; radius: Theme.rad(14); color: "white"; visible: false; layer.enabled: true }
                     MultiEffect { source: dPC; anchors.fill: parent; maskEnabled: true; maskSource: dPM }
-                    Rectangle { anchors.fill: parent; radius: 14; color: "transparent"; border.color: "#33ffffff"; border.width: 1 }
+                    Rectangle { anchors.fill: parent; radius: Theme.rad(14); color: "transparent"; border.color: "#33ffffff"; border.width: 1 }
                 }
 
                 Text {

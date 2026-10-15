@@ -64,7 +64,7 @@ ColumnLayout {
 
     component Card: Rectangle {
         Layout.fillWidth: true
-        radius: 14
+        radius: Theme.rad(14)
         color: Theme.panel
         border.color: Theme.hairSoft
         border.width: 1
@@ -82,7 +82,7 @@ ColumnLayout {
     // ---- the answer ----
     Rectangle {
         Layout.fillWidth: true
-        radius: 14
+        radius: Theme.rad(14)
         color: Theme.panel
         border.width: 1
         border.color: page.st === 2 ? Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.25)
@@ -100,11 +100,11 @@ ColumnLayout {
                 Layout.bottomMargin: 20
                 spacing: 20
                 Rectangle {
-                    Layout.preferredWidth: 52; Layout.preferredHeight: 52; radius: 26
+                    Layout.preferredWidth: 52; Layout.preferredHeight: 52; radius: Theme.rad(26)
                     color: Qt.rgba(page.stColor.r, page.stColor.g, page.stColor.b, page.st === 0 ? 0.06 : 0.12)
                     IconImg { anchors.centerIn: parent; src: "qrc:/icons/set-vpn.svg"; s: 26; tint: page.stColor }
                     Rectangle {
-                        anchors.fill: parent; radius: 26
+                        anchors.fill: parent; radius: Theme.rad(26)
                         color: "transparent"; border.color: Theme.amber; border.width: 2
                         visible: page.st === 1
                         SequentialAnimation on opacity {
@@ -193,7 +193,7 @@ ColumnLayout {
     Rectangle {
         visible: page.hasVpn && !vpn.tunnelReal && vpn.profiles.length > 0
         Layout.fillWidth: true
-        radius: 10
+        radius: Theme.rad(10)
         color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.08)
         border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.25); border.width: 1
         implicitHeight: warnRow.implicitHeight + 24
@@ -260,9 +260,9 @@ ColumnLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 20; anchors.rightMargin: 20
                             spacing: 14
-                            Rectangle { Layout.preferredWidth: 2; Layout.preferredHeight: 28; radius: 1; color: profRow.active ? Theme.t1 : "transparent" }
+                            Rectangle { Layout.preferredWidth: 2; Layout.preferredHeight: 28; radius: Theme.rad(1); color: profRow.active ? Theme.t1 : "transparent" }
                             Rectangle {
-                                Layout.preferredWidth: 34; Layout.preferredHeight: 24; radius: 4
+                                Layout.preferredWidth: 34; Layout.preferredHeight: 24; radius: Theme.rad(4)
                                 color: Theme.hover2
                                 Text { anchors.centerIn: parent; text: (profRow.modelData.cc || "··").toUpperCase(); color: Theme.tSoft; font.pixelSize: 11; font.weight: Font.Bold; font.family: Theme.fontSans }
                             }
@@ -277,7 +277,7 @@ ColumnLayout {
                                     text: profRow.modelData.name
                                     color: Theme.t1; font.pixelSize: 14; font.family: Theme.fontSans
                                     padding: 2; selectByMouse: true
-                                    background: Rectangle { color: "transparent"; border.color: Theme.accent; border.width: 1; radius: 4 }
+                                    background: Rectangle { color: "transparent"; border.color: Theme.accent; border.width: 1; radius: Theme.rad(4) }
                                     onAccepted: profRow.commitRename()
                                     onActiveFocusChanged: if (!activeFocus && profRow.editing) profRow.commitRename()
                                     Keys.onEscapePressed: { text = profRow.modelData.name; profRow.editing = false }
@@ -316,7 +316,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     Layout.margins: 12
                     implicitHeight: 52
-                    radius: 10
+                    radius: Theme.rad(10)
                     color: confDrop.containsDrag ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.10) : "transparent"
                     border.color: confDrop.containsDrag ? Theme.accent : Theme.hair
                     border.width: 1
@@ -407,13 +407,13 @@ ColumnLayout {
                         required property var modelData
                         Layout.fillWidth: true
                         implicitHeight: 34
-                        radius: 7
+                        radius: Theme.rad(7)
                         color: modelData.id === page.bound ? Theme.hover2 : "transparent"
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 8; anchors.rightMargin: 8
                             spacing: 10
-                            Rectangle { Layout.preferredWidth: 7; Layout.preferredHeight: 7; radius: 3.5; color: modelData.vpn ? Theme.grn : Theme.warn }
+                            Rectangle { Layout.preferredWidth: 7; Layout.preferredHeight: 7; radius: Theme.rad(3.5); color: modelData.vpn ? Theme.grn : Theme.warn }
                             Text { Layout.fillWidth: true; text: page.ifaceLabel(modelData); color: Theme.t1; font.pixelSize: 14; font.family: Theme.fontSans; elide: Text.ElideRight }
                             Text { text: (i18n.language, modelData.vpn ? "VPN" : i18n.t("vpn_iface_not_protecting")); color: modelData.vpn ? Theme.t4 : Theme.warn; font.pixelSize: 12; font.family: Theme.fontSans }
                         }

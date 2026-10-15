@@ -156,6 +156,21 @@ void loadFonts(QApplication &app)
     QFontDatabase::addApplicationFont(":/fonts/IBMPlexSans-SemiBold.ttf");
     QFontDatabase::addApplicationFont(":/fonts/IBMPlexSans-Bold.ttf");
     QFontDatabase::addApplicationFont(":/fonts/NewRocker-Regular.ttf");
+    // The themes' title and interface faces (all OFL). The two Japanese ones
+    // are cut down to Latin plus the few kanji a theme draws: whole, they
+    // weigh about 25 MB, and in Japanese the UI falls back to the system font.
+    static const char *const themeFonts[] = {
+        "BarlowCondensed-Medium", "BarlowCondensed-SemiBold", "BarlowCondensed-Bold",
+        "Newsreader-Medium", "Newsreader-SemiBold",
+        "InstrumentSerif-Regular", "InstrumentSerif-Italic",
+        "ShipporiMincho-SemiBold", "ShipporiMincho-Bold",
+        "ZenKakuGothicNew-Regular", "ZenKakuGothicNew-Medium", "ZenKakuGothicNew-Bold",
+        "SpaceGrotesk-Medium", "SpaceGrotesk-SemiBold", "SpaceGrotesk-Bold",
+        "IBMPlexMono-Regular", "IBMPlexMono-Medium", "IBMPlexMono-SemiBold",
+    };
+    for (const char *f : themeFonts)
+        if (QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/%1.ttf").arg(QLatin1String(f))) < 0)
+            qWarning() << "[font] failed to register" << f;
 
     if (!QFontDatabase::families().contains(QStringLiteral("IBM Plex Sans")))
         qWarning() << "[font] IBM Plex Sans failed to register — the UI is on a fallback family";

@@ -36,7 +36,7 @@ Column {
                 height: Math.round(grid.tileW * 9 / 16)
                 RoundedImage {
                     anchors.fill: parent
-                    radius: 4
+                    radius: Theme.rad(4)
                     sourceWidth: 640
                     sources: [still.modelData]
                     imageScale: ma.containsMouse ? 1.04 : 1

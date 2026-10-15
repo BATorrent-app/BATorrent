@@ -55,10 +55,10 @@ Rectangle {
             property int ps: status.stat("portStatus", typeof session !== "undefined" ? session.portStatus : 0)
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 8; height: 8; radius: 4
+                width: 8; height: 8; radius: Theme.rad(4)
                 color: portInd.ps === 1 ? Theme.grn
                      : portInd.ps === 2 ? Theme.warn
-                     : portInd.ps === 3 ? Theme.accent : Theme.t4
+                     : portInd.ps === 3 ? Theme.down : Theme.t4
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter

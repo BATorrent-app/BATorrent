@@ -88,7 +88,7 @@ Item {
             width: target ? target.width : 0
             y: tabs.height - 2
             height: 2
-            radius: 1
+            radius: Theme.rad(1)
             color: Theme.accent
             Behavior on x { enabled: indicator.ready && !Theme.reduceMotion
                 NumberAnimation { duration: Theme.durSlower; easing.type: Easing.OutQuart } }

@@ -44,7 +44,7 @@ Item {
         Rectangle {
             id: ph
             anchors.fill: parent
-            radius: 10
+            radius: Theme.rad(10)
             color: "#161618"
             clip: true
             border.color: ma.containsMouse ? Theme.accent : Theme.hair
@@ -96,7 +96,7 @@ Item {
             visible: false
             sourceSize: Qt.size(card.posterW * 2, card.posterH * 2)
         }
-        Rectangle { id: imgMask; anchors.fill: parent; radius: 10; visible: false; layer.enabled: true }
+        Rectangle { id: imgMask; anchors.fill: parent; radius: Theme.rad(10); visible: false; layer.enabled: true }
         MultiEffect {
             anchors.fill: parent
             source: imgSrc
@@ -111,7 +111,7 @@ Item {
             visible: card.rating > 0
             anchors.top: parent.top; anchors.right: parent.right
             anchors.topMargin: 6; anchors.rightMargin: 6
-            radius: 6
+            radius: Theme.rad(6)
             color: "#cc000000"
             implicitWidth: rt.width + 12
             implicitHeight: 18
@@ -174,7 +174,7 @@ Item {
             elide: Text.ElideRight
             color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; lineHeight: 1.38
         }
-        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: 9 }
+        background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: Theme.rad(9) }
     }
 
     CardActions {

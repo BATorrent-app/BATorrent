@@ -12,7 +12,7 @@ import "../dialogs"
 
 Rectangle {
     id: win
-    color: Theme.bg
+    color: Theme.pageBg
 
     property int sec: 0
     property int reloadTick: 0       // bumped by a reset to force the rows to re-read their values
@@ -25,10 +25,6 @@ Rectangle {
         if (typeof settings === "undefined" || field.key === undefined) return field.on === true
         return settings.getBool(field.key, field.on === true)
     }
-
-    // active custom-theme profile map; re-read on any profile data change
-    readonly property var ap: (typeof themeBridge !== "undefined" && themeBridge.customProfiles.length > 0)
-                              ? themeBridge.customProfiles[themeBridge.activeProfile] : ({})
 
     // Instant-apply settings: Esc / ⌘W just leave the page (nothing to confirm).
     Shortcut { enabled: win.isCurrent; sequences: [StandardKey.Cancel]; onActivated: win.closed() }
@@ -157,7 +153,7 @@ Rectangle {
                     id: searchFld
                     Layout.fillWidth: true
                     Layout.preferredHeight: 42
-                    radius: 10
+                    radius: Theme.rad(10)
                     fontSize: 15
                     iconSize: 15
                     icon: "qrc:/icons/search.svg"
@@ -192,7 +188,7 @@ Rectangle {
                                 Rectangle {
                                     width: parent.width
                                     height: 44
-                                    radius: 9
+                                    radius: Theme.rad(9)
                                     color: navItem.on ? Theme.sel : (nrMa.containsMouse ? Theme.hover : "transparent")
                                     RowLayout {
                                         anchors.fill: parent
@@ -250,7 +246,7 @@ Rectangle {
                                                 height: visible ? 34 : 0
                                                 Rectangle {
                                                     visible: parent.cur
-                                                    width: 2; height: 20; radius: 1
+                                                    width: 2; height: 20; radius: Theme.rad(1)
                                                     anchors.verticalCenter: parent.verticalCenter
                                                     color: Theme.accent
                                                 }
@@ -324,10 +320,12 @@ Rectangle {
                                 text: win.query.length > 0 ? (i18n.language, i18n.t("set_search_title"))
                                                            : schema.heads[win.sec].h
                                 color: Theme.t1
-                                font.pixelSize: 34
-                                font.weight: Font.Bold
-                                font.letterSpacing: -0.6
-                                font.family: Theme.fontSans
+                                font.pixelSize: Theme.displaySize(34)
+                                font.weight: Theme.tWeight(Font.Bold)
+                                font.letterSpacing: Theme.tTrack(34, -0.6)
+                                font.family: Theme.fontDisplay
+                                font.capitalization: Theme.tCaps
+                                font.italic: Theme.tItalic
                                 elide: Text.ElideRight
                             }
                             Text {
@@ -356,7 +354,7 @@ Rectangle {
                         visible: win.query.length > 0 && win.curBlocks.length === 0
                         Layout.fillWidth: true
                         Layout.preferredHeight: 140
-                        radius: 14
+                        radius: Theme.rad(14)
                         color: "transparent"
                         border.color: Theme.hair
                         border.width: 1
@@ -390,15 +388,17 @@ Rectangle {
                                 Layout.leftMargin: 4
                                 text: modelData.label
                                 color: Theme.t1
-                                font.pixelSize: 19
-                                font.weight: Font.DemiBold
-                                font.letterSpacing: -0.2
-                                font.family: Theme.fontSans
+                                font.pixelSize: Theme.displaySize(19)
+                                font.weight: Theme.tWeight(Font.DemiBold)
+                                font.letterSpacing: Theme.tTrack(19, -0.2)
+                                font.family: Theme.fontDisplay
+                                font.capitalization: Theme.tCaps
+                                font.italic: Theme.tItalic
                             }
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                radius: 14
+                                radius: Theme.rad(14)
                                 color: blk.bare ? "transparent" : Theme.panel
                                 border.color: Theme.hair
                                 border.width: blk.bare ? 0 : 1
@@ -422,9 +422,9 @@ Rectangle {
                                             field: modelData
                                             // the card's own edge closes the last row
                                             showDivider: index < blk.modelData.rows.length - 1
-                                            onRenameProfileRequested: { renameDlg.idx = themeBridge.activeProfile; renameField.text = themeBridge.customProfiles[themeBridge.activeProfile].name; renameDlg.open() }
                                             onColorPickRequested: function (role, cur) { colorDlg.targetRole = role; colorDlg.selectedColor = cur; colorDlg.open() }
-                                            onBgImageRequested: bgImageDlg.open()
+                                            onBgImageRequested: { bgImageDlg.target = "theme"; bgImageDlg.open() }
+                                            onUserImageRequested: { bgImageDlg.target = "user"; bgImageDlg.open() }
                                         }
                                     }
                                 }
@@ -449,7 +449,7 @@ Rectangle {
                     // says so; it pulses on a change so the save is visible.
                     Rectangle {
                         id: savedDot
-                        width: 7; height: 7; radius: 3.5
+                        width: 7; height: 7; radius: Theme.rad(3.5)
                         color: Theme.grn
                         transformOrigin: Item.Center
                         SequentialAnimation {
@@ -485,7 +485,8 @@ Rectangle {
         }
     }
 
-    // custom-theme dialogs
+    // theme dialogs: a colour of one's own theme, and a picture (the window
+    // picture of that theme, or "My image" behind a built-in one)
     ColorDialog {
         id: colorDlg
         property string targetRole: ""
@@ -497,13 +498,15 @@ Rectangle {
     }
     FileDialog {
         id: bgImageDlg
-        title: (i18n.language, i18n.t("set_custom_bgimage"))
+        property string target: "theme"
+        title: (i18n.language, i18n.t("set_choose_image"))
         nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.bmp)"]
         // Store a decoded plain filesystem path (selectedFile is a percent-
-        // encoded URL); Theme.bgImageSource re-encodes it for Image.source.
+        // encoded URL); Theme re-encodes it for Image.source.
         onAccepted: if (typeof themeBridge !== "undefined") {
-            var u = selectedFile.toString().replace(/^file:\/\/\/?/, Qt.platform.os === "windows" ? "" : "/")
-            themeBridge.setProfileImage(themeBridge.activeProfile, decodeURIComponent(u))
+            var u = decodeURIComponent(selectedFile.toString().replace(/^file:\/\/\/?/, Qt.platform.os === "windows" ? "" : "/"))
+            if (target === "user") themeBridge.userImage = u
+            else themeBridge.setProfileImage(themeBridge.activeProfile, u)
         }
     }
     // action buttons (default-app / pair phone)
@@ -642,19 +645,5 @@ Rectangle {
         }
     }
 
-    // rename the active profile
-    Dialog {
-        id: renameDlg
-        property int idx: 0
-        anchors.centerIn: parent
-        modal: true
-        title: (i18n.language, i18n.t("set_custom_rename"))
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        onAccepted: if (themeBridge && renameField.text.length > 0) themeBridge.renameProfile(idx, renameField.text)
-        contentItem: TFld {
-            id: renameField
-            implicitWidth: 240; implicitHeight: 32
-        }
-    }
 }
 

@@ -146,7 +146,7 @@ Item {
         visible: tile.isGroup
         x: 16; y: -10
         width: 178 - 32; height: 30
-        radius: 10
+        radius: Theme.radCard(10)
         color: Theme.stackBack
         border.color: Theme.hair; border.width: 1
         transform: Translate { y: posterShift.y }
@@ -155,7 +155,7 @@ Item {
         visible: tile.isGroup
         x: 8; y: -5
         width: 178 - 16; height: 30
-        radius: 10
+        radius: Theme.radCard(10)
         color: Theme.stackMid
         border.color: Theme.hair; border.width: 1
         transform: Translate { y: posterShift.y }
@@ -174,7 +174,7 @@ Item {
         // no art: what kind of file it is, set large at the top left
         Rectangle {
             anchors.fill: parent
-            radius: 10
+            radius: Theme.radCard(10)
             color: Theme.tileBlank
             visible: !tile.artShown
             Image {
@@ -198,9 +198,10 @@ Item {
                 font.pixelSize: 53
                 fontSizeMode: Text.HorizontalFit
                 minimumPixelSize: 20
-                font.weight: Font.Bold
-                font.letterSpacing: -1.5
-                font.family: Theme.fontSans
+                font.weight: Theme.tWeight(Font.Bold)
+                font.letterSpacing: Theme.isDefault ? -1.5 : Theme.tTrack(22, 0)
+                font.family: Theme.fontDisplay
+                font.capitalization: Theme.tCaps
             }
         }
 
@@ -222,7 +223,7 @@ Item {
         Rectangle {
             id: posterMask
             anchors.fill: parent
-            radius: 10
+            radius: Theme.radCard(10)
             color: "white"
             visible: false
             layer.enabled: true
@@ -243,7 +244,7 @@ Item {
             Rectangle {
                 anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
                 height: 56
-                radius: 10
+                radius: Theme.radCard(10)
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "transparent" }
                     GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.85) }
@@ -277,7 +278,7 @@ Item {
                 progress: tile.shownProgress
                 stateKey: tile.stateKey
                 // over art the paused grey needs to stand off the white wash
-                fill: tile.isDownloading ? Theme.accent
+                fill: tile.isDownloading ? Theme.down
                       : (tile.stateKey === "paused" || tile.stateKey === "queued") ? Qt.rgba(1, 1, 1, 0.55)
                       : Theme.fillFor(tile.stateKey)
                 sheen: tile.isDownloading && tile.downRate > 0
@@ -301,7 +302,7 @@ Item {
             y: 95
             width: 46
             height: 46
-            radius: 23
+            radius: Theme.rad(23)
             z: 5
             color: Qt.rgba(16 / 255, 16 / 255, 20 / 255, 0.8)
             border.color: ptMa.containsMouse ? Theme.accent : Qt.rgba(1, 1, 1, 0.25)
@@ -330,7 +331,7 @@ Item {
             visible: tile.isGroup
             x: 8; y: 8
             z: 6
-            radius: 10
+            radius: Theme.radCard(10)
             height: 20
             width: countTxt.implicitWidth + 16
             color: Qt.rgba(0, 0, 0, 0.8)
@@ -346,14 +347,40 @@ Item {
             }
         }
 
-        // Selection is neutral: a white ring outside the edge, never the accent
-        // (red already means downloading and trouble). Otherwise a hairline.
+        // Dark Star: the selected card glows violet from behind
+        Item {
+            visible: tile.selected && Theme.glow
+            anchors.fill: parent
+            z: -1
+            Rectangle {
+                id: glowSrc
+                anchors.fill: parent
+                radius: Theme.radCard(10)
+                color: Theme.accent
+                visible: false
+                layer.enabled: true
+            }
+            MultiEffect {
+                source: glowSrc
+                anchors.fill: glowSrc
+                autoPaddingEnabled: true
+                shadowEnabled: true
+                shadowColor: Theme.accent
+                shadowOpacity: 0.55
+                shadowBlur: 1.0
+                blurMax: 40
+            }
+        }
+
+        // Selection is neutral: a ring in the theme's ink outside the edge,
+        // never the accent (that already means buttons and the active tab).
+        // Otherwise a hairline.
         Rectangle {
             anchors.fill: parent
             anchors.margins: tile.selected ? -2 : 0
-            radius: tile.selected ? 12 : 10
+            radius: Theme.radCard(tile.selected ? 12 : 10)
             color: "transparent"
-            border.color: tile.selected ? Theme.t1
+            border.color: tile.selected ? Theme.selRing
                           : (tileMa.containsMouse ? Qt.rgba(1, 1, 1, 0.18) : Theme.hair)
             border.width: tile.selected ? 2 : 1
             Behavior on border.color { ColorAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
@@ -366,7 +393,7 @@ Item {
             id: finishHalo
             anchors.fill: parent
             anchors.margins: -3
-            radius: 13
+            radius: Theme.rad(13)
             color: "transparent"
             border.color: Qt.rgba(Theme.grn.r, Theme.grn.g, Theme.grn.b, 0.35)
             border.width: 8
@@ -376,7 +403,7 @@ Item {
         Rectangle {
             id: finishRing
             anchors.fill: parent
-            radius: 10
+            radius: Theme.radCard(10)
             color: "transparent"
             border.color: Theme.grn
             border.width: 2

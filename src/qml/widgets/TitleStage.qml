@@ -126,7 +126,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: badgeTxt.implicitWidth + 12
                 height: 19
-                radius: 3
+                radius: Theme.rad(3)
                 color: "transparent"
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.35)

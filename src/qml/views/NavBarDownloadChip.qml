@@ -24,7 +24,7 @@ Rectangle {
     Layout.alignment: Qt.AlignVCenter
     Layout.preferredHeight: 36
     Layout.preferredWidth: chipContent.implicitWidth + 16
-    radius: 9
+    radius: Theme.rad(9)
     color: chipHover.hovered ? Theme.elev : Theme.panel
     border.color: Theme.hairSoft
     border.width: 1
@@ -76,14 +76,14 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 2
-                radius: 1
+                radius: Theme.rad(1)
                 color: Theme.track
                 visible: !root.car.slotResume || (root.item && root.item.kind !== "game")
                 Rectangle {
                     anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
                     width: parent.width * Math.min(1, root.item ? (root.item.progress || 0) : 0)
-                    radius: 1
-                    color: Theme.accent
+                    radius: Theme.rad(1)
+                    color: Theme.down
                 }
             }
         }

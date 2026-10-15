@@ -98,7 +98,7 @@ Window {
 
     Rectangle {
         anchors.fill: parent
-        radius: 12
+        radius: Theme.rad(12)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
@@ -133,7 +133,7 @@ Window {
                     RowLayout {
                         spacing: 6
                         Rectangle {
-                            width: 6; height: 6; radius: 3
+                            width: 6; height: 6; radius: Theme.rad(3)
                             color: pop.busy ? Theme.grn : Theme.t4
                         }
                         Text {
@@ -152,7 +152,7 @@ Window {
                 // one button: pauses everything while something runs, resumes otherwise
                 Rectangle {
                     Layout.preferredWidth: 32; Layout.preferredHeight: 32
-                    radius: 8
+                    radius: Theme.rad(8)
                     color: tgMa.containsMouse ? Theme.hover : Theme.bg
                     border.color: Theme.hair; border.width: 1
                     IconImg {
@@ -179,7 +179,7 @@ Window {
                 spacing: 0
                 Repeater {
                     model: [
-                        { label: (i18n.language, pop.label("graph_download")), icon: "qrc:/icons/arrow-down.svg", tint: Theme.accent,
+                        { label: (i18n.language, pop.label("graph_download")), icon: "qrc:/icons/arrow-down.svg", tint: Theme.down,
                           val: pop.sess ? pop.sess.totalDownSpeed : "0 B/s" },
                         { label: (i18n.language, pop.label("graph_upload")), icon: "qrc:/icons/arrow-up.svg", tint: Theme.t4,
                           val: pop.sess ? pop.sess.totalUpSpeed : "0 B/s" }
@@ -258,11 +258,11 @@ Window {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 3
-                                radius: 2
+                                radius: Theme.rad(2)
                                 color: Theme.track
                                 Rectangle {
                                     width: parent.width * Math.max(0, Math.min(1, modelData.progress || 0))
-                                    height: parent.height; radius: 2
+                                    height: parent.height; radius: Theme.rad(2)
                                     color: Theme.accent
                                 }
                             }
@@ -286,7 +286,7 @@ Window {
                 signal clicked()
                 Layout.fillWidth: true
                 Layout.preferredHeight: 34
-                radius: 7
+                radius: Theme.rad(7)
                 color: rma.containsMouse ? Theme.hover : "transparent"
                 RowLayout {
                     anchors.fill: parent
@@ -321,7 +321,7 @@ Window {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        radius: 7
+                        radius: Theme.rad(7)
                         color: prefMa.containsMouse ? Theme.hover : "transparent"
                         RowLayout {
                             anchors.fill: parent
@@ -335,7 +335,7 @@ Window {
                     Rectangle {
                         Layout.fillHeight: true
                         Layout.preferredWidth: quitRow.implicitWidth + 20
-                        radius: 7
+                        radius: Theme.rad(7)
                         color: quitMa.containsMouse ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14) : "transparent"
                         RowLayout {
                             id: quitRow

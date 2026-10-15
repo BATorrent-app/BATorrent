@@ -67,7 +67,7 @@ Item {
     Rectangle {
         id: frame
         anchors.fill: parent
-        radius: 8
+        radius: Theme.rad(8)
         color: Theme.stageBg
         clip: true
 
@@ -121,7 +121,7 @@ Item {
                     required property int index
                     readonly property bool current: index === bb.shownIndex
                     width: current ? 22 : 8
-                    height: 4; radius: 2
+                    height: 4; radius: Theme.rad(2)
                     color: current ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.35)
                     Behavior on width { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
                     Behavior on color { ColorAnimation { duration: Theme.durBase } }

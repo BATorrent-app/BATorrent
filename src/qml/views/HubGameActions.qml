@@ -28,7 +28,7 @@ Item {
         property bool leftSide: true
         Rectangle {
             anchors.fill: parent
-            radius: 6
+            radius: Theme.rad(6)
             color: half.fill
             Behavior on color { ColorAnimation { duration: Theme.durFast } }
         }
@@ -178,12 +178,12 @@ Item {
                     visible: modelData.bar !== undefined && modelData.bar >= 0
                     width: 120
                     height: 3
-                    radius: 2
+                    radius: Theme.rad(2)
                     color: Qt.rgba(1, 1, 1, 0.1)
                     Rectangle {
                         width: parent.width * Math.max(0, Math.min(1, modelData.bar || 0))
                         height: parent.height
-                        radius: 2
+                        radius: Theme.rad(2)
                         color: Theme.accent
                         Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                     }

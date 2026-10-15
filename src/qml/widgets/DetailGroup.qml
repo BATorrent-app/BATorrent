@@ -120,9 +120,9 @@ ColumnLayout {
                     sourceSize: Qt.size(112, 160)
                 }
             }
-            Rectangle { id: coverMask; anchors.fill: parent; radius: 6; visible: false; layer.enabled: true }
+            Rectangle { id: coverMask; anchors.fill: parent; radius: Theme.rad(6); visible: false; layer.enabled: true }
             MultiEffect { source: coverArt; anchors.fill: parent; maskEnabled: true; maskSource: coverMask }
-            Rectangle { anchors.fill: parent; radius: 6; color: "transparent"; border.color: Theme.hair; border.width: 1 }
+            Rectangle { anchors.fill: parent; radius: Theme.rad(6); color: "transparent"; border.color: Theme.hair; border.width: 1 }
         }
         Item {
             anchors.left: cover.right
@@ -138,9 +138,12 @@ ColumnLayout {
                     width: parent.width
                     text: grp.summary.title || ""
                     color: Theme.t1
-                    font.pixelSize: 17
-                    font.weight: Font.DemiBold
-                    font.family: Theme.fontSans
+                    font.pixelSize: Theme.displaySize(17)
+                    font.weight: Theme.tWeight(Font.DemiBold)
+                    font.family: Theme.fontDisplay
+                    font.capitalization: Theme.tCaps
+                    font.italic: Theme.tItalic
+                    font.letterSpacing: Theme.tTrack(17, 0)
                     elide: Text.ElideRight
                 }
                 Text {
@@ -192,13 +195,13 @@ ColumnLayout {
                             readonly property real p: Math.max(0, Math.min(1, modelData.progress || 0))
                             width: (parent.width - parent.spacing * (grp.episodes.length - 1)) / Math.max(1, grp.episodes.length)
                             height: 4
-                            radius: 2
+                            radius: Theme.rad(2)
                             color: Theme.track
                             Rectangle {
                                 width: parent.width * parent.p
                                 height: 4
-                                radius: 2
-                                color: parent.p >= 0.999 ? Theme.doneFill : Theme.accent
+                                radius: Theme.rad(2)
+                                color: parent.p >= 0.999 ? Theme.doneFill : Theme.down
                             }
                         }
                     }
@@ -242,14 +245,14 @@ ColumnLayout {
             readonly property string title: grp.epTitle(modelData)
             width: epList.width
             height: 42
-            radius: 8
+            radius: Theme.rad(8)
             color: focused ? Theme.hover2 : (rowMa.containsMouse || playMa.containsMouse ? Theme.hover : "transparent")
             Behavior on color { ColorAnimation { duration: Theme.durFast } }
 
             Rectangle {
                 x: 8
                 anchors.verticalCenter: parent.verticalCenter
-                width: 2; height: 22; radius: 1
+                width: 2; height: 22; radius: Theme.rad(1)
                 color: row.focused ? Theme.t1 : "transparent"
             }
             Column {
@@ -287,7 +290,7 @@ ColumnLayout {
                 anchors.right: parent.right
                 anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
-                width: 28; height: 28; radius: 14
+                width: 28; height: 28; radius: Theme.rad(14)
                 color: playMa.containsMouse ? Theme.accent : Theme.field
                 border.color: playMa.containsMouse ? Theme.accent : Theme.hair
                 border.width: 1

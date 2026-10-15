@@ -105,7 +105,7 @@ Window {
                                 Rectangle {
                                     Layout.preferredWidth: 140
                                     implicitHeight: kc.implicitHeight + 8
-                                    radius: 6
+                                    radius: Theme.rad(6)
                                     color: Theme.field
                                     border.color: Theme.hair
                                     border.width: 1

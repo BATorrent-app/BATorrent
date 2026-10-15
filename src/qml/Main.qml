@@ -142,6 +142,7 @@ Window {
         || (welcomeDlg && welcomeDlg.opened)
         || (tourOverlay && tourOverlay.running)
     Component.onCompleted: {
+        if (typeof themeBridge !== "undefined") themeBridge.setAppFontFamily(appFace)
         if (typeof settings !== "undefined") library.classicMode = settings.getBool("classicMode")
         if (library.classicMode) library.gridView = false   // classic is a list layout
         if (typeof settings !== "undefined")
@@ -343,7 +344,7 @@ Window {
         // t3, not t4: t4 is the last step before invisible, and a paused dot
         // that cannot be seen says nothing at all.
         if (k === "paused" || k === "queued") return Theme.t3
-        return Theme.accent                                           // downloading = red
+        return Theme.down                                             // downloading
     }
     function fmtEta(sec) {
         if (sec < 0) return ""
@@ -530,6 +531,47 @@ Window {
 
     // (IconImg vem de widgets/)
 
+    // A theme of the user's own can put a picture behind the whole window:
+    // nav and panels let it through (Theme.nav/panel carry the alpha), the
+    // pages stop painting their fill, and a layer of the background colour
+    // dims it so text keeps reading.
+    Item {
+        id: windowPicture
+        anchors.fill: parent
+        visible: Theme.hasWindowImage
+        clip: true
+        readonly property string fit: Theme.windowFit
+        Image {
+            id: windowPictureImg
+            anchors.centerIn: parent
+            readonly property bool scales: windowPicture.fit === "fill" || windowPicture.fit === "fit"
+            width: scales ? parent.width * Theme.windowZoom : parent.width
+            height: scales ? parent.height * Theme.windowZoom : parent.height
+            source: Theme.windowImage
+            asynchronous: true
+            visible: Theme.windowBlur <= 0
+            fillMode: windowPicture.fit === "fit" ? Image.PreserveAspectFit
+                      : windowPicture.fit === "stretch" ? Image.Stretch
+                      : windowPicture.fit === "center" ? Image.Pad
+                      : windowPicture.fit === "tile" ? Image.Tile
+                      : Image.PreserveAspectCrop
+            layer.enabled: Theme.windowBlur > 0
+        }
+        MultiEffect {
+            visible: Theme.windowBlur > 0
+            source: windowPictureImg
+            anchors.fill: windowPictureImg
+            blurEnabled: true
+            blur: Theme.windowBlur
+            blurMax: 40
+        }
+        Rectangle { anchors.fill: parent; color: Theme.bg; opacity: Theme.windowDim }
+    }
+
+    // text Qt draws by itself (menus, file dialogs) follows the theme's face
+    readonly property string appFace: Theme.fontSans
+    onAppFaceChanged: if (typeof themeBridge !== "undefined") themeBridge.setAppFontFamily(appFace)
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -686,6 +728,15 @@ Window {
         toolBar: toolbar
     }
     property alias tourOverlay: appTour.tourOverlay
+
+    // Matrix: scanlines over the whole window, a line every 3 px
+    Image {
+        anchors.fill: parent
+        visible: Theme.scanlines
+        source: Theme.scanlines ? "qrc:/images/themes/scanline.png" : ""
+        fillMode: Image.Tile
+        smooth: false
+    }
 
     // ================== TOP-LEVEL WINDOWS (lazy) ==================
     // Built on first open via Loader, not at startup: instantiating all of

@@ -31,7 +31,7 @@ Window {
         Layout.fillWidth: true
         spacing: 12
         Rectangle {
-            Layout.preferredWidth: 8; Layout.preferredHeight: 8; radius: 4
+            Layout.preferredWidth: 8; Layout.preferredHeight: 8; radius: Theme.rad(4)
             color: ok ? Theme.grn : Theme.t4
         }
         Text { Layout.preferredWidth: 150; text: label; color: Theme.t3; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans }
@@ -67,7 +67,7 @@ Window {
 
             Rectangle {
                 Layout.fillWidth: true
-                radius: 11
+                radius: Theme.rad(11)
                 color: Theme.panel
                 border.color: Theme.hair
                 border.width: 1

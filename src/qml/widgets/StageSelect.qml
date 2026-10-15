@@ -28,7 +28,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: !sel.bare
-        radius: 4
+        radius: Theme.rad(4)
         color: Theme.stageField
         border.width: 1
         border.color: ma.containsMouse ? Theme.stageGhost : Theme.stageEdge

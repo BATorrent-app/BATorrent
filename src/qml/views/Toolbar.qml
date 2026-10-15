@@ -10,6 +10,7 @@
 // for the onboarding tour.
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import QtQuick.Controls
 import "../theme"
 import "../widgets"
@@ -46,7 +47,7 @@ Rectangle {
         Layout.preferredHeight: 34
         Layout.preferredWidth: tbRow.implicitWidth + 20
         Layout.minimumWidth: Layout.preferredWidth
-        radius: 8
+        radius: Theme.rad(8)
         color: !disabled && tbMa.containsMouse ? Theme.hover : "transparent"
         opacity: disabled ? 0.4 : 1.0
         Behavior on color { ColorAnimation { duration: Theme.durFast } }
@@ -68,7 +69,7 @@ Rectangle {
             visible: tb.activeFocus
             anchors.fill: parent
             anchors.margins: -2
-            radius: 10
+            radius: Theme.rad(10)
             color: "transparent"
             border.color: Theme.focusRing
             border.width: Theme.focusRingWidth
@@ -127,11 +128,32 @@ Rectangle {
             Layout.preferredHeight: 34
             Layout.preferredWidth: addRow.implicitWidth + 25
             Layout.rightMargin: 8
-            radius: 8
+            radius: Theme.rad(8)
             color: addMa.pressed ? Theme.accentDark : (addMa.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent)
             Behavior on color { ColorAnimation { duration: Theme.durFast } }
             scale: addMa.pressed ? Theme.pressScale : 1
             Behavior on scale { NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut } }
+            // Dark Star: the primary button gives off a halo
+            Rectangle {
+                id: addGlowSrc
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.accent
+                visible: false
+                layer.enabled: Theme.glow
+            }
+            MultiEffect {
+                visible: Theme.glow
+                z: -1
+                source: addGlowSrc
+                anchors.fill: addGlowSrc
+                autoPaddingEnabled: true
+                shadowEnabled: true
+                shadowColor: Theme.accent
+                shadowOpacity: 0.6
+                shadowBlur: 0.9
+                blurMax: 36
+            }
             Row {
                 id: addRow
                 anchors.verticalCenter: parent.verticalCenter
@@ -199,7 +221,7 @@ Rectangle {
             spacing: 18
             Row {
                 spacing: 5
-                IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/download.svg"; tint: Theme.accent; s: 12 }
+                IconImg { anchors.verticalCenter: parent.verticalCenter; src: "qrc:/icons/download.svg"; tint: Theme.down; s: 12 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: toolbar.downSpeedOverride.length > 0 ? toolbar.downSpeedOverride

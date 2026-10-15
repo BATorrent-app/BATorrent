@@ -49,6 +49,7 @@
 #endif
 #include <QCoreApplication>
 #include <QStyleHints>
+#include <QFont>
 #include <QPainter>
 #include <QSvgRenderer>
 #include <QJsonDocument>
@@ -77,10 +78,12 @@ QmlThemeBridge::QmlThemeBridge(QObject *parent) : QObject(parent)
 {
     qApp->installEventFilter(this);   // paint each window's native title bar (Windows)
     QSettings s;
-    m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("dark")).toString();
     m_followSystem = s.value(QStringLiteral("qmlFollowSystem"), false).toBool();
-    m_anime = s.value(QStringLiteral("qmlAnime"), false).toBool();
     loadProfiles();
+    migrateThemes();
+    m_themeName = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("default")).toString();
+    m_backgroundMode = s.value(QStringLiteral("qmlBackgroundMode"), QStringLiteral("theme")).toString();
+    m_userImage = s.value(QStringLiteral("qmlUserImage")).toString();
     m_activeProfile = s.value(QStringLiteral("qmlActiveProfile"), 0).toInt();
     if (m_activeProfile < 0 || m_activeProfile >= m_profiles.size())
         m_activeProfile = 0;
@@ -125,8 +128,15 @@ QString QmlThemeBridge::themeName() const
 {
     // When following the OS, the effective theme tracks the system scheme so the
     // whole palette (Theme.qml binds to this) swaps light/dark automatically.
-    if (m_followSystem) return m_osLight ? QStringLiteral("light") : QStringLiteral("dark");
-    return m_themeName;
+    // The dark side is the user's own dark theme, Default when the one picked
+    // by hand is light (or a theme of their own that is gone).
+    QString picked = m_themeName;
+    if (picked == QLatin1String("user") && m_profiles.isEmpty()) picked = QStringLiteral("default");
+    if (m_followSystem) {
+        if (m_osLight) return QStringLiteral("light");
+        return isLightTheme(picked) ? QStringLiteral("default") : picked;
+    }
+    return picked;
 }
 void QmlThemeBridge::setThemeName(const QString &n)
 {
@@ -166,9 +176,7 @@ bool QmlThemeBridge::eventFilter(QObject *o, QEvent *e)
 
 bool QmlThemeBridge::darkTitleBar() const
 {
-    // light-ish themes → light title bar; dark/midnight/custom → dark.
-    const QString n = themeName();   // effective (accounts for follow-system)
-    return !(n == QLatin1String("light") || n == QLatin1String("sakura"));
+    return !isLightTheme(themeName());   // effective (accounts for follow-system)
 }
 
 void QmlThemeBridge::applyTitleBar(QWindow *w, bool dark)
@@ -190,53 +198,87 @@ void QmlThemeBridge::refreshTitleBars()
     for (QWindow *w : windows) applyTitleBar(w, dark);
 }
 
-bool QmlThemeBridge::anime() const { return m_anime; }
-void QmlThemeBridge::setAnime(bool on)
+QString QmlThemeBridge::backgroundMode() const { return m_backgroundMode; }
+void QmlThemeBridge::setBackgroundMode(const QString &mode)
 {
-    if (on == m_anime) return;
-    m_anime = on;
-    QSettings().setValue(QStringLiteral("qmlAnime"), on);
+    const QString m = (mode == QLatin1String("clean") || mode == QLatin1String("user")) ? mode : QStringLiteral("theme");
+    if (m == m_backgroundMode) return;
+    m_backgroundMode = m;
+    QSettings().setValue(QStringLiteral("qmlBackgroundMode"), m);
     emit changed();
 }
 
-// ---- custom profiles ----
+QString QmlThemeBridge::userImage() const { return m_userImage; }
+void QmlThemeBridge::setUserImage(const QString &path)
+{
+    if (path == m_userImage) return;
+    m_userImage = path;
+    QSettings().setValue(QStringLiteral("qmlUserImage"), path);
+    emit changed();
+}
+
+bool QmlThemeBridge::isLightTheme(const QString &name) const
+{
+    if (name == QLatin1String("light") || name == QLatin1String("sakura")) return true;
+    if (name == QLatin1String("user"))
+        return activeMap().value(QStringLiteral("base")).toString() == QLatin1String("light");
+    return false;
+}
+
+void QmlThemeBridge::setAppFontFamily(const QString &family)
+{
+    if (family.isEmpty()) return;
+    QFont f = QGuiApplication::font();
+    if (f.family() == family) return;
+    f.setFamily(family);
+    QGuiApplication::setFont(f);
+}
+
+// ---- the user's own themes ----
 
 QVariantMap QmlThemeBridge::defaultProfile(const QString &name)
 {
     QVariantMap p;
     p["name"]      = name;
+    p["base"]      = QStringLiteral("dark");
+    p["corners"]   = QStringLiteral("soft");
+    p["font"]      = QStringLiteral("IBM Plex Sans");
     p["bg"]        = QStringLiteral("#0e0e10");
-    p["panel"]     = QStringLiteral("#141416");
+    p["panel"]     = QStringLiteral("#18181b");
     p["text"]      = QStringLiteral("#f3f3f4");
     p["primary"]   = QStringLiteral("#e5332b");
     p["secondary"] = QStringLiteral("#d99a2b");
     p["tertiary"]  = QStringLiteral("#3fb950");
     p["image"]     = QString();
-    p["opacity"]   = 55;
+    p["fit"]       = QStringLiteral("fill");
+    p["zoom"]      = 100;
+    p["dim"]       = 55;
+    p["blur"]      = 0;
     return p;
 }
 
 void QmlThemeBridge::loadProfiles()
 {
     QSettings s;
+    m_profiles.clear();
     const QByteArray json = s.value(QStringLiteral("qmlCustomProfiles")).toByteArray();
-    if (!json.isEmpty()) {
-        const auto doc = QJsonDocument::fromJson(json);
-        if (doc.isArray()) {
-            m_profiles.clear();
-            for (const auto &v : doc.array()) {
-                // backfill any missing keys from the default so a partial/old
-                // profile never collapses the palette to empty colors
-                QVariantMap p = defaultProfile(QString());
-                const QVariantMap stored = v.toObject().toVariantMap();
-                for (auto it = stored.cbegin(); it != stored.cend(); ++it)
-                    p[it.key()] = it.value();
-                m_profiles << p;
-            }
-        }
+    if (json.isEmpty()) return;
+    const auto doc = QJsonDocument::fromJson(json);
+    if (!doc.isArray()) return;
+    for (const auto &v : doc.array()) {
+        // backfill any missing keys from the default so a partial/old profile
+        // never collapses the palette to empty colors
+        QVariantMap p = defaultProfile(QString());
+        const QVariantMap stored = v.toObject().toVariantMap();
+        for (auto it = stored.cbegin(); it != stored.cend(); ++it)
+            p[it.key()] = it.value();
+        // the old Custom profile had the picture's opacity; the new one dims
+        // the picture with the background colour instead, the other way round
+        if (stored.contains(QStringLiteral("opacity")) && !stored.contains(QStringLiteral("dim")))
+            p["dim"] = qBound(0, 100 - stored.value(QStringLiteral("opacity")).toInt(), 90);
+        p.remove(QStringLiteral("opacity"));
+        m_profiles << p;
     }
-    if (m_profiles.isEmpty())
-        m_profiles << defaultProfile(QStringLiteral("Custom 1"));
 }
 
 void QmlThemeBridge::saveProfiles()
@@ -248,13 +290,46 @@ void QmlThemeBridge::saveProfiles()
                          QJsonDocument(arr).toJson(QJsonDocument::Compact));
 }
 
+void QmlThemeBridge::migrateThemes()
+{
+    QSettings s;
+    if (s.value(QStringLiteral("qmlThemesV2"), false).toBool()) return;
+    const bool existing = s.contains(QStringLiteral("qmlThemeName")) || s.contains(QStringLiteral("qmlAnime"));
+    QString name = s.value(QStringLiteral("qmlThemeName"), QStringLiteral("default")).toString();
+    // "dark" was the app as it looks now; "custom" is now a theme of one's own
+    if (name == QLatin1String("dark")) name = QStringLiteral("default");
+    if (name == QLatin1String("custom")) name = m_profiles.isEmpty() ? QStringLiteral("default") : QStringLiteral("user");
+    // Nobody ever chose the placeholder "Custom 1" unless they were on Custom:
+    // left in, it would show up as a theme they never made.
+    if (name != QLatin1String("user") && m_profiles.size() == 1) {
+        QVariantMap untouched = defaultProfile(QStringLiteral("Custom 1"));
+        QVariantMap p = m_profiles.first().toMap();
+        bool same = true;
+        for (const char *k : {"bg", "text", "primary", "secondary", "tertiary", "image"})
+            if (p.value(QLatin1String(k)) != untouched.value(QLatin1String(k))) same = false;
+        if (same && p.value(QStringLiteral("name")).toString() == QLatin1String("Custom 1")) {
+            m_profiles.clear();
+            saveProfiles();
+        }
+    }
+    s.setValue(QStringLiteral("qmlThemeName"), name);
+    // the anime art is gone; whoever had it on gets the theme's own art, and
+    // an existing install that had it off keeps a clean background
+    if (!s.contains(QStringLiteral("qmlBackgroundMode")))
+        s.setValue(QStringLiteral("qmlBackgroundMode"),
+                   existing && !s.value(QStringLiteral("qmlAnime"), false).toBool() ? QStringLiteral("clean")
+                                                                                     : QStringLiteral("theme"));
+    s.remove(QStringLiteral("qmlAnime"));
+    s.setValue(QStringLiteral("qmlThemesV2"), true);
+}
+
 QVariantList QmlThemeBridge::customProfiles() const { return m_profiles; }
 
 QVariantMap QmlThemeBridge::activeMap() const
 {
     if (m_activeProfile >= 0 && m_activeProfile < m_profiles.size())
         return m_profiles.at(m_activeProfile).toMap();
-    return defaultProfile(QStringLiteral("Custom 1"));
+    return defaultProfile(QStringLiteral("My theme"));
 }
 
 int QmlThemeBridge::activeProfile() const { return m_activeProfile; }
@@ -266,85 +341,83 @@ void QmlThemeBridge::setActiveProfile(int i)
     emit changed();
 }
 
+void QmlThemeBridge::selectProfile(int i)
+{
+    if (i < 0 || i >= m_profiles.size()) return;
+    m_activeProfile = i;
+    QSettings().setValue(QStringLiteral("qmlActiveProfile"), i);
+    setThemeName(QStringLiteral("user"));   // emits changed()
+}
+
 int QmlThemeBridge::addProfile()
 {
-    m_profiles << defaultProfile(QStringLiteral("Custom %1").arg(m_profiles.size() + 1));
+    m_profiles << defaultProfile(QStringLiteral("My theme %1").arg(m_profiles.size() + 1));
     saveProfiles();
     emit profilesChanged();
     return m_profiles.size() - 1;
 }
 
+int QmlThemeBridge::duplicateProfile(int i)
+{
+    if (i < 0 || i >= m_profiles.size()) return -1;
+    QVariantMap p = m_profiles.at(i).toMap();
+    p["name"] = p.value(QStringLiteral("name")).toString() + QStringLiteral(" copy");
+    m_profiles.insert(i + 1, p);
+    if (m_activeProfile > i) ++m_activeProfile;
+    saveProfiles();
+    emit profilesChanged();
+    return i + 1;
+}
+
 void QmlThemeBridge::removeProfile(int i)
 {
-    if (i < 0 || i >= m_profiles.size() || m_profiles.size() <= 1) return;
+    if (i < 0 || i >= m_profiles.size()) return;
+    const bool wasInUse = (i == m_activeProfile && m_themeName == QLatin1String("user"));
     m_profiles.removeAt(i);
     // keep the active selection pointing at the SAME profile: shift down if an
     // earlier one was removed, clamp if the active one (or past-end) was removed.
     if (i < m_activeProfile)
         --m_activeProfile;
     if (m_activeProfile >= m_profiles.size())
-        m_activeProfile = m_profiles.size() - 1;
+        m_activeProfile = qMax(0, int(m_profiles.size()) - 1);
     QSettings().setValue(QStringLiteral("qmlActiveProfile"), m_activeProfile);
     saveProfiles();
     emit profilesChanged();
-    emit changed();
+    if (wasInUse || (m_profiles.isEmpty() && m_themeName == QLatin1String("user")))
+        setThemeName(QStringLiteral("default"));
+    else
+        emit changed();
+}
+
+void QmlThemeBridge::setProfileValue(int i, const QString &key, const QVariant &value)
+{
+    if (i < 0 || i >= m_profiles.size()) return;
+    QVariantMap p = m_profiles.at(i).toMap();
+    if (p.value(key) == value) return;
+    p[key] = value;
+    m_profiles[i] = p;
+    saveProfiles();
+    emit profilesChanged();
+    if (i == m_activeProfile) {
+        emit changed();
+        if (key == QLatin1String("base")) refreshTitleBars();
+    }
 }
 
 void QmlThemeBridge::renameProfile(int i, const QString &name)
 {
-    if (i < 0 || i >= m_profiles.size()) return;
-    QVariantMap p = m_profiles.at(i).toMap();
-    if (p.value("name").toString() == name) return;
-    p["name"] = name;
-    m_profiles[i] = p;
-    saveProfiles();
-    emit profilesChanged();
+    setProfileValue(i, QStringLiteral("name"), name);
 }
 
 void QmlThemeBridge::setProfileColor(int i, const QString &role, const QString &hex)
 {
-    if (i < 0 || i >= m_profiles.size()) return;
-    QVariantMap p = m_profiles.at(i).toMap();
-    if (p.value(role).toString() == hex) return;
-    p[role] = hex;
-    m_profiles[i] = p;
-    saveProfiles();
-    emit profilesChanged();
-    if (i == m_activeProfile) emit changed();
+    setProfileValue(i, role, hex);
 }
 
 void QmlThemeBridge::setProfileImage(int i, const QString &path)
 {
-    if (i < 0 || i >= m_profiles.size()) return;
-    QVariantMap p = m_profiles.at(i).toMap();
-    if (p.value("image").toString() == path) return;
-    p["image"] = path;
-    m_profiles[i] = p;
-    saveProfiles();
-    emit profilesChanged();
-    if (i == m_activeProfile) emit changed();
+    setProfileValue(i, QStringLiteral("image"), path);
 }
-
-void QmlThemeBridge::setProfileOpacity(int i, int pct)
-{
-    if (i < 0 || i >= m_profiles.size()) return;
-    QVariantMap p = m_profiles.at(i).toMap();
-    if (p.value("opacity").toInt() == pct) return;
-    p["opacity"] = pct;
-    m_profiles[i] = p;
-    saveProfiles();
-    emit profilesChanged();
-    if (i == m_activeProfile) emit changed();
-}
-
-QString QmlThemeBridge::cBg()        const { return activeMap().value("bg").toString(); }
-QString QmlThemeBridge::cPanel()     const { return activeMap().value("panel").toString(); }
-QString QmlThemeBridge::cText()      const { return activeMap().value("text").toString(); }
-QString QmlThemeBridge::cPrimary()   const { return activeMap().value("primary").toString(); }
-QString QmlThemeBridge::cSecondary() const { return activeMap().value("secondary").toString(); }
-QString QmlThemeBridge::cTertiary()  const { return activeMap().value("tertiary").toString(); }
-QString QmlThemeBridge::cBgImage()   const { return activeMap().value("image").toString(); }
-int     QmlThemeBridge::cBgOpacity() const { return activeMap().value("opacity").toInt(); }
 
 bool QmlThemeBridge::osLight() const { return m_osLight; }
 

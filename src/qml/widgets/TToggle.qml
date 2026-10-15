@@ -15,7 +15,7 @@ Rectangle {
 
     implicitWidth: big ? 48 : 38
     implicitHeight: big ? 28 : 21
-    radius: 999
+    radius: Theme.rad(999)
     // ON is a light track with a dark knob, not a red pill. A Settings page can
     // carry eight of these at once, and filling every one with the accent turned
     // red into a surface: the opposite of the rule the rest of the app follows,
@@ -32,7 +32,7 @@ Rectangle {
         visible: tg.activeFocus
         anchors.fill: parent
         anchors.margins: -3
-        radius: 999
+        radius: Theme.rad(999)
         color: "transparent"
         border.color: Theme.focusRing
         border.width: Theme.focusRingWidth

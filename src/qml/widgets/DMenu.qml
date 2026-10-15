@@ -27,7 +27,7 @@ Menu {
             color: Theme.elev
             border.color: Theme.hair
             border.width: 1
-            radius: 10
+            radius: Theme.rad(10)
         }
         MultiEffect {
             source: plate

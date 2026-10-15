@@ -51,8 +51,8 @@ Item {
                 text: hc.label
                 // anime art sits behind the right columns: lift the weak grey + a contrasting
                 // outline so headers stay legible over both dark and bright parts of the art
-                color: controller.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : (Theme.hasAnime ? Theme.t2 : Theme.t4))
-                style: Theme.hasAnime ? Text.Outline : Text.Normal
+                color: controller.sortColumn === hc.col ? Theme.t2 : (hcMa.containsMouse ? Theme.t3 : (Theme.hasArt ? Theme.t2 : Theme.t4))
+                style: Theme.hasArt ? Text.Outline : Text.Normal
                 styleColor: Theme.isLight ? "#ffffff" : "#000000"
                 font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.6; font.family: Theme.fontSans
             }
@@ -77,30 +77,6 @@ Item {
 
     // full custom background image (z:-1, behind anime art and grid/list).
     // A theme-bg scrim at user-controlled opacity sits on top for legibility.
-    Item {
-        id: bgImageWrap
-        anchors.fill: parent
-        // Ready, not merely configured: a path that will not decode left the
-        // scrim dimming the page over nothing at all.
-        visible: bgImg.status === Image.Ready && !parent.empty
-        z: -1
-        Image {
-            id: bgImg
-            anchors.fill: parent
-            source: Theme.hasBgImage ? Theme.bgImageSource : ""
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-            sourceSize.width: parent.width
-            sourceSize.height: parent.height
-            cache: false
-        }
-        Rectangle {
-            anchors.fill: parent
-            color: Theme.bg
-            opacity: Theme.bgImageOpacity
-        }
-    }
-
     // empty state (no torrents)
     EmptyState {
         anchors.centerIn: parent
@@ -111,49 +87,12 @@ Item {
     }
 
 
-    // anime art (eyes top-right / spider bottom-right). The edges fade out;
-    // only Theme.bg sits behind the art, so two bg-colored gradient scrims
-    // (left + bottom/top) are enough.
-    Item {
-        id: animeArtWrap
-        visible: Theme.hasAnime && !parent.empty
-        width: Math.min(Theme.animeBottom ? 560 : 460, parent.width * 0.46)
-        height: animeArt.implicitWidth > 0 ? animeArt.implicitHeight * (width / animeArt.implicitWidth) : 0
-        anchors.right: parent.right
-        anchors.top: Theme.animeBottom ? undefined : parent.top
-        anchors.bottom: Theme.animeBottom ? parent.bottom : undefined
-        anchors.bottomMargin: Theme.animeBottom ? -80 : 0   // spider sits lower (peeks from bottom)
+    // the theme's art (or the user's picture) and its paper or grain, behind the cards
+    ThemeArt {
+        anchors.fill: parent
+        visible: !parent.empty
+        quiet: !controller.gridView
         z: 0
-
-        Image {
-            id: animeArt
-            anchors.fill: parent
-            source: Theme.hasAnime ? Theme.animeSource : ""
-            fillMode: Image.PreserveAspectFit
-            // list rows put state/peer columns right on top of the art:
-            // drop it to a watermark there so data wins the contrast fight
-            opacity: controller.gridView ? 0.9 : 0.25
-            Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
-        }
-        // fade left edge (mask: linear-gradient(90deg, transparent, #000 55%))
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Theme.bg }
-                GradientStop { position: 0.55; color: "transparent" }
-            }
-        }
-        // fade bottom (eyes) / top (spider): mask: linear-gradient(180deg, #000 60%, transparent)
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: Theme.animeBottom ? Theme.bg : "transparent" }
-                GradientStop { position: Theme.animeBottom ? 0.40 : 0.60; color: "transparent" }
-                GradientStop { position: 1.0; color: Theme.animeBottom ? "transparent" : Theme.bg }
-            }
-        }
     }
 
     // Torrents arrive after the resume data is read, so the first row only
@@ -340,7 +279,7 @@ Item {
                 HCol { label: (i18n.language, i18n.t("col_progress")); col: "progress"; w: 104 }
                 HCol { label: (i18n.language, i18n.t("col_state")); col: "state"; w: 140 }
                 HCol { label: (i18n.language, i18n.t("col_seeds_peers")); col: "seeds"; w: 76; alignRight: true }
-                HCol { label: (i18n.language, i18n.t("col_download")); col: "down"; w: 88; alignRight: true; arrow: "↓"; arrowInk: Theme.accent }
+                HCol { label: (i18n.language, i18n.t("col_download")); col: "down"; w: 88; alignRight: true; arrow: "↓"; arrowInk: Theme.down }
                 HCol { label: (i18n.language, i18n.t("col_upload")); col: "up"; w: 88; alignRight: true; arrow: "↑"; arrowInk: Theme.amber }
                 HCol { label: (i18n.language, i18n.t("col_ratio")); col: "ratio"; w: 48; alignRight: true }
                 HCol { label: (i18n.language, i18n.t("col_category")); col: "category"; w: 72 }
@@ -411,7 +350,7 @@ Item {
             x: Math.max(8, Math.min(listArea.tipPos.x, listArea.width - width - 8))
             y: listArea.tipPos.y
             z: 10
-            radius: 7
+            radius: Theme.rad(7)
             color: Theme.panel
             border.color: Theme.hair
             border.width: 1
@@ -531,7 +470,7 @@ Item {
             color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12)
             border.color: Theme.accent
             border.width: 1
-            radius: 2
+            radius: Theme.rad(2)
         }
     }
 }

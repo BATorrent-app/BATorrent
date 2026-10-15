@@ -35,7 +35,7 @@ Rectangle {
     })
     implicitWidth: 520
     implicitHeight: 300
-    radius: 14
+    radius: Theme.rad(14)
     color: Theme.bg
     border.width: focusArea === "theme" ? 2 : 1
     border.color: focusArea === "theme" ? Theme.accent : Theme.hair

@@ -111,7 +111,7 @@ QtObject {
     // quieter fact beside it, and the bar along the art's bottom edge (-1 = none).
     // `kind` is "game", "series" or "movie".
     function tileState(item, kind) {
-        var out = { state: "", ink: Theme.t2, meta: "", bar: -1, barColor: Theme.accent, dim: false }
+        var out = { state: "", ink: Theme.t2, meta: "", bar: -1, barColor: Theme.down, dim: false }
         if (!item) return out
         var size = root.fmtSize(item.size || 0)
         var pct = Math.floor((item.progress || 0) * 100)

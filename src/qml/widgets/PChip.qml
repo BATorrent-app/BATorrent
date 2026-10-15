@@ -13,7 +13,7 @@ Rectangle {
     signal clicked()
     implicitHeight: 26
     implicitWidth: ct.width + 18
-    radius: 7
+    radius: Theme.rad(7)
     // active = accent ring + accent text; the surface stays dark (color is a
     // signal, not a fill)
     color: cma.containsMouse ? "#2bffffff" : "#1d1d20"

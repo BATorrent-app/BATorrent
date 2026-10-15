@@ -56,7 +56,7 @@ Item {
                 anchors.fill: parent
                 icon: "qrc:/icons/search.svg"
                 clearable: true
-                radius: bar.hero ? 14 : 8
+                radius: Theme.rad(bar.hero ? 14 : 8)
                 fontSize: bar.hero ? 17 : 13
                 iconSize: bar.hero ? 20 : 14
                 placeholder: (i18n.language, i18n.t("search_input"))
@@ -86,7 +86,7 @@ Item {
                 delegate: Rectangle {
                     required property var modelData
                     readonly property bool on: bar.sv.typeFilter === modelData.k
-                    radius: 999
+                    radius: Theme.rad(999)
                     implicitHeight: 30
                     implicitWidth: pillTxt.implicitWidth + 26
                     color: on ? Theme.accentTint : (pillMa.containsMouse ? Theme.hover : "transparent")

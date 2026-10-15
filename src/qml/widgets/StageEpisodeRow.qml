@@ -27,7 +27,7 @@ Rectangle {
     signal downloadRequested()
 
     implicitHeight: 106
-    radius: 6
+    radius: Theme.rad(6)
     color: ma.containsMouse && (row.offered || row.playable) ? Theme.stageHover : "transparent"
     Behavior on color { ColorAnimation { duration: Theme.durFast } }
     opacity: row.offered || row.playable ? 1 : 0.55
@@ -64,7 +64,7 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: 152
             Layout.preferredHeight: 86
-            radius: 4
+            radius: Theme.rad(4)
             color: Theme.stagePanel
             clip: true
             Image {
@@ -81,7 +81,7 @@ Rectangle {
             Rectangle {
                 anchors.centerIn: parent
                 visible: row.playable && ma.containsMouse
-                width: 34; height: 34; radius: 17
+                width: 34; height: 34; radius: Theme.rad(17)
                 color: Qt.rgba(0, 0, 0, 0.35)
                 border.width: 1.5
                 border.color: Qt.rgba(1, 1, 1, 0.85)

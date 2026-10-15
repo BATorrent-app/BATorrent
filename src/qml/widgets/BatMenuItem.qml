@@ -13,7 +13,7 @@ MenuItem {
     property bool hideWhenDisabled: false
     property int elideMode: Text.ElideRight
     property string iconSrc: ""        // optional leading icon
-    property int highlightRadius: 6
+    property real highlightRadius: Theme.rad(6)
     property int rowHeight: 30
     implicitHeight: !enabled && hideWhenDisabled ? 1 : rowHeight
     visible: enabled || !hideWhenDisabled

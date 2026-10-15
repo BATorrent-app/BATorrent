@@ -52,7 +52,7 @@ Rectangle {
         anchors.centerIn: parent
         width: Math.min(parent.width - 48, 560)
         height: Math.min(parent.height - 48, 560)
-        radius: 12
+        radius: Theme.rad(12)
         color: Theme.elev
         border.color: Theme.hair
         border.width: 1
@@ -98,7 +98,7 @@ Rectangle {
                             required property var modelData
                             Layout.fillWidth: true
                             implicitHeight: 46
-                            radius: 8
+                            radius: Theme.rad(8)
                             color: Theme.field
                             border.color: Theme.hair; border.width: 1
                             RowLayout {
@@ -167,7 +167,7 @@ Rectangle {
                                     required property var modelData
                                     Layout.fillWidth: true
                                     implicitHeight: noteTxt.visible ? 50 : 38
-                                    radius: 8
+                                    radius: Theme.rad(8)
                                     color: "transparent"
                                     border.color: Theme.hairSoft; border.width: 1
                                     RowLayout {

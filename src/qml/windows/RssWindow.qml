@@ -63,7 +63,7 @@ Window {
         MouseArea { anchors.fill: parent; onClicked: editOverlay.visible = false }
         Rectangle {
             anchors.centerIn: parent
-            width: 460; height: 360; radius: 13
+            width: 460; height: 360; radius: Theme.rad(13)
             color: Theme.bg; border.color: Theme.hair; border.width: 1
             MouseArea { anchors.fill: parent }
             ColumnLayout {
@@ -127,7 +127,7 @@ Window {
         MouseArea { anchors.fill: parent; onClicked: addOverlay.visible = false }
         Rectangle {
             anchors.centerIn: parent
-            width: 440; height: 150; radius: 13
+            width: 440; height: 150; radius: Theme.rad(13)
             color: Theme.bg; border.color: Theme.hair; border.width: 1
             MouseArea { anchors.fill: parent }
             ColumnLayout {
@@ -167,7 +167,7 @@ Window {
                 visible: win.statusMsg.length > 0
                 anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
                 text: win.statusMsg
-                color: win.statusMsg.indexOf((i18n.language, i18n.t("dlg_error"))) === 0 ? Theme.accentText : Theme.t4
+                color: win.statusMsg.indexOf((i18n.language, i18n.t("dlg_error"))) === 0 ? Theme.downText : Theme.t4
                 font.pixelSize: 11; font.family: Theme.fontSans
                 elide: Text.ElideRight; width: Math.min(implicitWidth, parent.width / 2)
             }
@@ -220,7 +220,7 @@ Window {
                     delegate: Rectangle {
                         width: ListView.view.width
                         height: 38
-                        radius: 7
+                        radius: Theme.rad(7)
                         color: win.selectedFeed === index ? Theme.sel : (feedMa.containsMouse ? Theme.hover : "transparent")
 
                         RowLayout {
@@ -229,7 +229,7 @@ Window {
                             anchors.rightMargin: 11
                             spacing: 10
                             Rectangle {
-                                Layout.preferredWidth: 7; Layout.preferredHeight: 7; radius: 3.5
+                                Layout.preferredWidth: 7; Layout.preferredHeight: 7; radius: Theme.rad(3.5)
                                 color: modelData.enabled ? Theme.grn : Theme.t4
                             }
                             Text {
@@ -403,7 +403,7 @@ Window {
                                 visible: modelData.downloaded
                                 implicitWidth: badgeLbl.implicitWidth + 14
                                 implicitHeight: 18
-                                radius: 999
+                                radius: Theme.rad(999)
                                 color: Qt.rgba(63/255, 185/255, 80/255, 0.12)
                                 border.color: Qt.rgba(63/255, 185/255, 80/255, 0.3)
                                 border.width: 1
@@ -413,7 +413,7 @@ Window {
                             // .dl
                             Rectangle {
                                 Layout.preferredWidth: 28; Layout.preferredHeight: 28
-                                radius: 7
+                                radius: Theme.rad(7)
                                 color: "transparent"
                                 border.color: dlMa.containsMouse ? Theme.accent : Theme.hair
                                 border.width: 1

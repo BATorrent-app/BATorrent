@@ -21,7 +21,7 @@ Item {
     // select lines up with the row of text field under it.
     readonly property int ctlH: 42
     readonly property int ctlFont: 15
-    readonly property int ctlRadius: 9
+    readonly property real ctlRadius: Theme.rad(9)
 
     property Component number: cNumber
     property Component text: cText
@@ -135,7 +135,7 @@ Item {
         Rectangle {
             implicitWidth: segR.implicitWidth + 8
             implicitHeight: 42
-            radius: 10
+            radius: Theme.rad(10)
             color: Theme.field
             border.color: Theme.hair
             border.width: 1
@@ -152,7 +152,7 @@ Item {
                     delegate: Rectangle {
                         height: 34
                         implicitWidth: segLbl.implicitWidth + 28
-                        radius: 7
+                        radius: Theme.rad(7)
                         color: index === parent.parent.parent.curIdx ? Theme.sel : "transparent"
                         Text {
                             id: segLbl
@@ -271,7 +271,7 @@ Item {
                 Rectangle {
                     visible: root.field.file !== true && pathInput.text.length > 0
                     Layout.preferredWidth: 30; Layout.preferredHeight: 30
-                    radius: 6
+                    radius: Theme.rad(6)
                     color: clrMa.containsMouse ? Theme.hover : "transparent"
                     IconImg { anchors.centerIn: parent; src: "qrc:/icons/close.svg"; s: 12; tint: clrMa.containsMouse ? Theme.t1 : Theme.t3 }
                     MouseArea {
@@ -283,7 +283,7 @@ Item {
                 Rectangle {
                     Layout.preferredHeight: 32
                     Layout.preferredWidth: brLbl.implicitWidth + 24
-                    radius: 6
+                    radius: Theme.rad(6)
                     color: brMa.containsMouse ? Theme.hover : Theme.elev
                     border.color: Theme.hair; border.width: 1
                     Text {
@@ -340,7 +340,7 @@ Item {
                         readonly property int pos: ll.codes.length - 1 - index
                         height: 34
                         width: chipRow.implicitWidth + 16
-                        radius: 8
+                        radius: Theme.rad(8)
                         color: Theme.field
                         border.color: Theme.hair; border.width: 1
                         RowLayout {

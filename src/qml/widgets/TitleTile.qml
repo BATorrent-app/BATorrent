@@ -32,7 +32,7 @@ Item {
         id: frame
         width: parent.width
         height: tile.artH
-        radius: 4
+        radius: Theme.rad(4)
         color: Theme.stagePanel
         clip: true
 

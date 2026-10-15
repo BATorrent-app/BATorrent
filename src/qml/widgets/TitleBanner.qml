@@ -134,7 +134,7 @@ Item {
             spacing: 8
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 6; height: 6; radius: 3
+                width: 6; height: 6; radius: Theme.rad(3)
                 color: Theme.grn
             }
             Text {
@@ -154,7 +154,7 @@ Item {
                 visible: label.length > 0
                 width: ctaTxt.implicitWidth + 40
                 height: 40
-                radius: 4
+                radius: Theme.rad(4)
                 color: light ? (ctaMa.containsMouse ? "#ffffff" : Theme.stageT1)
                              : (ctaMa.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.1))
                 Behavior on color { ColorAnimation { duration: Theme.durFast } }

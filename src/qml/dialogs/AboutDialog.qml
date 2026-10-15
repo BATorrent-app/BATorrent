@@ -28,7 +28,7 @@ BatDialog {
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: 58
             Layout.preferredHeight: 58
-            source: "qrc:/images/logo.svg"
+            source: Theme.logoSource
             sourceSize: Qt.size(116, 116)
             fillMode: Image.PreserveAspectFit
         }
@@ -92,7 +92,7 @@ BatDialog {
     Rectangle {
         Layout.fillWidth: true
         Layout.topMargin: Theme.sp3
-        radius: 12
+        radius: Theme.rad(12)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
@@ -130,7 +130,7 @@ BatDialog {
         Layout.fillWidth: true
         Layout.topMargin: Theme.sp3
         Layout.bottomMargin: Theme.sp3
-        radius: 12
+        radius: Theme.rad(12)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1

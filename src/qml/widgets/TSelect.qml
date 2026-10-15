@@ -37,7 +37,7 @@ ComboBox {
         }
     }
 
-    property real radius: 7
+    property real radius: Theme.rad(7)
     background: Rectangle {
         radius: cb.radius
         color: cb.uiPalette.field
@@ -65,7 +65,7 @@ ComboBox {
         width: cb.width
         padding: 4
         background: Rectangle {
-            radius: 8
+            radius: Theme.rad(8)
             color: cb.uiPalette.elev
             border.color: cb.uiPalette.hair
             border.width: 1
@@ -102,7 +102,7 @@ ComboBox {
             }
         }
         background: Rectangle {
-            radius: 5
+            radius: Theme.rad(5)
             color: highlighted ? cb.uiPalette.hover : "transparent"
         }
     }

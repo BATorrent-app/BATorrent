@@ -63,7 +63,7 @@ Window {
                 required property int index
                 width: ListView.view.width
                 height: 52
-                radius: 7
+                radius: Theme.rad(7)
                 color: list.currentIndex === index ? Theme.sel : (rowMa.containsMouse ? Theme.hover : "transparent")
 
                 RowLayout {

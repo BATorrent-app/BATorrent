@@ -43,7 +43,7 @@ Flickable {
             Layout.columnSpan: body.columns
             Layout.fillWidth: true
             Layout.preferredHeight: missingRow.implicitHeight + Theme.sp4 * 2
-            radius: 10
+            radius: Theme.rad(10)
             color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.10)
             border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.35)
             border.width: 1
@@ -69,7 +69,7 @@ Flickable {
                 Rectangle {
                     Layout.preferredHeight: 28
                     Layout.preferredWidth: locTxt.implicitWidth + 22
-                    radius: 7
+                    radius: Theme.rad(7)
                     color: locMa.containsMouse ? Theme.hover : Theme.elev
                     border.color: Theme.hair; border.width: 1
                     Text { id: locTxt; anchors.centerIn: parent; text: (i18n.language, i18n.t("ctx_move_storage")); color: Theme.t1; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
@@ -78,7 +78,7 @@ Flickable {
                 Rectangle {
                     Layout.preferredHeight: 28
                     Layout.preferredWidth: reTxt.implicitWidth + 22
-                    radius: 7
+                    radius: Theme.rad(7)
                     color: reMa.containsMouse ? Qt.darker(Theme.accent, 1.1) : Theme.accent
                     Text { id: reTxt; anchors.centerIn: parent; text: (i18n.language, i18n.t("ctx_force_recheck")); color: "#ffffff"; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                     MouseArea { id: reMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: session.forceRecheckSelected() }

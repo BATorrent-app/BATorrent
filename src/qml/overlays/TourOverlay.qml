@@ -108,7 +108,7 @@ Item {
     Rectangle {
         visible: tour.hasSpot
         x: tour.hole.x; y: tour.hole.y; width: tour.hole.width; height: tour.hole.height
-        radius: 12; color: "transparent"
+        radius: Theme.rad(12); color: "transparent"
         border.color: Theme.accent; border.width: 2
         opacity: tour.fade * tour.contentVis
     }
@@ -136,7 +136,7 @@ Item {
         transformOrigin: Item.Center
         width: 326
         height: calloutCol.implicitHeight + 32
-        radius: 14
+        radius: Theme.rad(14)
         color: Theme.panel
         border.color: Theme.hair; border.width: 1
         x: {

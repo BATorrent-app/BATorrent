@@ -14,7 +14,7 @@ Rectangle {
 
     implicitWidth: 17
     implicitHeight: 17
-    radius: 5
+    radius: Theme.rad(5)
     color: on ? Theme.accent : Theme.field
     border.color: partial ? Theme.accent : (on ? "transparent" : Theme.hair)
     border.width: 1
@@ -26,7 +26,7 @@ Rectangle {
         visible: cb.activeFocus
         anchors.fill: parent
         anchors.margins: -3
-        radius: 7
+        radius: Theme.rad(7)
         color: "transparent"
         border.color: Theme.focusRing
         border.width: Theme.focusRingWidth

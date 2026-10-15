@@ -22,7 +22,7 @@ Rectangle {
         anchors.centerIn: parent
         width: Math.min(parent.width - 48, 520)
         height: Math.min(parent.height - 48, 420)
-        radius: 12
+        radius: Theme.rad(12)
         color: Theme.elev
         border.color: Theme.hair
         border.width: 1

@@ -31,7 +31,7 @@ Rectangle {
     signal openRequested()
 
     implicitHeight: 58
-    radius: 6
+    radius: Theme.rad(6)
     color: ma.containsMouse ? Theme.stageHover : "transparent"
     Behavior on color { ColorAnimation { duration: Theme.durFast } }
     opacity: pillTone === "cam" ? 0.7 : 1
@@ -54,7 +54,7 @@ Rectangle {
             Layout.preferredWidth: row.pillWidth
             Layout.minimumWidth: row.pillWidth
             Layout.preferredHeight: 20
-            radius: 5
+            radius: Theme.rad(5)
             color: row.pillTone === "cam" ? Theme.sel
                  : row.pillTone === "group" ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.14)
                  : row.pillTone === "hi" ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
@@ -87,7 +87,7 @@ Rectangle {
                     property color fill: "transparent"
                     Layout.preferredHeight: 16
                     Layout.preferredWidth: badgeTxt.implicitWidth + 12
-                    radius: 8
+                    radius: Theme.rad(8)
                     color: fill
                     Text {
                         id: badgeTxt
@@ -137,12 +137,12 @@ Rectangle {
                 Rectangle {
                     Layout.preferredWidth: 36
                     Layout.preferredHeight: 3
-                    radius: 2
+                    radius: Theme.rad(2)
                     color: Qt.rgba(1, 1, 1, 0.06)
                     Rectangle {
                         height: parent.height
                         width: parent.width * row.seedFill
-                        radius: 2
+                        radius: Theme.rad(2)
                         color: row.seedColor
                     }
                 }
@@ -165,7 +165,7 @@ Rectangle {
             Layout.preferredWidth: 28
             Layout.preferredHeight: 28
             visible: row.canWatch
-            radius: 7
+            radius: Theme.rad(7)
             color: watchMa.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
             border.width: 1
             border.color: watchMa.containsMouse ? Theme.stageT2 : Theme.stageHair
@@ -193,7 +193,7 @@ Rectangle {
             id: btn
             Layout.preferredWidth: 28
             Layout.preferredHeight: 28
-            radius: 7
+            radius: Theme.rad(7)
             readonly property bool hot: btnMa.containsMouse || (ma.containsMouse && !row.added)
             color: row.added ? "transparent" : (hot ? Theme.accent : "transparent")
             border.width: 1

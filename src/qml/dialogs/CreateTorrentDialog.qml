@@ -125,7 +125,7 @@ BatDialog {
     // 6. options card
     Rectangle {
         Layout.fillWidth: true
-        radius: 11
+        radius: Theme.rad(11)
         color: Theme.panel
         border.color: Theme.hair
         border.width: 1
@@ -173,7 +173,7 @@ BatDialog {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
             text: dlg.busy ? (i18n.language, i18n.t("create_creating")) : ""
-            color: text.indexOf((i18n.language, i18n.t("dlg_error"))) === 0 ? Theme.accentText : Theme.t3
+            color: text.indexOf((i18n.language, i18n.t("dlg_error"))) === 0 ? Theme.downText : Theme.t3
             font.pixelSize: 11
             font.family: Theme.fontSans
         }

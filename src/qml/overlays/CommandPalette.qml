@@ -108,7 +108,7 @@ Item {
         opacity: pal.shown
         scale: Theme.grow(0.965) + (1 - Theme.grow(0.965)) * pal.shown
         transformOrigin: Item.Top
-        radius: 13
+        radius: Theme.rad(13)
         color: Theme.bg
         border.color: Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.14)
         border.width: 1
@@ -151,7 +151,7 @@ Item {
             highlight: Rectangle {
                 width: list.width
                 height: 36
-                radius: 7
+                radius: Theme.rad(7)
                 color: Theme.sel
                 y: list.currentItem ? list.currentItem.y : 0
                 Behavior on y {
@@ -165,7 +165,7 @@ Item {
                 required property int index
                 width: ListView.view.width
                 height: 36
-                radius: 7
+                radius: Theme.rad(7)
                 color: index !== pal.sel && rowMa.containsMouse ? Theme.hover : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.durFast } }
                 // opening cascade: each row a little later than the one above

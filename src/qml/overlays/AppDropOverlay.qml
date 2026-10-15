@@ -61,7 +61,7 @@ Item {
         Behavior on opacity { OpacityAnimator { duration: 150; easing.type: Theme.easeOut } }
         Rectangle {
             anchors.centerIn: parent
-            width: 360; height: 200; radius: 16
+            width: 360; height: 200; radius: Theme.rad(16)
             color: Theme.panel
             border.color: Theme.accent
             border.width: 2

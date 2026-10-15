@@ -46,7 +46,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 9
+        radius: Theme.rad(9)
         color: diskMa.containsMouse ? Theme.hover : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.durFast } }
     }
@@ -93,13 +93,13 @@ Item {
             Layout.fillWidth: true
             Layout.minimumWidth: 56
             Layout.preferredHeight: 3
-            radius: 2; color: Theme.track
+            radius: Theme.rad(2); color: Theme.track
             Rectangle {
                 readonly property real used: root.shown
                     ? Math.max(0.02, Math.min(1, root.shown.usedFraction)) : 0
                 anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
                 width: parent.width * used
-                radius: 2
+                radius: Theme.rad(2)
                 color: used > 0.95 ? Theme.accent : used > 0.85 ? Theme.amber : Theme.t4
             }
         }

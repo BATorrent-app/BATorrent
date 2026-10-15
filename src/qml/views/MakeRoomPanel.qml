@@ -55,7 +55,7 @@ Rectangle {
         anchors.centerIn: parent
         width: Math.min(parent.width - 48, 600)
         height: Math.min(parent.height - 48, 560)
-        radius: 12
+        radius: Theme.rad(12)
         color: Theme.elev
         border.color: Theme.hair
         border.width: 1
@@ -130,7 +130,7 @@ Rectangle {
                     required property var modelData
                     width: ListView.view.width
                     height: 48
-                    radius: 8
+                    radius: Theme.rad(8)
                     color: rowMa.containsMouse ? Theme.hover : "transparent"
                     RowLayout {
                         anchors.fill: parent

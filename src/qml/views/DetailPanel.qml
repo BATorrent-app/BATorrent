@@ -45,7 +45,7 @@ Rectangle {
                 id: collapseBtn
                 anchors.right: parent.right; anchors.rightMargin: Theme.sp4
                 anchors.verticalCenter: parent.verticalCenter
-                width: 30; height: 26; radius: 7
+                width: 30; height: 26; radius: Theme.rad(7)
                 color: colMa.containsMouse ? Theme.hover : "transparent"
                 border.width: 1; border.color: Theme.hair
                 Behavior on color { ColorAnimation { duration: Theme.durFast } }
@@ -126,7 +126,7 @@ Rectangle {
                     height: 142
                     Rectangle {
                         id: grpCover
-                        width: 100; height: 142; radius: 7; clip: true
+                        width: 100; height: 142; radius: Theme.rad(7); clip: true
                         color: Theme.tileBlank
                         border.color: Theme.hair; border.width: 1
                         Image {
@@ -143,7 +143,7 @@ Rectangle {
                         Text {
                             width: parent.width
                             text: panelGroup.summary.title || ""
-                            color: Theme.t1; font.pixelSize: 17; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                            color: Theme.t1; font.pixelSize: Theme.displaySize(17); font.weight: Theme.tWeight(Font.DemiBold); font.family: Theme.fontDisplay; font.capitalization: Theme.tCaps; font.italic: Theme.tItalic; font.letterSpacing: Theme.tTrack(17, 0)
                             elide: Text.ElideRight
                         }
                         Text {
@@ -180,8 +180,8 @@ Rectangle {
                                     required property var modelData
                                     readonly property real p: Math.max(0, Math.min(1, modelData.progress || 0))
                                     width: (parent.width - parent.spacing * (panelGroup.episodes.length - 1)) / Math.max(1, panelGroup.episodes.length)
-                                    height: 4; radius: 2; color: Theme.track
-                                    Rectangle { width: parent.width * parent.p; height: 4; radius: 2; color: parent.p >= 0.999 ? Theme.doneFill : Theme.accent }
+                                    height: 4; radius: Theme.rad(2); color: Theme.track
+                                    Rectangle { width: parent.width * parent.p; height: 4; radius: Theme.rad(2); color: parent.p >= 0.999 ? Theme.doneFill : Theme.down }
                                 }
                             }
                         }

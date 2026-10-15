@@ -15,7 +15,7 @@ import "../dialogs"
 
 Rectangle {
     id: page
-    color: Theme.bg
+    color: Theme.pageBg
 
     readonly property var api: typeof search !== "undefined" ? search : null
     // Converted to JS once per change. Every pane used to read api.results

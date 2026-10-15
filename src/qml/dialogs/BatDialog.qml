@@ -107,7 +107,7 @@ Item {
         height: dlg.fitContent ? dlg.fittedH : dlg.cardH
         opacity: dlg.anim
         scale: Theme.reduceMotion ? 1 : (0.97 + 0.03 * dlg.anim)
-        radius: 13
+        radius: Theme.rad(13)
         color: dlg.uiPalette.bg
         border.color: dlg.uiPalette.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.14)
         border.width: 1
@@ -141,7 +141,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 22
                     height: 22
-                    radius: 6
+                    radius: Theme.rad(6)
                     color: xMa.containsMouse ? dlg.uiPalette.hover : "transparent"
                     IconImg {
                         anchors.centerIn: parent

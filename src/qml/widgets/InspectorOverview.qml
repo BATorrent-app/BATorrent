@@ -71,7 +71,7 @@ Item {
                 font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans
             }
         }
-        Rectangle { id: thMask; anchors.fill: parent; radius: 4; visible: false; layer.enabled: true }
+        Rectangle { id: thMask; anchors.fill: parent; radius: Theme.rad(4); visible: false; layer.enabled: true }
         MultiEffect { source: thArt; anchors.fill: parent; maskEnabled: true; maskSource: thMask }
     }
 
@@ -97,7 +97,7 @@ Item {
                     required property var modelData
                     Layout.fillWidth: true
                     implicitHeight: 60
-                    radius: 9
+                    radius: Theme.rad(9)
                     color: Theme.elev
                     RowLayout {
                         anchors.fill: parent
@@ -118,7 +118,7 @@ Item {
                         Rectangle {
                             Layout.preferredHeight: 28
                             Layout.preferredWidth: actTxt.implicitWidth + 20
-                            radius: 7
+                            radius: Theme.rad(7)
                             color: actMa.containsMouse ? Theme.hover : "transparent"
                             border.color: Theme.hair; border.width: 1
                             Text { id: actTxt; anchors.centerIn: parent; text: (i18n.language, ov.act(modelData)); color: Theme.t1; font.pixelSize: 12; font.weight: Font.Medium; font.family: Theme.fontSans }
@@ -157,7 +157,7 @@ Item {
                     Rectangle {
                         Layout.preferredHeight: 28
                         Layout.preferredWidth: goRow.implicitWidth + 18
-                        radius: 7
+                        radius: Theme.rad(7)
                         color: goMa.containsMouse ? Qt.darker(Theme.t1, 1.08) : Theme.t1
                         Row {
                             id: goRow
@@ -195,7 +195,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 8
-                radius: 4
+                radius: Theme.rad(4)
                 color: Theme.track
                 clip: true
                 Row {

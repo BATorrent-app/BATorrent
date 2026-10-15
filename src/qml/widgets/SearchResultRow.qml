@@ -51,7 +51,7 @@ Rectangle {
         visible: srcLabel.text.length > 0
         implicitWidth: srcLabel.implicitWidth + 14
         implicitHeight: 16
-        radius: 8
+        radius: Theme.rad(8)
         color: "transparent"
         border.color: Theme.hair
         border.width: 1
@@ -186,10 +186,10 @@ Rectangle {
                 spacing: 9
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 50; height: 4; radius: 2; color: Theme.hairSoft
+                    width: 50; height: 4; radius: Theme.rad(2); color: Theme.hairSoft
                     Rectangle {
                         width: parent.width * row.sv.seedFill(row.modelData.seedsN || 0)
-                        height: parent.height; radius: 2
+                        height: parent.height; radius: Theme.rad(2)
                         color: row.sv.seedColor(row.modelData.seedsN || 0)
                         Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                     }
@@ -209,7 +209,7 @@ Rectangle {
             Rectangle {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: 28; height: 28; radius: 7
+                width: 28; height: 28; radius: Theme.rad(7)
                 color: "transparent"
                 border.color: addMa.containsMouse ? Theme.accent : Theme.hair
                 border.width: 1

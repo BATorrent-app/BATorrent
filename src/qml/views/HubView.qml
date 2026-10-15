@@ -141,7 +141,7 @@ Item {
         if (item) openTitle(item)
     }
 
-    Rectangle { anchors.fill: parent; color: Theme.bg }
+    Rectangle { anchors.fill: parent; color: Theme.pageBg }
 
     Flickable {
         id: hubFlick
@@ -176,9 +176,12 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: (i18n.language, i18n.t("hub_empty_title"))
                     color: Theme.t1
-                    font.pixelSize: 18
-                    font.weight: Font.DemiBold
-                    font.family: Theme.fontSans
+                    font.pixelSize: Theme.displaySize(18)
+                    font.weight: Theme.tWeight(Font.DemiBold)
+                    font.family: Theme.fontDisplay
+                    font.capitalization: Theme.tCaps
+                    font.italic: Theme.tItalic
+                    font.letterSpacing: Theme.tTrack(18, 0)
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter

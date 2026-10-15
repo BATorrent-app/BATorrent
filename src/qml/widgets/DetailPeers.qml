@@ -56,9 +56,9 @@ ColumnLayout {
             delegate: RowLayout {
                 Layout.fillWidth: true; Layout.preferredHeight: 32
                 Layout.leftMargin: Theme.sp5; Layout.rightMargin: Theme.sp5; spacing: Theme.sp4
-                Rectangle { Layout.preferredWidth: 22; Layout.preferredHeight: 12; radius: 6; color: Theme.field }
-                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 12; radius: 6; color: Theme.field; opacity: 0.6 }
-                Rectangle { Layout.preferredWidth: 60; Layout.preferredHeight: 12; radius: 6; color: Theme.field; opacity: 0.45 }
+                Rectangle { Layout.preferredWidth: 22; Layout.preferredHeight: 12; radius: Theme.rad(6); color: Theme.field }
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 12; radius: Theme.rad(6); color: Theme.field; opacity: 0.6 }
+                Rectangle { Layout.preferredWidth: 60; Layout.preferredHeight: 12; radius: Theme.rad(6); color: Theme.field; opacity: 0.45 }
             }
         }
     }
@@ -96,7 +96,7 @@ ColumnLayout {
                         visible: parent.fsrc === "" && (modelData.cc || "").length > 0
                         width: 21; height: 14
                         anchors.verticalCenter: parent.verticalCenter
-                        radius: 2
+                        radius: Theme.rad(2)
                         color: "transparent"
                         border.color: Theme.hair; border.width: 1
                         Text {
@@ -111,7 +111,7 @@ ColumnLayout {
                 Text { text: modelData.ip; Layout.fillWidth: true; color: Theme.t1; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideRight }
                 Text { text: modelData.client; Layout.preferredWidth: 150; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
                 Text { text: Math.floor((modelData.progress || 0) * 100) + "%"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignRight; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum }
-                Text { text: modelData.downSpeed; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.accentText; font.pixelSize: 12; font.family: Theme.fontSans }
+                Text { text: modelData.downSpeed; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.downText; font.pixelSize: 12; font.family: Theme.fontSans }
                 Text { text: modelData.upSpeed; Layout.preferredWidth: 90; horizontalAlignment: Text.AlignRight; color: Theme.up; font.pixelSize: 12; font.family: Theme.fontSans }
             }
         }
@@ -145,7 +145,7 @@ ColumnLayout {
                             visible: parent.fsrc === "" && (modelData.cc || "").length > 0
                             width: 18; height: 12
                             anchors.verticalCenter: parent.verticalCenter
-                            radius: 2
+                            radius: Theme.rad(2)
                             color: "transparent"
                             border.color: Theme.hair; border.width: 1
                             Text {
@@ -164,7 +164,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 8
                     Text { text: modelData.client; Layout.fillWidth: true; color: Theme.t3; font.pixelSize: 11; font.family: Theme.fontSans; elide: Text.ElideRight }
-                    Text { text: "↓ " + modelData.downSpeed; color: Theme.accentText; font.pixelSize: 11; font.family: Theme.fontSans }
+                    Text { text: "↓ " + modelData.downSpeed; color: Theme.downText; font.pixelSize: 11; font.family: Theme.fontSans }
                     Text { text: "↑ " + modelData.upSpeed; color: Theme.up; font.pixelSize: 11; font.family: Theme.fontSans }
                 }
             }

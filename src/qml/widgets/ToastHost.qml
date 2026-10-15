@@ -38,7 +38,7 @@ Item {
                 id: card
                 width: 380
                 height: 86
-                radius: 10
+                radius: Theme.rad(10)
                 color: Theme.panel
                 border.width: (mKind === "warning" || mKind === "error") ? 1 : 0
                 border.color: eyebrowColor

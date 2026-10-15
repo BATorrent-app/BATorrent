@@ -36,7 +36,7 @@ Item {
     // state dot: "on" reads at a glance without filling the control
     Rectangle {
         visible: btn.active
-        width: 4; height: 4; radius: 2; color: Theme.accent
+        width: 4; height: 4; radius: Theme.rad(2); color: Theme.accent
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom; anchors.bottomMargin: 2
     }
