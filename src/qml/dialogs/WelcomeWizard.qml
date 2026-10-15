@@ -186,18 +186,21 @@ Item {
             // left column
             Flickable {
                 id: leftScroll
-                x: Math.min(64, page.width * 0.05)
-                y: 34
-                width: Math.min(470, page.width * 0.42)
-                height: parent.height - 34
-                contentHeight: left.implicitHeight + 16
+                // 8px of slack round the column, so a picked tile's ring is not cut
+                readonly property real pad: 8
+                x: Math.min(64, page.width * 0.05) - pad
+                y: 34 - pad
+                width: Math.min(470, page.width * 0.42) + 2 * pad
+                height: parent.height - 34 + pad
+                contentHeight: left.implicitHeight + 16 + pad
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
                 interactive: contentHeight > height
 
                 ColumnLayout {
                     id: left
-                    width: leftScroll.width
+                    x: leftScroll.pad; y: leftScroll.pad
+                    width: leftScroll.width - 2 * leftScroll.pad
                     spacing: 18
                     opacity: wiz.stepIn
                     transform: Translate { y: Theme.reduceMotion ? 0 : 14 * (1 - wiz.stepIn) }
@@ -560,7 +563,7 @@ Item {
             // the preview, turned slightly toward the text
             Item {
                 id: pvSlot
-                x: leftScroll.x + leftScroll.width + 56
+                x: leftScroll.x + leftScroll.width - leftScroll.pad + 56
                 y: 34
                 width: Math.max(0, page.width - x)
                 height: parent.height - 34
