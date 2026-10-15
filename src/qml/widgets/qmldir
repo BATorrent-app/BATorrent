@@ -11,7 +11,6 @@ TSelect 1.0 TSelect.qml
 PathFld 1.0 PathFld.qml
 Eyebrow 1.0 Eyebrow.qml
 EmptyState 1.0 EmptyState.qml
-LayoutChoiceTile 1.0 LayoutChoiceTile.qml
 PosterThumb 1.0 PosterThumb.qml
 ProgressTrack 1.0 ProgressTrack.qml
 PosterTile 1.0 PosterTile.qml

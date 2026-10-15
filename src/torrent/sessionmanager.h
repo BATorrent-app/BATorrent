@@ -53,6 +53,14 @@ public:
     // applies them.
     void addTorrentWithPriorities(const QString &filePath, const QString &savePath,
                                   const std::vector<int> &filePriorities);
+
+    void addTorrentFileEx(const QString &filePath, const QString &savePath,
+                          const std::vector<int> &filePriorities, bool paused) override;
+    void addMagnetEx(const QString &uri, const QString &savePath, bool paused) override;
+    void stageMagnet(const QString &uri) override;
+    void commitStaged(const QString &hash, const QString &savePath,
+                      const std::vector<int> &filePriorities, bool paused) override;
+    void discardStaged(const QString &hash) override;
     void removeTorrent(int index, bool deleteFiles = false, bool permanent = false);
     void pauseTorrent(int index);
     void resumeTorrent(int index);
@@ -497,6 +505,19 @@ private:
     // reject re-adding a duplicate; checks our list, not the lingering
     // libtorrent handle after an async removal).
     bool isDuplicate(const lt::info_hash_t &ih) const;
+    // the shared tail of every metadata-first add (a .torrent file, a staged
+    // magnet whose metadata came in)
+    void addTorrentInfo(std::shared_ptr<lt::torrent_info> ti, const QString &savePath,
+                        const std::vector<int> &filePriorities, bool paused);
+    // staged magnets (see stageMagnet): hash -> handle, and the URI to fall
+    // back to when one is committed before its metadata arrives
+    struct Staged { lt::torrent_handle handle; QString uri; };
+    std::map<QString, Staged> m_staged;
+    bool isStaged(const lt::torrent_handle &h) const;
+    void onStagedMetadata(const lt::torrent_handle &h);
+    // what a magnet's arriving metadata sets up (.!bt names, private
+    // blackout, hash rekey, resume save, threat scan), by handle
+    void handleMetadata(const lt::torrent_handle &h);
     bool effectiveStopAfterDownload(const QString &hash) const;
     qint64 effectiveMaxSeedSeconds(const QString &hash) const;
 

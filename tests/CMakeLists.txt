@@ -46,6 +46,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_network.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_security.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_lifecycle.cpp
+    ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_staging.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_tick.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_scheduler.cpp
     ${CMAKE_SOURCE_DIR}/src/torrent/sessionmanager_stats.cpp
@@ -104,6 +105,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/platform/logger.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/audiomode.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/episodegroup.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/metadata/filegroups.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/nameparser.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/releasegroup.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/contentlanguage.cpp
@@ -125,6 +127,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/qmllibrarymodel.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_add.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_addwindow.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_details.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_create.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_games.cpp
@@ -358,6 +361,7 @@ bat_add_test(test_security   test_security.cpp)
 bat_add_test(test_memory     test_memory.cpp)
 bat_add_test(test_unit       test_unit.cpp)
 bat_add_test(test_nameparser test_nameparser.cpp)
+bat_add_test(test_filegroups test_filegroups.cpp)
 bat_add_test(test_episodegroup test_episodegroup.cpp)
 bat_add_test(test_librarygroups test_librarygroups.cpp)
 bat_add_test(test_bridge     test_bridge.cpp)

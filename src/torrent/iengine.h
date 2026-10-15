@@ -104,6 +104,21 @@ public:
     virtual void addTorrentWithPriorities(const QString &filePath, const QString &savePath, const std::vector<int> &filePriorities) = 0;
     virtual void addMagnet(const QString &uri, const QString &savePath, const QString &coverHint = QString(), int coverType = -1) = 0;
 
+    // --- the Add download window ---
+    // Add with the window's choices: which files (0 = skip) and whether to
+    // start. paused keeps it stopped until the user resumes it.
+    virtual void addTorrentFileEx(const QString &filePath, const QString &savePath,
+                                  const std::vector<int> &filePriorities, bool paused) = 0;
+    virtual void addMagnetEx(const QString &uri, const QString &savePath, bool paused) = 0;
+    // A magnet waiting in the window: added out of the library, in upload
+    // mode on a scratch folder, only to fetch its metadata (stagedMetadata).
+    // Commit adds it for real with the window's choices (with or without the
+    // metadata yet); discard drops it.
+    virtual void stageMagnet(const QString &uri) = 0;
+    virtual void commitStaged(const QString &hash, const QString &savePath,
+                              const std::vector<int> &filePriorities, bool paused) = 0;
+    virtual void discardStaged(const QString &hash) = 0;
+
     // --- proxy (Settings) ---
     virtual void setProxySettings(int type, const QString &host, int port, const QString &user, const QString &pass) = 0;
     virtual int proxyType() const = 0;
@@ -144,6 +159,9 @@ signals:
     void torrentAddedInfo(int index, const QString &hash, const QString &name,
                           qint64 totalSize, const QStringList &fileNames,
                           const QString &hintTitle, int hintType);
+    // A staged magnet's metadata arrived: its name and every file with its size.
+    void stagedMetadata(const QString &hash, const QString &name, qint64 totalSize,
+                        const QStringList &paths, const QList<qint64> &sizes);
 };
 
 #endif

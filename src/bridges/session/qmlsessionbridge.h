@@ -187,6 +187,26 @@ public:
     Q_INVOKABLE void resolvePreview(const QString &infoHash, const QString &name);
     Q_INVOKABLE void addTorrentWithPrefs(const QString &filePath, const QString &savePath,
                                          const QVariantList &priorities);
+    // --- the Add download window ---
+    // What one pasted line is: {kind, value, hash, name, host, inLibrary, joins}
+    // or an empty map for nothing we can add.
+    Q_INVOKABLE QVariantMap describeInput(const QString &input) const;
+    Q_INVOKABLE bool inLibrary(const QString &infoHash) const;
+    // "Show<tab>season" when this episode joins a show already in the library
+    Q_INVOKABLE QString seriesMatch(const QString &name) const;
+    Q_INVOKABLE void stageMagnet(const QString &uri);          // answers with stagedPreview
+    Q_INVOKABLE void discardStaged(const QString &infoHash);
+    Q_INVOKABLE void commitStaged(const QString &infoHash, const QString &savePath,
+                                  const QVariantList &priorities, bool paused);
+    Q_INVOKABLE void addTorrentFileEx(const QString &filePath, const QString &savePath,
+                                      const QVariantList &priorities, bool paused);
+    Q_INVOKABLE void addMagnetEx(const QString &uri, const QString &savePath, bool paused);
+    Q_INVOKABLE void probeUrl(const QString &url);             // answers with urlProbed
+    Q_INVOKABLE void fetchTorrentUrl(const QString &url);      // answers with torrentUrlFetched
+    // Save folders per kind of download ("game", "video", "other")
+    Q_INVOKABLE QString folderFor(const QString &kind) const;
+    Q_INVOKABLE void setTypeFolder(const QString &kind, const QString &path);
+    Q_INVOKABLE QVariantList typeFolders() const;
     Q_INVOKABLE void copyMagnetLink();
     Q_INVOKABLE void copyInfoHash();
     Q_INVOKABLE void openSaveFolder();
@@ -439,6 +459,10 @@ public:
     Q_INVOKABLE void cancelInstall(const QString &infoHash);
 
 signals:
+    void stagedPreview(const QString &infoHash, const QVariantMap &preview);
+    void urlProbed(const QString &url, const QVariantMap &info);
+    void torrentUrlFetched(const QString &url, const QString &localPath);   // empty path: failed
+    void typeFoldersChanged();
     void statsChanged();
     void watchlistChanged();
     void selectionChanged();
@@ -541,6 +565,11 @@ private:
     QHash<QString, QVariantMap> m_watchTargets;   // infoHash → the file to play, see watchWhenReady
     QHash<QString, QPair<QVariantMap, qint64>> m_pendingFilePick;   // infoHash → {target, startedAtSec}
     QHash<QString, QSet<int>> m_pickedFiles;   // episodes picked out of one pack, all kept wanted
+    QNetworkAccessManager *m_probeNet = nullptr;  // the Add window's link probes
+    QVariantMap buildPreview(const QString &name, const QString &infoHash,
+                             const QStringList &paths, const QList<qint64> &sizes) const;
+    void onStagedMetadata(const QString &hash, const QString &name, qint64 totalSize,
+                          const QStringList &paths, const QList<qint64> &sizes);
     QNetworkAccessManager *m_skipNet = nullptr;   // AniSkip and the AniList lookup before it
     QHash<QString, QPair<QString, qint64>> m_pendingInstall; // Get&Install: infoHash → {title, startedAtSec}
     QSet<QString> m_installStarted;   // hashes where installGame was already kicked for pending install

@@ -112,7 +112,7 @@ fallback). `Main.qml` is the root window — torrent grid/list, toolbar, in-wind
 menu bar, detail panel, tray icon, and the host for every dialog.
 
 - **Screens / dialogs** (`*.qml`): `Main`, `SettingsWindow`, `SearchWindow`,
-  `RssWindow`, `AddTorrentDialog`, `CreateTorrentDialog`, `InspectorDialog`,
+  `RssWindow`, `AddDownloadDialog`, `CreateTorrentDialog`, `InspectorDialog`,
   `StatisticsWindow`, `DiagnosticsWindow`, `LogViewerWindow`, `PairingDialog`,
   `MagnetDialog`, `RemoveDialog`, `RemovedHistoryWindow`, `WelcomeDialog`,
   `AboutDialog`, `ShortcutsWindow`, `ReleaseNotesDialog`, `UpdateDialog`,

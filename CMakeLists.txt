@@ -84,6 +84,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/torrent/sessionmanager_network.cpp
     src/torrent/sessionmanager_security.cpp
     src/torrent/sessionmanager_lifecycle.cpp
+    src/torrent/sessionmanager_staging.cpp
     src/torrent/sessionmanager_tick.cpp
     src/torrent/sessionmanager_scheduler.cpp
     src/torrent/sessionmanager_stats.cpp
@@ -155,6 +156,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/geoipprovider.cpp
     src/services/metadata/audiomode.cpp
     src/services/metadata/episodegroup.cpp
+    src/services/metadata/filegroups.cpp
     src/services/metadata/nameparser.cpp
     src/services/metadata/releasegroup.cpp
     src/services/platform/contentlanguage.cpp
@@ -195,6 +197,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/bridges/qmllibrarymodel.cpp
     src/bridges/session/qmlsessionbridge.cpp
     src/bridges/session/qmlsessionbridge_add.cpp
+    src/bridges/session/qmlsessionbridge_addwindow.cpp
     src/bridges/session/qmlsessionbridge_details.cpp
     src/bridges/session/qmlsessionbridge_create.cpp
     src/bridges/session/qmlsessionbridge_games.cpp

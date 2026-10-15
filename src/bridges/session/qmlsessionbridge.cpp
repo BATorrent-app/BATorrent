@@ -111,6 +111,7 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
         });
     }
 
+    connect(m_session, &IEngine::stagedMetadata, this, &QmlSessionBridge::onStagedMetadata);
     connect(m_session, &IEngine::altSpeedsActiveChanged,
             this, &QmlSessionBridge::altSpeedsActiveChanged);
     connect(m_session, &IEngine::portStatusChanged,

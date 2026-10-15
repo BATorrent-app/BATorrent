@@ -96,16 +96,34 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
                                                 const QString &savePath,
                                                 const std::vector<int> &filePriorities)
 {
+    addTorrentFileEx(filePath, savePath, filePriorities, false);
+}
+
+void SessionManager::addTorrentFileEx(const QString &filePath, const QString &savePath,
+                                      const std::vector<int> &filePriorities, bool paused)
+{
+    try {
+        addTorrentInfo(std::make_shared<lt::torrent_info>(filePath.toStdString()),
+                       savePath, filePriorities, paused);
+    } catch (const std::exception &e) {
+        emit torrentError(QString::fromStdString(e.what()));
+    }
+}
+
+void SessionManager::addTorrentInfo(std::shared_ptr<lt::torrent_info> ti, const QString &savePath,
+                                    const std::vector<int> &filePriorities, bool paused)
+{
     try {
         lt::add_torrent_params atp;
-        atp.ti = std::make_shared<lt::torrent_info>(filePath.toStdString());
+        atp.ti = std::move(ti);
         if (atp.ti && isDuplicate(atp.ti->info_hashes())) {
-            qDebug() << "[session] addTorrentWithPriorities: duplicate ignored";
+            qDebug() << "[session] addTorrentInfo: duplicate ignored";
             return;
         }
         atp.save_path = savePath.toStdString();
         atp.flags &= ~(lt::torrent_flags::auto_managed
                        | lt::torrent_flags::paused);
+        if (paused) atp.flags |= lt::torrent_flags::paused;
         if (atp.ti && atp.ti->priv()) {
             atp.flags |= lt::torrent_flags::disable_dht
                        | lt::torrent_flags::disable_lsd

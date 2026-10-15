@@ -21,7 +21,7 @@ Item {
 
     property alias openFileDlg: openFileDlg
     property alias addDlg: addDlg
-    property alias addTorrentDlg: addTorrentDlg
+    property alias addTorrentDlg: addDlg
     property alias removeDlg: removeDlg
     property alias makeRoomPanel: makeRoomPanel
     property alias inputPrompt: inputPrompt
@@ -49,67 +49,65 @@ Item {
         }
         queueTimer.restart()
     }
+    // Into the Add download window, all of them at once; with "always use the
+    // default folder" on, what fits there skips the window.
     function processTorrentQueue() {
         if (typeof session === "undefined") { root.torrentQueue = []; return }
-        if (addTorrentDlg.opened) return
         var useDefault = settings.getBool("useDefaultPath")
+        var toWindow = []
         while (root.torrentQueue.length > 0) {
             var u = root.torrentQueue.shift()
-            var p = session.previewTorrent(u)
-            var known = p && p.ok && (p.totalSizeBytes || 0) > 0
-            var fits = !known || session.freeSaveBytes() < 0 || p.totalSizeBytes <= session.freeSaveBytes()
-            if (useDefault && fits) { session.addTorrentFile(u); continue }
-            if (p && p.ok) {
-                addTorrentDlg.savePath = session.defaultSavePath()
-                addTorrentDlg.loadPreview(p, u)
-                addTorrentDlg.open()
-                return
+            if (useDefault && !addDlg.opened) {
+                var p = session.previewTorrent(u)
+                var known = p && p.ok && (p.totalSizeBytes || 0) > 0
+                var fits = !known || session.freeSaveBytes() < 0 || p.totalSizeBytes <= session.freeSaveBytes()
+                if (p && p.ok && fits && !p.inLibrary) { session.addTorrentFile(u); continue }
             }
-            session.addTorrentFile(u)
+            toWindow.push(u)
         }
+        if (toWindow.length > 0) addDlg.openWithFiles(toWindow)
     }
 
     // ================== NATIVE FILE PICKER (Abrir) ==================
     FileDialog {
         id: openFileDlg
+        fileMode: FileDialog.OpenFiles
         title: (i18n.language, i18n.t("dlg_open_torrent"))
         nameFilters: [(i18n.language, i18n.t("filter_torrent_files")), (i18n.language, i18n.t("filter_all_files"))]
         onAccepted: {
-            if (typeof session === "undefined") return
-            var path = selectedFile.toString()
-            var p = session.previewTorrent(path)
-            if (!p.ok) { session.addTorrentFile(path); return }
-            addTorrentDlg.savePath = session.defaultSavePath()
-            addTorrentDlg.loadPreview(p, path)
-            addTorrentDlg.open()
+            var l = []
+            for (var i = 0; i < selectedFiles.length; ++i) l.push(selectedFiles[i].toString())
+            addDlg.openWithFiles(l)
         }
     }
 
     // ================== OVERLAY DIALOGS (in-app, backdrop covers all) ==================
-    AddInputDialog {
+    AddDownloadDialog {
         id: addDlg
-        // Every line through the one router, so a magnet, a .torrent link and
-        // an ordinary download can be pasted together and each still lands in
-        // the right place.
-        onAccepted: {
+        onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
+        onShowInLibraryRequested: function (hash) {
             if (typeof session === "undefined") return
-            for (var i = 0; i < lines.length; ++i) session.addAnything(lines[i].trim(), savePath)
+            root.host.currentPage = 0
+            session.selectByInfoHash(hash)
         }
-        onBrowseRequested: { addDlg.close(); openFileDlg.open() }
+        onChooseFilesRequested: function (hash) {
+            if (typeof session === "undefined") return
+            root.host.currentPage = 0
+            selectTimer.hash = hash
+            selectTimer.restart()
+        }
+    }
+    // the new torrent reaches the list a moment after it is added
+    Timer {
+        id: selectTimer
+        property string hash: ""
+        interval: 400
+        onTriggered: if (session.selectByInfoHash(hash)) root.host.detailTab = 2
     }
     Timer { id: queueTimer; interval: 130; onTriggered: root.processTorrentQueue() }
     Connections {
         target: typeof session !== "undefined" ? session : null
         function onOpenTorrentRequested(path) { root.enqueueTorrentUrls([path]) }
-    }
-    AddTorrentDialog {
-        id: addTorrentDlg
-        onAccepted: {
-            if (typeof session !== "undefined") session.addTorrentWithPrefs(torrentPath, savePath, priorities())
-            queueTimer.restart()                // open the next once this one has closed
-        }
-        onRejected: queueTimer.restart()
-        onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
     }
     RemoveDialog {
         id: removeDlg
@@ -212,16 +210,29 @@ Item {
     ReleaseNotesDialog  { id: releaseNotesDlg }
     WelcomeDialog {
         id: welcomeDlg
-        onAccepted: {
-            if (mode === "welcome") host.completeWelcome()
-            else host.maybeStartTour()
-        }
+        wizard: welcomeWizard
+        onAccepted: host.maybeStartTour()
+        onOpenReleaseNotes: releaseNotesDlg.open()
+    }
+    WelcomeWizard {
+        id: welcomeWizard
+        topInset: host.frameless ? 32 : 0
+        appView: host.appView
         // Closing it counts as having seen it. Every question here has a
         // sensible default and the whole thing is in Help → Setup wizard, so
         // reopening it on each launch was the app arguing with a decision the
         // user already made.
-        onRejected: if (mode === "welcome") host.dismissWelcome()
-        onOpenReleaseNotes: releaseNotesDlg.open()
+        onRejected: host.dismissWelcome()
+        // "Explore on my own": the tour stays in Help
+        onAccepted: {
+            host.dismissWelcome()
+            if (typeof settings !== "undefined") settings.set("tourSeen", true)
+        }
+        onTourRequested: {
+            host.dismissWelcome()
+            if (typeof settings !== "undefined") settings.set("tourSeen", false)
+            host.maybeStartTour()
+        }
     }
     AboutDialog         { id: aboutDlg }
 

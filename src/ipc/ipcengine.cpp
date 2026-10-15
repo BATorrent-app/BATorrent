@@ -168,6 +168,10 @@ void IpcEngine::dispatchEvent(const QString &name, const QByteArray &args)
         QString n; QStringList files; in >> n >> files; emit suspiciousFilesDetected(n, files);
     } else if (name == QLatin1String("killSwitch")) {
         emit killSwitchTriggered();
+    } else if (name == QLatin1String("stagedMetadata")) {
+        QString h, n; qint64 size; QStringList paths; QList<qint64> sizes;
+        in >> h >> n >> size >> paths >> sizes;
+        emit stagedMetadata(h, n, size, paths, sizes);
     } else if (name == QLatin1String("torrentAdded")) {
         qint32 idx; QString hash, n, hintTitle; qint64 size; QStringList files; qint32 hintType;
         in >> idx >> hash >> n >> size >> files >> hintTitle >> hintType;
@@ -261,6 +265,18 @@ void IpcEngine::addTorrentWithPriorities(const QString &fp, const QString &sp, c
   o << fp << sp << qint32(pr.size()); for (int v : pr) o << qint32(v); call(QStringLiteral("addTorrentWithPriorities"), d); }
 void IpcEngine::addMagnet(const QString &uri, const QString &sp, const QString &hint, int ct)
 { QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << uri << sp << hint << qint32(ct); call(QStringLiteral("addMagnet"), d); }
+void IpcEngine::addTorrentFileEx(const QString &fp, const QString &sp, const std::vector<int> &pr, bool paused)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+  o << fp << sp << qint32(pr.size()); for (int v : pr) o << qint32(v); o << paused; call(QStringLiteral("addTorrentFileEx"), d); }
+void IpcEngine::addMagnetEx(const QString &uri, const QString &sp, bool paused)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << uri << sp << paused; call(QStringLiteral("addMagnetEx"), d); }
+void IpcEngine::stageMagnet(const QString &uri)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << uri; call(QStringLiteral("stageMagnet"), d); }
+void IpcEngine::commitStaged(const QString &h, const QString &sp, const std::vector<int> &pr, bool paused)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+  o << h << sp << qint32(pr.size()); for (int v : pr) o << qint32(v); o << paused; call(QStringLiteral("commitStaged"), d); }
+void IpcEngine::discardStaged(const QString &h)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << h; call(QStringLiteral("discardStaged"), d); }
 void IpcEngine::renameFile(int ti, int fi, const QString &p)
 { QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << qint32(ti) << qint32(fi) << p; call(QStringLiteral("renameFile"), d); }
 void IpcEngine::extractTorrent(int i, const QString &pw)

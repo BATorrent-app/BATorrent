@@ -11,6 +11,7 @@ Rectangle {
     id: ta
     property alias text: input.text
     property alias placeholder: input.placeholderText
+    property bool wrap: true
 
     implicitWidth: 400
     implicitHeight: 88
@@ -30,7 +31,7 @@ Rectangle {
             placeholderTextColor: Theme.t4
             font.pixelSize: 12
             font.family: Theme.fontMono
-            wrapMode: TextArea.Wrap
+            wrapMode: ta.wrap ? TextArea.Wrap : TextArea.NoWrap
             background: null
             padding: 0
         }

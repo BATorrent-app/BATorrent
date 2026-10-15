@@ -56,6 +56,13 @@ void SessionManager::processAlerts()
       auto *a = m_alertDrain[i];
       try {
         if (auto *su = lt::alert_cast<lt::state_update_alert>(a)) { onStateUpdate(su); continue; }
+        // a magnet waiting in the Add window is only here for its metadata
+        if (!m_staged.empty()) {
+            if (auto *ta = dynamic_cast<lt::torrent_alert *>(a); ta && isStaged(ta->handle)) {
+                if (auto *mr = lt::alert_cast<lt::metadata_received_alert>(a)) onStagedMetadata(mr->handle);
+                continue;
+            }
+        }
         if (auto *fa = lt::alert_cast<lt::torrent_finished_alert>(a)) onTorrentFinished(fa);
         if (auto *ea = lt::alert_cast<lt::torrent_error_alert>(a)) onTorrentError(ea);
         if (auto *fe = lt::alert_cast<lt::file_error_alert>(a)) onFileError(fe);
@@ -239,10 +246,16 @@ void SessionManager::onTorrentChecked(const lt::torrent_checked_alert *tc)
 
 void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
 {
+    if (!mr->handle.is_valid()) return;
+    if (isStaged(mr->handle)) { onStagedMetadata(mr->handle); return; }
+    handleMetadata(mr->handle);
+}
+
+void SessionManager::handleMetadata(const lt::torrent_handle &h)
+{
     // Magnet just got its metadata: file list is now known, so apply
     // the .!bt suffix to each file.
-    if (!mr->handle.is_valid()) return;
-    auto ti = mr->handle.torrent_file();
+    auto ti = h.torrent_file();
     if (ti) {
         const auto &files = ti->files();
         for (lt::file_index_t i(0); i < files.end_file(); ++i) {
@@ -250,30 +263,30 @@ void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
             if (original.size() >= 4
                 && original.compare(original.size() - 4, 4, ".!bt") == 0)
                 continue;
-            mr->handle.rename_file(i, original + ".!bt");
+            h.rename_file(i, original + ".!bt");
         }
         // Magnet turned out to be private (BEP-27): apply the same discovery
         // blackout addTorrent gives private .torrent files, and take back the
         // public trackers addMagnet injected.
         if (ti->priv()) {
-            mr->handle.set_flags(lt::torrent_flags::disable_dht
+            h.set_flags(lt::torrent_flags::disable_dht
                                  | lt::torrent_flags::disable_lsd
                                  | lt::torrent_flags::disable_pex);
-            std::vector<lt::announce_entry> trackers = mr->handle.trackers();
+            std::vector<lt::announce_entry> trackers = h.trackers();
             const auto &pub = bat::publicTrackers();
             trackers.erase(std::remove_if(trackers.begin(), trackers.end(),
                 [&pub](const lt::announce_entry &ae) {
                     return std::find(pub.begin(), pub.end(), ae.url) != pub.end();
                 }), trackers.end());
-            mr->handle.replace_trackers(trackers);
+            h.replace_trackers(trackers);
         }
     }
     // Hybrid magnet: the add-time .resume is keyed by the URI's v1 hash, but
     // from here on resume data persists under get_best() (v2): drop the
     // stale file so the next launch doesn't double-load the torrent.
-    if (auto mit = m_magnetHashes.find(mr->handle); mit != m_magnetHashes.end()) {
+    if (auto mit = m_magnetHashes.find(h); mit != m_magnetHashes.end()) {
         const QString best = QString::fromStdString(
-            (std::ostringstream() << mr->handle.status().info_hashes.get_best()).str());
+            (std::ostringstream() << h.status().info_hashes.get_best()).str());
         if (best != mit->second) {
             const QString oldHash = mit->second;
             QFile::remove(QDir(resumeDataDir()).filePath(oldHash + ".resume"));
@@ -293,8 +306,8 @@ void SessionManager::onMetadataReceived(const lt::metadata_received_alert *mr)
             mit->second = best;
         }
     }
-    stageResumeSave(mr->handle);   // persist the magnet now it has metadata
-    scanTorrentForThreats(mr->handle, QString::fromStdString(mr->handle.status().name));
+    stageResumeSave(h);   // persist the magnet now it has metadata
+    scanTorrentForThreats(h, QString::fromStdString(h.status().name));
 }
 
 void SessionManager::onFileCompleted(const lt::file_completed_alert *fc)

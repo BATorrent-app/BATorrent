@@ -40,6 +40,7 @@ HttpMergeEngine::HttpMergeEngine(IEngine *inner, HttpDownloadManager *http, QObj
     connect(m_inner, &IEngine::suspiciousFilesDetected,this, &IEngine::suspiciousFilesDetected);
     connect(m_inner, &IEngine::killSwitchTriggered,   this, &IEngine::killSwitchTriggered);
     connect(m_inner, &IEngine::torrentAddedInfo,      this, &IEngine::torrentAddedInfo);
+    connect(m_inner, &IEngine::stagedMetadata,        this, &IEngine::stagedMetadata);
 
     // HTTP progress/state moves the same grid; a completed download rides the
     // same completion event as a finished torrent (toast, Play loop, disk-fit).
@@ -258,6 +259,11 @@ bool HttpMergeEngine::exportTorrent(int i, const QString &d) { return isHttp(i) 
 void HttpMergeEngine::addTracker(int i, const QString &u) { if (!isHttp(i)) m_inner->addTracker(i, u); }
 void HttpMergeEngine::addTorrentWithPriorities(const QString &fp, const QString &sp, const std::vector<int> &pr) { m_inner->addTorrentWithPriorities(fp, sp, pr); }
 void HttpMergeEngine::addMagnet(const QString &u, const QString &sp, const QString &ch, int ct) { m_inner->addMagnet(u, sp, ch, ct); }
+void HttpMergeEngine::addTorrentFileEx(const QString &fp, const QString &sp, const std::vector<int> &pr, bool paused) { m_inner->addTorrentFileEx(fp, sp, pr, paused); }
+void HttpMergeEngine::addMagnetEx(const QString &u, const QString &sp, bool paused) { m_inner->addMagnetEx(u, sp, paused); }
+void HttpMergeEngine::stageMagnet(const QString &u) { m_inner->stageMagnet(u); }
+void HttpMergeEngine::commitStaged(const QString &h, const QString &sp, const std::vector<int> &pr, bool paused) { m_inner->commitStaged(h, sp, pr, paused); }
+void HttpMergeEngine::discardStaged(const QString &h) { m_inner->discardStaged(h); }
 void HttpMergeEngine::streamSetDeadlineWindow(int t, int f, qint64 s, int w) { if (!isHttp(t)) m_inner->streamSetDeadlineWindow(t, f, s, w); }
 qint64 HttpMergeEngine::streamContiguousAvailableBytes(int t, int f, qint64 from, qint64 cap) const { return isHttp(t) ? 0 : m_inner->streamContiguousAvailableBytes(t, f, from, cap); }
 

@@ -2,9 +2,9 @@
 // Copyright (c) 2024-2026 Mateus Cruz
 // See LICENSE file for details
 
-// Unified onboarding screen. mode "welcome" (first install) shows a greeting and
-// leads into the mandatory tour; mode "update" (version changed) shows a personal
-// dev note + this version's highlights + a link to the full release notes.
+// Onboarding screen. mode "update" (version changed) shows a personal dev
+// note + this version's highlights + a link to the full release notes; mode
+// "welcome" hands over to the full-window setup wizard.
 //
 // The per-release dev note / highlights are SINGLE-LANGUAGE literals in
 // releaseContent below: auto-translating a personal message reads as fake. Edit
@@ -22,32 +22,19 @@ BatDialog {
     property string mode: "update"          // "welcome" | "update"
     readonly property bool isWelcome: mode === "welcome"
 
-    uiPalette: isWelcome ? WizardPalette : Theme
-    title: (i18n.language, i18n.t(isWelcome ? "welcome_window_title" : "whatsnew_title"))
-    cardW: isWelcome ? Math.min(960, Math.max(320, width - 48)) : 540
-    cardH: isWelcome ? Math.min(640, Math.max(480, height - 48)) : 584
-    fitContent: !isWelcome
-    backdropColor: isWelcome ? "#000000" : standardBackdropColor
+    title: (i18n.language, i18n.t("whatsnew_title"))
+    cardW: 540
+    cardH: 584
+    okText: (i18n.language, i18n.t("whatsnew_ok"))
+    showCancel: false
 
-    // Welcome is a multi-step setup; "update" keeps its single OK. holdOnOk
-    // routes the footer to nextRequested() so accepted() still means "done":
-    // the host starts the tour on it.
-    property int step: 0
-    okText: !isWelcome ? (i18n.language, i18n.t("whatsnew_ok"))
-          : (step < setup.lastStep ? (i18n.language, i18n.t("welcome_next"))
-                                   : (i18n.language, i18n.t("welcome_start")))
-    cancelText: (i18n.language, i18n.t("welcome_back"))
-    showCancel: isWelcome && step > 0
-    holdOnOk: isWelcome && step < setup.lastStep
-    holdOnCancel: isWelcome
-    footHint: isWelcome
-        ? (i18n.language, i18n.t("welcome_step_progress")).arg(step + 1).arg(setup.lastStep + 1)
-        : ""
-    onNextRequested: if (step < setup.lastStep) step++
-    onBackRequested: if (step > 0) step--
-    // Reopened from Help → Setup wizard, so it must not resume on whatever step
-    // it was left at the last time it ran.
-    onOpenedChanged: if (opened && isWelcome) step = 0
+    // The setup wizard covers the whole window; "welcome" opens it instead.
+    property var wizard: null
+    readonly property bool wizardOpen: wizard ? wizard.opened : false
+    function open() {
+        if (isWelcome && wizard) { wizard.open(); return }
+        opened = true
+    }
 
     signal openReleaseNotes()
 
@@ -227,14 +214,6 @@ BatDialog {
         opacity: 0.9
     }
 
-    // ===== WELCOME body =====
-    WelcomeSteps {
-        id: setup
-        visible: dlg.isWelcome
-        step: dlg.step
-        uiPalette: dlg.uiPalette
-    }
-
     // ===== UPDATE body =====
     Text {
         visible: !dlg.isWelcome
@@ -333,7 +312,7 @@ BatDialog {
         }
         BtnFlat {
             text: (i18n.language, i18n.t("whatsnew_open_wizard"))
-            onClicked: { dlg.step = 0; dlg.mode = "welcome" }
+            onClicked: { dlg.close(); dlg.mode = "welcome"; dlg.open() }
         }
     }
 }

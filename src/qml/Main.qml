@@ -236,7 +236,7 @@ Window {
     // The grid's first-run cascade waits on this.
     readonly property bool libraryObscured:
         showSplash
-        || (welcomeDlg && welcomeDlg.opened)
+        || (welcomeDlg && (welcomeDlg.opened || welcomeDlg.wizardOpen))
         || (tourOverlay && tourOverlay.running)
     Component.onCompleted: {
         if (typeof themeBridge !== "undefined") themeBridge.setAppFontFamily(appFace)
@@ -689,6 +689,7 @@ Window {
     onAppFaceChanged: if (typeof themeBridge !== "undefined") themeBridge.setAppFontFamily(appFace)
 
     ColumnLayout {
+        id: appBody
         anchors.fill: parent
         spacing: 0
         // ===== top navigation bar (the title bar too, on Windows) =====
@@ -825,6 +826,8 @@ Window {
         id: overlays
         host: win
     }
+    // the app without its overlays: the setup wizard shows it live
+    readonly property Item appView: appBody
     property alias openFileDlg: overlays.openFileDlg
     property alias addDlg: overlays.addDlg
     property alias addTorrentDlg: overlays.addTorrentDlg

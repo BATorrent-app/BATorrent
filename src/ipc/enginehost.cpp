@@ -57,6 +57,11 @@ EngineHost::EngineHost(SessionManager *session, const QString &serverName, QObje
     connect(m_session, &SessionManager::killSwitchTriggered, this, [this]() {
         sendEvent(QStringLiteral("killSwitch"), {});
     });
+    connect(m_session, &SessionManager::stagedMetadata, this,
+            [this](const QString &h, const QString &n, qint64 size, const QStringList &paths, const QList<qint64> &sizes) {
+        QByteArray a; QDataStream o(&a, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
+        o << h << n << size << paths << sizes; sendEvent(QStringLiteral("stagedMetadata"), a);
+    });
     // Self-contained add event: pack everything the UI's cover-resolve / toast /
     // auto-tracker flow needs, so it never has to query back by a racing index.
     connect(m_session, &SessionManager::torrentAdded, this, [this](int index) {
@@ -203,6 +208,20 @@ QByteArray EngineHost::dispatch(const QString &method, const QByteArray &args)
     } else if (method == QLatin1String("addMagnet")) {
         QString uri, sp, hint; qint32 ct; in >> uri >> sp >> hint >> ct;
         m_session->addMagnet(uri, sp, hint, ct);
+    } else if (method == QLatin1String("addTorrentFileEx") || method == QLatin1String("commitStaged")) {
+        QString first, sp; std::vector<int> pr; qint32 n; bool paused;
+        in >> first >> sp >> n; pr.reserve(n);
+        for (qint32 k = 0; k < n; ++k) { qint32 v; in >> v; pr.push_back(v); }
+        in >> paused;
+        if (method == QLatin1String("addTorrentFileEx")) m_session->addTorrentFileEx(first, sp, pr, paused);
+        else m_session->commitStaged(first, sp, pr, paused);
+    } else if (method == QLatin1String("addMagnetEx")) {
+        QString uri, sp; bool paused; in >> uri >> sp >> paused;
+        m_session->addMagnetEx(uri, sp, paused);
+    } else if (method == QLatin1String("stageMagnet")) {
+        QString uri; in >> uri; m_session->stageMagnet(uri);
+    } else if (method == QLatin1String("discardStaged")) {
+        QString h; in >> h; m_session->discardStaged(h);
     } else if (method == QLatin1String("renameFile")) {
         qint32 ti, fi; QString p; in >> ti >> fi >> p; m_session->renameFile(ti, fi, p);
     } else if (method == QLatin1String("extractTorrent")) {

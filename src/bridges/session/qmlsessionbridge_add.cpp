@@ -159,47 +159,20 @@ QVariantMap QmlSessionBridge::previewTorrent(const QString &filePath) const
         out["error"] = QString::fromUtf8(e.what());
         return out;
     }
-    out["ok"] = true;
-    out["name"] = QString::fromStdString(ti->name());
-    out["totalSize"] = formatSize(ti->total_size());
-    out["totalSizeBytes"] = static_cast<qint64>(ti->total_size());
-    out["fileCount"] = ti->num_files();
-
-    // info hash (same convention as SessionManager: info_hashes().get_best())
-    QString infoHash = QString::fromStdString(
-        (std::ostringstream() << ti->info_hashes().get_best()).str());
-    out["infoHash"] = infoHash;
-
-    // poster from metadata cache, if this torrent was seen before
-    if (m_resolver && m_resolver->hasCached(infoHash)) {
-        auto meta = m_resolver->cached(infoHash);
-        if (meta.valid) out["posterPath"] = meta.posterPath;
-    }
-
     const lt::file_storage &fs = ti->files();
     QStringList paths;
+    QList<qint64> sizes;
     paths.reserve(ti->num_files());
-    for (int i = 0; i < ti->num_files(); ++i)
+    sizes.reserve(ti->num_files());
+    for (int i = 0; i < ti->num_files(); ++i) {
         paths << QString::fromStdString(fs.file_path(lt::file_index_t(i)));
-
-    QVariantList files;
-    const auto rows = buildFileTree(paths);
-    files.reserve(rows.size());
-    for (const FileTreeRow &r : rows) {
-        QVariantMap f;
-        f["path"]  = r.name;             // the segment, not the whole path
-        f["dir"]   = r.isDir;
-        f["depth"] = r.depth;
-        // The row's position says nothing about which file it is once the
-        // list is grouped, and priorities are handed over positionally.
-        f["fileIndex"] = r.fileIndex;
-        const qint64 bytes = r.isDir ? 0
-                                     : static_cast<qint64>(fs.file_size(lt::file_index_t(r.fileIndex)));
-        f["size"] = r.isDir ? QString() : formatSize(bytes);
-        f["sizeBytes"] = bytes;
-        files << f;
+        sizes << fs.file_size(lt::file_index_t(i));
     }
-    out["files"] = files;
+    // same convention as SessionManager: info_hashes().get_best()
+    const QString infoHash = QString::fromStdString(
+        (std::ostringstream() << ti->info_hashes().get_best()).str());
+    out = buildPreview(QString::fromStdString(ti->name()), infoHash, paths, sizes);
+    out["sourceFile"] = QFileInfo(local).fileName();
     return out;
 }
 
