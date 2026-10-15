@@ -41,7 +41,7 @@ void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString
         const int row = m_session->torrentIndexByInfoHash(infoHash);
         if (row >= 0 && m_session->torrentHasVideo(row)) return;
     }
-    emit notify(tr_("dlg_download_complete"), name, 3);
+    emit finished(name, infoHash);
 }
 
 void QmlNotificationBridge::onTorrentError(const QString &message)
@@ -51,13 +51,13 @@ void QmlNotificationBridge::onTorrentError(const QString &message)
 
 void QmlNotificationBridge::onKillSwitchTriggered()
 {
-    emit notify(tr_("killswitch_title"), tr_("killswitch_triggered"), 1);
+    emit vpnDropped();
     maybeBeep();
 }
 
-void QmlNotificationBridge::onRssAutoDownloaded(const QString &feedName, const QString &itemTitle)
+void QmlNotificationBridge::onRssAutoDownloaded(const QString &, const QString &)
 {
-    emit notify(feedName, itemTitle, 0);
+    // the window groups a check's adds into one notice (rss.autoDownloaded)
 }
 
 void QmlNotificationBridge::onSuspiciousFilesDetected(const QString &name, const QStringList &files)

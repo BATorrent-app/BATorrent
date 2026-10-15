@@ -498,7 +498,12 @@ signals:
                            int unlocked, int total);
     // Raised while the game runs, one per achievement, as the emulator writes it.
     void achievementUnlocked(const QString &gameTitle, const QString &name, const QString &icon,
-                             const QString &percentLabel, bool rare);
+                             const QString &percentLabel, bool rare,
+                             const QString &description, int unlocked, int total);
+    // Something stuck that only the person can fix, once per item and reason:
+    // {infoHash, reason ("fetching" | "nospace" | "missing"), title, poster,
+    //  minutes, need, disk, diskPath, diskFree}
+    void needsYou(const QVariantMap &notice);
     void movieReady(const QString &infoHash, const QString &name);   // a movie/series finished → offer Play now
     void gameReady(const QString &infoHash, const QString &name);    // game download done → offer Install
     void installProgress(const QString &infoHash, double percent);  // Get&Install download/install progress
@@ -641,6 +646,8 @@ private:
     bool m_stillLoaded = false;
     bool m_incomingSeen = false;   // someone connected in: the port is reachable
     int m_reachTick = 0;
+    QSet<QString> m_needsSeen;     // "hash/reason" already raised
+    void watchNeeds();
     void trackStillSince();
     QHash<QString, QVector<int>> m_torrentDownHist;   // per-torrent rate rings (by hash)
     QHash<QString, QVector<int>> m_torrentUpHist;

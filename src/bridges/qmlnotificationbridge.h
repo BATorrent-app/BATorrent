@@ -25,6 +25,10 @@ public slots:
 signals:
     // level: 0 = information, 1 = warning, 2 = critical
     void notify(const QString &title, const QString &body, int level);
+    // something finished: the window words it (a film and a game get their own)
+    void finished(const QString &name, const QString &infoHash);
+    // the VPN went down: a band under the navigation, not a toast
+    void vpnDropped();
 
 private:
     IEngine *m_session = nullptr;

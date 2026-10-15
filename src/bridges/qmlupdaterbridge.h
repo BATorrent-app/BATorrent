@@ -21,6 +21,8 @@ public:
     Q_INVOKABLE QStringList releaseHighlights(int max) const;
     // unix seconds of the last check that got an answer, 0 never
     Q_INVOKABLE qint64 lastChecked() const;
+    // the check that just answered was the quiet one at startup
+    Q_INVOKABLE bool silentCheck() const { return m_silent; }
 
 signals:
     void updateFound(const QString &version, const QString &url, const QString &assetName);

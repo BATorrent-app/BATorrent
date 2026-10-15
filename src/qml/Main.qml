@@ -375,6 +375,8 @@ Window {
     // to re-download into): libtorrent moves storage there, then a recheck picks
     // up whatever's present. Shared by the context menu and the recovery banner.
     function promptSetLocation() { setLocationDlg.open() }
+    // Downloads with nothing selected: the Overview, where notices that left still are
+    function showOverview() { currentPage = 0; library.clearSelection() }
     function openSearch(query) { win.currentPage = 1; searchPage.runQuery(query) }
     // A torrent's own page, from Downloads. False when it has none.
     function openTorrentPage(hash) {
@@ -721,6 +723,13 @@ Window {
                 var p = anchor.mapToItem(win.contentItem, 0, anchor.height + 4)
                 logoMenu.popup(win.contentItem, p.x, p.y)
             }
+        }
+        // the VPN went down: a band until it is back
+        VpnDropBanner {
+            id: vpnBand
+            Layout.fillWidth: true
+            Layout.preferredHeight: implicitHeight
+            onSettingsRequested: { settingsPage.sec = 3; win.currentPage = 3 }
         }
 
         // ===== content stack (4.0 hub shell) =====

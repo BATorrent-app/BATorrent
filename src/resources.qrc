@@ -216,7 +216,7 @@
     <file>../src/qml/player/PlayerChrome.qml</file>
     <file>../src/qml/player/PlayerScrubber.qml</file>
     <file>../src/qml/player/PlayerShortcuts.qml</file>
-<file>../src/qml/overlays/ToastOverlay.qml</file>
+<file>../src/qml/overlays/NotificationStack.qml</file>
 <file>../src/qml/overlays/CommandPalette.qml</file>
 <file>../src/qml/windows/RssWindow.qml</file>
 <file>../src/qml/views/SettingsView.qml</file>
@@ -240,6 +240,7 @@
 <file>../src/qml/views/NavBarDownloadChip.qml</file>
 <file>../src/qml/views/DiskGauge.qml</file>
 <file>../src/qml/views/NavBarVpnChip.qml</file>
+<file>../src/qml/views/VpnDropBanner.qml</file>
 <file>../src/qml/views/SearchView.qml</file>
 <file>../src/qml/views/FindBar.qml</file>
 <file>../src/qml/views/SearchLanding.qml</file>

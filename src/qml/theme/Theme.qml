@@ -204,6 +204,8 @@ QtObject {
     readonly property color selectedFill: Qt.rgba(t1.r, t1.g, t1.b, 0.08)
     // The 1px seam between the two halves of a split primary button.
     readonly property color splitSeam: Qt.rgba(0, 0, 0, 0.25)
+    // the VPN-dropped band: the page tinted toward the problem red
+    readonly property color dangerBand: Qt.tint(bg, Qt.rgba(down.r, down.g, down.b, 0.16))
 
     // a selected row or an "on" pill, and a stronger accent wash
     readonly property color sel:        isUser ? _over(uPrimary, 0.13) : p.sel

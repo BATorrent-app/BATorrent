@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// One unlock at a time, in order; a rare one says so.
+// One card on screen; several unlocks at once become that card with a count.
 
 import QtQuick
 import QtTest
@@ -14,25 +14,21 @@ Item {
         name: "AchievementToast"
         when: windowShown
 
-        function test_unlocksShowOneAtATimeInOrder() {
+        function test_oneUnlockShowsItself() {
             var t = createTemporaryObject(toastComp, root)
-            t.push("Elden Ring", "First", "", "41", false)
-            t.push("Elden Ring", "Second", "", "4", true)
+            t.push({ name: "First", icon: "", percentLabel: "41", rare: false, description: "", unlocked: 3, total: 10 })
             compare(t.current.name, "First")
-            compare(t.queue.length, 1)
+            compare(t.extra, 0)
             verify(t.visible)
-            verify(!t.rare, "the service said it wasn't rare")
-            t.next()
-            compare(t.current.name, "Second")
-            verify(t.rare, "and that this one is")
-            t.next()
-            compare(t.current, null)
         }
 
-        function test_anUnknownShareIsNeverRare() {
+        function test_aBurstKeepsTheFirstAndCounts() {
             var t = createTemporaryObject(toastComp, root)
-            t.push("X", "No data", "", "")
-            verify(!t.rare)
+            t.push({ name: "First", rare: false })
+            t.push({ name: "Second", rare: true })
+            t.push({ name: "Third", rare: false })
+            compare(t.current.name, "First")
+            compare(t.extra, 2)
         }
 
         function test_itNeverTakesFocusOrClicks() {

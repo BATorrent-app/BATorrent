@@ -72,11 +72,16 @@ void QmlSessionBridge::onAchievementsLookedUp(const QString &key, int appId, con
             const QVariantMap a = v.toMap();
             if (a.value(QStringLiteral("apiName")).toString() != api) continue;
             const bool rare = a.value(QStringLiteral("rare")).toBool();
-            if (QSettings().value(QStringLiteral("notifSound"), true).toBool())
-                SoundPlayer::play(rare ? SoundSynth::Sound::AchievementRare : SoundSynth::Sound::Achievement);
+            // no sound of our own over a game: it has its own
+            // how far along: the ones already marked, and this one if the list lags
+            int done = 0;
+            for (const QVariant &o : list)
+                if (o.toMap().value(QStringLiteral("unlocked")).toBool()) ++done;
+            if (!a.value(QStringLiteral("unlocked")).toBool()) ++done;
             emit achievementUnlocked(m_achTitle.value(key), a.value(QStringLiteral("name")).toString(),
                                      a.value(QStringLiteral("icon")).toString(),
-                                     a.value(QStringLiteral("percentLabel")).toString(), rare);
+                                     a.value(QStringLiteral("percentLabel")).toString(), rare,
+                                     a.value(QStringLiteral("description")).toString(), done, int(list.size()));
             break;
         }
     }

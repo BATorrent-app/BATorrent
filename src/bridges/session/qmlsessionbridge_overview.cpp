@@ -56,6 +56,7 @@ QVariantMap QmlSessionBridge::overview() const
         QString reason;
         if (key == QLatin1String("missing")) reason = QStringLiteral("missing");
         else if (key == QLatin1String("error")) reason = QStringLiteral("error");
+        else if (info.fetchingMetadata && info.fetchingSecs >= 600) reason = QStringLiteral("fetching");
         else if (key == QLatin1String("downloading") && info.numSeeds == 0 && info.numPeers > 0
                  && info.downloadRate < 1024)
             reason = QStringLiteral("noseeds");
@@ -66,6 +67,7 @@ QVariantMap QmlSessionBridge::overview() const
             m[QStringLiteral("detail")] = info.stateDetail;
             m[QStringLiteral("pct")] = int(info.progress * 100);
             m[QStringLiteral("left")] = formatSize(qMax<qint64>(0, info.totalSize - info.totalDone));
+            m[QStringLiteral("minutes")] = int(qMax<qint64>(0, info.fetchingSecs) / 60);
             // trouble first, a pause last: it is the user's own choice
             att.append({ reason == QLatin1String("paused") ? -info.addedTime : (qint64(1) << 40) + info.addedTime, m });
             continue;

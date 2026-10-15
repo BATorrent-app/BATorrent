@@ -167,3 +167,64 @@ void QmlSessionBridge::removeTorrentsByHash(const QStringList &hashes, bool dele
     if (done > 0)
         emit toast(deleteFiles ? tr_("remove_trashed") : tr_("freeup_removed").arg(done), QString());
 }
+
+// What only the person can fix, said once per item and reason: a magnet that
+// has found no one to send its file list for ten minutes, a download the disk
+// has no room for (with the disk that does have it), files gone from disk.
+void QmlSessionBridge::watchNeeds()
+{
+    QSet<QString> live;
+    for (int i = 0; i < m_session->torrentCount(); ++i) {
+        const QString hash = m_session->torrentHashAt(i);
+        if (hash.isEmpty()) continue;
+        const TorrentInfo info = m_session->torrentAt(i);
+        QString reason;
+        if (info.fetchingMetadata && info.fetchingSecs >= 600) reason = QStringLiteral("fetching");
+        else if (info.filesMissing) reason = QStringLiteral("missing");
+        else if (info.hasError && (info.stateDetail.contains(QLatin1String("space"), Qt::CaseInsensitive)
+                                   || info.stateDetail.contains(QLatin1String("not enough"), Qt::CaseInsensitive)))
+            reason = QStringLiteral("nospace");
+        if (reason.isEmpty()) continue;
+        const QString key = hash + QLatin1Char('/') + reason;
+        live.insert(key);
+        if (m_needsSeen.contains(key)) continue;
+        m_needsSeen.insert(key);
+
+        QVariantMap n;
+        n[QStringLiteral("infoHash")] = hash;
+        n[QStringLiteral("reason")] = reason;
+        QString title = NameParser::parse(info.name).cleanTitle;
+        if (title.isEmpty()) title = info.name;
+        if (m_resolver && m_resolver->hasCached(hash)) {
+            const auto meta = m_resolver->cached(hash);
+            if (meta.valid) {
+                if (!meta.title.isEmpty()) title = meta.title;
+                if (QFileInfo::exists(meta.posterPath)) n[QStringLiteral("poster")] = QUrl::fromLocalFile(meta.posterPath).toString();
+            }
+        }
+        n[QStringLiteral("title")] = title;
+        n[QStringLiteral("minutes")] = int(qMax<qint64>(0, info.fetchingSecs) / 60);
+        if (reason == QLatin1String("nospace")) {
+            const qint64 need = qMax<qint64>(0, info.totalSize - info.totalDone);
+            n[QStringLiteral("need")] = formatSize(need);
+            n[QStringLiteral("here")] = QStorageInfo(info.savePath).rootPath();
+            // the roomiest other disk that holds what is left
+            QStorageInfo best;
+            const QString here = rootOf(info.savePath);
+            for (const QStorageInfo &v : QStorageInfo::mountedVolumes()) {
+                if (!v.isValid() || !v.isReady() || v.isReadOnly() || v.rootPath() == here) continue;
+                if (v.bytesAvailable() < need) continue;
+                if (!best.isValid() || v.bytesAvailable() > best.bytesAvailable()) best = v;
+            }
+            if (best.isValid()) {
+                n[QStringLiteral("disk")] = QDir::toNativeSeparators(best.rootPath()).remove(QLatin1Char('\\'));
+                n[QStringLiteral("diskPath")] = QDir(best.rootPath()).filePath(QFileInfo(info.savePath).fileName());
+                n[QStringLiteral("diskFree")] = formatSize(best.bytesAvailable());
+            }
+        }
+        emit needsYou(n);
+    }
+    // a fixed problem may come back later and be said again
+    for (auto it = m_needsSeen.begin(); it != m_needsSeen.end(); )
+        it = live.contains(*it) ? std::next(it) : m_needsSeen.erase(it);
+}

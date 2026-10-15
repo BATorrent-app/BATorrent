@@ -214,6 +214,15 @@ QtObject {
         ],
         // 6 Notificações
         [
+            // one switch per kind of notice
+            { type: "group", label: (i18n.language, i18n.t("set_grp_notices")) },
+            { type: "toggle", key: "notifyReady", on: true, label: (i18n.language, i18n.t("set_notify_ready")), note: (i18n.language, i18n.t("set_notify_ready_note")) },
+            { type: "toggle", key: "notifyNeeds", on: true, label: (i18n.language, i18n.t("set_notify_needs")), note: (i18n.language, i18n.t("set_notify_needs_note")) },
+            { type: "toggle", key: "notifyRss", on: true, label: (i18n.language, i18n.t("set_notify_rss")), note: (i18n.language, i18n.t("set_notify_rss_note")) },
+            { type: "toggle", key: "notifyNewVersion", on: true, label: (i18n.language, i18n.t("set_notify_version")), note: (i18n.language, i18n.t("set_notify_version_note")) },
+            { type: "toggle", key: "quietFullscreen", on: true, label: (i18n.language, i18n.t("set_quiet_fullscreen")), note: (i18n.language, i18n.t("set_quiet_fullscreen_note")) },
+            { type: "toggle", key: "notifyAchievements", label: (i18n.language, i18n.t("set_notify_achievements")), on: true,
+              note: (i18n.language, i18n.t("set_notify_achievements_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_telegram")) },
             { type: "text", key: "telegramToken", label: (i18n.language, i18n.t("settings_telegram_token")), mono: true, placeholder: "123456:ABC-DEF…", w: "grow", note: (i18n.language, i18n.t("set_telegram_token_note")) },
             { type: "text", key: "telegramChatId", label: (i18n.language, i18n.t("settings_telegram_chat")), mono: true, placeholder: "@canal  ·  -1001234567890", w: "w-md" },
@@ -226,8 +235,6 @@ QtObject {
             { type: "toggle", key: "discordEnabled", label: (i18n.language, i18n.t("set_discord_show")), on: true, note: (i18n.language, i18n.t("set_discord_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_system")) },
             { type: "toggle", key: "notifSound", label: (i18n.language, i18n.t("settings_notif_sound")), on: true },
-            { type: "toggle", key: "notifyAchievements", label: (i18n.language, i18n.t("set_notify_achievements")), on: true,
-              note: (i18n.language, i18n.t("set_notify_achievements_note")) },
             { type: "toggle", key: "notifyAchievementsSystem", label: (i18n.language, i18n.t("set_notify_achievements_system")),
               note: (i18n.language, i18n.t("set_notify_achievements_system_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_achievements")) },

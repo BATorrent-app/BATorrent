@@ -23,6 +23,55 @@ Item {
         target: typeof notifications !== "undefined" ? notifications : null
         ignoreUnknownSignals: true
         function onNotify(title, body, level) { host.notifyUser(title, body, level) }
+        // a film or a game says it its own way: give them a moment to
+        function onFinished(name, infoHash) { root.pendingDone[infoHash] = name; doneTimer.restart() }
+        function onVpnDropped() { if (!root.shown()) host.notifyNative(i18n.t("vpn_dropped_title"), i18n.t("vpn_dropped_tray")) }
+    }
+    property var pendingDone: ({})
+    Timer {
+        id: doneTimer
+        interval: 1500
+        onTriggered: {
+            for (var h in root.pendingDone) root.ready(h, root.pendingDone[h], "")
+            root.pendingDone = ({})
+        }
+    }
+    function shown() { return host.visible && host.visibility !== Window.Minimized && host.visibility !== Window.Hidden }
+    // "Hollow Knight is ready", with what can be done with it
+    function ready(hash, name, kind) {
+        delete pendingDone[hash]
+        var poster = typeof session !== "undefined" ? session.posterForHash(hash) : ""
+        var title = i18n.t("notif_ready").arg(name)
+        if (!shown()) { host.notifyUser(title, "", 3); return }
+        var actions = kind === "video" ? [{ id: "play:" + hash, label: i18n.t("notif_watch") }, { id: "open:" + hash, label: i18n.t("ctx_open_folder") }]
+                    : kind === "game" ? [{ id: "install:" + hash, label: i18n.t("hub_gs_install") }, { id: "open:" + hash, label: i18n.t("ctx_open_folder") }]
+                    : [{ id: "open:" + hash, label: i18n.t("ctx_open_folder") }]
+        toastHost.push({ tone: "ready", category: "ready", title: title, poster: poster ? host.fileUrl(poster) : "", actions: actions })
+    }
+    // RSS adds come in a burst, once per check: one notice for the lot
+    property var rssBatch: []
+    Timer {
+        id: rssTimer
+        interval: 4000
+        onTriggered: {
+            var b = root.rssBatch
+            root.rssBatch = []
+            if (b.length === 0) return
+            var title = b.length === 1 ? b[0].item : i18n.t("notif_rss_n").arg(b.length).arg(b[0].feed)
+            if (!root.shown()) { host.notifyUser(title, i18n.t("notif_rss_body"), 0); return }
+            toastHost.push({ tone: "ready", category: "rss", title: title, body: i18n.t("notif_rss_body"),
+                             actions: [{ id: "rss", label: i18n.t("notif_show") }] })
+        }
+    }
+    Connections {
+        target: typeof rss !== "undefined" ? rss : null
+        ignoreUnknownSignals: true
+        function onAutoDownloaded(feedName, itemTitle) {
+            var b = root.rssBatch
+            b.push({ feed: feedName, item: itemTitle })
+            root.rssBatch = b
+            rssTimer.restart()
+        }
     }
 
     // session-originated toasts (stream feedback, etc.)
@@ -32,26 +81,41 @@ Item {
         function onToast(title, body) { host.notifyUser(title, body, 0) }
         // The game is in front: our own card over it, or, when asked for (or
         // a game in exclusive fullscreen hides it), the OS notification.
-        function onAchievementUnlocked(game, name, icon, percentLabel, rare) {
+        function onAchievementUnlocked(game, name, icon, percentLabel, rare, description, unlocked, total) {
+            if (typeof settings !== "undefined" && !settings.getBool("notifyAchievements", true)) return
             if ((typeof settings !== "undefined" && settings.getBool("notifyAchievementsSystem"))
                     || (typeof themeBridge !== "undefined" && themeBridge.exclusiveFullscreenInFront()))
-                host.notifyNative(i18n.t("toast_achievement").arg(name), game)
+                host.notifyNative(i18n.t("toast_achievement").arg(name), description || game)
             else
-                achievementToast.push(game, name, icon, percentLabel, rare)
+                achievementToast.push({ name: name, icon: icon, percentLabel: percentLabel, rare: rare,
+                                        description: description, unlocked: unlocked, total: total })
+        }
+        // what only the person can fix, with the fix as the button
+        function onNeedsYou(n) {
+            var a, title, body
+            if (n.reason === "nospace") {
+                title = i18n.t("notif_nospace").arg(n.title)
+                body = n.disk ? i18n.t("notif_nospace_body").arg(n.need).arg(n.disk).arg(n.diskFree)
+                              : i18n.t("notif_nospace_body_none").arg(n.need)
+                a = n.disk ? [{ id: "move:" + n.infoHash + "|" + n.diskPath, label: i18n.t("notif_move_to").arg(n.disk) },
+                              { id: "files:" + n.infoHash, label: i18n.t("notif_choose_files") }]
+                           : [{ id: "freeup", label: i18n.t("search_wontfit_freeup") },
+                              { id: "files:" + n.infoHash, label: i18n.t("notif_choose_files") }]
+            } else if (n.reason === "fetching") {
+                title = i18n.t("notif_fetching").arg(n.title).arg(n.minutes)
+                body = i18n.t("notif_fetching_body")
+                a = [{ id: "keep:" + n.infoHash, label: i18n.t("notif_keep_trying") }, { id: "remove:" + n.infoHash, label: i18n.t("notif_remove") }]
+            } else {
+                title = i18n.t("notif_missing").arg(n.title)
+                body = i18n.t("notif_missing_body")
+                a = [{ id: "locate:" + n.infoHash, label: i18n.t("ov_act_locate") }]
+            }
+            if (!root.shown()) { host.notifyUser(title, body, 1); return }
+            toastHost.push({ tone: "needs", category: "needs", title: title, body: body, poster: n.poster || "", actions: a })
         }
         // a movie/series finished downloading → actionable "Play now" toast
-        function onMovieReady(infoHash, name) {
-            if (host.visible && host.visibility !== Window.Minimized && host.visibility !== Window.Hidden)
-                toastHost.show(i18n.t("toast_movie_ready"), name, 3, "play:" + infoHash, i18n.t("toast_play_now"))
-            else
-                host.notifyUser(i18n.t("toast_movie_ready"), name, 3)
-        }
-        function onGameReady(infoHash, name) {
-            if (host.visible && host.visibility !== Window.Minimized && host.visibility !== Window.Hidden)
-                toastHost.show(i18n.t("toast_game_ready"), name, 3, "install:" + infoHash, i18n.t("hub_gs_install"))
-            else
-                host.notifyUser(i18n.t("toast_game_ready"), name, 3)
-        }
+        function onMovieReady(infoHash, name) { root.ready(infoHash, name, "video") }
+        function onGameReady(infoHash, name) { root.ready(infoHash, name, "game") }
         function onInstallProgress(hash, percent) {
             if (hash !== gwOverlay.hash) return
             gwOverlay.percent = percent
@@ -102,12 +166,25 @@ Item {
         onAnotherRequested: if (hash !== "" && typeof session !== "undefined") session.abandonWatch(hash)
     }
 
-    // custom toast cards, pinned to the screen's bottom-right (native-like)
-    ToastOverlay {
+    // notices inside the window, above the status bar
+    NotificationStack {
         id: toastHost
-        anchorWindow: host
         onActionTriggered: function(actionId) {
-            if (actionId === "logs") host.showWin(host.logWinLoader)
+            var hash = actionId.indexOf(":") > 0 ? actionId.substring(actionId.indexOf(":") + 1) : ""
+            if (actionId === "overview") host.showOverview()
+            else if (actionId === "rss") host.showWin(host.rssWinLoader)
+            else if (actionId === "freeup") host.makeRoomPanel.open()
+            else if (actionId === "update") host.updateDlg.open()
+            else if (actionId.indexOf("open:") === 0 && typeof session !== "undefined") { if (session.selectByInfoHash(hash)) session.openSaveFolder() }
+            else if (actionId.indexOf("move:") === 0 && typeof session !== "undefined") {
+                var parts = hash.split("|")
+                if (session.selectByInfoHash(parts[0])) { session.moveSelectedStorage(parts[1]); session.resumeSelected() }
+            }
+            else if (actionId.indexOf("files:") === 0) { host.showOverview(); host.selectTorrentByHash(hash); host.detailTab = 2 }
+            else if (actionId.indexOf("remove:") === 0 && typeof session !== "undefined") { if (session.selectByInfoHash(hash)) host.removeDlg.open() }
+            else if (actionId.indexOf("locate:") === 0) { host.selectTorrentByHash(hash); host.promptSetLocation() }
+            else if (actionId.indexOf("keep:") === 0) {}
+            else if (actionId === "logs") host.showWin(host.logWinLoader)
             else if (actionId === "crashreport" && typeof logs !== "undefined")
                 Qt.openUrlExternally(logs.crashReportUrl())
             else if (actionId === "star")

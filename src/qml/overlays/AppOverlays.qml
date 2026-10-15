@@ -198,7 +198,13 @@ Item {
     Connections {
         target: typeof updater !== "undefined" ? updater : null
         ignoreUnknownSignals: true
-        function onUpdateFound(version, url, assetName) { updateDlg.showAvailable(version, url, assetName) }
+        // asked for: the window; found at startup: a notice, once per release
+        function onUpdateFound(version, url, assetName) {
+            if (!updater.silentCheck()) { updateDlg.showAvailable(version, url, assetName); return }
+            updateDlg.prepare(version, url, assetName)
+            host.toastHost.push({ tone: "ready", category: "version", title: i18n.t("notif_version").arg(version),
+                                  actions: [{ id: "update", label: i18n.t("notif_see_update") }] })
+        }
         function onNoUpdate(silent) { if (!silent) updateDlg.showNone() }
     }
     CreateTorrentDialog { id: createDlg }

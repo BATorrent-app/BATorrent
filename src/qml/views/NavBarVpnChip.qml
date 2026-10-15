@@ -59,7 +59,7 @@ Rectangle {
             visible: !root.bar.tightChip
             text: (i18n.language, root.st === 2 ? i18n.t("vpn_state_on")
                  : root.st === 1 ? i18n.t("vpn_state_connecting")
-                 : root.st === 3 ? i18n.t("vpn_state_failed")
+                 : root.st === 3 ? i18n.t("vpn_state_dropped")
                  : i18n.t("vpn_state_off"))
             color: root.stColor
             font.pixelSize: 12; font.family: Theme.fontSans
@@ -78,6 +78,6 @@ Rectangle {
     ToolTip.text: (i18n.language, "VPN — " +
         (root.st === 2 ? i18n.t("vpn_state_on")
          : root.st === 1 ? i18n.t("vpn_state_connecting")
-         : root.st === 3 ? i18n.t("vpn_state_failed")
+         : root.st === 3 ? i18n.t("vpn_state_dropped")
          : i18n.t("vpn_state_off")))
 }

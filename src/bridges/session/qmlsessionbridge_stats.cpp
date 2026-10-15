@@ -60,6 +60,7 @@ void QmlSessionBridge::sampleSpeeds()
     }
 
     trackStillSince();
+    watchNeeds();
     // An incoming connection proves the port is reachable even when the
     // router never answered UPnP: checked every few seconds, so the status
     // bar and the Network window read the same answer.

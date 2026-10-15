@@ -25,11 +25,13 @@ Item {
         if (a.reason === "missing") return i18n.t("ov_missing")
         if (a.reason === "error") return a.detail && a.detail.length > 0 ? a.detail : i18n.t("tile_error")
         if (a.reason === "noseeds") return i18n.t("ov_noseeds")
+        if (a.reason === "fetching") return i18n.t("ov_fetching").arg(a.minutes)
         return i18n.t("ov_paused").arg(a.pct).arg(a.left)
     }
     function act(a) {
         return i18n.t(a.reason === "missing" ? "ov_act_locate"
                     : a.reason === "noseeds" ? "ov_act_source"
+                    : a.reason === "fetching" ? "notif_remove"
                     : a.reason === "error" ? "ov_act_retry" : "ov_act_resume")
     }
     function run(a) {
@@ -37,6 +39,7 @@ Item {
         win.selectTorrentByHash(a.infoHash)
         if (a.reason === "missing") win.promptSetLocation()
         else if (a.reason === "noseeds") win.openSearch(a.title)
+        else if (a.reason === "fetching") win.removeDlg.open()
         else if (a.reason === "error") session.forceRecheckSelected()
         else session.resumeSelected()
     }

@@ -47,6 +47,13 @@ ModalShell {
         }
         checkedAt = hasUpdater ? updater.lastChecked() : 0
     }
+    // filled in without opening, for the notice that offers it
+    function prepare(v, u, a) {
+        version = v; url = u; assetName = a
+        size = hasUpdater ? updater.releaseSize() : ""
+        highlights = hasUpdater ? updater.releaseHighlights(3) : []
+        downloading = false; restarting = false; pct = 0; error = ""
+    }
     function showAvailable(v, u, a) {
         version = v; url = u; assetName = a
         size = hasUpdater ? updater.releaseSize() : ""
