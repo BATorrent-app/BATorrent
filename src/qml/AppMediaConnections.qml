@@ -7,6 +7,7 @@ import QtQuick
 // Player / debrid / search → overlay + window wiring. Keeps Main free of the
 // media-flow Connections clutter; host owns page jumps and notifyUser.
 Item {
+    id: root
     required property var host
     // Names intentionally differ from Main ids/aliases: `gwOverlay: gwOverlay`
     // self-shadows to undefined and aborts openPlayer before the window opens.
@@ -34,6 +35,8 @@ Item {
             watchOverlay.waited = waited
         }
         function onWatchFailed(title) {
+            // the player waiting for it says so itself
+            if (loaders.failWaiting(title)) return
             if (watchOverlay) watchOverlay.fail(i18n.t("gw_failed").arg(title))
         }
     }
@@ -87,12 +90,10 @@ Item {
         function onPickFileWhenReady(infoHash, target) {
             if (typeof session !== "undefined") session.pickFileWhenReady(infoHash, target)
         }
+        // ▶ on a release: the player opens now and the wait happens inside it
         function onPrepareAndWatch(infoHash, title, target) {
-            if (!watchOverlay) return
-            watchOverlay.forGame = false
-            watchOverlay.hash = infoHash
-            watchOverlay.title = title
-            watchOverlay.phase = "buffering"
+            if (watchOverlay) watchOverlay.hide()
+            loaders.openWaiting(root.waitFor(infoHash, title, target || ({})))
             if (typeof session !== "undefined") session.watchWhenReady(infoHash, title, target || ({}))
         }
         function onPrepareAndInstall(infoHash, title) {
@@ -105,6 +106,40 @@ Item {
             if (typeof session !== "undefined") session.installWhenReady(infoHash, title)
         }
     }
+    // What the waiting player shows, from the release list it was picked in:
+    // the work's title and art, the release, and the others it could switch to.
+    function waitFor(infoHash, title, target) {
+        var api = typeof search !== "undefined" ? search : null
+        var rows = api ? api.results : []
+        var h = String(infoHash || "").toLowerCase()
+        var row = null
+        for (var i = 0; i < rows.length; i++)
+            if (String(rows[i].coverHash || "").toLowerCase() === h) { row = rows[i]; break }
+        var season = target.season !== undefined ? target.season : (row ? row.season : -1)
+        var episode = target.episode !== undefined ? target.episode : (row && row.episode > 0 ? row.episode : -1)
+        function label(r) {
+            var q = [r.quality || "", r.source || ""].filter(function (x) { return x.length > 0 }).join(" ")
+            return q
+        }
+        var cands = []
+        for (var j = 0; j < rows.length; j++) {
+            var r = rows[j]
+            if (String(r.coverHash || "").toLowerCase() === h || r.isTitle) continue
+            if (episode > 0 && !(r.season === season && (r.episode === episode || !(r.episode > 0)))) continue
+            cands.push({ idx: j, quality: r.quality || "", label: label(r), seeds: r.seedsN || 0 })
+        }
+        return {
+            hash: infoHash,
+            title: (api && api.workTitle) || title,
+            subtitle: episode > 0 ? i18n.t("wait_ep_code").arg(season).arg(episode) : ((api && api.workYear) || ""),
+            art: api ? (api.workBackdrop || api.workPoster || "") : "",
+            release: row ? [label(row), row.sizeStr || ""].filter(function (x) { return x.length > 0 }).join(" · ") : "",
+            quality: row ? (row.quality || "") : "",
+            season: season, episode: episode,
+            candidates: cands
+        }
+    }
+
     Timer {
         id: selectAddedTimer
         property string hash: ""

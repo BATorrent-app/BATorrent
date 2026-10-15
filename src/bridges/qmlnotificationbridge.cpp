@@ -27,9 +27,11 @@ static void maybeChime()
         SoundPlayer::playCompletionChime();
 }
 
+// Never a notice for what the person just did: an added item is already in
+// the activity chip and in Downloads.
 void QmlNotificationBridge::onTorrentAdded(const QString &name)
 {
-    emit notify(tr_("notif_torrent_added"), name, 0);
+    Q_UNUSED(name);
 }
 
 void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &infoHash)

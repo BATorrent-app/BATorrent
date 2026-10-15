@@ -13,6 +13,7 @@ Item {
 
     property var hubPage: null
     property var searchPage: null     // answers "what comes after this episode" for a player
+    property var host: null           // the main window, raised when a wait is called off
 
     property alias rssWinLoader: rssWinLoader
     property alias shortcutsWinLoader: shortcutsWinLoader
@@ -43,9 +44,51 @@ Item {
     // something else while this plays)
     property int playersOpen: 0
 
+    // ▶ on a release: the player opens now and waits inside itself. A window
+    // already waiting (a switch to a healthier release) takes the new wait.
+    function openWaiting(wv) {
+        for (var i = 0; i < openPlayers.length; ++i) {
+            var e = openPlayers[i]
+            if (e && e.waiting) { e.startWaiting(wv); e.show(); e.raise(); e.requestActivate(); return }
+        }
+        var w = playerWindowComp.createObject(null)
+        if (!w) return
+        var step = 34 * (openPlayers.length % 6)
+        if (step > 0) { w.x = w.x + step; w.y = w.y + step }
+        openPlayers.push(w)
+        playersOpen = openPlayers.length
+        w.nextProvider = root.searchPage
+        w.startWaiting(wv)
+        w.prepareFrame()
+        w.show(); w.raise(); w.requestActivate()
+    }
+
+    // The wait gave up on its own (no file list, the item vanished): the
+    // waiting player says nobody is sharing it. False when none is waiting.
+    function failWaiting(title) {
+        for (var i = 0; i < openPlayers.length; ++i) {
+            var e = openPlayers[i]
+            if (e && e.waiting) {
+                var st = e.waitInfo || ({})
+                e.waitInfo = { meta: st.meta, peers: 0, elapsed: st.elapsed || 0, noSource: true }
+                return true
+            }
+        }
+        return false
+    }
+
     function openPlayer(url, title, hash, fileIndex) {
         console.info("[player] open " + (hash || "").substring(0, 8) + " file " + fileIndex
                      + " (" + openPlayers.length + " open)")
+        // the window that waited for this one plays it
+        for (var k = 0; k < openPlayers.length; ++k) {
+            var wt = openPlayers[k]
+            if (wt && wt.waiting && wt.waiting.hash === hash) {
+                wt.show(); wt.raise(); wt.requestActivate()
+                wt.openMedia(url, title, hash, fileIndex)
+                return
+            }
+        }
         // Same file twice: raise the window that already has it rather than
         // opening a duplicate that fights the first one for the same pieces.
         for (var i = 0; i < openPlayers.length; ++i) {
@@ -102,6 +145,10 @@ Item {
             // The id, not `this`: inside a Qt.callLater callback `this` is not
             // the window, so destroy() would quietly never run and every closed
             // player would leak.
+            onWaitCancelled: function (backToFind) {
+                if (root.host) { root.host.raise(); root.host.requestActivate() }
+                if (backToFind && root.searchPage) root.searchPage.closeSub(true)
+            }
             onClosed: Qt.callLater(function() {
                 root.forgetPlayer(playerWin)
                 playerWin.destroy()

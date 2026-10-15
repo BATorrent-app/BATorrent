@@ -50,6 +50,35 @@ Window {
     }
 
     property string streamUrl: ""
+    // Before there is anything to play: the wait, shown inside this window
+    // (PlayerWaiting). { hash, title, subtitle, art, release, quality,
+    // season, episode, candidates }; null once the stream opens.
+    property var waiting: null
+    property var waitInfo: ({})
+    signal waitCancelled(bool backToFind)
+    function startWaiting(wv) {
+        waiting = wv
+        waitInfo = ({})
+        infoHash = wv.hash
+        streamUrl = ""
+        mediaTitle = wv.title || ""
+        resolvedTitle = wv.title || ""
+        resolvedSubtitle = wv.subtitle || ""
+    }
+    // ← / Esc / ✕ while waiting: stop waiting, keep the download, go back
+    function cancelWait(backToFind) {
+        if (!waiting) return
+        var h = waiting.hash
+        waiting = null
+        if (typeof session !== "undefined") session.cancelWatch(h)
+        waitCancelled(!!backToFind)
+        close()
+    }
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        ignoreUnknownSignals: true
+        function onWaitState(hash, st) { if (win.waiting && hash === win.waiting.hash) win.waitInfo = st }
+    }
     property string localFile: ""   // on-disk path of the playing file (seek previews decode this, not the HTTP stream)
     readonly property bool ambientGlow: (typeof settings === "undefined") || settings.getBool("ambientGlow", true)
     property string mediaTitle: ""
@@ -341,6 +370,7 @@ Window {
     readonly property bool showEndCard: endCard.showEndCard
 
     function openMedia(url, title, hash, fileIdx) {
+        win.waiting = null
         resume.save()
         win.streamUrl = url
         win.mediaTitle = title
@@ -459,7 +489,11 @@ Window {
     }
 
     signal closed()
-    onClosing: { resume.save(); player.stop(); win.closed() }
+    onClosing: {
+        if (win.waiting && typeof session !== "undefined") session.cancelWatch(win.waiting.hash)
+        win.waiting = null
+        resume.save(); player.stop(); win.closed()
+    }
 
     Rectangle { anchors.fill: parent; color: "#000000" }
 
@@ -784,6 +818,11 @@ Window {
         nextSubtitle: win.nextSubtitle
         formatHelper: playerFmt
         onPlayNextRequested: win.playNext()
+    }
+
+    PlayerWaiting {
+        anchors.fill: parent
+        pw: win
     }
 
     PlayerChrome {

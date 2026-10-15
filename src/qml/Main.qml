@@ -884,6 +884,7 @@ Window {
     // them eagerly stalled the UI thread for seconds on launch.
     MainWindowLoaders {
         id: windowLoaders
+        host: win
         hubPage: hubPage
         searchPage: searchPage
     }

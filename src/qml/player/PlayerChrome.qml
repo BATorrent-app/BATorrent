@@ -26,7 +26,10 @@ Item {
     property var optionsPanel
     property var overflowMenu
 
-    readonly property bool shown: !!pw && pw.controlsShown
+    // waiting for the stream: only the top (back, title, window buttons) shows
+    readonly property bool waiting: !!pw && !!pw.waiting
+    readonly property bool shown: !!pw && (pw.controlsShown || waiting)
+    readonly property var hitItems: [waitBack]
     readonly property bool topVisible: topBar.visible
     readonly property real topHeight: 64
     readonly property bool barVisible: bar.visible
@@ -214,6 +217,16 @@ Item {
         spacing: 12
         opacity: topBar.opacity
         visible: topBar.visible && !!pw && pw.headerTitle.length > 0
+        // back to the releases, while waiting
+        Rectangle {
+            id: waitBack
+            visible: root.waiting
+            Layout.preferredWidth: 32; Layout.preferredHeight: 32
+            radius: 6
+            color: wbkMa.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            IconImg { anchors.centerIn: parent; src: "qrc:/icons/arrow-left.svg"; tint: "#ffffff"; s: 16 }
+            MouseArea { id: wbkMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (pw) pw.cancelWait(false) }
+        }
         Text {
             text: pw ? pw.headerTitle.replace(/\s*\(\d{4}\)\s*$/, "") : ""
             color: "#ffffff"; font.pixelSize: 16; font.weight: Font.DemiBold; font.family: Theme.fontSans
@@ -265,7 +278,7 @@ Item {
         id: bar
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
         height: 200
-        opacity: root.shown ? 1 : 0
+        opacity: root.shown && !root.waiting ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
 

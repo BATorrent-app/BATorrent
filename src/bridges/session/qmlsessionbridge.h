@@ -495,6 +495,11 @@ signals:
     void watchProgress(const QString &infoHash, double percent);   // 0..1, each tick while pending
     void watchFailed(const QString &title);      // Get&Watch: gave up (no seeds / no metadata)
     void watchHealth(const QString &infoHash, int downBps, int peers, int waitedSec);   // each tick while pending
+    // Everything the player's waiting screen says, each tick while pending:
+    // {meta, have, need, down, peers, seeds, elapsed, noSource}. have/need are
+    // the bytes needed to start playing smoothly, not the file. noSource: no
+    // peer for 45 s, the wait is over (the download stays in the list).
+    void waitState(const QString &infoHash, const QVariantMap &state);
     void skipTimesReady(const QString &infoHash, int fileIndex, const QVariantList &chapters);
     void mediaQuarantined(const QString &infoHash, const QString &fileName,
                           const QString &kindKey, const QString &searchQuery);
@@ -578,6 +583,7 @@ private:
     QString searchQueryFor(const QString &infoHash) const;
     QHash<QString, QPair<QString, qint64>> m_pendingWatch;   // infoHash → {title, startedAtSec}
     QSet<QString> m_watchPrepped;   // pending watches whose file is already being fetched for playback
+    QHash<QString, qint64> m_watchNoPeersSince;   // infoHash → first second seen with no peer
     QHash<QString, QElapsedTimer> m_watchClock;   // since watchWhenReady, for the start-up timings in the log
     QTimer m_watchFast;   // a quicker look than the engine's ~1 s tick while something waits to play
     QHash<QString, QVariantMap> m_watchTargets;   // infoHash → the file to play, see watchWhenReady

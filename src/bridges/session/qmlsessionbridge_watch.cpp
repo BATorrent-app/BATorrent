@@ -28,6 +28,7 @@ void QmlSessionBridge::cancelWatch(const QString &infoHash)
     m_watchPrepped.remove(infoHash);
     m_watchClock.remove(infoHash);
     m_watchTargets.remove(infoHash);
+    m_watchNoPeersSince.remove(infoHash);
 }
 
 void QmlSessionBridge::abandonWatch(const QString &infoHash)
@@ -55,6 +56,25 @@ void QmlSessionBridge::pollPendingWatch(bool verbose)
     for (const QString &hash : m_pendingWatch.keys()) {
         const int idx = m_session->torrentIndexByInfoHash(hash);
         const int file = idx >= 0 ? watchFile(idx, hash) : -1;
+        const qint64 waited = now - m_pendingWatch.value(hash).second;
+        QVariantMap st;
+        st[QStringLiteral("meta")] = file >= 0;
+        st[QStringLiteral("elapsed")] = waited;
+        if (idx >= 0) {
+            const TorrentInfo info = m_session->torrentAt(idx);
+            st[QStringLiteral("down")] = info.downloadRate;
+            st[QStringLiteral("peers")] = info.numPeers;
+            st[QStringLiteral("seeds")] = info.numSeeds;
+            // nobody to get it from for 45 s: stop pretending, keep the download
+            if (info.numPeers > 0) m_watchNoPeersSince.remove(hash);
+            else if (!m_watchNoPeersSince.contains(hash)) m_watchNoPeersSince.insert(hash, now);
+            if (m_watchNoPeersSince.contains(hash) && now - m_watchNoPeersSince.value(hash) >= 45) {
+                st[QStringLiteral("noSource")] = true;
+                emit waitState(hash, st);
+                cancelWatch(hash);
+                continue;
+            }
+        }
         if (file >= 0) {
             // Until the player opens the torrent is rarest-first: fetch it the player's way now.
             if (!m_watchPrepped.contains(hash)) {
@@ -72,6 +92,9 @@ void QmlSessionBridge::pollPendingWatch(bool verbose)
                 qInfo().noquote() << "[watch]" << hash.left(8) << "head" << head << "/"
                                   << StreamGate::headBytes(size) << "tail" << tail << "needed" << tailNeeded;
             const TorrentInfo info = m_session->torrentAt(idx);
+            st[QStringLiteral("have")] = head;
+            st[QStringLiteral("need")] = StreamGate::headBytes(size);
+            emit waitState(hash, st);
             emit watchProgress(hash, StreamGate::progress(head, size, tail, tailNeeded));
             emit watchHealth(hash, info.downloadRate, info.numPeers,
                              int(now - m_pendingWatch.value(hash).second));
@@ -86,8 +109,12 @@ void QmlSessionBridge::pollPendingWatch(bool verbose)
             // Priority alone loses to a slow peer holding the first piece; a
             // deadline is what jumps the queue (the tail already has one).
             m_session->streamSetDeadlineWindow(idx, file, head);
+        } else {
+            emit waitState(hash, st);
         }
-        if (now - m_pendingWatch.value(hash).second > 120) {
+        // Peers but no file list for this long, or the torrent never showed
+        // up: the waiting screen has nothing true left to say.
+        if ((file < 0 && waited > 120) || (idx < 0 && waited > 20)) {
             m_watchPrepped.remove(hash);
             m_watchClock.remove(hash);
             emit watchFailed(m_pendingWatch.take(hash).first);
