@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.9.0
+## v4.9.0 (2026-10-09)
 
 ### Added
 - One **Add** button where there were three. Paste a magnet, a link, an
@@ -75,7 +75,7 @@
 
 ---
 
-## v4.8.0
+## v4.8.0 (2026-08-05)
 
 ### Added
 - Point BATorrent at your own VPN. Set it up in Settings and only this app goes
@@ -221,7 +221,7 @@ tester-round polish. Not a public release, just a beta for testing.
 ### Changed
 - "Watch in player" is now just "Watch".
 
-## v4.7.0 "Cinema"
+## v4.7.0 "Cinema" (2026-07-21)
 
 ### Added
 - The built-in player was reworked. Audio, subtitles and speed are in one panel
@@ -259,7 +259,7 @@ tester-round polish. Not a public release, just a beta for testing.
 - Torrents with no artwork (an Ubuntu ISO, a code archive) no longer show a
   placeholder cover in the details.
 
-## v4.6.0 "Signal"
+## v4.6.0 "Signal" (2026-07-17)
 
 ### Added
 - Magnets get a set of well-known open trackers automatically, so fetching
@@ -301,7 +301,7 @@ tester-round polish. Not a public release, just a beta for testing.
   download's progress bar is neutral, and transfer numbers are only red or amber
   while data is moving.
 
-## v4.5.1 "Find"
+## v4.5.1 "Find" (2026-07-13)
 
 ### Added
 - Navigation moved to a bar at the top: Downloads, Find and HUB as tabs, with the
@@ -335,7 +335,7 @@ tester-round polish. Not a public release, just a beta for testing.
 - The top bar shows just the bat glyph (the full wordmark stays on the splash,
   About and the classic layout), and the grid selection ring is red.
 
-## v4.4.1
+## v4.4.1 (2026-07-10)
 
 Hotfix for v4.4.0, which didn't launch on Windows.
 
@@ -345,7 +345,7 @@ Hotfix for v4.4.0, which didn't launch on Windows.
   and the app quit without an error. It now uses the same shadow as the rest of
   the app.
 
-## v4.4.0 "Dublado"
+## v4.4.0 "Dublado" (2026-07-09)
 
 ### Added
 - With "Prefer my language" on (the default), the bundled stream source is asked
@@ -389,7 +389,7 @@ Hotfix for v4.4.0, which didn't launch on Windows.
 - The Web UI password is stored as salted PBKDF2 (100k iterations) instead of
   unsalted SHA-256. Existing setups upgrade on the next login.
 
-## v4.3.1
+## v4.3.1 (2026-07-02)
 
 Hotfix for v4.3.0, which didn't launch on Windows.
 
@@ -403,7 +403,7 @@ Hotfix for v4.3.0, which didn't launch on Windows.
   parser rejects malformed input, every network client has a timeout,
   release-name parsing is faster, and a few QML property bugs are fixed.
 
-## v4.3.0 "Continue"
+## v4.3.0 "Continue" (2026-07-02)
 
 The first release since v4.1.0. Continue watching, a command palette, automatic
 subtitles, swarm health in search, and a lot of fixes.
@@ -492,7 +492,7 @@ subtitles, swarm health in search, and a lot of fixes.
   category) for future statistics. It never leaves the machine.
 - Shared menu and dialog components, and tests for the stats history.
 
-## v4.1.0 "Parity"
+## v4.1.0 "Parity" (2026-06-11)
 
 Mostly fixes from user reports, plus the qBittorrent features people asked for.
 
@@ -527,7 +527,7 @@ Mostly fixes from user reports, plus the qBittorrent features people asked for.
 - Tests for the settings persistence and Windows boolean bugs.
 - A Qt Quick Test harness for the splash and the shared widgets.
 
-## v4.0.0 "Hub"
+## v4.0.0 "Hub" (2026-06-07)
 
 BATorrent becomes a media hub: find something, download it, then watch or play
 it, all built around cover art. A collapsible left nav rail switches pages.
@@ -567,7 +567,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
   launch.
 - Translated into all 8 languages.
 
-## v3.0.4
+## v3.0.4 (2026-06-06)
 
 ### Fixed
 - The app launches on a clean Windows install. The Visual C++ runtime was
@@ -585,7 +585,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
   prefers VLC, mpv or IINA (which can play a file that's still growing) and falls
   back to the default player, and stops waiting if the torrent has no seeders.
 
-## v3.0.3
+## v3.0.3 (2026-06-05)
 
 ### Added
 - An "All" search that queries every source at once, game catalogs and torrent
@@ -609,7 +609,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
 - Windows: the welcome dialog no longer comes back after "don't show again".
 - About: the Ukrainian flag renders, and Donate opens GitHub Sponsors.
 
-## v3.0.2
+## v3.0.2 (2026-06-04)
 
 ### Added
 - The WebUI was reskinned to match the desktop app: same palette, font, flat
@@ -646,7 +646,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
 
 ---
 
-## v3.0.1
+## v3.0.1 (2026-06-03)
 
 ### Fixed
 - Windows and Linux: the menu bar is back (File, Torrent, Settings, Help). It only
@@ -671,7 +671,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
 
 ---
 
-## v3.0.0
+## v3.0.0 (2026-06-02)
 
 ### Changed
 - The UI was rewritten in Qt Quick / QML, replacing QWidget. Every screen was
@@ -719,7 +719,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
 
 ---
 
-## v2.6.1
+## v2.6.1 (2026-05-25)
 
 ### Critical fix
 - **Auto-updater broken since v2.5.0**: the "Check for updates" button and silent startup check were both failing silently due to accumulated signal connections. Fixed by disconnecting stale handlers before each check.
@@ -728,7 +728,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
 
 ---
 
-## v2.6.0
+## v2.6.0 (2026-05-25)
 
 ### Search plugin system
 - **Multiple search providers** with configurable URL templates and JSON response mapping
@@ -755,7 +755,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
 
 ---
 
-## v2.5.3
+## v2.5.3 (2026-05-25)
 
 ### New features
 - **Temp download path**: download to a staging folder first, auto-move to the save path on completion. Keeps media servers (Plex, Jellyfin, Sonarr) from scanning partial files.
@@ -774,7 +774,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
 
 ---
 
-## v2.5.2
+## v2.5.2 (2026-05-25)
 
 ### Stability (from qBittorrent code analysis)
 - Try-catch around the entire `processAlerts` loop body: a single bad alert no longer crashes the app
@@ -818,7 +818,7 @@ it, all built around cover art. A collapsible left nav rail switches pages.
 
 ---
 
-## v2.5.0
+## v2.5.0 (2026-05-24)
 
 ### Privacy & private trackers
 - **PT Mode**: one-toggle compliance: disables DHT/PEX/LSD, forces anonymous handshake, announces to every tier

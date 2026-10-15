@@ -56,5 +56,5 @@ ColumnLayout {
         onRenameFileRequested: function(idx, current) { root.renameFileRequested(idx, current) }
     }
 
-    StatusBar {}
+    StatusBar { onPortClicked: root.host.showWin(root.host.diagWinLoader) }
 }

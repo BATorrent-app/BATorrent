@@ -196,6 +196,7 @@
 <file>../src/qml/dialogs/AddAddonDialog.qml</file>
 <file>../src/qml/dialogs/ReleaseNotesDialog.qml</file>
 <file>../src/qml/dialogs/WelcomeDialog.qml</file>
+<file>../src/qml/dialogs/WhatsNewDialog.qml</file>
 <file>../src/qml/overlays/TourOverlay.qml</file>
 <file>../src/qml/dialogs/AboutDialog.qml</file>
     <file>../src/qml/player/PlayerWindow.qml</file>

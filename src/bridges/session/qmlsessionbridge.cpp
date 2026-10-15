@@ -156,7 +156,12 @@ QmlSessionBridge::QmlSessionBridge(IEngine *session, MetadataResolver *resolver,
 QmlSessionBridge::~QmlSessionBridge() = default;
 
 bool QmlSessionBridge::altSpeedsActive() const { return m_session->altSpeedsActive(); }
-int QmlSessionBridge::portStatus() const { return m_session->portStatus(); }
+int QmlSessionBridge::portStatus() const
+{
+    const int s = m_session->portStatus();
+    return s == 2 && m_incomingSeen ? 1 : s;
+}
+void QmlSessionBridge::retryPortMapping() { m_session->applySetting(QStringLiteral("retryPortMapping"), true); }
 void QmlSessionBridge::setAltSpeedsActive(bool active) { m_session->setAltSpeedsActive(active); }
 
 

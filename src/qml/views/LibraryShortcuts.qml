@@ -73,4 +73,23 @@ Item {
     Shortcut { sequence: "Ctrl+5"; onActivated: library.setFilter("active") }
     Shortcut { sequence: "Ctrl+6"; onActivated: library.setFilter("paused") }
     Shortcut { sequence: "Ctrl+Shift+T"; onActivated: Theme.cycle() }
+    // What the Shortcuts window lists and only the macOS menu bar carried.
+    // Space and Shift+Delete leave a text field under the cursor alone.
+    function typing() { var f = host.activeFocusItem; return f && f.cursorPosition !== undefined }
+    Shortcut {
+        enabled: host.currentPage === 0 && host.hasSel
+        sequence: "Space"
+        onActivated: {
+            if (typing() || typeof session === "undefined") return
+            if (session.selectedPaused) session.resumeSelected(); else session.pauseSelected()
+        }
+    }
+    Shortcut {
+        enabled: host.currentPage === 0 && host.hasSel
+        sequence: "Shift+Del"
+        onActivated: { if (typing()) return; host.removeDlg.open(); host.removeDlg.deleteFiles = true }
+    }
+    Shortcut { enabled: Qt.platform.os !== "osx"; sequence: "Ctrl+N"; onActivated: host.createDlg.open() }
+    Shortcut { enabled: Qt.platform.os !== "osx"; sequence: "Ctrl+,"; onActivated: host.currentPage = 3 }
+    Shortcut { enabled: Qt.platform.os !== "osx"; sequence: "Ctrl+Shift+L"; onActivated: host.showWin(host.logWinLoader) }
 }

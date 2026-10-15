@@ -373,6 +373,8 @@ public:
     AdvancedSettings advancedSettings() const;
     void setAdvancedSettings(const AdvancedSettings &s);
     bool applySetting(const QString &key, const QVariant &v);   // key→setter routing (shared w/ IPC)
+    // ask the router again (UPnP and NAT-PMP), as the Network window offers
+    void retryPortMapping();
 
     // Bandwidth scheduler
     void setAltSpeedLimits(int downKbps, int upKbps);

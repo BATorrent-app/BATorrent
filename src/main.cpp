@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
     }
 
 #ifndef BAT_STORE_BUILD
-    if (!safeMode)
+    if (!safeMode && QSettings().value(QStringLiteral("autoCheckUpdates"), true).toBool())
         svc.updaterBridge->check(true);
 #endif
 

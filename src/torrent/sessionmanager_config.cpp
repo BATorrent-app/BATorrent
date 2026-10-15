@@ -75,6 +75,20 @@ bool SessionManager::autoRecheck() const { return m_autoRecheck; }
 
 int SessionManager::portStatus() const { return m_portStatus; }
 
+void SessionManager::retryPortMapping()
+{
+    // a proxy keeps both off on purpose (ProxyController): no mapping to retry
+    if (proxyType() != 0) return;
+    lt::settings_pack off;
+    off.set_bool(lt::settings_pack::enable_upnp, false);
+    off.set_bool(lt::settings_pack::enable_natpmp, false);
+    m_session.apply_settings(off);
+    lt::settings_pack on;
+    on.set_bool(lt::settings_pack::enable_upnp, true);
+    on.set_bool(lt::settings_pack::enable_natpmp, true);
+    m_session.apply_settings(on);
+}
+
 void SessionManager::updatePortStatus()
 {
     const int s = SessionConfig::portStatusCode(m_listenOk, m_portmapOk);

@@ -171,6 +171,7 @@ void Updater::parseReleaseInfo(QNetworkReply *reply)
 
     // Strip leading 'v' for comparison
     m_latestVersion = tagName.startsWith('v') ? tagName.mid(1) : tagName;
+    m_latestNotes = obj.value("body").toString();
     QString currentVersion = QApplication::applicationVersion();
 
     if (compareVersions(m_latestVersion, currentVersion) <= 0) {

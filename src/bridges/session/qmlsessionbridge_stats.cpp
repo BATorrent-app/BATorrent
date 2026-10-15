@@ -60,6 +60,14 @@ void QmlSessionBridge::sampleSpeeds()
     }
 
     trackStillSince();
+    // An incoming connection proves the port is reachable even when the
+    // router never answered UPnP: checked every few seconds, so the status
+    // bar and the Network window read the same answer.
+    if (++m_reachTick >= 10) {
+        m_reachTick = 0;
+        const bool in = m_session->detailedStats().hasIncomingConnections;
+        if (in != m_incomingSeen) { m_incomingSeen = in; emit portStatusChanged(); }
+    }
 
     m_downloadHistory.append(dl);
     m_uploadHistory.append(ul);
@@ -178,6 +186,14 @@ QVariantMap QmlSessionBridge::diagnostics() const
     m["portOk"] = stats.peersCount > 0;
     m["portText"] = stats.peersCount > 0 ? tr_("port_peers_connected").arg(stats.peersCount)
                                          : tr_("port_unconfirmed");
+    // the same answer the status bar gives (portStatus)
+    m["port"] = port;
+    m["dhtOn"] = dht;
+    m["dhtNodes"] = stats.dhtNodes;
+    m["peers"] = stats.peersCount;
+    m["incoming"] = stats.hasIncomingConnections;
+    m["portmapOk"] = m_session->portStatus() == 1;
+    m["status"] = portStatus();
     return m;
 }
 

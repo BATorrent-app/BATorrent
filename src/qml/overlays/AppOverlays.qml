@@ -144,7 +144,11 @@ Item {
 
     MakeRoomPanel { id: makeRoomPanel }
     InputPromptDialog   { id: inputPrompt }
-    UpdateDialog        { id: updateDlg }
+    UpdateDialog {
+        id: updateDlg
+        onWhatsNewRequested: { welcomeDlg.mode = "update"; welcomeDlg.open() }
+        onReleaseNotesRequested: releaseNotesDlg.open()
+    }
 
     // "why is this slow" diagnostic report
     BatDialog {
@@ -204,7 +208,14 @@ Item {
         id: welcomeDlg
         wizard: welcomeWizard
         onAccepted: host.maybeStartTour()
-        onOpenReleaseNotes: releaseNotesDlg.open()
+        onOpenReleaseNotes: function (v) {
+            if (v === "previous") releaseNotesDlg.openAt(releaseNotesDlg.previousOf(""))
+            else releaseNotesDlg.openAt(v)
+        }
+        onActionRequested: function (a) {
+            if (a === "add") addDlg.open()
+            else if (a === "downloads") host.currentPage = 0
+        }
     }
     WelcomeWizard {
         id: welcomeWizard

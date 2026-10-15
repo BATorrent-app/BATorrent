@@ -64,6 +64,7 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
         setExtractPasswords(SessionConfig::parseExtractPasswords(v.toString()));
     }
     else if (key == "autoExtract")         setAutoExtract(v.toBool());
+    else if (key == "retryPortMapping")    retryPortMapping();
     else if (key == "autoExtractDelete")   setAutoExtractDelete(v.toBool());
     else if (key == "runOnComplete")       setRunOnComplete(v.toString());
     else if (key == "watchedFolder")       setWatchedFolder(v.toString());

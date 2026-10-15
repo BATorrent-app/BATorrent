@@ -15,6 +15,8 @@ import "../widgets"
 Rectangle {
     id: status
     property var stats: null
+    // the port line opens the Network window, which reads the same answer
+    signal portClicked()
 
     function stat(key, fallback) {
         return stats !== null && stats[key] !== undefined ? stats[key] : fallback
@@ -68,6 +70,14 @@ Rectangle {
                 color: Theme.t4
                 font.pixelSize: 12
                 font.family: Theme.fontSans
+                // the whole line, dot included, opens the Network window
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.leftMargin: -16
+                    anchors.margins: -4
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: status.portClicked()
+                }
             }
         }
         Item { Layout.fillWidth: true }

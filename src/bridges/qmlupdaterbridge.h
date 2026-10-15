@@ -16,6 +16,11 @@ public:
     Q_INVOKABLE void check(bool silent = false);
     Q_INVOKABLE void downloadAndInstall(const QString &url, const QString &assetName);
     Q_INVOKABLE void skipVersion(const QString &version);
+    // the found release: its download size, and the first lines of its notes
+    Q_INVOKABLE QString releaseSize() const;
+    Q_INVOKABLE QStringList releaseHighlights(int max) const;
+    // unix seconds of the last check that got an answer, 0 never
+    Q_INVOKABLE qint64 lastChecked() const;
 
 signals:
     void updateFound(const QString &version, const QString &url, const QString &assetName);

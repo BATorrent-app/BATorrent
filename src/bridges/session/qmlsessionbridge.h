@@ -134,6 +134,7 @@ public:
     // (the default save folder when empty), every item on it with its reasons.
     Q_INVOKABLE QVariantMap freeUpSpace(const QString &path) const;
     Q_INVOKABLE void removeTorrentsByHash(const QStringList &hashes, bool deleteFiles);
+    Q_INVOKABLE void retryPortMapping();
     // Delete-by-hash so Make Room doesn't have to fight over m_selectedRows:
     // resolves the hash to its current engine index, then removeTorrent().
     Q_INVOKABLE void removeTorrentByHash(const QString &hash, bool deleteFiles, bool permanent);
@@ -635,6 +636,8 @@ private:
     QVector<int> m_uploadHistory;
     QHash<QString, qint64> m_pausedSince;   // hash -> unix secs it stopped (Free up space)
     bool m_stillLoaded = false;
+    bool m_incomingSeen = false;   // someone connected in: the port is reachable
+    int m_reachTick = 0;
     void trackStillSince();
     QHash<QString, QVector<int>> m_torrentDownHist;   // per-torrent rate rings (by hash)
     QHash<QString, QVector<int>> m_torrentUpHist;

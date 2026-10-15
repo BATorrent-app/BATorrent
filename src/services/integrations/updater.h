@@ -22,6 +22,8 @@ public:
     void downloadAndInstall(const QString &downloadUrl, const QString &assetName);
 
     QString latestVersion() const { return m_latestVersion; }
+    qint64 latestSize() const { return m_expectedSize; }
+    QString latestNotes() const { return m_latestNotes; }   // the release's own text (Markdown)
 
     // Returns -1 if a < b, 0 if equal, 1 if a > b. Compares dot-separated
     // numeric components ("2.10.0" > "2.3.1").
@@ -51,6 +53,7 @@ private:
 
     QNetworkAccessManager m_nam;
     QString m_latestVersion;
+    QString m_latestNotes;
     qint64 m_expectedSize = 0;   // asset byte size from the release JSON (0 = unknown, skip check)
 };
 
