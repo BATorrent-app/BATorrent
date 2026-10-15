@@ -115,13 +115,13 @@ Item {
                         IconImg {
                             anchors.verticalCenter: parent.verticalCenter
                             src: "qrc:/icons/play.svg"
-                            tint: card.buttonLight ? Theme.bg : "#ffffff"
+                            tint: card.buttonLight ? Theme.stageBg : "#ffffff"
                             s: 13
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: card.buttonText
-                            color: card.buttonLight ? Theme.bg : "#ffffff"
+                            color: card.buttonLight ? Theme.stageBg : "#ffffff"
                             font.pixelSize: 14
                             font.weight: Font.DemiBold
                             font.family: Theme.fontSans

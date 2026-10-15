@@ -19,6 +19,7 @@
 <file>icons/copy.svg</file>
 <file>icons/pencil.svg</file>
 <file>icons/check.svg</file>
+<file>icons/palette.svg</file>
 <file>icons/file.svg</file>
 <file>icons/caret-down-fill.svg</file>
 <file>icons/caret-up-fill.svg</file>
@@ -268,6 +269,7 @@
 <file>../src/qml/views/LibraryView.qml</file>
 <file>../src/qml/theme/Theme.qml</file>
 <file>../src/qml/theme/WizardPalette.qml</file>
+<file>../src/qml/theme/palette.js</file>
 <file>../src/qml/theme/qmldir</file>
 <file>../src/qml/widgets/WorkHero.qml</file>
 <file>../src/qml/widgets/ChainImage.qml</file>

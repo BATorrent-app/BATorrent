@@ -4,8 +4,10 @@
 
 pragma Singleton
 import QtQuick
+import "palette.js" as Palette
 
-// Tokens de cor e fonte de todos os temas. Nenhum hex/rgba fora deste arquivo.
+// Colour and font tokens for every theme. The built-in palettes live in
+// palette.js; no hex/rgba outside these two files.
 // Theme.name troca o tema; Theme.anime liga a arte de acento.
 // Salvo via QmlThemeBridge (QSettings: qmlThemeName, qmlAnime).
 QtObject {
@@ -46,17 +48,14 @@ QtObject {
     // only for raw data (hashes, logs)
     readonly property var tnum: ({ "tnum": true })
 
-    // Preview triplets for a theme you are NOT currently in: the onboarding
-    // shows all six side by side, and bg/panel/accent below can only answer for
-    // the active one. Keep in step with the chains right under this.
-    readonly property var swatches: [
-        { key: "dark",     bg: "#0e0e10", panel: "#1a1a1d", accent: "#e5332b" },
-        { key: "light",    bg: "#ffffff", panel: "#f4f5f7", accent: "#e5332b" },
-        { key: "midnight", bg: "#05080f", panel: "#0f1830", accent: "#e5332b" },
-        { key: "sakura",   bg: "#fde6ef", panel: "#ffffff", accent: "#d6336c" },
-        { key: "darkstar", bg: "#0b0612", panel: "#190f2e", accent: "#a855f7" },
-        { key: "matrix",   bg: "#040806", panel: "#0d1a11", accent: "#2be86a" }
-    ]
+    // Preview triplets for a theme you are NOT currently in: the onboarding and
+    // the theme picker show all six side by side, and bg/panel/accent below can
+    // only answer for the active one.
+    readonly property var swatches: Palette.ORDER.map(function (k) {
+        var t = Palette.build(k)
+        return { key: k, bg: t.bg, panel: t.panel, accent: t.accent, nav: t.nav,
+                 t1: t.t1, t3: t.t3, hair: t.hair, done: t.doneFill, ink: t.inkOnAccent }
+    })
 
     // ---------- state → colour ----------
     // One home for the language, because the dot, the label and the progress
@@ -98,178 +97,73 @@ QtObject {
                ? "#101014" : "#ffffff"
     }
 
+    // ---------- palette ----------
+    // Every built-in theme comes from palette.js: Dark and Light as tuned, the
+    // rest as those two turned to their own hue (the reasoning is at the top of
+    // that file). Custom stays below, on the user's six colours.
+    readonly property bool isCustom: name === "custom"
+    readonly property var p: Palette.build(isCustom ? "dark" : name)
+
     // ---------- surfaces ----------
-    readonly property color bg:
-        name === "custom"   ? customBgColor :
-        name === "light"    ? "#ffffff" :
-        name === "midnight" ? "#05080f" :
-        name === "sakura"   ? "#fde6ef" :
-        name === "darkstar" ? "#0b0612" :
-        name === "matrix"   ? "#040806" : "#0e0e10"
-
-    readonly property color panel:
-        name === "custom"   ? customPanelColor :
-        name === "light"    ? "#f4f5f7" :
-        name === "midnight" ? "#0f1830" :
-        name === "sakura"   ? "#ffffff" :
-        name === "darkstar" ? "#190f2e" :
-        name === "matrix"   ? "#081109" : "#141416"
-
+    readonly property color bg:    isCustom ? customBgColor : p.bg
+    readonly property color panel: isCustom ? customPanelColor : p.panel
     // elevated/recessed surfaces derive from the user's panel so they track it
-    readonly property color elev:
-        name === "custom"   ? Qt.darker(customPanelColor, 1.12) :
-        name === "light"    ? "#eef0f2" :
-        name === "midnight" ? "#0b1426" :
-        name === "sakura"   ? "#fcdcea" :
-        name === "darkstar" ? "#130b22" :
-        name === "matrix"   ? "#0b160d" : "#18181b"
-
+    readonly property color elev:  isCustom ? Qt.darker(customPanelColor, 1.12) : p.elev
     // top navigation surface: the darkest band of the chrome ladder
     // (nav < bg < panel), so the global bar reads one level below the page
-    readonly property color nav:
-        name === "custom"   ? Qt.darker(customPanelColor, 1.45) :
-        name === "light"    ? "#e7e9ec" :
-        name === "midnight" ? "#030509" :
-        name === "sakura"   ? "#f8d3e3" :
-        name === "darkstar" ? "#080410" :
-        name === "matrix"   ? "#020503" : "#0c0c0e"
+    readonly property color nav:   isCustom ? Qt.darker(customPanelColor, 1.45) : p.nav
+    // an input or recessed field
+    readonly property color field: isCustom ? Qt.darker(customBgColor, 1.18) : p.field
 
-    // input/recessed field (--c-field nos diálogos; home não usa, mas mantém coerência)
-    readonly property color field:
-        name === "custom"   ? Qt.darker(customBgColor, 1.18) :
-        name === "light"    ? "#ffffff" :
-        name === "midnight" ? "#080f1f" :
-        name === "sakura"   ? "#ffffff" :
-        name === "darkstar" ? "#0a0717" :
-        name === "matrix"   ? "#020604" : "#0b0c0d"
-
-    // ---------- hairlines (custom: derived from the user's text color) ----------
-    readonly property color hair:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.14) :
-        name === "light"    ? Qt.rgba(0,0,0,0.11) :
-        name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.15) :
-        name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.13) :
-        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.14) :
-        name === "matrix"   ? Qt.rgba(60/255,224/255,120/255,0.16) : Qt.rgba(1,1,1,0.08)
-
-    readonly property color hairSoft:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.07) :
-        name === "light"    ? Qt.rgba(0,0,0,0.06) :
-        name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.08) :
-        name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.07) :
-        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.08) :
-        name === "matrix"   ? Qt.rgba(60/255,224/255,120/255,0.08) : Qt.rgba(1,1,1,0.05)
-
-    readonly property color hover:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.05) :
-        name === "light"    ? Qt.rgba(0,0,0,0.045) :
-        name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.06) :
-        name === "midnight" ? Qt.rgba(80/255,140/255,245/255,0.07) :
-        name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.10) :
-        name === "matrix"   ? Qt.rgba(43/255,232/255,106/255,0.09) : Qt.rgba(1,1,1,0.035)
-
+    // ---------- lines and washes (custom: from the user's text colour) ----------
+    function _customInk(a) { return Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, a) }
+    readonly property color hair:     isCustom ? _customInk(0.14) : p.hair
+    readonly property color hairSoft: isCustom ? _customInk(0.07) : p.hairSoft
+    readonly property color hover:    isCustom ? _customInk(0.05) : p.hover
     // a step above hover: a pressed/open control, the selected row, a caption button
-    readonly property color hover2:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.08) :
-        isLight             ? Qt.rgba(0,0,0,0.07) : Qt.rgba(1,1,1,0.06)
+    readonly property color hover2:   isCustom ? _customInk(0.08) : p.hover2
+    readonly property color track:    isCustom ? _customInk(0.10) : p.track
 
     // a grid card with no art, and the type label set on it
-    readonly property color tileBlank: isLight ? Qt.darker(panel, 1.04) : "#161618"
-    readonly property color tileInk: isLight ? t1 : "#f3f3f4"
+    readonly property color tileBlank: (isLight || isCustom) ? Qt.darker(panel, 1.04) : p.tileBlank
+    readonly property color tileInk: (isLight || isCustom) ? t1 : p.t1
     // the two covers peeking out above a series card, back one darkest
-    readonly property color stackBack: isLight ? Qt.darker(panel, 1.10) : "#1c1c20"
-    readonly property color stackMid: isLight ? Qt.darker(panel, 1.05) : "#252529"
+    readonly property color stackBack: (isLight || isCustom) ? Qt.darker(panel, 1.10) : p.stackBack
+    readonly property color stackMid:  (isLight || isCustom) ? Qt.darker(panel, 1.05) : p.stackMid
 
     // the close caption button under the pointer (Windows' own red)
     readonly property color winClose: "#c42b1c"
 
-    // .sel / .pill.on tint (--c-sel)
+    // a selected row or an "on" pill, and a stronger accent wash
     readonly property color sel:
-        name === "custom"   ? Qt.rgba(customPrimaryColor.r, customPrimaryColor.g, customPrimaryColor.b, 0.13) :
-        name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.20) :
-        name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.13) :
-        name === "light"    ? Qt.rgba(229/255,51/255,43/255,0.10) :
-        name === "midnight" ? Qt.rgba(220/255,38/255,38/255,0.13) :
-        name === "matrix"   ? Qt.rgba(43/255,232/255,106/255,0.18) : Qt.rgba(229/255,51/255,43/255,0.09)
-
-    // .pill.on bg (home usa rgba(229,51,43,0.12); reaproveitado p/ accent tint forte)
+        isCustom ? Qt.rgba(customPrimaryColor.r, customPrimaryColor.g, customPrimaryColor.b, 0.13) : p.sel
     readonly property color accentTint:
-        name === "custom"   ? Qt.rgba(customPrimaryColor.r, customPrimaryColor.g, customPrimaryColor.b, 0.12) :
-        name === "darkstar" ? Qt.rgba(168/255,85/255,247/255,0.12) :
-        name === "sakura"   ? Qt.rgba(214/255,51/255,108/255,0.12) :
-        name === "matrix"   ? Qt.rgba(43/255,232/255,106/255,0.13) : Qt.rgba(229/255,51/255,43/255,0.12)
+        isCustom ? Qt.rgba(customPrimaryColor.r, customPrimaryColor.g, customPrimaryColor.b, 0.12) : p.accentTint
 
-    readonly property color track:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.10) :
-        name === "light"    ? Qt.rgba(0,0,0,0.10) :
-        name === "midnight" ? Qt.rgba(90/255,140/255,240/255,0.16) :
-        name === "sakura"   ? Qt.rgba(95/255,29/255,46/255,0.12) :
-        name === "darkstar" ? Qt.rgba(185/255,160/255,255/255,0.15) :
-        name === "matrix"   ? Qt.rgba(60/255,224/255,120/255,0.14) : Qt.rgba(1,1,1,0.09)
-
-    // ---------- text (custom: t1 = user color, t2-t4 fade by opacity) ----------
-    readonly property color t1:
-        name === "custom"   ? customTextColor :
-        name === "light"    ? "#16171a" :
-        name === "midnight" ? "#e4edff" :
-        name === "sakura"   ? "#3f1d2e" :
-        name === "darkstar" ? "#efeaff" :
-        name === "matrix"   ? "#c8ffd4" : "#f3f3f4"
-
-    readonly property color t2:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.72) :
-        name === "light"    ? "#44464d" :
-        name === "midnight" ? "#8aa3da" :
-        name === "sakura"   ? "#7e4862" :
-        name === "darkstar" ? "#b6aae0" :
-        name === "matrix"   ? "#84dd9b" : "#b4b5ba"
-
-    readonly property color t3:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.68) :
-        name === "light"    ? "#5c5d64" :
-        name === "midnight" ? "#8498c4" :
-        name === "sakura"   ? "#774d60" :
-        name === "darkstar" ? "#9e94c4" :
-        name === "matrix"   ? "#55a86c" : "#999a9f"
-
-
+    // ---------- text (custom: t1 = user colour, t2-t4 fade by opacity) ----------
+    readonly property color t1:    isCustom ? customTextColor : p.t1
     // between t1 and t2: menu rows, body copy that should not shout
-    readonly property color tSoft:
-        name === "dark" ? "#d9dade" : (name === "light" ? "#2a2c31" : t1)
-
-    readonly property color t4:
-        name === "custom"   ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.55) :
-        name === "light"    ? "#727581" :
-        name === "midnight" ? "#687bb1" :
-        name === "sakura"   ? "#98607d" :
-        name === "darkstar" ? "#8478a8" :
-        name === "matrix"   ? "#458a59" : "#7d7e87"
-
+    readonly property color tSoft: isCustom ? customTextColor : p.tSoft
+    readonly property color t2:    isCustom ? _customInk(0.72) : p.t2
+    readonly property color t3:    isCustom ? _customInk(0.68) : p.t3
+    readonly property color t4:    isCustom ? _customInk(0.55) : p.t4
 
     // ---------- stage (a title's page: art behind, release list beside it) ----------
     // Stays dark on every theme, light ones included: the text sits on a
     // backdrop, and a white page around a film still reads as a broken image.
-    // Dark themes keep their own ink; light and custom fall back to the dark set.
-    readonly property bool stageOwnInk: isDark && name !== "custom" && name !== "dark"
-    readonly property color stageBg:
-        name === "midnight" ? "#03050a" :
-        name === "darkstar" ? "#07040c" :
-        name === "matrix"   ? "#020403" : "#0a0a0b"
-    readonly property color stagePanel:
-        name === "midnight" ? "#0b1222" :
-        name === "darkstar" ? "#120a1f" :
-        name === "matrix"   ? "#07100a" : "#141416"
-    readonly property color stageField:
-        name === "midnight" ? "#0f1830" :
-        name === "darkstar" ? "#190f2e" :
-        name === "matrix"   ? "#0d1a11" : "#1a1a1d"
-    readonly property color stageT1:    stageOwnInk ? t1 : "#f3f3f4"
-    readonly property color stageInk:   stageOwnInk ? t1 : "#d9dade"   // hero body copy
-    readonly property color stageRaw:   stageOwnInk ? t2 : "#c9cace"   // a release's raw name
-    readonly property color stageT2:    stageOwnInk ? t2 : "#b4b5ba"
-    readonly property color stageMuted: stageOwnInk ? t3 : "#8c8d93"
-    readonly property color stageT4:    stageOwnInk ? t4 : "#7d7e87"
-    readonly property color stageDim:   stageOwnInk ? Qt.darker(t4, 1.3) : "#5f6068"
+    // Dark themes keep their own ink; light and custom fall back to Dark's.
+    readonly property bool stageOwnInk: isDark && !isCustom && name !== "dark"
+    readonly property var _stage: Palette.build(stageOwnInk ? name : "dark")
+    readonly property color stageBg:    _stage.stageBg
+    readonly property color stagePanel: _stage.stagePanel
+    readonly property color stageField: _stage.stageField
+    readonly property color stageT1:    _stage.t1
+    readonly property color stageInk:   _stage.tSoft   // hero body copy
+    readonly property color stageRaw:   stageOwnInk ? _stage.t2 : "#c9cace"   // a release's raw name
+    readonly property color stageT2:    _stage.t2
+    readonly property color stageMuted: stageOwnInk ? _stage.t3 : "#8c8d93"
+    readonly property color stageT4:    _stage.t4
+    readonly property color stageDim:   stageOwnInk ? Qt.darker(_stage.t4, 1.3) : "#5f6068"
     readonly property color stageHair:  Qt.rgba(1, 1, 1, 0.06)
     readonly property color stageEdge:  Qt.rgba(1, 1, 1, 0.14)   // field outline
     readonly property color stageHover: Qt.rgba(1, 1, 1, 0.045)
@@ -277,17 +171,16 @@ QtObject {
     // A filled action button with nothing to do yet (Extracting…), and its hover.
     readonly property color stageIdleFill:      "#2b2b30"
     readonly property color stageIdleFillHover: "#35353b"
-    readonly property color inkOnAccent: "#ffffff"   // ink on an accent-filled button
+    // ink on an accent-filled button: dark on a bright accent (Matrix's green)
+    readonly property color inkOnAccent: isCustom ? inkOn(customPrimaryColor) : p.inkOnAccent
     // the backdrop's fade into the panel, as alpha over stageBg
     function stageWash(a) { return Qt.rgba(stageBg.r, stageBg.g, stageBg.b, a) }
 
     // ---------- signal colours that are not theme accents ----------
     readonly property color star: up                 // a rating
     // orange, apart from the seeding amber: won't fit, slow, port blocked
-    readonly property color warn:
-        name === "matrix" ? "#e6d84a" : (isLight ? "#c2621f" : "#e8833a")
-    readonly property color seedLow:
-        name === "matrix" ? "#d6a24a" : (isLight ? "#b4562a" : "#d97640")   // 1–9 seeds
+    readonly property color warn: isCustom ? "#e8833a" : p.warn
+    readonly property color seedLow: isCustom ? "#d97640" : p.seedLow   // 1–9 seeds
 
     // ---------- custom theme (name === "custom"): active profile colors ----------
     // Six user colors (bg/panel/text + 3 accents). No legibility auto-fixing:
@@ -301,56 +194,19 @@ QtObject {
     readonly property color customTertiaryColor:  typeof themeBridge !== "undefined" ? themeBridge.cTertiary  : "#3fb950"
 
     // ---------- accents (functional) ----------
-    // --red (fill)
-    readonly property color accent:
-        name === "custom"   ? customPrimaryColor :
-        name === "sakura"   ? "#d6336c" :
-        name === "darkstar" ? "#a855f7" :
-        name === "matrix"   ? "#2be86a" : "#e5332b"
-    // --red-d
-    readonly property color accentDark:
-        name === "custom"   ? Qt.darker(customPrimaryColor, 1.35) :
-        name === "sakura"   ? "#be185d" :
-        name === "darkstar" ? "#7e22ce" :
-        name === "matrix"   ? "#18a84c" : "#c01f18"
-    // --red-t (accent text). For custom, just the primary itself: the user
-    // owns the contrast (no auto legibility fixing).
-    readonly property color accentText:
-        name === "custom"   ? customPrimaryColor :
-        name === "light"    ? "#cf2a22" :
-        name === "sakura"   ? "#be185d" :
-        name === "darkstar" ? "#c084fc" :
-        name === "midnight" ? "#ef6a64" :
-        name === "matrix"   ? "#5dff9b" : "#ec6a64"
-
-    // --amber (fill: seeding/upload)
-    readonly property color amber:
-        name === "custom"   ? customSecondaryColor :
-        name === "darkstar" ? "#22d3ee" :
-        name === "sakura"   ? "#c8881f" :
-        name === "matrix"   ? "#a6e22e" : "#d99a2b"
-    // --amber-t (.v-up text)
-    readonly property color up:
-        name === "custom"   ? Qt.lighter(customSecondaryColor, 1.2) :
-        name === "darkstar" ? "#67e8f9" :
-        name === "matrix"   ? "#c2f06a" :
-        (name === "light" || name === "sakura") ? "#9a6710" : "#e0b454"
-
-    // .fl-pa (paused fill): neutral derived from the user's text in custom
-    readonly property color pausedFill:
-        name === "custom" ? Qt.rgba(customTextColor.r, customTextColor.g, customTextColor.b, 0.42) :
-        isLight ? "#6a6c73" : "#54555c"
-
-    // a finished item's bar: the done green, darker so many of them stay calm
-    readonly property color doneFill:
-        name === "custom" ? Qt.darker(customTertiaryColor, 1.7) :
-        name === "matrix" ? "#1f7a3a" : (isLight ? "#3d9a4c" : "#24692f")
-
-    // --grn (verde de saúde: seeds em Search, "Instalado" em Addons, badge "Auto" em RSS)
-    // dark/midnight/darkstar #3fb950 ; light/sakura #2e9c40
-    readonly property color grn:
-        name === "custom" ? customTertiaryColor :
-        name === "matrix" ? "#44e070" : (isLight ? "#2e9c40" : "#3fb950")
+    readonly property color accent:     isCustom ? customPrimaryColor : p.accent
+    readonly property color accentDark: isCustom ? Qt.darker(customPrimaryColor, 1.35) : p.accentDark
+    // accent as text; for custom just the primary itself (the user owns the contrast)
+    readonly property color accentText: isCustom ? customPrimaryColor : p.accentText
+    // seeding and upload
+    readonly property color amber: isCustom ? customSecondaryColor : p.amber
+    readonly property color up:    isCustom ? Qt.lighter(customSecondaryColor, 1.2) : p.up
+    // paused: a neutral, from the user's text in custom
+    readonly property color pausedFill: isCustom ? _customInk(0.42) : p.pausedFill
+    // a finished item's bar: the done colour, darker so many of them stay calm
+    readonly property color doneFill: isCustom ? Qt.darker(customTertiaryColor, 1.7) : p.doneFill
+    // health: seeds in search, "Installed" in add-ons, the RSS "Auto" badge
+    readonly property color grn: isCustom ? customTertiaryColor : p.grn
 
     // ---------- window chrome ----------
     // macOS: secondary windows merge the native titlebar into their own header
