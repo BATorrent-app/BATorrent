@@ -221,34 +221,37 @@ QString localPath(QString p)
 }
 }
 
+// The folder made and remembered once, for any of the three ways in
+AddOptions QmlSessionBridge::addOptions(const QString &savePath, const QVariantList &priorities, bool paused)
+{
+    AddOptions o;
+    o.savePath = localPath(savePath).isEmpty() ? defaultSavePath() : localPath(savePath);
+    QDir().mkpath(o.savePath);
+    rememberSavePath(o.savePath);
+    o.filePriorities = toPrios(priorities);
+    o.paused = paused;
+    return o;
+}
+
 void QmlSessionBridge::commitStaged(const QString &infoHash, const QString &savePath,
                                     const QVariantList &priorities, bool paused)
 {
-    const QString dest = localPath(savePath).isEmpty() ? defaultSavePath() : localPath(savePath);
-    QDir().mkpath(dest);
-    rememberSavePath(dest);
-    m_session->commitStaged(infoHash, dest, toPrios(priorities), paused);
+    m_session->commitStaged(infoHash, addOptions(savePath, priorities, paused));
 }
 
-void QmlSessionBridge::addTorrentFileEx(const QString &filePath, const QString &savePath,
-                                        const QVariantList &priorities, bool paused)
+void QmlSessionBridge::addTorrentFileWith(const QString &filePath, const QString &savePath,
+                                          const QVariantList &priorities, bool paused)
 {
     if (filePath.isEmpty()) return;
-    const QString dest = localPath(savePath).isEmpty() ? defaultSavePath() : localPath(savePath);
-    QDir().mkpath(dest);
-    rememberSavePath(dest);
-    m_session->addTorrentFileEx(localPath(filePath), dest, toPrios(priorities), paused);
+    m_session->addTorrentFileWith(localPath(filePath), addOptions(savePath, priorities, paused));
 }
 
-void QmlSessionBridge::addMagnetEx(const QString &uri, const QString &savePath, bool paused)
+void QmlSessionBridge::addMagnetWith(const QString &uri, const QString &savePath, bool paused)
 {
     if (uri.isEmpty()) return;
-    const QString dest = localPath(savePath).isEmpty() ? defaultSavePath() : localPath(savePath);
-    QDir().mkpath(dest);
-    rememberSavePath(dest);
     const QString normalized = normalizeClipboardMagnet(uri);
     if (!normalized.isEmpty()) m_lastClipboardMagnet = normalized;
-    m_session->addMagnetEx(uri, dest, paused);
+    m_session->addMagnetWith(uri, addOptions(savePath, {}, paused));
 }
 
 void QmlSessionBridge::onStagedMetadata(const QString &hash, const QString &name, qint64,

@@ -444,7 +444,7 @@ Rectangle {
         signal clicked()
         width: 46; height: bar.stripH
         color: wbMa.containsMouse ? (glyph === "close" ? Theme.winClose : Theme.hover2) : "transparent"
-        readonly property color ink: wbMa.containsMouse && glyph === "close" ? "#ffffff" : Theme.tSoft
+        readonly property color ink: wbMa.containsMouse && glyph === "close" ? Theme.winCloseInk : Theme.tSoft
         Rectangle {   // minimize
             visible: wb.glyph === "min"
             anchors.centerIn: parent

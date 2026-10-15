@@ -43,10 +43,10 @@ bool SessionManager::isStaged(const lt::torrent_handle &h) const
     return false;
 }
 
-void SessionManager::addMagnetEx(const QString &uri, const QString &savePath, bool paused)
+void SessionManager::addMagnetWith(const QString &uri, const AddOptions &opts)
 {
-    addMagnet(uri, savePath);
-    if (!paused) return;
+    addMagnet(uri, opts.savePath);
+    if (!opts.paused) return;
     try {
         const QString hash = hashOf(lt::parse_magnet_uri(uri.toStdString()).info_hashes);
         const int i = torrentIndexByInfoHash(hash);
@@ -106,9 +106,11 @@ void SessionManager::discardStaged(const QString &hash)
     m_staged.erase(it);
 }
 
-void SessionManager::commitStaged(const QString &hash, const QString &savePath,
-                                  const std::vector<int> &filePriorities, bool paused)
+void SessionManager::commitStaged(const QString &hash, const AddOptions &opts)
 {
+    const QString &savePath = opts.savePath;
+    const std::vector<int> &filePriorities = opts.filePriorities;
+    const bool paused = opts.paused;
     auto it = m_staged.find(hash);
     if (it == m_staged.end()) {             // never staged (or already gone): a plain add
         return;
@@ -116,7 +118,7 @@ void SessionManager::commitStaged(const QString &hash, const QString &savePath,
     const Staged st = it->second;
     m_staged.erase(it);
     lt::torrent_handle h = st.handle;
-    if (!h.is_valid()) { addMagnetEx(st.uri, savePath, paused); return; }
+    if (!h.is_valid()) { addMagnetWith(st.uri, opts); return; }
 
     // Promoted as it is rather than removed and added again: libtorrent drops
     // a torrent asynchronously, and the same hash added back at once comes

@@ -21,14 +21,8 @@ Window {
     flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
     title: (i18n.language, i18n.t("shortcuts_title2"))
 
-    readonly property bool frameless: typeof framelessWindow !== "undefined" && framelessWindow === true
-    Loader {
-        id: framelessLoader
-        active: win.frameless
-        source: win.frameless ? "../AppFramelessAgent.qml" : ""
-        onLoaded: { item.window = win; item.navBar = titleBar }
-    }
-    function prepareFrame() { if (framelessLoader.item) framelessLoader.item.attach() }
+
+    function prepareFrame() { titleBar.prepareFrame() }
     onVisibleChanged: if (visible) search.field.forceActiveFocus()
 
     readonly property bool mac: Qt.platform.os === "osx"
@@ -69,8 +63,6 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: implicitHeight
             appWindow: win
-            ownsTitleBar: win.frameless
-            title: win.title
         }
 
         Flickable {
@@ -113,7 +105,7 @@ Window {
                             Layout.fillWidth: true
                             spacing: 2
                             Text { text: (i18n.language, i18n.t("sk_palette")); color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                            Text { Layout.fillWidth: true; text: (i18n.language, i18n.t("sk_palette_d")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
+                            Text { Layout.fillWidth: true; text: (i18n.language, i18n.t("sk_palette_d")); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans; elide: Text.ElideRight }
                         }
                         KeyCaps { combo: "Ctrl+K"; big: true }
                     }
@@ -200,7 +192,7 @@ Window {
                     anchors.centerIn: parent
                     text: modelData === "Space" ? (i18n.language, i18n.t("key_space")) : modelData
                     color: Theme.t2
-                    font.pixelSize: kc.big ? 12 : 11
+                    font.pixelSize: 13
                     font.family: Theme.fontMono
                 }
             }

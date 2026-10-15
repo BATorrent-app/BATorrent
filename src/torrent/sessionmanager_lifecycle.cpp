@@ -96,15 +96,14 @@ void SessionManager::addTorrentWithPriorities(const QString &filePath,
                                                 const QString &savePath,
                                                 const std::vector<int> &filePriorities)
 {
-    addTorrentFileEx(filePath, savePath, filePriorities, false);
+    addTorrentFileWith(filePath, AddOptions{ savePath, filePriorities, false });
 }
 
-void SessionManager::addTorrentFileEx(const QString &filePath, const QString &savePath,
-                                      const std::vector<int> &filePriorities, bool paused)
+void SessionManager::addTorrentFileWith(const QString &filePath, const AddOptions &opts)
 {
     try {
         addTorrentInfo(std::make_shared<lt::torrent_info>(filePath.toStdString()),
-                       savePath, filePriorities, paused);
+                       opts.savePath, opts.filePriorities, opts.paused);
     } catch (const std::exception &e) {
         emit torrentError(QString::fromStdString(e.what()));
     }

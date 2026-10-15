@@ -67,14 +67,14 @@ Item {
                     Layout.fillWidth: true
                     text: modelData.path
                     color: Theme.t1
-                    font.pixelSize: 12; font.weight: modelData.dir ? Font.DemiBold : Font.Medium
+                    font.pixelSize: 13; font.weight: modelData.dir ? Font.DemiBold : Font.Medium
                     font.family: Theme.fontSans
                     elide: Text.ElideMiddle
                 }
                 Text {
                     visible: !modelData.dir
                     text: modelData.size
-                    color: Theme.t4; font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
+                    color: Theme.t4; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
                 }
             }
         }

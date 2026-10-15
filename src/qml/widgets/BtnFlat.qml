@@ -13,6 +13,7 @@ Rectangle {
     property bool sm: false
     property bool lg: false                // Settings: sits beside 16px labels
     property bool primary: false
+    property bool ghost: false            // no border: a quiet action next to real buttons
     property bool danger: false            // a destructive action (Delete theme)
     property var uiPalette: Theme
     readonly property color onAccent: uiPalette.inkOnAccent !== undefined ? uiPalette.inkOnAccent : "#ffffff"
@@ -43,14 +44,15 @@ Rectangle {
     }
     color: btn.primary
         ? (ma.containsMouse ? uiPalette.accentDark : uiPalette.accent)
-        : (btn.danger && ma.containsMouse ? Qt.rgba(Theme.down.r, Theme.down.g, Theme.down.b, 0.1) : "transparent")
+        : (btn.danger && ma.containsMouse ? Qt.rgba(Theme.down.r, Theme.down.g, Theme.down.b, 0.1)
+           : btn.ghost && ma.containsMouse ? uiPalette.hover : "transparent")
     border.color: btn.primary
         ? "transparent"
         : btn.danger ? Qt.rgba(Theme.downText.r, Theme.downText.g, Theme.downText.b, 0.35)
         : (ma.containsMouse
             ? (uiPalette.isDark ? Qt.rgba(1,1,1,0.20) : Qt.rgba(0,0,0,0.22))
             : uiPalette.hair)
-    border.width: btn.primary ? 0 : 1
+    border.width: btn.primary || btn.ghost ? 0 : 1
 
     Row {
         id: row

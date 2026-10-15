@@ -99,8 +99,7 @@ Item {
             var parts = ("" + s).split(",").filter(function (x) { return x.length > 0 })
             return parts.length > 0 ? [parts[0]] : ["en"]
         }
-        var li = (typeof i18n !== "undefined") ? i18n.language : 0
-        return [["en", "pt", "zh", "ja", "ru", "es", "de", "uk"][li] || "en"]
+        return [(typeof i18n !== "undefined" && i18n.code) ? i18n.code : "en"]
     }
     function selectLang(code) {
         if (!code || (subLangs.length === 1 && subLangs[0] === code)) return

@@ -14,9 +14,23 @@ import "../theme"
 Rectangle {
     id: bar
     property Window appWindow: null
-    property string title: ""
-    // false where the system frame is kept (no QWindowKit): then only a header line
-    property bool ownsTitleBar: true
+    property string title: appWindow ? appWindow.title : ""
+    // false where the system frame is kept (no QWindowKit build)
+    readonly property bool ownsTitleBar: typeof framelessWindow !== "undefined" && framelessWindow === true
+
+    Loader {
+        id: agentLoader
+        active: bar.ownsTitleBar
+        source: bar.ownsTitleBar ? "../AppFramelessAgent.qml" : ""
+    }
+    // before the window's first show (MainWindowLoaders.showWin), so the system frame never flashes
+    function prepareFrame() {
+        var a = agentLoader.item
+        if (!a) return
+        a.window = bar.appWindow
+        a.navBar = bar
+        a.attach()
+    }
 
     readonly property real stripH: 32
     implicitHeight: ownsTitleBar ? stripH + 1 : 0
@@ -43,7 +57,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             text: bar.title
             color: Theme.t3
-            font.pixelSize: 12; font.family: Theme.fontSans
+            font.pixelSize: 13; font.family: Theme.fontSans
         }
     }
     Row {
@@ -69,7 +83,7 @@ Rectangle {
         signal clicked()
         width: 46; height: bar.stripH
         color: wbMa.containsMouse ? (glyph === "close" ? Theme.winClose : Theme.hover2) : "transparent"
-        readonly property color ink: wbMa.containsMouse && glyph === "close" ? "#ffffff" : Theme.tSoft
+        readonly property color ink: wbMa.containsMouse && glyph === "close" ? Theme.winCloseInk : Theme.tSoft
         Rectangle { visible: wb.glyph === "min"; anchors.centerIn: parent; width: 10; height: 1; color: wb.ink }
         Rectangle {
             visible: wb.glyph === "max"

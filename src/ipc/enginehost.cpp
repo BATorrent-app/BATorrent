@@ -208,16 +208,12 @@ QByteArray EngineHost::dispatch(const QString &method, const QByteArray &args)
     } else if (method == QLatin1String("addMagnet")) {
         QString uri, sp, hint; qint32 ct; in >> uri >> sp >> hint >> ct;
         m_session->addMagnet(uri, sp, hint, ct);
-    } else if (method == QLatin1String("addTorrentFileEx") || method == QLatin1String("commitStaged")) {
-        QString first, sp; std::vector<int> pr; qint32 n; bool paused;
-        in >> first >> sp >> n; pr.reserve(n);
-        for (qint32 k = 0; k < n; ++k) { qint32 v; in >> v; pr.push_back(v); }
-        in >> paused;
-        if (method == QLatin1String("addTorrentFileEx")) m_session->addTorrentFileEx(first, sp, pr, paused);
-        else m_session->commitStaged(first, sp, pr, paused);
-    } else if (method == QLatin1String("addMagnetEx")) {
-        QString uri, sp; bool paused; in >> uri >> sp >> paused;
-        m_session->addMagnetEx(uri, sp, paused);
+    } else if (method == QLatin1String("addTorrentFileWith") || method == QLatin1String("commitStaged")
+               || method == QLatin1String("addMagnetWith")) {
+        QString first; AddOptions opts; in >> first >> opts;
+        if (method == QLatin1String("addTorrentFileWith")) m_session->addTorrentFileWith(first, opts);
+        else if (method == QLatin1String("addMagnetWith")) m_session->addMagnetWith(first, opts);
+        else m_session->commitStaged(first, opts);
     } else if (method == QLatin1String("stageMagnet")) {
         QString uri; in >> uri; m_session->stageMagnet(uri);
     } else if (method == QLatin1String("discardStaged")) {

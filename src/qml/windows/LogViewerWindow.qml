@@ -22,14 +22,8 @@ Window {
     flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
     title: (i18n.language, i18n.t("logviewer_title2"))
 
-    readonly property bool frameless: typeof framelessWindow !== "undefined" && framelessWindow === true
-    Loader {
-        id: framelessLoader
-        active: win.frameless
-        source: win.frameless ? "../AppFramelessAgent.qml" : ""
-        onLoaded: { item.window = win; item.navBar = titleBar }
-    }
-    function prepareFrame() { if (framelessLoader.item) framelessLoader.item.attach() }
+
+    function prepareFrame() { titleBar.prepareFrame() }
 
     readonly property var api: typeof logs !== "undefined" ? logs : null
     onVisibleChanged: {
@@ -63,8 +57,6 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: implicitHeight
             appWindow: win
-            ownsTitleBar: win.frameless
-            title: win.title
         }
 
         // ---- level, filter, follow ----
@@ -76,36 +68,16 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: 12; anchors.rightMargin: 14
                 spacing: 10
-                Rectangle {
-                    implicitWidth: lvRow.implicitWidth + 6; implicitHeight: 32
-                    radius: Theme.rad(8)
-                    color: Theme.field
-                    border.color: Theme.hair; border.width: 1
-                    Row {
-                        id: lvRow
-                        x: 3; y: 3
-                        spacing: 2
-                        Repeater {
-                            model: [[3, "log_errors", 0], [2, "log_warnings", 1], [1, "log_info", 2], [0, "log_all", 3]]
-                            delegate: Rectangle {
-                                readonly property bool on: win.minLevel === modelData[0]
-                                width: lvTxt.implicitWidth + 22; height: 26
-                                radius: Math.max(0, Theme.rad(8) - 2)
-                                color: on ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.12) : "transparent"
-                                Text {
-                                    id: lvTxt
-                                    anchors.centerIn: parent
-                                    textFormat: Text.StyledText
-                                    text: (i18n.language, i18n.t(modelData[1])) + "  <font color='" + Theme.t4 + "'>"
-                                          + (win.api ? win.api.counts[modelData[2]] : 0) + "</font>"
-                                    color: parent.on ? Theme.t1 : Theme.t3
-                                    font.pixelSize: 13; font.weight: parent.on ? Font.DemiBold : Font.Normal
-                                    font.family: Theme.fontSans; font.features: Theme.tnum
-                                }
-                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.minLevel = modelData[0] }
-                            }
-                        }
+                Segmented {
+                    // a level shows itself and the ones above it; the count says how many that is
+                    options: {
+                        i18n.language
+                        var c = win.api ? win.api.counts : [0, 0, 0, 0]
+                        function opt(v, key, n) { return { value: v, label: i18n.t(key) + "  <font color='" + Theme.t4 + "'>" + n + "</font>" } }
+                        return [opt(3, "log_errors", c[0]), opt(2, "log_warnings", c[1]), opt(1, "log_info", c[2]), opt(0, "log_all", c[3])]
                     }
+                    current: win.minLevel
+                    onPicked: function (v) { win.minLevel = v }
                 }
                 TFld {
                     id: filter
@@ -151,19 +123,19 @@ Window {
                     x: 12; y: 4
                     width: 72
                     text: line.modelData.time
-                    color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontMono
+                    color: Theme.t4; font.pixelSize: 13; font.family: Theme.fontMono
                 }
                 Text {
                     x: 84; y: 4
                     width: 60
                     text: ["DEBUG", "INFO", "WARN", "ERROR"][line.modelData.level]
-                    color: line.lvInk; font.pixelSize: 12; font.weight: line.modelData.level >= 2 ? Font.DemiBold : Font.Normal; font.family: Theme.fontMono
+                    color: line.lvInk; font.pixelSize: 13; font.weight: line.modelData.level >= 2 ? Font.DemiBold : Font.Normal; font.family: Theme.fontMono
                 }
                 Text {
                     x: 148; y: 4
                     width: 90
                     text: line.modelData.module
-                    color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontMono
+                    color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontMono
                     elide: Text.ElideRight
                 }
                 Text {
@@ -172,7 +144,7 @@ Window {
                     width: line.width - x - 14
                     text: line.modelData.msg
                     color: line.modelData.level === 0 ? Theme.t3 : Theme.t1
-                    font.pixelSize: 12; font.family: Theme.fontMono
+                    font.pixelSize: 13; font.family: Theme.fontMono
                     wrapMode: Text.WrapAnywhere
                     textFormat: Text.PlainText
                 }
@@ -192,7 +164,7 @@ Window {
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                     color: win.copied !== "" ? Theme.grn : Theme.t3
-                    font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+                    font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
                     text: {
                         i18n.language
                         if (win.copied !== "") return win.copied
@@ -202,7 +174,7 @@ Window {
                         return i18n.t("log_session").arg(p[0]).arg((p[1] || "").replace(/^BATorrent /, ""))
                     }
                 }
-                BtnFlat { text: (i18n.language, i18n.t("logviewer_clear")); onClicked: if (win.api) win.api.clearLog() }
+                BtnFlat { ghost: true; text: (i18n.language, i18n.t("logviewer_clear")); onClicked: if (win.api) win.api.clearLog() }
                 BtnFlat { text: (i18n.language, i18n.t("logviewer_open_folder2")); onClicked: if (win.api) win.api.openLogsFolder() }
                 BtnFlat {
                     primary: true

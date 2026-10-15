@@ -19,7 +19,7 @@ MenuItem {
     // A category with nothing in it cannot be filtered to anything: in the
     // filter menu it is left out. The assign menu passes no count and keeps
     // every category, since that is where a first item gets filed.
-    readonly property bool empty: cmi.count === 0
+    readonly property bool empty: cmi.count === 0 && !cmi.current
     visible: !empty
     implicitHeight: empty ? 0 : 36
     height: implicitHeight

@@ -12,6 +12,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import "../theme"
 import "../widgets"
+import "../widgets/TimeAgo.js" as TimeAgo
 
 Window {
     id: win
@@ -24,16 +25,8 @@ Window {
     flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
     title: (i18n.language, i18n.t("tb_rss"))
 
-    // Windows builds with QWindowKit: the same title bar as the main window
-    readonly property bool frameless: typeof framelessWindow !== "undefined" && framelessWindow === true
-    Loader {
-        id: framelessLoader
-        active: win.frameless
-        source: win.frameless ? "../AppFramelessAgent.qml" : ""
-        onLoaded: { item.window = win; item.navBar = titleBar }
-    }
-    // called before the first show (MainWindowLoaders.showWin), so the frame never flashes
-    function prepareFrame() { if (framelessLoader.item) framelessLoader.item.attach() }
+
+    function prepareFrame() { titleBar.prepareFrame() }
 
     property int selectedFeed: 0
     readonly property var feedList: typeof rss !== "undefined" ? rss.feeds : []
@@ -58,16 +51,7 @@ Window {
         function onErrorOccurred(message) { win.statusMsg = (i18n.language, i18n.t("create_error_prefix")) + message }
     }
 
-    // "12 min ago", "yesterday", "3 days ago"
-    function ago(secs) {
-        if (!secs || secs <= 0) return ""
-        var d = Math.max(0, Date.now() / 1000 - secs)
-        if (d < 60) return i18n.t("rss_ago_now")
-        if (d < 3600) return i18n.t("rss_ago_min").arg(Math.floor(d / 60))
-        if (d < 86400) return i18n.t("rss_ago_h").arg(Math.floor(d / 3600))
-        if (d < 2 * 86400) return i18n.t("freeup_yesterday")
-        return i18n.t("freeup_days_ago").arg(Math.floor(d / 86400))
-    }
+    function ago(secs) { return TimeAgo.ago(secs, i18n.t) }
     function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") }
     function mono(s) { return "<font face='" + Theme.fontMono + "' color='" + Theme.t1 + "'>" + esc(s) + "</font>" }
     // the rule in plain words
@@ -102,7 +86,7 @@ Window {
             edAuto.on = f.autoDownload === true
             visible = true
         }
-        Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.6); MouseArea { anchors.fill: parent; onClicked: editOverlay.visible = false } }
+        Rectangle { anchors.fill: parent; color: Theme.scrim; MouseArea { anchors.fill: parent; onClicked: editOverlay.visible = false } }
         Rectangle {
             anchors.centerIn: parent
             width: 480; height: edCol.implicitHeight + 44
@@ -164,7 +148,7 @@ Window {
         z: 100
         visible: false
         onVisibleChanged: if (visible) addUrl.forceActiveFocus()
-        Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.6); MouseArea { anchors.fill: parent; onClicked: addOverlay.visible = false } }
+        Rectangle { anchors.fill: parent; color: Theme.scrim; MouseArea { anchors.fill: parent; onClicked: addOverlay.visible = false } }
         Rectangle {
             anchors.centerIn: parent
             width: 480; height: addCol.implicitHeight + 44
@@ -200,8 +184,6 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: implicitHeight
             appWindow: win
-            ownsTitleBar: win.frameless
-            title: win.title
         }
 
         // ======== no feed yet ========
@@ -270,13 +252,12 @@ Window {
                 anchors.fill: parent
                 anchors.leftMargin: 20; anchors.rightMargin: 16
                 spacing: 8
-                Text { text: (i18n.language, i18n.t("rss_feeds2")); color: Theme.t1; font.pixelSize: 17; font.weight: Font.DemiBold; font.family: Theme.fontSans }
                 Text {
                     Layout.fillWidth: true
                     Layout.leftMargin: 8
                     visible: win.statusMsg.length > 0
                     text: win.statusMsg
-                    color: Theme.downText; font.pixelSize: 12; font.family: Theme.fontSans
+                    color: Theme.downText; font.pixelSize: 13; font.family: Theme.fontSans
                     elide: Text.ElideRight
                 }
                 Item { Layout.fillWidth: true; visible: win.statusMsg.length === 0 }
@@ -310,7 +291,7 @@ Window {
                         width: ListView.view.width
                         height: 56
                         radius: Theme.rad(6)
-                        color: on ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.08) : (feedMa.containsMouse ? Theme.hover : "transparent")
+                        color: on ? Theme.selectedFill : (feedMa.containsMouse ? Theme.hover : "transparent")
                         Rectangle { visible: feedRow.on; width: 2; height: parent.height; color: Theme.t1 }
                         ColumnLayout {
                             x: 12
@@ -330,7 +311,7 @@ Window {
                                 Text {
                                     visible: modelData.newCount > 0
                                     text: (i18n.language, modelData.newCount === 1 ? i18n.t("rss_new_one") : i18n.t("rss_new_n").arg(modelData.newCount))
-                                    color: Theme.t2; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
+                                    color: Theme.t2; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
                                 }
                             }
                             Text {
@@ -340,7 +321,7 @@ Window {
                                     if (!modelData.enabled) return i18n.t("rss_feed_off")
                                     return modelData.lastCheckedSecs > 0 ? i18n.t("rss_updated").arg(win.ago(modelData.lastCheckedSecs)) : i18n.t("rss_not_checked")
                                 }
-                                color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans
+                                color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
                                 elide: Text.ElideRight
                             }
                         }
@@ -449,20 +430,20 @@ Window {
                                             i18n.language
                                             var s = modelData.state === "downloading" ? i18n.t("rss_st_downloading")
                                                   : modelData.state === "done" ? i18n.t("rss_st_done")
-                                                  : modelData.state === "ignored" ? i18n.t("rss_st_ignored")
+                                                  : modelData.state === "ignored" ? i18n.t(modelData.reason === "library" ? "rss_st_in_library" : "rss_st_ignored")
                                                   : ""
                                             if (modelData.size !== "") s = s.length > 0 ? s + " · " + modelData.size : modelData.size
                                             return s
                                         }
                                         color: modelData.state === "" || modelData.state === "ignored" ? Theme.t3 : Theme.t2
-                                        font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+                                        font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
                                     }
                                 }
                             }
                             Text {
                                 visible: !dlBtn.visible
                                 text: (i18n.language, win.ago(modelData.pubSecs))
-                                color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+                                color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
                             }
                             // a manual download, for what the rule left
                             BtnFlat {

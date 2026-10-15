@@ -49,8 +49,7 @@ Item {
     property bool showFooter: true
     property bool showCancel: true
     property bool showOk: true
-    readonly property color standardBackdropColor: uiPalette.isDark ? Qt.rgba(0, 0, 0, 0.5)
-                                                                    : Qt.rgba(20/255, 20/255, 28/255, 0.32)
+    readonly property color standardBackdropColor: Theme.scrim
     property color backdropColor: standardBackdropColor
     default property alias bodyContent: bodyHost.data
 

@@ -27,7 +27,7 @@ Item {
     property Item appView: null
     property bool opened: false
     property real anim: 0
-    Behavior on anim { NumberAnimation { duration: 260; easing.type: Theme.easeOut } }
+    Behavior on anim { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
     onOpenedChanged: {
         anim = opened ? 1 : 0
         if (opened) {
@@ -48,18 +48,19 @@ Item {
     property int step: 0
     readonly property int lastStep: 3            // 4 is the done page
     // fade + 14px rise between steps
-    property real stepIn: 1
+    property real stepIn: 1      // the fade, 380ms
+    property real stepRise: 1    // the 14px rise, 480ms
     function go(n) {
         if (n === step || n < 0 || n > lastStep + 1) return
         step = n
         stepIn = 0
+        stepRise = 0
         stepAnim.restart()
     }
-    NumberAnimation {
+    ParallelAnimation {
         id: stepAnim
-        target: wiz; property: "stepIn"; from: 0; to: 1
-        duration: Theme.reduceMotion ? 200 : 480
-        easing.type: Easing.OutCubic
+        NumberAnimation { target: wiz; property: "stepIn"; from: 0; to: 1; duration: 380; easing.type: Easing.OutCubic }
+        NumberAnimation { target: wiz; property: "stepRise"; from: 0; to: 1; duration: Theme.reduceMotion ? 0 : 480; easing.type: Easing.OutCubic }
     }
 
     // ---- what is set (mirrors, so the chips restate a choice at once) ----
@@ -203,7 +204,7 @@ Item {
                     width: leftScroll.width - 2 * leftScroll.pad
                     spacing: 18
                     opacity: wiz.stepIn
-                    transform: Translate { y: Theme.reduceMotion ? 0 : 14 * (1 - wiz.stepIn) }
+                    transform: Translate { y: Theme.reduceMotion ? 0 : 14 * (1 - wiz.stepRise) }
 
                     Text {
                         text: (i18n.language, i18n.t("wiz_step")).arg(wiz.step + 1).arg(wiz.lastStep + 1)
@@ -326,7 +327,7 @@ Item {
                                             border.color: Theme.hair
                                             visible: !tcell.on
                                         }
-                                        transform: Translate { y: tcell.on ? -3 : 0; Behavior on y { NumberAnimation { duration: 220 } } }
+                                        transform: Translate { y: tcell.on ? -3 : 0; Behavior on y { NumberAnimation { duration: Theme.durSlow } } }
                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Theme.setName(modelData) }
                                     }
                                     Text {
@@ -340,47 +341,20 @@ Item {
                         ColumnLayout {
                             spacing: 9
                             Text { text: (i18n.language, i18n.t("wiz_bg")); color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                            Rectangle {
-                                implicitWidth: segRow.implicitWidth + 6
-                                implicitHeight: 40
-                                radius: Theme.rad(8)
-                                color: Theme.field
-                                border.color: Theme.hair; border.width: 1
-                                Row {
-                                    id: segRow
-                                    x: 3; y: 3
-                                    spacing: 2
-                                    Repeater {
-                                        model: [["clean", "wiz_bg_clean"], ["theme", "wiz_bg_theme"], ["user", "wiz_bg_user"]]
-                                        delegate: Rectangle {
-                                            readonly property bool dis: modelData[0] === "theme" && !wiz.themeHasArt
-                                            readonly property bool on: (wiz.bgMode === modelData[0]) || (modelData[0] === "clean" && wiz.bgMode === "theme" && !wiz.themeHasArt)
-                                            width: segTxt.implicitWidth + 28; height: 34
-                                            radius: Math.max(0, Theme.rad(8) - 2)
-                                            color: on && !dis ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.12) : "transparent"
-                                            opacity: dis ? 0.4 : 1
-                                            Text {
-                                                id: segTxt
-                                                anchors.centerIn: parent
-                                                text: (i18n.language, i18n.t(modelData[1]))
-                                                color: parent.on && !parent.dis ? Theme.t1 : Theme.t3
-                                                font.pixelSize: 14; font.weight: Font.Medium; font.family: Theme.fontSans
-                                            }
-                                            MouseArea {
-                                                id: segMa
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: parent.dis ? Qt.ArrowCursor : Qt.PointingHandCursor
-                                                onClicked: {
-                                                    if (parent.dis || typeof themeBridge === "undefined") return
-                                                    if (modelData[0] === "user" && themeBridge.userImage === "") { imageDlg.open(); return }
-                                                    themeBridge.backgroundMode = modelData[0]
-                                                }
-                                            }
-                                            ToolTip.visible: dis && segMa.containsMouse
-                                            ToolTip.text: (i18n.language, i18n.t("wiz_bg_none"))
-                                        }
-                                    }
+                            Segmented {
+                                optionHeight: 34
+                                fontSize: 14
+                                // Default has no art: "Theme art" says why it can't be picked
+                                options: (i18n.language, [
+                                    { value: "clean", label: i18n.t("wiz_bg_clean") },
+                                    { value: "theme", label: i18n.t("wiz_bg_theme"), disabled: !wiz.themeHasArt, tip: wiz.themeHasArt ? "" : i18n.t("wiz_bg_none") },
+                                    { value: "user", label: i18n.t("wiz_bg_user") }
+                                ])
+                                current: wiz.bgMode === "theme" && !wiz.themeHasArt ? "clean" : wiz.bgMode
+                                onPicked: function (v) {
+                                    if (typeof themeBridge === "undefined") return
+                                    if (v === "user" && themeBridge.userImage === "") { imageDlg.open(); return }
+                                    themeBridge.backgroundMode = v
                                 }
                             }
                         }
@@ -508,8 +482,8 @@ Item {
                                                 Layout.fillWidth: true
                                                 spacing: 0
                                                 clip: true
-                                                Text { id: fpath; text: modelData.path; color: Theme.t2; font.pixelSize: 12; font.family: Theme.fontMono; elide: Text.ElideMiddle; width: Math.min(implicitWidth, parent.width - ffree.implicitWidth) }
-                                                Text { id: ffree; text: modelData.free !== "" ? "  ·  " + (i18n.language, i18n.t("addw_free")).arg(modelData.free) : ""; color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
+                                                Text { id: fpath; text: modelData.path; color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontMono; elide: Text.ElideMiddle; width: Math.min(implicitWidth, parent.width - ffree.implicitWidth) }
+                                                Text { id: ffree; text: modelData.free !== "" ? "  ·  " + (i18n.language, i18n.t("addw_free")).arg(modelData.free) : ""; color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans }
                                             }
                                         }
                                         BtnFlat {
@@ -613,7 +587,7 @@ Item {
             width: Math.min(760, parent.width - 120)
             spacing: 26
             opacity: wiz.stepIn
-            transform: Translate { y: Theme.reduceMotion ? 0 : 14 * (1 - wiz.stepIn) }
+            transform: Translate { y: Theme.reduceMotion ? 0 : 14 * (1 - wiz.stepRise) }
             Image { Layout.alignment: Qt.AlignHCenter; source: Theme.logoSource; Layout.preferredWidth: 88; Layout.preferredHeight: 88; sourceSize: Qt.size(176, 176) }
             Text {
                 Layout.fillWidth: true
@@ -734,7 +708,7 @@ Item {
         color: on ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.1) : (chipMa.containsMouse ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.05) : "transparent")
         border.width: on ? 1.5 : 1
         border.color: on ? Theme.t1 : Theme.hair
-        Behavior on color { ColorAnimation { duration: 200 } }
+        Behavior on color { ColorAnimation { duration: Theme.durBase } }
         Text {
             id: chipTxt
             anchors.centerIn: parent

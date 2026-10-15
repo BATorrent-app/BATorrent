@@ -54,12 +54,10 @@ public:
     void addTorrentWithPriorities(const QString &filePath, const QString &savePath,
                                   const std::vector<int> &filePriorities);
 
-    void addTorrentFileEx(const QString &filePath, const QString &savePath,
-                          const std::vector<int> &filePriorities, bool paused) override;
-    void addMagnetEx(const QString &uri, const QString &savePath, bool paused) override;
+    void addTorrentFileWith(const QString &filePath, const AddOptions &opts) override;
+    void addMagnetWith(const QString &uri, const AddOptions &opts) override;
     void stageMagnet(const QString &uri) override;
-    void commitStaged(const QString &hash, const QString &savePath,
-                      const std::vector<int> &filePriorities, bool paused) override;
+    void commitStaged(const QString &hash, const AddOptions &opts) override;
     void discardStaged(const QString &hash) override;
     void removeTorrent(int index, bool deleteFiles = false, bool permanent = false);
     void pauseTorrent(int index);

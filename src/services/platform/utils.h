@@ -217,7 +217,7 @@ inline void setSpeedUnit(int unit) { g_speedUnit() = unit; }
 
 inline QString formatSize(qint64 bytes)
 {
-    const QLocale loc = QLocale::system();
+    const QLocale loc;   // the app's language (Translator sets the default)
     if (bytes < 1024) return loc.toString(bytes) + " B";
     if (bytes < 1024 * 1024) return loc.toString(bytes / 1024.0, 'f', 1) + " KB";
     if (bytes < 1024LL * 1024 * 1024) return loc.toString(bytes / (1024.0 * 1024.0), 'f', 1) + " MB";
@@ -226,7 +226,7 @@ inline QString formatSize(qint64 bytes)
 
 inline QString formatSpeed(int bps)
 {
-    const QLocale loc = QLocale::system();
+    const QLocale loc;
     if (g_speedUnit() == 1) {
         // Bits-per-second display. Convert bytes-per-second → bits by *8.
         const double bits = bps * 8.0;

@@ -102,7 +102,7 @@ QVariantList QmlRssBridge::itemsForFeed(int feedIndex) const
         m["pubSecs"] = it.pubDate.isValid() ? it.pubDate.toSecsSinceEpoch() : 0;
         m["downloaded"] = it.downloaded;
         // what happened to it: downloading, downloaded, or why it was left
-        QString state;
+        QString state, reason;
         if (it.downloaded) {
             const int i = libraryIndex(rss.session(), it.link, it.title);
             if (i >= 0) {
@@ -111,10 +111,15 @@ QVariantList QmlRssBridge::itemsForFeed(int feedIndex) const
             } else {
                 state = QStringLiteral("done");
             }
+        } else if (libraryIndex(rss.session(), it.link, it.title) >= 0) {
+            state = QStringLiteral("ignored");
+            reason = QStringLiteral("library");
         } else if (feed.autoDownload && filtering && !re.match(it.title).hasMatch()) {
             state = QStringLiteral("ignored");
+            reason = QStringLiteral("filter");
         }
         m["state"] = state;
+        m["reason"] = reason;
         out << m;
     }
     return out;

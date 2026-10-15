@@ -88,7 +88,7 @@ Item {
             makeRoomPanel.targetBytes = bytes
             makeRoomPanel.targetName = name
             makeRoomPanel.targetPath = path
-            makeRoomPanel.open = true
+            makeRoomPanel.open()
         }
         onShowInLibraryRequested: function (hash) {
             if (typeof session === "undefined") return

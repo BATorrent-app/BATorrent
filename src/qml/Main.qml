@@ -715,7 +715,7 @@ Window {
             onSettingsClicked: win.currentPage = 3
             onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }
             onSelectTorrent: function(infoHash) { win.selectTorrentByHash(infoHash) }
-            onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
+            onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open() }
             onMenuRequested: function(anchor) {
                 if (logoMenu.opened) { logoMenu.close(); return }
                 var p = anchor.mapToItem(win.contentItem, 0, anchor.height + 4)
@@ -779,7 +779,7 @@ Window {
             onAddLink: promptHttpDownload()
             onRemoveSelected: removeDlg.open()
             onOpenRss: win.showWin(rssWinLoader)
-            onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open = true }
+            onMakeRoomRequested: { makeRoomPanel.targetBytes = 0; makeRoomPanel.open() }
         }
 
         // ================== SUBBAR + LIBRARY ==================
@@ -798,7 +798,7 @@ Window {
                 SearchView {
                     id: searchPage
                     Layout.fillWidth: true; Layout.fillHeight: true
-                    onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
+                    onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open() }
                     onBackTo: function (page) { win.currentPage = page }
                 }
                 // ----- page 2: HUB -----

@@ -9,6 +9,7 @@ import QtQuick
 import QtQuick.Layouts
 import "../theme"
 import "../widgets"
+import "../widgets/TimeAgo.js" as TimeAgo
 
 Window {
     id: win
@@ -21,14 +22,8 @@ Window {
     flags: Theme.unifiedChrome ? (Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint) : Qt.Window
     title: (i18n.language, i18n.t("net_title"))
 
-    readonly property bool frameless: typeof framelessWindow !== "undefined" && framelessWindow === true
-    Loader {
-        id: framelessLoader
-        active: win.frameless
-        source: win.frameless ? "../AppFramelessAgent.qml" : ""
-        onLoaded: { item.window = win; item.navBar = titleBar }
-    }
-    function prepareFrame() { if (framelessLoader.item) framelessLoader.item.attach() }
+
+    function prepareFrame() { titleBar.prepareFrame() }
 
     readonly property var sess: typeof session !== "undefined" ? session : null
     property var diag: ({})
@@ -45,17 +40,14 @@ Window {
     // after asking the router again, look a few seconds later
     Timer { id: retryTimer; interval: 6000; onTriggered: { win.retrying = false; win.run() } }
 
-    readonly property bool listening: diag.port > 0
+    readonly property bool listening: diag.port > 0 && diag.status !== 3
     readonly property bool reachable: diag.status === 1
     readonly property bool vpnOn: typeof vpn !== "undefined" && vpn !== null && vpn.connectedInterface !== undefined && vpn.connectedInterface.length > 0
-    // 0 fine, 1 reachable only one way, 2 not listening
-    readonly property int verdict: !listening ? 2 : reachable ? 0 : 1
+    // the status bar's answer (session.portStatus), in sentences:
+    // 0 open, 1 blocked, 2 not listening, 3 still checking
+    readonly property int verdict: diag.status === 1 ? 0 : diag.status === 2 ? 1 : diag.status === 3 ? 2 : 3
 
-    function since(ms) {
-        win.tick
-        var s = Math.max(0, Math.floor((Date.now() - ms) / 1000))
-        return s < 60 ? i18n.t("net_checked_s").arg(s) : i18n.t("net_checked_m").arg(Math.floor(s / 60))
-    }
+    function since(ms) { win.tick; return i18n.t("net_checked").arg(TimeAgo.secondsAgo(ms, i18n.t)) }
 
     ColumnLayout {
         anchors.fill: parent
@@ -66,8 +58,6 @@ Window {
             Layout.fillWidth: true
             Layout.preferredHeight: implicitHeight
             appWindow: win
-            ownsTitleBar: win.frameless
-            title: win.title
         }
 
         Flickable {
@@ -106,19 +96,19 @@ Window {
                         spacing: 6
                         Text {
                             Layout.fillWidth: true
-                            text: (i18n.language, i18n.t(["net_v_ok", "net_v_blocked", "net_v_closed"][win.verdict]))
+                            text: (i18n.language, i18n.t(["net_v_ok", "net_v_blocked", "net_v_closed", "net_v_checking"][win.verdict]))
                             color: Theme.t1; font.pixelSize: 19; font.weight: Font.DemiBold; font.family: Theme.fontSans
                             wrapMode: Text.WordWrap
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: (i18n.language, i18n.t(["net_v_ok_d", "net_v_blocked_d", "net_v_closed_d"][win.verdict]).arg(win.diag.port || 0))
+                            text: (i18n.language, i18n.t(["net_v_ok_d", "net_v_blocked_d", "net_v_closed_d", "net_v_checking_d"][win.verdict]).arg(win.diag.port || 0))
                             color: Theme.t2; font.pixelSize: 14; font.family: Theme.fontSans
                             wrapMode: Text.WordWrap; lineHeight: 1.4
                         }
                         Row {
                             Layout.topMargin: 6
-                            visible: win.verdict !== 0
+                            visible: win.verdict === 1 || win.verdict === 2
                             spacing: 8
                             BtnFlat {
                                 primary: true
@@ -187,12 +177,12 @@ Window {
                                         Layout.fillWidth: true
                                         spacing: 2
                                         Text { text: (i18n.language, i18n.t(modelData.k)); color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                                        Text { Layout.fillWidth: true; text: (i18n.language, i18n.t(modelData.d)); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight }
+                                        Text { Layout.fillWidth: true; text: (i18n.language, i18n.t(modelData.d)); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans; elide: Text.ElideRight }
                                     }
                                     Text {
                                         text: (i18n.language, modelData.v)
                                         color: modelData.ok === 1 ? Theme.warn : modelData.ok === 2 ? Theme.downText : Theme.t2
-                                        font.pixelSize: 12; font.family: Theme.fontMono
+                                        font.pixelSize: 13; font.family: Theme.fontMono
                                     }
                                 }
                             }

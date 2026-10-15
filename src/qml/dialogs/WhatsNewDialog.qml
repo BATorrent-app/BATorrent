@@ -17,23 +17,15 @@ import QtQuick
 import QtQuick.Layouts
 import "../theme"
 import "../widgets"
+import "../widgets/TimeAgo.js" as TimeAgo
 
-Item {
+ModalShell {
     id: dlg
-    anchors.fill: parent
-    z: 200
-    visible: opened || anim > 0
-
-    property bool opened: false
-    property real anim: 0
-    Behavior on anim { NumberAnimation { duration: 180; easing.type: Theme.easeOut } }
-    onOpenedChanged: {
-        anim = opened ? 1 : 0
-        if (opened) DialogStack.push(dlg); else DialogStack.pop(dlg)
-    }
-    Component.onDestruction: DialogStack.pop(dlg)
-    function open() { opened = true }
-    function close() { opened = false }
+    cardWidth: 1040
+    cardHeight: 830
+    cardRadius: 14
+    // leaving any way counts as having read it
+    function dismiss() { close(); done() }
 
     signal done()                                  // Got it
     signal actionRequested(string action)          // "add", "downloads"
@@ -176,318 +168,279 @@ Item {
                                 : (content.highlights || []).slice(content.lead ? 0 : 1).map(function (h) { return { title: h, body: "" } })
     readonly property var lead: content.lead ? content.lead
                                : (content.highlights && content.highlights.length > 0 ? { title: content.highlights[0], body: "" } : null)
-    function fmtDate(d) {
-        if (!d) return ""
-        var p = d.split("-")
-        var loc = Qt.locale(["en_US", "pt_BR", "zh_CN", "ja_JP", "ru_RU", "es_ES", "de_DE", "uk_UA", "tr_TR"][i18n.language] || "en_US")
-        return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(loc, Locale.LongFormat).replace(/^[^,]*,\s*/, "")
-    }
+    function fmtBytes(b) { return typeof session !== "undefined" ? session.humanSize(b) : "" }
+    function fmtDate(d) { return TimeAgo.date(d, i18n.localeName, true) }
 
-    Shortcut {
-        sequences: [StandardKey.Cancel]
-        enabled: dlg.opened && DialogStack.topItem === dlg
-        onActivated: { dlg.close(); dlg.done() }
-    }
 
-    Rectangle {
+    RowLayout {
         anchors.fill: parent
-        opacity: dlg.anim
-        color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.7) : Qt.rgba(20/255, 20/255, 28/255, 0.4)
-        MouseArea { anchors.fill: parent; onClicked: { dlg.close(); dlg.done() } onWheel: function (w) { w.accepted = true } }
-    }
+        spacing: 0
 
-    Rectangle {
-        id: card
-        anchors.centerIn: parent
-        width: Math.min(1040, dlg.width - 32)
-        height: Math.min(830, dlg.height - 40)
-        opacity: dlg.anim
-        scale: Theme.reduceMotion ? 1 : (0.97 + 0.03 * dlg.anim)
-        radius: Theme.rad(14)
-        color: Theme.elev
-        border.color: Theme.hair; border.width: 1
-        clip: true
-        MouseArea { anchors.fill: parent; onWheel: function (w) { w.accepted = true } }
-
-        RowLayout {
-            anchors.fill: parent
+        // ================= the letter =================
+        ColumnLayout {
+            Layout.preferredWidth: Math.min(420, dlg.card.width * 0.4)
+            Layout.fillWidth: false
+            Layout.fillHeight: true
             spacing: 0
-
-            // ================= the letter =================
-            ColumnLayout {
-                Layout.preferredWidth: Math.min(420, card.width * 0.4)
-                Layout.fillWidth: false
+            Flickable {
+                id: letter
+                Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 0
-                Flickable {
-                    id: letter
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    contentWidth: width
-                    contentHeight: letterCol.implicitHeight + 60
-                    boundsBehavior: Flickable.StopAtBounds
-                    ColumnLayout {
-                        id: letterCol
-                        x: 36; y: 34
-                        width: letter.width - 72
-                        spacing: 0
-                        Text { text: dlg.shortVer; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 112; lineHeight: 0.85 }
-                        RowLayout {
+                clip: true
+                contentWidth: width
+                contentHeight: letterCol.implicitHeight + 60
+                boundsBehavior: Flickable.StopAtBounds
+                ColumnLayout {
+                    id: letterCol
+                    x: 36; y: 34
+                    width: letter.width - 72
+                    spacing: 0
+                    Text { text: dlg.shortVer; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 112; lineHeight: 0.85 }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Row {
+                            Text { text: "BAT"; color: Theme.down; font.family: "New Rocker"; font.pixelSize: 26 }
+                            Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 26 }
+                        }
+                        Item { Layout.fillWidth: true }
+                        Text { text: (i18n.language, dlg.fmtDate(dlg.content.date)); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans }
+                    }
+                    Rectangle { Layout.topMargin: 14; Layout.bottomMargin: 26; width: 40; height: 2; color: Theme.down }
+                    Repeater {
+                        model: dlg.noteParas
+                        delegate: Text {
+                            required property var modelData
+                            required property int index
                             Layout.fillWidth: true
-                            Row {
-                                Text { text: "BAT"; color: Theme.down; font.family: "New Rocker"; font.pixelSize: 26 }
-                                Text { text: "orrent"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 26 }
-                            }
-                            Item { Layout.fillWidth: true }
-                            Text { text: (i18n.language, dlg.fmtDate(dlg.content.date)); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans }
-                        }
-                        Rectangle { Layout.topMargin: 14; Layout.bottomMargin: 26; width: 40; height: 2; color: Theme.down }
-                        Repeater {
-                            model: dlg.noteParas
-                            delegate: Text {
-                                required property var modelData
-                                required property int index
-                                Layout.fillWidth: true
-                                Layout.topMargin: index > 0 ? 12 : 0
-                                text: modelData
-                                textFormat: Text.StyledText
-                                linkColor: Theme.accentText
-                                color: Theme.t1; font.pixelSize: 14; font.family: Theme.fontSans
-                                wrapMode: Text.WordWrap; lineHeight: 1.55
-                                onLinkActivated: function (link) { Qt.openUrlExternally(link) }
-                            }
-                        }
-                        RowLayout {
-                            Layout.topMargin: 24
-                            spacing: 12
-                            RoundedImage {
-                                width: 38; height: 38
-                                radius: 19
-                                sources: ["qrc:/images/avatar-mateus.jpg"]
-                                sourceWidth: 76
-                            }
-                            ColumnLayout {
-                                spacing: 0
-                                Text { text: "Mateus"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 19 }
-                                Text { text: (i18n.language, i18n.t("wn_builds_solo")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
-                            }
+                            Layout.topMargin: index > 0 ? 12 : 0
+                            text: modelData
+                            textFormat: Text.StyledText
+                            linkColor: Theme.accentText
+                            color: Theme.t1; font.pixelSize: 15; font.family: Theme.fontSans
+                            wrapMode: Text.WordWrap; lineHeight: 1.65
+                            onLinkActivated: function (link) { Qt.openUrlExternally(link) }
                         }
                     }
-                }
-                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.margins: 30
-                    Layout.topMargin: 22
-                    spacing: 12
-                    Text { text: (i18n.language, i18n.t("wn_feedback")); color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans }
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: 38
-                        radius: Theme.rad(8)
-                        color: tellMa.containsMouse ? Theme.hover : "transparent"
-                        border.color: Theme.hair; border.width: 1
-                        Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("wn_tell_me")) + "  ↗"; color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                        MouseArea { id: tellMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally(dlg.feedbackUrl) }
+                    RowLayout {
+                        Layout.topMargin: 24
+                        spacing: 12
+                        RoundedImage {
+                            width: 38; height: 38
+                            radius: 19
+                            sources: ["qrc:/images/avatar-mateus.jpg"]
+                            sourceWidth: 76
+                        }
+                        ColumnLayout {
+                            spacing: 0
+                            Text { text: "Mateus"; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 19 }
+                            Text { text: (i18n.language, i18n.t("wn_builds_solo")); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
+                        }
                     }
                 }
             }
-            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.hair }
-
-            // ================= what changed =================
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.margins: 30
+                Layout.topMargin: 22
+                spacing: 12
+                Text { text: (i18n.language, i18n.t("wn_feedback")); color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans }
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 38
+                    radius: Theme.rad(8)
+                    color: tellMa.containsMouse ? Theme.hover : "transparent"
+                    border.color: Theme.hair; border.width: 1
+                    Text { anchors.centerIn: parent; text: (i18n.language, i18n.t("wn_tell_me")) + "  ↗"; color: Theme.t1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                    MouseArea { id: tellMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally(dlg.feedbackUrl) }
+                }
+            }
+        }
+        Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.hair }
+
+        // ================= what changed =================
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 60
+                Layout.leftMargin: 32; Layout.rightMargin: 14
+                Text { Layout.fillWidth: true; text: (i18n.language, i18n.t("whatsnew_title")); color: Theme.t1; font.pixelSize: 17; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+                CloseButton {
+                    onClicked: dlg.dismiss()
+                }
+            }
+            Item {
+                Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 0
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 60
-                    Layout.leftMargin: 32; Layout.rightMargin: 14
-                    Text { Layout.fillWidth: true; text: (i18n.language, i18n.t("whatsnew_title")); color: Theme.t1; font.pixelSize: 17; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                    Rectangle {
-                        width: 30; height: 30; radius: Theme.rad(6)
-                        color: xMa.containsMouse ? Theme.hover : "transparent"
-                        IconImg { anchors.centerIn: parent; src: "qrc:/icons/close.svg"; s: 14; tint: xMa.containsMouse ? Theme.t1 : Theme.t3 }
-                        MouseArea { id: xMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { dlg.close(); dlg.done() } }
-                    }
-                }
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Flickable {
-                        id: news
-                        anchors.fill: parent
-                        clip: true
-                        contentWidth: width
-                        contentHeight: newsCol.implicitHeight + 24
-                        boundsBehavior: Flickable.StopAtBounds
-                        WheelScroller { flick: news }
-                        ColumnLayout {
-                            id: newsCol
-                            x: 32
-                            width: news.width - 64
-                            spacing: 0
+                Flickable {
+                    id: news
+                    anchors.fill: parent
+                    clip: true
+                    contentWidth: width
+                    contentHeight: newsCol.implicitHeight + 24
+                    boundsBehavior: Flickable.StopAtBounds
+                    WheelScroller { flick: news }
+                    ColumnLayout {
+                        id: newsCol
+                        x: 32
+                        width: news.width - 64
+                        spacing: 0
 
-                            // the main change
-                            Rectangle {
-                                Layout.fillWidth: true
-                                visible: dlg.lead !== null
-                                implicitHeight: leadRow.implicitHeight + 40
-                                radius: Theme.radCard(12)
-                                color: Theme.panel
-                                border.color: Theme.hair; border.width: 1
-                                RowLayout {
-                                    id: leadRow
-                                    x: 20; y: 20
-                                    width: parent.width - 40
-                                    spacing: 18
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.alignment: Qt.AlignTop
-                                        spacing: 10
-                                        Text {
-                                            Layout.fillWidth: true
-                                            text: dlg.lead ? dlg.lead.title : ""
-                                            color: Theme.t1; font.pixelSize: 23; font.weight: Font.Bold; font.family: Theme.fontSans
-                                            wrapMode: Text.WordWrap; lineHeight: 1.15
-                                        }
-                                        Text {
-                                            Layout.fillWidth: true
-                                            visible: text !== ""
-                                            text: dlg.lead ? dlg.lead.body : ""
-                                            color: Theme.t2; font.pixelSize: 14; font.family: Theme.fontSans
-                                            wrapMode: Text.WordWrap; lineHeight: 1.45
-                                        }
-                                        BtnFlat {
-                                            Layout.topMargin: 4
-                                            visible: dlg.lead && dlg.lead.action
-                                            primary: true
-                                            text: (i18n.language, i18n.t("wn_try_it"))
-                                            onClicked: { var a = dlg.lead.action; dlg.close(); dlg.done(); dlg.actionRequested(a) }
-                                        }
-                                    }
-                                    // a picture of it, in the app's own parts
-                                    Rectangle {
-                                        visible: dlg.lead && dlg.lead.action === "add" && leadRow.width > 430
-                                        Layout.alignment: Qt.AlignTop
-                                        Layout.preferredWidth: 250
-                                        implicitHeight: pvCol.implicitHeight + 20
-                                        radius: Theme.rad(10)
-                                        color: Theme.elev
-                                        border.color: Theme.hair; border.width: 1
-                                        Column {
-                                            id: pvCol
-                                            x: 10; y: 10
-                                            width: parent.width - 20
-                                            spacing: 8
-                                            Rectangle {
-                                                width: parent.width; height: 40
-                                                radius: Theme.rad(6)
-                                                color: Theme.field
-                                                border.color: Theme.hair; border.width: 1
-                                                Column {
-                                                    x: 8; anchors.verticalCenter: parent.verticalCenter
-                                                    Text { width: pvCol.width - 16; text: "magnet:?xt=urn:btih:9f3c1e…"; elide: Text.ElideRight; color: Theme.t3; font.pixelSize: 9; font.family: Theme.fontMono }
-                                                    Text { width: pvCol.width - 16; text: "https://releases.ubuntu.com/…"; elide: Text.ElideRight; color: Theme.t3; font.pixelSize: 9; font.family: Theme.fontMono }
-                                                }
-                                            }
-                                            Repeater {
-                                                model: [["Hollow Knight", "addw_src_torrent", "Game · 7,4 GB"], ["ubuntu-24.04-desktop.iso", "addw_src_direct", "resumable · 5,7 GB"]]
-                                                delegate: Row {
-                                                    spacing: 8
-                                                    Rectangle { width: 22; height: 28; radius: 3; color: Theme.hover }
-                                                    Column {
-                                                        anchors.verticalCenter: parent.verticalCenter
-                                                        Text { text: modelData[0]; color: Theme.t1; font.pixelSize: 11; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                                                        Text { text: (i18n.language, i18n.t(modelData[1])) + " · " + modelData[2]; color: Theme.t3; font.pixelSize: 10; font.family: Theme.fontSans }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // the others, a line each
-                            Repeater {
-                                model: dlg.items
-                                delegate: Item {
-                                    id: it
-                                    required property var modelData
-                                    required property int index
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: itCol.implicitHeight + 30
-                                    Rectangle { visible: it.index > 0; width: parent.width; height: 1; color: Theme.hairSoft }
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        spacing: 12
-                                        ColumnLayout {
-                                            id: itCol
-                                            Layout.fillWidth: true
-                                            spacing: 3
-                                            Text { Layout.fillWidth: true; text: it.modelData.title; color: Theme.t1; font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans; wrapMode: Text.WordWrap }
-                                            Text { Layout.fillWidth: true; visible: text !== ""; text: it.modelData.body || ""; color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans; wrapMode: Text.WordWrap }
-                                        }
-                                        BtnFlat {
-                                            visible: !!it.modelData.showMe
-                                            text: (i18n.language, i18n.t("wn_show_me"))
-                                            onClicked: { var a = it.modelData.showMe; dlg.close(); dlg.done(); dlg.actionRequested(a) }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // fixed, apart from the news
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.topMargin: 10
-                                visible: (dlg.content.fixes || []).length > 0
-                                implicitHeight: fxCol.implicitHeight + 30
-                                radius: Theme.radCard(10)
-                                color: "transparent"
-                                border.color: Theme.hair; border.width: 1
+                        // the main change
+                        Rectangle {
+                            Layout.fillWidth: true
+                            visible: dlg.lead !== null
+                            implicitHeight: leadRow.implicitHeight + 40
+                            radius: Theme.radCard(12)
+                            color: Theme.panel
+                            border.color: Theme.hair; border.width: 1
+                            GridLayout {
+                                id: leadRow
+                                x: 20; y: 20
+                                width: parent.width - 40
+                                columns: width > 560 ? 2 : 1
+                                columnSpacing: 18
+                                rowSpacing: 16
                                 ColumnLayout {
-                                    id: fxCol
-                                    x: 16; y: 15
-                                    width: parent.width - 32
-                                    spacing: 8
-                                    Text { text: (i18n.language, i18n.t("rn_fixed")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.9; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
-                                    Repeater {
-                                        model: dlg.content.fixes || []
-                                        delegate: RowLayout {
-                                            required property var modelData
-                                            Layout.fillWidth: true
-                                            spacing: 10
-                                            Text { Layout.fillWidth: true; text: modelData; color: Theme.t2; font.pixelSize: 14; font.family: Theme.fontSans; wrapMode: Text.WordWrap }
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignTop
+                                    spacing: 10
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: dlg.lead ? dlg.lead.title : ""
+                                        color: Theme.t1; font.pixelSize: 23; font.weight: Font.Bold; font.family: Theme.fontSans
+                                        wrapMode: Text.WordWrap; lineHeight: 1.15
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        visible: text !== ""
+                                        text: dlg.lead ? dlg.lead.body : ""
+                                        color: Theme.t2; font.pixelSize: 14; font.family: Theme.fontSans
+                                        wrapMode: Text.WordWrap; lineHeight: 1.45
+                                    }
+                                    BtnFlat {
+                                        Layout.topMargin: 4
+                                        visible: dlg.lead && dlg.lead.action
+                                        primary: true
+                                        text: (i18n.language, i18n.t("wn_try_it"))
+                                        onClicked: { var a = dlg.lead.action; dlg.close(); dlg.done(); dlg.actionRequested(a) }
+                                    }
+                                }
+                                // a picture of it: the Add window's own rows, with made-up items
+                                Rectangle {
+                                    visible: dlg.lead && dlg.lead.action === "add"
+                                    Layout.alignment: Qt.AlignTop
+                                    Layout.fillWidth: leadRow.columns === 1
+                                    Layout.preferredWidth: leadRow.columns === 1 ? -1 : 300
+                                    implicitHeight: pvCol.implicitHeight + 2
+                                    radius: Theme.rad(9)
+                                    color: Theme.elev
+                                    border.color: Theme.hair; border.width: 1
+                                    clip: true
+                                    Column {
+                                        id: pvCol
+                                        x: 1; y: 1
+                                        width: parent.width - 2
+                                        AddItemRow {
+                                            width: pvCol.width; first: true; removable: false
+                                            name: "Hollow Knight"; tag: "HK"
+                                            source: (i18n.language, i18n.t("addw_src_torrent"))
+                                            meta: (i18n.language, i18n.t("addw_type_game"))
+                                            size: dlg.fmtBytes(7.4e9)
+                                        }
+                                        AddItemRow {
+                                            width: pvCol.width; removable: false
+                                            name: "ubuntu-24.04-desktop-amd64.iso"; tag: "ISO"
+                                            source: (i18n.language, i18n.t("addw_src_direct"))
+                                            meta: (i18n.language, "releases.ubuntu.com · " + i18n.t("addw_resumable"))
+                                            size: dlg.fmtBytes(5.7e9)
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width; height: 40
-                        visible: news.contentHeight > news.height && !news.atYEnd
-                        gradient: Gradient {
-                            GradientStop { position: 0; color: "transparent" }
-                            GradientStop { position: 1; color: Theme.elev }
+
+                        // the others, a line each
+                        Repeater {
+                            model: dlg.items
+                            delegate: Item {
+                                id: it
+                                required property var modelData
+                                required property int index
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: itCol.implicitHeight + 30
+                                Rectangle { visible: it.index > 0; width: parent.width; height: 1; color: Theme.hairSoft }
+                                RowLayout {
+                                    anchors.fill: parent
+                                    spacing: 12
+                                    ColumnLayout {
+                                        id: itCol
+                                        Layout.fillWidth: true
+                                        spacing: 3
+                                        Text { Layout.fillWidth: true; text: it.modelData.title; color: Theme.t1; font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans; wrapMode: Text.WordWrap }
+                                        Text { Layout.fillWidth: true; visible: text !== ""; text: it.modelData.body || ""; color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans; wrapMode: Text.WordWrap }
+                                    }
+                                    BtnFlat {
+                                        visible: !!it.modelData.showMe
+                                        text: (i18n.language, i18n.t("wn_show_me"))
+                                        onClicked: { var a = it.modelData.showMe; dlg.close(); dlg.done(); dlg.actionRequested(a) }
+                                    }
+                                }
+                            }
+                        }
+
+                        // fixed, apart from the news
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.topMargin: 10
+                            visible: (dlg.content.fixes || []).length > 0
+                            implicitHeight: fxCol.implicitHeight + 30
+                            radius: Theme.radCard(10)
+                            color: "transparent"
+                            border.color: Theme.hair; border.width: 1
+                            ColumnLayout {
+                                id: fxCol
+                                x: 16; y: 15
+                                width: parent.width - 32
+                                spacing: 8
+                                Text { text: (i18n.language, i18n.t("rn_fixed")); color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.9; font.capitalization: Font.AllUppercase; font.family: Theme.fontSans }
+                                Repeater {
+                                    model: dlg.content.fixes || []
+                                    delegate: RowLayout {
+                                        required property var modelData
+                                        Layout.fillWidth: true
+                                        spacing: 10
+                                        Text { Layout.fillWidth: true; text: modelData; color: Theme.t2; font.pixelSize: 14; font.family: Theme.fontSans; wrapMode: Text.WordWrap }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 68
-                    Layout.leftMargin: 24; Layout.rightMargin: 20
-                    spacing: 6
-                    BtnFlat { text: (i18n.language, i18n.t("whatsnew_full_notes")); onClicked: { dlg.close(); dlg.done(); dlg.releaseNotesRequested(dlg.appVer) } }
-                    Text { text: "·"; color: Theme.t4; font.pixelSize: 13 }
-                    BtnFlat { text: (i18n.language, i18n.t("wn_previous")); onClicked: { dlg.close(); dlg.done(); dlg.releaseNotesRequested("previous") } }
-                    Item { Layout.fillWidth: true }
-                    BtnFlat { primary: true; text: (i18n.language, i18n.t("wn_got_it")); onClicked: { dlg.close(); dlg.done() } }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width; height: 40
+                    visible: news.contentHeight > news.height && !news.atYEnd
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: "transparent" }
+                        GradientStop { position: 1; color: Theme.elev }
+                    }
                 }
+            }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 68
+                Layout.leftMargin: 24; Layout.rightMargin: 20
+                spacing: 6
+                BtnFlat { text: (i18n.language, i18n.t("whatsnew_full_notes")); onClicked: { dlg.close(); dlg.done(); dlg.releaseNotesRequested(dlg.appVer) } }
+                Text { text: "·"; color: Theme.t4; font.pixelSize: 13 }
+                BtnFlat { text: (i18n.language, i18n.t("wn_previous")); onClicked: { dlg.close(); dlg.done(); dlg.releaseNotesRequested("previous") } }
+                Item { Layout.fillWidth: true }
+                BtnFlat { primary: true; text: (i18n.language, i18n.t("wn_got_it")); onClicked: { dlg.close(); dlg.done() } }
             }
         }
     }

@@ -13,6 +13,9 @@ class QmlI18nBridge : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(int language READ language WRITE setLanguage NOTIFY languageChanged)
+    // the same language as a code ("pt") and a locale ("pt_BR"), so QML keeps no table of its own
+    Q_PROPERTY(QString code READ code NOTIFY languageChanged)
+    Q_PROPERTY(QString localeName READ localeName NOTIFY languageChanged)
 public:
     explicit QmlI18nBridge(QObject *parent = nullptr) : QObject(parent) {}
     Q_INVOKABLE QString t(const QString &key) const { return tr_(key); }
@@ -23,6 +26,13 @@ public:
             QDateTime::fromSecsSinceEpoch(secsSinceEpoch).date(), QStringLiteral("d MMM yyyy"));
     }
     int language() const { return static_cast<int>(Translator::instance().language()); }
+    QString code() const { return Translator::instance().code(); }
+    QString localeName() const { return Translator::instance().locale().name(); }
+    // the code of language index i, for settings that store an index (contentLanguage)
+    Q_INVOKABLE QString codeOf(int i) const {
+        static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk", "tr"};
+        return i >= 0 && i < 9 ? QString::fromLatin1(codes[i]) : code();
+    }
     Q_INVOKABLE void setLanguage(int lang) {
         if (lang == language()) return;
         Translator::instance().setLanguage(static_cast<Translator::Language>(lang));

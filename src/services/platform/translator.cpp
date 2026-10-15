@@ -50,6 +50,12 @@ Translator::Language Translator::savedLanguage()
     return static_cast<Language>(lang);
 }
 
+QString Translator::code() const
+{
+    static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk", "tr"};
+    return QString::fromLatin1(codes[static_cast<int>(m_lang)]);
+}
+
 QLocale Translator::locale() const
 {
     static const char *names[] = {"en_US", "pt_BR", "zh_CN", "ja_JP", "ru_RU", "es_ES", "de_DE", "uk_UA", "tr_TR"};
@@ -60,6 +66,8 @@ void Translator::setLanguage(Language lang)
 {
     m_lang = lang;
     m_applied = true;
+    // sizes and dates follow the app's language, not the system's
+    QLocale::setDefault(locale());
     static const char *codes[] = {"en", "pt", "zh", "ja", "ru", "es", "de", "uk", "tr"};
     m_strings.clear();
     loadLanguage(codes[static_cast<int>(lang)], m_strings);

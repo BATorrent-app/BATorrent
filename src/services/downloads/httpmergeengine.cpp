@@ -259,10 +259,10 @@ bool HttpMergeEngine::exportTorrent(int i, const QString &d) { return isHttp(i) 
 void HttpMergeEngine::addTracker(int i, const QString &u) { if (!isHttp(i)) m_inner->addTracker(i, u); }
 void HttpMergeEngine::addTorrentWithPriorities(const QString &fp, const QString &sp, const std::vector<int> &pr) { m_inner->addTorrentWithPriorities(fp, sp, pr); }
 void HttpMergeEngine::addMagnet(const QString &u, const QString &sp, const QString &ch, int ct) { m_inner->addMagnet(u, sp, ch, ct); }
-void HttpMergeEngine::addTorrentFileEx(const QString &fp, const QString &sp, const std::vector<int> &pr, bool paused) { m_inner->addTorrentFileEx(fp, sp, pr, paused); }
-void HttpMergeEngine::addMagnetEx(const QString &u, const QString &sp, bool paused) { m_inner->addMagnetEx(u, sp, paused); }
+void HttpMergeEngine::addTorrentFileWith(const QString &fp, const AddOptions &o) { m_inner->addTorrentFileWith(fp, o); }
+void HttpMergeEngine::addMagnetWith(const QString &u, const AddOptions &o) { m_inner->addMagnetWith(u, o); }
 void HttpMergeEngine::stageMagnet(const QString &u) { m_inner->stageMagnet(u); }
-void HttpMergeEngine::commitStaged(const QString &h, const QString &sp, const std::vector<int> &pr, bool paused) { m_inner->commitStaged(h, sp, pr, paused); }
+void HttpMergeEngine::commitStaged(const QString &h, const AddOptions &o) { m_inner->commitStaged(h, o); }
 void HttpMergeEngine::discardStaged(const QString &h) { m_inner->discardStaged(h); }
 void HttpMergeEngine::streamSetDeadlineWindow(int t, int f, qint64 s, int w) { if (!isHttp(t)) m_inner->streamSetDeadlineWindow(t, f, s, w); }
 qint64 HttpMergeEngine::streamContiguousAvailableBytes(int t, int f, qint64 from, qint64 cap) const { return isHttp(t) ? 0 : m_inner->streamContiguousAvailableBytes(t, f, from, cap); }

@@ -9,24 +9,13 @@ import QtQuick
 import QtQuick.Layouts
 import "../theme"
 import "../widgets"
+import "../widgets/TimeAgo.js" as TimeAgo
 
-Item {
+ModalShell {
     id: dlg
-    anchors.fill: parent
-    z: 200
-    visible: opened || anim > 0
-
-    property bool opened: false
-    property real anim: 0
-    Behavior on anim { NumberAnimation { duration: 150; easing.type: Theme.easeOut } }
-    onOpenedChanged: {
-        anim = opened ? 1 : 0
-        if (opened) { DialogStack.push(dlg); if (versions.length === 0) parse(); pick(0) }
-        else DialogStack.pop(dlg)
-    }
-    Component.onDestruction: DialogStack.pop(dlg)
-    function open() { opened = true }
-    function close() { opened = false }
+    cardWidth: 900
+    cardHeight: 620
+    onOpenedChanged: if (opened) { if (versions.length === 0) parse(); pick(0) }
     // a version to open on, "4.8" or "4.8.0"; the newest when not found
     function openAt(v) { if (versions.length === 0) parse(); opened = true; pick(Math.max(0, indexOf(v))) }
 
@@ -87,176 +76,141 @@ Item {
         flush()
         versions = out
     }
-    function fmtDate(d, full) {
-        if (!d) return ""
-        var p = d.split("-")
-        var dt = new Date(+p[0], +p[1] - 1, +p[2])
-        var loc = Qt.locale(["en_US", "pt_BR", "zh_CN", "ja_JP", "ru_RU", "es_ES", "de_DE", "uk_UA", "tr_TR"][i18n.language] || "en_US")
-        return full ? dt.toLocaleDateString(loc, Locale.LongFormat).replace(/^[^,]*,\s*/, "")
-                    : dt.toLocaleDateString(loc, "MMM yyyy")
-    }
+    function fmtDate(d, full) { return TimeAgo.date(d, i18n.localeName, full) }
     function sectionLabel(k) {
         return k === "added" ? i18n.t("rn_added") : k === "changed" ? i18n.t("rn_changed")
              : k === "fixed" ? i18n.t("rn_fixed") : k === "security" ? i18n.t("rn_security") : k
     }
 
-    Shortcut {
-        sequences: [StandardKey.Cancel]
-        enabled: dlg.opened && DialogStack.topItem === dlg
-        onActivated: dlg.close()
-    }
 
-    Rectangle {
+    ColumnLayout {
         anchors.fill: parent
-        opacity: dlg.anim
-        color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.7) : Qt.rgba(20/255, 20/255, 28/255, 0.4)
-        MouseArea { anchors.fill: parent; onClicked: dlg.close(); onWheel: function (w) { w.accepted = true } }
-    }
+        spacing: 0
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 56
+            Layout.leftMargin: 20; Layout.rightMargin: 12
+            Text { Layout.fillWidth: true; text: (i18n.language, i18n.t("release_notes_title2")); color: Theme.t1; font.pixelSize: 17; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+            CloseButton {
+                onClicked: dlg.dismiss()
+            }
+        }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
 
-    Rectangle {
-        anchors.centerIn: parent
-        width: Math.min(900, dlg.width - 32)
-        height: Math.min(620, dlg.height - 48)
-        opacity: dlg.anim
-        scale: Theme.reduceMotion ? 1 : (0.97 + 0.03 * dlg.anim)
-        radius: Theme.rad(12)
-        color: Theme.elev
-        border.color: Theme.hair; border.width: 1
-        clip: true
-        MouseArea { anchors.fill: parent; onWheel: function (w) { w.accepted = true } }
-
-        ColumnLayout {
-            anchors.fill: parent
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             spacing: 0
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 56
-                Layout.leftMargin: 20; Layout.rightMargin: 12
-                Text { Layout.fillWidth: true; text: (i18n.language, i18n.t("release_notes_title2")); color: Theme.t1; font.pixelSize: 17; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                Rectangle {
-                    width: 30; height: 30; radius: Theme.rad(6)
-                    color: xMa.containsMouse ? Theme.hover : "transparent"
-                    IconImg { anchors.centerIn: parent; src: "qrc:/icons/close.svg"; s: 14; tint: xMa.containsMouse ? Theme.t1 : Theme.t3 }
-                    MouseArea { id: xMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: dlg.close() }
+
+            // versions
+            ListView {
+                id: verList
+                Layout.preferredWidth: 150
+                Layout.fillHeight: true
+                Layout.margins: 8
+                clip: true
+                model: dlg.versions
+                spacing: 2
+                boundsBehavior: Flickable.StopAtBounds
+                delegate: Rectangle {
+                    readonly property bool on: dlg.current === index
+                    width: ListView.view.width
+                    height: 44
+                    radius: Theme.rad(6)
+                    color: on ? Theme.selectedFill : (vMa.containsMouse ? Theme.hover : "transparent")
+                    Rectangle { visible: parent.on; width: 2; height: parent.height; color: Theme.t1 }
+                    Column {
+                        x: 12; anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1
+                        Text { text: modelData.v.replace(/\.0$/, ""); color: parent.parent.on ? Theme.t1 : Theme.t2; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum }
+                        Text { visible: modelData.date !== ""; text: (i18n.language, dlg.fmtDate(modelData.date, false)); color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans }
+                    }
+                    MouseArea { id: vMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: dlg.pick(index) }
                 }
             }
-            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hair }
+            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.hair }
 
-            RowLayout {
+            // the chosen version
+            Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 0
-
-                // versions
-                ListView {
-                    id: verList
-                    Layout.preferredWidth: 150
-                    Layout.fillHeight: true
-                    Layout.margins: 8
+                Flickable {
+                    id: body
+                    anchors.fill: parent
                     clip: true
-                    model: dlg.versions
-                    spacing: 2
+                    contentWidth: width
+                    contentHeight: notes.implicitHeight + 56
                     boundsBehavior: Flickable.StopAtBounds
-                    delegate: Rectangle {
-                        readonly property bool on: dlg.current === index
-                        width: ListView.view.width
-                        height: 44
-                        radius: Theme.rad(6)
-                        color: on ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.08) : (vMa.containsMouse ? Theme.hover : "transparent")
-                        Rectangle { visible: parent.on; width: 2; height: parent.height; color: Theme.t1 }
-                        Column {
-                            x: 12; anchors.verticalCenter: parent.verticalCenter
-                            spacing: 1
-                            Text { text: modelData.v.replace(/\.0$/, ""); color: parent.parent.on ? Theme.t1 : Theme.t2; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum }
-                            Text { visible: modelData.date !== ""; text: (i18n.language, dlg.fmtDate(modelData.date, false)); color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
-                        }
-                        MouseArea { id: vMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: dlg.pick(index) }
-                    }
-                }
-                Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.hair }
-
-                // the chosen version
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Flickable {
-                        id: body
-                        anchors.fill: parent
-                        clip: true
-                        contentWidth: width
-                        contentHeight: notes.implicitHeight + 56
-                        boundsBehavior: Flickable.StopAtBounds
-                        WheelScroller { flick: body }
-                        ColumnLayout {
-                            id: notes
-                            x: 28; y: 26
-                            width: Math.min(600, body.width - 56)
-                            spacing: 6
-                            Row {
-                                spacing: 10
-                                Text { text: dlg.cur ? dlg.cur.v : ""; color: Theme.t1; font.pixelSize: 24; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum }
-                                Text {
-                                    anchors.baseline: parent.children[0].baseline
-                                    text: (i18n.language, dlg.cur ? [dlg.cur.name ? "“" + dlg.cur.name + "”" : "", dlg.fmtDate(dlg.cur.date, true)].filter(function (s) { return s !== "" }).join(" · ") : "")
-                                    color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
-                                }
+                    WheelScroller { flick: body }
+                    ColumnLayout {
+                        id: notes
+                        x: 28; y: 26
+                        width: Math.min(600, body.width - 56)
+                        spacing: 6
+                        Row {
+                            spacing: 10
+                            Text { text: dlg.cur ? dlg.cur.v : ""; color: Theme.t1; font.pixelSize: 24; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum }
+                            Text {
+                                anchors.baseline: parent.children[0].baseline
+                                text: (i18n.language, dlg.cur ? [dlg.cur.name ? "“" + dlg.cur.name + "”" : "", dlg.fmtDate(dlg.cur.date, true)].filter(function (s) { return s !== "" }).join(" · ") : "")
+                                color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
                             }
-                            Repeater {
-                                model: dlg.cur ? dlg.cur.sections : []
-                                delegate: ColumnLayout {
-                                    id: secCol
-                                    required property var modelData
-                                    Layout.fillWidth: true
-                                    Layout.topMargin: 14
-                                    spacing: 10
-                                    Row {
-                                        spacing: 7
-                                        Rectangle {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: 6; height: 6; radius: 3
-                                            color: secCol.modelData.kind === "added" ? Theme.grn
-                                                 : secCol.modelData.kind === "security" ? Theme.warn : Theme.t3
+                        }
+                        Repeater {
+                            model: dlg.cur ? dlg.cur.sections : []
+                            delegate: ColumnLayout {
+                                id: secCol
+                                required property var modelData
+                                Layout.fillWidth: true
+                                Layout.topMargin: 14
+                                spacing: 10
+                                Row {
+                                    spacing: 7
+                                    Rectangle {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 6; height: 6; radius: 3
+                                        color: secCol.modelData.kind === "added" ? Theme.grn
+                                             : secCol.modelData.kind === "security" ? Theme.warn : Theme.t3
+                                    }
+                                    Text {
+                                        text: (i18n.language, dlg.sectionLabel(secCol.modelData.kind))
+                                        color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.9
+                                        font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
+                                    }
+                                }
+                                Repeater {
+                                    model: secCol.modelData.items
+                                    delegate: ColumnLayout {
+                                        required property var modelData
+                                        Layout.fillWidth: true
+                                        spacing: 3
+                                        Text {
+                                            Layout.fillWidth: true
+                                            visible: modelData.title !== ""
+                                            text: modelData.title
+                                            color: Theme.t1; font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans
+                                            wrapMode: Text.WordWrap
                                         }
                                         Text {
-                                            text: (i18n.language, dlg.sectionLabel(secCol.modelData.kind))
-                                            color: Theme.t3; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.9
-                                            font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
-                                        }
-                                    }
-                                    Repeater {
-                                        model: secCol.modelData.items
-                                        delegate: ColumnLayout {
-                                            required property var modelData
                                             Layout.fillWidth: true
-                                            spacing: 3
-                                            Text {
-                                                Layout.fillWidth: true
-                                                visible: modelData.title !== ""
-                                                text: modelData.title
-                                                color: Theme.t1; font.pixelSize: 15; font.weight: Font.DemiBold; font.family: Theme.fontSans
-                                                wrapMode: Text.WordWrap
-                                            }
-                                            Text {
-                                                Layout.fillWidth: true
-                                                visible: modelData.body !== ""
-                                                text: modelData.body
-                                                color: Theme.t2; font.pixelSize: 14; font.family: Theme.fontSans
-                                                wrapMode: Text.WordWrap; lineHeight: 1.5
-                                            }
+                                            visible: modelData.body !== ""
+                                            text: modelData.body
+                                            color: Theme.t2; font.pixelSize: 15; font.family: Theme.fontSans
+                                            wrapMode: Text.WordWrap; lineHeight: 1.6
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width; height: 40
-                        visible: body.contentHeight > body.height && !body.atYEnd
-                        gradient: Gradient {
-                            GradientStop { position: 0; color: "transparent" }
-                            GradientStop { position: 1; color: Theme.elev }
-                        }
+                }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width; height: 40
+                    visible: body.contentHeight > body.height && !body.atYEnd
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: "transparent" }
+                        GradientStop { position: 1; color: Theme.elev }
                     }
                 }
             }

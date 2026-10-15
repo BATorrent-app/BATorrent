@@ -3,6 +3,7 @@
 // See LICENSE file for details
 
 #include "ipc/ipcengine.h"
+#include "ipc/ipcserialize.h"
 #include "torrent/streamgate.h"
 #include "torrent/sessionconfig.h"
 #include <QSettings>
@@ -265,16 +266,14 @@ void IpcEngine::addTorrentWithPriorities(const QString &fp, const QString &sp, c
   o << fp << sp << qint32(pr.size()); for (int v : pr) o << qint32(v); call(QStringLiteral("addTorrentWithPriorities"), d); }
 void IpcEngine::addMagnet(const QString &uri, const QString &sp, const QString &hint, int ct)
 { QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << uri << sp << hint << qint32(ct); call(QStringLiteral("addMagnet"), d); }
-void IpcEngine::addTorrentFileEx(const QString &fp, const QString &sp, const std::vector<int> &pr, bool paused)
-{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
-  o << fp << sp << qint32(pr.size()); for (int v : pr) o << qint32(v); o << paused; call(QStringLiteral("addTorrentFileEx"), d); }
-void IpcEngine::addMagnetEx(const QString &uri, const QString &sp, bool paused)
-{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << uri << sp << paused; call(QStringLiteral("addMagnetEx"), d); }
+void IpcEngine::addTorrentFileWith(const QString &fp, const AddOptions &opts)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << fp << opts; call(QStringLiteral("addTorrentFileWith"), d); }
+void IpcEngine::addMagnetWith(const QString &uri, const AddOptions &opts)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << uri << opts; call(QStringLiteral("addMagnetWith"), d); }
 void IpcEngine::stageMagnet(const QString &uri)
 { QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << uri; call(QStringLiteral("stageMagnet"), d); }
-void IpcEngine::commitStaged(const QString &h, const QString &sp, const std::vector<int> &pr, bool paused)
-{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion);
-  o << h << sp << qint32(pr.size()); for (int v : pr) o << qint32(v); o << paused; call(QStringLiteral("commitStaged"), d); }
+void IpcEngine::commitStaged(const QString &h, const AddOptions &opts)
+{ QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << h << opts; call(QStringLiteral("commitStaged"), d); }
 void IpcEngine::discardStaged(const QString &h)
 { QByteArray d; QDataStream o(&d, QIODevice::WriteOnly); o.setVersion(ipc::kStreamVersion); o << h; call(QStringLiteral("discardStaged"), d); }
 void IpcEngine::renameFile(int ti, int fi, const QString &p)

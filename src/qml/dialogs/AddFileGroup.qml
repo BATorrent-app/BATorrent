@@ -95,7 +95,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: (i18n.language, g.host.selRev, g.sub())
-                    color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans
+                    color: Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans
                     elide: Text.ElideRight
                 }
             }
@@ -126,11 +126,11 @@ Item {
                         id: cRow
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: chip.c.label; color: chip.on ? Theme.t1 : Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans }
+                        Text { text: chip.c.label; color: chip.on ? Theme.t1 : Theme.t3; font.pixelSize: 13; font.family: Theme.fontSans }
                         Text {
                             text: chip.c.inBase ? (i18n.language, i18n.t("addw_in_game_data")) : chip.c.size
                             color: chip.on ? Theme.t2 : Theme.t4
-                            font.pixelSize: 11; font.family: Theme.fontSans; font.features: Theme.tnum
+                            font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
                             anchors.baseline: parent.children[0].baseline
                         }
                     }

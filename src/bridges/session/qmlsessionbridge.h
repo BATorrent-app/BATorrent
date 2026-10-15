@@ -14,6 +14,7 @@
 class HttpDownloadManager;
 class QNetworkAccessManager;
 class PlayLog;
+struct AddOptions;
 class AchievementLedger;
 class AchievementService;
 class AchievementWatch;
@@ -201,11 +202,12 @@ public:
     Q_INVOKABLE QString seriesMatch(const QString &name) const;
     Q_INVOKABLE void stageMagnet(const QString &uri);          // answers with stagedPreview
     Q_INVOKABLE void discardStaged(const QString &infoHash);
+    // the window's choices for one item: folder, files (priority per file, empty = all), start or not
     Q_INVOKABLE void commitStaged(const QString &infoHash, const QString &savePath,
                                   const QVariantList &priorities, bool paused);
-    Q_INVOKABLE void addTorrentFileEx(const QString &filePath, const QString &savePath,
-                                      const QVariantList &priorities, bool paused);
-    Q_INVOKABLE void addMagnetEx(const QString &uri, const QString &savePath, bool paused);
+    Q_INVOKABLE void addTorrentFileWith(const QString &filePath, const QString &savePath,
+                                        const QVariantList &priorities, bool paused);
+    Q_INVOKABLE void addMagnetWith(const QString &uri, const QString &savePath, bool paused);
     Q_INVOKABLE void probeUrl(const QString &url);             // answers with urlProbed
     Q_INVOKABLE void fetchTorrentUrl(const QString &url);      // answers with torrentUrlFetched
     // Save folders per kind of download ("game", "video", "other")
@@ -571,6 +573,7 @@ private:
     QHash<QString, QPair<QVariantMap, qint64>> m_pendingFilePick;   // infoHash → {target, startedAtSec}
     QHash<QString, QSet<int>> m_pickedFiles;   // episodes picked out of one pack, all kept wanted
     QNetworkAccessManager *m_probeNet = nullptr;  // the Add window's link probes
+    AddOptions addOptions(const QString &savePath, const QVariantList &priorities, bool paused);
     QVariantMap buildPreview(const QString &name, const QString &infoHash,
                              const QStringList &paths, const QList<qint64> &sizes) const;
     void onStagedMetadata(const QString &hash, const QString &name, qint64 totalSize,

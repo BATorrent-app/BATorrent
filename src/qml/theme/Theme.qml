@@ -196,6 +196,14 @@ QtObject {
 
     // the close caption button under the pointer (Windows' own red)
     readonly property color winClose: "#c42b1c"
+    readonly property color winCloseInk: "#ffffff"   // the ✕ glyph on winClose
+    // The window dimmed behind a modal (DESIGN-SPEC: 70% on dark).
+    readonly property color scrim: isDark ? Qt.rgba(0, 0, 0, 0.7) : Qt.rgba(20/255, 20/255, 28/255, 0.4)
+    // A chosen segment, and a chosen row or card (the spec's `selected`).
+    readonly property color segOn: Qt.rgba(t1.r, t1.g, t1.b, 0.12)
+    readonly property color selectedFill: Qt.rgba(t1.r, t1.g, t1.b, 0.08)
+    // The 1px seam between the two halves of a split primary button.
+    readonly property color splitSeam: Qt.rgba(0, 0, 0, 0.25)
 
     // a selected row or an "on" pill, and a stronger accent wash
     readonly property color sel:        isUser ? _over(uPrimary, 0.13) : p.sel

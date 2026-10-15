@@ -113,12 +113,10 @@ public:
     void addTorrentWithPriorities(const QString &filePath, const QString &savePath, const std::vector<int> &filePriorities) override;
     void addMagnet(const QString &uri, const QString &savePath, const QString &coverHint = QString(), int coverType = -1) override;
 
-    void addTorrentFileEx(const QString &filePath, const QString &savePath,
-                          const std::vector<int> &filePriorities, bool paused) override;
-    void addMagnetEx(const QString &uri, const QString &savePath, bool paused) override;
+    void addTorrentFileWith(const QString &filePath, const AddOptions &opts) override;
+    void addMagnetWith(const QString &uri, const AddOptions &opts) override;
     void stageMagnet(const QString &uri) override;
-    void commitStaged(const QString &hash, const QString &savePath,
-                      const std::vector<int> &filePriorities, bool paused) override;
+    void commitStaged(const QString &hash, const AddOptions &opts) override;
     void discardStaged(const QString &hash) override;
     void setProxySettings(int type, const QString &host, int port, const QString &user, const QString &pass) override;
     int proxyType() const override;

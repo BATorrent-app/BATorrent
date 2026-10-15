@@ -107,16 +107,14 @@ public:
     // --- the Add download window ---
     // Add with the window's choices: which files (0 = skip) and whether to
     // start. paused keeps it stopped until the user resumes it.
-    virtual void addTorrentFileEx(const QString &filePath, const QString &savePath,
-                                  const std::vector<int> &filePriorities, bool paused) = 0;
-    virtual void addMagnetEx(const QString &uri, const QString &savePath, bool paused) = 0;
+    virtual void addTorrentFileWith(const QString &filePath, const AddOptions &opts) = 0;
+    virtual void addMagnetWith(const QString &uri, const AddOptions &opts) = 0;   // priorities unused: no metadata yet
     // A magnet waiting in the window: added out of the library, in upload
     // mode on a scratch folder, only to fetch its metadata (stagedMetadata).
     // Commit adds it for real with the window's choices (with or without the
     // metadata yet); discard drops it.
     virtual void stageMagnet(const QString &uri) = 0;
-    virtual void commitStaged(const QString &hash, const QString &savePath,
-                              const std::vector<int> &filePriorities, bool paused) = 0;
+    virtual void commitStaged(const QString &hash, const AddOptions &opts) = 0;
     virtual void discardStaged(const QString &hash) = 0;
 
     // --- proxy (Settings) ---

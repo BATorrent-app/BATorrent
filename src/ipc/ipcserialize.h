@@ -13,6 +13,22 @@
 #include <vector>
 #include "torrent/types.h"
 
+inline QDataStream &operator<<(QDataStream &s, const AddOptions &o)
+{
+    s << o.savePath << qint32(o.filePriorities.size());
+    for (int v : o.filePriorities) s << qint32(v);
+    return s << o.paused;
+}
+inline QDataStream &operator>>(QDataStream &s, AddOptions &o)
+{
+    qint32 n = 0;
+    s >> o.savePath >> n;
+    o.filePriorities.clear();
+    o.filePriorities.reserve(qMax(0, n));
+    for (qint32 k = 0; k < n; ++k) { qint32 v; s >> v; o.filePriorities.push_back(v); }
+    return s >> o.paused;
+}
+
 inline QDataStream &operator<<(QDataStream &s, const TorrentInfo &t)
 {
     s << t.name << t.savePath << qint64(t.totalSize) << qint64(t.totalDone)

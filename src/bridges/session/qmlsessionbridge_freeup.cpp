@@ -152,13 +152,17 @@ QVariantMap QmlSessionBridge::freeUpSpace(const QString &path) const
 
 void QmlSessionBridge::removeTorrentsByHash(const QStringList &hashes, bool deleteFiles)
 {
+    const QString selected = m_selectedIndex >= 0 ? m_session->torrentHashAt(m_selectedIndex) : QString();
     int done = 0;
     for (const QString &h : hashes) {
         const int i = m_session->torrentIndexByInfoHash(h);
         if (i < 0) continue;
         m_session->removeTorrent(i, deleteFiles, false);
-        if (m_selectedIndex == i) { m_selectedIndex = -1; emit selectionChanged(); emit selectionListsChanged(); }
         ++done;
+    }
+    if (done > 0 && m_selectedIndex >= 0) {
+        const int now = hashes.contains(selected) ? -1 : m_session->torrentIndexByInfoHash(selected);
+        if (now != m_selectedIndex) { m_selectedIndex = now; emit selectionChanged(); emit selectionListsChanged(); }
     }
     if (done > 0)
         emit toast(deleteFiles ? tr_("remove_trashed") : tr_("freeup_removed").arg(done), QString());

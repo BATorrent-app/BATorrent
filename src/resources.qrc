@@ -192,6 +192,8 @@
 <file>../src/qml/dialogs/AddDownloadDialog.qml</file>
 <file>../src/qml/dialogs/AddFileGroup.qml</file>
 <file>../src/qml/dialogs/AddFileTree.qml</file>
+<file>../src/qml/dialogs/AddItemRow.qml</file>
+<file>../src/qml/dialogs/AddDestinations.qml</file>
 <file>../src/qml/dialogs/WelcomeWizard.qml</file>
 <file>../src/qml/dialogs/CreateTorrentDialog.qml</file>
 <file>../src/qml/dialogs/AddAddonDialog.qml</file>
@@ -311,6 +313,10 @@
 <file>../src/qml/widgets/IconImg.qml</file>
 <file>../src/qml/widgets/CatItem.qml</file>
 <file>../src/qml/widgets/WindowTitleBar.qml</file>
+<file>../src/qml/widgets/ModalShell.qml</file>
+<file>../src/qml/widgets/CloseButton.qml</file>
+<file>../src/qml/widgets/Segmented.qml</file>
+<file>../src/qml/widgets/TimeAgo.js</file>
 <file>../src/qml/widgets/BtnFlat.qml</file>
 <file>../src/qml/widgets/TFld.qml</file>
 <file>../src/qml/widgets/TArea.qml</file>

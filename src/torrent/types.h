@@ -131,6 +131,15 @@ struct PeerInfo {
     QString client;
 };
 
+// What the Add download window decided for one item: where it goes, which
+// files (priority per file in the torrent's order, 0 = skip; empty = all)
+// and whether it starts.
+struct AddOptions {
+    QString savePath;
+    std::vector<int> filePriorities;
+    bool paused = false;
+};
+
 struct FileInfo {
     QString path;
     qint64 size;
