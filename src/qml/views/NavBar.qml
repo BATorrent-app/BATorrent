@@ -20,7 +20,9 @@ Rectangle {
     // the title strip exists only where the bar is the window's title bar
     readonly property real stripH: ownsTitleBar ? 32 : 0
     implicitHeight: 52 + stripH
-    color: Theme.nav
+    // With the title strip the bar is the window's frame, a step darker, and
+    // a thin accent line sets it apart from the app below.
+    color: ownsTitleBar ? Theme.frame : Theme.nav
 
     property int currentIndex: 0            // bound down from the window; never self-assigned
     property bool showDownloadChip: true    // host setting gate
@@ -66,6 +68,16 @@ Rectangle {
         NumberAnimation { target: dlChip; property: "contentOpacity"; to: 1; duration: Theme.durSlower; easing.type: Theme.easeOut }
     }
 
+    Rectangle {
+        id: sheet
+        visible: bar.ownsTitleBar
+        y: bar.stripH
+        width: parent.width
+        height: parent.height - y
+        color: Theme.nav
+        // one thin line in the accent marks where the app begins
+        Rectangle { width: parent.width; height: 1; color: Theme.accent }
+    }
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairSoft }
 
     readonly property var items: buildItems(i18n.language)
@@ -372,7 +384,10 @@ Rectangle {
                 tip: (i18n.language, i18n.t("menu_help_title"))
                 onClicked: bar.helpRequested(helpBtn)
             }
-            Item { width: 6; height: 1 }
+            Item {
+                width: 13; height: bar.stripH
+                Rectangle { anchors.centerIn: parent; width: 1; height: 16; color: Theme.hair }
+            }
             WinButton {
                 id: minBtn
                 glyph: "min"
@@ -402,13 +417,13 @@ Rectangle {
         property string tip
         property bool active: true
         signal clicked()
-        width: 30; height: bar.stripH
+        width: 34; height: bar.stripH
         radius: Theme.rad(6)
         color: sbtnMa.containsMouse && sbtn.active ? Theme.hover2 : "transparent"
         IconImg {
             anchors.centerIn: parent
             src: sbtn.icon
-            s: 15
+            s: 18
             tint: !sbtn.active ? Theme.t4 : (sbtnMa.containsMouse ? Theme.t1 : Theme.t3)
         }
         MouseArea {

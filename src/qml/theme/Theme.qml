@@ -172,6 +172,8 @@ QtObject {
     readonly property color elev:  isUser ? Qt.tint(uPanel, _uInk(0.05)) : p.elev
     // top navigation surface: the darkest band of the chrome ladder
     readonly property color nav:   isUser ? (hasWindowImage ? _over(uPanel, 0.82) : Qt.darker(uPanel, userLight ? 1.04 : 1.35)) : p.nav
+    // the window's frame around the title strip: a step below the nav
+    readonly property color frame: isLight ? Qt.darker(nav, 1.08) : Qt.darker(nav, 2.2)
     // a page's own fill: clear when a user theme puts a picture behind the window
     readonly property color pageBg: hasWindowImage ? "transparent" : bg
     // an input or recessed field
