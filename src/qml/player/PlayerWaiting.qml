@@ -123,11 +123,20 @@ Item {
                     Row {
                         spacing: 7
                         Rectangle {
+                            id: stepDot
                             anchors.verticalCenter: parent.verticalCenter
                             width: 7; height: 7; radius: 3.5
                             color: step.done ? Theme.grn : step.now ? (root.warnState ? Theme.warn : "#ffffff") : "transparent"
                             border.width: step.done || step.now ? 0 : 1
                             border.color: Qt.rgba(1, 1, 1, 0.45)
+                            // the step under way breathes, so the wait reads as alive
+                            SequentialAnimation on opacity {
+                                running: step.now && root.visible && !root.noSource
+                                loops: Animation.Infinite
+                                onRunningChanged: if (!running) stepDot.opacity = 1
+                                NumberAnimation { to: 0.3; duration: 700; easing.type: Easing.InOutSine }
+                                NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
+                            }
                         }
                         Text {
                             text: (i18n.language, i18n.t(step.modelData))
@@ -222,6 +231,35 @@ Item {
             id: track
             width: parent.width; height: 4; radius: 2
             color: Qt.rgba(1, 1, 1, 0.18)
+            // no bytes yet: a light runs along the bar, so it is plainly working
+            Item {
+                anchors.fill: parent
+                clip: true
+                visible: root.stage < 2 && !root.noSource && root.visible
+                Rectangle {
+                    id: sweep
+                    width: parent.width * 0.22; height: parent.height; radius: 2
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0) }
+                        GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.75) }
+                        GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0) }
+                    }
+                    NumberAnimation on x {
+                        running: sweep.parent.visible && !Theme.reduceMotion
+                        loops: Animation.Infinite
+                        from: -sweep.width; to: track.width
+                        duration: 1400; easing.type: Easing.InOutQuad
+                    }
+                    // reduced motion: it fades in place instead
+                    SequentialAnimation on opacity {
+                        running: sweep.parent.visible && Theme.reduceMotion
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 0.2; duration: 800 }
+                        NumberAnimation { to: 1; duration: 800 }
+                    }
+                }
+            }
             Rectangle {
                 height: parent.height; radius: 2
                 width: root.need > 0 && !root.noSource ? Math.max(height, parent.width * Math.min(1, root.have / root.need)) : 0

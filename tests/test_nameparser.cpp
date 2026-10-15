@@ -209,3 +209,24 @@ TEST_CASE("GOG installer names: underscores, version, build and platform go", "[
     // A plain number in a title is not a version.
     CHECK(P("Cyberpunk 2077 [GOG]").cleanTitle == "Cyberpunk 2077");
 }
+
+TEST_CASE("A season pack is a series, named by what comes before the season", "[nameparser]")
+{
+    const auto a = P("Reacher (2022) Season 1 S01 + Extras (1080p BluRay x265 HEVC 10bit EAC3 5.1 Ghost) [QxR]");
+    CHECK(a.cleanTitle == "Reacher");
+    CHECK(a.year == 2022);
+    CHECK(a.season == 1);
+    CHECK(a.episode == -1);
+    CHECK(a.contentType == ContentType::Series);
+
+    const auto b = P("Reacher.S01.COMPLETE.720p.AMZN.WEBRip.x264-GalaxyTV");
+    CHECK(b.cleanTitle == "Reacher");
+    CHECK(b.contentType == ContentType::Series);
+
+    const auto c = P("True Detective S01-S04 1080p");
+    CHECK(c.cleanTitle == "True Detective");
+    CHECK(c.season == 1);
+
+    // a film is still a film
+    CHECK(P("Spider-Man.Brand.New.Day.2026.1080p.WEB-DL.x264").contentType == ContentType::Movie);
+}

@@ -128,6 +128,25 @@ ParsedName NameParser::parse(const QString &rawName)
         }
     }
 
+    // A season pack: "S01", "S01-S04", "Season 1", "Seasons 1-3", "Temporada 2",
+    // "Complete Series". A series with no single episode; the title is what
+    // comes before the marker ("Reacher (2022) Season 1 S01 + Extras" is
+    // Reacher, not a film called "Reacher Season 1 S01 + Extras").
+    if (result.season < 0) {
+        static const QRegularExpression packRe(QStringLiteral(
+            "\\b(?:S(\\d{1,2})(?:\\s*-\\s*S?\\d{1,2})?|Seasons?[ .]?(\\d{1,2})(?:\\s*-\\s*\\d{1,2})?"
+            "|Temporadas?[ .]?(\\d{1,2})|Complete[ .]Series)\\b"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch pm = packRe.match(work);
+        if (pm.hasMatch() && pm.capturedStart() > 0) {
+            const QString n = !pm.captured(1).isEmpty() ? pm.captured(1)
+                            : !pm.captured(2).isEmpty() ? pm.captured(2) : pm.captured(3);
+            result.season = n.isEmpty() ? 1 : n.toInt();
+            result.contentType = ContentType::Series;
+            work.truncate(pm.capturedStart());
+        }
+    }
+
     static const QStringList repackers = {
         QStringLiteral("FitGirl"), QStringLiteral("DODI"), QStringLiteral("CODEX"),
         QStringLiteral("PLAZA"), QStringLiteral("RUNE"), QStringLiteral("EMPRESS"),

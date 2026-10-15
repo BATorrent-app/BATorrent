@@ -254,7 +254,7 @@ Item {
         Text {
             readonly property real total: (pw && pw.streamStats && pw.streamStats.totalBytes) || 0
             readonly property real done: (pw && pw.streamStats && pw.streamStats.downloadedBytes) || 0
-            visible: !!pw && pw.stillDownloading && total > 0
+            visible: !!pw && pw.stillDownloading && total > 0 && !root.waiting
             text: (i18n.language, i18n.t("player_rest_downloading")).arg(Math.floor(done / Math.max(1, total) * 100))
             color: Theme.stageMuted; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
             MouseArea { id: restMa; anchors.fill: parent; hoverEnabled: true }
