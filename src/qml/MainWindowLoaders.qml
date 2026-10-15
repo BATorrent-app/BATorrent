@@ -51,29 +51,29 @@ Item {
             var e = openPlayers[i]
             if (e && e.waiting) { e.startWaiting(wv); e.show(); e.raise(); e.requestActivate(); return }
         }
-        var w = playerWindowComp.createObject(null)
+        var w = newPlayer()
         if (!w) return
-        var step = 34 * (openPlayers.length % 6)
-        if (step > 0) { w.x = w.x + step; w.y = w.y + step }
-        openPlayers.push(w)
-        playersOpen = openPlayers.length
-        w.nextProvider = root.searchPage
         w.startWaiting(wv)
         w.prepareFrame()
         w.show(); w.raise(); w.requestActivate()
     }
 
-    // The wait gave up on its own (no file list, the item vanished): the
-    // waiting player says nobody is sharing it. False when none is waiting.
-    function failWaiting(title) {
-        for (var i = 0; i < openPlayers.length; ++i) {
-            var e = openPlayers[i]
-            if (e && e.waiting) {
-                var st = e.waitInfo || ({})
-                e.waitInfo = { meta: st.meta, peers: 0, elapsed: st.elapsed || 0, noSource: true }
-                return true
-            }
-        }
+    // A new player window, cascaded and counted. Every player opens at the same
+    // default geometry, so the second one covered the first pixel for pixel and
+    // read as the video having been replaced: the windows were both there.
+    function newPlayer() {
+        var w = playerWindowComp.createObject(null)
+        if (!w) return null
+        var step = 34 * (openPlayers.length % 6)
+        if (step > 0) { w.x = w.x + step; w.y = w.y + step }
+        openPlayers.push(w)
+        playersOpen = openPlayers.length
+        w.nextProvider = root.searchPage
+        return w
+    }
+
+    function anyWaiting() {
+        for (var i = 0; i < openPlayers.length; ++i) if (openPlayers[i] && openPlayers[i].waiting) return true
         return false
     }
 
@@ -95,16 +95,8 @@ Item {
             var e = openPlayers[i]
             if (e && e.streamUrl === url) { e.show(); e.raise(); e.requestActivate(); return }
         }
-        var w = playerWindowComp.createObject(null)
+        var w = newPlayer()
         if (!w) return
-        // Cascade. Every player opens at the same default geometry, so the
-        // second one covered the first pixel for pixel and read as the video
-        // having been replaced: the windows were both there the whole time.
-        var step = 34 * (openPlayers.length % 6)
-        if (step > 0) { w.x = w.x + step; w.y = w.y + step }
-        openPlayers.push(w)
-        playersOpen = openPlayers.length
-        w.nextProvider = root.searchPage
         w.prepareFrame()
         w.show(); w.raise(); w.requestActivate()
         w.openMedia(url, title, hash, fileIndex)

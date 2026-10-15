@@ -15,7 +15,11 @@ QtObject {
     property var games: ({})    // lower-case title → game item
     property int gen: 0         // bumps on every rebuild, for bindings to follow
 
-    function key(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() }
+    // Lower case, ASCII punctuation and spaces folded to one space. Letters of
+    // every script stay: folding everything outside a-z left Japanese, Chinese
+    // and Cyrillic titles as "", all one key.
+    function key(s) { return String(s || "").toLowerCase().replace(/[\s!-\/:-@\[-`{-~]+/g, " ").trim() }
+    function isWatched(v) { return v.watched || (v.watchedPct || 0) >= 0.9 }
 
     function refresh() {
         if (!api) return
@@ -41,11 +45,13 @@ QtObject {
         var _ = gen
         var type = it.type || ""
         if (type === "game") {
-            var gm = games[key(it.title || it.name)]
+            var gk = key(it.title || it.name)
+            var gm = gk.length > 0 ? games[gk] : null
             if (!gm) return null
             return { text: i18n.t(gm.installState === 4 ? "hub_installed" : "hub_tile_in_library"), next: null }
         }
-        var list = (it.tmdbId ? shows["t" + it.tmdbId] : null) || shows["n" + key(it.title || it.name)]
+        var nk = key(it.title || it.name)
+        var list = (it.tmdbId ? shows["t" + it.tmdbId] : null) || (nk.length > 0 ? shows["n" + nk] : null)
         if (!list || list.length === 0) return null
         if (type === "series" || list[0].isSeries) {
             // every episode of the show across its torrents, once each
@@ -62,15 +68,15 @@ QtObject {
                 }
             }
             eps.sort(function (x, y) { return x.season - y.season || x.episode - y.episode })
-            var done = eps.filter(function (v) { return v.watched || (v.watchedPct || 0) >= 0.9 })
+            var done = eps.filter(isWatched)
             var next = null
             for (var e = 0; e < eps.length; e++)
-                if (!(eps[e].watched || (eps[e].watchedPct || 0) >= 0.9)) { next = eps[e]; break }
+                if (!isWatched(eps[e])) { next = eps[e]; break }
             if (eps.length === 0 || done.length === 0)
                 return { text: i18n.t("hub_tile_in_library"), next: next ? { season: next.season, episode: next.episode } : null }
             if (!next) return { text: i18n.t("hub_tile_watched"), next: null }
             var season = eps.filter(function (v) { return v.season === next.season })
-            var seasonDone = season.filter(function (v) { return v.watched || (v.watchedPct || 0) >= 0.9 }).length
+            var seasonDone = season.filter(isWatched).length
             return { text: i18n.t("find_state_series").arg(pad(next.season)).arg(seasonDone).arg(season.length),
                      next: { season: next.season, episode: next.episode } }
         }

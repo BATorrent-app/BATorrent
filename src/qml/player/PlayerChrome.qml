@@ -380,9 +380,10 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             width: ccT.implicitWidth + 8; height: 18; radius: 3
                             color: "transparent"
-                            border.color: root.subsOff ? Qt.rgba(1, 1, 1, ccMa.containsMouse ? 0.7 : 0.45) : "#ffffff"
+                            // off: a solid quieter grey, not white faded
+                            border.color: root.subsOff ? (ccMa.containsMouse ? Theme.stageT1 : Theme.stageMuted) : "#ffffff"
                             border.width: root.subsOff ? 1 : 1.5
-                            Text { id: ccT; anchors.centerIn: parent; text: "CC"; color: parent.border.color; font.pixelSize: 10; font.weight: Font.Bold; font.family: Theme.fontSans }
+                            Text { id: ccT; anchors.centerIn: parent; text: "CC"; color: parent.border.color; font.pixelSize: 11; font.weight: Font.Bold; font.family: Theme.fontSans }
                         }
                         Text { visible: !root.subsOff; anchors.verticalCenter: parent.verticalCenter; text: root.subBadge; color: "#ffffff"; font.pixelSize: 13; font.family: Theme.fontSans }
                     }

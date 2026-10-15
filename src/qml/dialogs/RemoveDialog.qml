@@ -14,7 +14,7 @@ import "../widgets"
 
 ModalShell {
     id: dlg
-    cardWidth: 460
+    cardWidth: 560
     cardHeight: col.implicitHeight
 
     // 0 keep the files, 1 to the Trash, 2 delete permanently
@@ -166,7 +166,7 @@ ModalShell {
         Item {
             Layout.fillWidth: true
             Layout.topMargin: 18
-            Layout.preferredHeight: 62
+            Layout.preferredHeight: 64
             Rectangle { width: parent.width; height: 1; color: Theme.hairSoft }
             RowLayout {
                 anchors.fill: parent

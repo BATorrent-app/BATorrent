@@ -49,7 +49,7 @@ public:
     // Why the last title search came back empty, when it failed rather than
     // found nothing: no internet, or the catalogs not answering.
     enum SearchFailure { NoFailure = 0, Offline = 1, CatalogDown = 2 };
-    int lastSearchFailure() const { return m_searchFailure; }
+    SearchFailure lastSearchFailure() const { return m_searchFailure; }
     // A query that found nothing, likely misspelt: look for the nearest real
     // title (answers titleSuggestion, with an empty map when none is close).
     Q_INVOKABLE void suggestTitle(const QString &query);
@@ -151,7 +151,7 @@ private:
     int m_searchPending = 0;
     QString m_searchQuery;
     QVariantList m_searchWorks;
-    int m_searchFailure = NoFailure;
+    SearchFailure m_searchFailure = NoFailure;
     void noteSearchError(int networkError);
 
     QHash<QString, QString> m_logoCache;   // "type:id" → logo url, "" when the title has none

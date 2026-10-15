@@ -41,6 +41,9 @@ TorrentInfo SessionManager::torrentAt(int index) const
     // reports both of these true for a magnet that has done nothing.
     const bool hasWork = torrentHasWork(st.has_metadata, static_cast<long long>(st.total_wanted));
     info.hasError = bool(st.errc);
+    info.completedTime = static_cast<qint64>(st.completed_time);
+    info.diskFull = st.errc == boost::system::errc::no_space_on_device
+                    || st.errc == boost::system::errc::file_too_large;
     info.finished = hasWork && st.is_finished;
     info.seeding = hasWork && st.is_seeding;
     info.numPeers = st.num_peers;

@@ -227,6 +227,11 @@ TEST_CASE("A season pack is a series, named by what comes before the season", "[
     CHECK(c.cleanTitle == "True Detective");
     CHECK(c.season == 1);
 
+    // every season: a series, and no season pretended
+    const auto d = P("The Office Complete Series 1080p");
+    CHECK(d.contentType == ContentType::Series);
+    CHECK(d.season == -1);
+
     // a film is still a film
     CHECK(P("Spider-Man.Brand.New.Day.2026.1080p.WEB-DL.x264").contentType == ContentType::Movie);
 }

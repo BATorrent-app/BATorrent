@@ -15,22 +15,9 @@ Rectangle {
     signal settingsRequested()
 
     readonly property bool hasVpn: typeof vpn !== "undefined" && vpn !== null
-    // dropped: the tunnel failed after being up (not a connect that never worked)
+    // dropped: the tunnel failed after being up (not a connect that never
+    // worked). The window keeps it, so the nav chip says the same thing.
     property bool dropped: false
-    Connections {
-        target: band.hasVpn ? vpn : null
-        ignoreUnknownSignals: true
-        function onStateChanged() {
-            if (vpn.connState === 2) band.dropped = false
-        }
-        // the tunnel went away without being asked to
-        function onInterfaceDown(deliberate) { if (!deliberate) band.dropped = true }
-    }
-    Connections {
-        target: typeof notifications !== "undefined" ? notifications : null
-        ignoreUnknownSignals: true
-        function onVpnDropped() { band.dropped = true }
-    }
     readonly property bool killSwitch: typeof settings !== "undefined" && settings.getBool("killSwitchEnabled")
 
     visible: dropped
@@ -52,15 +39,9 @@ Rectangle {
             text: (i18n.language, "<b><font color='" + Theme.t1 + "'>" + i18n.t(band.killSwitch ? "vpn_dropped_stopped" : "vpn_dropped_open") + "</font></b> "
                   + i18n.t(band.killSwitch ? "vpn_dropped_stopped_d" : "vpn_dropped_open_d"))
         }
-        Rectangle {
-            width: rcTxt.implicitWidth + 22; height: 30
-            radius: Theme.rad(6)
-            color: rcMa.containsMouse ? Qt.darker(Theme.t1, 1.08) : Theme.t1
-            Text { id: rcTxt; anchors.centerIn: parent; text: (i18n.language, i18n.t("vpn_reconnect")); color: Theme.bg; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-            MouseArea {
-                id: rcMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                onClicked: if (band.hasVpn) vpn.connectLastUsed()
-            }
+        LightBtn {
+            text: (i18n.language, i18n.t("vpn_reconnect"))
+            onClicked: if (band.hasVpn) vpn.connectLastUsed()
         }
         BtnFlat { sm: true; text: (i18n.language, i18n.t("vpn_settings_btn")); onClicked: band.settingsRequested() }
     }

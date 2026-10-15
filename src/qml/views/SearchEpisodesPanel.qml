@@ -112,7 +112,10 @@ Item {
         target: panel.sv.disco
         ignoreUnknownSignals: true
         function onEpisodesReady(id, s, eps) {
-            if (id === panel.tmdbId && s === panel.season) panel.tmdbRows = eps
+            if (id === panel.tmdbId && s === panel.season) {
+                panel.tmdbRows = eps
+                panel.sv.lastSeason = { season: s, episodes: eps }
+            }
         }
         function onLanguageReloaded() { panel.requestSeason() }   // episode names, again in the new language
         function onSeasonCastReady(id, s, cast) {
@@ -226,6 +229,7 @@ Item {
         index: panel.index
         season: panel.season
         episode: panel.episode
+        seasonEpisodes: panel.tmdbRows.length
         title: {
             for (var i = 0; i < panel.tmdbRows.length; i++)
                 if (panel.tmdbRows[i].episode === panel.episode) return panel.tmdbRows[i].name || ""

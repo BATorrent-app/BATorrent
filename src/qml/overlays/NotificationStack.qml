@@ -11,7 +11,8 @@
 // Overview, which reads the same state.
 //
 // While a game or a video fills the screen (and "Quiet in full screen" is
-// on) notices wait, and come back as one summary.
+// on) notices wait, whether they were going to this window or to the
+// system's, and come back as one summary (summaryReady).
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
@@ -23,24 +24,30 @@ Item {
 
     // the status bar's height, so the stack sits above it
     property int bottomInset: 30
-    signal actionTriggered(string actionId)
+    // action: { id, hash?, path? }, as given in the notice's actions
+    signal actionTriggered(var action)
+    // the held notices, once the full screen is gone: title, body, count
+    signal summaryReady(string title, string body)
 
     ListModel { id: notes }
     property int uid: 0
     readonly property int maxShown: 3
     readonly property int hidden: Math.max(0, notes.count - maxShown)
 
-    function on(key, def) { return typeof settings === "undefined" ? def : settings.getBool(key, def) }
+    function settingOn(key, def) { return typeof settings === "undefined" ? def : settings.getBool(key, def) }
+    // the Notices group in Settings: one switch per kind
+    function wanted(category) {
+        return category === "ready" ? settingOn("notifyReady", true)
+             : category === "needs" ? settingOn("notifyNeeds", true)
+             : category === "rss" ? settingOn("notifyRss", true)
+             : category === "version" ? settingOn("notifyNewVersion", true) : true
+    }
 
     // n: { tone: "ready" | "needs" | "", category: "ready" | "needs" | "rss" | "version" | "",
-    //      title, body, poster, tag, actions: [{ id, label }] (the first one is primary) }
+    //      title, body, poster, tag, actions: [{ id, label, hash?, path? }] (the first one is primary) }
     function push(n) {
-        var cat = n.category || ""
-        if (cat === "ready" && !on("notifyReady", true)) return
-        if (cat === "needs" && !on("notifyNeeds", true)) return
-        if (cat === "rss" && !on("notifyRss", true)) return
-        if (cat === "version" && !on("notifyNewVersion", true)) return
-        if (quiet) { held.push(n); return }
+        if (!wanted(n.category || "")) return
+        if (hold(n)) return
         var a = n.actions || []
         notes.append({
             uid: ++uid,
@@ -49,10 +56,17 @@ Item {
             body: n.body || "",
             poster: n.poster || "",
             tag: n.tag || "",
-            a1: a.length > 0 ? a[0].id : "", a1Label: a.length > 0 ? a[0].label : "",
-            a2: a.length > 1 ? a[1].id : "", a2Label: a.length > 1 ? a[1].label : "",
+            // a ListModel keeps plain values: the actions travel as JSON
+            a1: a.length > 0 ? JSON.stringify(a[0]) : "", a1Label: a.length > 0 ? a[0].label : "",
+            a2: a.length > 1 ? JSON.stringify(a[1]) : "", a2Label: a.length > 1 ? a[1].label : "",
             sticky: n.tone === "needs"
         })
+    }
+    // Kept for its quiet: true when the notice waits for the full screen to end.
+    function hold(n) {
+        if (!quiet) return false
+        held.push(n)
+        return true
     }
     // the old call: level 3 ready, 1 and 2 need the person, 0 neither
     function show(title, body, level, actionId, actionText) {
@@ -65,11 +79,15 @@ Item {
         for (var i = 0; i < notes.count; ++i)
             if (notes.get(i).uid === id) { notes.remove(i); return }
     }
+    function trigger(json, id) {
+        remove(id)
+        if (json) actionTriggered(JSON.parse(json))
+    }
 
     // ---- quiet in full screen ----
     property var held: []
     property bool fullscreenNow: false
-    readonly property bool quiet: fullscreenNow && on("quietFullscreen", true)
+    readonly property bool quiet: fullscreenNow && settingOn("quietFullscreen", true)
     Timer {
         interval: 3000; repeat: true; running: true
         onTriggered: stack.fullscreenNow = typeof themeBridge !== "undefined" && themeBridge.exclusiveFullscreenInFront()
@@ -77,8 +95,7 @@ Item {
     onQuietChanged: if (!quiet && held.length > 0) {
         var n = held.length, titles = held.map(function (h) { return h.title }).slice(0, 3)
         held = []
-        push({ tone: "", title: i18n.t("notif_while_away").arg(n), body: titles.join(" · "),
-               actions: [{ id: "overview", label: i18n.t("notif_show") }] })
+        summaryReady(i18n.t("notif_while_away").arg(n), titles.join(" · "))
     }
 
     Column {
@@ -108,7 +125,7 @@ Item {
                 text: (i18n.language, i18n.t("notif_more")).arg(stack.hidden)
                 color: Theme.t2; font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
             }
-            MouseArea { id: moreMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: stack.actionTriggered("overview") }
+            MouseArea { id: moreMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: stack.actionTriggered({ id: "overview" }) }
         }
     }
 
@@ -180,19 +197,16 @@ Item {
                     visible: model.a1 !== ""
                     spacing: 8
                     // the primary is light, never red: red is for downloading and errors
-                    Rectangle {
-                        width: p1.implicitWidth + 20; height: 28
-                        radius: Theme.rad(6)
-                        color: p1Ma.containsMouse ? Qt.darker(Theme.t1, 1.08) : Theme.t1
-                        Text { id: p1; anchors.centerIn: parent; text: model.a1Label; color: Theme.bg; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-                        MouseArea { id: p1Ma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: { var a = model.a1, u = model.uid; stack.remove(u); stack.actionTriggered(a) } }
+                    LightBtn {
+                        height: 28
+                        text: model.a1Label
+                        onClicked: stack.trigger(model.a1, model.uid)
                     }
                     BtnFlat {
                         visible: model.a2 !== ""
                         sm: true
                         text: model.a2Label
-                        onClicked: { var a = model.a2, u = model.uid; stack.remove(u); stack.actionTriggered(a) }
+                        onClicked: stack.trigger(model.a2, model.uid)
                     }
                 }
             }

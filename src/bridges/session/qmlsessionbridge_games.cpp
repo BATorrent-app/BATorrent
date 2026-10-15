@@ -498,8 +498,8 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
             m_playLog->recordLaunch(infoHash, nowMs);
             if (!isInstaller && pid > 0 && !m_runningGames.contains(infoHash))
                 followRunningGame(infoHash, pid, exe, nowMs);
-            emit toast(isInstaller ? tr_("hub_game_installing") : tr_("hub_game_launch"),
-                       QFileInfo(exe).completeBaseName());
+            // a game that starts says so itself; an installer takes a while, so it is said
+            if (isInstaller) emit toast(tr_("hub_game_installing"), QFileInfo(exe).completeBaseName());
             return;
         }
         qWarning().noquote() << "[game] could not start" << exe << "-" << why;

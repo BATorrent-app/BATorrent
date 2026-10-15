@@ -59,10 +59,8 @@ void QmlSessionBridge::smartPaste()
     if (clip.isEmpty()) { emit toast(tr_("toast_paste_none"), QString()); return; }
     QString magnet = normalizeClipboardMagnet(clip);
     if (!magnet.isEmpty()) {
+        // no confirmation: the item shows in the activity chip and in Downloads
         addMagnetUri(magnet);
-        // confirm always: past the active-download limit the torrent is queued
-        // (not visibly at the top), so without this the paste looks ignored
-        emit toast(tr_("toast_magnet_added"), QString());
         return;
     }
     if (clip.endsWith(QStringLiteral(".torrent"), Qt::CaseInsensitive)

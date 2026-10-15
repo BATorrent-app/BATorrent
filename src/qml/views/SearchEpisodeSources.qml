@@ -18,6 +18,7 @@ ColumnLayout {
     property var index
     property int season
     property int episode
+    property int seasonEpisodes: 0     // how many the season has: a one-season pack holds them all
     property string title
     signal backRequested()
 
@@ -194,6 +195,10 @@ ColumnLayout {
                 seedFill: src.logic.seedFillOf(modelData.seedsN || 0)
                 fewSeeds: src.logic.hasFewSeeds(modelData)
                 shortBy: fit.fits ? "" : src.sv.fmtSize(fit.short)
+                // a season pack says how many episodes it holds (a span of seasons doesn't know)
+                extra: !((modelData.episode || 0) > 0) && src.seasonEpisodes > 0
+                       && !src.logic.seasonSpan(modelData.name)
+                       ? (i18n.language, i18n.t("find_rel_n_eps")).arg(src.seasonEpisodes) : ""
                 canWatch: src.sv.canWatch(modelData)
                 added: src.sv.wasAdded(modelData)
                 onAddRequested: if (src.sv.api) src.sv.api.activateResult(modelData._idx)

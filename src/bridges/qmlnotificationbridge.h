@@ -15,11 +15,9 @@ public:
     void setSession(IEngine *s) { m_session = s; }   // to skip the generic toast for movies (Play-now handles them)
 
 public slots:
-    void onTorrentAdded(const QString &name);
     void onTorrentFinished(const QString &name, const QString &infoHash);
     void onTorrentError(const QString &message);
     void onKillSwitchTriggered();
-    void onRssAutoDownloaded(const QString &feedName, const QString &itemTitle);
     void onSuspiciousFilesDetected(const QString &name, const QStringList &files);
 
 signals:

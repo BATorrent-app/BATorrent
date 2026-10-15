@@ -37,16 +37,39 @@ Item {
         }
     }
     function shown() { return host.visible && host.visibility !== Window.Minimized && host.visibility !== Window.Hidden }
+    // One way out for every notice: off in Settings, nothing; a game or video
+    // filling the screen, held for the summary; the window up, the stack;
+    // otherwise the system's notification, whose click does the first action.
+    function deliver(n) {
+        if (!toastHost.wanted(n.category || "")) return
+        if (toastHost.hold(n)) return
+        if (shown()) { toastHost.push(n); return }
+        var a = n.actions || []
+        host.notifyNative(n.title, n.body || "", a.length > 0 ? a[0] : null)
+    }
+    // the episode a finished series download is at, for "Watch S01E01"
+    function episodeCode(hash) {
+        if (typeof session === "undefined") return ""
+        var lib = session.movieLibrary()
+        for (var i = 0; i < lib.length; i++) {
+            var m = lib[i]
+            if (m.infoHash !== hash || !m.isSeries) continue
+            var v = m.videos || []
+            for (var j = 0; j < v.length; j++) if (v[j].idx === m.fileIndex && v[j].code) return v[j].code
+        }
+        return ""
+    }
     // "Hollow Knight is ready", with what can be done with it
     function ready(hash, name, kind) {
         delete pendingDone[hash]
         var poster = typeof session !== "undefined" ? session.posterForHash(hash) : ""
-        var title = i18n.t("notif_ready").arg(name)
-        if (!shown()) { host.notifyUser(title, "", 3); return }
-        var actions = kind === "video" ? [{ id: "play:" + hash, label: i18n.t("notif_watch") }, { id: "open:" + hash, label: i18n.t("ctx_open_folder") }]
-                    : kind === "game" ? [{ id: "install:" + hash, label: i18n.t("hub_gs_install") }, { id: "open:" + hash, label: i18n.t("ctx_open_folder") }]
-                    : [{ id: "open:" + hash, label: i18n.t("ctx_open_folder") }]
-        toastHost.push({ tone: "ready", category: "ready", title: title, poster: poster ? host.fileUrl(poster) : "", actions: actions })
+        var ep = kind === "video" ? episodeCode(hash) : ""
+        var open = { id: "open", hash: hash, label: i18n.t("ctx_open_folder") }
+        var actions = kind === "video" ? [{ id: "play", hash: hash, label: ep ? i18n.t("notif_watch_ep").arg(ep) : i18n.t("notif_watch") }, open]
+                    : kind === "game" ? [{ id: "install", hash: hash, label: i18n.t("hub_gs_install") }, open]
+                    : [open]
+        deliver({ tone: "ready", category: "ready", title: i18n.t("notif_ready").arg(name),
+                  poster: poster ? host.fileUrl(poster) : "", actions: actions })
     }
     // RSS adds come in a burst, once per check: one notice for the lot
     property var rssBatch: []
@@ -58,9 +81,8 @@ Item {
             root.rssBatch = []
             if (b.length === 0) return
             var title = b.length === 1 ? b[0].item : i18n.t("notif_rss_n").arg(b.length).arg(b[0].feed)
-            if (!root.shown()) { host.notifyUser(title, i18n.t("notif_rss_body"), 0); return }
-            toastHost.push({ tone: "ready", category: "rss", title: title, body: i18n.t("notif_rss_body"),
-                             actions: [{ id: "rss", label: i18n.t("notif_show") }] })
+            root.deliver({ tone: "ready", category: "rss", title: title, body: i18n.t("notif_rss_body"),
+                           actions: [{ id: "rss", label: i18n.t("notif_show") }] })
         }
     }
     Connections {
@@ -97,21 +119,21 @@ Item {
                 title = i18n.t("notif_nospace").arg(n.title)
                 body = n.disk ? i18n.t("notif_nospace_body").arg(n.need).arg(n.disk).arg(n.diskFree)
                               : i18n.t("notif_nospace_body_none").arg(n.need)
-                a = n.disk ? [{ id: "move:" + n.infoHash + "|" + n.diskPath, label: i18n.t("notif_move_to").arg(n.disk) },
-                              { id: "files:" + n.infoHash, label: i18n.t("notif_choose_files") }]
+                a = n.disk ? [{ id: "move", hash: n.infoHash, path: n.diskPath, label: i18n.t("notif_move_to").arg(n.disk) },
+                              { id: "files", hash: n.infoHash, label: i18n.t("notif_choose_files") }]
                            : [{ id: "freeup", label: i18n.t("search_wontfit_freeup") },
-                              { id: "files:" + n.infoHash, label: i18n.t("notif_choose_files") }]
+                              { id: "files", hash: n.infoHash, label: i18n.t("notif_choose_files") }]
             } else if (n.reason === "fetching") {
                 title = i18n.t("notif_fetching").arg(n.title).arg(n.minutes)
                 body = i18n.t("notif_fetching_body")
-                a = [{ id: "keep:" + n.infoHash, label: i18n.t("notif_keep_trying") }, { id: "remove:" + n.infoHash, label: i18n.t("notif_remove") }]
+                a = [{ id: "keep", hash: n.infoHash, label: i18n.t("notif_keep_trying") },
+                     { id: "remove", hash: n.infoHash, label: i18n.t("notif_remove") }]
             } else {
                 title = i18n.t("notif_missing").arg(n.title)
                 body = i18n.t("notif_missing_body")
-                a = [{ id: "locate:" + n.infoHash, label: i18n.t("ov_act_locate") }]
+                a = [{ id: "locate", hash: n.infoHash, label: i18n.t("ov_act_locate") }]
             }
-            if (!root.shown()) { host.notifyUser(title, body, 1); return }
-            toastHost.push({ tone: "needs", category: "needs", title: title, body: body, poster: n.poster || "", actions: a })
+            root.deliver({ tone: "needs", category: "needs", title: title, body: body, poster: n.poster || "", actions: a })
         }
         // a movie/series finished downloading → actionable "Play now" toast
         function onMovieReady(infoHash, name) { root.ready(infoHash, name, "video") }
@@ -169,32 +191,33 @@ Item {
     // notices inside the window, above the status bar
     NotificationStack {
         id: toastHost
-        onActionTriggered: function(actionId) {
-            var hash = actionId.indexOf(":") > 0 ? actionId.substring(actionId.indexOf(":") + 1) : ""
-            if (actionId === "overview") host.showOverview()
-            else if (actionId === "rss") host.showWin(host.rssWinLoader)
-            else if (actionId === "freeup") host.makeRoomPanel.open()
-            else if (actionId === "update") host.updateDlg.open()
-            else if (actionId.indexOf("open:") === 0 && typeof session !== "undefined") { if (session.selectByInfoHash(hash)) session.openSaveFolder() }
-            else if (actionId.indexOf("move:") === 0 && typeof session !== "undefined") {
-                var parts = hash.split("|")
-                if (session.selectByInfoHash(parts[0])) { session.moveSelectedStorage(parts[1]); session.resumeSelected() }
-            }
-            else if (actionId.indexOf("files:") === 0) { host.showOverview(); host.selectTorrentByHash(hash); host.detailTab = 2 }
-            else if (actionId.indexOf("remove:") === 0 && typeof session !== "undefined") { if (session.selectByInfoHash(hash)) host.removeDlg.open() }
-            else if (actionId.indexOf("locate:") === 0) { host.selectTorrentByHash(hash); host.promptSetLocation() }
-            else if (actionId.indexOf("keep:") === 0) {}
-            else if (actionId === "logs") host.showWin(host.logWinLoader)
-            else if (actionId === "crashreport" && typeof logs !== "undefined")
-                Qt.openUrlExternally(logs.crashReportUrl())
-            else if (actionId === "star")
-                Qt.openUrlExternally("https://github.com/BATorrent-app/BATorrent")
-            else if (actionId.indexOf("play:") === 0 && typeof session !== "undefined")
-                session.playByHash(actionId.substring(5))
-            else if (actionId.indexOf("install:") === 0 && typeof session !== "undefined") {
-                session.installGame(actionId.substring(8))
-                host.currentPage = 2
-            }
+        onActionTriggered: function (a) { root.act(a) }
+        // what waited out a full screen: one summary, wherever the person is
+        onSummaryReady: function (title, body) {
+            var a = [{ id: "overview", label: i18n.t("notif_show") }]
+            if (root.shown()) toastHost.push({ tone: "", title: title, body: body, actions: a })
+            else host.notifyNative(title, body, a[0])
+        }
+    }
+    // What a notice's button (or a click on the system's notice) does.
+    function act(a) {
+        var s = typeof session !== "undefined" ? session : null
+        switch (a.id) {
+        case "overview": host.showOverview(); break
+        case "rss": host.showWin(host.rssWinLoader); break
+        case "freeup": host.makeRoomPanel.open(); break
+        case "update": host.updateDlg.open(); break
+        case "logs": host.showWin(host.logWinLoader); break
+        case "crashreport": if (typeof logs !== "undefined") Qt.openUrlExternally(logs.crashReportUrl()); break
+        case "star": Qt.openUrlExternally("https://github.com/BATorrent-app/BATorrent"); break
+        case "open": if (s && s.selectByInfoHash(a.hash)) s.openSaveFolder(); break
+        case "move": if (s && s.selectByInfoHash(a.hash)) { s.moveSelectedStorage(a.path); s.resumeSelected() } break
+        case "files": host.showOverview(); host.selectTorrentByHash(a.hash); host.detailTab = 2; break
+        case "remove": if (s && s.selectByInfoHash(a.hash)) host.removeDlg.open(); break
+        case "locate": host.selectTorrentByHash(a.hash); host.promptSetLocation(); break
+        case "keep": if (s) s.keepTrying(a.hash); break
+        case "play": if (s) s.playByHash(a.hash); break
+        case "install": if (s) { s.installGame(a.hash); host.currentPage = 2 } break
         }
     }
 

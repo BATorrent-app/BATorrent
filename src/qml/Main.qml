@@ -589,6 +589,13 @@ Window {
     AppTray {
         id: trayIcon
         onRestoreRequested: { win.show(); win.raise(); win.requestActivate() }
+        // a system notice clicked: the app comes up and does the notice's one thing
+        onMessageClicked: {
+            win.show(); win.raise(); win.requestActivate()
+            var a = win.nativeAction
+            win.nativeAction = null
+            if (a) appNotifications.act(a)
+        }
         onContextRequested: function(geo) { trayPopup.popUpAt(geo) }
     }
 
@@ -606,6 +613,7 @@ Window {
             toastHost.show(title, body, level,
                            level === 2 ? "logs" : "", level === 2 ? i18n.t("toast_view_logs") : "")
         } else if (trayIcon.available) {
+            nativeAction = null
             // `supportsMessages` reads false on Windows even when showMessage
             // works, so gate on `available`.
             trayIcon.showMessage(title, body,
@@ -619,7 +627,27 @@ Window {
 
     // For what happens while another app is in front (a game running): the
     // in-app toast would sit behind it, so the OS notification goes first.
-    function notifyNative(title, body) {
+    // The VPN went down after being up: the band under the navigation and the
+    // nav chip ("Dropped") both read it; reconnecting clears it.
+    property bool vpnDropped: false
+    readonly property int vpnConnected: 2   // vpn.connState when the tunnel is up
+    Connections {
+        target: typeof vpn !== "undefined" ? vpn : null
+        ignoreUnknownSignals: true
+        function onStateChanged() { if (vpn.connState === win.vpnConnected) win.vpnDropped = false }
+        // the tunnel went away without being asked to
+        function onInterfaceDown(deliberate) { if (!deliberate) win.vpnDropped = true }
+    }
+    Connections {
+        target: typeof notifications !== "undefined" ? notifications : null
+        ignoreUnknownSignals: true
+        function onVpnDropped() { win.vpnDropped = true }
+    }
+
+    // action: what a click on the system notice does ({ id, hash? }), or none
+    property var nativeAction: null
+    function notifyNative(title, body, action) {
+        nativeAction = action || null
         if (trayIcon.available) trayIcon.showMessage(title, body, Platform.SystemTrayIcon.Information, 5000)
         else toastHost.show(title, body, 0)
     }
@@ -727,6 +755,7 @@ Window {
         // the VPN went down: a band until it is back
         VpnDropBanner {
             id: vpnBand
+            dropped: win.vpnDropped
             Layout.fillWidth: true
             Layout.preferredHeight: implicitHeight
             onSettingsRequested: { settingsPage.sec = 3; win.currentPage = 3 }

@@ -58,9 +58,8 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 text: {
                     i18n.language
-                    var v = typeof session !== "undefined" && session.diskVolumes && session.diskVolumes.length > 0 ? session.diskVolumes[0] : null
                     return i18n.t(root.sv.wontFit === 1 ? "find_disk_wont_fit_1" : "find_disk_wont_fit")
-                               .arg(root.sv.wontFit).arg(v ? v.name : "").arg(root.sv.fmtSize(root.sv.saveFree)) + " · "
+                               .arg(root.sv.wontFit).arg(root.sv.saveDiskName).arg(root.sv.fmtSize(root.sv.saveFree)) + " · "
                 }
                 color: Theme.warn; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
             }

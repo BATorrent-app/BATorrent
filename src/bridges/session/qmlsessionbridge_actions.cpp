@@ -53,6 +53,10 @@ void QmlSessionBridge::removeSelectedRows(bool deleteFiles, bool permanent)
         : m_selectedRows;
     if (rows.isEmpty()) return;
     const int n = rows.size();
+    // A game installed outside its download stays playable: record it as a
+    // kept game now, while its torrent is still there to name it.
+    for (int r : rows)
+        if (gameOutlivesTorrent(m_session->torrentHashAt(r))) { gameLibrary(); break; }
     std::sort(rows.begin(), rows.end(), std::greater<int>());
     // A batch fires beginRemoveRows/endRemoveRows back-to-back with no time for
     // the grid/list's remove+displaced Transition to settle between them:
@@ -63,10 +67,7 @@ void QmlSessionBridge::removeSelectedRows(bool deleteFiles, bool permanent)
     m_selectedRows.clear();
     m_selectedIndex = -1;
     emit selectionChanged(); emit selectionListsChanged();
-    // set the expectation: trashed files still occupy disk until the Trash is emptied
-    if (deleteFiles)
-        emit toast(permanent ? tr_("remove_deleted") : tr_("remove_trashed"),
-                   n > 1 ? QString::number(n) : QString());
+    // No toast: the remove dialog already said what happens to the files.
 }
 void QmlSessionBridge::removeSelectedWithFilesPermanent() { removeSelectedRows(true, true); }
 
@@ -88,13 +89,9 @@ QVariantMap QmlSessionBridge::removalInfo()
     for (int r : rows) {
         const TorrentInfo info = m_session->torrentAt(r);
         const QString hash = m_session->torrentHashAt(r);
-        QString name = info.name;
-        if (m_resolver && m_resolver->hasCached(hash)) {
-            const MetadataResult meta = m_resolver->cached(hash);
-            if (meta.valid && !meta.title.isEmpty()) name = meta.title;
-            if (poster.isEmpty() && meta.valid && !meta.posterPath.isEmpty())
-                poster = QUrl::fromLocalFile(meta.posterPath).toString();
-        }
+        QString cover;
+        const QString name = shownTitle(hash, info.name, &cover);
+        if (poster.isEmpty()) poster = cover;
         names << name;
         bytes += info.totalDone;
         // the people this stops: only what is seeding right now
@@ -107,9 +104,6 @@ QVariantMap QmlSessionBridge::removalInfo()
             gameSize = formatSize(info.totalDone);
         }
     }
-    // records the kept game now, before its torrent goes
-    if (!game.isEmpty()) gameLibrary();
-
     m[QStringLiteral("names")] = names;
     m[QStringLiteral("poster")] = poster;
     m[QStringLiteral("size")] = formatSize(bytes);
@@ -160,7 +154,6 @@ void QmlSessionBridge::extractSelected(const QString &password)
 {
     if (!hasSelection()) return;
     m_session->extractTorrent(m_selectedIndex, password);
-    emit toast(tr_("extract_started"), m_session->torrentAt(m_selectedIndex).name);
 }
 
 bool QmlSessionBridge::selectedForceStart() const
@@ -234,7 +227,6 @@ void QmlSessionBridge::refreshAll()
     // Re-emit every role now so speed/ETA/status visibly repaint on the spot,
     // instead of the user waiting for the next periodic tick to see any change.
     emit queueRefreshNeeded();
-    emit toast(tr_("toast_refreshed"), QString());
 }
 
 void QmlSessionBridge::stopSeedingSelected()

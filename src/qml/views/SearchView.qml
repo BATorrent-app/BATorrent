@@ -114,6 +114,7 @@ Rectangle {
     readonly property var langOptions: compute.langOptions
     readonly property var viewModel: compute.viewModel
     readonly property double saveFree: compute.saveFree
+    readonly property string saveDiskName: compute.saveDiskName
     readonly property int wontFit: compute.wontFit
 
     function typeLabel(t) { return fmt.typeLabel(t) }
@@ -275,6 +276,15 @@ Rectangle {
     // not to an empty Find.
     property int returnPage: -1
     signal backTo(int page)
+    // The season last listed on a title's page: what a waiting player shows
+    // for an episode picked from it (its still and its name).
+    property var lastSeason: ({ season: -1, episodes: [] })
+    function episodeOf(season, episode) {
+        if (lastSeason.season !== season) return null
+        var eps = lastSeason.episodes || []
+        for (var i = 0; i < eps.length; i++) if (eps[i].episode === episode) return eps[i]
+        return null
+    }
     signal addMagnetRequested()
     // { tmdbId, season, episode } a show opens on (the HUB sends where you are in it).
     property var pendingEpisode: null

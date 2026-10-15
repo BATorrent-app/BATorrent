@@ -27,13 +27,6 @@ static void maybeChime()
         SoundPlayer::playCompletionChime();
 }
 
-// Never a notice for what the person just did: an added item is already in
-// the activity chip and in Downloads.
-void QmlNotificationBridge::onTorrentAdded(const QString &name)
-{
-    Q_UNUSED(name);
-}
-
 void QmlNotificationBridge::onTorrentFinished(const QString &name, const QString &infoHash)
 {
     maybeChime();
@@ -57,10 +50,6 @@ void QmlNotificationBridge::onKillSwitchTriggered()
     maybeBeep();
 }
 
-void QmlNotificationBridge::onRssAutoDownloaded(const QString &, const QString &)
-{
-    // the window groups a check's adds into one notice (rss.autoDownloaded)
-}
 
 void QmlNotificationBridge::onSuspiciousFilesDetected(const QString &name, const QStringList &files)
 {

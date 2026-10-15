@@ -35,8 +35,8 @@ Item {
             watchOverlay.waited = waited
         }
         function onWatchFailed(title) {
-            // the player waiting for it says so itself
-            if (loaders.failWaiting(title)) return
+            // a waiting player heard it by hash (waitState noSource) and says so itself
+            if (loaders.anyWaiting()) return
             if (watchOverlay) watchOverlay.fail(i18n.t("gw_failed").arg(title))
         }
     }
@@ -121,6 +121,8 @@ Item {
             var q = [r.quality || "", r.source || ""].filter(function (x) { return x.length > 0 }).join(" ")
             return q
         }
+        // the episode's own still and name, from the season the release was picked in
+        var ep = episode > 0 && loaders.searchPage ? loaders.searchPage.episodeOf(season, episode) : null
         var cands = []
         for (var j = 0; j < rows.length; j++) {
             var r = rows[j]
@@ -131,8 +133,9 @@ Item {
         return {
             hash: infoHash,
             title: (api && api.workTitle) || title,
-            subtitle: episode > 0 ? i18n.t("wait_ep_code").arg(season).arg(episode) : ((api && api.workYear) || ""),
-            art: api ? (api.workBackdrop || api.workPoster || "") : "",
+            subtitle: episode > 0 ? i18n.t("wait_ep_code").arg(season).arg(episode) + (ep && ep.name ? " · " + ep.name : "")
+                                  : ((api && api.workYear) || ""),
+            art: (ep && ep.still) || (api ? (api.workBackdrop || api.workPoster || "") : ""),
             release: row ? [label(row), row.sizeStr || ""].filter(function (x) { return x.length > 0 }).join(" · ") : "",
             quality: row ? (row.quality || "") : "",
             season: season, episode: episode,

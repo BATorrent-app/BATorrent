@@ -37,6 +37,9 @@ struct TorrentInfo {
     bool seeding = false;
     bool filesMissing = false;   // data was deleted/moved off disk under a live torrent
     bool hasError = false;       // libtorrent parked it: disk full, permissions, bad piece storage
+    // The error is the disk being full: told by the error code, because the
+    // message is the system's and arrives in the system's language.
+    bool diskFull = false;
     // From libtorrent's downloading_metadata, never from !hasMetadata: a
     // default-constructed TorrentInfo must not claim to be fetching.
     bool fetchingMetadata = false;
@@ -47,6 +50,7 @@ struct TorrentInfo {
     float availability = 0;     // distributed copies (swarm health)
     qint64 totalUploaded = 0;
     qint64 addedTime = 0;       // unix seconds
+    qint64 completedTime = 0;   // unix seconds it finished, 0 while it hasn't
     QString category;
     QStringList tags;
 };

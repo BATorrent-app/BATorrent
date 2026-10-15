@@ -12,6 +12,7 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import QtQuick.Controls.Basic
 import "../theme"
+import "TimeAgo.js" as TimeAgo
 
 Item {
     id: ov
@@ -21,6 +22,8 @@ Item {
     onVisibleChanged: if (visible) refresh()
     Timer { interval: 3000; repeat: true; running: ov.visible; onTriggered: ov.refresh() }
 
+    // ", 12 min ago": how long it has been like this, when that is known
+    function since(a) { return a.since > 0 ? " · " + TimeAgo.ago(a.since, i18n.t) : "" }
     function why(a) {
         if (a.reason === "missing") return i18n.t("ov_missing")
         if (a.reason === "error") return a.detail && a.detail.length > 0 ? a.detail : i18n.t("tile_error")
@@ -113,8 +116,10 @@ Item {
                             Text { Layout.fillWidth: true; text: modelData.title; color: Theme.t1; font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans; elide: Text.ElideRight }
                             Text {
                                 Layout.fillWidth: true
-                                text: (i18n.language, ov.why(modelData))
-                                color: modelData.reason === "paused" ? Theme.t3 : Theme.accentText
+                                text: (i18n.language, ov.why(modelData) + ov.since(modelData))
+                                // orange asks for a hand, red is a fault, grey was the person's own pause
+                                color: modelData.reason === "paused" ? Theme.t3
+                                     : modelData.reason === "error" || modelData.reason === "missing" ? Theme.accentText : Theme.warn
                                 font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
                             }
                         }
@@ -153,7 +158,7 @@ Item {
                         Text { Layout.fillWidth: true; text: modelData.title; color: Theme.t1; font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans; elide: Text.ElideRight }
                         Text {
                             Layout.fillWidth: true
-                            text: (i18n.language, i18n.t(modelData.type === "game" ? "ov_not_played" : "ov_not_watched"))
+                            text: (i18n.language, i18n.t(modelData.type === "game" ? "ov_not_played" : "ov_not_watched") + ov.since(modelData))
                             color: Theme.t4; font.pixelSize: 12; font.family: Theme.fontSans; elide: Text.ElideRight
                         }
                     }

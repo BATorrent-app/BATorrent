@@ -256,6 +256,18 @@ TestCase {
         compare(logic.langBits(rel({ name: "x" }), "PT-BR", tr).length, 0)
     }
 
+    function test_recommendedPrefersYourLanguageThenPicture() {
+        var rows = logic.tagged([ rel({ name: "a", quality: "4K", seedsN: 500, sizeBytes: 100 }),
+                                  rel({ name: "b", quality: "1080p", seedsN: 80, sizeBytes: 100, audioMode: "dub" }),
+                                  rel({ name: "c", quality: "1080p", seedsN: 10, sizeBytes: 100, audioMode: "dub" }) ])
+        // the bridge's pick wins when it is in the list
+        compare(logic.recommendedIdx(rows, 0, -1), 0)
+        // otherwise: dubbed in your language, well seeded, before a bigger picture
+        compare(logic.recommendedIdx(rows, -1, -1), 1)
+        // what does not fit is never the pick
+        compare(logic.recommendedIdx([rows[0]], -1, 50), -1)
+    }
+
     function test_fewSeedsAndWhatDoesNotFit() {
         verify(logic.hasFewSeeds(rel({ seedsN: 29 })))
         verify(!logic.hasFewSeeds(rel({ seedsN: 30 })))

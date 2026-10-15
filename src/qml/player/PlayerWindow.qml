@@ -490,8 +490,12 @@ Window {
 
     signal closed()
     onClosing: {
-        if (win.waiting && typeof session !== "undefined") session.cancelWatch(win.waiting.hash)
-        win.waiting = null
+        // Esc and ✕ while waiting: the same as ←, back to the releases
+        if (win.waiting) {
+            if (typeof session !== "undefined") session.cancelWatch(win.waiting.hash)
+            win.waiting = null
+            win.waitCancelled(false)
+        }
         resume.save(); player.stop(); win.closed()
     }
 

@@ -6,6 +6,7 @@
 // game's releases, a season's episodes, one episode's sources. Pure functions
 // over the bridge's flat result rows, so tst_FindTitleLogic can drive them.
 import QtQuick
+import "../widgets/ReleaseRules.js" as Rules
 
 QtObject {
     id: root
@@ -301,8 +302,7 @@ QtObject {
     // ---- one episode's releases, as people read them ----
 
     // Under this many seeds a release says so, in orange.
-    readonly property int fewSeeds: 30
-    function hasFewSeeds(r) { return !!r && (r.seedsN || 0) < fewSeeds }
+    function hasFewSeeds(r) { return !!r && Rules.fewSeeds(r.seedsN || 0) }
 
     // The release's name as a person would say it: what it was made from and
     // how it sounds for an episode ("BluRay · 5.1"); which season(s) and cut
@@ -312,7 +312,7 @@ QtObject {
         var n = r.name || ""
         var bits = []
         if (!((r.episode || 0) > 0)) {
-            var span = /\bS(?:eason)?[ ._-]?0?(\d{1,2})\s*[-–~]\s*S?(?:eason)?[ ._-]?0?(\d{1,2})\b/i.exec(n)
+            var span = seasonSpan(n)
             if (span && parseInt(span[2]) > parseInt(span[1])) {
                 bits.push(tr("find_rel_seasons").arg(parseInt(span[1])).arg(parseInt(span[2])))
                 if (/complete/i.test(n)) bits.push(tr("find_rel_complete"))
@@ -328,6 +328,12 @@ QtObject {
         if (bits.length > 0) return bits.join(" · ")
         // nothing it is made of: who released it, then the raw name
         return (r.releaseGroup || "").length > 0 ? r.releaseGroup : n
+    }
+
+    // "S01-S04", "Seasons 1–3": [match, first, last], or null. NameParser
+    // (C++) finds the same marker, but only keeps the first season.
+    function seasonSpan(name) {
+        return /\bS(?:eason)?[ ._-]?0?(\d{1,2})\s*[-–~]\s*S?(?:eason)?[ ._-]?0?(\d{1,2})\b/i.exec(name || "")
     }
 
     // H.264 / H.265 the way players name them, from x264, AVC, HEVC...
@@ -364,9 +370,22 @@ QtObject {
     // sorted by quality, then seeds). -1 when none qualifies.
     function recommendedIdx(rows, bridgeBest, freeBytes) {
         for (var i = 0; i < rows.length; i++) if (rows[i]._idx === bridgeBest) return bridgeBest
-        for (var j = 0; j < rows.length; j++)
-            if (!hasFewSeeds(rows[j]) && fitOf(rows[j], freeBytes).fits) return rows[j]._idx
-        return -1
+        var best = -1, bestScore = -1
+        for (var j = 0; j < rows.length; j++) {
+            var r = rows[j]
+            if (hasFewSeeds(r) || !fitOf(r, freeBytes).fits) continue
+            var score = recommendScore(r)
+            if (score > bestScore) { bestScore = score; best = r._idx }
+        }
+        return best
+    }
+    // Seeds × quality × size × the person's language: in their language first,
+    // then the better picture, then the healthier swarm, then the smaller file.
+    function recommendScore(r) {
+        var mine = r.audioMode === "dub" || r.audioMode === "sub" || r.native === true
+        var seeds = Math.min(1, Math.log((r.seedsN || 0) + 1) / Math.log(1000))
+        var gb = (r.sizeBytes || 0) / 1073741824
+        return (mine ? 1000 : 0) + qualityRank(r.quality) * 100 + seeds * 50 - Math.min(20, gb)
     }
 
     // How a release sits on the save disk: {fits, short} with short the bytes missing.

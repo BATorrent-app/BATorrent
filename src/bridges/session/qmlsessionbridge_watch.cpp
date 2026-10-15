@@ -103,6 +103,7 @@ void QmlSessionBridge::pollPendingWatch(bool verbose)
                                   << m_watchClock.take(hash).elapsed() << "ms, head" << head;
                 m_pendingWatch.remove(hash);
                 m_watchPrepped.remove(hash);
+                m_watchNoPeersSince.remove(hash);   // a later watch of it starts its own clock
                 playByHashFile(hash, file);
                 continue;
             }
@@ -115,6 +116,10 @@ void QmlSessionBridge::pollPendingWatch(bool verbose)
         // Peers but no file list for this long, or the torrent never showed
         // up: the waiting screen has nothing true left to say.
         if ((file < 0 && waited > 120) || (idx < 0 && waited > 20)) {
+            // the player waiting for this hash says so itself
+            st[QStringLiteral("noSource")] = true;
+            emit waitState(hash, st);
+            m_watchNoPeersSince.remove(hash);
             m_watchPrepped.remove(hash);
             m_watchClock.remove(hash);
             emit watchFailed(m_pendingWatch.take(hash).first);

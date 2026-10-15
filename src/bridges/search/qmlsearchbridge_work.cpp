@@ -155,7 +155,8 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         setSearching(false);
         // Empty because it failed, or because nothing is called that: the page
         // says which, and for the second looks for what was probably meant.
-        const int fail = m_results.isEmpty() ? m_discovery->lastSearchFailure() : DiscoveryService::NoFailure;
+        const DiscoveryService::SearchFailure fail = m_results.isEmpty() ? m_discovery->lastSearchFailure()
+                                                                         : DiscoveryService::NoFailure;
         m_failure = fail == DiscoveryService::Offline ? QStringLiteral("offline")
                   : fail == DiscoveryService::CatalogDown ? QStringLiteral("catalog") : QString();
         if (m_results.isEmpty() && fail == DiscoveryService::NoFailure) m_discovery->suggestTitle(query);

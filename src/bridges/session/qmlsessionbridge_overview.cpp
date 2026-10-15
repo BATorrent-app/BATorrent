@@ -15,6 +15,7 @@
 #include "services/games/playlog.h"
 #include "services/platform/utils.h"  // formatSize
 
+#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QSettings>
@@ -38,14 +39,8 @@ QVariantMap QmlSessionBridge::overview() const
         if (!info.completed && !info.finished && info.totalSize > 0)
             remaining += qMax<qint64>(0, info.totalSize - info.totalDone);
 
-        QString title = info.name, poster;
-        if (m_resolver && m_resolver->hasCached(hash)) {
-            const auto meta = m_resolver->cached(hash);
-            if (meta.valid) {
-                if (!meta.title.isEmpty()) title = meta.title;
-                if (!meta.posterPath.isEmpty()) poster = QUrl::fromLocalFile(meta.posterPath).toString();
-            }
-        }
+        QString poster;
+        const QString title = shownTitle(hash, info.name, &poster);
         const QString ext = QFileInfo(info.name).suffix().toUpper();
         QVariantMap m;
         m[QStringLiteral("infoHash")] = hash;
@@ -56,7 +51,7 @@ QVariantMap QmlSessionBridge::overview() const
         QString reason;
         if (key == QLatin1String("missing")) reason = QStringLiteral("missing");
         else if (key == QLatin1String("error")) reason = QStringLiteral("error");
-        else if (info.fetchingMetadata && info.fetchingSecs >= 600) reason = QStringLiteral("fetching");
+        else if (info.fetchingMetadata && fetchingTooLong(hash, info.fetchingSecs)) reason = QStringLiteral("fetching");
         else if (key == QLatin1String("downloading") && info.numSeeds == 0 && info.numPeers > 0
                  && info.downloadRate < 1024)
             reason = QStringLiteral("noseeds");
@@ -68,6 +63,10 @@ QVariantMap QmlSessionBridge::overview() const
             m[QStringLiteral("pct")] = int(info.progress * 100);
             m[QStringLiteral("left")] = formatSize(qMax<qint64>(0, info.totalSize - info.totalDone));
             m[QStringLiteral("minutes")] = int(qMax<qint64>(0, info.fetchingSecs) / 60);
+            // since when, for "12 min ago": stuck fetching, or paused, when known
+            const qint64 now = QDateTime::currentSecsSinceEpoch();
+            if (reason == QLatin1String("fetching")) m[QStringLiteral("since")] = now - qMax<qint64>(0, info.fetchingSecs);
+            else if (reason == QLatin1String("paused") && m_pausedSince.contains(hash)) m[QStringLiteral("since")] = m_pausedSince.value(hash);
             // trouble first, a pause last: it is the user's own choice
             att.append({ reason == QLatin1String("paused") ? -info.addedTime : (qint64(1) << 40) + info.addedTime, m });
             continue;
@@ -84,6 +83,7 @@ QVariantMap QmlSessionBridge::overview() const
             if (w.value(QStringLiteral("watched")).toBool() || w.value(QStringLiteral("resumeMs")).toLongLong() > 0) continue;
             m[QStringLiteral("type")] = QStringLiteral("video");
         }
+        if (info.completedTime > 0) m[QStringLiteral("since")] = info.completedTime;
         rdy.append({ info.addedTime, m });
     }
     auto newest = [](const Row &a, const Row &b) { return a.added > b.added; };

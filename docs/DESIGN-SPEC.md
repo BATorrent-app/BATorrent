@@ -147,7 +147,7 @@ Texto do botão = verbo + objeto quando há ambiguidade ("Add 3", "Use Games", "
 
 ### Chips e segmentados
 - **Chip de filtro:** texto `t3` + contagem `t4`; ativo = `t1` 600 + fundo `selected`.
-- **Chip de escolha** (destino, idioma): borda `hair`; selecionado = anel 1.5px `t1`; problema = anel `warn` + subtexto laranja; cabe = subtexto `doneDot`.
+- **Chip de escolha** (destino, idioma): borda `hair`; selecionado = fundo `selected` + anel 1px `t1` a 40% (um anel branco cheio pesava demais ao lado dos outros chips); problema = anel `warn` + subtexto laranja; cabe = subtexto `doneDot`.
 - **Segmentado:** trilho `field` com borda `hair`; opção ativa com fundo `rgba(255,255,255,0.12)`; desabilitada com opacidade 0.4 e tooltip explicando o porquê.
 
 ### Progresso
@@ -220,7 +220,8 @@ Texto do botão = verbo + objeto quando há ambiguidade ("Add 3", "Use Games", "
 
 - Curva padrão: `cubic-bezier(.2,.8,.2,1)`. Durações: 160ms (hover, cor), 240ms (conteúdo), 300ms (indicadores), 400–520ms (troca de passo, tema).
 - Troca de conteúdo: fade + 14px na direção da navegação. Indicadores deslizam, não pulam.
-- Nada se move sem causa (sem animação em loop, exceto o brilho de transferência ativa).
+- Nada se move sem causa (sem animação em loop, exceto o brilho de transferência ativa e a espera de um stream).
+- Espera de um stream (o player antes do vídeo): enquanto nenhum byte chegou, o ponto da etapa atual pulsa e uma luz corre pela barra, para a espera não parecer travada. Some quando os bytes começam (a barra passa a encher) ou quando a espera termina. Com `reduceMotion`, a luz só pisca no lugar.
 - `reduceMotion`: só fade, sem deslocamento.
 
 ---

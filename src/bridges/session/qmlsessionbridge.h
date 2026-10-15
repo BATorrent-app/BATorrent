@@ -282,6 +282,9 @@ public:
     // The inspector with nothing selected: what needs you, what is ready and
     // never opened, and the space left once the downloads land.
     Q_INVOKABLE QVariantMap overview() const;
+    // "Keep trying" on a magnet with no file list: say it again in ten more
+    // minutes, and keep it out of the Overview until then.
+    Q_INVOKABLE void keepTrying(const QString &infoHash);
     Q_INVOKABLE QVariantMap episodeOf(const QString &infoHash, int fileIndex) const;   // {season, episode}, -1 when not an episode
     // Resolved display title for the player header: {title, subtitle, raw}.
     // title/subtitle come from the metadata cache + name parse; raw is the
@@ -658,7 +661,13 @@ private:
     bool m_stillLoaded = false;
     bool m_incomingSeen = false;   // someone connected in: the port is reachable
     int m_reachTick = 0;
-    QSet<QString> m_needsSeen;     // "hash/reason" already raised
+    QSet<QString> m_needsSeen;
+    QHash<QString, qint64> m_fetchSnooze;   // infoHash → fetchingSecs at which it is news again
+    bool fetchingTooLong(const QString &infoHash, qint64 fetchingSecs) const
+    { return fetchingSecs >= qMax<qint64>(600, m_fetchSnooze.value(infoHash, 0)); }
+    // The name a torrent is shown by (its resolved title, else its parsed
+    // name) and, through poster, its cover as a file URL when there is one.
+    QString shownTitle(const QString &infoHash, const QString &rawName, QString *poster = nullptr) const;     // "hash/reason" already raised
     void watchNeeds();
     void trackStillSince();
     QHash<QString, QVector<int>> m_torrentDownHist;   // per-torrent rate rings (by hash)

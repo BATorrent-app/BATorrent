@@ -229,16 +229,4 @@ Item {
         var list = bits.length === 1 ? bits[0] : i18n.t("find_and").arg(bits.slice(0, -1).join(", ")).arg(bits[bits.length - 1])
         return i18n.t(found.length === 1 ? "find_others_1" : "find_others").arg(list)
     }
-
-    // the light primary: the one thing to do next, never red
-    component LightBtn: Rectangle {
-        id: lb
-        property string text
-        signal clicked()
-        width: lbTxt.implicitWidth + 24; height: 32
-        radius: Theme.rad(6)
-        color: lbMa.containsMouse ? Qt.darker(Theme.t1, 1.08) : Theme.t1
-        Text { id: lbTxt; anchors.centerIn: parent; text: lb.text; textFormat: Text.PlainText; color: Theme.bg; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans }
-        MouseArea { id: lbMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: lb.clicked() }
-    }
 }

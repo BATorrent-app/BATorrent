@@ -164,8 +164,28 @@ void QmlSessionBridge::removeTorrentsByHash(const QStringList &hashes, bool dele
         const int now = hashes.contains(selected) ? -1 : m_session->torrentIndexByInfoHash(selected);
         if (now != m_selectedIndex) { m_selectedIndex = now; emit selectionChanged(); emit selectionListsChanged(); }
     }
-    if (done > 0)
-        emit toast(deleteFiles ? tr_("remove_trashed") : tr_("freeup_removed").arg(done), QString());
+}
+
+QString QmlSessionBridge::shownTitle(const QString &infoHash, const QString &rawName, QString *poster) const
+{
+    QString title = NameParser::parse(rawName).cleanTitle;
+    if (title.isEmpty()) title = rawName;
+    if (m_resolver && m_resolver->hasCached(infoHash)) {
+        const auto meta = m_resolver->cached(infoHash);
+        if (meta.valid) {
+            if (!meta.title.isEmpty()) title = meta.title;
+            if (poster && QFileInfo::exists(meta.posterPath)) *poster = QUrl::fromLocalFile(meta.posterPath).toString();
+        }
+    }
+    return title;
+}
+
+void QmlSessionBridge::keepTrying(const QString &infoHash)
+{
+    const int i = m_session->torrentIndexByInfoHash(infoHash);
+    if (i < 0) return;
+    m_fetchSnooze.insert(infoHash, qMax<qint64>(0, m_session->torrentAt(i).fetchingSecs) + 600);
+    m_needsSeen.remove(infoHash + QStringLiteral("/fetching"));
 }
 
 // What only the person can fix, said once per item and reason: a magnet that
@@ -179,10 +199,9 @@ void QmlSessionBridge::watchNeeds()
         if (hash.isEmpty()) continue;
         const TorrentInfo info = m_session->torrentAt(i);
         QString reason;
-        if (info.fetchingMetadata && info.fetchingSecs >= 600) reason = QStringLiteral("fetching");
+        if (info.fetchingMetadata && fetchingTooLong(hash, info.fetchingSecs)) reason = QStringLiteral("fetching");
         else if (info.filesMissing) reason = QStringLiteral("missing");
-        else if (info.hasError && (info.stateDetail.contains(QLatin1String("space"), Qt::CaseInsensitive)
-                                   || info.stateDetail.contains(QLatin1String("not enough"), Qt::CaseInsensitive)))
+        else if (info.hasError && info.diskFull)
             reason = QStringLiteral("nospace");
         if (reason.isEmpty()) continue;
         const QString key = hash + QLatin1Char('/') + reason;
@@ -193,21 +212,13 @@ void QmlSessionBridge::watchNeeds()
         QVariantMap n;
         n[QStringLiteral("infoHash")] = hash;
         n[QStringLiteral("reason")] = reason;
-        QString title = NameParser::parse(info.name).cleanTitle;
-        if (title.isEmpty()) title = info.name;
-        if (m_resolver && m_resolver->hasCached(hash)) {
-            const auto meta = m_resolver->cached(hash);
-            if (meta.valid) {
-                if (!meta.title.isEmpty()) title = meta.title;
-                if (QFileInfo::exists(meta.posterPath)) n[QStringLiteral("poster")] = QUrl::fromLocalFile(meta.posterPath).toString();
-            }
-        }
-        n[QStringLiteral("title")] = title;
+        QString poster;
+        n[QStringLiteral("title")] = shownTitle(hash, info.name, &poster);
+        if (!poster.isEmpty()) n[QStringLiteral("poster")] = poster;
         n[QStringLiteral("minutes")] = int(qMax<qint64>(0, info.fetchingSecs) / 60);
         if (reason == QLatin1String("nospace")) {
             const qint64 need = qMax<qint64>(0, info.totalSize - info.totalDone);
             n[QStringLiteral("need")] = formatSize(need);
-            n[QStringLiteral("here")] = QStorageInfo(info.savePath).rootPath();
             // the roomiest other disk that holds what is left
             QStorageInfo best;
             const QString here = rootOf(info.savePath);

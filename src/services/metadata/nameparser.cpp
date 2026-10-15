@@ -141,7 +141,7 @@ ParsedName NameParser::parse(const QString &rawName)
         if (pm.hasMatch() && pm.capturedStart() > 0) {
             const QString n = !pm.captured(1).isEmpty() ? pm.captured(1)
                             : !pm.captured(2).isEmpty() ? pm.captured(2) : pm.captured(3);
-            result.season = n.isEmpty() ? 1 : n.toInt();
+            result.season = n.isEmpty() ? -1 : n.toInt();   // "Complete Series": every season
             result.contentType = ContentType::Series;
             work.truncate(pm.capturedStart());
         }

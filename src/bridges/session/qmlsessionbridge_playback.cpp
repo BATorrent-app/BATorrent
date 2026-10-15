@@ -72,15 +72,12 @@ void QmlSessionBridge::streamSelected()
         if (QFile::exists(actual) && (prog >= 0.02f || done > 5*1024*1024)) {
             m_streamTimer->stop();
             if (guardRefuses(m_session->torrentHashAt(m_streamIndex), m_streamFileIdx)) return;
-            const bool opened = launchMediaPlayer(actual);
-            emit toast(tr_("ctx_stream"), opened ? tr_("stream_started").arg(cur.name)
-                                                 : tr_("stream_no_player"));
+            if (!launchMediaPlayer(actual)) emit toast(tr_("ctx_stream"), tr_("stream_no_player"));
         } else if (++m_streamTries > 300) {   // ~10 min with no buffer (dead torrent): give up
             m_streamTimer->stop();
         }
     });
     m_streamTimer->start();
-    emit toast(tr_("ctx_stream"), tr_("stream_started").arg(info.name));
 }
 
 int QmlSessionBridge::bestVideoFile(int row) const

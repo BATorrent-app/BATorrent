@@ -87,8 +87,11 @@ QtObject {
         return out
     }
 
-    readonly property double saveFree: (typeof session !== "undefined" && session.diskVolumes
-        && session.diskVolumes.length > 0) ? (session.diskVolumes[0].freeBytes || 0) : -1
+    // the save disk, read once here: its free space and its name
+    readonly property var saveVolume: (typeof session !== "undefined" && session.diskVolumes
+        && session.diskVolumes.length > 0) ? session.diskVolumes[0] : null
+    readonly property double saveFree: saveVolume ? (saveVolume.freeBytes || 0) : -1
+    readonly property string saveDiskName: saveVolume ? (saveVolume.name || "") : ""
     readonly property int wontFit: {
         if (saveFree < 0 || !sv || !sv.api) return 0
         var n = 0, res = sv.results

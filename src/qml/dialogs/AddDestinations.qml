@@ -22,7 +22,7 @@ ColumnLayout {
         Item { Layout.fillWidth: true }
         Text {
             visible: host.needBytes > 0
-            color: host.destFits ? Theme.t2 : Theme.amber
+            color: host.destFits ? Theme.t2 : Theme.warn
             font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
             text: {
                 i18n.language
@@ -48,7 +48,7 @@ ColumnLayout {
                 // picked: a filled chip with a soft ring, not a hard white outline
                 color: on ? Theme.selectedFill : (dMa.containsMouse ? Theme.hover : "transparent")
                 border.width: 1
-                border.color: on ? (ok ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.4) : Theme.amber) : Theme.hair
+                border.color: on ? (ok ? Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.4) : Theme.warn) : Theme.hair
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     x: 12
@@ -57,7 +57,7 @@ ColumnLayout {
                     Text {
                         id: dSub
                         visible: text !== ""
-                        color: !dchip.ok ? Theme.amber : (host.needBytes > 0 ? Theme.grn : Theme.t4)
+                        color: !dchip.ok ? Theme.warn : (host.needBytes > 0 ? Theme.grn : Theme.t4)
                         font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
                         text: {
                             i18n.language
@@ -92,8 +92,8 @@ ColumnLayout {
         visible: !host.destFits && host.needBytes > 0
         implicitHeight: warnCol.implicitHeight + 24
         radius: Theme.rad(9)
-        color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.08)
-        border.color: Qt.rgba(Theme.amber.r, Theme.amber.g, Theme.amber.b, 0.3); border.width: 1
+        color: Qt.rgba(Theme.warn.r, Theme.warn.g, Theme.warn.b, 0.08)
+        border.color: Qt.rgba(Theme.warn.r, Theme.warn.g, Theme.warn.b, 0.3); border.width: 1
         ColumnLayout {
             id: warnCol
             x: 12; y: 12
@@ -102,7 +102,7 @@ ColumnLayout {
             Text {
                 Layout.fillWidth: true
                 text: (i18n.language, i18n.t("addw_no_fit")).arg(host.destName(host.destPath))
-                color: Theme.amber; font.pixelSize: 13; font.family: Theme.fontSans
+                color: Theme.warn; font.pixelSize: 13; font.family: Theme.fontSans
                 wrapMode: Text.WordWrap
             }
             Flow {

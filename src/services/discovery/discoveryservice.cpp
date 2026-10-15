@@ -19,7 +19,6 @@
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
-#include <memory>
 #include <QNetworkRequest>
 #include <QPair>
 #include <QSet>
@@ -27,6 +26,8 @@
 #include <QStandardPaths>
 #include <QUrl>
 #include <QUrlQuery>
+
+#include <memory>
 
 using namespace DiscoveryKeys;
 

@@ -139,8 +139,6 @@ AppServices AppServices::create(QApplication &app)
         });
     }
     QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
-                     svc.notificationBridge, &QmlNotificationBridge::onRssAutoDownloaded);
-    QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
                      telegram, &TelegramNotifier::onRssAutoDownloaded);
     svc.settingsBridge->setTelegramNotifier(telegram);
 
@@ -197,9 +195,10 @@ AppServices AppServices::create(QApplication &app)
     QObject::connect(svc.sessionBridge, &QmlSessionBridge::queueMoved,
                      svc.posterModel, &QmlPosterModel::moveRow);
 
-    auto handleAdded = [resolver = svc.resolver, notificationBridge = svc.notificationBridge,
-                        eng = svc.eng](
-            int index, const QString &hash, const QString &name, qint64 totalSize,
+    // No notice here: what the person just added is already in the activity
+    // chip and in Downloads.
+    auto handleAdded = [resolver = svc.resolver, eng = svc.eng](
+            int index, const QString &hash, const QString &name, qint64 /*totalSize*/,
             const QStringList &fileNames, const QString &hintTitle, int hintType) {
         if (!hash.isEmpty()) {
             if (!hintTitle.isEmpty() && hintType >= 0)
@@ -207,8 +206,6 @@ AppServices AppServices::create(QApplication &app)
             else
                 resolver->resolve(hash, name, fileNames);
         }
-        notificationBridge->onTorrentAdded(
-            totalSize > 0 ? name + " · " + formatSize(totalSize) : name);
         if (AddonManager::instance().autoTrackersEnabled())
             for (const QString &tr : AddonManager::instance().trackerList())
                 eng->addTracker(index, tr);

@@ -44,7 +44,6 @@ void QmlSessionBridge::removeTorrentByHash(const QString &hash, bool deleteFiles
         if (m_session->torrentHashAt(i) != hash) continue;
         m_session->removeTorrent(i, deleteFiles, permanent);
         if (m_selectedIndex == i) { m_selectedIndex = -1; emit selectionChanged(); emit selectionListsChanged(); }
-        emit toast(permanent ? tr_("remove_deleted") : tr_("remove_trashed"), QString());
         return;
     }
 }

@@ -12,26 +12,27 @@ import QtQuick.Effects
 import QtQuick.Layouts
 import "../theme"
 import "../widgets"
+import "../widgets/ReleaseRules.js" as Rules
 
 Item {
     id: root
     property var pw
     // { hash, title, subtitle, art, release, season, episode, candidates: [{idx, quality, label, seeds}] }
-    readonly property var w: pw && pw.waiting ? pw.waiting : null
+    readonly property var wait: pw && pw.waiting ? pw.waiting : null
     // { meta, have, need, down, peers, seeds, elapsed, noSource } from session.waitState
-    readonly property var s: pw && pw.waitInfo ? pw.waitInfo : ({})
-    visible: !!w
+    readonly property var info: pw && pw.waitInfo ? pw.waitInfo : ({})
+    visible: !!wait
     property bool keepWaiting: false
-    onWChanged: keepWaiting = false
+    onWaitChanged: keepWaiting = false
 
-    readonly property bool noSource: s.noSource === true
-    readonly property bool meta: s.meta === true
-    readonly property real have: s.have || 0
-    readonly property real need: s.need || 0
-    readonly property real down: s.down || 0
-    readonly property int peers: s.peers || 0
-    readonly property int seeds: s.seeds || 0
-    readonly property int elapsed: s.elapsed || 0
+    readonly property bool noSource: info.noSource === true
+    readonly property bool meta: info.meta === true
+    readonly property real have: info.have || 0
+    readonly property real need: info.need || 0
+    readonly property real down: info.down || 0
+    readonly property int peers: info.peers || 0
+    readonly property int seeds: info.seeds || 0
+    readonly property int elapsed: info.elapsed || 0
     // 0 getting info, 1 finding peers, 2 buffering
     readonly property int stage: !meta ? 0 : (have <= 0 && down <= 0 ? 1 : 2)
     readonly property real eta: down > 0 ? Math.max(0, need - have) / down : Infinity
@@ -40,32 +41,33 @@ Item {
     readonly property bool warnState: noSource || slow || late
 
     // a healthier release of the same thing, from the list it came from
-    readonly property var alt: {
-        if (!w || !(slow || late) || keepWaiting) return null
-        var c = w.candidates || []
+    readonly property var betterRelease: {
+        if (!wait || !(slow || late) || keepWaiting) return null
+        var c = wait.candidates || []
         var best = null
         for (var i = 0; i < c.length; i++) {
             var r = c[i]
-            if (r.seeds < 30 || r.seeds <= seeds * 3) continue
-            var same = r.quality === w.quality
+            if (Rules.fewSeeds(r.seeds) || r.seeds <= seeds * 3) continue
+            var same = r.quality === wait.quality
             if (!best || (same && !best.same) || (same === best.same && r.seeds > best.seeds))
                 best = { idx: r.idx, label: r.label, seeds: r.seeds, same: same }
         }
         return best
     }
 
-    function mb(b) { return pw ? pw.fmtBytes(b) : "" }
+    function fmtSize(b) { return pw ? pw.fmtBytes(b) : "" }
     function clock(sec) { var m = Math.floor(sec / 60), x = sec % 60; return m + ":" + (x < 10 ? "0" : "") + x }
     function about(sec) {
         if (!isFinite(sec)) return ""
         return sec < 60 ? i18n.t("wait_about_s").arg(Math.max(1, Math.ceil(sec)))
                         : i18n.t("wait_about_min").arg(Math.max(1, Math.round(sec / 60)))
     }
-    function playAlt() {
-        if (!alt || typeof search === "undefined" || !search) return
-        if (typeof session !== "undefined") session.cancelWatch(w.hash)
-        if (w.episode > 0) search.addAndWatchEpisode(alt.idx, w.season, w.episode)
-        else search.addAndWatch(alt.idx)
+    function playBetter() {
+        var b = betterRelease
+        if (!b || typeof search === "undefined" || !search) return
+        if (typeof session !== "undefined") session.cancelWatch(wait.hash)
+        if (wait.episode > 0) search.addAndWatchEpisode(b.idx, wait.season, wait.episode)
+        else search.addAndWatch(b.idx)
     }
 
     // ---- the still, blurred and dimmed ----
@@ -73,7 +75,7 @@ Item {
     Image {
         id: art
         anchors.fill: parent
-        source: root.w ? (root.w.art || "") : ""
+        source: root.wait ? (root.wait.art || "") : ""
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         visible: false
@@ -100,7 +102,7 @@ Item {
     // ---- the middle: steps, what is left, why, what to do ----
     ColumnLayout {
         anchors.centerIn: parent
-        width: Math.min(parent.width - 80, 560)
+        width: Math.min(parent.width - 80, 760)
         spacing: 0
 
         Row {
@@ -157,9 +159,9 @@ Item {
             font.pixelSize: 22; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
             text: {
                 i18n.language
-                if (!root.w) return ""
+                if (!root.wait) return ""
                 if (root.noSource) return i18n.t("wait_t_nosource")
-                if (root.stage === 0) return i18n.t(root.w.episode > 0 ? "wait_t_info_ep" : "wait_t_info")
+                if (root.stage === 0) return i18n.t(root.wait.episode > 0 ? "wait_t_info_ep" : "wait_t_info")
                 if (root.stage === 1) return i18n.t("wait_t_peers")
                 if (root.slow) return i18n.t("wait_t_slow").arg(root.about(root.eta))
                 return isFinite(root.eta) ? i18n.t("wait_t_starting").arg(root.about(root.eta)) : i18n.t("wait_t_buffering")
@@ -169,19 +171,19 @@ Item {
             Layout.fillWidth: true
             Layout.topMargin: 10
             horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-            color: Qt.rgba(1, 1, 1, 0.85)
+            elide: Text.ElideRight
+            color: Theme.stageInk
             font.pixelSize: 14; font.family: Theme.fontSans; font.features: Theme.tnum
             text: {
                 i18n.language
-                if (!root.w) return ""
+                if (!root.wait) return ""
                 if (root.noSource) return i18n.t("wait_r_nosource").arg(root.elapsed)
                 if (root.stage === 0) return i18n.t("wait_r_info")
                 if (root.stage === 1) return root.peers > 0 ? i18n.t(root.peers === 1 ? "wait_r_peers_1" : "wait_r_peers").arg(root.peers)
                                                             : i18n.t("wait_r_nopeers")
-                if (root.slow && root.alt) return i18n.t("wait_r_slow_alt").arg(root.seeds).arg(root.alt.label).arg(root.alt.seeds)
-                if (root.slow) return i18n.t("wait_r_slow").arg(root.seeds).arg(root.mb(root.down) + "/s")
-                return i18n.t("wait_r_buffering").arg(root.mb(root.have)).arg(root.mb(root.need))
+                if (root.slow && root.betterRelease) return i18n.t("wait_r_slow_alt").arg(root.seeds).arg(root.betterRelease.label).arg(root.betterRelease.seeds)
+                if (root.slow) return i18n.t("wait_r_slow").arg(root.seeds).arg(root.fmtSize(root.down) + "/s")
+                return i18n.t("wait_r_buffering").arg(root.fmtSize(root.have)).arg(root.fmtSize(root.need))
             }
         }
 
@@ -190,9 +192,9 @@ Item {
             Layout.topMargin: 20
             spacing: 8
             // the no-source way out
-            WaitBtn {
+            LightBtn {
                 visible: root.noSource
-                light: true
+                stage: true; fontSize: 14
                 text: (i18n.language, i18n.t("wait_choose_other"))
                 onClicked: root.pw.cancelWait(false)
             }
@@ -202,20 +204,20 @@ Item {
                 onClicked: root.pw.cancelWait(true)
             }
             // slow: the healthier release, or keep going
-            WaitBtn {
-                visible: !root.noSource && !!root.alt
-                light: true
-                text: root.alt ? (i18n.language, i18n.t("wait_play_alt")).arg(root.alt.label) : ""
-                onClicked: root.playAlt()
+            LightBtn {
+                visible: !root.noSource && !!root.betterRelease
+                stage: true; fontSize: 14
+                text: root.betterRelease ? (i18n.language, i18n.t("wait_play_alt")).arg(root.betterRelease.label) : ""
+                onClicked: root.playBetter()
             }
             WaitBtn {
-                visible: !root.noSource && !!root.alt
+                visible: !root.noSource && !!root.betterRelease
                 text: (i18n.language, i18n.t("wait_keep"))
                 onClicked: root.keepWaiting = true
             }
             // early on: just the way back
             WaitBtn {
-                visible: !root.noSource && !root.alt && root.stage < 2
+                visible: !root.noSource && !root.betterRelease && root.stage < 2
                 text: (i18n.language, i18n.t("btn_cancel"))
                 onClicked: root.pw.cancelWait(false)
             }
@@ -264,13 +266,13 @@ Item {
                 height: parent.height; radius: 2
                 width: root.need > 0 && !root.noSource ? Math.max(height, parent.width * Math.min(1, root.have / root.need)) : 0
                 visible: root.stage === 2
-                color: root.slow ? Theme.warn : Theme.accent
+                color: root.slow ? Theme.warn : Theme.down
                 Behavior on width { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
             }
         }
         Text {
             anchors.left: parent.left; anchors.bottom: parent.bottom
-            text: root.stage === 2 && !root.noSource ? root.mb(root.have).replace(/ \S+$/, "") + " / " + root.mb(root.need)
+            text: root.stage === 2 && !root.noSource ? root.fmtSize(root.have).replace(/ \S+$/, "") + " / " + root.fmtSize(root.need)
                                                     : root.clock(root.elapsed)
             color: "#ffffff"; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans; font.features: Theme.tnum
         }
@@ -279,8 +281,9 @@ Item {
             spacing: 16
             Text {
                 visible: root.down > 0
-                text: "↓ " + root.mb(root.down) + "/s"
-                color: root.slow ? Theme.warn : "#ffffff"
+                textFormat: Text.StyledText
+                text: "<font color='" + (root.slow ? Theme.warn : Theme.down) + "'>↓</font> " + root.fmtSize(root.down) + "/s"
+                color: root.slow ? Theme.warn : Theme.stageT1
                 font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
             }
             Text {
@@ -291,25 +294,24 @@ Item {
             }
             Text {
                 visible: text.length > 0
-                text: root.w ? (root.w.release || "") : ""
+                text: root.wait ? (root.wait.release || "") : ""
                 color: Qt.rgba(1, 1, 1, 0.6)
                 font.pixelSize: 13; font.family: Theme.fontSans; font.features: Theme.tnum
             }
         }
     }
 
+    // the secondary next to the light primary: outlined, on the dark still
     component WaitBtn: Rectangle {
         id: b
         property string text
-        property bool light: false
         signal clicked()
         width: bTxt.implicitWidth + 28; height: 34
         radius: Theme.rad(6)
-        color: light ? (bMa.containsMouse ? "#ffffff" : Qt.rgba(1, 1, 1, 0.92))
-                     : (bMa.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.25))
-        border.width: light ? 0 : 1
-        border.color: Qt.rgba(1, 1, 1, 0.35)
-        Text { id: bTxt; anchors.centerIn: parent; text: b.text; color: b.light ? "#0e0e10" : "#ffffff"; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
+        color: bMa.containsMouse ? Theme.stageHover : Qt.rgba(0, 0, 0, 0.25)
+        border.width: 1
+        border.color: Theme.stageEdge
+        Text { id: bTxt; anchors.centerIn: parent; text: b.text; color: Theme.stageT1; font.pixelSize: 14; font.weight: Font.DemiBold; font.family: Theme.fontSans }
         MouseArea { id: bMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: b.clicked() }
     }
 }

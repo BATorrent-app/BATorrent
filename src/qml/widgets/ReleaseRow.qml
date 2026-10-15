@@ -34,8 +34,7 @@ Rectangle {
     implicitHeight: 56
     radius: Theme.rad(8)
     color: ma.containsMouse ? Theme.stageHover : "transparent"
-    border.width: row.recommended ? 1.5 : 0
-    border.color: Theme.stageT2
+    // Recommended is said once, in grey after the name: no ring as well
 
     MouseArea {
         id: ma

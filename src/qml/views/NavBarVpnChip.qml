@@ -12,6 +12,9 @@ import "../widgets"
 Rectangle {
     id: root
     required property var bar
+    // the tunnel was up and went down (the window keeps it, the band shows it);
+    // a connect that never worked is "Failed"
+    readonly property bool dropped: !!bar.appWindow && bar.appWindow.vpnDropped
 
     visible: typeof vpn !== "undefined"
     Layout.alignment: Qt.AlignVCenter
@@ -59,7 +62,7 @@ Rectangle {
             visible: !root.bar.tightChip
             text: (i18n.language, root.st === 2 ? i18n.t("vpn_state_on")
                  : root.st === 1 ? i18n.t("vpn_state_connecting")
-                 : root.st === 3 ? i18n.t("vpn_state_dropped")
+                 : root.st === 3 ? i18n.t(root.dropped ? "vpn_state_dropped" : "vpn_state_failed")
                  : i18n.t("vpn_state_off"))
             color: root.stColor
             font.pixelSize: 12; font.family: Theme.fontSans
@@ -75,9 +78,9 @@ Rectangle {
     }
     ToolTip.visible: vpnMa.containsMouse
     ToolTip.delay: 400
-    ToolTip.text: (i18n.language, "VPN — " +
+    ToolTip.text: (i18n.language, "VPN · " +
         (root.st === 2 ? i18n.t("vpn_state_on")
          : root.st === 1 ? i18n.t("vpn_state_connecting")
-         : root.st === 3 ? i18n.t("vpn_state_dropped")
+         : root.st === 3 ? i18n.t(root.dropped ? "vpn_state_dropped" : "vpn_state_failed")
          : i18n.t("vpn_state_off")))
 }

@@ -202,6 +202,10 @@ Item {
         function onUpdateFound(version, url, assetName) {
             if (!updater.silentCheck()) { updateDlg.showAvailable(version, url, assetName); return }
             updateDlg.prepare(version, url, assetName)
+            if (typeof settings !== "undefined") {
+                if (settings.get("updateNoticeFor") === version) return
+                settings.set("updateNoticeFor", version)
+            }
             host.toastHost.push({ tone: "ready", category: "version", title: i18n.t("notif_version").arg(version),
                                   actions: [{ id: "update", label: i18n.t("notif_see_update") }] })
         }
