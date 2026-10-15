@@ -38,7 +38,7 @@ Item {
     Component.onDestruction: DialogStack.pop(dlg)
 
     signal chooseFilesRequested(string infoHash)
-    signal freeSpaceRequested(double targetBytes)
+    signal freeSpaceRequested(double targetBytes, string name, string path)
     signal showInLibraryRequested(string infoHash)
 
     function open() { opened = true }
@@ -976,8 +976,10 @@ Item {
                                         text: (i18n.language, i18n.t("search_wontfit_freeup"))
                                         onClicked: {
                                             var need = Math.max(0, dlg.needBytes - Math.max(0, dlg.freeAt(dlg.destPath)))
+                                            var what = dlg.single ? items.get(0).name : i18n.t("addw_sum_items").arg(dlg.addCount)
+                                            var where = dlg.destPath
                                             dlg.reject()
-                                            dlg.freeSpaceRequested(need)
+                                            dlg.freeSpaceRequested(need, what, where)
                                         }
                                     }
                                 }

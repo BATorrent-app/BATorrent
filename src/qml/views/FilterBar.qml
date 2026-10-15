@@ -399,9 +399,8 @@ Rectangle {
                             // Never narrower than the control it drops from: a
                             // menu that is wider on one side and shorter on the
                             // other does not read as belonging to it.
-                            implicitWidth: Math.max(230, parent.width)
-                            topPadding: 6
-                            bottomPadding: 6
+                            implicitWidth: Math.max(260, parent.width)
+                            padding: 6
                             // Pressing the trigger must reach onClicked and
                             // toggle; the default also closes on a press over
                             // the parent, so the menu shut and reopened in one
@@ -424,7 +423,7 @@ Rectangle {
                             // are the same answer.
                             property var counts: ({})
                             function countOf(c) { return counts[c] === undefined ? 0 : counts[c] }
-                            background: Rectangle { color: Theme.panel; border.color: Theme.hair; border.width: 1; radius: Theme.rad(8) }
+                            background: Rectangle { color: Theme.elev; border.color: Theme.hair; border.width: 1; radius: Theme.rad(9) }
                             // The four built-ins are static; user-created ones are
                             // appended on open: the same rule the right-click menu
                             // follows. This list was hardcoded too, so a category
@@ -440,11 +439,12 @@ Rectangle {
                                 current: controller.catFilter === ""
                                 onTriggered: controller.applyCatFilter("")
                             }
-                            MenuSeparator { contentItem: Rectangle { implicitHeight: 1; color: Theme.hairSoft } }
-                            CatItem { text: win.catLabel("Apps");   count: catFilterMenu.countOf("Apps");   current: controller.catFilter === "Apps";   onTriggered: controller.applyCatFilter("Apps") }
+                            MenuSeparator { topPadding: 5; bottomPadding: 5; contentItem: Rectangle { implicitHeight: 1; color: Theme.hair } }
+                            // a fixed order; the empty ones stay out (CatItem)
                             CatItem { text: win.catLabel("Games");  count: catFilterMenu.countOf("Games");  current: controller.catFilter === "Games";  onTriggered: controller.applyCatFilter("Games") }
-                            CatItem { text: win.catLabel("Movies"); count: catFilterMenu.countOf("Movies"); current: controller.catFilter === "Movies"; onTriggered: controller.applyCatFilter("Movies") }
                             CatItem { text: win.catLabel("Series"); count: catFilterMenu.countOf("Series"); current: controller.catFilter === "Series"; onTriggered: controller.applyCatFilter("Series") }
+                            CatItem { text: win.catLabel("Movies"); count: catFilterMenu.countOf("Movies"); current: controller.catFilter === "Movies"; onTriggered: controller.applyCatFilter("Movies") }
+                            CatItem { text: win.catLabel("Apps");   count: catFilterMenu.countOf("Apps");   current: controller.catFilter === "Apps";   onTriggered: controller.applyCatFilter("Apps") }
                             CatItem { text: win.catLabel("Compressed"); count: catFilterMenu.countOf("Compressed"); current: controller.catFilter === "Compressed"; onTriggered: controller.applyCatFilter("Compressed") }
                             Instantiator {
                                 id: catFilterCustoms

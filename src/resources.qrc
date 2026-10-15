@@ -308,6 +308,7 @@
 <file>../src/qml/widgets/ThemeArt.qml</file>
 <file>../src/qml/widgets/IconImg.qml</file>
 <file>../src/qml/widgets/CatItem.qml</file>
+<file>../src/qml/widgets/WindowTitleBar.qml</file>
 <file>../src/qml/widgets/BtnFlat.qml</file>
 <file>../src/qml/widgets/TFld.qml</file>
 <file>../src/qml/widgets/TArea.qml</file>

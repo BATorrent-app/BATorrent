@@ -130,6 +130,10 @@ public:
     // unsorted: the Make Room panel sorts client-side (by size or by age),
     // same pattern as Search's result list.
     Q_INVOKABLE QVariantList makeRoomList() const;
+    // Free up space: {disk, freeBytes, rows} for the volume holding `path`
+    // (the default save folder when empty), every item on it with its reasons.
+    Q_INVOKABLE QVariantMap freeUpSpace(const QString &path) const;
+    Q_INVOKABLE void removeTorrentsByHash(const QStringList &hashes, bool deleteFiles);
     // Delete-by-hash so Make Room doesn't have to fight over m_selectedRows:
     // resolves the hash to its current engine index, then removeTorrent().
     Q_INVOKABLE void removeTorrentByHash(const QString &hash, bool deleteFiles, bool permanent);
@@ -629,6 +633,9 @@ private:
     QTimer m_sampleTimer;
     QVector<int> m_downloadHistory;
     QVector<int> m_uploadHistory;
+    QHash<QString, qint64> m_pausedSince;   // hash -> unix secs it stopped (Free up space)
+    bool m_stillLoaded = false;
+    void trackStillSince();
     QHash<QString, QVector<int>> m_torrentDownHist;   // per-torrent rate rings (by hash)
     QHash<QString, QVector<int>> m_torrentUpHist;
 

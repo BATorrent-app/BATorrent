@@ -24,6 +24,8 @@ Item {
 
     function showWin(loader) {
         loader.active = true
+        // a window with its own title bar takes the system frame off first
+        if (loader.item && loader.item.prepareFrame !== undefined && !loader.item.visible) loader.item.prepareFrame()
         if (loader.item) { loader.item.show(); loader.item.raise(); loader.item.requestActivate() }
     }
 

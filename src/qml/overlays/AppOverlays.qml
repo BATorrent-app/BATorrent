@@ -84,7 +84,12 @@ Item {
     // ================== OVERLAY DIALOGS (in-app, backdrop covers all) ==================
     AddDownloadDialog {
         id: addDlg
-        onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open = true }
+        onFreeSpaceRequested: function (bytes, name, path) {
+            makeRoomPanel.targetBytes = bytes
+            makeRoomPanel.targetName = name
+            makeRoomPanel.targetPath = path
+            makeRoomPanel.open = true
+        }
         onShowInLibraryRequested: function (hash) {
             if (typeof session === "undefined") return
             root.host.currentPage = 0
@@ -137,20 +142,7 @@ Item {
     }
     RefreshFlash { id: refreshFlash }
 
-    MakeRoomPanel {
-        id: makeRoomPanel
-        onDeleteRequested: function (infoHash) {
-            if (typeof session === "undefined") return
-            if (session.selectByInfoHash(infoHash)) removeDlg.open()
-        }
-        // the row list is a snapshot (Q_INVOKABLE, not a bound property): refresh
-        // it after a delete goes through so the panel doesn't show a stale entry
-        Connections {
-            target: typeof session !== "undefined" ? session : null
-            ignoreUnknownSignals: true
-            function onStatsChanged() { if (makeRoomPanel.open) makeRoomPanel.reload() }
-        }
-    }
+    MakeRoomPanel { id: makeRoomPanel }
     InputPromptDialog   { id: inputPrompt }
     UpdateDialog        { id: updateDlg }
 

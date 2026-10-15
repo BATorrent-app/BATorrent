@@ -59,6 +59,8 @@ void QmlSessionBridge::sampleSpeeds()
         else ++it;
     }
 
+    trackStillSince();
+
     m_downloadHistory.append(dl);
     m_uploadHistory.append(ul);
     while (m_downloadHistory.size() > HistoryMaxPoints) m_downloadHistory.removeFirst();

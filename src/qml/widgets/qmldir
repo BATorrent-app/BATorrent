@@ -62,3 +62,4 @@ CardActions 1.0 CardActions.qml
 TitleTile 1.0 TitleTile.qml
 TitleBanner 1.0 TitleBanner.qml
 ThemeArt 1.0 ThemeArt.qml
+WindowTitleBar 1.0 WindowTitleBar.qml

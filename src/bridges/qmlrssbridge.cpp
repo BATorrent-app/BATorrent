@@ -6,8 +6,42 @@
 
 #include "services/integrations/rssmanager.h"
 #include "services/platform/utils.h"
+#include "torrent/iengine.h"
 
+#include <libtorrent/magnet_uri.hpp>
+#include <QDateTime>
+#include <QRegularExpression>
+#include <QSettings>
 #include <QUrl>
+#include <sstream>
+
+namespace {
+QString seenKey(const QString &url) { return QStringLiteral("rssSeen/") + QString::fromLatin1(url.toUtf8().toBase64(QByteArray::Base64UrlEncoding)); }
+QString squash(const QString &s)
+{
+    QString out;
+    for (const QChar c : s) if (c.isLetterOrNumber()) out += c.toLower();
+    return out;
+}
+// the library row this feed item became, by hash for a magnet, else by name
+int libraryIndex(IEngine *eng, const QString &link, const QString &title)
+{
+    if (!eng) return -1;
+    if (link.startsWith(QLatin1String("magnet:"))) {
+        try {
+            const auto atp = lt::parse_magnet_uri(link.toStdString());
+            const QString h = QString::fromStdString((std::ostringstream() << atp.info_hashes.get_best()).str());
+            const int i = eng->torrentIndexByInfoHash(h);
+            if (i >= 0) return i;
+        } catch (const std::exception &) {}
+    }
+    const QString key = squash(title);
+    if (key.isEmpty()) return -1;
+    for (int i = 0; i < eng->torrentCount(); ++i)
+        if (squash(eng->torrentAt(i).name) == key) return i;
+    return -1;
+}
+}
 
 QmlRssBridge::QmlRssBridge(QObject *parent) : QObject(parent)
 {
@@ -36,7 +70,15 @@ QVariantList QmlRssBridge::feeds() const
         m["checkInterval"] = f.checkIntervalMin;
         m["lastChecked"] = f.lastChecked.isValid()
             ? f.lastChecked.toString("yyyy-MM-dd hh:mm") : QString();
-        m["count"] = RssManager::instance().itemsForFeed(i).size();
+        m["lastCheckedSecs"] = f.lastChecked.isValid() ? f.lastChecked.toSecsSinceEpoch() : 0;
+        const auto items = RssManager::instance().itemsForFeed(i);
+        m["count"] = items.size();
+        // new: published since the feed was last opened here
+        const qint64 seen = QSettings().value(seenKey(f.url), 0).toLongLong();
+        int fresh = 0;
+        for (const RssItem &it : items)
+            if (it.pubDate.isValid() && it.pubDate.toSecsSinceEpoch() > seen) ++fresh;
+        m["newCount"] = seen > 0 ? fresh : 0;
         out << m;
     }
     return out;
@@ -45,17 +87,47 @@ QVariantList QmlRssBridge::feeds() const
 QVariantList QmlRssBridge::itemsForFeed(int feedIndex) const
 {
     QVariantList out;
-    const auto items = RssManager::instance().itemsForFeed(feedIndex);
+    auto &rss = RssManager::instance();
+    const auto items = rss.itemsForFeed(feedIndex);
+    const auto feeds = rss.feeds();
+    const RssFeed feed = feedIndex >= 0 && feedIndex < feeds.size() ? feeds[feedIndex] : RssFeed();
+    const QRegularExpression re(feed.filterPattern, QRegularExpression::CaseInsensitiveOption);
+    const bool filtering = !feed.filterPattern.isEmpty() && re.isValid();
     for (const RssItem &it : items) {
         QVariantMap m;
         m["title"] = it.title;
         m["link"] = it.link;
         m["size"] = it.size > 0 ? formatSize(it.size) : QString();
         m["date"] = it.pubDate.isValid() ? it.pubDate.toString("yyyy-MM-dd hh:mm") : QString();
+        m["pubSecs"] = it.pubDate.isValid() ? it.pubDate.toSecsSinceEpoch() : 0;
         m["downloaded"] = it.downloaded;
+        // what happened to it: downloading, downloaded, or why it was left
+        QString state;
+        if (it.downloaded) {
+            const int i = libraryIndex(rss.session(), it.link, it.title);
+            if (i >= 0) {
+                const TorrentInfo info = rss.session()->torrentAt(i);
+                state = info.completed || info.finished ? QStringLiteral("done") : QStringLiteral("downloading");
+            } else {
+                state = QStringLiteral("done");
+            }
+        } else if (feed.autoDownload && filtering && !re.match(it.title).hasMatch()) {
+            state = QStringLiteral("ignored");
+        }
+        m["state"] = state;
         out << m;
     }
     return out;
+}
+
+void QmlRssBridge::markFeedSeen(int index)
+{
+    const auto feeds = RssManager::instance().feeds();
+    if (index < 0 || index >= feeds.size()) return;
+    const QString key = seenKey(feeds[index].url);
+    const bool first = !QSettings().contains(key);
+    QSettings().setValue(key, QDateTime::currentSecsSinceEpoch());
+    if (!first) emit feedsChanged();
 }
 
 void QmlRssBridge::addFeed(const QString &url)

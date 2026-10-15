@@ -23,6 +23,8 @@ public:
     Q_INVOKABLE void checkAllFeeds();
     Q_INVOKABLE void checkFeed(int index);
     Q_INVOKABLE void downloadItem(int feedIndex, int itemIndex);
+    // the feed was looked at: its items stop counting as new
+    Q_INVOKABLE void markFeedSeen(int index);
     Q_INVOKABLE void updateFeedSettings(int index, const QString &filterPattern,
                                         const QString &savePath, int checkInterval,
                                         bool enabled, bool autoDownload);

@@ -40,6 +40,8 @@ public:
     static RssManager &instance();
 
     void setSession(IEngine *session, const QString &savePath);
+    IEngine *session() const { return m_session; }
+    QString defaultSavePath() const { return m_defaultSavePath; }
 
     // Feed management
     void addFeed(const QString &url);

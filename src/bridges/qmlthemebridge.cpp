@@ -186,6 +186,12 @@ void QmlThemeBridge::applyTitleBar(QWindow *w, bool dark)
     const BOOL on = dark ? TRUE : FALSE;
     DwmSetWindowAttribute(reinterpret_cast<HWND>(w->winId()),
                           DWMWA_USE_IMMERSIVE_DARK_MODE, &on, sizeof(on));
+    // A neutral edge: with "accent colour on title bars and borders" on,
+    // Windows 11 would draw the user's accent round a window whose title bar
+    // is our own. Older Windows ignores the attribute.
+    constexpr DWORD kBorderColor = 34;   // DWMWA_BORDER_COLOR
+    const COLORREF edge = dark ? RGB(43, 43, 46) : RGB(200, 200, 204);
+    DwmSetWindowAttribute(reinterpret_cast<HWND>(w->winId()), kBorderColor, &edge, sizeof(edge));
 #else
     Q_UNUSED(w); Q_UNUSED(dark);
 #endif
