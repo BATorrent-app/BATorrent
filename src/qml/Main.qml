@@ -78,7 +78,15 @@ Window {
     readonly property string navLocation: {
         var names = [i18n.t("nav_downloads"), i18n.t("nav_find"), i18n.t("nav_hub"), i18n.t("tb_settings")]
         var base = (i18n.language, names[currentPage] || "BATorrent"), sub = ""
-        if (currentPage === 1 && searchPage.api) {
+        if (currentPage === 0) {
+            // the library is the app itself: just its name until something is picked
+            var rows = library.selectedRows || []
+            if (library.keyedRows && rows.length === 1 && library.rowModel.isGroup(rows[0]))
+                sub = library.rowModel.groupSummary(rows[0]).title || ""
+            else if (win.hasSel)
+                sub = session.selectedMetaTitle.length > 0 ? session.selectedMetaTitle : session.selectedName
+            if (sub.length === 0) return "BATorrent"
+        } else if (currentPage === 1 && searchPage.api) {
             var api = searchPage.api
             if ((api.singleTitleView || api.inStreams) && api.workTitle) sub = api.workTitle
             else if (api.activeQuery) sub = api.activeQuery
@@ -98,19 +106,61 @@ Window {
     property var pageBack: []
     property var pageForward: []
     property bool historyStep: false
+    // A step of history is a page plus what was open in it (a game, a title,
+    // the catalog): back closes what is open before it leaves the page, and
+    // forward opens it again. These replace the Back buttons inside pages.
+    function pageView(p) { return p === 1 ? searchPage : p === 2 ? hubPage : null }
+    function subOf(p) { var v = pageView(p); return v ? v.subView() : null }
+    function hereState() {
+        var s = subOf(currentPage)
+        return { page: currentPage, sub: (s && s.restorable !== false) ? s : null }
+    }
+    function gotoState(st) {
+        var page = typeof st === "number" ? st : st.page
+        historyStep = true
+        currentPage = page
+        if (typeof st !== "number" && st.sub) { var v = pageView(page); if (v) v.restoreSub(st.sub) }
+        historyStep = false
+    }
+    // Opening something new inside a page (another game, another title) drops
+    // what was ahead, as a browser does; the arrows' own reopening does not.
+    function subOpened(open) { if (open && !historyStep) pageForward = [] }
+    Connections {
+        target: hubPage
+        function onGameOpenChanged() { win.subOpened(hubPage.gameOpen) }
+    }
+    Connections {
+        target: searchPage
+        function onLastTitleChanged() { win.subOpened(true) }
+        function onShowRowGridChanged() { win.subOpened(searchPage.showRowGrid) }
+        function onShowCatalogBrowseChanged() { win.subOpened(searchPage.showCatalogBrowse) }
+        function onShowAdvancedChanged() { win.subOpened(searchPage.showAdvanced) }
+    }
+    readonly property bool canGoBack: pageBack.length > 0 || subOf(currentPage) !== null
     function goBack() {
+        var v = pageView(currentPage), s = subOf(currentPage)
+        if (s && !(v.subFromElsewhere && pageBack.length > 0)) {
+            // close what is open and stay on the page
+            if (s.restorable !== false) pageForward = pageForward.concat([{ page: currentPage, sub: s }])
+            historyStep = true; v.closeSub(true); historyStep = false
+            return
+        }
         if (pageBack.length === 0) return
         var b = pageBack.slice(), to = b.pop()
-        pageForward = pageForward.concat([currentPage])
+        pageForward = pageForward.concat([hereState()])
         pageBack = b
-        historyStep = true; currentPage = to; historyStep = false
+        if (s) { historyStep = true; v.closeSub(true); historyStep = false }
+        gotoState(to)
     }
     function goForward() {
         if (pageForward.length === 0) return
         var f = pageForward.slice(), to = f.pop()
-        pageBack = pageBack.concat([currentPage])
+        var here = hereState()
+        // forward into a view on this same page is a step within it
+        var samePage = to.page === currentPage
+        pageBack = samePage ? pageBack : pageBack.concat([here])
         pageForward = f
-        historyStep = true; currentPage = to; historyStep = false
+        gotoState(to)
     }
     // the contextual continue/download chip in the top bar (some users find it
     // redundant on the Downloads page)
@@ -651,7 +701,7 @@ Window {
             showDownloadChip: win.showDownloadChip && windowLoaders.playersOpen === 0
             menuOpen: logoMenu.opened
             location: win.navLocation
-            canBack: win.pageBack.length > 0
+            canBack: win.canGoBack
             canForward: win.pageForward.length > 0
             onBackRequested: win.goBack()
             onForwardRequested: win.goForward()

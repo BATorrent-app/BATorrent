@@ -23,7 +23,7 @@ Rectangle {
         anchors.rightMargin: 20
         spacing: Theme.sp2
         BtnFlat {
-            visible: root.sv.api && root.sv.api.canGoBack
+            visible: root.sv.api && root.sv.api.canGoBack && !Theme.titleStripNav
             primary: true
             text: (i18n.language, i18n.t("search_back2"))
             // From the full table, back is the title's own page, not the grid.

@@ -50,6 +50,7 @@ Item {
         size: 34
         icon: "qrc:/icons/chevron-bold.svg"
         rotation: 180
+        visible: !Theme.titleStripNav
         onClicked: hero.backRequested()
     }
 

@@ -31,9 +31,10 @@ Item {
         Rectangle {
             id: backBtn
             anchors.left: parent.left
-            anchors.leftMargin: Theme.sp5
+            anchors.leftMargin: Theme.titleStripNav ? Theme.sp5 - 12 : Theme.sp5
             anchors.verticalCenter: parent.verticalCenter
-            width: 30; height: 30; radius: Theme.rad(8)
+            visible: !Theme.titleStripNav    // the title strip's back does this
+            width: visible ? 30 : 0; height: 30; radius: Theme.rad(8)
             color: backMa.containsMouse ? Theme.hover : "transparent"
             IconImg {
                 anchors.centerIn: parent

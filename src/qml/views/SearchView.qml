@@ -266,8 +266,42 @@ Rectangle {
     signal backTo(int page)
     // { tmdbId, season, episode } a show opens on (the HUB sends where you are in it).
     property var pendingEpisode: null
+    // The views opened inside Find, for the title strip's back/forward:
+    // what is open (null when nothing is), how to close it, how to reopen it.
+    // A title reached by clicking a search result cannot be reopened from
+    // here, so it reports restorable: false and forward stays off.
+    property var lastTitle: null
+    function subView() {
+        if (showAdvanced && titlePicked) return { kind: "advanced" }
+        if (api && api.canGoBack) {
+            var t = lastTitle
+            return (t && api.workTitle === (t.title || "")) ? { kind: "title", item: t }
+                                                              : { kind: "title", restorable: false }
+        }
+        if (browse && showRowGrid) return { kind: "rowgrid", label: rowGridLabel, items: rowGridItems }
+        if (browse && showCatalogBrowse) return { kind: "catalog", group: groupFilter }
+        return null
+    }
+    // opened from another page: back returns there, as the old Back did
+    readonly property bool subFromElsewhere: returnPage >= 0
+    function closeSub(silent) {
+        var v = subView()
+        if (!v) return
+        if (v.kind === "advanced") showAdvanced = false
+        else if (v.kind === "title") { if (silent) returnPage = -1; leaveTitle() }
+        else if (v.kind === "rowgrid") closeRowGrid()
+        else if (v.kind === "catalog") closeCatalogBrowse()
+    }
+    function restoreSub(v) {
+        if (!v) return
+        if (v.kind === "advanced") showAdvanced = true
+        else if (v.kind === "title" && v.item) openTitle(v.item)
+        else if (v.kind === "rowgrid") openRowGrid(v.label, v.items)
+        else if (v.kind === "catalog") openCatalogBrowse(v.group)
+    }
     function openTitle(item, fromPage) {
         if (!api || !item) return
+        lastTitle = item
         pendingEpisode = (item.season >= 0 && item.episode > 0)
             ? { tmdbId: item.tmdbId || 0, season: item.season, episode: item.episode } : null
         findBar.setText(item.title || "")

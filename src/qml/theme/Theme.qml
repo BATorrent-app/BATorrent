@@ -292,6 +292,10 @@ QtObject {
     readonly property string logoSource: isLight ? "qrc:/images/logo-light.svg" : "qrc:/images/logo.svg"
 
     // ---------- window chrome ----------
+    // The window draws its own title strip, with back/forward: the Back
+    // buttons inside pages step aside then (they stay where the system draws
+    // the title bar, macOS and Linux, which has no arrows).
+    readonly property bool titleStripNav: typeof framelessWindow !== "undefined" && framelessWindow === true
     // macOS: secondary windows merge the native titlebar into their own header
     // band (ExpandedClientAreaHint + NoTitleBarBackgroundHint) so the title
     // isn't drawn twice. Off elsewhere until tested per-platform.

@@ -123,6 +123,15 @@ Item {
         gameOpen = false
         if (gameReturnPage >= 0) { var p = gameReturnPage; gameReturnPage = -1; returnTo(p) }
     }
+    // for the title strip's back/forward (see SearchView.subView)
+    function subView() { return gameOpen ? { kind: "game", hash: gameHash } : null }
+    readonly property bool subFromElsewhere: gameReturnPage >= 0
+    function closeSub(silent) {
+        if (!gameOpen) return
+        if (silent) gameReturnPage = -1
+        closeGame()
+    }
+    function restoreSub(v) { if (v && v.kind === "game") openGame(v.hash, -1) }
 
     property var detailItem: null
     property bool detailOpen: false

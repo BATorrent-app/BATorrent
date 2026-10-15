@@ -77,6 +77,7 @@ Item {
                 anchors.rightMargin: Theme.sp5
                 spacing: Theme.sp3
                 BtnFlat {
+                    visible: !Theme.titleStripNav
                     text: (i18n.language, i18n.t("search_back2"))
                     onClicked: browse.backRequested()
                 }
