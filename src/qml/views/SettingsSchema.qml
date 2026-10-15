@@ -61,8 +61,8 @@ QtObject {
         // 0 Geral
         [
             { type: "group", label: (i18n.language, i18n.t("set_grp_appearance")) },
+            { type: "theme", label: (i18n.language, i18n.t("set_theme2")), note: (i18n.language, i18n.t("set_theme_note")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", "Matrix", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
             { type: "select", isLang: true, label: (i18n.language, i18n.t("set_language2")), options: root.languageNames, icons: root.languageFlags, value: 0 },
-            { type: "theme", label: (i18n.language, i18n.t("set_theme2")), options: [(i18n.language, i18n.t("set_theme_dark")), (i18n.language, i18n.t("set_theme_light")), "Midnight", "Sakura", "Dark Star", "Matrix", (i18n.language, i18n.t("set_theme_custom"))], value: 0 },
             { type: "toggle", key: "followSystem", label: (i18n.language, i18n.t("set_follow_system")), note: (i18n.language, i18n.t("set_follow_system_note")) },
             { type: "appicon", label: (i18n.language, i18n.t("set_app_icon")), note: (i18n.language, i18n.t("set_app_icon_note")) },
             { type: "anime", label: (i18n.language, i18n.t("set_anime2")) },

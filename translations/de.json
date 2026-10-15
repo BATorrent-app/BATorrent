@@ -1605,5 +1605,6 @@
   "kind_program": "Programm",
   "group_overlap": "%1 sind auch im Staffelpaket: dieselben Dateien doppelt auf der Platte.",
   "player_resumed_at": "Weiter ab %1",
-  "player_from_start": "Von vorn"
+  "player_from_start": "Von vorn",
+  "set_theme_note": "Jedes Theme behält Layout und Kontrast bei. Nur die Farben ändern sich."
 }

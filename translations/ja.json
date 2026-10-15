@@ -1605,5 +1605,6 @@
   "kind_program": "プログラム",
   "group_overlap": "%1 はシーズンパックにも含まれています：同じファイルがディスクに二重にあります。",
   "player_resumed_at": "%1 から再開",
-  "player_from_start": "最初から"
+  "player_from_start": "最初から",
+  "set_theme_note": "どのテーマもレイアウトとコントラストは同じで、色だけが変わります。"
 }

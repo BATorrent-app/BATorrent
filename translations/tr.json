@@ -1605,5 +1605,6 @@
   "kind_program": "Program",
   "group_overlap": "%1 sezon paketinde de var: aynı dosyalar diskte iki kez.",
   "player_resumed_at": "%1 noktasından devam",
-  "player_from_start": "Baştan"
+  "player_from_start": "Baştan",
+  "set_theme_note": "Her tema aynı düzeni ve kontrastı korur. Yalnızca renkler değişir."
 }

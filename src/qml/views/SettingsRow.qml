@@ -105,7 +105,6 @@ ColumnLayout {
                 case "password": return fieldCtrls.text
                 case "select": return fieldCtrls.select
                 case "segmented": return fieldCtrls.segmented
-                case "theme": return themeCtrls.theme
                 case "appicon": return themeCtrls.appicon
                 case "debrid": return fieldCtrls.debrid
                 case "debridtoken": return fieldCtrls.debridtoken
@@ -119,6 +118,18 @@ ColumnLayout {
                 return null
             }
         }
+    }
+
+    // the theme picker sits under its label, across the row
+    Loader {
+        visible: field.type === "theme"
+        active: field.type === "theme"
+        Layout.fillWidth: true
+        Layout.topMargin: -2
+        Layout.bottomMargin: Theme.sp5
+        Layout.leftMargin: 3
+        Layout.rightMargin: 3
+        sourceComponent: field.type === "theme" ? themeCtrls.theme : null
     }
 
     RowLayout {

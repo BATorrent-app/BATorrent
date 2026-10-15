@@ -1605,5 +1605,6 @@
   "kind_program": "Programa",
   "group_overlap": "%1 también están en el pack de la temporada: los mismos archivos dos veces en el disco.",
   "player_resumed_at": "Continuando desde %1",
-  "player_from_start": "Desde el principio"
+  "player_from_start": "Desde el principio",
+  "set_theme_note": "Todos los temas mantienen el mismo diseño y contraste. Solo cambian los colores."
 }

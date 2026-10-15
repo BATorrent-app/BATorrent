@@ -1605,5 +1605,6 @@
   "kind_program": "程序",
   "group_overlap": "%1 也包含在整季包中：同样的文件在磁盘上存了两次。",
   "player_resumed_at": "从 %1 继续",
-  "player_from_start": "从头开始"
+  "player_from_start": "从头开始",
+  "set_theme_note": "所有主题的布局和对比度都相同，只有颜色不同。"
 }
