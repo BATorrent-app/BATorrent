@@ -64,6 +64,31 @@ Window {
         clearFilterFocus()
         if (currentPage !== 1) searchPage.returnPage = -1
         if (currentPage !== 2) hubPage.gameReturnPage = -1
+        // the pages visited, for back/forward in the title strip: a page
+        // reached by hand drops whatever was ahead, as in a browser
+        if (!win.historyStep) {
+            win.pageBack = win.pageBack.concat([win.lastPage]).slice(-30)
+            win.pageForward = []
+        }
+        win.lastPage = currentPage
+    }
+    property int lastPage: 0
+    property var pageBack: []
+    property var pageForward: []
+    property bool historyStep: false
+    function goBack() {
+        if (pageBack.length === 0) return
+        var b = pageBack.slice(), to = b.pop()
+        pageForward = pageForward.concat([currentPage])
+        pageBack = b
+        historyStep = true; currentPage = to; historyStep = false
+    }
+    function goForward() {
+        if (pageForward.length === 0) return
+        var f = pageForward.slice(), to = f.pop()
+        pageBack = pageBack.concat([currentPage])
+        pageForward = f
+        historyStep = true; currentPage = to; historyStep = false
     }
     // the contextual continue/download chip in the top bar (some users find it
     // redundant on the Downloads page)
@@ -467,6 +492,25 @@ Window {
         settingsPage: settingsPage
     }
 
+    // back/forward like a browser: Alt+arrows and the mouse's side buttons
+    Shortcut { sequence: "Alt+Left"; onActivated: win.goBack() }
+    Shortcut { sequence: "Alt+Right"; onActivated: win.goForward() }
+    MouseArea {
+        anchors.fill: parent
+        z: 1000
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        onClicked: function(mouse) { mouse.button === Qt.BackButton ? win.goBack() : win.goForward() }
+    }
+
+    // the ? in the title strip
+    AppHelpMenu {
+        id: helpMenu
+        host: win
+        tourOverlay: appTour.tourOverlay
+        welcomeDialog: welcomeDlg
+        releaseNotesDialog: releaseNotesDlg
+    }
+
     // ----- system tray -----
     AppTray {
         id: trayIcon
@@ -584,6 +628,15 @@ Window {
             currentIndex: win.currentPage
             showDownloadChip: win.showDownloadChip && windowLoaders.playersOpen === 0
             menuOpen: logoMenu.opened
+            canBack: win.pageBack.length > 0
+            canForward: win.pageForward.length > 0
+            onBackRequested: win.goBack()
+            onForwardRequested: win.goForward()
+            onHelpRequested: function(anchor) {
+                if (helpMenu.opened) { helpMenu.close(); return }
+                var p = anchor.mapToItem(win.contentItem, anchor.width, anchor.height + 4)
+                helpMenu.popup(win.contentItem, p.x - helpMenu.width, p.y)
+            }
             onPageRequested: function(page) { win.currentPage = page }
             onSettingsClicked: win.currentPage = 3
             onVpnClicked: { settingsPage.sec = 3; win.currentPage = 3 }

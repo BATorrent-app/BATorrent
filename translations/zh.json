@@ -1649,5 +1649,7 @@
   "ed_duplicate": "复制",
   "ed_delete": "删除主题",
   "ed_contrast_warn": "此背景上的文字对比度低于 4.5:1，可能不易阅读。",
-  "ed_new_name": "我的主题 %1"
+  "ed_new_name": "我的主题 %1",
+  "nav_back": "后退",
+  "nav_forward": "前进"
 }

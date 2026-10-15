@@ -213,6 +213,59 @@ Rectangle {
         }
         TGrpDiv {}
 
+        // alt speed (turtle): a speed limit, so it lives with the speeds
+        Rectangle {
+            id: altChip
+            readonly property bool on: typeof session !== "undefined" && session.altSpeedsActive
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredHeight: 32
+            Layout.preferredWidth: altRow.implicitWidth + 24
+            radius: Theme.rad(9)
+            color: on ? Theme.accentTint : (altMa.containsMouse ? Theme.hover : "transparent")
+            Behavior on color { ColorAnimation { duration: Theme.durFast } }
+            readonly property color ink: on ? Theme.accentText : Theme.t3
+            function limitText() {
+                var kb = typeof settings !== "undefined" ? Number(settings.get("altDownloadLimit") || 0) : 0
+                if (kb <= 0) return ""
+                return kb >= 1024 ? (Math.round(kb / 102.4) / 10).toLocaleString(Qt.locale(), 'f', kb % 1024 === 0 ? 0 : 1) + " MB/s"
+                                  : kb + " KB/s"
+            }
+            Row {
+                id: altRow
+                anchors.centerIn: parent
+                spacing: 8
+                IconImg {
+                    anchors.verticalCenter: parent.verticalCenter
+                    src: "qrc:/icons/turtle.svg"
+                    tint: altChip.ink
+                    s: 17
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, altChip.on
+                           ? (altChip.limitText().length > 0 ? i18n.t("nav_alt_on_limit").arg(altChip.limitText())
+                                                             : i18n.t("nav_alt_on"))
+                           : i18n.t("nav_alt_off"))
+                    color: altChip.ink
+                    font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans
+                }
+            }
+            MouseArea {
+                id: altMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive)
+            }
+            ToolTip.text: (i18n.language, i18n.t("tb_alt_speed"))
+            ToolTip.visible: altMa.containsMouse
+            ToolTip.delay: 400
+            Accessible.role: Accessible.CheckBox
+            Accessible.name: (i18n.language, i18n.t("tb_alt_speed"))
+            Accessible.checked: altChip.on
+        }
+
+
         // global speeds: the tinted arrows carry down/up, the figures stay neutral
         Row {
             Layout.alignment: Qt.AlignVCenter

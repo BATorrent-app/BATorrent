@@ -3,10 +3,11 @@
 // See LICENSE file for details
 
 // The one navigation bar, on top. On Windows it is also the window's title
-// bar: the empty stretch drags the window (double click maximizes) and the
-// window buttons sit at its right end. The logo opens the app menu that used
-// to be a menu bar of its own. Tabs on the left; continue chip, alt speed,
-// VPN and settings on the right.
+// bar: a thin strip above it carries back/forward, the app's name and help,
+// with the window buttons at its end, so the row below has its whole width
+// for the tabs; the empty stretch of either drags the window (double click
+// maximizes). The logo opens the app menu that used to be a menu bar of its
+// own. Tabs on the left; continue chip, VPN and settings on the right.
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
@@ -16,7 +17,9 @@ import "../widgets"
 
 Rectangle {
     id: bar
-    implicitHeight: 54
+    // the title strip exists only where the bar is the window's title bar
+    readonly property real stripH: ownsTitleBar ? 32 : 0
+    implicitHeight: 52 + stripH
     color: Theme.nav
 
     property int currentIndex: 0            // bound down from the window; never self-assigned
@@ -30,15 +33,21 @@ Rectangle {
     signal selectTorrent(string infoHash)
     signal makeRoomRequested()
     signal menuRequested(Item anchor)
+    // page history, like a browser's
+    property bool canBack: false
+    property bool canForward: false
+    signal backRequested()
+    signal forwardRequested()
+    signal helpRequested(Item anchor)
 
     // Everything a click must reach, for the frameless window: the rest of the
     // bar is title bar (drag, double click, the system menu on right click).
-    readonly property var hitItems: [logoBtn, navRow, dlChip, altChip, vpnChip, gearBtn]
+    readonly property var hitItems: [logoBtn, navRow, dlChip, vpnChip, gearBtn, backBtn, fwdBtn, helpBtn]
     readonly property alias minButton: minBtn
     readonly property alias maxButton: maxBtn
     readonly property alias closeButton: closeBtn
 
-    readonly property bool tightChip: width < 1180
+    readonly property bool tightChip: width < 1000
 
     readonly property DownloadCarousel carousel: DownloadCarousel {
         id: car
@@ -90,6 +99,7 @@ Rectangle {
         id: logoBtn
         x: 10
         anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: bar.stripH / 2
         width: logoRow.implicitWidth + 16
         height: 40
         radius: Theme.rad(9)
@@ -144,7 +154,8 @@ Rectangle {
         id: navRow
         anchors.left: logoBtn.right
         anchors.leftMargin: 14
-        height: parent.height
+        y: bar.stripH
+        height: parent.height - bar.stripH
         Repeater {
             id: navRepeater
             model: bar.items
@@ -252,81 +263,42 @@ Rectangle {
     // ----- right cluster -----
     RowLayout {
         id: rightRow
-        anchors.right: winButtons.visible ? winButtons.left : parent.right
-        anchors.rightMargin: winButtons.visible ? 0 : 12
+        anchors.right: parent.right
+        anchors.rightMargin: 12
         anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: bar.stripH / 2
         spacing: 2
 
         NavBarDownloadChip { id: dlChip; bar: bar; car: car }
-
-        // alt speed (turtle): a mode with a visible state, next to the VPN
-        Rectangle {
-            id: altChip
-            readonly property bool on: typeof session !== "undefined" && session.altSpeedsActive
-            Layout.leftMargin: dlChip.visible ? 6 : 0
-            Layout.preferredHeight: 36
-            Layout.preferredWidth: altRow.implicitWidth + 24
-            radius: Theme.rad(9)
-            color: on ? Theme.accentTint : (altMa.containsMouse ? Theme.hover : "transparent")
-            Behavior on color { ColorAnimation { duration: Theme.durFast } }
-            readonly property color ink: on ? Theme.accentText : Theme.t3
-            function limitText() {
-                var kb = typeof settings !== "undefined" ? Number(settings.get("altDownloadLimit") || 0) : 0
-                if (kb <= 0) return ""
-                return kb >= 1024 ? (Math.round(kb / 102.4) / 10).toLocaleString(Qt.locale(), 'f', kb % 1024 === 0 ? 0 : 1) + " MB/s"
-                                  : kb + " KB/s"
-            }
-            Row {
-                id: altRow
-                anchors.centerIn: parent
-                spacing: 8
-                IconImg {
-                    anchors.verticalCenter: parent.verticalCenter
-                    src: "qrc:/icons/turtle.svg"
-                    tint: altChip.ink
-                    s: 17
-                }
-                Text {
-                    visible: !bar.tightChip || altChip.on
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: (i18n.language, altChip.on
-                           ? (altChip.limitText().length > 0 ? i18n.t("nav_alt_on_limit").arg(altChip.limitText())
-                                                             : i18n.t("nav_alt_on"))
-                           : i18n.t("nav_alt_off"))
-                    color: altChip.ink
-                    font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans
-                }
-            }
-            MouseArea {
-                id: altMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: if (typeof session !== "undefined") session.setAltSpeedsActive(!session.altSpeedsActive)
-            }
-            ToolTip.text: (i18n.language, i18n.t("tb_alt_speed"))
-            ToolTip.visible: altMa.containsMouse
-            ToolTip.delay: 400
-            Accessible.role: Accessible.CheckBox
-            Accessible.name: (i18n.language, i18n.t("tb_alt_speed"))
-            Accessible.checked: altChip.on
-        }
 
         NavBarVpnChip { id: vpnChip; bar: bar }
 
         Rectangle {
             id: gearBtn
             readonly property bool on: bar.currentIndex === 3
-            Layout.preferredWidth: 36
+            Layout.preferredWidth: gearRow.implicitWidth + 22
             Layout.preferredHeight: 36
             radius: Theme.rad(9)
             color: on ? Theme.hover2 : (gearMa.containsMouse ? Theme.hover : "transparent")
             Behavior on color { ColorAnimation { duration: Theme.durFast } }
-            IconImg {
+            readonly property color ink: gearBtn.on || gearMa.containsMouse ? Theme.t1 : Theme.t2
+            Row {
+                id: gearRow
                 anchors.centerIn: parent
-                src: "qrc:/icons/settings.svg"
-                tint: gearBtn.on || gearMa.containsMouse ? Theme.t1 : Theme.t2
-                s: 18
+                spacing: 7
+                IconImg {
+                    anchors.verticalCenter: parent.verticalCenter
+                    src: "qrc:/icons/settings.svg"
+                    tint: gearBtn.ink
+                    s: 17
+                }
+                Text {
+                    visible: !bar.tightChip
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (i18n.language, i18n.t("tb_settings"))
+                    color: gearBtn.ink
+                    font.pixelSize: 13; font.weight: Font.Medium; font.family: Theme.fontSans
+                }
             }
             MouseArea {
                 id: gearMa
@@ -336,7 +308,7 @@ Rectangle {
                 onClicked: bar.settingsClicked()
             }
             ToolTip.text: (i18n.language, i18n.t("tb_settings"))
-            ToolTip.visible: gearMa.containsMouse
+            ToolTip.visible: gearMa.containsMouse && bar.tightChip
             ToolTip.delay: 400
             Accessible.role: Accessible.Button
             Accessible.name: (i18n.language, i18n.t("tb_settings"))
@@ -344,47 +316,122 @@ Rectangle {
         }
     }
 
-    // ----- window buttons (frameless only) -----
-    Row {
-        id: winButtons
+    // ----- title strip (frameless only) -----
+    // back/forward on the left, the app's name in the middle, help and the
+    // window buttons on the right
+    Item {
+        id: titleStrip
         visible: bar.ownsTitleBar
-        anchors.right: parent.right
-        anchors.top: parent.top
-        Rectangle {
-            anchors.top: parent.top
-            anchors.topMargin: 16
-            width: 1; height: 22
-            color: Theme.hair
-        }
-        Item { width: 6; height: 1 }
-        WinButton {
-            id: minBtn
-            glyph: "min"
-            onClicked: if (bar.appWindow) bar.appWindow.showMinimized()
-        }
-        WinButton {
-            id: maxBtn
-            glyph: bar.appWindow && bar.appWindow.visibility === Window.Maximized ? "restore" : "max"
-            onClicked: {
-                if (!bar.appWindow) return
-                if (bar.appWindow.visibility === Window.Maximized) bar.appWindow.showNormal()
-                else bar.appWindow.showMaximized()
+        width: parent.width
+        height: bar.stripH
+        Row {
+            x: 8
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+            StripButton {
+                id: backBtn
+                icon: "qrc:/icons/arrow-left.svg"
+                active: bar.canBack
+                tip: (i18n.language, i18n.t("nav_back"))
+                onClicked: bar.backRequested()
+            }
+            StripButton {
+                id: fwdBtn
+                icon: "qrc:/icons/arrow-right.svg"
+                active: bar.canForward
+                tip: (i18n.language, i18n.t("nav_forward"))
+                onClicked: bar.forwardRequested()
             }
         }
-        WinButton {
-            id: closeBtn
-            glyph: "close"
-            onClicked: if (bar.appWindow) bar.appWindow.close()
+        Row {
+            anchors.centerIn: parent
+            spacing: 7
+            Image {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 16; height: 16
+                source: Theme.logoSource
+                sourceSize: Qt.size(32, 32)
+                fillMode: Image.PreserveAspectFit
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "BATorrent"
+                color: Theme.t2
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.family: Theme.fontSans
+            }
+        }
+        Row {
+            id: winButtons
+            anchors.right: parent.right
+            anchors.top: parent.top
+            StripButton {
+                id: helpBtn
+                icon: "qrc:/icons/help.svg"
+                tip: (i18n.language, i18n.t("menu_help_title"))
+                onClicked: bar.helpRequested(helpBtn)
+            }
+            Item { width: 6; height: 1 }
+            WinButton {
+                id: minBtn
+                glyph: "min"
+                onClicked: if (bar.appWindow) bar.appWindow.showMinimized()
+            }
+            WinButton {
+                id: maxBtn
+                glyph: bar.appWindow && bar.appWindow.visibility === Window.Maximized ? "restore" : "max"
+                onClicked: {
+                    if (!bar.appWindow) return
+                    if (bar.appWindow.visibility === Window.Maximized) bar.appWindow.showNormal()
+                    else bar.appWindow.showMaximized()
+                }
+            }
+            WinButton {
+                id: closeBtn
+                glyph: "close"
+                onClicked: if (bar.appWindow) bar.appWindow.close()
+            }
         }
     }
 
-    // Caption buttons drawn the way Windows draws them: 46×32, a hairline
-    // glyph, grey wash on hover and red under the close button.
+    // A small icon button of the title strip: back, forward, help.
+    component StripButton: Rectangle {
+        id: sbtn
+        property string icon
+        property string tip
+        property bool active: true
+        signal clicked()
+        width: 30; height: bar.stripH
+        radius: Theme.rad(6)
+        color: sbtnMa.containsMouse && sbtn.active ? Theme.hover2 : "transparent"
+        IconImg {
+            anchors.centerIn: parent
+            src: sbtn.icon
+            s: 15
+            tint: !sbtn.active ? Theme.t4 : (sbtnMa.containsMouse ? Theme.t1 : Theme.t3)
+        }
+        MouseArea {
+            id: sbtnMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: sbtn.active ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: if (sbtn.active) sbtn.clicked()
+        }
+        ToolTip.visible: sbtnMa.containsMouse && sbtn.tip.length > 0
+        ToolTip.text: sbtn.tip
+        ToolTip.delay: 500
+        Accessible.role: Accessible.Button
+        Accessible.name: sbtn.tip
+    }
+
+    // Caption buttons drawn the way Windows draws them: 46 wide, the strip's
+    // height, a hairline glyph, grey wash on hover and red under the close button.
     component WinButton: Rectangle {
         id: wb
         property string glyph: "min"
         signal clicked()
-        width: 46; height: 32
+        width: 46; height: bar.stripH
         color: wbMa.containsMouse ? (glyph === "close" ? Theme.winClose : Theme.hover2) : "transparent"
         readonly property color ink: wbMa.containsMouse && glyph === "close" ? "#ffffff" : Theme.tSoft
         Rectangle {   // minimize

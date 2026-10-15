@@ -1649,5 +1649,7 @@
   "ed_duplicate": "Duplicate",
   "ed_delete": "Delete theme",
   "ed_contrast_warn": "Text on this background is under 4.5:1 and may be hard to read.",
-  "ed_new_name": "My theme %1"
+  "ed_new_name": "My theme %1",
+  "nav_back": "Back",
+  "nav_forward": "Forward"
 }

@@ -38,6 +38,9 @@
 <file>icons/copy.svg</file>
 <file>icons/pencil.svg</file>
 <file>icons/check.svg</file>
+<file>icons/arrow-left.svg</file>
+<file>icons/arrow-right.svg</file>
+<file>icons/help.svg</file>
 <file>icons/palette.svg</file>
 <file>icons/file.svg</file>
 <file>icons/caret-down-fill.svg</file>
@@ -159,6 +162,7 @@
 <file>../src/qml/views/LibraryController.qml</file>
 <file>../src/qml/AppTray.qml</file>
 <file>../src/qml/AppLogoMenu.qml</file>
+<file>../src/qml/AppHelpMenu.qml</file>
 <file>../src/qml/AppFramelessAgent.qml</file>
 <file>../src/qml/AppMenuBar.qml</file>
 <file>../src/qml/MainWindowLoaders.qml</file>

@@ -1649,5 +1649,7 @@
   "ed_duplicate": "Duplizieren",
   "ed_delete": "Theme löschen",
   "ed_contrast_warn": "Text auf diesem Hintergrund liegt unter 4,5:1 und ist eventuell schwer lesbar.",
-  "ed_new_name": "Mein Theme %1"
+  "ed_new_name": "Mein Theme %1",
+  "nav_back": "Zurück",
+  "nav_forward": "Vorwärts"
 }

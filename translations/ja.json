@@ -1649,5 +1649,7 @@
   "ed_duplicate": "複製",
   "ed_delete": "テーマを削除",
   "ed_contrast_warn": "この背景の文字はコントラストが 4.5:1 未満で、読みにくい場合があります。",
-  "ed_new_name": "マイテーマ %1"
+  "ed_new_name": "マイテーマ %1",
+  "nav_back": "戻る",
+  "nav_forward": "進む"
 }

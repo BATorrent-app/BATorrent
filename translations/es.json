@@ -1649,5 +1649,7 @@
   "ed_duplicate": "Duplicar",
   "ed_delete": "Eliminar tema",
   "ed_contrast_warn": "El texto sobre este fondo está por debajo de 4,5:1 y puede costar leerlo.",
-  "ed_new_name": "Mi tema %1"
+  "ed_new_name": "Mi tema %1",
+  "nav_back": "Atrás",
+  "nav_forward": "Adelante"
 }

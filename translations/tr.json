@@ -1649,5 +1649,7 @@
   "ed_duplicate": "Çoğalt",
   "ed_delete": "Temayı sil",
   "ed_contrast_warn": "Bu arka plandaki metin 4,5:1'in altında ve okunması zor olabilir.",
-  "ed_new_name": "Temam %1"
+  "ed_new_name": "Temam %1",
+  "nav_back": "Geri",
+  "nav_forward": "İleri"
 }
