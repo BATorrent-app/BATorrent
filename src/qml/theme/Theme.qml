@@ -239,7 +239,8 @@ QtObject {
     readonly property color stageIdleFillHover: "#35353b"
     // ink on an accent-filled button: dark on a bright accent (Midnight's lamp
     // yellow, Matrix's phosphor)
-    readonly property color inkOnAccent: isUser ? inkOn(uPrimary) : p.inkOnAccent
+    readonly property color inkOnAccent: isUser ? (Palette.luminance(String(uPrimary).length === 9 ? "#" + String(uPrimary).slice(3) : String(uPrimary)) > 0.4 ? "#101014" : "#ffffff")
+                                                : p.inkOnAccent
     // the backdrop's fade into the panel, as alpha over stageBg
     function stageWash(a) { return Qt.rgba(stageBg.r, stageBg.g, stageBg.b, a) }
 

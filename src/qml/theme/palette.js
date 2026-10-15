@@ -242,7 +242,11 @@ function build(name) {
         p.hover = alpha(hairInk, 0.045); p.sel = alpha(p.accent, 0.12)
     }
     p.accentTint = alpha(p.accent, 0.12)
-    p.inkOnAccent = inkOn(p.accent)
+    // The label on an accent button. Not inkOn()'s crossing point: a saturated
+    // red or violet sits just past it and came out with black text, where a
+    // button reads white. Dark ink only on an accent that is light outright
+    // (Midnight's lamp yellow, Matrix's phosphor).
+    if (!p.inkOnAccent) p.inkOnAccent = luminance(p.accent) > 0.4 ? "#101014" : "#ffffff"
     p.grn = p.doneDot
     p.tileBlank = p.tile; p.stackMid = p.stack1; p.stackBack = p.stack2
     p.pausedFill = p.paused
