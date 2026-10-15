@@ -117,34 +117,21 @@ Item {
     }
 
     // ----- GRID -----
-    // The grid shows only once it has its columns for the width it lands at.
-    // Coming from the list, the inspector takes its width in the same moment
-    // and the grid laid out its first frame still at the list's width: one
-    // frame of cards in the wrong columns, then the jump into place.
-    property bool gridReady: false
-    Component.onCompleted: gridReady = controller.gridView
-    Connections {
-        target: libraryView.controller
-        function onGridViewChanged() {
-            if (!libraryView.controller.gridView) { libraryView.gridReady = false; return }
-            gridSettle.restart()
-        }
-    }
-    Timer {
-        id: gridSettle
-        interval: 32
-        onTriggered: { grid.reflow(); grid.forceLayout(); libraryView.gridReady = true }
-    }
-
     GridView {
         id: grid
-        opacity: (controller.gridView && libraryView.gridReady && !parent.empty) ? 1 : 0
-        visible: opacity > 0.01
+        opacity: (controller.gridView && !parent.empty) ? 1 : 0
+        // Kept visible (at opacity 0) in the list so it lays out for every
+        // width it is given: a hidden GridView keeps its old columns, and
+        // coming back from the list its first frames had cards in the wrong
+        // columns before they jumped into place. Disabled there so it never
+        // takes the list's clicks or wheel.
+        visible: !parent.empty
+        enabled: controller.gridView
         // Grid and list are two views of the SAME rows, so the switch should read
         // as one changing form, not two things swapping. The incoming view grows
         // the last 1.5% into place while the outgoing shrinks away underneath:
         // a plain cross-fade left both hanging half-visible on top of each other.
-        scale: (Theme.reduceMotion || (controller.gridView && libraryView.gridReady && !parent.empty)) ? 1 : 0.985
+        scale: (Theme.reduceMotion || (controller.gridView && !parent.empty)) ? 1 : 0.985
         transformOrigin: Item.Center
         Behavior on opacity { NumberAnimation { duration: 190; easing.type: Theme.easeOut } }
         Behavior on scale { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
@@ -165,8 +152,15 @@ Item {
         // Once more after things settle: the inspector's slide and the grid's
         // own fade-in overlap, and a reflow asked for while it is still hidden
         // is dropped.
+        // The nudge only ever moves forward: toggled between two values, the
+        // two width changes of one switch (the inspector arriving, then the
+        // layout settling) cancelled out inside a frame, the grid saw no change
+        // and kept the list's columns until the timer below caught it.
         property real nudge: 0
-        function reflow() { nudge = nudge > 0 ? 0 : 0.0001 }
+        function reflow() {
+            nudge = nudge >= 0.01 ? 0.0001 : nudge + 0.0001
+            forceLayout()
+        }
         onWidthChanged: { reflow(); settleReflow.restart() }
         onVisibleChanged: if (visible) { reflow(); settleReflow.restart() }
         Timer { id: settleReflow; interval: Theme.durSlower + 60; onTriggered: grid.reflow() }
@@ -175,15 +169,25 @@ Item {
         // as the whole grid flashing. The container's opacity Behavior already
         // covers the initial fade-in. (List view has no populate, never flashed.)
         add: Transition {
-            NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut }
-            NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut }
+            NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: grid.viewSwitch ? 0 : Theme.durBase; easing.type: Theme.easeOut }
+            NumberAnimation { properties: "scale"; from: 0.9; to: 1; duration: grid.viewSwitch ? 0 : Theme.durBase; easing.type: Theme.easeOut }
         }
         // deleting several selected torrents at once fires these back-to-back
         // with no time to settle between them: a known Qt Quick view-recycling
         // risk: so a batch removal (bulkRemoveInProgress) skips the animation
         // instead of stacking transitions; a single remove keeps it.
         readonly property bool bulkRemove: typeof session !== "undefined" && session.bulkRemoveInProgress
-        readonly property bool skipDisplace: bulkRemove
+        // Switching between list and grid reshapes the rows (the list opens a
+        // series into its episodes, the grid keeps one card), and the model
+        // reports that as inserts and moves. Animated, the cards slid about as
+        // if something had changed; nothing had, so the switch skips it.
+        property bool viewSwitch: false
+        Connections {
+            target: libraryView.controller
+            function onGridViewChanged() { grid.viewSwitch = true; viewSwitchEnd.restart() }
+        }
+        Timer { id: viewSwitchEnd; interval: Theme.durSlower + 120; onTriggered: grid.viewSwitch = false }
+        readonly property bool skipDisplace: bulkRemove || viewSwitch
         remove: Transition {
             NumberAnimation { properties: "opacity"; to: 0; duration: grid.bulkRemove ? 0 : 160; easing.type: Theme.easeIn }
             NumberAnimation { properties: "scale"; to: 0.85; duration: grid.bulkRemove ? 0 : 160; easing.type: Theme.easeIn }
@@ -193,10 +197,10 @@ Item {
             NumberAnimation { properties: "scale"; to: 1; duration: grid.skipDisplace ? 0 : 280; easing.type: Theme.easeOut }
         }
         move: Transition {
-            NumberAnimation { properties: "x,y"; duration: Theme.durSlower; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+            NumberAnimation { properties: "x,y"; duration: grid.skipDisplace ? 0 : Theme.durSlower; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
         }
         moveDisplaced: Transition {
-            NumberAnimation { properties: "x,y"; duration: Theme.durSlower; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
+            NumberAnimation { properties: "x,y"; duration: grid.skipDisplace ? 0 : Theme.durSlower; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
         }
         clip: true
         model: libraryView.modelOverride !== null ? libraryView.modelOverride : win.model
